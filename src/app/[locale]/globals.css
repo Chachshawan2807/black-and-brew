@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sarabun:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Inter', 'Sarabun', system-ui, sans-serif;
+
+  /* Collapsible animations */
+  --animate-collapsible-down: collapsible-down 0.2s ease-out;
+  --animate-collapsible-up: collapsible-up 0.2s ease-out;
+}
+
+@keyframes collapsible-down {
+  from { height: 0; }
+  to { height: var(--radix-collapsible-content-height); }
+}
+
+@keyframes collapsible-up {
+  from { height: var(--radix-collapsible-content-height); }
+  to { height: 0; }
+}
+
+:root {
+  --background: #EDEDF0;
+  --foreground: #000000;
+  font-size: 15.5px;
+}
+
+@layer base {
+  html {
+    background-color: #EDEDF0;
+  }
+  body {
+    background-color: #EDEDF0;
+    color: #000000;
+    @apply selection:bg-blue-500/30;
+    font-family: 'Inter', 'Sarabun', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight text-[#000000];
+    font-family: 'Inter', 'Sarabun', system-ui, sans-serif;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+    z-index: 10;
+  }
+}
+
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200 shadow-lg;
+  }
+  
+  .glass-card {
+    @apply bg-[#ffffff] backdrop-blur-md border border-gray-100 rounded-2xl hover:shadow-lg transition-all duration-300;
+  }
+}

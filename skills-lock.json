@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "gemini-api": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gemini-api/SKILL.md",
+      "computedHash": "7e22493b7e3393b0aa46634c8ba0a861c56d85bb158f48551ddc1feda3d53c8b"
+    },
+    "google-cloud-waf-security": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/google-cloud-waf-security/SKILL.md",
+      "computedHash": "b49e3f41dd7758c3392cde1ff10fbed769d7e089cd8c4a8bf0c914749f1276e3"
+    }
+  }
+}

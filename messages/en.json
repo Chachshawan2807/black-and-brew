@@ -1,0 +1,10 @@
+{
+  "Index": {
+    "title": "Black and Brew Scheduling",
+    "description": "High-Availability & Real-time Scheduling System"
+  },
+  "Common": {
+    "loading": "Loading...",
+    "error": "Something went wrong"
+  }
+}
