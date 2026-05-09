@@ -1,8 +1,6 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+# --- Dependencies & Packages ---
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -10,45 +8,52 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# --- Python & Virtual Environments (จุดที่ทำให้เกิด 10k) ---
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# next.js
-/.next/
-/out/
+# --- Python AI Tools (Clean Sweep) ---
+config/
+workspace/
+storage/
+logs/
+config2.yaml
+config2.bak
+fix_config.py
+surgery.py
 
-# production
-/build
+# --- Next.js & Production ---
+.next/
+out/
+build/
+coverage/
 
-# misc
+# --- AI Tools & Cache (Antigravity System) ---
+.antigravity/
+.aider.tags.cache.v3/
+.aider.tags.cache.v4/
+mem0_storage.json
+
+# --- Environment Files & Private Data ---
+.env*
+.env.local
+.vercel
+
+# --- System & Misc ---
 .DS_Store
 *.pem
-
-# debug
+*.tsbuildinfo
+next-env.d.ts
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# AI Tools & Cache
-.antigravity/
-.aider.tags.cache.v3/
-.aider.tags.cache.v4/
-__pycache__/
-
-# Private Data
-mem0_storage.json
-.env.local
-
-# scratch
+# --- Project Specific ---
 scratch/sidebar-temp/

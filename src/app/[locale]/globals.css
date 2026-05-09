@@ -34,14 +34,17 @@
   body {
     background-color: #EDEDF0;
     color: #000000;
-    @apply selection:bg-blue-500/30;
+    &::selection {
+      background-color: rgb(59 130 246 / 0.3);
+    }
     font-family: 'Inter', 'Sarabun', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     line-height: 1.6;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight text-[#000000];
+    letter-spacing: -0.025em;
+    color: #000000;
     font-family: 'Inter', 'Sarabun', system-ui, sans-serif;
   }
 
@@ -63,10 +66,25 @@
 
 @layer components {
   .glass-panel {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200 shadow-lg;
+    background-color: rgb(255 255 255 / 0.95);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
   }
   
   .glass-card {
-    @apply bg-[#ffffff] backdrop-blur-md border border-gray-100 rounded-2xl hover:shadow-lg transition-all duration-300;
+    background-color: #ffffff;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid #f3f4f6;
+    border-radius: 1rem;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+
+    &:hover {
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+    }
   }
 }
