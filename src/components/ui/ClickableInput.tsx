@@ -57,23 +57,19 @@ export function ClickableInput({
     >
       {icon && <div className="shrink-0 pointer-events-none">{icon}</div>}
       
-      <div className="flex-1 relative h-full flex items-center">
-        {type === 'date' && value && (
-          <div className="absolute inset-0 flex items-center text-[14px] text-[#000000] pointer-events-none z-10 bg-white">
-            {displayValue}
-          </div>
-        )}
+      <div className="flex-1 flex items-center justify-center min-w-0">
+        <span className="text-[14px] font-normal text-[#000000] text-center block w-full truncate">
+          {type === 'date' && value ? displayValue : (type === 'date' ? 'YYYY-MM-DD' : value?.toString() || '')}
+        </span>
         <input
           ref={inputRef}
           type={type}
           value={value}
-          className={`w-full h-full bg-transparent text-[14px] text-[#000000] border-none outline-none focus:ring-0 cursor-pointer appearance-none ${className} ${type === 'date' && value ? 'opacity-0' : 'opacity-100'}`}
+          className="sr-only"
           onClick={(e) => e.stopPropagation()} 
           {...props}
         />
       </div>
-      
-      <div className="absolute inset-0 z-0" />
     </div>
   );
 }

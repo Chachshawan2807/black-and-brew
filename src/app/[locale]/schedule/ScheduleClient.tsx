@@ -55,12 +55,14 @@ interface SortableEmployeeRowProps {
   nameInput: string;
   setNameInput: (s: string) => void;
   onNameClick: (id: string, name: string) => void;
+  onNameClick: (id: string, name: string) => void;
   onSaveName: (id: string) => void;
+  onDeleteEmployee: (id: string) => void;
 }
 
 function SortableEmployeeRow({
   id, profile, weekDays, shifts, shiftTypes, onCellClick,
-  editingNameId, nameInput, setNameInput, onNameClick, onSaveName
+  editingNameId, nameInput, setNameInput, onNameClick, onSaveName, onDeleteEmployee
 }: SortableEmployeeRowProps) {
   const {
     attributes,
@@ -85,9 +87,9 @@ function SortableEmployeeRow({
       className={`grid grid-cols-8 border-b border-gray-100 hover:bg-gray-50 transition-colors group relative bg-white ${isDragging ? 'shadow-lg ring-1 ring-black/5 scale-[1.002]' : ''}`}
     >
       <div className="p-2 border-r border-gray-100 flex items-center gap-2 bg-white sticky left-0 z-[5]">
-        <div 
-          {...attributes} 
-          {...listeners} 
+        <div
+          {...attributes}
+          {...listeners}
           className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-gray-100 rounded-lg transition-all text-gray-300 hover:text-gray-600"
           title="ลากเพื่อเปลี่ยนลำดับ"
         >
@@ -105,7 +107,7 @@ function SortableEmployeeRow({
               onKeyDown={(e) => e.key === 'Enter' && onSaveName(id)}
             />
           ) : (
-            <span 
+            <span
               onClick={() => onNameClick(id, profile.full_name)}
               className="text-[16px] font-normal text-[#000000] truncate leading-[1.6] tracking-tight cursor-text hover:text-blue-600 transition-colors block"
             >
@@ -113,6 +115,13 @@ function SortableEmployeeRow({
             </span>
           )}
         </div>
+        <button
+          onClick={() => onDeleteEmployee(id)}
+          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+          title="ลบพนักงานถาวร"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
 
       {weekDays.map(date => {
@@ -150,12 +159,12 @@ interface ScheduleClientProps {
   locale: string;
 }
 
-export default function ScheduleClient({ 
-  initialProfiles, 
-  initialShifts, 
+export default function ScheduleClient({
+  initialProfiles,
+  initialShifts,
   initialHolidays,
   initialDateStr,
-  locale 
+  locale
 }: ScheduleClientProps) {
   const router = useRouter();
 
@@ -194,7 +203,7 @@ export default function ScheduleClient({
 
   const mgmtStartRef = useRef<HTMLInputElement>(null);
   const mgmtEndRef = useRef<HTMLInputElement>(null);
-  
+
   const histStartRef = useRef<HTMLInputElement>(null);
   const histEndRef = useRef<HTMLInputElement>(null);
 
@@ -225,8 +234,8 @@ export default function ScheduleClient({
 
   const pushToHistory = useCallback((currentProfiles: any[], currentOrder: string[], currentShifts: any[]) => {
     setUndoStack(prev => {
-      const newStack = [...prev, { 
-        profiles: JSON.parse(JSON.stringify(currentProfiles)), 
+      const newStack = [...prev, {
+        profiles: JSON.parse(JSON.stringify(currentProfiles)),
         orderedProfileIds: [...currentOrder],
         shifts: JSON.parse(JSON.stringify(currentShifts))
       }];
@@ -239,14 +248,14 @@ export default function ScheduleClient({
     if (undoStack.length === 0) return;
     const previous = undoStack[undoStack.length - 1];
     const newUndoStack = undoStack.slice(0, -1);
-    
-    setRedoStack(prev => [{ 
-      profiles: JSON.parse(JSON.stringify(profiles)), 
+
+    setRedoStack(prev => [{
+      profiles: JSON.parse(JSON.stringify(profiles)),
       orderedProfileIds: [...orderedProfileIds],
       shifts: JSON.parse(JSON.stringify(shifts))
     }, ...prev].slice(0, 20));
     setUndoStack(newUndoStack);
-    
+
     setProfiles(previous.profiles);
     setOrderedProfileIds(previous.orderedProfileIds);
     setShifts(previous.shifts);
@@ -257,10 +266,10 @@ export default function ScheduleClient({
         ...previous.orderedProfileIds.map((id: string, i: number) => supabase.from('profiles').update({ display_order: i }).eq('id', id)),
         ...previous.profiles.map((p: any) => supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id))
       ];
-      
+
       await Promise.all(profileUpdates);
       await supabase.from('shifts').delete().gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
-      
+
       if (previous.shifts.length > 0) {
         await supabase.from('shifts').insert(previous.shifts.map((s: any) => {
           const { id, created_at, ...rest } = s; // Cleanup internal fields
@@ -278,14 +287,14 @@ export default function ScheduleClient({
     if (redoStack.length === 0) return;
     const next = redoStack[0];
     const newRedoStack = redoStack.slice(1);
-    
-    setUndoStack(prev => [...prev, { 
-      profiles: JSON.parse(JSON.stringify(profiles)), 
+
+    setUndoStack(prev => [...prev, {
+      profiles: JSON.parse(JSON.stringify(profiles)),
       orderedProfileIds: [...orderedProfileIds],
       shifts: JSON.parse(JSON.stringify(shifts))
     }].slice(-20));
     setRedoStack(newRedoStack);
-    
+
     setProfiles(next.profiles);
     setOrderedProfileIds(next.orderedProfileIds);
     setShifts(next.shifts);
@@ -296,10 +305,10 @@ export default function ScheduleClient({
         ...next.orderedProfileIds.map((id: string, i: number) => supabase.from('profiles').update({ display_order: i }).eq('id', id)),
         ...next.profiles.map((p: any) => supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id))
       ];
-      
+
       await Promise.all(profileUpdates);
       await supabase.from('shifts').delete().gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
-      
+
       if (next.shifts.length > 0) {
         await supabase.from('shifts').insert(next.shifts.map((s: any) => {
           const { id, created_at, ...rest } = s;
@@ -343,11 +352,11 @@ export default function ScheduleClient({
       // Group contiguous shifts into ranges
       const grouped: any[] = [];
       const sorted = [...(data || [])].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-      
+
       sorted.forEach(shift => {
-        const prev = grouped.find(g => 
-          g.employee_id === shift.employee_id && 
-          g.metadata?.location === shift.metadata?.location && 
+        const prev = grouped.find(g =>
+          g.employee_id === shift.employee_id &&
+          g.metadata?.location === shift.metadata?.location &&
           g.metadata?.remark === shift.metadata?.remark &&
           format(addDays(new Date(g.endDate), 1), 'yyyy-MM-dd') === format(new Date(shift.start_time), 'yyyy-MM-dd')
         );
@@ -386,35 +395,35 @@ export default function ScheduleClient({
       alert('กรุณากรอกข้อมูลให้ครบถ้วน (พนักงาน, วันเริ่มต้น, วันสิ้นสุด)');
       return;
     }
-    
+
     setLoading(true);
     pushToHistory(profiles, orderedProfileIds, shifts);
-    
+
     try {
       const start = new Date(managementForm.startDate);
       const end = new Date(managementForm.endDate);
       const newShifts = [];
       const datesToDelete = [];
-      
+
       for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
         const dateStr = format(d, 'yyyy-MM-dd');
         datesToDelete.push(dateStr + 'T00:00:00');
-        
+
         const isLeave = managementForm.shiftType === 'ลา' || managementForm.shiftType === 'on_leave';
-        
+
         newShifts.push({
           employee_id: managementForm.employeeId,
           start_time: dateStr + 'T00:00:00',
           end_time: dateStr + 'T23:59:59',
           status: isLeave ? 'on_leave' : 'scheduled',
-          metadata: { 
-            location: managementForm.shiftType, 
-            is_management: true, 
-            remark: managementForm.remark 
+          metadata: {
+            location: managementForm.shiftType,
+            is_management: true,
+            remark: managementForm.remark
           }
         });
       }
-      
+
       // Delete existing for this employee in range
       if (datesToDelete.length > 0) {
         const { error: delError } = await supabase.from('shifts')
@@ -423,25 +432,25 @@ export default function ScheduleClient({
           .in('start_time', datesToDelete);
         if (delError) throw delError;
       }
-      
+
       // Insert new
       if (newShifts.length > 0) {
         const { error: insError } = await supabase.from('shifts')
           .insert(newShifts);
         if (insError) throw insError;
       }
-      
+
       // Success Feedback & Refresh
       setSaveSuccess(true);
       fetchMgmtHistory();
       setTimeout(() => setSaveSuccess(false), 3000);
-      
+
       // Reset form but stay open
       setManagementForm({ employeeId: '', shiftType: '6:30', startDate: '', endDate: '', remark: '' });
-      
+
       await revalidateAppPaths();
       router.refresh();
-      
+
     } catch (error) {
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
     } finally {
@@ -452,12 +461,12 @@ export default function ScheduleClient({
   const handleCopyShifts = async (sourceDateStr: string) => {
     if (!sourceDateStr) return;
     setLoading(true);
-    
+
     try {
       // 1. Calculate source week boundaries (Monday start)
       const sourceMonday = startOfWeek(new Date(sourceDateStr), { weekStartsOn: 1 });
       const sourceSunday = addDays(sourceMonday, 6);
-      
+
       // 2. Fetch source shifts from Supabase
       const { data: sourceShifts, error: fetchError } = await supabase.from('shifts')
         .select('*')
@@ -467,7 +476,7 @@ export default function ScheduleClient({
         .not('status', 'eq', '')
         .not('metadata->>location', 'is', null)
         .not('metadata->>location', 'eq', '');
-        
+
       if (fetchError) throw fetchError;
       if (!sourceShifts || sourceShifts.length === 0) {
         alert('ไม่พบข้อมูลกะงานในสัปดาห์ที่เลือก กรุณาเลือกสัปดาห์อื่นที่มีการลงเวลาไว้แล้ว');
@@ -483,16 +492,16 @@ export default function ScheduleClient({
         .delete()
         .gte('start_time', weekDays[0] + 'T00:00:00')
         .lte('start_time', weekDays[6] + 'T23:59:59');
-      
+
       if (deleteError) throw deleteError;
 
       // 4. Map source shifts to current target week dates (Maintains same day-of-week)
       const newShifts = sourceShifts.map((s: any) => {
         const oldDate = new Date(s.start_time.split('T')[0]);
         // Day index: 0=Mon, 1=Tue, ..., 6=Sun
-        const dayIndex = (oldDate.getDay() + 6) % 7; 
+        const dayIndex = (oldDate.getDay() + 6) % 7;
         const targetDateStr = weekDays[dayIndex];
-        
+
         return {
           employee_id: s.employee_id,
           start_time: targetDateStr + 'T00:00:00',
@@ -501,13 +510,13 @@ export default function ScheduleClient({
           metadata: s.metadata
         };
       });
-      
+
       // 5. Batch Insert into Supabase
       if (newShifts.length > 0) {
         const { error: insertError } = await supabase.from('shifts').insert(newShifts);
         if (insertError) throw insertError;
       }
-      
+
       // 6. Sync UI and Dashboard Stats
       revalidateAppPaths();
     } catch (err) {
@@ -528,7 +537,7 @@ export default function ScheduleClient({
     if (over && active.id !== over.id) {
       pushToHistory(profiles, orderedProfileIds, shifts);
       let newOrder: string[] = [];
-      
+
       // Update local state first for instant feedback
       setOrderedProfileIds((items) => {
         const oldIndex = items.indexOf(active.id as string);
@@ -540,7 +549,7 @@ export default function ScheduleClient({
       // Sync with database
       if (newOrder.length > 0) {
         try {
-          const updates = newOrder.map((id, index) => 
+          const updates = newOrder.map((id, index) =>
             supabase.from('profiles').update({ display_order: index }).eq('id', id)
           );
           await Promise.all(updates);
@@ -549,6 +558,33 @@ export default function ScheduleClient({
           // silently handle error
         }
       }
+    }
+  };
+
+  const handleDeleteEmployee = async (employeeId: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this employee? This action cannot be undone and will remove all associated shifts.')) return;
+    
+    setLoading(true);
+    pushToHistory(profiles, orderedProfileIds, shifts); // Save state for undo just in case, though DB delete is permanent
+    try {
+      // 1. Delete all shifts for this employee to satisfy foreign key constraints
+      await supabase.from('shifts').delete().eq('employee_id', employeeId);
+      
+      // 2. Delete the employee profile
+      const { error } = await supabase.from('profiles').delete().eq('id', employeeId);
+      if (error) throw error;
+      
+      // 3. Update UI State instantly (collapse the row)
+      setProfiles(prev => prev.filter(p => p.id !== employeeId));
+      setOrderedProfileIds(prev => prev.filter(id => id !== employeeId));
+      setShifts(prev => prev.filter(s => s.employee_id !== employeeId));
+      
+      revalidateAppPaths();
+    } catch (error) {
+      console.error('Failed to delete employee:', error);
+      alert('เกิดข้อผิดพลาดในการลบพนักงาน');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -601,7 +637,7 @@ export default function ScheduleClient({
       const shiftId = selectedCell.shift.id;
       setShifts(prev => prev.filter(s => s.id !== shiftId));
       setSelectedCell(null);
-      
+
       const result = await deleteShift(shiftId);
       if (result.success) {
         revalidateAppPaths(); // Fire and forget
@@ -651,7 +687,7 @@ export default function ScheduleClient({
       <header className="h-14 border-b border-gray-200 px-6 flex items-center justify-between bg-[#f8f8f8] shrink-0 z-20 shadow-sm">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-1">
-            <button 
+            <button
               onClick={undo}
               disabled={undoStack.length === 0}
               className={`p-1.5 rounded-md transition-all duration-200 active:scale-95 ${undoStack.length > 0 ? 'hover:bg-gray-200 text-gray-800 cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
@@ -659,7 +695,7 @@ export default function ScheduleClient({
             >
               <Undo2 className="w-4 h-4" strokeWidth={1.5} />
             </button>
-            <button 
+            <button
               onClick={redo}
               disabled={redoStack.length === 0}
               className={`p-1.5 rounded-md transition-all duration-200 active:scale-95 ${redoStack.length > 0 ? 'hover:bg-gray-200 text-gray-800 cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
@@ -672,7 +708,7 @@ export default function ScheduleClient({
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={() => setShowManagementModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-md border border-emerald-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
             >
@@ -681,13 +717,13 @@ export default function ScheduleClient({
             </button>
 
             <div className="relative">
-              <input 
+              <input
                 ref={copyInputRef}
-                type="date" 
+                type="date"
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer pointer-events-none"
                 onChange={(e) => handleCopyShifts(e.target.value)}
               />
-              <button 
+              <button
                 onClick={() => copyInputRef.current?.showPicker()}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md border border-blue-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
               >
@@ -699,7 +735,7 @@ export default function ScheduleClient({
 
 
 
-            <button 
+            <button
               onClick={() => setShowClearConfirm(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-red-600 bg-red-50 hover:bg-red-100 rounded-md border border-red-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
             >
@@ -708,18 +744,18 @@ export default function ScheduleClient({
             </button>
           </div>
 
-            <div className="flex items-center gap-6 pl-4">
+          <div className="flex items-center gap-6 pl-4">
             <ClickableDatePicker
               value={initialDateStr}
               onChange={handleDateChange}
               containerClassName="w-fit h-9 scale-100 origin-right"
             />
             <div className="flex items-center">
-              <Image 
-                src="/images/logo.png" 
-                alt="BLACKANDBREW Logo" 
-                width={120} 
-                height={48} 
+              <Image
+                src="/images/logo.png"
+                alt="BLACKANDBREW Logo"
+                width={120}
+                height={48}
                 className="object-contain"
                 priority
               />
@@ -761,17 +797,17 @@ export default function ScheduleClient({
             })}
           </div>
 
-          <div className="grid grid-cols-8 bg-[#fafafa] border-b border-gray-100 shrink-0 sticky top-[38px] z-[15]">
-            <div className="p-2.5 border-r border-gray-100 flex items-center justify-center bg-[#fafafa]">
-              <span className="text-[11px] text-gray-500 font-normal uppercase tracking-widest">Employee</span>
+          <div className="grid grid-cols-8 bg-gray-100 border-b border-gray-200 shrink-0 sticky top-[38px] z-[15]">
+            <div className="p-2.5 border-r border-gray-200 flex items-center justify-center bg-gray-100">
+              <span className="text-[11px] text-[#000000] font-normal uppercase tracking-widest">Employee</span>
             </div>
             {weekDays.map((date) => {
               const d = new Date(date);
               const isToday = date === todayStr;
               return (
-                <div key={date} className={`p-1.5 text-center border-r last:border-0 border-gray-100 transition-colors ${isToday ? 'bg-blue-50/50' : 'bg-[#fafafa]'}`}>
-                  <div className={`text-[12px] font-normal uppercase tracking-tighter mb-0 ${isToday ? 'text-gray-900' : 'text-gray-600'}`}>{dayLabels[d.getDay()]}</div>
-                  <div className={`text-xl font-normal ${isToday ? 'text-gray-900' : 'text-[#111111]'}`}>{d.getDate()}</div>
+                <div key={date} className="p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-gray-200 transition-colors min-h-[50px] bg-gray-100">
+                  <div className="text-[12px] font-normal uppercase tracking-tighter mb-0 text-[#000000]">{dayLabels[d.getDay()]}</div>
+                  <div className={`text-xl font-normal w-8 h-8 flex items-center justify-center mt-0.5 rounded-full ${isToday ? 'bg-[#ffda66] text-[#000000]' : 'text-[#000000]'}`}>{d.getDate()}</div>
                 </div>
               );
             })}
@@ -799,6 +835,7 @@ export default function ScheduleClient({
                           setNameInput={setNameInput}
                           onNameClick={(id, name) => { setEditingNameId(id); setNameInput(name); }}
                           onSaveName={handleSaveName}
+                          onDeleteEmployee={handleDeleteEmployee}
                         />
                       );
                     })}
@@ -817,12 +854,13 @@ export default function ScheduleClient({
                         weekDays={weekDays}
                         shifts={shifts}
                         shiftTypes={shiftTypes}
-                        onCellClick={() => {}}
+                        onCellClick={() => { }}
                         editingNameId={null}
                         nameInput={""}
-                        setNameInput={() => {}}
-                        onNameClick={() => {}}
-                        onSaveName={() => {}}
+                        setNameInput={() => { }}
+                        onNameClick={() => { }}
+                        onSaveName={() => { }}
+                        onDeleteEmployee={() => { }}
                       />
                     );
                   })}
@@ -852,15 +890,15 @@ export default function ScheduleClient({
       </main>
 
       {selectedCell && (
-        <div 
-          className="fixed inset-0 z-50 overflow-hidden" 
+        <div
+          className="fixed inset-0 z-50 overflow-hidden"
           onClick={() => setSelectedCell(null)}
         >
-          <div 
+          <div
             className="absolute bg-white/95 backdrop-blur-md border border-gray-200 w-48 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
-            style={{ 
+            style={{
               top: `${Math.min(window.innerHeight - 300, selectedCell.y)}px`,
-              left: `${Math.min(window.innerWidth - 200, selectedCell.x)}px` 
+              left: `${Math.min(window.innerWidth - 200, selectedCell.x)}px`
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -871,9 +909,9 @@ export default function ScheduleClient({
             </div>
             <div className="p-1.5 grid gap-1">
               {shiftTypes.map(type => (
-                <button 
-                  key={type.value} 
-                  onClick={() => handleSave(type.value)} 
+                <button
+                  key={type.value}
+                  onClick={() => handleSave(type.value)}
                   className={`py-1.5 px-3 rounded-lg border text-[12px] font-normal shadow-sm w-full text-left transition-all duration-200 cursor-pointer hover:brightness-95 hover:shadow-md active:scale-[0.97] ${type.color}`}
                 >
                   {type.label}
@@ -882,8 +920,8 @@ export default function ScheduleClient({
             </div>
             {selectedCell.shift && (
               <div className="p-1.5 bg-white border-t border-gray-50">
-                <button 
-                  onClick={handleClear} 
+                <button
+                  onClick={handleClear}
                   className="w-full py-1.5 rounded-lg bg-red-50 text-red-500 text-[11px] font-normal border border-red-100 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer active:scale-[0.97]"
                 >
                   Clear Entry
@@ -904,15 +942,15 @@ export default function ScheduleClient({
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
             <h3 className="text-lg font-normal text-gray-900">ยืนยันการลบข้อมูล</h3>
-            <p className="text-sm text-gray-500">คุณแน่ใจหรือไม่ที่จะลบข้อมูลกะงาน<br/>ของสัปดาห์นี้ทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้ง่ายๆ</p>
+            <p className="text-sm text-gray-500">คุณแน่ใจหรือไม่ที่จะลบข้อมูลกะงาน<br />ของสัปดาห์นี้ทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้ง่ายๆ</p>
             <div className="grid grid-cols-2 gap-3 pt-4">
-              <button 
+              <button
                 onClick={() => setShowClearConfirm(false)}
                 className="py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-normal transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
-              <button 
+              <button
                 onClick={handleClearAll}
                 className="py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-normal transition-colors cursor-pointer"
               >
@@ -931,7 +969,7 @@ export default function ScheduleClient({
       )}
       {/* Management Modal */}
       {showManagementModal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
@@ -946,7 +984,7 @@ export default function ScheduleClient({
                   <h3 className="text-lg font-normal text-gray-900 tracking-tight">จัดการการลา / เปลี่ยนกะ</h3>
                 </div>
               </div>
-              
+
               <div className="p-6 space-y-6 flex-1 overflow-y-auto">
                 {/* Success Feedback Overlay (Mini) */}
                 {saveSuccess && (
@@ -962,7 +1000,7 @@ export default function ScheduleClient({
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-normal text-[#4B5563] uppercase tracking-widest px-1">พนักงาน</label>
                   <div className="relative">
-                    <select 
+                    <select
                       className="w-full h-11 px-4 pr-10 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-[14px] font-normal appearance-none"
                       value={managementForm.employeeId}
                       onChange={(e) => setManagementForm(prev => ({ ...prev, employeeId: e.target.value }))}
@@ -982,16 +1020,15 @@ export default function ScheduleClient({
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-normal text-[#4B5563] uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
                   <div className="relative group/select">
-                    <select 
-                      className={`w-full h-11 px-4 pr-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-[14px] font-normal shadow-sm appearance-none ${
-                        shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-white border-gray-200'
-                      }`}
+                    <select
+                      className={`w-full h-11 px-4 pr-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-[14px] font-normal shadow-sm appearance-none ${shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-white border-gray-200'
+                        }`}
                       value={managementForm.shiftType}
                       onChange={(e) => setManagementForm(prev => ({ ...prev, shiftType: e.target.value }))}
                     >
                       {shiftTypes.map(t => (
-                        <option 
-                          key={t.value} 
+                        <option
+                          key={t.value}
                           value={t.value}
                           className="bg-white text-gray-900 font-normal py-2"
                         >
@@ -1008,44 +1045,42 @@ export default function ScheduleClient({
                 {/* Smart Date Range Selector */}
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-normal text-[#4B5563] uppercase tracking-widest px-1">ระบุช่วงวันที่จัดการ</label>
-                  <div 
+                  <div
                     className="group relative flex items-center h-12 px-4 rounded-xl border border-gray-200 bg-white hover:border-gray-400 transition-all cursor-pointer overflow-hidden shadow-sm"
                     onClick={() => mgmtStartRef.current?.showPicker()}
                   >
-                    <Calendar className="w-4 h-4 text-[#4B5563] mr-3 shrink-0" strokeWidth={1.5} />
+                    <Calendar className="w-4 h-4 text-[#000000] mr-3 shrink-0" strokeWidth={1.5} />
                     <div className="flex-1 flex items-center gap-2 text-[13.5px] font-normal text-[#000000]">
                       <span>{managementForm.startDate ? format(new Date(managementForm.startDate), 'dd/MM/yyyy') : 'เริ่มต้น'}</span>
                       <span className="text-gray-300 mx-1">→</span>
                       <span>{managementForm.endDate ? format(new Date(managementForm.endDate), 'dd/MM/yyyy') : 'สิ้นสุด'}</span>
                     </div>
 
-                    <div className="absolute inset-0 opacity-0 pointer-events-none flex">
-                      <input 
-                        ref={mgmtStartRef}
-                        type="date" 
-                        className="w-1/2"
-                        value={managementForm.startDate}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setManagementForm(prev => ({ ...prev, startDate: val }));
-                          if (val) setTimeout(() => mgmtEndRef.current?.showPicker(), 100);
-                        }}
-                      />
-                      <input 
-                        ref={mgmtEndRef}
-                        type="date" 
-                        className="w-1/2"
-                        value={managementForm.endDate}
-                        onChange={(e) => setManagementForm(prev => ({ ...prev, endDate: e.target.value }))}
-                      />
-                    </div>
+                    <input
+                      ref={mgmtStartRef}
+                      type="date"
+                      className="sr-only"
+                      value={managementForm.startDate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setManagementForm(prev => ({ ...prev, startDate: val }));
+                        if (val) setTimeout(() => mgmtEndRef.current?.showPicker(), 100);
+                      }}
+                    />
+                    <input
+                      ref={mgmtEndRef}
+                      type="date"
+                      className="sr-only"
+                      value={managementForm.endDate}
+                      onChange={(e) => setManagementForm(prev => ({ ...prev, endDate: e.target.value }))}
+                    />
                   </div>
                 </div>
 
                 {/* Remark */}
                 <div className="space-y-1.5 pt-2">
                   <label className="text-[11px] font-normal text-[#4B5563] uppercase tracking-widest px-1">หมายเหตุ</label>
-                  <textarea 
+                  <textarea
                     placeholder="รายละเอียดเพิ่มเติม..."
                     className="w-full h-20 p-4 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-[13px] leading-relaxed font-normal"
                     value={managementForm.remark}
@@ -1055,13 +1090,13 @@ export default function ScheduleClient({
               </div>
 
               <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-3">
-                <button 
+                <button
                   onClick={() => setShowManagementModal(false)}
                   className="flex-1 py-3 rounded-xl bg-white border border-gray-200 text-gray-500 font-normal text-[12px] hover:bg-gray-100 transition-all active:scale-95 shadow-sm"
                 >
                   ปิดหน้าต่าง
                 </button>
-                <button 
+                <button
                   onClick={handleSaveManagement}
                   className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-normal text-[12px] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 cursor-pointer"
                 >
@@ -1084,7 +1119,7 @@ export default function ScheduleClient({
 
               {/* History Filter */}
               <div className="p-4 border-b border-gray-100 bg-white">
-                <div 
+                <div
                   className="group relative flex items-center h-10 px-3 rounded-xl border border-gray-200 bg-gray-50/30 hover:bg-white hover:border-gray-400 transition-all cursor-pointer overflow-hidden"
                   onClick={() => histStartRef.current?.showPicker()}
                 >
@@ -1096,26 +1131,24 @@ export default function ScheduleClient({
                   </div>
 
                   {/* Hidden Native Date Pickers */}
-                  <div className="absolute inset-0 opacity-0 pointer-events-none flex">
-                    <input 
-                      ref={histStartRef}
-                      type="date" 
-                      className="w-1/2"
-                      value={historyFilter.start}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setHistoryFilter(prev => ({ ...prev, start: val }));
-                        if (val) setTimeout(() => histEndRef.current?.showPicker(), 100);
-                      }}
-                    />
-                    <input 
-                      ref={histEndRef}
-                      type="date" 
-                      className="w-1/2"
-                      value={historyFilter.end}
-                      onChange={(e) => setHistoryFilter(prev => ({ ...prev, end: e.target.value }))}
-                    />
-                  </div>
+                  <input
+                    ref={histStartRef}
+                    type="date"
+                    className="sr-only"
+                    value={historyFilter.start}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setHistoryFilter(prev => ({ ...prev, start: val }));
+                      if (val) setTimeout(() => histEndRef.current?.showPicker(), 100);
+                    }}
+                  />
+                  <input
+                    ref={histEndRef}
+                    type="date"
+                    className="sr-only"
+                    value={historyFilter.end}
+                    onChange={(e) => setHistoryFilter(prev => ({ ...prev, end: e.target.value }))}
+                  />
                 </div>
               </div>
 

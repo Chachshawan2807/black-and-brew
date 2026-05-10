@@ -18,7 +18,7 @@ export default function SidebarLayout({
       <Sidebar />
       <main
         className={cn(
-          "min-h-screen bg-[#EDEDF0] transition-[margin-left] ease-in-out duration-300",
+          "min-h-screen bg-transparent transition-[margin-left] ease-in-out duration-300",
           isOpen === false ? "lg:ml-[90px]" : "lg:ml-72"
         )}
       >

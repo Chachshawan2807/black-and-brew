@@ -2,6 +2,7 @@ import {
   LayoutGrid,
   CalendarRange,
   Wrench,
+  Home,
   type LucideIcon
 } from "lucide-react";
 
@@ -31,8 +32,15 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
       groupLabel: "",
       menus: [
         {
+          href: `${prefix}`,
+          label: "หน้าหลัก",
+          active: pathname === `${prefix}` || pathname === `${prefix}/`,
+          icon: Home,
+          submenus: []
+        },
+        {
           href: `${prefix}/dashboard`,
-          label: "แดชบอร์ด",
+          label: "แดชบอร์ดพนักงาน",
           active: pathname.includes("/dashboard"),
           icon: LayoutGrid,
           submenus: []

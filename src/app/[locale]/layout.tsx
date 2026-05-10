@@ -34,10 +34,10 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className={`${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[#EDEDF0] text-[#000000]">
+      <body className="min-h-full flex flex-col bg-[#fdfbf7] text-[#1a1a1a]">
         <SidebarLayout>
           <Suspense fallback={
-            <div className="flex-1 min-h-screen bg-[#EDEDF0] flex items-center justify-center">
+            <div className="flex-1 min-h-screen bg-[#fdfbf7] flex items-center justify-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
                 <span className="text-[10px] font-normal uppercase tracking-[0.3em] text-[#000000] opacity-40">

@@ -15,3 +15,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Date Picker Accessibility:** สำหรับ Input ประเภทวันที่ (Date Picker) ทั้งหมดในโปรเจกต์ ต้องทำให้พื้นที่ทั้งหมดของ Input Container สามารถคลิกเพื่อเรียกปฏิทินขึ้นมาได้ (Full-width clickable area) ไม่จำกัดเฉพาะการคลิกที่ไอคอน
 - **Implementation Style:** ใช้สไตล์การเขียนแบบ Shared Component หรือ Tailwind Utility ที่ขยาย Hitbox ให้ครอบคลุมทั้งกรอบ Input เพื่อให้พนักงานใช้งานได้สะดวกบนทุกอุปกรณ์
 <!-- END:clickable-input-rules -->
+
+<!-- BEGIN:data-sync-standard -->
+# DATA SYNCHRONIZATION STANDARD
+- **Database Rules:** Any data changes (Add, Update, Delete) connected to Supabase must trigger an immediate, automatic update to the database and reflect in the UI state without manual refresh.
+<!-- END:data-sync-standard -->

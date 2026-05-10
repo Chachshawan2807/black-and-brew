@@ -6,5 +6,13 @@
   "Common": {
     "loading": "Loading...",
     "error": "Something went wrong"
+  },
+  "Dashboard": {
+    "schedule": "Manage staff schedules",
+    "maintenance": "Equipment maintenance logs",
+    "staff": "Staff overview and active shifts",
+    "scheduleTitle": "Schedule",
+    "maintenanceTitle": "Maintenance",
+    "staffTitle": "Staff Dashboard"
   }
 }
