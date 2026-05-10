@@ -4,8 +4,7 @@ Methodology: Outcome-First, Chained Thinking, R0/R1/R2 Risk Assessment
 
 0. System Overview & Identity
 Project Identity: BLACK-AND-BREW Enterprise Resource Planning (ERP) System (v2026).
-Primary Purpose: ระบบจัดการตารางงานพนักงาน (Scheduling) และระบบบันทึกประวัติการซ่อมบำรุงอุปกรณ์ (Maintenance System).
-> Note: Smart Inventory module has been decommissioned. Route archived at `scratch/archived-modules/inventory/`.
+Primary Purpose: ระบบจัดการตารางงานพนักงาน (Scheduling) และระบบบันทึกประวัติการซ่อมบำรุงอุปกรณ์ (Maintenance System) รวมถึงระบบจัดการคลังสินค้าอัจฉริยะ (Smart Inventory).
 
 Core Context & Constraints
 Target Personnel: พนักงานหลัก 9 ท่าน.
@@ -32,10 +31,16 @@ Thai Localization:
 
 3. Database & Security Architecture (R0 Data Integrity)
 Database: Supabase PostgreSQL
-Schema Design: profiles, shifts, service_records.
-> Archived schemas (no longer active): inventory_items, inventory_transactions, inventory_checks, purchase_orders.
+Schema Design: profiles, shifts, service_records, inventory_items.
 Data Sanitation: ระบบตัวเลขต้องไม่มีเลข 0 นำหน้าเพื่อป้องกันความผิดพลาดทางตรรกะ.  
+Safe Deletion & Optimistic UI: การลบข้อมูล (Delete) ต้องทำการลบ Child Records ทั้งหมดก่อนเสมอ (เช่น shifts ก่อน profiles) เพื่อป้องกัน Foreign Key Error การอัปเดตสถานะ UI ต้องทำแบบทันทีผ่าน `.filter()` และไม่ต้องพึ่งพา Browser Refresh
 
+Inventory Data Flow (Google Sheets Logic): 
+- Metadata: Column headers and order are dynamically fetched and saved via `inventory_config` table using JSON mapping.
+- Schema: `inventory_items` table MUST contain: `id (uuid), name (text), stock (numeric), order_qty (numeric), order_point (numeric), target_stock (numeric), unit (text), source (text), sort_order (int4), updated_at (timestamp)`.
+- Full-Form CRUD: การเพิ่มข้อมูลทำผ่าน Modal แบบ 2-column Grid เพื่อประหยัดพื้นที่แนวตั้ง. Input ตัวเลขถูกจำกัดความกว้างให้พอดีกับ 3-4 หลัก.
+- Sync Logic: ทุกครั้งที่แก้ข้อมูลใน Cell (`onBlur` หรือกด Enter) ระบบจะยิง `supabase.update()` ทันที พร้อมอัปเดต `updated_at` โดยมี `supabase.channel()` คอยซิงค์ข้อมูลข้ามเครื่อง (Real-time Broadcast) แบบไร้รอยต่อ (Zero-layer DOM). มีระบบ `undoStack` / `redoStack` พร้อม `isSyncing` Lock เพื่อป้องกันการกดซ้ำระหว่างซิงค์. ระบบย้อนกลับทำงานในคลิกเดียว (1-Click Undo).
+- Error Handling: ระบบบังคับใช้ Detailed Logging `console.error('Supabase Error:', error.message, error.details);` เสมอเมื่อเรียกข้อมูลจากฐานข้อมูล.
 4. AI Autonomy & Operational Protocol (R0 Autonomous Execution)
 Full Permission Mode (100% AI Control):
 * AI ได้รับการอนุญาตให้ดำเนินการด้วยตัวเองได้ทุกอย่าง (Full CRUD Operations) ทั้งการเพิ่ม, แก้ไข, ลบข้อมูล และการรันคำสั่งต่างๆ ในระบบโดยไม่ต้องรอการยืนยันซ้ำซ้อน  

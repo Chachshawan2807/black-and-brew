@@ -55,7 +55,6 @@ interface SortableEmployeeRowProps {
   nameInput: string;
   setNameInput: (s: string) => void;
   onNameClick: (id: string, name: string) => void;
-  onNameClick: (id: string, name: string) => void;
   onSaveName: (id: string) => void;
   onDeleteEmployee: (id: string) => void;
 }
@@ -188,6 +187,9 @@ export default function ScheduleClient({
 
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState('');
+
+  const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
+  const [newEmployeeName, setNewEmployeeName] = useState('');
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -588,6 +590,43 @@ export default function ScheduleClient({
     }
   };
 
+  const handleAddEmployee = async () => {
+    if (!newEmployeeName.trim()) return;
+    
+    setLoading(true);
+    try {
+      // Calculate next display order
+      const nextOrder = profiles.length;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([{ 
+          full_name: newEmployeeName.trim(),
+          display_order: nextOrder
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        // Optimistic UI Update: Update local state immediately
+        const newProfile = data as Profile;
+        setProfiles(prev => [...prev, newProfile]);
+        setOrderedProfileIds(prev => [...prev, newProfile.id]);
+        
+        // Reset and close
+        setNewEmployeeName('');
+        setShowAddEmployeeModal(false);
+        revalidateAppPaths();
+      }
+    } catch (error) {
+      console.error('Failed to add employee:', error);
+      alert('เกิดข้อผิดพลาดในการเพิ่มพนักงาน');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveName = async (id: string) => {
     if (!nameInput.trim()) return setEditingNameId(null);
     pushToHistory(profiles, orderedProfileIds, shifts);
@@ -720,7 +759,7 @@ export default function ScheduleClient({
               <input
                 ref={copyInputRef}
                 type="date"
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer pointer-events-none"
+                className="sr-only"
                 onChange={(e) => handleCopyShifts(e.target.value)}
               />
               <button
@@ -741,6 +780,14 @@ export default function ScheduleClient({
             >
               <Trash2 className="w-3.5 h-3.5" />
               Clear All
+            </button>
+
+            <button
+              onClick={() => setShowAddEmployeeModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-black bg-gray-100 hover:bg-gray-200 rounded-md border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Employee
             </button>
           </div>
 
@@ -1193,6 +1240,46 @@ export default function ScheduleClient({
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Employee Modal */}
+      {showAddEmployeeModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setShowAddEmployeeModal(false)} />
+          <div className="relative bg-white w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 animate-in fade-in zoom-in duration-300 p-8">
+            <h3 className="text-xl font-normal text-black mb-4 uppercase tracking-tight">เพิ่มพนักงานใหม่</h3>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ชื่อ-นามสกุล</label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  value={newEmployeeName}
+                  onChange={e => setNewEmployeeName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddEmployee()}
+                  placeholder="กรอกชื่อพนักงาน"
+                  className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-4 py-3 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => setShowAddEmployeeModal(false)}
+                  className="flex-1 py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-sm"
+                >
+                  ยกเลิก
+                </button>
+                <button 
+                  onClick={handleAddEmployee}
+                  disabled={loading || !newEmployeeName.trim()}
+                  className="flex-1 py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  ยืนยัน
+                </button>
               </div>
             </div>
           </div>

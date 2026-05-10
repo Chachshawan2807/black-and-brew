@@ -20,7 +20,7 @@ export function Sidebar() {
     <aside
       className={cn(
         'fixed top-0 left-0 z-[100] h-screen -translate-x-full lg:translate-x-0 transition-[width] ease-in-out duration-300 bg-white border-r border-gray-200 shadow-sm',
-        isOpen === false ? 'w-[90px]' : 'w-fit min-w-[240px] max-w-[280px]'
+        isOpen === false ? 'w-16' : 'w-fit max-w-[260px]'
       )}
     >
       <SidebarToggle isOpen={isOpen} setIsOpen={sidebar?.setIsOpen} />

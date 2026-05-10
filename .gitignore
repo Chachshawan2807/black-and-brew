@@ -23,10 +23,6 @@ config/
 workspace/
 storage/
 logs/
-config2.yaml
-config2.bak
-fix_config.py
-surgery.py
 
 # --- Next.js & Production ---
 .next/

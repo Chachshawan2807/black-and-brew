@@ -13,6 +13,13 @@
     "staff": "Staff overview and active shifts",
     "scheduleTitle": "Schedule",
     "maintenanceTitle": "Maintenance",
-    "staffTitle": "Staff Dashboard"
+    "staffTitle": "Staff Dashboard",
+    "inventoryTitle": "Inventory System",
+    "inventory": "Manage items and stock levels"
+  },
+  "Inventory": {
+    "title": "Inventory Management",
+    "description": "Manage inventory items and stock levels",
+    "items": "items"
   }
 }

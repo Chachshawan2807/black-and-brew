@@ -27,6 +27,13 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
       description: t('maintenance'),
       href: `/${locale}/maintenance`,
       iconName: 'Wrench',
+    },
+    {
+      id: 'inventory',
+      title: t('inventoryTitle'),
+      description: t('inventory'),
+      href: `/${locale}/inventory`,
+      iconName: 'Package',
     }
   ];
 

@@ -36,3 +36,31 @@ WITH CHECK (true);
 -- 4. Optimized Indexes
 CREATE INDEX idx_shifts_time_range ON shifts (start_time, end_time);
 CREATE INDEX idx_employee_shifts ON shifts (employee_id);
+
+-- 5. Inventory Items (Core Inventory Tracking)
+-- Re-activated from archived status as requested
+CREATE TABLE inventory_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  stock NUMERIC DEFAULT 0, -- คงเหลือ (Stock)
+  order_qty NUMERIC DEFAULT 0, -- จำนวนสั่งซื้อ (Order Qty)
+  order_point NUMERIC DEFAULT 0, -- จุดสั่งซื้อ (Reorder Point)
+  target_stock NUMERIC DEFAULT 0, -- จำนวนที่ต้องมี (Target Qty)
+  unit TEXT NOT NULL, -- หน่วย
+  source TEXT, -- ช่องทางสั่งซื้อ (Source)
+  sort_order INTEGER DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS for inventory_items
+ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public access for inventory_items" 
+ON inventory_items FOR ALL 
+USING (true) 
+WITH CHECK (true);
+
+-- Indexes for inventory_items
+CREATE INDEX idx_inventory_items_name ON inventory_items (name);
+CREATE INDEX idx_inventory_items_sort ON inventory_items (sort_order);

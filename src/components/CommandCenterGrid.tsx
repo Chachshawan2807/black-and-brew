@@ -7,7 +7,8 @@ import {
   Wrench, 
   LayoutGrid, 
   ChevronRight,
-  GripHorizontal
+  GripHorizontal,
+  Package
 } from 'lucide-react';
 import {
   DndContext,
@@ -39,6 +40,7 @@ const iconMap: Record<string, React.ElementType> = {
   CalendarRange,
   Wrench,
   LayoutGrid,
+  Package,
 };
 
 function SortableItem({ item }: { item: NavItem }) {
@@ -63,7 +65,8 @@ function SortableItem({ item }: { item: NavItem }) {
   const colorMap: Record<string, { bg: string, border: string, hover: string }> = {
     CalendarRange: { bg: 'bg-[#e6f0ff]', border: 'border-[#c2d6ff]', hover: 'group-hover:bg-[#ccdfff]' }, // Soft Blue
     Wrench: { bg: 'bg-[#e6faed]', border: 'border-[#bbf2ce]', hover: 'group-hover:bg-[#ccf2d9]' }, // Pale Mint
-    LayoutGrid: { bg: 'bg-[#fff0e6]', border: 'border-[#ffd8c2]', hover: 'group-hover:bg-[#ffe5d4]' } // Light Peach
+    LayoutGrid: { bg: 'bg-[#fff0e6]', border: 'border-[#ffd8c2]', hover: 'group-hover:bg-[#ffe5d4]' }, // Light Peach
+    Package: { bg: 'bg-[#f3e8ff]', border: 'border-[#d8b4fe]', hover: 'group-hover:bg-[#e9d5ff]' } // Soft Purple
   };
 
   const colors = colorMap[item.iconName] || { bg: 'bg-white', border: 'border-gray-200', hover: 'group-hover:bg-gray-50' };

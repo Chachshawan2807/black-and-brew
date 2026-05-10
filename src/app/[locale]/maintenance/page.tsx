@@ -403,21 +403,19 @@ export default function MaintenancePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5 group cursor-pointer" onClick={() => dateInputRef.current?.showPicker()}>
                   <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">วันที่เซอร์วิส</label>
-                  <div className="relative h-[42px] flex items-center">
-                    {formData.start_date && (
-                      <div className="absolute inset-0 flex items-center px-3 text-[13px] text-[#000000] pointer-events-none z-10 bg-[#f8f9fa] rounded-xl border border-gray-100">
-                        {format(parseISO(formData.start_date), 'dd/MM/yyyy')}
-                      </div>
-                    )}
+                  <div className="relative h-[42px] flex items-center bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 cursor-pointer focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50 transition-all">
+                    <span className="text-[13px] text-[#000000] flex-1">
+                      {formData.start_date ? format(parseISO(formData.start_date), 'dd/MM/yyyy') : ''}
+                    </span>
                     <input 
                       ref={dateInputRef}
                       type="date" 
                       required
                       value={formData.start_date}
                       onChange={e => setFormData({ ...formData, start_date: e.target.value })}
-                      className={`w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 text-[13px] text-[#000000] leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all cursor-pointer relative z-0 ${formData.start_date ? 'opacity-0' : 'opacity-100'}`}
+                      className="sr-only"
                     />
-                    <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4B5563] pointer-events-none group-hover:text-blue-500 transition-colors" />
+                    <Calendar className="w-4 h-4 text-[#4b5563] pointer-events-none group-hover:text-blue-500 transition-colors" />
                   </div>
                 </div>
                 <div className="space-y-1.5">

@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import LiveShiftList from './components/LiveShiftList';
+import InventorySummaryCard from './components/InventorySummaryCard';
 import { Loader2, CalendarRange, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -36,6 +37,8 @@ export default async function DashboardPage({
     .gte('date', startDate)
     .lte('date', endDate);
 
+  const { count: totalInventoryItems } = await supabase.from('inventory_items').select('id', { count: 'exact' });
+
   return (
     <div className="min-h-screen bg-inherit p-4 md:p-6 text-[#333333] relative">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -57,6 +60,11 @@ export default async function DashboardPage({
             />
           </div>
         </header>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <InventorySummaryCard locale={locale} totalItems={totalInventoryItems || 0} />
+        </div>
 
         <main>
           <Suspense fallback={

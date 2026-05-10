@@ -3,6 +3,7 @@ import {
   CalendarRange,
   Wrench,
   Home,
+  Package,
   type LucideIcon
 } from "lucide-react";
 
@@ -62,6 +63,13 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
           label: "บันทึกการซ่อม",
           active: pathname.includes("/maintenance"),
           icon: Wrench,
+          submenus: []
+        },
+        {
+          href: `${prefix}/inventory`,
+          label: "คลังสินค้า",
+          active: pathname.includes("/inventory"),
+          icon: Package, // Using Package as a suitable icon for Inventory
           submenus: []
         },
       ]
