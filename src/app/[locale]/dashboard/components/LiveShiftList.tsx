@@ -327,15 +327,15 @@ export default function LiveShiftList({
                   <GripVertical className="w-5 h-5 text-gray-300" />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-[#f0f9f1] border border-[#e0f2f1] rounded-2xl p-3 flex flex-col items-center justify-center text-center">
+                  <div className="bg-[#f0f9f1] border border-[#e0f2f1] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
                     <Briefcase className="w-4 h-4 text-[#2e7d32] mb-1.5" />
                     <span className="text-xl font-normal text-[#2e7d32]">{activeProfileData.workDays}</span>
                   </div>
-                  <div className="bg-[#fff1f2] border border-[#ffe4e6] rounded-2xl p-3 flex flex-col items-center justify-center text-center">
+                  <div className="bg-[#fff1f2] border border-[#ffe4e6] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
                     <CalendarX className="w-4 h-4 text-[#e11d48] mb-1.5" />
                     <span className="text-xl font-normal text-[#e11d48]">{activeProfileData.leaveDays}</span>
                   </div>
-                  <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-2xl p-3 flex flex-col items-center justify-center text-center">
+                  <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
                     <TreePalm className="w-4 h-4 text-[#0284c7] mb-1.5" />
                     <span className="text-xl font-normal text-[#0284c7]">{activeProfileData.publicHolidays}</span>
                   </div>

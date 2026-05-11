@@ -16,7 +16,6 @@ interface ClickableDatePickerProps extends React.InputHTMLAttributes<HTMLInputEl
 export function ClickableDatePicker({
   containerClassName = '',
   icon,
-  className = '',
   value,
   ...props
 }: ClickableDatePickerProps) {

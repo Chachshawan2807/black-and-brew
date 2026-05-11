@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Next.js: Full Stack (Debug All)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev",
+            "console": "integratedTerminal",
+            "serverReadyAction": {
+                "pattern": "started server on .+, url: (https?://.+)",
+                "uriFormat": "%s",
+                "action": "debugWithChrome"
+            }
+        },
+        {
+            "name": "Next.js: Client Side",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "Next.js: Server Side",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev"
+        }
+    ]
+}

@@ -12,6 +12,9 @@
 | **Python Runtime** | Stable environment for legacy scripts and AI tools. | ภาษาโปรแกรมสำหรับการประมวลผล AI (เวอร์ชันเสถียร) | `v3.12.x (Stable)` |
 | **jcode** [V2] | **Code Context Prep** — Deep structural analysis of repo before every Audit. | **Code Context Prep** — วิเคราะห์โครงสร้าง repo เชิงลึกก่อน Audit ทุกครั้ง (Mandatory) | `.antigravity/tools/jcode` |
 | **design-md** [V2] | **Document Standard** — 70+ brand design systems used as layout reference. | **Document Standard** — ใช้เป็นฐานอ้างอิงโครงสร้าง .md ทุกไฟล์ที่สร้างใหม่ (Mandatory) | `.antigravity/references/design-md` |
+| **Agent FS Tool** | Local filesystem CRUD with Zod validation. | ระบบจัดการไฟล์ในเครื่องพร้อมการตรวจสอบความถูกต้อง | `src/lib/agent-tools/fs_tool.ts` |
+| **Agent Shell Tool** | Secure command execution via child_process. | ระบบรันคำสั่ง Shell อย่างปลอดภัย | `src/lib/agent-tools/shell_tool.ts` |
+| **Agent Search Proxy** | Unified search interface (Code, Docs, Web). | ระบบค้นหาอัจฉริยะแบบรวมศูนย์ | `src/lib/agent-tools/search_proxy.ts` |
 | **Mem0** | Long-term memory (Node.js & Python implementation). | ระบบความจำระยะยาวสำหรับ AI (รองรับทั้ง Node.js และ Python) | `src/lib/ai/memory.ts` |
 | **aider/RepoMap** | Codebase context map generator — reduces token cost before Audit tasks. | สร้างแผนที่โค้ดแบบอัตโนมัติ — ลด Token Cost ก่อนเริ่ม Audit | `.antigravity/tools/memory-engine/aider` |
 | **GraphRAG** | Knowledge-graph deep context extraction for unstructured private data. | ดึงบริบทเชิงลึกจากข้อมูลเอกชนผ่าน Knowledge Graph | `.antigravity/tools/memory-engine/graphrag` |

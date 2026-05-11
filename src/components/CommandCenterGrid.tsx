@@ -122,7 +122,9 @@ export default function CommandCenterGrid({ initialItems }: { initialItems: NavI
     })
   );
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
     const savedOrder = localStorage.getItem('command-center-order');
     if (savedOrder) {

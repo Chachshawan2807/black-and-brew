@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> **Generated:** 2026-05-08 10:58:27 (GMT+7) | **Root:** `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | **Tool:** RepoMap v2.0 (stdlib-only)
+> **Generated:** 2026-05-12 01:00:00 (GMT+7) | **Root:** `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | **Tool:** RepoMap v2.0 (stdlib-only)
 
 ---
 
@@ -99,6 +99,10 @@ black-and-brew/
 |   |   |-- request.ts (733 B)
 |   |   +-- routing.ts (294 B)
 |   |-- [DIR] lib/
+|   |   |-- [DIR] agent-tools/
+|   |   |   |-- fs_tool.ts (1.5 KB)
+|   |   |   |-- search_proxy.ts (956 B)
+|   |   |   +-- shell_tool.ts (783 B)
 |   |   |-- date-utils.ts (920 B)
 |   |   |-- menu-list.ts (1.2 KB)
 |   |   |-- supabase.ts (1.3 KB)
@@ -125,7 +129,7 @@ black-and-brew/
 |-- README.md (1.4 KB)
 |-- skills-lock.json (535 B)
 |-- SKILLS_INVENTORY.md (3.9 KB)
-|-- SPEC_ARCHITECTURE.md (12.8 KB)
+|-- MASTER_BLUEPRINT.md (16.8 KB) [Active — Master Architecture]
 |-- TASK_LIST.md (907 B)
 |-- tsconfig.json (681 B)
 +-- tsconfig.tsbuildinfo (229.6 KB)
@@ -140,7 +144,7 @@ black-and-brew/
 | Dashboard | `src/app/[locale]/dashboard/` | [OK] Active |
 | Schedule  | `src/app/[locale]/schedule/`  | [OK] Active |
 | Maintenance | `src/app/[locale]/maintenance/` | [OK] Active |
-| Inventory | `scratch/archived-modules/inventory/` | [Archived] Archived |
+| Inventory | `src/app/[locale]/inventory/` | [OK] Active |
 
 ---
 

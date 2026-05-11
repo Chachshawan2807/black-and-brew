@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import LiveShiftList from './components/LiveShiftList';
-import InventorySummaryCard from './components/InventorySummaryCard';
+
 import { Loader2, CalendarRange, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -37,34 +37,31 @@ export default async function DashboardPage({
     .gte('date', startDate)
     .lte('date', endDate);
 
-  const { count: totalInventoryItems } = await supabase.from('inventory_items').select('id', { count: 'exact' });
+
 
   return (
-    <div className="min-h-screen bg-inherit p-4 md:p-6 text-[#333333] relative">
+    <div className="min-h-screen bg-transparent p-4 md:p-12 text-[#000000] relative font-normal">
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-gray-200 pb-4">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#000000]/5 pb-4">
           <div className="h-4">
             {/* Purified Minimalist Space */}
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center relative z-[50]">
             <Image 
               src="/images/logo.png" 
               alt="BLACKANDBREW Logo" 
               width={180} 
               height={72} 
               className="object-contain"
+              style={{ width: 'auto', height: 'auto' }}
               priority
             />
           </div>
         </header>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <InventorySummaryCard locale={locale} totalItems={totalInventoryItems || 0} />
-        </div>
 
         <main>
           <Suspense fallback={

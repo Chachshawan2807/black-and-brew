@@ -32,7 +32,7 @@ export default function ShiftCard({ shift, profile }: ShiftCardProps) {
     <div className={`
       relative overflow-hidden p-6 
       ${isLeave
-        ? 'bg-orange-500/10 border border-orange-500/20 rounded-2xl shadow-[0_0_15px_rgba(249,115,22,0.1)]'
+        ? 'bg-orange-500/10 border border-orange-500/20 rounded-3xl shadow-[0_0_15px_rgba(249,115,22,0.1)]'
         : 'glass-card'}
     `}>
       <div className="flex items-center justify-between gap-4">

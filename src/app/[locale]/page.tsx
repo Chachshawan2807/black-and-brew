@@ -40,16 +40,17 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
   return (
     <div className="min-h-[calc(100vh-2rem)] bg-inherit flex flex-col items-center justify-center relative px-4 py-8">
       <div className="max-w-4xl w-full space-y-12">
-        <header className="flex flex-col items-center justify-center gap-6">
+        <header className="flex flex-col items-center justify-center gap-6 relative z-[50]">
           <Image 
             src="/images/logo.png" 
             alt="BLACKANDBREW Logo" 
             width={240} 
             height={96} 
             className="object-contain"
+            style={{ width: 'auto', height: 'auto' }}
             priority
           />
-          <h1 className="text-xl font-normal text-[#1a1a1a] tracking-widest uppercase">
+          <h1 className="text-xl font-normal text-[#000000] tracking-widest uppercase">
             Command Center
           </h1>
         </header>

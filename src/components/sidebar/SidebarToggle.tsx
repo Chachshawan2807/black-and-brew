@@ -14,8 +14,8 @@ export function SidebarToggle({ isOpen, setIsOpen }: SidebarToggleProps) {
     <div className="invisible lg:visible absolute top-[16px] -right-[16px] z-[9999]">
       <Button
         onClick={() => setIsOpen?.()}
-        className="rounded-full w-8 h-8 bg-white border-gray-200 shadow-sm hover:bg-gray-50 transition-all duration-300"
-        variant="outline"
+        className="rounded-full w-8 h-8 bg-white border-none shadow-md hover:bg-[#fff3dd] transition-all duration-500"
+        variant="ghost"
         size="icon"
       >
         <ChevronLeft

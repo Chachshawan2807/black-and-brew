@@ -1,6 +1,7 @@
 # Environment Audit & AI Capabilities (2026)
 
 ## 1. System Discovery & Infrastructure
+
 Detailed breakdown of the current environment's core components and active toolchains.
 
 | Category | Tool/Framework | Version | Status | Notes |
@@ -15,30 +16,33 @@ Detailed breakdown of the current environment's core components and active toolc
 | **State** | Zustand | ^5.0.13 | Active | Global state management. |
 
 ## 2. Legacy & Custom Skills
+
 Specialized capabilities inherited from project history and specific business logic.
 
-*   **BLACKANDBREW ERP Logic**: Deep knowledge of Coffee Shop operations, including:
-    *   **Scheduling**: GMT+7 Shift management, Drag-to-Shift mechanics.
-    *   **Maintenance**: Equipment logs and status-based conditional coloring.
-    *   **Personnel**: Pre-seeded staff logic (นิต้า, ปิ่น, มุก, เม, มีนา, ชัช, หนูดี, ฟิว, ล่า).
-*   **UI/UX PRO MAX**: Strict adherence to minimalist pastel designs based on local time (e.g., 6:30 = light green).
-*   **Timezone Mastery**: Surgical UTC to GMT+7 conversions for accurate shift tracking.
-*   **i18n**: Multi-language support via `next-intl`.
+* **BLACKANDBREW ERP Logic**: Deep knowledge of Coffee Shop operations, including:
+  * **Scheduling**: GMT+7 Shift management, Drag-to-Shift mechanics.
+  * **Maintenance**: Equipment logs and status-based conditional coloring.
+  * **Personnel**: Pre-seeded staff logic (นิต้า, ปิ่น, มุก, เม, มีนา, ชัช, หนูดี, ฟิว, ล่า).
+* **UI/UX PRO MAX**: Strict adherence to minimalist pastel designs based on local time (e.g., 6:30 = light green).
+* **Timezone Mastery**: Surgical UTC to GMT+7 conversions for accurate shift tracking.
+* **i18n**: Multi-language support via `next-intl`.
 
 ## 3. Integrations & Internal Agents (Delegated)
-> **⚠️ SINGLE SOURCE OF TRUTH (SSOT) RULE:** > The active list of all available AI skills, memory engines (Mem0, RepoMap, GraphRAG), and token monitoring tools is strictly maintained in `SKILLS_INVENTORY.md`. 
+>
+> **⚠️ SINGLE SOURCE OF TRUTH (SSOT) RULE:** > The active list of all available AI skills, memory engines (Mem0, RepoMap, GraphRAG), and token monitoring tools is strictly maintained in `SKILLS_INVENTORY.md`.
 > AI Agents MUST read `SKILLS_INVENTORY.md` to discover capabilities. Do not list them here to prevent data fragmentation.
 
 ## 4. Validation Report
+
 Last checked: Current Session
 
-- [x] **rtk**: Functional (`rtk --version` -> 0.39.0)
-- [x] **cargo**: Functional (`cargo --version` -> 1.95.0)
-- [x] **npm**: Functional (`npm --version` -> 11.12.1)
-- [x] **next**: Functional (Verified via `package.json` and dev server)
-- [x] **supabase**: Functional (Client initialized as Singleton)
-- [x] **python**: Functional (Verified via `python --version` -> 3.14.3)
-- [x] **tokentracker**: Functional (Hooks active for Gemini/Opencode)
+* [x] **rtk**: Functional (`rtk --version` -> 0.39.0)
+* [x] **cargo**: Functional (`cargo --version` -> 1.95.0)
+* [x] **npm**: Functional (`npm --version` -> 11.12.1)
+* [x] **next**: Functional (Verified via `package.json` and dev server)
+* [x] **supabase**: Functional (Client initialized as Singleton)
+* [x] **python**: Functional (Verified via `python --version` -> 3.14.3)
+* [x] **tokentracker**: Functional (Hooks active for Gemini/Opencode)
 
 ## 5. Risk Mapping (Operational Security)
 
@@ -56,11 +60,11 @@ Last checked: Current Session
 | Timestamp (GMT+7) | Action | Skill/Tool Used | Risk | Outcome |
 | :--- | :--- | :--- | :--- | :--- |
 | 2026-05-07 22:06 | System Upgrade: Created `.antigravity/system-instructions.md` | File System | R0 | ✅ Success |
-| 2026-05-07 22:06 | Appended Skill-First Protocol (§ 7) to `SPEC_ARCHITECTURE.md` | File System | R0 | ✅ Success |
+| 2026-05-07 22:06 | Appended Skill-First Protocol (§ 7) to `MASTER_BLUEPRINT.md` | File System | R0 | ✅ Success |
 | 2026-05-07 22:06 | Initialized Autonomous Execution Logs in `ai-capabilities.md` | File System | R0 | ✅ Success |
 | 2026-05-07 22:06 | Full environment scan & skill validation completed | RTK, Cargo, npm | R0 | ✅ Success |
 | 2026-05-07 22:40 | Installed `jcode` and `design-md` tools | git, File System | R0 | ✅ Success |
-| 2026-05-07 22:40 | Registered tools in SKILLS_INVENTORY & SPEC_ARCHITECTURE | File System | R0 | ✅ Success |
+| 2026-05-07 22:40 | Registered tools in SKILLS_INVENTORY & MASTER_BLUEPRINT | File System | R0 | ✅ Success |
 | 2026-05-07 22:41 | Cleaned stray instruction text from ai-capabilities.md | File System | R0 | ✅ Success |
 | 2026-05-07 23:07 | [Fix 1] Deduplicated THAI_TIMEZONE — centralized in timezone.ts | File System | R0 | ✅ Success |
 | 2026-05-07 23:07 | [Fix 2] Removed 7x console.error leaks from inventory/page.tsx | File System | R0 | ✅ Success |
@@ -70,17 +74,17 @@ Last checked: Current Session
 | 2026-05-07 23:07 | [Fix 6] Added created_at & remark/is_management fields to Shift interface | File System | R1 | ✅ Success |
 | 2026-05-07 23:07 | [Fix 7] Replaced startsWith() with isSameThaiDay() for GMT+7 safety | File System | R1 | ✅ Success |
 | 2026-05-07 23:14 | [R2-8] Decommissioned inventory/ route → archived to scratch/archived-modules/ | File System | R2 | ✅ Success |
-| 2026-05-07 23:14 | [R2-9] Updated SPEC_ARCHITECTURE.md §0 — removed Smart Inventory, updated schema list | File System | R2 | ✅ Success |
+| 2026-05-07 23:14 | [R2-9] Updated MASTER_BLUEPRINT.md §0 — removed Smart Inventory, updated schema list | File System | R2 | ✅ Success |
 | 2026-05-07 23:54 | Cloned mem0, graphrag, aider repos → .antigravity/tools/memory-engine/ | git | R0 | ✅ Success |
 | 2026-05-07 23:54 | Installed pip via pacman (MSYS2 UCRT64 Python 3.14.3) | pacman | R0 | ✅ Success |
 | 2026-05-07 23:54 | Installed mem0ai + runtime deps (httpx, pydantic, qdrant-client) | pip | R0 | ✅ Success |
 | 2026-05-07 23:54 | Registered Mem0, aider/RepoMap, GraphRAG in SKILLS_INVENTORY.md | File System | R0 | ✅ Success |
-| 2026-05-07 23:54 | Added §9 Memory & Context Management System to SPEC_ARCHITECTURE.md | File System | R0 | ✅ Success |
+| 2026-05-07 23:54 | Added §9 Memory & Context Management System to MASTER_BLUEPRINT.md | File System | R0 | ✅ Success |
 | 2026-05-08 00:59 | [V2] Verified jcode (Rust/Cargo) & design-md (70 brand templates) — already current | git pull | R0 | ✅ Success |
 | 2026-05-08 00:59 | [V2] Upgraded jcode & design-md entries in SKILLS_INVENTORY.md to V2 with mandatory protocols | File System | R0 | ✅ Success |
 | 2026-05-08 00:59 | [V2] Upgraded SPEC §8 — added 3-step workflow: Code Context Prep → Execution → Design Validation | File System | R0 | ✅ Success |
 | 2026-05-08 00:59 | [V2] Ran RepoMap — PROJECT_MAP.md regenerated (145 lines, 4,457 bytes) | Python | R0 | ✅ Success |
-| 2026-05-08 01:29 | [Audit] Read Context: mem0_storage.json, SPEC_ARCHITECTURE.md, PROJECT_MAP.md | File System | R0 | ✅ Success |
+| 2026-05-08 01:29 | [Audit] Read Context: mem0_storage.json, MASTER_BLUEPRINT.md, PROJECT_MAP.md | File System | R0 | ✅ Success |
 | 2026-05-08 01:29 | [Audit] Identified dead code (inventory module) & spec violations (font-bold) | File System | R0 | ✅ Success |
 | 2026-05-08 01:29 | [Refactor] Moved src/app/[locale]/inventory to scratch/archived-modules/inventory | PowerShell | R0 | ✅ Success |
 | 2026-05-08 01:29 | [Refactor] Removed 'font-bold' to comply with SPEC No Bold Text rule | File System | R0 | ✅ Success |

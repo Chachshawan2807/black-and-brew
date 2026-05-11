@@ -95,7 +95,7 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize }: {
   return (
     <th
       style={style}
-      className={`p-0 font-normal ${col.id === 'source' ? '' : 'border-r border-slate-100'} group relative select-none bg-slate-50/50`}
+      className={`p-0 font-normal ${col.id === 'source' ? '' : 'border-r border-[#000000]/5'} group relative select-none bg-transparent`}
     >
       <div className="p-3 flex items-center justify-center">
         <input 
@@ -135,9 +135,9 @@ function SortableRow({ item, columns, handleUpdateField, handleSaveField, reques
     <tr
       ref={setNodeRef}
       style={style}
-      className="border-b border-slate-100 hover:bg-[#f0fdf4] transition-colors group"
+      className="border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-colors group"
     >
-      <td className="w-10 min-w-[40px] border-r border-slate-100 p-0 text-center align-middle">
+      <td className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle">
         <div 
           className="flex items-center justify-center h-full min-h-[44px] cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500"
           {...attributes}
@@ -151,54 +151,74 @@ function SortableRow({ item, columns, handleUpdateField, handleSaveField, reques
         <td 
           key={col.id} 
           style={{ width: col.width, minWidth: col.id === 'name' ? '240px' : col.width }} 
-          className={`p-0 border-r border-slate-100 relative group/cell ${index === columns.length - 1 ? 'border-r-0' : ''}`}
+          className={`p-0 border-r border-[#000000]/5 relative group/cell ${index === columns.length - 1 ? 'border-r-0' : ''}`}
         >
-          <div className="flex items-center relative h-full">
-            <input 
-              type="text"
-              inputMode={col.type === 'number' ? 'decimal' : 'text'}
-              value={item[col.id] === null || (col.type === 'number' && item[col.id] === 0) ? '' : item[col.id]}
-              onFocus={handleFocus}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (col.type === 'number') {
-                  if (val === '') {
-                    handleUpdateField(item.id, col.id, 0);
-                    return;
-                  }
-                  if (!/^[0-9.]*$/.test(val)) return;
-                  let parsed = val;
-                  if (parsed.length > 1 && parsed.startsWith('0') && !parsed.startsWith('0.')) {
-                    parsed = parsed.replace(/^0+(?=\d)/, '');
-                  }
-                  handleUpdateField(item.id, col.id, parsed);
-                } else {
-                  handleUpdateField(item.id, col.id, val);
-                }
-              }}
-              onBlur={(e) => {
-                let finalVal: string | number = e.target.value;
-                if (col.type === 'number') {
-                  finalVal = finalVal === '' ? 0 : Number(finalVal);
-                  handleUpdateField(item.id, col.id, finalVal);
-                }
-                handleSaveField(item.id, col.id, finalVal);
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-              className={`w-full px-2 py-3 bg-transparent border-none focus:outline-none focus:bg-purple-50/50 text-[14px] font-normal text-[#000000] ${col.id === 'name' ? 'text-left pr-8' : 'text-center'} ${col.type === 'number' ? 'font-mono' : ''}`}
-            />
-            {col.id === 'name' && (
-              <button 
-                onClick={() => requestDelete(item.id)}
-                className="absolute right-2 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover/cell:opacity-100"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          <EditableCell 
+            item={item} 
+            col={col} 
+            handleUpdateField={handleUpdateField} 
+            handleSaveField={handleSaveField} 
+            requestDelete={requestDelete} 
+            handleFocus={handleFocus} 
+          />
         </td>
       ))}
     </tr>
+  );
+}
+
+function EditableCell({ item, col, handleUpdateField, handleSaveField, requestDelete, handleFocus }: any) {
+  const [localValue, setLocalValue] = useState<string>('');
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Sync with global state when not focused
+  useEffect(() => {
+    if (!isFocused) {
+      const val = item[col.id];
+      // Idle 0 = Hidden: 0 or empty shows as "" when not focused
+      setLocalValue(val === 0 || val === '' || val === null || val === undefined ? '' : String(val));
+    }
+  }, [item[col.id], isFocused, col.id]);
+
+  return (
+    <div className="flex items-center relative h-full">
+      <input 
+        type="text"
+        inputMode={col.type === 'number' ? 'decimal' : 'text'}
+        value={localValue}
+        onFocus={() => {
+          setIsFocused(true);
+          handleFocus();
+        }}
+        onChange={(e) => {
+          // Absolute String-First Strategy: set value directly to allow "0", "00", etc.
+          setLocalValue(e.target.value);
+        }}
+        onBlur={() => {
+          setIsFocused(false);
+          let finalVal: string | number = localValue;
+          
+          if (col.type === 'number') {
+            const numericValue = localValue === "" ? 0 : Number(localValue);
+            finalVal = isNaN(numericValue) ? 0 : numericValue;
+          }
+
+          // Force explicitly save, as requested
+          handleUpdateField(item.id, col.id, finalVal);
+          handleSaveField(item.id, col.id, finalVal);
+        }}
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+        className={`w-full px-2 py-3 bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/50 text-[14px] font-normal text-[#000000] ${col.id === 'name' ? 'text-left pr-8' : 'text-center'} ${col.type === 'number' ? 'font-mono' : ''}`}
+      />
+      {col.id === 'name' && (
+        <button 
+          onClick={() => requestDelete(item.id)}
+          className="absolute right-2 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover/cell:opacity-100"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -299,10 +319,10 @@ export default function DynamicInventoryManager() {
     const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock'];
     
     numericFields.forEach(field => {
-      if (sanitized[field] === '' || sanitized[field] === null || sanitized[field] === undefined) {
+      if (sanitized[field] === '' || sanitized[field] === null || sanitized[field] === undefined || isNaN(Number(sanitized[field]))) {
         sanitized[field] = 0;
-      } else if (typeof sanitized[field] === 'string') {
-        sanitized[field] = Number(sanitized[field]) || 0;
+      } else {
+        sanitized[field] = Number(sanitized[field]);
       }
     });
 
@@ -374,7 +394,6 @@ export default function DynamicInventoryManager() {
 
   function handleFocus() {
     if (!isEditing) {
-      pushHistory();
       setIsEditing(true);
     }
   }
@@ -386,13 +405,17 @@ export default function DynamicInventoryManager() {
   async function handleSaveField(id: string, field: string, value: any) {
     setIsEditing(false);
     const original = previousStateRef.current.items.find(i => i.id === id);
-    if (original && original[field] === value) return;
+    
+    // Explicitly bypass the early return if the user specifically typed a numeric value to force a sync validation
+    if (original && original[field] === value && value !== 0 && value !== "") return;
 
+    pushHistory();
     setSavingState('saving');
     let sanitizedValue = value;
     const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock'];
     if (numericFields.includes(field)) {
-      sanitizedValue = value === '' || value === null || value === undefined ? 0 : Number(value) || 0;
+      sanitizedValue = value === '' || value === null || value === undefined ? 0 : Number(value);
+      if (isNaN(sanitizedValue as number)) sanitizedValue = 0;
     }
 
     try {
@@ -525,16 +548,16 @@ export default function DynamicInventoryManager() {
 
   if (loading) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-purple-50 text-[#000000]">
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-purple-400" strokeWidth={1.5} />
-        <span className="font-normal text-sm uppercase tracking-widest text-slate-500">กำลังโหลด...</span>
+      <div className="flex h-full flex-col items-center justify-center bg-transparent text-[#000000]">
+        <Loader2 className="w-8 h-8 animate-spin mb-4 text-[#000000]/20" strokeWidth={1.5} />
+        <span className="font-normal text-sm uppercase tracking-widest text-[#000000]/40">Synchronizing...</span>
       </div>
     );
   }
 
   return (
     <>
-    <div className="flex-1 w-full max-w-full overflow-y-auto bg-[#f8f7ff] text-[#000000] font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
+    <div className="flex-1 w-full max-w-full overflow-y-auto bg-transparent text-[#000000] font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
       <div className="w-fit mx-auto flex flex-col items-start">
         <div className="w-full flex flex-col items-center mb-8 text-center">
           <h1 className="text-3xl font-normal tracking-tight text-slate-800">คลังสินค้า</h1>
@@ -559,7 +582,7 @@ export default function DynamicInventoryManager() {
               <button 
                 onClick={handleUndo}
                 disabled={undoStack.length === 0 || isSyncing}
-                className={`p-2.5 rounded-2xl transition-all ${
+                className={`p-2.5 rounded-3xl transition-all ${
                   undoStack.length === 0 || isSyncing 
                   ? 'text-[#94a3b8] cursor-default' 
                   : 'text-[#000000] hover:bg-purple-100'
@@ -571,7 +594,7 @@ export default function DynamicInventoryManager() {
               <button 
                 onClick={handleRedo}
                 disabled={redoStack.length === 0 || isSyncing}
-                className={`p-2.5 rounded-2xl transition-all ${
+                className={`p-2.5 rounded-3xl transition-all ${
                   redoStack.length === 0 || isSyncing 
                   ? 'text-[#94a3b8] cursor-default' 
                   : 'text-[#000000] hover:bg-purple-100'
@@ -593,7 +616,7 @@ export default function DynamicInventoryManager() {
         </div>
 
         <div className="w-full overflow-x-auto flex flex-col pb-8">
-          <div className="w-fit border border-slate-100 bg-white/80 backdrop-blur-md shadow-sm rounded-3xl overflow-hidden mx-auto">
+          <div className="w-fit border border-[#000000]/5 bg-[#fdfcf0]/80 backdrop-blur-md shadow-sm rounded-3xl overflow-hidden mx-auto">
             <DndContext 
               sensors={sensors} 
               collisionDetection={closestCenter} 
@@ -651,7 +674,7 @@ export default function DynamicInventoryManager() {
               }}>
                 {activeRowId ? (
                   <table className="w-full border-collapse">
-                    <tbody className="bg-white/90 backdrop-blur-md shadow-2xl border border-purple-200 rounded-2xl overflow-hidden opacity-90">
+                    <tbody className="bg-white/90 backdrop-blur-md shadow-2xl border border-purple-200 rounded-3xl overflow-hidden opacity-90">
                        <SortableRow 
                          item={items.find(i => i.id === activeRowId)!}
                          columns={columns}
@@ -694,7 +717,7 @@ export default function DynamicInventoryManager() {
                   required
                   value={newItemData.name || ''}
                   onChange={e => setNewItemData(prev => ({...prev, name: e.target.value}))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-2xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
                 />
               </div>
 
@@ -703,22 +726,22 @@ export default function DynamicInventoryManager() {
                 <input 
                   type="text"
                   inputMode="decimal"
-                  value={newItemData.stock || ''}
+                  value={newItemData.stock === null || newItemData.stock === undefined ? '' : newItemData.stock}
                   onChange={e => {
                     let val = e.target.value.replace(/[^0-9.]/g, '');
                     if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                     setNewItemData(prev => ({...prev, stock: val}));
                   }}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-2xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12px] font-normal text-slate-600 ml-1">หน่วย</label>
                 <input 
-                  value={newItemData.unit || ''}
+                  value={newItemData.unit === null || newItemData.unit === undefined ? '' : newItemData.unit}
                   onChange={e => setNewItemData(prev => ({...prev, unit: e.target.value}))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-2xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
                 />
               </div>
 
@@ -727,13 +750,13 @@ export default function DynamicInventoryManager() {
                 <input 
                   type="text"
                   inputMode="decimal"
-                  value={newItemData.order_qty || ''}
+                  value={newItemData.order_qty === null || newItemData.order_qty === undefined ? '' : newItemData.order_qty}
                   onChange={e => {
                     let val = e.target.value.replace(/[^0-9.]/g, '');
                     if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                     setNewItemData(prev => ({...prev, order_qty: val}));
                   }}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-2xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
                 />
               </div>
 
@@ -742,13 +765,13 @@ export default function DynamicInventoryManager() {
                 <input 
                   type="text"
                   inputMode="decimal"
-                  value={newItemData.order_point || ''}
+                  value={newItemData.order_point === null || newItemData.order_point === undefined ? '' : newItemData.order_point}
                   onChange={e => {
                     let val = e.target.value.replace(/[^0-9.]/g, '');
                     if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                     setNewItemData(prev => ({...prev, order_point: val}));
                   }}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-2xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
                 />
               </div>
 
@@ -757,30 +780,30 @@ export default function DynamicInventoryManager() {
                 <input 
                   type="text"
                   inputMode="decimal"
-                  value={newItemData.target_stock || ''}
+                  value={newItemData.target_stock === null || newItemData.target_stock === undefined ? '' : newItemData.target_stock}
                   onChange={e => {
                     let val = e.target.value.replace(/[^0-9.]/g, '');
                     if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                     setNewItemData(prev => ({...prev, target_stock: val}));
                   }}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-2xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12px] font-normal text-slate-600 ml-1">ช่องทางสั่งซื้อ</label>
                 <input 
-                  value={newItemData.source || ''}
+                  value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}
                   onChange={e => setNewItemData(prev => ({...prev, source: e.target.value}))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-2xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
                 />
               </div>
             </div>
             <div className="mt-8 flex gap-3">
-              <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-2xl text-[14px] font-normal text-[#000000] transition-colors">
+              <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
                 ยกเลิก
               </button>
-              <button type="submit" className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 rounded-2xl text-[14px] font-normal text-white transition-colors shadow-sm">
+              <button type="submit" className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
                 บันทึกข้อมูล
               </button>
             </div>
@@ -799,10 +822,10 @@ export default function DynamicInventoryManager() {
           <h3 className="text-lg font-normal text-[#000000] mb-2">ต้องการลบรายการนี้ใช่หรือไม่?</h3>
           <p className="text-sm font-normal text-slate-500 mb-6">ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</p>
           <div className="flex gap-3">
-            <button onClick={() => setDeleteId(null)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-2xl text-[14px] font-normal text-[#000000] transition-colors">
+            <button onClick={() => setDeleteId(null)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
               ยกเลิก
             </button>
-            <button onClick={executeDelete} className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-2xl text-[14px] font-normal text-white transition-colors shadow-sm">
+            <button onClick={executeDelete} className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
               ลบรายการ
             </button>
           </div>

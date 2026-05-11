@@ -215,35 +215,36 @@ export default function MaintenancePage() {
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-inherit p-4 md:p-6 text-[#333333] relative">
-      <div className="max-w-7xl mx-auto space-y-4">
+    <div className="min-h-screen bg-transparent p-4 md:p-12 text-[#000000] relative font-normal">
+      <div className="max-w-7xl mx-auto space-y-12">
         
         {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-gray-100 pb-4">
-          <div className="space-y-1">
-            <h1 className="text-4xl font-normal tracking-tighter text-[#111111] uppercase flex items-center gap-3">
-              <Wrench className="w-8 h-8 text-blue-500" strokeWidth={1.5} />
-              Maintenance Records
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 pb-8 border-b border-[#000000]/5">
+          <div className="space-y-2">
+            <h1 className="text-5xl font-normal tracking-tighter text-[#000000] uppercase flex items-center gap-4">
+              <Wrench className="w-10 h-10 text-[#000000]" strokeWidth={1} />
+              Maintenance
             </h1>
-            <p className="text-gray-400 text-sm font-normal uppercase tracking-widest px-1">บันทึกประวัติการซ่อมบำรุงอุปกรณ์</p>
+            <p className="text-[#000000]/60 text-sm font-normal uppercase tracking-[0.2em] px-1">Equipment Service History</p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
              <button 
               onClick={() => { resetForm(); setIsModalOpen(true); }}
-              className="group flex items-center gap-2 bg-[#f8f9fa] hover:bg-blue-50 text-blue-600 border border-blue-100 px-6 py-3 rounded-2xl transition-all duration-300 shadow-sm active:scale-95"
+              className="group flex items-center gap-3 bg-[#000000] hover:bg-[#1a1a1a] text-white px-8 py-4 rounded-3xl transition-all duration-500 shadow-lg active:scale-95"
              >
-              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-              <span className="font-normal">เพิ่มบันทึกใหม่</span>
+              <Plus className="w-5 h-5 transition-transform duration-500 group-hover:rotate-90" />
+              <span className="font-normal tracking-wide">New Record</span>
             </button>
 
-            <div className="flex items-center">
+            <div className="hidden md:block relative z-[50]">
               <Image 
                 src="/images/logo.png" 
                 alt="BLACKANDBREW Logo" 
-                width={160} 
-                height={64} 
-                className="object-contain"
+                width={140} 
+                height={56} 
+                className="object-contain opacity-90"
+                style={{ width: 'auto', height: 'auto' }}
                 priority
               />
             </div>
@@ -251,123 +252,144 @@ export default function MaintenancePage() {
         </header>
 
         {/* Stats / Quick Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-emerald-50/40 border border-emerald-100 p-4 rounded-3xl space-y-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-[#eff6ff] p-8 rounded-[32px] space-y-4 border-none shadow-sm group hover:shadow-md transition-all duration-500">
             <div className="flex items-center justify-between">
-              <span className="text-emerald-700 font-normal uppercase tracking-wider text-[10px]">เสร็จสมบูรณ์</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span className="text-[#000000]/40 font-normal uppercase tracking-widest text-[11px]">Completed</span>
+              <div className="p-2 bg-white/50 rounded-xl">
+                <CheckCircle2 className="w-5 h-5 text-[#3b82f6]" strokeWidth={1.5} />
+              </div>
             </div>
-            <div className="text-2xl font-normal text-emerald-900 leading-tight">{records.filter(r => r.status === 'เสร็จสมบูรณ์').length}</div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-5xl font-normal text-[#000000] tracking-tighter">
+                {records.filter(r => r.status === 'เสร็จสมบูรณ์').length}
+              </div>
+              <span className="text-sm text-[#000000]/30 font-normal uppercase tracking-wider">Units</span>
+            </div>
           </div>
-          <div className="bg-blue-50/40 border border-blue-100 p-4 rounded-3xl space-y-1">
+
+          <div className="bg-[#f0fdf4] p-8 rounded-[32px] space-y-4 border-none shadow-sm group hover:shadow-md transition-all duration-500">
             <div className="flex items-center justify-between">
-              <span className="text-blue-700 font-normal uppercase tracking-wider text-[10px]">กำลังดำเนินการ</span>
-              <Clock className="w-4 h-4 text-blue-500" />
+              <span className="text-[#000000]/40 font-normal uppercase tracking-widest text-[11px]">In Progress</span>
+              <div className="p-2 bg-white/50 rounded-xl">
+                <Clock className="w-5 h-5 text-[#10b981]" strokeWidth={1.5} />
+              </div>
             </div>
-            <div className="text-2xl font-normal text-blue-900 leading-tight">{records.filter(r => r.status === 'กำลังดำเนินการ').length}</div>
+            <div className="flex items-baseline gap-2">
+              <div className="text-5xl font-normal text-[#000000] tracking-tighter">
+                {records.filter(r => r.status === 'กำลังดำเนินการ').length}
+              </div>
+              <span className="text-sm text-[#000000]/30 font-normal uppercase tracking-wider">Tasks</span>
+            </div>
           </div>
-          <div className="bg-purple-50/40 border border-purple-100 p-4 rounded-3xl space-y-1">
+
+          <div className="bg-[#fff7ed] p-8 rounded-[32px] space-y-4 border-none shadow-sm group hover:shadow-md transition-all duration-500">
             <div className="flex items-center justify-between">
-              <span className="text-purple-700 font-normal uppercase tracking-wider text-[10px]">รวมค่าใช้จ่าย</span>
-              <DollarSign className="w-4 h-4 text-purple-500" />
+              <span className="text-[#000000]/40 font-normal uppercase tracking-widest text-[11px]">Total Expenses</span>
+              <div className="p-2 bg-white/50 rounded-xl">
+                <DollarSign className="w-5 h-5 text-[#f59e0b]" strokeWidth={1.5} />
+              </div>
             </div>
-            <div className="text-2xl font-normal text-purple-900 leading-tight">฿{records.reduce((acc, curr) => acc + (curr.cost || 0), 0).toLocaleString()}</div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-normal text-[#000000]/40 tracking-tighter mr-1">฿</span>
+              <div className="text-5xl font-normal text-[#000000] tracking-tighter">
+                {records.reduce((acc, curr) => acc + (curr.cost || 0), 0).toLocaleString()}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Records List */}
-        <main className="space-y-6">
+        <main className="pb-20">
           {loading && records.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-              <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-200" strokeWidth={1.5} />
-              <span className="text-base tracking-wide uppercase font-normal">กำลังโหลดข้อมูล...</span>
+            <div className="flex flex-col items-center justify-center py-32 text-[#000000]/20">
+              <Loader2 className="w-12 h-12 animate-spin mb-6" strokeWidth={1} />
+              <span className="text-sm tracking-[0.3em] uppercase font-normal">Synchronizing Records...</span>
             </div>
           ) : records.length === 0 ? (
-            <div className="bg-gray-50 border border-dashed border-gray-200 rounded-3xl py-20 flex flex-col items-center justify-center text-gray-400">
-              <AlertCircle className="w-12 h-12 mb-4 opacity-20" />
-              <p className="text-lg font-normal">ไม่พบประวัติการซ่อมบำรุง</p>
+            <div className="bg-white/50 border border-dashed border-[#000000]/10 rounded-[32px] py-32 flex flex-col items-center justify-center text-[#000000]/40">
+              <Wrench className="w-20 h-20 mb-8 opacity-10" strokeWidth={0.5} />
+              <p className="text-xl font-normal tracking-wide italic">No maintenance records discovered yet.</p>
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="mt-4 text-blue-500 hover:underline font-normal"
+                className="mt-8 text-[#000000] hover:opacity-60 transition-opacity font-normal text-xs uppercase tracking-[0.3em] border-b border-[#000000] pb-1"
               >
-                สร้างบันทึกแรกของคุณ
+                Begin your first entry
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {records.map((record) => (
                 <div 
                   key={record.id} 
-                  className="bg-white border border-gray-100 p-4 rounded-3xl hover:shadow-xl hover:border-blue-100 transition-all duration-300 group relative flex flex-col h-full max-w-md mx-auto w-full"
+                  className="bg-white border-none p-8 rounded-[32px] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-700 group flex flex-col h-full"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-xl ${record.status === 'เสร็จสมบูรณ์' ? 'bg-emerald-50 text-emerald-500' : 'bg-blue-50 text-blue-500'}`}>
-                        {record.status === 'เสร็จสมบูรณ์' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                  <div className="flex items-start justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-3xl ${record.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981]' : 'bg-[#eff6ff] text-[#3b82f6]'}`}>
+                        {record.status === 'เสร็จสมบูรณ์' ? <CheckCircle2 className="w-5 h-5" strokeWidth={1.5} /> : <Clock className="w-5 h-5" strokeWidth={1.5} />}
                       </div>
                       <div>
-                        <h3 className="text-base font-normal text-gray-900 tracking-tight line-clamp-1">{record.equipment}</h3>
-                        <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                           <span className="flex items-center gap-1 font-normal text-gray-500">
-                            <Calendar className="w-3 h-3" />
-                            {format(new Date(record.start_date), 'dd/MM/yyyy')}
-                          </span>
+                        <h3 className="text-lg font-normal text-[#000000] tracking-tight leading-none mb-2">{record.equipment}</h3>
+                        <div className="flex items-center gap-2 text-[10px] text-[#000000]/40 uppercase tracking-widest">
+                           <Calendar className="w-3 h-3" />
+                           {format(new Date(record.start_date), 'dd/MM/yyyy')}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                       <button 
                         onClick={() => handleEdit(record)}
-                        className="p-1.5 bg-gray-50 hover:bg-blue-50 text-gray-400 hover:text-blue-500 rounded-lg transition-all duration-300 active:scale-95 border border-transparent hover:border-blue-100"
+                        className="p-2 bg-[#fff3dd] hover:bg-[#ffe8b3] text-[#000000] rounded-xl transition-all duration-300 active:scale-90"
                       >
-                        <Edit2 className="w-3.5 h-3.5" />
+                        <Edit2 className="w-4 h-4" strokeWidth={1.5} />
                       </button>
                       <button 
                         onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
-                        className="p-1.5 bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-all duration-300 active:scale-95 border border-transparent hover:border-red-100"
+                        className="p-2 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl transition-all duration-300 active:scale-90"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                       <span className="uppercase tracking-wider font-normal text-[8px] bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 text-gray-500">
+                  <div className="flex-1 space-y-6">
+                    <div className="flex items-center gap-4">
+                       <span className="uppercase tracking-[0.2em] font-normal text-[9px] text-[#000000]/40">
                         {record.task_type}
                       </span>
-                      <div className="h-px flex-1 bg-gray-50" />
-                      <div className="text-right">
-                        <div className="text-base font-normal text-gray-900 tracking-tighter">
-                          ฿{(record.cost || 0).toLocaleString()}
-                        </div>
+                      <div className="h-[1px] flex-1 bg-[#000000]/5" />
+                      <div className="text-xl font-normal text-[#000000] tracking-tighter">
+                        ฿{(record.cost || 0).toLocaleString()}
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="space-y-4">
                       {record.detected_problem && (
-                        <div className="bg-gray-50/50 p-2.5 rounded-xl border border-gray-50">
-                          <span className="block text-[9px] font-normal uppercase tracking-widest text-[#000000] mb-0.5">ปัญหาที่พบ</span>
-                          <p className="text-[15px] text-[#000000] font-normal line-clamp-2 leading-relaxed">{record.detected_problem}</p>
+                        <div className="space-y-2">
+                          <span className="block text-[10px] font-normal uppercase tracking-[0.2em] text-[#000000]/30">Observed Issue</span>
+                          <p className="text-base text-[#000000]/80 font-normal leading-relaxed">{record.detected_problem}</p>
                         </div>
                       )}
                       {record.work_details && (
-                        <div className="bg-white p-2.5 rounded-xl border border-gray-50">
-                          <span className="block text-[9px] font-normal uppercase tracking-widest text-[#000000] mb-0.5">รายละเอียดการซ่อม</span>
-                          <p className="text-[15px] text-[#000000] font-normal line-clamp-2 leading-relaxed">{record.work_details}</p>
+                        <div className="space-y-2">
+                          <span className="block text-[10px] font-normal uppercase tracking-[0.2em] text-[#000000]/30">Service Performed</span>
+                          <p className="text-base text-[#000000]/80 font-normal leading-relaxed">{record.work_details}</p>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[12px] font-normal text-[#000000]">
-                      <User className="w-4 h-4 text-gray-400" />
-                      {record.person_in_charge || 'ไม่ระบุ'}
+                  <div className="mt-8 pt-8 border-t border-[#000000]/5 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-normal text-[#000000]/60">
+                      <div className="w-6 h-6 rounded-full bg-[#fff3dd] flex items-center justify-center text-[10px]">
+                        {record.person_in_charge?.[0] || '?'}
+                      </div>
+                      {record.person_in_charge || 'Unknown'}
                     </div>
                     {record.recommended_frequency && (
-                      <div className="flex items-center gap-1 text-[9px] font-normal text-blue-500 bg-blue-50/50 px-2 py-0.5 rounded-full border border-blue-100">
-                        <Clock className="w-2.5 h-2.5" />
+                      <div className="text-[10px] font-normal text-[#000000]/40 uppercase tracking-widest flex items-center gap-2">
+                        <Clock className="w-3 h-3" />
                         {record.recommended_frequency}
                       </div>
                     )}
@@ -383,28 +405,28 @@ export default function MaintenancePage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-          <div className="relative bg-white w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 animate-in fade-in zoom-in duration-300">
-            <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+            <div className="relative bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden border-none animate-in fade-in zoom-in duration-500">
+            <div className="p-8 border-b border-[#000000]/5 flex items-center justify-between bg-[#fff3dd]/30">
               <div>
-                <h2 className="text-xl font-normal text-gray-900 tracking-tight uppercase">
-                  {editingRecord ? 'แก้ไขบันทึก' : 'เพิ่มบันทึกการซ่อม'}
+                <h2 className="text-2xl font-normal text-[#000000] tracking-tighter uppercase">
+                  {editingRecord ? 'Edit Record' : 'New Maintenance Entry'}
                 </h2>
-                <p className="text-[11px] text-gray-400 mt-0.5 uppercase tracking-wider font-normal">กรอกรายละเอียดการเซอร์วิสอุปกรณ์</p>
+                <p className="text-[11px] text-[#000000]/40 mt-1 uppercase tracking-widest font-normal">Service Details & Equipment Status</p>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 hover:bg-gray-200 rounded-xl transition-colors text-gray-400"
+                className="p-2 hover:bg-[#000000]/5 rounded-3xl transition-colors text-[#000000]"
               >
-                <ChevronRight className="w-5 h-5 rotate-90" />
+                <ChevronRight className="w-6 h-6 rotate-90" strokeWidth={1} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5 group cursor-pointer" onClick={() => dateInputRef.current?.showPicker()}>
-                  <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">วันที่เซอร์วิส</label>
-                  <div className="relative h-[42px] flex items-center bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 cursor-pointer focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50 transition-all">
-                    <span className="text-[13px] text-[#000000] flex-1">
+            <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar bg-white">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2 group cursor-pointer" onClick={() => dateInputRef.current?.showPicker()}>
+                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Service Date</label>
+                  <div className="relative h-[52px] flex items-center bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 cursor-pointer transition-all">
+                    <span className="text-sm text-[#000000] flex-1">
                       {formData.start_date ? format(parseISO(formData.start_date), 'dd/MM/yyyy') : ''}
                     </span>
                     <input 
@@ -415,150 +437,149 @@ export default function MaintenancePage() {
                       onChange={e => setFormData({ ...formData, start_date: e.target.value })}
                       className="sr-only"
                     />
-                    <Calendar className="w-4 h-4 text-[#4b5563] pointer-events-none group-hover:text-blue-500 transition-colors" />
+                    <Calendar className="w-4 h-4 text-[#000000]/40 group-hover:text-[#000000] transition-colors" />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ประเภทงาน</label>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Task Type</label>
                   <select 
                     value={formData.task_type}
                     onChange={e => setFormData({ ...formData, task_type: e.target.value })}
-                    className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all appearance-none cursor-pointer"
+                    className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all appearance-none cursor-pointer"
                   >
-                    <option value="ซ่อมแซม">ซ่อมแซม</option>
-                    <option value="บำรุงรักษา">บำรุงรักษา</option>
-                    <option value="ติดตั้ง">ติดตั้ง</option>
-                    <option value="เปลี่ยนอะไหล่">เปลี่ยนอะไหล่</option>
-                    <option value="อื่นๆ">อื่นๆ</option>
+                    <option value="ซ่อมแซม">ซ่อมแซม (Repair)</option>
+                    <option value="บำรุงรักษา">บำรุงรักษา (Maintenance)</option>
+                    <option value="ติดตั้ง">ติดตั้ง (Installation)</option>
+                    <option value="เปลี่ยนอะไหล่">เปลี่ยนอะไหล่ (Replacement)</option>
+                    <option value="อื่นๆ">อื่นๆ (Others)</option>
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ชื่ออุปกรณ์ / เครื่องจักร</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Equipment Name</label>
                     <input 
                     type="text" 
                     required
-                    placeholder="เช่น เครื่องชงกาแฟ"
+                    placeholder="e.g. Espresso Machine"
                     value={formData.equipment}
                     onChange={e => setFormData({ ...formData, equipment: e.target.value })}
-                    className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                    className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ความถี่ที่แนะนำ</label>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Recommended Frequency</label>
                   <input 
                     type="text" 
-                    placeholder="เช่น ทุก 3-4 เดือน"
+                    placeholder="e.g. Every 3 months"
                     value={formData.recommended_frequency}
                     onChange={e => setFormData({ ...formData, recommended_frequency: e.target.value })}
-                    className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ปัญหาที่พบ</label>
-                <input 
-                  type="text" 
-                  placeholder="รายละเอียดอาการเสียหรือปัญหา"
-                  value={formData.detected_problem}
-                  onChange={e => setFormData({ ...formData, detected_problem: e.target.value })}
-                  className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">รายละเอียดการดำเนินการ</label>
-                <input 
-                  type="text" 
-                  placeholder="ระบุสิ่งที่ทำไป..."
-                  value={formData.work_details}
-                  onChange={e => setFormData({ ...formData, work_details: e.target.value })}
-                  className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ค่าใช้จ่าย (บาท)</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4B5563] text-sm">฿</span>
-                    <input 
-                      type="number" 
-                      min="0"
-                      value={formData.cost === 0 ? '' : formData.cost}
-                      onChange={e => {
-                        const val = e.target.value.replace(/^0+/, ''); // Remove leading zeros
-                        setFormData({ ...formData, cost: val === '' ? 0 : Number(val) });
-                      }}
-                      onFocus={e => { if (formData.cost === 0) e.target.value = ''; }}
-                      className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl pl-8 pr-3 py-2 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ผู้รับผิดชอบ</label>
-                  <input 
-                    type="text" 
-                    placeholder="ชื่อผู้ดำเนินการ"
-                    value={formData.person_in_charge}
-                    onChange={e => setFormData({ ...formData, person_in_charge: e.target.value })}
-                    className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                    className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">สถานะงาน</label>
-                <div className="flex gap-2">
+                <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Problem Detected</label>
+                <textarea 
+                  placeholder="Describe the issue..."
+                  rows={2}
+                  value={formData.detected_problem}
+                  onChange={e => setFormData({ ...formData, detected_problem: e.target.value })}
+                  className="w-full bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Work Details</label>
+                <textarea 
+                  placeholder="What was done?"
+                  rows={2}
+                  value={formData.work_details}
+                  onChange={e => setFormData({ ...formData, work_details: e.target.value })}
+                  className="w-full bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Cost (THB)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#000000]/40 text-sm">฿</span>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={formData.cost === 0 ? '' : formData.cost}
+                      onChange={e => {
+                        const val = e.target.value.replace(/^0+/, '');
+                        setFormData({ ...formData, cost: val === '' ? 0 : Number(val) });
+                      }}
+                      className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl pl-8 pr-4 py-3 text-sm focus:outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Person in Charge</label>
+                  <input 
+                    type="text" 
+                    placeholder="Technician Name"
+                    value={formData.person_in_charge}
+                    onChange={e => setFormData({ ...formData, person_in_charge: e.target.value })}
+                    className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Job Status</label>
+                <div className="flex gap-4">
                   <button 
                     type="button"
                     onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[12px] font-normal transition-all ${formData.status === 'กำลังดำเนินการ' ? 'bg-amber-50 border-amber-200 text-amber-600 ring-2 ring-amber-500/20' : 'bg-[#f8f9fa] border-gray-100 text-[#4B5563] hover:bg-gray-50'}`}
+                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-3xl text-xs font-normal transition-all duration-500 ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#eff6ff] text-[#3b82f6] shadow-sm' : 'bg-[#f8f9fa] text-[#000000]/40 hover:bg-gray-100'}`}
                   >
-                    <Clock className="w-3.5 h-3.5" />
-                    กำลังดำเนินการ
+                    <Clock className="w-4 h-4" strokeWidth={1.5} />
+                    In Progress
                   </button>
                   <button 
                     type="button"
                     onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-[12px] font-normal transition-all ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-emerald-50 border-emerald-200 text-emerald-600 ring-2 ring-emerald-500/20' : 'bg-[#f8f9fa] border-gray-100 text-[#4B5563] hover:bg-gray-50'}`}
+                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-3xl text-xs font-normal transition-all duration-500 ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] shadow-sm' : 'bg-[#f8f9fa] text-[#000000]/40 hover:bg-gray-100'}`}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    เสร็จสมบูรณ์
+                    <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
+                    Completed
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-1.5 pb-2">
-                <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">หมายเหตุเพิ่มเติม</label>
+              <div className="space-y-2">
+                <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Notes</label>
                 <input 
                   type="text" 
-                  placeholder="ระบุหมายเหตุ (ถ้ามี)"
+                  placeholder="Additional notes..."
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-3 py-2 text-[13px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                  className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all"
                 />
               </div>
             </form>
 
-            <div className="p-6 bg-gray-50/50 border-t border-gray-50 flex gap-3">
+            <div className="p-8 bg-gray-50/30 border-t border-[#000000]/5 flex gap-4">
               <button 
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="flex-1 py-3 text-gray-500 font-normal hover:bg-gray-200/50 rounded-xl transition-all text-sm"
+                className="flex-1 py-4 text-[#000000]/40 font-normal hover:text-[#000000] transition-all text-sm uppercase tracking-widest"
               >
-                ยกเลิก
+                Dismiss
               </button>
               <button 
                 onClick={handleSubmit}
                 disabled={loading}
-                className="flex-[2] py-3 bg-[#333333] text-white font-normal rounded-xl hover:bg-black transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                className="flex-[2] py-4 bg-[#000000] text-white font-normal rounded-3xl hover:bg-[#1a1a1a] transition-all shadow-xl active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 text-sm uppercase tracking-widest"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                บันทึกข้อมูล
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" strokeWidth={1.5} />}
+                Confirm Entry
               </button>
             </div>
           </div>
@@ -568,26 +589,26 @@ export default function MaintenancePage() {
       {/* Delete Confirmation Modal */}
       {isDeleteConfirmOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setIsDeleteConfirmOpen(false)} />
-          <div className="relative bg-white w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 animate-in fade-in zoom-in duration-300 p-8 text-center">
-            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-8 h-8" />
+          <div className="absolute inset-0 bg-black/5 backdrop-blur-md" onClick={() => setIsDeleteConfirmOpen(false)} />
+          <div className="relative bg-white w-full max-w-sm rounded-[40px] shadow-2xl overflow-hidden border-none animate-in fade-in zoom-in duration-500 p-10 text-center">
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Trash2 className="w-10 h-10" strokeWidth={1} />
             </div>
-            <h3 className="text-xl font-normal text-gray-900 mb-2">ยืนยันการลบข้อมูล?</h3>
-            <p className="text-gray-400 text-sm mb-6">คุณไม่สามารถย้อนกลับการดำเนินการนี้ได้หลังจากลบข้อมูลสำเร็จ</p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setIsDeleteConfirmOpen(false)}
-                className="flex-1 py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-sm"
-              >
-                ยกเลิก
-              </button>
+            <h3 className="text-2xl font-normal text-[#000000] tracking-tighter mb-2 uppercase">Delete Record?</h3>
+            <p className="text-[#000000]/40 text-sm font-normal mb-8 leading-relaxed">This action is irreversible and will permanently remove this maintenance entry from the vault.</p>
+            <div className="flex flex-col gap-3">
               <button 
                 onClick={handleDelete}
                 disabled={loading}
-                className="flex-1 py-3 bg-red-500 text-white font-normal rounded-xl hover:bg-red-600 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm"
+                className="w-full py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm uppercase tracking-widest"
               >
-                {loading ? 'กำลังลบ...' : 'ยืนยันการลบ'}
+                {loading ? 'Processing...' : 'Confirm Deletion'}
+              </button>
+              <button 
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="w-full py-4 text-[#000000]/40 font-normal hover:text-[#000000] transition-all text-sm uppercase tracking-widest"
+              >
+                Cancel
               </button>
             </div>
           </div>
@@ -596,7 +617,7 @@ export default function MaintenancePage() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed bottom-8 right-8 z-[200] px-6 py-4 rounded-2xl shadow-2xl border flex items-center gap-3 animate-in slide-in-from-right-full duration-300 ${toast.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
+        <div className={`fixed bottom-8 right-8 z-[200] px-6 py-4 rounded-3xl shadow-2xl border flex items-center gap-3 animate-in slide-in-from-right-full duration-300 ${toast.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
           {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span className="font-normal">{toast.message}</span>
         </div>

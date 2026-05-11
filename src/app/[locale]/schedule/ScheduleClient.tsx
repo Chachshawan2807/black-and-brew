@@ -83,9 +83,9 @@ function SortableEmployeeRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`grid grid-cols-8 border-b border-gray-100 hover:bg-gray-50 transition-colors group relative bg-white ${isDragging ? 'shadow-lg ring-1 ring-black/5 scale-[1.002]' : ''}`}
+      className={`grid grid-cols-8 border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-colors group relative bg-transparent ${isDragging ? 'shadow-lg ring-1 ring-black/5 scale-[1.002]' : ''}`}
     >
-      <div className="p-2 border-r border-gray-100 flex items-center gap-2 bg-white sticky left-0 z-[5]">
+      <div className="p-2 border-r border-[#000000]/5 flex items-center gap-2 bg-[#fdfcf0] sticky left-0 z-[5]">
         <div
           {...attributes}
           {...listeners}
@@ -175,12 +175,13 @@ export default function ScheduleClient({
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
   const [selectedCell, setSelectedCell] = useState<{ employeeId: string; date: string; shift?: any; x: number; y: number } | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [editingHoliday, setEditingHoliday] = useState<string | null>(null);
   const [holidayInput, setHolidayInput] = useState('');
@@ -226,7 +227,9 @@ export default function ScheduleClient({
   const copyInputRef = useRef<HTMLInputElement>(null);
 
   // Sync with server props
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShifts(initialShifts);
     setProfiles(initialProfiles);
     setHolidays(initialHolidays);
@@ -280,7 +283,7 @@ export default function ScheduleClient({
       }
       await revalidateAppPaths();
       router.refresh();
-    } catch (err) {
+    } catch {
       // Failed to undo
     }
   };
@@ -319,7 +322,7 @@ export default function ScheduleClient({
       }
       await revalidateAppPaths();
       router.refresh();
-    } catch (err) {
+    } catch {
       // Failed to redo, silently ignore or handle error
     }
   };
@@ -331,7 +334,7 @@ export default function ScheduleClient({
       setShowClearConfirm(false);
       await revalidateAppPaths();
       router.refresh();
-    } catch (err) {
+    } catch {
       alert('ไม่สามารถลบข้อมูลได้ โปรดลองอีกครั้ง');
     }
   };
@@ -381,13 +384,15 @@ export default function ScheduleClient({
       });
 
       setMgmtHistory(grouped.reverse()); // Show newest first
-    } catch (error) {
+    } catch {
       // Silently handle error to prevent data leakage
     }
   }, [historyFilter]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (showManagementModal) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchMgmtHistory();
     }
   }, [showManagementModal, fetchMgmtHistory]);
@@ -453,7 +458,7 @@ export default function ScheduleClient({
       await revalidateAppPaths();
       router.refresh();
 
-    } catch (error) {
+    } catch {
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
     } finally {
       setLoading(false);
@@ -521,7 +526,7 @@ export default function ScheduleClient({
 
       // 6. Sync UI and Dashboard Stats
       revalidateAppPaths();
-    } catch (err) {
+    } catch {
       alert('เกิดข้อผิดพลาดในการคัดลอกข้อมูล กรุณาลองใหม่อีกครั้ง');
     } finally {
       setLoading(false);
@@ -722,8 +727,8 @@ export default function ScheduleClient({
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   return (
-    <div className="flex flex-col h-screen bg-white text-[#333333] overflow-hidden">
-      <header className="h-14 border-b border-gray-200 px-6 flex items-center justify-between bg-[#f8f8f8] shrink-0 z-20 shadow-sm">
+    <div className="flex flex-col h-screen bg-transparent text-[#000000] overflow-hidden">
+      <header className="h-14 border-b border-[#000000]/5 px-6 flex items-center justify-between bg-transparent shrink-0 z-20 shadow-sm">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-1">
             <button
@@ -797,24 +802,25 @@ export default function ScheduleClient({
               onChange={handleDateChange}
               containerClassName="w-fit h-9 scale-100 origin-right"
             />
-            <div className="flex items-center">
-              <Image
-                src="/images/logo.png"
-                alt="BLACKANDBREW Logo"
-                width={120}
-                height={48}
-                className="object-contain"
-                priority
-              />
-            </div>
+            <div className="flex items-center gap-4 relative z-[50]">
+            <Image 
+              src="/images/logo.png" 
+              alt="BLACKANDBREW Logo" 
+              width={140} 
+              height={56} 
+              className="object-contain"
+              style={{ width: 'auto', height: 'auto' }}
+              priority
+            />
           </div>
         </div>
-      </header>
+      </div>
+    </header>
 
-      <main className="flex-1 p-2 md:p-4 overflow-hidden flex flex-col bg-[#f5f5f5]">
-        <div className="flex-1 flex flex-col bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="grid grid-cols-8 border-b border-gray-200 bg-red-50/20 sticky top-0 z-[16]">
-            <div className="p-2.5 border-r border-gray-100 flex items-center justify-center bg-red-50/40">
+      <main className="flex-1 p-2 md:p-4 overflow-hidden flex flex-col bg-transparent">
+        <div className="flex-1 flex flex-col bg-[#fdfcf0]/80 backdrop-blur-sm border border-[#000000]/5 rounded-3xl overflow-hidden shadow-sm">
+          <div className="grid grid-cols-8 border-b border-[#000000]/5 bg-red-50/10 sticky top-0 z-[16]">
+            <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-red-50/20">
               <span className="text-[10px] text-[#991b1b] font-normal uppercase tracking-widest">Holiday</span>
             </div>
             {weekDays.map(date => {
@@ -823,7 +829,7 @@ export default function ScheduleClient({
                 <div
                   key={`holiday-${date}`}
                   onClick={() => { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); }}
-                  className="p-1 border-r last:border-0 border-gray-100 flex items-center justify-center min-h-[38px] cursor-pointer hover:bg-red-50 transition-colors"
+                  className="p-1 border-r last:border-0 border-[#000000]/5 flex items-center justify-center min-h-[38px] cursor-pointer hover:bg-red-50 transition-colors"
                 >
                   {editingHoliday === date ? (
                     <input
@@ -984,7 +990,7 @@ export default function ScheduleClient({
       {/* Clear All Confirmation Dialog */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
-          <div className="bg-white border border-gray-100 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl p-6 text-center space-y-4">
+          <div className="bg-white border border-gray-100 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl p-6 text-center space-y-4">
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
@@ -1020,15 +1026,15 @@ export default function ScheduleClient({
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
-          <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 flex max-h-[90vh]">
+          <div className="bg-[#fdfcf0] w-full max-w-5xl rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 flex max-h-[90vh]">
             {/* Left side: Management Form */}
-            <div className="w-[320px] flex flex-col border-r border-gray-100 shrink-0">
-              <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <div className="w-[320px] flex flex-col border-r border-[#000000]/5 shrink-0">
+              <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]/50">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-emerald-50 rounded-lg">
+                  <div className="p-2 bg-emerald-50 rounded-3xl">
                     <UserCog className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <h3 className="text-lg font-normal text-gray-900 tracking-tight">จัดการการลา / เปลี่ยนกะ</h3>
+                  <h3 className="text-lg font-normal text-[#000000] tracking-tight">จัดการการลา / เปลี่ยนกะ</h3>
                 </div>
               </div>
 
@@ -1045,10 +1051,10 @@ export default function ScheduleClient({
 
                 {/* Employee Selection */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal text-[#4B5563] uppercase tracking-widest px-1">พนักงาน</label>
+                  <label className="text-[11px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">พนักงาน</label>
                   <div className="relative">
                     <select
-                      className="w-full h-11 px-4 pr-10 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-[14px] font-normal appearance-none"
+                      className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-[14px] font-normal appearance-none text-[#000000]"
                       value={managementForm.employeeId}
                       onChange={(e) => setManagementForm(prev => ({ ...prev, employeeId: e.target.value }))}
                     >
@@ -1065,10 +1071,10 @@ export default function ScheduleClient({
 
                 {/* Shift/Type Selection */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal text-[#4B5563] uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
+                  <label className="text-[11px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
                   <div className="relative group/select">
                     <select
-                      className={`w-full h-11 px-4 pr-10 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-[14px] font-normal shadow-sm appearance-none ${shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-white border-gray-200'
+                      className={`w-full h-11 px-4 pr-10 rounded-3xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-[14px] font-normal shadow-sm appearance-none text-[#000000] ${shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-white border-[#000000]/5'
                         }`}
                       value={managementForm.shiftType}
                       onChange={(e) => setManagementForm(prev => ({ ...prev, shiftType: e.target.value }))}
@@ -1091,9 +1097,9 @@ export default function ScheduleClient({
 
                 {/* Smart Date Range Selector */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal text-[#4B5563] uppercase tracking-widest px-1">ระบุช่วงวันที่จัดการ</label>
+                  <label className="text-[11px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">ระบุช่วงวันที่จัดการ</label>
                   <div
-                    className="group relative flex items-center h-12 px-4 rounded-xl border border-gray-200 bg-white hover:border-gray-400 transition-all cursor-pointer overflow-hidden shadow-sm"
+                    className="group relative flex items-center h-12 px-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0] hover:border-[#000000]/20 transition-all cursor-pointer overflow-hidden shadow-sm"
                     onClick={() => mgmtStartRef.current?.showPicker()}
                   >
                     <Calendar className="w-4 h-4 text-[#000000] mr-3 shrink-0" strokeWidth={1.5} />
@@ -1126,26 +1132,26 @@ export default function ScheduleClient({
 
                 {/* Remark */}
                 <div className="space-y-1.5 pt-2">
-                  <label className="text-[11px] font-normal text-[#4B5563] uppercase tracking-widest px-1">หมายเหตุ</label>
+                  <label className="text-[11px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">หมายเหตุ</label>
                   <textarea
                     placeholder="รายละเอียดเพิ่มเติม..."
-                    className="w-full h-20 p-4 rounded-xl border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-[13px] leading-relaxed font-normal"
+                    className="w-full h-20 p-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-[13px] leading-relaxed font-normal text-[#000000]"
                     value={managementForm.remark}
                     onChange={(e) => setManagementForm(prev => ({ ...prev, remark: e.target.value }))}
                   />
                 </div>
               </div>
 
-              <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+              <div className="p-4 bg-[#fdfcf0] border-t border-[#000000]/5 flex gap-3">
                 <button
                   onClick={() => setShowManagementModal(false)}
-                  className="flex-1 py-3 rounded-xl bg-white border border-gray-200 text-gray-500 font-normal text-[12px] hover:bg-gray-100 transition-all active:scale-95 shadow-sm"
+                  className="flex-1 py-3 rounded-3xl bg-transparent border border-[#000000]/10 text-[#000000]/60 font-normal text-[12px] hover:bg-[#000000]/5 transition-all active:scale-95 shadow-sm"
                 >
                   ปิดหน้าต่าง
                 </button>
                 <button
                   onClick={handleSaveManagement}
-                  className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-normal text-[12px] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 cursor-pointer"
+                  className="flex-1 py-3 rounded-3xl bg-emerald-600 text-white font-normal text-[12px] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 cursor-pointer"
                 >
                   บันทึกข้อมูล
                 </button>
@@ -1153,21 +1159,21 @@ export default function ScheduleClient({
             </div>
 
             {/* Right side: History Panel */}
-            <div className="flex-1 flex flex-col bg-gray-50/30 min-w-0">
-              <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-white">
+            <div className="flex-1 flex flex-col bg-[#fdfcf0]/30 min-w-0">
+              <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]">
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="w-5 h-5 text-gray-400" />
-                  <h3 className="text-lg font-normal text-gray-900 tracking-tight">ประวัติการจัดการทั้งหมด</h3>
+                  <CalendarDays className="w-5 h-5 text-[#000000]/40" />
+                  <h3 className="text-lg font-normal text-[#000000] tracking-tight">ประวัติการจัดการทั้งหมด</h3>
                 </div>
-                <button onClick={() => setShowManagementModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-all">
+                <button onClick={() => setShowManagementModal(false)} className="p-2 hover:bg-[#000000]/5 rounded-full text-[#000000]/40 transition-all">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* History Filter */}
-              <div className="p-4 border-b border-gray-100 bg-white">
+              <div className="p-4 border-b border-[#000000]/5 bg-[#fdfcf0]">
                 <div
-                  className="group relative flex items-center h-10 px-3 rounded-xl border border-gray-200 bg-gray-50/30 hover:bg-white hover:border-gray-400 transition-all cursor-pointer overflow-hidden"
+                  className="group relative flex items-center h-10 px-3 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/30 hover:bg-[#fdfcf0] hover:border-[#000000]/20 transition-all cursor-pointer overflow-hidden"
                   onClick={() => histStartRef.current?.showPicker()}
                 >
                   <Calendar className="w-3.5 h-3.5 text-gray-400 mr-2.5 shrink-0" />
@@ -1202,14 +1208,14 @@ export default function ScheduleClient({
               {/* History List - Grid Layout */}
               <div className="flex-1 overflow-y-auto p-5">
                 {mgmtHistory.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-50 space-y-2">
+                  <div className="h-full flex flex-col items-center justify-center text-[#000000]/20 space-y-2">
                     <CalendarDays className="w-8 h-8" />
                     <p className="text-xs font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {mgmtHistory.map((item) => (
-                      <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md group h-[130px] min-w-0">
+                      <div key={item.id} className="bg-[#fdfcf0] rounded-3xl border border-[#000000]/5 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md group h-[130px] min-w-0">
                         <div className={`h-1 w-full ${item.color}`} />
                         <div className="p-3 flex flex-col h-full">
                           <div className="flex justify-between items-start mb-1">

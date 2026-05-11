@@ -22,17 +22,17 @@
 }
 
 :root {
-  --background: #EDEDF0;
+  --background: #fdfcf0;
   --foreground: #000000;
   font-size: 15.5px;
 }
 
 @layer base {
   html {
-    background-color: #EDEDF0;
+    background-color: #fdfcf0;
   }
   body {
-    background-color: #EDEDF0;
+    background-color: #fdfcf0;
     color: #000000;
     &::selection {
       background-color: rgb(59 130 246 / 0.3);

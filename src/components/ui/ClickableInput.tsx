@@ -18,7 +18,6 @@ export function ClickableInput({
   type,
   containerClassName = '', 
   icon, 
-  className = '', 
   value,
   ...props 
 }: ClickableInputProps) {
