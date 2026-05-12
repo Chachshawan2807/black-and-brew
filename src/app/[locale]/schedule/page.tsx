@@ -22,7 +22,7 @@ export default async function SchedulePage({
   const sundayStr = format(sunday, 'yyyy-MM-dd');
 
   // Fetch Data on Server
-  const { data: profiles } = await supabase.from('profiles').select('*').order('display_order', { ascending: true });
+  const { data: profiles } = await supabase.from('profiles').select('*').order('schedule_order', { ascending: true });
   const { data: shifts } = await supabase.from('shifts')
     .select('*')
     .gte('start_time', mondayStr + 'T00:00:00')

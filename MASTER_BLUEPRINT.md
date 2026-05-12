@@ -32,9 +32,13 @@ Tech Stack: Next.js 16, React 19, Supabase, Tailwind CSS, Vercel Edge Runtime.
   เพื่อให้มองเห็นชัดเจนบนพื้นหลังสว่าง
 * ใช้ตัวอักษรสีดำ (#000000) สำหรับหัวข้อและข้อมูลหลัก
 
-### Thai Localization
+### Thai Localization (Thai Typography Integrity)
 
-* บังคับใช้ line-height และ padding เพื่อป้องกันสระไทยทับซ้อน
+* **Line-height & Padding**: บังคับใช้ `line-height: 1.6 !important` และ `padding` แนวตั้งที่เพียงพอ (เช่น `py-4`) เพื่อป้องกันสระไทยและวรรณยุกต์ (Tone Marks) ถูกตัดขาดหายไป
+* **Font Priority**: บังคับใช้ `'Sarabun'` เป็นฟอนต์หลัก ตามด้วย `'Inter'` เพื่อรองรับ Thai Metrics อย่างสมบูรณ์
+* **8pt Grid System**: บังคับใช้ระยะห่าง (Spacing/Sizing) เป็นทวีคูณของ 8 (8, 16, 24, 32...) เสมอ
+* **Optical Alignment**: จัดกึ่งกลางด้วยสายตา (Visual Center). ชดเชยพื้นที่สระบนด้วย +4px ถึง +6px Padding
+* **Interaction Mastery**: Hover/Active transition 300ms ease-in-out. Feedback ต้องชัดเจนและนุ่มนวล
 
 ### UI Layering & Stacking Context (Logo Z-Index Standard)
 
@@ -47,6 +51,14 @@ Tech Stack: Next.js 16, React 19, Supabase, Tailwind CSS, Vercel Edge Runtime.
   clashing with navigation or persistent branding.
 * Persistent sidebars and headers must maintain a clear stacking context to
   avoid being obscured by page-specific content windows.
+
+### Drag-and-Drop Standards (Unified Drag Experience)
+
+* **Sensory Constraint**: `PointerSensor` must use `activationConstraint: { distance: 10 }` to prevent accidental drag triggers.
+* **Unified Drag Overlay**: All draggable items must use a `DragOverlay` with `scale-105`, `shadow-2xl`, and `rounded-3xl`.
+* **High-Precision Alignment**: `DragOverlay` must use `zIndex: 9999` and maintain relative coordinate alignment (Relative Stickiness) to ensure it appears exactly under the cursor without jumping.
+* **Content Visibility**: Overlays must enforce `min-w` or `w-max` and `table-fixed` (for grids) to prevent data clipping or layout collapse during drag.
+* **Mobile Handle Protocol**: Drag handles must be at least `p-3` (44px target) with `touch-none` to ensure mobile accessibility and prevent browser scroll interference.
 
 ## 3. Rendering Strategy: Hybrid PPR
 
@@ -62,17 +74,12 @@ Database: Supabase PostgreSQL
 Schema Design: profiles, shifts, service_records,
 inventory_items.
 
-### Data Sanitation (Global Zero Rule - SPEC 3.1)
+### Data Sanitation (Persistent Zero Logic - SPEC 3.1)
 
-* "Empty is Zero" Logic: Numeric values of 0 must be rendered as empty strings ("")
-  in UI inputs for a cleaner, "Google Sheets" style appearance.
-* Fallback to 0: If a field is empty (""), the system must treat it as 0 in state,
-  calculations, and database operations.
-* Manual Deletion: Users must be able to delete numbers (including 0) to leave
-  the field empty.
-* Numeric formatting: Strip leading zeros from integer inputs (e.g., 05 -> 5)
-  to prevent logic errors.
-* Fallback Display: If data is null/undefined (non-numeric), show as empty string.
+* **Persistent Zero**: ห้ามลบหรือซ่อนเลข 0 ทั้งในฐานข้อมูลและหน้าจอ (Data Integrity) ตัวเลข 0 ต้องแสดงผลอย่างชัดเจนเสมอเพื่อให้ข้อมูลมีความแม่นยำสูงสุด
+* **Empty as Zero (State Only)**: หากช่องกรอกข้อมูลถูกเว้นว่าง ระบบต้องคำนวณและบันทึกเป็น 0 ใน State และ Database แต่เมื่อมีการบันทึก 0 ลงไปแล้ว หน้าจอต้องแสดงเลข "0"
+* **Numeric Formatting**: ตัดเลข 0 นำหน้า (Leading Zeros) ออกสำหรับจำนวนเต็ม (เช่น 05 -> 5) เพื่อป้องกันความสับสน
+* **Null Safety**: หากข้อมูลเป็น null/undefined ให้แสดงผลเป็นค่าว่างเพื่อรอการกรอกข้อมูล
 
 ### Safe Deletion & Optimistic UI
 
@@ -135,6 +142,14 @@ inventory_items.
 Base Logic: Outcome-First + Blueprinting.
 Every task MUST follow:
 THINK → MAP (jcode) → BUDGET CHECK → EXECUTE → VALIDATE → LOG.
+
+### Daily Closing Integrity Workflow (S2W Integration)
+
+* **Automation**: ทุกการสิ้นสุดการทำงานรายวันหรือการแก้ไขใหญ่ ต้องรัน Workflow ตรวจสอบความถูกต้อง:
+  1. `lint-markdown` (ตรวจสอบความถูกต้องของเอกสาร)
+  2. `build-check` (รัน `npm run build` เพื่อยืนยัน Exit Code 0)
+  3. `git-sync` (ซิงค์ข้อมูลกับ GitHub พร้อมตรวจสอบ Secret Check)
+* **Location**: `.antigravity/workflows/daily_closing_integrity.json`
 
 ### Combo Matrix (Enforced for ALL Interfaces)
 
@@ -291,8 +306,44 @@ python .antigravity/tools/memory-engine/aider/aider/repomap.py .
 | `fs_tool.ts` types | `fs_tool.ts` | Updated | Exported Schema, replaced `any` with `unknown` for strict typing. |
 | `shell_tool.ts` types | `shell_tool.ts` | Updated | Replaced `any` with `unknown` for strict typing, fixed syntax errors. |
 | `setMounted` inside Effect | `ScheduleClient.tsx` | Kept (Rules disabled) | Necessary for Next.js 16 hydration, silenced `set-state-in-effect`. |
-| `setIsMounted` inside Effect | `CommandCenterGrid.tsx`| Kept (Rules disabled) | Necessary for Next.js 16 hydration, silenced `set-state-in-effect`. |
+| `setIsMounted` inside Effect | `CommandCenterGrid.tsx` | Kept (Rules disabled) | Necessary for Next.js 16 hydration, silenced `set-state-in-effect`. |
 | `confirmDelete` | `ScheduleClient.tsx` | Removed | Unused state variable. |
 | Unused `error`/`err` blocks | `ScheduleClient.tsx` | Removed | Switched to empty `catch {}` block per Next.js 13+ standards to avoid data leakage. |
 
-*System Integrity Validated:* Zero build errors (Exit Code 0), visual standards matching Morning Latte Cream (`#fdfcf0`) remain 100% compliant.
+## 12. Universal Skill Matrix (Enforced Standard)
+
+| หมวดหมู่ | ทักษะ / กฎ (Skill/Rule) | สถานะ (Status) | รายละเอียด |
+| :--- | :--- | :--- | :--- |
+| **Architecture** | Outcome-First Protocol | ✅ Active | วางแผนก่อนลงมือทำเสมอ |
+| **Architecture** | Budget Guardian | ✅ Active | ป้องกันการสแกน Junk Folders |
+| **Architecture** | Persistent Zero Logic | ✅ Active | เลข 0 ห้ามหายและต้องแสดงผล |
+| **UI / Visual** | Aesthetic Enforcer | ✅ Active | สีตัวหนังสือ #000000 และพื้นหลัง #fdfcf0 |
+| **UI / Visual** | Radius Lock | ✅ Active | ขอบมน rounded-3xl ทุกจุด |
+| **UI / Visual** | Thai Typography Integrity | ✅ Active | ป้องกันวรรณยุกต์ไทยขาดหาย |
+| **UI / Visual** | 8pt Grid & Optical Balance | ✅ Active | ระยะห่างทวีคูณ 8 และจัดวางตามสายตา |
+| **UI / Visual** | Interaction Mastery | ✅ Active | Transition 300ms และ Feedback นุ่มนวล |
+| **Technical** | Precision Strike | ✅ Active | แก้ไขโค้ดแบบเจาะจง Root Cause |
+| **Technical** | Google-Sheet Navigation | ✅ Active | Enter-to-Next-Row ใน Inventory |
+| **Technical** | Secure Cloud Sync | ✅ Active | ตรวจสอบ Secrets ก่อน Push GitHub |
+| **Automation** | S2W Integration | ✅ Active | รัน Daily Closing Integrity Workflow |
+| **Validation** | Build Validation | ✅ Active | บังคับ Exit Code 0 ในขั้นตอนสำคัญ |
+
+## 13. Deployment Prerequisites & Environment Sync (SPEC 3.1)
+
+ก่อนการ Deploy ระบบไปยัง Production (เช่น Vercel) หรือการรันระบบในเครื่องใหม่ (Local Setup) ต้องทำการเตรียมตัวแปรสภาพแวดล้อม (Environment Variables) ตามไฟล์ `.env.example` ดังนี้:
+
+### Environment Variable Sync Report (May 2026 Audit)
+
+| Variable Name | Status in `.env.example` | Source of Value | Requirement |
+| :--- | :--- | :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ Placeholder Set | Supabase Dashboard -> Settings -> API | **Mandatory** |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Placeholder Set | Supabase Dashboard -> Settings -> API | **Mandatory** |
+| `GOOGLE_API_KEY` | ✅ Placeholder Set | Google Cloud Console -> APIs & Services | Optional |
+| `GOOGLE_CALENDAR_API_KEY` | ✅ Placeholder Set | Google Cloud Console -> APIs & Services | **Mandatory** (Holiday Actions) |
+
+### Synchronization Protocol
+* **Security**: ห้าม Push ไฟล์ `.env.local` ขึ้น GitHub โดยเด็ดขาด (ตรวจสอบ `.gitignore` เสมอ)
+* **Vercel Setup**: เมื่อ Deploy ไปยัง Vercel ต้องนำตัวแปรทั้งหมดใน `.env.example` ไปตั้งค่าในหน้า Environment Variables ของโปรเจกต์
+* **Local Run**: คัดลอก `.env.example` เป็น `.env.local` และกรอกค่าจริงก่อนรัน `npm run dev`
+
+*System Integrity Validated:* Environment structure synced with `.env.example` and verified against `src/` discovery. Zero secret leakage detected. Build integrity maintained (Exit Code 0).

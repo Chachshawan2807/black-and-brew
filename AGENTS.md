@@ -33,8 +33,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- END:spreadsheet-ui-maintenance -->
 
 <!-- BEGIN:error-handling-standard -->
-# ERROR HANDLING & DEBUGGING STANDARD
+# ERROR HANDLING & SYSTEMATIC DEBUGGING STANDARD
 
+- **Root Cause First:** NO FIXES WITHOUT ROOT CAUSE INVESTIGATION. Follow `systematic-debugging` phases (Phase 1: Root Cause -> Phase 2: Pattern -> Phase 3: Hypothesis -> Phase 4: Fix).
+- **Failing Test First:** Every bug fix MUST start with a failing test case that reproduces the issue.
 - **Supabase Fetches & Mutations:** Always wrap Supabase calls in try/catch blocks.
 - **Detailed Logging:** In the catch block or when `error` is returned from Supabase, you must log the precise details: `if (error) { console.error('Supabase Error:', error.message, error.details); throw error; }`.
 - **Graceful Fallbacks:** Handle empty or null data gracefully (e.g., `setItems(data || [])`). Do not allow the UI to crash if data is missing.
@@ -46,3 +48,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Zero-Display UI Logic:** Numeric values of 0 must be rendered as empty strings `""` for a cleaner UI, while maintaining 0 in the database.
 <!-- END:error-handling-standard -->
 <!-- END:data-sync-standard -->
+
+<!-- BEGIN:superpowers-sop -->
+# CORE DEVELOPMENT SOP (Superpowers)
+
+- **Writing Plans:** Use the `writing-plans` skill for any task with >3 steps. Save to `docs/plans/`. No placeholders.
+- **TDD (Test-Driven Development):** NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST. Follow Red-Green-Refactor religiously.
+- **Verification:** Always verify "RED" (test fails) and "GREEN" (test passes) before proceeding.
+- **Documentation Reference:** Full SOP details are available in [SOP.md](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/docs/SOP.md).
+<!-- END:superpowers-sop -->

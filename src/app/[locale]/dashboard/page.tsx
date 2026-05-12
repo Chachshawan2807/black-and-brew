@@ -27,7 +27,7 @@ export default async function DashboardPage({
   const endDate = endParam || format(sunday, 'yyyy-MM-dd');
 
   // Fetch Data on Server
-  const { data: profiles } = await supabase.from('profiles').select('*').order('display_order', { ascending: true });
+  const { data: profiles } = await supabase.from('profiles').select('*').order('dashboard_order', { ascending: true });
   const { data: shifts } = await supabase.from('shifts')
     .select('*')
     .gte('start_time', startDate + 'T00:00:00')
@@ -49,17 +49,6 @@ export default async function DashboardPage({
             {/* Purified Minimalist Space */}
           </div>
 
-          <div className="flex items-center relative z-[50]">
-            <Image 
-              src="/images/logo.png" 
-              alt="BLACKANDBREW Logo" 
-              width={180} 
-              height={72} 
-              className="object-contain"
-              style={{ width: 'auto', height: 'auto' }}
-              priority
-            />
-          </div>
         </header>
 
 

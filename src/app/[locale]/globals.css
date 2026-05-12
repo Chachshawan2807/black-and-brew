@@ -37,15 +37,16 @@
     &::selection {
       background-color: rgb(59 130 246 / 0.3);
     }
-    font-family: 'Inter', 'Sarabun', system-ui, sans-serif;
+    font-family: 'Sarabun', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    line-height: 1.6;
+    line-height: 1.6 !important;
   }
 
   h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.025em;
     color: #000000;
-    font-family: 'Inter', 'Sarabun', system-ui, sans-serif;
+    font-family: 'Sarabun', 'Inter', system-ui, sans-serif;
+    line-height: 1.5;
   }
 
   input[type="date"]::-webkit-calendar-picker-indicator {

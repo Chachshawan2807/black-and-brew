@@ -15,13 +15,20 @@ import { isSameThaiDay } from '@/lib/date-utils';
 
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
+  DragStartEvent,
   DragEndEvent,
+  DragOverlay,
+  defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
+import {
+  restrictToWindowEdges,
+  snapCenterToCursor,
+} from '@dnd-kit/modifiers';
 import {
   arrayMove,
   SortableContext,
@@ -89,10 +96,10 @@ function SortableEmployeeRow({
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-gray-100 rounded-lg transition-all text-gray-300 hover:text-gray-600"
+          className="cursor-grab active:cursor-grabbing p-3 hover:bg-gray-100 rounded-3xl transition-all text-gray-300 hover:text-gray-600 touch-none flex items-center justify-center"
           title="ลากเพื่อเปลี่ยนลำดับ"
         >
-          <GripVertical className="w-4 h-4" />
+          <GripVertical className="w-5 h-5" />
         </div>
 
         <div className="flex-1 py-1">
@@ -173,6 +180,7 @@ export default function ScheduleClient({
   const [holidays, setHolidays] = useState<any[]>(initialHolidays);
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [loading, setLoading] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -535,37 +543,39 @@ export default function ScheduleClient({
 
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       pushToHistory(profiles, orderedProfileIds, shifts);
-      let newOrder: string[] = [];
+      
+      const oldIndex = orderedProfileIds.indexOf(active.id as string);
+      const newIndex = orderedProfileIds.indexOf(over.id as string);
 
-      // Update local state first for instant feedback
-      setOrderedProfileIds((items) => {
-        const oldIndex = items.indexOf(active.id as string);
-        const newIndex = items.indexOf(over.id as string);
-        newOrder = arrayMove(items, oldIndex, newIndex);
-        return newOrder;
-      });
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = arrayMove(orderedProfileIds, oldIndex, newIndex);
+        setOrderedProfileIds(newOrder);
 
-      // Sync with database
-      if (newOrder.length > 0) {
+        // PERSISTENCE ARMOR: Push updates to Supabase
         try {
           const updates = newOrder.map((id, index) =>
-            supabase.from('profiles').update({ display_order: index }).eq('id', id)
+            supabase.from('profiles').update({ schedule_order: index }).eq('id', id)
           );
           await Promise.all(updates);
-          revalidateAppPaths(); // Fire and forget
-        } catch {
-          // silently handle error
+          revalidateAppPaths(); 
+        } catch (error) {
+          console.error('Supabase Persistence Error:', error);
         }
       }
     }
+    setActiveId(null);
   };
 
   const handleDeleteEmployee = async (employeeId: string) => {
@@ -802,20 +812,9 @@ export default function ScheduleClient({
               onChange={handleDateChange}
               containerClassName="w-fit h-9 scale-100 origin-right"
             />
-            <div className="flex items-center gap-4 relative z-[50]">
-            <Image 
-              src="/images/logo.png" 
-              alt="BLACKANDBREW Logo" 
-              width={140} 
-              height={56} 
-              className="object-contain"
-              style={{ width: 'auto', height: 'auto' }}
-              priority
-            />
           </div>
         </div>
-      </div>
-    </header>
+      </header>
 
       <main className="flex-1 p-2 md:p-4 overflow-hidden flex flex-col bg-transparent">
         <div className="flex-1 flex flex-col bg-[#fdfcf0]/80 backdrop-blur-sm border border-[#000000]/5 rounded-3xl overflow-hidden shadow-sm">
@@ -869,7 +868,14 @@ export default function ScheduleClient({
           <div className="flex-1 overflow-y-auto overflow-x-auto">
             <div className="min-w-[900px]">
               {mounted ? (
-                <DndContext id="schedule-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <DndContext 
+                  id="schedule-dnd" 
+                  sensors={sensors} 
+                  collisionDetection={closestCorners} 
+                  onDragStart={handleDragStart} 
+                  onDragEnd={handleDragEnd}
+                  modifiers={[restrictToWindowEdges]}
+                >
                   <SortableContext items={orderedProfileIds} strategy={verticalListSortingStrategy}>
                     {orderedProfileIds.map(pid => {
                       const p = profiles.find(x => x.id === pid);
@@ -893,6 +899,31 @@ export default function ScheduleClient({
                       );
                     })}
                   </SortableContext>
+                  <DragOverlay 
+                    zIndex={9999}
+                    dropAnimation={{
+                      duration: 300,
+                      easing: 'ease-in-out',
+                      sideEffects: defaultDropAnimationSideEffects({
+                        styles: { active: { opacity: '0.8' } },
+                      }),
+                    }}
+                  >
+                    {activeId ? (
+                      <div className="grid grid-cols-8 border border-black/10 bg-white/95 backdrop-blur-sm shadow-2xl rounded-3xl overflow-hidden scale-105 ring-4 ring-black/5 transition-transform duration-300 min-w-[900px] z-[9999]">
+                        {/* Simplified Row for Overlay */}
+                        <div className="p-4 border-r border-black/5 flex items-center gap-3 bg-gray-50/50">
+                          <GripVertical className="w-5 h-5 text-gray-400" />
+                          <span className="text-[17px] font-normal text-black truncate">
+                            {profiles.find(p => p.id === activeId)?.full_name}
+                          </span>
+                        </div>
+                        {weekDays.map(date => (
+                          <div key={`overlay-${date}`} className="p-1 border-r last:border-0 border-gray-50 min-h-[64px]" />
+                        ))}
+                      </div>
+                    ) : null}
+                  </DragOverlay>
                 </DndContext>
               ) : (
                 <div className="opacity-50 pointer-events-none">

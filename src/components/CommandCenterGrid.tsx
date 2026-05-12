@@ -12,12 +12,15 @@ import {
 } from 'lucide-react';
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
+  DragStartEvent,
   DragEndEvent,
+  DragOverlay,
+  defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -43,7 +46,14 @@ const iconMap: Record<string, React.ElementType> = {
   Package,
 };
 
-function SortableItem({ item }: { item: NavItem }) {
+const colorMap: Record<string, { bg: string, border: string, hover: string }> = {
+  CalendarRange: { bg: 'bg-[#e6f0ff]', border: 'border-[#c2d6ff]', hover: 'group-hover:bg-[#ccdfff]' }, // Soft Blue
+  Wrench: { bg: 'bg-[#e6faed]', border: 'border-[#bbf2ce]', hover: 'group-hover:bg-[#ccf2d9]' }, // Pale Mint
+  LayoutGrid: { bg: 'bg-[#fff0e6]', border: 'border-[#ffd8c2]', hover: 'group-hover:bg-[#ffe5d4]' }, // Light Peach
+  Package: { bg: 'bg-[#f3e8ff]', border: 'border-[#d8b4fe]', hover: 'group-hover:bg-[#e9d5ff]' } // Soft Purple
+};
+
+const SortableItem = React.memo(({ item, isOverlay = false }: { item: NavItem, isOverlay?: boolean }) => {
   const {
     attributes,
     listeners,
@@ -58,26 +68,23 @@ function SortableItem({ item }: { item: NavItem }) {
     transition,
     zIndex: isDragging ? 10 : 1,
     position: 'relative' as const,
+    opacity: isDragging && !isOverlay ? 0.3 : 1,
   };
 
   const Icon = iconMap[item.iconName] || LayoutGrid;
-
-  const colorMap: Record<string, { bg: string, border: string, hover: string }> = {
-    CalendarRange: { bg: 'bg-[#e6f0ff]', border: 'border-[#c2d6ff]', hover: 'group-hover:bg-[#ccdfff]' }, // Soft Blue
-    Wrench: { bg: 'bg-[#e6faed]', border: 'border-[#bbf2ce]', hover: 'group-hover:bg-[#ccf2d9]' }, // Pale Mint
-    LayoutGrid: { bg: 'bg-[#fff0e6]', border: 'border-[#ffd8c2]', hover: 'group-hover:bg-[#ffe5d4]' }, // Light Peach
-    Package: { bg: 'bg-[#f3e8ff]', border: 'border-[#d8b4fe]', hover: 'group-hover:bg-[#e9d5ff]' } // Soft Purple
-  };
-
   const colors = colorMap[item.iconName] || { bg: 'bg-white', border: 'border-gray-200', hover: 'group-hover:bg-gray-50' };
 
   return (
-    <div ref={setNodeRef} style={style} className={`group relative flex flex-col ${colors.bg} border ${colors.border} shadow-sm transition-all duration-300 ${isDragging ? 'shadow-xl' : 'hover:shadow-md hover:-translate-y-1'} overflow-hidden rounded-xl`}>
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={`group relative flex flex-col ${colors.bg} border ${colors.border} shadow-sm transition-all duration-300 ${isDragging ? 'shadow-xl' : 'hover:shadow-md hover:-translate-y-1'} overflow-hidden rounded-[32px]`}
+    >
       <div className="absolute top-0 left-0 w-full h-1 bg-black/5 group-hover:bg-[#1a1a1a] transition-colors duration-300" />
       
       {/* Drag Handle */}
       <div 
-        className="absolute top-3 right-3 p-2 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-4 right-4 p-2 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
         {...attributes}
         {...listeners}
       >
@@ -89,32 +96,35 @@ function SortableItem({ item }: { item: NavItem }) {
         className="flex-1 flex flex-col p-8 min-h-[44px] min-w-[44px]"
       >
         <div className="flex items-center justify-between mb-6">
-          <div className={`p-3 bg-white/60 ${colors.hover} transition-colors duration-300 rounded-lg`}>
+          <div className={`p-4 bg-white/60 ${colors.hover} transition-colors duration-300 rounded-[20px]`}>
             <Icon className="w-8 h-8 text-[#1a1a1a]" strokeWidth={1.5} />
           </div>
-          <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-[#1a1a1a] transition-colors duration-300 transform group-hover:translate-x-1" strokeWidth={1.5} />
+          <ChevronRight className="w-6 h-6 text-gray-500 group-hover:text-[#1a1a1a] transition-colors duration-300 transform group-hover:translate-x-1" strokeWidth={1.5} />
         </div>
         <div>
           <h2 className="text-lg font-normal text-[#1a1a1a] tracking-wide mb-2">
             {item.title}
           </h2>
-          <p className="text-sm font-normal text-gray-700 line-clamp-2">
+          <p className="text-sm font-normal text-gray-700 line-clamp-2 leading-relaxed">
             {item.description}
           </p>
         </div>
       </Link>
     </div>
   );
-}
+});
+
+SortableItem.displayName = 'SortableItem';
 
 export default function CommandCenterGrid({ initialItems }: { initialItems: NavItem[] }) {
   const [items, setItems] = useState<NavItem[]>(initialItems);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Requires 5px movement before dragging starts (allows clicks on links)
+        distance: 10, 
       },
     }),
     useSensor(KeyboardSensor, {
@@ -145,8 +155,13 @@ export default function CommandCenterGrid({ initialItems }: { initialItems: NavI
     }
   }, [initialItems]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
 
     if (over && active.id !== over.id) {
       setItems((items) => {
@@ -174,7 +189,8 @@ export default function CommandCenterGrid({ initialItems }: { initialItems: NavI
   return (
     <DndContext 
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <SortableContext 
@@ -187,6 +203,21 @@ export default function CommandCenterGrid({ initialItems }: { initialItems: NavI
           ))}
         </main>
       </SortableContext>
+      
+      <DragOverlay dropAnimation={{
+        duration: 300,
+        easing: 'ease-in-out',
+        sideEffects: defaultDropAnimationSideEffects({
+          styles: { active: { opacity: '0.4' } },
+        }),
+      }}>
+        {activeId ? (
+          <SortableItem 
+            item={items.find(i => i.id === activeId)!} 
+            isOverlay 
+          />
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }

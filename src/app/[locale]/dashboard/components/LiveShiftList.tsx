@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { startOfWeek, addDays, format } from 'date-fns';
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -229,7 +229,7 @@ export default function LiveShiftList({
       if (newOrder.length > 0) {
         try {
           const updates = newOrder.map((id, index) => 
-            supabase.from('profiles').update({ display_order: index }).eq('id', id)
+            supabase.from('profiles').update({ dashboard_order: index }).eq('id', id)
           );
           await Promise.all(updates);
           await revalidateAppPaths();
@@ -283,7 +283,7 @@ export default function LiveShiftList({
         <DndContext
           id="dashboard-dnd"
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
@@ -303,12 +303,14 @@ export default function LiveShiftList({
           </div>
 
           <DragOverlay dropAnimation={{
+            duration: 250,
+            easing: 'ease-in-out',
             sideEffects: defaultDropAnimationSideEffects({
               styles: { active: { opacity: '0.3' } },
             }),
           }}>
             {activeId && activeProfileData ? (
-              <div className="glass-card p-5 flex flex-col gap-4 bg-white shadow-2xl border border-blue-100 scale-105 opacity-100 ring-2 ring-blue-500">
+              <div className="glass-card p-5 flex flex-col gap-4 bg-white shadow-2xl border border-blue-100 scale-105 opacity-100 ring-2 ring-blue-500 rounded-3xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {activeProfileData.profile.avatar_url ? (

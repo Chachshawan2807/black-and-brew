@@ -236,18 +236,6 @@ export default function MaintenancePage() {
               <Plus className="w-5 h-5 transition-transform duration-500 group-hover:rotate-90" />
               <span className="font-normal tracking-wide">New Record</span>
             </button>
-
-            <div className="hidden md:block relative z-[50]">
-              <Image 
-                src="/images/logo.png" 
-                alt="BLACKANDBREW Logo" 
-                width={140} 
-                height={56} 
-                className="object-contain opacity-90"
-                style={{ width: 'auto', height: 'auto' }}
-                priority
-              />
-            </div>
           </div>
         </header>
 

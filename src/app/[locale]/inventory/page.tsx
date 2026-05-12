@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X } from 'lucide-react';
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -14,6 +14,10 @@ import {
   DragOverlay,
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
+import {
+  restrictToWindowEdges,
+  snapCenterToCursor,
+} from '@dnd-kit/modifiers';
 import {
   arrayMove,
   SortableContext,
@@ -97,7 +101,7 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize }: {
       style={style}
       className={`p-0 font-normal ${col.id === 'source' ? '' : 'border-r border-[#000000]/5'} group relative select-none bg-transparent`}
     >
-      <div className="p-3 flex items-center justify-center">
+      <div className="p-4 flex items-center justify-center">
         <input 
           type="text"
           value={col.label}
@@ -105,7 +109,7 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize }: {
           onBlur={saveColumnsConfig}
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           onPointerDown={(e) => e.stopPropagation()}
-          className="bg-transparent border-none focus:outline-none focus:bg-white/50 text-[13px] font-normal text-[#000000] cursor-text px-1 rounded-md text-center whitespace-nowrap overflow-hidden text-ellipsis w-full"
+          className="bg-transparent border-none focus:outline-none focus:bg-white/50 text-[13px] font-normal text-[#000000]/60 uppercase tracking-wider cursor-text px-2 py-1 rounded-xl text-center w-full"
         />
       </div>
       {/* Resizer Handle */}
@@ -117,8 +121,9 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize }: {
   );
 }
 
-function SortableRow({ item, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus }: { 
+function SortableRow({ item, index: rowIndex, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus }: { 
   item: InventoryItem; 
+  index: number;
   columns: ColumnDef[];
   handleUpdateField: (id: string, field: string, value: any) => void;
   handleSaveField: (id: string, field: string, value: any) => void;
@@ -139,11 +144,11 @@ function SortableRow({ item, columns, handleUpdateField, handleSaveField, reques
     >
       <td className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle">
         <div 
-          className="flex items-center justify-center h-full min-h-[44px] cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500"
+          className="flex items-center justify-center h-full min-h-[64px] w-full cursor-grab active:cursor-grabbing text-[#000000]/20 hover:text-[#000000] transition-all duration-300 p-3 touch-none"
           {...attributes}
           {...listeners}
         >
-          <GripVertical className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+          <GripVertical className="w-5 h-5" />
         </div>
       </td>
 
@@ -156,6 +161,7 @@ function SortableRow({ item, columns, handleUpdateField, handleSaveField, reques
           <EditableCell 
             item={item} 
             col={col} 
+            rowIndex={rowIndex}
             handleUpdateField={handleUpdateField} 
             handleSaveField={handleSaveField} 
             requestDelete={requestDelete} 
@@ -167,55 +173,74 @@ function SortableRow({ item, columns, handleUpdateField, handleSaveField, reques
   );
 }
 
-function EditableCell({ item, col, handleUpdateField, handleSaveField, requestDelete, handleFocus }: any) {
+function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField, requestDelete, handleFocus }: any) {
   const [localValue, setLocalValue] = useState<string>('');
   const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Sync with global state when not focused
   useEffect(() => {
     if (!isFocused) {
       const val = item[col.id];
-      // Idle 0 = Hidden: 0 or empty shows as "" when not focused
-      setLocalValue(val === 0 || val === '' || val === null || val === undefined ? '' : String(val));
+      const displayVal = val === null || val === undefined ? '' : String(val);
+      setLocalValue(displayVal);
+      if (inputRef.current) {
+        inputRef.current.value = displayVal;
+      }
     }
   }, [item[col.id], isFocused, col.id]);
+
+  const handleBlur = () => {
+    const val = inputRef.current?.value || '';
+    let finalVal: string | number = val;
+    
+    if (col.type === 'number') {
+      const numericValue = val === "" ? 0 : Number(val);
+      finalVal = isNaN(numericValue) ? 0 : numericValue;
+    }
+
+    setLocalValue(String(finalVal));
+    setIsFocused(false);
+
+    // PERSISTENCE ARMOR: Push updates to Supabase via parent handlers
+    handleUpdateField(item.id, col.id, finalVal);
+    handleSaveField(item.id, col.id, finalVal);
+  };
 
   return (
     <div className="flex items-center relative h-full">
       <input 
+        ref={inputRef}
         type="text"
         inputMode={col.type === 'number' ? 'decimal' : 'text'}
-        value={localValue}
+        defaultValue={localValue}
         onFocus={() => {
           setIsFocused(true);
           handleFocus();
         }}
-        onChange={(e) => {
-          // Absolute String-First Strategy: set value directly to allow "0", "00", etc.
-          setLocalValue(e.target.value);
-        }}
-        onBlur={() => {
-          setIsFocused(false);
-          let finalVal: string | number = localValue;
-          
-          if (col.type === 'number') {
-            const numericValue = localValue === "" ? 0 : Number(localValue);
-            finalVal = isNaN(numericValue) ? 0 : numericValue;
+        onBlur={handleBlur}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+            const nextRowInput = document.querySelector(`input[data-col-id="${col.id}"][data-row-index="${rowIndex + 1}"]`) as HTMLInputElement;
+            if (nextRowInput) {
+              setTimeout(() => {
+                nextRowInput.focus();
+                nextRowInput.select();
+              }, 10);
+            }
           }
-
-          // Force explicitly save, as requested
-          handleUpdateField(item.id, col.id, finalVal);
-          handleSaveField(item.id, col.id, finalVal);
         }}
-        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-        className={`w-full px-2 py-3 bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/50 text-[14px] font-normal text-[#000000] ${col.id === 'name' ? 'text-left pr-8' : 'text-center'} ${col.type === 'number' ? 'font-mono' : ''}`}
+        data-col-id={col.id}
+        data-row-index={rowIndex}
+        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/80 text-[15px] font-normal leading-[1.6] transition-all ${col.id === 'name' ? 'text-left pr-10 text-[#000000]' : 'text-center text-[#000000]/60'} ${col.type === 'number' ? 'font-mono' : ''}`}
       />
       {col.id === 'name' && (
         <button 
           onClick={() => requestDelete(item.id)}
-          className="absolute right-2 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover/cell:opacity-100"
+          className="absolute right-3 p-1.5 text-[#000000]/20 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover/cell:opacity-100"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4" />
         </button>
       )}
     </div>
@@ -244,7 +269,7 @@ export default function DynamicInventoryManager() {
   const previousStateRef = useRef<{items: InventoryItem[], cols: ColumnDef[]}>({ items: [], cols: defaultColumns });
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -341,10 +366,10 @@ export default function DynamicInventoryManager() {
     
     const newItem = {
       name: newItemData.name || '',
-      stock: Number(newItemData.stock) || 0,
-      order_qty: Number(newItemData.order_qty) || 0,
-      order_point: Number(newItemData.order_point) || 0,
-      target_stock: Number(newItemData.target_stock) || 0,
+      stock: (newItemData.stock as unknown as string === "" || newItemData.stock === undefined || newItemData.stock === null) ? 0 : Number(newItemData.stock),
+      order_qty: (newItemData.order_qty as unknown as string === "" || newItemData.order_qty === undefined || newItemData.order_qty === null) ? 0 : Number(newItemData.order_qty),
+      order_point: (newItemData.order_point as unknown as string === "" || newItemData.order_point === undefined || newItemData.order_point === null) ? 0 : Number(newItemData.order_point),
+      target_stock: (newItemData.target_stock as unknown as string === "" || newItemData.target_stock === undefined || newItemData.target_stock === null) ? 0 : Number(newItemData.target_stock),
       unit: newItemData.unit || '',
       source: newItemData.source || '',
       sort_order: items.length
@@ -406,17 +431,18 @@ export default function DynamicInventoryManager() {
     setIsEditing(false);
     const original = previousStateRef.current.items.find(i => i.id === id);
     
-    // Explicitly bypass the early return if the user specifically typed a numeric value to force a sync validation
-    if (original && original[field] === value && value !== 0 && value !== "") return;
-
-    pushHistory();
-    setSavingState('saving');
     let sanitizedValue = value;
     const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock'];
     if (numericFields.includes(field)) {
       sanitizedValue = value === '' || value === null || value === undefined ? 0 : Number(value);
       if (isNaN(sanitizedValue as number)) sanitizedValue = 0;
     }
+
+    // Phase 2: Persistence Armor - Compare sanitized values to prevent redundant saves and keep 0
+    if (original && Number(original[field]) === Number(sanitizedValue)) return;
+
+    pushHistory();
+    setSavingState('saving');
 
     try {
       const { error } = await supabase
@@ -549,8 +575,8 @@ export default function DynamicInventoryManager() {
   if (loading) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-transparent text-[#000000]">
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-[#000000]/20" strokeWidth={1.5} />
-        <span className="font-normal text-sm uppercase tracking-widest text-[#000000]/40">Synchronizing...</span>
+        <Loader2 className="w-8 h-8 animate-spin mb-4 text-[#000000]" strokeWidth={1.5} />
+        <span className="font-normal text-sm uppercase tracking-widest text-[#000000]">Synchronizing...</span>
       </div>
     );
   }
@@ -560,8 +586,8 @@ export default function DynamicInventoryManager() {
     <div className="flex-1 w-full max-w-full overflow-y-auto bg-transparent text-[#000000] font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
       <div className="w-fit mx-auto flex flex-col items-start">
         <div className="w-full flex flex-col items-center mb-8 text-center">
-          <h1 className="text-3xl font-normal tracking-tight text-slate-800">คลังสินค้า</h1>
-          <p className="text-sm font-normal mt-1 text-slate-500">Dynamic UI & Time-Travel Sync</p>
+          <h1 className="text-3xl font-normal tracking-tight text-[#000000]">คลังสินค้า</h1>
+          <p className="text-sm font-normal mt-1 text-[#000000]">Dynamic UI & Time-Travel Sync</p>
         </div>
         
         <div className="w-full flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
@@ -569,7 +595,7 @@ export default function DynamicInventoryManager() {
             {savingState === 'saving' && (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
-                <span className="text-slate-500">Saving...</span>
+                <span className="text-[#000000]">Saving...</span>
               </>
             )}
             {savingState === 'synced' && (
@@ -607,10 +633,10 @@ export default function DynamicInventoryManager() {
 
             <button 
               onClick={() => setShowAddModal(true)}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white hover:bg-purple-100 border border-slate-100 rounded-3xl shadow-sm transition-all text-[14px] font-normal text-[#000000]"
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border border-[#000000]/5 rounded-3xl shadow-sm transition-all text-[14px] font-normal text-[#000000] active:scale-95"
             >
-              <Plus className="w-4 h-4 text-purple-600" />
-              เพิ่มรายการ
+              <Plus className="w-4 h-4 text-[#000000]" />
+              <span>เพิ่มรายการ</span>
             </button>
           </div>
         </div>
@@ -619,9 +645,10 @@ export default function DynamicInventoryManager() {
           <div className="w-fit border border-[#000000]/5 bg-[#fdfcf0]/80 backdrop-blur-md shadow-sm rounded-3xl overflow-hidden mx-auto">
             <DndContext 
               sensors={sensors} 
-              collisionDetection={closestCenter} 
+              collisionDetection={closestCorners} 
               onDragStart={handleDragStartRows}
               onDragEnd={handleDragEndRows}
+              modifiers={[restrictToWindowEdges]}
             >
               <table className="table-auto border-collapse">
                 <thead>
@@ -642,15 +669,16 @@ export default function DynamicInventoryManager() {
                   <tbody>
                     {items.length === 0 ? (
                       <tr>
-                        <td colSpan={columns.length + 1} className="p-12 text-center text-[14px] font-normal text-slate-400">
+                        <td colSpan={columns.length + 1} className="p-12 text-center text-[14px] font-normal text-[#000000]">
                           ไม่มีข้อมูลสินค้าในระบบ กรุณกด "เพิ่มรายการ"
                         </td>
                       </tr>
                     ) : (
-                      items.map((item) => (
+                      items.map((item, index) => (
                         <SortableRow 
                           key={item.id} 
                           item={item} 
+                          index={index}
                           columns={columns} 
                           handleUpdateField={handleUpdateField}
                           handleSaveField={handleSaveField}
@@ -663,28 +691,36 @@ export default function DynamicInventoryManager() {
                 </SortableContext>
               </table>
               
-              <DragOverlay dropAnimation={{
-                sideEffects: defaultDropAnimationSideEffects({
-                  styles: {
-                    active: {
-                      opacity: '0.4',
+              <DragOverlay 
+                zIndex={9999}
+                dropAnimation={{
+                  duration: 300,
+                  easing: 'ease-in-out',
+                  sideEffects: defaultDropAnimationSideEffects({
+                    styles: {
+                      active: {
+                        opacity: '0.8',
+                      },
                     },
-                  },
-                }),
-              }}>
+                  }),
+                }}
+              >
                 {activeRowId ? (
-                  <table className="w-full border-collapse">
-                    <tbody className="bg-white/90 backdrop-blur-md shadow-2xl border border-purple-200 rounded-3xl overflow-hidden opacity-90">
-                       <SortableRow 
-                         item={items.find(i => i.id === activeRowId)!}
-                         columns={columns}
-                         handleUpdateField={() => {}}
-                         handleSaveField={() => {}}
-                         requestDelete={() => {}}
-                         handleFocus={() => {}}
-                       />
-                    </tbody>
-                  </table>
+                  <div className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-3xl overflow-hidden scale-105 border border-[#000000]/10 ring-4 ring-black/5 transition-transform duration-300 w-max min-w-[900px] z-[9999]">
+                    <table className="w-full border-collapse table-fixed">
+                      <tbody>
+                         <SortableRow 
+                           item={items.find(i => i.id === activeRowId)!}
+                           index={items.findIndex(i => i.id === activeRowId)}
+                           columns={columns}
+                           handleUpdateField={() => {}}
+                           handleSaveField={() => {}}
+                           requestDelete={() => {}}
+                           handleFocus={() => {}}
+                         />
+                      </tbody>
+                    </table>
+                  </div>
                 ) : null}
               </DragOverlay>
             </DndContext>
@@ -705,14 +741,14 @@ export default function DynamicInventoryManager() {
         >
           <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-lg font-normal text-[#000000]">เพิ่มรายการใหม่</h2>
-            <button onClick={() => setShowAddModal(false)} className="p-2 text-slate-400 hover:text-[#000000] hover:bg-slate-100 rounded-full transition-colors">
+            <button onClick={() => setShowAddModal(false)} className="p-2 text-[#000000] hover:text-[#000000] hover:bg-slate-100 rounded-full transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
           <form onSubmit={handleAddItemSubmit} className="p-6">
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <div className="col-span-2 flex flex-col gap-1.5">
-                <label className="text-[12px] font-normal text-slate-600 ml-1">ชื่อรายการ</label>
+                <label className="text-[12px] font-normal text-[#000000] ml-1">ชื่อรายการ</label>
                 <input 
                   required
                   value={newItemData.name || ''}
@@ -820,7 +856,7 @@ export default function DynamicInventoryManager() {
             <Trash2 className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-normal text-[#000000] mb-2">ต้องการลบรายการนี้ใช่หรือไม่?</h3>
-          <p className="text-sm font-normal text-slate-500 mb-6">ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</p>
+          <p className="text-sm font-normal text-[#000000] mb-6">ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</p>
           <div className="flex gap-3">
             <button onClick={() => setDeleteId(null)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
               ยกเลิก
