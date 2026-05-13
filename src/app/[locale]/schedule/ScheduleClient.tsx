@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Undo2, Redo2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays } from 'lucide-react';
 import { startOfWeek, addDays, format } from 'date-fns';
@@ -38,6 +38,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // --- Constants Outside Component ---
 const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
@@ -66,31 +67,34 @@ interface SortableEmployeeRowProps {
   onDeleteEmployee: (id: string) => void;
 }
 
-function SortableEmployeeRow({
+const SortableEmployeeRow = React.memo(({
   id, profile, weekDays, shifts, shiftTypes, onCellClick,
   editingNameId, nameInput, setNameInput, onNameClick, onSaveName, onDeleteEmployee
-}: SortableEmployeeRowProps) {
+}: SortableEmployeeRowProps) => {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
-    transition,
+    transition: dndTransition,
     isDragging
   } = useSortable({ id });
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    transition,
+    transition: dndTransition || 'transform 150ms cubic-bezier(0.2, 0, 0, 1)',
     zIndex: isDragging ? 100 : 1,
-    opacity: isDragging ? 0.6 : 1,
+    willChange: 'transform',
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`grid grid-cols-8 border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-colors group relative bg-transparent ${isDragging ? 'shadow-lg ring-1 ring-black/5 scale-[1.002]' : ''}`}
+      className={cn(
+        "grid grid-cols-8 border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-all duration-300 group relative bg-transparent",
+        isDragging && "opacity-70 scale-[1.02] shadow-xl z-[100] bg-white ring-1 ring-black/5 rounded-3xl cursor-grabbing"
+      )}
     >
       <div className="p-2 border-r border-[#000000]/5 flex items-center gap-2 bg-[#fdfcf0] sticky left-0 z-[5]">
         <div
@@ -155,7 +159,9 @@ function SortableEmployeeRow({
       })}
     </div>
   );
-}
+});
+
+SortableEmployeeRow.displayName = 'SortableEmployeeRow';
 
 interface ScheduleClientProps {
   initialProfiles: Profile[];
@@ -543,7 +549,7 @@ export default function ScheduleClient({
 
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -552,30 +558,35 @@ export default function ScheduleClient({
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveId(null);
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      pushToHistory(profiles, orderedProfileIds, shifts);
-      
-      const oldIndex = orderedProfileIds.indexOf(active.id as string);
-      const newIndex = orderedProfileIds.indexOf(over.id as string);
+    if (!over || active.id === over.id) return;
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrder = arrayMove(orderedProfileIds, oldIndex, newIndex);
-        setOrderedProfileIds(newOrder);
+    const rollbackOrder = [...orderedProfileIds];
+    const oldIndex = orderedProfileIds.indexOf(active.id as string);
+    const newIndex = orderedProfileIds.indexOf(over.id as string);
 
-        // PERSISTENCE ARMOR: Push updates to Supabase
-        try {
-          const updates = newOrder.map((id, index) =>
-            supabase.from('profiles').update({ schedule_order: index }).eq('id', id)
-          );
-          await Promise.all(updates);
-          revalidateAppPaths(); 
-        } catch (error) {
-          console.error('Supabase Persistence Error:', error);
-        }
+    if (oldIndex !== -1 && newIndex !== -1) {
+      // Zero Latency Local Update
+      const newOrder = arrayMove(orderedProfileIds, oldIndex, newIndex);
+      setOrderedProfileIds(newOrder);
+
+      // Background Sync
+      try {
+        const updates = newOrder.map((id, index) =>
+          supabase.from('profiles').update({ schedule_order: index }).eq('id', id)
+        );
+        const results = await Promise.all(updates);
+        const error = results.find(r => r.error);
+        if (error) throw error.error;
+        
+        revalidateAppPaths(); 
+      } catch (error) {
+        console.error('World-Class DND Rollback (Schedule):', error);
+        setOrderedProfileIds(rollbackOrder);
+        alert('ไม่สามารถจัดลำดับได้ เนื่องจากปัญหาการเชื่อมต่อ');
       }
     }
-    setActiveId(null);
   };
 
   const handleDeleteEmployee = async (employeeId: string) => {
@@ -899,31 +910,6 @@ export default function ScheduleClient({
                       );
                     })}
                   </SortableContext>
-                  <DragOverlay 
-                    zIndex={9999}
-                    dropAnimation={{
-                      duration: 300,
-                      easing: 'ease-in-out',
-                      sideEffects: defaultDropAnimationSideEffects({
-                        styles: { active: { opacity: '0.8' } },
-                      }),
-                    }}
-                  >
-                    {activeId ? (
-                      <div className="grid grid-cols-8 border border-black/10 bg-white/95 backdrop-blur-sm shadow-2xl rounded-3xl overflow-hidden scale-105 ring-4 ring-black/5 transition-transform duration-300 min-w-[900px] z-[9999]">
-                        {/* Simplified Row for Overlay */}
-                        <div className="p-4 border-r border-black/5 flex items-center gap-3 bg-gray-50/50">
-                          <GripVertical className="w-5 h-5 text-gray-400" />
-                          <span className="text-[17px] font-normal text-black truncate">
-                            {profiles.find(p => p.id === activeId)?.full_name}
-                          </span>
-                        </div>
-                        {weekDays.map(date => (
-                          <div key={`overlay-${date}`} className="p-1 border-r last:border-0 border-gray-50 min-h-[64px]" />
-                        ))}
-                      </div>
-                    ) : null}
-                  </DragOverlay>
                 </DndContext>
               ) : (
                 <div className="opacity-50 pointer-events-none">

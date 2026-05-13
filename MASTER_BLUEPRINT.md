@@ -102,6 +102,7 @@ inventory_items.
   คอยซิงค์ข้อมูลข้ามเครื่อง (Real-time Broadcast) แบบไร้รอยต่อ (Zero-layer DOM).
   มีระบบ `undoStack` / `redoStack` พร้อม `isSyncing` Lock เพื่อป้องกันการกดซ้ำระหว่างซิงค์.
   ระบบย้อนกลับทำงานในคลิกเดียว (1-Click Undo).
+* Transaction History (Clean Slate v3.1): ระบบประวัติใช้กลยุทธ์ **Two-Step Fetch** (ดึงประวัติก่อนแล้วจึงดึงชื่อสินค้ามา Merge) เพื่อป้องกันปัญหา FK Join และ RLS บล็อกข้อมูล พร้อมระบบ Auto-refresh เมื่อมีการบันทึกข้อมูลใหม่.
 * Error Handling: ระบบบังคับใช้ Detailed Logging เสมอเมื่อเรียกข้อมูลจากฐานข้อมูล:
   `console.error('Supabase Error:', error.message, error.details);`
 
@@ -327,6 +328,7 @@ python .antigravity/tools/memory-engine/aider/aider/repomap.py .
 | **Technical** | Secure Cloud Sync | ✅ Active | ตรวจสอบ Secrets ก่อน Push GitHub |
 | **Automation** | S2W Integration | ✅ Active | รัน Daily Closing Integrity Workflow |
 | **Validation** | Build Validation | ✅ Active | บังคับ Exit Code 0 ในขั้นตอนสำคัญ |
+| **Integrity** | Transaction System Rebirth | ✅ Active | Two-Step Fetch & Cache Buster v3.1 |
 
 ## 13. Deployment Prerequisites & Environment Sync (SPEC 3.1)
 

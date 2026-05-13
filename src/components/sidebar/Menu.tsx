@@ -28,9 +28,9 @@ export default function Menu({ isOpen }: MenuProps) {
 
   return (
     <ScrollArea className="[&>div>div[style]]:!block">
-      <nav className={cn('mt-8 h-full w-full')}>
+      <nav className={cn('mt-2 h-full w-full')}>
         <ul className={cn(
-          "flex flex-col min-h-[calc(100vh-48px-36px-16px-32px)] lg:min-h-[calc(100vh-32px-40px-32px)] gap-8 px-2",
+          "flex flex-col min-h-[calc(100vh-48px-36px-16px-32px)] lg:min-h-[calc(100vh-32px-40px-32px)] gap-1 px-2",
           isOpen === false ? "items-center" : "items-start"
         )}>
           {menuList.flatMap(({ menus }) => menus).map(({ href, label, icon: Icon, active, submenus }, menuIndex) =>

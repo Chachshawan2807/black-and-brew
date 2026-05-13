@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X } from 'lucide-react';
+import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, History, Search, ArrowDownToLine, ArrowUpFromLine, ShoppingCart } from 'lucide-react';
+import { recordTransaction, fetchTransactionHistory, fetchFrequentItems } from '@/app/actions/inventory-actions';
 import {
   DndContext,
   closestCorners,
@@ -26,6 +27,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { cn } from '@/lib/utils';
 
 interface InventoryItem {
   id: string;
@@ -37,6 +39,7 @@ interface InventoryItem {
   unit: string;
   source: string;
   sort_order: number;
+  updated_at?: string;
   [key: string]: any;
 }
 
@@ -57,11 +60,12 @@ const defaultColumns: ColumnDef[] = [
   { id: 'source', label: 'ช่องทางสั่งซื้อ', width: '160px', type: 'text' },
 ];
 
-function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize }: { 
+function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onResizeEnd }: { 
   col: ColumnDef; 
   updateColumnLabel: (id: string, label: string) => void;
   saveColumnsConfig: () => void;
   onResize: (id: string, width: number) => void;
+  onResizeEnd: (id: string, width: number) => void;
 }) {
   const isResizing = useRef(false);
   const startX = useRef(0);
@@ -79,11 +83,14 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize }: {
       onResize(col.id, newWidth);
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (upEvent: MouseEvent) => {
       isResizing.current = false;
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      saveColumnsConfig();
+      
+      const delta = upEvent.pageX - startX.current;
+      const finalWidth = Math.max(80, startWidth.current + delta);
+      onResizeEnd(col.id, finalWidth);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -115,13 +122,15 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize }: {
       {/* Resizer Handle */}
       <div 
         onMouseDown={handleMouseDown}
-        className={`absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-purple-300 transition-colors z-20 ${col.id === 'source' ? '' : 'border-r border-slate-100'}`}
-      />
+        className={`absolute right-0 top-0 bottom-0 w-1 px-0.5 cursor-col-resize hover:bg-black/10 transition-all z-20 group/resizer`}
+      >
+        <div className="w-[1px] h-full bg-[#000000]/5 group-hover/resizer:bg-black/20 mx-auto" />
+      </div>
     </th>
   );
 }
 
-function SortableRow({ item, index: rowIndex, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus }: { 
+const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus }: { 
   item: InventoryItem; 
   index: number;
   columns: ColumnDef[];
@@ -129,18 +138,24 @@ function SortableRow({ item, index: rowIndex, columns, handleUpdateField, handle
   handleSaveField: (id: string, field: string, value: any) => void;
   requestDelete: (id: string) => void;
   handleFocus: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition: dndTransition, isDragging } = useSortable({ id: item.id });
+  
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: CSS.Translate.toString(transform),
+    transition: dndTransition || 'transform 150ms cubic-bezier(0.2, 0, 0, 1)',
+    zIndex: isDragging ? 100 : 1,
+    willChange: 'transform',
   };
 
   return (
     <tr
       ref={setNodeRef}
       style={style}
-      className="border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-colors group"
+      className={cn(
+        "border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-all duration-300 group",
+        isDragging && "opacity-70 scale-[1.02] shadow-xl z-[100] bg-white ring-1 ring-black/5 rounded-3xl cursor-grabbing"
+      )}
     >
       <td className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle">
         <div 
@@ -171,7 +186,9 @@ function SortableRow({ item, index: rowIndex, columns, handleUpdateField, handle
       ))}
     </tr>
   );
-}
+});
+
+SortableRow.displayName = 'SortableRow';
 
 function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField, requestDelete, handleFocus }: any) {
   const [localValue, setLocalValue] = useState<string>('');
@@ -181,7 +198,17 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
   // Sync with global state when not focused
   useEffect(() => {
     if (!isFocused) {
-      const val = item[col.id];
+      let val = item[col.id];
+      
+      // Phase 1: COMPUTED LOGIC INTEGRATION
+      if (col.id === 'order_qty') {
+        const stock = Number(item.stock) || 0;
+        const orderPoint = Number(item.order_point) || 0;
+        const targetStock = Number(item.target_stock) || 0;
+        const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
+        val = computedOrderQty === 0 ? '' : computedOrderQty;
+      }
+
       const displayVal = val === null || val === undefined ? '' : String(val);
       setLocalValue(displayVal);
       if (inputRef.current) {
@@ -233,7 +260,8 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         }}
         data-col-id={col.id}
         data-row-index={rowIndex}
-        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/80 text-[15px] font-normal leading-[1.6] transition-all ${col.id === 'name' ? 'text-left pr-10 text-[#000000]' : 'text-center text-[#000000]/60'} ${col.type === 'number' ? 'font-mono' : ''}`}
+        readOnly={col.id === 'order_qty'}
+        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/80 text-[15px] font-normal leading-[1.6] transition-all ${col.id === 'name' ? 'text-left pr-10 text-[#000000]' : 'text-center text-[#000000]/60'} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-[#000000]/5 text-[#000000] cursor-not-allowed select-none font-medium' : ''}`}
       />
       {col.id === 'name' && (
         <button 
@@ -257,6 +285,8 @@ export default function DynamicInventoryManager() {
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
+  const [poActiveTab, setPoActiveTab] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   
@@ -269,11 +299,58 @@ export default function DynamicInventoryManager() {
   const previousStateRef = useRef<{items: InventoryItem[], cols: ColumnDef[]}>({ items: [], cols: defaultColumns });
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  // Quick Entry State
+  const [quickSearch, setQuickSearch] = useState('');
+  const [quickQty, setQuickQty] = useState('');
+  const [quickType, setQuickType] = useState<'IN' | 'OUT'>('IN');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [frequentItems, setFrequentItems] = useState<{id: string, name: string}[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
+
+  // Phase 1 & 2: COMPUTED ORDER LOGIC
+  const itemsToOrder = useMemo(() => {
+    return items.filter(item => {
+      const stock = Number(item.stock) || 0;
+      const orderPoint = Number(item.order_point) || 0;
+      const targetStock = Number(item.target_stock) || 0;
+      return stock <= orderPoint && targetStock > stock;
+    }).map(item => {
+      const stock = Number(item.stock) || 0;
+      const targetStock = Number(item.target_stock) || 0;
+      return {
+        ...item,
+        computedOrderQty: targetStock - stock
+      };
+    });
+  }, [items]);
+
+  const poSources = useMemo(() => {
+    const sources = new Set<string>();
+    itemsToOrder.forEach(item => {
+      sources.add(item.source || 'ไม่ได้ระบุแหล่งที่มา');
+    });
+    return Array.from(sources);
+  }, [itemsToOrder]);
+
+  const displayedPoItems = useMemo(() => {
+    if (poActiveTab === 'all') return itemsToOrder;
+    return itemsToOrder.filter(i => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === poActiveTab);
+  }, [itemsToOrder, poActiveTab]);
+
+  const filteredItems = useMemo(() => {
+    if (!quickSearch) return [];
+    return items.filter(item => 
+      item.name.toLowerCase().includes(quickSearch.toLowerCase())
+    ).slice(0, 10);
+  }, [items, quickSearch]);
+
   useEffect(() => {
+    loadFrequentItems();
     fetchConfigAndInventory();
 
     const channel = supabase
@@ -285,12 +362,26 @@ export default function DynamicInventoryManager() {
             return [...prev, payload.new as InventoryItem];
           });
         } else if (payload.eventType === 'UPDATE') {
-          setItems(prev => prev.map(item => item.id === payload.new.id ? payload.new as InventoryItem : item).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)));
+          setItems(prev => prev.map(item => item.id === payload.new.id ? payload.new as InventoryItem : item));
         } else if (payload.eventType === 'DELETE') {
           setItems(prev => prev.filter(item => item.id !== payload.old.id));
         }
       })
       .subscribe();
+
+    // Fast Initial Column Load from LocalStorage
+    const savedWidths = localStorage.getItem('inventory-column-widths');
+    if (savedWidths) {
+      try {
+        const widths = JSON.parse(savedWidths);
+        setColumns(prev => prev.map(col => ({
+          ...col,
+          width: widths[col.id] || col.width
+        })));
+      } catch (e) {
+        console.error('Failed to parse saved widths:', e);
+      }
+    }
 
     return () => {
       supabase.removeChannel(channel);
@@ -320,10 +411,18 @@ export default function DynamicInventoryManager() {
       if (configRes.data && configRes.data.settings) {
         const settings = configRes.data.settings;
         if (settings.order && settings.labels) {
+           // Overwrite Protection: Check localStorage first for widths
+           const localWidths = JSON.parse(localStorage.getItem('inventory-column-widths') || '{}');
+           
            const newCols = settings.order.map((id: string) => {
               const def = defaultColumns.find(c => c.id === id);
-              return def ? { ...def, label: settings.labels[id] || def.label } : null;
+              return def ? { 
+                ...def, 
+                label: settings.labels[id] || def.label,
+                width: localWidths[id] || settings.widths?.[id] || def.width 
+              } : null;
            }).filter(Boolean) as ColumnDef[];
+           
            if (newCols.length > 0) {
              loadedCols = newCols;
              setColumns(newCols);
@@ -466,9 +565,15 @@ export default function DynamicInventoryManager() {
 
   async function saveColumnsConfig(currentCols: ColumnDef[] = columns) {
     setSavingState('saving');
+    
+    // Local Persistence
+    const widths = currentCols.reduce((acc, c) => ({...acc, [c.id]: c.width}), {});
+    localStorage.setItem('inventory-column-widths', JSON.stringify(widths));
+
     const settings = {
       order: currentCols.map(c => c.id),
-      labels: currentCols.reduce((acc, c) => ({...acc, [c.id]: c.label}), {})
+      labels: currentCols.reduce((acc, c) => ({...acc, [c.id]: c.label}), {}),
+      widths
     };
     try {
       const { error } = await supabase.from('inventory_config').upsert({ id: 'column_labels', settings });
@@ -485,6 +590,14 @@ export default function DynamicInventoryManager() {
     setColumns(prev => prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col));
   }
 
+  function handleColumnResizeEnd(id: string, width: number) {
+    setColumns(prev => {
+      const nextCols = prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col);
+      saveColumnsConfig(nextCols);
+      return nextCols;
+    });
+  }
+
   async function handleDragStartRows(event: any) {
     setActiveRowId(event.active.id);
   }
@@ -493,27 +606,30 @@ export default function DynamicInventoryManager() {
     setActiveRowId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+    const rollbackItems = [...items];
+    const oldIndex = items.findIndex((i) => i.id === active.id);
+    const overIndex = over ? items.findIndex((i) => i.id === over.id) : -1;
 
-    pushHistory();
-    setItems((prevItems) => {
-      const oldIndex = prevItems.findIndex((i) => i.id === active.id);
-      const newIndex = prevItems.findIndex((i) => i.id === over.id);
-      const newItems = arrayMove(prevItems, oldIndex, newIndex);
-      const updatedItems = newItems.map((item, index) => ({ ...item, sort_order: index }));
+    // Zero Latency Local Update
+    const newItems = arrayMove(items, oldIndex, overIndex);
+    const updatedItems = newItems.map((item, index) => ({ ...item, sort_order: index }));
+    setItems(updatedItems);
+    setSavingState('saving');
 
-      Promise.all(updatedItems.map((item) => 
-        supabase.from('inventory_items').update({ sort_order: item.sort_order }).eq('id', item.id)
-      )).then(() => {
-        setSavingState('synced');
-        setTimeout(() => setSavingState('idle'), 2000);
-      }).catch(err => {
-         console.error('Supabase Error (Reorder):', err);
-         fetchConfigAndInventory(); 
-      });
-
-      setSavingState('saving');
-      return updatedItems;
-    });
+    // Background Sync
+    try {
+      const { error } = await supabase.from('inventory_items').upsert(
+        updatedItems.map(item => ({ id: item.id, sort_order: item.sort_order }))
+      );
+      if (error) throw error;
+      setSavingState('synced');
+      setTimeout(() => setSavingState('idle'), 2000);
+    } catch (err) {
+      console.error('World-Class DND Rollback (Inventory):', err);
+      setItems(rollbackItems);
+      setSavingState('idle');
+      alert('ไม่สามารถจัดลำดับได้ เนื่องจากปัญหาการเชื่อมต่อ');
+    }
   }
 
   async function syncFullStateToDB(currentItems: InventoryItem[], currentCols: ColumnDef[]) {
@@ -570,6 +686,115 @@ export default function DynamicInventoryManager() {
     setItems(nextState.items);
     setColumns(nextState.cols);
     await syncFullStateToDB(nextState.items, nextState.cols);
+  }
+
+  async function loadFrequentItems() {
+    const res = await fetchFrequentItems();
+    if (res.success && res.data) {
+      setFrequentItems(res.data);
+    }
+  }
+
+  async function handleOpenHistory() {
+    setTransactionHistory([]);
+    setShowHistoryModal(true);
+    const res = await fetchTransactionHistory();
+    if (res.success && res.data) {
+      setTransactionHistory(res.data);
+    } else if (res.error) {
+      console.error('[UI] History fetch failed:', res.error);
+    }
+  }
+
+  async function handleCancelTransaction(txId: string, itemId: string, type: 'IN' | 'OUT', quantity: number) {
+    if (!window.confirm('ยืนยันการยกเลิกรายการนี้? ยอดสต็อกจะถูกปรับคืนอัตโนมัติ')) return;
+    
+    setSavingState('saving');
+    try {
+      // 1. Get current stock
+      const { data: itemData, error: itemError } = await supabase
+        .from('inventory_items')
+        .select('stock')
+        .eq('id', itemId)
+        .single();
+        
+      if (itemError) throw itemError;
+      
+      const currentStock = itemData.stock || 0;
+      const newStock = type === 'IN' ? currentStock - quantity : currentStock + quantity;
+      
+      // 2. Update stock
+      const { error: updateError } = await supabase
+        .from('inventory_items')
+        .update({ stock: newStock })
+        .eq('id', itemId);
+        
+      if (updateError) throw updateError;
+      
+      // 3. Delete transaction
+      const { error: deleteError } = await supabase
+        .from('inventory_transactions')
+        .delete()
+        .eq('id', txId);
+        
+      if (deleteError) throw deleteError;
+      
+      // Refresh history
+      const res = await fetchTransactionHistory();
+      if (res.success && res.data) {
+        setTransactionHistory(res.data);
+      }
+      
+      setSavingState('synced');
+      setTimeout(() => setSavingState('idle'), 2000);
+    } catch (err: any) {
+      console.error('Failed to cancel transaction:', err.message || err);
+      alert('ไม่สามารถยกเลิกรายการได้: ' + (err.message || 'Unknown error'));
+      setSavingState('idle');
+    }
+  }
+
+  async function handleQuickSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!quickSearch || !quickQty) return;
+    
+    // Find item
+    const item = items.find(i => i.name === quickSearch || i.id === quickSearch);
+    if (!item) {
+      alert('ไม่พบสินค้าที่ระบุ');
+      return;
+    }
+
+    const qty = Number(quickQty);
+    if (isNaN(qty) || qty <= 0) {
+      alert('กรุณาระบุจำนวนที่ถูกต้อง');
+      return;
+    }
+
+    setSavingState('saving');
+    
+    const res = await recordTransaction(item.id, quickType, qty, 'Quick Entry');
+    
+    if (!res.success) {
+      alert(res.error);
+      setSavingState('idle');
+      return;
+    }
+
+    // Optimistically update local state if not picked up by realtime yet
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, stock: res.newStock } : i));
+    setQuickSearch('');
+    setQuickQty('');
+    setSavingState('synced');
+    setTimeout(() => setSavingState('idle'), 2000);
+    loadFrequentItems();
+    // Auto-refresh history if modal is open
+    if (showHistoryModal) {
+      const histRes = await fetchTransactionHistory();
+      if (histRes.success && histRes.data) {
+        setTransactionHistory(histRes.data);
+      }
+    }
   }
 
   if (loading) {
@@ -632,12 +857,101 @@ export default function DynamicInventoryManager() {
             </div>
 
             <button 
+              onClick={() => setShowPurchaseOrderModal(true)}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-black hover:bg-black/80 text-white rounded-3xl shadow-sm transition-all text-[14px] font-normal active:scale-95"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span>รายการสั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-1">{itemsToOrder.length}</span>}</span>
+            </button>
+            <button 
               onClick={() => setShowAddModal(true)}
               className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border border-[#000000]/5 rounded-3xl shadow-sm transition-all text-[14px] font-normal text-[#000000] active:scale-95"
             >
               <Plus className="w-4 h-4 text-[#000000]" />
               <span>เพิ่มรายการ</span>
             </button>
+            <button 
+              onClick={handleOpenHistory}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border border-[#000000]/5 rounded-3xl shadow-sm transition-all text-[14px] font-normal text-[#000000] active:scale-95"
+            >
+              <History className="w-4 h-4 text-[#000000]" />
+              <span>ประวัติ</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="w-full flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-3xl border border-black/5 shadow-sm">
+          <div className="flex-1">
+            <form onSubmit={handleQuickSubmit} className="flex flex-col md:flex-row items-end md:items-center gap-4">
+              <div className="flex-1 w-full relative">
+                <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-black/40" />
+                <input 
+                  type="text" 
+                  placeholder="ค้นหาสินค้า..." 
+                  value={quickSearch}
+                  onChange={e => setQuickSearch(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-[15px] font-normal text-black outline-none transition-all"
+                />
+                
+                {/* Custom Dropdown */}
+                {isSearchFocused && filteredItems.length > 0 && (
+                  <div className="absolute top-full left-0 w-full mt-2 bg-[#fdfcf0] border border-black/5 rounded-3xl shadow-xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="max-h-60 overflow-y-auto py-2">
+                      {filteredItems.map(item => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setQuickSearch(item.name);
+                            setIsSearchFocused(false);
+                          }}
+                          className="w-full text-left px-5 py-3 hover:bg-black/5 transition-colors flex items-center justify-between group"
+                        >
+                          <span className="text-[14px] text-black font-normal">{item.name}</span>
+                          <span className="text-[12px] text-black/30 group-hover:text-black/50 transition-colors uppercase tracking-widest font-mono">
+                            {item.stock} {item.unit}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 w-full md:w-auto items-center">
+                <input 
+                  type="number" 
+                  placeholder="" 
+                  value={quickQty}
+                  onChange={e => setQuickQty(e.target.value)}
+                  min="0" step="1"
+                  className="w-28 px-4 py-3 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-[15px] font-normal text-black outline-none transition-all text-center"
+                />
+                <div className="flex bg-slate-100 p-1 rounded-3xl">
+                  <button type="button" onClick={() => setQuickType('IN')} className={cn("px-4 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1", quickType === 'IN' ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black")}>
+                    <ArrowDownToLine className="w-3.5 h-3.5" /> เข้า
+                  </button>
+                  <button type="button" onClick={() => setQuickType('OUT')} className={cn("px-4 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1", quickType === 'OUT' ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black")}>
+                    <ArrowUpFromLine className="w-3.5 h-3.5" /> ออก
+                  </button>
+                </div>
+                <button type="submit" className="px-6 py-3 bg-black text-white rounded-3xl text-[14px] font-medium hover:bg-black/80 transition-all shadow-sm active:scale-95 whitespace-nowrap">
+                  บันทึก
+                </button>
+              </div>
+            </form>
+            {frequentItems.length > 0 && (
+              <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
+                <span className="text-[12px] text-black/40 font-normal whitespace-nowrap">รายการบ่อย:</span>
+                {frequentItems.map(fi => (
+                  <button key={fi.id} onClick={() => setQuickSearch(fi.name)} className="px-3 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-full text-[13px] text-black/70 whitespace-nowrap transition-colors">
+                    {fi.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -661,6 +975,7 @@ export default function DynamicInventoryManager() {
                         updateColumnLabel={updateColumnLabel}
                         saveColumnsConfig={() => saveColumnsConfig(columns)}
                         onResize={handleColumnResize}
+                        onResizeEnd={handleColumnResizeEnd}
                       />
                     ))}
                   </tr>
@@ -691,38 +1006,6 @@ export default function DynamicInventoryManager() {
                 </SortableContext>
               </table>
               
-              <DragOverlay 
-                zIndex={9999}
-                dropAnimation={{
-                  duration: 300,
-                  easing: 'ease-in-out',
-                  sideEffects: defaultDropAnimationSideEffects({
-                    styles: {
-                      active: {
-                        opacity: '0.8',
-                      },
-                    },
-                  }),
-                }}
-              >
-                {activeRowId ? (
-                  <div className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-3xl overflow-hidden scale-105 border border-[#000000]/10 ring-4 ring-black/5 transition-transform duration-300 w-max min-w-[900px] z-[9999]">
-                    <table className="w-full border-collapse table-fixed">
-                      <tbody>
-                         <SortableRow 
-                           item={items.find(i => i.id === activeRowId)!}
-                           index={items.findIndex(i => i.id === activeRowId)}
-                           columns={columns}
-                           handleUpdateField={() => {}}
-                           handleSaveField={() => {}}
-                           requestDelete={() => {}}
-                           handleFocus={() => {}}
-                         />
-                      </tbody>
-                    </table>
-                  </div>
-                ) : null}
-              </DragOverlay>
             </DndContext>
           </div>
         </div>
@@ -864,6 +1147,208 @@ export default function DynamicInventoryManager() {
             <button onClick={executeDelete} className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
               ลบรายการ
             </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Reconstructed Transaction History Modal */}
+    {showHistoryModal && (
+      <div 
+        className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40 backdrop-blur-md p-4"
+        onClick={() => setShowHistoryModal(false)}
+      >
+        <div 
+          className="bg-[#fdfcf0] rounded-3xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col border border-black/5"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="px-8 py-6 border-b border-black/5 flex items-center justify-between bg-white/50 backdrop-blur-sm shrink-0">
+            <div>
+              <h2 className="text-2xl font-normal text-[#000000] flex items-center gap-3">
+                <History className="w-6 h-6 text-black/40" /> 
+                ประวัติการเคลื่อนไหว
+              </h2>
+              <p className="text-black/40 text-[13px] mt-1 font-normal">ตรวจสอบรายการรับเข้าและนำออกย้อนหลัง</p>
+            </div>
+            <button 
+              onClick={() => setShowHistoryModal(false)} 
+              className="p-3 text-black/30 hover:text-black hover:bg-black/5 rounded-full transition-all active:scale-95"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Table Content */}
+          <div className="overflow-y-auto p-8 bg-[#fdfcf0] flex-1">
+            <div className="bg-white rounded-[2rem] border border-black/5 shadow-sm overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-black/5">
+                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-left w-[160px]">วันเวลา</th>
+                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-left">ชื่อรายการสินค้า</th>
+                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[120px]">ประเภท</th>
+                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-right w-[110px]">จำนวน</th>
+                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-right w-[110px]">คงเหลือ</th>
+                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[90px]">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.03]">
+                  {transactionHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-20 text-center text-black/30 text-[15px] font-normal italic">
+                        <div className="flex flex-col items-center gap-3">
+                          <ShoppingCart className="w-10 h-10 opacity-10" />
+                          ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    transactionHistory.map((tx: any) => (
+                      <tr key={tx.id} className="group hover:bg-slate-50/80 transition-colors">
+                        {/* Day/Time - Left */}
+                        <td className="py-5 px-6 text-[14px] text-black/60 font-mono text-left">
+                          {new Date(tx.created_at).toLocaleString('th-TH', { 
+                            dateStyle: 'short', 
+                            timeStyle: 'short' 
+                          })}
+                        </td>
+                        
+                        {/* Item Name - Left */}
+                        <td className="py-5 px-6 text-[15px] text-black font-medium text-left">
+                          {tx.inventory_items?.name || 'ไม่ทราบชื่อสินค้า'}
+                        </td>
+                        
+                        {/* Type - Center */}
+                        <td className="py-5 px-6 text-center">
+                          <span className={cn(
+                            "px-4 py-1.5 rounded-full text-[12px] font-medium inline-flex items-center gap-1.5 transition-all shadow-sm",
+                            tx.type === 'IN' 
+                              ? "bg-black text-white" 
+                              : "bg-slate-100 text-black/60 font-normal border border-black/5"
+                          )}>
+                            {tx.type === 'IN' ? <ArrowDownToLine className="w-3.5 h-3.5" /> : <ArrowUpFromLine className="w-3.5 h-3.5" />}
+                            {tx.type === 'IN' ? 'รับเข้า' : 'นำออก'}
+                          </span>
+                        </td>
+                        
+                        {/* Quantity - Right (Mono) */}
+                        <td className="py-5 px-6 text-[16px] text-right font-mono text-black font-medium">
+                          {tx.quantity}
+                        </td>
+                        
+                        {/* Balance After - Right (Mono) */}
+                        <td className="py-5 px-6 text-[16px] text-right font-mono text-black/40">
+                          {tx.balance_after}
+                        </td>
+                        
+                        {/* Actions - Center */}
+                        <td className="py-5 px-6 text-center">
+                          <button
+                            onClick={() => handleCancelTransaction(tx.id, tx.inventory_item_id, tx.type, tx.quantity)}
+                            className="p-2 text-black/10 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
+                            title="ยกเลิกรายการนี้"
+                          >
+                            <Trash2 className="w-4.5 h-4.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          {/* Footer Info */}
+          <div className="px-8 py-4 bg-white/30 border-t border-black/5 flex justify-between items-center shrink-0 text-[12px] text-black/30">
+            <span>แสดง {transactionHistory.length} รายการล่าสุด</span>
+            <span className="font-mono uppercase tracking-tighter">System Rebirth v3.1</span>
+          </div>
+        </div>
+      </div>
+    )}
+
+
+    {/* Purchase Orders Modal */}
+    {showPurchaseOrderModal && (
+      <div 
+        className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+        onClick={() => setShowPurchaseOrderModal(false)}
+      >
+        <div 
+          className="bg-[#fdfcf0] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-6 py-5 border-b border-black/5 flex items-center justify-between bg-white shrink-0">
+            <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ (Purchase Orders)
+            </h2>
+            <button onClick={() => setShowPurchaseOrderModal(false)} className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="flex flex-col flex-1 overflow-hidden">
+            {/* Tabs Navigation */}
+            <div className="px-6 pt-4 bg-white border-b border-black/5 shrink-0">
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                <button 
+                  onClick={() => setPoActiveTab('all')} 
+                  className={cn("px-4 py-3 text-[14px] whitespace-nowrap transition-colors border-b-2 font-medium", poActiveTab === 'all' ? "border-black text-black" : "border-transparent text-black/50 hover:text-black")}
+                >
+                  ทั้งหมด ({itemsToOrder.length})
+                </button>
+                {poSources.map(source => (
+                  <button 
+                    key={source} 
+                    onClick={() => setPoActiveTab(source)} 
+                    className={cn("px-4 py-3 text-[14px] whitespace-nowrap transition-colors border-b-2 font-medium", poActiveTab === source ? "border-black text-black" : "border-transparent text-black/50 hover:text-black")}
+                  >
+                    {source} ({itemsToOrder.filter(i => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === source).length})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="overflow-y-auto p-6 bg-[#fdfcf0] flex-1">
+              {displayedPoItems.length === 0 ? (
+                <div className="py-16 flex flex-col items-center justify-center text-black/40 bg-white rounded-3xl border border-black/5 shadow-sm">
+                  <ShoppingCart className="w-12 h-12 mb-4 opacity-20" />
+                  <p className="text-[15px]">ไม่มีรายการสั่งซื้อสำหรับช่องทางนี้</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-3xl shadow-sm border border-black/5 overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-black/5 bg-slate-50/50">
+                        <th className="py-4 font-normal text-black/40 text-[13px] w-12 text-center border-r border-black/5">#</th>
+                        <th className="py-4 font-normal text-black/40 text-[13px] text-left pl-4 border-r border-black/5">ชื่อรายการ</th>
+                        <th className="py-4 font-normal text-black/40 text-[13px] text-center w-24 border-r border-black/5">คงเหลือ</th>
+                        <th className="py-4 font-normal text-black/40 text-[13px] text-center w-32 border-r border-black/5">จำนวนสั่งซื้อ</th>
+                        <th className="py-4 font-normal text-black/40 text-[13px] w-24 text-center border-r border-black/5">หน่วย</th>
+                        <th className="py-4 font-normal text-black/40 text-[13px] w-32 text-center">อัปเดตล่าสุด</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayedPoItems.map((item, idx) => (
+                        <tr key={item.id} className="border-b border-black/5 last:border-0 hover:bg-[#000000]/5 transition-colors">
+                          <td className="py-4 text-[14px] text-black/30 text-center border-r border-black/5">{idx + 1}</td>
+                          <td className="py-4 text-[15px] text-black font-medium text-left pl-4 border-r border-black/5">{item.name}</td>
+                          <td className="py-4 text-[15px] text-black/50 text-center font-mono border-r border-black/5">{item.stock}</td>
+                          <td className="py-4 text-[16px] text-black text-center font-mono font-medium border-r border-black/5">{item.computedOrderQty}</td>
+                          <td className="py-4 text-[14px] text-black/50 text-center border-r border-black/5">{item.unit || '-'}</td>
+                          <td className="py-4 text-[13px] text-black/40 text-center font-mono">
+                            {new Date(item.updated_at || Date.now()).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

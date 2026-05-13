@@ -27,7 +27,7 @@ export function Sidebar() {
       <SidebarToggle isOpen={isOpen} setIsOpen={sidebar?.setIsOpen} />
       <div className="relative h-full flex flex-col px-3 py-4 overflow-y-auto overflow-x-hidden">
         <div className={cn(
-          "mb-10 flex items-center transition-all duration-500",
+          "mb-2 flex items-center transition-all duration-500",
           isOpen === false ? "justify-center" : "justify-start px-2"
         )}>
           <div className="relative z-[110]">
