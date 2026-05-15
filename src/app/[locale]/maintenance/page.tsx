@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { 
   Plus, 
@@ -15,7 +16,9 @@ import {
   AlertCircle,
   Loader2,
   ChevronRight,
-  Calendar
+  Calendar,
+  Tool,
+  ClipboardList
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -215,76 +218,93 @@ export default function MaintenancePage() {
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-12 text-[#000000] relative font-normal">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <div className="min-h-screen bg-[#fdfcf0] p-4 md:p-10 text-[#000000] relative font-normal" style={{ lineHeight: '1.6' }}>
+      <div className="max-w-7xl mx-auto space-y-10">
         
         {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 pb-8 border-b border-[#000000]/5">
-          <div className="space-y-2">
-            <h1 className="text-5xl font-normal tracking-tighter text-[#000000] uppercase flex items-center gap-4">
-              <Wrench className="w-10 h-10 text-[#000000]" strokeWidth={1} />
-              Maintenance
-            </h1>
-            <p className="text-[#000000]/60 text-sm font-normal uppercase tracking-[0.2em] px-1">Equipment Service History</p>
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-black/5">
+          <div className="space-y-1.5">
+            <motion.h1 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-4xl md:text-5xl font-normal tracking-[0.1em] text-[#000000] flex items-center gap-3"
+            >
+              <div className="p-2.5 bg-black text-white rounded-2xl">
+                <Wrench className="w-8 h-8" strokeWidth={1.5} />
+              </div>
+              MAINTENANCE
+            </motion.h1>
+            <p className="text-[#000000]/50 text-[11px] font-normal uppercase tracking-[0.3em] px-1">Equipment Service History</p>
           </div>
 
-          <div className="flex items-center gap-6">
-             <button 
+          <div className="flex items-center gap-4">
+             <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => { resetForm(); setIsModalOpen(true); }}
-              className="group flex items-center gap-3 bg-[#000000] hover:bg-[#1a1a1a] text-white px-8 py-4 rounded-3xl transition-all duration-500 shadow-lg active:scale-95"
+              className="group flex items-center gap-2.5 bg-[#000000] hover:bg-black/80 text-white px-7 py-3.5 rounded-2xl transition-all shadow-sm"
              >
-              <Plus className="w-5 h-5 transition-transform duration-500 group-hover:rotate-90" />
-              <span className="font-normal tracking-wide">New Record</span>
-            </button>
+              <Plus className="w-4.5 h-4.5" />
+              <span className="font-medium text-sm tracking-wide">New Record</span>
+            </motion.button>
           </div>
         </header>
 
         {/* Stats / Quick Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[#eff6ff] p-8 rounded-[32px] space-y-4 border-none shadow-sm group hover:shadow-md transition-all duration-500">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="bg-[#f0fdf4] border border-[#dcfce7] p-6 rounded-3xl space-y-3 shadow-sm hover:shadow-md transition-all"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-[#000000]/40 font-normal uppercase tracking-widest text-[11px]">Completed</span>
-              <div className="p-2 bg-white/50 rounded-xl">
-                <CheckCircle2 className="w-5 h-5 text-[#3b82f6]" strokeWidth={1.5} />
+              <span className="text-[#14532d]/60 font-medium uppercase tracking-widest text-[10px]">Completed</span>
+              <div className="p-2 bg-white/50 rounded-xl border border-[#dcfce7]">
+                <CheckCircle2 className="w-4 h-4 text-[#10b981]" strokeWidth={1.5} />
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <div className="text-5xl font-normal text-[#000000] tracking-tighter">
+              <div className="text-4xl font-normal text-[#14532d] tracking-tight">
                 {records.filter(r => r.status === 'เสร็จสมบูรณ์').length}
               </div>
-              <span className="text-sm text-[#000000]/30 font-normal uppercase tracking-wider">Units</span>
+              <span className="text-[10px] text-[#14532d]/40 font-medium uppercase tracking-widest">Units</span>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-[#f0fdf4] p-8 rounded-[32px] space-y-4 border-none shadow-sm group hover:shadow-md transition-all duration-500">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="bg-[#f0f9ff] border border-[#e0f2fe] p-6 rounded-3xl space-y-3 shadow-sm hover:shadow-md transition-all"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-[#000000]/40 font-normal uppercase tracking-widest text-[11px]">In Progress</span>
-              <div className="p-2 bg-white/50 rounded-xl">
-                <Clock className="w-5 h-5 text-[#10b981]" strokeWidth={1.5} />
+              <span className="text-[#0c4a6e]/60 font-medium uppercase tracking-widest text-[10px]">In Progress</span>
+              <div className="p-2 bg-white/50 rounded-xl border border-[#e0f2fe]">
+                <Clock className="w-4 h-4 text-[#0284c7]" strokeWidth={1.5} />
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <div className="text-5xl font-normal text-[#000000] tracking-tighter">
+              <div className="text-4xl font-normal text-[#0c4a6e] tracking-tight">
                 {records.filter(r => r.status === 'กำลังดำเนินการ').length}
               </div>
-              <span className="text-sm text-[#000000]/30 font-normal uppercase tracking-wider">Tasks</span>
+              <span className="text-[10px] text-[#0c4a6e]/40 font-medium uppercase tracking-widest">Tasks</span>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-[#fff7ed] p-8 rounded-[32px] space-y-4 border-none shadow-sm group hover:shadow-md transition-all duration-500">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className="bg-[#fff1f2] border border-[#ffe4e6] p-6 rounded-3xl space-y-3 shadow-sm hover:shadow-md transition-all"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-[#000000]/40 font-normal uppercase tracking-widest text-[11px]">Total Expenses</span>
-              <div className="p-2 bg-white/50 rounded-xl">
-                <DollarSign className="w-5 h-5 text-[#f59e0b]" strokeWidth={1.5} />
+              <span className="text-[#9f1239]/60 font-medium uppercase tracking-widest text-[10px]">Total Expenses</span>
+              <div className="p-2 bg-white/50 rounded-xl border border-[#ffe4e6]">
+                <DollarSign className="w-4 h-4 text-[#e11d48]" strokeWidth={1.5} />
               </div>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-normal text-[#000000]/40 tracking-tighter mr-1">฿</span>
-              <div className="text-5xl font-normal text-[#000000] tracking-tighter">
+              <span className="text-xl font-normal text-[#9f1239]/40 tracking-tighter mr-1">฿</span>
+              <div className="text-4xl font-normal text-[#9f1239] tracking-tight">
                 {records.reduce((acc, curr) => acc + (curr.cost || 0), 0).toLocaleString()}
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Records List */}
@@ -306,273 +326,291 @@ export default function MaintenancePage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {records.map((record) => (
-                <div 
-                  key={record.id} 
-                  className="bg-white border-none p-8 rounded-[32px] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-700 group flex flex-col h-full"
-                >
-                  <div className="flex items-start justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-3xl ${record.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981]' : 'bg-[#eff6ff] text-[#3b82f6]'}`}>
-                        {record.status === 'เสร็จสมบูรณ์' ? <CheckCircle2 className="w-5 h-5" strokeWidth={1.5} /> : <Clock className="w-5 h-5" strokeWidth={1.5} />}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-normal text-[#000000] tracking-tight leading-none mb-2">{record.equipment}</h3>
-                        <div className="flex items-center gap-2 text-[10px] text-[#000000]/40 uppercase tracking-widest">
-                           <Calendar className="w-3 h-3" />
-                           {format(new Date(record.start_date), 'dd/MM/yyyy')}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence>
+                {records.map((record, index) => (
+                  <motion.div 
+                    key={record.id} 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ y: -5 }}
+                    className="bg-white border border-black/5 p-6 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all group flex flex-col h-full"
+                  >
+                    <div className="flex items-start justify-between mb-5">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-2xl ${record.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7]' : 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe]'}`}>
+                          {record.status === 'เสร็จสมบูรณ์' ? <CheckCircle2 className="w-4.5 h-4.5" strokeWidth={1.5} /> : <Clock className="w-4.5 h-4.5" strokeWidth={1.5} />}
+                        </div>
+                        <div>
+                          <h3 className="text-[17px] font-medium text-[#000000] tracking-tight leading-tight">{record.equipment}</h3>
+                          <div className="flex items-center gap-1.5 text-[10px] text-[#000000]/40 uppercase tracking-widest mt-1">
+                             <Calendar className="w-3 h-3" />
+                             {format(new Date(record.start_date), 'dd/MM/yyyy')}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <button 
-                        onClick={() => handleEdit(record)}
-                        className="p-2 bg-[#fff3dd] hover:bg-[#ffe8b3] text-[#000000] rounded-xl transition-all duration-300 active:scale-90"
-                      >
-                        <Edit2 className="w-4 h-4" strokeWidth={1.5} />
-                      </button>
-                      <button 
-                        onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
-                        className="p-2 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl transition-all duration-300 active:scale-90"
-                      >
-                        <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 space-y-6">
-                    <div className="flex items-center gap-4">
-                       <span className="uppercase tracking-[0.2em] font-normal text-[9px] text-[#000000]/40">
-                        {record.task_type}
-                      </span>
-                      <div className="h-[1px] flex-1 bg-[#000000]/5" />
-                      <div className="text-xl font-normal text-[#000000] tracking-tighter">
-                        ฿{(record.cost || 0).toLocaleString()}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleEdit(record)}
+                          className="p-2 hover:bg-black/5 text-black/40 hover:text-black rounded-xl transition-all active:scale-90"
+                        >
+                          <Edit2 className="w-4 h-4" strokeWidth={1.5} />
+                        </button>
+                        <button 
+                          onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
+                          className="p-2 hover:bg-red-50 text-black/40 hover:text-red-500 rounded-xl transition-all active:scale-90"
+                        >
+                          <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                        </button>
                       </div>
                     </div>
-                    
-                    <div className="space-y-4">
-                      {record.detected_problem && (
-                        <div className="space-y-2">
-                          <span className="block text-[10px] font-normal uppercase tracking-[0.2em] text-[#000000]/30">Observed Issue</span>
-                          <p className="text-base text-[#000000]/80 font-normal leading-relaxed">{record.detected_problem}</p>
+
+                    <div className="flex-1 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <span className="px-2.5 py-1 bg-black/5 rounded-lg uppercase tracking-widest font-normal text-[9px] text-black/60">
+                          {record.task_type}
+                        </span>
+                        <div className="h-[1px] flex-1 bg-black/5" />
+                        <div className="text-lg font-medium text-[#000000] tracking-tight">
+                          ฿{(record.cost || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        {record.detected_problem && (
+                          <div className="p-3 bg-black/[0.02] rounded-2xl border border-black/[0.03]">
+                            <span className="block text-[9px] font-normal uppercase tracking-widest text-black/30 mb-1">Issue Detected</span>
+                            <p className="text-[13px] text-black/80 font-normal leading-[1.6] line-clamp-2">{record.detected_problem}</p>
+                          </div>
+                        )}
+                        {record.work_details && (
+                          <div className="p-3 bg-black/[0.02] rounded-2xl border border-black/[0.03]">
+                            <span className="block text-[9px] font-normal uppercase tracking-widest text-black/30 mb-1">Service Detail</span>
+                            <p className="text-[13px] text-black/80 font-normal leading-[1.6] line-clamp-2">{record.work_details}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-5 border-t border-black/5 flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-[12px] font-medium text-black/50">
+                        <div className="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-[10px] font-normal">
+                          {record.person_in_charge?.[0] || '?'}
+                        </div>
+                        {record.person_in_charge || 'Unknown'}
+                      </div>
+                      {record.recommended_frequency && (
+                        <div className="text-[9px] font-normal text-black/30 uppercase tracking-widest flex items-center gap-1.5">
+                          <Clock className="w-3 h-3" />
+                          {record.recommended_frequency}
                         </div>
                       )}
-                      {record.work_details && (
-                        <div className="space-y-2">
-                          <span className="block text-[10px] font-normal uppercase tracking-[0.2em] text-[#000000]/30">Service Performed</span>
-                          <p className="text-base text-[#000000]/80 font-normal leading-relaxed">{record.work_details}</p>
-                        </div>
-                      )}
                     </div>
-                  </div>
-
-                  <div className="mt-8 pt-8 border-t border-[#000000]/5 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-normal text-[#000000]/60">
-                      <div className="w-6 h-6 rounded-full bg-[#fff3dd] flex items-center justify-center text-[10px]">
-                        {record.person_in_charge?.[0] || '?'}
-                      </div>
-                      {record.person_in_charge || 'Unknown'}
-                    </div>
-                    {record.recommended_frequency && (
-                      <div className="text-[10px] font-normal text-[#000000]/40 uppercase tracking-widest flex items-center gap-2">
-                        <Clock className="w-3 h-3" />
-                        {record.recommended_frequency}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </main>
       </div>
 
       {/* Form Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-            <div className="relative bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden border-none animate-in fade-in zoom-in duration-500">
-            <div className="p-8 border-b border-[#000000]/5 flex items-center justify-between bg-[#fff3dd]/30">
-              <div>
-                <h2 className="text-2xl font-normal text-[#000000] tracking-tighter uppercase">
-                  {editingRecord ? 'Edit Record' : 'New Maintenance Entry'}
-                </h2>
-                <p className="text-[11px] text-[#000000]/40 mt-1 uppercase tracking-widest font-normal">Service Details & Equipment Status</p>
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/10 backdrop-blur-sm" 
+              onClick={() => setIsModalOpen(false)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white w-full max-w-lg rounded-[32px] shadow-2xl overflow-hidden border border-black/5"
+            >
+              <div className="p-6 border-b border-black/5 flex items-center justify-between bg-[#fff7ed]/50">
+                <div>
+                  <h2 className="text-xl font-normal text-[#000000] tracking-tight uppercase">
+                    {editingRecord ? 'Edit Record' : 'New Entry'}
+                  </h2>
+                  <p className="text-[9px] text-black/40 mt-0.5 uppercase tracking-widest font-normal">Service Details & Equipment Status</p>
+                </div>
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-2 hover:bg-black/5 rounded-2xl transition-colors text-black/40"
+                >
+                  <X className="w-5 h-5" strokeWidth={2} />
+                </button>
               </div>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-[#000000]/5 rounded-3xl transition-colors text-[#000000]"
-              >
-                <ChevronRight className="w-6 h-6 rotate-90" strokeWidth={1} />
-              </button>
-            </div>
 
-            <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2 group cursor-pointer" onClick={() => dateInputRef.current?.showPicker()}>
-                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Service Date</label>
-                  <div className="relative h-[52px] flex items-center bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 cursor-pointer transition-all">
-                    <span className="text-sm text-[#000000] flex-1">
-                      {formData.start_date ? format(parseISO(formData.start_date), 'dd/MM/yyyy') : ''}
-                    </span>
-                    <input 
-                      ref={dateInputRef}
-                      type="date" 
+              <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[65vh] overflow-y-auto custom-scrollbar bg-white">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5 cursor-pointer" onClick={() => dateInputRef.current?.showPicker()}>
+                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Service Date</label>
+                    <div className="relative h-11 flex items-center bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 cursor-pointer hover:bg-black/[0.04] transition-all">
+                      <span className="text-sm text-black font-medium flex-1">
+                        {formData.start_date ? format(parseISO(formData.start_date), 'dd/MM/yyyy') : ''}
+                      </span>
+                      <input 
+                        ref={dateInputRef}
+                        type="date" 
+                        required
+                        value={formData.start_date}
+                        onChange={e => setFormData({ ...formData, start_date: e.target.value })}
+                        className="sr-only"
+                      />
+                      <Calendar className="w-4 h-4 text-black/30" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Task Type</label>
+                    <div className="relative">
+                      <select 
+                        value={formData.task_type}
+                        onChange={e => setFormData({ ...formData, task_type: e.target.value })}
+                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all appearance-none cursor-pointer hover:bg-black/[0.04]"
+                      >
+                        <option value="ซ่อมแซม">ซ่อมแซม (Repair)</option>
+                        <option value="บำรุงรักษา">บำรุงรักษา (Maintenance)</option>
+                        <option value="ติดตั้ง">ติดตั้ง (Installation)</option>
+                        <option value="เปลี่ยนอะไหล่">เปลี่ยนอะไหล่ (Replacement)</option>
+                        <option value="อื่นๆ">อื่นๆ (Others)</option>
+                      </select>
+                      <ChevronRight className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-black/30 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Equipment Name</label>
+                      <input 
+                      type="text" 
                       required
-                      value={formData.start_date}
-                      onChange={e => setFormData({ ...formData, start_date: e.target.value })}
-                      className="sr-only"
+                      placeholder="e.g. Espresso Machine"
+                      value={formData.equipment}
+                      onChange={e => setFormData({ ...formData, equipment: e.target.value })}
+                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
                     />
-                    <Calendar className="w-4 h-4 text-[#000000]/40 group-hover:text-[#000000] transition-colors" />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Task Type</label>
-                  <select 
-                    value={formData.task_type}
-                    onChange={e => setFormData({ ...formData, task_type: e.target.value })}
-                    className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="ซ่อมแซม">ซ่อมแซม (Repair)</option>
-                    <option value="บำรุงรักษา">บำรุงรักษา (Maintenance)</option>
-                    <option value="ติดตั้ง">ติดตั้ง (Installation)</option>
-                    <option value="เปลี่ยนอะไหล่">เปลี่ยนอะไหล่ (Replacement)</option>
-                    <option value="อื่นๆ">อื่นๆ (Others)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Equipment Name</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Frequency</label>
                     <input 
-                    type="text" 
-                    required
-                    placeholder="e.g. Espresso Machine"
-                    value={formData.equipment}
-                    onChange={e => setFormData({ ...formData, equipment: e.target.value })}
-                    className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Recommended Frequency</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Every 3 months"
-                    value={formData.recommended_frequency}
-                    onChange={e => setFormData({ ...formData, recommended_frequency: e.target.value })}
-                    className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Problem Detected</label>
-                <textarea 
-                  placeholder="Describe the issue..."
-                  rows={2}
-                  value={formData.detected_problem}
-                  onChange={e => setFormData({ ...formData, detected_problem: e.target.value })}
-                  className="w-full bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all resize-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Work Details</label>
-                <textarea 
-                  placeholder="What was done?"
-                  rows={2}
-                  value={formData.work_details}
-                  onChange={e => setFormData({ ...formData, work_details: e.target.value })}
-                  className="w-full bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Cost (THB)</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#000000]/40 text-sm">฿</span>
-                    <input 
-                      type="number" 
-                      min="0"
-                      value={formData.cost === 0 ? '' : formData.cost}
-                      onChange={e => {
-                        const val = e.target.value.replace(/^0+/, '');
-                        setFormData({ ...formData, cost: val === '' ? 0 : Number(val) });
-                      }}
-                      className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl pl-8 pr-4 py-3 text-sm focus:outline-none transition-all"
+                      type="text" 
+                      placeholder="e.g. Every 3 months"
+                      value={formData.recommended_frequency}
+                      onChange={e => setFormData({ ...formData, recommended_frequency: e.target.value })}
+                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Person in Charge</label>
-                  <input 
-                    type="text" 
-                    placeholder="Technician Name"
-                    value={formData.person_in_charge}
-                    onChange={e => setFormData({ ...formData, person_in_charge: e.target.value })}
-                    className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all"
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Problem Detected</label>
+                  <textarea 
+                    placeholder="Describe the issue..."
+                    rows={2}
+                    value={formData.detected_problem}
+                    onChange={e => setFormData({ ...formData, detected_problem: e.target.value })}
+                    className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-3">
-                <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Job Status</label>
-                <div className="flex gap-4">
-                  <button 
-                    type="button"
-                    onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
-                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-3xl text-xs font-normal transition-all duration-500 ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#eff6ff] text-[#3b82f6] shadow-sm' : 'bg-[#f8f9fa] text-[#000000]/40 hover:bg-gray-100'}`}
-                  >
-                    <Clock className="w-4 h-4" strokeWidth={1.5} />
-                    In Progress
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
-                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-3xl text-xs font-normal transition-all duration-500 ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] shadow-sm' : 'bg-[#f8f9fa] text-[#000000]/40 hover:bg-gray-100'}`}
-                  >
-                    <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
-                    Completed
-                  </button>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Work Details</label>
+                  <textarea 
+                    placeholder="What was done?"
+                    rows={2}
+                    value={formData.work_details}
+                    onChange={e => setFormData({ ...formData, work_details: e.target.value })}
+                    className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
+                  />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-[11px] font-normal uppercase tracking-[0.2em] text-[#000000]/40 ml-1">Notes</label>
-                <input 
-                  type="text" 
-                  placeholder="Additional notes..."
-                  value={formData.notes}
-                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full h-[52px] bg-[#f8f9fa] border-none rounded-3xl px-4 py-3 text-sm focus:outline-none transition-all"
-                />
-              </div>
-            </form>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Cost (THB)</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30 text-sm font-normal">฿</span>
+                      <input 
+                        type="number" 
+                        min="0"
+                        value={formData.cost === 0 ? '' : formData.cost}
+                        onChange={e => {
+                          const val = e.target.value.replace(/^0+/, '');
+                          setFormData({ ...formData, cost: val === '' ? 0 : Number(val) });
+                        }}
+                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl pl-8 pr-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">In Charge</label>
+                    <input 
+                      type="text" 
+                      placeholder="Technician Name"
+                      value={formData.person_in_charge}
+                      onChange={e => setFormData({ ...formData, person_in_charge: e.target.value })}
+                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
+                    />
+                  </div>
+                </div>
 
-            <div className="p-8 bg-gray-50/30 border-t border-[#000000]/5 flex gap-4">
-              <button 
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="flex-1 py-4 text-[#000000]/40 font-normal hover:text-[#000000] transition-all text-sm uppercase tracking-widest"
-              >
-                Dismiss
-              </button>
-              <button 
-                onClick={handleSubmit}
-                disabled={loading}
-                className="flex-[2] py-4 bg-[#000000] text-white font-normal rounded-3xl hover:bg-[#1a1a1a] transition-all shadow-xl active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 text-sm uppercase tracking-widest"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" strokeWidth={1.5} />}
-                Confirm Entry
-              </button>
-            </div>
+                <div className="space-y-2">
+                  <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Job Status</label>
+                  <div className="flex gap-3">
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[11px] font-normal transition-all ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
+                    >
+                      <Clock className="w-4 h-4" strokeWidth={1.5} />
+                      In Progress
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[11px] font-normal transition-all ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
+                      Completed
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Notes</label>
+                  <input 
+                    type="text" 
+                    placeholder="Additional notes..."
+                    value={formData.notes}
+                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
+                  />
+                </div>
+              </form>
+
+              <div className="p-6 bg-gray-50/50 border-t border-black/5 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-3.5 text-black/40 font-normal hover:text-black transition-all text-[11px] uppercase tracking-widest"
+                >
+                  Dismiss
+                </button>
+                <button 
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="flex-[2] py-3.5 bg-black text-white font-normal rounded-2xl hover:bg-black/80 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" strokeWidth={2} />}
+                  Confirm Entry
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       {isDeleteConfirmOpen && (

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { Shift, Profile } from '../types';
 import { CalendarDays, Users, Briefcase, CalendarX, TreePalm, Loader2, GripVertical } from 'lucide-react';
 import { ClickableInput } from '@/components/ui/ClickableInput';
-import { revalidateAppPaths } from '@/app/actions/shift-actions';
+import { revalidateAppPaths, updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter } from 'next/navigation';
 import { startOfWeek, addDays, format } from 'date-fns';
 import {
@@ -27,6 +28,10 @@ import {
   rectSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable';
+import {
+  restrictToWindowEdges,
+  snapCenterToCursor,
+} from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 
 interface PerformanceData {
@@ -54,16 +59,29 @@ function SortableEmployeeCard({ id, data, isDragging }: SortableEmployeeCardProp
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    transition,
+    transition: transition || 'transform 150ms cubic-bezier(0.2, 0, 0, 1)',
     opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? 50 : 1,
+    zIndex: isDragging ? 100 : 1,
+    willChange: 'transform',
   };
 
   return (
-    <div
+    <motion.div
       ref={setNodeRef}
+      layout
+      layoutId={id}
       style={style}
-      className={`glass-card p-4 flex flex-col gap-4 bg-white select-none border border-gray-100 shadow-sm transition-all duration-300 ${isDragging ? 'cursor-grabbing ring-1 ring-blue-500 opacity-30' : 'cursor-grab hover:border-blue-400 hover:-translate-y-[2px] hover:shadow-xl'}`}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ y: -5, scale: 1.01, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30,
+        layout: { duration: 0.3 }
+      }}
+      className={`glass-card p-6 flex flex-col gap-5 bg-white/80 backdrop-blur-xl select-none border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 rounded-3xl ${isDragging ? 'cursor-grabbing ring-2 ring-black/10 opacity-70 scale-105 shadow-2xl z-100' : 'cursor-grab hover:border-black/10 hover:shadow-xl'}`}
       {...attributes}
       {...listeners}
     >
@@ -75,34 +93,29 @@ function SortableEmployeeCard({ id, data, isDragging }: SortableEmployeeCardProp
           </h3>
         </div>
 
-
         <div className="p-1 rounded-md hover:bg-gray-100 transition-colors">
           <GripVertical className="w-5 h-5 text-gray-400" />
         </div>
       </div>
 
       {/* Performance Metrics */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-xl p-2.5 flex flex-col items-center justify-center text-center">
-          <span className="text-xl font-normal text-[#14532d]">{data.workDays}</span>
-          <span className="text-[11px] text-[#14532d] uppercase tracking-widest font-normal opacity-80">Work</span>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#dcfce7]">
+          <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
+          <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Work</span>
         </div>
 
-
-
-        <div className="bg-[#fef2f2] border border-[#fee2e2] rounded-xl p-2.5 flex flex-col items-center justify-center text-center">
-          <span className="text-xl font-normal text-[#7f1d1d]">{data.leaveDays}</span>
-          <span className="text-[11px] text-[#7f1d1d] uppercase tracking-widest font-normal opacity-80">Leave</span>
+        <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#e0f2fe]">
+          <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
+          <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Leave</span>
         </div>
 
-        <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-xl p-2.5 flex flex-col items-center justify-center text-center">
-          <span className="text-xl font-normal text-[#0c4a6e]">{data.publicHolidays}</span>
-          <span className="text-[11px] text-[#0c4a6e] uppercase tracking-widest font-normal opacity-80">Hol.</span>
+        <div className="bg-[#fff1f2] border border-[#ffe4e6] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#ffe4e6]">
+          <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
+          <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Hol.</span>
         </div>
-
-
       </div>
-    </div>
+    </motion.div>
 
 
   );
@@ -147,7 +160,7 @@ export default function LiveShiftList({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -225,16 +238,14 @@ export default function LiveShiftList({
         return newOrder;
       });
 
-      // Optimized Parallel Sync with Supabase
+      // Optimized Parallel Sync with Server Action (Service Role)
       if (newOrder.length > 0) {
         try {
-          const updates = newOrder.map((id, index) => 
-            supabase.from('profiles').update({ dashboard_order: index }).eq('id', id)
-          );
-          await Promise.all(updates);
-          await revalidateAppPaths();
+          const result = await updateDashboardOrder(newOrder);
+          if (!result.success) throw new Error(result.error);
         } catch (error) {
-          // silently handle error
+          console.error('[Dashboard] Order Sync failed:', error);
+          // Optional: handle rollback if critical
         }
       }
     }
@@ -245,10 +256,10 @@ export default function LiveShiftList({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 glass-card">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-50 border border-blue-100">
-            <CalendarDays className="w-5 h-5 text-blue-500" strokeWidth={1.5} />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-5 bg-white/80 backdrop-blur-xl border border-black/5 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.02)] mb-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-2xl bg-black/5">
+            <CalendarDays className="w-5 h-5 text-black/60" strokeWidth={1.5} />
           </div>
           <div>
             <p className="text-[11px] text-gray-500 uppercase tracking-widest mb-0.5"></p>
@@ -270,14 +281,13 @@ export default function LiveShiftList({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg w-fit shadow-sm">
-          <Users className="w-4 h-4 text-blue-500" strokeWidth={1.5} />
+        <div className="flex items-center gap-3 px-5 py-2.5 bg-black/5 rounded-2xl w-fit">
+          <Users className="w-4 h-4 text-black/60" strokeWidth={1.5} />
           <span className="text-lg font-normal text-[#000000]">{profiles.length}</span>
-          <span className="text-xs text-gray-500 ml-1 uppercase tracking-wider">All Staff</span>
+          <span className="text-[11px] text-[#000000]/40 ml-1 uppercase tracking-widest font-normal">All Staff</span>
         </div>
 
       </div>
-
 
       {mounted ? (
         <DndContext
@@ -286,6 +296,7 @@ export default function LiveShiftList({
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          modifiers={[snapCenterToCursor, restrictToWindowEdges]}
         >
           <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 relative">
             <SortableContext
@@ -304,42 +315,35 @@ export default function LiveShiftList({
 
           <DragOverlay dropAnimation={{
             duration: 250,
-            easing: 'ease-in-out',
+            easing: 'cubic-bezier(0.2, 0, 0, 1)',
             sideEffects: defaultDropAnimationSideEffects({
               styles: { active: { opacity: '0.3' } },
             }),
           }}>
             {activeId && activeProfileData ? (
-              <div className="glass-card p-5 flex flex-col gap-4 bg-white shadow-2xl border border-blue-100 scale-105 opacity-100 ring-2 ring-blue-500 rounded-3xl">
+              <div className="glass-card p-6 flex flex-col gap-5 bg-white/95 shadow-2xl border border-black/10 scale-105 opacity-100 ring-2 ring-black/5 rounded-3xl backdrop-blur-xl pointer-events-none">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {activeProfileData.profile.avatar_url ? (
-                      <img src={activeProfileData.profile.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover border border-gray-200" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center border border-gray-200 shrink-0">
-                        <span className="text-xl text-gray-400 font-normal">{activeProfileData.profile.full_name[0]}</span>
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="text-[17px] font-normal tracking-tight text-[#333333] leading-tight">
-                        {activeProfileData.profile.full_name}
-                      </h3>
-                    </div>
+                  <div className="flex-1 py-1">
+                    <h3 className="text-[19px] font-normal tracking-tight text-[#000000] leading-[1.6]">
+                      {activeProfileData.profile.full_name}
+                    </h3>
                   </div>
-                  <GripVertical className="w-5 h-5 text-gray-300" />
+                  <div className="p-1 rounded-md bg-gray-100">
+                    <GripVertical className="w-5 h-5 text-gray-600" />
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-[#f0f9f1] border border-[#e0f2f1] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
-                    <Briefcase className="w-4 h-4 text-[#2e7d32] mb-1.5" />
-                    <span className="text-xl font-normal text-[#2e7d32]">{activeProfileData.workDays}</span>
-                  </div>
-                  <div className="bg-[#fff1f2] border border-[#ffe4e6] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
-                    <CalendarX className="w-4 h-4 text-[#e11d48] mb-1.5" />
-                    <span className="text-xl font-normal text-[#e11d48]">{activeProfileData.leaveDays}</span>
+                  <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
+                    <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.workDays}</span>
+                    <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Work</span>
                   </div>
                   <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
-                    <TreePalm className="w-4 h-4 text-[#0284c7] mb-1.5" />
-                    <span className="text-xl font-normal text-[#0284c7]">{activeProfileData.publicHolidays}</span>
+                    <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.leaveDays}</span>
+                    <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Leave</span>
+                  </div>
+                  <div className="bg-[#fff1f2] border border-[#ffe4e6] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
+                    <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.publicHolidays}</span>
+                    <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Hol.</span>
                   </div>
                 </div>
               </div>

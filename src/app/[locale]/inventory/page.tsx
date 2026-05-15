@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, History, Search, ArrowDownToLine, ArrowUpFromLine, ShoppingCart } from 'lucide-react';
+import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, History, Search, ArrowDownToLine, ArrowUpFromLine, ShoppingCart, PlusCircle, PackagePlus, PackageMinus, CloudUpload } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { recordTransaction, fetchTransactionHistory, fetchFrequentItems } from '@/app/actions/inventory-actions';
 import {
   DndContext,
@@ -60,8 +61,8 @@ const defaultColumns: ColumnDef[] = [
   { id: 'source', label: 'ช่องทางสั่งซื้อ', width: '160px', type: 'text' },
 ];
 
-function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onResizeEnd }: { 
-  col: ColumnDef; 
+function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onResizeEnd }: {
+  col: ColumnDef;
   updateColumnLabel: (id: string, label: string) => void;
   saveColumnsConfig: () => void;
   onResize: (id: string, width: number) => void;
@@ -75,7 +76,7 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onR
     isResizing.current = true;
     startX.current = e.pageX;
     startWidth.current = parseInt(col.width) || 150;
-    
+
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!isResizing.current) return;
       const delta = moveEvent.pageX - startX.current;
@@ -87,7 +88,7 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onR
       isResizing.current = false;
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      
+
       const delta = upEvent.pageX - startX.current;
       const finalWidth = Math.max(80, startWidth.current + delta);
       onResizeEnd(col.id, finalWidth);
@@ -109,7 +110,7 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onR
       className={`p-0 font-normal ${col.id === 'source' ? '' : 'border-r border-[#000000]/5'} group relative select-none bg-transparent`}
     >
       <div className="p-4 flex items-center justify-center">
-        <input 
+        <input
           type="text"
           value={col.label}
           onChange={(e) => updateColumnLabel(col.id, e.target.value)}
@@ -120,7 +121,7 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onR
         />
       </div>
       {/* Resizer Handle */}
-      <div 
+      <div
         onMouseDown={handleMouseDown}
         className={`absolute right-0 top-0 bottom-0 w-1 px-0.5 cursor-col-resize hover:bg-black/10 transition-all z-20 group/resizer`}
       >
@@ -130,8 +131,8 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onR
   );
 }
 
-const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus }: { 
-  item: InventoryItem; 
+const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus }: {
+  item: InventoryItem;
   index: number;
   columns: ColumnDef[];
   handleUpdateField: (id: string, field: string, value: any) => void;
@@ -140,7 +141,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
   handleFocus: () => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition: dndTransition, isDragging } = useSortable({ id: item.id });
-  
+
   const style = {
     transform: CSS.Translate.toString(transform),
     transition: dndTransition || 'transform 150ms cubic-bezier(0.2, 0, 0, 1)',
@@ -158,7 +159,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
       )}
     >
       <td className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle">
-        <div 
+        <div
           className="flex items-center justify-center h-full min-h-[64px] w-full cursor-grab active:cursor-grabbing text-[#000000]/20 hover:text-[#000000] transition-all duration-300 p-3 touch-none"
           {...attributes}
           {...listeners}
@@ -168,19 +169,19 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
       </td>
 
       {columns.map((col, index) => (
-        <td 
-          key={col.id} 
-          style={{ width: col.width, minWidth: col.id === 'name' ? '240px' : col.width }} 
+        <td
+          key={col.id}
+          style={{ width: col.width, minWidth: col.id === 'name' ? '240px' : col.width }}
           className={`p-0 border-r border-[#000000]/5 relative group/cell ${index === columns.length - 1 ? 'border-r-0' : ''}`}
         >
-          <EditableCell 
-            item={item} 
-            col={col} 
+          <EditableCell
+            item={item}
+            col={col}
             rowIndex={rowIndex}
-            handleUpdateField={handleUpdateField} 
-            handleSaveField={handleSaveField} 
-            requestDelete={requestDelete} 
-            handleFocus={handleFocus} 
+            handleUpdateField={handleUpdateField}
+            handleSaveField={handleSaveField}
+            requestDelete={requestDelete}
+            handleFocus={handleFocus}
           />
         </td>
       ))}
@@ -199,7 +200,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
   useEffect(() => {
     if (!isFocused) {
       let val = item[col.id];
-      
+
       // Phase 1: COMPUTED LOGIC INTEGRATION
       if (col.id === 'order_qty') {
         const stock = Number(item.stock) || 0;
@@ -220,7 +221,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
   const handleBlur = () => {
     const val = inputRef.current?.value || '';
     let finalVal: string | number = val;
-    
+
     if (col.type === 'number') {
       const numericValue = val === "" ? 0 : Number(val);
       finalVal = isNaN(numericValue) ? 0 : numericValue;
@@ -236,7 +237,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
 
   return (
     <div className="flex items-center relative h-full">
-      <input 
+      <input
         ref={inputRef}
         type="text"
         inputMode={col.type === 'number' ? 'decimal' : 'text'}
@@ -264,7 +265,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/80 text-[15px] font-normal leading-[1.6] transition-all ${col.id === 'name' ? 'text-left pr-10 text-[#000000]' : 'text-center text-[#000000]/60'} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-[#000000]/5 text-[#000000] cursor-not-allowed select-none font-medium' : ''}`}
       />
       {col.id === 'name' && (
-        <button 
+        <button
           onClick={() => requestDelete(item.id)}
           className="absolute right-3 p-1.5 text-[#000000]/20 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover/cell:opacity-100"
         >
@@ -289,14 +290,14 @@ export default function DynamicInventoryManager() {
   const [poActiveTab, setPoActiveTab] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
-  
+
   // Add Form State
   const [newItemData, setNewItemData] = useState<Partial<InventoryItem>>({});
 
   // History State
-  const [undoStack, setUndoStack] = useState<{items: InventoryItem[], cols: ColumnDef[]}[]>([]);
-  const [redoStack, setRedoStack] = useState<{items: InventoryItem[], cols: ColumnDef[]}[]>([]);
-  const previousStateRef = useRef<{items: InventoryItem[], cols: ColumnDef[]}>({ items: [], cols: defaultColumns });
+  const [undoStack, setUndoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
+  const [redoStack, setRedoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
+  const previousStateRef = useRef<{ items: InventoryItem[], cols: ColumnDef[] }>({ items: [], cols: defaultColumns });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -309,7 +310,7 @@ export default function DynamicInventoryManager() {
   const [quickType, setQuickType] = useState<'IN' | 'OUT'>('IN');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [frequentItems, setFrequentItems] = useState<{id: string, name: string}[]>([]);
+  const [frequentItems, setFrequentItems] = useState<{ id: string, name: string }[]>([]);
   const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
 
   // Phase 1 & 2: COMPUTED ORDER LOGIC
@@ -344,7 +345,7 @@ export default function DynamicInventoryManager() {
 
   const filteredItems = useMemo(() => {
     if (!quickSearch) return [];
-    return items.filter(item => 
+    return items.filter(item =>
       item.name.toLowerCase().includes(quickSearch.toLowerCase())
     ).slice(0, 10);
   }, [items, quickSearch]);
@@ -403,7 +404,7 @@ export default function DynamicInventoryManager() {
         console.error('Supabase Error (Fetch):', inventoryRes.error.message, inventoryRes.error.details);
         throw inventoryRes.error;
       }
-      
+
       const loadedItems = inventoryRes.data || [];
       setItems(loadedItems);
 
@@ -411,25 +412,25 @@ export default function DynamicInventoryManager() {
       if (configRes.data && configRes.data.settings) {
         const settings = configRes.data.settings;
         if (settings.order && settings.labels) {
-           // Overwrite Protection: Check localStorage first for widths
-           const localWidths = JSON.parse(localStorage.getItem('inventory-column-widths') || '{}');
-           
-           const newCols = settings.order.map((id: string) => {
-              const def = defaultColumns.find(c => c.id === id);
-              return def ? { 
-                ...def, 
-                label: settings.labels[id] || def.label,
-                width: localWidths[id] || settings.widths?.[id] || def.width 
-              } : null;
-           }).filter(Boolean) as ColumnDef[];
-           
-           if (newCols.length > 0) {
-             loadedCols = newCols;
-             setColumns(newCols);
-           }
+          // Overwrite Protection: Check localStorage first for widths
+          const localWidths = JSON.parse(localStorage.getItem('inventory-column-widths') || '{}');
+
+          const newCols = settings.order.map((id: string) => {
+            const def = defaultColumns.find(c => c.id === id);
+            return def ? {
+              ...def,
+              label: settings.labels[id] || def.label,
+              width: localWidths[id] || settings.widths?.[id] || def.width
+            } : null;
+          }).filter(Boolean) as ColumnDef[];
+
+          if (newCols.length > 0) {
+            loadedCols = newCols;
+            setColumns(newCols);
+          }
         }
       }
-      
+
       previousStateRef.current = { items: loadedItems, cols: loadedCols };
     } catch (err: any) {
       console.error('Failed to fetch inventory:', err.message || err);
@@ -441,7 +442,7 @@ export default function DynamicInventoryManager() {
   function sanitizeInventoryItem(item: InventoryItem) {
     const sanitized = { ...item };
     const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock'];
-    
+
     numericFields.forEach(field => {
       if (sanitized[field] === '' || sanitized[field] === null || sanitized[field] === undefined || isNaN(Number(sanitized[field]))) {
         sanitized[field] = 0;
@@ -462,7 +463,7 @@ export default function DynamicInventoryManager() {
   async function handleAddItemSubmit(e: React.FormEvent) {
     e.preventDefault();
     pushHistory();
-    
+
     const newItem = {
       name: newItemData.name || '',
       stock: (newItemData.stock as unknown as string === "" || newItemData.stock === undefined || newItemData.stock === null) ? 0 : Number(newItemData.stock),
@@ -486,7 +487,7 @@ export default function DynamicInventoryManager() {
         .insert([newItem])
         .select()
         .single();
-        
+
       if (error) throw error;
       setItems(prev => prev.map(item => item.id === tempId ? data : item));
       setSavingState('synced');
@@ -503,7 +504,7 @@ export default function DynamicInventoryManager() {
     pushHistory();
     setItems(prev => prev.filter(item => item.id !== deleteId));
     setDeleteId(null);
-    
+
     try {
       setSavingState('saving');
       const { error } = await supabase.from('inventory_items').delete().eq('id', deleteId);
@@ -529,7 +530,7 @@ export default function DynamicInventoryManager() {
   async function handleSaveField(id: string, field: string, value: any) {
     setIsEditing(false);
     const original = previousStateRef.current.items.find(i => i.id === id);
-    
+
     let sanitizedValue = value;
     const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock'];
     if (numericFields.includes(field)) {
@@ -548,7 +549,7 @@ export default function DynamicInventoryManager() {
         .from('inventory_items')
         .update({ [field]: sanitizedValue })
         .eq('id', id);
-        
+
       if (error) throw error;
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
@@ -565,14 +566,14 @@ export default function DynamicInventoryManager() {
 
   async function saveColumnsConfig(currentCols: ColumnDef[] = columns) {
     setSavingState('saving');
-    
+
     // Local Persistence
-    const widths = currentCols.reduce((acc, c) => ({...acc, [c.id]: c.width}), {});
+    const widths = currentCols.reduce((acc, c) => ({ ...acc, [c.id]: c.width }), {});
     localStorage.setItem('inventory-column-widths', JSON.stringify(widths));
 
     const settings = {
       order: currentCols.map(c => c.id),
-      labels: currentCols.reduce((acc, c) => ({...acc, [c.id]: c.label}), {}),
+      labels: currentCols.reduce((acc, c) => ({ ...acc, [c.id]: c.label }), {}),
       widths
     };
     try {
@@ -641,19 +642,19 @@ export default function DynamicInventoryManager() {
         const { error: upsertErr } = await supabase.from('inventory_items').upsert(sanitizedItems);
         if (upsertErr) throw upsertErr;
       }
-      
+
       const { data: dbItems } = await supabase.from('inventory_items').select('id');
       if (dbItems) {
-         const snapshotIds = sanitizedItems.map(i => i.id);
-         const toDelete = dbItems.filter(dbI => !snapshotIds.includes(dbI.id)).map(i => i.id);
-         if (toDelete.length > 0) {
-            await supabase.from('inventory_items').delete().in('id', toDelete);
-         }
+        const snapshotIds = sanitizedItems.map(i => i.id);
+        const toDelete = dbItems.filter(dbI => !snapshotIds.includes(dbI.id)).map(i => i.id);
+        if (toDelete.length > 0) {
+          await supabase.from('inventory_items').delete().in('id', toDelete);
+        }
       }
 
       const settings = {
         order: currentCols.map(c => c.id),
-        labels: currentCols.reduce((acc, c) => ({...acc, [c.id]: c.label}), {})
+        labels: currentCols.reduce((acc, c) => ({ ...acc, [c.id]: c.label }), {})
       };
       await supabase.from('inventory_config').upsert({ id: 'column_labels', settings });
 
@@ -662,7 +663,7 @@ export default function DynamicInventoryManager() {
     } catch (err: any) {
       console.error('Error syncing undo/redo:', err.message || err);
       setSavingState('idle');
-      fetchConfigAndInventory(); 
+      fetchConfigAndInventory();
     } finally {
       setIsSyncing(false);
     }
@@ -708,7 +709,7 @@ export default function DynamicInventoryManager() {
 
   async function handleCancelTransaction(txId: string, itemId: string, type: 'IN' | 'OUT', quantity: number) {
     if (!window.confirm('ยืนยันการยกเลิกรายการนี้? ยอดสต็อกจะถูกปรับคืนอัตโนมัติ')) return;
-    
+
     setSavingState('saving');
     try {
       // 1. Get current stock
@@ -717,34 +718,34 @@ export default function DynamicInventoryManager() {
         .select('stock')
         .eq('id', itemId)
         .single();
-        
+
       if (itemError) throw itemError;
-      
+
       const currentStock = itemData.stock || 0;
       const newStock = type === 'IN' ? currentStock - quantity : currentStock + quantity;
-      
+
       // 2. Update stock
       const { error: updateError } = await supabase
         .from('inventory_items')
         .update({ stock: newStock })
         .eq('id', itemId);
-        
+
       if (updateError) throw updateError;
-      
+
       // 3. Delete transaction
       const { error: deleteError } = await supabase
         .from('inventory_transactions')
         .delete()
         .eq('id', txId);
-        
+
       if (deleteError) throw deleteError;
-      
+
       // Refresh history
       const res = await fetchTransactionHistory();
       if (res.success && res.data) {
         setTransactionHistory(res.data);
       }
-      
+
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err: any) {
@@ -757,7 +758,7 @@ export default function DynamicInventoryManager() {
   async function handleQuickSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!quickSearch || !quickQty) return;
-    
+
     // Find item
     const item = items.find(i => i.name === quickSearch || i.id === quickSearch);
     if (!item) {
@@ -772,9 +773,9 @@ export default function DynamicInventoryManager() {
     }
 
     setSavingState('saving');
-    
+
     const res = await recordTransaction(item.id, quickType, qty, 'Quick Entry');
-    
+
     if (!res.success) {
       alert(res.error);
       setSavingState('idle');
@@ -808,551 +809,577 @@ export default function DynamicInventoryManager() {
 
   return (
     <>
-    <div className="flex-1 w-full max-w-full overflow-y-auto bg-transparent text-[#000000] font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
-      <div className="w-fit mx-auto flex flex-col items-start">
-        <div className="w-full flex flex-col items-center mb-8 text-center">
-          <h1 className="text-3xl font-normal tracking-tight text-[#000000]">คลังสินค้า</h1>
-          <p className="text-sm font-normal mt-1 text-[#000000]">Dynamic UI & Time-Travel Sync</p>
-        </div>
-        
-        <div className="w-full flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
-          <div className="flex items-center gap-1.5 text-xs font-normal min-w-[70px]">
-            {savingState === 'saving' && (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
-                <span className="text-[#000000]">Saving...</span>
-              </>
-            )}
-            {savingState === 'synced' && (
-              <span className="text-emerald-500">✓ Synced</span>
-            )}
+      <div className="flex-1 w-full max-w-full overflow-y-auto bg-transparent text-[#000000] font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
+        <div className="w-fit mx-auto flex flex-col items-start">
+          <div className="w-full flex flex-col items-center mb-8 text-center">
+            <motion.h1
+              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="text-3xl font-normal tracking-[0.2em] text-[#000000] uppercase"
+            >
+              คลังสินค้า
+            </motion.h1>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1 border-r border-slate-200 pr-4 mr-2">
-              <button 
-                onClick={handleUndo}
-                disabled={undoStack.length === 0 || isSyncing}
-                className={`p-2.5 rounded-3xl transition-all ${
-                  undoStack.length === 0 || isSyncing 
-                  ? 'text-[#94a3b8] cursor-default' 
-                  : 'text-[#000000] hover:bg-purple-100'
-                }`}
-                title="ย้อนกลับ (Undo)"
-              >
-                <Undo2 className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={handleRedo}
-                disabled={redoStack.length === 0 || isSyncing}
-                className={`p-2.5 rounded-3xl transition-all ${
-                  redoStack.length === 0 || isSyncing 
-                  ? 'text-[#94a3b8] cursor-default' 
-                  : 'text-[#000000] hover:bg-purple-100'
-                }`}
-                title="ทำซ้ำ (Redo)"
-              >
-                <Redo2 className="w-4 h-4" />
-              </button>
+          <div className="w-full flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
+            <div className="flex items-center gap-1.5 text-xs font-normal min-w-[70px]">
+              {savingState === 'saving' && (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#000000]" />
+                  <span className="text-[#000000]">Syncing...</span>
+                </>
+              )}
+              {savingState === 'synced' && (
+                <span className="text-emerald-500">✓ Synced</span>
+              )}
             </div>
 
-            <button 
-              onClick={() => setShowPurchaseOrderModal(true)}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-black hover:bg-black/80 text-white rounded-3xl shadow-sm transition-all text-[14px] font-normal active:scale-95"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span>รายการสั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-1">{itemsToOrder.length}</span>}</span>
-            </button>
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border border-[#000000]/5 rounded-3xl shadow-sm transition-all text-[14px] font-normal text-[#000000] active:scale-95"
-            >
-              <Plus className="w-4 h-4 text-[#000000]" />
-              <span>เพิ่มรายการ</span>
-            </button>
-            <button 
-              onClick={handleOpenHistory}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 border border-[#000000]/5 rounded-3xl shadow-sm transition-all text-[14px] font-normal text-[#000000] active:scale-95"
-            >
-              <History className="w-4 h-4 text-[#000000]" />
-              <span>ประวัติ</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="w-full flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-3xl border border-black/5 shadow-sm">
-          <div className="flex-1">
-            <form onSubmit={handleQuickSubmit} className="flex flex-col md:flex-row items-end md:items-center gap-4">
-              <div className="flex-1 w-full relative">
-                <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-black/40" />
-                <input 
-                  type="text" 
-                  placeholder="ค้นหาสินค้า..." 
-                  value={quickSearch}
-                  onChange={e => setQuickSearch(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-[15px] font-normal text-black outline-none transition-all"
-                />
-                
-                {/* Custom Dropdown */}
-                {isSearchFocused && filteredItems.length > 0 && (
-                  <div className="absolute top-full left-0 w-full mt-2 bg-[#fdfcf0] border border-black/5 rounded-3xl shadow-xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="max-h-60 overflow-y-auto py-2">
-                      {filteredItems.map(item => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => {
-                            setQuickSearch(item.name);
-                            setIsSearchFocused(false);
-                          }}
-                          className="w-full text-left px-5 py-3 hover:bg-black/5 transition-colors flex items-center justify-between group"
-                        >
-                          <span className="text-[14px] text-black font-normal">{item.name}</span>
-                          <span className="text-[12px] text-black/30 group-hover:text-black/50 transition-colors uppercase tracking-widest font-mono">
-                            {item.stock} {item.unit}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2 w-full md:w-auto items-center">
-                <input 
-                  type="number" 
-                  placeholder="" 
-                  value={quickQty}
-                  onChange={e => setQuickQty(e.target.value)}
-                  min="0" step="1"
-                  className="w-28 px-4 py-3 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-[15px] font-normal text-black outline-none transition-all text-center"
-                />
-                <div className="flex bg-slate-100 p-1 rounded-3xl">
-                  <button type="button" onClick={() => setQuickType('IN')} className={cn("px-4 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1", quickType === 'IN' ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black")}>
-                    <ArrowDownToLine className="w-3.5 h-3.5" /> เข้า
-                  </button>
-                  <button type="button" onClick={() => setQuickType('OUT')} className={cn("px-4 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1", quickType === 'OUT' ? "bg-black text-white shadow-sm" : "text-black/50 hover:text-black")}>
-                    <ArrowUpFromLine className="w-3.5 h-3.5" /> ออก
-                  </button>
-                </div>
-                <button type="submit" className="px-6 py-3 bg-black text-white rounded-3xl text-[14px] font-medium hover:bg-black/80 transition-all shadow-sm active:scale-95 whitespace-nowrap">
-                  บันทึก
-                </button>
-              </div>
-            </form>
-            {frequentItems.length > 0 && (
-              <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
-                <span className="text-[12px] text-black/40 font-normal whitespace-nowrap">รายการบ่อย:</span>
-                {frequentItems.map(fi => (
-                  <button key={fi.id} onClick={() => setQuickSearch(fi.name)} className="px-3 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-full text-[13px] text-black/70 whitespace-nowrap transition-colors">
-                    {fi.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="w-full overflow-x-auto flex flex-col pb-8">
-          <div className="w-fit border border-[#000000]/5 bg-[#fdfcf0]/80 backdrop-blur-md shadow-sm rounded-3xl overflow-hidden mx-auto">
-            <DndContext 
-              sensors={sensors} 
-              collisionDetection={closestCorners} 
-              onDragStart={handleDragStartRows}
-              onDragEnd={handleDragEndRows}
-              modifiers={[restrictToWindowEdges]}
-            >
-              <table className="table-auto border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="w-10 min-w-[40px] border-r border-slate-100"></th>
-                    {columns.map(col => (
-                      <ColumnHeader 
-                        key={col.id} 
-                        col={col} 
-                        updateColumnLabel={updateColumnLabel}
-                        saveColumnsConfig={() => saveColumnsConfig(columns)}
-                        onResize={handleColumnResize}
-                        onResizeEnd={handleColumnResizeEnd}
-                      />
-                    ))}
-                  </tr>
-                </thead>
-                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                  <tbody>
-                    {items.length === 0 ? (
-                      <tr>
-                        <td colSpan={columns.length + 1} className="p-12 text-center text-[14px] font-normal text-[#000000]">
-                          ไม่มีข้อมูลสินค้าในระบบ กรุณกด "เพิ่มรายการ"
-                        </td>
-                      </tr>
-                    ) : (
-                      items.map((item, index) => (
-                        <SortableRow 
-                          key={item.id} 
-                          item={item} 
-                          index={index}
-                          columns={columns} 
-                          handleUpdateField={handleUpdateField}
-                          handleSaveField={handleSaveField}
-                          requestDelete={setDeleteId}
-                          handleFocus={handleFocus}
-                        />
-                      ))
-                    )}
-                  </tbody>
-                </SortableContext>
-              </table>
-              
-            </DndContext>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* Add Modal */}
-    {showAddModal && (
-      <div 
-        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4"
-        onClick={() => setShowAddModal(false)}
-      >
-        <div 
-          className="bg-white rounded-3xl shadow-xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-lg font-normal text-[#000000]">เพิ่มรายการใหม่</h2>
-            <button onClick={() => setShowAddModal(false)} className="p-2 text-[#000000] hover:text-[#000000] hover:bg-slate-100 rounded-full transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <form onSubmit={handleAddItemSubmit} className="p-6">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              <div className="col-span-2 flex flex-col gap-1.5">
-                <label className="text-[12px] font-normal text-[#000000] ml-1">ชื่อรายการ</label>
-                <input 
-                  required
-                  value={newItemData.name || ''}
-                  onChange={e => setNewItemData(prev => ({...prev, name: e.target.value}))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-normal text-slate-600 ml-1">คงเหลือ</label>
-                <input 
-                  type="text"
-                  inputMode="decimal"
-                  value={newItemData.stock === null || newItemData.stock === undefined ? '' : newItemData.stock}
-                  onChange={e => {
-                    let val = e.target.value.replace(/[^0-9.]/g, '');
-                    if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
-                    setNewItemData(prev => ({...prev, stock: val}));
-                  }}
-                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-normal text-slate-600 ml-1">หน่วย</label>
-                <input 
-                  value={newItemData.unit === null || newItemData.unit === undefined ? '' : newItemData.unit}
-                  onChange={e => setNewItemData(prev => ({...prev, unit: e.target.value}))}
-                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-normal text-slate-600 ml-1">จำนวนสั่งซื้อ</label>
-                <input 
-                  type="text"
-                  inputMode="decimal"
-                  value={newItemData.order_qty === null || newItemData.order_qty === undefined ? '' : newItemData.order_qty}
-                  onChange={e => {
-                    let val = e.target.value.replace(/[^0-9.]/g, '');
-                    if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
-                    setNewItemData(prev => ({...prev, order_qty: val}));
-                  }}
-                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-normal text-slate-600 ml-1">จุดสั่งซื้อ</label>
-                <input 
-                  type="text"
-                  inputMode="decimal"
-                  value={newItemData.order_point === null || newItemData.order_point === undefined ? '' : newItemData.order_point}
-                  onChange={e => {
-                    let val = e.target.value.replace(/[^0-9.]/g, '');
-                    if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
-                    setNewItemData(prev => ({...prev, order_point: val}));
-                  }}
-                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-normal text-slate-600 ml-1">จำนวนที่ต้องมี</label>
-                <input 
-                  type="text"
-                  inputMode="decimal"
-                  value={newItemData.target_stock === null || newItemData.target_stock === undefined ? '' : newItemData.target_stock}
-                  onChange={e => {
-                    let val = e.target.value.replace(/[^0-9.]/g, '');
-                    if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
-                    setNewItemData(prev => ({...prev, target_stock: val}));
-                  }}
-                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-normal text-slate-600 ml-1">ช่องทางสั่งซื้อ</label>
-                <input 
-                  value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}
-                  onChange={e => setNewItemData(prev => ({...prev, source: e.target.value}))}
-                  className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
-                />
-              </div>
-            </div>
-            <div className="mt-8 flex gap-3">
-              <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
-                ยกเลิก
-              </button>
-              <button type="submit" className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
-                บันทึกข้อมูล
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    )}
-
-    {/* Delete Confirm Alert */}
-    {deleteId && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-200">
-          <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Trash2 className="w-6 h-6" />
-          </div>
-          <h3 className="text-lg font-normal text-[#000000] mb-2">ต้องการลบรายการนี้ใช่หรือไม่?</h3>
-          <p className="text-sm font-normal text-[#000000] mb-6">ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</p>
-          <div className="flex gap-3">
-            <button onClick={() => setDeleteId(null)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
-              ยกเลิก
-            </button>
-            <button onClick={executeDelete} className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
-              ลบรายการ
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {/* Reconstructed Transaction History Modal */}
-    {showHistoryModal && (
-      <div 
-        className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40 backdrop-blur-md p-4"
-        onClick={() => setShowHistoryModal(false)}
-      >
-        <div 
-          className="bg-[#fdfcf0] rounded-3xl shadow-2xl w-full max-w-5xl max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col border border-black/5"
-          onClick={e => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="px-8 py-6 border-b border-black/5 flex items-center justify-between bg-white/50 backdrop-blur-sm shrink-0">
-            <div>
-              <h2 className="text-2xl font-normal text-[#000000] flex items-center gap-3">
-                <History className="w-6 h-6 text-black/40" /> 
-                ประวัติการเคลื่อนไหว
-              </h2>
-              <p className="text-black/40 text-[13px] mt-1 font-normal">ตรวจสอบรายการรับเข้าและนำออกย้อนหลัง</p>
-            </div>
-            <button 
-              onClick={() => setShowHistoryModal(false)} 
-              className="p-3 text-black/30 hover:text-black hover:bg-black/5 rounded-full transition-all active:scale-95"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Table Content */}
-          <div className="overflow-y-auto p-8 bg-[#fdfcf0] flex-1">
-            <div className="bg-white rounded-[2rem] border border-black/5 shadow-sm overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50 border-b border-black/5">
-                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-left w-[160px]">วันเวลา</th>
-                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-left">ชื่อรายการสินค้า</th>
-                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[120px]">ประเภท</th>
-                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-right w-[110px]">จำนวน</th>
-                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-right w-[110px]">คงเหลือ</th>
-                    <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[90px]">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black/[0.03]">
-                  {transactionHistory.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-20 text-center text-black/30 text-[15px] font-normal italic">
-                        <div className="flex flex-col items-center gap-3">
-                          <ShoppingCart className="w-10 h-10 opacity-10" />
-                          ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    transactionHistory.map((tx: any) => (
-                      <tr key={tx.id} className="group hover:bg-slate-50/80 transition-colors">
-                        {/* Day/Time - Left */}
-                        <td className="py-5 px-6 text-[14px] text-black/60 font-mono text-left">
-                          {new Date(tx.created_at).toLocaleString('th-TH', { 
-                            dateStyle: 'short', 
-                            timeStyle: 'short' 
-                          })}
-                        </td>
-                        
-                        {/* Item Name - Left */}
-                        <td className="py-5 px-6 text-[15px] text-black font-medium text-left">
-                          {tx.inventory_items?.name || 'ไม่ทราบชื่อสินค้า'}
-                        </td>
-                        
-                        {/* Type - Center */}
-                        <td className="py-5 px-6 text-center">
-                          <span className={cn(
-                            "px-4 py-1.5 rounded-full text-[12px] font-medium inline-flex items-center gap-1.5 transition-all shadow-sm",
-                            tx.type === 'IN' 
-                              ? "bg-black text-white" 
-                              : "bg-slate-100 text-black/60 font-normal border border-black/5"
-                          )}>
-                            {tx.type === 'IN' ? <ArrowDownToLine className="w-3.5 h-3.5" /> : <ArrowUpFromLine className="w-3.5 h-3.5" />}
-                            {tx.type === 'IN' ? 'รับเข้า' : 'นำออก'}
-                          </span>
-                        </td>
-                        
-                        {/* Quantity - Right (Mono) */}
-                        <td className="py-5 px-6 text-[16px] text-right font-mono text-black font-medium">
-                          {tx.quantity}
-                        </td>
-                        
-                        {/* Balance After - Right (Mono) */}
-                        <td className="py-5 px-6 text-[16px] text-right font-mono text-black/40">
-                          {tx.balance_after}
-                        </td>
-                        
-                        {/* Actions - Center */}
-                        <td className="py-5 px-6 text-center">
-                          <button
-                            onClick={() => handleCancelTransaction(tx.id, tx.inventory_item_id, tx.type, tx.quantity)}
-                            className="p-2 text-black/10 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
-                            title="ยกเลิกรายการนี้"
-                          >
-                            <Trash2 className="w-4.5 h-4.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          {/* Footer Info */}
-          <div className="px-8 py-4 bg-white/30 border-t border-black/5 flex justify-between items-center shrink-0 text-[12px] text-black/30">
-            <span>แสดง {transactionHistory.length} รายการล่าสุด</span>
-            <span className="font-mono uppercase tracking-tighter">System Rebirth v3.1</span>
-          </div>
-        </div>
-      </div>
-    )}
-
-
-    {/* Purchase Orders Modal */}
-    {showPurchaseOrderModal && (
-      <div 
-        className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
-        onClick={() => setShowPurchaseOrderModal(false)}
-      >
-        <div 
-          className="bg-[#fdfcf0] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="px-6 py-5 border-b border-black/5 flex items-center justify-between bg-white shrink-0">
-            <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ (Purchase Orders)
-            </h2>
-            <button onClick={() => setShowPurchaseOrderModal(false)} className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
-          <div className="flex flex-col flex-1 overflow-hidden">
-            {/* Tabs Navigation */}
-            <div className="px-6 pt-4 bg-white border-b border-black/5 shrink-0">
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-                <button 
-                  onClick={() => setPoActiveTab('all')} 
-                  className={cn("px-4 py-3 text-[14px] whitespace-nowrap transition-colors border-b-2 font-medium", poActiveTab === 'all' ? "border-black text-black" : "border-transparent text-black/50 hover:text-black")}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1 border-r border-slate-200 pr-4 mr-2">
+                <button
+                  onClick={handleUndo}
+                  disabled={undoStack.length === 0 || isSyncing}
+                  className={`p-2.5 rounded-3xl transition-all ${undoStack.length === 0 || isSyncing
+                    ? 'text-[#94a3b8] cursor-default'
+                    : 'text-[#000000] hover:bg-purple-100'
+                    }`}
+                  title="ย้อนกลับ (Undo)"
                 >
-                  ทั้งหมด ({itemsToOrder.length})
+                  <Undo2 className="w-4 h-4" />
                 </button>
-                {poSources.map(source => (
-                  <button 
-                    key={source} 
-                    onClick={() => setPoActiveTab(source)} 
-                    className={cn("px-4 py-3 text-[14px] whitespace-nowrap transition-colors border-b-2 font-medium", poActiveTab === source ? "border-black text-black" : "border-transparent text-black/50 hover:text-black")}
-                  >
-                    {source} ({itemsToOrder.filter(i => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === source).length})
-                  </button>
-                ))}
+                <button
+                  onClick={handleRedo}
+                  disabled={redoStack.length === 0 || isSyncing}
+                  className={`p-2.5 rounded-3xl transition-all ${redoStack.length === 0 || isSyncing
+                    ? 'text-[#94a3b8] cursor-default'
+                    : 'text-[#000000] hover:bg-purple-100'
+                    }`}
+                  title="ทำซ้ำ (Redo)"
+                >
+                  <Redo2 className="w-4 h-4" />
+                </button>
               </div>
-            </div>
 
-            {/* Tab Content */}
-            <div className="overflow-y-auto p-6 bg-[#fdfcf0] flex-1">
-              {displayedPoItems.length === 0 ? (
-                <div className="py-16 flex flex-col items-center justify-center text-black/40 bg-white rounded-3xl border border-black/5 shadow-sm">
-                  <ShoppingCart className="w-12 h-12 mb-4 opacity-20" />
-                  <p className="text-[15px]">ไม่มีรายการสั่งซื้อสำหรับช่องทางนี้</p>
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}
+                onClick={() => setShowPurchaseOrderModal(true)}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#f0fdf4] border border-[#dcfce7] hover:bg-[#dcfce7] text-[#14532d] rounded-3xl shadow-sm transition-all text-[14px] font-medium"
+              >
+                <ShoppingCart className="w-4.5 h-4.5" strokeWidth={1.5} />
+                <span>รายการสั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-[#14532d] text-white text-[10px] px-2 py-0.5 rounded-full ml-1">{itemsToOrder.length}</span>}</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#fff7ed] border border-[#ffedd5] hover:bg-[#ffedd5] text-[#9a3412] rounded-3xl shadow-sm transition-all text-[14px] font-medium"
+              >
+                <PlusCircle className="w-4.5 h-4.5" strokeWidth={1.5} />
+                <span>Add Item</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}
+                onClick={handleOpenHistory}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#f5f3ff] border border-[#ede9fe] hover:bg-[#ede9fe] text-[#5b21b6] rounded-3xl shadow-sm transition-all text-[14px] font-medium"
+              >
+                <History className="w-4.5 h-4.5" strokeWidth={1.5} />
+                <span>Transaction History</span>
+              </motion.button>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="w-full flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-3xl border border-black/5 shadow-sm">
+            <div className="flex-1">
+              <form onSubmit={handleQuickSubmit} className="flex flex-col md:flex-row items-end md:items-center gap-4">
+                <div className="flex-1 w-full relative">
+                  <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-black/40" />
+                  <input
+                    type="text"
+                    placeholder="ค้นหาสินค้า..."
+                    value={quickSearch}
+                    onChange={e => setQuickSearch(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-[15px] font-normal text-black outline-none transition-all"
+                  />
+
+                  {/* Custom Dropdown */}
+                  {isSearchFocused && filteredItems.length > 0 && (
+                    <div className="absolute top-full left-0 w-full mt-2 bg-[#fdfcf0] border border-black/5 rounded-3xl shadow-xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="max-h-60 overflow-y-auto py-2">
+                        {filteredItems.map(item => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              setQuickSearch(item.name);
+                              setIsSearchFocused(false);
+                            }}
+                            className="w-full text-left px-5 py-3 hover:bg-black/5 transition-colors flex items-center justify-between group"
+                          >
+                            <span className="text-[14px] text-black font-normal">{item.name}</span>
+                            <span className="text-[12px] text-black/30 group-hover:text-black/50 transition-colors uppercase tracking-widest font-mono">
+                              {item.stock} {item.unit}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="bg-white rounded-3xl shadow-sm border border-black/5 overflow-hidden">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-black/5 bg-slate-50/50">
-                        <th className="py-4 font-normal text-black/40 text-[13px] w-12 text-center border-r border-black/5">#</th>
-                        <th className="py-4 font-normal text-black/40 text-[13px] text-left pl-4 border-r border-black/5">ชื่อรายการ</th>
-                        <th className="py-4 font-normal text-black/40 text-[13px] text-center w-24 border-r border-black/5">คงเหลือ</th>
-                        <th className="py-4 font-normal text-black/40 text-[13px] text-center w-32 border-r border-black/5">จำนวนสั่งซื้อ</th>
-                        <th className="py-4 font-normal text-black/40 text-[13px] w-24 text-center border-r border-black/5">หน่วย</th>
-                        <th className="py-4 font-normal text-black/40 text-[13px] w-32 text-center">อัปเดตล่าสุด</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayedPoItems.map((item, idx) => (
-                        <tr key={item.id} className="border-b border-black/5 last:border-0 hover:bg-[#000000]/5 transition-colors">
-                          <td className="py-4 text-[14px] text-black/30 text-center border-r border-black/5">{idx + 1}</td>
-                          <td className="py-4 text-[15px] text-black font-medium text-left pl-4 border-r border-black/5">{item.name}</td>
-                          <td className="py-4 text-[15px] text-black/50 text-center font-mono border-r border-black/5">{item.stock}</td>
-                          <td className="py-4 text-[16px] text-black text-center font-mono font-medium border-r border-black/5">{item.computedOrderQty}</td>
-                          <td className="py-4 text-[14px] text-black/50 text-center border-r border-black/5">{item.unit || '-'}</td>
-                          <td className="py-4 text-[13px] text-black/40 text-center font-mono">
-                            {new Date(item.updated_at || Date.now()).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="flex gap-2 w-full md:w-auto items-center">
+                  <input
+                    type="number"
+                    placeholder=""
+                    value={quickQty}
+                    onChange={e => setQuickQty(e.target.value)}
+                    min="0" step="1"
+                    className="w-28 px-4 py-3 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-[15px] font-normal text-black outline-none transition-all text-center"
+                  />
+                  <div className="flex bg-slate-100/50 p-1 rounded-3xl border border-black/5">
+                    <button type="button" onClick={() => setQuickType('IN')} className={cn("px-5 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1.5", quickType === 'IN' ? "bg-[#f0fdf4] text-[#14532d] shadow-sm border border-[#dcfce7]" : "text-black/40 hover:text-black/60")}>
+                      <PackagePlus className="w-4 h-4" strokeWidth={1.5} /> Stock In
+                    </button>
+                    <button type="button" onClick={() => setQuickType('OUT')} className={cn("px-5 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1.5", quickType === 'OUT' ? "bg-[#fff1f2] text-[#9f1239] shadow-sm border border-[#ffe4e6]" : "text-black/40 hover:text-black/60")}>
+                      <PackageMinus className="w-4 h-4" strokeWidth={1.5} /> Stock Out
+                    </button>
+                  </div>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} type="submit" className="px-6 py-3 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#e0f2fe] text-[#0c4a6e] rounded-3xl text-[14px] font-medium transition-all shadow-sm flex items-center gap-2 whitespace-nowrap">
+                    <CloudUpload className="w-4.5 h-4.5" strokeWidth={1.5} />
+                    Save
+                  </motion.button>
+                </div>
+              </form>
+              {frequentItems.length > 0 && (
+                <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
+                  <span className="text-[12px] text-black/40 font-normal whitespace-nowrap">รายการบ่อย:</span>
+                  {frequentItems.map(fi => (
+                    <button key={fi.id} onClick={() => setQuickSearch(fi.name)} className="px-3 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-full text-[13px] text-black/70 whitespace-nowrap transition-colors">
+                      {fi.name}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
           </div>
+
+          <div className="w-full overflow-x-auto flex flex-col pb-8">
+            <div className="w-fit border border-[#000000]/5 bg-[#fdfcf0]/80 backdrop-blur-md shadow-sm rounded-3xl overflow-hidden mx-auto">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStartRows}
+                onDragEnd={handleDragEndRows}
+                modifiers={[restrictToWindowEdges]}
+              >
+                <table className="table-auto border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/50">
+                      <th className="w-10 min-w-[40px] border-r border-slate-100"></th>
+                      {columns.map(col => (
+                        <ColumnHeader
+                          key={col.id}
+                          col={col}
+                          updateColumnLabel={updateColumnLabel}
+                          saveColumnsConfig={() => saveColumnsConfig(columns)}
+                          onResize={handleColumnResize}
+                          onResizeEnd={handleColumnResizeEnd}
+                        />
+                      ))}
+                    </tr>
+                  </thead>
+                  <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                    <tbody>
+                      {items.length === 0 ? (
+                        <tr>
+                          <td colSpan={columns.length + 1} className="p-12 text-center text-[14px] font-normal text-[#000000]">
+                            ไม่มีข้อมูลสินค้าในระบบ กรุณกด "เพิ่มรายการ"
+                          </td>
+                        </tr>
+                      ) : (
+                        items.map((item, index) => (
+                          <SortableRow
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            columns={columns}
+                            handleUpdateField={handleUpdateField}
+                            handleSaveField={handleSaveField}
+                            requestDelete={setDeleteId}
+                            handleFocus={handleFocus}
+                          />
+                        ))
+                      )}
+                    </tbody>
+                  </SortableContext>
+                </table>
+
+              </DndContext>
+            </div>
+          </div>
         </div>
       </div>
-    )}
+
+      {/* Add Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4"
+            onClick={() => setShowAddModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-lg font-normal text-[#000000]">เพิ่มรายการใหม่</h2>
+                <button onClick={() => setShowAddModal(false)} className="p-2 text-[#000000] hover:text-[#000000] hover:bg-slate-100 rounded-full transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <form onSubmit={handleAddItemSubmit} className="p-6">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  <div className="col-span-2 flex flex-col gap-1.5">
+                    <label className="text-[12px] font-normal text-[#000000] ml-1">ชื่อรายการ</label>
+                    <input
+                      required
+                      value={newItemData.name || ''}
+                      onChange={e => setNewItemData(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-normal text-slate-600 ml-1">คงเหลือ</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={newItemData.stock === null || newItemData.stock === undefined ? '' : newItemData.stock}
+                      onChange={e => {
+                        let val = e.target.value.replace(/[^0-9.]/g, '');
+                        if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
+                        setNewItemData(prev => ({ ...prev, stock: val }));
+                      }}
+                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-normal text-slate-600 ml-1">หน่วย</label>
+                    <input
+                      value={newItemData.unit === null || newItemData.unit === undefined ? '' : newItemData.unit}
+                      onChange={e => setNewItemData(prev => ({ ...prev, unit: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-normal text-slate-600 ml-1">จำนวนสั่งซื้อ</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={newItemData.order_qty === null || newItemData.order_qty === undefined ? '' : newItemData.order_qty}
+                      onChange={e => {
+                        let val = e.target.value.replace(/[^0-9.]/g, '');
+                        if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
+                        setNewItemData(prev => ({ ...prev, order_qty: val }));
+                      }}
+                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-normal text-slate-600 ml-1">จุดสั่งซื้อ</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={newItemData.order_point === null || newItemData.order_point === undefined ? '' : newItemData.order_point}
+                      onChange={e => {
+                        let val = e.target.value.replace(/[^0-9.]/g, '');
+                        if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
+                        setNewItemData(prev => ({ ...prev, order_point: val }));
+                      }}
+                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-normal text-slate-600 ml-1">จำนวนที่ต้องมี</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={newItemData.target_stock === null || newItemData.target_stock === undefined ? '' : newItemData.target_stock}
+                      onChange={e => {
+                        let val = e.target.value.replace(/[^0-9.]/g, '');
+                        if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
+                        setNewItemData(prev => ({ ...prev, target_stock: val }));
+                      }}
+                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-normal text-slate-600 ml-1">ช่องทางสั่งซื้อ</label>
+                    <input
+                      value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}
+                      onChange={e => setNewItemData(prev => ({ ...prev, source: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="mt-8 flex gap-3">
+                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
+                    ยกเลิก
+                  </button>
+                  <button type="submit" className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
+                    บันทึกข้อมูล
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirm Alert */}
+      <AnimatePresence>
+        {deleteId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4">
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 text-center">
+              <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-normal text-[#000000] mb-2">ต้องการลบรายการนี้ใช่หรือไม่?</h3>
+              <p className="text-sm font-normal text-[#000000] mb-6">ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeleteId(null)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
+                  ยกเลิก
+                </button>
+                <button onClick={executeDelete} className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
+                  ลบรายการ
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reconstructed Transaction History Modal */}
+      <AnimatePresence>
+        {showHistoryModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center bg-black/20 backdrop-blur-md p-4"
+            onClick={() => setShowHistoryModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="bg-[#fdfcf0] rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col border border-black/5"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="px-8 py-6 border-b border-black/5 flex items-center justify-between bg-white/50 backdrop-blur-sm shrink-0">
+                <div>
+                  <h2 className="text-2xl font-normal text-[#000000] flex items-center gap-3">
+                    <History className="w-6 h-6 text-black/40" />
+                    ประวัติการเคลื่อนไหว
+                  </h2>
+                  <p className="text-black/40 text-[13px] mt-1 font-normal">ตรวจสอบรายการรับเข้าและนำออกย้อนหลัง</p>
+                </div>
+                <button
+                  onClick={() => setShowHistoryModal(false)}
+                  className="p-3 text-black/30 hover:text-black hover:bg-black/5 rounded-full transition-all active:scale-95"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Table Content */}
+              <div className="overflow-y-auto p-8 bg-[#fdfcf0] flex-1">
+                <div className="bg-white rounded-[2rem] border border-black/5 shadow-sm overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-black/5">
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-left w-[160px]">วันเวลา</th>
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-left">ชื่อรายการสินค้า</th>
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[120px]">ประเภท</th>
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-right w-[110px]">จำนวน</th>
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-right w-[110px]">คงเหลือ</th>
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[90px]">จัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/[0.03]">
+                      {transactionHistory.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-20 text-center text-black/30 text-[15px] font-normal italic">
+                            <div className="flex flex-col items-center gap-3">
+                              <ShoppingCart className="w-10 h-10 opacity-10" />
+                              ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        transactionHistory.map((tx: any, index: number) => (
+                          <motion.tr
+                            key={tx.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.03 }}
+                            className="group hover:bg-slate-50/80 transition-colors"
+                          >
+                            {/* Day/Time - Left */}
+                            <td className="py-3.5 px-6 text-[14px] text-black/60 font-mono text-left">
+                              {new Date(tx.created_at).toLocaleString('th-TH', {
+                                dateStyle: 'short',
+                                timeStyle: 'short'
+                              })}
+                            </td>
+
+                            {/* Item Name - Left */}
+                            <td className="py-3.5 px-6 text-[15px] text-black font-normal text-left" style={{ lineHeight: '1.6' }}>
+                              {tx.inventory_items?.name || 'ไม่ทราบชื่อสินค้า'}
+                            </td>
+
+                            {/* Type - Center */}
+                            <td className="py-3.5 px-6 text-center">
+                              <span className={cn(
+                                "px-3.5 py-1.5 rounded-full text-[11px] font-medium inline-flex items-center gap-1.5 transition-all shadow-sm border",
+                                tx.type === 'IN'
+                                  ? "bg-[#f0fdf4] text-[#14532d] border-[#dcfce7]"
+                                  : "bg-[#fff1f2] text-[#9f1239] border-[#ffe4e6]"
+                              )}>
+                                {tx.type === 'IN' ? <ArrowDownToLine className="w-3.5 h-3.5" /> : <ArrowUpFromLine className="w-3.5 h-3.5" />}
+                                {tx.type === 'IN' ? 'รับเข้า' : 'นำออก'}
+                              </span>
+                            </td>
+
+                            {/* Quantity - Right (Mono) */}
+                            <td className="py-3.5 px-6 text-[15px] text-right font-mono text-black font-normal">
+                              {tx.quantity}
+                            </td>
+
+                            {/* Balance After - Right (Mono) */}
+                            <td className="py-3.5 px-6 text-[15px] text-right font-mono text-black/40">
+                              {tx.balance_after}
+                            </td>
+
+                            {/* Actions - Center */}
+                            <td className="py-3.5 px-6 text-center">
+                              <button
+                                onClick={() => handleCancelTransaction(tx.id, tx.inventory_item_id, tx.type, tx.quantity)}
+                                className="p-2 text-black/10 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
+                                title="ยกเลิกรายการนี้"
+                              >
+                                <Trash2 className="w-4.5 h-4.5" />
+                              </button>
+                            </td>
+                          </motion.tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Footer Info */}
+              <div className="px-8 py-4 bg-white/30 border-t border-black/5 flex justify-between items-center shrink-0 text-[12px] text-black/30">
+                <span>แสดง {transactionHistory.length} รายการล่าสุด</span>
+                <span className="font-mono uppercase tracking-tighter">System Rebirth v3.1</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+
+      {/* Purchase Orders Modal */}
+      <AnimatePresence>
+        {showPurchaseOrderModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center bg-black/20 backdrop-blur-md p-4"
+            onClick={() => setShowPurchaseOrderModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="bg-[#fdfcf0] rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="px-6 py-5 border-b border-black/5 flex items-center justify-between bg-white shrink-0">
+                <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ (Purchase Orders)
+                </h2>
+                <button onClick={() => setShowPurchaseOrderModal(false)} className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex flex-col flex-1 overflow-hidden">
+                {/* Tabs Navigation */}
+                <div className="px-6 pt-4 bg-white border-b border-black/5 shrink-0">
+                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                    <button
+                      onClick={() => setPoActiveTab('all')}
+                      className={cn("px-4 py-3 text-[14px] whitespace-nowrap transition-colors border-b-2 font-medium", poActiveTab === 'all' ? "border-black text-black" : "border-transparent text-black/50 hover:text-black")}
+                    >
+                      ทั้งหมด ({itemsToOrder.length})
+                    </button>
+                    {poSources.map(source => (
+                      <button
+                        key={source}
+                        onClick={() => setPoActiveTab(source)}
+                        className={cn("px-4 py-3 text-[14px] whitespace-nowrap transition-colors border-b-2 font-medium", poActiveTab === source ? "border-black text-black" : "border-transparent text-black/50 hover:text-black")}
+                      >
+                        {source} ({itemsToOrder.filter(i => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === source).length})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tab Content */}
+                <div className="overflow-y-auto p-6 bg-[#fdfcf0] flex-1">
+                  {displayedPoItems.length === 0 ? (
+                    <div className="py-16 flex flex-col items-center justify-center text-black/40 bg-white rounded-3xl border border-black/5 shadow-sm">
+                      <ShoppingCart className="w-12 h-12 mb-4 opacity-20" />
+                      <p className="text-[15px]">ไม่มีรายการสั่งซื้อสำหรับช่องทางนี้</p>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-3xl shadow-sm border border-black/5 overflow-hidden">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-black/5 bg-slate-50/50">
+                            <th className="py-4 font-normal text-black/40 text-[13px] w-12 text-center border-r border-black/5">#</th>
+                            <th className="py-4 font-normal text-black/40 text-[13px] text-left pl-4 border-r border-black/5">ชื่อรายการ</th>
+                            <th className="py-4 font-normal text-black/40 text-[13px] text-center w-24 border-r border-black/5">คงเหลือ</th>
+                            <th className="py-4 font-normal text-black/40 text-[13px] text-center w-32 border-r border-black/5">จำนวนสั่งซื้อ</th>
+                            <th className="py-4 font-normal text-black/40 text-[13px] w-24 text-center border-r border-black/5">หน่วย</th>
+                            <th className="py-4 font-normal text-black/40 text-[13px] w-32 text-center">อัปเดตล่าสุด</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {displayedPoItems.map((item, idx) => (
+                            <tr key={item.id} className="border-b border-black/5 last:border-0 hover:bg-[#000000]/5 transition-colors">
+                              <td className="py-4 text-[14px] text-black/30 text-center border-r border-black/5">{idx + 1}</td>
+                              <td className="py-4 text-[15px] text-black font-medium text-left pl-4 border-r border-black/5">{item.name}</td>
+                              <td className="py-4 text-[15px] text-black/50 text-center font-mono border-r border-black/5">{item.stock}</td>
+                              <td className="py-4 text-[16px] text-black text-center font-mono font-medium border-r border-black/5">{item.computedOrderQty}</td>
+                              <td className="py-4 text-[14px] text-black/50 text-center border-r border-black/5">{item.unit || '-'}</td>
+                              <td className="py-4 text-[13px] text-black/40 text-center font-mono">
+                                {new Date(item.updated_at || Date.now()).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

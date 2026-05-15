@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Undo2, Redo2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays } from 'lucide-react';
 import { startOfWeek, addDays, format } from 'date-fns';
 
@@ -9,7 +10,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 
-import { deleteShift, revalidateAppPaths } from '@/app/actions/shift-actions';
+import { deleteShift, revalidateAppPaths, updateStaffOrder } from '@/app/actions/shift-actions';
 import type { Profile, Shift } from '@/types';
 import { isSameThaiDay } from '@/lib/date-utils';
 
@@ -43,12 +44,12 @@ import { cn } from '@/lib/utils';
 // --- Constants Outside Component ---
 const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 const shiftTypes = [
-  { label: '6:30', value: '6:30', color: 'bg-[#d4edda] text-[#155724] border-[#c3e6cb]' },
-  { label: '7:00', value: '7:00', color: 'bg-[#ffffff] text-[#333333] border-gray-300' },
-  { label: '8:00', value: '8:00', color: 'bg-[#fff3cd] text-[#856404] border-[#ffeeba]' },
-  { label: 'ร้านซักผ้า', value: 'ร้านซักผ้า', color: 'bg-[#d1ecf1] text-[#0c5460] border-[#bee5eb]' },
-  { label: 'ไปสาขา 2', value: 'ไปสาขา 2', color: 'bg-[#d1ecf1] text-[#0c5460] border-[#bee5eb]' },
-  { label: 'ลา', value: 'ลา', color: 'bg-[#f8d7da] text-[#721c24] border-[#f5c6cb]' }
+  { label: '6:30', value: '6:30', color: 'bg-[#d4edda] text-[#000000] border-[#c3e6cb]' },
+  { label: '7:00', value: '7:00', color: 'bg-[#ffffff] text-[#000000] border-gray-300' },
+  { label: '8:00', value: '8:00', color: 'bg-[#fff3cd] text-[#000000] border-[#ffeeba]' },
+  { label: 'ร้านซักผ้า', value: 'ร้านซักผ้า', color: 'bg-[#d1ecf1] text-[#000000] border-[#bee5eb]' },
+  { label: 'ไปสาขา 2', value: 'ไปสาขา 2', color: 'bg-[#d1ecf1] text-[#000000] border-[#bee5eb]' },
+  { label: 'ลา', value: 'ลา', color: 'bg-[#f8d7da] text-[#000000] border-[#f5c6cb]' }
 ];
 
 // --- Sub-component: SortableEmployeeRow ---
@@ -88,12 +89,20 @@ const SortableEmployeeRow = React.memo(({
   };
 
   return (
-    <div
+    <motion.div
       ref={setNodeRef}
+      layout
+      layoutId={id}
       style={style}
+      transition={{ 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30,
+        layout: { duration: 0.3 }
+      }}
       className={cn(
         "grid grid-cols-8 border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-all duration-300 group relative bg-transparent",
-        isDragging && "opacity-70 scale-[1.02] shadow-xl z-[100] bg-white ring-1 ring-black/5 rounded-3xl cursor-grabbing"
+        isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-white ring-1 ring-black/5 rounded-3xl cursor-grabbing"
       )}
     >
       <div className="p-2 border-r border-[#000000]/5 flex items-center gap-2 bg-[#fdfcf0] sticky left-0 z-[5]">
@@ -157,7 +166,7 @@ const SortableEmployeeRow = React.memo(({
           </div>
         );
       })}
-    </div>
+    </motion.div>
   );
 });
 
@@ -280,12 +289,13 @@ export default function ScheduleClient({
     setShifts(previous.shifts);
 
     try {
-      // Optimized Parallel Persistence
-      const profileUpdates = [
-        ...previous.orderedProfileIds.map((id: string, i: number) => supabase.from('profiles').update({ display_order: i }).eq('id', id)),
-        ...previous.profiles.map((p: any) => supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id))
-      ];
+      // Use updateStaffOrder Server Action with Service Role
+      await updateStaffOrder(previous.orderedProfileIds);
 
+      // Name updates still use client-side if allowed by RLS, but for stability we standardise
+      const profileUpdates = previous.profiles.map((p: any) => 
+        supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id)
+      );
       await Promise.all(profileUpdates);
       await supabase.from('shifts').delete().gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
 
@@ -319,12 +329,12 @@ export default function ScheduleClient({
     setShifts(next.shifts);
 
     try {
-      // Optimized Parallel Persistence
-      const profileUpdates = [
-        ...next.orderedProfileIds.map((id: string, i: number) => supabase.from('profiles').update({ display_order: i }).eq('id', id)),
-        ...next.profiles.map((p: any) => supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id))
-      ];
+      // Use updateStaffOrder Server Action with Service Role
+      await updateStaffOrder(next.orderedProfileIds);
 
+      const profileUpdates = next.profiles.map((p: any) => 
+        supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id)
+      );
       await Promise.all(profileUpdates);
       await supabase.from('shifts').delete().gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
 
@@ -571,20 +581,16 @@ export default function ScheduleClient({
       const newOrder = arrayMove(orderedProfileIds, oldIndex, newIndex);
       setOrderedProfileIds(newOrder);
 
-      // Background Sync
+      // Background Sync using Server Action (Service Role)
       try {
-        const updates = newOrder.map((id, index) =>
-          supabase.from('profiles').update({ schedule_order: index }).eq('id', id)
-        );
-        const results = await Promise.all(updates);
-        const error = results.find(r => r.error);
-        if (error) throw error.error;
+        const result = await updateStaffOrder(newOrder);
+        if (!result.success) throw new Error(result.error);
         
-        revalidateAppPaths(); 
+        console.log('[Schedule] Order persisted successfully');
       } catch (error) {
         console.error('World-Class DND Rollback (Schedule):', error);
         setOrderedProfileIds(rollbackOrder);
-        alert('ไม่สามารถจัดลำดับได้ เนื่องจากปัญหาการเชื่อมต่อ');
+        alert('ไม่สามารถจัดลำดับได้ เนื่องจากปัญหาการเชื่อมต่อหรือสิทธิ์การเข้าถึง');
       }
     }
   };

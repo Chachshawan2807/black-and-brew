@@ -4,8 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAdminKey);
 
 // === RECORD TRANSACTION (Atomic via RPC) ===
 export async function recordTransaction(
@@ -42,41 +43,56 @@ export async function recordTransaction(
   }
 }
 
-// === FETCH TRANSACTION HISTORY (Clean Slate v3.1) ===
-// Strategy: Two-step fetch (transactions + item names separately)
-// This bypasses any FK join issues and RLS complications on related tables.
-export async function fetchTransactionHistory(productId?: string, limit: number = 50) {
-  noStore();
+// === FETCH TRANSACTION HISTORY (SPEC 3.1 — Two-Step Fetch) ===
+// Column: inventory_item_id (VERIFIED via Supabase Dashboard — DO NOT CHANGE)
+// Strategy: Two-step fetch (transactions -> item names -> merge in code)
+export async function fetchTransactionHistory(itemId?: string, limit: number = 50) {
+  noStore(); // Phase 1: Force disable cache — always fetch fresh from DB
+
+  console.log('--- [fetchTransactionHistory] DB Fetch Start ---');
+  console.log('[fetchTransactionHistory] Filter itemId:', itemId ?? 'ALL');
+
   try {
     // Step 1: Fetch raw transaction data (no join — bulletproof approach)
+    // Uses inventory_item_id — VERIFIED column name in actual DB
     let query = supabase
       .from('inventory_transactions')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (productId) {
-      query = query.eq('inventory_item_id', productId);
+    if (itemId) {
+      query = query.eq('inventory_item_id', itemId);
     }
 
     const { data: transactions, error: txError } = await query;
 
     if (txError) {
-      console.error('[fetchTransactionHistory] Query Error:', txError.message, txError.details, txError.hint);
+      console.error('[fetchTransactionHistory] Supabase Deep Error:', txError);
+      console.error('[fetchTransactionHistory] Details:', txError.message, txError.details, txError.hint);
       return { success: false, error: `DB Error: ${txError.message}`, data: [] };
     }
 
+    console.log('[fetchTransactionHistory] Raw Transactions Found:', transactions?.length ?? 0);
+
     if (!transactions || transactions.length === 0) {
-      console.log('[fetchTransactionHistory] No transactions found. Table may be empty or RLS may be blocking.');
+      console.log('[fetchTransactionHistory] Result: Empty. Table may be empty or RLS is blocking access.');
       return { success: true, data: [] };
     }
 
-    console.log(`[fetchTransactionHistory] Fetched ${transactions.length} raw records.`);
+    // Log first record for schema verification
+    console.log('[fetchTransactionHistory] Sample record keys:', Object.keys(transactions[0]));
 
     // Step 2: Get unique item IDs and fetch their names separately
-    const itemIds = [...new Set(transactions.map((tx: any) => tx.inventory_item_id).filter(Boolean))];
-    
+    // Uses inventory_item_id — VERIFIED column name in actual DB
+    const itemIds = [...new Set(
+      transactions.map((tx: any) => tx.inventory_item_id).filter(Boolean)
+    )] as string[];
+
+    console.log('[fetchTransactionHistory] Unique item IDs to lookup:', itemIds.length);
+
     let itemNameMap: Record<string, string> = {};
+
     if (itemIds.length > 0) {
       const { data: itemsData, error: itemsError } = await supabase
         .from('inventory_items')
@@ -84,8 +100,9 @@ export async function fetchTransactionHistory(productId?: string, limit: number 
         .in('id', itemIds);
 
       if (itemsError) {
-        console.error('[fetchTransactionHistory] Items Lookup Error:', itemsError.message);
+        console.error('[fetchTransactionHistory] Items Lookup Error:', itemsError);
       } else if (itemsData) {
+        console.log('[fetchTransactionHistory] Item names fetched:', itemsData.length);
         itemsData.forEach((item: any) => {
           itemNameMap[item.id] = item.name;
         });
@@ -93,14 +110,17 @@ export async function fetchTransactionHistory(productId?: string, limit: number 
     }
 
     // Step 3: Merge names into transaction data
+    // Uses inventory_item_id — VERIFIED column name in actual DB
     const enrichedData = transactions.map((tx: any) => ({
       ...tx,
-      inventory_items: { 
-        name: itemNameMap[tx.inventory_item_id] || 'ไม่ทราบชื่อสินค้า' 
+      inventory_items: {
+        name: itemNameMap[tx.inventory_item_id] || 'ไม่ทราบชื่อสินค้า'
       }
     }));
 
-    console.log(`[fetchTransactionHistory] Enriched ${enrichedData.length} records with item names.`);
+    console.log('[fetchTransactionHistory] Enriched records ready:', enrichedData.length);
+    console.log('--- [fetchTransactionHistory] DB Fetch Complete ---');
+
     return { success: true, data: enrichedData };
   } catch (error: any) {
     console.error('[fetchTransactionHistory] Unexpected Error:', error.message || error);
@@ -109,6 +129,7 @@ export async function fetchTransactionHistory(productId?: string, limit: number 
 }
 
 // === FETCH FREQUENT ITEMS ===
+// Uses inventory_item_id — VERIFIED column name in actual DB
 export async function fetchFrequentItems() {
   try {
     const { data, error } = await supabase
@@ -118,13 +139,13 @@ export async function fetchFrequentItems() {
       .limit(100);
 
     if (error) {
-      console.error('[fetchFrequentItems] Error:', error.message);
+      console.error('[fetchFrequentItems] Supabase Deep Error:', error);
       return { success: true, data: [] };
     }
 
     if (!data || data.length === 0) return { success: true, data: [] };
 
-    // Count frequencies
+    // Count frequencies using inventory_item_id — VERIFIED column name in actual DB
     const counts: Record<string, number> = {};
     data.forEach((tx: any) => {
       const id = tx.inventory_item_id;

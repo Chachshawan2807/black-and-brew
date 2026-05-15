@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sarabun:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Prompt:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Inter', 'Sarabun', system-ui, sans-serif;
+  --font-sans: 'Prompt', 'IBM Plex Sans Thai', 'Inter', system-ui, sans-serif;
 
   /* Collapsible animations */
   --animate-collapsible-down: collapsible-down 0.2s ease-out;
@@ -37,7 +37,7 @@
     &::selection {
       background-color: rgb(59 130 246 / 0.3);
     }
-    font-family: 'Sarabun', 'Inter', system-ui, sans-serif;
+    font-family: 'Prompt', 'IBM Plex Sans Thai', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     line-height: 1.6 !important;
   }
@@ -45,7 +45,7 @@
   h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.025em;
     color: #000000;
-    font-family: 'Sarabun', 'Inter', system-ui, sans-serif;
+    font-family: 'Prompt', 'IBM Plex Sans Thai', 'Inter', system-ui, sans-serif;
     line-height: 1.5;
   }
 

@@ -2,6 +2,7 @@ export interface Profile {
   id: string;
   full_name: string;
   avatar_url?: string;
+  display_order?: number;
 }
 
 export interface Shift {
