@@ -1,8 +1,50 @@
 # Changelog — BLACKANDBREW ERP
 
-> **Current Version:** 3.1 (System Rebirth) | **Last Updated:** 2026-05-15
+> **Current Version:** 3.3 (AI Agent Frontend Deployment) | **Last Updated:** 2026-05-17
 
 ---
+
+## v3.4 — Project-Wide Omni-Refactor & AI Sync (2026-05-17)
+
+### Phase 1: Architectural Scan
+- Scanned `src/`, `public/`, `sql/`, and root config files.
+- Identified 4 issues: 3 orphaned files in `src/lib/agent-tools/`, 1 empty type stub, 1 Zero-Bold violation, and missing `isMounted` guard in AI overlay.
+
+### Phase 2: Dead Code & Junk Purge
+- **Deleted:** `src/lib/agent-tools/fs_tool.ts` — not imported anywhere in codebase.
+- **Deleted:** `src/lib/agent-tools/search_proxy.ts` — not imported anywhere in codebase.
+- **Deleted:** `src/lib/agent-tools/shell_tool.ts` — not imported anywhere in codebase.
+- **Deleted:** `src/types/supabase.ts` — empty 0-byte file (placeholder stub, no content).
+
+### Phase 3: AI Optimization Check
+- **Verified:** `route.ts` uses `providerOptions.google.generationConfig.maxOutputTokens` ✅
+- **Verified:** All tools use `inputSchema` (Vercel AI SDK v6 standard) ✅
+- **Verified:** Sliding window memory (`messages.slice(-4)`) in place to prevent token bloat ✅
+- **Verified:** Surgical tool partitioning with column-selected queries and `.limit(8)` ✅
+- **Security:** AI route reads via Supabase Security Definer RPCs (`get_ai_store_status`, `get_ai_inventory_item_details`) — anon key cannot bypass RLS on write operations ✅
+
+### Phase 4: Visual & Hydration Enforcement
+- **Zero-Bold Fix:** Changed `font-medium` → `font-normal` on "บรู" name label in `AIChatOverlay.tsx` (line 90).
+- **Hydration Guard:** Added `isMounted` state with `useEffect` to `AIChatOverlay.tsx` to prevent browser-only globals from running during SSR.
+- **Build:** `npm run build` → **Exit Code 0** ✅
+
+---
+
+
+
+### AI Assistant "บรู" Frontend
+
+- **Chat Overlay UI:** Created `src/components/ai/AIChatOverlay.tsx` with a pastel theme, compact dimensions (max-h-[70vh], overflow-y-auto), bottom-right positioning, Framer Motion open/close animations (0.2s), and `isMounted` protection for prerendering. The component was directly integrated into `src/app/[locale]/layout.tsx` and the redundant `AIChatWrapper.tsx` was removed.
+- **Typography Enforcement:** Implemented a strict "no bold text" policy for all chat messages and inputs, using `font-normal` or `font-medium` to maintain consistent aesthetic standards.
+- **Impact:** Provided a visually appealing and functional chat interface for the AI Assistant, ensuring a smooth user experience and adherence to design guidelines.
+- **Evidence:** `src/components/ai/AIChatOverlay.tsx`, `src/app/[locale]/layout.tsx`
+
+### AI Assistant "บรู" Backend
+
+- **Read-Only Views and RPCs:** Created `view_today_shifts` and `view_inventory_summary` for safe, summarized data access. Implemented `get_ai_store_status` and `get_ai_inventory_item_details` RPCs in Supabase to provide comprehensive, controlled data to the AI assistant.
+- **API Route Handler:** Developed `src/app/api/chat/route.ts` using Vercel AI SDK v6. Ensured compliance with AI SDK v6 standards by utilizing `providerOptions.google.generationConfig.maxOutputTokens` and `inputSchema` for tools, including the new inventory item details RPC.
+- **Impact:** Enabled secure and efficient data access for the AI Assistant, adhering to modern AI SDK standards and promoting maintainability.
+- **Evidence:** `sql/ai_agent_views.sql`, `src/app/api/chat/route.ts`
 
 ## v3.2 — Typography & UI Optimization (2026-05-16)
 

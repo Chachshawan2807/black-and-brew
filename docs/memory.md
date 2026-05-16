@@ -65,7 +65,7 @@
 
 - **Date:** May 2026
 - **Context:** การ Undo stock transactions ทำให้ ledger ไม่ตรงกับ actual stock
-- **Decision:** Financial/Stock transactions MUST NEVER use UI Undo/Redo stack. ต้องแก้ผ่าน compensating transaction หรือลบใน History ledger
+- **Decision:** Financial/Stock transactions MUST NEVER use UI Undo/Redo stack. ต้องแก้ผ่าน compensating transaction หรือลบใน History ledger. 
 - **Impact:** `handleCancelTransaction()` ทำ manual stock reversal แยกจาก undoStack
 - **Evidence:** `PROTOCOL_ENFORCER.md` Ledger Integrity section
 
@@ -92,3 +92,31 @@
 - **Decision:** Implement **DOM Separation**: Use an outer `div` (Wrapper) for Dnd-kit transforms and an inner `motion.div` (UI) for Framer Motion micro-interactions. Switch to `CSS.Translate.toString(transform)` for the wrapper to decouple layout from scaling.
 - **Impact:** Frictionless layout gliding; cards slide smoothly while dragging.
 - **Evidence:** `SortableEmployeeCard` in `LiveShiftList.tsx` (Lines 51-118).
+
+### DEC-011: AI Agent Backend Deployment (Bru)
+
+- **Date:** May 17, 2026
+- **Context:** ต้องการสร้างระบบหลังบ้านสำหรับ AI Assistant ("บรู") เพื่อให้สามารถอ่านข้อมูลสต็อกสินค้าและตารางงานพนักงานได้อย่างปลอดภัยและมีประสิทธิภาพ
+- **Decision:** สร้าง Read-Only Views (`view_today_shifts`, `view_inventory_summary`) และ RPCs (`get_ai_store_status`, `get_ai_inventory_item_details`) ใน Supabase เพื่อเป็นแหล่งข้อมูลสำหรับ AI. พร้อมทั้งสร้าง API Route Handler (`src/app/api/chat/route.ts`) ด้วย Vercel AI SDK v6, โดยใช้ `providerOptions.google.generationConfig.maxOutputTokens` และ `inputSchema` สำหรับ Tools.
+- **Impact:** AI Assistant สามารถเข้าถึงข้อมูลที่จำเป็นได้อย่างปลอดภัยและถูกควบคุม. การใช้ AI SDK v6 standards ช่วยให้โค้ดเป็นมาตรฐานและดูแลรักษาง่าย.
+- **Evidence:** `sql/ai_agent_views.sql`, `src/app/api/chat/route.ts`
+
+### DEC-012: AI Agent Frontend UI (Bru)
+
+- **Date:** May 17, 2026
+- **Context:** ต้องการสร้างหน้าต่างแชท UI สำหรับ AI Assistant ("บรู") ที่เป็นมิตรต่อผู้ใช้งาน, มีความสวยงามแบบพาสเทล, และสามารถเปิด-ปิดได้ พร้อมทั้งบังคับใช้มาตรฐานการแสดงผลตัวอักษร.
+- **Decision:** สร้าง `AIChatOverlay.tsx` component ด้วยดีไซน์กะทัดรัด (max-h-[70vh], overflow-y-auto), ตำแหน่งมุมล่างขวา, พร้อมแอนิเมชันเปิด-ปิดด้วย `framer-motion` (0.2s) และใช้ `isMounted` wrap ชั้นนอกสุดเพื่อป้องกัน `Math.random` ตอน Prerender. จากนั้นฝัง `<AIChatOverlay />` เข้าไปใน `src/app/[locale]/layout.tsx` โดยตรง และลบ `AIChatWrapper.tsx` ที่ไม่จำเป็นออก. บังคับใช้ `font-normal` หรือ `font-medium` สำหรับตัวหนังสือคำถาม-คำตอบทั้งหมดในหน้าต่างแชท.
+- **Impact:** ผู้ใช้งานสามารถโต้ตอบกับ AI Assistant ได้อย่างสะดวกสบายและสวยงาม. โค้ด UI มีประสิทธิภาพและเป็นไปตามมาตรฐานการออกแบบ.
+- **Evidence:** `src/components/ai/AIChatOverlay.tsx`, `src/app/[locale]/layout.tsx`
+
+### DEC-013: Project-Wide Omni-Refactor (v3.4)
+
+- **Date:** May 17, 2026
+- **Context:** ต้องการทำ Project-Wide Omni-Refactor เพื่อกำจัด Dead Code, ตรวจสอบ AI Pipeline, และบังคับใช้ Visual Standards แบบ Autonomous
+- **Decision:**
+  1. ลบ `src/lib/agent-tools/` ทั้งโฟลเดอร์ (3 ไฟล์) — ไม่มี Import ใดๆ ในโปรเจกต์ (Orphaned)
+  2. ลบ `src/types/supabase.ts` — ไฟล์ว่างเปล่า (0 bytes) ไม่มีประโยชน์
+  3. แก้ไข Zero-Bold violation: `font-medium` → `font-normal` ใน `AIChatOverlay.tsx`
+  4. เพิ่ม `isMounted` hydration guard ใน `AIChatOverlay.tsx`
+- **Impact:** Codebase สะอาดขึ้น, Zero-Bold policy บังคับใช้ 100%, Hydration-safe AI Overlay
+- **Evidence:** `docs/changelog.md` v3.4, `npm run build` Exit Code 0

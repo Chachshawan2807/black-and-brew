@@ -4,7 +4,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
 import SidebarLayout from '@/components/sidebar/SidebarLayout';
 import I18nProvider from '@/components/providers/I18nProvider';
-import AIChatWrapper from '@/components/ai/AIChatWrapper';
+import AIChatOverlay from '@/components/ai/AIChatWrapper';
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -52,7 +52,7 @@ export default async function RootLayout({
             </I18nProvider>
           </Suspense>
         </SidebarLayout>
-        <AIChatWrapper />
+        <AIChatOverlay />
       </body>
     </html>
   );

@@ -1,0 +1,26 @@
+[REBIRTH PROTOCOL: DAILY DOCUMENTATION PURIFICATION]
+ROLE: Supreme System Documentarian & Markdown Architecture Master.
+CONTEXT: ร้าน BLACKANDBREW (ระบบจัดการสต็อกสินค้า คลังสินค้า และตารางงานพนักงาน)
+OBJECTIVE: ตรวจสอบ รีแฟกเตอร์โครงสร้าง และอัปเดตเนื้อหาในไฟล์เอกสารระบบ .md ทั้งหมด ทั่วทั้งโปรเจกต์ให้เป็นปัจจุบัน ถูกต้องสมบูรณ์ และผ่านกฎเกณฑ์ของส่วนขยาย "markdownlint" 100%
+
+📋 TECHNICAL LINTING & SYNCHRONIZATION BLUEPRINT:
+
+1. Markdownlint Standard Enforcement (จัดรูปแบบ Syntax สากล):
+   - MD001 / MD002 (Heading Levels): ตรวจสอบการเรียงลำดับหัวข้อ # h1, ## h2, ### h3 ให้ถูกต้องตามโครงสร้างลำดับชั้น ห้ามข้ามขั้น
+   - MD009 / <Trailing Spaces>: ค้นหาและลบช่องว่าง (Spaces) ส่วนเกินที่ลอยอยู่ท้ายบรรดาลประโยคออกทั้งหมด 100%
+   - MD012 (Consecutive Blank Lines): ลบบรรทัดว่างที่ซ้อนกันเกินจำเป็น ให้เหลือระยะห่างที่พอดีและสม่ำเสมอ
+   - MD022 (Spacing around headings): บังคับให้มีบรรทัดว่าง 1 บรรทัดเปล่า ทั้งก่อนหน้าและหลังบรรทัดหัวข้อทุกจุด
+   - MD007 / MD030 (List Indentation): จัดระเบียบระยะเยื้องของ Bullet points รายการย่อยให้ตรงแนว และเว้นวรรค 1 ช่องหลังเครื่องหมาย `-` หรือ `*` เสมอ
+
+2. Content Synchronization (อัปเดตเนื้อหาให้เป็นปัจจุบัน):
+   - ตรวจเช็คประวัติการแก้ไขโค้ดล่าสุดในวันนี้ (เทียบข้อมูลจาก Git status หรือ Memory ล่าสุด)
+   - ดำเนินการอัปเดตข้อมูลลงในไฟล์ที่เกี่ยวข้องโดยตรง:
+     - `docs/changelog.md`: บันทึกการเปลี่ยนแปลง (Added/Changed/Fixed) ประจำวันนี้อย่างเป็นระบบ
+     - `docs/memory.md`: อัปเดตสถานะ Context และความจำทางเทคนิคล่าสุดของระบบ
+     - `docs/rules.md`: เพิ่มกฎเหล็กใหม่ๆ ที่ค้นพบจากการแก้บั๊กในวันนี้ (ถ้ามี)
+
+3. Process & Design Integrity Safeguard [CRITICAL]:
+   - [FACT-BASED ONLY] อัปเดตเฉพาะข้อมูลที่เป็นข้อเท็จจริงจริงทางระบบ ห้ามลบข้อมูลประวัติศาสตร์สำคัญ, ห้ามทำสาระสำคัญของโปรเจกต์สูญหาย
+   - [ZERO-BOLD POLICY] บังคับใช้ฟอนต์ตัวปกติ font-normal หรือ font-medium ในโค้ดตัวอย่างหรือคำอธิบายดีไซน์พาสเทล ห้ามหนาเด็ดขาด
+
+START NOW: เปิดโหมด Autonomy สแกนและ Auto-fix ไฟล์ .md ทั้งหมดในโปรเจกต์ให้เสร็จสิ้นใน One-Shot และรายงานไฟล์ที่มีการอัปเดตให้ผมทราบ

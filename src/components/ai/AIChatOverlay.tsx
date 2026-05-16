@@ -6,16 +6,20 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+// Actual chat component containing useChat (only runs on client)
 export default function AIChatOverlay() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // AI SDK v6 useChat API: uses sendMessage + status instead of handleSubmit/isLoading
+  // AI SDK v6 useChat API
   const { messages, sendMessage, status, error } = useChat({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
   });
 
+  // Hydration guard: prevent Math.random / browser-only globals during SSR
+  useEffect(() => { setIsMounted(true); }, []);
   const isLoading = status === 'streaming' || status === 'submitted';
 
   // Auto-scroll to latest message
@@ -32,6 +36,8 @@ export default function AIChatOverlay() {
     sendMessage({ role: 'user', parts: [{ type: 'text', text: trimmed }] });
     setInputValue('');
   };
+
+  if (!isMounted) return null;
 
   return (
     <>
@@ -86,7 +92,7 @@ export default function AIChatOverlay() {
                 <Bot size={16} className="text-[#000000]" />
               </div>
               <div>
-                <p className="text-[14px] font-medium text-[#000000] leading-tight">บรู</p>
+                <p className="text-[14px] font-normal text-[#000000] leading-tight">บรู</p>
                 <p className="text-[11px] font-normal text-[#000000]/40 leading-tight">
                   AI ผู้ช่วยร้าน BLACKANDBREW
                 </p>
@@ -104,11 +110,13 @@ export default function AIChatOverlay() {
               )}
 
               {messages.map((msg) => {
-                // Extract text content from message parts (AI SDK v6 format)
-                const textContent = msg.parts
-                  .filter((p) => p.type === 'text')
-                  .map((p) => (p as { type: 'text'; text: string }).text)
-                  .join('');
+                let textContent = (msg as any).content;
+                if (!textContent && msg.parts && Array.isArray(msg.parts)) {
+                  textContent = msg.parts
+                    .filter((p: any) => p.type === 'text')
+                    .map((p: any) => p.text)
+                    .join('');
+                }
                 if (!textContent) return null;
                 return <ChatBubble key={msg.id} role={msg.role} content={textContent} />;
               })}
@@ -126,7 +134,6 @@ export default function AIChatOverlay() {
                 </div>
               )}
 
-              {/* Error state */}
               {error && (
                 <div className="text-[12px] font-normal text-red-500 px-1">
                   เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง

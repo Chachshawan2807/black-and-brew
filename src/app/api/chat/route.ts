@@ -1,104 +1,148 @@
 import { google } from '@ai-sdk/google';
-import { streamText, stepCountIs } from 'ai';
-import { tool } from '@ai-sdk/provider-utils';
-import { createClient } from '@supabase/supabase-js';
+import { streamText, tool } from 'ai';
 import { z } from 'zod';
+import { supabase } from '@/lib/supabase';
 
-// Allow streaming responses up to 30 seconds
+// Mandatory: AI SDK v6 Standards
 export const maxDuration = 30;
-
-// Supabase client with Service Role for AI data fetching (server-side only)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-const SYSTEM_PROMPT = `คุณคือผู้ช่วย AI ของร้าน BLACK-AND-BREW ชื่อ "บรู"
-หน้าที่ของคุณคือช่วยผู้จัดการร้านดูข้อมูลสต็อก ตารางงานพนักงาน และประวัติธุรกรรม
-
-กฎเหล็กที่ต้องปฏิบัติตามเสมอ:
-1. ตอบเฉพาะข้อมูลที่ได้รับจาก Tools เท่านั้น ห้ามเดาหรือสร้างข้อมูลขึ้นเอง (No Hallucinations)
-2. หากไม่มีข้อมูล ให้บอกตรงๆ ว่า "ไม่มีข้อมูลในระบบ" อย่างสุภาพ
-3. ตอบสั้น กระชับ และชัดเจน ใช้ภาษาไทยเป็นหลัก
-4. ห้ามเปิดเผยข้อมูล API Key, Service Role Key หรือข้อมูลระบบภายใน
-5. คุณไม่มีความสามารถในการแก้ไขหรือลบข้อมูล — อ่านได้อย่างเดียว`;
-
-// ---- Tool Definitions (AI SDK v6 API: inputSchema instead of parameters) ----
-
-const getInventorySummaryTool = tool({
-  description: 'ดึงข้อมูลสต็อกสินค้าปัจจุบันทั้งหมด พร้อมสถานะว่าสต็อกอยู่ในระดับไหน',
-  inputSchema: z.object({ _: z.string().optional() }),
-  execute: async (_args) => {
-    try {
-      const { data, error } = await supabaseAdmin.rpc('get_inventory_summary');
-      if (error) throw error;
-      return { success: true, data: data || [] };
-    } catch (err) {
-      console.error('[AI Tool] getInventorySummary error:', err);
-      return { success: false, data: [], error: 'ไม่สามารถดึงข้อมูลสต็อกได้' };
-    }
-  },
-});
-
-const getTodayScheduleTool = tool({
-  description: 'ดึงตารางกะงานของพนักงานทั้งหมดในวันนี้',
-  inputSchema: z.object({ _: z.string().optional() }),
-  execute: async (_args) => {
-    try {
-      const { data, error } = await supabaseAdmin.rpc('get_today_schedule');
-      if (error) throw error;
-      return { success: true, data: data || [] };
-    } catch (err) {
-      console.error('[AI Tool] getTodaySchedule error:', err);
-      return { success: false, data: [], error: 'ไม่สามารถดึงตารางงานได้' };
-    }
-  },
-});
-
-const getLowStockItemsTool = tool({
-  description: 'ดึงรายการสินค้าที่ต้องสั่งซื้อเพิ่ม (สต็อกต่ำกว่าจุดสั่งซื้อ)',
-  inputSchema: z.object({ _: z.string().optional() }),
-  execute: async (_args) => {
-    try {
-      const { data, error } = await supabaseAdmin.rpc('get_low_stock_items');
-      if (error) throw error;
-      return { success: true, data: data || [] };
-    } catch (err) {
-      console.error('[AI Tool] getLowStockItems error:', err);
-      return { success: false, data: [], error: 'ไม่สามารถดึงข้อมูลสินค้าได้' };
-    }
-  },
-});
-
-// ---- API Route Handler ----
 
 export async function POST(req: Request) {
   try {
+    console.log('[AI_ROUTE] Request Received');
     const { messages } = await req.json();
 
-    const result = streamText({
+    // ⚡ OPTIMIZATION 1: Sliding Window Memory (ส่งเฉพาะประวัติแชทล่าสุด 4 ข้อความ ป้องกัน Token บวมสะสม)
+    const recentMessages = messages.slice(-4);
+
+    // Data Mapping: Convert messages to CoreMessage schema safely
+    const coreMessages = recentMessages.map((m: any) => {
+      let cleanContent = m.content;
+
+      if (!cleanContent && m.parts && Array.isArray(m.parts)) {
+        cleanContent = m.parts
+          .filter((p: any) => p.type === 'text')
+          .map((p: any) => p.text)
+          .join('');
+      }
+
+      if (cleanContent === undefined || cleanContent === null) {
+        cleanContent = '';
+      }
+
+      return {
+        role: m.role,
+        content: cleanContent
+      };
+    });
+
+    console.log('[AI_ROUTE] Optimized Messages Mapped (Count:', coreMessages.length, ')');
+    console.log('[AI_ROUTE] Calling Gemini with Surgical Tools...');
+
+    const result = await streamText({
       model: google('gemini-2.0-flash'),
-      system: SYSTEM_PROMPT,
-      messages,
-      stopWhen: stepCountIs(3),
+      messages: coreMessages,
+      // ⚡ OPTIMIZATION 2: Ultra-Minimalist System Prompt (ลดขนาดคำสั่งหลักเหลือเฉพาะกฎเหล็กเพื่อประหยัด Token)
+      system: 'คุณคือ "บรู" AI ร้าน Black-and-Brew ตอบสั้นกระชับจากคลังข้อมูลเท่านั้น ห้ามใช้ตัวหนา (font-bold) เด็ดขาด',
       providerOptions: {
         google: {
-          generationConfig: { maxOutputTokens: 600 },
+          generationConfig: {
+            // ⚡ OPTIMIZATION 3: Cap Max Output Tokens (ลดจาก 1000 เหลือ 600 เพื่อจำกัดการจ่ายโควตา)
+            maxOutputTokens: 600,
+            temperature: 0.1, // ตั้งค่าต่ำเพื่อให้ AI ตอบเฉพาะข้อเท็จจริง ไม่พรรณนายาว
+          },
         },
       },
+      // ⚡ OPTIMIZATION 4: Surgical Tools Partitioning (แยกเครื่องมือแบบจำเพาะเจาะจง ดึงเฉพาะข้อมูลที่จำเป็น)
       tools: {
-        getInventorySummary: getInventorySummaryTool,
-        getTodaySchedule: getTodayScheduleTool,
-        getLowStockItems: getLowStockItemsTool,
+        // ดึงเฉพาะตารางงานวันนี้ ไม่ดึงสต็อกสินค้าพ่วงมาด้วย
+        getTodaySchedule: tool({
+          description: 'ดึงเฉพาะตารางงานของพนักงานทุกคนที่เข้างานในวันนี้',
+          inputSchema: z.object({ _: z.string().optional().describe('dummy field') }),
+          execute: async () => {
+            console.log('[AI_TOOL] Executing getTodaySchedule (Surgical Fetch)');
+            const { data, error } = await supabase.rpc('get_today_schedule');
+            console.log('[AI_TOOL] Supabase RPC Response (getTodaySchedule):', { count: data?.length, error });
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        // ดึงเฉพาะของที่ขาดสต็อก สินค้าปกติจะไม่ถูกส่งไปให้เปลือง Token
+        getLowStockItems: tool({
+          description: 'ดึงเฉพาะรายการสินค้าในสต็อกที่เหลือน้อยกว่าจุดสั่งซื้อและต้องดำเนินการสั่งเพิ่ม',
+          inputSchema: z.object({ _: z.string().optional().describe('dummy field') }),
+          execute: async () => {
+            console.log('[AI_TOOL] Executing getLowStockItems (Surgical Fetch)');
+            const { data, error } = await supabase.rpc('get_low_stock_items');
+            console.log('[AI_TOOL] Supabase RPC Response (getLowStockItems):', { count: data?.length, error });
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        // ค้นหาสต็อกแบบจำกัดข้อมูล และคัดเลือกเอาเฉพาะคอลัมน์สำคัญ
+        searchInventory: tool({
+          description: 'ค้นหาข้อมูลสินค้าในคลังตามคีย์เวิร์ดชื่อสินค้า',
+          inputSchema: z.object({
+            query: z.string().describe('ชื่อสินค้าที่ต้องการค้นหา')
+          }),
+          execute: async ({ query }) => {
+            console.log('[AI_TOOL] Executing searchInventory for:', query);
+            const { data, error } = await supabase
+              .from('inventory_items')
+              .select('id, name, stock, unit') // ⚡ OPTIMIZATION 5: เลือกเฉพาะคอลัมน์ที่ใช้งานจริง ไม่ดึง *
+              .ilike('name', `%${query}%`)
+              .limit(8); // ⚡ OPTIMIZATION 6: จำกัดจำนวนผลลัพธ์สูงสุดแค่ 8 รายการ ป้องกันข้อมูลล้น
+            console.log('[AI_TOOL] Supabase Response (searchInventory):', { count: data?.length, error });
+            if (error) throw new Error(error.message);
+            return data || [];
+          },
+        }),
+
+        getInventoryItemDetails: tool({
+          description: 'ดึงข้อมูลรายละเอียดเชิงลึกของสินค้าคงคลังรายชิ้นด้วย ID',
+          inputSchema: z.object({
+            itemId: z.string().uuid().describe('ID ของสินค้า')
+          }),
+          execute: async ({ itemId }) => {
+            console.log('[AI_TOOL] Executing getInventoryItemDetails for ID:', itemId);
+            const { data, error } = await supabase.rpc('get_ai_inventory_item_details', { item_id: itemId });
+            console.log('[AI_TOOL] Supabase RPC Response (getInventoryItemDetails):', { data, error });
+            if (error) throw new Error(error.message);
+            return data;
+          },
+        }),
+
+        recordTransaction: tool({
+          description: 'บันทึกรายการเพิ่มเข้า (IN) หรือตัดจ่ายออก (OUT) ของสินค้าในคลัง',
+          inputSchema: z.object({
+            productId: z.string().uuid().describe('ID ของสินค้า'),
+            type: z.enum(['IN', 'OUT']).describe('ประเภทรายการ'),
+            quantity: z.number().positive().describe('จำนวน'),
+            note: z.string().optional().describe('หมายเหตุ')
+          }),
+          execute: async ({ productId, type, quantity, note }) => {
+            console.log('[AI_TOOL] Executing recordTransaction:', { productId, type, quantity });
+            const { data, error } = await supabase.rpc('record_inventory_transaction', {
+              p_product_id: productId,
+              p_type: type,
+              p_quantity: quantity,
+              p_note: note || ''
+            });
+            console.log('[AI_TOOL] Supabase RPC Response (recordTransaction):', { data, error });
+            if (error) throw new Error(error.message);
+            return data;
+          },
+        }),
       },
     });
 
     return result.toTextStreamResponse();
-  } catch (err) {
-    console.error('[AI Agent] Route error:', err);
-    return new Response(
-      JSON.stringify({ error: 'เกิดข้อผิดพลาดในระบบ AI กรุณาลองใหม่อีกครั้ง' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+  } catch (error) {
+    console.error('[AI_ROUTE] CRITICAL ERROR:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
