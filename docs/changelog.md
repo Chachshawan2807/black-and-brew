@@ -4,25 +4,41 @@
 
 ---
 
+## v3.2 — Typography & UI Optimization (2026-05-16)
+
+### High-Legibility Scaling (R0 Standard)
+
+- **Typography Scale-up (+2 Sizes):** อัปเกรดขนาดตัวอักษรของหัวข้อย่อย (Sub-labels) และป้ายกำกับฟิลด์ (Input Labels) จาก `text-[11px]` เป็น **`text-[13px]/text-[14px]`** ทั่วทั้งระบบ
+- **Space Integrity Guard:** ปรับลด Padding และ Margin แบบสัดส่วนผกผันเพื่อให้หน้าต่าง Modals ยังคงความกะทัดรัด (One-Shot View)
+- **Zero-Bold Policy Enforcement:** บังคับใช้ `font-normal` และ `font-medium` ทั่วทั้งแอปพลิเคชัน ห้ามใช้ตัวหนาเด็ดขาด
+- **Documentation Standard:** อัปเดต `docs/rules.md` และ `docs/design.md` เพื่อใช้เป็นกฎเหล็กสำหรับ AI Agent ในอนาคต
+
+### System-Wide Big Cleaning & Audit (R0 Standard)
+
+- **Syntax & Code Smells:** Removed unused `Tool` import in `maintenance/page.tsx` resolving a critical TypeScript build error. Purged all debug `console.log` statements across `inventory-actions.ts`, `shift-actions.ts`, `ScheduleClient.tsx`, and `search_proxy.ts` for clean production terminal output.
+- **Security & Error Boundary:** Fixed a potential crash in `shift-actions.ts` by adding optional chaining (`firstError.error?.message`) to prevent null-reference TypeErrors during DB synchronization.
+- **React & Build Optimization:** Verified complete dependency array integrity across all hooks. Achieved 100% successful `npm run build` with zero linting or TS errors.
+- **UI Integrity Verified:** System-wide scan confirmed 0 instances of `font-bold` or `font-semibold`. The "Zero-Bold Policy" and "DOM Separation" for DnD remain uncompromised.
+
 ## v3.2 — Performance & DnD Stabilization (May 2026)
 
 ### Interaction Mirroring (R0 Standard)
 
--   Implemented **Perfect Mirroring** of DnD interactions from Inventory to Dashboard and Schedule.
--   Enforced precision sensors (**distance: 5px**) and **closestCorners** collision detection system-wide.
--   Integrated **Framer Motion Layout** for smooth card/row "Gliding" animations.
--   Unified spring physics (**stiffness: 300, damping: 30**) across all sortable components.
+- Implemented **Perfect Mirroring** of DnD interactions from Inventory to Dashboard and Schedule.
+- Enforced precision sensors (**distance: 5px**) and **closestCorners** collision detection system-wide.
+- Integrated **Framer Motion Layout** for smooth card/row "Gliding" animations.
+- Unified spring physics (**stiffness: 300, damping: 30**) across all sortable components.
 
 ### Data & Persistence
 
--   Fixed "Drag-and-Drop bounce-back" in Schedule by syncing column targets to `schedule_order`.
--   Transitioned all list reordering to **Service Role Server Actions** to bypass RLS latency.
--   Enforced high-legibility standards with **pure black (#000000)** text on pastel backgrounds.
+- Fixed "Drag-and-Drop bounce-back" in Schedule by syncing column targets to `schedule_order`.
+- Transitioned all list reordering to **Service Role Server Actions** to bypass RLS latency.
+- Enforced high-legibility standards with **pure black (#000000)** text on pastel backgrounds.
 
 ### Documentation & Governance
 
--   Established **MASTER_BLUEPRINT.md** as the definitive architectural single source of truth.
--   Completed **Daily Closing Integrity Workflow [R0]** with 100% build pass.
+- Established **MASTER_BLUEPRINT.md** as the definitive architectural single source of truth.
+- Completed **Daily Closing Integrity Workflow [R0]** with 100% build pass.
 
 ---
 

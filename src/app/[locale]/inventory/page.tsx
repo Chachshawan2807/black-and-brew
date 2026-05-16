@@ -139,6 +139,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
   handleSaveField: (id: string, field: string, value: any) => void;
   requestDelete: (id: string) => void;
   handleFocus: () => void;
+  totalItems: number;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition: dndTransition, isDragging } = useSortable({ id: item.id });
 
@@ -152,13 +153,25 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
   return (
     <tr
       ref={setNodeRef}
-      style={style}
       className={cn(
         "border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-all duration-300 group",
         isDragging && "opacity-70 scale-[1.02] shadow-xl z-[100] bg-white ring-1 ring-black/5 rounded-3xl cursor-grabbing"
       )}
+      style={isDragging ? style : undefined}
     >
-      <td className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle">
+      {/* 0. Static Row Index (Fixed) */}
+      <td className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle bg-black/[0.01]">
+        <div className="flex items-center justify-center h-full">
+          <span className="text-[10px] font-medium text-black/20 tabular-nums tracking-tighter">
+            {(rowIndex + 1).toString().padStart(2, '0')}
+          </span>
+        </div>
+      </td>
+
+      <td
+        style={!isDragging ? style : undefined}
+        className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle"
+      >
         <div
           className="flex items-center justify-center h-full min-h-[64px] w-full cursor-grab active:cursor-grabbing text-[#000000]/20 hover:text-[#000000] transition-all duration-300 p-3 touch-none"
           {...attributes}
@@ -171,7 +184,11 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
       {columns.map((col, index) => (
         <td
           key={col.id}
-          style={{ width: col.width, minWidth: col.id === 'name' ? '240px' : col.width }}
+          style={{
+            width: col.width,
+            minWidth: col.id === 'name' ? '240px' : col.width,
+            ...(!isDragging ? style : {})
+          }}
           className={`p-0 border-r border-[#000000]/5 relative group/cell ${index === columns.length - 1 ? 'border-r-0' : ''}`}
         >
           <EditableCell
@@ -802,7 +819,7 @@ export default function DynamicInventoryManager() {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-transparent text-[#000000]">
         <Loader2 className="w-8 h-8 animate-spin mb-4 text-[#000000]" strokeWidth={1.5} />
-        <span className="font-normal text-sm uppercase tracking-widest text-[#000000]">Synchronizing...</span>
+        <span className="font-normal text-sm uppercase tracking-widest text-[#000000]">กำลังซิงค์ข้อมูล...</span>
       </div>
     );
   }
@@ -821,15 +838,15 @@ export default function DynamicInventoryManager() {
           </div>
 
           <div className="w-full flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
-            <div className="flex items-center gap-1.5 text-xs font-normal min-w-[70px]">
+            <div className="flex items-center gap-1.5 text-sm font-normal min-w-[70px]">
               {savingState === 'saving' && (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-[#000000]" />
-                  <span className="text-[#000000]">Syncing...</span>
+                  <span className="text-[#000000]">กำลังซิงค์ข้อมูล...</span>
                 </>
               )}
               {savingState === 'synced' && (
-                <span className="text-emerald-500">✓ Synced</span>
+                <span className="text-emerald-500">✓ ซิงค์ข้อมูลแล้ว</span>
               )}
             </div>
 
@@ -865,7 +882,7 @@ export default function DynamicInventoryManager() {
                 className="flex items-center justify-center gap-2 px-6 py-3 bg-[#f0fdf4] border border-[#dcfce7] hover:bg-[#dcfce7] text-[#14532d] rounded-3xl shadow-sm transition-all text-[14px] font-medium"
               >
                 <ShoppingCart className="w-4.5 h-4.5" strokeWidth={1.5} />
-                <span>รายการสั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-[#14532d] text-white text-[10px] px-2 py-0.5 rounded-full ml-1">{itemsToOrder.length}</span>}</span>
+                <span>รายการสั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-[#14532d] text-white text-[12px] px-2 py-0.5 rounded-full ml-1">{itemsToOrder.length}</span>}</span>
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}
@@ -873,7 +890,7 @@ export default function DynamicInventoryManager() {
                 className="flex items-center justify-center gap-2 px-6 py-3 bg-[#fff7ed] border border-[#ffedd5] hover:bg-[#ffedd5] text-[#9a3412] rounded-3xl shadow-sm transition-all text-[14px] font-medium"
               >
                 <PlusCircle className="w-4.5 h-4.5" strokeWidth={1.5} />
-                <span>Add Item</span>
+                <span>เพิ่มสินค้า</span>
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}
@@ -881,7 +898,7 @@ export default function DynamicInventoryManager() {
                 className="flex items-center justify-center gap-2 px-6 py-3 bg-[#f5f3ff] border border-[#ede9fe] hover:bg-[#ede9fe] text-[#5b21b6] rounded-3xl shadow-sm transition-all text-[14px] font-medium"
               >
                 <History className="w-4.5 h-4.5" strokeWidth={1.5} />
-                <span>Transaction History</span>
+                <span>ประวัติ</span>
               </motion.button>
             </div>
           </div>
@@ -937,15 +954,15 @@ export default function DynamicInventoryManager() {
                   />
                   <div className="flex bg-slate-100/50 p-1 rounded-3xl border border-black/5">
                     <button type="button" onClick={() => setQuickType('IN')} className={cn("px-5 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1.5", quickType === 'IN' ? "bg-[#f0fdf4] text-[#14532d] shadow-sm border border-[#dcfce7]" : "text-black/40 hover:text-black/60")}>
-                      <PackagePlus className="w-4 h-4" strokeWidth={1.5} /> Stock In
+                      <PackagePlus className="w-4 h-4" strokeWidth={1.5} /> รับเข้าสินค้า
                     </button>
                     <button type="button" onClick={() => setQuickType('OUT')} className={cn("px-5 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1.5", quickType === 'OUT' ? "bg-[#fff1f2] text-[#9f1239] shadow-sm border border-[#ffe4e6]" : "text-black/40 hover:text-black/60")}>
-                      <PackageMinus className="w-4 h-4" strokeWidth={1.5} /> Stock Out
+                      <PackageMinus className="w-4 h-4" strokeWidth={1.5} /> นำออกสินค้า
                     </button>
                   </div>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} type="submit" className="px-6 py-3 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#e0f2fe] text-[#0c4a6e] rounded-3xl text-[14px] font-medium transition-all shadow-sm flex items-center gap-2 whitespace-nowrap">
                     <CloudUpload className="w-4.5 h-4.5" strokeWidth={1.5} />
-                    Save
+                    บันทึก
                   </motion.button>
                 </div>
               </form>
@@ -974,6 +991,7 @@ export default function DynamicInventoryManager() {
                 <table className="table-auto border-collapse">
                   <thead>
                     <tr className="bg-slate-50/50">
+                      <th className="w-10 min-w-[40px] border-r border-slate-100 text-[10px] font-normal text-black/20 uppercase tracking-widest text-center italic">#</th>
                       <th className="w-10 min-w-[40px] border-r border-slate-100"></th>
                       {columns.map(col => (
                         <ColumnHeader
@@ -1006,6 +1024,7 @@ export default function DynamicInventoryManager() {
                             handleSaveField={handleSaveField}
                             requestDelete={setDeleteId}
                             handleFocus={handleFocus}
+                            totalItems={items.length}
                           />
                         ))
                       )}
@@ -1183,7 +1202,7 @@ export default function DynamicInventoryManager() {
                 <div>
                   <h2 className="text-2xl font-normal text-[#000000] flex items-center gap-3">
                     <History className="w-6 h-6 text-black/40" />
-                    ประวัติการเคลื่อนไหว
+                    ประวัติ
                   </h2>
                   <p className="text-black/40 text-[13px] mt-1 font-normal">ตรวจสอบรายการรับเข้าและนำออกย้อนหลัง</p>
                 </div>
@@ -1201,11 +1220,11 @@ export default function DynamicInventoryManager() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-black/5">
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-left w-[160px]">วันเวลา</th>
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-left">ชื่อรายการสินค้า</th>
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[160px]">วันที่และเวลา</th>
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center">ชื่อรายการสินค้า</th>
                         <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[120px]">ประเภท</th>
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-right w-[110px]">จำนวน</th>
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-right w-[110px]">คงเหลือ</th>
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[110px]">จำนวน</th>
+                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[110px]">คงเหลือ</th>
                         <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[90px]">จัดการ</th>
                       </tr>
                     </thead>
@@ -1241,26 +1260,27 @@ export default function DynamicInventoryManager() {
                               {tx.inventory_items?.name || 'ไม่ทราบชื่อสินค้า'}
                             </td>
 
-                            {/* Type - Center */}
+                            {/* Type - Center (Pure Iconography) */}
                             <td className="py-3.5 px-6 text-center">
-                              <span className={cn(
-                                "px-3.5 py-1.5 rounded-full text-[11px] font-medium inline-flex items-center gap-1.5 transition-all shadow-sm border",
-                                tx.type === 'IN'
-                                  ? "bg-[#f0fdf4] text-[#14532d] border-[#dcfce7]"
-                                  : "bg-[#fff1f2] text-[#9f1239] border-[#ffe4e6]"
-                              )}>
-                                {tx.type === 'IN' ? <ArrowDownToLine className="w-3.5 h-3.5" /> : <ArrowUpFromLine className="w-3.5 h-3.5" />}
-                                {tx.type === 'IN' ? 'รับเข้า' : 'นำออก'}
-                              </span>
+                              <div className="flex justify-center">
+                                <span className={cn(
+                                  "w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border",
+                                  tx.type === 'IN'
+                                    ? "bg-[#f0fdf4] text-[#14532d] border-[#dcfce7]"
+                                    : "bg-[#fff1f2] text-[#9f1239] border-[#ffe4e6]"
+                                )}>
+                                  {tx.type === 'IN' ? <PackagePlus className="w-4.5 h-4.5" /> : <PackageMinus className="w-4.5 h-4.5" />}
+                                </span>
+                              </div>
                             </td>
 
-                            {/* Quantity - Right (Mono) */}
-                            <td className="py-3.5 px-6 text-[15px] text-right font-mono text-black font-normal">
+                            {/* Quantity - Center (Mono) */}
+                            <td className="py-3.5 px-6 text-[15px] text-center font-mono text-black font-normal">
                               {tx.quantity}
                             </td>
 
-                            {/* Balance After - Right (Mono) */}
-                            <td className="py-3.5 px-6 text-[15px] text-right font-mono text-black/40">
+                            {/* Balance After - Center (Mono) */}
+                            <td className="py-3.5 px-6 text-[15px] text-center font-mono text-black/40">
                               {tx.balance_after}
                             </td>
 
@@ -1285,7 +1305,7 @@ export default function DynamicInventoryManager() {
               {/* Footer Info */}
               <div className="px-8 py-4 bg-white/30 border-t border-black/5 flex justify-between items-center shrink-0 text-[12px] text-black/30">
                 <span>แสดง {transactionHistory.length} รายการล่าสุด</span>
-                <span className="font-mono uppercase tracking-tighter">System Rebirth v3.1</span>
+                <span className="font-mono uppercase tracking-tighter"></span>
               </div>
             </motion.div>
           </motion.div>

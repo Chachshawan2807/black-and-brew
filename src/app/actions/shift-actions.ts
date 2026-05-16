@@ -50,8 +50,6 @@ export async function updateStaffOrder(orderedIds: string[]) {
   if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'Empty order list' };
 
   try {
-    console.log('[updateStaffOrder] Syncing new staff order:', orderedIds.length, 'profiles');
-    
     // Perform updates in parallel using Service Role
     const updates = orderedIds.map((id, index) => 
       supabaseAdmin
@@ -67,8 +65,8 @@ export async function updateStaffOrder(orderedIds: string[]) {
     const firstError = results.find(r => r.error);
     
     if (firstError) {
-      console.error('[updateStaffOrder] Supabase Error:', firstError.error.message);
-      return { success: false, error: firstError.error.message };
+      console.error('[updateStaffOrder] Supabase Error:', firstError.error?.message);
+      return { success: false, error: firstError.error?.message || 'Unknown error' };
     }
 
     revalidatePath('/[locale]/schedule', 'page');

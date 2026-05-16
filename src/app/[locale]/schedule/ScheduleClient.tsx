@@ -94,9 +94,9 @@ const SortableEmployeeRow = React.memo(({
       layout
       layoutId={id}
       style={style}
-      transition={{ 
-        type: "spring", 
-        stiffness: 300, 
+      transition={{
+        type: "spring",
+        stiffness: 300,
         damping: 30,
         layout: { duration: 0.3 }
       }}
@@ -293,7 +293,7 @@ export default function ScheduleClient({
       await updateStaffOrder(previous.orderedProfileIds);
 
       // Name updates still use client-side if allowed by RLS, but for stability we standardise
-      const profileUpdates = previous.profiles.map((p: any) => 
+      const profileUpdates = previous.profiles.map((p: any) =>
         supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id)
       );
       await Promise.all(profileUpdates);
@@ -332,7 +332,7 @@ export default function ScheduleClient({
       // Use updateStaffOrder Server Action with Service Role
       await updateStaffOrder(next.orderedProfileIds);
 
-      const profileUpdates = next.profiles.map((p: any) => 
+      const profileUpdates = next.profiles.map((p: any) =>
         supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id)
       );
       await Promise.all(profileUpdates);
@@ -585,8 +585,6 @@ export default function ScheduleClient({
       try {
         const result = await updateStaffOrder(newOrder);
         if (!result.success) throw new Error(result.error);
-        
-        console.log('[Schedule] Order persisted successfully');
       } catch (error) {
         console.error('World-Class DND Rollback (Schedule):', error);
         setOrderedProfileIds(rollbackOrder);
@@ -596,23 +594,23 @@ export default function ScheduleClient({
   };
 
   const handleDeleteEmployee = async (employeeId: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this employee? This action cannot be undone and will remove all associated shifts.')) return;
-    
+    if (!window.confirm('คุณแน่ใจหรือไม่ที่จะลบพนักงานคนนี้ถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้ และจะลบกะงานทั้งหมดที่เกี่ยวข้องด้วย')) return;
+
     setLoading(true);
     pushToHistory(profiles, orderedProfileIds, shifts); // Save state for undo just in case, though DB delete is permanent
     try {
       // 1. Delete all shifts for this employee to satisfy foreign key constraints
       await supabase.from('shifts').delete().eq('employee_id', employeeId);
-      
+
       // 2. Delete the employee profile
       const { error } = await supabase.from('profiles').delete().eq('id', employeeId);
       if (error) throw error;
-      
+
       // 3. Update UI State instantly (collapse the row)
       setProfiles(prev => prev.filter(p => p.id !== employeeId));
       setOrderedProfileIds(prev => prev.filter(id => id !== employeeId));
       setShifts(prev => prev.filter(s => s.employee_id !== employeeId));
-      
+
       revalidateAppPaths();
     } catch (error) {
       console.error('Failed to delete employee:', error);
@@ -624,15 +622,15 @@ export default function ScheduleClient({
 
   const handleAddEmployee = async () => {
     if (!newEmployeeName.trim()) return;
-    
+
     setLoading(true);
     try {
       // Calculate next display order
       const nextOrder = profiles.length;
-      
+
       const { data, error } = await supabase
         .from('profiles')
-        .insert([{ 
+        .insert([{
           full_name: newEmployeeName.trim(),
           display_order: nextOrder
         }])
@@ -645,7 +643,7 @@ export default function ScheduleClient({
         const newProfile = data as Profile;
         setProfiles(prev => [...prev, newProfile]);
         setOrderedProfileIds(prev => [...prev, newProfile.id]);
-        
+
         // Reset and close
         setNewEmployeeName('');
         setShowAddEmployeeModal(false);
@@ -762,7 +760,7 @@ export default function ScheduleClient({
               onClick={undo}
               disabled={undoStack.length === 0}
               className={`p-1.5 rounded-md transition-all duration-200 active:scale-95 ${undoStack.length > 0 ? 'hover:bg-gray-200 text-gray-800 cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
-              title="Undo"
+              title="เลิกทำ"
             >
               <Undo2 className="w-4 h-4" strokeWidth={1.5} />
             </button>
@@ -770,7 +768,7 @@ export default function ScheduleClient({
               onClick={redo}
               disabled={redoStack.length === 0}
               className={`p-1.5 rounded-md transition-all duration-200 active:scale-95 ${redoStack.length > 0 ? 'hover:bg-gray-200 text-gray-800 cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
-              title="Redo"
+              title="ทำซ้ำ"
             >
               <Redo2 className="w-4 h-4" strokeWidth={1.5} />
             </button>
@@ -784,7 +782,7 @@ export default function ScheduleClient({
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-md border border-emerald-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
             >
               <UserCog className="w-3.5 h-3.5" />
-              จัดการการลา/เปลี่ยนกะ
+              การลา/เปลี่ยนกะ
             </button>
 
             <div className="relative">
@@ -799,7 +797,7 @@ export default function ScheduleClient({
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md border border-blue-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Copy Previous
+                คัดลอกสัปดาห์ก่อนหน้า
               </button>
             </div>
 
@@ -811,7 +809,7 @@ export default function ScheduleClient({
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-red-600 bg-red-50 hover:bg-red-100 rounded-md border border-red-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Clear All
+              ล้างทั้งหมด
             </button>
 
             <button
@@ -819,7 +817,7 @@ export default function ScheduleClient({
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-black bg-gray-100 hover:bg-gray-200 rounded-md border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
             >
               <Plus className="w-3.5 h-3.5" />
-              Add Employee
+              เพิ่มพนักงาน
             </button>
           </div>
 
@@ -837,7 +835,7 @@ export default function ScheduleClient({
         <div className="flex-1 flex flex-col bg-[#fdfcf0]/80 backdrop-blur-sm border border-[#000000]/5 rounded-3xl overflow-hidden shadow-sm">
           <div className="grid grid-cols-8 border-b border-[#000000]/5 bg-red-50/10 sticky top-0 z-[16]">
             <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-red-50/20">
-              <span className="text-[10px] text-[#991b1b] font-normal uppercase tracking-widest">Holiday</span>
+              <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
             </div>
             {weekDays.map(date => {
               const holiday = holidays.find(h => h.date === date);
@@ -868,7 +866,7 @@ export default function ScheduleClient({
 
           <div className="grid grid-cols-8 bg-gray-100 border-b border-gray-200 shrink-0 sticky top-[38px] z-[15]">
             <div className="p-2.5 border-r border-gray-200 flex items-center justify-center bg-gray-100">
-              <span className="text-[11px] text-[#000000] font-normal uppercase tracking-widest">Employee</span>
+              <span className="text-[13px] text-[#000000] font-normal uppercase tracking-widest">พนักงาน</span>
             </div>
             {weekDays.map((date) => {
               const d = new Date(date);
@@ -885,11 +883,11 @@ export default function ScheduleClient({
           <div className="flex-1 overflow-y-auto overflow-x-auto">
             <div className="min-w-[900px]">
               {mounted ? (
-                <DndContext 
-                  id="schedule-dnd" 
-                  sensors={sensors} 
-                  collisionDetection={closestCorners} 
-                  onDragStart={handleDragStart} 
+                <DndContext
+                  id="schedule-dnd"
+                  sensors={sensors}
+                  collisionDetection={closestCorners}
+                  onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                   modifiers={[restrictToWindowEdges]}
                 >
@@ -1018,7 +1016,7 @@ export default function ScheduleClient({
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
             <h3 className="text-lg font-normal text-gray-900">ยืนยันการลบข้อมูล</h3>
-            <p className="text-sm text-gray-500">คุณแน่ใจหรือไม่ที่จะลบข้อมูลกะงาน<br />ของสัปดาห์นี้ทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้ง่ายๆ</p>
+            <p className="text-sm text-gray-500">คุณแน่ใจหรือไม่ที่จะลบข้อมูลกะงาน<br />ของสัปดาห์นี้ทั้งหมด</p>
             <div className="grid grid-cols-2 gap-3 pt-4">
               <button
                 onClick={() => setShowClearConfirm(false)}
@@ -1040,7 +1038,7 @@ export default function ScheduleClient({
       {loading && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[100] flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-          <p className="text-sm font-normal text-blue-600 uppercase tracking-widest">Processing...</p>
+          <p className="text-sm font-normal text-blue-600 uppercase tracking-widest">กำลังดำเนินการ...</p>
         </div>
       )}
       {/* Management Modal */}
@@ -1057,7 +1055,7 @@ export default function ScheduleClient({
                   <div className="p-2 bg-emerald-50 rounded-3xl">
                     <UserCog className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <h3 className="text-lg font-normal text-[#000000] tracking-tight">จัดการการลา / เปลี่ยนกะ</h3>
+                  <h3 className="text-lg font-normal text-[#000000] tracking-tight">การลา / เปลี่ยนกะ</h3>
                 </div>
               </div>
 
@@ -1074,7 +1072,7 @@ export default function ScheduleClient({
 
                 {/* Employee Selection */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">พนักงาน</label>
+                  <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">พนักงาน</label>
                   <div className="relative">
                     <select
                       className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-[14px] font-normal appearance-none text-[#000000]"
@@ -1094,7 +1092,7 @@ export default function ScheduleClient({
 
                 {/* Shift/Type Selection */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
+                  <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
                   <div className="relative group/select">
                     <select
                       className={`w-full h-11 px-4 pr-10 rounded-3xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-[14px] font-normal shadow-sm appearance-none text-[#000000] ${shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-white border-[#000000]/5'
@@ -1120,7 +1118,7 @@ export default function ScheduleClient({
 
                 {/* Smart Date Range Selector */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">ระบุช่วงวันที่จัดการ</label>
+                  <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">ระบุช่วงวันที่จัดการ</label>
                   <div
                     className="group relative flex items-center h-12 px-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0] hover:border-[#000000]/20 transition-all cursor-pointer overflow-hidden shadow-sm"
                     onClick={() => mgmtStartRef.current?.showPicker()}
@@ -1155,7 +1153,7 @@ export default function ScheduleClient({
 
                 {/* Remark */}
                 <div className="space-y-1.5 pt-2">
-                  <label className="text-[11px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">หมายเหตุ</label>
+                  <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">หมายเหตุ</label>
                   <textarea
                     placeholder="รายละเอียดเพิ่มเติม..."
                     className="w-full h-20 p-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-[13px] leading-relaxed font-normal text-[#000000]"
@@ -1233,7 +1231,7 @@ export default function ScheduleClient({
                 {mgmtHistory.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-[#000000]/20 space-y-2">
                     <CalendarDays className="w-8 h-8" />
-                    <p className="text-xs font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
+                    <p className="text-sm font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1247,7 +1245,7 @@ export default function ScheduleClient({
                               {item.location}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-[#000000] mb-1.5">
+                          <div className="flex items-center gap-1 text-[12px] text-[#000000] mb-1.5">
                             <Calendar className="w-2.5 h-2.5" />
                             <span>{format(new Date(item.startDate), 'dd/MM/yyyy')}</span>
                             {item.startDate !== item.endDate && (
@@ -1258,7 +1256,7 @@ export default function ScheduleClient({
                             )}
                           </div>
                           {item.remark ? (
-                            <p className="text-[10px] text-gray-400 bg-gray-50/50 p-2 rounded-lg leading-tight italic truncate line-clamp-2 mt-auto border border-gray-100">
+                            <p className="text-[12px] text-gray-400 bg-gray-50/50 p-2 rounded-lg leading-tight italic truncate line-clamp-2 mt-auto border border-gray-100">
                               &quot;{item.remark}&quot;
                             </p>
                           ) : (
@@ -1283,10 +1281,10 @@ export default function ScheduleClient({
             <h3 className="text-xl font-normal text-black mb-4 uppercase tracking-tight">เพิ่มพนักงานใหม่</h3>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[11px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ชื่อ-นามสกุล</label>
-                <input 
+                <label className="text-[13px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ชื่อ</label>
+                <input
                   autoFocus
-                  type="text" 
+                  type="text"
                   value={newEmployeeName}
                   onChange={e => setNewEmployeeName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddEmployee()}
@@ -1295,13 +1293,13 @@ export default function ScheduleClient({
                 />
               </div>
               <div className="flex gap-3 pt-2">
-                <button 
+                <button
                   onClick={() => setShowAddEmployeeModal(false)}
                   className="flex-1 py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-sm"
                 >
                   ยกเลิก
                 </button>
-                <button 
+                <button
                   onClick={handleAddEmployee}
                   disabled={loading || !newEmployeeName.trim()}
                   className="flex-1 py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm flex items-center justify-center gap-2"

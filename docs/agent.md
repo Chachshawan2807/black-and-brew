@@ -11,6 +11,12 @@
 - AI ได้รับอนุญาตให้ดำเนินการ Full CRUD ทั้ง Add, Edit, Delete และ Run commands โดยไม่ต้องรอยืนยันซ้ำ
 - AI มีอำนาจจัดการ Permissions และ Settings ตามความเหมาะสมเพื่อให้บรรลุผลลัพธ์ (Outcome-First)
 
+### 1.1 Autonomous Execution Privileges (สิทธิ์การทำงานอิสระ)
+
+- **Full Autonomy (R0 & R1)**: Agent มีอำนาจในการตัดสินใจแก้ไขโครงสร้างโค้ด การจัดรูปแบบ UI และการจัดการไฟล์ภายในโมดูลได้ทันทีโดยไม่ต้องรออนุมัติ
+- **Validation Requirement**: แม้จะทำงานอิสระ แต่ Agent ต้องทำการตรวจสอบ Syntax และรัน Build เช็คด้วยตนเองให้ผ่าน 100% ก่อนส่งงาน
+- **Approval Lock (R2)**: สงวนสิทธิ์การขออนุมัติเฉพาะงานที่มีผลกระทบต่อโครงสร้างฐานข้อมูลหลัก (Core DB Schema) หรือนโยบายความปลอดภัยระดับสูงเท่านั้น
+
 ---
 
 ## 2. Operational Protocol
@@ -32,9 +38,9 @@ THINK → MAP → BUDGET CHECK → EXECUTE → VALIDATE → LOG
 
 | Level | Classification | Examples | Protocol |
 | :--- | :--- | :--- | :--- |
-| **R0** | Low Risk | UI edits, Documentation, Lints | Auto-approve |
-| **R1** | Medium Risk | DB mutations, API keys | Context verification |
-| **R2** | High Risk | Prod deployment, RLS changes, Deletion | Strict user approval |
+| **R0** | Low Risk | UI edits, Documentation, Lints | **Auto-approve** |
+| **R1** | Medium Risk | Module-level logic, local styles | **Auto-approve** |
+| **R2** | High Risk | Core DB Schema, RLS, Global Auth | **Strict user approval** |
 
 ---
 

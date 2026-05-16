@@ -6,6 +6,13 @@
 
 ## Decision Log
 
+### DEC-003: Sub-label Typography Standard
+
+- **Date:** May 16, 2026
+- **Context:** ฟอนต์ขนาด `text-[11px]` หรือเล็กกว่า อ่านยากบนหน้าจอพนักงาน (Mobile/Tablet)
+- **Decision:** อัปเกรดหัวข้อย่อยและป้ายกำกับทั้งหมดเป็น **`text-sm` (14px)** หรือขั้นต่ำ **`text-[13px]`** โดยห้ามใช้ `font-bold` (Zero-Bold Policy)
+- **Impact:** ต้องปรับลด Padding/Gap ใน Modals เพื่อล็อกความสูงให้จบในหน้าเดียว (One-Shot View)
+
 ### DEC-001: Column Rename `product_id` → `inventory_item_id`
 
 - **Date:** May 2026
@@ -77,3 +84,11 @@
 - **Decision:** Load column widths จาก localStorage ก่อน แล้วจึง sync จาก Supabase
 - **Impact:** Zero Layout Shift on page load
 - **Evidence:** `page.tsx` lines 373-384, `PROTOCOL_ENFORCER.md` Persistent UI States
+
+### DEC-010: DOM Separation for DnD & Framer Motion Integration
+
+- **Date:** May 16, 2026
+- **Context:** Style conflicts between `@dnd-kit` and `framer-motion` over the `transform` property caused stuttering and blocked layout gliding during drag events.
+- **Decision:** Implement **DOM Separation**: Use an outer `div` (Wrapper) for Dnd-kit transforms and an inner `motion.div` (UI) for Framer Motion micro-interactions. Switch to `CSS.Translate.toString(transform)` for the wrapper to decouple layout from scaling.
+- **Impact:** Frictionless layout gliding; cards slide smoothly while dragging.
+- **Evidence:** `SortableEmployeeCard` in `LiveShiftList.tsx` (Lines 51-118).

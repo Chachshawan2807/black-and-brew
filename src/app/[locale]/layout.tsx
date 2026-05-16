@@ -4,6 +4,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
 import SidebarLayout from '@/components/sidebar/SidebarLayout';
 import I18nProvider from '@/components/providers/I18nProvider';
+import AIChatWrapper from '@/components/ai/AIChatWrapper';
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -40,7 +41,7 @@ export default async function RootLayout({
             <div className="flex-1 min-h-screen bg-[#fdfcf0] flex items-center justify-center">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-                <span className="text-[10px] font-normal uppercase tracking-[0.3em] text-[#000000] opacity-40">
+                <span className="text-[12px] font-normal uppercase tracking-[0.3em] text-[#000000] opacity-40">
                   Streaming BLACKANDBREW...
                 </span>
               </div>
@@ -51,6 +52,7 @@ export default async function RootLayout({
             </I18nProvider>
           </Suspense>
         </SidebarLayout>
+        <AIChatWrapper />
       </body>
     </html>
   );

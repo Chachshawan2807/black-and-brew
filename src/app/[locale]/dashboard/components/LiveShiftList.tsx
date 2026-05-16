@@ -59,65 +59,62 @@ function SortableEmployeeCard({ id, data, isDragging }: SortableEmployeeCardProp
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    transition: transition || 'transform 150ms cubic-bezier(0.2, 0, 0, 1)',
-    opacity: isDragging ? 0.3 : 1,
-    zIndex: isDragging ? 100 : 1,
-    willChange: 'transform',
+    transition: isDragging ? 'none' : transition || 'transform 250ms cubic-bezier(0.2, 0, 0, 1)',
   };
 
   return (
-    <motion.div
+    <div
       ref={setNodeRef}
-      layout
-      layoutId={id}
       style={style}
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ y: -5, scale: 1.01, transition: { duration: 0.2 } }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ 
-        type: "spring", 
-        stiffness: 300, 
-        damping: 30,
-        layout: { duration: 0.3 }
-      }}
-      className={`glass-card p-6 flex flex-col gap-5 bg-white/80 backdrop-blur-xl select-none border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 rounded-3xl ${isDragging ? 'cursor-grabbing ring-2 ring-black/10 opacity-70 scale-105 shadow-2xl z-100' : 'cursor-grab hover:border-black/10 hover:shadow-xl'}`}
+      className={isDragging ? "opacity-0 z-0" : "z-10 relative"}
       {...attributes}
       {...listeners}
     >
-      {/* Employee Info */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1 py-1">
-          <h3 className="text-[19px] font-normal tracking-tight text-[#000000] leading-[1.6] truncate">
-            {data.profile.full_name}
-          </h3>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        whileHover={{ y: -4, scale: 1.02, transition: { duration: 0.2, ease: "easeOut" } }}
+        whileTap={{ scale: 0.98 }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+          mass: 1
+        }}
+        className="glass-card p-6 flex flex-col gap-5 bg-white/80 backdrop-blur-xl select-none border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-shadow duration-300 hover:border-black/10 hover:shadow-xl rounded-3xl"
+      >
+        {/* Employee Info */}
+        <div className="flex items-center justify-between">
+          <div className="flex-1 py-1">
+            <h3 className="text-[19px] font-normal tracking-tight text-[#000000] leading-[1.6] truncate">
+              {data.profile.full_name}
+            </h3>
+          </div>
+
+          <div className="p-1 rounded-md hover:bg-gray-100 transition-colors">
+            <GripVertical className="w-5 h-5 text-gray-400" />
+          </div>
         </div>
 
-        <div className="p-1 rounded-md hover:bg-gray-100 transition-colors">
-          <GripVertical className="w-5 h-5 text-gray-400" />
+        {/* Performance Metrics */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#dcfce7]">
+            <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
+            <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
+          </div>
+
+          <div className="bg-[#fff5f5] border border-[#fee2e2] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#fee2e2]">
+            <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
+            <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ลา</span>
+          </div>
+
+          <div className="bg-[#fffaf0] border border-[#ffedd5] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#ffedd5]">
+            <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
+            <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
+          </div>
         </div>
-      </div>
-
-      {/* Performance Metrics */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#dcfce7]">
-          <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
-          <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Work</span>
-        </div>
-
-        <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#e0f2fe]">
-          <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
-          <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Leave</span>
-        </div>
-
-        <div className="bg-[#fff1f2] border border-[#ffe4e6] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#ffe4e6]">
-          <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
-          <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Hol.</span>
-        </div>
-      </div>
-    </motion.div>
-
-
+      </motion.div>
+    </div>
   );
 }
 
@@ -129,9 +126,9 @@ interface LiveShiftListProps {
   endDate: string;
 }
 
-export default function LiveShiftList({ 
-  initialProfiles, 
-  initialShifts, 
+export default function LiveShiftList({
+  initialProfiles,
+  initialShifts,
   initialHolidays,
   startDate,
   endDate
@@ -160,7 +157,7 @@ export default function LiveShiftList({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 10,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -262,7 +259,7 @@ export default function LiveShiftList({
             <CalendarDays className="w-5 h-5 text-black/60" strokeWidth={1.5} />
           </div>
           <div>
-            <p className="text-[11px] text-gray-500 uppercase tracking-widest mb-0.5"></p>
+            <p className="text-[13px] text-gray-500 uppercase tracking-widest mb-0.5"></p>
             <div className="flex items-center gap-2 justify-center">
               <ClickableInput
                 type="date"
@@ -284,7 +281,7 @@ export default function LiveShiftList({
         <div className="flex items-center gap-3 px-5 py-2.5 bg-black/5 rounded-2xl w-fit">
           <Users className="w-4 h-4 text-black/60" strokeWidth={1.5} />
           <span className="text-lg font-normal text-[#000000]">{profiles.length}</span>
-          <span className="text-[11px] text-[#000000]/40 ml-1 uppercase tracking-widest font-normal">All Staff</span>
+          <span className="text-[13px] text-[#000000]/40 ml-1 uppercase tracking-widest font-normal">พนักงานทั้งหมด</span>
         </div>
 
       </div>
@@ -314,10 +311,10 @@ export default function LiveShiftList({
           </div>
 
           <DragOverlay dropAnimation={{
-            duration: 250,
+            duration: 300,
             easing: 'cubic-bezier(0.2, 0, 0, 1)',
             sideEffects: defaultDropAnimationSideEffects({
-              styles: { active: { opacity: '0.3' } },
+              styles: { active: { opacity: '0.4' } },
             }),
           }}>
             {activeId && activeProfileData ? (
@@ -335,15 +332,15 @@ export default function LiveShiftList({
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.workDays}</span>
-                    <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Work</span>
+                    <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
                   </div>
-                  <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
+                  <div className="bg-[#fff5f5] border border-[#fee2e2] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.leaveDays}</span>
-                    <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Leave</span>
+                    <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ลา</span>
                   </div>
-                  <div className="bg-[#fff1f2] border border-[#ffe4e6] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
+                  <div className="bg-[#fffaf0] border border-[#ffedd5] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.publicHolidays}</span>
-                    <span className="text-[10px] text-[#000000]/60 uppercase tracking-widest font-normal mt-0.5">Hol.</span>
+                    <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
                   </div>
                 </div>
               </div>

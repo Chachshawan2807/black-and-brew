@@ -18,6 +18,8 @@ Hybrid PPR architecture: Static Shell (Navigation, Branding) + Dynamic Islands (
 - **DnD:** @dnd-kit/core + sortable
 - **Testing:** Vitest + Testing Library
 - **Deploy:** Vercel Edge Runtime
+- **Interaction Layer:** Decoupled DOM Separation (Dnd-kit for layout, Framer Motion for micro-interactions)
+
 
 ---
 

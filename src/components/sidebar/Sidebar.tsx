@@ -25,7 +25,7 @@ export function Sidebar() {
       )}
     >
       <SidebarToggle isOpen={isOpen} setIsOpen={sidebar?.setIsOpen} />
-      <div className="relative h-full flex flex-col px-3 py-4 overflow-y-auto overflow-x-hidden">
+      <div className="relative h-full flex flex-col px-3 py-4 overflow-y-auto overflow-x-hidden scrollbar-none [&::-webkit-scrollbar]:hidden">
         <div className={cn(
           "mb-2 flex items-center transition-all duration-500",
           isOpen === false ? "justify-center" : "justify-start px-2"

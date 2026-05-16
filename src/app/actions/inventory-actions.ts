@@ -49,9 +49,6 @@ export async function recordTransaction(
 export async function fetchTransactionHistory(itemId?: string, limit: number = 50) {
   noStore(); // Phase 1: Force disable cache — always fetch fresh from DB
 
-  console.log('--- [fetchTransactionHistory] DB Fetch Start ---');
-  console.log('[fetchTransactionHistory] Filter itemId:', itemId ?? 'ALL');
-
   try {
     // Step 1: Fetch raw transaction data (no join — bulletproof approach)
     // Uses inventory_item_id — VERIFIED column name in actual DB
@@ -73,23 +70,15 @@ export async function fetchTransactionHistory(itemId?: string, limit: number = 5
       return { success: false, error: `DB Error: ${txError.message}`, data: [] };
     }
 
-    console.log('[fetchTransactionHistory] Raw Transactions Found:', transactions?.length ?? 0);
-
     if (!transactions || transactions.length === 0) {
-      console.log('[fetchTransactionHistory] Result: Empty. Table may be empty or RLS is blocking access.');
       return { success: true, data: [] };
     }
-
-    // Log first record for schema verification
-    console.log('[fetchTransactionHistory] Sample record keys:', Object.keys(transactions[0]));
 
     // Step 2: Get unique item IDs and fetch their names separately
     // Uses inventory_item_id — VERIFIED column name in actual DB
     const itemIds = [...new Set(
       transactions.map((tx: any) => tx.inventory_item_id).filter(Boolean)
     )] as string[];
-
-    console.log('[fetchTransactionHistory] Unique item IDs to lookup:', itemIds.length);
 
     let itemNameMap: Record<string, string> = {};
 
@@ -102,7 +91,6 @@ export async function fetchTransactionHistory(itemId?: string, limit: number = 5
       if (itemsError) {
         console.error('[fetchTransactionHistory] Items Lookup Error:', itemsError);
       } else if (itemsData) {
-        console.log('[fetchTransactionHistory] Item names fetched:', itemsData.length);
         itemsData.forEach((item: any) => {
           itemNameMap[item.id] = item.name;
         });
@@ -117,9 +105,6 @@ export async function fetchTransactionHistory(itemId?: string, limit: number = 5
         name: itemNameMap[tx.inventory_item_id] || 'ไม่ทราบชื่อสินค้า'
       }
     }));
-
-    console.log('[fetchTransactionHistory] Enriched records ready:', enrichedData.length);
-    console.log('--- [fetchTransactionHistory] DB Fetch Complete ---');
 
     return { success: true, data: enrichedData };
   } catch (error: any) {

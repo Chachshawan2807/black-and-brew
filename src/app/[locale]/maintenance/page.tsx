@@ -3,22 +3,22 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
-import { 
-  Plus, 
-  Wrench, 
-  Edit2, 
-  Trash2, 
-  CheckCircle2, 
-  Clock, 
-  DollarSign, 
+import {
+  Plus,
+  Wrench,
+  Edit2,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  DollarSign,
   User,
   FileText,
   AlertCircle,
   Loader2,
   ChevronRight,
   Calendar,
-  Tool,
-  ClipboardList
+  ClipboardList,
+  X
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -28,7 +28,7 @@ import React from 'react';
 // Simple Toast implementation
 const useToast = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  
+
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 3000);
@@ -112,7 +112,7 @@ export default function MaintenancePage() {
     setLoading(true);
 
     // Prepare payload with DB-compliant mapping and explicit sanitation
-    const payload = { 
+    const payload = {
       start_date: formData.start_date,
       equipment: formData.equipment,
       detected_problem: formData.detected_problem.trim() === "" ? null : formData.detected_problem,
@@ -126,7 +126,7 @@ export default function MaintenancePage() {
       // Logic Fix: Auto-set completion_date if status is 'เสร็จสมบูรณ์'
       completion_date: formData.status === 'เสร็จสมบูรณ์' ? format(new Date(), 'yyyy-MM-dd') : null
     };
-    
+
     try {
       let error;
       if (editingRecord?.id) {
@@ -220,11 +220,11 @@ export default function MaintenancePage() {
   return (
     <div className="min-h-screen bg-[#fdfcf0] p-4 md:p-10 text-[#000000] relative font-normal" style={{ lineHeight: '1.6' }}>
       <div className="max-w-7xl mx-auto space-y-10">
-        
+
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-black/5">
           <div className="space-y-1.5">
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="text-4xl md:text-5xl font-normal tracking-[0.1em] text-[#000000] flex items-center gap-3"
@@ -232,80 +232,25 @@ export default function MaintenancePage() {
               <div className="p-2.5 bg-black text-white rounded-2xl">
                 <Wrench className="w-8 h-8" strokeWidth={1.5} />
               </div>
-              MAINTENANCE
+              ประวัติการซ่อมบำรุง
             </motion.h1>
-            <p className="text-[#000000]/50 text-[11px] font-normal uppercase tracking-[0.3em] px-1">Equipment Service History</p>
+            <p className="text-[#000000]/50 text-[13px] font-normal uppercase tracking-[0.3em] px-1">บันทึกการดูแลรักษาอุปกรณ์และเครื่องใช้</p>
           </div>
 
           <div className="flex items-center gap-4">
-             <motion.button 
+            <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => { resetForm(); setIsModalOpen(true); }}
               className="group flex items-center gap-2.5 bg-[#000000] hover:bg-black/80 text-white px-7 py-3.5 rounded-2xl transition-all shadow-sm"
-             >
+            >
               <Plus className="w-4.5 h-4.5" />
-              <span className="font-medium text-sm tracking-wide">New Record</span>
+              <span className="font-medium text-sm tracking-wide">เพิ่มบันทึกใหม่</span>
             </motion.button>
           </div>
         </header>
 
-        {/* Stats / Quick Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="bg-[#f0fdf4] border border-[#dcfce7] p-6 rounded-3xl space-y-3 shadow-sm hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[#14532d]/60 font-medium uppercase tracking-widest text-[10px]">Completed</span>
-              <div className="p-2 bg-white/50 rounded-xl border border-[#dcfce7]">
-                <CheckCircle2 className="w-4 h-4 text-[#10b981]" strokeWidth={1.5} />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <div className="text-4xl font-normal text-[#14532d] tracking-tight">
-                {records.filter(r => r.status === 'เสร็จสมบูรณ์').length}
-              </div>
-              <span className="text-[10px] text-[#14532d]/40 font-medium uppercase tracking-widest">Units</span>
-            </div>
-          </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-[#f0f9ff] border border-[#e0f2fe] p-6 rounded-3xl space-y-3 shadow-sm hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[#0c4a6e]/60 font-medium uppercase tracking-widest text-[10px]">In Progress</span>
-              <div className="p-2 bg-white/50 rounded-xl border border-[#e0f2fe]">
-                <Clock className="w-4 h-4 text-[#0284c7]" strokeWidth={1.5} />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <div className="text-4xl font-normal text-[#0c4a6e] tracking-tight">
-                {records.filter(r => r.status === 'กำลังดำเนินการ').length}
-              </div>
-              <span className="text-[10px] text-[#0c4a6e]/40 font-medium uppercase tracking-widest">Tasks</span>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="bg-[#fff1f2] border border-[#ffe4e6] p-6 rounded-3xl space-y-3 shadow-sm hover:shadow-md transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[#9f1239]/60 font-medium uppercase tracking-widest text-[10px]">Total Expenses</span>
-              <div className="p-2 bg-white/50 rounded-xl border border-[#ffe4e6]">
-                <DollarSign className="w-4 h-4 text-[#e11d48]" strokeWidth={1.5} />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-normal text-[#9f1239]/40 tracking-tighter mr-1">฿</span>
-              <div className="text-4xl font-normal text-[#9f1239] tracking-tight">
-                {records.reduce((acc, curr) => acc + (curr.cost || 0), 0).toLocaleString()}
-              </div>
-            </div>
-          </motion.div>
-        </div>
 
         {/* Records List */}
         <main className="pb-20">
@@ -318,7 +263,7 @@ export default function MaintenancePage() {
             <div className="bg-white/50 border border-dashed border-[#000000]/10 rounded-[32px] py-32 flex flex-col items-center justify-center text-[#000000]/40">
               <Wrench className="w-20 h-20 mb-8 opacity-10" strokeWidth={0.5} />
               <p className="text-xl font-normal tracking-wide italic">No maintenance records discovered yet.</p>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(true)}
                 className="mt-8 text-[#000000] hover:opacity-60 transition-opacity font-normal text-xs uppercase tracking-[0.3em] border-b border-[#000000] pb-1"
               >
@@ -329,8 +274,8 @@ export default function MaintenancePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <AnimatePresence>
                 {records.map((record, index) => (
-                  <motion.div 
-                    key={record.id} 
+                  <motion.div
+                    key={record.id}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
@@ -345,19 +290,19 @@ export default function MaintenancePage() {
                         <div>
                           <h3 className="text-[17px] font-medium text-[#000000] tracking-tight leading-tight">{record.equipment}</h3>
                           <div className="flex items-center gap-1.5 text-[10px] text-[#000000]/40 uppercase tracking-widest mt-1">
-                             <Calendar className="w-3 h-3" />
-                             {format(new Date(record.start_date), 'dd/MM/yyyy')}
+                            <Calendar className="w-3 h-3" />
+                            {format(new Date(record.start_date), 'dd/MM/yyyy')}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
+                        <button
                           onClick={() => handleEdit(record)}
                           className="p-2 hover:bg-black/5 text-black/40 hover:text-black rounded-xl transition-all active:scale-90"
                         >
                           <Edit2 className="w-4 h-4" strokeWidth={1.5} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
                           className="p-2 hover:bg-red-50 text-black/40 hover:text-red-500 rounded-xl transition-all active:scale-90"
                         >
@@ -368,7 +313,7 @@ export default function MaintenancePage() {
 
                     <div className="flex-1 space-y-4">
                       <div className="flex items-center gap-3">
-                        <span className="px-2.5 py-1 bg-black/5 rounded-lg uppercase tracking-widest font-normal text-[9px] text-black/60">
+                        <span className="px-2.5 py-1 bg-black/5 rounded-lg uppercase tracking-widest font-normal text-[11px] text-black/60">
                           {record.task_type}
                         </span>
                         <div className="h-[1px] flex-1 bg-black/5" />
@@ -376,32 +321,28 @@ export default function MaintenancePage() {
                           ฿{(record.cost || 0).toLocaleString()}
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 gap-3">
-                        {record.detected_problem && (
-                          <div className="p-3 bg-black/[0.02] rounded-2xl border border-black/[0.03]">
-                            <span className="block text-[9px] font-normal uppercase tracking-widest text-black/30 mb-1">Issue Detected</span>
-                            <p className="text-[13px] text-black/80 font-normal leading-[1.6] line-clamp-2">{record.detected_problem}</p>
-                          </div>
-                        )}
-                        {record.work_details && (
-                          <div className="p-3 bg-black/[0.02] rounded-2xl border border-black/[0.03]">
-                            <span className="block text-[9px] font-normal uppercase tracking-widest text-black/30 mb-1">Service Detail</span>
-                            <p className="text-[13px] text-black/80 font-normal leading-[1.6] line-clamp-2">{record.work_details}</p>
-                          </div>
-                        )}
+                        <div className="p-3 bg-black/[0.02] rounded-2xl border border-black/[0.03]">
+                          <span className="block text-[13px] font-normal uppercase tracking-widest text-black/60 mb-1">อาการที่พบ</span>
+                          <p className="text-[13px] text-black/80 font-normal leading-[1.6] line-clamp-2">{record.detected_problem}</p>
+                        </div>
+                        <div className="p-3 bg-black/[0.02] rounded-2xl border border-black/[0.03]">
+                          <span className="block text-[13px] font-normal uppercase tracking-widest text-black/60 mb-1">รายละเอียดการซ่อม</span>
+                          <p className="text-[13px] text-black/80 font-normal leading-[1.6] line-clamp-2">{record.work_details}</p>
+                        </div>
                       </div>
                     </div>
 
                     <div className="mt-6 pt-5 border-t border-black/5 flex items-center justify-between">
                       <div className="flex items-center gap-2 text-[12px] font-medium text-black/50">
-                        <div className="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-[10px] font-normal">
+                        <div className="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-[12px] font-normal">
                           {record.person_in_charge?.[0] || '?'}
                         </div>
                         {record.person_in_charge || 'Unknown'}
                       </div>
                       {record.recommended_frequency && (
-                        <div className="text-[9px] font-normal text-black/30 uppercase tracking-widest flex items-center gap-1.5">
+                        <div className="text-[11px] font-normal text-black/30 uppercase tracking-widest flex items-center gap-1.5">
                           <Clock className="w-3 h-3" />
                           {record.recommended_frequency}
                         </div>
@@ -419,23 +360,23 @@ export default function MaintenancePage() {
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/10 backdrop-blur-sm" 
-              onClick={() => setIsModalOpen(false)} 
+              className="absolute inset-0 bg-black/10 backdrop-blur-sm"
+              onClick={() => setIsModalOpen(false)}
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-lg rounded-[32px] shadow-2xl overflow-hidden border border-black/5"
+              className="relative bg-white w-full max-w-xl rounded-[32px] shadow-2xl overflow-hidden border border-black/5"
             >
-              <div className="p-6 border-b border-black/5 flex items-center justify-between bg-[#fff7ed]/50">
+              <div className="p-5 border-b border-black/5 flex items-center justify-between bg-[#fff7ed]/50">
                 <div>
                   <h2 className="text-xl font-normal text-[#000000] tracking-tight uppercase">
-                    {editingRecord ? 'Edit Record' : 'New Entry'}
+                    {editingRecord ? 'แก้ไขบันทึก' : 'เพิ่มบันทึกใหม่'}
                   </h2>
-                  <p className="text-[9px] text-black/40 mt-0.5 uppercase tracking-widest font-normal">Service Details & Equipment Status</p>
+                  <p className="text-[13px] text-black/60 mt-0.5 uppercase tracking-widest font-normal">รายละเอียดการซ่อมและสถานะอุปกรณ์</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setIsModalOpen(false)}
                   className="p-2 hover:bg-black/5 rounded-2xl transition-colors text-black/40"
                 >
@@ -443,17 +384,18 @@ export default function MaintenancePage() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[65vh] overflow-y-auto custom-scrollbar bg-white">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar bg-white">
+                {/* Row 1: Date & Type */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5 cursor-pointer" onClick={() => dateInputRef.current?.showPicker()}>
-                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Service Date</label>
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">วันที่รับบริการ</label>
                     <div className="relative h-11 flex items-center bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 cursor-pointer hover:bg-black/[0.04] transition-all">
                       <span className="text-sm text-black font-medium flex-1">
                         {formData.start_date ? format(parseISO(formData.start_date), 'dd/MM/yyyy') : ''}
                       </span>
-                      <input 
+                      <input
                         ref={dateInputRef}
-                        type="date" 
+                        type="date"
                         required
                         value={formData.start_date}
                         onChange={e => setFormData({ ...formData, start_date: e.target.value })}
@@ -463,41 +405,42 @@ export default function MaintenancePage() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Task Type</label>
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ประเภทงาน</label>
                     <div className="relative">
-                      <select 
+                      <select
                         value={formData.task_type}
                         onChange={e => setFormData({ ...formData, task_type: e.target.value })}
                         className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all appearance-none cursor-pointer hover:bg-black/[0.04]"
                       >
-                        <option value="ซ่อมแซม">ซ่อมแซม (Repair)</option>
-                        <option value="บำรุงรักษา">บำรุงรักษา (Maintenance)</option>
-                        <option value="ติดตั้ง">ติดตั้ง (Installation)</option>
-                        <option value="เปลี่ยนอะไหล่">เปลี่ยนอะไหล่ (Replacement)</option>
-                        <option value="อื่นๆ">อื่นๆ (Others)</option>
+                        <option value="ซ่อมแซม">ซ่อมแซม</option>
+                        <option value="บำรุงรักษา">บำรุงรักษา</option>
+                        <option value="ติดตั้ง">ติดตั้ง</option>
+                        <option value="เปลี่ยนอะไหล่">เปลี่ยนอะไหล่</option>
+                        <option value="อื่นๆ">อื่นๆ</option>
                       </select>
                       <ChevronRight className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-black/30 pointer-events-none" />
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Row 2: Equipment & Frequency */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Equipment Name</label>
-                      <input 
-                      type="text" 
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ชื่ออุปกรณ์</label>
+                    <input
+                      type="text"
                       required
-                      placeholder="e.g. Espresso Machine"
+                      placeholder="เช่น เครื่องชงเอสเปรสโซ"
                       value={formData.equipment}
                       onChange={e => setFormData({ ...formData, equipment: e.target.value })}
                       className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Frequency</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Every 3 months"
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ความถี่ที่แนะนำ</label>
+                    <input
+                      type="text"
+                      placeholder="เช่น ทุก 3 เดือน"
                       value={formData.recommended_frequency}
                       onChange={e => setFormData({ ...formData, recommended_frequency: e.target.value })}
                       className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
@@ -505,35 +448,14 @@ export default function MaintenancePage() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Problem Detected</label>
-                  <textarea 
-                    placeholder="Describe the issue..."
-                    rows={2}
-                    value={formData.detected_problem}
-                    onChange={e => setFormData({ ...formData, detected_problem: e.target.value })}
-                    className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Work Details</label>
-                  <textarea 
-                    placeholder="What was done?"
-                    rows={2}
-                    value={formData.work_details}
-                    onChange={e => setFormData({ ...formData, work_details: e.target.value })}
-                    className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Row 3: Cost & In Charge (Moved Up) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Cost (THB)</label>
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ค่าใช้จ่าย (บาท)</label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30 text-sm font-normal">฿</span>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         min="0"
                         value={formData.cost === 0 ? '' : formData.cost}
                         onChange={e => {
@@ -545,10 +467,10 @@ export default function MaintenancePage() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">In Charge</label>
-                    <input 
-                      type="text" 
-                      placeholder="Technician Name"
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ผู้รับผิดชอบ / ช่าง</label>
+                    <input
+                      type="text"
+                      placeholder="ชื่อ"
                       value={formData.person_in_charge}
                       onChange={e => setFormData({ ...formData, person_in_charge: e.target.value })}
                       className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
@@ -556,55 +478,80 @@ export default function MaintenancePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Job Status</label>
-                  <div className="flex gap-3">
-                    <button 
-                      type="button"
-                      onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[11px] font-normal transition-all ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
-                    >
-                      <Clock className="w-4 h-4" strokeWidth={1.5} />
-                      In Progress
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[11px] font-normal transition-all ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
-                    >
-                      <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
-                      Completed
-                    </button>
+                {/* Textareas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">อาการที่พบ</label>
+                    <textarea
+                      placeholder="อธิบายปัญหา"
+                      rows={2}
+                      value={formData.detected_problem}
+                      onChange={e => setFormData({ ...formData, detected_problem: e.target.value })}
+                      className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-sm font-medium focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">รายละเอียดการซ่อม</label>
+                    <textarea
+                      placeholder="ดำเนินการอะไรบ้าง?"
+                      rows={2}
+                      value={formData.work_details}
+                      onChange={e => setFormData({ ...formData, work_details: e.target.value })}
+                      className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-sm font-medium focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-normal uppercase tracking-widest text-black/40 ml-1">Notes</label>
-                  <input 
-                    type="text" 
-                    placeholder="Additional notes..."
-                    value={formData.notes}
-                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">สถานะงาน</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-normal transition-all ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
+                      >
+                        <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        กำลังดำเนินการ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-normal transition-all ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        เสร็จสิ้น
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">หมายเหตุ</label>
+                    <input
+                      type="text"
+                      placeholder="หมายเหตุ"
+                      value={formData.notes}
+                      onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
+                    />
+                  </div>
                 </div>
               </form>
 
-              <div className="p-6 bg-gray-50/50 border-t border-black/5 flex gap-3">
-                <button 
+              <div className="p-5 bg-gray-50/50 border-t border-black/5 flex gap-3">
+                <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3.5 text-black/40 font-normal hover:text-black transition-all text-[11px] uppercase tracking-widest"
+                  className="flex-1 py-3 text-black/60 font-normal hover:text-black transition-all text-[12px] uppercase tracking-widest"
                 >
-                  Dismiss
+                  ยกเลิก
                 </button>
-                <button 
+                <button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="flex-[2] py-3.5 bg-black text-white font-normal rounded-2xl hover:bg-black/80 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+                  className="flex-[2] py-3 bg-black text-white font-normal rounded-2xl hover:bg-black/80 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-[12px] uppercase tracking-widest"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" strokeWidth={2} />}
-                  Confirm Entry
+                  ยืนยันบันทึก
                 </button>
               </div>
             </motion.div>
@@ -623,14 +570,14 @@ export default function MaintenancePage() {
             <h3 className="text-2xl font-normal text-[#000000] tracking-tighter mb-2 uppercase">Delete Record?</h3>
             <p className="text-[#000000]/40 text-sm font-normal mb-8 leading-relaxed">This action is irreversible and will permanently remove this maintenance entry from the vault.</p>
             <div className="flex flex-col gap-3">
-              <button 
+              <button
                 onClick={handleDelete}
                 disabled={loading}
                 className="w-full py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm uppercase tracking-widest"
               >
                 {loading ? 'Processing...' : 'Confirm Deletion'}
               </button>
-              <button 
+              <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
                 className="w-full py-4 text-[#000000]/40 font-normal hover:text-[#000000] transition-all text-sm uppercase tracking-widest"
               >

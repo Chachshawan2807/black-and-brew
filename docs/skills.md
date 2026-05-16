@@ -22,7 +22,8 @@
 | Skill Name & Description | Technical Implementation | Location Reference |
 | :--- | :--- | :--- |
 | **Spreadsheet Inline Editing**: แก้ไขข้อมูลได้โดยตรงบนตารางเหมือน Google Sheets และเลื่อนช่องถัดไปด้วยปุ่ม Enter | ใช้ Native `<input>` ภายใน `<td>` จับ State ด้วย `onChange` และทริกเกอร์บันทึกด้วย `onBlur` หรือ `onKeyDown={Enter}` | `src/app/[locale]/inventory/page.tsx` (`EditableCell`) |
-| **Drag-and-Drop Sorting**: จับลากสลับลำดับแถวได้อย่างอิสระ | ใช้ `@dnd-kit/core` ร่วมกับ `SortableContext` และบังคับ `PointerSensor` ที่ distance: 5 เพื่อป้องกันการเผลอลาก | `src/app/[locale]/inventory/page.tsx` (`SortableRow`) |
+| **Frictionless Layout Gliding**: ระบบลากวางที่การ์ดใบอื่นสามารถไหลสลับตำแหน่งกันได้อย่างนุ่มนวลไร้รอยต่อ | ใช้กลยุทธ์ **DOM Separation** (Outer Wrapper for DnD / Inner Motion for UI) และใช้ `CSS.Translate` แทน `Transform` เพื่อป้องกัน Conflict | `src/app/[locale]/dashboard/components/LiveShiftList.tsx` |
+| **100% Mechanical Mirroring**: การทำซ้ำระบบ Interaction จากหน้าหนึ่งไปยังอีกหน้าหนึ่งได้อย่างสมบูรณ์แบบ | อ้างอิง Sensor, Physics (Stiffness: 300, Damping: 30), และ DropAnimation Profile จากหน้า CommandCenterGrid | `src/app/[locale]/dashboard/components/LiveShiftList.tsx` |
 | **Optimistic UI Updates**: อัปเดตหน้าจอทันทีโดยไม่ต้องรอ DB ตอบสนอง เพื่อประสบการณ์ใช้งานที่ลื่นไหล | ใช้ Functional Update แบบทันที (`setItems(prev => ...)`) หาก Supabase update error ระบบจะสั่ง Rollback State คืนทันที | `src/app/[locale]/inventory/page.tsx` |
 | **Dynamic Column Configuration**: เปลี่ยนชื่อคอลัมน์และลากปรับความกว้างได้ บันทึกค่าลงฐานข้อมูลอัตโนมัติ | ใช้งานตาราง `inventory_config` จัดเก็บ JSONB (Labels/Widths/Order) ควบคู่กับ Mouse Event Listener (onMouseMove) | `src/app/[locale]/inventory/page.tsx` (`ColumnHeader`) |
 | **Aesthetic Lock (R0 Visuals)**: ดีไซน์ Minimalist ตามมาตรฐาน Morning Latte Cream | บังคับใช้ `font-normal`, ลบ `font-bold` ออกทั้งหมด, ทุก element ต้องใช้ `rounded-3xl` | `globals.css`, Component ทุกชิ้น |
@@ -49,3 +50,5 @@
 | **Codebase Search Proxy**: เครื่องมือค้นหา Logic ภายในโปรเจกต์ เพื่อป้องกัน Agent แก้โค้ดผิดที่ | รันคำสั่ง grep หรือ search engine ภายในโฟลเดอร์ | `src/lib/agent-tools/search_proxy.ts` |
 | **Memory & Context Engine (Mem0)**: ระบบจำ Decision Log และ Architecture (ระยะยาว) ของโปรเจกต์ | รันสคริปต์ Python `mem0ai` ฝังข้อมูลลง SQLite/Vector DB ป้องกัน AI ลืมบริบทงานข้ามวัน (ตาม Blueprint) | `.antigravity/tools/memory-engine/` (Reference) |
 | **RepoMap Generation**: สร้างแผนที่ไฟล์โปรเจกต์ย่อๆ (Precision Strike) ลดการอ่านไฟล์ขยะ ลด Token | รันคำสั่ง `aider/repomap.py` ก่อนเริ่มแก้ไฟล์ทุกครั้ง | `MASTER_BLUEPRINT.md` (Combo Matrix) |
+| **Self-Directed Error Resolution**: การแก้ไขข้อผิดพลาดด้วยตนเองจนกว่าจะผ่าน Build | ทำการวนลูปแก้ไข Syntax/Lint errors อัตโนมัติโดยไม่หยุดรอคำสั่งยืนยัน (ภายใต้ One-Shot Rule) | `docs/agent.md` / `docs/rules.md` |
+| **Autonomous Context Anchoring**: การยึดโยงบริบทระบบอัตโนมัติ | วิเคราะห์ความเชื่อมโยงของ Metadata และเอกสารระบบเพื่อรักษาความเสถียรของ Architecture ตลอดการทำงาน | `docs/agent.md` |

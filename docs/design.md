@@ -57,7 +57,7 @@ font-family: 'Sarabun', 'Inter', system-ui, sans-serif;
 | Section Title (`h2`) | `text-2xl` / `text-xl` / `text-lg` | Default |
 | Body Text | `text-[15px]` | `1.6` |
 | Input Text | `text-[14px]` - `text-[15px]` | `1.6` |
-| Labels / Column Headers | `text-[13px]` | Default |
+| Labels / Sub-headings | `text-[13px]` - `text-[14px]` | Default |
 | Timestamps / Hints | `text-[12px]` - `text-[13px]` | Default |
 | Numeric Mono | `font-mono` | Default |
 
@@ -111,6 +111,8 @@ Wrapper:   border border-black/5 bg-[#fdfcf0]/80 backdrop-blur-md rounded-3xl sh
 Header:    bg-slate-50/50 text-black/60 text-[13px] uppercase tracking-wider
 Row:       border-b border-black/5 hover:bg-black/5 transition-all duration-300
 Cell:      Direct <input> in <td>, px-4 py-4 min-h-[56px] bg-transparent
+Index Cell: bg-black/[0.01], text-black/20, text-[10px], font-medium, tabular-nums
+Type Indicator: w-9 h-9, rounded-2xl, icon size w-4.5 h-4.5, flex center
 ```
 
 ### Status Badge

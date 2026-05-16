@@ -16,8 +16,6 @@ export type SearchInput = z.infer<typeof searchSchema>;
 export async function searchProxy(input: SearchInput) {
   const { query, type, limit } = input;
   
-  console.log(`[SearchProxy] Searching for "${query}" in category: ${type} (limit: ${limit})`);
-  
   // Implementation note: Web search is routed through the agent's internal capability 
   // Code and docs search leverage the shell and fs tools.
   
