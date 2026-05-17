@@ -61,10 +61,12 @@
 ## 5. Detailed Skill Modules
 
 ### MODULE: mobile-ux-architect
+
 **Description:** สกิลสถาปัตยกรรมจัดระเบียบเลย์เอาท์ เลเยอร์ ปรับสัดส่วน Element และระบบปุ่มควบคุมสำหรับ Mobile View ความละเอียดสูง
 **Status:** Installed & Active via Antigravity Auto-Retry Protocol
 
 #### [CORE INSTRUCTIONS & CAPABILITIES]
+
 1. LAYOUT COMPACTNESS (การกระชับพื้นที่):
    - ทุกครั้งที่มีการแก้ไข UI สำหรับ Mobile View ให้ยุบรวมแถวอินพุตและปุ่มการทำงานให้อยู่ในแถวเดียวกันผ่านระบบ Flexbox (`flex flex-row items-center`) หรือ Grid ระบบคงที่ เพื่อลดการเคลื่อนสายตาและประหยัดพื้นที่หน้าจอ
    - ช่องค้นหาสินค้าหรืออินพุตหลัก ให้ใช้สัดส่วนยืดหยุ่นที่เหมาะสม เช่น `flex-[2]` หรือ `flex-grow` เพื่อเหลือพื้นที่ให้ช่องจำนวนและปุ่มสลับข้าง
@@ -86,4 +88,3 @@
 5. ZERO-BOLD & HIGH-LEGIBILITY POLICY:
    - ห้ามใช้ความหนาตัวอักษรระดับ `font-bold` หรือ `font-semibold` ในระบบปุ่ม ตัวกรอง และเนื้อหาตารางเด็ดขาด ให้คงน้ำหนักเป็น `font-normal` และฝังคลาส `antialiased` เสมอ
    - สีของตัวหนังสือหลักและหัวข้อต้องใช้สีดำหรือสีเข้มคมชัด Contrast สูง (`text-neutral-900`) บนพื้นหลังสีพาสเทลสว่างของโครงการ
-
