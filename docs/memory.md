@@ -226,6 +226,18 @@
 - **Impact:** รูปภาพที่เซฟออกมาฟิตพอดีกับตัวตารางงานอย่างแม่นยำ 100% ไร้รอยบวมขอบขาวด้านล่าง และแก้ปัญหาคอลัมน์เยื้องบนอุปกรณ์หน้าจอสัมผัสขนาดเล็ก
 - **Evidence:** `src/app/[locale]/schedule/ScheduleClient.tsx` (lines 752-780, 875-1012)
 
+### DEC-024: Unified Inventory Controls & Segmented Quick Input Bar (v3.15)
+
+- **Date:** May 17, 2026
+- **Context:** หน้าจอจัดการสต็อก (Inventory Module) ในส่วนบนมีปุ่มและช่องกรอกข้อมูลหลายแถว ทำให้ตัวหน้าจอดูหนาแน่นและซับซ้อนเกินไป พนักงานต้องการเลย์เอาต์ที่กะทัดรัด จบในหน้าเดียว (One-Shot View) และใช้งานง่าย
+- **Decision:** ปรับปรุงโครงสร้างแถวและปุ่มควบคุม:
+  1. **Single-Row Action Buttons:** บีบอัดกลุ่มปุ่ม 6 ปุ่มเดิมลงมาเรียงหน้ากระดานในแถวเดียวกันทั้งหมดเป็น `grid-cols-6` ปรับขนาดตัวหนังสือเป็น `text-xs/text-[13px]` และ Padding `py-2 px-1` เพื่อให้อยู่ในบรรทัดเดียวกันโดยไม่ปัดเศษตกหล่น
+  2. **Segmented Quick Input Bar:** ยุบรวมช่อง "ค้นหาสินค้า" (Search Input), "กรอกจำนวน" (Quantity Input), และ "รับเข้า/นำออก" ไว้ในแถวเดียวกันหมดแบบ `flex flex-row items-center gap-2` โดยสร้างสวิตช์แบบ Segmented Control (Toggle Switch) เพื่อสลับระหว่าง IN และ OUT
+  3. **Zero-Bold Policy:** บังคับใช้ `font-normal` และ `antialiased` สำหรับข้อความบนปุ่มและสวิตช์ทั้งหมด
+- **Impact:** เลย์เอาต์คลังสินค้ามีความสวยงามแบบ Minimalist สมส่วน อ่านง่าย และมีระเบียบยิ่งขึ้น
+- **Evidence:** `src/app/[locale]/inventory/page.tsx` (lines 800-845, 870-920)
+
+
 
 
 

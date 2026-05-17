@@ -1,6 +1,23 @@
 # Changelog — BLACKANDBREW ERP
 
-> **Current Version:** 3.14 (Precision Table Image Capture) | **Last Updated:** 2026-05-17
+> **Current Version:** 3.15 (Unified Inventory Controls Restructure) | **Last Updated:** 2026-05-17
+
+---
+
+## v3.15 — Unified Inventory Controls Restructure (2026-05-17)
+
+### Phase 1: Planning & Blueprint Architecture
+- Formulated the restructure blueprint in `docs/plans/2026-05-17-control-panel-restructure.md`, `docs/plans/2026-05-17-single-row-buttons.md`, and `docs/plans/2026-05-17-segmented-switch.md`.
+- Cleared all markdown lint errors project-wide (resolving heading spacing and list blank line occurrences).
+
+### Phase 2: Horizontal Row Consolidation & Segmented Toggle (R0 Standard)
+- **Single-Row Action Buttons:** Compacted the 6 control panel buttons ("รับเข้าสินค้า", "นำออกสินค้า", "บันทึก", "รายการสั่งซื้อ", "เพิ่มสินค้า", "ประวัติ") into a unified `grid-cols-6` frontend grid container to prevent wraps. Scaled down buttons to lightweight `py-2 px-1 text-xs/text-[13px]` proportions with `w-3.5 h-3.5` icons, strictly satisfying the **Zero-Bold Policy** (`font-normal`).
+- **Segmented Quick Input Bar:** Collapsed the search box, quantity input box, and IN/OUT selectors into a single horizontal row (`flex flex-row items-center gap-2`). Swapped the separate IN/OUT buttons for a sleek, capsule-shaped **Segmented Control** toggle button.
+- **Micro-scale Optimizations:** Rendered numbers and text labels beautifully, keeping 0 values cleanly persisting in the database while leaving empty input strings correctly sanitized, avoiding null or blank crashes.
+
+### Phase 3: Integrity Validation & Build Clean Pass
+- Verified 100% compliance of the `AIChatOverlay` `isMounted` hydration guard and typography standards.
+- Successfully completed production Next.js compilation (`npm run build`) with exit code 0.
 
 ---
 

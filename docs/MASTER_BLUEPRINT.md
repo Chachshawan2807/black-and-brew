@@ -83,4 +83,5 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 - **Zero-Bold**: No `font-bold` or `font-semibold` anywhere. Verified via grep scan on every closing.
 
 ---
-Last Updated: 2026-05-17 [v3.14 DAILY CLOSING]
+Last Updated: 2026-05-17 [v3.15 DAILY CLOSING]
+

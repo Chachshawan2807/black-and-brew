@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, History, Search, ArrowDownToLine, ArrowUpFromLine, ShoppingCart, PlusCircle, PackagePlus, PackageMinus, CloudUpload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toPng } from 'html-to-image';
 import { recordTransaction, fetchTransactionHistory, fetchFrequentItems } from '@/app/actions/inventory-actions';
 import {
   DndContext,
@@ -304,7 +305,7 @@ export default function DynamicInventoryManager() {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
-  const [poActiveTab, setPoActiveTab] = useState<string>('all');
+  const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
 
@@ -356,9 +357,33 @@ export default function DynamicInventoryManager() {
   }, [itemsToOrder]);
 
   const displayedPoItems = useMemo(() => {
-    if (poActiveTab === 'all') return itemsToOrder;
-    return itemsToOrder.filter(i => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === poActiveTab);
-  }, [itemsToOrder, poActiveTab]);
+    if (selectedChannels.includes('all')) return itemsToOrder;
+    return itemsToOrder.filter(i => selectedChannels.includes(i.source || 'ไม่ได้ระบุแหล่งที่มา'));
+  }, [itemsToOrder, selectedChannels]);
+
+  const exportPOImage = async () => {
+    const element = document.getElementById('blackandbrew-po-table');
+    if (!element) return;
+    try {
+      const dataUrl = await toPng(element, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: '#fff3dd',
+        style: {
+          margin: '0',
+          padding: '0',
+          border: 'none',
+          boxShadow: 'none'
+        }
+      });
+      const link = document.createElement('a');
+      link.download = `PurchaseOrders-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export PO image:', err);
+    }
+  };
 
   const filteredItems = useMemo(() => {
     if (!quickSearch) return [];
@@ -876,99 +901,105 @@ export default function DynamicInventoryManager() {
                 </button>
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}
-                onClick={() => setShowPurchaseOrderModal(true)}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#f0fdf4] border border-[#dcfce7] hover:bg-[#dcfce7] text-[#14532d] rounded-3xl shadow-sm transition-all text-[14px] font-medium"
-              >
-                <ShoppingCart className="w-4.5 h-4.5" strokeWidth={1.5} />
-                <span>รายการสั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-[#14532d] text-white text-[12px] px-2 py-0.5 rounded-full ml-1">{itemsToOrder.length}</span>}</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAddModal(true)}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#fff7ed] border border-[#ffedd5] hover:bg-[#ffedd5] text-[#9a3412] rounded-3xl shadow-sm transition-all text-[14px] font-medium"
-              >
-                <PlusCircle className="w-4.5 h-4.5" strokeWidth={1.5} />
-                <span>เพิ่มสินค้า</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}
-                onClick={handleOpenHistory}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-[#f5f3ff] border border-[#ede9fe] hover:bg-[#ede9fe] text-[#5b21b6] rounded-3xl shadow-sm transition-all text-[14px] font-medium"
-              >
-                <History className="w-4.5 h-4.5" strokeWidth={1.5} />
-                <span>ประวัติ</span>
-              </motion.button>
+
             </div>
           </div>
 
           {/* Quick Actions */}
           <div className="w-full flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-3xl border border-black/5 shadow-sm">
             <div className="flex-1">
-              <form onSubmit={handleQuickSubmit} className="flex flex-col md:flex-row items-end md:items-center gap-4">
-                <div className="flex-1 w-full relative">
-                  <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-black/40" />
-                  <input
-                    type="text"
-                    placeholder="ค้นหาสินค้า..."
-                    value={quickSearch}
-                    onChange={e => setQuickSearch(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-[15px] font-normal text-black outline-none transition-all"
-                  />
+              <form onSubmit={handleQuickSubmit} className="flex flex-col gap-5 w-full">
+                <div className="flex flex-row items-center gap-2 w-full box-border mb-4">
+                  {/* 1. ช่องค้นหาสินค้า */}
+                  <div className="flex-[2] relative">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
+                    <input
+                      type="text"
+                      placeholder="ค้นหาสินค้า..."
+                      value={quickSearch}
+                      onChange={e => setQuickSearch(e.target.value)}
+                      onFocus={() => setIsSearchFocused(true)}
+                      onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-neutral-200 bg-white text-[14px] font-normal text-black outline-none focus:border-black/20 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                    />
 
-                  {/* Custom Dropdown */}
-                  {isSearchFocused && filteredItems.length > 0 && (
-                    <div className="absolute top-full left-0 w-full mt-2 bg-[#fdfcf0] border border-black/5 rounded-3xl shadow-xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="max-h-60 overflow-y-auto py-2">
-                        {filteredItems.map(item => (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => {
-                              setQuickSearch(item.name);
-                              setIsSearchFocused(false);
-                            }}
-                            className="w-full text-left px-5 py-3 hover:bg-black/5 transition-colors flex items-center justify-between group"
-                          >
-                            <span className="text-[14px] text-black font-normal">{item.name}</span>
-                            <span className="text-[12px] text-black/30 group-hover:text-black/50 transition-colors uppercase tracking-widest font-mono">
-                              {item.stock} {item.unit}
-                            </span>
-                          </button>
-                        ))}
+                    {/* Custom Dropdown */}
+                    {isSearchFocused && filteredItems.length > 0 && (
+                      <div className="absolute top-full left-0 w-full mt-2 bg-[#fdfcf0] border border-black/5 rounded-xl shadow-xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="max-h-60 overflow-y-auto py-2">
+                          {filteredItems.map(item => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                setQuickSearch(item.name);
+                                setIsSearchFocused(false);
+                              }}
+                              className="w-full text-left px-5 py-3 hover:bg-black/5 transition-colors flex items-center justify-between group"
+                            >
+                              <span className="text-[14px] text-black font-normal">{item.name}</span>
+                              <span className="text-[12px] text-black/30 group-hover:text-black/50 transition-colors uppercase tracking-widest font-mono">
+                                {item.stock} {item.unit}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2 w-full md:w-auto items-center">
-                  <input
-                    type="number"
-                    placeholder=""
-                    value={quickQty}
-                    onChange={e => setQuickQty(e.target.value)}
-                    min="0" step="1"
-                    className="w-28 px-4 py-3 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-[15px] font-normal text-black outline-none transition-all text-center"
-                  />
-                  <div className="flex bg-slate-100/50 p-1 rounded-3xl border border-black/5">
-                    <button type="button" onClick={() => setQuickType('IN')} className={cn("px-5 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1.5", quickType === 'IN' ? "bg-[#f0fdf4] text-[#14532d] shadow-sm border border-[#dcfce7]" : "text-black/40 hover:text-black/60")}>
-                      <PackagePlus className="w-4 h-4" strokeWidth={1.5} /> รับเข้าสินค้า
+                    )}
+                  </div>
+                  
+                  {/* 2. ช่องใส่จำนวน */}
+                  <div className="w-20 md:w-24 shrink-0">
+                    <input
+                      type="number"
+                      placeholder="จำนวน"
+                      value={quickQty}
+                      onChange={e => setQuickQty(e.target.value)}
+                      min="0" step="1"
+                      className="w-full text-[14px] font-normal py-2 px-2 text-center rounded-xl border border-neutral-200 bg-white placeholder-neutral-400 text-black outline-none focus:border-black/20 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                    />
+                  </div>
+
+                  {/* 3. สวิตช์สลับข้างสไตล์ Segmented Control */}
+                  <div className="flex items-center bg-neutral-100 p-1 rounded-full border border-neutral-200/60 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setQuickType('IN')}
+                      className={cn("px-3 py-1.5 text-[14px] font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                    >
+                      รับเข้า
                     </button>
-                    <button type="button" onClick={() => setQuickType('OUT')} className={cn("px-5 py-2 rounded-3xl text-[14px] font-medium transition-all flex items-center gap-1.5", quickType === 'OUT' ? "bg-[#fff1f2] text-[#9f1239] shadow-sm border border-[#ffe4e6]" : "text-black/40 hover:text-black/60")}>
-                      <PackageMinus className="w-4 h-4" strokeWidth={1.5} /> นำออกสินค้า
+                    <button
+                      type="button"
+                      onClick={() => setQuickType('OUT')}
+                      className={cn("px-3 py-1.5 text-[14px] font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                    >
+                      นำออก
                     </button>
                   </div>
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} type="submit" className="px-6 py-3 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#e0f2fe] text-[#0c4a6e] rounded-3xl text-[14px] font-medium transition-all shadow-sm flex items-center gap-2 whitespace-nowrap">
-                    <CloudUpload className="w-4.5 h-4.5" strokeWidth={1.5} />
-                    บันทึก
-                  </motion.button>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1.5 w-full box-border">
+                  <button type="submit" className="px-1 py-2 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-3xl text-xs font-normal transition-all shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased">
+                    <CloudUpload className="w-3.5 h-3.5" strokeWidth={1.5} /> บันทึก
+                  </button>
+                  <button type="button" onClick={() => setShowPurchaseOrderModal(true)} className="flex items-center justify-center gap-1 px-1 py-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-xs font-normal antialiased">
+                    <ShoppingCart className="w-3.5 h-3.5 text-[#14532d]" strokeWidth={1.5} />
+                    <span className="truncate">สั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-[#14532d] text-white text-[10px] px-1 py-0.2 rounded-full font-normal">{itemsToOrder.length}</span>}</span>
+                  </button>
+                  <button type="button" onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-1 px-1 py-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-xs font-normal antialiased">
+                    <PlusCircle className="w-3.5 h-3.5 text-[#9a3412]" strokeWidth={1.5} />
+                    <span>เพิ่มสินค้า</span>
+                  </button>
+                  <button type="button" onClick={handleOpenHistory} className="flex items-center justify-center gap-1 px-1 py-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-xs font-normal antialiased">
+                    <History className="w-3.5 h-3.5 text-[#5b21b6]" strokeWidth={1.5} />
+                    <span>ประวัติ</span>
+                  </button>
                 </div>
               </form>
               {frequentItems.length > 0 && (
-                <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
-                  <span className="text-[12px] text-black/40 font-normal whitespace-nowrap">รายการบ่อย:</span>
+                <div className="flex items-center gap-2 mt-6 pt-3 border-t border-black/5 overflow-x-auto pb-1 scrollbar-hide">
+                  <span className="text-[12px] text-black/40 font-normal whitespace-nowrap">รายการใช้บ่อย:</span>
                   {frequentItems.map(fi => (
                     <button key={fi.id} onClick={() => setQuickSearch(fi.name)} className="px-3 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-full text-[13px] text-black/70 whitespace-nowrap transition-colors">
                       {fi.name}
@@ -1326,53 +1357,72 @@ export default function DynamicInventoryManager() {
               className="bg-[#fdfcf0] rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
               onClick={e => e.stopPropagation()}
             >
-              <div className="px-6 py-5 border-b border-black/5 flex items-center justify-between bg-white shrink-0">
-                <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ
-                </h2>
-                <button onClick={() => setShowPurchaseOrderModal(false)} className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              <div id="blackandbrew-po-table" className="relative max-h-[75vh] overflow-y-auto flex flex-col w-full bg-[#fdfcf0]">
 
-              <div className="flex flex-col flex-1 overflow-hidden">
-                {/* Tabs Navigation */}
-                <div className="px-6 pt-5 pb-4 bg-white border-b border-black/5 shrink-0">
-                  <div className="flex flex-wrap gap-2.5 items-center overflow-x-auto scrollbar-hide">
-                    <button
-                      onClick={() => setPoActiveTab('all')}
-                      className={cn(
-                        "px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap",
-                        poActiveTab === 'all'
-                          ? "bg-[#000000] border-[#000000] text-white shadow-sm"
-                          : "border-neutral-200 bg-transparent text-neutral-800 hover:bg-neutral-50"
-                      )}
-                    >
-                      ทั้งหมด <span className={poActiveTab === 'all' ? "text-white/60 text-[12px] ml-1 font-mono font-normal" : "text-neutral-500 text-[12px] ml-1 font-mono font-normal"}>({itemsToOrder.length})</span>
-                    </button>
-                    {poSources.map(source => {
-                      const count = itemsToOrder.filter(i => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === source).length;
-                      const isActive = poActiveTab === source;
-                      return (
-                        <button
-                          key={source}
-                          onClick={() => setPoActiveTab(source)}
-                          className={cn(
-                            "px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap",
-                            isActive
-                              ? "bg-[#000000] border-[#000000] text-white shadow-sm"
-                              : "border-neutral-200 bg-transparent text-neutral-800 hover:bg-neutral-50"
-                          )}
-                        >
-                          {source} <span className={isActive ? "text-white/60 text-[12px] ml-1 font-mono font-normal" : "text-neutral-500 text-[12px] ml-1 font-mono font-normal"}>({count})</span>
-                        </button>
-                      );
-                    })}
+                {/* STICKY STYLED WRAPPER FOR THE HEADER */}
+                <div className="sticky top-0 bg-[#fff3dd] z-30 pt-4 pb-4 w-full box-border border-b border-black/5 shadow-sm">
+                  <div className="px-6 flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2 antialiased">
+                      <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ
+                    </h2>
+                    <div className="flex items-center gap-3">
+                      <button onClick={exportPOImage} className="px-4 py-2 bg-white hover:bg-neutral-50 text-[#000000] text-[14px] rounded-full flex items-center gap-2 transition-colors border border-[#000000]/5 shadow-sm antialiased font-normal">
+                        <ArrowDownToLine className="w-4 h-4" /> บันทึกเป็นรูปภาพ
+                      </button>
+                      <button onClick={() => setShowPurchaseOrderModal(false)} className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tabs Navigation */}
+                  <div className="px-6">
+                    <div className="flex flex-wrap gap-2.5 items-center overflow-x-auto scrollbar-hide">
+                      <button
+                        onClick={() => setSelectedChannels(['all'])}
+                        className={cn(
+                          "px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap",
+                          selectedChannels.includes('all')
+                            ? "bg-[#000000] border-[#000000] text-white shadow-sm"
+                            : "border-neutral-200 bg-transparent text-neutral-800 hover:bg-neutral-50"
+                        )}
+                      >
+                        ทั้งหมด <span className={selectedChannels.includes('all') ? "text-white/60 text-[12px] ml-1 font-mono font-normal" : "text-neutral-500 text-[12px] ml-1 font-mono font-normal"}>({itemsToOrder.length})</span>
+                      </button>
+                      {poSources.map(source => {
+                        const count = itemsToOrder.filter(i => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === source).length;
+                        const isActive = selectedChannels.includes(source) && !selectedChannels.includes('all');
+                        return (
+                          <button
+                            key={source}
+                            onClick={() => {
+                              setSelectedChannels(prev => {
+                                let next = prev.filter(c => c !== 'all');
+                                if (next.includes(source)) {
+                                  next = next.filter(c => c !== source);
+                                } else {
+                                  next = [...next, source];
+                                }
+                                return next.length === 0 ? ['all'] : next;
+                              });
+                            }}
+                            className={cn(
+                              "px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap",
+                              isActive
+                                ? "bg-[#000000] border-[#000000] text-white shadow-sm"
+                                : "border-neutral-200 bg-transparent text-neutral-800 hover:bg-neutral-50"
+                            )}
+                          >
+                            {source} <span className={isActive ? "text-white/60 text-[12px] ml-1 font-mono font-normal" : "text-neutral-500 text-[12px] ml-1 font-mono font-normal"}>({count})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
-                {/* Tab Content */}
-                <div className="overflow-y-auto p-6 bg-[#fdfcf0] flex-1">
+                {/* Tab Content (Direct Sibling) */}
+                <div className="p-6">
                   {displayedPoItems.length === 0 ? (
                     <div className="py-16 flex flex-col items-center justify-center text-black/40 bg-white rounded-3xl border border-black/5 shadow-sm">
                       <ShoppingCart className="w-12 h-12 mb-4 opacity-20" />
