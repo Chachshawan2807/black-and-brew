@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Plus, Trash2, Undo2, Redo2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Download } from 'lucide-react';
 import { startOfWeek, addDays, format } from 'date-fns';
 
@@ -500,7 +500,7 @@ export default function ScheduleClient({
 
       // 2. Fetch source shifts from Supabase
       const { data: sourceShifts, error: fetchError } = await supabase.from('shifts')
-        .select('*')
+        .select('id, employee_id, start_time, end_time, status, metadata')
         .gte('start_time', format(sourceMonday, 'yyyy-MM-dd') + 'T00:00:00')
         .lte('start_time', format(sourceSunday, 'yyyy-MM-dd') + 'T23:59:59')
         .not('status', 'is', null)

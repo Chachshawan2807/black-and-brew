@@ -2,6 +2,7 @@ import { google } from '@ai-sdk/google';
 import { streamText, tool } from 'ai';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
+import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
 
 // Mandatory: AI SDK v6 Standards
 export const maxDuration = 30;
@@ -9,7 +10,17 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   try {
     console.log('[AI_ROUTE] Request Received');
-    const { messages } = await req.json();
+    const { messages, clientContext } = await req.json();
+
+    // [SECURITY] Server-side Prompt Injection Defense & Token Optimization
+    const sanitizedContext = typeof clientContext === 'string'
+      ? optimizeThaiTokens(
+          clientContext
+            .replace(/```[\s\S]*?```/g, '')
+            .replace(/\[INST\]|\[\/INST\]|<\|im_start\|>|<\|im_end\|>|###\s*(system|user|assistant)/gi, '')
+            .replace(/ignore previous instructions?|forget (all|your|prior)|you are now|act as|jailbreak/gi, '')
+        ).slice(0, 1000)
+      : null;
 
     // ⚡ OPTIMIZATION 1: Sliding Window Memory (ส่งเฉพาะประวัติแชทล่าสุด 4 ข้อความ ป้องกัน Token บวมสะสม)
     const recentMessages = messages.slice(-4);
@@ -31,7 +42,7 @@ export async function POST(req: Request) {
 
       return {
         role: m.role,
-        content: cleanContent
+        content: optimizeThaiTokens(cleanContent)
       };
     });
 
@@ -42,7 +53,7 @@ export async function POST(req: Request) {
       model: google('gemini-2.0-flash'),
       messages: coreMessages,
       // ⚡ OPTIMIZATION 2: Ultra-Minimalist System Prompt (ลดขนาดคำสั่งหลักเหลือเฉพาะกฎเหล็กเพื่อประหยัด Token)
-      system: 'คุณคือ "บรู" AI ร้าน Black-and-Brew ตอบสั้นกระชับจากคลังข้อมูลเท่านั้น ห้ามใช้ตัวหนา (font-bold) เด็ดขาด',
+      system: `คุณคือ "บรู" AI ร้าน Black-and-Brew ตอบสั้นกระชับจากคลังข้อมูลเท่านั้น ห้ามใช้ตัวหนา (font-bold) เด็ดขาด${sanitizedContext ? `\n\n[Live Screen Context]\nผู้ใช้กำลังดูข้อมูลนี้บนหน้าจอ:\n${sanitizedContext}\nหากผู้ใช้ถามเกี่ยวกับสิ่งที่เห็นบนหน้าจอ ให้อิงตามข้อมูล Live Context นี้ก่อน` : ''}`,
       providerOptions: {
         google: {
           generationConfig: {

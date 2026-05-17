@@ -30,11 +30,39 @@ export default function AIChatOverlay() {
     }
   }, [messages, isOpen]);
 
+  const getActiveWindowContext = () => {
+    if (typeof window === 'undefined') return "Current View: Main Dashboard";
+    // Scans for active dialogs/modals
+    const activeModal = document.querySelector('[role="dialog"]') || document.querySelector('.modal') || document.querySelector('[class*="Modal"]');
+    if (!activeModal) return "Current View: Main Dashboard";
+
+    const textContent = activeModal.textContent || "";
+    // Clean up excessive whitespace/newlines to optimize tokens
+    const cleanedText = textContent
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // [SECURITY] Prompt Injection Sanitization:
+    // Strip characters and patterns used in prompt injection attacks
+    const sanitized = cleanedText
+      .replace(/```[\s\S]*?```/g, '') // ลบ code blocks
+      .replace(/\[INST\]|\[\/INST\]|<\|im_start\|>|<\|im_end\|>|###\s*(system|user|assistant)/gi, '') // ลบ injection tokens
+      .replace(/ignore previous instructions?|forget (all|your|prior)|you are now|act as|jailbreak/gi, '') // ลบ jailbreak patterns
+      .slice(0, 800); // จำกัดความยาวสูงสุด 800 ตัวอักษรเพื่อป้องกัน Token flooding
+
+    return `Active Window Data:\n${sanitized}`;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = inputValue.trim();
     if (!trimmed || isLoading) return;
-    sendMessage({ role: 'user', parts: [{ type: 'text', text: trimmed }] });
+    
+    const liveScreenContext = getActiveWindowContext();
+    sendMessage(
+      { role: 'user', parts: [{ type: 'text', text: trimmed }] },
+      { body: { clientContext: liveScreenContext } }
+    );
     setInputValue('');
   };
 

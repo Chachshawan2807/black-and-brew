@@ -81,9 +81,70 @@ export default function MaintenancePage() {
 
   const [isMounted, setIsMounted] = useState(false);
 
+  const DEFAULT_WIDTHS = {
+    date: 120,
+    equipment: 185,
+    issue: 280,
+    frequency: 140,
+    technician: 160,
+    taskType: 120,
+    cost: 100,
+    status: 110,
+    manage: 110
+  };
+
+  const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_WIDTHS);
+
+  const handleMouseDown = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.pageX;
+    const startWidth = colWidths[id] || DEFAULT_WIDTHS[id as keyof typeof DEFAULT_WIDTHS];
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const currentWidth = Math.max(70, startWidth + (moveEvent.pageX - startX));
+      setColWidths(prev => {
+        const updated = { ...prev, [id]: currentWidth };
+        localStorage.setItem('bb-maintenance-col-widths', JSON.stringify(updated));
+        return updated;
+      });
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
   useEffect(() => {
     setIsMounted(true);
     setFormData(prev => ({ ...prev, start_date: format(new Date(), 'yyyy-MM-dd') }));
+    
+    // Load column widths from localStorage safely
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('bb-maintenance-col-widths');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // [SECURITY] Type validation: reject non-object or non-numeric values
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            const safeWidths: Record<string, number> = {};
+            Object.entries(parsed).forEach(([key, val]) => {
+              if (typeof key === 'string' && typeof val === 'number' && val > 0 && val < 2000) {
+                safeWidths[key] = val;
+              }
+            });
+            setColWidths(safeWidths);
+          }
+        } catch (e) {
+          console.error(e);
+          localStorage.removeItem('bb-maintenance-col-widths'); // ล้างข้อมูลเสียหายออก
+        }
+      }
+    }
+    
     fetchRecords();
   }, []);
 
@@ -271,86 +332,165 @@ export default function MaintenancePage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <AnimatePresence>
-                {records.map((record, index) => (
-                  <motion.div
-                    key={record.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ y: -5 }}
-                    className="bg-white border border-black/5 p-6 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all group flex flex-col h-full"
-                  >
-                    <div className="flex items-start justify-between mb-5">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2.5 rounded-2xl ${record.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7]' : 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe]'}`}>
-                          {record.status === 'เสร็จสมบูรณ์' ? <CheckCircle2 className="w-4.5 h-4.5" strokeWidth={1.5} /> : <Clock className="w-4.5 h-4.5" strokeWidth={1.5} />}
-                        </div>
-                        <div>
-                          <h3 className="text-[17px] font-medium text-[#000000] tracking-tight leading-tight">{record.equipment}</h3>
-                          <div className="flex items-center gap-1.5 text-[10px] text-[#000000]/40 uppercase tracking-widest mt-1">
-                            <Calendar className="w-3 h-3" />
-                            {format(new Date(record.start_date), 'dd/MM/yyyy')}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEdit(record)}
-                          className="p-2 hover:bg-black/5 text-black/40 hover:text-black rounded-xl transition-all active:scale-90"
-                        >
-                          <Edit2 className="w-4 h-4" strokeWidth={1.5} />
-                        </button>
-                        <button
-                          onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
-                          className="p-2 hover:bg-red-50 text-black/40 hover:text-red-500 rounded-xl transition-all active:scale-90"
-                        >
-                          <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <span className="px-2.5 py-1 bg-black/5 rounded-lg uppercase tracking-widest font-normal text-[11px] text-black/60">
-                          {record.task_type}
-                        </span>
-                        <div className="h-[1px] flex-1 bg-black/5" />
-                        <div className="text-lg font-medium text-[#000000] tracking-tight">
+            <div className="w-full overflow-x-auto box-border bg-white rounded-3xl border border-black/5 shadow-sm">
+              <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '1100px' }}>
+                <thead>
+                  <tr className="border-b border-neutral-200/50 bg-slate-50/50">
+                    <th 
+                      style={{ width: `${colWidths.date}px` }} 
+                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                    >
+                      วันที่
+                      <div
+                        onMouseDown={(e) => handleMouseDown('date', e)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
+                      />
+                    </th>
+                    <th 
+                      style={{ width: `${colWidths.equipment}px` }} 
+                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                    >
+                      อุปกรณ์
+                      <div
+                        onMouseDown={(e) => handleMouseDown('equipment', e)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
+                      />
+                    </th>
+                    <th 
+                      style={{ width: `${colWidths.issue}px` }} 
+                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                    >
+                      อาการ/ปัญหา
+                      <div
+                        onMouseDown={(e) => handleMouseDown('issue', e)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
+                      />
+                    </th>
+                    <th 
+                      style={{ width: `${colWidths.frequency}px` }} 
+                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                    >
+                      ความถี่ที่แนะนำ
+                      <div
+                        onMouseDown={(e) => handleMouseDown('frequency', e)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
+                      />
+                    </th>
+                    <th 
+                      style={{ width: `${colWidths.technician}px` }} 
+                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                    >
+                      ผู้รับผิดชอบ
+                      <div
+                        onMouseDown={(e) => handleMouseDown('technician', e)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
+                      />
+                    </th>
+                    <th 
+                      style={{ width: `${colWidths.taskType}px` }} 
+                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                    >
+                      ประเภท
+                      <div
+                        onMouseDown={(e) => handleMouseDown('taskType', e)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
+                      />
+                    </th>
+                    <th 
+                      style={{ width: `${colWidths.cost}px` }} 
+                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                    >
+                      ค่าใช้จ่าย
+                      <div
+                        onMouseDown={(e) => handleMouseDown('cost', e)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
+                      />
+                    </th>
+                    <th 
+                      style={{ width: `${colWidths.status}px` }} 
+                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                    >
+                      สถานะ
+                      <div
+                        onMouseDown={(e) => handleMouseDown('status', e)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
+                      />
+                    </th>
+                    <th 
+                      style={{ width: `${colWidths.manage}px` }} 
+                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                    >
+                      จัดการ
+                      <div
+                        onMouseDown={(e) => handleMouseDown('manage', e)}
+                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
+                      />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.03]">
+                  <AnimatePresence>
+                    {records.map((record, index) => (
+                      <motion.tr
+                        key={record.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                        className="group hover:bg-slate-50/80 transition-colors"
+                      >
+                        <td className="py-4 px-5 text-sm font-normal text-neutral-600 antialiased font-mono">
+                          {format(new Date(record.start_date), 'dd/MM/yyyy')}
+                        </td>
+                        <td className="py-4 px-5 text-[15px] font-normal text-neutral-900 antialiased whitespace-normal break-words">
+                          {record.equipment}
+                        </td>
+                        <td className="py-4 px-5 text-[14px] font-normal text-neutral-800 antialiased whitespace-normal break-words" title={record.detected_problem || '-'}>
+                          {record.detected_problem || '-'}
+                        </td>
+                        <td className="py-4 px-5 text-[14px] font-normal text-neutral-800 antialiased whitespace-normal break-words">
+                          {record.recommended_frequency || '-'}
+                        </td>
+                        <td className="py-4 px-5 text-[14px] font-normal text-neutral-800 antialiased whitespace-normal break-words">
+                          {record.person_in_charge || '-'}
+                        </td>
+                        <td className="py-4 px-5 text-center">
+                          <span className="inline-block px-2.5 py-1 bg-black/5 rounded-lg uppercase tracking-widest font-normal text-[11px] text-black/60">
+                            {record.task_type}
+                          </span>
+                        </td>
+                        <td className="py-4 px-5 text-[15px] font-normal text-neutral-900 antialiased text-right font-mono">
                           ฿{(record.cost || 0).toLocaleString()}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        <div className="p-3 bg-black/[0.02] rounded-2xl border border-black/[0.03]">
-                          <span className="block text-[13px] font-normal uppercase tracking-widest text-black/60 mb-1">อาการที่พบ</span>
-                          <p className="text-[13px] text-black/80 font-normal leading-[1.6] line-clamp-2">{record.detected_problem}</p>
-                        </div>
-                        <div className="p-3 bg-black/[0.02] rounded-2xl border border-black/[0.03]">
-                          <span className="block text-[13px] font-normal uppercase tracking-widest text-black/60 mb-1">รายละเอียดการซ่อม</span>
-                          <p className="text-[13px] text-black/80 font-normal leading-[1.6] line-clamp-2">{record.work_details}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 pt-5 border-t border-black/5 flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-[12px] font-medium text-black/50">
-                        <div className="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center text-[12px] font-normal">
-                          {record.person_in_charge?.[0] || '?'}
-                        </div>
-                        {record.person_in_charge || 'Unknown'}
-                      </div>
-                      {record.recommended_frequency && (
-                        <div className="text-[11px] font-normal text-black/30 uppercase tracking-widest flex items-center gap-1.5">
-                          <Clock className="w-3 h-3" />
-                          {record.recommended_frequency}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                        </td>
+                        <td className="py-4 px-5 text-sm font-normal antialiased text-center">
+                          <span className={`inline-flex px-3 py-1.5 text-xs rounded-2xl items-center justify-center gap-1.5 transition-all shadow-sm border ${record.status === 'เสร็จสมบูรณ์'
+                            ? 'bg-[#f0fdf4] text-[#14532d] border-[#dcfce7]'
+                            : 'bg-[#f0f9ff] text-[#0c4a6e] border-[#e0f2fe]'
+                            }`}>
+                            {record.status === 'เสร็จสมบูรณ์' ? <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} /> : <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                            {record.status}
+                          </span>
+                        </td>
+                        <td className="py-4 px-5 text-center">
+                          <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleEdit(record)}
+                              className="p-2 hover:bg-black/5 text-black/40 hover:text-black rounded-xl transition-all active:scale-90"
+                            >
+                              <Edit2 className="w-4 h-4" strokeWidth={1.5} />
+                            </button>
+                            <button
+                              onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
+                              className="p-2 hover:bg-red-50 text-black/40 hover:text-red-500 rounded-xl transition-all active:scale-90"
+                            >
+                              <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
             </div>
           )}
         </main>
@@ -467,7 +607,7 @@ export default function MaintenancePage() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ผู้รับผิดชอบ / ช่าง</label>
+                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ผู้รับผิดชอบ</label>
                     <input
                       type="text"
                       placeholder="ชื่อ"

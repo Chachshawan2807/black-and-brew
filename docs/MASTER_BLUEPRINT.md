@@ -38,7 +38,7 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 - **Security**: AI reads via Supabase Security Definer RPCs (`get_ai_store_status`, `get_ai_inventory_item_details`) — read-only data layer.
 - **Hydration**: `AIChatOverlay` uses `isMounted` guard (`useEffect(() => setIsMounted(true), []`) to prevent Math.random prerender errors. Loaded via `next/dynamic ssr:false` in `AIChatWrapper`.
 - **Branding & UI Polish**: Implemented a custom branding logo loaded dynamically via `/ai-agent-logo.svg` inside standard Next.js `<Image />` tags, overriding the generic Lucide `<Bot />` icons in the header, bubble avatars, and thinking indicators for maximum brand coherence.
-- **UI Enhancements (R0 Standard)**: 
+- **UI Enhancements (R0 Standard)**:
   - Swapped the generic closed-state floating button icon (`MessageCircle`) with the branding logo (inverted to pure white).
   - Scaled up the chat bubble text size to `text-[15px]` using `font-light antialiased` typography parameters for a crisp, ultra-legible screen display while strictly respecting the **Zero-Bold Policy** (zero bold styling).
   - Enhanced contrast hierarchy by changing secondary sub-headers and loaders from generic transparent black (`text-[#000000]/40`) to a high-density "Deep Coffee" shade (`text-[#1a1a1a]`).
@@ -83,5 +83,6 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 - **Zero-Bold**: No `font-bold` or `font-semibold` anywhere. Verified via grep scan on every closing.
 
 ---
+
 Last Updated: 2026-05-17 [v3.15 DAILY CLOSING]
 

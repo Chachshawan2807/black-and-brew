@@ -22,9 +22,9 @@ export default async function SchedulePage({
   const sundayStr = format(sunday, 'yyyy-MM-dd');
 
   // Fetch Data on Server
-  const { data: profiles } = await supabase.from('profiles').select('*').order('schedule_order', { ascending: true });
+  const { data: profiles } = await supabase.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true });
   const { data: shifts } = await supabase.from('shifts')
-    .select('*')
+    .select('id, employee_id, start_time, end_time, status, metadata')
     .gte('start_time', mondayStr + 'T00:00:00')
     .lte('start_time', sundayStr + 'T23:59:59')
     .not('status', 'is', null)
@@ -33,7 +33,7 @@ export default async function SchedulePage({
     .not('metadata->>location', 'eq', '');
 
   const { data: holidays } = await supabase.from('holidays')
-    .select('*')
+    .select('id, date, name')
     .gte('date', mondayStr)
     .lte('date', sundayStr);
 

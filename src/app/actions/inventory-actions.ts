@@ -54,7 +54,7 @@ export async function fetchTransactionHistory(itemId?: string, limit: number = 5
     // Uses inventory_item_id — VERIFIED column name in actual DB
     let query = supabase
       .from('inventory_transactions')
-      .select('*')
+      .select('id, inventory_item_id, type, quantity, note, created_at')
       .order('created_at', { ascending: false })
       .limit(limit);
 

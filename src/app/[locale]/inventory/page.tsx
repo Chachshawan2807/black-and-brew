@@ -417,12 +417,23 @@ export default function DynamicInventoryManager() {
     if (savedWidths) {
       try {
         const widths = JSON.parse(savedWidths);
-        setColumns(prev => prev.map(col => ({
-          ...col,
-          width: widths[col.id] || col.width
-        })));
+        // [SECURITY] Type validation: ensure parsed value is a plain object with numeric values
+        if (widths && typeof widths === 'object' && !Array.isArray(widths)) {
+          const safeWidths: Record<string, string> = {};
+          Object.entries(widths).forEach(([key, val]) => {
+            const numVal = Number(val);
+            if (typeof key === 'string' && !isNaN(numVal) && numVal > 0 && numVal < 2000) {
+              safeWidths[key] = String(numVal); // ColumnDef.width is string
+            }
+          });
+          setColumns(prev => prev.map(col => ({
+            ...col,
+            width: safeWidths[col.id] || col.width
+          })));
+        }
       } catch (e) {
         console.error('Failed to parse saved widths:', e);
+        localStorage.removeItem('inventory-column-widths'); // ล้างข้อมูลเสียหายออก
       }
     }
 
@@ -908,8 +919,8 @@ export default function DynamicInventoryManager() {
           {/* Quick Actions */}
           <div className="w-full flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-3xl border border-black/5 shadow-sm">
             <div className="flex-1">
-              <form onSubmit={handleQuickSubmit} className="flex flex-col gap-5 w-full">
-                <div className="flex flex-row items-center gap-2 w-full box-border mb-4">
+              <form onSubmit={handleQuickSubmit} className="flex flex-col gap-2.5 w-full">
+                <div className="flex flex-row items-center gap-2 w-full box-border mb-0">
                   {/* 1. ช่องค้นหาสินค้า */}
                   <div className="flex-[2] relative">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
@@ -931,7 +942,8 @@ export default function DynamicInventoryManager() {
                             <button
                               key={item.id}
                               type="button"
-                              onClick={() => {
+                              onMouseDown={(e) => {
+                                e.preventDefault();
                                 setQuickSearch(item.name);
                                 setIsSearchFocused(false);
                               }}
@@ -955,6 +967,12 @@ export default function DynamicInventoryManager() {
                       placeholder="จำนวน"
                       value={quickQty}
                       onChange={e => setQuickQty(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleQuickSubmit(e as any);
+                        }
+                      }}
                       min="0" step="1"
                       className="w-full text-[14px] font-normal py-2 px-2 text-center rounded-xl border border-neutral-200 bg-white placeholder-neutral-400 text-black outline-none focus:border-black/20 focus:ring-1 focus:ring-black/10 transition-all antialiased"
                     />
@@ -965,34 +983,37 @@ export default function DynamicInventoryManager() {
                     <button
                       type="button"
                       onClick={() => setQuickType('IN')}
-                      className={cn("px-3 py-1.5 text-[14px] font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                      className={cn("flex items-center justify-center px-3 py-1.5 text-[14px] font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
                     >
+                      <PackagePlus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'IN' ? "text-[#84cc16]" : "text-neutral-400")} />
                       รับเข้า
                     </button>
                     <button
                       type="button"
                       onClick={() => setQuickType('OUT')}
-                      className={cn("px-3 py-1.5 text-[14px] font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                      className={cn("flex items-center justify-center px-3 py-1.5 text-[14px] font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
                     >
+                      <PackageMinus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'OUT' ? "text-[#f87171]" : "text-neutral-400")} />
                       นำออก
                     </button>
                   </div>
+                  
+                  <button type="submit" className="px-4 py-2 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0 h-[38px]">
+                    <CloudUpload className="w-4 h-4" strokeWidth={1.5} /> บันทึก
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-4 gap-1.5 w-full box-border">
-                  <button type="submit" className="px-1 py-2 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-3xl text-xs font-normal transition-all shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased">
-                    <CloudUpload className="w-3.5 h-3.5" strokeWidth={1.5} /> บันทึก
+                <div className="grid grid-cols-3 gap-2 w-full box-border">
+                  <button type="button" onClick={() => setShowPurchaseOrderModal(true)} className="flex items-center justify-center gap-1.5 px-1 py-2.5 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-sm font-normal antialiased">
+                    <ShoppingCart className="w-4 h-4 text-[#14532d]" strokeWidth={1.5} />
+                    <span className="truncate">สั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-[#14532d] text-white text-[10px] px-1.5 py-0.5 rounded-full font-normal">{itemsToOrder.length}</span>}</span>
                   </button>
-                  <button type="button" onClick={() => setShowPurchaseOrderModal(true)} className="flex items-center justify-center gap-1 px-1 py-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-xs font-normal antialiased">
-                    <ShoppingCart className="w-3.5 h-3.5 text-[#14532d]" strokeWidth={1.5} />
-                    <span className="truncate">สั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-[#14532d] text-white text-[10px] px-1 py-0.2 rounded-full font-normal">{itemsToOrder.length}</span>}</span>
-                  </button>
-                  <button type="button" onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-1 px-1 py-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-xs font-normal antialiased">
-                    <PlusCircle className="w-3.5 h-3.5 text-[#9a3412]" strokeWidth={1.5} />
+                  <button type="button" onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-1.5 px-1 py-2.5 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-sm font-normal antialiased">
+                    <PlusCircle className="w-4 h-4 text-[#9a3412]" strokeWidth={1.5} />
                     <span>เพิ่มสินค้า</span>
                   </button>
-                  <button type="button" onClick={handleOpenHistory} className="flex items-center justify-center gap-1 px-1 py-2 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-xs font-normal antialiased">
-                    <History className="w-3.5 h-3.5 text-[#5b21b6]" strokeWidth={1.5} />
+                  <button type="button" onClick={handleOpenHistory} className="flex items-center justify-center gap-1.5 px-1 py-2.5 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-sm font-normal antialiased">
+                    <History className="w-4 h-4 text-[#5b21b6]" strokeWidth={1.5} />
                     <span>ประวัติ</span>
                   </button>
                 </div>
@@ -1256,13 +1277,12 @@ export default function DynamicInventoryManager() {
                         <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[120px]">ประเภท</th>
                         <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[110px]">จำนวน</th>
                         <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[110px]">คงเหลือ</th>
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[90px]">จัดการ</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-black/[0.03]">
                       {transactionHistory.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="py-20 text-center text-black/30 text-[15px] font-normal italic">
+                          <td colSpan={5} className="py-20 text-center text-black/30 text-[15px] font-normal italic">
                             <div className="flex flex-col items-center gap-3">
                               <ShoppingCart className="w-10 h-10 opacity-10" />
                               ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้
@@ -1313,17 +1333,6 @@ export default function DynamicInventoryManager() {
                             {/* Balance After - Center (Mono) */}
                             <td className="py-3.5 px-6 text-[15px] text-center font-mono text-black/40">
                               {tx.balance_after}
-                            </td>
-
-                            {/* Actions - Center */}
-                            <td className="py-3.5 px-6 text-center">
-                              <button
-                                onClick={() => handleCancelTransaction(tx.id, tx.inventory_item_id, tx.type, tx.quantity)}
-                                className="p-2 text-black/10 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
-                                title="ยกเลิกรายการนี้"
-                              >
-                                <Trash2 className="w-4.5 h-4.5" />
-                              </button>
                             </td>
                           </motion.tr>
                         ))

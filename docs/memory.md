@@ -65,7 +65,7 @@
 
 - **Date:** May 2026
 - **Context:** การ Undo stock transactions ทำให้ ledger ไม่ตรงกับ actual stock
-- **Decision:** Financial/Stock transactions MUST NEVER use UI Undo/Redo stack. ต้องแก้ผ่าน compensating transaction หรือลบใน History ledger. 
+- **Decision:** Financial/Stock transactions MUST NEVER use UI Undo/Redo stack. ต้องแก้ผ่าน compensating transaction หรือลบใน History ledger.
 - **Impact:** `handleCancelTransaction()` ทำ manual stock reversal แยกจาก undoStack
 - **Evidence:** `PROTOCOL_ENFORCER.md` Ledger Integrity section
 
@@ -237,13 +237,33 @@
 - **Impact:** เลย์เอาต์คลังสินค้ามีความสวยงามแบบ Minimalist สมส่วน อ่านง่าย และมีระเบียบยิ่งขึ้น
 - **Evidence:** `src/app/[locale]/inventory/page.tsx` (lines 800-845, 870-920)
 
+### DEC-025: Supabase Query Optimization — Explicit Field Selection (v3.16)
 
+- **Date:** May 18, 2026
+- **Context:** ทุก Server-side Supabase query ใช้ `select('*')` ดึงข้อมูลทุก column โดยไม่จำเป็น ทำให้ Network Payload ใหญ่เกินความต้องการและเพิ่มภาระ Supabase PostgREST parser
+- **Decision:** แก้ไข `select('*')` ทุกจุดให้ระบุเฉพาะ field ที่ใช้จริงบนหน้าจอ:
+  - `profiles`: `id, full_name, dashboard_order` (dashboard) / `id, full_name, schedule_order` (schedule)
+  - `shifts`: `id, employee_id, start_time, end_time, status, metadata`
+  - `holidays`: `id, date, name`
+  - `inventory_transactions`: `id, inventory_item_id, type, quantity, note, created_at`
+  - **คงไว้** `select('*')` สำหรับ `service_records` และ `inventory_items` เพราะทุก field ถูกใช้งานในการแสดงผลจริง
+- **Impact:** ลด Network Payload ต่อ Request, ลดภาระ PostgREST serialization, เพิ่มความเร็ว Time-to-First-Byte บนมือถือ
+- **Evidence:** `dashboard/page.tsx` (line 36-44), `schedule/page.tsx` (line 25-38), `ScheduleClient.tsx` (line 503), `inventory-actions.ts` (line 57)
 
+### DEC-026: Prompt Injection Defense & XSS Mitigation (v3.17)
 
+- **Date:** May 18, 2026
+- **Context:** ระบบรับข้อมูล Context แบบดิบ ๆ จาก `textContent` ของ Modal ในหน้าต่างเบราว์เซอร์ เพื่อส่งไปให้ AI ประมวลผล ซึ่งเสี่ยงต่อการโดนแทรกแซงคำสั่ง (Prompt Injection) และการใช้งาน `localStorage.getItem` คู่กับ `JSON.parse` โดยไม่มีการทำ Type Validation อาจทำให้ระบบหยุดชะงัก (Crash) จาก Malformed Data
+- **Decision:**
+  1. เพิ่มตรรกะ Sanitization ล้างคำสั่งควบคุม (เช่น `[INST]`, `ignore previous instructions`) ออกจาก `clientContext` ทั้งฝั่งหน้าบ้าน (`AIChatOverlay.tsx`) และหลังบ้าน (`route.ts`)
+  2. เพิ่ม Strict Type Guard ครอบ `JSON.parse` ของ `localStorage` ในไฟล์ `inventory/page.tsx` และ `maintenance/page.tsx` โดยบังคับให้ค่าต้องเป็น Plain Object ที่มี value เป็นชนิดตัวเลข/สตริงที่ปลอดภัยเท่านั้น
+- **Impact:** ป้องกันการโจมตีระดับ Data Payload และป้องกัน AI SDK ทำงานผิดพลาด ระบบแกร่งขึ้น (Security Hardened)
+- **Evidence:** `src/components/ai/AIChatOverlay.tsx` (lines 42-49), `src/app/api/chat/route.ts` (lines 13-20), `src/app/[locale]/inventory/page.tsx` (lines 420-430)
 
+### DEC-027: Thai Token Optimizer for AI Agent (v3.18)
 
-
-
-
-
-
+- **Date:** May 18, 2026
+- **Context:** ระบบ AI ดึงข้อความดิบทั้งจาก UI Context และประวัติการแชท (Chat History) ซึ่งบ่อยครั้งมีช่องว่าง (Whitespace) หรือตัวอักษรซ้ำซ้อนในภาษาไทย (เช่น 55555, ๆๆๆ) ทำให้สิ้นเปลือง Token โควตาของระบบอย่างรวดเร็ว
+- **Decision:** สร้าง Utility `optimizeThaiTokens` ใน `src/utils/thaiTokenOptimizer.ts` เพื่อจัดการบีบอัดข้อความภาษาไทย (ตัดช่องว่างซ้ำซ้อน, ย่อตัวอักษรซ้ำให้อยู่ในขอบเขต) และนำไปฝังในท่อลำเลียงข้อมูล `req.json()` ใน `api/chat/route.ts` ก่อนประมวลผล
+- **Impact:** ลดปริมาณ Input Tokens ที่ส่งเข้า Gemini Flash ลงอย่างเป็นนัยสำคัญ เพิ่มความเร็วในการประมวลผล (TTFB) และลดต้นทุนการเรียกใช้ API ในระยะยาวโดยไม่กระทบความเข้าใจของระบบ
+- **Evidence:** `src/utils/thaiTokenOptimizer.ts`, `src/app/api/chat/route.ts` (lines 13-19, 41)

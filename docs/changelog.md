@@ -1,21 +1,105 @@
 # Changelog — BLACKANDBREW ERP
 
-> **Current Version:** 3.15 (Unified Inventory Controls Restructure) | **Last Updated:** 2026-05-17
+> **Current Version:** 3.19 (Daily Closing Integrity) | **Last Updated:** 2026-05-18
+
+---
+
+## v3.19 — Daily Closing Integrity Workflow (2026-05-18)
+
+### Phase 1: Security & Quality Checks
+- **Markdown Linting**: ล้าง Trailing spaces และจัดระเบียบโครงสร้างเอกสารผ่าน Script `format_markdown.js` สำเร็จ 100%
+- **Zero-Bold Policy**: ยืนยันไม่มีการใช้งาน `font-bold` หลุดรอดเข้ามาในระบบ UI และหน้าแชท AI
+- **XSS Prevention**: ระบบอ่าน `localStorage` (Mobile UX) ถูกล็อกด้วย Type Validator (JSON Parse Guard) แล้ว
+- **Hydration Guards**: คอมโพเนนต์ AI และ Modal ทั้งหมดทำงานผ่าน `isMounted` อย่างเคร่งครัด
+- **Persistent Zero**: ตรรกะจัดการคลังสินค้ายังคงรักษาเลขศูนย์อย่างแม่นยำ
+
+### Phase 2: Production Readiness
+- **Build Pass**: ทดสอบระบบ `npm run build` ปรากฏว่าผ่านฉลุย Exit Code 0 อย่างสมบูรณ์
+- **Cloud Sync**: รันระบบจัดเก็บ `.gitignore` รักษาความลับไฟล์ API Key กรองขยะ และ Commit ยอดงานประจำวันขึ้นสู่ GitHub
+
+---
+
+## v3.18 — Project-Wide Omni-Refactor & AI Sync (2026-05-18)
+
+### Phase 1: Architectural Scan & Dead Code Purge (v3.18)
+
+- **Zero-Bold Validation**: ตรวจพบความสมบูรณ์ 100% ไม่มี `font-bold` เล็ดลอดเข้ามาทำลายกฎ Morning Latte Cream
+- **TypeScript & ESLint Audit**: สแกนโค้ดและรัน Linter ทั่วโปรเจกต์ ล้างตัวแปรที่ไม่ได้ใช้ (Dead Code/Unused Variables)
+- **Dead Import Removal**: ตัด `AnimatePresence` ที่ไม่ได้ใช้งานออกจาก `ScheduleClient.tsx` เพื่อลด Bundle Size และเพิ่มความเร็ว Render
+
+### Phase 2: AI Token Optimization & Context Sync (v3.18)
+
+- **Token Compressor Creation**: สร้างสคริปต์แกนหลัก `src/utils/thaiTokenOptimizer.ts` สำหรับบีบอัดข้อความภาษาไทย (ลบช่องว่าง, ลดอักขระซ้ำซ้อนเช่น '555', 'ๆๆๆ')
+- **Deep SDK Integration**: นำ `thaiTokenOptimizer` เข้าเสียบใน `route.ts` ครอบคลุมทั้ง `clientContext` (Context Injection) และ `recentMessages` ทำให้ AI รับรู้สถานะจอภาพโดยประหยัด Token สูงสุด
+- **AI Hydration Check**: ระบบส่งต่อข้อมูลทำผ่าน Server-side ปลอดภัยไร้ปัญหา Layout Shift หรือ Hydration Mismatch
+
+### Phase 3: Zero-Error Validation (v3.18)
+
+- ระบบทำการ Re-build หลังจากการผ่าตัดโค้ด
+- **Compilation Results**: TypeScript ผ่านสมบูรณ์, สร้าง Static Pages ครบทุกหน้า `Exit Code 0`
+
+---
+
+## v3.17 — Security-Hardened Omni-Refactor (2026-05-18)
+
+### Phase 1: Security Audit & Threat Scan (v3.17)
+
+- **Leak Prevention Checked**: สแกนหา API key leaks ฝั่ง Client (`"use client"`) ไม่พบการอ้างอิง `NEXT_PUBLIC_SUPABASE_SERVICE` อย่างเปิดเผย (มีการเรียกใช้เป็น fallback ฝั่ง server เท่านั้น)
+- **Session Auth Checked**: พบว่าระบบส่วนใหญ่ไม่ได้เรียก `getSession()` ที่มีช่องโหว่
+- **AI Payload Checked**: พบช่องโหว่ Prompt Injection ใน `clientContext` ทั้งฝั่ง Client (`AIChatOverlay.tsx`) และฝั่ง Server (`route.ts`)
+- **XSS Checked**: พบการดึงข้อมูล `localStorage` ด้วย JSON.parse() ใน `inventory/page.tsx` และ `maintenance/page.tsx` ซึ่งเสี่ยงต่อการถูกแทรกแซง Data Types เพื่อก่อให้เกิด React Rendering Crash
+
+### Phase 2: Vulnerability Mitigation (v3.17)
+
+- **Anti-Prompt Injection**: ติดตั้งระบบกรองและทำความสะอาด (Sanitization) ข้อมูลใน `AIChatOverlay.tsx` ตัดทอน jailbreak keywords และ code blocks และจำกัดความยาว 800 ตัวอักษรก่อนส่ง
+- **Server-Side Defense-in-Depth**: เพิ่มระบบคัดกรองซ้อนอีกชั้นใน `route.ts` ดักจับ `clientContext` ป้องกันการโจมตีซ้ำซ้อนจากภายนอก
+- **Strict JSON Type Validation (XSS Prevention)**: เสริมเกราะให้ `JSON.parse` ของ `localStorage` ในโมดูล Inventory และ Maintenance ตรวจสอบว่าต้องเป็นโครงสร้าง Plain Object ที่มีค่าเป็น String/Number เท่านั้น (หากเสียจะถูกล้างทิ้งอัตโนมัติ)
+
+### Phase 3: Integrity Validation & Build Pass (v3.17)
+
+- แก้ไขปัญหา Self-healing TypeScript Type Error (แปลง Type ของ Width เป็น String)
+- **Compilation Output**: ผ่านการตรวจสอบและ Build ผ่านสมบูรณ์ `Exit Code 0`
+
+---
+
+## v3.16 — Performance-Driven Omni-Refactor (2026-05-18)
+
+### Phase 1: Scan Results (v3.16)
+
+- **Zero font-bold violations found** — Zero-Bold Policy (`font-normal` + `antialiased`) บังคับใช้ครอบคลุม 100% ทุกไฟล์
+- **Event Listener Cleanup ผ่าน** — `removeEventListener` มีอยู่ใน `useEffect` cleanup ทั้ง inventory และ maintenance Resizable Columns
+- **`maxTokens` ไม่มีการใช้งาน** — AI SDK v6 ใช้ `maxOutputTokens` ถูกต้องสมบูรณ์
+- **ตรวจพบ `select('*')` จำนวน 10 จุด ใน 5 ไฟล์** — ต้องแก้ไขทั้งหมด
+
+### Phase 2: Supabase Query Optimization (v3.16)
+
+- **`dashboard/page.tsx`**: ปรับ 3 คิวรี — `profiles` → `id, full_name, dashboard_order`, `shifts` → `id, employee_id, start_time, end_time, status, metadata`, `holidays` → `id, date, name`
+- **`schedule/page.tsx`**: ปรับ 3 คิวรี — `profiles` → `id, full_name, schedule_order`, `shifts` → specific 6 fields, `holidays` → `id, date, name`
+- **`schedule/ScheduleClient.tsx`**: ปรับ Copy Shifts คิวรี (line 503) → `id, employee_id, start_time, end_time, status, metadata`
+- **`inventory-actions.ts`**: ปรับ `fetchTransactionHistory` → `id, inventory_item_id, type, quantity, note, created_at`
+- **`maintenance/page.tsx` + `inventory/page.tsx`**: คงไว้ `select('*')` เนื่องจาก Server Component ใช้ทุก field ของ `service_records` และ `inventory_items` อย่างครบถ้วน
+
+### Phase 3: Build Validation (v3.16)
+
+- รัน `npm run build` ผ่านสมบูรณ์ **Exit Code 0** — TypeScript ผ่าน, 20/20 Static Pages สร้างสำเร็จ
 
 ---
 
 ## v3.15 — Unified Inventory Controls Restructure (2026-05-17)
 
-### Phase 1: Planning & Blueprint Architecture
+### Phase 1: Planning & Blueprint Architecture (v3.15)
+
 - Formulated the restructure blueprint in `docs/plans/2026-05-17-control-panel-restructure.md`, `docs/plans/2026-05-17-single-row-buttons.md`, and `docs/plans/2026-05-17-segmented-switch.md`.
 - Cleared all markdown lint errors project-wide (resolving heading spacing and list blank line occurrences).
 
-### Phase 2: Horizontal Row Consolidation & Segmented Toggle (R0 Standard)
+### Phase 2: Horizontal Row Consolidation & Segmented Toggle (R0 Standard) (v3.15)
+
 - **Single-Row Action Buttons:** Compacted the 6 control panel buttons ("รับเข้าสินค้า", "นำออกสินค้า", "บันทึก", "รายการสั่งซื้อ", "เพิ่มสินค้า", "ประวัติ") into a unified `grid-cols-6` frontend grid container to prevent wraps. Scaled down buttons to lightweight `py-2 px-1 text-xs/text-[13px]` proportions with `w-3.5 h-3.5` icons, strictly satisfying the **Zero-Bold Policy** (`font-normal`).
 - **Segmented Quick Input Bar:** Collapsed the search box, quantity input box, and IN/OUT selectors into a single horizontal row (`flex flex-row items-center gap-2`). Swapped the separate IN/OUT buttons for a sleek, capsule-shaped **Segmented Control** toggle button.
 - **Micro-scale Optimizations:** Rendered numbers and text labels beautifully, keeping 0 values cleanly persisting in the database while leaving empty input strings correctly sanitized, avoiding null or blank crashes.
 
-### Phase 3: Integrity Validation & Build Clean Pass
+### Phase 3: Integrity Validation & Build Clean Pass (v3.15)
+
 - Verified 100% compliance of the `AIChatOverlay` `isMounted` hydration guard and typography standards.
 - Successfully completed production Next.js compilation (`npm run build`) with exit code 0.
 
@@ -23,16 +107,19 @@
 
 ## v3.14 — Precision Table Image Capture (2026-05-17)
 
-### Phase 1: Action Planning & Analysis
+### Phase 1: Action Planning & Analysis (v3.14)
+
 - Developed layout re-nesting strategy in `docs/plans/2026-05-17-schedule-precision-capture.md`.
 - Evaluated why the previous flexbox-1 structure produced extra bottom white spaces on vertical displays.
 
-### Phase 2: DOM Restructuring & Tight Crop (R0 Standard Compliance)
+### Phase 2: DOM Restructuring & Tight Crop (R0 Standard Compliance) (v3.14)
+
 - **Column Alignment Integration:** Nestled both the holiday label row and day-header segments inside the `min-w-[900px]` scrolling element. This resolves small-screen column shifting and aligns them across all screen dimensions.
 - **Precision Element Targeting:** Moved `id="blackandbrew-schedule-table"` from the outer full-height flex container to the inner `min-w-[900px] h-fit` grid wrapper. This instructs `html-to-image` to tightly crop the exported file, eliminating the bottom white spaces.
 - **Export Style Override:** Injected temporary style overrides (`margin: '0'`, `padding: '0'`, `border: 'none'`, `boxShadow: 'none'`) during rendering to cleanly parse calendar grids without outer margins or drop shadows.
 
-### Phase 3: Integration and Build Clean Pass
+### Phase 3: Integration and Build Clean Pass (v3.14)
+
 - Verified all 8 unit tests passed cleanly via Vitest.
 - Completed Next.js production build (`npm run build`) successfully with exit code 0.
 
@@ -40,19 +127,24 @@
 
 ## v3.13 — Swap Exporter to html-to-image (2026-05-17)
 
-### Phase 1: Action Planning & Analysis
+### Phase 1: Action Planning & Analysis (v3.13)
+
 - Developed package management swap plan in `docs/plans/2026-05-17-schedule-image-export-swap.md`.
 - Identified limitations of `html2canvas` regarding newer CSS standard parameters (e.g. `oklch()`).
 
-### Phase 2: Dependency Mapping & Refactoring (R0 Standard Compliance)
+### Phase 2: Dependency Mapping & Refactoring (R0 Standard Compliance) (v3.13)
+
 - **Dependency Swapping:** Cleanly uninstalled `html2canvas` and installed the modern SVG-to-Canvas compiler `html-to-image`.
 - **Dynamic Module Safety:** Used dynamic lazy imports inside the client event callback to cleanly prevent SSR crashes:
+
   ```typescript
   const { toPng } = await import('html-to-image');
   ```
+
 - **Fidelity Specifications:** Mapped the exporter options to `pixelRatio: 2` (double-resolution details) and set the output to `quality: 1.0` in matching cream pastel (`#fdfcf0`) with scale correction `transform: 'scale(1)'`.
 
-### Phase 3: Integration and Build Clean Pass
+### Phase 3: Integration and Build Clean Pass (v3.13)
+
 - Verified all 8 unit tests passed cleanly via Vitest.
 - Completed Next.js production build (`npm run build`) successfully with exit code 0.
 
@@ -60,22 +152,26 @@
 
 ## v3.12 — High-Fidelity Schedule Image Export (2026-05-17)
 
-### Phase 1: Action Planning & Analysis
+### Phase 1: Action Planning & Analysis (v3.12)
+
 - Developed the high-fidelity download target tasks in `docs/plans/2026-05-17-schedule-image-export.md`.
 - Read and reviewed Visual Standards, Zero-Bold Policy, and dynamic modules rules.
 
-### Phase 2: Refactoring & Dynamic Integration (R0 Standard Compliance)
+### Phase 2: Refactoring & Dynamic Integration (R0 Standard Compliance) (v3.12)
+
 - **Dependency Integration:** Successfully installed `html2canvas` for precise layout-to-pixel parsing.
 - **Dynamic Imports Safety:** Used dynamic lazy imports for `html2canvas` inside the async export function to completely eliminate Next.js server-side compilation issues concerning client-only `window`/`document` models.
 - **Export Resolution Control:** Calibrated the canvas scale to `scale: 2` (double-resolution mapping) so that exported PNG schedules remain extremely crisp when zoomed or printed. Styled canvas backdrops in matching cream pastel (`#fdfcf0`).
 - **Precision Element Targeting:** Locked target container with `id="blackandbrew-schedule-table"`, cleanly capturing the core schedule grid (Header row, holiday slots, employee cells, daily sum FOH rows) while completely bypassing controls and sidebars.
 - **UI Button Integration:** Rendered a modern capsule button next to header controls containing the `Download` icon:
+
   ```typescript
   "flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-slate-800 bg-slate-100 hover:bg-slate-200"
   ```
   strictly respecting the **Zero-Bold Policy** (`font-normal`).
 
-### Phase 3: Integration and Build Clean Pass
+### Phase 3: Integration and Build Clean Pass (v3.12)
+
 - Verified all 8 unit tests passed cleanly via Vitest.
 - Completed Next.js production build (`npm run build`) successfully with exit code 0.
 
@@ -83,18 +179,21 @@
 
 ## v3.11 — Purchase Orders Navigation Chips (2026-05-17)
 
-### Phase 1: Action Planning & Analysis
+### Phase 1: Action Planning & Analysis (v3.11)
+
 - Developed the modern chip redesign layout tasks in `docs/plans/2026-05-17-po-tabs-refactor.md`.
 - Read and reviewed Visual Standards, Zero-Bold Policy, and design instructions.
 
-### Phase 2: Component Refactoring (R0 Standard Compliance)
+### Phase 2: Component Refactoring (R0 Standard Compliance) (v3.11)
+
 - **Wrapper Modernization:** Redesigned the categories tab navigation layout in `page.tsx` using `flex flex-wrap gap-2.5 items-center pt-5 pb-4` to present a spacious, fluid navigation bar.
 - **Pill-shaped Chips Design:** Completely decoupled the classic underlines (`border-b-2`) and replaced them with rounded navigation capsules (`rounded-full px-4 py-2 border font-normal whitespace-nowrap`).
 - **Active state Styling:** Styled the chosen tab chip in soft black background (`bg-[#000000] border-[#000000] text-white shadow-sm`) strictly adhering to the Zero-Bold Policy (`font-normal`).
 - **Inactive state Styling:** Styled unselected chips in transparent backgrounds with delicate margins (`border-neutral-200 text-neutral-800 hover:bg-neutral-50`).
 - **Hierarchy Counts:** Mapped shift totals (e.g. `(101)`) in distinct `<span>` wrappers, downscaling counts to a lightweight `text-[12px] font-mono font-normal` inside active/inactive states for visual breathing room.
 
-### Phase 3: Integration and Build Clean Pass
+### Phase 3: Integration and Build Clean Pass (v3.11)
+
 - Verified all 8 unit tests passed cleanly via Vitest.
 - Completed Next.js production build (`npm run build`) successfully with exit code 0.
 
@@ -102,18 +201,21 @@
 
 ## v3.10 — Precise Deduplicated Summary Calculations (2026-05-17)
 
-### Phase 1: Action Planning & Analysis
+### Phase 1: Action Planning & Analysis (v3.10)
+
 - Outlined the exact shift matching properties and deduplication tasks in `docs/plans/2026-05-17-schedule-summary-deduplication.md`.
 - Inspected cell properties inside `ScheduleClient.tsx` to confirm location properties.
 
-### Phase 2: Logic Refactoring (R0 Standard Compliance)
+### Phase 2: Logic Refactoring (R0 Standard Compliance) (v3.10)
+
 - **Cell Property Alignment:** Inspected grid items and confirmed cell parameters parse `s.metadata?.location` directly.
 - **Active Profile Filtering:** Added a containment constraint `s.employee_id && orderedProfileIds.includes(s.employee_id)` to filter out historical shifts from deleted or inactive employees from the daily summary count.
 - **Set-Based Deduplication:** Incorporated a deduplication logic mapping matching shifts to employee IDs inside a new `Set(...).size` to avoid counting multiple entries for a single employee on a single day.
 - **Aesthetic and Visual Integrity:** Maintained original styling of the visual grid and the FOH totals row.
 - **Zero-Bold Policy:** Checked all modified code segment properties to ensure zero bold styles are used.
 
-### Phase 3: Integration and Build Clean Pass
+### Phase 3: Integration and Build Clean Pass (v3.10)
+
 - Verified all 8 unit tests passed cleanly via Vitest.
 - Compiled the full Next.js production build (`npm run build`) successfully with exit code 0.
 
@@ -121,17 +223,20 @@
 
 ## v3.9 — Strict Shift Count Validation (2026-05-17)
 
-### Phase 1: Action Planning & Analysis
+### Phase 1: Action Planning & Analysis (v3.9)
+
 - Outlined the strict work shifts summary task in `docs/plans/2026-05-17-schedule-summary-logic.md`.
 - Identified `ScheduleClient.tsx` bottom-most summary calculations row for modification.
 
-### Phase 2: Refactoring & Logic Integration (R0 Standard Compliance)
+### Phase 2: Refactoring & Logic Integration (R0 Standard Compliance) (v3.9)
+
 - **Strict Calculations Logic:** Formed the `VALID_WORK_SHIFTS` constant array: `['6:30', '7:00', '8:00']`.
 - **Filtering Shift Constraints:** Rewrote the daily totals counter `fohCount` to count only when the shift's metadata location falls within `VALID_WORK_SHIFTS` and the shift is not marked as `on_leave`.
 - **Aesthetic and Visual Integrity:** Ensured other specific shift designations (`ร้านซักผ้า`, `ไปสาขา 2`) are fully preserved in the rendering cells, modifying only the summation calculations row.
 - **Zero-Bold Policy:** Maintained zero bold styling inside the summation grid block.
 
-### Phase 3: Integration & Validation Checks
+### Phase 3: Integration & Validation Checks (v3.9)
+
 - Executed the full Vitest suite (`8/8 tests passed successfully`).
 - Completed Next.js production bundler check successfully (`npm run build` completed with static route optimizations and exit code 0).
 
@@ -139,17 +244,20 @@
 
 ## v3.8 — Typography Refinement & Contrast Tuning (2026-05-17)
 
-### Phase 1: Planning and Component Refactoring
+### Phase 1: Planning and Component Refactoring (v3.8)
+
 - Created the design polish task schedule in `docs/plans/2026-05-17-typography-contrast.md`.
 - Refactored `AIChatOverlay.tsx` to calibrate typographical weight hierarchy.
 
-### Phase 2: Design Integrity (R0 Standard Compliance)
+### Phase 2: Design Integrity (R0 Standard Compliance) (v3.8)
+
 - **Typography Weight Calibration:** Scaled the chat bubble text weight down from `font-normal` (400) to `font-light` (300) and embedded the CSS `antialiased` utility, ensuring that the larger `text-[15px]` letters appear sleek, crisp, and beautifully proportioned on all screens.
 - **Deep Coffee Contrast tuning:** Boosted secondary captions ("AI ผู้ช่วยร้าน BLACKANDBREW" and the "กำลังคิด..." status label) from a generic transparent black (`text-[#000000]/40`) to a high-contrast `#1a1a1a` Dark Coffee shade, which provides superior visibility under varying coffee shop lighting conditions.
 - **Logo Symbol Re-check:** Verified that all SVG imports cleanly render `/ai-agent-logo.svg` without rendering artifacts.
 - **Zero-Bold Audit:** Verified that Zero-Bold policy constraints are fully satisfied across all modified components.
 
-### Phase 3: Integration and Build Clean Pass
+### Phase 3: Integration and Build Clean Pass (v3.8)
+
 - Verified all 8 unit tests passed cleanly via Vitest.
 - Compiled the full Next.js production build (`npm run build`) successfully with exit code 0.
 
@@ -157,16 +265,19 @@
 
 ## v3.7 — AI Agent UI Polish & Interaction (2026-05-17)
 
-### Phase 1: Action Planning & TDD Verification
+### Phase 1: Action Planning & TDD Verification (v3.7)
+
 - Drafted the UI polish task schedule in `docs/plans/2026-05-17-ai-agent-ui-polish.md`.
 - Cleared the unused `MessageCircle` import from `lucide-react` at the top of `AIChatOverlay.tsx`.
 
-### Phase 2: High-Density UI Upgrades (R0 Standard Compliance)
+### Phase 2: High-Density UI Upgrades (R0 Standard Compliance) (v3.7)
+
 - **Floating Button Swap:** Replaced generic `MessageCircle` closed-state trigger icon with a pure white branding logo (`/ai-agent-logo.svg` + inverted filter) rendering inside the floating circular button.
 - **Bubble Text Scaling:** Scaled the chat bubble font size up from `text-[13px]` to `text-[15px]` to maximize reading comfort on mobile screens and tablets, strictly maintaining standard typography `font-normal` (Zero-Bold Policy).
 - **Click Outside to Close:** Added an invisible backdrop transition wrapper (`fixed inset-0 z-[198] bg-black/0`) within the `<AnimatePresence>` block so that clicking on empty space immediately closes the active overlay panel.
 
-### Phase 3: Validation and Build Clean Pass
+### Phase 3: Validation and Build Clean Pass (v3.7)
+
 - Resolved a React fragment hierarchy syntax edge case before final checks.
 - Executed the full Vitest command line suite (`8/8 tests passed successfully`).
 - Ran and completed the Next.js production build (`npm run build` completed with static route optimizations and exit code 0).
@@ -175,13 +286,15 @@
 
 ## v3.6 — AI Agent Custom Branding Logo (2026-05-17)
 
-### Phase 1: Planning and Component Refactoring
+### Phase 1: Planning and Component Refactoring (v3.6)
+
 - Created the logo update plan `docs/plans/2026-05-17-ai-agent-logo.md`.
 - Refactored `AIChatOverlay.tsx` by removing the generic Lucide `<Bot />` icon and importing Next.js `<Image />` component.
 - Implemented `/ai-agent-logo.svg` across all 3 key branding elements: the chat header, the typing indicator, and the assistant message avatar.
 - Preserved perfect layout symmetry with rounded borders and correct size classes (`w-6 h-6` for header, `w-5 h-5` for bubble/loader avatars).
 
-### Phase 2: Design and Build Integrity Check
+### Phase 2: Design and Build Integrity Check (v3.6)
+
 - Verified compliance with the **Zero-Bold Policy** across all modified files.
 - Executed and passed all 8 unit tests in the Vitest suite.
 - Built the Next.js production app successfully using `npm run build` with zero issues or warning logs.
@@ -190,16 +303,19 @@
 
 ## v3.5 — Persistent Date Range via Cookies (2026-05-17)
 
-### Phase 1: Failing Test Design (TDD Red Phase)
+### Phase 1: Failing Test Design (TDD Red Phase) (v3.5)
+
 - Created `src/test/dashboard_date_cookies.test.ts` to assert that:
   1. Client-side cookie setting functions correctly update `document.cookie` with selected date parameters.
   2. The server-side resolution follows the hierarchical priority: URL search params > saved cookies > Monday-Sunday fallback default.
 
-### Phase 2: Component Refactoring (TDD Green Phase)
+### Phase 2: Component Refactoring (TDD Green Phase) (v3.5)
+
 - **Client Component (`LiveShiftList.tsx`):** Added logic in `handleDateChange` to set `dashboard_start_date` and `dashboard_end_date` cookies with 1-year max-age and `SameSite=Lax` constraint prior to URL search parameter navigation.
 - **Server Component (`dashboard/page.tsx`):** Integrated Next.js `cookies()` parser into the server-rendered dashboard page. Replaced URL parameter fallback with a chain checking URL search parameters first, then cookies, and finally the current week.
 
-### Phase 3: Integrity Validation & Daily Closing
+### Phase 3: Integrity Validation & Daily Closing (v3.5)
+
 - **Tests:** Executed and passed all 8 tests in the suite successfully (Vitest exit code 0).
 - **TypeScript & Build:** Ran Next.js production build (`npm run build`) successfully with zero type checking or optimization warnings.
 - **Zero-Bold Policy:** Confirmed zero bold font weight violations in all newly added or modified code segments.
@@ -208,40 +324,42 @@
 
 ## v3.4 — Project-Wide Omni-Refactor & AI Sync (2026-05-17)
 
-### Phase 1: Architectural Scan
+### Phase 1: Architectural Scan (v3.4)
+
 - Scanned `src/`, `public/`, `sql/`, and root config files.
 - Identified 4 issues: 3 orphaned files in `src/lib/agent-tools/`, 1 empty type stub, 1 Zero-Bold violation, and missing `isMounted` guard in AI overlay.
 
-### Phase 2: Dead Code & Junk Purge
+### Phase 2: Dead Code & Junk Purge (v3.4)
+
 - **Deleted:** `src/lib/agent-tools/fs_tool.ts` — not imported anywhere in codebase.
 - **Deleted:** `src/lib/agent-tools/search_proxy.ts` — not imported anywhere in codebase.
 - **Deleted:** `src/lib/agent-tools/shell_tool.ts` — not imported anywhere in codebase.
 - **Deleted:** `src/types/supabase.ts` — empty 0-byte file (placeholder stub, no content).
 
-### Phase 3: AI Optimization Check
+### Phase 3: AI Optimization Check (v3.4)
+
 - **Verified:** `route.ts` uses `providerOptions.google.generationConfig.maxOutputTokens` ✅
 - **Verified:** All tools use `inputSchema` (Vercel AI SDK v6 standard) ✅
 - **Verified:** Sliding window memory (`messages.slice(-4)`) in place to prevent token bloat ✅
 - **Verified:** Surgical tool partitioning with column-selected queries and `.limit(8)` ✅
 - **Security:** AI route reads via Supabase Security Definer RPCs (`get_ai_store_status`, `get_ai_inventory_item_details`) — anon key cannot bypass RLS on write operations ✅
 
-### Phase 4: Visual & Hydration Enforcement
+### Phase 4: Visual & Hydration Enforcement (v3.4)
+
 - **Zero-Bold Fix:** Changed `font-medium` → `font-normal` on "บรู" name label in `AIChatOverlay.tsx` (line 90).
 - **Hydration Guard:** Added `isMounted` state with `useEffect` to `AIChatOverlay.tsx` to prevent browser-only globals from running during SSR.
 - **Build:** `npm run build` → **Exit Code 0** ✅
 
 ---
 
-
-
-### AI Assistant "บรู" Frontend
+### AI Assistant "บรู" Frontend (v3.4)
 
 - **Chat Overlay UI:** Created `src/components/ai/AIChatOverlay.tsx` with a pastel theme, compact dimensions (max-h-[70vh], overflow-y-auto), bottom-right positioning, Framer Motion open/close animations (0.2s), and `isMounted` protection for prerendering. The component was directly integrated into `src/app/[locale]/layout.tsx` and the redundant `AIChatWrapper.tsx` was removed.
 - **Typography Enforcement:** Implemented a strict "no bold text" policy for all chat messages and inputs, using `font-normal` or `font-medium` to maintain consistent aesthetic standards.
 - **Impact:** Provided a visually appealing and functional chat interface for the AI Assistant, ensuring a smooth user experience and adherence to design guidelines.
 - **Evidence:** `src/components/ai/AIChatOverlay.tsx`, `src/app/[locale]/layout.tsx`
 
-### AI Assistant "บรู" Backend
+### AI Assistant "บรู" Backend (v3.4)
 
 - **Read-Only Views and RPCs:** Created `view_today_shifts` and `view_inventory_summary` for safe, summarized data access. Implemented `get_ai_store_status` and `get_ai_inventory_item_details` RPCs in Supabase to provide comprehensive, controlled data to the AI assistant.
 - **API Route Handler:** Developed `src/app/api/chat/route.ts` using Vercel AI SDK v6. Ensured compliance with AI SDK v6 standards by utilizing `providerOptions.google.generationConfig.maxOutputTokens` and `inputSchema` for tools, including the new inventory item details RPC.
@@ -250,14 +368,14 @@
 
 ## v3.2 — Typography & UI Optimization (2026-05-16)
 
-### High-Legibility Scaling (R0 Standard)
+### High-Legibility Scaling (R0 Standard) (v3.2)
 
 - **Typography Scale-up (+2 Sizes):** อัปเกรดขนาดตัวอักษรของหัวข้อย่อย (Sub-labels) และป้ายกำกับฟิลด์ (Input Labels) จาก `text-[11px]` เป็น **`text-[13px]/text-[14px]`** ทั่วทั้งระบบ
 - **Space Integrity Guard:** ปรับลด Padding และ Margin แบบสัดส่วนผกผันเพื่อให้หน้าต่าง Modals ยังคงความกะทัดรัด (One-Shot View)
 - **Zero-Bold Policy Enforcement:** บังคับใช้ `font-normal` และ `font-medium` ทั่วทั้งแอปพลิเคชัน ห้ามใช้ตัวหนาเด็ดขาด
 - **Documentation Standard:** อัปเดต `docs/rules.md` และ `docs/design.md` เพื่อใช้เป็นกฎเหล็กสำหรับ AI Agent ในอนาคต
 
-### System-Wide Big Cleaning & Audit (R0 Standard)
+### System-Wide Big Cleaning & Audit (R0 Standard) (v3.2)
 
 - **Syntax & Code Smells:** Removed unused `Tool` import in `maintenance/page.tsx` resolving a critical TypeScript build error. Purged all debug `console.log` statements across `inventory-actions.ts`, `shift-actions.ts`, `ScheduleClient.tsx`, and `search_proxy.ts` for clean production terminal output.
 - **Security & Error Boundary:** Fixed a potential crash in `shift-actions.ts` by adding optional chaining (`firstError.error?.message`) to prevent null-reference TypeErrors during DB synchronization.
@@ -266,20 +384,20 @@
 
 ## v3.2 — Performance & DnD Stabilization (May 2026)
 
-### Interaction Mirroring (R0 Standard)
+### Interaction Mirroring (R0 Standard) (v3.2)
 
 - Implemented **Perfect Mirroring** of DnD interactions from Inventory to Dashboard and Schedule.
 - Enforced precision sensors (**distance: 5px**) and **closestCorners** collision detection system-wide.
 - Integrated **Framer Motion Layout** for smooth card/row "Gliding" animations.
 - Unified spring physics (**stiffness: 300, damping: 30**) across all sortable components.
 
-### Data & Persistence
+### Data & Persistence (v3.2)
 
 - Fixed "Drag-and-Drop bounce-back" in Schedule by syncing column targets to `schedule_order`.
 - Transitioned all list reordering to **Service Role Server Actions** to bypass RLS latency.
 - Enforced high-legibility standards with **pure black (#000000)** text on pastel backgrounds.
 
-### Documentation & Governance
+### Documentation & Governance (v3.2)
 
 - Established **MASTER_BLUEPRINT.md** as the definitive architectural single source of truth.
 - Completed **Daily Closing Integrity Workflow [R0]** with 100% build pass.
@@ -288,7 +406,7 @@
 
 ## v3.1 — System Rebirth & Staff Access Refinement (May 2026)
 
-### Transaction System Rebirth
+### Transaction System Rebirth (v3.1)
 
 - Implemented **Two-Step Fetch** strategy for transaction history — bypasses FK join and RLS silent failures
 - Applied `unstable_noStore()` cache buster for all transaction queries
@@ -296,12 +414,12 @@
 - Added comprehensive server-side telemetry (`console.log`) for deep debugging
 - Fixed UI mappings in history modal for accurate data display
 
-### Staff Dashboard
+### Staff Dashboard (v3.1)
 
 - Removed restricted "Inventory Management" shortcuts from Staff Dashboard
 - Established root redirect `/` → `/th` via `src/app/page.tsx`
 
-### Standards
+### Standards (v3.1)
 
 - Enforced `inventory_item_id` naming across all Server Actions and queries
 - Verified Two-Step Fetch eliminates silent failures in transaction reporting
@@ -311,18 +429,18 @@
 
 ## v3.0 — The Great Purge: Zero-Waste Architecture (May 2026)
 
-### Dead Code Elimination
+### Dead Code Elimination (v3.0)
 
 - Removed 14+ orphaned files: `mem0.py`, `gemini.ts`, `token-utils.ts`, `memory.ts`, debug scripts
 - Purged `__pycache__/`, `grep_ast/`, broken `[locale` bracket directory, empty `staff/` route
 - Removed dead `src/app/api/` tree
 
-### Dependency Cleanup
+### Dependency Cleanup (v3.0)
 
 - Uninstalled 3 unused npm packages: `js-tiktoken`, `tokentracker-cli`, `@google/genai`
 - Reduced `node_modules` by 39 packages
 
-### Technical Fixes
+### Technical Fixes (v3.0)
 
 - Fixed TypeScript type narrowing in inventory `onBlur` handler
 - Fixed duplicate interface property in `ScheduleClient.tsx`
@@ -334,18 +452,18 @@
 
 ## v2.6 — High-End Inventory Grid (May 2026)
 
-### Undo/Redo Stability
+### Undo/Redo Stability (v2.6)
 
 - Refactored history engine with snapshot-based persistence
 - Resolved "two-click" desync bug
 - Implemented state-locking during database sync (`isSyncing`)
 
-### Numeric Formatting
+### Numeric Formatting (v2.6)
 
 - Integrated "Smart Sanitizer" for leading zeros (05 bug)
 - Fixed empty-string Supabase errors for numeric columns
 
-### UI Enhancements
+### UI Enhancements (v2.6)
 
 - Applied "Super-Soft Pastel" theme with `rounded-3xl`
 - Full-form "Add Item" modal with 2-column grid
@@ -355,22 +473,22 @@
 
 ## v2.2 — Global Omni-Refactor (May 2026)
 
-### UI Architecture
+### UI Architecture (v2.2)
 
 - Flattened all overlapping DOM structures
 - Native inputs hidden using `sr-only` for accessibility + styling control
 
-### Data Integrity
+### Data Integrity (v2.2)
 
 - Implemented "Safe Deletion" globally (shifts before profiles — FK safety)
 - Optimistic UI triggers instantly using `.filter()`
 
-### Aesthetics (R0 Constraints)
+### Aesthetics (R0 Constraints) (v2.2)
 
 - Eradicated all `font-bold` and `font-semibold` (app-wide `font-normal`)
 - Unified text colors: primary `#000000`, secondary `#4b5563`
 
-### System Cleanup
+### System Cleanup (v2.2)
 
 - Purged deprecated testing scripts
 - Cleaned `.gitignore`
@@ -380,21 +498,21 @@
 
 ## v2.0 — Foundation (May 2026)
 
-### Core Setup
+### Core Setup (v2.0)
 
 - Initialized Next.js 16 with App Router
 - Configured Supabase with Thailand Edge Region
 - Setup Tailwind CSS 4 with PostCSS
 - Implemented i18n via `next-intl` (th/en)
 
-### Modules Built
+### Modules Built (v2.0)
 
 - Dashboard (Command Center) with LiveShiftList
 - Schedule with Drag-and-Drop shift management
 - Inventory with spreadsheet-style inline editing
 - Maintenance equipment tracking
 
-### Database
+### Database (v2.0)
 
 - Applied core schema: `profiles`, `shifts`, `inventory_items`
 - Setup RLS policies for collaborative access

@@ -33,13 +33,13 @@ export default async function DashboardPage({
   const endDate = endParam || savedEnd || format(sunday, 'yyyy-MM-dd');
 
   // Fetch Data on Server
-  const { data: profiles } = await supabase.from('profiles').select('*').order('dashboard_order', { ascending: true });
+  const { data: profiles } = await supabase.from('profiles').select('id, full_name, dashboard_order').order('dashboard_order', { ascending: true });
   const { data: shifts } = await supabase.from('shifts')
-    .select('*')
+    .select('id, employee_id, start_time, end_time, status, metadata')
     .gte('start_time', startDate + 'T00:00:00')
     .lte('start_time', endDate + 'T23:59:59');
   const { data: holidays } = await supabase.from('holidays')
-    .select('*')
+    .select('id, date, name')
     .gte('date', startDate)
     .lte('date', endDate);
 
