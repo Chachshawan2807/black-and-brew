@@ -3,8 +3,9 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { X, Send, User, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 
 // Actual chat component containing useChat (only runs on client)
 export default function AIChatOverlay() {
@@ -67,8 +68,9 @@ export default function AIChatOverlay() {
               animate={{ rotate: 0, opacity: 1 }}
               exit={{ rotate: -90, opacity: 0 }}
               transition={{ duration: 0.2 }}
+              className="flex items-center justify-center"
             >
-              <MessageCircle size={22} />
+              <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={26} height={26} className="w-[26px] h-[26px] object-contain invert" />
             </motion.span>
           )}
         </AnimatePresence>
@@ -77,23 +79,34 @@ export default function AIChatOverlay() {
       {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            key="chat-window"
-            initial={{ opacity: 0, y: 20, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.96 }}
-            transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
-            className="fixed bottom-24 right-6 z-[199] w-[340px] max-w-[calc(100vw-3rem)] bg-white rounded-3xl shadow-xl border border-black/5 flex flex-col overflow-hidden"
-            style={{ maxHeight: '70vh' }}
-          >
+          <>
+            {/* Click Outside Backdrop */}
+            <motion.div
+              key="chat-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 z-[198] bg-black/0"
+            />
+            <motion.div
+              key="chat-window"
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.96 }}
+              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              className="fixed bottom-24 right-6 z-[199] w-[340px] max-w-[calc(100vw-3rem)] bg-white rounded-3xl shadow-xl border border-black/5 flex flex-col overflow-hidden"
+              style={{ maxHeight: '70vh' }}
+            >
             {/* Header */}
             <div className="px-5 py-4 border-b border-black/5 flex items-center gap-3 bg-[#fdfcf0]">
-              <div className="w-8 h-8 rounded-2xl bg-black/5 flex items-center justify-center shrink-0">
-                <Bot size={16} className="text-[#000000]" />
+              <div className="w-8 h-8 rounded-2xl bg-black/5 flex items-center justify-center shrink-0 overflow-hidden">
+                <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={24} height={24} className="w-6 h-6 object-contain" />
               </div>
               <div>
                 <p className="text-[14px] font-normal text-[#000000] leading-tight">บรู</p>
-                <p className="text-[11px] font-normal text-[#000000]/40 leading-tight">
+                <p className="text-[11px] font-normal text-[#1a1a1a] leading-tight">
                   AI ผู้ช่วยร้าน BLACKANDBREW
                 </p>
               </div>
@@ -124,12 +137,12 @@ export default function AIChatOverlay() {
               {/* Loading indicator */}
               {isLoading && (
                 <div className="flex items-center gap-2 px-1">
-                  <div className="w-7 h-7 rounded-2xl bg-black/5 flex items-center justify-center shrink-0">
-                    <Bot size={13} className="text-[#000000]/60" />
+                  <div className="w-7 h-7 rounded-2xl bg-black/5 flex items-center justify-center shrink-0 overflow-hidden">
+                    <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={20} height={20} className="w-5 h-5 object-contain" />
                   </div>
                   <div className="flex gap-1 items-center">
-                    <Loader2 size={13} className="animate-spin text-[#000000]/40" />
-                    <span className="text-[12px] font-normal text-[#000000]/40">กำลังคิด...</span>
+                    <Loader2 size={13} className="animate-spin text-[#1a1a1a]" />
+                    <span className="text-[12px] font-normal text-[#1a1a1a]">กำลังคิด...</span>
                   </div>
                 </div>
               )}
@@ -169,7 +182,8 @@ export default function AIChatOverlay() {
               </motion.button>
             </form>
           </motion.div>
-        )}
+        </>
+      )}
       </AnimatePresence>
     </>
   );
@@ -190,13 +204,13 @@ function ChatBubble({ role, content }: { role: string; content: string }) {
         {isUser ? (
           <User size={13} className="text-white" />
         ) : (
-          <Bot size={13} className="text-[#000000]/60" />
+          <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={20} height={20} className="w-5 h-5 object-contain" />
         )}
       </div>
 
       {/* Bubble */}
       <div
-        className={`max-w-[80%] px-4 py-2.5 rounded-3xl text-[13px] font-normal leading-relaxed whitespace-pre-line ${
+        className={`max-w-[80%] px-4 py-2.5 rounded-3xl text-[15px] font-light antialiased leading-relaxed whitespace-pre-line ${
           isUser
             ? 'bg-[#000000] text-white rounded-br-md'
             : 'bg-black/5 text-[#000000] rounded-bl-md'

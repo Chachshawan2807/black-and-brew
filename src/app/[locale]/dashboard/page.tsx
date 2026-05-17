@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import LiveShiftList from './components/LiveShiftList';
+import { cookies } from 'next/headers';
 
 import { Loader2, CalendarRange, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -18,13 +19,18 @@ export default async function DashboardPage({
 }) {
   const { locale } = await params;
   const { start: startParam, end: endParam } = await searchParams;
+  const cookieStore = await cookies();
+  
+  const savedStart = cookieStore.get('dashboard_start_date')?.value;
+  const savedEnd = cookieStore.get('dashboard_end_date')?.value;
 
   // Default to current week (Monday-Start)
   const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
   const sunday = addDays(monday, 6);
   
-  const startDate = startParam || format(monday, 'yyyy-MM-dd');
-  const endDate = endParam || format(sunday, 'yyyy-MM-dd');
+  // ลำดับความสำคัญ: 1. จาก URL -> 2. จาก Cookie ที่เคยเลือกไว้ -> 3. ค่าเริ่มต้นของสัปดาห์ปัจจุบัน
+  const startDate = startParam || savedStart || format(monday, 'yyyy-MM-dd');
+  const endDate = endParam || savedEnd || format(sunday, 'yyyy-MM-dd');
 
   // Fetch Data on Server
   const { data: profiles } = await supabase.from('profiles').select('*').order('dashboard_order', { ascending: true });

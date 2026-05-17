@@ -42,11 +42,12 @@
 - **Collaborative Logic**: Frontend must allow editing of any profile or shift for authenticated users, removing restrictions based on `auth.uid()`.
 
 ## Persistent UI States
-- **Standard**: All user-customized layout changes (width, sort order, labels) must persist across refreshes.
+- **Standard**: All user-customized layout changes (width, sort order, labels) and dashboard date filters must persist across refreshes.
 - **Implementation**: 
   - Use `localStorage` for immediate, zero-latency persistence (e.g., `inventory-column-widths`).
+  - Use secure `cookies` (`SameSite=Lax`, Max-Age 1 year) for server-rendered persistent states that must be resolved prior to data fetching (e.g., dashboard date range).
   - Sync to Supabase `inventory_config` (id: `column_labels`) for cross-device consistency.
-- **Fast Load**: Initialization must prioritize `localStorage` to prevent Layout Shift, followed by database synchronization.
+- **Fast Load**: Initialization must prioritize `localStorage` to prevent Layout Shift, followed by database synchronization. For cookie-backed states, server components must resolve the value in a priority hierarchy: URL Params > Cookies > Fallback defaults.
 
 ## Transaction & Search Integrity
 - **Search UI**: Hover-based activation for search results is strictly prohibited. 

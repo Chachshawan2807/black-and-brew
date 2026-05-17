@@ -1328,7 +1328,7 @@ export default function DynamicInventoryManager() {
             >
               <div className="px-6 py-5 border-b border-black/5 flex items-center justify-between bg-white shrink-0">
                 <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ (Purchase Orders)
+                  <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ
                 </h2>
                 <button onClick={() => setShowPurchaseOrderModal(false)} className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors">
                   <X className="w-5 h-5" />
@@ -1337,23 +1337,37 @@ export default function DynamicInventoryManager() {
 
               <div className="flex flex-col flex-1 overflow-hidden">
                 {/* Tabs Navigation */}
-                <div className="px-6 pt-4 bg-white border-b border-black/5 shrink-0">
-                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                <div className="px-6 pt-5 pb-4 bg-white border-b border-black/5 shrink-0">
+                  <div className="flex flex-wrap gap-2.5 items-center overflow-x-auto scrollbar-hide">
                     <button
                       onClick={() => setPoActiveTab('all')}
-                      className={cn("px-4 py-3 text-[14px] whitespace-nowrap transition-colors border-b-2 font-medium", poActiveTab === 'all' ? "border-black text-black" : "border-transparent text-black/50 hover:text-black")}
+                      className={cn(
+                        "px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap",
+                        poActiveTab === 'all'
+                          ? "bg-[#000000] border-[#000000] text-white shadow-sm"
+                          : "border-neutral-200 bg-transparent text-neutral-800 hover:bg-neutral-50"
+                      )}
                     >
-                      ทั้งหมด ({itemsToOrder.length})
+                      ทั้งหมด <span className={poActiveTab === 'all' ? "text-white/60 text-[12px] ml-1 font-mono font-normal" : "text-neutral-500 text-[12px] ml-1 font-mono font-normal"}>({itemsToOrder.length})</span>
                     </button>
-                    {poSources.map(source => (
-                      <button
-                        key={source}
-                        onClick={() => setPoActiveTab(source)}
-                        className={cn("px-4 py-3 text-[14px] whitespace-nowrap transition-colors border-b-2 font-medium", poActiveTab === source ? "border-black text-black" : "border-transparent text-black/50 hover:text-black")}
-                      >
-                        {source} ({itemsToOrder.filter(i => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === source).length})
-                      </button>
-                    ))}
+                    {poSources.map(source => {
+                      const count = itemsToOrder.filter(i => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === source).length;
+                      const isActive = poActiveTab === source;
+                      return (
+                        <button
+                          key={source}
+                          onClick={() => setPoActiveTab(source)}
+                          className={cn(
+                            "px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap",
+                            isActive
+                              ? "bg-[#000000] border-[#000000] text-white shadow-sm"
+                              : "border-neutral-200 bg-transparent text-neutral-800 hover:bg-neutral-50"
+                          )}
+                        >
+                          {source} <span className={isActive ? "text-white/60 text-[12px] ml-1 font-mono font-normal" : "text-neutral-500 text-[12px] ml-1 font-mono font-normal"}>({count})</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

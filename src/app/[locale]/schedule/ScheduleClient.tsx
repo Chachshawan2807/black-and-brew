@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Undo2, Redo2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays } from 'lucide-react';
+import { Plus, Trash2, Undo2, Redo2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Download } from 'lucide-react';
 import { startOfWeek, addDays, format } from 'date-fns';
 
 import Image from 'next/image';
@@ -749,6 +749,39 @@ export default function ScheduleClient({
     }
   };
 
+  const exportScheduleImage = async () => {
+    try {
+      const { toPng } = await import('html-to-image');
+      const element = document.getElementById('blackandbrew-schedule-table');
+      if (!element) return;
+
+      setLoading(true);
+
+      const dataUrl = await toPng(element, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: '#fdfcf0',
+        style: {
+          transform: 'scale(1)',
+          margin: '0',
+          padding: '0',
+          border: 'none',
+          boxShadow: 'none',
+        }
+      });
+
+      const link = document.createElement('a');
+      link.download = `Schedule-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export image:', err);
+      alert('เกิดข้อผิดพลาดในการบันทึกตารางงานเป็นรูปภาพ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   return (
@@ -813,6 +846,14 @@ export default function ScheduleClient({
             </button>
 
             <button
+              onClick={exportScheduleImage}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-md border border-slate-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
+            >
+              <Download className="w-3.5 h-3.5" />
+              บันทึกรูปภาพ
+            </button>
+
+            <button
               onClick={() => setShowAddEmployeeModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-black bg-gray-100 hover:bg-gray-200 rounded-md border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
             >
@@ -833,55 +874,55 @@ export default function ScheduleClient({
 
       <main className="flex-1 p-2 md:p-4 overflow-hidden flex flex-col bg-transparent">
         <div className="flex-1 flex flex-col bg-[#fdfcf0]/80 backdrop-blur-sm border border-[#000000]/5 rounded-3xl overflow-hidden shadow-sm">
-          <div className="grid grid-cols-8 border-b border-[#000000]/5 bg-red-50/10 sticky top-0 z-[16]">
-            <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-red-50/20">
-              <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
-            </div>
-            {weekDays.map(date => {
-              const holiday = holidays.find(h => h.date === date);
-              return (
-                <div
-                  key={`holiday-${date}`}
-                  onClick={() => { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); }}
-                  className="p-1 border-r last:border-0 border-[#000000]/5 flex items-center justify-center min-h-[38px] cursor-pointer hover:bg-red-50 transition-colors"
-                >
-                  {editingHoliday === date ? (
-                    <input
-                      autoFocus
-                      className="w-full h-full bg-white border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400"
-                      value={holidayInput}
-                      onChange={(e) => setHolidayInput(e.target.value)}
-                      onBlur={() => handleSaveHoliday(date)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveHoliday(date)}
-                    />
-                  ) : (
-                    <span className="text-[14px] font-normal text-[#7f1d1d] text-center leading-tight tracking-tight px-1 uppercase">
-                      {holiday?.name || ''}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="grid grid-cols-8 bg-gray-100 border-b border-gray-200 shrink-0 sticky top-[38px] z-[15]">
-            <div className="p-2.5 border-r border-gray-200 flex items-center justify-center bg-gray-100">
-              <span className="text-[13px] text-[#000000] font-normal uppercase tracking-widest">พนักงาน</span>
-            </div>
-            {weekDays.map((date) => {
-              const d = new Date(date);
-              const isToday = date === todayStr;
-              return (
-                <div key={date} className="p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-gray-200 transition-colors min-h-[50px] bg-gray-100">
-                  <div className="text-[12px] font-normal uppercase tracking-tighter mb-0 text-[#000000]">{dayLabels[d.getDay()]}</div>
-                  <div className={`text-xl font-normal w-8 h-8 flex items-center justify-center mt-0.5 rounded-full ${isToday ? 'bg-[#ffda66] text-[#000000]' : 'text-[#000000]'}`}>{d.getDate()}</div>
-                </div>
-              );
-            })}
-          </div>
-
           <div className="flex-1 overflow-y-auto overflow-x-auto">
-            <div className="min-w-[900px]">
+            <div id="blackandbrew-schedule-table" className="min-w-[900px] bg-[#fdfcf0] h-fit flex flex-col">
+              <div className="grid grid-cols-8 border-b border-[#000000]/5 bg-red-50/10 sticky top-0 z-[16]">
+                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-red-50/20">
+                  <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
+                </div>
+                {weekDays.map(date => {
+                  const holiday = holidays.find(h => h.date === date);
+                  return (
+                    <div
+                      key={`holiday-${date}`}
+                      onClick={() => { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); }}
+                      className="p-1 border-r last:border-0 border-[#000000]/5 flex items-center justify-center min-h-[38px] cursor-pointer hover:bg-red-50 transition-colors"
+                    >
+                      {editingHoliday === date ? (
+                        <input
+                          autoFocus
+                          className="w-full h-full bg-white border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400"
+                          value={holidayInput}
+                          onChange={(e) => setHolidayInput(e.target.value)}
+                          onBlur={() => handleSaveHoliday(date)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveHoliday(date)}
+                        />
+                      ) : (
+                        <span className="text-[14px] font-normal text-[#7f1d1d] text-center leading-tight tracking-tight px-1 uppercase">
+                          {holiday?.name || ''}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-8 bg-gray-100 border-b border-gray-200 shrink-0 sticky top-[38px] z-[15]">
+                <div className="p-2.5 border-r border-gray-200 flex items-center justify-center bg-gray-100">
+                  <span className="text-[13px] text-[#000000] font-normal uppercase tracking-widest">พนักงาน</span>
+                </div>
+                {weekDays.map((date) => {
+                  const d = new Date(date);
+                  const isToday = date === todayStr;
+                  return (
+                    <div key={date} className="p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-gray-200 transition-colors min-h-[50px] bg-gray-100">
+                      <div className="text-[12px] font-normal uppercase tracking-tighter mb-0 text-[#000000]">{dayLabels[d.getDay()]}</div>
+                      <div className={`text-xl font-normal w-8 h-8 flex items-center justify-center mt-0.5 rounded-full ${isToday ? 'bg-[#ffda66] text-[#000000]' : 'text-[#000000]'}`}>{d.getDate()}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
               {mounted ? (
                 <DndContext
                   id="schedule-dnd"
@@ -941,16 +982,22 @@ export default function ScheduleClient({
                 </div>
               )}
 
-
               <div className="grid grid-cols-8 border-t border-gray-200 bg-[#f5f5f5] sticky bottom-0">
                 <div className="p-2 border-r border-gray-100 flex items-center justify-center bg-gray-50/30">
                   {/* Empty space - removed FOH label */}
                 </div>
                 {weekDays.map(date => {
-                  const fohCount = shifts.filter(s => {
-                    const loc = s.metadata?.location;
-                    return s.start_time.startsWith(date) && loc !== 'ร้านซักผ้า' && loc !== 'ไปสาขา 2' && loc !== 'ลา' && s.status !== 'on_leave';
-                  }).length;
+                  const VALID_SHIFTS = ['6:30', '7:00', '8:00'];
+                  const fohCount = new Set(
+                    shifts
+                      .filter(s => {
+                        const loc = s.metadata?.location?.trim();
+                        const isSameDay = s.start_time.startsWith(date);
+                        const isActiveEmployee = s.employee_id && orderedProfileIds.includes(s.employee_id);
+                        return isSameDay && s.status !== 'on_leave' && isActiveEmployee && VALID_SHIFTS.includes(loc || '');
+                      })
+                      .map(s => s.employee_id)
+                  ).size;
                   return (
                     <div key={`foh-${date}`} className={`p-1.5 border-r last:border-0 border-gray-100 flex items-center justify-center ${date === todayStr ? 'bg-blue-50/50' : ''}`}>
                       <span className={`text-[15px] font-normal ${fohCount > 0 ? 'text-emerald-600' : 'text-gray-300'}`}>{fohCount}</span>

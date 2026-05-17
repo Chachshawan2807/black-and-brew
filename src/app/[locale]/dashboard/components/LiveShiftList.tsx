@@ -166,6 +166,10 @@ export default function LiveShiftList({
   );
 
   const handleDateChange = (start: string, end: string) => {
+    // บันทึกวันที่เก็บไว้ใน Cookie มีอายุยาวนาน 1 ปี (Max-Age)
+    document.cookie = `dashboard_start_date=${start}; path=/; max-age=31536000; SameSite=Lax`;
+    document.cookie = `dashboard_end_date=${end}; path=/; max-age=31536000; SameSite=Lax`;
+    
     router.push(`?start=${start}&end=${end}`);
   };
 
