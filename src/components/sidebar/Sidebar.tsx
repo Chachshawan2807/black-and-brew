@@ -25,24 +25,26 @@ export function Sidebar() {
       )}
     >
       <SidebarToggle isOpen={isOpen} setIsOpen={sidebar?.setIsOpen} />
-      <div className="relative h-full flex flex-col px-3 py-4 overflow-y-auto overflow-x-hidden scrollbar-none [&::-webkit-scrollbar]:hidden">
+      <div className="relative h-full flex flex-col px-3 py-4 overflow-hidden">
         <div className={cn(
-          "mb-2 flex items-center transition-all duration-500",
+          "mb-4 flex items-center transition-all duration-500",
           isOpen === false ? "justify-center" : "justify-start px-2"
         )}>
           <div className="relative z-[110]">
             <Image 
               src="/images/logo.png" 
               alt="Logo" 
-              width={isOpen === false ? 40 : 160} 
-              height={isOpen === false ? 40 : 64} 
+              width={isOpen === false ? 40 : 140} 
+              height={isOpen === false ? 40 : 56} 
               className="object-contain"
               style={{ width: 'auto', height: 'auto' }}
               priority
             />
           </div>
         </div>
-        <Menu isOpen={sidebar?.isOpen} />
+        <div className="flex-1 overflow-hidden">
+          <Menu isOpen={sidebar?.isOpen} />
+        </div>
       </div>
     </aside>
   );

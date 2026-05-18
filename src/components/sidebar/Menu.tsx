@@ -1,14 +1,14 @@
 "use client";
 
-
 import { usePathname, useParams } from 'next/navigation';
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
 import { getMenuList } from '@/lib/menu-list';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { CollapseMenuButton } from '@/components/sidebar/CollapseMenuButton';
+import { LogOut } from 'lucide-react';
+import { clearAuth } from '@/app/actions/auth';
 import {
   Tooltip,
   TooltipTrigger,
@@ -27,63 +27,103 @@ export default function Menu({ isOpen }: MenuProps) {
   const menuList = getMenuList(pathname, locale);
 
   return (
-    <ScrollArea className="[&>div>div[style]]:!block">
-      <nav className={cn('mt-2 h-full w-full')}>
-        <ul className={cn(
-          "flex flex-col min-h-[calc(100vh-48px-36px-16px-32px)] lg:min-h-[calc(100vh-32px-40px-32px)] gap-1 px-2",
-          isOpen === false ? "items-center" : "items-start"
-        )}>
-          {menuList.flatMap(({ menus }) => menus).map(({ href, label, icon: Icon, active, submenus }, menuIndex) =>
-            submenus.length === 0 ? (
-              <li className="w-full" key={menuIndex}>
-                <TooltipProvider disableHoverableContent>
-                  <Tooltip delayDuration={100}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={active ? 'secondary' : 'ghost'}
-                        className={cn(
-                          'h-10',
-                          isOpen === false ? 'w-10 mx-auto justify-center' : 'w-full justify-start'
-                        )}
-                        asChild
-                      >
-                        <Link href={href}>
-                          <span className={cn(isOpen === false ? '' : 'mr-4')}>
-                            <Icon size={18} />
-                          </span>
-                          <p
-                            className={cn(
-                              'max-w-[200px] truncate',
-                              isOpen === false
-                                ? '-translate-x-96 opacity-0'
-                                : 'translate-x-0 opacity-100'
-                            )}
-                          >
-                            {label}
-                          </p>
-                        </Link>
-                      </Button>
-                    </TooltipTrigger>
-                    {isOpen === false && (
-                      <TooltipContent side="right">{label}</TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              </li>
-            ) : (
-              <li className="w-full" key={menuIndex}>
-                <CollapseMenuButton
-                  icon={Icon}
-                  label={label}
-                  active={active}
-                  submenus={submenus}
-                  isOpen={isOpen}
-                />
-              </li>
-            )
-          )}
-        </ul>
-      </nav>
-    </ScrollArea>
+    <nav className="h-full w-full flex flex-col justify-between overflow-hidden">
+      <ul className={cn(
+        "flex flex-col gap-1 px-2 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden",
+        isOpen === false ? "items-center" : "items-start"
+      )}>
+        {menuList.flatMap(({ menus }) => menus).map(({ href, label, icon: Icon, active, submenus }, menuIndex) =>
+          submenus.length === 0 ? (
+            <li className="w-full" key={menuIndex}>
+              <TooltipProvider disableHoverableContent>
+                <Tooltip delayDuration={100}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={active ? 'secondary' : 'ghost'}
+                      className={cn(
+                        'h-10 font-normal antialiased',
+                        isOpen === false ? 'w-10 mx-auto justify-center' : 'w-full justify-start'
+                      )}
+                      asChild
+                    >
+                      <Link href={href}>
+                        <span className={cn(isOpen === false ? '' : 'mr-4')}>
+                          <Icon size={18} />
+                        </span>
+                        <p
+                          className={cn(
+                            'max-w-[200px] truncate font-normal',
+                            isOpen === false
+                              ? '-translate-x-96 opacity-0 hidden'
+                              : 'translate-x-0 opacity-100'
+                          )}
+                        >
+                          {label}
+                        </p>
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  {isOpen === false && (
+                    <TooltipContent side="right">{label}</TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            </li>
+          ) : (
+            <li className="w-full" key={menuIndex}>
+              <CollapseMenuButton
+                icon={Icon}
+                label={label}
+                active={active}
+                submenus={submenus}
+                isOpen={isOpen}
+              />
+            </li>
+          )
+        )}
+      </ul>
+
+      {/* Logout Button */}
+      <div className="w-full px-2 pt-4 border-t border-black/5 mt-auto">
+        <TooltipProvider disableHoverableContent>
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={async () => {
+                  await clearAuth();
+                  sessionStorage.removeItem('bb_auth_pin');
+                  localStorage.removeItem('bb_auth_pin');
+                  window.location.reload();
+                }}
+                variant="ghost"
+                className={cn(
+                  'h-10 text-red-500 hover:text-red-600 hover:bg-red-50 font-normal antialiased w-full',
+                  isOpen === false ? 'justify-center px-0' : 'justify-start'
+                )}
+              >
+                <span className={cn(isOpen === false ? '' : 'mr-4')}>
+                  <LogOut size={18} />
+                </span>
+                <p
+                  className={cn(
+                    'max-w-[200px] truncate font-normal',
+                    isOpen === false
+                      ? '-translate-x-96 opacity-0 hidden'
+                      : 'translate-x-0 opacity-100'
+                  )}
+                >
+                  {locale === 'th' ? 'ออกจากระบบ' : 'Logout'}
+                </p>
+              </Button>
+            </TooltipTrigger>
+            {isOpen === false && (
+              <TooltipContent side="right">
+                {locale === 'th' ? 'ออกจากระบบ' : 'Logout'}
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </nav>
   );
 }

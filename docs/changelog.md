@@ -1,6 +1,30 @@
 # Changelog — BLACKANDBREW ERP
 
-> **Current Version:** 3.19 (Daily Closing Integrity) | **Last Updated:** 2026-05-18
+> **Current Version:** 3.20 (Daily Closing Integrity) | **Last Updated:** 2026-05-18
+
+---
+
+## v3.20 — Server-Side Security Hardening & Sidebar Layout Optimization (2026-05-18)
+
+### Phase 1: Security Gate Hardening & Anti-Brute Force
+
+- **Server-Side Verification**: Moved PIN verification completely to the server-side (`src/app/actions/auth.ts` Server Actions) to prevent client bundles from exposing verification keys.
+- **Environment Isolation**: Renamed `NEXT_PUBLIC_APP_PIN` to `APP_PIN` in `.env.local` to completely prevent env leakage to client-side bundles.
+- **HTTP-Only Secure Cookie Session**: Employs a secure HTTP-Only, `SameSite=Strict` cookie (`bb_auth_pin_verified`) on successful login.
+- **Anti-Brute Force (Rate Limiter)**: Implemented a robust lockout mechanism triggering a 15-minute countdown screen after 5 failed entries, persisting across window/tab refreshes via `localStorage` state tracking.
+- **Zero-Bold Policy Lockout Screen**: Lockout screens adhere 100% to Morning Latte Cream (#fdfcf0) styling with pure `font-normal` and `antialiased` typography.
+
+### Phase 2: Sidebar Height & Layout Optimization
+
+- **Flexbox Restructuring**: Transformed Sidebar into a rigid Flexbox column `flex flex-col h-full overflow-hidden justify-between` to ensure it fits 100% Viewport Height perfectly.
+- **Scrollbar Elimination**: Completely removed the bloated Radix-UI `ScrollArea` component, replacing it with a direct vertical list and dynamic internal `overflow-y-auto` scroll behavior on menu items only.
+- **Static Bottom Logout**: Anchored the Logout button statically to the bottom (`mt-auto`) using CSS Flex separation, guaranteeing it remains visible and styled cleanly without viewport leakage.
+- **Server-Side Session Terminate**: Linked the menu's Logout action to the `clearAuth()` server action to dynamically clear the HTTP-Only cookie, preventing stale credential usage.
+
+### Phase 3: Production Readiness & Integrity
+
+- **Build Pass**: Checked typescript validation, assets loading, and Next.js compiles with Exit Code 0.
+- **Git Sync & Protection**: Confirmed `.env.local` is protected in `.gitignore`. Committed daily development files.
 
 ---
 

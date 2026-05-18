@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import SidebarLayout from '@/components/sidebar/SidebarLayout';
 import I18nProvider from '@/components/providers/I18nProvider';
 import AIChatOverlay from '@/components/ai/AIChatWrapper';
+import PinGateway from '@/components/auth/PinGateway';
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -36,23 +37,25 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-[#fdfcf0] text-[#000000]">
-        <SidebarLayout>
-          <Suspense fallback={
-            <div className="flex-1 min-h-screen bg-[#fdfcf0] flex items-center justify-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-                <span className="text-[12px] font-normal uppercase tracking-[0.3em] text-[#000000] opacity-40">
-                  Streaming BLACKANDBREW...
-                </span>
+        <PinGateway>
+          <SidebarLayout>
+            <Suspense fallback={
+              <div className="flex-1 min-h-screen bg-[#fdfcf0] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+                  <span className="text-[12px] font-normal uppercase tracking-[0.3em] text-[#000000] opacity-40">
+                    Streaming BLACKANDBREW...
+                  </span>
+                </div>
               </div>
-            </div>
-          }>
-            <I18nProvider locale={locale}>
-              {children}
-            </I18nProvider>
-          </Suspense>
-        </SidebarLayout>
-        <AIChatOverlay />
+            }>
+              <I18nProvider locale={locale}>
+                {children}
+              </I18nProvider>
+            </Suspense>
+          </SidebarLayout>
+          <AIChatOverlay />
+        </PinGateway>
       </body>
     </html>
   );

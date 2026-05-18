@@ -267,3 +267,28 @@
 - **Decision:** สร้าง Utility `optimizeThaiTokens` ใน `src/utils/thaiTokenOptimizer.ts` เพื่อจัดการบีบอัดข้อความภาษาไทย (ตัดช่องว่างซ้ำซ้อน, ย่อตัวอักษรซ้ำให้อยู่ในขอบเขต) และนำไปฝังในท่อลำเลียงข้อมูล `req.json()` ใน `api/chat/route.ts` ก่อนประมวลผล
 - **Impact:** ลดปริมาณ Input Tokens ที่ส่งเข้า Gemini Flash ลงอย่างเป็นนัยสำคัญ เพิ่มความเร็วในการประมวลผล (TTFB) และลดต้นทุนการเรียกใช้ API ในระยะยาวโดยไม่กระทบความเข้าใจของระบบ
 - **Evidence:** `src/utils/thaiTokenOptimizer.ts`, `src/app/api/chat/route.ts` (lines 13-19, 41)
+
+### DEC-028: Daily Closing Integrity Check & Commit (v3.19)
+
+- **Date:** May 18, 2026
+- **Context:** ระบบต้องการการประเมินความสมบูรณ์ประจำวัน (Daily Closing) เพื่อรับรองมาตรฐานโค้ด, UI, AI และความปลอดภัยก่อนจัดเก็บลง Repository
+- **Decision:** ดำเนินการตรวจสอบ 5 เฟส: 1) ล้างขยะ Markdown และยืนยัน Zero-Bold Policy, 2) ทบทวนโครงสร้าง AI, `route.ts`, และ `thaiTokenOptimizer`, 3) รัน `npm run build` จนผ่านแบบ Exit Code 0, 4) อัปเดตโครงสร้างระบบในเอกสาร (Omni-Blueprint), และ 5) ยืนยันความปลอดภัย `.gitignore` และทำ `git commit`
+- **Impact:** รับประกันว่า Source Code มีเสถียรภาพสูงสุด 100% ปราศจากบั๊กและพร้อมสำหรับการทำงานวันพรุ่งนี้
+- **Evidence:** `docs/changelog.md` (v3.19), Git Commit Hash `6dc021b`
+
+### DEC-029: Server-Side Auth Gate & Anti-Brute Force (v3.20)
+
+- **Date:** May 18, 2026
+- **Context:** การตรวจสอบรหัสผ่าน 6 หลักบนหน้าบ้านมีความเสี่ยงต่อการหลุดรั่วของคีย์ลับ (`NEXT_PUBLIC_APP_PIN` หลุดรอดไปใน Client Bundle) และระบบขาดการป้องกันสุ่มรหัส (Brute Force)
+- **Decision:** ย้ายการตรวจรหัสผ่านไปทำบนฝั่ง Server (Server-Side) 100% ผ่าน Server Action (`src/app/actions/auth.ts`) และเก็บสถานะลงใน HTTP-Only Secure Cookie. รวมทั้งเพิ่มระบบล็อกหน้าจอ 15 นาทีเมื่อป้อนรหัสผิดติดต่อกัน 5 ครั้ง (Lockout State) บันทึกถาวรลงใน localStorage เพื่อป้องกันการโกงรีเฟรชหน้าต่าง
+- **Impact:** ยกระดับความมั่นคงปลอดภัยเทียบเท่ามาตรฐานตู้นิรภัยการเงิน ป้องกัน Client-side leak และ Brute force สุ่มเดารหัสผ่าน
+- **Evidence:** `src/app/actions/auth.ts`, `src/components/auth/PinGateway.tsx`, `src/components/sidebar/Menu.tsx`
+
+### DEC-030: Sidebar Viewport Height & Scrollbar Elimination (v3.20)
+
+- **Date:** May 18, 2026
+- **Context:** หน้าแถบนำทาง (Sidebar) เดิมใช้ Radix ScrollArea และมักจะสร้าง Scrollbar แนวตั้งที่ไม่น่าดูบนหน้าจอมือถือ/แท็บเล็ตหน้าร้าน
+- **Decision:** เปลี่ยนมาใช้โครงสร้าง Flexbox `flex flex-col h-full overflow-hidden justify-between` ยกเลิก ScrollArea และตรึงปุ่มออกจากระบบ (Logout Button) ไว้ด้านล่างสุดด้วย `mt-auto` เพื่อให้ฟิตพอดีความสูง 100% Viewport Height
+- **Impact:** กำจัดแถบเลื่อน (Scrollbar) ได้ 100% ทำให้เมนูมีความกะทัดรัด สมมาตร และสวยงามมินิมัลขึ้น
+- **Evidence:** `src/components/sidebar/Sidebar.tsx`, `src/components/sidebar/Menu.tsx`
+

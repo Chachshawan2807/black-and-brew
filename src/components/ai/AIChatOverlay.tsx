@@ -42,8 +42,7 @@ export default function AIChatOverlay() {
       .replace(/\s+/g, ' ')
       .trim();
 
-    // [SECURITY] Prompt Injection Sanitization:
-    // Strip characters and patterns used in prompt injection attacks
+    // MODULE 3: SYSTEM_SECURITY_HARDENING (Input Sanitization)
     const sanitized = cleanedText
       .replace(/```[\s\S]*?```/g, '') // ลบ code blocks
       .replace(/\[INST\]|\[\/INST\]|<\|im_start\|>|<\|im_end\|>|###\s*(system|user|assistant)/gi, '') // ลบ injection tokens

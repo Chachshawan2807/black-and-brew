@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     console.log('[AI_ROUTE] Request Received');
     const { messages, clientContext } = await req.json();
 
-    // [SECURITY] Server-side Prompt Injection Defense & Token Optimization
+    // MODULE 3: SYSTEM_SECURITY_HARDENING (Prompt Injection Guard)
     const sanitizedContext = typeof clientContext === 'string'
       ? optimizeThaiTokens(
           clientContext
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         ).slice(0, 1000)
       : null;
 
-    // ⚡ OPTIMIZATION 1: Sliding Window Memory (ส่งเฉพาะประวัติแชทล่าสุด 4 ข้อความ ป้องกัน Token บวมสะสม)
+    // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Sliding Window Memory)
     const recentMessages = messages.slice(-4);
 
     // Data Mapping: Convert messages to CoreMessage schema safely
@@ -52,18 +52,18 @@ export async function POST(req: Request) {
     const result = await streamText({
       model: google('gemini-2.0-flash'),
       messages: coreMessages,
-      // ⚡ OPTIMIZATION 2: Ultra-Minimalist System Prompt (ลดขนาดคำสั่งหลักเหลือเฉพาะกฎเหล็กเพื่อประหยัด Token)
+      // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Ultra-Minimalist System Prompt)
       system: `คุณคือ "บรู" AI ร้าน Black-and-Brew ตอบสั้นกระชับจากคลังข้อมูลเท่านั้น ห้ามใช้ตัวหนา (font-bold) เด็ดขาด${sanitizedContext ? `\n\n[Live Screen Context]\nผู้ใช้กำลังดูข้อมูลนี้บนหน้าจอ:\n${sanitizedContext}\nหากผู้ใช้ถามเกี่ยวกับสิ่งที่เห็นบนหน้าจอ ให้อิงตามข้อมูล Live Context นี้ก่อน` : ''}`,
       providerOptions: {
         google: {
           generationConfig: {
-            // ⚡ OPTIMIZATION 3: Cap Max Output Tokens (ลดจาก 1000 เหลือ 600 เพื่อจำกัดการจ่ายโควตา)
+            // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Cap Max Output Tokens)
             maxOutputTokens: 600,
             temperature: 0.1, // ตั้งค่าต่ำเพื่อให้ AI ตอบเฉพาะข้อเท็จจริง ไม่พรรณนายาว
           },
         },
       },
-      // ⚡ OPTIMIZATION 4: Surgical Tools Partitioning (แยกเครื่องมือแบบจำเพาะเจาะจง ดึงเฉพาะข้อมูลที่จำเป็น)
+      // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Surgical Tools Partitioning)
       tools: {
         // ดึงเฉพาะตารางงานวันนี้ ไม่ดึงสต็อกสินค้าพ่วงมาด้วย
         getTodaySchedule: tool({
@@ -101,9 +101,9 @@ export async function POST(req: Request) {
             console.log('[AI_TOOL] Executing searchInventory for:', query);
             const { data, error } = await supabase
               .from('inventory_items')
-              .select('id, name, stock, unit') // ⚡ OPTIMIZATION 5: เลือกเฉพาะคอลัมน์ที่ใช้งานจริง ไม่ดึง *
+              .select('id, name, stock, unit') // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Restricted Query Fetching)
               .ilike('name', `%${query}%`)
-              .limit(8); // ⚡ OPTIMIZATION 6: จำกัดจำนวนผลลัพธ์สูงสุดแค่ 8 รายการ ป้องกันข้อมูลล้น
+              .limit(8); // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Result Limiting)
             console.log('[AI_TOOL] Supabase Response (searchInventory):', { count: data?.length, error });
             if (error) throw new Error(error.message);
             return data || [];

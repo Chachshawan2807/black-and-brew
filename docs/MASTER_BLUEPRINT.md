@@ -64,6 +64,13 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
   - Aligns Holiday row and Day headers inside the scrolling container so they scroll and export uniformly as a single calendar block.
   - Resets styles (margin/padding: 0, border: none, boxShadow: none) during render for a clean tight crop.
 
+### 7. Server-Side Security Gate & Anti-Brute Force (R0 Standard)
+
+- **Security Gate**: The authentication PIN checks are migrated 100% to the server-side via Server Actions in `src/app/actions/auth.ts`.
+- **Environment Isolation**: The environment variable is stored as a secret `APP_PIN` (without `NEXT_PUBLIC_`) so Next.js never leaks the key to client bundles.
+- **Session Hardening**: Authentication is registered as a secure, HTTP-Only, `SameSite=Strict` cookie (`bb_auth_pin_verified`) on successful entry. Client components check auth status via Server Action `checkAuth()`.
+- **Anti-Brute Force (Rate Limiter)**: If an operator enters the wrong PIN 5 times in a row, the system enforces a strict 15-minute lockout screen (`localStorage` persisted to prevent page refresh bypass). The lockout timer renders dynamically with standard `font-normal` and `antialiased` typography on Morning Latte Cream (#fdfcf0).
+
 ## 📂 Module Status
 
 | Module | DnD Status | Persistence | UI Mirroring |
@@ -84,5 +91,4 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ---
 
-Last Updated: 2026-05-17 [v3.15 DAILY CLOSING]
-
+Last Updated: 2026-05-18 [v3.20 DAILY CLOSING]

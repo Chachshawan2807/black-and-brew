@@ -417,7 +417,7 @@ export default function DynamicInventoryManager() {
     if (savedWidths) {
       try {
         const widths = JSON.parse(savedWidths);
-        // [SECURITY] Type validation: ensure parsed value is a plain object with numeric values
+        // MODULE 3: SYSTEM_SECURITY_HARDENING (Type Validation Engine)
         if (widths && typeof widths === 'object' && !Array.isArray(widths)) {
           const safeWidths: Record<string, string> = {};
           Object.entries(widths).forEach(([key, val]) => {

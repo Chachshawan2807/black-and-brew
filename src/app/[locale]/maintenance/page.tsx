@@ -128,7 +128,7 @@ export default function MaintenancePage() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          // [SECURITY] Type validation: reject non-object or non-numeric values
+          // MODULE 3: SYSTEM_SECURITY_HARDENING (Type Validation Engine)
           if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
             const safeWidths: Record<string, number> = {};
             Object.entries(parsed).forEach(([key, val]) => {
