@@ -91,8 +91,7 @@ export default function Menu({ isOpen }: MenuProps) {
               <Button
                 onClick={async () => {
                   await clearAuth();
-                  sessionStorage.removeItem('bb_auth_pin');
-                  localStorage.removeItem('bb_auth_pin');
+                  sessionStorage.removeItem('bb_auth_pin_verified');
                   window.location.reload();
                 }}
                 variant="ghost"

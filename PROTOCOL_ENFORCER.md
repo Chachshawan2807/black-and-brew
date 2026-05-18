@@ -43,14 +43,14 @@
 
 ## Persistent UI States
 - **Standard**: All user-customized layout changes (width, sort order, labels) and dashboard date filters must persist across refreshes.
-- **Implementation**: 
+- **Implementation**:
   - Use `localStorage` for immediate, zero-latency persistence (e.g., `inventory-column-widths`).
   - Use secure `cookies` (`SameSite=Lax`, Max-Age 1 year) for server-rendered persistent states that must be resolved prior to data fetching (e.g., dashboard date range).
   - Sync to Supabase `inventory_config` (id: `column_labels`) for cross-device consistency.
 - **Fast Load**: Initialization must prioritize `localStorage` to prevent Layout Shift, followed by database synchronization. For cookie-backed states, server components must resolve the value in a priority hierarchy: URL Params > Cookies > Fallback defaults.
 
 ## Transaction & Search Integrity
-- **Search UI**: Hover-based activation for search results is strictly prohibited. 
+- **Search UI**: Hover-based activation for search results is strictly prohibited.
 - **Search Behavior**: Search results (Product List) must only show during active input and must be displayed as a modular dropdown below the search box.
 - **Search Styling**: Use Black-on-Pastel theme (`bg-[#fdfcf0]`, `#000000`, `rounded-3xl`, subtle shadow).
 - **Transaction Logic**: Transaction history must update the running balance atomically. Use Postgres RPC (`record_inventory_transaction`) to ensure zero-guard and prevent race conditions.
@@ -83,3 +83,10 @@
 ## Branding Standard
 - **Sidebar Only**: The brand logo must only appear in the Sidebar (Top-Left).
 - **Home Page**: Home page header should be minimal (No logo, No "Command Center" text).
+
+## Security & Session Integrity
+- **Standard**: Client-side authentication states must use `sessionStorage` strictly to isolate tabs and prevent cross-session memory leaks.
+- **Enforcement**:
+  - `localStorage` is strictly prohibited for storing authentication tokens or verification status (`bb_auth_pin_verified`).
+  - Upon starting a new tab or reopening the browser, the PIN Gateway must block rendering and request the 6-digit PIN anew.
+  - Brute-force lockout state (`bb_failed_attempts` and `bb_lockout_until`) must persist in `localStorage` to prevent operators from bypassing lockouts via page refreshes or tab switching.

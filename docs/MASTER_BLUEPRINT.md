@@ -1,4 +1,4 @@
-# Black-and-Brew ERP: MASTER BLUEPRINT [R0]
+# Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
 ## 🏛️ Architectural Core
 
@@ -64,11 +64,12 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
   - Aligns Holiday row and Day headers inside the scrolling container so they scroll and export uniformly as a single calendar block.
   - Resets styles (margin/padding: 0, border: none, boxShadow: none) during render for a clean tight crop.
 
-### 7. Server-Side Security Gate & Anti-Brute Force (R0 Standard)
+### 7. Server-Side Security Gate & Anti-Brute Force (R1 Standard)
 
 - **Security Gate**: The authentication PIN checks are migrated 100% to the server-side via Server Actions in `src/app/actions/auth.ts`.
 - **Environment Isolation**: The environment variable is stored as a secret `APP_PIN` (without `NEXT_PUBLIC_`) so Next.js never leaks the key to client bundles.
-- **Session Hardening**: Authentication is registered as a secure, HTTP-Only, `SameSite=Strict` cookie (`bb_auth_pin_verified`) on successful entry. Client components check auth status via Server Action `checkAuth()`.
+- **Session Hardening & Tab Isolation**: Client-side authentication checks strictly enforce **`sessionStorage`** tab isolation to prevent credentials persistence across tab/browser lifecycles. Any access on a fresh tab or a fresh browser session will immediately trigger the Security PIN Gate. Upon successful verification, the state is stored in `sessionStorage.getItem('bb_auth_pin_verified')`. The server action `verifyPin` also sets a secure, HTTP-Only, `SameSite=Strict` cookie (`bb_auth_pin_verified`) for supplementary server-side API requests.
+- **Type-Guarded LocalStorage Recovery**: To prevent client-side injection attacks, corruption, or UI crashes, any state deserialized from `localStorage` (such as column widths or drag orders) must be validated through the **Type Validation Engine**. Keys and value types, ranges, bounds, and array lengths must be checked (e.g. `typeof key === 'string' && typeof val === 'number' && val > 0 && val < 2000`) before state is updated.
 - **Anti-Brute Force (Rate Limiter)**: If an operator enters the wrong PIN 5 times in a row, the system enforces a strict 15-minute lockout screen (`localStorage` persisted to prevent page refresh bypass). The lockout timer renders dynamically with standard `font-normal` and `antialiased` typography on Morning Latte Cream (#fdfcf0).
 
 ## 📂 Module Status
@@ -88,7 +89,8 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 - **AI Hydration**: `AIChatOverlay` must include `isMounted` guard + be loaded via `next/dynamic` with `ssr: false`.
 - **AI SDK**: Always use `providerOptions.google.generationConfig.maxOutputTokens`. Never use `maxTokens`.
 - **Zero-Bold**: No `font-bold` or `font-semibold` anywhere. Verified via grep scan on every closing.
+- **Storage Safety**: Never parse raw values from `localStorage` without Type Validation Engine checking.
 
 ---
 
-Last Updated: 2026-05-18 [v3.20 DAILY CLOSING]
+Last Updated: 2026-05-18 [v3.22 DAILY CLOSING]

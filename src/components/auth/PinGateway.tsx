@@ -17,12 +17,13 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     setIsMounted(true);
     
-    // Initial auth check
-    checkAuth().then(verified => {
-      if (verified) {
-        setIsAuthenticated(true);
-      }
-    });
+    // Enforce sessionStorage for authenticating state
+    const isVerified = sessionStorage.getItem('bb_auth_pin_verified') === 'true';
+    if (isVerified) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
 
     // Lockout check
     const storedLockout = localStorage.getItem('bb_lockout_until');
@@ -85,6 +86,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       // Verify PIN via Server Action
       const res = await verifyPin(fullPin);
       if (res.success) {
+        sessionStorage.setItem('bb_auth_pin_verified', 'true');
         localStorage.removeItem('bb_failed_attempts');
         localStorage.removeItem('bb_lockout_until');
         setFailedCountDisplay('0');

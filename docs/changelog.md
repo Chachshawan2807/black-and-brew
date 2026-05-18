@@ -1,6 +1,35 @@
 # Changelog — BLACKANDBREW ERP
 
-> **Current Version:** 3.20 (Daily Closing Integrity) | **Last Updated:** 2026-05-18
+> **Current Version:** 3.22 (Storage Verification & Architectural Parity) | **Last Updated:** 2026-05-18
+
+---
+
+## v3.22 — Storage Verification & Architectural Parity (2026-05-18)
+
+### Type-Guarded LocalStorage Parsing
+- **Safe Deserialization (Type Validation Engine)**: Enforced type guards on all JSON deserialization from `localStorage` across `CommandCenterGrid`, `MaintenancePage`, and `InventoryPage` to prevent UI corruption, injection, or crash from corrupted/modified storage states.
+- **Validation Rules**: Checked keys, value types, array dimensions, and bounds (e.g. `typeof key === 'string' && typeof val === 'number' && val > 0 && val < 2000`) before state application.
+
+### Production Build & Document Sync
+- **Production Ready**: Executed clean production package compilation with `npm run build` (exit code 0).
+- **Blueprint & Skills Alignment**: Synchronized `MASTER_BLUEPRINT.md`, `SKILLS_INVENTORY.md`, and created `docs/skills.md` to increment versions (v3.22, 4.1) and document secure session-only auth isolation, brute-force prevention, and storage safety standards.
+
+---
+
+## v3.21 — Session Integrity & Storage Audit (2026-05-18)
+
+### Phase 1: Storage Cleanse & Purge
+- **Purged localStorage for Auth**: Completely scanned and purged all legacy `localStorage` calls managing auth status or credentials (`bb_auth_pin`), preventing stale browser memory or cross-session persistence.
+- **Session-Only PIN Verification**: Refactored `PinGateway.tsx` client component to strictly check and store client auth state using `sessionStorage.getItem('bb_auth_pin_verified')` only.
+- **Strict Tab Isolation**: Enforces PIN gate check for every new tab opened or browser restart 100%, since `sessionStorage` is unique to the browser window/tab session.
+
+### Phase 2: Logout Sync & Navigation Cleanse
+- **Client Session Revocation**: Updated the Logout button in the sidebar `Menu.tsx` to immediately invoke `sessionStorage.removeItem('bb_auth_pin_verified')` alongside server-side cookie clearing, ensuring instantaneous state termination.
+- **Lockout State Preservation**: Safely preserved failed login attempt lockout tracking via `localStorage` (`bb_failed_attempts` and `bb_lockout_until`) so brute-force prevention cannot be bypassed by simply opening new tabs or refreshing.
+
+### Phase 3: TDD Validation & Build Pass
+- **TDD Test Suite**: Designed and wrote a robust frontend test suite `src/test/session_auth.test.tsx` verifying session-only isolation, non-auth leakage to `localStorage`, and correct default gate blockage. All 11 tests pass successfully.
+- **Production Build Integrity**: Successfully built the production package using `npm run build` with zero compile warnings and exit code 0. Zero-Bold (`font-normal` + `antialiased`) and morning latte cream (#fdfcf0) are completely intact.
 
 ---
 

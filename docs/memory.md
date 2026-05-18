@@ -292,3 +292,14 @@
 - **Impact:** กำจัดแถบเลื่อน (Scrollbar) ได้ 100% ทำให้เมนูมีความกะทัดรัด สมมาตร และสวยงามมินิมัลขึ้น
 - **Evidence:** `src/components/sidebar/Sidebar.tsx`, `src/components/sidebar/Menu.tsx`
 
+### DEC-031: Enforced Session-Only Authentication (v3.21)
+
+- **Date:** May 18, 2026
+- **Context:** บัญชีล็อกอินค้างบนเบราว์เซอร์จากการใช้ cookies/localStorage ร่วมกัน ทำให้การเปิดแท็บใหม่หรือเปิดเบราว์เซอร์ใหม่ไม่ต้องพิมพ์ PIN อีกครั้ง ขัดแย้งกับหลักการความปลอดภัยสูงสุดของระบบหน้าร้าน
+- **Decision:** กำจัดระบบตรวจสอบ auth state ฝั่ง client ผ่าน cookie check และ `localStorage` ย้ายไปควบคุมด้วย `sessionStorage` แบบ 100%
+  1. ในหน้า `PinGateway.tsx` เมื่อตรวจสอบ initial state ให้เช็คคีย์ `bb_auth_pin_verified` จาก `sessionStorage` เท่านั้น (หากไม่มีให้เด้งบล็อกทันที)
+  2. เมื่อกรอก PIN ถูกต้อง ให้เขียนลง `sessionStorage` เป็นหลัก
+  3. ปรับปรุงปุ่ม Logout ให้เคลียร์ `sessionStorage.removeItem('bb_auth_pin_verified')` ด้วย
+  4. รักษา `localStorage` เฉพาะสำหรับเก็บ lockout state ป้องกัน brute-force สุ่มรหัส
+- **Impact:** ปิดความจำค้างข้ามแท็บและข้ามเบราว์เซอร์ 100% บังคับกรอก PIN ทุกครั้งเมื่อเริ่ม session ใหม่ เพิ่มความปลอดภัยสูงสุด
+- **Evidence:** `src/components/auth/PinGateway.tsx`, `src/components/sidebar/Menu.tsx`, `src/test/session_auth.test.tsx`
