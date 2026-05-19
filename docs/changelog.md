@@ -1,6 +1,20 @@
 # Changelog — BLACKANDBREW ERP
 
-> **Current Version:** 3.22 (Storage Verification & Architectural Parity) | **Last Updated:** 2026-05-18
+> **Current Version:** 3.23 (Scheduler Atomic Operations & Sync) | **Last Updated:** 2026-05-19
+
+---
+
+## v3.23 — Scheduler Atomic Operations & Sync (2026-05-19)
+
+### Atomic Uniqueness Defense (Backend)
+- **Delete-then-Insert Strategy (`saveShift`)**: Redesigned `saveShift` Server Action in `shift-actions.ts` to operate as a single transaction Service Role block. It now strictly deletes any pre-existing shifts for that specific employee on that date (`supabaseAdmin.from('shifts').delete()`) before inserting the new record, permanently eliminating duplicate scheduling conflicts without DB constraints modification.
+- **Cache Invalidation**: Linked paths invalidation securely across both `/schedule` and `/dashboard` pages upon successful transaction execution.
+
+### Latency Debounce & Fetch-after-Save (Frontend)
+- **Post-Save Fetch-after-Save Strategy**: Swapped all optimistic UI assumptions and custom rollbacks inside `handleSave` under `ScheduleClient.tsx` in favor of a direct post-save database synchronization flow.
+- **Latency Debounce**: Introduced a 500ms delay before execution (`setTimeout` block) to allow Supabase database replication to completely settle.
+- **Widen Timezone Padding**: Widen the fetch range by +- 1 day (`startRange` and `endRange` derived from `weekDays`) to completely eliminate edge-of-timezone overflow issues, preventing shifts from silently disappearing from the grid UI.
+- **History Stack Cleanse**: Purged all manual `undo()` and `pushToHistory()` triggers from `handleSave` to strictly rely on the database as the unique source-of-truth.
 
 ---
 

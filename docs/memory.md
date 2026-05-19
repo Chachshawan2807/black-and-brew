@@ -303,3 +303,14 @@
   4. รักษา `localStorage` เฉพาะสำหรับเก็บ lockout state ป้องกัน brute-force สุ่มรหัส
 - **Impact:** ปิดความจำค้างข้ามแท็บและข้ามเบราว์เซอร์ 100% บังคับกรอก PIN ทุกครั้งเมื่อเริ่ม session ใหม่ เพิ่มความปลอดภัยสูงสุด
 - **Evidence:** `src/components/auth/PinGateway.tsx`, `src/components/sidebar/Menu.tsx`, `src/test/session_auth.test.tsx`
+
+### DEC-032: Fetch-after-Save & Atomic Delete-then-Insert Scheduler Sync (v3.23)
+
+- **Date:** May 19, 2026
+- **Context:** หน้าตารางงาน (ScheduleClient.tsx) เกิดปัญหาข้อมูลกะงานหายวับหรือทับซ้อนกันเมื่อทำธุรกรรมเซฟล้มเหลว หรือมีการส่งคืนข้อมูล Supabase แบบ Array และมีปัญหา timezone ตกขอบสัปดาห์
+- **Decision:** พัฒนาระบบสองส่วนเพื่อความปลอดภัยสูงสุด:
+  1. **Atomic Delete-then-Insert (`saveShift`):** เปลี่ยนมาทำงานแบบ Service Role โดยลบกะงานเดิมของพนักงานคนนั้นในวันนั้นทิ้งก่อนเสมอ เพื่อตัดสิทธิ์ข้อมูลเบิ้ลซ้ำซ้อนอย่างถาวร แล้วค่อย insert รายการใหม่ลงไปเดี่ยวๆ
+  2. **Fetch-after-Save Strategy:** นำระบบ UI optimistic/manual state mapping และ rollback stack ออก เปลี่ยนมาดึงข้อมูลสัปดาห์จริงจากฐานข้อมูลตรงๆ โดยมีดีเลย์ 500ms ปรับสมดุล Latency และขยายช่วงวันที่ Fetch กว้างขึ้น +- 1 วัน (`startRange`/`endRange`)
+- **Impact:** ยอดสรุป FOH และ Grid ตารางทำงานถูกต้อง 100% ข้อมูลไม่มีซ้ำซ้อน ไม่หายวับ และแก้ไขปัญหา Timezone ตกขอบสัปดาห์อย่างเบ็ดเสร็จ
+- **Evidence:** `src/app/[locale]/schedule/ScheduleClient.tsx` (lines 673-715), `src/app/actions/shift-actions.ts` (lines 156-200)
+

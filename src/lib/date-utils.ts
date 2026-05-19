@@ -16,11 +16,13 @@ export function formatToThai(date: Date | string, formatStr: string) {
 }
 
 export function isSameThaiDay(date1: Date | string, date2: Date | string) {
-  const d1 = typeof date1 === 'string' ? parseISO(date1) : date1;
-  const d2 = typeof date2 === 'string' ? parseISO(date2) : date2;
-  
-  const z1 = toZonedTime(d1, THAI_TIMEZONE);
-  const z2 = toZonedTime(d2, THAI_TIMEZONE);
-  
-  return format(z1, 'yyyy-MM-dd') === format(z2, 'yyyy-MM-dd');
+  const getLocalDateStr = (d: Date | string) => {
+    if (typeof d === 'string') {
+      const match = d.match(/^\d{4}-\d{2}-\d{2}/);
+      if (match) return match[0];
+    }
+    const dObj = typeof d === 'string' ? parseISO(d) : d;
+    return format(toZonedTime(dObj, THAI_TIMEZONE), 'yyyy-MM-dd');
+  };
+  return getLocalDateStr(date1) === getLocalDateStr(date2);
 }

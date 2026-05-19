@@ -72,6 +72,14 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 - **Type-Guarded LocalStorage Recovery**: To prevent client-side injection attacks, corruption, or UI crashes, any state deserialized from `localStorage` (such as column widths or drag orders) must be validated through the **Type Validation Engine**. Keys and value types, ranges, bounds, and array lengths must be checked (e.g. `typeof key === 'string' && typeof val === 'number' && val > 0 && val < 2000`) before state is updated.
 - **Anti-Brute Force (Rate Limiter)**: If an operator enters the wrong PIN 5 times in a row, the system enforces a strict 15-minute lockout screen (`localStorage` persisted to prevent page refresh bypass). The lockout timer renders dynamically with standard `font-normal` and `antialiased` typography on Morning Latte Cream (#fdfcf0).
 
+### 8. Fetch-after-Save Strategy & Latency Mitigation (v3.23)
+
+- **Database Uniqueness Assurance**: To guarantee database uniqueness without schema constraints, the `saveShift` Server Action executes an atomic delete-then-insert maneuver utilizing `supabaseAdmin`. This ensures that no duplicate shift records exist for a single employee on a single day.
+- **Latency Debounce & Fetch Padding**:
+  - A short 500ms delay (`new Promise(resolve => setTimeout(resolve, 500))`) is introduced on save to allow the database to clear transaction latencies before fetching updated values.
+  - The fetch range for weekly shifts is widened by 1 day on both ends (`startRange` and `endRange` derived from `weekDays`) to completely eliminate edge-of-timezone overflow issues, preventing shifts from silently disappearing from the grid UI.
+  - Replaces all legacy client-side rollback mechanisms to guarantee absolute sync with the Supabase source-of-truth.
+
 ## 📂 Module Status
 
 | Module | DnD Status | Persistence | UI Mirroring |
@@ -93,4 +101,4 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ---
 
-Last Updated: 2026-05-18 [v3.22 DAILY CLOSING]
+Last Updated: 2026-05-19 [v3.23 DAILY CLOSING]

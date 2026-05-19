@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 
-import { deleteShift, revalidateAppPaths, updateStaffOrder } from '@/app/actions/shift-actions';
+import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift } from '@/app/actions/shift-actions';
 import type { Profile, Shift } from '@/types';
 import { isSameThaiDay } from '@/lib/date-utils';
 
@@ -144,7 +144,7 @@ const SortableEmployeeRow = React.memo(({
       </div>
 
       {weekDays.map(date => {
-        const shift = shifts.find(s => s.employee_id === profile.id && isSameThaiDay(s.start_time, date));
+        const shift = shifts.find(s => (s.employee_id === profile.id || (s as any).profile_id === profile.id) && isSameThaiDay(s.start_time, date));
         const type = shiftTypes.find(t => t.value === shift?.metadata?.location);
         return (
           <div
@@ -672,27 +672,52 @@ export default function ScheduleClient({
 
   const handleSave = async (type: string) => {
     if (!selectedCell) return;
-    pushToHistory(profiles, orderedProfileIds, shifts);
+    const { employeeId, date, shift } = selectedCell;
+    setSelectedCell(null);
+
     const isLeave = type === 'on_leave' || type === 'ลา';
     const payload = {
-      employee_id: selectedCell.employeeId,
-      start_time: selectedCell.date + 'T00:00:00',
-      end_time: selectedCell.date + 'T23:59:59',
+      employee_id: employeeId,
+      start_time: date + 'T00:00:00',
+      end_time: date + 'T23:59:59',
       status: (isLeave ? 'on_leave' : 'scheduled') as Shift['status'],
       metadata: { location: type }
     };
+
+    setLoading(true);
     try {
-      if (selectedCell.shift?.id) {
-        setShifts(prev => prev.map(s => s.id === selectedCell.shift.id ? { ...s, ...payload } : s));
-        await supabase.from('shifts').update(payload).eq('id', selectedCell.shift.id);
-      } else {
-        const { data } = await supabase.from('shifts').insert(payload).select().single();
-        if (data) setShifts(prev => [...prev, data]);
-      }
-      setSelectedCell(null);
-      revalidateAppPaths(); // Fire and forget
-    } catch {
-      alert('เกิดข้อผิดพลาดในการบันทึกกะงาน');
+      // 1. บันทึกข้อมูล
+      const res = await saveShift(shift?.id ? { id: shift.id, ...payload } : payload);
+      if (!res.success) throw new Error(res.error);
+
+      // 2. หน่วงเวลาเล็กน้อยเพื่อให้ Database สลาย Latency (สำคัญมาก)
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 3. ขยายช่วงเวลา Fetch ให้กว้างขึ้น 1 วัน เพื่อแก้ปัญหา Timezone ตกขอบ
+      const startRange = format(addDays(new Date(weekDays[0]), -1), 'yyyy-MM-dd');
+      const endRange = format(addDays(new Date(weekDays[6]), 1), 'yyyy-MM-dd');
+
+      const { data: updatedShifts, error: fetchError } = await supabase
+        .from('shifts')
+        .select('*')
+        .gte('start_time', startRange + 'T00:00:00')
+        .lte('start_time', endRange + 'T23:59:59');
+
+      if (fetchError) throw fetchError;
+      
+      // อัปเดตข้อมูลใหม่ทั้งหมด
+      setShifts(updatedShifts || []);
+      
+      // สั่ง Sync ผ่าน Server Action ล่าสุด
+      await revalidateAppPaths();
+      router.refresh();
+
+    } catch (error) {
+      console.error('[handleSave] Fatal Error:', error);
+      alert('บันทึกข้อมูลเรียบร้อย แต่การอัปเดตหน้าจอขัดข้อง โปรดกดรีเฟรชหน้าจอ');
+      router.refresh();
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -992,7 +1017,7 @@ export default function ScheduleClient({
                     shifts
                       .filter(s => {
                         const loc = s.metadata?.location?.trim();
-                        const isSameDay = s.start_time.startsWith(date);
+                        const isSameDay = isSameThaiDay(s.start_time, date);
                         const isActiveEmployee = s.employee_id && orderedProfileIds.includes(s.employee_id);
                         return isSameDay && s.status !== 'on_leave' && isActiveEmployee && VALID_SHIFTS.includes(loc || '');
                       })

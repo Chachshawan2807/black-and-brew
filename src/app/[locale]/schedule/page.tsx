@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import ScheduleClient from './ScheduleClient';
 import { startOfWeek, addDays, format } from 'date-fns';
+import { fetchShifts } from '@/app/actions/shift-actions';
 
 export default async function SchedulePage({
 
@@ -23,14 +24,9 @@ export default async function SchedulePage({
 
   // Fetch Data on Server
   const { data: profiles } = await supabase.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true });
-  const { data: shifts } = await supabase.from('shifts')
-    .select('id, employee_id, start_time, end_time, status, metadata')
-    .gte('start_time', mondayStr + 'T00:00:00')
-    .lte('start_time', sundayStr + 'T23:59:59')
-    .not('status', 'is', null)
-    .not('status', 'eq', '')
-    .not('metadata->>location', 'is', null)
-    .not('metadata->>location', 'eq', '');
+  
+  const shiftsRes = await fetchShifts(mondayStr, sundayStr);
+  const shifts = shiftsRes.success ? shiftsRes.data : [];
 
   const { data: holidays } = await supabase.from('holidays')
     .select('id, date, name')

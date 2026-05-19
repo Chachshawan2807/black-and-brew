@@ -109,3 +109,94 @@ export async function revalidateAppPaths() {
   revalidatePath('/[locale]/schedule', 'page');
   revalidatePath('/[locale]/dashboard', 'page');
 }
+
+/**
+ * Server Action: fetchShifts
+ * Fetches shifts and strictly standardizes timestamps to YYYY-MM-DDT00:00:00 format.
+ */
+export async function fetchShifts(startDate: string, endDate: string) {
+  noStore();
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('shifts')
+      .select('id, employee_id, start_time, end_time, status, metadata')
+      .gte('start_time', startDate + 'T00:00:00')
+      .lte('start_time', endDate + 'T23:59:59')
+      .not('status', 'is', null)
+      .not('status', 'eq', '')
+      .not('metadata->>location', 'is', null)
+      .not('metadata->>location', 'eq', '');
+
+    if (error) {
+      console.error('[fetchShifts] Supabase Error:', error.message, error.details);
+      throw error;
+    }
+
+    const normalized = (data || []).map(s => {
+      const datePart = s.start_time.split('T')[0];
+      return {
+        ...s,
+        start_time: datePart + 'T00:00:00',
+        end_time: datePart + 'T23:59:59'
+      };
+    });
+
+    return { success: true, data: normalized };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[fetchShifts] Critical Error:', errorMsg);
+    return { success: false, error: errorMsg, data: [] };
+  }
+}
+
+/**
+ * Server Action: saveShift
+ * Normalizes input date format and upserts a shift, returning standard format.
+ */
+export async function saveShift(payload: {
+  id?: string;
+  employee_id: string;
+  start_time: string;
+  end_time: string;
+  status: 'scheduled' | 'completed' | 'swapped' | 'cancelled' | 'on_leave';
+  metadata: { location?: string; remark?: string; [key: string]: any };
+}) {
+  noStore();
+  try {
+    const datePart = payload.start_time.split('T')[0];
+    const targetStart = datePart + 'T00:00:00';
+    const targetEnd = datePart + 'T23:59:59';
+
+    // 1. ล้างกะงานเดิมของพนักงานคนนี้ในวันนั้นทิ้งก่อนเสมอ (เพื่อป้องกันข้อมูลซ้ำซ้อน)
+    await supabaseAdmin
+      .from('shifts')
+      .delete()
+      .eq('employee_id', payload.employee_id)
+      .gte('start_time', targetStart)
+      .lte('start_time', targetEnd);
+
+    // 2. Insert ข้อมูลใหม่เข้าไปตัวเดียว
+    const { data, error } = await supabaseAdmin
+      .from('shifts')
+      .insert([{
+        employee_id: payload.employee_id,
+        start_time: targetStart,
+        end_time: targetEnd,
+        status: payload.status,
+        metadata: payload.metadata
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    revalidatePath('/[locale]/schedule', 'page');
+    revalidatePath('/[locale]/dashboard', 'page');
+    
+    return { success: true, data };
+  } catch (err) {
+    console.error('[saveShift] Critical Error:', err);
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
