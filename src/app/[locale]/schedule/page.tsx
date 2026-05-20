@@ -1,10 +1,16 @@
-import { supabase } from '@/lib/supabase';
 import ScheduleClient from './ScheduleClient';
 import { startOfWeek, addDays, format } from 'date-fns';
-import { fetchShifts } from '@/app/actions/shift-actions';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey, {
+  global: {
+    fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' })
+  }
+});
 
 export default async function SchedulePage({
-
   params,
   searchParams
 }: {
@@ -14,7 +20,6 @@ export default async function SchedulePage({
   const { locale } = await params;
   const { week: weekParam } = await searchParams;
 
-  // Logic: Monday-Start
   const baseDate = weekParam ? new Date(weekParam) : new Date();
   const monday = startOfWeek(baseDate, { weekStartsOn: 1 });
   const sunday = addDays(monday, 6);
@@ -22,22 +27,30 @@ export default async function SchedulePage({
   const mondayStr = format(monday, 'yyyy-MM-dd');
   const sundayStr = format(sunday, 'yyyy-MM-dd');
 
-  // Fetch Data on Server
-  const { data: profiles } = await supabase.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true });
-  
-  const shiftsRes = await fetchShifts(mondayStr, sundayStr);
-  const shifts = shiftsRes.success ? shiftsRes.data : [];
+  // ใช้ Admin Fetch เพื่อหลีกเลี่ยงการถูกบล็อกข้อมูลจาก RLS
+  const [profilesRes, shiftsRes, holidaysRes] = await Promise.all([
+    supabaseAdmin.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
+    supabaseAdmin.from('shifts')
+      .select('id, employee_id, start_time, end_time, status, metadata')
+      .gte('start_time', mondayStr + 'T00:00:00')
+      .lte('start_time', sundayStr + 'T23:59:59')
+      .not('status', 'is', null)
+      .not('status', 'eq', '')
+      .not('metadata->>location', 'is', null)
+      .not('metadata->>location', 'eq', ''),
+    supabaseAdmin.from('holidays').select('id, date, name').gte('date', mondayStr).lte('date', sundayStr)
+  ]);
 
-  const { data: holidays } = await supabase.from('holidays')
-    .select('id, date, name')
-    .gte('date', mondayStr)
-    .lte('date', sundayStr);
+  const normalizedShifts = (shiftsRes.data || []).map(s => {
+    const datePart = s.start_time.split('T')[0];
+    return { ...s, start_time: datePart + 'T00:00:00', end_time: datePart + 'T23:59:59' };
+  });
 
   return (
-    <ScheduleClient 
-      initialProfiles={profiles || []}
-      initialShifts={shifts || []}
-      initialHolidays={holidays || []}
+    <ScheduleClient
+      initialProfiles={profilesRes.data || []}
+      initialShifts={normalizedShifts}
+      initialHolidays={holidaysRes.data || []}
       initialDateStr={mondayStr}
       locale={locale}
     />

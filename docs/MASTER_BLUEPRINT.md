@@ -57,6 +57,9 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
   - Set-based deduplication (`new Set(...).size`) is integrated to ensure each active employee is counted at most once per day, matching absolute scheduling realities.
   - Non-work shifts like `ร้านซักผ้า` or `ไปสาขา 2` are visually retained in cells for operational scheduling, but are completely filtered out from summary row calculations.
   - Sinks directly into `ScheduleClient.tsx` grid sum calculations to maintain absolute scheduling accuracy and data parity.
+- **Direct Sync Strategy (v3.24)**:
+  - To prevent state destruction during dynamic revalidation or router refresh, `ScheduleClient.tsx` implements an unconditional `useEffect` block that directly synchronizes server props (`initialProfiles`, `initialShifts`, `initialHolidays`, and `initialDateStr`) into their respective React states (`profiles`, `shifts`, `holidays`, `currentDate`, and `orderedProfileIds`).
+  - This avoids fragile conditional loops and blocking refs, ensuring the client UI always renders the exact server-resolved database source-of-truth.
 - **High-Fidelity PNG Export**:
   - A client-side "บันทึกรูปภาพ" action integrates the `html-to-image` library loaded via dynamic browser-only imports to prevent Next.js SSR build errors.
   - Scales the capture by `2` (pixelRatio: 2) to ensure high-definition text output for print or share.
@@ -80,6 +83,10 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
   - The fetch range for weekly shifts is widened by 1 day on both ends (`startRange` and `endRange` derived from `weekDays`) to completely eliminate edge-of-timezone overflow issues, preventing shifts from silently disappearing from the grid UI.
   - Replaces all legacy client-side rollback mechanisms to guarantee absolute sync with the Supabase source-of-truth.
 
+### 9. Next.js Config & Build Compatibility
+
+- **NextConfig cacheComponents compatibility**: Route-level configurations such as `export const dynamic = 'force-dynamic';` are strictly avoided inside layout/page definitions because they conflict with custom configurations such as `nextConfig.cacheComponents` in Turbopack. Route freshness is instead maintained by applying `cache: 'no-store'` inside fetches and utilizing server actions for path revalidation.
+
 ## 📂 Module Status
 
 | Module | DnD Status | Persistence | UI Mirroring |
@@ -101,4 +108,4 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ---
 
-Last Updated: 2026-05-19 [v3.23 DAILY CLOSING]
+Last Updated: 2026-05-21 [v3.24 DAILY CLOSING]

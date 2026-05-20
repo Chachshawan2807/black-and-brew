@@ -144,7 +144,11 @@ const SortableEmployeeRow = React.memo(({
       </div>
 
       {weekDays.map(date => {
-        const shift = shifts.find(s => (s.employee_id === profile.id || (s as any).profile_id === profile.id) && isSameThaiDay(s.start_time, date));
+        // STRICT STRING MATCHING — avoids isSameThaiDay timezone mismatch
+        const shift = shifts.find(s =>
+          (s.employee_id === profile.id || (s as any).profile_id === profile.id) &&
+          s.start_time.split('T')[0] === date
+        );
         const type = shiftTypes.find(t => t.value === shift?.metadata?.location);
         return (
           <div
@@ -249,16 +253,22 @@ export default function ScheduleClient({
 
   const copyInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync with server props
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // SAFE REACT HYDRATION: ซิงค์ข้อมูลใหม่จาก Server เสมอเมื่อมีการ revalidate / refresh
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShifts(initialShifts);
-    setProfiles(initialProfiles);
-    setHolidays(initialHolidays);
-    setOrderedProfileIds(initialProfiles.map(p => p.id));
-    setCurrentDate(new Date(initialDateStr));
-  }, [initialShifts, initialProfiles, initialHolidays, initialDateStr]);
+    if (initialProfiles && initialProfiles.length > 0) {
+      setProfiles(initialProfiles);
+      setOrderedProfileIds(initialProfiles.map(p => p.id));
+    }
+    if (initialShifts) {
+      setShifts(initialShifts);
+    }
+    if (initialHolidays) {
+      setHolidays(initialHolidays);
+    }
+    if (initialDateStr) {
+      setCurrentDate(new Date(initialDateStr));
+    }
+  }, [initialProfiles, initialShifts, initialHolidays, initialDateStr]);
 
   const pushToHistory = useCallback((currentProfiles: any[], currentOrder: string[], currentShifts: any[]) => {
     setUndoStack(prev => {
@@ -306,7 +316,6 @@ export default function ScheduleClient({
         }));
       }
       await revalidateAppPaths();
-      router.refresh();
     } catch {
       // Failed to undo
     }
@@ -345,7 +354,6 @@ export default function ScheduleClient({
         }));
       }
       await revalidateAppPaths();
-      router.refresh();
     } catch {
       // Failed to redo, silently ignore or handle error
     }
@@ -357,7 +365,6 @@ export default function ScheduleClient({
       await supabase.from('shifts').delete().gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
       setShowClearConfirm(false);
       await revalidateAppPaths();
-      router.refresh();
     } catch {
       alert('ไม่สามารถลบข้อมูลได้ โปรดลองอีกครั้ง');
     }
@@ -480,7 +487,6 @@ export default function ScheduleClient({
       setManagementForm({ employeeId: '', shiftType: '6:30', startDate: '', endDate: '', remark: '' });
 
       await revalidateAppPaths();
-      router.refresh();
 
     } catch {
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
@@ -672,7 +678,7 @@ export default function ScheduleClient({
 
   const handleSave = async (type: string) => {
     if (!selectedCell) return;
-    const { employeeId, date, shift } = selectedCell;
+    const { employeeId, date } = selectedCell;
     setSelectedCell(null);
 
     const isLeave = type === 'on_leave' || type === 'ลา';
@@ -684,64 +690,90 @@ export default function ScheduleClient({
       metadata: { location: type }
     };
 
-    setLoading(true);
+    // 1. Snapshot for rollback
+    const previousShifts = [...shifts];
+    pushToHistory(profiles, orderedProfileIds, shifts);
+
+    // 2. Build optimistic shift with a temp ID
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const optimisticShift: Shift = {
+      id: tempId,
+      employee_id: employeeId,
+      start_time: date + 'T00:00:00',
+      end_time: date + 'T23:59:59',
+      status: isLeave ? 'on_leave' : 'scheduled',
+      metadata: { location: type }
+    };
+
+    // 3. Optimistically update UI immediately
+    setShifts(prev => {
+      const filtered = prev.filter(s => {
+        const sDate = s.start_time.split('T')[0];
+        const empIdMatch = s.employee_id === employeeId || (s as any).profile_id === employeeId;
+        return !(empIdMatch && sDate === date);
+      });
+      return [...filtered, optimisticShift];
+    });
+
+    // 4. Fire background server action
     try {
-      // 1. บันทึกข้อมูล
-      const res = await saveShift(shift?.id ? { id: shift.id, ...payload } : payload);
-      if (!res.success) throw new Error(res.error);
-
-      // 2. หน่วงเวลาเล็กน้อยเพื่อให้ Database สลาย Latency (สำคัญมาก)
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // 3. ขยายช่วงเวลา Fetch ให้กว้างขึ้น 1 วัน เพื่อแก้ปัญหา Timezone ตกขอบ
-      const startRange = format(addDays(new Date(weekDays[0]), -1), 'yyyy-MM-dd');
-      const endRange = format(addDays(new Date(weekDays[6]), 1), 'yyyy-MM-dd');
-
-      const { data: updatedShifts, error: fetchError } = await supabase
-        .from('shifts')
-        .select('*')
-        .gte('start_time', startRange + 'T00:00:00')
-        .lte('start_time', endRange + 'T23:59:59');
-
-      if (fetchError) throw fetchError;
-      
-      // อัปเดตข้อมูลใหม่ทั้งหมด
-      setShifts(updatedShifts || []);
-      
-      // สั่ง Sync ผ่าน Server Action ล่าสุด
-      await revalidateAppPaths();
-      router.refresh();
-
+      const res = await saveShift(payload);
+      if (!res.success) {
+        console.error('[handleSave] Server action failed:', res.error);
+        setShifts(previousShifts);
+        return;
+      }
+      // 5. Swap temp ID → real DB ID to keep handleClear functional
+      if (res.data?.id) {
+        setShifts(prev => prev.map(s =>
+          s.id === tempId ? { ...s, id: res.data!.id } : s
+        ));
+      }
+      // Server Action (saveShift) already handles revalidation internally
     } catch (error) {
-      console.error('[handleSave] Fatal Error:', error);
-      alert('บันทึกข้อมูลเรียบร้อย แต่การอัปเดตหน้าจอขัดข้อง โปรดกดรีเฟรชหน้าจอ');
-      router.refresh();
-    } finally {
-      setLoading(false);
+      console.error('[handleSave] Network Error:', error);
+      setShifts(previousShifts);
     }
   };
 
   const handleClear = async () => {
-    if (!selectedCell?.shift?.id) {
+    if (!selectedCell) return;
+
+    // MUST LOOKUP LATEST ID FROM SOURCE OF TRUTH (shifts array)
+    // selectedCell.shift.id may be stale (tempId) if the ID swap ran after modal opened
+    const latestShift = shifts.find(s =>
+      (s.employee_id === selectedCell.employeeId || (s as any).profile_id === selectedCell.employeeId) &&
+      s.start_time.split('T')[0] === selectedCell.date
+    );
+
+    if (!latestShift?.id) {
       setSelectedCell(null);
       return;
     }
-    pushToHistory(profiles, orderedProfileIds, shifts);
-    try {
-      const shiftId = selectedCell.shift.id;
-      setShifts(prev => prev.filter(s => s.id !== shiftId));
-      setSelectedCell(null);
 
+    const shiftId = latestShift.id;
+    const previousShifts = [...shifts];
+    pushToHistory(profiles, orderedProfileIds, shifts);
+
+    // Optimistic UI Drop
+    setShifts(prev => prev.filter(s => s.id !== shiftId));
+    setSelectedCell(null);
+
+    // Just visual drop — DB save will handle sync via revalidateAppPaths
+    if (shiftId.startsWith('temp-')) return;
+
+    // 4. Fire background delete for real DB rows
+    try {
       const result = await deleteShift(shiftId);
-      if (result.success) {
-        revalidateAppPaths(); // Fire and forget
-      } else {
-        // Rollback on fail is complex, typically handled by full refresh, but we just alert
-        alert('ลบข้อมูลไม่สำเร็จ: ' + result.error);
-        router.refresh();
+      if (!result.success) {
+        console.error('[handleClear] Server action failed:', result.error);
+        setShifts(previousShifts);
+        return;
       }
-    } catch {
-      alert('เกิดข้อผิดพลาดในการลบข้อมูล');
+      // 5. deleteShift already calls revalidateAppPaths internally
+    } catch (error) {
+      console.error('[handleClear] Network Error:', error);
+      setShifts(previousShifts);
     }
   };
 

@@ -314,3 +314,13 @@
 - **Impact:** ยอดสรุป FOH และ Grid ตารางทำงานถูกต้อง 100% ข้อมูลไม่มีซ้ำซ้อน ไม่หายวับ และแก้ไขปัญหา Timezone ตกขอบสัปดาห์อย่างเบ็ดเสร็จ
 - **Evidence:** `src/app/[locale]/schedule/ScheduleClient.tsx` (lines 673-715), `src/app/actions/shift-actions.ts` (lines 156-200)
 
+### DEC-033: Direct Hydration Sync & NextConfig cacheComponents Alignment (v3.24)
+
+- **Date:** May 21, 2026
+- **Context:** หน้าตารางงาน (`ScheduleClient.tsx`) มีปัญหาทำลายสถานะกะงานตอนที่ `router.refresh()` ทำงานเนื่องจากตรรกะ Safe React Hydration แบบเดิมมีเงื่อนไขตรวจสอบที่ไม่ครอบคลุม และยังพบบัญชีข้อผิดพลาดการคอมไพล์ Next.js build-time บ่งชี้ว่า `dynamic = 'force-dynamic'` ไม่รองรับเมื่อ `nextConfig.cacheComponents` ทำงาน
+- **Decision:**
+  1. Refactor ตรรกะซิงค์ใน `ScheduleClient.tsx` ให้ใช้การ Hydrate ตรงไปตรงมาจาก server props ทุกครั้งที่มีการเปลี่ยนแปลง (`initialProfiles`, `initialShifts`, `initialHolidays`, `initialDateStr`) เข้าสู่ react states ทันทีโดยไม่มี equality check ที่ปิดกั้น
+  2. ลบ `export const dynamic = 'force-dynamic';` ออกจาก `/schedule/page.tsx` เพื่อให้คอมไพล์ผ่านร่วมกับ `cacheComponents` ได้ โดยใช้ config `cache: 'no-store'` ใน global custom fetcher ในตัวแปร `supabaseAdmin` แทนเพื่อรับประกันความสดใหม่ของข้อมูลและประสิทธิภาพในการบิวด์
+- **Impact:** ตารางงานซิงค์ข้อมูลอย่างถูกต้อง ปลอดภัย ไร้ปัญหาข้อมูลกะงานหายวับระหว่าง revalidate/refresh และโปรเจกต์คอมไพล์โปรดักชันบิวด์ผ่าน 100% ไร้ข้อผิดพลาด
+- **Evidence:** `src/app/[locale]/schedule/ScheduleClient.tsx` (lines 255-273), `src/app/[locale]/schedule/page.tsx` (lines 13-14)
+

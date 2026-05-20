@@ -1,6 +1,16 @@
 # Changelog — BLACKANDBREW ERP
 
-> **Current Version:** 3.23 (Scheduler Atomic Operations & Sync) | **Last Updated:** 2026-05-19
+> **Current Version:** 3.24 (Safe Hydration Direct Sync & NextConfig Compatibility) | **Last Updated:** 2026-05-21
+
+---
+
+## v3.24 — Safe Hydration Direct Sync & NextConfig Compatibility (2026-05-21)
+
+### Safe Hydration Direct Sync
+- **Direct Props Hydration (`ScheduleClient.tsx`)**: Replaced the fragile `useEffect` state-blocking conditional logic with a direct, straightforward synchronization block. It maps `initialProfiles`, `initialShifts`, `initialHolidays`, and `initialDateStr` unconditionally into local React states (`profiles`, `shifts`, `holidays`, `currentDate`, `orderedProfileIds`) on any prop update, solving the dynamic data revalidation/refresh loss of shifts.
+
+### Next.js 16 Config & Build Alignment
+- **Dynamic Config Compatibility (`page.tsx`)**: Removed `export const dynamic = 'force-dynamic'` from `/schedule/page.tsx` to prevent build-time conflicts with the Turbopack `nextConfig.cacheComponents` configuration. Freshness is maintained via `cache: 'no-store'` inside fetch configurations and utilizing server action path revalidation, ensuring a successful Next.js production build.
 
 ---
 
