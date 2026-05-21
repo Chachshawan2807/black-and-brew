@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, History, Search, ArrowDownToLine, ArrowUpFromLine, ShoppingCart, PlusCircle, PackagePlus, PackageMinus, CloudUpload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
+import { useRouter } from 'next/navigation';
 import { recordTransaction, fetchTransactionHistory, fetchFrequentItems } from '@/app/actions/inventory-actions';
 import {
   DndContext,
@@ -234,7 +235,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         inputRef.current.value = displayVal;
       }
     }
-  }, [item[col.id], isFocused, col.id]);
+  }, [item[col.id], item.stock, item.order_point, item.target_stock, isFocused, col.id]);
 
   const handleBlur = () => {
     const val = inputRef.current?.value || '';
@@ -295,6 +296,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
 }
 
 export default function DynamicInventoryManager() {
+  const router = useRouter();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [columns, setColumns] = useState<ColumnDef[]>(defaultColumns);
   const [loading, setLoading] = useState(true);
@@ -840,6 +842,7 @@ export default function DynamicInventoryManager() {
     setQuickSearch('');
     setQuickQty('');
     setSavingState('synced');
+    router.refresh();
     setTimeout(() => setSavingState('idle'), 2000);
     loadFrequentItems();
     // Auto-refresh history if modal is open

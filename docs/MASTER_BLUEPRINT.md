@@ -31,7 +31,7 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ### 4. AI Agent: "บรู" (Vercel AI SDK v6)
 
-- **Model**: `gemini-2.0-flash` via `@ai-sdk/google`.
+- **Model**: `gemini-2.5-flash` via `@ai-sdk/google`.
 - **Transport**: `DefaultChatTransport` (useChat hook) → `POST /api/chat`.
 - **Token Optimization**: Sliding window (`messages.slice(-4)`), `maxOutputTokens: 600`, ultra-minimalist system prompt.
 - **Tools**: Surgical partitioning — `getTodaySchedule`, `getLowStockItems`, `searchInventory`, `getInventoryItemDetails`, `recordTransaction`.

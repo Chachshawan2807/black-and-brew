@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
@@ -60,6 +60,7 @@ export async function revalidateAppPaths() {
 }
 
 export async function saveShift(payload: any) {
+  noStore();
   const datePart = payload.start_time.split('T')[0];
   const cleanStartTime = datePart + 'T00:00:00';
   const cleanEndTime = datePart + 'T23:59:59';
@@ -79,18 +80,8 @@ export async function saveShift(payload: any) {
       .single();
 
     if (error) {
-      await supabaseAdmin.from('shifts').delete().eq('employee_id', payload.employee_id).eq('start_time', cleanStartTime);
-      const retryRes = await supabaseAdmin.from('shifts').insert([{
-        employee_id: payload.employee_id,
-        start_time: cleanStartTime,
-        end_time: cleanEndTime,
-        status: payload.status,
-        metadata: payload.metadata
-      }]).select().single();
-
-      if (retryRes.error) throw retryRes.error;
-      revalidateAppPaths();
-      return { success: true, data: retryRes.data };
+      console.error('[saveShift] Upsert Error:', error);
+      return { success: false, error: error.message };
     }
 
     revalidateAppPaths();
