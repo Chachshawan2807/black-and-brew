@@ -65,8 +65,8 @@ Tech Stack: Next.js 16, React 19, Supabase, Tailwind CSS, Vercel Edge Runtime.
 * Static Shell: Navigation และ Branding (ใช้โลโก้ที่ public/images/logo.png).
 * Dynamic Islands: ข้อมูล Real-time เชื่อมต่อกับ Supabase.
 * Root Redirect Logic: บังคับการ Redirect จาก Root URL (/) ไปยังหน้าหลักตามภาษา
-  (/th) เพื่อเข้าสู่ Command Center โดยตรงผ่าน Server-side Proxy
-  (`src/proxy.ts`).
+  (/th) เพื่อเข้าสู่ Command Center โดยตรงผ่าน Next.js Routing Middleware
+  (`src/middleware.ts`).
 
 ## 4. Database & Security Architecture (R0 Data Integrity)
 

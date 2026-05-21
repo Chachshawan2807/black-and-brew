@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { streamText, tool } from 'ai';
+import { streamText, tool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
@@ -52,8 +52,7 @@ export async function POST(req: Request) {
     const result = await streamText({
       model: google('gemini-2.5-flash'),
       messages: coreMessages,
-      // @ts-expect-error - AI SDK runtime supports maxSteps, but type definition is missing in this version
-      maxSteps: 5,
+      stopWhen: stepCountIs(5),
       // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Ultra-Minimalist System Prompt)
       system: `คุณคือ "บรู" AI ร้าน Black-and-Brew ตอบสั้นกระชับจากคลังข้อมูลเท่านั้น ห้ามใช้ตัวหนา (font-bold) เด็ดขาด${sanitizedContext ? `\n\n[Live Screen Context]\nผู้ใช้กำลังดูข้อมูลนี้บนหน้าจอ:\n${sanitizedContext}\nหากผู้ใช้ถามเกี่ยวกับสิ่งที่เห็นบนหน้าจอ ให้อิงตามข้อมูล Live Context นี้ก่อน` : ''}`,
       providerOptions: {
