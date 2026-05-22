@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       messages: coreMessages,
       stopWhen: stepCountIs(5),
       // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Ultra-Minimalist System Prompt)
-      system: `คุณคือ "บรู" AI ร้าน Black-and-Brew ตอบสั้นกระชับจากคลังข้อมูลเท่านั้น ห้ามใช้ตัวหนา (font-bold) เด็ดขาด${sanitizedContext ? `\n\n[Live Screen Context]\nผู้ใช้กำลังดูข้อมูลนี้บนหน้าจอ:\n${sanitizedContext}\nหากผู้ใช้ถามเกี่ยวกับสิ่งที่เห็นบนหน้าจอ ให้อิงตามข้อมูล Live Context นี้ก่อน` : ''}`,
+      system: `คุณคือ "บรู" AI ร้าน Black-and-Brew ตอบสั้นกระชับจากคลังข้อมูลเท่านั้น ห้ามใช้ตัวหนา (font-bold) เด็ดขาด เมื่อเรียกใช้ Tool และได้รับข้อมูลแล้ว บังคับให้ต้องนำข้อมูลดิบมาสรุปเป็นข้อความภาษาไทยเพื่อตอบกลับผู้ใช้เสมอ ห้ามหยุดการทำงานเงียบๆ และห้ามตอบกลับเป็นค่าว่าง (Empty String) เด็ดขาด${sanitizedContext ? `\n\n[Live Screen Context]\nผู้ใช้กำลังดูข้อมูลนี้บนหน้าจอ:\n${sanitizedContext}\nหากผู้ใช้ถามเกี่ยวกับสิ่งที่เห็นบนหน้าจอ ให้อิงตามข้อมูล Live Context นี้ก่อน` : ''}`,
       providerOptions: {
         google: {
           generationConfig: {
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return result.toTextStreamResponse();
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error('[AI_ROUTE] CRITICAL ERROR:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
