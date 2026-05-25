@@ -221,6 +221,13 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
 
 SortableRow.displayName = 'SortableRow';
 
+// 1. ฟังก์ชันคำนวณสีสำหรับแสดงผลยอดคงเหลือ
+function getStockColorClass(stock: number, targetStock: number): string {
+  if (stock <= targetStock) return 'text-red-600';
+  if (stock <= targetStock + 1) return 'text-orange-500';
+  return 'text-green-600';
+}
+
 function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField, requestDelete, handleFocus }: any) {
   const [localValue, setLocalValue] = useState<string>('');
   const [isFocused, setIsFocused] = useState(false);
@@ -265,6 +272,14 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
     handleSaveField(item.id, col.id, finalVal);
   };
 
+  // ควบคุมการจัดเรียงข้อความและสีเฉพาะคอลัมน์คงเหลือ
+  const getAlignmentAndColor = () => {
+    if (col.id === 'name') return 'text-left pr-10 text-[#000000]';
+    if (col.id === 'stock') return `text-center ${getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0)}`;
+    if (col.id === 'order_qty') return 'text-center text-[#000000]';
+    return 'text-center text-[#000000]/60';
+  };
+
   return (
     <div className="flex items-center relative h-full">
       <input
@@ -292,7 +307,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         data-col-id={col.id}
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty'}
-        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/80 text-[15px] font-normal leading-[1.6] transition-all ${col.id === 'name' ? 'text-left pr-10 text-[#000000]' : 'text-center text-[#000000]/60'} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-[#000000]/5 text-[#000000] cursor-not-allowed select-none font-medium' : ''}`}
+        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/80 text-[15px] font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-[#000000]/5 cursor-not-allowed select-none font-medium' : ''}`}
       />
       {col.id === 'name' && (
         <button
@@ -378,15 +393,31 @@ export default function DynamicInventoryManager() {
     const element = document.getElementById('blackandbrew-po-table');
     if (!element) return;
     try {
+      // 1. ดึงความสูงและความกว้างที่แท้จริงของตารางทั้งหมด
+      const fullHeight = element.scrollHeight;
+      const fullWidth = element.scrollWidth;
+
       const dataUrl = await toPng(element, {
         quality: 1.0,
         pixelRatio: 2,
         backgroundColor: '#fff3dd',
+        width: fullWidth,
+        height: fullHeight,
         style: {
           margin: '0',
           padding: '0',
           border: 'none',
-          boxShadow: 'none'
+          boxShadow: 'none',
+          maxHeight: 'none', // ปลดล็อกข้อจำกัดความสูง
+          overflow: 'hidden' // ป้องกันไม่ให้มี Scrollbar โผล่ในรูปภาพ
+        },
+        filter: (node) => {
+          // 2. กรองเอาปุ่มกดออกไปจากรูปภาพ (อ้างอิงผ่าน ID)
+          // @ts-ignore
+          if (node?.id === 'po-action-buttons') {
+            return false;
+          }
+          return true;
         }
       });
       const link = document.createElement('a');
@@ -867,6 +898,19 @@ export default function DynamicInventoryManager() {
 
   const selectedQuickItem = items.find(i => i.name === quickSearch || i.id === quickSearch);
 
+  // 2. คำนวณสีของป้ายคงเหลือเฉพาะเมื่อมีไอเท็มถูกเลือก
+  let quickBadgeStyles = { bg: 'bg-emerald-50/60 border-emerald-100/70', label: 'text-emerald-600/70', val: 'text-emerald-900' };
+  if (selectedQuickItem) {
+    const sqStock = Number(selectedQuickItem.stock) || 0;
+    const sqTarget = Number(selectedQuickItem.target_stock) || 0;
+
+    if (sqStock <= sqTarget) {
+      quickBadgeStyles = { bg: 'bg-red-50/60 border-red-100/70', label: 'text-red-600/70', val: 'text-red-900' };
+    } else if (sqStock <= sqTarget + 1) {
+      quickBadgeStyles = { bg: 'bg-orange-50/60 border-orange-100/70', label: 'text-orange-600/70', val: 'text-orange-900' };
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-transparent text-[#000000]">
@@ -976,15 +1020,17 @@ export default function DynamicInventoryManager() {
                     )}
                   </div>
 
-                  {/* ยอดคงเหลือของสินค้าที่เลือก */}
+                  {/* 3. ยอดคงเหลือของสินค้าที่เลือกพร้อมสีไดนามิก */}
                   {selectedQuickItem && (
-                    <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50/60 border border-emerald-100/70 text-emerald-800 rounded-xl text-[14px] whitespace-nowrap shrink-0 transition-all duration-200 animate-in fade-in zoom-in-95">
-                      <span className="text-emerald-600/70 text-[13px]">คงเหลือ:</span>
-                      <span className="font-medium antialiased font-mono text-emerald-900">{selectedQuickItem.stock}</span>
-                      <span className="text-emerald-600/70 text-[12px]">{selectedQuickItem.unit}</span>
+                    <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[14px] whitespace-nowrap shrink-0 transition-all duration-200 animate-in fade-in zoom-in-95 border ${quickBadgeStyles.bg}`}>
+                      <span className={`text-[13px] ${quickBadgeStyles.label}`}>คงเหลือ:</span>
+                      <span className={`font-normal antialiased font-mono ${quickBadgeStyles.val}`}>
+                        {Number.isInteger(selectedQuickItem.stock) ? selectedQuickItem.stock : Number(selectedQuickItem.stock).toFixed(1)}
+                      </span>
+                      <span className={`text-[12px] ${quickBadgeStyles.label}`}>{selectedQuickItem.unit}</span>
                     </div>
                   )}
-                  
+
                   {/* 2. ช่องใส่จำนวน */}
                   <div className="w-20 md:w-24 shrink-0">
                     <input
@@ -998,7 +1044,8 @@ export default function DynamicInventoryManager() {
                           handleQuickSubmit(e as any);
                         }
                       }}
-                      min="0" step="1"
+                      min="0"
+                      step="any" // 🔥 แก้ไขจาก "1" เป็น "any" ตรงจุดนี้ครับ
                       className="w-full text-[14px] font-normal py-2 px-2 text-center rounded-xl border border-neutral-200 bg-white placeholder-neutral-400 text-black outline-none focus:border-black/20 focus:ring-1 focus:ring-black/10 transition-all antialiased"
                     />
                   </div>
@@ -1022,7 +1069,7 @@ export default function DynamicInventoryManager() {
                       นำออก
                     </button>
                   </div>
-                  
+
                   <button type="submit" className="px-4 py-2 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0 h-[38px]">
                     <CloudUpload className="w-4 h-4" strokeWidth={1.5} /> บันทึก
                   </button>
@@ -1384,7 +1431,9 @@ export default function DynamicInventoryManager() {
                     <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2 antialiased">
                       <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ
                     </h2>
-                    <div className="flex items-center gap-3">
+
+                    {/* 🔥 เพิ่ม id="po-action-buttons" ตรงจุดนี้ครับ */}
+                    <div id="po-action-buttons" className="flex items-center gap-3">
                       <button onClick={exportPOImage} className="px-4 py-2 bg-white hover:bg-neutral-50 text-[#000000] text-[14px] rounded-full flex items-center gap-2 transition-colors border border-[#000000]/5 shadow-sm antialiased font-normal">
                         <ArrowDownToLine className="w-4 h-4" /> บันทึกเป็นรูปภาพ
                       </button>
@@ -1465,8 +1514,8 @@ export default function DynamicInventoryManager() {
                             <tr key={item.id} className="border-b border-black/5 last:border-0 hover:bg-[#000000]/5 transition-colors">
                               <td className="py-4 text-[14px] text-black/30 text-center border-r border-black/5">{idx + 1}</td>
                               <td className="py-4 text-[15px] text-black font-medium text-left pl-4 border-r border-black/5">{item.name}</td>
-                              <td className="py-4 text-[15px] text-black/50 text-center font-mono border-r border-black/5">{item.stock}</td>
-                              <td className="py-4 text-[16px] text-black text-center font-mono font-medium border-r border-black/5">{item.computedOrderQty}</td>
+                              <td className={`py-4 text-[15px] text-center font-mono border-r border-black/5 ${getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0)}`}>{Number.isInteger(item.stock) ? item.stock : Number(item.stock).toFixed(1)}</td>
+                              <td className="py-4 text-[16px] text-black text-center font-mono font-medium border-r border-black/5">{Number.isInteger(item.computedOrderQty) ? item.computedOrderQty : Number(item.computedOrderQty).toFixed(1)}</td>
                               <td className="py-4 text-[14px] text-black/50 text-center border-r border-black/5">{item.unit || '-'}</td>
                               <td className="py-4 text-[13px] text-black/40 text-center font-mono">
                                 {new Date(item.updated_at || Date.now()).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}

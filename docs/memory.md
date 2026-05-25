@@ -380,6 +380,9 @@
 - **Evidence:** `src/app/api/weather/route.ts` (lines 35-49), `src/components/dashboard/WeatherWidget.tsx` (lines 6-120)
 
 ### DEC-040: Project-Wide Daily Closing Integrity Check
+
 **Context:** Executed the final daily closing protocol to validate structural safety.
-**Decision:** Applied zero-bold typography adherence to loading skeletons (WeatherWidget), verified AI tool schemas, and confirmed Typescript build stability (`npx tsc --noEmit` and `npm run build`).
+**Decision:** Applied zero-bold typography adherence to loading skeletons (WeatherWidget), verified AI tool schemas, and confirmed Typescript build stability (
+px tsc --noEmit and
+pm run build).
 **Consequence:** The repository is now formally verified as stable and safely locked for the daily closing.
