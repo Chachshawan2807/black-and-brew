@@ -1,7 +1,7 @@
 import { google } from '@ai-sdk/google';
 import { streamText, stepCountIs } from 'ai';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
-import { readTableTool } from '@/app/actions/tools/database-tools';
+import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
 import { internetSearchTool } from '@/app/actions/tools/search-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 
@@ -94,6 +94,9 @@ export async function POST(req: Request) {
       tools: {
         // Universal DB Reader (Phase 1)
         readTable: readTableTool,
+        
+        // Schedule / Shifts Reader
+        getDailyShiftsTool: getDailyShiftsTool,
         
         // Internet Search Tool
         internetSearchTool: internetSearchTool,

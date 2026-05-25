@@ -37,8 +37,12 @@ coverage/
 mem0_storage.json
 
 # --- Environment Files & Private Data ---
-.env*
+# 🔒 แก้ไขส่วนนี้: ระบุชื่อรายไฟล์เพื่อปลดล็อก .env.example ให้ผ่านได้ปลอดภัย
+.env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .vercel
 
 # --- System & Misc ---

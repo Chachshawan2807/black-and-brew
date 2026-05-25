@@ -56,3 +56,51 @@ export const readTableTool = tool({
     return data;
   }
 });
+
+export const getDailyShiftsTool = tool({
+  description: 'ดึงข้อมูลตารางงานและกะการทำงานของพนักงานทุกคนในวันที่ระบุ (รูปแบบ YYYY-MM-DD)',
+  inputSchema: z.object({
+    date: z.string().describe('วันที่ต้องการดูตารางงาน รูปแบบ YYYY-MM-DD เช่น 2026-05-26')
+  }),
+  execute: async ({ date }) => {
+    console.log(`[AI_TOOL] Get Daily Shifts for: ${date}`);
+    
+    const { data: profiles, error: profileError } = await adminClient
+      .from('profiles')
+      .select('id, full_name, schedule_order')
+      .order('schedule_order', { ascending: true });
+
+    if (profileError) {
+      console.error('[AI_TOOL] Error reading profiles:', profileError);
+      throw new Error(`Failed to read profiles: ${profileError.message}`);
+    }
+
+    const { data: shifts, error: shiftError } = await adminClient
+      .from('shifts')
+      .select('employee_id, status, start_time, metadata')
+      .gte('start_time', `${date}T00:00:00`)
+      .lte('start_time', `${date}T23:59:59`);
+
+    if (shiftError) {
+      console.error('[AI_TOOL] Error reading shifts:', shiftError);
+      throw new Error(`Failed to read shifts: ${shiftError.message}`);
+    }
+
+    const payload = (profiles || []).map((profile, index) => {
+      const shift = (shifts || []).find(s => s.employee_id === profile.id);
+      
+      let shiftValue = "";
+      if (shift && shift.metadata && shift.metadata.location) {
+        shiftValue = shift.metadata.location;
+      }
+
+      return {
+        row_order: index + 1,
+        name: profile.full_name,
+        shift: shiftValue
+      };
+    });
+
+    return payload;
+  }
+});
