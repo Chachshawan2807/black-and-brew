@@ -2,6 +2,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
+import { cookies } from 'next/headers';
+import { z } from 'zod';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
@@ -9,6 +11,13 @@ const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NE
 const supabase = createClient(supabaseUrl, supabaseAdminKey);
 
 // === RECORD TRANSACTION (Atomic via RPC) ===
+const transactionSchema = z.object({
+  productId: z.string().uuid().or(z.string()),
+  type: z.enum(['IN', 'OUT']),
+  quantity: z.number().positive(),
+  note: z.string().optional()
+});
+
 export async function recordTransaction(
   productId: string,
   type: 'IN' | 'OUT',
@@ -16,6 +25,20 @@ export async function recordTransaction(
   note: string = ''
 ) {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
+    const parsed = transactionSchema.safeParse({ productId, type, quantity, note });
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid transaction payload' };
+    }
+
     if (quantity <= 0) {
       return { success: false, error: 'Quantity must be greater than 0' };
     }

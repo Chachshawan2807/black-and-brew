@@ -2,9 +2,10 @@
 
 ## Goal
 
-Resolve the shift rendering/disappearing bug in `BLACKANDBREW ERP` scheduler. When shifts are saved or updated, they optimistically render in the UI, but after 1 second (upon server-side revalidation/re-fetch hydration) they disappear due to timezone shifts or mismatching date fields. 
+Resolve the shift rendering/disappearing bug in `BLACKANDBREW ERP` scheduler. When shifts are saved or updated, they optimistically render in the UI, but after 1 second (upon server-side revalidation/re-fetch hydration) they disappear due to timezone shifts or mismatching date fields.
 
 We will align Server Actions and client-side code by:
+
 1. Normalizing all shift date strings to the standardized `YYYY-MM-DDT00:00:00` format in both Server Actions (fetching & saving) and client-side logic.
 2. Integrating a robust date parser/helper that ensures consistent coordinate detection.
 3. Maximizing horizontally available space, adhering strictly to the minimal Pastel Morning Latte aesthetics and Zero-Bold policy.
@@ -21,6 +22,7 @@ We will align Server Actions and client-side code by:
 ### Step 1: Write a Failing TDD Test Case (RED Phase)
 
 Create `src/test/date_compliance.test.ts` to test:
+
 1. `isSameThaiDay` date comparison under different string formats (with timezone offset vs local date string).
 2. Standardizing database-returned ISO strings to `YYYY-MM-DDT00:00:00` format.
 
@@ -29,6 +31,7 @@ Run `npm run test` to verify the tests fail or check existing suite passes.
 ### Step 2: Implement Shift Server Actions in `src/app/actions/shift-actions.ts`
 
 Add two server actions:
+
 1. `fetchShiftsAction(startDate: string, endDate: string)`:
    - Queries `shifts` using `supabaseAdmin`.
    - Cleanses the dates to `YYYY-MM-DDT00:00:00` format.

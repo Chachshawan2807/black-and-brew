@@ -1,56 +1,65 @@
-# SKILLS INVENTORY
+# BLACKANDBREW ERP: SKILL HARVESTING & SYNERGY BUNDLING
 
-> Version: 4.2 | Status: RTK & Master Blueprint Compliant | Format: Zero-Bold Policy Active
-เอกสารฉบับนี้รวบรวมทักษะระบบ (System Skills) และความสามารถเชิงเทคนิคของโปรเจกต์ BLACKANDBREW ERP โดยจัดกลุ่มเป็น 4 โมดูลหลัก เพื่อลด Context Tax ขจัดข้อความซ้ำซ้อน และเพิ่มความแม่นยำในการเรียกใช้เครื่องมือของ Agent
+*Last Scanned & Updated: 2026-05-25*
+
+## CAPABILITY INVENTORY (คลังความสามารถปัจจุบัน)
+
+### 1. Data & Integration Capabilities
+
+* **Universal DB Reader (`readTableTool`)**: ระบบดึงข้อมูลจากตารางแบบ Bypasses RLS (ผ่าน `adminClient`) สำหรับให้ AI ใช้วิเคราะห์ข้อมูลภายในร้าน
+* **Weather API Service (`/api/weather`)**: การเชื่อมต่อ OpenWeatherMap แบบแคชข้อมูล (1800s) พร้อมการแปลงเวลาโซนไทย (Asia/Bangkok)
+* **External Intel Search (`internetSearchTool`)**: เครื่องมือค้นหาอินเทอร์เน็ตผ่าน Tavily API สำหรับสืบค้นสภาพแวดล้อม ข่าวสาร โดยล็อกพิกัดเป้าหมาย "ตำบลบึงคำพร้อย" เสมอ
+* **RepoMap Context Tool (`repo-map`)**: เครื่องมือสแกนโครงสร้างโปรเจกต์และสร้างแผนผังไฟล์ยึดโยงบริบท (`PROJECT_MAP.md`) แบบ Zero-dependency ช่วยลดการใช้ Token และกำหนดพิกัดไฟล์ได้อย่างแม่นยำก่อนการแก้ไขหรือตรวจสอบระบบ
+
+### 2. UI/UX & Client Capabilities
+
+* **Client Persistence & Hydration Safe**: ใช้แพตเทิร์น `isMounted` เพื่อแก้ไขปัญหา Hydration Mismatch ของ Next.js ตอนโหลดหน้าจอแรกและ LocalStorage
+* **Optimistic UI Updates**: การอัปเดต State ล่วงหน้า (เช่น ฟังก์ชันในคลังสินค้า) เพื่อให้ผู้ใช้รู้สึกว่าระบบตอบสนองทันที (0ms Action) ก่อนส่งเข้าฐานข้อมูล
+* **Minimalist Aesthetics (UI/UX PRO MAX)**: การออกแบบคุมโทนพาสเทล (Pastel/Latte Theming) ห้ามใช้ตัวหนา (Zero-Bold Policy) และแฝง Micro-animations (`animate-in fade-in`)
+
+### 3. Performance & Security Capabilities
+
+* **Thai Token Optimizer**: ฟังก์ชัน `optimizeThaiTokens` ตัดอักขระซ้ำ (เช่น 5555, ๆๆๆ) ลดการใช้ Token ฝั่งภาษาไทยก่อนส่งให้ LLM
+* **Prompt Injection Guard**: การกรองคำสั่งแปลกปลอม (Jailbreak) ออกจาก Context สภาพแวดล้อม
+* **Singleton Database Connection**: ออปติไมซ์ Client Supabase ลดจำนวน Event (2 per sec)
 
 ---
 
-## MODULE 1: MOBILE_UX_ARCHITECT
+## SYNERGY BUNDLES (ชุดทักษะมัดรวมสำหรับ AI)
 
-Description: ทักษะสถาปัตยกรรมจัดระเบียบเลย์เอาท์ การปรับสัดส่วน Element และระบบควบคุมสำหรับหน้าจอ Mobile View รวมถึงตารางและการแสดงผล
+ชุดคอมโบที่ผสานความสามารถต่างๆ เข้าด้วยกัน เพื่อให้ AI นำไปเรียกใช้งานได้อย่างมีประสิทธิภาพสูงสุด
 
-| Skill Specification | Trigger Criteria | Technical Implementation |
-| :--- | :--- | :--- |
-| Layout Compactness & Single-Row Grid | เมื่อต้องปรับปรุง UI สำหรับ Mobile View หรือต้องการลดพื้นที่หน้าจอ | ยุบรวมอินพุตและปุ่มคำสั่งหลักด้วย Flexbox (flex-row) หรือ Grid คงที่แถวเดียวเสมอ |
-| Segmented Controls & Action Switches | เมื่อต้องสร้างปุ่มสลับสถานะคู่ (เช่น รับเข้า/นำออก) | ใช้ Container ขอบมนกลม (rounded-full) สลับสีพื้นหลังสว่างเพื่อแสดงสถานะที่เลือก |
-| Resizable Tables & LocalStorage | เมื่อผู้ใช้ต้องปรับความกว้างคอลัมน์ในตาราง เช่น หน้า Maintenance | โหลดความกว้างตอน SSR จากนั้นใช้ useEffect ดึงจาก localStorage และดักจับ Mouse Event เพื่อปรับขนาด |
-| Sticky Freezing & Layer Isolation | เมื่อสร้างหน้าต่างย่อย (Modal) ที่มีข้อมูลตารางยาว | ใช้คลาส sticky top-0 ตรึงส่วนหัว จำกัดความสูงกล่องข้อมูลหลักด้วย max-h และเปิด overflow-y-auto |
+### [Bundle 1] "External Intel Set" 🌍
 
-## MODULE 2: HYBRID_CONTEXT_ENGINE
+* **ส่วนประกอบ**: `internetSearchTool` + `Weather API`
+* **หน้าที่**: วิเคราะห์ปัจจัยภายนอกร้านแบบ Real-time เช่น สภาพอากาศปัจจุบัน ข่าวสารท้องถิ่น หรือวันหยุด เพื่อพยากรณ์ยอดขายหรือการจัดเตรียมวัตถุดิบ
 
-Description: ทักษะระบบดักจับพิกัด การทำงานร่วมกับ UI และสแกนข้อความบนหน้าต่างย่อย เพื่อส่งต่อเป็น clientContext เข้าสู่สมอง AI แบบ Real-time
+### [Bundle 2] "High-Velocity UI Set" ⚡
 
-| Skill Specification | Trigger Criteria | Technical Implementation |
-| :--- | :--- | :--- |
-| Live Screen Extraction (Modal Context) | เมื่อ AI ต้องการบริบทสิ่งที่ผู้ใช้กำลังดูอยู่บนหน้าต่างย่อย | สแกน DOM ดึงข้อความจาก [role="dialog"] ส่งเข้า Request Payload (body: { clientContext }) สู่ AI |
-| Coordinate & Interaction Tracking | เมื่อต้องตรวจสอบพิกัดการลากวาง (Drag-and-Drop) | อ้างอิง Sensor และ Physics Profile (Stiffness: 300, Damping: 30) จัดการ DOM Separation ให้เคลื่อนไหวลื่นไหล |
-| Context Bootstrapping | เมื่อเริ่มต้นเซสชันใหม่กับ Agent | บังคับสแกน RepoMap เพื่อล็อกพิกัดไฟล์ ลดการอ่านไฟล์ขยะ และยึดโยงบริบทระบบอัตโนมัติก่อนลงมือแก้ไขรหัส |
+* **ส่วนประกอบ**: `Optimistic Updates` + `isMounted Guard` + `Micro-animations`
+* **หน้าที่**: การสร้างและเรนเดอร์หน้าจอ Component ใหม่โดยเน้นการตอบสนองที่ 0ms และปลอดภัยต่อ Hydration Error พร้อมแอนิเมชันตอนปรากฏตัว
 
-## MODULE 3: SYSTEM_SECURITY_HARDENING
+### [Bundle 3] "Safe Data Injector Set" 🛡️
 
-Description: ทักษะระบบรักษาความปลอดภัย การกรองคำสั่ง การตรวจสอบประเภทข้อมูล และการล็อกสิทธิ์การเข้าถึงผ่าน Server Actions
+* **ส่วนประกอบ**: `Zod Schema` + `adminClient` + `readTableTool`
+* **หน้าที่**: ชุดอ่านและเขียนข้อมูลขั้นสูงที่ใช้ Service Role Key ข้ามข้อจำกัด RLS อย่างปลอดภัย โดยมีการตรวจสอบโครงสร้างข้อมูลอย่างเข้มงวด
 
-| Skill Specification | Trigger Criteria | Technical Implementation |
-| :--- | :--- | :--- |
-| Input Sanitization & Prompt Injection Guard | เมื่อมีการรับข้อมูลจากผู้ใช้ภายนอกเข้าสู่ระบบ AI หรือ Database | ทำการกรองข้อความและอักขระพิเศษ ป้องกันคำสั่งแทรกซ้อน (Prompt Injection) อย่างเคร่งครัด |
-| Type Validation Engine | เมื่อรับส่งข้อมูลผ่าน API หรือบันทึกข้อมูลเข้าฐานข้อมูล | ตรวจสอบโครงสร้างข้อมูลด้วย Zod Schema เพื่อบังคับชนิดตัวแปรให้ตรงตามมาตรฐานอย่างเคร่งครัด |
-| Service Role & Privilege Escalation | เมื่อมีการอ่าน/เขียนข้อมูลสำคัญที่ข้ามข้อจำกัด RLS | ทำงานผ่าน Server Actions เท่านั้น และล็อกสิทธิ์ผู้ใช้ด้วย supabase.auth.getUser() ก่อนเริ่มดำเนินการ |
-| Zero-Cache Data Integrity | เมื่อต้องการความถูกต้องของข้อมูลสต็อกและประวัติธุรกรรม | บังคับใช้ unstable_noStore() ป้องกัน Next.js จำค่าเก่า และจัดการ Transaction ด้วย Row Lock (FOR UPDATE) |
-| NextConfig Build Compatibility | เมื่อสร้างความเข้ากันได้ของการกำหนดค่า Routing กับ Build configuration | ห้ามใช้ dynamic = 'force-dynamic' ใน layouts/pages บังคับใช้ no-store fetches + server actions แทน |
-| Secure Server Auth Gate, sessionStorage Isolation & Anti-Brute Force | เมื่อเข้าสู่แอปพลิเคชันหรือมีการตรวจสอบสิทธิ์บาริสต้า | ย้ายการยืนยันรหัส PIN 6 หลักไปฝั่ง Server Action และแยกแท็บควบคุมด้วย sessionStorage ปิดความจำข้ามหน้า 100% พร้อมระบบล็อกการป้อนรหัสผิดครบ 5 ครั้ง ใน localStorage เป็นเวลา 15 นาที |
+### [Bundle 4] "Token Economy Set" 💰
 
-## MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY
+* **ส่วนประกอบ**: `thaiTokenOptimizer` + `Prompt Injection Guard` + `Sliding Window Memory (slice)`
+* **หน้าที่**: ชุดทำความสะอาดและลดขนาดท่อส่งข้อความภาษาไทยก่อนส่งเข้า LLM ช่วยประหยัด Token และรักษาความปลอดภัยจากคำสั่งแทรกแซง
 
-Description: ทักษะการเพิ่มประสิทธิภาพการทำงานของระบบ การลดการใช้ Token และการจัดการหน่วยความจำของแอปพลิเคชัน
+### [Bundle 5] "Aesthetic Standardization Set" 🎨
 
-| Skill Specification | Trigger Criteria | Technical Implementation |
-| :--- | :--- | :--- |
-| Thai Token Optimizer (String Truncation) | เมื่อต้องการประมวลผลข้อความภาษาไทยเข้าสู่ AI Context | ใช้งานระบบ thaiTokenOptimizer ยุบรวมคำและตัดคำเยิ่นเย้อเพื่อประหยัด Token ใน Prompt |
-| Render Caching & Reference Stability | เมื่อพบปัญหา React Re-render ซ้ำซ้อนจากการส่ง Props | บังคับใช้ useMemo สำหรับออบเจกต์ และ useCallback สำหรับฟังก์ชัน เพื่อล็อก Reference ใน Memory |
-| Restricted Query Fetching | เมื่อดึงข้อมูลจากฐานข้อมูล Supabase เข้าสู่ระบบ | ระบุชื่อฟิลด์แบบเจาะจง (เช่น select('id, name')) ห้ามดึงทุกฟิลด์เพื่อลด Payload และการใช้ RAM |
-| Persistent Zero & Numeric Sanitization | เมื่อรับค่าตัวเลขจากฟอร์ม | ป้องกันค่าว่างเข้าสู่ฐานข้อมูล ตัดเลข 0 นำหน้า และแปลงเป็นตัวเลขโดยสมบูรณ์ |
-| Sliding Window Memory | เมื่อส่งประวัติแชทให้ AI | ตัดประวัติแชทเหลือเฉพาะ 4 ข้อความล่าสุด (messages.slice(-4)) ป้องกัน Token บวมสะสม |
-| Ultra-Minimalist System Prompt | เมื่อกำหนดคำสั่งหลักให้ AI | ลดขนาด System Prompt เหลือเฉพาะกฎเหล็ก และแนบ Context แบบมีเงื่อนไข |
-| AI Output Token Capping | เมื่อเรียกใช้ AI Model | กำหนด maxOutputTokens: 600 และ temperature: 0.1 เพื่อประหยัดโควตา |
-| Surgical Tools Partitioning | เมื่อพัฒนา AI Tools | สร้างเครื่องมือเฉพาะกิจ (เช่น getTodaySchedule) ดึงเฉพาะตารางที่จำเป็น แทนการดึงข้อมูลภาพรวม |
-| Computed Auto-Ordering Logic | เมื่อคำนวณจำนวนที่ต้องสั่งซื้อในตารางสต็อก | ใช้ React Math State คำนวณ (target_stock - stock) แบบ Real-time |
+* **ส่วนประกอบ**: `Zero-Bold Policy` + `Pastel/Latte Theming` + `Tailwind Transitions`
+* **หน้าที่**: มาตรฐานการเขียน UI ใหม่ทุกชิ้นต้องคงคอนเซปต์ Minimalist ตัวอักษรบาง และใช้สีโทนสว่างสบายตา
+
+### [Bundle 6] "System Reconstruction & Recovery Set" 🔄
+
+* **ส่วนประกอบ**: `RTK (The Reconstruction ToolKit)` + `adminClient (Service Role)` + `LocalStorage Client Persistence`
+* **หน้าที่**: ใช้สำหรับกู้คืนโครงสร้างและสถานะของระบบหรือตารางข้อมูลหน้าร้านใน 0ms เมื่อเกิดกรณีข้อมูลขัดข้อง หรือตรวจพบความคลาดเคลื่อนของข้อมูลประวัติ (Undo/Redo Stack & Rollback State)
+
+### [Bundle 7] "Context Mapping & Precision Strike Set" 🗺️
+
+* **ส่วนประกอบ**: `RepoMap (repomap.py)` + `RTK (The Reconstruction ToolKit)` + `readTableTool`
+* **หน้าที่**: การจำลองแผนผังของโครงสร้างโปรเจกต์แบบประหยัด Token ร่วมกับการอ่านข้อมูลระดับโครงสร้างฐานข้อมูลผ่าน `readTableTool` เพื่อให้ AI มองเห็นการเชื่อมโยงระบบอย่างทะลุปรุโปร่ง และกู้คืนข้อมูลหรือจัดความสมมาตรทางดีไซน์แบบ Zero Functional Errors เมื่อเกิดการล่มหรือผิดพลาด

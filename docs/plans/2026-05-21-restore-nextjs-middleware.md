@@ -1,9 +1,11 @@
 # docs/plans/2026-05-21-restore-nextjs-middleware.md
 
 ## Problem Statement
+
 The `/th/inventory` route returns a `404 Not Found` error. Other routes work.
 
 ## Deep Scan Findings
+
 1. **Routing Folder Structure:**
    - Folder exists: `src/app/[locale]/inventory`
    - Entry file: `page.tsx`
@@ -27,6 +29,7 @@ The `/th/inventory` route returns a `404 Not Found` error. Other routes work.
    - Without active middleware, the Next.js routing system fails to route and rewrite `/th/inventory` correctly, yielding a 404 error.
 
 ## Action Plan
+
 1. Restore Next.js routing by copying/moving `src/proxy.ts` to `src/middleware.ts`.
 2. Delete `src/proxy.ts` to keep the codebase clean.
 3. Validate by running TypeScript and testing the application routes.

@@ -16,6 +16,7 @@ Secure the PIN Gateway system in the `BLACKANDBREW ERP` by completely removing `
 ### Step 1: Write a Failing TDD Test Case (RED Phase)
 
 Create `src/test/session_auth.test.tsx` to verify that:
+
 1. `PinGateway` initially mounts and checks authentication.
 2. When `sessionStorage` has `bb_auth_pin_verified` set to `'true'`, it should allow viewing child components.
 3. When `sessionStorage` is empty/null, it should render the security PIN input/gateway and not fall back to `localStorage` or server check.
@@ -35,6 +36,7 @@ Run `npm run test` to verify the test is failing (or that it doesn't compile/pas
 ### Step 3: Update Logout Logic in `Menu.tsx`
 
 In `src/components/sidebar/Menu.tsx` (Logout action):
+
 - Clear `sessionStorage.removeItem('bb_auth_pin_verified')`.
 - Remove `localStorage.removeItem('bb_auth_pin')` or any other references to auth in `localStorage`.
 

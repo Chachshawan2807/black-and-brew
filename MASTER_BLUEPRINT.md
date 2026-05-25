@@ -344,6 +344,7 @@ python .antigravity/tools/memory-engine/aider/aider/repomap.py .
 | `GOOGLE_CALENDAR_API_KEY` | ✅ Placeholder Set | Google Cloud Console -> APIs & Services | **Mandatory** (Holiday Actions) |
 
 ### Synchronization Protocol
+
 * **Security**: ห้าม Push ไฟล์ `.env.local` ขึ้น GitHub โดยเด็ดขาด (ตรวจสอบ `.gitignore` เสมอ)
 * **Vercel Setup**: เมื่อ Deploy ไปยัง Vercel ต้องนำตัวแปรทั้งหมดใน `.env.example` ไปตั้งค่าในหน้า Environment Variables ของโปรเจกต์
 * **Local Run**: คัดลอก `.env.example` เป็น `.env.local` และกรอกค่าจริงก่อนรัน `npm run dev`

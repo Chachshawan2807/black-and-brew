@@ -2,6 +2,8 @@
 
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
+import { z } from 'zod';
 
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -59,9 +61,33 @@ export async function revalidateAppPaths() {
   revalidatePath('/[locale]/dashboard', 'page');
 }
 
+const shiftSchema = z.object({
+  id: z.string().optional(),
+  employee_id: z.string(),
+  start_time: z.string(),
+  end_time: z.string().optional(),
+  status: z.string(),
+  metadata: z.any().optional()
+});
+
 export async function saveShift(payload: any) {
   noStore();
-  const datePart = payload.start_time.split('T')[0];
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get('sb-access-token')?.value;
+  const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+  if (!pinVerified && (!user || authError)) {
+    return { success: false, error: 'Unauthorized: Session missing or invalid' };
+  }
+
+  const parsed = shiftSchema.safeParse(payload);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid payload structure' };
+  }
+
+  const datePart = parsed.data.start_time.split('T')[0];
   const cleanStartTime = datePart + 'T00:00:00';
   const cleanEndTime = datePart + 'T23:59:59';
 

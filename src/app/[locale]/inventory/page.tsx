@@ -73,11 +73,22 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onR
   const isResizing = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     isResizing.current = true;
     startX.current = e.pageX;
     startWidth.current = parseInt(col.width) || 150;
+
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!isResizing.current) return;
@@ -88,16 +99,16 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onR
 
     const handleMouseUp = (upEvent: MouseEvent) => {
       isResizing.current = false;
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
 
       const delta = upEvent.pageX - startX.current;
       const finalWidth = Math.max(80, startWidth.current + delta);
       onResizeEnd(col.id, finalWidth);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove, { signal });
+    document.addEventListener('mouseup', handleMouseUp, { signal });
     e.preventDefault();
   };
 
@@ -452,7 +463,7 @@ export default function DynamicInventoryManager() {
     try {
       const [configRes, inventoryRes] = await Promise.all([
         supabase.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
-        supabase.from('inventory_items').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true })
+        supabase.from('inventory_items').select('id, name, stock, order_qty, order_point, target_stock, unit, source, sort_order, updated_at').order('sort_order', { ascending: true }).order('name', { ascending: true })
       ]);
 
       if (inventoryRes.error) {
@@ -854,6 +865,8 @@ export default function DynamicInventoryManager() {
     }
   }
 
+  const selectedQuickItem = items.find(i => i.name === quickSearch || i.id === quickSearch);
+
   if (loading) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-transparent text-[#000000]">
@@ -925,7 +938,7 @@ export default function DynamicInventoryManager() {
               <form onSubmit={handleQuickSubmit} className="flex flex-col gap-2.5 w-full">
                 <div className="flex flex-row items-center gap-2 w-full box-border mb-0">
                   {/* 1. ช่องค้นหาสินค้า */}
-                  <div className="flex-[2] relative">
+                  <div className="flex-1 min-w-[200px] relative">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
                     <input
                       type="text"
@@ -962,6 +975,15 @@ export default function DynamicInventoryManager() {
                       </div>
                     )}
                   </div>
+
+                  {/* ยอดคงเหลือของสินค้าที่เลือก */}
+                  {selectedQuickItem && (
+                    <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50/60 border border-emerald-100/70 text-emerald-800 rounded-xl text-[14px] whitespace-nowrap shrink-0 transition-all duration-200 animate-in fade-in zoom-in-95">
+                      <span className="text-emerald-600/70 text-[13px]">คงเหลือ:</span>
+                      <span className="font-medium antialiased font-mono text-emerald-900">{selectedQuickItem.stock}</span>
+                      <span className="text-emerald-600/70 text-[12px]">{selectedQuickItem.unit}</span>
+                    </div>
+                  )}
                   
                   {/* 2. ช่องใส่จำนวน */}
                   <div className="w-20 md:w-24 shrink-0">
@@ -1149,21 +1171,6 @@ export default function DynamicInventoryManager() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[12px] font-normal text-slate-600 ml-1">จำนวนสั่งซื้อ</label>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={newItemData.order_qty === null || newItemData.order_qty === undefined ? '' : newItemData.order_qty}
-                      onChange={e => {
-                        let val = e.target.value.replace(/[^0-9.]/g, '');
-                        if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
-                        setNewItemData(prev => ({ ...prev, order_qty: val }));
-                      }}
-                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
                     <label className="text-[12px] font-normal text-slate-600 ml-1">จุดสั่งซื้อ</label>
                     <input
                       type="text"
@@ -1193,7 +1200,7 @@ export default function DynamicInventoryManager() {
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
+                  <div className="col-span-2 flex flex-col gap-1.5">
                     <label className="text-[12px] font-normal text-slate-600 ml-1">ช่องทางสั่งซื้อ</label>
                     <input
                       value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}

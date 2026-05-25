@@ -94,11 +94,22 @@ export default function MaintenancePage() {
   };
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_WIDTHS);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
 
   const handleMouseDown = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.pageX;
     const startWidth = colWidths[id] || DEFAULT_WIDTHS[id as keyof typeof DEFAULT_WIDTHS];
+
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const currentWidth = Math.max(70, startWidth + (moveEvent.pageX - startX));
@@ -110,12 +121,12 @@ export default function MaintenancePage() {
     };
 
     const handleMouseUp = () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mousemove', handleMouseMove, { signal });
+    window.addEventListener('mouseup', handleMouseUp, { signal });
   };
 
   useEffect(() => {
@@ -153,7 +164,7 @@ export default function MaintenancePage() {
     try {
       const { data, error } = await supabase
         .from('service_records')
-        .select('*')
+        .select('id, start_date, equipment, detected_problem, task_type, work_details, recommended_frequency, cost, person_in_charge, status, notes, completion_date, created_at')
         .order('start_date', { ascending: false });
 
       if (error) {

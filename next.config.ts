@@ -8,6 +8,16 @@ const withNextIntl = createNextIntlPlugin(
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'openweathermap.org',
+        port: '',
+        pathname: '/img/wn/**',
+      },
+    ],
+  },
 };
 
 export default withNextIntl(nextConfig);

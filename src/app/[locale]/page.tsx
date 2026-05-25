@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import Image from 'next/image';
 import CommandCenterGrid from '@/components/CommandCenterGrid';
+import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
 
 export default async function IndexPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -43,6 +44,8 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
         <header className="flex flex-col items-center justify-center gap-6 relative z-[50]">
           {/* Logo removed - only present in Sidebar */}
         </header>
+
+        <WeatherWidget />
 
         <CommandCenterGrid initialItems={navItems} />
       </div>
