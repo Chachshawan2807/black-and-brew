@@ -7,7 +7,7 @@
 ## 📊 File Type Summary
 
 | Extension | Count |
-|-----------|-------|
+| ----------- | ------- |
 | `.md` | 38 |
 | `.tsx` | 32 |
 | `.ts` | 31 |
@@ -26,7 +26,7 @@
 
 ## 🌲 Project Structure
 
-```
+```text
 black-and-brew/
 |-- [DIR] .agents/
 |   +-- [DIR] skills/
@@ -204,9 +204,9 @@ black-and-brew/
 ## ⚙️ Active Modules (Top-Level)
 
 | Module | Path | Status |
-|--------|------|--------|
+| -------- | ------ | -------- |
 | Dashboard | `src/app/[locale]/dashboard/` | [OK] Active |
-| Schedule  | `src/app/[locale]/schedule/`  | [OK] Active |
+| Schedule | `src/app/[locale]/schedule/` | [OK] Active |
 | Maintenance | `src/app/[locale]/maintenance/` | [OK] Active |
 | Inventory | `scratch/archived-modules/inventory/` | [Archived] Archived |
 
