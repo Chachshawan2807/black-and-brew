@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 
-import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift } from '@/app/actions/shift-actions';
+import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange } from '@/app/actions/shift-actions';
 import type { Profile, Shift } from '@/types';
 import { isSameThaiDay } from '@/lib/date-utils';
 
@@ -51,6 +51,92 @@ const shiftTypes = [
   { label: 'ไปสาขา 2', value: 'ไปสาขา 2', color: 'bg-[#d1ecf1] text-[#000000] border-[#bee5eb]' },
   { label: 'ลา', value: 'ลา', color: 'bg-[#f8d7da] text-[#000000] border-[#f5c6cb]' }
 ];
+
+interface ColumnDef {
+  id: string;
+  label: string;
+  width: string;
+}
+
+const defaultHistoryColumns: ColumnDef[] = [
+  { id: 'employee_name', label: 'พนักงาน', width: '150px' },
+  { id: 'date_range', label: 'วันที่', width: '200px' },
+  { id: 'shift_type', label: 'ประเภท', width: '180px' },
+  { id: 'remark', label: 'หมายเหตุ', width: 'auto' },
+  { id: 'actions', label: 'จัดการ', width: '80px' }
+];
+
+function ColumnHeader({ col, onResize, onResizeEnd }: {
+  col: ColumnDef;
+  onResize: (id: string, width: number) => void;
+  onResizeEnd: (id: string, width: number) => void;
+}) {
+  const isResizing = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isResizing.current = true;
+    startX.current = e.pageX;
+    startWidth.current = parseInt(col.width) || 150;
+
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isResizing.current) return;
+      const delta = moveEvent.pageX - startX.current;
+      const newWidth = Math.max(60, startWidth.current + delta);
+      onResize(col.id, newWidth);
+    };
+
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      isResizing.current = false;
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
+
+      const delta = upEvent.pageX - startX.current;
+      const finalWidth = Math.max(60, startWidth.current + delta);
+      onResizeEnd(col.id, finalWidth);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove, { signal });
+    document.addEventListener('mouseup', handleMouseUp, { signal });
+    e.preventDefault();
+  };
+
+  const style = {
+    width: col.width,
+    minWidth: col.width === 'auto' ? '80px' : col.width,
+  };
+
+  return (
+    <th
+      style={style}
+      className="p-3 text-[13px] font-normal text-[#000000] border-b border-r border-[#000000]/10 bg-[#fdfcf0] text-center whitespace-nowrap relative group select-none"
+    >
+      {col.label}
+      {/* Resizer Handle */}
+      {col.id !== 'actions' && (
+        <div
+          onMouseDown={handleMouseDown}
+          className="absolute right-0 top-0 bottom-0 w-1 px-0.5 cursor-col-resize hover:bg-black/10 transition-all z-20 group/resizer"
+        >
+          <div className="w-[1px] h-full bg-[#000000]/5 group-hover/resizer:bg-black/20 mx-auto" />
+        </div>
+      )}
+    </th>
+  );
+}
+
 
 // --- Sub-component: SortableEmployeeRow ---
 interface SortableEmployeeRowProps {
@@ -212,6 +298,33 @@ export default function ScheduleClient({
 
   const [editingHoliday, setEditingHoliday] = useState<string | null>(null);
   const [holidayInput, setHolidayInput] = useState('');
+
+  // History table states
+  const [mgmtColumns, setMgmtColumns] = useState<ColumnDef[]>(defaultHistoryColumns);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // Hydrate history column widths from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('blackandbrew-shift-history-col-widths');
+      if (saved) {
+        const widths: Record<string, string> = JSON.parse(saved);
+        if (widths && typeof widths === 'object' && !Array.isArray(widths)) {
+          setMgmtColumns(prev => prev.map(col => {
+            const w = Number(widths[col.id]);
+            if (!isNaN(w) && w > 0 && w < 2000) {
+              return { ...col, width: `${w}px` };
+            }
+            return col;
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse saved history column widths:', e);
+      localStorage.removeItem('blackandbrew-shift-history-col-widths');
+    }
+  }, []);
+
 
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState('');
@@ -427,6 +540,58 @@ export default function ScheduleClient({
       fetchMgmtHistory();
     }
   }, [showManagementModal, fetchMgmtHistory]);
+
+  const handleColumnResize = useCallback((id: string, width: number) => {
+    setMgmtColumns(prev => prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col));
+  }, []);
+
+  const handleColumnResizeEnd = useCallback((id: string, width: number) => {
+    setMgmtColumns(prev => {
+      const nextCols = prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col);
+      // Persist to localStorage immediately
+      const widths = nextCols.reduce<Record<string, string>>((acc, c) => {
+        const px = parseInt(c.width);
+        if (!isNaN(px)) acc[c.id] = String(px);
+        return acc;
+      }, {});
+      localStorage.setItem('blackandbrew-shift-history-col-widths', JSON.stringify(widths));
+      return nextCols;
+    });
+  }, []);
+
+  const handleDeleteHistory = async (historyItem: any) => {
+    if (!window.confirm(`คุณต้องการลบประวัติการจัดการของ ${historyItem.employee_name} วันที่ ${format(new Date(historyItem.startDate), 'dd/MM/yyyy')} ใช่หรือไม่?\n(การกระทำนี้จะลบกะการทำงานในช่วงนี้ออกด้วย)`)) {
+      return;
+    }
+
+    setConfirmDeleteId(historyItem.id);
+
+    // Optimistic UI Update (Zero Latency)
+    const previousHistory = [...mgmtHistory];
+    setMgmtHistory(prev => prev.filter(h => h.id !== historyItem.id));
+
+    try {
+      const { success, error } = await deleteManagementHistoryRange(
+        historyItem.employee_id,
+        historyItem.startDate,
+        historyItem.endDate
+      );
+
+      if (!success) throw new Error(error || 'Failed to delete history');
+
+      // Fetch fresh shifts for calendar display
+      const { data: freshShifts } = await supabase.from('shifts').select('*').gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
+      if (freshShifts) setShifts(freshShifts);
+
+    } catch (err: any) {
+      console.error('Failed to delete history:', err);
+      // Rollback
+      setMgmtHistory(previousHistory);
+      alert('ไม่สามารถลบประวัติได้: ' + (err.message || 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ'));
+    } finally {
+      setConfirmDeleteId(null);
+    }
+  };
 
   const handleSaveManagement = async () => {
     if (!managementForm.employeeId || !managementForm.startDate || !managementForm.endDate) {
@@ -1222,7 +1387,7 @@ export default function ScheduleClient({
 
                 {/* Smart Date Range Selector */}
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">ระบุช่วงวันที่จัดการ</label>
+                  <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">ระบุช่วงวันที่</label>
                   <div
                     className="group relative flex items-center h-12 px-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0] hover:border-[#000000]/20 transition-all cursor-pointer overflow-hidden shadow-sm"
                     onClick={() => mgmtStartRef.current?.showPicker()}
@@ -1288,7 +1453,7 @@ export default function ScheduleClient({
               <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="w-5 h-5 text-[#000000]/40" />
-                  <h3 className="text-lg font-normal text-[#000000] tracking-tight">ประวัติการจัดการทั้งหมด</h3>
+                  <h3 className="text-lg font-normal text-[#000000] tracking-tight">ประวัติ</h3>
                 </div>
                 <button onClick={() => setShowManagementModal(false)} className="p-2 hover:bg-[#000000]/5 rounded-full text-[#000000]/40 transition-all">
                   <X className="w-5 h-5" />
@@ -1338,37 +1503,52 @@ export default function ScheduleClient({
                     <p className="text-sm font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {mgmtHistory.map((item) => (
-                      <div key={item.id} className="bg-[#fdfcf0] rounded-3xl border border-[#000000]/5 shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md group h-[130px] min-w-0">
-                        <div className={`h-1 w-full ${item.color}`} />
-                        <div className="p-3 flex flex-col h-full">
-                          <div className="flex justify-between items-start mb-1">
-                            <p className="text-[13px] font-normal text-gray-900 truncate flex-1 pr-1">{item.employee_name}</p>
-                            <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-normal ${item.color} border border-gray-100 shrink-0`}>
-                              {item.location}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-[12px] text-[#000000] mb-1.5">
-                            <Calendar className="w-2.5 h-2.5" />
-                            <span>{format(new Date(item.startDate), 'dd/MM/yyyy')}</span>
-                            {item.startDate !== item.endDate && (
-                              <>
-                                <span className="text-gray-300">→</span>
-                                <span>{format(new Date(item.endDate), 'dd/MM/yyyy')}</span>
-                              </>
-                            )}
-                          </div>
-                          {item.remark ? (
-                            <p className="text-[12px] text-gray-400 bg-gray-50/50 p-2 rounded-lg leading-tight italic truncate line-clamp-2 mt-auto border border-gray-100">
-                              &quot;{item.remark}&quot;
-                            </p>
-                          ) : (
-                            <div className="flex-1" />
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto h-full">
+                    <table className="w-full text-left border-collapse" style={{ tableLayout: 'fixed' }}>
+                      <thead className="sticky top-0 z-10 shadow-sm">
+                        <tr>
+                          {mgmtColumns.map(col => (
+                            <ColumnHeader
+                              key={col.id}
+                              col={col}
+                              onResize={handleColumnResize}
+                              onResizeEnd={handleColumnResizeEnd}
+                            />
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mgmtHistory.map((item) => (
+                          <tr key={item.id} className="border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-colors">
+                            <td className="p-3 text-[13px] font-normal text-[#000000] border-r border-[#000000]/5 truncate bg-transparent">
+                              {item.employee_name}
+                            </td>
+                            <td className="p-3 text-[12px] font-normal text-[#000000] border-r border-[#000000]/5 truncate bg-transparent">
+                              {format(new Date(item.startDate), 'dd/MM/yyyy')}
+                              {item.startDate !== item.endDate && ` → ${format(new Date(item.endDate), 'dd/MM/yyyy')}`}
+                            </td>
+                            <td className="p-3 text-[12px] font-normal text-[#000000] border-r border-[#000000]/5 truncate bg-transparent">
+                              <span className={`px-2 py-0.5 rounded-full ${item.color} border border-gray-100/50 inline-block`}>
+                                {item.location}
+                              </span>
+                            </td>
+                            <td className="p-3 text-[12px] font-normal text-[#000000]/80 border-r border-[#000000]/5 truncate bg-transparent">
+                              {item.remark || '-'}
+                            </td>
+                            <td className="p-3 text-center bg-transparent">
+                              <button
+                                onClick={() => handleDeleteHistory(item)}
+                                disabled={confirmDeleteId === item.id}
+                                className="p-1.5 text-[#000000]/20 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all mx-auto flex items-center justify-center disabled:opacity-50"
+                                title="ลบประวัติการจัดการ"
+                              >
+                                {confirmDeleteId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>

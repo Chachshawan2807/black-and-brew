@@ -26,17 +26,17 @@
 * **Action**: Executed comprehensive structural refactoring of the Inventory sorting system. Parsed `inventory-items.csv` (106 items) and bulk-migrated `sort_order` values (1-based index) into Supabase `inventory_items` table while preserving stock levels.
 * **Result**: All 106 items updated with sequential `sort_order` matching physical store layout. Zero insert failures on existing items.
 * **Files Modified**:
-  - `src/app/[locale]/inventory/page.tsx` — Strict `.order('sort_order', { ascending: true })` fetch, max+1 new item placement, 1-based DnD sort_order sync
-  - `src/app/actions/migrate-inventory-sort-order.ts` — [NEW] One-time CSV migration script with robust quoted-field parsing
-  - `src/test/run_migration.test.ts` — [NEW] Integration test to trigger and verify migration
+  * `src/app/[locale]/inventory/page.tsx` — Strict `.order('sort_order', { ascending: true })` fetch, max+1 new item placement, 1-based DnD sort_order sync
+  * `src/app/actions/migrate-inventory-sort-order.ts` — [NEW] One-time CSV migration script with robust quoted-field parsing
+  * `src/test/run_migration.test.ts` — [NEW] Integration test to trigger and verify migration
 * **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0, 21/21 static pages)
 
 * **Execution**: [DAILY LINE NOTIFICATION PROTOCOL]
 * **Action**: Created Vercel Cron scheduled endpoint (`/api/daily-report`) to trigger at 00:00 UTC (07:00 ICT) every day. Built a compiler script that aggregates shift data, strictly filtered inventory alerts (`stock <= order_point + 2`), OpenWeatherMap forecast (06:30 - 18:00 ICT window), and upcoming public holidays.
 * **Result**: Implemented automated, token-free, rule-based push notifications sent daily via LINE Messaging API, protected by `CRON_SECRET`.
 * **Files Modified**:
-  - `src/app/actions/daily-report-actions.ts` — [NEW] Core data compiler logic
-  - `src/app/api/daily-report/route.ts` — [NEW] Vercel Cron Endpoint
-  - `vercel.json` — [NEW] Schedule configuration
-  - `.env.example` — Added CRON_SECRET reference
+  * `src/app/actions/daily-report-actions.ts` — [NEW] Core data compiler logic
+  * `src/app/api/daily-report/route.ts` — [NEW] Vercel Cron Endpoint
+  * `vercel.json` — [NEW] Schedule configuration
+  * `.env.example` — Added CRON_SECRET reference
 * **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0)

@@ -116,3 +116,27 @@ export async function saveShift(payload: any) {
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
+
+export async function deleteManagementHistoryRange(employeeId: string, startDate: string, endDate: string) {
+  if (!employeeId || !startDate || !endDate) return { success: false, error: 'Missing parameters' };
+  try {
+    const { error } = await supabaseAdmin
+      .from('shifts')
+      .delete()
+      .eq('employee_id', employeeId)
+      .eq('metadata->is_management', true)
+      .gte('start_time', `${startDate.split('T')[0]}T00:00:00`)
+      .lte('start_time', `${endDate.split('T')[0]}T23:59:59`);
+
+    if (error) {
+      console.error('[deleteManagementHistoryRange] Supabase Error:', error.message, error);
+      throw error;
+    }
+
+    revalidateAppPaths();
+    return { success: true };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    return { success: false, error: errorMsg };
+  }
+}

@@ -422,6 +422,7 @@ pm run build).
   4. **Isolation Strategy:** ฟังก์ชันนี้ยังไม่ถูกเชื่อมต่อกับ cron jobs, database triggers หรือระบบ scheduling ใดๆ ทั้งสิ้น คงไว้เป็น callable utility สำหรับต่อยอดในอนาคต
   5. **Security:** Token ถูกเรียกใช้ผ่าน `process.env.LINE_CHANNEL_ACCESS_TOKEN` ฝั่ง server-side เท่านั้น (`'use server'`) ไม่มีความเสี่ยงหลุดไป client bundle
 - **Impact:** วางรากฐานระบบแจ้งเตือน LINE สำหรับต่อยอดเป็นโมดูลแจ้งเตือนอัตโนมัติในอนาคต
+
 ### DEC-044: Daily LINE Notification Protocol
 
 - **Date:** May 26, 2026
@@ -429,12 +430,11 @@ pm run build).
 - **Decision:**
   1. **Vercel Cron Trigger:** ตั้งค่า `vercel.json` trigger ไปที่ endpoint `/api/daily-report` ทุกวันเวลา 00:00 UTC (07:00 น. ICT)
   2. **Security & Authorization:** ใช้ `CRON_SECRET` ใน Header `Authorization: Bearer <token>` เพื่อตรวจสอบสิทธิ์ ไม่ให้โดนยิง API จากภายนอก
-  3. **Data Source Consolidation (`daily-report-actions.ts`):** 
-     - **Shifts:** สรุปกำลังพลจาก Supabase แบบเรียงลำดับ 9 ลำดับ (Master Order) ตัดข้อมูล "ลา" หรือ "วันหยุด" 
+  3. **Data Source Consolidation (`daily-report-actions.ts`):**
+     - **Shifts:** สรุปกำลังพลจาก Supabase แบบเรียงลำดับ 9 ลำดับ (Master Order) ตัดข้อมูล "ลา" หรือ "วันหยุด"
      - **Inventory:** กรองเข้มงวด `stock <= order_point + 2` เท่านั้น ไม่แสดงรายการปกติ
      - **Weather:** ดึง OpenWeatherMap เฉพาะช่วง 06:30-18:00 (เวลาทำงาน) ป้องกัน noise
      - **Holiday:** คำนวณวันหยุดถัดไปแจ้งเตือนล่วงหน้า 3 วัน
   4. **Rule-Based Recommendation:** ใช้ rule-based logic สั้นๆ แจ้งเตือนเรื่องฝนตกหรือเทศกาลเพื่อลดการใช้ Token ของ AI เสริมความเสถียรของ Cron
 - **Impact:** ได้ระบบสรุปข้อมูลอัจฉริยะทำงานอัตโนมัติ 100% ตอบสนองความเร็ว 0ms ในมุมผู้ใช้งาน
 - **Evidence:** `src/app/actions/daily-report-actions.ts`, `src/app/api/daily-report/route.ts`, `vercel.json`
-
