@@ -386,3 +386,15 @@
 px tsc --noEmit and
 pm run build).
 **Consequence:** The repository is now formally verified as stable and safely locked for the daily closing.
+
+### DEC-041: Inventory Sort Order Refactoring & CSV Migration (v4.3)
+
+- **Date:** May 26, 2026
+- **Context:** สินค้าคงคลัง 106 รายการในระบบ ERP ถูกเรียงลำดับแบบไม่สอดคล้องกับตำแหน่งจริงของสินค้าภายในร้าน (Physical Layout) ทำให้พนักงานเสียเวลาในการค้นหาและตรวจนับสต็อก ไฟล์ CSV (`inventory-items.csv`) ที่มีลำดับสินค้าตามตำแหน่งจริงถูกวางไว้ที่โฟลเดอร์ราก
+- **Decision:**
+  1. **CSV Migration Script:** สร้างสคริปต์ `migrate-inventory-sort-order.ts` สำหรับอ่านและแยกวิเคราะห์ CSV พร้อมรองรับ quoted fields (เครื่องหมายคำพูดซ้อน) จับคู่ชื่อสินค้ากับฐานข้อมูล และอัปเดต `sort_order` แบบ 1-based index ตามลำดับบรรทัดใน CSV ขณะเดียวกันก็รักษายอดคงเหลือ (stock) ที่ถูกต้อง
+  2. **Strict Sort Fetch:** ลบ `.order('name', { ascending: true })` fallback ออก เหลือเฉพาะ `.order('sort_order', { ascending: true })` อย่างเข้มงวด
+  3. **Max+1 New Item Placement:** เมื่อเพิ่มสินค้าใหม่ ระบบจะ query ค่า `sort_order` สูงสุดจาก Supabase แล้วกำหนดค่า `max + 1` ให้สินค้าใหม่ ผนวกท้ายรายการเสมอ
+  4. **1-Based DnD Sync:** ปรับ `handleDragEndRows` และ `syncFullStateToDB` ให้ใช้ `index + 1` (1-based) แทน `index` (0-based) เพื่อความสอดคล้องกับค่าที่ migration สร้างไว้
+- **Impact:** ลำดับสินค้าในหน้า Inventory ตรงกับตำแหน่งจริงในร้าน 100% รองรับการลากจัดเรียงใหม่แบบ Drag-and-Drop พร้อมบันทึกถาวรลง Supabase
+- **Evidence:** `src/app/actions/migrate-inventory-sort-order.ts`, `src/app/[locale]/inventory/page.tsx`, `src/test/run_migration.test.ts`, `npx tsc --noEmit` ✓, `npm run build` Exit Code 0

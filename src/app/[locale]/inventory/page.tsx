@@ -494,7 +494,7 @@ export default function DynamicInventoryManager() {
     try {
       const [configRes, inventoryRes] = await Promise.all([
         supabase.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
-        supabase.from('inventory_items').select('id, name, stock, order_qty, order_point, target_stock, unit, source, sort_order, updated_at').order('sort_order', { ascending: true }).order('name', { ascending: true })
+        supabase.from('inventory_items').select('id, name, stock, order_qty, order_point, target_stock, unit, source, sort_order, updated_at').order('sort_order', { ascending: true })
       ]);
 
       if (inventoryRes.error) {
@@ -561,6 +561,8 @@ export default function DynamicInventoryManager() {
     e.preventDefault();
     pushHistory();
 
+    const initialSortOrder = items.length > 0 ? Math.max(...items.map(i => i.sort_order || 0)) + 1 : 1;
+
     const newItem = {
       name: newItemData.name || '',
       stock: (newItemData.stock as unknown as string === "" || newItemData.stock === undefined || newItemData.stock === null) ? 0 : Number(newItemData.stock),
@@ -569,7 +571,7 @@ export default function DynamicInventoryManager() {
       target_stock: (newItemData.target_stock as unknown as string === "" || newItemData.target_stock === undefined || newItemData.target_stock === null) ? 0 : Number(newItemData.target_stock),
       unit: newItemData.unit || '',
       source: newItemData.source || '',
-      sort_order: items.length
+      sort_order: initialSortOrder
     };
 
     const tempId = crypto.randomUUID();
@@ -579,9 +581,25 @@ export default function DynamicInventoryManager() {
 
     try {
       setSavingState('saving');
+      
+      // Query maximum sort_order from Supabase to assign max + 1
+      const { data: maxOrderData, error: maxOrderErr } = await supabase
+        .from('inventory_items')
+        .select('sort_order')
+        .order('sort_order', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const nextSortOrder = (maxOrderErr || !maxOrderData) ? initialSortOrder : (maxOrderData.sort_order || 0) + 1;
+      
+      const dbNewItem = {
+        ...newItem,
+        sort_order: nextSortOrder
+      };
+
       const { data, error } = await supabase
         .from('inventory_items')
-        .insert([newItem])
+        .insert([dbNewItem])
         .select()
         .single();
 
@@ -710,7 +728,7 @@ export default function DynamicInventoryManager() {
 
     // Zero Latency Local Update
     const newItems = arrayMove(items, oldIndex, overIndex);
-    const updatedItems = newItems.map((item, index) => ({ ...item, sort_order: index }));
+    const updatedItems = newItems.map((item, index) => ({ ...item, sort_order: index + 1 }));
     setItems(updatedItems);
     setSavingState('saving');
 
@@ -734,7 +752,7 @@ export default function DynamicInventoryManager() {
     setSavingState('saving');
     setIsSyncing(true);
     try {
-      const sanitizedItems = currentItems.map((item, index) => sanitizeInventoryItem({ ...item, sort_order: index }));
+      const sanitizedItems = currentItems.map((item, index) => sanitizeInventoryItem({ ...item, sort_order: index + 1 }));
       if (sanitizedItems.length > 0) {
         const { error: upsertErr } = await supabase.from('inventory_items').upsert(sanitizedItems);
         if (upsertErr) throw upsertErr;

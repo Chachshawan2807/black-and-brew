@@ -19,3 +19,14 @@
 * **Execution**: [REBIRTH PROTOCOL: DAILY CLOSING INTEGRITY WORKFLOW]
 * **Action**: Executed Omni-Blueprint validation, UI/UX linting, Typescript readiness check, Next.js build validation, and Git security syncing.
 * **Result**: Ensured absolute zero-functional error architecture, 100% build pass, and complete project mapping updates.
+
+## 2026-05-26
+
+* **Execution**: [INVENTORY SORTING REFACTORING & CSV DATA MIGRATION]
+* **Action**: Executed comprehensive structural refactoring of the Inventory sorting system. Parsed `inventory-items.csv` (106 items) and bulk-migrated `sort_order` values (1-based index) into Supabase `inventory_items` table while preserving stock levels.
+* **Result**: All 106 items updated with sequential `sort_order` matching physical store layout. Zero insert failures on existing items.
+* **Files Modified**:
+  - `src/app/[locale]/inventory/page.tsx` — Strict `.order('sort_order', { ascending: true })` fetch, max+1 new item placement, 1-based DnD sort_order sync
+  - `src/app/actions/migrate-inventory-sort-order.ts` — [NEW] One-time CSV migration script with robust quoted-field parsing
+  - `src/test/run_migration.test.ts` — [NEW] Integration test to trigger and verify migration
+* **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0, 21/21 static pages)
