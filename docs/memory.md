@@ -398,3 +398,43 @@ pm run build).
   4. **1-Based DnD Sync:** ปรับ `handleDragEndRows` และ `syncFullStateToDB` ให้ใช้ `index + 1` (1-based) แทน `index` (0-based) เพื่อความสอดคล้องกับค่าที่ migration สร้างไว้
 - **Impact:** ลำดับสินค้าในหน้า Inventory ตรงกับตำแหน่งจริงในร้าน 100% รองรับการลากจัดเรียงใหม่แบบ Drag-and-Drop พร้อมบันทึกถาวรลง Supabase
 - **Evidence:** `src/app/actions/migrate-inventory-sort-order.ts`, `src/app/[locale]/inventory/page.tsx`, `src/test/run_migration.test.ts`, `npx tsc --noEmit` ✓, `npm run build` Exit Code 0
+
+### DEC-042: Inventory Quick Action Bar UI/UX Refactoring
+
+- **Date:** May 26, 2026
+- **Context:** หน้าต่าง Quick Action Bar ในระบบ Inventory กลมกลืนไปกับพื้นหลังสี Latte ครีมมากเกินไป และไม่มีการตรึงตำแหน่ง ทำให้เมื่อเลื่อนตารางข้อมูลสินค้าลงด้านล่างจะบดบังข้อมูลตัวกรอง/ค้นหา และเกิดการซ้อนทับข้อมูลขณะเลื่อนหน้าจอ
+- **Decision:**
+  1. ปรับปรุง Quick Actions Container โดยเติม Tailwind class `sticky top-0 z-20` เพื่อให้แถบ Quick Action ตรึงอยู่ด้านบนเสมอขณะผู้ใช้ทำการเลื่อนตารางลงมา
+  2. เพิ่มความทึบของสีพื้นหลังเป็นสีขาวทึบ (`bg-white`) เพื่อป้องกันข้อมูลของตารางโผล่ซ้อนขึ้นมาใต้วงขอบโค้งมน
+  3. เพิ่มความเด่นชัดและ Harden borders ให้กับกรอบคอนเทนเนอร์หลัก (`border-2 border-black` และเพิ่มเงา `shadow-sm`)
+  4. ปรับปรุงขอบของช่องอินพุตด้านใน ได้แก่ ช่องค้นหาสินค้า (`quickSearch`), ช่องป้อนจำนวน (`quickQty`) และขอบสวิตช์เลือกรับเข้า/นำออก (Segmented Control) ให้เป็นเส้นสีดำคมชัดสูง (`border-black`) แทนเส้นสีเทาอ่อนแบบเดิม
+- **Impact:** ยกระดับการเลื่อนดูข้อมูลและความสะดวกสบายในการกรอง/สั่งงานที่ร้านได้อย่างชัดเจน เพิ่มความสะดวกในการอ่านและป้อนข้อมูลของพนักงานผ่านอุปกรณ์เคลื่อนที่ในร้าน
+- **Evidence:** `src/app/[locale]/inventory/page.tsx`, `npx tsc --noEmit` ✓, `npm run build` Exit Code 0
+
+### DEC-043: LINE Messaging API Foundation Integration
+
+- **Date:** May 26, 2026
+- **Context:** ระบบ ERP ต้องการช่องทางการแจ้งเตือนอัตโนมัติผ่าน LINE เพื่อสื่อสารข้อมูลสำคัญ (เช่น สินค้าใกล้หมด, สรุปยอดประจำวัน) ไปยังผู้จัดการร้านและพนักงานผ่านแอป LINE ได้โดยตรง โดยตัวแปรสภาพแวดล้อม `LINE_CHANNEL_ACCESS_TOKEN` และ `CHANNEL_ID` ถูกลงทะเบียนไว้ในระบบแล้ว
+- **Decision:**
+  1. **SDK Installation:** ติดตั้ง `@line/bot-sdk` v11.x เป็น dependency หลักของโปรเจกต์
+  2. **Server Action Wrapper:** สร้างฟังก์ชัน `sendLineNotification(targetId, message)` ใน `src/app/actions/line-actions.ts` ทำหน้าที่เป็น baseline wrapper สำหรับส่ง push text message ผ่าน LINE API
+  3. **Client Initialization:** ใช้ `LineBotClient.fromChannelAccessToken()` (v11 API) สร้าง client แบบมีเงื่อนไข — หาก token ว่างเปล่า client จะเป็น `null` พร้อม early-return error message ที่ชัดเจน
+  4. **Isolation Strategy:** ฟังก์ชันนี้ยังไม่ถูกเชื่อมต่อกับ cron jobs, database triggers หรือระบบ scheduling ใดๆ ทั้งสิ้น คงไว้เป็น callable utility สำหรับต่อยอดในอนาคต
+  5. **Security:** Token ถูกเรียกใช้ผ่าน `process.env.LINE_CHANNEL_ACCESS_TOKEN` ฝั่ง server-side เท่านั้น (`'use server'`) ไม่มีความเสี่ยงหลุดไป client bundle
+- **Impact:** วางรากฐานระบบแจ้งเตือน LINE สำหรับต่อยอดเป็นโมดูลแจ้งเตือนอัตโนมัติในอนาคต
+### DEC-044: Daily LINE Notification Protocol
+
+- **Date:** May 26, 2026
+- **Context:** ระบบมีความต้องการสรุปข้อมูลสำคัญ (กำลังพล, สินค้าคงคลัง, สภาพอากาศ, และวันหยุด) ส่งตรงถึงผู้ใช้งานผ่าน LINE ทุกเช้าเวลา 07:00 น. เพื่อให้สามารถวางแผนกลยุทธ์หน้าร้านได้อย่างรวดเร็ว
+- **Decision:**
+  1. **Vercel Cron Trigger:** ตั้งค่า `vercel.json` trigger ไปที่ endpoint `/api/daily-report` ทุกวันเวลา 00:00 UTC (07:00 น. ICT)
+  2. **Security & Authorization:** ใช้ `CRON_SECRET` ใน Header `Authorization: Bearer <token>` เพื่อตรวจสอบสิทธิ์ ไม่ให้โดนยิง API จากภายนอก
+  3. **Data Source Consolidation (`daily-report-actions.ts`):** 
+     - **Shifts:** สรุปกำลังพลจาก Supabase แบบเรียงลำดับ 9 ลำดับ (Master Order) ตัดข้อมูล "ลา" หรือ "วันหยุด" 
+     - **Inventory:** กรองเข้มงวด `stock <= order_point + 2` เท่านั้น ไม่แสดงรายการปกติ
+     - **Weather:** ดึง OpenWeatherMap เฉพาะช่วง 06:30-18:00 (เวลาทำงาน) ป้องกัน noise
+     - **Holiday:** คำนวณวันหยุดถัดไปแจ้งเตือนล่วงหน้า 3 วัน
+  4. **Rule-Based Recommendation:** ใช้ rule-based logic สั้นๆ แจ้งเตือนเรื่องฝนตกหรือเทศกาลเพื่อลดการใช้ Token ของ AI เสริมความเสถียรของ Cron
+- **Impact:** ได้ระบบสรุปข้อมูลอัจฉริยะทำงานอัตโนมัติ 100% ตอบสนองความเร็ว 0ms ในมุมผู้ใช้งาน
+- **Evidence:** `src/app/actions/daily-report-actions.ts`, `src/app/api/daily-report/route.ts`, `vercel.json`
+

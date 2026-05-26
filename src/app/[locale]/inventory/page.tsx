@@ -581,7 +581,7 @@ export default function DynamicInventoryManager() {
 
     try {
       setSavingState('saving');
-      
+
       // Query maximum sort_order from Supabase to assign max + 1
       const { data: maxOrderData, error: maxOrderErr } = await supabase
         .from('inventory_items')
@@ -591,7 +591,7 @@ export default function DynamicInventoryManager() {
         .maybeSingle();
 
       const nextSortOrder = (maxOrderErr || !maxOrderData) ? initialSortOrder : (maxOrderData.sort_order || 0) + 1;
-      
+
       const dbNewItem = {
         ...newItem,
         sort_order: nextSortOrder
@@ -940,7 +940,7 @@ export default function DynamicInventoryManager() {
 
   return (
     <>
-      <div className="flex-1 w-full max-w-full overflow-y-auto bg-transparent text-[#000000] font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
+      <div className="flex-1 w-full max-w-full bg-transparent text-[#000000] font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
         <div className="w-fit mx-auto flex flex-col items-start">
           <div className="w-full flex flex-col items-center mb-8 text-center">
             <motion.h1
@@ -995,7 +995,7 @@ export default function DynamicInventoryManager() {
           </div>
 
           {/* Quick Actions */}
-          <div className="w-full flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-3xl border border-black/5 shadow-sm">
+          <div className="w-full flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-3xl border-2 border-black shadow-sm sticky top-4 md:top-8 z-[50]">
             <div className="flex-1">
               <form onSubmit={handleQuickSubmit} className="flex flex-col gap-2.5 w-full">
                 <div className="flex flex-row items-center gap-2 w-full box-border mb-0">
@@ -1009,7 +1009,7 @@ export default function DynamicInventoryManager() {
                       onChange={e => setQuickSearch(e.target.value)}
                       onFocus={() => setIsSearchFocused(true)}
                       onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-neutral-200 bg-white text-[14px] font-normal text-black outline-none focus:border-black/20 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-black bg-white text-[14px] font-normal text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
                     />
 
                     {/* Custom Dropdown */}
@@ -1064,12 +1064,12 @@ export default function DynamicInventoryManager() {
                       }}
                       min="0"
                       step="any" // 🔥 แก้ไขจาก "1" เป็น "any" ตรงจุดนี้ครับ
-                      className="w-full text-[14px] font-normal py-2 px-2 text-center rounded-xl border border-neutral-200 bg-white placeholder-neutral-400 text-black outline-none focus:border-black/20 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                      className="w-full text-[14px] font-normal py-2 px-2 text-center rounded-xl border border-black bg-white placeholder-neutral-400 text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
                     />
                   </div>
 
                   {/* 3. สวิตช์สลับข้างสไตล์ Segmented Control */}
-                  <div className="flex items-center bg-neutral-100 p-1 rounded-full border border-neutral-200/60 shrink-0">
+                  <div className="flex items-center bg-neutral-100 p-1 rounded-full border border-black shrink-0">
                     <button
                       type="button"
                       onClick={() => setQuickType('IN')}

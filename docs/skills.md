@@ -9,6 +9,7 @@
 * **Universal DB Reader (`readTableTool`)**: ระบบดึงข้อมูลจากตารางแบบ Bypasses RLS (ผ่าน `adminClient`) สำหรับให้ AI ใช้วิเคราะห์ข้อมูลภายในร้าน
 * **Weather API Service (`/api/weather`)**: การเชื่อมต่อ OpenWeatherMap แบบแคชข้อมูล (1800s) พร้อมการแปลงเวลาโซนไทย (Asia/Bangkok)
 * **External Intel Search (`internetSearchTool`)**: เครื่องมือค้นหาอินเทอร์เน็ตผ่าน Tavily API สำหรับสืบค้นสภาพแวดล้อม ข่าวสาร โดยล็อกพิกัดเป้าหมาย "ตำบลบึงคำพร้อย" เสมอ
+* **LINE Notification Push Service (`sendLineNotification`)**: ฟังก์ชัน Server Action สำหรับส่ง Push Text Message ผ่าน LINE Messaging API (`@line/bot-sdk` v11.x) ไปยัง User ID / Group ID ที่ระบุ — เป็น Callable Utility แบบแยกส่วนสำหรับต่อยอดระบบแจ้งเตือนอัตโนมัติ
 * **RepoMap Context Tool (`repo-map`)**: เครื่องมือสแกนโครงสร้างโปรเจกต์และสร้างแผนผังไฟล์ยึดโยงบริบท (`PROJECT_MAP.md`) แบบ Zero-dependency ช่วยลดการใช้ Token และกำหนดพิกัดไฟล์ได้อย่างแม่นยำก่อนการแก้ไขหรือตรวจสอบระบบ
 
 ### 2. UI/UX & Client Capabilities

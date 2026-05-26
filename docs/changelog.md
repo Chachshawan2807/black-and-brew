@@ -30,3 +30,13 @@
   - `src/app/actions/migrate-inventory-sort-order.ts` — [NEW] One-time CSV migration script with robust quoted-field parsing
   - `src/test/run_migration.test.ts` — [NEW] Integration test to trigger and verify migration
 * **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0, 21/21 static pages)
+
+* **Execution**: [DAILY LINE NOTIFICATION PROTOCOL]
+* **Action**: Created Vercel Cron scheduled endpoint (`/api/daily-report`) to trigger at 00:00 UTC (07:00 ICT) every day. Built a compiler script that aggregates shift data, strictly filtered inventory alerts (`stock <= order_point + 2`), OpenWeatherMap forecast (06:30 - 18:00 ICT window), and upcoming public holidays.
+* **Result**: Implemented automated, token-free, rule-based push notifications sent daily via LINE Messaging API, protected by `CRON_SECRET`.
+* **Files Modified**:
+  - `src/app/actions/daily-report-actions.ts` — [NEW] Core data compiler logic
+  - `src/app/api/daily-report/route.ts` — [NEW] Vercel Cron Endpoint
+  - `vercel.json` — [NEW] Schedule configuration
+  - `.env.example` — Added CRON_SECRET reference
+* **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0)
