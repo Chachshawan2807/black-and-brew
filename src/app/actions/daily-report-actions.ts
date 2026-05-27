@@ -43,7 +43,6 @@ interface StaffShiftEntry {
 const THAI_REPORT_DATE_FORMAT = 'dd/MM/yyyy';
 
 const DAY_OFF_SHIFT_TEXT = 'วันหยุด';
-const STAFF_NAME_FIXED_WIDTH = 14;
 
 /**
  * Normalizes legacy/empty shift labels into standard day-off status.
@@ -57,8 +56,7 @@ function normalizeShiftText(shiftText: string): string {
 }
 
 function formatStaffLine(name: string, value: string): string {
-  const spacing = ' '.repeat(Math.max(2, STAFF_NAME_FIXED_WIDTH - name.length + 2));
-  return `- ${name}:${spacing}${value}`;
+  return `- ${name} (${value})`;
 }
 
 /**
