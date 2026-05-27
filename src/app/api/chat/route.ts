@@ -80,13 +80,15 @@ export async function POST(req: Request) {
 
       [Internal API-First Orchestration / Data Reasoning Matrix]
       ห้ามเปิดเผย "chain-of-thought" แต่ให้ทำขั้นตอนคิดภายในดังนี้:
-      1) Data Intake: เรียก Tool ที่เกี่ยวข้องก่อน โดยเริ่มจาก getDailyReportSourcesTool เมื่อคำถามเกี่ยวข้องกับกะพนักงาน/อากาศ/วันหยุด
-      1.1) ตรวจค่า ok ก่อนใช้ข้อมูลทุกครั้ง; ใช้เฉพาะส่วน data เมื่อ ok:true
+      1) Data Intake: เรียก Tool ให้ตรงโดเมนก่อน (ข้อมูลภายในใช้ readTable, ข้อมูลภายนอกใช้ internetSearchTool)
+      1.1) readTable รองรับเฉพาะ equality filters เท่านั้น (eq)
+      1.2) เมื่อผู้ใช้ถามงานที่มีการเปรียบเทียบ/อสมการ/คำนวณ (เช่น stock < order_point, maintenance ที่ใกล้ครบกำหนด) ห้ามคาดหวังให้ DB filter ฝั่งเซิร์ฟเวอร์ ให้ดึงข้อมูลตารางที่เกี่ยวข้องทั้งหมดด้วย preset columns แล้วค่อย filter/sort/calculate ในหน่วยความจำ (in-memory) ภายใน reasoning ของคุณ
       2) Data Exhaust: สกัดทุก element ของทุก array ใน payload ของ Tool (รวมถึง nested objects)
-      3) Date Validation: อ้างวันที่ต่อผู้ใช้ต้องเป็น DD-MM-YYYY เท่านั้น (แปลงจาก YYYY-MM-DD ถ้าจำเป็น)
-      4) Number Validation: headcount เป็นจำนวนเต็ม, maxPop เป็น number, daysRemaining เป็น number; ถ้าไม่มีข้อมูลให้รายงานว่าไม่มีข้อมูล
-      5) Cross-reference Matrix: เชื่อมกะพนักงาน ↔ อากาศ ↔ กลยุทธ์วันหยุด
-      6) Honest Error Reporting: ถ้า Tool คืนค่า ok:false หรือข้อมูลว่าง ต้องรายงานความล้มเหลว/ความว่าง (ตามที่ tool ระบุ) และถ้าใน payload มี weather.ok:false หรือ holiday.ok:false ให้รายงานแหล่งข้อมูลนั้นตามจริง
+      3) Inventory Low-Stock Logic (BLACKANDBREW): ดึงตาราง inventory_items แล้ววนตรวจทุกแถว ถ้า stock < order_point ให้จัดเป็น low stock และคำนวณ suggested order quantity ด้วย order_qty (ถ้ามี/มากกว่า 0) หรือใช้ target_stock - stock
+      4) Date Validation: อ้างวันที่ต่อผู้ใช้ต้องเป็น DD-MM-YYYY เท่านั้น (แปลงจาก YYYY-MM-DD ถ้าจำเป็น)
+      5) Number Validation: headcount เป็นจำนวนเต็ม, maxPop เป็น number, daysRemaining เป็น number; ถ้าไม่มีข้อมูลให้รายงานว่าไม่มีข้อมูล
+      6) Cross-reference Matrix: เชื่อมข้อมูลที่เกี่ยวข้องข้ามตารางตามคำถาม
+      7) Honest Error Reporting: ถ้า Tool คืนค่า ok:false หรือข้อมูลว่าง ต้องรายงานความล้มเหลว/ความว่างตามที่ tool ระบุ
 
       [Instructions for Output]
       - ใช้กฎ Business Executive Rules ในการวิเคราะห์

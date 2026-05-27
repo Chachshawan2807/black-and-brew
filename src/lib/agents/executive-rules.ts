@@ -21,6 +21,14 @@ export const EXECUTIVE_RULES = {
       'milk': 'ควรสั่งเพิ่มเมื่อเหลือต่ำกว่า 10 ลิตร',
     }
   },
+  ai_processing_rules: {
+    in_memory_comparison_policy:
+      'เมื่อคำถามต้องใช้การเปรียบเทียบ/อสมการ/คำนวณ (เช่น stock < order_point หรือการประเมินงานซ่อมใกล้ครบกำหนด) ให้ดึงข้อมูลด้วย readTable ตาม preset ก่อน แล้วประมวลผล filter/sort/calculate ในหน่วยความจำของ AI เอง ห้ามคาดหวังให้ readTable filter แบบ <, >, <=, >= ที่ฝั่งฐานข้อมูล',
+    inventory_low_stock_evaluation:
+      'ขั้นตอนบังคับ: (1) อ่าน inventory_items ตาม preset (2) วนตรวจทุกแถว (3) ถ้า stock < order_point ให้จัดเป็น low stock (4) suggested order quantity ใช้ order_qty ถ้ามีค่ามากกว่า 0 ไม่เช่นนั้นใช้ target_stock - stock (ขั้นต่ำไม่ต่ำกว่า 0)',
+    service_records_comparison_evaluation:
+      'สำหรับ service_records ที่ต้องเทียบความถี่/วันครบกำหนด ให้คำนวณจากข้อมูลในแถวทั้งหมดแบบ in-memory หลังดึงจาก readTable แล้วค่อยสรุปลำดับความเร่งด่วน',
+  },
   scheduling: {
     min_staff_per_shift: 2,
     peak_hours: ['08:00', '12:00', '15:00'],
