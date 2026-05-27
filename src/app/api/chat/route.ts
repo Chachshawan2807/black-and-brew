@@ -1,8 +1,10 @@
 import { google } from '@ai-sdk/google';
 import { streamText, stepCountIs } from 'ai';
+import { format } from 'date-fns';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
+import { toZonedTime } from 'date-fns-tz';
 import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
-import { internetSearchTool } from '@/app/actions/tools/search-tools';
+import { getDailyReportSourcesTool } from '@/app/actions/tools/internal-sources-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 
 // Mandatory: AI SDK v6 Standards
@@ -51,13 +53,15 @@ export async function POST(req: Request) {
     console.log('[AI_ROUTE] Optimized Messages Mapped (Count:', coreMessages.length, ')');
     console.log('[AI_ROUTE] Calling Gemini with Surgical Tools...');
 
-    const currentThaiDate = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
-    const currentIsoDate = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).toISOString().split('T')[0]; // YYYY-MM-DD
+    const now = new Date();
+    const todayZoned = toZonedTime(now, 'Asia/Bangkok');
+    const currentThaiDate = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+    const currentIsoDate = format(todayZoned, 'yyyy-MM-dd'); // YYYY-MM-DD
 
     const result = await streamText({
       model: google('gemini-2.5-flash'), // Changed to gemini-2.0-flash for stability
       messages: coreMessages,
-      stopWhen: stepCountIs(10), // Increased to allow complex multi-step analysis
+      stopWhen: stepCountIs(20), // Allow complex multi-source reasoning
       // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Ultra-Minimalist System Prompt)
       system: `คุณคือ "บรู" AI ผู้ช่วยบริหารระบบร้าน Black-and-Brew
 
@@ -68,24 +72,34 @@ export async function POST(req: Request) {
       - วันเวลาปัจจุบันของไทย: ${currentThaiDate}
       (จงใช้ข้อมูลฐานเวลานี้ในการคำนวณคำว่า วันนี้, พรุ่งนี้, หรือตารางงานล่วงหน้าเสมอ)
 
-      คุณมีสิทธิ์เข้าถึงฐานข้อมูลหลังบ้านได้ทุกส่วน (Universal Read Access)
-      หากผู้ใช้ถามข้อมูลที่เกี่ยวกับทรัพยากร บุคคล หรือสถิติ ให้ใช้ Tool ดึงข้อมูลจากฐานข้อมูลจริงมาประกอบกับกฎเกณฑ์ของธุรกิจเสมอ
+      หลักการข้อมูล: โครงสร้างนี้ยึด "Internal API-First" แบบเข้มงวด
+      - ข้อมูลที่ได้จาก Tool คือ "Primary Absolute Truth"
+      - ห้ามเดาข้อมูลจากความรู้เดิม หรืออินเทอร์เน็ต
+      - ถ้า Tool ให้ข้อมูลไม่ครบ/ล้มเหลว ต้องรายงานตามค่าที่ได้รับจริง
 
       [Business Executive Rules]
       ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
 
-      [Instructions]
-      - หากผู้ใช้ถามเกี่ยวกับสภาพอากาศ วันหยุด ข่าวสาร หรือข้อมูลภายนอกร้าน ให้คุณใช้เครื่องมือ \`internetSearchTool\` โดยระบบจะบังคับใส่คำค้นหาให้เจาะจงพิกัด "ตำบลบึงคำพร้อย ลำลูกกา ปทุมธานี" ร่วมด้วยเสมอ เพื่อความแม่นยำของเรดาร์สภาพอากาศรอบตัวร้านจริง 100%
-      - ใช้กฎข้างต้นในการวิเคราะห์ข้อมูล เช่น ถ้าสต็อกต่ำกว่าเกณฑ์ ให้แจ้งเตือนผู้ใช้
-      - ตอบสั้นกระชับจากคลังข้อมูลเท่านั้น ห้ามใช้ตัวหนา (font-bold) เด็ดขาด
-      - เมื่อเรียกใช้ Tool และได้รับข้อมูลแล้ว ต้องสรุปเป็นภาษาไทยเพื่อตอบกลับเสมอ
-      - ห้ามเดาข้อมูลเองเด็ดขาด ถ้าไม่มีข้อมูลให้แจ้งตามตรง
+      [Internal API-First Orchestration / Data Reasoning Matrix]
+      ห้ามเปิดเผย "chain-of-thought" แต่ให้ทำขั้นตอนคิดภายในดังนี้:
+      1) Data Intake: เรียก Tool ที่เกี่ยวข้องก่อน โดยเริ่มจาก getDailyReportSourcesTool เมื่อคำถามเกี่ยวข้องกับกะพนักงาน/อากาศ/วันหยุด
+      1.1) ตรวจค่า ok ก่อนใช้ข้อมูลทุกครั้ง; ใช้เฉพาะส่วน data เมื่อ ok:true
+      2) Data Exhaust: สกัดทุก element ของทุก array ใน payload ของ Tool (รวมถึง nested objects)
+      3) Date Validation: อ้างวันที่ต่อผู้ใช้ต้องเป็น DD-MM-YYYY เท่านั้น (แปลงจาก YYYY-MM-DD ถ้าจำเป็น)
+      4) Number Validation: headcount เป็นจำนวนเต็ม, maxPop เป็น number, daysRemaining เป็น number; ถ้าไม่มีข้อมูลให้รายงานว่าไม่มีข้อมูล
+      5) Cross-reference Matrix: เชื่อมกะพนักงาน ↔ อากาศ ↔ กลยุทธ์วันหยุด
+      6) Honest Error Reporting: ถ้า Tool คืนค่า ok:false หรือข้อมูลว่าง ต้องรายงานความล้มเหลว/ความว่าง (ตามที่ tool ระบุ) และถ้าใน payload มี weather.ok:false หรือ holiday.ok:false ให้รายงานแหล่งข้อมูลนั้นตามจริง
+
+      [Instructions for Output]
+      - ใช้กฎ Business Executive Rules ในการวิเคราะห์
+      - ตอบเป็นภาษาไทยเท่านั้น และห้ามใช้ตัวหนา (font-bold)
+      - สรุปจากข้อมูลที่ยืนยันจาก Tool เท่านั้น ห้ามเดา
       ${sanitizedContext ? `\n\n[Live Screen Context]\nผู้ใช้กำลังดูข้อมูลนี้บนหน้าจอ:\n${sanitizedContext}\nหากผู้ใช้ถามเกี่ยวกับสิ่งที่เห็นบนหน้าจอ ให้อิงตามข้อมูล Live Context นี้ก่อน` : ''}`,
       providerOptions: {
         google: {
           generationConfig: {
             // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Cap Max Output Tokens)
-            maxOutputTokens: 1000,
+            maxOutputTokens: 1200,
             temperature: 0.1,
           },
         },
@@ -97,9 +111,9 @@ export async function POST(req: Request) {
         
         // Schedule / Shifts Reader
         getDailyShiftsTool: getDailyShiftsTool,
-        
-        // Internet Search Tool
-        internetSearchTool: internetSearchTool,
+
+        // Internal API-First Daily LINE sources
+        getDailyReportSourcesTool: getDailyReportSourcesTool,
       },
     });
 

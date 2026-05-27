@@ -34,26 +34,38 @@ export const readTableTool = tool({
   }),
   execute: async ({ tableName, columns, filters, limit }) => {
     console.log(`[AI_TOOL] Universal Read: ${tableName}`, { columns, filters, limit });
-    
-    let query = adminClient
-      .from(tableName)
-      .select(columns)
-      .limit(limit);
+    try {
+      let query = adminClient
+        .from(tableName)
+        .select(columns)
+        .limit(limit);
 
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        query = query.eq(key, value);
-      });
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          query = query.eq(key, value);
+        });
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error(`[AI_TOOL] Error reading ${tableName}:`, error);
+        return {
+          ok: false,
+          data: null,
+          error: { message: error.message, details: error.details, hint: (error as any).hint ?? null },
+        };
+      }
+
+      return { ok: true, data: data ?? [] };
+    } catch (err: any) {
+      console.error(`[AI_TOOL] Universal Read crashed:`, err);
+      return {
+        ok: false,
+        data: null,
+        error: { message: err?.message || 'Unknown error', details: err?.details ?? null, hint: null },
+      };
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error(`[AI_TOOL] Error reading ${tableName}:`, error);
-      throw new Error(`Failed to read table ${tableName}: ${error.message}`);
-    }
-
-    return data;
   }
 });
 
@@ -64,43 +76,59 @@ export const getDailyShiftsTool = tool({
   }),
   execute: async ({ date }) => {
     console.log(`[AI_TOOL] Get Daily Shifts for: ${date}`);
-    
-    const { data: profiles, error: profileError } = await adminClient
-      .from('profiles')
-      .select('id, full_name, schedule_order')
-      .order('schedule_order', { ascending: true });
+    try {
+      const { data: profiles, error: profileError } = await adminClient
+        .from('profiles')
+        .select('id, full_name, schedule_order')
+        .order('schedule_order', { ascending: true });
 
-    if (profileError) {
-      console.error('[AI_TOOL] Error reading profiles:', profileError);
-      throw new Error(`Failed to read profiles: ${profileError.message}`);
-    }
-
-    const { data: shifts, error: shiftError } = await adminClient
-      .from('shifts')
-      .select('employee_id, status, start_time, metadata')
-      .gte('start_time', `${date}T00:00:00`)
-      .lte('start_time', `${date}T23:59:59`);
-
-    if (shiftError) {
-      console.error('[AI_TOOL] Error reading shifts:', shiftError);
-      throw new Error(`Failed to read shifts: ${shiftError.message}`);
-    }
-
-    const payload = (profiles || []).map((profile, index) => {
-      const shift = (shifts || []).find(s => s.employee_id === profile.id);
-      
-      let shiftValue = "";
-      if (shift && shift.metadata && shift.metadata.location) {
-        shiftValue = shift.metadata.location;
+      if (profileError) {
+        console.error('[AI_TOOL] Error reading profiles:', profileError);
+        return {
+          ok: false,
+          data: null,
+          error: { message: profileError.message, details: profileError.details, hint: (profileError as any).hint ?? null },
+        };
       }
 
-      return {
-        row_order: index + 1,
-        name: profile.full_name,
-        shift: shiftValue
-      };
-    });
+      const { data: shifts, error: shiftError } = await adminClient
+        .from('shifts')
+        .select('employee_id, status, start_time, metadata')
+        .gte('start_time', `${date}T00:00:00`)
+        .lte('start_time', `${date}T23:59:59`);
 
-    return payload;
+      if (shiftError) {
+        console.error('[AI_TOOL] Error reading shifts:', shiftError);
+        return {
+          ok: false,
+          data: null,
+          error: { message: shiftError.message, details: shiftError.details, hint: (shiftError as any).hint ?? null },
+        };
+      }
+
+      const payload = (profiles || []).map((profile, index) => {
+        const shift = (shifts || []).find(s => s.employee_id === profile.id);
+
+        let shiftValue = '';
+        if (shift && shift.metadata && shift.metadata.location) {
+          shiftValue = shift.metadata.location;
+        }
+
+        return {
+          row_order: index + 1,
+          name: profile.full_name,
+          shift: shiftValue,
+        };
+      });
+
+      return { ok: true, data: payload };
+    } catch (err: any) {
+      console.error('[AI_TOOL] Get Daily Shifts crashed:', err);
+      return {
+        ok: false,
+        data: null,
+        error: { message: err?.message || 'Unknown error', details: err?.details ?? null, hint: null },
+      };
+    }
   }
 });

@@ -163,6 +163,49 @@ describe('Daily LINE Notification Protocol Actions', () => {
       const result = await fetchTodayShifts(new Date('2026-05-26'));
       expect(result).toEqual({ activeStaff: [], offStaff: [], headcount: 0 });
     });
+
+    it('should normalize legacy "ไม่มีกะ" to day-off status', async () => {
+      mockProfilesData = [{ id: 'p1', full_name: 'หนูดี', schedule_order: 1 }];
+      mockShiftsData = [
+        { employee_id: 'p1', status: 'active', metadata: { location: 'ไม่มีกะ' } },
+      ];
+
+      const result = await fetchTodayShifts(new Date('2026-05-26'));
+      expect(result.offStaff[0]).toEqual({ name: 'หนูดี', shiftText: 'วันหยุด' });
+    });
+  });
+
+  describe('compileDailyReportPayload() staff formatting', () => {
+    it('should use DD-MM-YYYY header and group day-off staff with Thai "และ"', async () => {
+      mockProfilesData = [
+        { id: 'p1', full_name: 'ปิ่น', schedule_order: 1 },
+        { id: 'p2', full_name: 'หนูดี', schedule_order: 2 },
+        { id: 'p3', full_name: 'ฟิว', schedule_order: 3 },
+        { id: 'p4', full_name: 'มุก', schedule_order: 4 },
+      ];
+      mockShiftsData = [
+        { employee_id: 'p1', status: 'active', metadata: { location: 'เข้ากะ 6:30' } },
+        { employee_id: 'p4', status: 'on_leave', metadata: { location: 'ลา' } },
+      ];
+
+      vi.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({ list: [] }),
+      } as Response);
+      mockHolidaysData = null;
+
+      const payload = await compileDailyReportPayload();
+      const today = toZonedTime(new Date(), 'Asia/Bangkok');
+      const expectedDate = format(today, 'dd-MM-yyyy');
+
+      expect(payload).toMatch(new RegExp(`รายงานสรุปประจำวันที่ ${expectedDate.replace(/-/g, '\\-')}`));
+      expect(payload).toContain('- ปิ่น: 6:30');
+      expect(payload).toContain('วันหยุดประจำวัน');
+      expect(payload).toContain('หนูดีและฟิวเป็นวันหยุด');
+      expect(payload).toContain('- มุก: ลา');
+      expect(payload).not.toContain('ไม่มีกะ');
+      expect(payload).not.toMatch(/หนูดี: วันหยุด/);
+    });
   });
 
 
@@ -235,7 +278,7 @@ describe('Daily LINE Notification Protocol Actions', () => {
       const targetDate = new Date('2026-05-26');
       const result = await fetchNextHoliday(targetDate);
 
-      expect(result).toEqual({ name: 'วันวิสาขบูชา', daysRemaining: 6 });
+      expect(result).toEqual({ name: 'วันวิสาขบูชา', daysRemaining: 6, ok: true });
     });
 
     it('should return null if no holiday is returned', async () => {

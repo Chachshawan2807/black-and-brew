@@ -37,6 +37,69 @@ interface StaffShiftEntry {
   shiftText: string;
 }
 
+/** Thai display format for report header (DD-MM-YYYY). */
+const THAI_REPORT_DATE_FORMAT = 'dd-MM-yyyy';
+
+const DAY_OFF_SHIFT_TEXT = 'วันหยุด';
+
+/**
+ * Normalizes legacy/empty shift labels into standard day-off status.
+ * Never surfaces "ไม่มีกะ" in the LINE report.
+ */
+function normalizeShiftText(shiftText: string): string {
+  const trimmed = shiftText.trim();
+  if (!trimmed || trimmed === 'ไม่มีกะ') return DAY_OFF_SHIFT_TEXT;
+  return trimmed;
+}
+
+function isDayOffShift(shiftText: string): boolean {
+  return normalizeShiftText(shiftText) === DAY_OFF_SHIFT_TEXT;
+}
+
+/**
+ * Joins employee names Thai-style: AและB or A, B และC
+ */
+function joinThaiNames(names: string[]): string {
+  if (names.length === 0) return '';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]}และ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')} และ${names[names.length - 1]}`;
+}
+
+/**
+ * Builds the staff block: active shifts, grouped day-off line, then leave/other statuses.
+ */
+function formatStaffSection(activeStaff: StaffShiftEntry[], offStaff: StaffShiftEntry[]): string {
+  const activeLines = activeStaff.map((s) => `- ${s.name}: ${s.shiftText}`);
+
+  const dayOffNames: string[] = [];
+  const otherOffLines: string[] = [];
+
+  for (const entry of offStaff) {
+    const normalized = normalizeShiftText(entry.shiftText);
+    if (isDayOffShift(normalized)) {
+      dayOffNames.push(entry.name);
+    } else {
+      otherOffLines.push(`- ${entry.name}: ${normalized}`);
+    }
+  }
+
+  const sections: string[] = [];
+  if (activeLines.length > 0) sections.push(activeLines.join('\n'));
+
+  if (dayOffNames.length > 0) {
+    sections.push(`วันหยุดประจำวัน\n${joinThaiNames(dayOffNames)}เป็นวันหยุด`);
+  }
+
+  if (otherOffLines.length > 0) sections.push(otherOffLines.join('\n'));
+
+  if (sections.length === 0) {
+    return '- ไม่มีข้อมูลพนักงานในระบบ';
+  }
+
+  return sections.join('\n\n');
+}
+
 /**
  * SPEC: Staff Shift Chronological Sorting
  * 
@@ -70,7 +133,7 @@ export async function fetchTodayShifts(targetDate: Date) {
     profiles.forEach(profile => {
       const shift = shifts.find(s => s.employee_id === profile.id);
 
-      let shiftText = 'วันหยุด'; // Default: empty/null/blank → "วันหยุด"
+      let shiftText = DAY_OFF_SHIFT_TEXT; // Default: empty/null/blank → day off
 
       if (shift && shift.status && shift.status !== 'on_leave' && shift.metadata?.location) {
         const rawLocation = shift.metadata.location;
@@ -82,12 +145,14 @@ export async function fetchTodayShifts(targetDate: Date) {
           shiftText = rawLocation.replace(/^เข้ากะ\s*/, '').trim();
 
           if (!shiftText) {
-            shiftText = 'วันหยุด'; // Blank after stripping → "วันหยุด"
+            shiftText = DAY_OFF_SHIFT_TEXT;
           }
         }
       } else if (shift && (shift.status === 'on_leave' || shift.metadata?.location === 'ลา')) {
         shiftText = 'ลา';
       }
+
+      shiftText = normalizeShiftText(shiftText);
 
       // Classify into Active or Off/Leave block
       if (isActiveShift(shiftText)) {
@@ -118,10 +183,18 @@ export async function fetchTodayShifts(targetDate: Date) {
  * - Weather Fallback Rule: If no severe storms, errors, or exceptional data → "สภาพอากาศปกติ"
  * - Do NOT display missing placeholder warnings
  */
-export async function fetchWeatherForecast() {
+export async function fetchWeatherForecast(targetDate?: Date) {
   try {
     const apiKey = process.env.OPENWEATHER_API_KEY;
-    if (!apiKey) return { summary: 'สภาพอากาศปกติ', maxPop: 0, warningPeriods: [] };
+    if (!apiKey) {
+      return {
+        ok: false,
+        error: { message: 'Missing OPENWEATHER_API_KEY', details: null },
+        summary: 'สภาพอากาศปกติ',
+        maxPop: 0,
+        warningPeriods: [],
+      };
+    }
 
     // Lat/Lon for Lam Luk Ka, Pathum Thani as specified
     const lat = '13.929692';
@@ -131,14 +204,20 @@ export async function fetchWeatherForecast() {
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
       // Fallback: return normal weather status on API error
-      return { summary: 'สภาพอากาศปกติ', maxPop: 0, warningPeriods: [] };
+      return {
+        ok: false,
+        error: { message: 'OpenWeatherMap responded with error', details: response.statusText },
+        summary: 'สภาพอากาศปกติ',
+        maxPop: 0,
+        warningPeriods: [],
+      };
     }
 
     const data = await response.json();
 
-    // Get today's start and end in UTC for 06:30 - 18:00 ICT
-    const now = new Date();
-    const today = toZonedTime(now, 'Asia/Bangkok');
+    // Get target day's start/end in Asia/Bangkok for 06:30 - 18:00 ICT
+    const base = targetDate ?? new Date();
+    const today = toZonedTime(base, 'Asia/Bangkok');
     today.setHours(0, 0, 0, 0);
     const dateStr = format(today, 'yyyy-MM-dd');
 
@@ -158,7 +237,13 @@ export async function fetchWeatherForecast() {
 
     if (workingHours.length === 0) {
       // No data in working hours → default to normal (no placeholder warning)
-      return { summary: 'สภาพอากาศปกติ', maxPop: 0, warningPeriods: [] };
+      return {
+        ok: true,
+        dataWindowEmpty: true,
+        summary: 'สภาพอากาศปกติ',
+        maxPop: 0,
+        warningPeriods: [],
+      };
     }
 
     let maxPop = 0;
@@ -203,6 +288,7 @@ export async function fetchWeatherForecast() {
     }
 
     return {
+      ok: true,
       summary,
       maxPop,
       warningPeriods: warnings
@@ -211,7 +297,13 @@ export async function fetchWeatherForecast() {
   } catch (error) {
     console.error('[fetchWeatherForecast] Error:', error);
     // Fallback: return normal status on any error (no placeholder warnings)
-    return { summary: 'สภาพอากาศปกติ', maxPop: 0, warningPeriods: [] };
+    return {
+      ok: false,
+      error: { message: (error as any)?.message || 'Unknown error', details: (error as any)?.details ?? null },
+      summary: 'สภาพอากาศปกติ',
+      maxPop: 0,
+      warningPeriods: [],
+    };
   }
 }
 
@@ -232,15 +324,19 @@ export async function fetchNextHoliday(targetDate: Date) {
       .limit(1)
       .single();
 
-    if (error || !data) return null;
+    if (error) {
+      return { ok: false, error: { message: error.message, details: error.details ?? null } };
+    }
+
+    if (!data) return null;
 
     const holidayDate = startOfDay(new Date(data.date));
     const targetMidnight = startOfDay(targetDate);
     const diff = differenceInDays(holidayDate, targetMidnight);
-    return { name: data.name, daysRemaining: diff };
+    return { ok: true, name: data.name, daysRemaining: diff };
   } catch (error) {
     console.error('[fetchNextHoliday] Error:', error);
-    return null;
+    return { ok: false, error: { message: (error as any)?.message || 'Unknown error', details: (error as any)?.details ?? null } };
   }
 }
 
@@ -265,7 +361,7 @@ function generateStrategicAdvice(weather: any, holiday: any) {
   }
 
   // Holiday-based advice with 7-day threshold
-  if (holiday && holiday.daysRemaining <= 7) {
+  if (holiday && holiday.ok === true && typeof holiday.daysRemaining === 'number' && holiday.daysRemaining <= 7) {
     if (holiday.daysRemaining === 0) {
       // Tier 0: Holiday today
       advices.push(`🔴 วันนี้เป็นวันหยุดนักขัตฤกษ์ (${holiday.name}) คาดว่าลูกค้าหน้าร้านจะหนาแน่นเป็นพิเศษ เตรียมกำลังพลและวัตถุดิบให้พร้อมรับมือ`);
@@ -295,28 +391,15 @@ function generateStrategicAdvice(weather: any, holiday: any) {
 export async function compileDailyReportPayload() {
   const now = new Date();
   const today = toZonedTime(now, 'Asia/Bangkok');
-  const dateStr = format(today, 'dd/MM/yyyy');
+  const dateStr = format(today, THAI_REPORT_DATE_FORMAT);
 
   const [{ activeStaff, offStaff, headcount }, weather, holiday] = await Promise.all([
     fetchTodayShifts(today),
-    fetchWeatherForecast(),
+    fetchWeatherForecast(today),
     fetchNextHoliday(today)
   ]);
 
-  // Build staff section with two blocks separated by empty line
-  const activeLines = activeStaff.map(s => `- ${s.name}: ${s.shiftText}`).join('\n');
-  const offLines = offStaff.map(s => `- ${s.name}: ${s.shiftText}`).join('\n');
-
-  let staffSection = '';
-  if (activeLines && offLines) {
-    staffSection = `${activeLines}\n\n${offLines}`;
-  } else if (activeLines) {
-    staffSection = activeLines;
-  } else if (offLines) {
-    staffSection = offLines;
-  } else {
-    staffSection = '- ไม่มีข้อมูลพนักงานในระบบ';
-  }
+  const staffSection = formatStaffSection(activeStaff, offStaff);
 
 
 
@@ -326,7 +409,7 @@ export async function compileDailyReportPayload() {
     : 'ไม่มีช่วงเวลาเสี่ยงพิเศษ';
 
   // Build holiday section
-  const holidayText = holiday
+  const holidayText = holiday && holiday.ok === true
     ? `${holiday.name} (อีก ${holiday.daysRemaining} วัน)`
     : 'ไม่มีข้อมูลวันหยุดในระบบ';
 
