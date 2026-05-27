@@ -3,8 +3,8 @@ import { streamText, stepCountIs } from 'ai';
 import { format } from 'date-fns';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
 import { toZonedTime } from 'date-fns-tz';
-import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
-import { getDailyReportSourcesTool } from '@/app/actions/tools/internal-sources-tools';
+import { readTableTool } from '@/app/actions/tools/database-tools';
+import { internetSearchTool } from '@/app/actions/tools/search-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 
 // Mandatory: AI SDK v6 Standards
@@ -104,14 +104,8 @@ export async function POST(req: Request) {
       },
       // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Surgical Tools Partitioning)
       tools: {
-        // Universal DB Reader (Phase 1)
         readTable: readTableTool,
-        
-        // Schedule / Shifts Reader
-        getDailyShiftsTool: getDailyShiftsTool,
-
-        // Internal API-First Daily LINE sources
-        getDailyReportSourcesTool: getDailyReportSourcesTool,
+        internetSearchTool: internetSearchTool,
       },
     });
 

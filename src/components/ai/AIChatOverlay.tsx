@@ -9,10 +9,9 @@ import Image from 'next/image';
 
 const QUICK_ACTIONS = [
   { id: 'shift', label: '👥 เช็กตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
-  { id: 'weather', label: '🌦️ เช็กสภาพอากาศ & วันหยุด', query: 'ตรวจสอบสภาพอากาศในพื้นที่ร้านวันนี้และเช็กว่ามีวันหยุดนักขัตฤกษ์ใกล้ๆ นี้ไหม' }
-  ,
+  { id: 'weather', label: '🌦️ เช็กสภาพอากาศ & วันหยุด', query: 'ตรวจสอบสภาพอากาศในพื้นที่ร้านวันนี้และเช็กว่ามีวันหยุดนักขัตฤกษ์ใกล้ๆ นี้ไหม' },
   { id: 'inventory', label: '📦 เช็กสต็อกต่ำกว่าจุดสั่งซื้อ', query: 'สรุปสินค้าที่สต็อกต่ำกว่าจุดสั่งซื้อ พร้อมจำนวนที่ควรสั่งเติม' },
-  { id: 'maintenance', label: '🧰 แจ้งงานซ่อมบำรุง', query: 'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น' }
+  { id: 'maintenance', label: '🧰 แจ้งงานซ่อมบำรุง', query: 'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น' },
 ];
 
 // Actual chat component containing useChat (only runs on client)
@@ -27,17 +26,16 @@ export default function AIChatOverlay() {
     transport: new DefaultChatTransport({ api: '/api/chat' }),
   });
 
-  // Hydration guard: prevent Math.random / browser-only globals during SSR
+  // Hydration guard + load chat history once after mount
   useEffect(() => {
     setIsMounted(true);
     const savedHistory = localStorage.getItem('bb-chat-history');
     if (savedHistory) {
       try {
         const parsed = JSON.parse(savedHistory);
-        // Anti-XSS Sanitization: Strip script tags and dangerous HTML payload
         const sanitized = parsed.map((msg: any) => ({
           ...msg,
-          content: typeof msg.content === 'string' 
+          content: typeof msg.content === 'string'
             ? msg.content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').replace(/on\w+="[^"]*"/gi, '')
             : msg.content
         }));
@@ -46,29 +44,27 @@ export default function AIChatOverlay() {
         console.error("Failed to parse chat history", e);
       }
     }
-  }, []); // บรรทัดสำคัญ: ล็อกเป็นอาร์เรย์ว่างคงที่ขนาดเป็น 0 ตลอดไป ห้ามใส่ตัวแปรอื่น
+  }, []);
+
   const isLoading = status === 'streaming' || status === 'submitted';
 
-  // One combined effect: auto-scroll + (debounced) persistence.
+  // Persist chat history after mount (debounced, skip during streaming)
   useEffect(() => {
-    if (!isMounted) return;
-
-    // Auto-scroll on open/messages update
-    if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    // Avoid heavy localStorage writes during streaming.
-    if (isLoading) return;
+    if (!isMounted || isLoading) return;
 
     const t = window.setTimeout(() => {
       localStorage.setItem('bb-chat-history', JSON.stringify(messages));
     }, 300);
 
-    return () => {
-      window.clearTimeout(t);
-    };
-  }, [messages, isOpen, isMounted, isLoading]);
+    return () => window.clearTimeout(t);
+  }, [messages, isMounted, isLoading]);
+
+  // Auto-scroll when messages update
+  useEffect(() => {
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isOpen]);
 
   const getActiveWindowContext = () => {
     if (typeof window === 'undefined') return "Current View: Main Dashboard";
@@ -167,7 +163,7 @@ export default function AIChatOverlay() {
               style={{ maxHeight: '70vh' }}
             >
               {/* Header */}
-              <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between gap-3 bg-[#fdfcf0]">
+              <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between gap-3 bg-[#fdfcf0]">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-2xl bg-black/5 flex items-center justify-center shrink-0 overflow-hidden">
                     <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={24} height={24} className="w-6 h-6 object-contain" />
@@ -184,7 +180,7 @@ export default function AIChatOverlay() {
                     setMessages([]);
                     localStorage.removeItem('bb-chat-history');
                   }}
-                  className="text-black/60 hover:text-black transition-colors"
+                  className="text-black hover:opacity-70 transition-opacity"
                   title="ล้างประวัติ"
                 >
                   <Trash2 size={16} />
@@ -221,7 +217,7 @@ export default function AIChatOverlay() {
                 )}
 
                 {error && (
-                  <div className="text-[12px] font-normal text-red-500 px-1">
+                  <div className="text-[12px] font-normal text-black px-1">
                     เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง
                   </div>
                 )}
@@ -243,7 +239,7 @@ export default function AIChatOverlay() {
                           { body: { clientContext: liveScreenContext } }
                         );
                       }}
-                      className="border border-black px-3 py-1.5 rounded-full text-xs text-black bg-gray-50 hover:bg-black hover:text-white transition cursor-pointer"
+                      className="border-2 border-black px-3 py-1.5 rounded-full text-xs text-black bg-white hover:bg-black hover:text-white transition cursor-pointer"
                     >
                       {action.label}
                     </button>
@@ -254,7 +250,7 @@ export default function AIChatOverlay() {
               {/* Input Area */}
               <form
                 onSubmit={handleSubmit}
-                className="px-4 py-3 border-t border-black/5 flex items-center gap-2 bg-[#fdfcf0]"
+                className="px-4 py-3 border-t-2 border-black flex items-center gap-2 bg-[#fdfcf0]"
               >
                 <input
                   id="ai-chat-input"
@@ -264,7 +260,7 @@ export default function AIChatOverlay() {
                   placeholder="ถามบรู..."
                   disabled={isLoading}
                   autoComplete="off"
-                  className="flex-1 bg-white border border-black/5 rounded-2xl px-4 py-2.5 text-[13px] font-normal text-black placeholder:text-black/40 focus:outline-none focus:ring-1 focus:ring-black/10 transition-all disabled:opacity-50"
+                  className="flex-1 bg-white border-2 border-black rounded-2xl px-4 py-2.5 text-[13px] font-normal text-black placeholder:text-black placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-black transition-all disabled:opacity-50"
                 />
                 <motion.button
                   type="submit"
@@ -305,8 +301,8 @@ function ChatBubble({ role, content }: { role: string; content: string }) {
       {/* Bubble */}
       <div
         className={`max-w-[80%] px-4 py-2.5 rounded-3xl text-[15px] font-light antialiased leading-relaxed whitespace-pre-line ${isUser
-            ? 'bg-[#000000] text-white rounded-br-md'
-            : 'bg-black/5 text-black rounded-bl-md'
+            ? 'bg-[#fdfcf0] text-black border-2 border-black rounded-br-md'
+            : 'bg-white text-black border-2 border-black rounded-bl-md'
           }`}
       >
         {content}

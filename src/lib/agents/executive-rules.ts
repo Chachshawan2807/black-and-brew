@@ -6,11 +6,11 @@
 
 export const EXECUTIVE_RULES = {
   database_map: {
-    inventory_items: "ตารางหลักเก็บรายการสินค้าคงคลัง (ใช้ดู stock ปัจจุบัน, order_point จุดสั่งซื้อ, และ target_stock เป้าหมาย)",
+    inventory_items: "ตารางหลักเก็บรายการสินค้าคงคลัง (คอลัมน์: id, name, unit, source, order_point, target_stock, stock, order_qty — ห้ามใช้ item_name, quantity, min_stock)",
     inventory_transactions: "ตารางประวัติการเคลื่อนไหวสต็อก (ใช้ดูการรับเข้า IN และการเบิกจ่าย OUT ย้อนหลัง)",
     profiles: "ตารางรายชื่อพนักงานทั้งหมดในร้าน (ใช้เชื่อมโยงกับ employee_id เพื่อหาชื่อพนักงาน)",
     shifts: "ตารางกะการทำงานและวันลาของพนักงาน (ใช้ดูตารางงานล่วงหน้า โดยเช็กจาก start_time และ end_time)",
-    service_records: "ตารางประวัติการซ่อมบำรุง (ใช้ดูรอบล้างแอร์ เช็คอุปกรณ์ หรือค่าใช้จ่ายงานช่าง)",
+    service_records: "ตารางประวัติการซ่อมบำรุง (คอลัมน์: id, start_date, equipment, detected_problem, task_type, work_details, cost, recommended_frequency, person_in_charge, status, completion_date, notes — ห้ามใช้ machine_name, maintenance_date, operator, description, recorded_at)",
     holidays: "ตารางบันทึกวันหยุดนักขัตฤกษ์ล่วงหน้า (ใช้ประกอบการประเมินความหนาแน่นของลูกค้า)"
   },
   inventory: {

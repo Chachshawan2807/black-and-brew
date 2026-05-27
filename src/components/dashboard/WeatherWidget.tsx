@@ -61,14 +61,14 @@ export function WeatherWidget() {
 
   if (!data || data.error || !data.current) {
     return (
-      <div className="bg-white border border-gray-100 rounded-[32px] p-8 shadow-sm w-full min-h-[220px] flex items-center justify-center">
+      <div className="bg-white border-2 border-black rounded-[32px] p-8 shadow-sm w-full min-h-[220px] flex items-center justify-center">
         <p className="text-black font-normal">ไม่สามารถดึงข้อมูลสภาพอากาศได้</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[32px] p-6 md:p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white border-2 border-black rounded-[32px] p-6 md:p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-md transition-shadow duration-300">
       {/* Current Weather (Left side on desktop) */}
       <div className="flex items-center gap-6">
         <div>
@@ -107,7 +107,7 @@ export function WeatherWidget() {
           {data.hourly.map((hour, index) => (
             <div 
               key={index} 
-              className="flex flex-col items-center justify-center min-w-[72px] p-3 border border-gray-100 rounded-[20px] bg-gray-50/50 hover:bg-gray-50 transition-colors"
+              className="flex flex-col items-center justify-center min-w-[72px] p-3 border-2 border-black rounded-[20px] bg-gray-50/50 hover:bg-gray-50 transition-colors"
             >
               <span className="text-sm font-medium text-black">{hour.time}</span>
               <Image 

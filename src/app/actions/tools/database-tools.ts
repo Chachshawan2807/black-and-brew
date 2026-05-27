@@ -24,11 +24,54 @@ const adminClient = createClient(supabaseUrl!, supabaseServiceKey!, {
   }
 });
 
+/** Maps legacy/wrong AI column names to verified inventory_items schema. */
+const INVENTORY_ITEM_COLUMN_ALIASES: Record<string, string> = {
+  item_name: 'name',
+  quantity: 'stock',
+  min_stock: 'order_point',
+};
+
+const INVENTORY_ITEMS_PRESET =
+  'id, name, unit, source, order_point, target_stock, stock, order_qty';
+
+function normalizeInventoryItemColumns(columns: string): string {
+  return columns
+    .split(',')
+    .map((col) => col.trim())
+    .filter(Boolean)
+    .map((col) => INVENTORY_ITEM_COLUMN_ALIASES[col] ?? col)
+    .join(', ');
+}
+
+/** Maps legacy/wrong AI column names to verified service_records schema. */
+const SERVICE_RECORD_COLUMN_ALIASES: Record<string, string> = {
+  machine_name: 'equipment',
+  maintenance_date: 'start_date',
+  recorded_at: 'start_date',
+  operator: 'person_in_charge',
+  description: 'work_details',
+};
+
+const SERVICE_RECORDS_PRESET =
+  'id, start_date, equipment, detected_problem, task_type, work_details, cost, recommended_frequency, person_in_charge, status, completion_date, notes';
+
+function normalizeServiceRecordColumns(columns: string): string {
+  return columns
+    .split(',')
+    .map((col) => col.trim())
+    .filter(Boolean)
+    .map((col) => SERVICE_RECORD_COLUMN_ALIASES[col] ?? col)
+    .join(', ');
+}
+
 export const readTableTool = tool({
-  description: 'สแกนและอ่านข้อมูลจากตารางใดก็ได้ในฐานข้อมูล (Universal Read Access) สามารถระบุคอลัมน์และเงื่อนไขการกรองได้',
+  description:
+    'สแกนและอ่านข้อมูลจากตารางใดก็ได้ในฐานข้อมูล (Universal Read Access) สามารถระบุคอลัมน์และเงื่อนไขการกรองได้ — inventory_items: name/stock/order_point (ไม่ใช่ item_name/quantity/min_stock); service_records: equipment/start_date/person_in_charge (ไม่ใช่ machine_name/maintenance_date/operator/recorded_at)',
   inputSchema: z.object({
     tableName: z.string().describe('ชื่อตารางที่ต้องการอ่าน'),
-    columns: z.string().optional().describe('คอลัมน์ที่ต้องการ (เช่น "id, name, stock"). หากไม่ส่ง/เป็น "*" จะใช้ค่า preset ที่ปลอดภัยตามตาราง'),
+    columns: z.string().optional().describe(
+      'คอลัมน์ที่ต้องการ (เช่น "id, name, stock"). inventory_items: id, name, unit, source, order_point, target_stock, stock, order_qty. service_records: id, start_date, equipment, detected_problem, task_type, work_details, cost, recommended_frequency, person_in_charge, status, completion_date, notes. หากไม่ส่ง/เป็น "*" จะใช้ preset ตามตาราง'
+    ),
     filters: z.record(z.string(), z.any()).optional().describe('เงื่อนไขการกรอง (Key-Value pair สำหรับ equality check)'),
     limit: z.number().max(100).default(50).describe('จำกัดจำนวนแถวที่ดึงมา')
   }),
@@ -39,14 +82,20 @@ export const readTableTool = tool({
         profiles: 'id, full_name, schedule_order',
         shifts: 'id, employee_id, status, start_time, end_time, metadata',
         holidays: 'id, date, name',
-        inventory_items: 'id, name, stock, order_qty, order_point, target_stock, unit, sort_order, updated_at',
+        inventory_items: INVENTORY_ITEMS_PRESET,
         inventory_transactions: 'id, inventory_item_id, type, quantity, note, created_at',
-        service_records: 'id, recorded_at, notes',
+        service_records: SERVICE_RECORDS_PRESET,
       };
 
       const normalizedColumns = (columns ?? '').trim();
       const shouldUsePreset = !normalizedColumns || normalizedColumns === '*';
-      const selectedColumns = shouldUsePreset ? (TABLE_COLUMN_PRESETS[tableName] ?? '*') : columns!;
+      let selectedColumns = shouldUsePreset ? (TABLE_COLUMN_PRESETS[tableName] ?? '*') : columns!;
+      if (tableName === 'inventory_items' && !shouldUsePreset) {
+        selectedColumns = normalizeInventoryItemColumns(selectedColumns);
+      }
+      if (tableName === 'service_records' && !shouldUsePreset) {
+        selectedColumns = normalizeServiceRecordColumns(selectedColumns);
+      }
 
       let query = adminClient
         .from(tableName)
