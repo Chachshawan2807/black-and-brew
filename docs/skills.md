@@ -64,3 +64,8 @@
 
 * **ส่วนประกอบ**: `RepoMap (repomap.py)` + `RTK (The Reconstruction ToolKit)` + `readTableTool`
 * **หน้าที่**: การจำลองแผนผังของโครงสร้างโปรเจกต์แบบประหยัด Token ร่วมกับการอ่านข้อมูลระดับโครงสร้างฐานข้อมูลผ่าน `readTableTool` เพื่อให้ AI มองเห็นการเชื่อมโยงระบบอย่างทะลุปรุโปร่ง และกู้คืนข้อมูลหรือจัดความสมมาตรทางดีไซน์แบบ Zero Functional Errors เมื่อเกิดการล่มหรือผิดพลาด
+
+### [Bundle 8] "Omni Cleanup & Performance Determinism Set" ⚙️
+
+* **ส่วนประกอบ**: `console-log purge` + `Map/Set indexing` + `AIChatOverlay hydration debounce` + `dynamic modal split` + `daily-report security guard`
+* **หน้าที่**: ลดต้นทุน render/คำนวณ, ลด payload network บนจุดที่หนัก, และทำให้ security behavior เป็น deterministic โดยไม่ fallback ไปคีย์ anon แบบเงียบๆ

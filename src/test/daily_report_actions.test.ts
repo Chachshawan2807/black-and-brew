@@ -84,6 +84,7 @@ describe('Daily LINE Notification Protocol Actions', () => {
       ...originalEnv,
       NEXT_PUBLIC_SUPABASE_URL: 'https://test.supabase.co',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test_key',
+      SUPABASE_SERVICE_ROLE_KEY: 'test_service_role_key',
       OPENWEATHER_API_KEY: 'weather_key'
     };
 

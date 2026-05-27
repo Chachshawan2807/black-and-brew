@@ -40,3 +40,13 @@
   * `vercel.json` — [NEW] Schedule configuration
   * `.env.example` — Added CRON_SECRET reference
 * **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0)
+
+## 2026-05-27
+
+* **Execution**: [REBIRTH PROTOCOL: PERFORMANCE-DRIVEN OMNI-REFACTOR & CODE PURGE] (v4.4)
+* **Action**: ตัด `console.log()` ในโหมด production paths เพื่อลด CPU/latency, เพิ่ม fixed perf indexing ใน `LiveShiftList`, ปรับ `AIChatOverlay` ให้ quick actions ครบ 4 ปุ่มและรวม hydration effects 2 ตัว พร้อม debounce การ persist localStorage
+* **Action**: ลด payload ใน `ScheduleClient` โดยหลีกเลี่ยง `select('*')` และระบุคอลัมน์ที่ใช้จริงตาม UI
+* **Action**: ทำ code splitting สำหรับ modal หนัก (`PurchaseOrdersModal`) ผ่าน `next/dynamic` (`ssr:false`)
+* **Action**: Harden ความปลอดภัยใน `daily-report-actions.ts` โดยตัด fallback จาก `NEXT_PUBLIC_SUPABASE_ANON_KEY` เหลือเฉพาะ `SUPABASE_SERVICE_ROLE_KEY` พร้อม guard เมื่อ key หาย และอัปเดต unit test ให้ตั้งค่า service role key
+* **Result**: โค้ดสะอาดขึ้น, ลดภาระ render/คำนวณ, ลด payload network, และ security behavior เป็น deterministic
+* **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0)

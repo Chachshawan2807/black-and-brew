@@ -23,10 +23,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing target ID' }, { status: 500 });
     }
 
-    console.log('[CRON] Starting Daily Report generation...');
     const message = await compileDailyReportPayload();
 
-    console.log('[CRON] Sending message to LINE...');
     const result = await sendLineNotification(targetRecipientId, message);
 
     if (!result.success) {
@@ -34,7 +32,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: result.error }, { status: 500 });
     }
 
-    console.log('[CRON] Daily report sent successfully!');
     return NextResponse.json({ 
       success: true, 
       timestamp: new Date().toISOString(),

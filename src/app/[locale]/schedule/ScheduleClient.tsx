@@ -103,6 +103,10 @@ function ColumnHeader({ col, onResize, onResizeEnd }: {
       abortControllerRef.current?.abort();
       abortControllerRef.current = null;
 
+      // Explicitly remove listeners to avoid any potential lingering handlers.
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+
       const delta = upEvent.pageX - startX.current;
       const finalWidth = Math.max(60, startWidth.current + delta);
       onResizeEnd(col.id, finalWidth);
@@ -488,7 +492,8 @@ export default function ScheduleClient({
       // Fetch shifts with is_management: true in metadata
       // Note: We'll fetch a reasonable range or all
       let query = supabase.from('shifts')
-        .select(`*, profiles(full_name)`)
+        // Data minimization: only fields used by management history grouping UI
+        .select(`id, employee_id, status, start_time, end_time, metadata, profiles(full_name)`)
         .eq('metadata->is_management', true)
         .order('start_time', { ascending: false });
 
@@ -516,7 +521,11 @@ export default function ScheduleClient({
           grouped.push({
             id: shift.id,
             employee_id: shift.employee_id,
-            employee_name: shift.profiles?.full_name || 'Unknown',
+            employee_name: (() => {
+              const profiles = (shift as any).profiles;
+              if (Array.isArray(profiles)) return profiles[0]?.full_name || 'Unknown';
+              return profiles?.full_name || 'Unknown';
+            })(),
             location: shift.metadata?.location,
             remark: shift.metadata?.remark,
             startDate: shift.start_time,
@@ -580,7 +589,11 @@ export default function ScheduleClient({
       if (!success) throw new Error(error || 'Failed to delete history');
 
       // Fetch fresh shifts for calendar display
-      const { data: freshShifts } = await supabase.from('shifts').select('*').gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
+      const { data: freshShifts } = await supabase
+        .from('shifts')
+        .select('id, employee_id, status, start_time, end_time, metadata')
+        .gte('start_time', weekDays[0] + 'T00:00:00')
+        .lte('start_time', weekDays[6] + 'T23:59:59');
       if (freshShifts) setShifts(freshShifts);
 
     } catch (err: any) {

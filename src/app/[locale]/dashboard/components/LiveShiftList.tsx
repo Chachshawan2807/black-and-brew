@@ -177,43 +177,54 @@ export default function LiveShiftList({
 
   // Performance Data
   const performanceData = useMemo(() => {
+    const holidaySet = new Set(holidays.map(h => h.date));
+
+    const scheduledByEmployee = new Map<string, Shift[]>();
+    const leaveCountByEmployee = new Map<string, number>();
+
+    for (const s of shifts) {
+      const employeeId = typeof s.employee_id === 'string' ? s.employee_id : null;
+      if (!employeeId) continue;
+      if (s.status === 'scheduled') {
+        const list = scheduledByEmployee.get(employeeId) ?? [];
+        list.push(s);
+        scheduledByEmployee.set(employeeId, list);
+      } else if (s.status === 'on_leave') {
+        leaveCountByEmployee.set(employeeId, (leaveCountByEmployee.get(employeeId) ?? 0) + 1);
+      }
+    }
+
     const data = profiles.map(profile => {
-      const employeeShifts = shifts.filter(s => s.employee_id === profile.id && s.status === 'scheduled');
-      const leaveDays = shifts.filter(s => s.employee_id === profile.id && s.status === 'on_leave').length;
+      const employeeShifts = scheduledByEmployee.get(profile.id) ?? [];
+      const leaveDays = leaveCountByEmployee.get(profile.id) ?? 0;
 
-      // Separate shifts into Holiday and Normal work
-      let normalWorkDays = 0;
       let publicHolidaysCount = 0;
-
-      employeeShifts.forEach(s => {
+      for (const s of employeeShifts) {
         const shiftDate = s.start_time.split('T')[0];
-        const isHoliday = holidays.some(h => h.date === shiftDate);
-        if (isHoliday) {
-          publicHolidaysCount++;
-        } else {
-          normalWorkDays++;
-        }
-      });
+        if (holidaySet.has(shiftDate)) publicHolidaysCount++;
+      }
+
+      const normalWorkDays = employeeShifts.length - publicHolidaysCount;
 
       // NEW LOGIC: The 1+1 Rule
       // WORK: All shifts (normal + holiday)
       // HOL.: Only shifts on public holidays
       const workDays = normalWorkDays + publicHolidaysCount;
-      const publicHolidaysCount_final = publicHolidaysCount;
 
       return {
         profile,
         workDays,
         leaveDays,
-        publicHolidays: publicHolidaysCount_final
+        publicHolidays: publicHolidaysCount
       };
 
     });
 
     if (orderedProfileIds.length > 0) {
+      const orderIndex = new Map(orderedProfileIds.map((id, idx) => [id, idx]));
       return [...data].sort((a, b) => {
-        const indexA = orderedProfileIds.indexOf(a.profile.id);
-        const indexB = orderedProfileIds.indexOf(b.profile.id);
+        const indexA = orderIndex.get(a.profile.id) ?? -1;
+        const indexB = orderIndex.get(b.profile.id) ?? -1;
         // Put new employees (not in order list) at the end
         if (indexA === -1) return 1;
         if (indexB === -1) return -1;

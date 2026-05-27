@@ -438,3 +438,17 @@ pm run build).
   4. **Rule-Based Recommendation:** ใช้ rule-based logic สั้นๆ แจ้งเตือนเรื่องฝนตกหรือเทศกาลเพื่อลดการใช้ Token ของ AI เสริมความเสถียรของ Cron
 - **Impact:** ได้ระบบสรุปข้อมูลอัจฉริยะทำงานอัตโนมัติ 100% ตอบสนองความเร็ว 0ms ในมุมผู้ใช้งาน
 - **Evidence:** `src/app/actions/daily-report-actions.ts`, `src/app/api/daily-report/route.ts`, `vercel.json`
+
+### DEC-045: Omni Cleanup, Payload Minimization & Security Determinism (v4.4)
+
+- **Date:** May 27, 2026
+- **Context:** ระบบต้องการความเร็วสูงสุด (ลด CPU/log noise, ลด payload, ลด rerender/คำนวณซ้ำ) พร้อมความปลอดภัยที่ deterministic (ไม่ fallback ใช้ anon key เงียบๆ) และทำให้ modal ใหญ่โหลดช้าลงแบบ chunk
+- **Decision:**
+  1. ทำ `console.log` purge ใน production paths ของ `api/chat`, `api/daily-report`, `line-actions`, `database-tools`, และ `search-tools`
+  2. ปรับ `ScheduleClient` ให้หลีกเลี่ยง `select('*')` ด้วยการระบุเฉพาะคอลัมน์ที่ UI ใช้จริง
+  3. เพิ่มประสิทธิภาพการคำนวณ `LiveShiftList` ด้วย Map/Set indexing เพื่อลดการ filter ซ้ำ
+  4. ปรับ `AIChatOverlay` ให้ quick actions ครบ 4 ปุ่ม และรวม hydration effects 2 ชุด พร้อม debounce การ persist localStorage
+  5. ทำ dynamic split ของ modal หนัก: `PurchaseOrdersModal` ด้วย `next/dynamic` (`ssr:false`)
+  6. Harden ความปลอดภัย: ใน `daily-report-actions.ts` ตัด fallback ไป `NEXT_PUBLIC_SUPABASE_ANON_KEY` เหลือเฉพาะ `SUPABASE_SERVICE_ROLE_KEY` + guard เมื่อ key หาย
+- **Impact:** ประสิทธิภาพดีขึ้นในมุม render/network, ลดภาระ CPU, และทำให้ security behavior เป็น deterministic 100%
+- **Evidence:** `src/app/api/chat/route.ts`, `src/app/api/daily-report/route.ts`, `src/app/actions/tools/database-tools.ts`, `src/app/actions/tools/search-tools.ts`, `src/app/[locale]/schedule/ScheduleClient.tsx`, `src/app/[locale]/dashboard/components/LiveShiftList.tsx`, `src/components/ai/AIChatOverlay.tsx`, `src/app/[locale]/inventory/PurchaseOrdersModal.tsx`, `src/app/actions/daily-report-actions.ts`, `npx tsc --noEmit`, `npm run build`

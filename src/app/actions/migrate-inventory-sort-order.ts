@@ -7,7 +7,7 @@ export async function runInventoryMigration() {
   const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   const supabase = createClient(supabaseUrl, supabaseAdminKey);
 
-  console.log('Starting Inventory Migration...');
+  // Migration script: keep logs minimal.
 
   // 1. Read CSV File from project root
   const csvPath = path.join(process.cwd(), 'inventory-items.csv');
@@ -61,7 +61,7 @@ export async function runInventoryMigration() {
     }
   }
 
-  console.log(`Parsed ${csvItems.length} items from CSV.`);
+  // Parsed CSV items.
 
   // 3. Fetch existing items from database
   const { data: dbItems, error: fetchErr } = await supabase
@@ -129,6 +129,6 @@ export async function runInventoryMigration() {
     }
   }
 
-  console.log(`Migration Complete. Updated: ${updatedCount}, Inserted: ${insertedCount}`);
+  // Migration complete.
   return { updatedCount, insertedCount };
 }

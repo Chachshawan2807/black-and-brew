@@ -12,7 +12,6 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    console.log('[AI_ROUTE] Request Received');
     const { messages, clientContext } = await req.json();
 
     // MODULE 3: SYSTEM_SECURITY_HARDENING (Prompt Injection Guard)
@@ -50,8 +49,7 @@ export async function POST(req: Request) {
       };
     });
 
-    console.log('[AI_ROUTE] Optimized Messages Mapped (Count:', coreMessages.length, ')');
-    console.log('[AI_ROUTE] Calling Gemini with Surgical Tools...');
+    // Note: avoid noisy production logs to keep CPU low.
 
     const now = new Date();
     const todayZoned = toZonedTime(now, 'Asia/Bangkok');

@@ -7,7 +7,6 @@ export const internetSearchTool = tool({
     query: z.string().describe('คำค้นหาข้อมูลที่ต้องการจากอินเทอร์เน็ต'),
   }),
   execute: async ({ query }) => {
-    console.log('[AI_TOOL] Executing internetSearchTool for:', query);
     try {
       const response = await fetch('https://api.tavily.com/search', {
         method: 'POST',

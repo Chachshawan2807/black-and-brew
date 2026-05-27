@@ -5,10 +5,12 @@ import { format, differenceInDays, startOfDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey, {
-  global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) }
-});
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAdmin = supabaseAdminKey
+  ? createClient(supabaseUrl, supabaseAdminKey, {
+    global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) }
+  })
+  : null;
 
 // Time values recognized as active working shifts (chronological order)
 const ACTIVE_TIME_VALUES = ['6:30', '7:00', '8:00'];
@@ -37,10 +39,11 @@ interface StaffShiftEntry {
   shiftText: string;
 }
 
-/** Thai display format for report header (DD-MM-YYYY). */
-const THAI_REPORT_DATE_FORMAT = 'dd-MM-yyyy';
+/** Thai display format for report header (DD/MM/YYYY). */
+const THAI_REPORT_DATE_FORMAT = 'dd/MM/yyyy';
 
 const DAY_OFF_SHIFT_TEXT = 'วันหยุด';
+const STAFF_NAME_FIXED_WIDTH = 14;
 
 /**
  * Normalizes legacy/empty shift labels into standard day-off status.
@@ -48,56 +51,38 @@ const DAY_OFF_SHIFT_TEXT = 'วันหยุด';
  */
 function normalizeShiftText(shiftText: string): string {
   const trimmed = shiftText.trim();
-  if (!trimmed || trimmed === 'ไม่มีกะ') return DAY_OFF_SHIFT_TEXT;
+  const dayOffAliases = new Set(['', 'ไม่มีกะ', 'ไม่มีข้อมูล', 'null', 'undefined']);
+  if (dayOffAliases.has(trimmed.toLowerCase())) return DAY_OFF_SHIFT_TEXT;
   return trimmed;
 }
 
-function isDayOffShift(shiftText: string): boolean {
-  return normalizeShiftText(shiftText) === DAY_OFF_SHIFT_TEXT;
+function formatStaffLine(name: string, value: string): string {
+  const spacing = ' '.repeat(Math.max(2, STAFF_NAME_FIXED_WIDTH - name.length + 2));
+  return `- ${name}:${spacing}${value}`;
 }
 
 /**
- * Joins employee names Thai-style: AและB or A, B และC
- */
-function joinThaiNames(names: string[]): string {
-  if (names.length === 0) return '';
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]}และ${names[1]}`;
-  return `${names.slice(0, -1).join(', ')} และ${names[names.length - 1]}`;
-}
-
-/**
- * Builds the staff block: active shifts, grouped day-off line, then leave/other statuses.
+ * Builds the staff block into exactly two groups:
+ * 1) Active shift lines
+ * 2) Non-working / special status lines
+ * Groups are separated by exactly one blank line when both exist.
  */
 function formatStaffSection(activeStaff: StaffShiftEntry[], offStaff: StaffShiftEntry[]): string {
-  const activeLines = activeStaff.map((s) => `- ${s.name}: ${s.shiftText}`);
+  const normalizedOffStaff = offStaff.map((entry) => ({
+    ...entry,
+    shiftText: normalizeShiftText(entry.shiftText),
+  }));
 
-  const dayOffNames: string[] = [];
-  const otherOffLines: string[] = [];
+  const activeLines = activeStaff.map((s) => formatStaffLine(s.name, s.shiftText));
+  const nonWorkingLines = normalizedOffStaff.map((s) => formatStaffLine(s.name, s.shiftText));
 
-  for (const entry of offStaff) {
-    const normalized = normalizeShiftText(entry.shiftText);
-    if (isDayOffShift(normalized)) {
-      dayOffNames.push(entry.name);
-    } else {
-      otherOffLines.push(`- ${entry.name}: ${normalized}`);
-    }
+  if (activeLines.length > 0 && nonWorkingLines.length > 0) {
+    return `${activeLines.join('\n')}\n\n${nonWorkingLines.join('\n')}`;
   }
 
-  const sections: string[] = [];
-  if (activeLines.length > 0) sections.push(activeLines.join('\n'));
-
-  if (dayOffNames.length > 0) {
-    sections.push(`วันหยุดประจำวัน\n${joinThaiNames(dayOffNames)}เป็นวันหยุด`);
-  }
-
-  if (otherOffLines.length > 0) sections.push(otherOffLines.join('\n'));
-
-  if (sections.length === 0) {
-    return '- ไม่มีข้อมูลพนักงานในระบบ';
-  }
-
-  return sections.join('\n\n');
+  if (activeLines.length > 0) return activeLines.join('\n');
+  if (nonWorkingLines.length > 0) return nonWorkingLines.join('\n');
+  return '- ไม่มีข้อมูลพนักงานในระบบ';
 }
 
 /**
@@ -113,6 +98,11 @@ function formatStaffSection(activeStaff: StaffShiftEntry[], offStaff: StaffShift
  */
 export async function fetchTodayShifts(targetDate: Date) {
   try {
+    if (!supabaseAdmin) {
+      console.error('[fetchTodayShifts] Missing SUPABASE_SERVICE_ROLE_KEY');
+      return { activeStaff: [], offStaff: [], headcount: 0 };
+    }
+
     const dateStr = format(targetDate, 'yyyy-MM-dd');
 
     // Fetch all profiles dynamically (no hardcoded MASTER_ORDER)
@@ -130,37 +120,52 @@ export async function fetchTodayShifts(targetDate: Date) {
     const activeStaff: StaffShiftEntry[] = [];
     const offStaff: StaffShiftEntry[] = [];
 
-    profiles.forEach(profile => {
-      const shift = shifts.find(s => s.employee_id === profile.id);
+    // Exhaustive loop: process every staff profile entry, no early break.
+    for (const profile of profiles) {
+      const profileName = typeof profile?.full_name === 'string' && profile.full_name.trim()
+        ? profile.full_name.trim()
+        : 'ไม่ระบุชื่อ';
 
-      let shiftText = DAY_OFF_SHIFT_TEXT; // Default: empty/null/blank → day off
+      try {
+        const shift = shifts.find((s: any) => s?.employee_id === profile?.id);
+        let shiftText = DAY_OFF_SHIFT_TEXT; // strict default for missing/null/blank schedule
 
-      if (shift && shift.status && shift.status !== 'on_leave' && shift.metadata?.location) {
-        const rawLocation = shift.metadata.location;
-
-        if (rawLocation === 'ลา') {
+        // Missing shift record, null schedule, undefined schedule, blank schedule => วันหยุด
+        if (!shift) {
+          shiftText = DAY_OFF_SHIFT_TEXT;
+        } else if (shift.status === 'on_leave' || shift.metadata?.location === 'ลา') {
           shiftText = 'ลา';
         } else {
-          // Strip "เข้ากะ" prefix
-          shiftText = rawLocation.replace(/^เข้ากะ\s*/, '').trim();
+          const rawLocation = shift.metadata?.location;
 
-          if (!shiftText) {
+          if (typeof rawLocation === 'string') {
+            // Strip "เข้ากะ" prefix and normalize blank/null-like text.
+            shiftText = normalizeShiftText(rawLocation.replace(/^เข้ากะ\s*/, ''));
+          } else {
+            // null | undefined | non-string schedule payload => day off
             shiftText = DAY_OFF_SHIFT_TEXT;
           }
         }
-      } else if (shift && (shift.status === 'on_leave' || shift.metadata?.location === 'ลา')) {
-        shiftText = 'ลา';
-      }
 
-      shiftText = normalizeShiftText(shiftText);
+        shiftText = normalizeShiftText(shiftText);
 
-      // Classify into Active or Off/Leave block
-      if (isActiveShift(shiftText)) {
-        activeStaff.push({ name: profile.full_name, shiftText });
-      } else {
-        offStaff.push({ name: profile.full_name, shiftText });
+        // Classify into Active or Off/Leave block
+        if (isActiveShift(shiftText)) {
+          activeStaff.push({ name: profileName, shiftText });
+        } else {
+          offStaff.push({ name: profileName, shiftText });
+        }
+      } catch (profileError: any) {
+        // Never let one broken profile mapping truncate the whole report.
+        console.error('[fetchTodayShifts] Profile mapping error:', {
+          profileId: profile?.id,
+          profileName,
+          message: profileError?.message || profileError,
+        });
+        offStaff.push({ name: profileName, shiftText: DAY_OFF_SHIFT_TEXT });
+        continue;
       }
-    });
+    }
 
     // Sort Active block chronologically (earliest → latest)
     activeStaff.sort((a, b) => parseShiftTimeToNumber(a.shiftText) - parseShiftTimeToNumber(b.shiftText));
@@ -314,6 +319,10 @@ export async function fetchWeatherForecast(targetDate?: Date) {
  */
 export async function fetchNextHoliday(targetDate: Date) {
   try {
+    if (!supabaseAdmin) {
+      return { ok: false, error: { message: 'Missing SUPABASE_SERVICE_ROLE_KEY', details: null } };
+    }
+
     const dateStr = format(targetDate, 'yyyy-MM-dd');
 
     const { data, error } = await supabaseAdmin
@@ -417,18 +426,18 @@ export async function compileDailyReportPayload() {
 
   const payload = `รายงานสรุปประจำวันที่ ${dateStr}
 
-👥 [พนักงาน]
+👥 พนักงาน
 รวมวันนี้: ${headcount} คน
 ${staffSection}
 
-🌦️ [สภาพอากาศ]
-- ภาพรวม: ${weather.summary}
-- โอกาสเกิดฝน: ${weather.maxPop}%
-- ช่วงเวลาที่ต้องเฝ้าระวัง: ${weatherWarnings}
+🌦️ สภาพอากาศ
+- ภาพรวม:  ${weather.summary}
+- โอกาสเกิดฝน:  ${weather.maxPop}%
+- ช่วงเวลาที่ต้องเฝ้าระวัง:  ${weatherWarnings}
 
-📅 [วันหยุดนักขัตฤกษ์]
-- วันหยุดนักขัตฤกษ์ถัดไป: ${holidayText}
-- คำแนะนำ: ${strategy}`;
+📅 วันหยุดนักขัตฤกษ์
+- วันหยุดนักขัตฤกษ์ถัดไป:  ${holidayText}
+- 🟡 คำแนะนำ:  ${strategy}`;
 
   return payload;
 }

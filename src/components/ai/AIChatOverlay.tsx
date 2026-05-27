@@ -10,6 +10,9 @@ import Image from 'next/image';
 const QUICK_ACTIONS = [
   { id: 'shift', label: '👥 เช็กตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
   { id: 'weather', label: '🌦️ เช็กสภาพอากาศ & วันหยุด', query: 'ตรวจสอบสภาพอากาศในพื้นที่ร้านวันนี้และเช็กว่ามีวันหยุดนักขัตฤกษ์ใกล้ๆ นี้ไหม' }
+  ,
+  { id: 'inventory', label: '📦 เช็กสต็อกต่ำกว่าจุดสั่งซื้อ', query: 'สรุปสินค้าที่สต็อกต่ำกว่าจุดสั่งซื้อ พร้อมจำนวนที่ควรสั่งเติม' },
+  { id: 'maintenance', label: '🧰 แจ้งงานซ่อมบำรุง', query: 'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น' }
 ];
 
 // Actual chat component containing useChat (only runs on client)
@@ -44,21 +47,28 @@ export default function AIChatOverlay() {
       }
     }
   }, []); // บรรทัดสำคัญ: ล็อกเป็นอาร์เรย์ว่างคงที่ขนาดเป็น 0 ตลอดไป ห้ามใส่ตัวแปรอื่น
-
-  // LocalStorage Persistence
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('bb-chat-history', JSON.stringify(messages));
-    }
-  }, [messages, isMounted]);
   const isLoading = status === 'streaming' || status === 'submitted';
 
-  // Auto-scroll to latest message
+  // One combined effect: auto-scroll + (debounced) persistence.
   useEffect(() => {
+    if (!isMounted) return;
+
+    // Auto-scroll on open/messages update
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen]);
+
+    // Avoid heavy localStorage writes during streaming.
+    if (isLoading) return;
+
+    const t = window.setTimeout(() => {
+      localStorage.setItem('bb-chat-history', JSON.stringify(messages));
+    }, 300);
+
+    return () => {
+      window.clearTimeout(t);
+    };
+  }, [messages, isOpen, isMounted, isLoading]);
 
   const getActiveWindowContext = () => {
     if (typeof window === 'undefined') return "Current View: Main Dashboard";

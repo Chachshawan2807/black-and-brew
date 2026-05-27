@@ -28,16 +28,29 @@ export const readTableTool = tool({
   description: 'สแกนและอ่านข้อมูลจากตารางใดก็ได้ในฐานข้อมูล (Universal Read Access) สามารถระบุคอลัมน์และเงื่อนไขการกรองได้',
   inputSchema: z.object({
     tableName: z.string().describe('ชื่อตารางที่ต้องการอ่าน'),
-    columns: z.string().default('*').describe('คอลัมน์ที่ต้องการ (เช่น "id, name, stock")'),
+    columns: z.string().optional().describe('คอลัมน์ที่ต้องการ (เช่น "id, name, stock"). หากไม่ส่ง/เป็น "*" จะใช้ค่า preset ที่ปลอดภัยตามตาราง'),
     filters: z.record(z.string(), z.any()).optional().describe('เงื่อนไขการกรอง (Key-Value pair สำหรับ equality check)'),
     limit: z.number().max(100).default(50).describe('จำกัดจำนวนแถวที่ดึงมา')
   }),
   execute: async ({ tableName, columns, filters, limit }) => {
-    console.log(`[AI_TOOL] Universal Read: ${tableName}`, { columns, filters, limit });
+    // Minimal runtime logging for performance.
     try {
+      const TABLE_COLUMN_PRESETS: Record<string, string> = {
+        profiles: 'id, full_name, schedule_order',
+        shifts: 'id, employee_id, status, start_time, end_time, metadata',
+        holidays: 'id, date, name',
+        inventory_items: 'id, name, stock, order_qty, order_point, target_stock, unit, sort_order, updated_at',
+        inventory_transactions: 'id, inventory_item_id, type, quantity, note, created_at',
+        service_records: 'id, recorded_at, notes',
+      };
+
+      const normalizedColumns = (columns ?? '').trim();
+      const shouldUsePreset = !normalizedColumns || normalizedColumns === '*';
+      const selectedColumns = shouldUsePreset ? (TABLE_COLUMN_PRESETS[tableName] ?? '*') : columns!;
+
       let query = adminClient
         .from(tableName)
-        .select(columns)
+        .select(selectedColumns)
         .limit(limit);
 
       if (filters) {
@@ -75,7 +88,7 @@ export const getDailyShiftsTool = tool({
     date: z.string().describe('วันที่ต้องการดูตารางงาน รูปแบบ YYYY-MM-DD เช่น 2026-05-26')
   }),
   execute: async ({ date }) => {
-    console.log(`[AI_TOOL] Get Daily Shifts for: ${date}`);
+    // Minimal runtime logging for performance.
     try {
       const { data: profiles, error: profileError } = await adminClient
         .from('profiles')

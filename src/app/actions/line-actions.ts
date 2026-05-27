@@ -40,7 +40,7 @@ export async function sendLineNotification(targetId: string, message: string) {
       ],
     });
 
-    console.log(`[LINE Action Success] Notification sent to ${targetId}`);
+    // Keep production logs minimal.
     return { success: true, response };
   } catch (err: any) {
     console.error('[LINE Action Failure]:', err.message || err);
