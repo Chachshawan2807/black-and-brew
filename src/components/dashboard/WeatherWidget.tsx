@@ -88,7 +88,7 @@ export function WeatherWidget() {
           </div>
         </div>
         <div className="hidden sm:block shrink-0 opacity-80">
-          <Image 
+          <Image
             src={`https://openweathermap.org/img/wn/${data.current.icon}@4x.png`}
             alt={data.current.description}
             width={100}
@@ -105,22 +105,26 @@ export function WeatherWidget() {
         </div>
         <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide">
           {data.hourly.map((hour, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="flex flex-col items-center justify-center min-w-[72px] p-3 border-2 border-black rounded-[20px] bg-gray-50/50 hover:bg-gray-50 transition-colors"
             >
-              <span className="text-sm font-medium text-black">{hour.time}</span>
-              <Image 
+              {/* บังคับข้อความเวลากางเต็ม 100% และจัดกึ่งกลาง */}
+              <span className="w-full text-center text-sm font-medium text-black">{hour.time}</span>
+              <Image
                 src={`https://openweathermap.org/img/wn/${hour.icon}@2x.png`}
                 alt="weather icon"
                 width={48}
                 height={48}
-                className="opacity-90 my-1"
+                className="opacity-90 my-1 mx-auto"
               />
-              <span className="text-xs font-normal text-blue-700 antialiased mb-1">
-                💧 {hour.pop}%
+              {/* บังคับช่องโอกาสฝนเป็น Flex ตรงกลาง และใช้สีดำล้วน */}
+              <span className="w-full text-center flex items-center justify-center gap-1 text-xs font-normal text-black antialiased mb-1">
+                <span>💧</span>
+                <span>{hour.pop}%</span>
               </span>
-              <span className="text-base font-medium text-black">{hour.temp}°C</span>
+              {/* บังคับข้อความอุณหภูมิกางเต็ม 100% และจัดกึ่งกลาง */}
+              <span className="w-full text-center text-base font-medium text-black">{hour.temp}°C</span>
             </div>
           ))}
         </div>

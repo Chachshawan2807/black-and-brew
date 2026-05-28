@@ -425,7 +425,8 @@ export async function compileDailyReportPayload() {
 
   const strategy = generateStrategicAdvice(weather, holiday);
 
-  const payload = `รายงานสรุปประจำวันที่ ${dateStr}
+  const payload = `== ข้อความอัตโนมัติ ==
+รายงานสรุปของเช้าวันที่ ${dateStr}
 
 👥 พนักงาน
 รวมวันนี้: ${headcount} คน
