@@ -19,53 +19,52 @@ function safeError(err: any) {
 }
 
 export const getDailyReportSourcesTool = tool({
-  description:
-    'ดึงชุดข้อมูลภายในทั้งหมดที่ใช้สร้าง Daily LINE Report (กะพนักงาน + อากาศ + วันหยุด) เพื่อให้ AI ใช้เป็น Primary Truth ก่อนตอบ',
+  description: 'ดึงชุดข้อมูลภายในทั้งหมด (กะพนักงาน + อากาศ + วันหยุด) โดยระบุวันที่เลือกได้ หรือใช้ค่าเริ่มต้นเป็นวันนี้หากไม่ระบุ',
   inputSchema: z.object({
-    date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional()
-      .describe('วันที่ (YYYY-MM-DD) หากไม่ส่งจะใช้ วันนี้ ตาม Asia/Bangkok'),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('วันที่ในรูปแบบ YYYY-MM-DD เช่น วันพรุ่งนี้')
   }),
   execute: async ({ date }) => {
     try {
       const base = date ? new Date(`${date}T00:00:00.000Z`) : new Date();
       const zoned = toZonedTime(base, 'Asia/Bangkok');
       zoned.setHours(0, 0, 0, 0);
-
       const [{ activeStaff, offStaff, headcount }, weather, holiday] = await Promise.all([
         fetchTodayShifts(zoned),
         fetchWeatherForecast(zoned),
         fetchNextHoliday(zoned),
       ]);
-
       return {
         ok: true,
         data: {
-          reportDateThai: format(zoned, THAI_REPORT_DATE_FORMAT),
-          reportDateISO: format(zoned, 'yyyy-MM-dd'),
-          staff: {
-            activeStaff: activeStaff ?? [],
-            offStaff: offStaff ?? [],
-            headcount: Number.isFinite(headcount) ? headcount : 0,
-          },
-          weather: {
-            ok: weather?.ok ?? true,
-            error: weather?.error ?? null,
-            dataWindowEmpty: weather?.dataWindowEmpty ?? false,
-            summary: weather?.summary ?? 'สภาพอากาศปกติ',
-            maxPop: typeof weather?.maxPop === 'number' ? weather.maxPop : 0,
-            warningPeriods: Array.isArray(weather?.warningPeriods)
-              ? weather.warningPeriods
-              : [],
-          },
+          reportDateThai: format(zoned, 'dd-MM-yyyy'),
+          staff: { activeStaff: activeStaff ?? [], offStaff: offStaff ?? [], headcount: headcount || 0 },
+          weather: { summary: weather?.summary ?? 'สภาพอากาศปกติ', maxPop: weather?.maxPop || 0 },
           holiday: holiday ?? null,
         },
       };
-    } catch (err: any) {
-      return { ok: false, data: null, error: safeError(err) };
-    }
+    } catch (err: any) { return { ok: false, data: null, error: { message: err?.message } }; }
   },
 });
 
+export const weatherTool = tool({
+  description: 'ดึงข้อมูลสภาพอากาศจาก OpenWeather และวันหยุดถัดไป (ระบุวันที่เลือกได้)',
+  inputSchema: z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('วันที่ในรูปแบบ YYYY-MM-DD')
+  }),
+  execute: async ({ date }) => {
+    try {
+      const base = date ? new Date(`${date}T00:00:00.000Z`) : new Date();
+      const zoned = toZonedTime(base, 'Asia/Bangkok');
+      zoned.setHours(0, 0, 0, 0);
+      const [weather, holiday] = await Promise.all([fetchWeatherForecast(zoned), fetchNextHoliday(zoned)]);
+      return {
+        ok: true,
+        data: {
+          reportDateThai: format(zoned, 'dd-MM-yyyy'),
+          weather: { summary: weather?.summary ?? 'สภาพอากาศปกติ', maxPop: weather?.maxPop || 0 },
+          holiday: holiday ?? null,
+        },
+      };
+    } catch (err: any) { return { ok: false, data: null, error: { message: err?.message } }; }
+  },
+});

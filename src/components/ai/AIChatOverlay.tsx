@@ -8,9 +8,9 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 
 const QUICK_ACTIONS = [
-  { id: 'shift', label: '👥 เช็กตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
-  { id: 'weather', label: '🌦️ เช็กสภาพอากาศ & วันหยุด', query: 'ตรวจสอบสภาพอากาศในพื้นที่ร้านวันนี้และเช็กว่ามีวันหยุดนักขัตฤกษ์ใกล้ๆ นี้ไหม' },
-  { id: 'inventory', label: '📦 เช็กสต็อกต่ำกว่าจุดสั่งซื้อ', query: 'สรุปสินค้าที่สต็อกต่ำกว่าจุดสั่งซื้อ พร้อมจำนวนที่ควรสั่งเติม' },
+  { id: 'shift', label: '👥 ตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
+  { id: 'weather', label: '🌦️ สภาพอากาศ & วันหยุด', query: 'ตรวจสอบสภาพอากาศในพื้นที่ร้านวันนี้และเช็กว่ามีวันหยุดนักขัตฤกษ์ใกล้ๆ นี้ไหม' },
+  { id: 'inventory', label: '📦 สต็อกต่ำกว่าจุดสั่งซื้อ', query: 'สรุปสินค้าที่สต็อกต่ำกว่าจุดสั่งซื้อ พร้อมจำนวนที่ควรสั่งเติม' },
   { id: 'maintenance', label: '🧰 แจ้งงานซ่อมบำรุง', query: 'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น' },
 ];
 
@@ -301,8 +301,8 @@ function ChatBubble({ role, content }: { role: string; content: string }) {
       {/* Bubble */}
       <div
         className={`max-w-[80%] px-4 py-2.5 rounded-3xl text-[15px] font-light antialiased leading-relaxed whitespace-pre-line ${isUser
-            ? 'bg-[#fdfcf0] text-black border-2 border-black rounded-br-md'
-            : 'bg-white text-black border-2 border-black rounded-bl-md'
+          ? 'bg-[#fdfcf0] text-black border-2 border-black rounded-br-md'
+          : 'bg-white text-black border-2 border-black rounded-bl-md'
           }`}
       >
         {content}

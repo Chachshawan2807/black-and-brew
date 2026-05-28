@@ -5,12 +5,13 @@ import { format, differenceInDays, startOfDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseAdmin = supabaseAdminKey
-  ? createClient(supabaseUrl, supabaseAdminKey, {
+const getSupabaseAdmin = () => {
+  const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseAdminKey) return null;
+  return createClient(supabaseUrl, supabaseAdminKey, {
     global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) }
-  })
-  : null;
+  });
+};
 
 // Time values recognized as active working shifts (chronological order)
 const ACTIVE_TIME_VALUES = ['6:30', '7:00', '8:00'];
@@ -40,7 +41,7 @@ interface StaffShiftEntry {
 }
 
 /** Thai display format for report header (DD/MM/YYYY). */
-const THAI_REPORT_DATE_FORMAT = 'dd/MM/yyyy';
+const THAI_REPORT_DATE_FORMAT = 'dd-MM-yyyy';
 
 const DAY_OFF_SHIFT_TEXT = 'วันหยุด';
 
@@ -96,6 +97,7 @@ function formatStaffSection(activeStaff: StaffShiftEntry[], offStaff: StaffShift
  */
 export async function fetchTodayShifts(targetDate: Date) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     if (!supabaseAdmin) {
       console.error('[fetchTodayShifts] Missing SUPABASE_SERVICE_ROLE_KEY');
       return { activeStaff: [], offStaff: [], headcount: 0 };
@@ -317,6 +319,7 @@ export async function fetchWeatherForecast(targetDate?: Date) {
  */
 export async function fetchNextHoliday(targetDate: Date) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     if (!supabaseAdmin) {
       return { ok: false, error: { message: 'Missing SUPABASE_SERVICE_ROLE_KEY', details: null } };
     }
@@ -435,7 +438,7 @@ ${staffSection}
 
 📅 วันหยุดนักขัตฤกษ์
 - วันหยุดนักขัตฤกษ์ถัดไป:  ${holidayText}
-- 🟡 คำแนะนำ:  ${strategy}`;
+- คำแนะนำ:  ${strategy}`;
 
   return payload;
 }

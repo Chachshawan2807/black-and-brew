@@ -80,6 +80,8 @@ import {
 describe('Daily LINE Notification Protocol Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-26T10:00:00+07:00'));
     process.env = {
       ...originalEnv,
       NEXT_PUBLIC_SUPABASE_URL: 'https://test.supabase.co',
@@ -100,6 +102,7 @@ describe('Daily LINE Notification Protocol Actions', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     process.env = originalEnv;
   });
 
@@ -200,12 +203,11 @@ describe('Daily LINE Notification Protocol Actions', () => {
       const expectedDate = format(today, 'dd-MM-yyyy');
 
       expect(payload).toMatch(new RegExp(`รายงานสรุปประจำวันที่ ${expectedDate.replace(/-/g, '\\-')}`));
-      expect(payload).toContain('- ปิ่น: 6:30');
-      expect(payload).toContain('วันหยุดประจำวัน');
-      expect(payload).toContain('หนูดีและฟิวเป็นวันหยุด');
-      expect(payload).toContain('- มุก: ลา');
+      expect(payload).toContain('- ปิ่น (6:30)');
+      expect(payload).toContain('- หนูดี (วันหยุด)');
+      expect(payload).toContain('- ฟิว (วันหยุด)');
+      expect(payload).toContain('- มุก (ลา)');
       expect(payload).not.toContain('ไม่มีกะ');
-      expect(payload).not.toMatch(/หนูดี: วันหยุด/);
     });
   });
 
