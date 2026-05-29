@@ -456,13 +456,15 @@ pm run build).
 ### DEC-014: CSV-Verified Tool Schema Lock (Inventory + Maintenance)
 
 - **Date:** May 27, 2026
-- **Context:** AI query เกิด Postgres 42703 เพราะเรียกคอลัมน์ที่ไม่มีจริง เช่น item_name, maintenance_date, operator`r
-- **Decision:** บังคับ eadTableTool ให้ใช้ preset ตาม schema จริง และ map alias ที่ผิดไปคอลัมน์จริงก่อนยิง query
-- **Impact:** ลดโอกาส query fail ในระบบ AI executive chat และ maintenance/inventory lookup
+- **Context:** AI query ๏ฟฝ๏ฟฝิด Postgres 42703 ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝยก๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝีจ๏ฟฝิง ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ item_name, maintenance_date, operator`r
+- **Decision:** ๏ฟฝัง๏ฟฝับ 
+eadTableTool ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ preset ๏ฟฝ๏ฟฝ๏ฟฝ schema ๏ฟฝ๏ฟฝิง ๏ฟฝ๏ฟฝ๏ฟฝ map alias ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝิดไปค๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝิง๏ฟฝ๏ฟฝอน๏ฟฝิง query
+- **Impact:** ลด๏ฟฝอก๏ฟฝ๏ฟฝ query fail ๏ฟฝ๏ฟฝ๏ฟฝะบ๏ฟฝ AI executive chat ๏ฟฝ๏ฟฝ๏ฟฝ maintenance/inventory lookup
 
 ### DEC-015: AI Chat Tool Surface Minimization
 
 - **Date:** May 27, 2026
-- **Context:** ลดความซับซ้อน orchestration และคุมเส้นทางข้อมูลตาม Internal API-First
-- **Decision:** /api/chat ใช้เครื่องมือเพียง eadTable และ internetSearchTool`r
-- **Impact:** ลด branching behavior ของ agent และบังคับใช้ schema map เดียวจาก Universal DB reader
+- **Context:** ลด๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝับ๏ฟฝ๏ฟฝอน orchestration ๏ฟฝ๏ฟฝะค๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ้นทาง๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝลต๏ฟฝ๏ฟฝ Internal API-First
+- **Decision:** /api/chat ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝอง๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝยง 
+eadTable ๏ฟฝ๏ฟฝ๏ฟฝ internetSearchTool`r
+- **Impact:** ลด branching behavior ๏ฟฝอง agent ๏ฟฝ๏ฟฝะบัง๏ฟฝับ๏ฟฝ๏ฟฝ๏ฟฝ schema map ๏ฟฝ๏ฟฝ๏ฟฝ๏ฟฝวจาก Universal DB reader

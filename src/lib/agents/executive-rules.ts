@@ -29,6 +29,11 @@ export const EXECUTIVE_RULES = {
     service_records_comparison_evaluation:
       'สำหรับ service_records ที่ต้องเทียบความถี่/วันครบกำหนด ให้คำนวณจากข้อมูลในแถวทั้งหมดแบบ in-memory หลังดึงจาก readTable แล้วค่อยสรุปลำดับความเร่งด่วน',
   },
+  scheduling_integrity: {
+    atomic_weekly_flush_protocol:
+      'เมื่อดำเนินการ "คัดลอกสัปดาห์ก่อนหน้า" ระบบต้อง (1) คำนวณช่วงวันที่แบบ Zoned Time (Asia/Bangkok) (2) ลบกะงานเดิมในสัปดาห์เป้าหมายทั้งหมด 7 วันทิ้งก่อนเสมอ เพื่อป้องกันการชนกันของข้อมูล (Conflict) (3) ใช้ delay 500ms ก่อนดึงข้อมูลใหม่เพื่อป้องกัน Latency Sync',
+    timezone_anchor: 'Asia/Bangkok (GMT+7) เท่านั้น'
+  },
   scheduling: {
     min_staff_per_shift: 2,
     peak_hours: ['08:00', '12:00', '15:00'],

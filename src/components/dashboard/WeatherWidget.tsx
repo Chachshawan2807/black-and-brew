@@ -68,7 +68,7 @@ export function WeatherWidget() {
   }
 
   return (
-    <div className="bg-white border-2 border-black rounded-[32px] p-6 md:p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-[#fdfcf0] border-2 border-black rounded-[32px] p-6 md:p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-md transition-shadow duration-300">
       {/* Current Weather (Left side on desktop) */}
       <div className="flex items-center gap-6">
         <div>

@@ -55,7 +55,7 @@ export async function GET() {
     return NextResponse.json({ current, hourly }, {
       headers: {
         'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=600',
-      },
+      }, // เพิ่ม Cache-Control headers เพื่อประสิทธิภาพการแคช
     });
   } catch (error) {
     console.error('[WEATHER_API] Error fetching weather:', error);

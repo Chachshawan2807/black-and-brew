@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { compileDailyReportPayload } from '@/app/actions/daily-report-actions';
 import { sendLineNotification } from '@/app/actions/line-actions';
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
+
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');

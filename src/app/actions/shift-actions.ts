@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!; // บังคับใช้ Service Role เท่านั้นเพื่อความปลอดภัยของข้อมูล
 const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey);
 
 export async function deleteShift(id: string) {
@@ -138,5 +138,143 @@ export async function deleteManagementHistoryRange(employeeId: string, startDate
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : 'Unknown error';
     return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * ดึงข้อมูลกะงานและโปรไฟล์พนักงานสำหรับช่วงวันที่กำหนดแบบยืดหยุ่น (Server-side)
+ * @param startDate วันที่เริ่มต้น YYYY-MM-DD
+ * @param endDate วันที่สิ้นสุด YYYY-MM-DD
+ */
+export async function fetchRosterData(startDate: string, endDate: string) {
+  try {
+    const [profilesRes, shiftsRes, holidaysRes] = await Promise.all([
+      supabaseAdmin
+        .from('profiles')
+        .select('id, full_name, dashboard_order')
+        .order('dashboard_order', { ascending: true }), // แก้ไขให้ใช้ระเบียบ dashboard_order พนักงานจะได้ขึ้นครบทุกคน
+      supabaseAdmin
+        .from('shifts')
+        .select('id, employee_id, status, metadata, start_time, end_time')
+        .gte('start_time', `${startDate}T00:00:00`)
+        .lte('start_time', `${endDate}T23:59:59`),
+      supabaseAdmin
+        .from('holidays')
+        .select('id, date, name')
+    ]);
+
+    if (profilesRes.error) throw profilesRes.error;
+    if (shiftsRes.error) throw shiftsRes.error;
+    if (holidaysRes.error) throw holidaysRes.error;
+
+    return {
+      success: true,
+      profiles: profilesRes.data || [],
+      shifts: shiftsRes.data || [],
+      holidays: holidaysRes.data || []
+    };
+  } catch (error: any) {
+    console.error('[fetchRosterData] Error:', error.message || error);
+    return { success: false, profiles: [], shifts: [], holidays: [], error: error.message || 'Internal Server Error' };
+  }
+}
+
+/**
+ * คัดลอกตารางงานจากสัปดาห์หนึ่งไปยังอีกสัปดาห์หนึ่ง
+ * บังคับใช้ Atomic Weekly Flush Protocol (DEC-047)
+ */
+export async function copyWeeklyShifts(sourceStartDate: string, targetStartDate: string) {
+  noStore();
+  const cookieStore = await cookies();
+  const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+  if (!pinVerified) {
+    return { success: false, error: 'Unauthorized: โปรดเข้าสู่ระบบด้วย PIN' };
+  }
+
+  try {
+    const sStart = sourceStartDate.split('T')[0];
+    const tStart = targetStartDate.split('T')[0];
+
+    // 1. คำนวณวันสิ้นสุดของสัปดาห์เป้าหมาย (7 วัน)
+    const targetEndDate = new Date(tStart);
+    targetEndDate.setDate(targetEndDate.getDate() + 6);
+    const tEnd = targetEndDate.toISOString().split('T')[0];
+
+    // 2. ATOMIC FLUSH: ลบข้อมูลเก่าในสัปดาห์เป้าหมายทิ้งทั้งหมดก่อน เพื่อป้องกัน Conflict 409
+    // นี่คือวิธีที่ปลอดภัยที่สุดเพื่อให้แน่ใจว่าไม่มีข้อมูลใด (เช่น วันลา) มาขวางการคัดลอก
+    const { error: deleteError } = await supabaseAdmin
+      .from('shifts')
+      .delete()
+      .gte('start_time', `${tStart}T00:00:00`)
+      .lte('start_time', `${tEnd}T23:59:59`);
+
+    if (deleteError) {
+      console.error('[copyWeeklyShifts] Delete Error:', deleteError);
+      throw deleteError;
+    }
+
+    // 3. ดึงข้อมูลจากสัปดาห์ต้นทาง
+    const sourceEndDate = new Date(sStart);
+    sourceEndDate.setDate(sourceEndDate.getDate() + 6);
+    const sEnd = sourceEndDate.toISOString().split('T')[0];
+
+    const { data: sourceShifts, error: fetchError } = await supabaseAdmin
+      .from('shifts')
+      .select('employee_id, status, metadata, start_time')
+      .gte('start_time', `${sStart}T00:00:00`)
+      .lte('start_time', `${sEnd}T23:59:59`);
+
+    if (fetchError) throw fetchError;
+    if (!sourceShifts || sourceShifts.length === 0) {
+      return { success: true, message: 'ไม่มีข้อมูลกะงานในสัปดาห์ก่อนหน้าที่จะคัดลอก' };
+    }
+
+    // 3.1 DEDUPLICATION: กรองข้อมูลต้นทางให้เหลือ 1 คนต่อ 1 วันเท่านั้น เพื่อป้องกัน Error 409 Conflict
+    const uniqueShiftsMap = new Map();
+    sourceShifts.forEach(shift => {
+      const dateOnly = shift.start_time.split('T')[0];
+      const key = `${shift.employee_id}_${dateOnly}`;
+      // เก็บเฉพาะรายการล่าสุดหากมีความซ้ำซ้อนในสัปดาห์ต้นทาง
+      uniqueShiftsMap.set(key, shift);
+    });
+    const deduplicatedSourceShifts = Array.from(uniqueShiftsMap.values());
+
+    // 4. แปลงข้อมูลวันที่จากต้นทางไปปลายทาง (Day-to-Day Mapping)
+    const sourceBase = new Date(sStart).getTime();
+    const targetBase = new Date(tStart);
+
+    const newShifts = deduplicatedSourceShifts.map(shift => {
+      const currentShiftDate = new Date(shift.start_time.split('T')[0]).getTime();
+      const dayOffset = Math.round((currentShiftDate - sourceBase) / (1000 * 60 * 60 * 24));
+      
+      const newDate = new Date(targetBase);
+      newDate.setDate(targetBase.getDate() + dayOffset);
+      const newDateStr = newDate.toISOString().split('T')[0];
+
+      return {
+        employee_id: shift.employee_id,
+        status: shift.status,
+        metadata: shift.metadata,
+        start_time: `${newDateStr}T00:00:00`,
+        end_time: `${newDateStr}T23:59:59`
+      };
+    });
+
+    // 5. บันทึกข้อมูลใหม่แบบ Bulk Insert (เนื่องจากเราล้างข้อมูลเป้าหมายไปแล้วในขั้นตอนที่ 2)
+    const { error: insertError } = await supabaseAdmin
+      .from('shifts')
+      .insert(newShifts);
+
+    if (insertError) {
+      console.error('[copyWeeklyShifts] Insert Error:', insertError);
+      throw insertError;
+    }
+
+    revalidateAppPaths();
+    return { success: true };
+  } catch (err: any) {
+    console.error('[copyWeeklyShifts] CRITICAL FAILURE:', err);
+    return { success: false, error: err.message || 'เกิดข้อผิดพลาดรุนแรงในการคัดลอกข้อมูล' };
   }
 }

@@ -1,16 +1,12 @@
 import { Suspense } from 'react';
 import LiveShiftList from './components/LiveShiftList';
+import MonthlyRoster from './components/MonthlyRoster'; // เชื่อมต่อตารางรายเดือนตัวใหม่เรียบร้อย
 import { cookies } from 'next/headers';
-
-import { Loader2, CalendarRange, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { startOfWeek, addDays, format } from 'date-fns';
-import Image from 'next/image';
-
 
 export default async function DashboardPage({
-
   params,
   searchParams
 }: {
@@ -32,7 +28,7 @@ export default async function DashboardPage({
   const startDate = startParam || savedStart || format(monday, 'yyyy-MM-dd');
   const endDate = endParam || savedEnd || format(sunday, 'yyyy-MM-dd');
 
-  // Fetch Data on Server
+  // Fetch Data on Server (รักษาฐานข้อมูลและความปลอดภัยเดิมไว้ครบถ้วน)
   const { data: profiles } = await supabase.from('profiles').select('id, full_name, dashboard_order').order('dashboard_order', { ascending: true });
   const { data: shifts } = await supabase.from('shifts')
     .select('id, employee_id, start_time, end_time, status, metadata')
@@ -43,8 +39,6 @@ export default async function DashboardPage({
     .gte('date', startDate)
     .lte('date', endDate);
 
-
-
   return (
     <div className="min-h-screen bg-transparent p-4 md:p-12 text-[#000000] relative font-normal">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -54,11 +48,10 @@ export default async function DashboardPage({
           <div className="h-4">
             {/* Purified Minimalist Space */}
           </div>
-
         </header>
 
-
-        <main>
+        <main className="space-y-12">
+          {/* 1. ส่วนแสดงผลตารางกะงานรายสัปดาห์เดิม */}
           <Suspense fallback={
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <Loader2 className="w-8 h-8 animate-spin mb-4 text-gray-300" strokeWidth={1.5} />
@@ -73,6 +66,11 @@ export default async function DashboardPage({
               endDate={endDate}
             />
           </Suspense>
+
+          {/* 2. ส่วนแสดงผลตารางเวรและตรวจสอบกะงานแบบรายเดือนภาพรวม (ส่วนที่อัปเดตเพิ่มใหม่) */}
+          <div className="pt-8 border-t border-[#000000]/5">
+            <MonthlyRoster />
+          </div>
         </main>
       </div>
     </div>

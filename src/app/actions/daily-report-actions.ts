@@ -432,7 +432,7 @@ export async function compileDailyReportPayload() {
 รวมวันนี้: ${headcount} คน
 ${staffSection}
 
-🌦️ สภาพอากาศ
+🌦️ สภาพอากาศ บึงคำพร้อย
 - ภาพรวม:  ${weather.summary}
 - โอกาสเกิดฝน:  ${weather.maxPop}%
 - ช่วงเวลาที่ต้องเฝ้าระวัง:  ${weatherWarnings}
