@@ -17,9 +17,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const targetRecipientId = process.env.LINE_TARGET_RECIPIENT_ID;
+    // แก้ไข: เปลี่ยนมาดึงค่ากลุ่ม (LINE_GROUP_ID) เป็นอันดับแรก เพื่อรองรับกลุ่มไลน์เดิมของร้าน
+    const targetRecipientId = process.env.LINE_GROUP_ID || process.env.LINE_TARGET_RECIPIENT_ID;
+
     if (!targetRecipientId) {
-      console.error('[CRON] Missing LINE_TARGET_RECIPIENT_ID in environment');
+      console.error('[CRON] Missing target ID (LINE_GROUP_ID / LINE_TARGET_RECIPIENT_ID) in environment');
       return NextResponse.json({ success: false, error: 'Missing target ID' }, { status: 500 });
     }
 
@@ -32,8 +34,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: result.error }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       timestamp: new Date().toISOString(),
       previewText: message.substring(0, 50) + '...'
     });
