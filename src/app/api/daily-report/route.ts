@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
+import { unstable_noStore as noStore } from 'next/cache';
 import { compileDailyReportPayload } from '@/app/actions/daily-report-actions';
 import { sendLineNotification } from '@/app/actions/line-actions';
 
-export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
 export async function GET(request: Request) {
+  noStore();
   try {
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
