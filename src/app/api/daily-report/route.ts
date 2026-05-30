@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
+import { unstable_noStore as noStore } from 'next/cache'; // 💡 เรียกตัวนี้กลับมาช่วยคุมหลังบ้าน
 import { compileDailyReportPayload } from '@/app/actions/daily-report-actions';
 import { sendLineNotification } from '@/app/actions/line-actions';
 
-// บังคับให้เป็น Dynamic Route เพื่อป้องกัน Vercel Prerender Error จากการใช้ request.headers
-export const dynamic = 'force-dynamic';
+// ลบ export const dynamic ออกไปแล้วตามคำสั่งของระบบ
 export const maxDuration = 30;
 
 export async function GET(request: Request) {
+  // 💡 ใช้ noStore() บรรทัดแรกสุด เพื่อสั่งให้ข้ามการทำ Prerender ตอนรันไทม์โดยไม่ขัดกับระบบแคชหลัก
+  noStore();
+
   try {
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
@@ -21,7 +24,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // ดึงค่าไอดีกลุ่ม LINE_GROUP_ID เป็นอันดับแรก เพื่อรองรับกลุ่มไลน์เดิมของร้าน
     const targetRecipientId = process.env.LINE_GROUP_ID || process.env.LINE_TARGET_RECIPIENT_ID;
 
     if (!targetRecipientId) {
