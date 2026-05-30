@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import { setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import SidebarLayout from '@/components/sidebar/SidebarLayout';
 import I18nProvider from '@/components/providers/I18nProvider';
 import AIChatOverlay from '@/components/ai/AIChatWrapper';
@@ -56,6 +57,7 @@ export default async function RootLayout({
           </SidebarLayout>
           <AIChatOverlay />
         </PinGateway>
+        <SpeedInsights />
       </body>
     </html>
   );
