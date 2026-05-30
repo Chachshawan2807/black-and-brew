@@ -4,9 +4,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Undo2, Redo2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Download } from 'lucide-react';
-import { startOfWeek, addDays, format } from 'date-fns';
+import { startOfWeek, addDays, format, parseISO, isValid } from 'date-fns';
 
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 
@@ -23,13 +22,8 @@ import {
   useSensors,
   DragStartEvent,
   DragEndEvent,
-  DragOverlay,
-  defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
-import {
-  restrictToWindowEdges,
-  snapCenterToCursor,
-} from '@dnd-kit/modifiers';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import {
   arrayMove,
   SortableContext,
@@ -102,8 +96,6 @@ function ColumnHeader({ col, onResize, onResizeEnd }: {
       isResizing.current = false;
       abortControllerRef.current?.abort();
       abortControllerRef.current = null;
-
-      // Explicitly remove listeners to avoid any potential lingering handlers.
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
 
@@ -128,7 +120,6 @@ function ColumnHeader({ col, onResize, onResizeEnd }: {
       className="p-3 text-[13px] font-normal text-[#000000] border-b border-r border-[#000000]/10 bg-[#fdfcf0] text-center whitespace-nowrap relative group select-none"
     >
       {col.label}
-      {/* Resizer Handle */}
       {col.id !== 'actions' && (
         <div
           onMouseDown={handleMouseDown}
@@ -140,7 +131,6 @@ function ColumnHeader({ col, onResize, onResizeEnd }: {
     </th>
   );
 }
-
 
 // --- Sub-component: SortableEmployeeRow ---
 interface SortableEmployeeRowProps {
@@ -234,7 +224,6 @@ const SortableEmployeeRow = React.memo(({
       </div>
 
       {weekDays.map(date => {
-        // STRICT STRING MATCHING — avoids isSameThaiDay timezone mismatch
         const shift = shifts.find(s =>
           (s.employee_id === profile.id || (s as any).profile_id === profile.id) &&
           s.start_time.split('T')[0] === date
@@ -292,22 +281,17 @@ export default function ScheduleClient({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
   const [selectedCell, setSelectedCell] = useState<{ employeeId: string; date: string; shift?: any; x: number; y: number } | null>(null);
-
   const [editingHoliday, setEditingHoliday] = useState<string | null>(null);
   const [holidayInput, setHolidayInput] = useState('');
 
-  // History table states
   const [mgmtColumns, setMgmtColumns] = useState<ColumnDef[]>(defaultHistoryColumns);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  // Hydrate history column widths from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem('blackandbrew-shift-history-col-widths');
@@ -329,16 +313,13 @@ export default function ScheduleClient({
     }
   }, []);
 
-
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState('');
 
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [newEmployeeName, setNewEmployeeName] = useState('');
-
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  // Leave & Shift Management System
   const [showManagementModal, setShowManagementModal] = useState(false);
   const [managementForm, setManagementForm] = useState({
     employeeId: '',
@@ -348,18 +329,10 @@ export default function ScheduleClient({
     remark: ''
   });
 
-  const mgmtStartRef = useRef<HTMLInputElement>(null);
-  const mgmtEndRef = useRef<HTMLInputElement>(null);
-
-  const histStartRef = useRef<HTMLInputElement>(null);
-  const histEndRef = useRef<HTMLInputElement>(null);
-
-  // History Panel State
   const [mgmtHistory, setMgmtHistory] = useState<any[]>([]);
   const [historyFilter, setHistoryFilter] = useState({ start: '', end: '' });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Undo/Redo System
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [redoStack, setRedoStack] = useState<any[]>([]);
 
@@ -368,9 +341,6 @@ export default function ScheduleClient({
     return [...Array(7)].map((_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
   }, [currentDate]);
 
-  const copyInputRef = useRef<HTMLInputElement>(null);
-
-  // SAFE REACT HYDRATION: ซิงค์ข้อมูลใหม่จาก Server เสมอเมื่อมีการ revalidate / refresh
   useEffect(() => {
     if (initialProfiles && initialProfiles.length > 0) {
       setProfiles(initialProfiles);
@@ -416,10 +386,7 @@ export default function ScheduleClient({
     setShifts(previous.shifts);
 
     try {
-      // Use updateStaffOrder Server Action with Service Role
       await updateStaffOrder(previous.orderedProfileIds);
-
-      // Name updates still use client-side if allowed by RLS, but for stability we standardise
       const profileUpdates = previous.profiles.map((p: any) =>
         supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id)
       );
@@ -428,14 +395,12 @@ export default function ScheduleClient({
 
       if (previous.shifts.length > 0) {
         await supabase.from('shifts').insert(previous.shifts.map((s: any) => {
-          const { id, created_at, ...rest } = s; // Cleanup internal fields
+          const { id, created_at, ...rest } = s; 
           return rest;
         }));
       }
       await revalidateAppPaths();
-    } catch {
-      // Failed to undo
-    }
+    } catch { }
   };
 
   const redo = async () => {
@@ -455,9 +420,7 @@ export default function ScheduleClient({
     setShifts(next.shifts);
 
     try {
-      // Use updateStaffOrder Server Action with Service Role
       await updateStaffOrder(next.orderedProfileIds);
-
       const profileUpdates = next.profiles.map((p: any) =>
         supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id)
       );
@@ -471,9 +434,7 @@ export default function ScheduleClient({
         }));
       }
       await revalidateAppPaths();
-    } catch {
-      // Failed to redo, silently ignore or handle error
-    }
+    } catch { }
   };
 
   const handleClearAll = async () => {
@@ -489,10 +450,7 @@ export default function ScheduleClient({
 
   const fetchMgmtHistory = useCallback(async () => {
     try {
-      // Fetch shifts with is_management: true in metadata
-      // Note: We'll fetch a reasonable range or all
       let query = supabase.from('shifts')
-        // Data minimization: only fields used by management history grouping UI
         .select(`id, employee_id, status, start_time, end_time, metadata, profiles(full_name)`)
         .eq('metadata->is_management', true)
         .order('start_time', { ascending: false });
@@ -503,7 +461,6 @@ export default function ScheduleClient({
       const { data, error } = await query;
       if (error) throw error;
 
-      // Group contiguous shifts into ranges
       const grouped: any[] = [];
       const sorted = [...(data || [])].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
@@ -536,16 +493,12 @@ export default function ScheduleClient({
         }
       });
 
-      setMgmtHistory(grouped.reverse()); // Show newest first
-    } catch {
-      // Silently handle error to prevent data leakage
-    }
+      setMgmtHistory(grouped.reverse());
+    } catch { }
   }, [historyFilter]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (showManagementModal) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchMgmtHistory();
     }
   }, [showManagementModal, fetchMgmtHistory]);
@@ -557,7 +510,6 @@ export default function ScheduleClient({
   const handleColumnResizeEnd = useCallback((id: string, width: number) => {
     setMgmtColumns(prev => {
       const nextCols = prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col);
-      // Persist to localStorage immediately
       const widths = nextCols.reduce<Record<string, string>>((acc, c) => {
         const px = parseInt(c.width);
         if (!isNaN(px)) acc[c.id] = String(px);
@@ -574,8 +526,6 @@ export default function ScheduleClient({
     }
 
     setConfirmDeleteId(historyItem.id);
-
-    // Optimistic UI Update (Zero Latency)
     const previousHistory = [...mgmtHistory];
     setMgmtHistory(prev => prev.filter(h => h.id !== historyItem.id));
 
@@ -588,7 +538,6 @@ export default function ScheduleClient({
 
       if (!success) throw new Error(error || 'Failed to delete history');
 
-      // Fetch fresh shifts for calendar display
       const { data: freshShifts } = await supabase
         .from('shifts')
         .select('id, employee_id, status, start_time, end_time, metadata')
@@ -598,7 +547,6 @@ export default function ScheduleClient({
 
     } catch (err: any) {
       console.error('Failed to delete history:', err);
-      // Rollback
       setMgmtHistory(previousHistory);
       alert('ไม่สามารถลบประวัติได้: ' + (err.message || 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ'));
     } finally {
@@ -624,7 +572,6 @@ export default function ScheduleClient({
       for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
         const dateStr = format(d, 'yyyy-MM-dd');
         datesToDelete.push(dateStr + 'T00:00:00');
-
         const isLeave = managementForm.shiftType === 'ลา' || managementForm.shiftType === 'on_leave';
 
         newShifts.push({
@@ -640,7 +587,6 @@ export default function ScheduleClient({
         });
       }
 
-      // Delete existing for this employee in range
       if (datesToDelete.length > 0) {
         const { error: delError } = await supabase.from('shifts')
           .delete()
@@ -649,98 +595,23 @@ export default function ScheduleClient({
         if (delError) throw delError;
       }
 
-      // Insert new
       if (newShifts.length > 0) {
         const { error: insError } = await supabase.from('shifts')
           .insert(newShifts);
         if (insError) throw insError;
       }
 
-      // Success Feedback & Refresh
       setSaveSuccess(true);
       fetchMgmtHistory();
       setTimeout(() => setSaveSuccess(false), 3000);
-
-      // Reset form but stay open
       setManagementForm({ employeeId: '', shiftType: '6:30', startDate: '', endDate: '', remark: '' });
-
       await revalidateAppPaths();
-
     } catch {
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
     } finally {
       setLoading(false);
     }
   };
-
-  const handleCopyShifts = async (sourceDateStr: string) => {
-    if (!sourceDateStr) return;
-    setLoading(true);
-
-    try {
-      // 1. Calculate source week boundaries (Monday start)
-      const sourceMonday = startOfWeek(new Date(sourceDateStr), { weekStartsOn: 1 });
-      const sourceSunday = addDays(sourceMonday, 6);
-
-      // 2. Fetch source shifts from Supabase
-      const { data: sourceShifts, error: fetchError } = await supabase.from('shifts')
-        .select('id, employee_id, start_time, end_time, status, metadata')
-        .gte('start_time', format(sourceMonday, 'yyyy-MM-dd') + 'T00:00:00')
-        .lte('start_time', format(sourceSunday, 'yyyy-MM-dd') + 'T23:59:59')
-        .not('status', 'is', null)
-        .not('status', 'eq', '')
-        .not('metadata->>location', 'is', null)
-        .not('metadata->>location', 'eq', '');
-
-      if (fetchError) throw fetchError;
-      if (!sourceShifts || sourceShifts.length === 0) {
-        alert('ไม่พบข้อมูลกะงานในสัปดาห์ที่เลือก กรุณาเลือกสัปดาห์อื่นที่มีการลงเวลาไว้แล้ว');
-        setLoading(false);
-        return;
-      }
-
-      // Record for undo
-      pushToHistory(profiles, orderedProfileIds, shifts);
-
-      // 3. Delete all shifts in the current target week to prepare for copy
-      const { error: deleteError } = await supabase.from('shifts')
-        .delete()
-        .gte('start_time', weekDays[0] + 'T00:00:00')
-        .lte('start_time', weekDays[6] + 'T23:59:59');
-
-      if (deleteError) throw deleteError;
-
-      // 4. Map source shifts to current target week dates (Maintains same day-of-week)
-      const newShifts = sourceShifts.map((s: any) => {
-        const oldDate = new Date(s.start_time.split('T')[0]);
-        // Day index: 0=Mon, 1=Tue, ..., 6=Sun
-        const dayIndex = (oldDate.getDay() + 6) % 7;
-        const targetDateStr = weekDays[dayIndex];
-
-        return {
-          employee_id: s.employee_id,
-          start_time: targetDateStr + 'T00:00:00',
-          end_time: targetDateStr + 'T23:59:59',
-          status: s.status,
-          metadata: s.metadata
-        };
-      });
-
-      // 5. Batch Insert into Supabase
-      if (newShifts.length > 0) {
-        const { error: insertError } = await supabase.from('shifts').insert(newShifts);
-        if (insertError) throw insertError;
-      }
-
-      // 6. Sync UI and Dashboard Stats
-      revalidateAppPaths();
-    } catch {
-      alert('เกิดข้อผิดพลาดในการคัดลอกข้อมูล กรุณาลองใหม่อีกครั้ง');
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -761,11 +632,9 @@ export default function ScheduleClient({
     const newIndex = orderedProfileIds.indexOf(over.id as string);
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      // Zero Latency Local Update
       const newOrder = arrayMove(orderedProfileIds, oldIndex, newIndex);
       setOrderedProfileIds(newOrder);
 
-      // Background Sync using Server Action (Service Role)
       try {
         const result = await updateStaffOrder(newOrder);
         if (!result.success) throw new Error(result.error);
@@ -781,20 +650,15 @@ export default function ScheduleClient({
     if (!window.confirm('คุณแน่ใจหรือไม่ที่จะลบพนักงานคนนี้ถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้ และจะลบกะงานทั้งหมดที่เกี่ยวข้องด้วย')) return;
 
     setLoading(true);
-    pushToHistory(profiles, orderedProfileIds, shifts); // Save state for undo just in case, though DB delete is permanent
+    pushToHistory(profiles, orderedProfileIds, shifts); 
     try {
-      // 1. Delete all shifts for this employee to satisfy foreign key constraints
       await supabase.from('shifts').delete().eq('employee_id', employeeId);
-
-      // 2. Delete the employee profile
       const { error } = await supabase.from('profiles').delete().eq('id', employeeId);
       if (error) throw error;
 
-      // 3. Update UI State instantly (collapse the row)
       setProfiles(prev => prev.filter(p => p.id !== employeeId));
       setOrderedProfileIds(prev => prev.filter(id => id !== employeeId));
       setShifts(prev => prev.filter(s => s.employee_id !== employeeId));
-
       revalidateAppPaths();
     } catch (error) {
       console.error('Failed to delete employee:', error);
@@ -809,26 +673,18 @@ export default function ScheduleClient({
 
     setLoading(true);
     try {
-      // Calculate next display order
       const nextOrder = profiles.length;
-
       const { data, error } = await supabase
         .from('profiles')
-        .insert([{
-          full_name: newEmployeeName.trim(),
-          display_order: nextOrder
-        }])
+        .insert([{ full_name: newEmployeeName.trim(), display_order: nextOrder }])
         .select()
         .single();
 
       if (error) throw error;
       if (data) {
-        // Optimistic UI Update: Update local state immediately
         const newProfile = data as Profile;
         setProfiles(prev => [...prev, newProfile]);
         setOrderedProfileIds(prev => [...prev, newProfile.id]);
-
-        // Reset and close
         setNewEmployeeName('');
         setShowAddEmployeeModal(false);
         revalidateAppPaths();
@@ -848,7 +704,7 @@ export default function ScheduleClient({
       setProfiles(prev => prev.map(p => p.id === id ? { ...p, full_name: nameInput } : p));
       setEditingNameId(null);
       await supabase.from('profiles').update({ full_name: nameInput }).eq('id', id);
-      revalidateAppPaths(); // Fire and forget
+      revalidateAppPaths(); 
     } catch {
       alert('เกิดข้อผิดพลาดในการบันทึกชื่อ');
     }
@@ -868,11 +724,9 @@ export default function ScheduleClient({
       metadata: { location: type }
     };
 
-    // 1. Snapshot for rollback
     const previousShifts = [...shifts];
     pushToHistory(profiles, orderedProfileIds, shifts);
 
-    // 2. Build optimistic shift with a temp ID
     const tempId = `temp-${crypto.randomUUID()}`;
     const optimisticShift: Shift = {
       id: tempId,
@@ -883,7 +737,6 @@ export default function ScheduleClient({
       metadata: { location: type }
     };
 
-    // 3. Optimistically update UI immediately
     setShifts(prev => {
       const filtered = prev.filter(s => {
         const sDate = s.start_time.split('T')[0];
@@ -893,7 +746,6 @@ export default function ScheduleClient({
       return [...filtered, optimisticShift];
     });
 
-    // 4. Fire background server action
     try {
       const res = await saveShift(payload);
       if (!res.success) {
@@ -901,13 +753,11 @@ export default function ScheduleClient({
         setShifts(previousShifts);
         return;
       }
-      // 5. Swap temp ID → real DB ID to keep handleClear functional
       if (res.data?.id) {
         setShifts(prev => prev.map(s =>
           s.id === tempId ? { ...s, id: res.data!.id } : s
         ));
       }
-      // Server Action (saveShift) already handles revalidation internally
     } catch (error) {
       console.error('[handleSave] Network Error:', error);
       setShifts(previousShifts);
@@ -916,9 +766,6 @@ export default function ScheduleClient({
 
   const handleClear = async () => {
     if (!selectedCell) return;
-
-    // MUST LOOKUP LATEST ID FROM SOURCE OF TRUTH (shifts array)
-    // selectedCell.shift.id may be stale (tempId) if the ID swap ran after modal opened
     const latestShift = shifts.find(s =>
       (s.employee_id === selectedCell.employeeId || (s as any).profile_id === selectedCell.employeeId) &&
       s.start_time.split('T')[0] === selectedCell.date
@@ -933,14 +780,10 @@ export default function ScheduleClient({
     const previousShifts = [...shifts];
     pushToHistory(profiles, orderedProfileIds, shifts);
 
-    // Optimistic UI Drop
     setShifts(prev => prev.filter(s => s.id !== shiftId));
     setSelectedCell(null);
-
-    // Just visual drop — DB save will handle sync via revalidateAppPaths
     if (shiftId.startsWith('temp-')) return;
 
-    // 4. Fire background delete for real DB rows
     try {
       const result = await deleteShift(shiftId);
       if (!result.success) {
@@ -948,7 +791,6 @@ export default function ScheduleClient({
         setShifts(previousShifts);
         return;
       }
-      // 5. deleteShift already calls revalidateAppPaths internally
     } catch (error) {
       console.error('[handleClear] Network Error:', error);
       setShifts(previousShifts);
@@ -978,7 +820,7 @@ export default function ScheduleClient({
       }
       setEditingHoliday(null);
       setHolidayInput('');
-      revalidateAppPaths(); // Fire and forget
+      revalidateAppPaths(); 
     } catch {
       alert('เกิดข้อผิดพลาดในการบันทึกวันหยุด');
     }
@@ -991,7 +833,6 @@ export default function ScheduleClient({
       if (!element) return;
 
       setLoading(true);
-
       const dataUrl = await toPng(element, {
         quality: 1.0,
         pixelRatio: 2,
@@ -1052,25 +893,6 @@ export default function ScheduleClient({
               <UserCog className="w-3.5 h-3.5" />
               การลา/เปลี่ยนกะ
             </button>
-
-            <div className="relative">
-              <input
-                ref={copyInputRef}
-                type="date"
-                className="sr-only"
-                onChange={(e) => handleCopyShifts(e.target.value)}
-              />
-              <button
-                onClick={() => copyInputRef.current?.showPicker()}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md border border-blue-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                คัดลอกสัปดาห์ก่อนหน้า
-              </button>
-            </div>
-
-
-
 
             <button
               onClick={() => setShowClearConfirm(true)}
@@ -1219,7 +1041,6 @@ export default function ScheduleClient({
 
               <div className="grid grid-cols-8 border-t border-gray-200 bg-[#f5f5f5] sticky bottom-0">
                 <div className="p-2 border-r border-gray-100 flex items-center justify-center bg-gray-50/30">
-                  {/* Empty space - removed FOH label */}
                 </div>
                 {weekDays.map(date => {
                   const VALID_SHIFTS = ['6:30', '7:00', '8:00'];
@@ -1284,13 +1105,10 @@ export default function ScheduleClient({
                 </button>
               </div>
             )}
-
           </div>
         </div>
       )}
 
-
-      {/* Clear All Confirmation Dialog */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
           <div className="bg-white border border-gray-100 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl p-6 text-center space-y-4">
@@ -1316,22 +1134,21 @@ export default function ScheduleClient({
           </div>
         </div>
       )}
-      {/* Loading Overlay */}
+
       {loading && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[100] flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
           <p className="text-sm font-normal text-blue-600 uppercase tracking-widest">กำลังดำเนินการ...</p>
         </div>
       )}
-      {/* Management Modal */}
+
       {showManagementModal && (
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
           <div className="bg-[#fdfcf0] w-full max-w-5xl rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 flex max-h-[90vh]">
-            {/* Left side: Management Form */}
-            <div className="w-[320px] flex flex-col border-r border-[#000000]/5 shrink-0">
+            <div className="w-[380px] flex flex-col border-r border-[#000000]/5 shrink-0">
               <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]/50">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-emerald-50 rounded-3xl">
@@ -1342,7 +1159,6 @@ export default function ScheduleClient({
               </div>
 
               <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-                {/* Success Feedback Overlay (Mini) */}
                 {saveSuccess && (
                   <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
@@ -1352,7 +1168,6 @@ export default function ScheduleClient({
                   </div>
                 )}
 
-                {/* Employee Selection */}
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">พนักงาน</label>
                   <div className="relative">
@@ -1372,22 +1187,18 @@ export default function ScheduleClient({
                   </div>
                 </div>
 
-                {/* Shift/Type Selection */}
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
                   <div className="relative group/select">
                     <select
-                      className={`w-full h-11 px-4 pr-10 rounded-3xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-[14px] font-normal shadow-sm appearance-none text-[#000000] ${shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-white border-[#000000]/5'
-                        }`}
+                      className={`w-full h-11 px-4 pr-10 rounded-3xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-[14px] font-normal shadow-sm appearance-none text-[#000000] ${
+                        shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-white border-[#000000]/5'
+                      }`}
                       value={managementForm.shiftType}
                       onChange={(e) => setManagementForm(prev => ({ ...prev, shiftType: e.target.value }))}
                     >
                       {shiftTypes.map(t => (
-                        <option
-                          key={t.value}
-                          value={t.value}
-                          className="bg-white text-gray-900 font-normal py-2"
-                        >
+                        <option key={t.value} value={t.value} className="bg-white text-gray-900 font-normal py-2">
                           {t.label}
                         </option>
                       ))}
@@ -1398,42 +1209,40 @@ export default function ScheduleClient({
                   </div>
                 </div>
 
-                {/* Smart Date Range Selector */}
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">ระบุช่วงวันที่</label>
-                  <div
-                    className="group relative flex items-center h-12 px-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0] hover:border-[#000000]/20 transition-all cursor-pointer overflow-hidden shadow-sm"
-                    onClick={() => mgmtStartRef.current?.showPicker()}
-                  >
-                    <Calendar className="w-4 h-4 text-[#000000] mr-3 shrink-0" strokeWidth={1.5} />
-                    <div className="flex-1 flex items-center gap-2 text-[13.5px] font-normal text-[#000000]">
-                      <span>{managementForm.startDate ? format(new Date(managementForm.startDate), 'dd/MM/yyyy') : 'เริ่มต้น'}</span>
-                      <span className="text-gray-300 mx-1">→</span>
-                      <span>{managementForm.endDate ? format(new Date(managementForm.endDate), 'dd/MM/yyyy') : 'สิ้นสุด'}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="relative group flex-1">
+                      <input 
+                        type="date" 
+                        value={managementForm.startDate}
+                        onChange={(e) => setManagementForm(prev => ({ ...prev, startDate: e.target.value }))}
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                      />
+                      <div className="bg-white px-3 py-3 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal w-full text-center transition-all group-hover:border-black/20 antialiased">
+                        {managementForm.startDate && isValid(parseISO(managementForm.startDate)) 
+                          ? format(parseISO(managementForm.startDate), 'dd/MM/yyyy') 
+                          : 'เริ่ม'}
+                      </div>
                     </div>
-
-                    <input
-                      ref={mgmtStartRef}
-                      type="date"
-                      className="sr-only"
-                      value={managementForm.startDate}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setManagementForm(prev => ({ ...prev, startDate: val }));
-                        if (val) setTimeout(() => mgmtEndRef.current?.showPicker(), 100);
-                      }}
-                    />
-                    <input
-                      ref={mgmtEndRef}
-                      type="date"
-                      className="sr-only"
-                      value={managementForm.endDate}
-                      onChange={(e) => setManagementForm(prev => ({ ...prev, endDate: e.target.value }))}
-                    />
+                    <span className="text-black font-normal select-none">—</span>
+                    <div className="relative group flex-1">
+                      <input 
+                        type="date" 
+                        value={managementForm.endDate}
+                        onChange={(e) => setManagementForm(prev => ({ ...prev, endDate: e.target.value }))}
+                        min={managementForm.startDate}
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                      />
+                      <div className="bg-white px-3 py-3 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal w-full text-center transition-all group-hover:border-black/20 antialiased">
+                        {managementForm.endDate && isValid(parseISO(managementForm.endDate)) 
+                          ? format(parseISO(managementForm.endDate), 'dd/MM/yyyy') 
+                          : 'สิ้นสุด'}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Remark */}
                 <div className="space-y-1.5 pt-2">
                   <label className="text-[13px] font-normal text-[#000000]/60 uppercase tracking-widest px-1">หมายเหตุ</label>
                   <textarea
@@ -1448,7 +1257,7 @@ export default function ScheduleClient({
               <div className="p-4 bg-[#fdfcf0] border-t border-[#000000]/5 flex gap-3">
                 <button
                   onClick={() => setShowManagementModal(false)}
-                  className="flex-1 py-3 rounded-3xl bg-transparent border border-[#000000]/10 text-[#000000]/60 font-normal text-[12px] hover:bg-[#000000]/5 transition-all active:scale-95 shadow-sm"
+                  className="flex-1 py-3 rounded-3xl bg-transparent border border-[#000000]/10 text-[#000000]/60 font-normal text-[12px] hover:bg-[#000000]/5 transition-all active:scale-95 shadow-sm cursor-pointer"
                 >
                   ปิดหน้าต่าง
                 </button>
@@ -1461,54 +1270,49 @@ export default function ScheduleClient({
               </div>
             </div>
 
-            {/* Right side: History Panel */}
             <div className="flex-1 flex flex-col bg-[#fdfcf0]/30 min-w-0">
               <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="w-5 h-5 text-[#000000]/40" />
                   <h3 className="text-lg font-normal text-[#000000] tracking-tight">ประวัติ</h3>
                 </div>
-                <button onClick={() => setShowManagementModal(false)} className="p-2 hover:bg-[#000000]/5 rounded-full text-[#000000]/40 transition-all">
+                <button onClick={() => setShowManagementModal(false)} className="p-2 hover:bg-[#000000]/5 rounded-full text-[#000000]/40 transition-all cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* History Filter */}
               <div className="p-4 border-b border-[#000000]/5 bg-[#fdfcf0]">
-                <div
-                  className="group relative flex items-center h-10 px-3 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/30 hover:bg-[#fdfcf0] hover:border-[#000000]/20 transition-all cursor-pointer overflow-hidden"
-                  onClick={() => histStartRef.current?.showPicker()}
-                >
-                  <Calendar className="w-3.5 h-3.5 text-gray-400 mr-2.5 shrink-0" />
-                  <div className="flex-1 flex items-center gap-2 text-[12px] font-normal text-[#000000]">
-                    <span>{historyFilter.start ? format(new Date(historyFilter.start), 'dd/MM/yyyy') : 'กรองตามวันที่...'}</span>
-                    <span className="text-gray-300">→</span>
-                    <span>{historyFilter.end ? format(new Date(historyFilter.end), 'dd/MM/yyyy') : 'ทั้งหมด'}</span>
+                  <div className="flex items-center gap-2 max-w-sm">
+                    <div className="relative group flex-1">
+                      <input 
+                        type="date" 
+                        value={historyFilter.start}
+                        onChange={(e) => setHistoryFilter(prev => ({ ...prev, start: e.target.value }))}
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                      />
+                      <div className="bg-white px-3 py-2 rounded-full border border-black/5 shadow-sm text-black text-[13px] font-normal w-full text-center transition-all group-hover:border-black/20 antialiased">
+                        {historyFilter.start && isValid(parseISO(historyFilter.start)) 
+                          ? format(parseISO(historyFilter.start), 'dd/MM/yyyy') 
+                          : 'กรองตั้งแต่วันที่'}
+                      </div>
+                    </div>
+                    <span className="text-black font-normal select-none text-xs">—</span>
+                    <div className="relative group flex-1">
+                      <input 
+                        type="date" 
+                        value={historyFilter.end}
+                        onChange={(e) => setHistoryFilter(prev => ({ ...prev, end: e.target.value }))}
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                      />
+                      <div className="bg-white px-3 py-2 rounded-full border border-black/5 shadow-sm text-black text-[13px] font-normal w-full text-center transition-all group-hover:border-black/20 antialiased">
+                        {historyFilter.end && isValid(parseISO(historyFilter.end)) 
+                          ? format(parseISO(historyFilter.end), 'dd/MM/yyyy') 
+                          : 'ถึงวันที่'}
+                      </div>
+                    </div>
                   </div>
-
-                  {/* Hidden Native Date Pickers */}
-                  <input
-                    ref={histStartRef}
-                    type="date"
-                    className="sr-only"
-                    value={historyFilter.start}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setHistoryFilter(prev => ({ ...prev, start: val }));
-                      if (val) setTimeout(() => histEndRef.current?.showPicker(), 100);
-                    }}
-                  />
-                  <input
-                    ref={histEndRef}
-                    type="date"
-                    className="sr-only"
-                    value={historyFilter.end}
-                    onChange={(e) => setHistoryFilter(prev => ({ ...prev, end: e.target.value }))}
-                  />
-                </div>
               </div>
 
-              {/* History List - Grid Layout */}
               <div className="flex-1 overflow-y-auto p-5">
                 {mgmtHistory.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-[#000000]/20 space-y-2">
@@ -1570,7 +1374,6 @@ export default function ScheduleClient({
         </div>
       )}
 
-      {/* Add Employee Modal */}
       {showAddEmployeeModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setShowAddEmployeeModal(false)} />
@@ -1592,14 +1395,14 @@ export default function ScheduleClient({
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowAddEmployeeModal(false)}
-                  className="flex-1 py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-sm"
+                  className="flex-1 py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-sm cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   onClick={handleAddEmployee}
                   disabled={loading || !newEmployeeName.trim()}
-                  className="flex-1 py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   ยืนยัน

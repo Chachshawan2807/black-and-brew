@@ -8,7 +8,9 @@ import {
   isSameDay, 
   parseISO,
   startOfMonth,
-  endOfMonth
+  endOfMonth,
+  isBefore,
+  isValid
 } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { 
@@ -17,18 +19,11 @@ import {
   Calendar as CalendarIcon 
 } from 'lucide-react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
-import { ClickableInput } from '@/components/ui/ClickableInput';
 import { fetchRosterData } from '@/app/actions/shift-actions';
 
 interface Profile {
   id: string;
   full_name: string;
-}
-
-interface Holiday {
-  id: string;
-  date: string;
-  name: string;
 }
 
 interface Shift {
@@ -43,12 +38,11 @@ interface Shift {
 }
 
 export default function MonthlyRoster() {
-  // ตั้งค่าช่วงวันที่เริ่มต้นเริ่มต้นที่วันแรกถึงวันสุดท้ายของเดือนปัจจุบันตามปฏิทิน
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [activeTab, setActiveTab] = useState<'consolidated' | 'individual'>('consolidated');
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const [data, setData] = useState<{ profiles: Profile[]; shifts: Shift[]; holidays: Holiday[] }>({ profiles: [], shifts: [], holidays: [] });
+  const [data, setData] = useState<{ profiles: Profile[]; shifts: Shift[] }>({ profiles: [], shifts: [] });
   const [loading, setLoading] = useState(true);
 
   const daysInInterval = useMemo(() => {
@@ -66,7 +60,7 @@ export default function MonthlyRoster() {
       setLoading(true);
       const res = await fetchRosterData(startDate, endDate);
       if (res.success) {
-        setData({ profiles: res.profiles, shifts: res.shifts, holidays: res.holidays });
+        setData({ profiles: res.profiles, shifts: res.shifts });
         if (res.profiles.length > 0 && !selectedStaffId) {
           setSelectedStaffId(res.profiles[0].id);
         }
@@ -76,28 +70,34 @@ export default function MonthlyRoster() {
     loadData();
   }, [startDate, endDate]);
 
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setStartDate(val);
+    if (endDate && val && isBefore(parseISO(endDate), parseISO(val))) {
+      setEndDate('');
+    }
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (startDate && val && isBefore(parseISO(val), parseISO(startDate))) return;
+    setEndDate(val);
+  };
+
   const getShiftDisplay = (shift: Shift) => {
     const loc = shift.metadata?.location || '';
-    const cleanLoc = loc.replace(/^เข้ากะ\s*/, '').trim();
+    const cleanTime = loc.replace(/^เข้ากะ\s*/, '').trim();
     
-    // 1. กรณีลาพนักงาน (Priority สูงสุด)
-    if (shift.status === 'on_leave' || cleanLoc === 'ลา') 
-      return { text: 'ลา', color: 'bg-[#fff5f5] border-[#fee2e2] text-rose-900 border' };
+    if (shift.status === 'on_leave' || loc === 'ลา') 
+      return { text: 'ลา', color: 'bg-[#fff5f5] text-rose-900' };
+    if (cleanTime === '6:30' || cleanTime === '06:30') 
+      return { text: '06:30', color: 'bg-[#f0fdf4] text-emerald-900' };
+    if (cleanTime === '7:00' || cleanTime === '07:00') 
+      return { text: '07:00', color: 'bg-white border border-black/5 text-black' };
+    if (cleanTime === '8:00' || cleanTime === '08:00') 
+      return { text: '08:00', color: 'bg-[#fffbeb] text-amber-900' };
     
-    // 2. ตรวจสอบกะเวลาปกติ (รองรับทั้งแบบมีและไม่มี 0 นำหน้า)
-    if (cleanLoc === '6:30' || cleanLoc === '06:30') 
-      return { text: '06:30', color: 'bg-[#f0fdf4] border-[#dcfce7] text-emerald-900 border' };
-    if (cleanLoc === '7:00' || cleanLoc === '07:00') 
-      return { text: '07:00', color: 'bg-white border-neutral-100 text-black border' };
-    if (cleanLoc === '8:00' || cleanLoc === '08:00') 
-      return { text: '08:00', color: 'bg-[#fffbeb] border-[#fef3c7] text-amber-900 border' };
-    
-    // 3. กะงานพิเศษ (ไปสาขา 2, ร้านซักผ้า) -> ใช้สีฟ้า Sky
-    if (cleanLoc === 'ไปสาขา 2' || cleanLoc === 'ร้านซักผ้า')
-      return { text: cleanLoc, color: 'bg-[#f0f9ff] border-[#e0f2fe] text-sky-900 border' };
-    
-    // 4. กรณีอื่นๆ (Fallback หรือชื่ออื่นๆ)
-    return { text: cleanLoc || 'งาน', color: 'bg-slate-50 text-slate-900' };
+    return { text: cleanTime || 'งาน', color: 'bg-[#f0f9ff] text-sky-900' };
   };
 
   return (
@@ -111,22 +111,36 @@ export default function MonthlyRoster() {
           <h2 className="text-2xl text-black font-normal tracking-tight">ตารางเวรและภาพรวมช่วงวันที่</h2>
         </div>
 
-        {/* ส่วนกล่องเปลี่ยนช่วงวันที่อิสระตามความต้องการใช้งานจริง */}
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center bg-white rounded-3xl px-4 py-2 border border-black/10 shadow-sm gap-2">
-            <ClickableInput
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              containerClassName="w-[130px] scale-90 origin-center"
-            />
-            <span className="text-[#000000] text-sm font-normal opacity-40 px-1">—</span>
-            <ClickableInput
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              containerClassName="w-[130px] scale-90 origin-center"
-            />
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-3">
+            {/* กล่องแคปซูลวันที่เริ่มต้น (Double Capsule Design) */}
+            <div className="relative group">
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={handleStartDateChange}
+                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+              />
+              <div className="bg-white px-6 py-2.5 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal min-w-[130px] text-center transition-all group-hover:border-black/20 antialiased">
+                {startDate && isValid(parseISO(startDate)) ? format(parseISO(startDate), 'dd/MM/yyyy') : 'เริ่ม'}
+              </div>
+            </div>
+
+            <span className="text-black font-normal select-none">—</span>
+
+            {/* กล่องแคปซูลวันที่สิ้นสุด (Double Capsule Design) */}
+            <div className="relative group">
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={handleEndDateChange}
+                min={startDate}
+                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+              />
+              <div className="bg-white px-6 py-2.5 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal min-w-[130px] text-center transition-all group-hover:border-black/20 antialiased">
+                {endDate && isValid(parseISO(endDate)) ? format(parseISO(endDate), 'dd/MM/yyyy') : 'สิ้นสุด'}
+              </div>
+            </div>
           </div>
 
           <div className="flex bg-neutral-200/50 rounded-[24px] p-1.5 gap-1.5 backdrop-blur-sm">
@@ -156,24 +170,20 @@ export default function MonthlyRoster() {
       ) : (
         <div className="bg-white rounded-[32px] border border-black/5 overflow-hidden shadow-xl shadow-black/5">
           {activeTab === 'consolidated' ? (
-            <ScrollArea.Root className="w-full h-[820px]">
+            <ScrollArea.Root className="w-full h-[600px]">
               <ScrollArea.Viewport className="w-full h-full">
                 <table className="w-full border-separate border-spacing-0">
                   <thead className="sticky top-0 z-20">
                     <tr className="bg-neutral-50/95 backdrop-blur-md">
-                      <th className="sticky left-0 z-30 bg-neutral-50 p-6 text-left border-b border-r border-black/10 text-black font-normal w-fit whitespace-nowrap shadow-sm">
-                        พนักงาน
+                      <th className="sticky left-0 z-30 bg-neutral-50 p-6 text-left border-b border-r border-black/10 text-black font-normal whitespace-nowrap shadow-sm">
+                        รายชื่อพนักงาน
                       </th>
-                      {daysInInterval.map((day) => {
-                        const isHoliday = data.holidays.some(h => isSameDay(parseISO(h.date), day));
-                        return (
-                          <th key={day.toISOString()} className="p-4 text-center border-b border-r border-black/5 text-black font-normal min-w-[65px] relative">
-                            {isHoliday && <div className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full shadow-sm" title="วันหยุดนักขัตฤกษ์" />}
-                            <div className="text-[11px] text-black font-normal uppercase mb-1 opacity-60">{format(day, 'EEE', { locale: th })}</div>
-                            <div className="text-lg leading-none">{format(day, 'd')}</div>
-                          </th>
-                        );
-                      })}
+                      {daysInInterval.map((day) => (
+                        <th key={day.toISOString()} className="p-4 text-center border-b border-r border-black/5 text-black font-normal min-w-[65px]">
+                          <div className="text-[11px] text-black font-normal uppercase mb-1 opacity-60">{format(day, 'EEE', { locale: th })}</div>
+                          <div className="text-lg leading-none">{format(day, 'd')}</div>
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -186,9 +196,9 @@ export default function MonthlyRoster() {
                           const shift = data.shifts.find(s => s.employee_id === profile.id && isSameDay(parseISO(s.start_time), day));
                           const display = shift ? getShiftDisplay(shift) : null;
                           return (
-                            <td key={day.toISOString()} className="p-2.5 py-2 border-r border-b border-black/5 h-20">
+                            <td key={day.toISOString()} className="p-2 border-r border-b border-black/5 h-20">
                               {display && (
-                                <div className={`w-full h-full flex items-center justify-center rounded-xl text-[12px] font-normal shadow-sm p-2.5 text-center transition-transform active:scale-95 antialiased ${display.color}`}>
+                                <div className={`w-full h-full flex items-center justify-center rounded-xl text-[12px] text-black font-normal shadow-sm p-1 text-center transition-transform active:scale-95 ${display.color}`}>
                                   {display.text}
                                 </div>
                               )}
@@ -220,7 +230,6 @@ export default function MonthlyRoster() {
                 </select>
               </div>
 
-              {/* ปฏิทินรายบุคคลขยายขนาดกล่องและเพิ่ม Padding ป้องกันตัวอักษรชิดขอบ */}
               <div className="grid grid-cols-7 gap-2">
                 {['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'].map(day => (
                   <div key={day} className="p-4 text-center text-black text-[12px] font-normal uppercase tracking-wider">{day}</div>
@@ -235,7 +244,7 @@ export default function MonthlyRoster() {
                     <div key={day.toISOString()} className="bg-neutral-50/30 h-36 p-4 flex flex-col justify-between rounded-[24px] border border-black/5 transition-all hover:bg-neutral-50 hover:shadow-lg">
                       <span className="text-black text-lg font-normal">{format(day, 'd')}</span>
                       {shift && display && (
-                        <div className={`w-full p-2.5 rounded-xl flex items-center justify-center text-center text-[13px] font-normal leading-relaxed shadow-sm min-h-[50px] ${display.color}`}>
+                        <div className={`w-full p-2.5 rounded-xl flex items-center justify-center text-center text-[13px] text-black font-normal leading-relaxed shadow-sm min-h-[50px] ${display.color}`}>
                           {display.text}
                         </div>
                       )}
