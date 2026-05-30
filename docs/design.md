@@ -150,6 +150,27 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 
 ---
 
+## 8. Mobile-Specific UI Patterns
+
+### Sticky Name Column (ตารางงาน)
+
+```html
+<!-- ตัวอย่างโครงสร้างที่ต้องการใน ScheduleClient.tsx -->
+<div class="overflow-x-auto scrollbar-none">
+  <table>
+    <td class="sticky left-0 z-20 bg-white border-r border-black/5 text-black">
+       ชื่อพนักงาน
+    </td>
+  </table>
+</div>
+```
+
+### Bottom Sheet Drawer
+- **Mobile**: `fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-2xl-up animate-in slide-in-from-bottom`
+- **Desktop (md:)**: `relative rounded-3xl translate-y-0` (กลับมาเป็น Modal กลางจอปกติ)
+
+---
+
 ## 8. Responsive Strategy
 
 - **Desktop-First** for table/spreadsheet layouts

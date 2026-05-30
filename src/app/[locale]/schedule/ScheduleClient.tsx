@@ -185,7 +185,7 @@ const SortableEmployeeRow = React.memo(({
         isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-white ring-1 ring-black/5 rounded-3xl cursor-grabbing"
       )}
     >
-      <div className="p-2 border-r border-[#000000]/5 flex items-center gap-2 bg-[#fdfcf0] sticky left-0 z-[5]">
+      <div className="p-2 border-r border-[#000000]/5 flex items-center gap-2 bg-[#fdfcf0] sticky left-0 z-20 text-black font-normal md:static md:bg-transparent">
         <div
           {...attributes}
           {...listeners}
@@ -884,8 +884,8 @@ export default function ScheduleClient({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4 min-w-0 flex-1 justify-end pl-4">
+          <div className="flex items-center gap-2 w-full overflow-x-auto whitespace-nowrap pb-2 scrollbar-none md:overflow-visible md:pb-0">
             <button
               onClick={() => setShowManagementModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-normal text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-md border border-emerald-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
@@ -931,10 +931,10 @@ export default function ScheduleClient({
 
       <main className="flex-1 p-2 md:p-4 overflow-hidden flex flex-col bg-transparent">
         <div className="flex-1 flex flex-col bg-[#fdfcf0]/80 backdrop-blur-sm border border-[#000000]/5 rounded-3xl overflow-hidden shadow-sm">
-          <div className="flex-1 overflow-y-auto overflow-x-auto">
+          <div className="flex-1 overflow-x-auto scrollbar-none md:overflow-visible overflow-y-auto">
             <div id="blackandbrew-schedule-table" className="min-w-[900px] bg-[#fdfcf0] h-fit flex flex-col">
               <div className="grid grid-cols-8 border-b border-[#000000]/5 bg-red-50/10 sticky top-0 z-[16]">
-                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-red-50/20">
+                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-[#fdfcf0] sticky left-0 z-20 text-black font-normal md:static md:bg-red-50/20">
                   <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
                 </div>
                 {weekDays.map(date => {
@@ -965,7 +965,7 @@ export default function ScheduleClient({
               </div>
 
               <div className="grid grid-cols-8 bg-gray-100 border-b border-gray-200 shrink-0 sticky top-[38px] z-[15]">
-                <div className="p-2.5 border-r border-gray-200 flex items-center justify-center bg-gray-100">
+                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-[#fdfcf0] sticky left-0 z-20 text-black font-normal md:static md:bg-gray-100">
                   <span className="text-[13px] text-[#000000] font-normal uppercase tracking-widest">พนักงาน</span>
                 </div>
                 {weekDays.map((date) => {
@@ -1110,8 +1110,9 @@ export default function ScheduleClient({
       )}
 
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
-          <div className="bg-white border border-gray-100 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl p-6 text-center space-y-4">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 text-black text-center space-y-4">
+            <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-6 md:hidden" />
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
@@ -1144,11 +1145,12 @@ export default function ScheduleClient({
 
       {showManagementModal && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[70] flex items-end justify-center md:items-center p-0 md:p-4 animate-in fade-in duration-300"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
-          <div className="bg-[#fdfcf0] w-full max-w-5xl rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 flex max-h-[90vh]">
-            <div className="w-[380px] flex flex-col border-r border-[#000000]/5 shrink-0">
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-5xl md:max-h-none md:translate-y-0 p-6 text-black flex flex-col md:flex-row">
+            <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-6 md:hidden" />
+            <div className="w-full md:w-[380px] flex flex-col border-r border-[#000000]/5 shrink-0">
               <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]/50">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-emerald-50 rounded-3xl">
@@ -1375,9 +1377,10 @@ export default function ScheduleClient({
       )}
 
       {showAddEmployeeModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
           <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setShowAddEmployeeModal(false)} />
-          <div className="relative bg-white w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 animate-in fade-in zoom-in duration-300 p-8">
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 text-black border border-gray-100">
+            <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-6 md:hidden" />
             <h3 className="text-xl font-normal text-black mb-4 uppercase tracking-tight">เพิ่มพนักงานใหม่</h3>
             <div className="space-y-4">
               <div className="space-y-1.5">

@@ -4,6 +4,27 @@
 
 ---
 
+### DEC-046: AI System Prompt - Store Location & Weather Context (v4.5)
+
+- **Date:** May 30, 2026
+- **Context:** ต้องการให้ AI (บรู) รับรู้ตำแหน่งพิกัดที่ตั้งของร้านจาก Environment Variables เพื่อความแม่นยำในการให้ข้อมูลสภาพอากาศและทิศทาง
+- **Decision:** ฝังพิกัด `NEXT_PUBLIC_STORE_LAT` และ `NEXT_PUBLIC_STORE_LON` ลงใน System Instruction หลักของโมเดล และบังคับให้การดึงสภาพอากาศจาก OpenWeather API ต้องอ้างอิงพิกัดนี้เสมอผ่าน Server-side เท่านั้น
+- **Impact:** AI สามารถตอบคำถามเรื่องฝนและอากาศได้แม่นยำตามพิกัดร้านจริง และรักษาความปลอดภัยของ API Key ผ่านกระบวนการหลังบ้าน
+- **Evidence:** `src/app/api/chat/route.ts`, `src/app/api/weather/route.ts`, `MASTER_BLUEPRINT.md`
+
+### DEC-047: Global Mobile UI Overhaul & Responsive Isolation (v4.6)
+
+- **Date:** May 30, 2026
+- **Context:** ต้องการเพิ่มประสิทธิภาพการใช้งานบนมือถือสำหรับตารางงานและระบบจัดการพนักงานที่ซับซ้อน โดยไม่กระทบต่อ Desktop Layout เดิม
+- **Decision:** 
+    1. **Table Isolation**: ใช้ `overflow-x-auto scrollbar-none` หุ้มตาราง และล็อกคอลัมน์ชื่อพนักงานด้วย `sticky left-0 z-20`
+    2. **Header Navigation**: ปรับปุ่มควบคุมด้านบนเป็น `flex overflow-x-auto whitespace-nowrap` บนมือถือ
+    3. **Modal Transition**: เปลี่ยน Modal เป็น Bottom Sheet Drawer บนหน้าจอขนาดเล็ก (Mobile)
+- **Impact:** พนักงานสามารถใช้งานตารางกะงานขนาดใหญ่บนมือถือได้ลื่นไหล ไม่เกิดปัญหากดปุ่มผิด (Fat-finger protection) และรักษา Desktop Layout เดิม 100%
+- **Evidence:** `MASTER_BLUEPRINT.md`, `docs/design.md`
+
+---
+
 ## Decision Log
 
 ### DEC-003: Sub-label Typography Standard

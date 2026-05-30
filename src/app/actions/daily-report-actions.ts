@@ -1,6 +1,8 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 import { format, differenceInDays, startOfDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
@@ -202,8 +204,8 @@ export async function fetchWeatherForecast(targetDate?: Date) {
     }
 
     // Lat/Lon for Lam Luk Ka, Pathum Thani as specified
-    const lat = '13.929692';
-    const lon = '100.716932';
+    const lat = process.env.NEXT_PUBLIC_STORE_LAT || '13.929692';
+    const lon = process.env.NEXT_PUBLIC_STORE_LON || '100.716932';
     const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=th`;
 
     const response = await fetch(url, { cache: 'no-store' });
@@ -351,6 +353,46 @@ export async function fetchNextHoliday(targetDate: Date) {
 }
 
 /**
+ * AI-powered insights generator for LINE reports (Persona: Bru).
+ * Refactored to handle human-like weather summaries and strategic advice.
+ */
+async function generateInsightsWithAI(weather: any, holiday: any, headcount: number, staffSection: string) {
+  try {
+    const { text } = await generateText({
+      model: google('gemini-2.5-flash'),
+      system: `คุณคือ "บรู" AI ผู้ช่วยผู้จัดการร้านกาแฟ BLACKANDBREW ที่มีความเป็นมนุษย์สูง 
+      สรุปข้อมูลอย่างกระชับ ได้ใจความ เป็นธรรมชาติ ไม่เป็นหุ่นยนต์ทวนคำสั่ง 
+      ห้ามใช้ตัวหนา (font-bold) ในคำตอบโดยเด็ดขาด`,
+      prompt: `ข้อมูลของวันนี้:
+      - จำนวนพนักงาน: ${headcount} คน
+      - กะงาน: ${staffSection}
+      - อากาศ: ${weather.summary} (โอกาสฝนสูงสุด ${weather.maxPop}%, ช่วงเสี่ยง: ${weather.warningPeriods.join(', ') || 'ไม่มี'})
+      - วันหยุด: ${holiday?.name || 'ไม่มี'} (เหลืออีก ${holiday?.daysRemaining ?? 'N/A'} วัน)
+
+      โปรดวิเคราะห์และสร้างเอาต์พุต 2 ส่วน คั่นด้วยเครื่องหมาย "|||":
+
+      1. [สรุปภาพรวมอากาศ]: พ่นข้อความสั้นๆ 1-2 บรรทัดที่เป็นธรรมชาติ (ตัวอย่าง: "ช่วงเช้าแดดใส บ่ายโมงถึงสามโมงเย็นมีแนวโน้มฝนตกปรอยๆ แดดร่มช่วงเย็นครับ")
+
+      2. [คำแนะนำกลยุทธ์]: แบ่งเป็น 2 หัวข้อย่อยด้วยสำนวนที่นุ่มนวล:
+         ☕ คำแนะนำการบริหารร้านและการเตรียมทีม: วิเคราะห์ผลกระทบต่อร้าน BLACKANDBREW โดยตรง (เช่น หากบ่ายฝนตก ให้พนักงานเตรียมเช็ดเก้าอี้โซน outdoor และดันยอดขายเมนู Delivery หรือหากแดดร้อนจัด/เป็นวันหยุดนักขัตฤกษ์ที่มีคนเข้าร้านเยอะ ให้เตรียมสต็อกน้ำแข็งและเบสกาแฟเย็นให้พร้อม)
+         🛵 ความห่วงใยพนักงาน: ประโยคสั้นๆ แสดงความใส่ใจปิดท้าย (ตัวอย่าง: "เดินทางมาทำงานระวังถนนลื่นกันด้วยนะครับทีม" หรือ "วันนี้แดดแรง อย่าลืมดื่มน้ำกันเยอะๆ นะครับทุกคน")`,
+    });
+
+    const parts = text.split('|||').map(p => p.trim());
+    if (parts.length >= 2) {
+      return {
+        summary: parts[0],
+        strategy: parts[1]
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('[AI Insights Failure]:', error);
+    return null;
+  }
+}
+
+/**
  * SPEC: Strategic Advice Generator (Rule-Based)
  * 
  * - If countdown <= 7 days: MUST pivot to proactive tactical alert
@@ -411,7 +453,10 @@ export async function compileDailyReportPayload() {
 
   const staffSection = formatStaffSection(activeStaff, offStaff);
 
-
+  // Introduce AI Insights (Bru Persona)
+  const aiInsights = await generateInsightsWithAI(weather, holiday, headcount, staffSection);
+  const weatherSummary = aiInsights?.summary || weather.summary;
+  const strategy = aiInsights?.strategy || generateStrategicAdvice(weather, holiday);
 
   // Build weather section
   const weatherWarnings = weather.warningPeriods.length > 0
@@ -423,8 +468,6 @@ export async function compileDailyReportPayload() {
     ? `${holiday.name} (อีก ${holiday.daysRemaining} วัน)`
     : 'ไม่มีข้อมูลวันหยุดในระบบ';
 
-  const strategy = generateStrategicAdvice(weather, holiday);
-
   const payload = `== ข้อความอัตโนมัติ ==
 รายงานสรุปของเช้าวันที่ ${dateStr}
 
@@ -432,14 +475,16 @@ export async function compileDailyReportPayload() {
 รวมวันนี้: ${headcount} คน
 ${staffSection}
 
+📅 วันหยุดนักขัตฤกษ์
+- วันหยุดนักขัตฤกษ์ถัดไป:  ${holidayText}
+
 🌦️ สภาพอากาศ บึงคำพร้อย
-- ภาพรวม:  ${weather.summary}
+- ภาพรวม:  ${weatherSummary}
 - โอกาสเกิดฝน:  ${weather.maxPop}%
 - ช่วงเวลาที่ต้องเฝ้าระวัง:  ${weatherWarnings}
 
-📅 วันหยุดนักขัตฤกษ์
-- วันหยุดนักขัตฤกษ์ถัดไป:  ${holidayText}
-- คำแนะนำ:  ${strategy}`;
+💡 คำแนะนำประจำวัน:
+${strategy}`;
 
   return payload;
 }

@@ -8,6 +8,11 @@ import { weatherTool, getDailyReportSourcesTool } from '@/app/actions/tools/inte
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
 
+// 1. การดึงค่า Environment Variables ในฝั่ง Server (Secure Backend Process)
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || "13.9312";
+const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || "100.6756";
+
 // Mandatory: AI SDK v6 Standards
 export const maxDuration = 30;
 
@@ -107,18 +112,15 @@ export async function POST(req: Request) {
     const currentThaiDate = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
     const currentIsoDate = format(todayZoned, 'yyyy-MM-dd'); // YYYY-MM-DD
 
-    const storeLat = process.env.NEXT_PUBLIC_STORE_LAT || '13.929692';
-    const storeLon = process.env.NEXT_PUBLIC_STORE_LON || '100.716933';
-
     const result = await streamText({
       model: google('gemini-2.5-flash'), // อัปเกรดเป็นรุ่น 2.5-flash ตามที่ระบุ
       messages: coreMessages,
       stopWhen: stepCountIs(dynamicMaxSteps), // Dynamic: internal/weather=2, external=4
       // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Ultra-Minimalist System Prompt)
-      system: `คุณคือ "บรู" AI ผู้ช่วยผู้จัดการร้าน Black-and-Brew
+      system: `คุณคือผู้ช่วย AI ประจำร้านกาแฟ BLACKANDBREW (ชื่อเล่น: บรู) ตัวร้านตั้งอยู่ที่พิกัด ละติจูด: ${STORE_LAT} และลองติจูด: ${STORE_LON} เสมอ หากผู้ใช้มีการสอบถามเกี่ยวกับสภาพอากาศ ความร้อน หรือฝน ให้ระลึกไว้ว่าต้องอ้างอิงพิกัดนี้ในการวิเคราะห์ข้อมูลหรือส่งคำขอไปยัง OpenWeather API ทุกครั้งเพื่อความแม่นยำสูงสุด
 
       [Bru Persona & Communication Style]
-      - บุคลิก: เป็นมิตร อบอุ่น และมืออาชีพเหมือนผู้ช่วยผู้จัดการร้านกาแฟที่คอยดูแลความเรียบร้อยของร้าน
+      - บุคลิก: เป็นมิตร อบอุ่น และมืออาชีพเหมือนผู้ช่วยผู้จัดการร้านกาแฟที่คอยดูแลความเรียบร้อยของร้าน (ชื่อเล่น: บรู)
       - การสนทนา: ให้ใช้ภาษาพูดที่เป็นธรรมชาติ เรียบเรียงประโยคให้ลื่นไหลเหมือนคุยกับคนจริงๆ 
       - ข้อห้าม: ห้ามตอบเป็นตารางทื่อๆ หรือใช้สัญลักษณ์ซ้ำซากตามเทมเพลตตายตัวแบบหุ่นยนต์เด็ดขาด
       - ข้อมูล: ใช้ข้อมูลตัวเลขและกฎเกณฑ์จาก EXECUTIVE_RULES อย่างแม่นยำ 100% แต่การสื่อสารต้องดู "Human-like"
@@ -126,7 +128,7 @@ export async function POST(req: Request) {
       [ข้อมูลบริบทและพิกัดที่ตั้งของร้าน]
       - ชื่อร้าน: BLACKANDBREW (แบล็ก แอนด์ บรู)
       - ที่ตั้งหลัก: ตำบลบึงคำพร้อย อำเภอลำลูกกา จังหวัดปทุมธานี, ประเทศไทย
-      - พิกัดทางภูมิศาสตร์ (Lat, Lon): ${storeLat}, ${storeLon}
+      - พิกัดทางภูมิศาสตร์ (Lat, Lon): ${STORE_LAT}, ${STORE_LON}
       - วันนี้คือวันที่: ${currentIsoDate}
       - วันเวลาปัจจุบันของไทย: ${currentThaiDate}
       (จงใช้ข้อมูลฐานเวลานี้ในการคำนวณคำว่า วันนี้, พรุ่งนี้, หรือตารางงานล่วงหน้าเสมอ)

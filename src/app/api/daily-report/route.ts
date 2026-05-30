@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { unstable_noStore as noStore } from 'next/cache';
 import { compileDailyReportPayload } from '@/app/actions/daily-report-actions';
 import { sendLineNotification } from '@/app/actions/line-actions';
 
+// บังคับให้เป็น Dynamic Route เพื่อป้องกัน Vercel Prerender Error จากการใช้ request.headers
+export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
 export async function GET(request: Request) {
-  noStore();
   try {
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // แก้ไข: เปลี่ยนมาดึงค่ากลุ่ม (LINE_GROUP_ID) เป็นอันดับแรก เพื่อรองรับกลุ่มไลน์เดิมของร้าน
+    // ดึงค่าไอดีกลุ่ม LINE_GROUP_ID เป็นอันดับแรก เพื่อรองรับกลุ่มไลน์เดิมของร้าน
     const targetRecipientId = process.env.LINE_GROUP_ID || process.env.LINE_TARGET_RECIPIENT_ID;
 
     if (!targetRecipientId) {
@@ -30,7 +30,6 @@ export async function GET(request: Request) {
     }
 
     const message = await compileDailyReportPayload();
-
     const result = await sendLineNotification(targetRecipientId, message);
 
     if (!result.success) {

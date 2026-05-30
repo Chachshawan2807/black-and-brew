@@ -176,7 +176,7 @@ export default function MonthlyRoster() {
                   <thead className="sticky top-0 z-20">
                     <tr className="bg-neutral-50/95 backdrop-blur-md">
                       <th className="sticky left-0 z-30 bg-neutral-50 p-6 text-left border-b border-r border-black/10 text-black font-normal whitespace-nowrap shadow-sm">
-                        รายชื่อพนักงาน
+                        พนักงาน
                       </th>
                       {daysInInterval.map((day) => (
                         <th key={day.toISOString()} className="p-4 text-center border-b border-r border-black/5 text-black font-normal min-w-[65px]">

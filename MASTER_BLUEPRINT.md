@@ -20,17 +20,24 @@ Tech Stack: Next.js 16, React 19, Supabase, Tailwind CSS, Vercel Edge Runtime.
 
 ## 2. UI/UX & Typography Standards (R0 Visual Integrity)
 
-### Compact & Adaptive UI
+### Responsive & Adaptive UI (Isolation Standard)
+
+* **Desktop Preservation**: ห้ามเปลี่ยนแปลงเลเอาท์ในมุมมอง `md:` ขึ้นไป ให้ใช้ Responsive Prefixes (`md:`) แยกแยะโครงสร้างอย่างเด็ดขาด
+* **Mobile Table Protocol**: ตารางที่มีข้อมูลจำนวนมากต้องหุ้มด้วย Container ที่มี `overflow-x-auto` และคอลัมน์สำคัญ (เช่น ชื่อ) ต้องใช้ `sticky left-0 z-20 bg-white` (หรือสีพื้นหลังที่เหมาะสม)
+* **Mobile Header Protocol**: แผงควบคุม (Header Buttons) ต้องเรียงตัวแนวนอนและสไลด์ได้ (`flex overflow-x-auto whitespace-nowrap`) โดยคงขนาดปุ่มมาตรฐานไว้
+* **Mobile Modal Protocol**: หน้าต่างย่อย (Dialog/Modal) ต้องเปลี่ยนเป็น Bottom Sheet Drawer (เลื่อนจากล่างขึ้นบน) เมื่อแสดงผลบนมือถือ เพื่อความสะดวกในการใช้งานมือเดียว
+
+### UI Components
 
 * หน้าต่าง Modal และ Form ใช้ระบบ Grid เพื่อลดความสูง
 * Sidebar ปรับขนาดอัตโนมัติ (Dynamic Width)
 
 ### Typography & Visibility (Strict Rules)
 
-* ห้ามใช้ตัวอักษรแบบหนา (No Bold Text) ในทุกส่วนของแอปพลิเคชัน
+* ห้ามใช้ตัวอักษรแบบหนา (No Bold Text) ในทุกส่วนของแอปพลิเคชัน (Zero-Bold Policy)
 * กรณีใช้สีเทา ต้องเป็นสีเทาแบบเข้ม (Dark Gray / #555555 หรือเข้มกว่า)
   เพื่อให้มองเห็นชัดเจนบนพื้นหลังสว่าง
-* ใช้ตัวอักษรสีดำ (#000000) สำหรับหัวข้อและข้อมูลหลัก
+* ใช้ตัวอักษรสีดำเข้ม (`text-black` / #000000) สำหรับข้อมูลหลักและปุ่มกดทั้งหมดเพื่อ High Visibility
 
 ### Thai Localization (Thai Typography Integrity)
 
@@ -107,6 +114,13 @@ inventory_items.
   `console.error('Supabase Error:', error.message, error.details);`
 
 ## 5. AI Autonomy & Operational Protocol (R0 Autonomous Execution)
+
+### AI Identity & Location Context (Strict Instruction)
+
+* **Store Identity**: คุณคือผู้ช่วย AI ประจำร้านกาแฟ BLACKANDBREW (ชื่อเล่น: บรู)
+* **Location Anchor**: ตัวร้านตั้งอยู่ที่พิกัดละติจูด: `{process.env.NEXT_PUBLIC_STORE_LAT}` และลองติจูด: `{process.env.NEXT_PUBLIC_STORE_LON}` เสมอ
+* **Weather Protocol**: หากมีการสอบถามเกี่ยวกับสภาพอากาศ หรือปัจจัยภายนอก ให้ใช้พิกัดที่ระบุข้างต้นในการเรียกใช้งานเครื่องมือหรือส่งคำขอไปยัง API เพื่อความแม่นยำสูงสุด
+* **Environment Guard**: การเรียกใช้พิกัดและ API Keys (`OPENWEATHER_API_KEY`) ต้องทำผ่าน Server-side เท่านั้น ห้ามเปิดเผยคีย์ลับสู่ Client-side
 
 ### Full Permission Mode (100% AI Control)
 
