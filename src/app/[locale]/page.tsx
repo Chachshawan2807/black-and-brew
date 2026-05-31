@@ -1,5 +1,4 @@
 import { getTranslations } from 'next-intl/server';
-import Image from 'next/image';
 import CommandCenterGrid from '@/components/CommandCenterGrid';
 import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
 
@@ -35,16 +34,19 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
       description: t('inventory'),
       href: `/${locale}/inventory`,
       iconName: 'Package',
+    },
+    {
+      id: 'marketInsights',
+      title: t('marketInsightsTitle'),
+      description: t('marketInsightsDescription'),
+      href: `/${locale}/market-insights`,
+      iconName: 'LineChart',
     }
   ];
 
   return (
     <div className="min-h-[calc(100vh-2rem)] bg-inherit flex flex-col items-center justify-center relative px-4 py-8">
       <div className="max-w-4xl w-full space-y-12">
-        <header className="flex flex-col items-center justify-center gap-6 relative z-[50]">
-          {/* Logo removed - only present in Sidebar */}
-        </header>
-
         <WeatherWidget />
 
         <CommandCenterGrid initialItems={navItems} />

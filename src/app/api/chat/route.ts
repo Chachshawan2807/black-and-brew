@@ -63,15 +63,12 @@ export async function POST(req: Request) {
     let dynamicMaxSteps = 1;
 
     if (isScheduleQuery) {
-      tools.getDailyReportSourcesTool = wrapTool(getDailyReportSourcesTool);
-      dynamicMaxSteps = Math.max(dynamicMaxSteps, 2);
+      // [PROTOCOL 2.1] ใช้ readTableTool เป็นแหล่งข้อมูลหลักเพื่อความเสถียร
+      tools.readTable = wrapTool(readTableTool);
+      dynamicMaxSteps = Math.max(dynamicMaxSteps, 3);
     }
     if (isInventoryQuery) {
       tools.readTable = wrapTool(readTableTool);
-      dynamicMaxSteps = Math.max(dynamicMaxSteps, 2);
-    }
-    if (isWeatherQuery || hasWeatherBusinessLink) {
-      tools.weatherTool = wrapTool(weatherTool);
       dynamicMaxSteps = Math.max(dynamicMaxSteps, 2);
     }
     if (isExternalSearchQuery) {

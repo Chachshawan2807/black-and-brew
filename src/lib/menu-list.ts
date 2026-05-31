@@ -4,6 +4,7 @@ import {
   Wrench,
   Home,
   Package,
+  LineChart,
   type LucideIcon
 } from "lucide-react";
 
@@ -69,7 +70,14 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
           href: `${prefix}/inventory`,
           label: "คลังสินค้า",
           active: pathname.includes("/inventory"),
-          icon: Package, // Using Package as a suitable icon for Inventory
+          icon: Package,
+          submenus: []
+        },
+        {
+          href: `${prefix}/market-insights`,
+          label: "วิเคราะห์ตลาด",
+          active: pathname.includes("/market-insights"),
+          icon: LineChart,
           submenus: []
         },
       ]

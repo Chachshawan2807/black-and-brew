@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { unstable_noStore as noStore } from 'next/cache'; // 💡 เรียกตัวนี้กลับมาช่วยคุมหลังบ้าน
+import { unstable_noStore as noStore } from 'next/cache'; 
 import { compileDailyReportPayload } from '@/app/actions/daily-report-actions';
 import { sendLineNotification } from '@/app/actions/line-actions';
 
-// ลบ export const dynamic ออกไปแล้วตามคำสั่งของระบบ
 export const maxDuration = 30;
 
 export async function GET(request: Request) {
-  // 💡 ใช้ noStore() บรรทัดแรกสุด เพื่อสั่งให้ข้ามการทำ Prerender ตอนรันไทม์โดยไม่ขัดกับระบบแคชหลัก
+  // บังคับข้ามการทำแคช Prerender โดยเรียกใช้ noStore() ที่ประกาศไว้ด้านบนสุดของไฟล์อย่างถูกต้อง
   noStore();
 
   try {

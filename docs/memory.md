@@ -25,6 +25,14 @@
 
 ---
 
+### DEC-048: Local Consumer Behavior & Market Insights Service (v4.7)
+
+- **Date:** May 31, 2026
+- **Context:** ต้องการระบบวิเคราะห์แนวโน้มตลาดรอบร้านเพื่อช่วยในการตัดสินใจเลือกโปรโมชั่นและเมนูใหม่
+- **Decision:** สร้างระบบ Market Insights ที่ใช้ Gemini 2.5 Flash ร่วมกับ Tavily Search API เพื่อค้นหาข้อมูลเทรนด์แบบ Real-time และนำมาวิเคราะห์คู่กับยอดขายภายในร้าน (Inventory Transactions) บังคับใช้ Persona "บรู" และ Zero-Bold Policy อย่างเข้มงวด
+- **Impact:** ช่วยให้พนักงานและผู้จัดการมองเห็นภาพรวมตลาดรอบสาขาลำลูกกาได้ชัดเจนขึ้น เพิ่มโอกาสในการขายเมนูตามกระแส
+- **Evidence:** `src/app/actions/market-insights-actions.ts`, `src/app/[locale]/market-insights/page.tsx`
+
 ## Decision Log
 
 ### DEC-003: Sub-label Typography Standard

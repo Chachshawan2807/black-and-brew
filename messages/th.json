@@ -15,11 +15,19 @@
     "maintenanceTitle": "บันทึกการซ่อมบำรุง",
     "staffTitle": "แดชบอร์ดพนักงาน",
     "inventoryTitle": "คลังสินค้า",
-    "inventory": "จัดการรายการและจำนวนสต็อก"
+    "inventory": "จัดการรายการและจำนวนสต็อก",
+    "marketInsightsTitle": "วิเคราะห์ตลาด",
+    "marketInsightsDescription": "วิเคราะห์แนวโน้มตลาดและพฤติกรรมผู้บริโภค"
   },
   "Inventory": {
     "title": "การจัดการคลังสินค้า",
     "description": "จัดการรายการสินค้าคงคลังและจำนวนสต็อก",
     "items": "รายการ"
+  },
+  "MarketInsights": {
+    "title": "วิเคราะห์ตลาด (Market Insights)",
+    "description": "วิเคราะห์แนวโน้มตลาดและพฤติกรรมผู้บริโภคย่านลำลูกกาแบบเรียลไทม์",
+    "externalData": "กระแสเมนูฮิตและวัตถุดิบ",
+    "strategy": "กลยุทธ์ประจำสัปดาห์"
   }
 }

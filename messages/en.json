@@ -15,11 +15,21 @@
     "maintenanceTitle": "Maintenance",
     "staffTitle": "Staff Dashboard",
     "inventoryTitle": "Inventory System",
-    "inventory": "Manage items and stock levels"
+    "inventory": "Manage items and stock levels",
+    "marketInsightsTitle": "Market Insights",
+    "marketInsightsDescription": "Consumer behavior and market trends"
   },
   "Inventory": {
     "title": "Inventory Management",
     "description": "Manage inventory items and stock levels",
     "items": "items"
+  },
+  "MarketInsights": {
+    "title": "Market Trends & Insights",
+    "description": "Analysis of local coffee trends in Lam Luk Ka",
+    "loading": "Bru is analyzing market data for you...",
+    "internalData": "Popular Items in Store",
+    "externalData": "Market Trends",
+    "strategy": "Suggested Strategy"
   }
 }
