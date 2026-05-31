@@ -16,7 +16,7 @@
 
 - **Date:** May 30, 2026
 - **Context:** ต้องการเพิ่มประสิทธิภาพการใช้งานบนมือถือสำหรับตารางงานและระบบจัดการพนักงานที่ซับซ้อน โดยไม่กระทบต่อ Desktop Layout เดิม
-- **Decision:** 
+- **Decision:**
     1. **Table Isolation**: ใช้ `overflow-x-auto scrollbar-none` หุ้มตาราง และล็อกคอลัมน์ชื่อพนักงานด้วย `sticky left-0 z-20`
     2. **Header Navigation**: ปรับปุ่มควบคุมด้านบนเป็น `flex overflow-x-auto whitespace-nowrap` บนมือถือ
     3. **Modal Transition**: เปลี่ยน Modal เป็น Bottom Sheet Drawer บนหน้าจอขนาดเล็ก (Mobile)
@@ -32,6 +32,113 @@
 - **Decision:** สร้างระบบ Market Insights ที่ใช้ Gemini 2.5 Flash ร่วมกับ Tavily Search API เพื่อค้นหาข้อมูลเทรนด์แบบ Real-time และนำมาวิเคราะห์คู่กับยอดขายภายในร้าน (Inventory Transactions) บังคับใช้ Persona "บรู" และ Zero-Bold Policy อย่างเข้มงวด
 - **Impact:** ช่วยให้พนักงานและผู้จัดการมองเห็นภาพรวมตลาดรอบสาขาลำลูกกาได้ชัดเจนขึ้น เพิ่มโอกาสในการขายเมนูตามกระแส
 - **Evidence:** `src/app/actions/market-insights-actions.ts`, `src/app/[locale]/market-insights/page.tsx`
+
+### DEC-049: Bru AI 2.0 - Weighted Intent & Relational Reasoning (v4.8)
+
+- **Date:** June 1, 2026
+- **Context:** พบปัญหา AI ตอบ "ครับ", แสดงรหัส UUID แทนชื่อพนักงาน และการจำกัด Steps ทำให้การวิเคราะห์ข้อมูลข้ามตารางล้มเหลว
+- **Decision:**
+    1. **Intent Scoring**: เปลี่ยนระบบตรวจจับ Intent เป็นแบบให้คะแนน (Weighted Scoring) เพื่อรองรับคำถามซับซ้อน
+    2. **ID Preserving**: ปรับปรุง `cleanToolOutput` ให้คงเหลือฟิลด์ ID/FK ไว้เพื่อให้ AI ทำ Relational Mapping ได้
+    3. **Persona Lockdown**: เพิ่มกฎเหล็ก [GENDER RULES] บังคับ "ค่ะ/นะคะ" และห้าม "ครับ" 100%
+    4. **Dynamic System Prompt**: Inject เฉพาะกฎที่จำเป็นตาม Intent เพื่อประหยัด Token และลดความสับสนของโมเดล
+- **Impact:** AI สามารถเชื่อมโยงรหัสพนักงานจากตาราง shifts ไปยังชื่อใน profiles ได้อย่างแม่นยำ และรักษาบุคลิกผู้หญิงได้อย่างเสถียร
+- **Evidence:** `src/app/api/chat/route.ts`
+
+### DEC-050: Full Roster Visibility Protocol (v4.9)
+
+- **Date:** June 1, 2026
+- **Context:** ผู้ใช้ต้องการเห็นรายชื่อพนักงานครบทุกคนในรายงานตารางงานรายวัน ไม่ใช่เฉพาะผู้ที่มีกะงาน
+- **Decision:** 
+    1. ยกเลิกกฎการซ่อนพนักงานที่ไม่มีกะงานใน System Prompt
+    2. บังคับให้ AI แสดงรายชื่อพนักงานครบทั้ง 9 คนเสมอ (นิต้า, ปิ่น, มุก, เม, มีนา, ชัช, หนูดี, ฟิว, ล่า)
+    3. หากพนักงานไม่มีข้อมูลกะงาน ให้ระบุว่า "หยุดพัก" หรือ "ไม่มีกะงาน" แทนการตัดชื่อออก
+- **Impact:** ผู้จัดการสามารถตรวจสอบกำลังพลโดยรวมได้ครบถ้วน และลดความสับสนเรื่องรายชื่อพนักงานที่หายไป
+
+### DEC-051: Categorized Daily Roster Reporting (v5.0)
+
+- **Date:** June 1, 2026
+- **Context:** ต้องการให้บรูแยกหมวดหมู่พนักงานในรายงานตารางงานรายวันเพื่อให้เห็นชัดเจนว่าใครทำงานหน้าร้าน ใครทำส่วนอื่น และใครหยุด
+- **Decision:** 
+    1. แบ่งการรายงานเป็น 3 หมวดหมู่: "ปฏิบัติงานหน้าร้าน" (มีระบุเวลา), "ปฏิบัติงานส่วนอื่น" (กะงานอื่นๆ), และ "หยุดพัก/ลา"
+    2. หากพนักงานไม่มีกะงาน ให้ระบุสถานะเป็น "วันหยุด" (แทนคำว่า ไม่มีกะงาน หรือ หยุดพัก)
+    3. บังคับให้แสดงรายชื่อพนักงานครบทั้ง 9 คนในรายงานเสมอ
+- **Impact:** เพิ่มความชัดเจนในการบริหารจัดการกำลังพลรายวัน ผู้จัดการสามารถแยกแยะหน้าที่ของพนักงานได้ทันทีจากรายงาน
+
+### DEC-052: Enhanced Staff Roster Sorting & Headcount Protocol (v5.1)
+
+- **Date:** June 1, 2026
+- **Context:** ต้องการให้รายงานตารางงานรายวันมีการสรุปยอดรวมกลุ่มหน้าร้าน และเรียงลำดับเวลา/ชื่อให้ตรงกับหน้าจอระบบ
+- **Decision:** 
+    1. **FOH Headcount**: ต้องระบุจำนวนพนักงานรวมในหัวข้อ "พนักงานปฏิบัติงานหน้าร้าน"
+    2. **Primary Sort (Time)**: เรียงกลุ่มหน้าร้านตามเวลาเข้างาน (เช้าไปสาย)
+    3. **Secondary Sort (Master Order)**: หากเวลาเท่ากันหรือหมวดหมู่อื่นๆ ให้เรียงตาม `row_order` จาก Database เสมอเพื่อให้ตรงกับลำดับในหน้าจอจัดการ
+- **Impact:** รายงานมีความเป็นระเบียบ อ่านง่าย และตรงตามความเป็นจริงของหน้าจอระบบ 100%
+
+### DEC-054: Plain Text Minimalist Roster Formatting (v5.3)
+
+- **Date:** June 1, 2026
+- **Context:** ต้องการลดความซับซ้อนของรูปแบบการตอบกลับในรายงานตารางงานเพื่อให้ดูสะอาดตาและเข้ากับสไตล์มินิมัลมากยิ่งขึ้น
+- **Decision:** 
+    1. ยกเลิกการใช้ตัวหนา (**), เครื่องหมายหัวข้อ (*), และเครื่องหมายทวิภาค (:) ในส่วนของหัวข้อและรายชื่อ
+    2. ยกเลิกคำนำหน้า "คุณ" ก่อนชื่อพนักงาน ให้แสดงเฉพาะชื่อเท่านั้น
+    3. กำหนดรูปแบบใหม่: หัวข้อคือ `[ชื่อหมวดหมู่] (รวม [จำนวน] คน)` และรายชื่อคือ `[ชื่อ] - [เวลา/สถานะ]`
+- **Impact:** รายงานมีความสะอาดตา (Clean UI) และสอดคล้องกับ Zero-Bold Policy อย่างสมบูรณ์แบบ
+
+### DEC-055: Holiday Schema Correction & Countdown Logic (v5.4)
+
+- **Date:** June 1, 2026
+- **Context:** AI ไม่สามารถตอบคำถามเกี่ยวกับวันหยุดถัดไปได้เนื่องจากใช้ชื่อคอลัมน์ผิด (holiday_date แทนที่จะเป็น date) และไม่มีการคำนวณจำนวนวันที่เหลือ
+- **Decision:**
+    1. เพิ่ม `holiday` intent ในระบบตรวจจับ (Classify Intent) เพื่อเปิดใช้งานเครื่องมือฐานข้อมูล
+    2. อัปเดต System Prompt ระบุชื่อคอลัมน์ในตาราง `holidays` คือ `date` และ `name` อย่างเข้มงวด
+    3. บังคับให้ AI คำนวณจำนวนวันที่เหลือ (Countdown) จากวันปัจจุบันก่อนตอบเสมอ
+- **Impact:** AI สามารถระบุวันหยุดนักขัตฤกษ์ถัดไปได้อย่างแม่นยำ พร้อมข้อมูลการนับถอยหลังที่ผู้ใช้ต้องการ
+
+### DEC-056: Responsive Table Overflow & Padding Optimization (v5.5)
+
+- **Date:** June 1, 2026
+- **Context:** พบปัญหาตาราง "การลา/เปลี่ยนกะ" และตารางข้อมูลอื่นๆ กว้างล้นจอในอุปกรณ์ขนาดเล็ก ทำให้อ่านข้อมูลลำบากและ UI แตก
+- **Decision:** 
+    1. ห่อหุ้มตาราง (Table Element) ด้วย `div` ที่มีคลาส `w-full overflow-x-auto` เสมอ
+    2. กำหนด `min-width` ขั้นต่ำให้ตัวตาราง (แนะนำ `min-w-[800px]`) เพื่อรักษาความกว้างคอลัมน์ให้สมมาตร
+    3. ปรับลด Padding ของ `td` และ `th` ให้กระชับขึ้น (Tightened Spacing) เพื่อลดความหนาของตาราง
+    4. ยืนยันการใช้ `text-black` และ `font-normal` ตาม Zero-Bold Policy
+- **Impact:** ตารางแสดงผลได้ถูกต้องทุกอุปกรณ์ (Responsive) โดยไม่มีปัญหาข้อมูลอัดแน่นหรือล้นขอบจอ
+
+### DEC-057: Desktop & Modal Table Overflow Fix (v5.6)
+
+- **Date:** June 1, 2026
+- **Context:** พบปัญหาตาราง "การลา/เปลี่ยนกะ" ล้นขอบหน้าจอเดสก์ท็อปและภายใน Modal ทำให้อ่านข้อมูลไม่ได้
+- **Decision:** 
+    1. ยกระดับกฎ DEC-056 ให้ครอบคลุม "ทุกหน้าจอ" ไม่จำกัดเฉพาะ Mobile
+    2. บังคับใช้ `overflow-x-auto` และ `scrollbar-thin` ในระดับ Wrapper ทุกครั้งที่มีการแสดงผลตารางใน Modal
+    3. กำหนด `min-width` ที่เหมาะสมสำหรับตารางที่มีคอลัมน์จำนวนมากเพื่อรักษาความสมมาตรของข้อมูล
+- **Impact:** ตารางในหน้าต่างจัดการกะงานและ Modal ทั้งหมดจะฟิตพอดีกับหน้าจอและสามารถเลื่อนดูในแนวนอนได้หากข้อมูลยาวเกินไป
+
+### DEC-058: Modal Vertical Viewport Overflow & Centering (v5.7)
+
+- **Date:** June 1, 2026
+- **Context:** พบปัญหาหน้าต่าง Modal การลา/เปลี่ยนกะยืดตัวสูงเกินขอบบน-ล่างของหน้าจอเบราว์เซอร์ ทำให้ข้อมูลตารางประวัติล้นหายไป
+- **Decision:** 
+    1. **Vertical Constraint**: บังคับใส่คลาส `max-h-[90vh]` หรือ `max-h-[calc(100vh-4rem)]` ที่กล่อง Modal Content หลักเสมอ
+    2. **Internal Scroll**: เปิดใช้งาน `overflow-y-auto` และ `scrollbar-thin` เพื่อให้เนื้อหาภายในสามารถเลื่อนขึ้น-ลงได้เอง
+    3. **Centering Protocol**: บังคับให้ Overlay ฉากหลังใช้ `flex items-center justify-center p-4` เพื่อจัดวางกล่อง Modal ไว้กึ่งกลางหน้าจออย่างสมมาตร
+    4. **Visibility**: ยืนยันการใช้ `text-black` และ `font-normal` (Zero-Bold) ในเนื้อหาตาราง
+- **Impact:** หน้าต่างจัดการกะงานและ Modal ทุกส่วนในระบบจะแสดงผลได้พอดีกับทุกขนาดหน้าจอ และใช้งานได้สะดวกบนทุกอุปกรณ์
+
+### DEC-059: Global 100% Mobile Responsive Refit (v5.8)
+
+- **Date:** June 1, 2026
+- **Context:** ต้องการปรับปรุงระบบให้รองรับมือถือ 100% แบบ App-like โดยไม่กระทบ Desktop Layout
+- **Decision:** 
+    1. **Mobile-First Typography**: บังคับใช้ `text-base` (16px) สำหรับ Inputs บนมือถือเพื่อป้องกัน iOS Auto-zoom และใช้ `text-sm` บน Desktop
+    2. **Navigation Swap**: ใช้ `hidden md:flex` สำหรับ Sidebar และเพิ่ม Top/Bottom Bar สำหรับมือถือ
+    3. **Touch Target Standard**: ทุกปุ่มกด (Interactive Elements) ต้องมีความสูงอย่างน้อย 44px (`h-11`) บนมือถือ
+    4. **Fluid Layout**: ปรับ Padding เป็น `p-4` บนมือถือ และ `md:p-8` บน Desktop
+    5. **Data Transformation**: เปลี่ยนจาก Table เป็น Card Stack ในหน้า Inventory และ Schedule เมื่อหน้าจอเล็กกว่า `md`
+- **Impact:** ระบบมีความลื่นไหลเหมือนใช้งานแอปพลิเคชันพื้นฐาน (Native-like) และเข้าถึงข้อมูลได้ง่ายด้วยนิ้วโป้ง
+- **Evidence:** `MASTER_BLUEPRINT.md`, `src/app/[locale]/layout.tsx`
 
 ## Decision Log
 
@@ -486,7 +593,7 @@ pm run build).
 
 - **Date:** May 27, 2026
 - **Context:** AI query ��Դ Postgres 42703 ��������¡��������������ը�ԧ ���� item_name, maintenance_date, operator`r
-- **Decision:** �ѧ�Ѻ 
+- **Decision:** �ѧ�Ѻ
 eadTableTool ������ preset ��� schema ��ԧ ��� map alias ����Դ令��������ԧ��͹�ԧ query
 - **Impact:** Ŵ�͡�� query fail ���к� AI executive chat ��� maintenance/inventory lookup
 
@@ -494,6 +601,15 @@ eadTableTool ������ preset ��� schema ��ԧ ��� map a
 
 - **Date:** May 27, 2026
 - **Context:** Ŵ�����Ѻ��͹ orchestration ��Ф����鹷ҧ�����ŵ�� Internal API-First
-- **Decision:** /api/chat ��������ͧ������§ 
+- **Decision:** /api/chat ��������ͧ������§
 eadTable ��� internetSearchTool`r
+- **Impact:** ระบบมีความลื่นไหลเหมือนใช้งานแอปพลิเคชันพื้นฐาน (Native-like) และเข้าถึงข้อมูลได้ง่ายด้วยนิ้วโป้ง
+- **Evidence:** `MASTER_BLUEPRINT.md`, `src/app/[locale]/layout.tsx`
+
+### DEC-060: Universal Tool Architecture & Daily Closing (v5.9)
+
+- **Date:** June 1, 2026
+- **Context:** ต้องการลดความซับซ้อนของ AI reasoning และปิดจบงานประจำวัน
+- **Decision:** ยุบเครื่องมือย่อยใน `route.ts` ให้เหลือเพียง `readTable` และ `internetSearch` โดยใช้ Preset Columns ที่ตรวจสอบความถูกต้องแล้ว (CSV-Verified) และยืนยันความปลอดภัย API Keys
+- **Impact:** AI ตอบคำถามแม่นยำขึ้น ไม่หลงชื่อคอลัมน์ และระบบมีความปลอดภัยเชิงสถาปัตยกรรม 100%
 - **Impact:** Ŵ branching behavior �ͧ agent ��кѧ�Ѻ��� schema map ����Ǩҡ Universal DB reader

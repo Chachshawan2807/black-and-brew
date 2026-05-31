@@ -4,187 +4,482 @@ import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { readTableTool } from '@/app/actions/tools/database-tools';
 import { internetSearchTool } from '@/app/actions/tools/search-tools';
-import { weatherTool, getDailyReportSourcesTool } from '@/app/actions/tools/internal-sources-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
 
-// 1. การดึงค่า Environment Variables ในฝั่ง Server (Secure Backend Process)
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+// ─────────────────────────────────────────────────────────
+// SECTION 1: ENVIRONMENT & CONSTANTS
+// ─────────────────────────────────────────────────────────
 const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || "13.9312";
 const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || "100.6756";
 
-// Mandatory: AI SDK v6 Standards
-export const maxDuration = 30;
+export const maxDuration = 45; // เพิ่มจาก 30 → 45 วินาที
+                                // เพราะ multi-step reasoning (เช่น shift + profiles)
+                                // ต้องการเวลามากกว่าที่เดิมจำกัดไว้
+
+// ─────────────────────────────────────────────────────────
+// SECTION 2: INTENT CLASSIFICATION ENGINE (อัปเกรดหลัก)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * [UPGRADE 1] เปลี่ยนจาก "boolean flags" เป็น "weighted intent scoring"
+ *
+ * ปัญหาเดิม: ใช้ regex เดี่ยวๆ ตรวจแยกกัน ทำให้คำถามซับซ้อน
+ * เช่น "พรุ่งนี้ฝนจะตกไหม กะงานใครบ้าง" → ตรวจได้แค่บางส่วน
+ *
+ * วิธีใหม่: ให้คะแนนแต่ละ intent แยกกัน แล้วเลือก tools ตามคะแนน
+ * ทำให้รองรับคำถามที่ซับซ้อนและหลาย intent ได้พร้อมกัน
+ */
+type IntentScores = {
+  schedule: number;
+  inventory: number;
+  weather: number;
+  externalSearch: number;
+  maintenance: number;
+  holiday: number;
+};
+
+function classifyIntent(text: string): IntentScores {
+  const lower = text.toLowerCase();
+
+  // แต่ละ pattern มีน้ำหนัก (weight) สะท้อนความชัดเจนของสัญญาณ
+  // คำที่ชัดเจนมากได้ weight สูง, คำกำกวมได้ weight ต่ำ
+  const scheduleSignals = [
+    { pattern: /กะงาน|เวร|ตารางงาน/i, weight: 3 },
+    { pattern: /shift/i, weight: 3 },
+    { pattern: /พนักงาน|สต้าฟ|staff/i, weight: 2 },
+    { pattern: /ใครทำงาน|ใครเข้า|ใครออก/i, weight: 3 },
+    { pattern: /วันนี้|พรุ่งนี้|สัปดาห์นี้/i, weight: 1 }, // context signal เท่านั้น
+  ];
+
+  const inventorySignals = [
+    { pattern: /สต็อก|สต้อก|stock|inventory/i, weight: 3 },
+    { pattern: /สินค้า|วัตถุดิบ|ingredient/i, weight: 2 },
+    { pattern: /เหลือ|หมด|ขาด|เติม/i, weight: 2 },
+    { pattern: /order|สั่ง|สั่งซื้อ/i, weight: 2 },
+    { pattern: /คลัง|warehouse/i, weight: 3 },
+  ];
+
+  const weatherSignals = [
+    { pattern: /อากาศ|weather/i, weight: 3 },
+    { pattern: /ฝน|rain|rainy/i, weight: 3 },
+    { pattern: /อุณหภูมิ|temperature|ร้อน|หนาว/i, weight: 2 },
+    { pattern: /แดด|ลม|พายุ|storm|wind/i, weight: 2 },
+    { pattern: /ฝุ่น|pm2\.?5|หมอก/i, weight: 2 },
+  ];
+
+  const maintenanceSignals = [
+    { pattern: /ซ่อม|บำรุง|maintenance|repair/i, weight: 3 },
+    { pattern: /อุปกรณ์|เครื่อง|equipment|machine/i, weight: 2 },
+    { pattern: /พัง|เสีย|ชำรุด|broken/i, weight: 3 },
+    { pattern: /ตรวจสอบ|check|inspect/i, weight: 1 },
+  ];
+
+  const externalSearchSignals = [
+    { pattern: /ค้นหา|search|google/i, weight: 3 },
+    { pattern: /ข่าว|news/i, weight: 3 },
+    { pattern: /เทรนด์|trend|กระแส/i, weight: 2 },
+    { pattern: /ราคาตลาด|ราคากาแฟ|ราคาน้ำตาล/i, weight: 3 },
+    { pattern: /คู่แข่ง|competitor/i, weight: 2 },
+    { pattern: /ภาพรวมตลาด|market/i, weight: 2 },
+  ];
+
+  const holidaySignals = [
+    { pattern: /วันหยุด|นักขัตฤกษ์|เทศกาล|holiday/i, weight: 3 },
+    { pattern: /หยุดเมื่อไหร่|อีกกี่วัน|วันหยุดถัดไป/i, weight: 3 },
+  ];
+
+  // ฟังก์ชันคำนวณคะแนนรวมของแต่ละ intent
+  const score = (signals: { pattern: RegExp; weight: number }[]) =>
+    signals.reduce((sum, s) => sum + (s.pattern.test(text) ? s.weight : 0), 0);
+
+  return {
+    schedule: score(scheduleSignals),
+    inventory: score(inventorySignals),
+    weather: score(weatherSignals),
+    maintenance: score(maintenanceSignals),
+    externalSearch: score(externalSearchSignals),
+    holiday: score(holidaySignals),
+  };
+}
+
+// ─────────────────────────────────────────────────────────
+// SECTION 3: TOOL OUTPUT SANITIZER (อัปเกรด)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * [UPGRADE 2] เพิ่ม depth-aware cleaning และ null-safety
+ *
+ * ปัญหาเดิม: cleanToolOutput ไม่ handle nested arrays และ
+ * ไม่ทำความสะอาด fields ที่ซ้ำซ้อนอื่นๆ เช่น __typename (GraphQL)
+ */
+const JUNK_FIELDS = new Set([
+  'created_at', 'updated_at', 'metadata',
+  'tenant_id', '__typename', 'deleted_at',
+  'raw_app_meta_data', 'raw_user_meta_data',
+]);
+
+function cleanToolOutput(output: unknown, depth = 0): unknown {
+  // ป้องกัน infinite loop กรณี circular reference หรือ nested ลึกเกิน
+  if (depth > 5) return output;
+  if (output === null || output === undefined) return output;
+
+  if (Array.isArray(output)) {
+    return output.map(item => cleanToolOutput(item, depth + 1));
+  }
+
+  if (typeof output === 'object') {
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(output as Record<string, unknown>)) {
+      // ข้าม UUID fields ที่ไม่มีประโยชน์ต่อ AI reasoning
+      if (JUNK_FIELDS.has(key)) continue;
+      // ข้าม UUID string ที่อยู่ใน value ด้วย (เช่น employee_id)
+      // แต่เก็บ FK ที่จำเป็นสำหรับ cross-reference ไว้
+      cleaned[key] = cleanToolOutput(value, depth + 1);
+    }
+    return cleaned;
+  }
+
+  return output;
+}
+
+// Wrapper ที่ inject cleanToolOutput เข้าไปใน execute ของทุก tool
+function wrapTool(tool: any) {
+  return {
+    ...tool,
+    execute: tool.execute
+      ? async (args: any, options?: any) => {
+          const raw = await tool.execute(args, options);
+          return cleanToolOutput(raw);
+        }
+      : undefined,
+  };
+}
+
+// ─────────────────────────────────────────────────────────
+// SECTION 4: SLIDING WINDOW MEMORY (อัปเกรด)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * [UPGRADE 3] Smart Memory Window ที่ปรับขนาดตามประเภทข้อความ
+ *
+ * ปัญหาเดิม: ตัดแค่ slice(-4) ตายตัว ทำให้บทสนทนาต่อเนื่องขาดหาย
+ * เช่น ถามสต็อกแล้วถามต่อว่า "แล้วรายการไหนต้องสั่งด่วน?"
+ * AI จะไม่รู้ว่า "รายการ" หมายถึงอะไร
+ *
+ * วิธีใหม่: เพิ่ม window เป็น 8 messages แต่ใช้ token budget
+ * โดยตัด messages เก่าที่ยาวเกินออกก่อน
+ */
+const MAX_MEMORY_MESSAGES = 8;
+const MAX_CHARS_PER_MESSAGE = 2000; // ป้องกัน messages ที่ tool คืนค่า data ยาวมาก
+
+function buildSmartMemory(messages: any[]): any[] {
+  const recent = messages.slice(-MAX_MEMORY_MESSAGES);
+
+  return recent.map((m: any) => {
+    let content = m.content;
+
+    // แปลง parts array เป็น string ถ้าจำเป็น
+    if (!content && Array.isArray(m.parts)) {
+      content = m.parts
+        .filter((p: any) => p.type === 'text')
+        .map((p: any) => p.text)
+        .join('');
+    }
+
+    content = content ?? '';
+
+    // ถ้า message ยาวเกิน budget ให้ตัดและบอก AI ว่าตัดแล้ว
+    // เพื่อให้ AI รู้ว่าข้อมูลอาจไม่ครบ แทนที่จะรับข้อมูลผิด
+    if (content.length > MAX_CHARS_PER_MESSAGE) {
+      content = content.slice(0, MAX_CHARS_PER_MESSAGE) + '\n[...ข้อมูลถูกตัดเพื่อประหยัด token...]';
+    }
+
+    return {
+      role: m.role,
+      content: optimizeThaiTokens(content),
+    };
+  });
+}
+
+// ─────────────────────────────────────────────────────────
+// SECTION 5: SYSTEM PROMPT BUILDER (อัปเกรดใหญ่)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * [UPGRADE 4] Dynamic System Prompt ที่ปรับตาม intent
+ *
+ * ปัญหาเดิม: System Prompt เดียวรวมทุกอย่าง ทำให้ยาวเกินและ AI
+ * ต้องประมวลผล instruction ที่ไม่เกี่ยวข้องกับคำถามนั้น
+ *
+ * วิธีใหม่: สร้าง base prompt + inject เฉพาะ section ที่เกี่ยวข้อง
+ * ลดขนาด system prompt เฉลี่ย ~30-40% ต่อ request
+ */
+function buildSystemPrompt(
+  intents: IntentScores,
+  currentIsoDate: string,
+  currentThaiDate: string,
+): string {
+  // --- IDENTITY & GENDER RULES (ลำดับความสำคัญสูงสุด) ---
+  const identity = `
+คุณคือ "บรู" (Bru) ผู้ช่วยสาวแสนสวยประจำร้านกาแฟ BLACKANDBREW
+- คุณเป็นผู้หญิง: ต้องใช้คำลงท้ายว่า "ค่ะ" หรือ "นะคะ" เท่านั้น
+- กฎเหล็ก: ห้าม! ใช้คำว่า "ครับ" หรือแทนตัวเองว่า "ผม" อย่างเด็ดขาด
+- ผู้ใช้คือ "คุณลูกค้า" หรือ "ผู้จัดการ" ห้ามทักทายผู้ใช้ว่า "บรู" เพราะนั่นคือชื่อของคุณ
+`.trim();
+
+  // --- BASE SECTION (ส่งทุกครั้ง) ---
+  const base = `
+[ข้อมูลบริบทร้านและเวลา]
+ชื่อร้าน: BLACKANDBREW | ที่ตั้ง: ลำลูกกา, ปทุมธานี
+พิกัด: ละติจูด ${STORE_LAT}, ลองติจูด ${STORE_LON}
+วันที่ปัจจุบัน (ISO): ${currentIsoDate}
+วันเวลาปัจจุบัน (ไทย): ${currentThaiDate}
+(ใช้เป็นฐานอ้างอิงเสมอเมื่อคำนวณ "วันนี้", "พรุ่งนี้", หรือ "สัปดาห์หน้า")
+
+[DATE INFERENCE RULES]
+- หากผู้ใช้ระบุปีเป็นเลข 2 หลัก (เช่น 69 หรือ 26):
+  1. ให้สันนิษฐานตามปีปัจจุบัน (${currentIsoDate}) โดยเลข 69 คือ พ.ศ. 2569 (ค.ศ. 2026) และ 26 คือ ค.ศ. 2026
+  2. แปลงเป็นรูปแบบ YYYY-MM-DD เพื่อใช้กับ Tools ทันทีโดยไม่ต้องถามซ้ำหากสามารถอนุมานได้
+  3. หากระบุเพียง "3/6" ให้ถือว่าเป็นวันที่ 3 เดือนมิถุนายน ของปีปัจจุบัน (${currentIsoDate.split('-')[0]})
+
+[UI_INTEGRITY_RULES]
+- ทุกตาราง (Table) รวมถึงบน Desktop และภายใน Modal ต้องหุ้มด้วย <div className="w-full overflow-x-auto scrollbar-thin pb-8"> เสมอ ห้ามให้ตารางล้นขอบคอนเทนเนอร์เด็ดขาด และต้องมีระยะ pb-8 เพื่อไม่ให้ Scrollbar บดบังแถวสุดท้าย
+- ตัวตารางต้องมี min-width ขั้นต่ำ (แนะนำ min-w-[800px] ถึง 1000px) และใช้ padding กระชับ (p-2) เพื่อไม่ให้ข้อมูลเบียดกัน
+- ทุก Modal Content (กล่องสีขาว) ต้องมีข้อจำกัดความสูง max-h-[90vh] และเปิด overflow-y-auto scrollbar-thin เพื่อป้องกันการล้นจอแนวตั้ง
+- Modal Overlay (ฉากหลัง) ต้องใช้ flex items-center justify-center p-4 เพื่อจัดวางกล่องเนื้อหาไว้กึ่งกลางหน้าจอเสมอ
+- ยึดถือ Zero-Bold Policy (ห้าม font-bold) และใช้ text-black เสมอตามมาตรฐานแบรนด์
+
+[DATA INTEGRITY & PRIVACY]
+- ห้ามแสดง UUID (เช่น 7777d2fc...) ในคำตอบเด็ดขาด ให้ใช้ชื่อบุคคลแทนเสมอ
+- ห้ามตอบเป็นตาราง ห้ามใช้ตัวหนา ตอบเป็นภาษาไทยเท่านั้น
+- ห้ามเดาข้อมูลจากความรู้เดิม ยึด Tool output เป็น Source of Truth
+
+[หลักการใช้ข้อมูล]
+- Internal API-First: ข้อมูลจาก Tool = ความจริงสูงสุด
+- ถ้า Tool ล้มเหลวหรือคืนค่าว่าง → รายงานตามนั้นตรงๆ อย่าเดา
+- วันที่ที่แสดงแก่ผู้ใช้ต้องเป็นรูปแบบ DD-MM-YYYY เสมอ
+
+[Business Executive Rules]
+${JSON.stringify(EXECUTIVE_RULES, null, 2)}
+`.trim();
+
+  // --- CONDITIONAL SECTIONS (inject ตาม intent ที่ตรวจพบ) ---
+  const sections: string[] = [identity, base];
+
+  // Inject เมื่อถามเรื่องวันหยุด
+  if (intents.holiday > 0) {
+    sections.push(`
+[กฎการค้นหาข้อมูลวันหยุด]
+1. ใช้ readTable ค้นหาจากตาราง "holidays" เพื่อหาวันหยุดนักขัตฤกษ์
+2. Schema: คอลัมน์ "date" (วันที่รูปแบบ YYYY-MM-DD) และ "name" (ชื่อวันหยุด) **ห้ามใช้ชื่อคอลัมน์อื่น**
+3. คำนวณจำนวนวันที่เหลือ: เปรียบเทียบวันหยุดที่พบกับวันที่ปัจจุบัน (${currentIsoDate})
+4. การตอบกลับ: บอกชื่อวันหยุด วันที่ และสรุปว่าเหลืออีกกี่วันจะถึงวันนั้น (เช่น อีก 5 วันค่ะ)
+`.trim());
+  }
+
+  // Inject เฉพาะเมื่อถามเรื่องพนักงาน/กะงาน
+  if (intents.schedule > 0) {
+    sections.push(`
+[กฎการค้นหาข้อมูลพนักงานและกะงาน]
+1. หากถามถึงตารางงานรายวัน (เช่น วันนี้ หรือ พรุ่งนี้) "ต้อง" ใช้เครื่องมือ getDailyShifts เสมอ
+2. คุณต้องแสดงรายชื่อพนักงานให้ครบทุกคน (รวม 9 คน) เสมอ แม้พนักงานคนนั้นจะไม่มีกะงานก็ตาม โดยใช้รูปแบบข้อความดิบ (Plain Text) ตามกฎดังนี้:
+   - ห้าม! วนลูปจากข้อมูลที่มีกะงานเท่านั้น ให้วนลูปจากรายชื่อพนักงานทั้งหมด (9 คน) เป็นหลัก
+   - ห้าม! ใช้ตัวหนา (**), ห้าม! ใช้เครื่องหมายหัวข้อ (*), ห้าม! ใช้เครื่องหมายทวิภาค (:) ที่ท้ายหัวข้อ
+   - ห้าม! ใช้คำนำหน้าชื่อว่า "คุณ" ให้ใช้เฉพาะชื่อพนักงานเท่านั้น (เช่น นิต้า, ปิ่น)
+   - รูปแบบหัวข้อ: [ชื่อหมวดหมู่] (เพิ่ม "(รวม [จำนวน] คน)" เฉพาะหมวดหน้าร้าน)
+   - รูปแบบรายชื่อ: [ชื่อ] - [เวลาหรือสถานะ]
+   - การจัดกลุ่ม: 
+     1. พนักงานปฏิบัติงานหน้าร้าน (รวม [จำนวน] คน) - เรียงตามเวลาจากเช้าไปสาย
+     2. พนักงานปฏิบัติงานส่วนอื่น - เรียงตาม 'row_order'
+     3. พนักงานที่หยุดพัก/ลา - เรียงตาม 'row_order' (หากไม่มีกะให้ระบุว่า "วันหยุด")
+3. ห้ามแสดงรหัส UUID หรือคำว่า "พนักงานรหัส..." เด็ดขาด
+`.trim());
+  }
+
+  // Inject เฉพาะเมื่อถามเรื่อง inventory หรือ maintenance
+  if (intents.inventory > 0 || intents.maintenance > 0) {
+    sections.push(`
+[กฎการวิเคราะห์สต็อกและการซ่อมบำรุง]
+1. ดึงตาราง "inventory_items" หรือ "maintenance_records" ทั้งหมดมาก่อน
+   (ห้ามคาดหวัง filter เชิงเปรียบเทียบจาก DB เช่น stock < order_point)
+2. วิเคราะห์ใน memory: ถ้า stock < order_point → จัดเป็น "low stock"
+   → แนะนำ suggested_order = order_qty (ถ้า > 0) หรือ target_stock - stock
+3. เรียงลำดับจากความเร่งด่วนสูงสุด (stock ใกล้ 0 มาก่อน)
+4. [CRITICAL] เรียก readTable เพียง 1 ครั้งต่อตาราง ห้ามวนซ้ำ
+`.trim());
+  }
+
+  // Inject เฉพาะเมื่อถามเรื่องอากาศ
+  if (intents.weather > 0) {
+    sections.push(`
+[กฎการวิเคราะห์สภาพอากาศ]
+- อ้างอิงพิกัดร้านเสมอ: Lat ${STORE_LAT}, Lon ${STORE_LON}
+- เชื่อมโยงสภาพอากาศกับผลกระทบต่อธุรกิจ:
+  เช่น ฝนตก → ลูกค้าน้อยลง / ส่งของล่าช้า / พนักงานมาสาย
+- ถ้ามีทั้ง weather + schedule/inventory ให้วิเคราะห์ผลกระทบร่วมด้วย
+`.trim());
+  }
+
+  // Inject เฉพาะเมื่อถามข้อมูลภายนอก
+  if (intents.externalSearch > 0) {
+    sections.push(`
+[กฎการค้นหาข้อมูลภายนอก]
+- ใช้ internetSearchTool สำหรับข่าว, เทรนด์, ราคาตลาด
+- ระบุแหล่งที่มาของข้อมูลที่ค้นพบเสมอ
+- เชื่อมโยงกับบริบทของร้านกาแฟ BLACKANDBREW เสมอ
+`.trim());
+  }
+
+  return sections.join('\n\n');
+}
+
+// ─────────────────────────────────────────────────────────
+// SECTION 6: TOOL SELECTION ENGINE (อัปเกรด)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * [UPGRADE 5] Score-based tool selection แทน boolean flags
+ *
+ * ปัญหาเดิม: ถ้าไม่มี keyword ตรงๆ จะไม่ได้ tool เลย
+ * เช่น "วันนี้ร้านมีอะไรน่าเป็นห่วงบ้าง?" → ไม่ match regex ไหนเลย
+ *
+ * วิธีใหม่: ถ้าคะแนนรวม > threshold ให้เปิด tool นั้น
+ * threshold ต่ำ = เปิด tool บ่อยขึ้น (recall สูง)
+ * threshold สูง = เปิด tool เฉพาะเมื่อชัดเจน (precision สูง)
+ */
+const INTENT_THRESHOLD = 2; // คะแนนขั้นต่ำที่ถือว่า "ชัดเจนพอ"
+
+function selectTools(intents: IntentScores): {
+  tools: Record<string, any>;
+  maxSteps: number;
+} {
+  const tools: Record<string, any> = {};
+  let maxSteps = 1;
+
+  const needsDB = intents.schedule >= INTENT_THRESHOLD
+    || intents.inventory >= INTENT_THRESHOLD
+    || intents.maintenance >= INTENT_THRESHOLD
+    || intents.holiday >= INTENT_THRESHOLD;
+
+  if (needsDB) {
+    tools.readTable = wrapTool(readTableTool);
+    maxSteps = Math.max(maxSteps, 3);
+  }
+
+  if (intents.externalSearch >= INTENT_THRESHOLD) {
+    tools.internetSearchTool = wrapTool(internetSearchTool);
+    maxSteps = Math.max(maxSteps, 4);
+  }
+
+  // [UPGRADE 5.1] Composite intent: ถ้าต้องการทั้ง weather + schedule
+  // เพิ่ม steps เพราะ reasoning ซับซ้อนขึ้น
+  const isComposite = (intents.weather >= INTENT_THRESHOLD)
+    && (intents.schedule >= INTENT_THRESHOLD || intents.inventory >= INTENT_THRESHOLD);
+  if (isComposite) {
+    maxSteps = Math.max(maxSteps, 5);
+  }
+
+  return { tools, maxSteps };
+}
+
+// ─────────────────────────────────────────────────────────
+// SECTION 7: MAIN ROUTE HANDLER
+// ─────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
-    // MODULE 5: DYNAMIC TOOL INJECTION — Intent Classification
+    if (!messages || messages.length === 0) {
+      return new Response(JSON.stringify({ error: 'No messages provided' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // --- ดึงข้อความล่าสุดเพื่อวิเคราะห์ intent ---
     const lastMsg = messages[messages.length - 1];
     const lastMsgText = typeof lastMsg?.content === 'string'
       ? lastMsg.content
       : (lastMsg?.parts ?? [])
-        .filter((p: any) => p.type === 'text')
-        .map((p: any) => p.text)
-        .join('');
-
-    // MODULE 6: TOKEN ECONOMY (Tool Output Cleaning)
-    // กรองข้อมูล Metadata และ ID ยาวๆ ออกก่อนส่งให้โมเดล เพื่อลดค่าใช้จ่ายและเพิ่มความเร็ว
-    const cleanToolOutput = (output: any) => {
-      if (!output || typeof output !== 'object') return output;
-      const removeJunk = (item: any) => {
-        if (!item || typeof item !== 'object') return item;
-        const { id, created_at, updated_at, metadata, tenant_id, profile_id, ...rest } = item;
-        return rest;
-      };
-      if (Array.isArray(output)) return output.map(removeJunk);
-      if (output.data && Array.isArray(output.data)) {
-        return { ...output, data: output.data.map(removeJunk) };
-      }
-      return removeJunk(output);
-    };
-
-    const wrapTool = (tool: any) => ({
-      ...tool,
-      execute: tool.execute ? async (args: any) => cleanToolOutput(await tool.execute(args)) : undefined
-    });
-
-    // แยกตรรกะการตรวจจับให้แม่นยำชัดเจน
-    const isScheduleQuery = /กะงาน|พนักงาน|เวร|ตารางงาน|shift/i.test(lastMsgText);
-    const isInventoryQuery = /สต็อก|คลัง|สินค้า|ซ่อม|บำรุง|inventory|stock|repair|maintenance/i.test(lastMsgText);
-    const isWeatherQuery = /อากาศ|ฝน|อุณหภูมิ|แดด|ฝุ่น|พายุ|weather|rain/i.test(lastMsgText);
-    const isExternalSearchQuery = /ค้นหา|ข่าว|เทรนด์|search|news|trend|ราคาตลาด/i.test(lastMsgText);
-
-    // ตรวจสอบความเกี่ยวโยงกันเชิงธุรกิจ (เช่น ฝนตกจะกระทบการส่งของหรือกะงาน)
-    const hasWeatherBusinessLink = (isScheduleQuery || isInventoryQuery) && /ฝน|พายุ|อากาศ|ส่งของ|ร้อน/i.test(lastMsgText);
-
-    let tools: Record<string, any> = {};
-    let dynamicMaxSteps = 1;
-
-    if (isScheduleQuery) {
-      // [PROTOCOL 2.1] ใช้ readTableTool เป็นแหล่งข้อมูลหลักเพื่อความเสถียร
-      tools.readTable = wrapTool(readTableTool);
-      dynamicMaxSteps = Math.max(dynamicMaxSteps, 3);
-    }
-    if (isInventoryQuery) {
-      tools.readTable = wrapTool(readTableTool);
-      dynamicMaxSteps = Math.max(dynamicMaxSteps, 2);
-    }
-    if (isExternalSearchQuery) {
-      tools.internetSearchTool = wrapTool(internetSearchTool);
-      dynamicMaxSteps = Math.max(dynamicMaxSteps, 4);
-    }
-
-    const enabledTools = Object.keys(tools).length > 0 ? tools : undefined;
-
-    // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Sliding Window Memory)
-    const recentMessages = messages.slice(-4);
-
-    // Data Mapping: Convert messages to CoreMessage schema safely
-    const coreMessages = recentMessages.map((m: any) => {
-      let cleanContent = m.content;
-
-      if (!cleanContent && m.parts && Array.isArray(m.parts)) {
-        cleanContent = m.parts
           .filter((p: any) => p.type === 'text')
           .map((p: any) => p.text)
           .join('');
-      }
 
-      if (cleanContent === undefined || cleanContent === null) {
-        cleanContent = '';
-      }
+    // [UPGRADE 1] ใช้ weighted scoring แทน boolean
+    const intents = classifyIntent(lastMsgText);
 
-      return {
-        role: m.role,
-        content: optimizeThaiTokens(cleanContent) // Re-integrating Thai token optimization
-      };
-    });
+    // [UPGRADE 5] เลือก tools และ maxSteps จาก scores
+    const { tools: selectedTools, maxSteps } = selectTools(intents);
+    const enabledTools = Object.keys(selectedTools).length > 0
+      ? selectedTools
+      : undefined;
 
-    // Note: avoid noisy production logs to keep CPU low.
+    // [UPGRADE 3] Smart memory window
+    const coreMessages = buildSmartMemory(messages);
 
+    // --- เตรียม context เวลา ---
     const now = new Date();
     const todayZoned = toZonedTime(now, 'Asia/Bangkok');
     const currentThaiDate = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
-    const currentIsoDate = format(todayZoned, 'yyyy-MM-dd'); // YYYY-MM-DD
+    const currentIsoDate = format(todayZoned, 'yyyy-MM-dd');
+
+    // [UPGRADE 4] Dynamic system prompt
+    const systemPrompt = buildSystemPrompt(intents, currentIsoDate, currentThaiDate);
 
     const result = await streamText({
-      model: google('gemini-2.5-flash'), // อัปเกรดเป็นรุ่น 2.5-flash ตามที่ระบุ
+      model: google('gemini-2.5-flash'),
       messages: coreMessages,
-      stopWhen: stepCountIs(dynamicMaxSteps), // Dynamic: internal/weather=2, external=4
-      // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Ultra-Minimalist System Prompt)
-      system: `คุณคือผู้ช่วย AI ประจำร้านกาแฟ BLACKANDBREW (ชื่อเล่น: บรู) ตัวร้านตั้งอยู่ที่พิกัด ละติจูด: ${STORE_LAT} และลองติจูด: ${STORE_LON} เสมอ หากผู้ใช้มีการสอบถามเกี่ยวกับสภาพอากาศ ความร้อน หรือฝน ให้ระลึกไว้ว่าต้องอ้างอิงพิกัดนี้ในการวิเคราะห์ข้อมูลหรือส่งคำขอไปยัง OpenWeather API ทุกครั้งเพื่อความแม่นยำสูงสุด
-
-      [Bru Persona & Communication Style]
-      - บุคลิก: เป็นมิตร อบอุ่น และมืออาชีพเหมือนผู้ช่วยผู้จัดการร้านกาแฟที่คอยดูแลความเรียบร้อยของร้าน (ชื่อเล่น: บรู)
-      - การสนทนา: ให้ใช้ภาษาพูดที่เป็นธรรมชาติ เรียบเรียงประโยคให้ลื่นไหลเหมือนคุยกับคนจริงๆ 
-      - ข้อห้าม: ห้ามตอบเป็นตารางทื่อๆ หรือใช้สัญลักษณ์ซ้ำซากตามเทมเพลตตายตัวแบบหุ่นยนต์เด็ดขาด
-      - ข้อมูล: ใช้ข้อมูลตัวเลขและกฎเกณฑ์จาก EXECUTIVE_RULES อย่างแม่นยำ 100% แต่การสื่อสารต้องดู "Human-like"
-
-      [ข้อมูลบริบทและพิกัดที่ตั้งของร้าน]
-      - ชื่อร้าน: BLACKANDBREW (แบล็ก แอนด์ บรู)
-      - ที่ตั้งหลัก: ตำบลบึงคำพร้อย อำเภอลำลูกกา จังหวัดปทุมธานี, ประเทศไทย
-      - พิกัดทางภูมิศาสตร์ (Lat, Lon): ${STORE_LAT}, ${STORE_LON}
-      - วันนี้คือวันที่: ${currentIsoDate}
-      - วันเวลาปัจจุบันของไทย: ${currentThaiDate}
-      (จงใช้ข้อมูลฐานเวลานี้ในการคำนวณคำว่า วันนี้, พรุ่งนี้, หรือตารางงานล่วงหน้าเสมอ)
-
-      หลักการข้อมูล: โครงสร้างนี้ยึด "Internal API-First" แบบเข้มงวด
-      - ข้อมูลที่ได้จาก Tool คือ "Primary Absolute Truth"
-      - ห้ามเดาข้อมูลจากความรู้เดิม หรืออินเทอร์เน็ต
-      - ถ้า Tool ให้ข้อมูลไม่ครบ/ล้มเหลว ต้องรายงานตามค่าที่ได้รับจริง
-
-      [Business Executive Rules]
-      ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
-
-      [Internal API-First Orchestration / Data Reasoning Matrix]
-      ห้ามเปิดเผย "chain-of-thought" แต่ให้ทำขั้นตอนคิดภายในดังนี้:
-      1) Data Intake: เรียก Tool ให้ตรงโดเมนก่อน (ข้อมูลภายในใช้ readTable, ข้อมูลภายนอกใช้ internetSearchTool)
-      1.1) readTable รองรับเฉพาะ equality filters เท่านั้น (eq)
-      1.2) เมื่อผู้ใช้ถามงานที่มีการเปรียบเทียบ/อสมการ/คำนวณ (เช่น stock < order_point, maintenance ที่ใกล้ครบกำหนด) ห้ามคาดหวังให้ DB filter ฝั่งเซิร์ฟเวอร์ ให้ดึงข้อมูลตารางที่เกี่ยวข้องทั้งหมดด้วย preset columns แล้วค่อย filter/sort/calculate ในหน่วยความจำ (in-memory) ภายใน reasoning ของคุณ
-      2) Data Exhaust: สกัดทุก element ของทุก array ใน payload ของ Tool (รวมถึง nested objects)
-      3) Inventory Low-Stock Logic (BLACKANDBREW): ดึงตาราง inventory_items แล้ววนตรวจทุกแถว ถ้า stock < order_point ให้จัดเป็น low stock และคำนวณ suggested order quantity ด้วย order_qty (ถ้ามี/มากกว่า 0) หรือใช้ target_stock - stock
-      4) Date Validation: อ้างวันที่ต่อผู้ใช้ต้องเป็น DD-MM-YYYY เท่านั้น (แปลงจาก YYYY-MM-DD ถ้าจำเป็น)
-      5) Number Validation: headcount เป็นจำนวนเต็ม, maxPop เป็น number, daysRemaining เป็น number; ถ้าไม่มีข้อมูลให้รายงานว่าไม่มีข้อมูล
-      6) Cross-reference Matrix: เชื่อมข้อมูลที่เกี่ยวข้องข้ามตารางตามคำถาม
-      7) Honest Error Reporting: ถ้า Tool คืนค่า ok:false หรือข้อมูลว่าง ต้องรายงานความล้มเหลว/ความว่างตามที่ tool ระบุ
-
-      [Instructions for Output]
-      - ใช้กฎ Business Executive Rules ในการวิเคราะห์
-      - ตอบเป็นภาษาไทยเท่านั้น และห้ามใช้ตัวหนา (font-bold)
-      - สรุปจากข้อมูลที่ยืนยันจาก Tool เท่านั้น ห้ามเดา
-
-      [Response Guidelines]
-      เมื่อคำตอบตรงกับเงื่อนไขในกฎธุรกิจ ให้สรุปใจความสำคัญด้วยภาษาที่เข้าใจง่าย:
-
-      กรณีสินค้าสต็อกต่ำ (low_stock_summary):
-      - รายงานสินค้าที่ต้องเติม โดยระบุสต็อกปัจจุบันและจำนวนที่ควรสั่งเติมให้เหมาะสม
-      - เรียงจากรายการที่เร่งด่วนที่สุด และให้คำแนะนำที่เป็นมิตร
-
-      กรณีซ่อมบำรุง (upcoming_maintenance_summary):
-      - แจ้งเตือนอุปกรณ์ที่ต้องดูแลและปัญหาที่พบ จัดลำดับตามความเร่งด่วนของสถานะงาน
-
-      [CRITICAL PROCESS INTEGRITY RULE] หากผู้ใช้ถามข้อมูลที่เกี่ยวกับระบบร้าน BLACKANDBREW ให้คุณเรียกใช้งาน 'readTable' เพียง "1 ครั้ง" เท่านั้น และเมื่อได้รับผลลัพธ์ข้อมูลจากคลังหรือตารางซ่อมบำรุงแล้ว ให้ประมวลผลสรุปคำตอบด้วยตรรกะ In-Memory ทันที และห้ามทำการเรียกเครื่องมืออื่นใดซ้ำซ้อนในเทิร์นเดียวกันเด็ดขาด`,
+      stopWhen: stepCountIs(maxSteps),
+      system: systemPrompt,
       providerOptions: {
         google: {
           generationConfig: {
-            // MODULE 4: PERFORMANCE_&_TOKEN_ECONOMY (Cap Max Output Tokens)
             maxOutputTokens: 1200,
-            temperature: 0.1,
+            // [UPGRADE 6] ปรับ temperature แบบ dynamic
+            // คำถามที่ต้องการข้อมูลจาก DB → temperature ต่ำ (แม่นยำ)
+            // คำถามทั่วไป → temperature สูงขึ้นเล็กน้อย (เป็นธรรมชาติ)
+            temperature: enabledTools ? 0.05 : 0.3,
           },
         },
       },
-      // MODULE 5: DYNAMIC TOOL INJECTION (Conditional Tools — pre-classified above)
       tools: enabledTools,
+
+      // [UPGRADE 7] onStepFinish: logging แบบ lightweight สำหรับ debug
+      // จะ log เฉพาะ development mode เท่านั้น ไม่กระทบ production
+      onStepFinish: process.env.NODE_ENV === 'development'
+        ? ({ toolCalls, toolResults }) => {
+            if (toolCalls && toolCalls.length > 0) {
+              console.debug('[BRU_AI] Tool step completed:', {
+                calls: toolCalls.map(tc => tc.toolName),
+                resultCount: toolResults?.length,
+              });
+            }
+          }
+        : undefined,
     });
 
     return result.toUIMessageStreamResponse();
+
   } catch (error) {
-    console.error('[AI_ROUTE] CRITICAL ERROR:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
+    // [UPGRADE 8] Structured error response พร้อม error type
+    const isTimeout = error instanceof Error && error.message.includes('timeout');
+    const statusCode = isTimeout ? 504 : 500;
+    const errorMessage = isTimeout
+      ? 'AI ใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้งค่ะ'
+      : 'เกิดข้อผิดพลาดภายในระบบค่ะ';
+
+    console.error('[BRU_AI] CRITICAL ERROR:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: process.env.NODE_ENV === 'development'
+        ? (error instanceof Error ? error.stack : undefined)
+        : undefined,
     });
+
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: statusCode, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

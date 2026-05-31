@@ -225,8 +225,8 @@ export default function LiveShiftList({
   const activeProfileData = performanceData.find(d => d.profile.id === activeId);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-5 bg-white/80 backdrop-blur-xl border border-black/5 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.02)] mb-6">
+    <div className="space-y-4 p-4 md:p-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 md:p-5 bg-white/80 backdrop-blur-xl border border-black/5 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.02)] mb-6">
         
         {/* แผงควบคุมฝั่งซ้าย: ไอคอน และ Double Capsule Date Picker */}
         <div className="flex items-center gap-4">
@@ -241,7 +241,7 @@ export default function LiveShiftList({
                 type="date" 
                 value={startDate}
                 onChange={(e) => handleDateChange(e.target.value, endDate)}
-                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-11"
               />
               <div className="bg-white px-6 py-2.5 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal min-w-[130px] text-center transition-all group-hover:border-black/20 antialiased">
                 {startDate && isValid(parseISO(startDate)) ? format(parseISO(startDate), 'dd/MM/yyyy') : 'เริ่ม'}
@@ -257,7 +257,7 @@ export default function LiveShiftList({
                 value={endDate}
                 onChange={(e) => handleDateChange(startDate, e.target.value)}
                 min={startDate}
-                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-11"
               />
               <div className="bg-white px-6 py-2.5 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal min-w-[130px] text-center transition-all group-hover:border-black/20 antialiased">
                 {endDate && isValid(parseISO(endDate)) ? format(parseISO(endDate), 'dd/MM/yyyy') : 'สิ้นสุด'}
@@ -267,7 +267,7 @@ export default function LiveShiftList({
         </div>
 
         {/* แผงควบคุมฝั่งขวา: จำนวนพนักงาน */}
-        <div className="flex items-center gap-3 px-5 py-2.5 bg-black/5 rounded-2xl w-fit">
+        <div className="flex items-center gap-3 px-5 h-11 bg-black/5 rounded-2xl w-fit">
           <Users className="w-4 h-4 text-black/60" strokeWidth={1.5} />
           <span className="text-lg font-normal text-[#000000]">{profiles.length}</span>
           <span className="text-[13px] text-[#000000]/40 ml-1 uppercase tracking-widest font-normal">พนักงานทั้งหมด</span>

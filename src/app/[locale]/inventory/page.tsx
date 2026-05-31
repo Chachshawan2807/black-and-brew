@@ -176,7 +176,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
       {/* 0. Static Row Index (Fixed) */}
       <td className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle bg-black/[0.01]">
         <div className="flex items-center justify-center h-full">
-          <span className="text-[10px] font-medium text-black/20 tabular-nums tracking-tighter">
+          <span className="text-[10px] font-normal text-black/20 tabular-nums tracking-tighter">
             {(rowIndex + 1).toString().padStart(2, '0')}
           </span>
         </div>
@@ -310,7 +310,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         data-col-id={col.id}
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty'}
-        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/80 text-[15px] font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-[#000000]/5 cursor-not-allowed select-none font-medium' : ''}`}
+        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-[#000000]/5 cursor-not-allowed select-none' : ''}`}
       />
       {col.id === 'name' && (
         <button
@@ -943,7 +943,7 @@ export default function DynamicInventoryManager() {
 
   return (
     <>
-      <div className="flex-1 w-full max-w-full bg-transparent text-[#000000] font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
+      <div className="flex-1 w-full max-w-full bg-transparent text-black font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
         <div className="w-fit mx-auto flex flex-col items-start">
           <div className="w-full flex flex-col items-center mb-8 text-center">
             <motion.h1
@@ -1012,13 +1012,13 @@ export default function DynamicInventoryManager() {
                       onChange={e => setQuickSearch(e.target.value)}
                       onFocus={() => setIsSearchFocused(true)}
                       onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-black bg-white text-[14px] font-normal text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                      className="w-full h-11 pl-9 pr-3 rounded-xl border border-black bg-white text-base md:text-sm font-normal text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
                     />
 
                     {/* Custom Dropdown */}
                     {isSearchFocused && filteredItems.length > 0 && (
                       <div className="absolute top-full left-0 w-full mt-2 bg-[#fdfcf0] border border-black/5 rounded-xl shadow-xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="max-h-60 overflow-y-auto py-2">
+                        <div className="max-h-[50vh] overflow-y-auto py-2">
                           {filteredItems.map(item => (
                             <button
                               key={item.id}
@@ -1066,17 +1066,17 @@ export default function DynamicInventoryManager() {
                         }
                       }}
                       min="0"
-                      step="any" // 🔥 แก้ไขจาก "1" เป็น "any" ตรงจุดนี้ครับ
-                      className="w-full text-[14px] font-normal py-2 px-2 text-center rounded-xl border border-black bg-white placeholder-neutral-400 text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                      step="any"
+                      className="w-full h-11 text-base md:text-sm font-normal px-2 text-center rounded-xl border border-black bg-white placeholder-neutral-400 text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
                     />
                   </div>
 
                   {/* 3. สวิตช์สลับข้างสไตล์ Segmented Control */}
-                  <div className="flex items-center bg-neutral-100 p-1 rounded-full border border-black shrink-0">
+                  <div className="flex items-center bg-neutral-100 p-1 rounded-full border border-black shrink-0 h-11">
                     <button
                       type="button"
                       onClick={() => setQuickType('IN')}
-                      className={cn("flex items-center justify-center px-3 py-1.5 text-[14px] font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                      className={cn("flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
                     >
                       <PackagePlus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'IN' ? "text-[#84cc16]" : "text-neutral-400")} />
                       รับเข้า
@@ -1084,14 +1084,14 @@ export default function DynamicInventoryManager() {
                     <button
                       type="button"
                       onClick={() => setQuickType('OUT')}
-                      className={cn("flex items-center justify-center px-3 py-1.5 text-[14px] font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                      className={cn("flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
                     >
                       <PackageMinus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'OUT' ? "text-[#f87171]" : "text-neutral-400")} />
                       นำออก
                     </button>
                   </div>
 
-                  <button type="submit" className="px-4 py-2 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0 h-[38px]">
+                  <button type="submit" className="px-4 h-11 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0">
                     <CloudUpload className="w-4 h-4" strokeWidth={1.5} /> บันทึก
                   </button>
                 </div>
@@ -1124,8 +1124,8 @@ export default function DynamicInventoryManager() {
             </div>
           </div>
 
-          <div className="w-full overflow-x-auto flex flex-col pb-8">
-            <div className="w-fit border border-[#000000]/5 bg-[#fdfcf0]/80 backdrop-blur-md shadow-sm rounded-3xl overflow-hidden mx-auto">
+          <div className="w-full overflow-x-auto scrollbar-thin flex flex-col pb-6">
+            <div className="w-max min-w-full border border-black/5 bg-[#fdfcf0]/80 backdrop-blur-md shadow-sm rounded-3xl overflow-hidden">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCorners}
@@ -1196,21 +1196,21 @@ export default function DynamicInventoryManager() {
               className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-                <h2 className="text-lg font-normal text-[#000000]">เพิ่มรายการใหม่</h2>
-                <button onClick={() => setShowAddModal(false)} className="p-2 text-[#000000] hover:text-[#000000] hover:bg-slate-100 rounded-full transition-colors">
+              <div className="px-6 h-14 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-lg font-normal text-black">เพิ่มรายการใหม่</h2>
+                <button onClick={() => setShowAddModal(false)} className="p-2 text-black hover:bg-slate-100 rounded-full transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <form onSubmit={handleAddItemSubmit} className="p-6">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <div className="col-span-2 flex flex-col gap-1.5">
-                    <label className="text-[12px] font-normal text-[#000000] ml-1">ชื่อรายการ</label>
+                    <label className="text-[12px] font-normal text-black ml-1 uppercase tracking-wider">ชื่อรายการ</label>
                     <input
                       required
                       value={newItemData.name || ''}
                       onChange={e => setNewItemData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
                     />
                   </div>
 
@@ -1225,7 +1225,7 @@ export default function DynamicInventoryManager() {
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, stock: val }));
                       }}
-                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
                     />
                   </div>
 
@@ -1234,7 +1234,7 @@ export default function DynamicInventoryManager() {
                     <input
                       value={newItemData.unit === null || newItemData.unit === undefined ? '' : newItemData.unit}
                       onChange={e => setNewItemData(prev => ({ ...prev, unit: e.target.value }))}
-                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
                     />
                   </div>
 
@@ -1249,7 +1249,7 @@ export default function DynamicInventoryManager() {
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, order_point: val }));
                       }}
-                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
                     />
                   </div>
 
@@ -1264,7 +1264,7 @@ export default function DynamicInventoryManager() {
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, target_stock: val }));
                       }}
-                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
                     />
                   </div>
 
@@ -1273,7 +1273,7 @@ export default function DynamicInventoryManager() {
                     <input
                       value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}
                       onChange={e => setNewItemData(prev => ({ ...prev, source: e.target.value }))}
-                      className="w-full px-4 py-2.5 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-[14px] font-normal text-[#000000] outline-none transition-all"
+                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
                     />
                   </div>
                 </div>

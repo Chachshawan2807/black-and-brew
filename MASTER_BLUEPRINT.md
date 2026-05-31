@@ -23,7 +23,14 @@ Tech Stack: Next.js 16, React 19, Supabase, Tailwind CSS, Vercel Edge Runtime.
 ### Responsive & Adaptive UI (Isolation Standard)
 
 * **Desktop Preservation**: ห้ามเปลี่ยนแปลงเลเอาท์ในมุมมอง `md:` ขึ้นไป ให้ใช้ Responsive Prefixes (`md:`) แยกแยะโครงสร้างอย่างเด็ดขาด
-* **Mobile Table Protocol**: ตารางที่มีข้อมูลจำนวนมากต้องหุ้มด้วย Container ที่มี `overflow-x-auto` และคอลัมน์สำคัญ (เช่น ชื่อ) ต้องใช้ `sticky left-0 z-20 bg-white` (หรือสีพื้นหลังที่เหมาะสม)
+* **Mobile-First Layout (App-like UX)**: 
+    *   **Padding**: บนมือถือใช้ `p-4`, บนเดสก์ท็อปใช้ `md:p-8`
+    *   **Navigation**: ซ่อน Sidebar บนมือถือ (`hidden md:flex`) และใช้ Sticky Top Bar หรือ Bottom Nav แทน
+    *   **Touch Targets**: ปุ่มกดและ Input ต้องมีความสูงอย่างน้อย 44px (`h-11`) เพื่อรองรับการกดด้วยนิ้วมือ
+    *   **iOS Zoom Prevention**: ช่องกรอกข้อมูลต้องใช้ `text-base` (16px) บนมือถือเพื่อป้องกัน Auto-zoom
+ * **Table Responsiveness Protocol (DEC-056/057)**: ทุกตาราง (รวมถึงใน Desktop และ Modal) ต้องหุ้มด้วย Container `div` ที่มีคลาส `w-full overflow-x-auto scrollbar-thin` เพื่อป้องกันตารางล้นขอบคอนเทนเนอร์. ตัวตารางต้องมี `w-full` และ `min-width` ที่เหมาะสม (เช่น `min-w-[800px]` หรือ `min-w-[1000px]` สำหรับตารางกะงาน) เพื่อรักษาความกว้างคอลัมน์.
+ * **Weather Subsystem (บึงคำพร้อย)**: ระบบพยากรณ์อากาศใช้พิกัด Lat: 13.9312, Lon: 100.6756 โดยมีการแคชข้อมูลทุก 30 นาที และแยกโครงสร้าง `current` และ `hourly` (Asia/Bangkok) เพื่อความแม่นยำสูงสุด
+ * **Table Cell Standard**: ใช้ Padding ที่กระชับ (แนะนำ `px-3 py-2.5` หรือ `p-2`) เพื่อลดการกินพื้นที่โดยไม่จำเป็น. บังคับใช้สีตัวอักษร `text-black` และ `font-normal` (Zero-Bold Policy) 100% ในทุกช่องข้อมูล.
 * **Mobile Header Protocol**: แผงควบคุม (Header Buttons) ต้องเรียงตัวแนวนอนและสไลด์ได้ (`flex overflow-x-auto whitespace-nowrap`) โดยคงขนาดปุ่มมาตรฐานไว้
 * **Mobile Modal Protocol**: หน้าต่างย่อย (Dialog/Modal) ต้องเปลี่ยนเป็น Bottom Sheet Drawer (เลื่อนจากล่างขึ้นบน) เมื่อแสดงผลบนมือถือ เพื่อความสะดวกในการใช้งานมือเดียว
 

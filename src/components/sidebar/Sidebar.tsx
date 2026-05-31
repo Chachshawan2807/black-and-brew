@@ -20,7 +20,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed top-0 left-0 z-[100] h-screen -translate-x-full lg:translate-x-0 transition-[width] ease-in-out duration-300 bg-transparent border-none',
+        'fixed top-0 left-0 z-[100] h-screen -translate-x-full md:flex md:translate-x-0 transition-[width] ease-in-out duration-300 bg-white md:bg-transparent border-none shadow-2xl md:shadow-none',
         isOpen === false ? 'w-20' : 'w-fit max-w-[280px]'
       )}
     >

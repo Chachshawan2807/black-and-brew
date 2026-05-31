@@ -226,26 +226,24 @@ export default function AIChatOverlay() {
               </div>
 
               {/* Quick Actions */}
-              {messages.length === 0 && (
-                <div className="px-4 flex flex-wrap gap-2 items-center justify-start mb-3">
-                  {QUICK_ACTIONS.map((action) => (
-                    <button
-                      key={action.id}
-                      type="button"
-                      onClick={() => {
-                        const liveScreenContext = getActiveWindowContext();
-                        sendMessage(
-                          { role: 'user', parts: [{ type: 'text', text: action.query }] },
-                          { body: { clientContext: liveScreenContext } }
-                        );
-                      }}
-                      className="border-2 border-black px-3 py-1.5 rounded-full text-xs text-black bg-white hover:bg-black hover:text-white transition cursor-pointer"
-                    >
-                      {action.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="px-4 flex flex-wrap gap-2 items-center justify-start mb-3">
+                {QUICK_ACTIONS.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => {
+                      const liveScreenContext = getActiveWindowContext();
+                      sendMessage(
+                        { role: 'user', parts: [{ type: 'text', text: action.query }] },
+                        { body: { clientContext: liveScreenContext } }
+                      );
+                    }}
+                    className="border-2 border-black px-3 py-1.5 rounded-full text-xs text-black bg-white hover:bg-black hover:text-white transition cursor-pointer whitespace-nowrap"
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
 
               {/* Input Area */}
               <form
@@ -265,7 +263,7 @@ export default function AIChatOverlay() {
                 <motion.button
                   type="submit"
                   disabled={isLoading || !inputValue.trim()}
-                  className="w-9 h-9 rounded-2xl bg-[#000000] text-white flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity"
+                  className="w-9 h-9 rounded-3xl bg-[#000000] text-white flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity"
                   whileTap={{ scale: 0.9 }}
                   aria-label="ส่งข้อความ"
                 >
@@ -300,7 +298,7 @@ function ChatBubble({ role, content }: { role: string; content: string }) {
 
       {/* Bubble */}
       <div
-        className={`max-w-[80%] px-4 py-2.5 rounded-3xl text-[15px] font-light antialiased leading-relaxed whitespace-pre-line ${isUser
+        className={`max-w-[80%] px-4 py-2.5 rounded-3xl text-[15px] font-normal antialiased leading-relaxed whitespace-pre-line ${isUser
           ? 'bg-[#fdfcf0] text-black border-2 border-black rounded-br-md'
           : 'bg-white text-black border-2 border-black rounded-bl-md'
           }`}

@@ -146,14 +146,14 @@ export default function MonthlyRoster() {
           <div className="flex bg-neutral-200/50 rounded-[24px] p-1.5 gap-1.5 backdrop-blur-sm">
             <button 
               onClick={() => setActiveTab('consolidated')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'consolidated' ? 'bg-white shadow-md text-black' : 'text-black/60 hover:text-black'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'consolidated' ? 'bg-white shadow-md text-black' : 'text-black hover:opacity-100 opacity-60'}`}
             >
               <Users className="w-4 h-4" />
               <span className="text-sm font-normal">รวมพนักงาน</span>
             </button>
             <button 
               onClick={() => setActiveTab('individual')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'individual' ? 'bg-white shadow-md text-black' : 'text-black/60 hover:text-black'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'individual' ? 'bg-white shadow-md text-black' : 'text-black hover:opacity-100 opacity-60'}`}
             >
               <User className="w-4 h-4" />
               <span className="text-sm font-normal">รายบุคคล</span>
@@ -165,31 +165,33 @@ export default function MonthlyRoster() {
       {loading ? (
         <div className="flex flex-col items-center justify-center h-[500px] gap-4">
           <div className="w-12 h-12 border-4 border-black/10 border-t-black rounded-full animate-spin" />
-          <p className="text-black font-normal animate-pulse">กำลังจัดแจงข้อมูลเวร...</p>
+          <p className="text-black font-normal animate-pulse">บรูกำลังจัดแจงข้อมูลเวรให้สักครู่นะคะ...</p>
         </div>
       ) : (
         <div className="bg-white rounded-[32px] border border-black/5 overflow-hidden shadow-xl shadow-black/5">
           {activeTab === 'consolidated' ? (
-            <ScrollArea.Root className="w-full h-[600px]">
-              <ScrollArea.Viewport className="w-full h-full">
-                <table className="w-full border-separate border-spacing-0">
+            <ScrollArea.Root className="w-full min-h-[500px] max-h-[750px]">
+              <ScrollArea.Viewport className="w-full pb-32">
+                <table className="w-max border-collapse mb-20">
                   <thead className="sticky top-0 z-20">
                     <tr className="bg-neutral-50/95 backdrop-blur-md">
                       <th className="sticky left-0 z-30 bg-neutral-50 p-6 text-left border-b border-r border-black/10 text-black font-normal whitespace-nowrap shadow-sm">
                         พนักงาน
                       </th>
                       {daysInInterval.map((day) => (
-                        <th key={day.toISOString()} className="p-4 text-center border-b border-r border-black/5 text-black font-normal min-w-[65px]">
-                          <div className="text-[11px] text-black font-normal uppercase mb-1 opacity-60">{format(day, 'EEE', { locale: th })}</div>
+                        <th key={day.toISOString()} className="p-4 text-center border-b border-r border-black/5 text-black font-normal min-w-[75px]">
+                          <div className="text-[11px] text-black font-normal uppercase mb-1 opacity-80">{format(day, 'EEE', { locale: th })}</div>
                           <div className="text-lg leading-none">{format(day, 'd')}</div>
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {data.profiles.map((profile) => (
-                      <tr key={profile.id} className="group hover:bg-neutral-50 transition-colors">
-                        <td className="sticky left-0 z-10 bg-white p-5 border-r border-b border-black/10 text-black font-normal text-sm group-hover:bg-neutral-50 transition-colors shadow-sm whitespace-nowrap">
+                    {/* DEC-059: วนลูปรายชื่อพนักงานทั้งหมดจาก data.profiles (ห้าม Filter ออก) */}
+                    {data.profiles.map((profile) => {
+                      return (
+                        <tr key={profile.id} className="group hover:bg-neutral-50 transition-colors">
+                          <td className="sticky left-0 z-10 bg-white p-5 border-r border-b border-black/10 text-black font-normal text-sm group-hover:bg-neutral-50 transition-colors whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] h-20">
                           {profile.full_name}
                         </td>
                         {daysInInterval.map((day) => {
@@ -206,7 +208,8 @@ export default function MonthlyRoster() {
                           );
                         })}
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </ScrollArea.Viewport>
@@ -230,7 +233,7 @@ export default function MonthlyRoster() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-2 pb-24">
                 {['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'].map(day => (
                   <div key={day} className="p-4 text-center text-black text-[12px] font-normal uppercase tracking-wider">{day}</div>
                 ))}

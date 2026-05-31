@@ -52,33 +52,41 @@
 * **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0)
 
 * **Execution**: [REBIRTH PROTOCOL: DAILY CLOSING INTEGRITY WORKFLOW] (2026-05-27, round 2)
-* **Action**: �׹�ѹʤ��� inventory_items ��� service_records �� 
+* **Action**: �׹�ѹʤ��� inventory_items ��� service_records ��
 eadTableTool ��� CSV ��ԧ, ����� alias mapping �ѹ query ��������Դ, ����ִ service_records preset ������������ԧ���ҹ���
 * **Action**: ��Ѻ AIChatOverlay ���� high-contrast black policy (w-full max-w-2xl + md:w-[650px], order-2 border-black, quick chips 4 �����ҡ QUICK_ACTIONS, �¡ useEffect ��Ŵ/૿ localStorage)
 * **Action**: ��Ѻ WeatherWidget ��餧�ԡѴ�֧�Ӿ���� ���١��, ��ç hourly Ẻ�����ǹ͹, ��Тͺ�ӪѴ���� skeleton/�����
-* **Action**: Ŵ�����ͧ����� /api/chat �������� 
+* **Action**: Ŵ�����ͧ����� /api/chat ��������
 eadTable + internetSearchTool ������׹�ѹ dynamic time anchor (currentThaiDate, currentIsoDate)
-* **Verification**: 
-px tsc --noEmit ? | 
+* **Verification**:
+px tsc --noEmit ? |
 pm run build ? (Exit Code 0)
 
 ## 2026-05-29
 
-*   **Execution**: [REBIRTH PROTOCOL: PERFORMANCE-DRIVEN OMNI-REFACTOR & CODE PURGE]
-*   **Action**: ดำเนินการปรับปรุงประสิทธิภาพและทำความสะอาดโค้ดทั่วทั้งโปรเจกต์
-    1.  **Dead Code Elimination**: Re-integrated `optimizeThaiTokens` in `src/app/api/chat/route.ts` for token economy.
-    2.  **Strip Production Logs**: Verified `console.log()` calls were mostly removed, retaining only `console.error()` for critical issues.
-    3.  **Supabase Speed Up**: Confirmed explicit field selection in Supabase queries (`daily-report-actions.ts`, `inventory-actions.ts`, `shift-actions.ts`) to reduce payload size.
-    4.  **Weather Route Acceleration**: Added `Cache-Control` headers (`public, s-maxage=1800, stale-while-revalidate=600`) to `src/app/api/weather/route.ts` for 0ms render after initial load.
-    5.  **Aesthetic Style**: Changed `bg-white` to `bg-[#fdfcf0]` in `src/components/dashboard/WeatherWidget.tsx` to align with the "Morning Latte Cream" theme.
-    6.  **Zero-Bold Policy Enforcement**: Verified `AIChatOverlay.tsx` and `WeatherWidget.tsx` adhere to `font-normal`/`font-light` and `antialiased` styles.
-    7.  **Security & Environment Lock**: Confirmed server-side usage of sensitive API keys and `.env.local` in `.gitignore`.
-*   **Result**: Increased system speed, backend processing, UI rendering, and response times with zero functional errors. Codebase is cleaner, lighter, and more performant.
-*   **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0)
+* **Execution**: [REBIRTH PROTOCOL: PERFORMANCE-DRIVEN OMNI-REFACTOR & CODE PURGE]
+* **Action**: ดำเนินการปรับปรุงประสิทธิภาพและทำความสะอาดโค้ดทั่วทั้งโปรเจกต์
+    1. **Dead Code Elimination**: Re-integrated `optimizeThaiTokens` in `src/app/api/chat/route.ts` for token economy.
+    2. **Strip Production Logs**: Verified `console.log()` calls were mostly removed, retaining only `console.error()` for critical issues.
+    3. **Supabase Speed Up**: Confirmed explicit field selection in Supabase queries (`daily-report-actions.ts`, `inventory-actions.ts`, `shift-actions.ts`) to reduce payload size.
+    4. **Weather Route Acceleration**: Added `Cache-Control` headers (`public, s-maxage=1800, stale-while-revalidate=600`) to `src/app/api/weather/route.ts` for 0ms render after initial load.
+    5. **Aesthetic Style**: Changed `bg-white` to `bg-[#fdfcf0]` in `src/components/dashboard/WeatherWidget.tsx` to align with the "Morning Latte Cream" theme.
+    6. **Zero-Bold Policy Enforcement**: Verified `AIChatOverlay.tsx` and `WeatherWidget.tsx` adhere to `font-normal`/`font-light` and `antialiased` styles.
+    7. **Security & Environment Lock**: Confirmed server-side usage of sensitive API keys and `.env.local` in `.gitignore`.
+* **Result**: Increased system speed, backend processing, UI rendering, and response times with zero functional errors. Codebase is cleaner, lighter, and more performant.
+* **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0)
 
 ## 2026-05-31
 
 * **Execution**: [REBIRTH PROTOCOL: DAILY CLOSING & ARCHITECTURE INTEGRITY SYNC]
 * **Action**: ปฏิบัติตามมาตรฐาน High-Contrast Black Policy บน AIChatOverlay, กำจัดเครื่องมือย่อยใน AI Route เหลือเพียง Universal readTable และ internetSearch, แก้ไขบั๊ก MISSING_MESSAGE ใน en.json
 * **Result**: ระบบมีความเป็นเอกภาพเชิงสถาปัตยกรรม 100% สระไทยไม่ทับกันด้วย leading-[2.2] และ build ผ่านสมบูรณ์
+
+## 2026-06-01 (v5.9)
+
+* **Execution**: [REBIRTH PROTOCOL: DAILY CLOSING & ARCHITECTURE INTEGRITY SYNC]
+* **Action**: รีแฟกเตอร์ AI Chat Tools เหลือเพียง Universal Read และ Search เพื่อลดความซับซ้อน (Logic Slimming)
+* **Action**: ตรวจสอบความแม่นยำของคอลัมน์ใน `readTableTool` (inventory_items: name, stock, order_point) และผูกสิทธิ์ผ่าน `SUPABASE_SERVICE_ROLE_KEY`
+* **Action**: ยืนยันมาตรฐาน High-Contrast Black Policy สำหรับ UI และระบบพยากรณ์อากาศพิกัดบึงคำพร้อย
+* **Result**: ระบบมีความเสถียรเชิงโครงสร้างสูงสุด ผ่านการตรวจสอบ Type Safety และพร้อมสำหรับ Production
 * **Verification**: `npm run build` ✓ (25/25 Pages)

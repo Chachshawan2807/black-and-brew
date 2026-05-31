@@ -18,6 +18,27 @@
 - **Standard**: Financial/Stock transactions MUST NEVER use the UI Undo/Redo stack.
 - **Implementation**: Mistakes must be corrected via compensating transactions or explicit deletion in the History ledger. This prevents database deadlocks and maintains absolute audit trail accuracy.
 
+## Table Responsiveness Standard (DEC-056/057)
+
+- **Standard**: ทุกตารางข้อมูล (รวมถึงบน Desktop และ Modal) ต้องไม่ล้นขอบคอนเทนเนอร์และรองรับการเลื่อนในแนวนอน
+- **Implementation**: 
+  1. ต้องห่อหุ้มตารางด้วย `<div className="w-full overflow-x-auto scrollbar-thin border border-black/5 rounded-3xl pb-8">` เสมอ (เพิ่ม pb-8 เพื่อกัน Scrollbar บังเนื้อหา)
+  2. ตัวตารางต้องมี `w-full` และ `min-width` ที่เหมาะสม (เช่น `min-w-[1000px]` สำหรับตารางจัดการกะ)
+  3. ปรับลด Padding ของเซลล์ให้กระชับ (`px-2 py-2` หรือ `p-2`) เพื่อความหนาแน่นของข้อมูลที่เหมาะสม
+  4. บังคับใช้ `text-black` และ `font-normal` ตาม Zero-Bold Policy 100%
+
+## Employee Data Integrity (DEC-059)
+
+- **Standard**: ตารางแสดงผลพนักงาน (Overview/Dashboard) ต้องแสดงรายชื่อครบทั้ง 9 คนเสมอ
+- **Implementation**: ห้ามใช้การ `.map` จาก Array ของกะงาน (Shifts) ให้ใช้รายชื่อพนักงานจาก `profiles` เป็นตัวตั้งหลักในการเรนเดอร์เสมอ หากไม่มีกะงานให้แสดงสถานะว่าง
+
+## Modal Vertical Centering & Overflow (DEC-058)
+
+- **Standard**: หน้าต่างย่อย (Modal) ต้องไม่ยืดตัวจนล้นขอบจอแนวตั้ง และต้องอยู่กึ่งกลางหน้าจอเสมอ
+- **Implementation**: 
+  1. บังคับใช้ `max-h-[90vh]` และ `overflow-y-auto scrollbar-thin` ที่กล่องเนื้อหาหลัก (White Box)
+  2. บังคับใช้ `flex items-center justify-center p-4` ที่ Overlay ฉากหลัง
+
 ## PO Interface Standards
 
 - **Standard**: Item names are left-aligned; all other PO data is centered.
