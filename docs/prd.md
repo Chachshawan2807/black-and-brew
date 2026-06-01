@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> **Version:** 3.1 | **Last Updated:** 2026-05-15 | **Owner:** System Architect
+> **Version:** 4.0 | **Last Updated:** 2026-06-01 | **Owner:** System Architect
 
 ---
 
@@ -90,13 +90,14 @@
 | **Deployment** | Vercel Edge Runtime |
 | **i18n** | Thai (primary), English — via `next-intl` |
 | **State Management** | Zustand for global state, React useState for local |
+| **PWA Compliance** | Standalone mode with Web App Manifest & Network-First Service Worker |
 | **Target INP** | < 200ms (Core Web Vitals 2026) |
 
 ---
 
 ## 6. Non-Functional Requirements
 
-- **Accessibility:** WCAG 2.2 AA Compliance (Contrast Ratio: Black text on light pastel backgrounds)
+- **Accessibility:** WCAG 2.2 AA Compliance (Contrast Ratio: Black text on light pastel backgrounds) & Full-width clickable hitboxes for all Date Pickers
 - **Security:** RLS enabled on all tables; Service Role Key used only in Server Actions; never exposed to browser
-- **Performance:** Hybrid PPR rendering (Static Shell + Dynamic Islands)
-- **Reliability:** Optimistic UI with Rollback on failure; Atomic transactions via PostgreSQL RPC
+- **Performance:** Hybrid PPR rendering (Static Shell + Dynamic Islands) with Network-First Service Worker caching
+- **Reliability:** Optimistic UI with Rollback on failure; Atomic transactions via PostgreSQL RPC; iOS Safe Zone (Home Indicator) compliance for mobile buttons and menus

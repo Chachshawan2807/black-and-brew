@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache'; 
+import { headers } from 'next/headers';
 import { compileDailyReportPayload } from '@/app/actions/daily-report-actions';
 import { sendLineNotification } from '@/app/actions/line-actions';
 
 export const maxDuration = 30;
 
 export async function GET(request: Request) {
-  // บังคับข้ามการทำแคช Prerender โดยเรียกใช้ noStore() ที่ประกาศไว้ด้านบนสุดของไฟล์อย่างถูกต้อง
+  // บังคับข้ามการทำแคช Prerender โดยใช้ dynamic api
+  await headers();
   noStore();
 
   try {

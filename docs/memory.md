@@ -140,6 +140,29 @@
 - **Impact:** ระบบมีความลื่นไหลเหมือนใช้งานแอปพลิเคชันพื้นฐาน (Native-like) และเข้าถึงข้อมูลได้ง่ายด้วยนิ้วโป้ง
 - **Evidence:** `MASTER_BLUEPRINT.md`, `src/app/[locale]/layout.tsx`
 
+### DEC-060: PWA Architecture Integration (v6.1)
+
+- **Date:** June 1, 2026
+- **Context:** ต้องการให้แอปพลิเคชันสามารถติดตั้งใช้งานบนหน้าจอมือถือได้เหมือน Native App (Progressive Web App) และมีกลไกการโหลดข้อมูลตารางงานล่าสุดโดยไม่มีผลกระทบต่อเวอร์ชันเดสก์ท็อปเดิม
+- **Decision:**
+    1. **Dynamic App Manifest**: สร้าง `src/app/manifest.ts` กำหนดข้อมูลแอป ไอคอน และสีธีม Morning Latte Cream
+    2. **Network-First Service Worker**: พัฒนา `public/sw.js` ใช้กลยุทธ์ Network-First แบบมี Cache Busting เพื่อความสดใหม่ของตารางงานกะทำงานพนักงาน
+    3. **Background SW Registration**: สร้าง `PwaRegister.tsx` เพื่อลงทะเบียน Service Worker ในฝั่งไคลเอนต์แบบออฟไลน์
+    4. **iOS Safe Zone Integration**: เพิ่ม Meta tags สำหรับอุปกรณ์ iOS ใน root layout
+- **Impact:** รองรับการติดตั้งแบบ Add to Home Screen บนสมาร์ตโฟน มีความเสถียรและลื่นไหล โดยไม่กระทบหน้าจอเดสก์ท็อปเดิม
+- **Evidence:** `src/app/manifest.ts`, `public/sw.js`, `src/components/PwaRegister.tsx`, `src/app/[locale]/layout.tsx`
+
+### DEC-061: Custom Calendar & DatePicker Accessibility (v6.1)
+
+- **Date:** June 1, 2026
+- **Context:** ปุ่มเลือกวันที่ของเบราว์เซอร์กดยากบนหน้าจอมือถือ และไม่มีความยืดหยุ่นในการปรับแต่งดีไซน์ตามมาตรฐานพาสเทลมินิมัล
+- **Decision:**
+    1. **Custom Calendar Popover**: สร้างปฏิทินที่ขยายเต็มหน้าจอเป็น Modal กึ่งกลางหน้าจอเมื่อเข้าใช้งานผ่านมือถือ ปรับดีไซน์เป็นทรงแคปซูลสวยงาม
+    2. **Full-width Clickable Input Area**: กำหนดให้ปุ่มตัวเลือกวันที่สามารถกดคลิกเพื่อเรียกหน้าต่างปฏิทินได้จาก "ทุกตารางนิ้วของกรอบ" (Full-width clickable area) ไม่จำกัดเฉพาะการกดบนไอคอนขนาดเล็ก
+    3. **iOS Safe Area Padding**: ขยับหน้าต่างเลือกปฏิทินและแถบเมนูด้านล่างให้พ้น iOS Home Indicator เสมอด้วย `env(safe-area-inset-bottom)`
+- **Impact:** ยกระดับประสบการณ์การป้อนข้อมูลวันที่บนอุปกรณ์สัมผัส สะดวกสบาย ปลอดภัยจากการกดพลาด และมีดีไซน์ที่หรูหราเข้ากับระบบ
+- **Evidence:** `src/components/ClickableDatePicker.tsx`, `src/app/[locale]/schedule/ScheduleClient.tsx`
+
 ## Decision Log
 
 ### DEC-003: Sub-label Typography Standard

@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> **Version:** 3.1 | **Last Updated:** 2026-05-15 | **Enforcement:** Mandatory
+> **Version:** 4.0 | **Last Updated:** 2026-06-01 | **Enforcement:** Mandatory
 
 ---
 
@@ -110,6 +110,13 @@
 - All DB timestamps: `TIMESTAMPTZ` (stored as UTC)
 - All display: Converted to GMT+7 (Bangkok) via `toLocaleString('th-TH')`
 - Never use raw UTC dates in UI
+
+### Date Picker & PWA Accessibility Rules
+
+- ✅ **DatePicker Hitbox**: สำหรับ Input ประเภทวันที่ (Date Picker) ทั้งหมด ต้องทำให้พื้นที่ทั้งหมดของกรอบ Input Container สามารถคลิกได้ (Full-width clickable area) ไม่จำกัดเฉพาะการคลิกที่ไอคอน
+- ✅ **Capsule Design Consistency**: ปุ่มและเมนูปฏิทินต้องออกแบบเป็นทรงแคปซูลสวยงาม เข้ากับรูปแบบพาสเทล
+- ✅ **iOS Safe Zone Compliance**: บนอุปกรณ์มือถือ (Viewport < md) หน้าต่างปฏิทินแบบ Popover/Modal และแถบนำทางส่วนท้าย ต้องชดเชยระยะปลอดภัยด้านล่างด้วย `env(safe-area-inset-bottom)` เสมอ เพื่อไม่ให้ถูกปุ่มระบบของ iOS บดบัง
+- ✅ **Service Worker Strategy**: ทุกการทำงานของ Service Worker สำหรับเส้นทางแบบไดนามิก (Dynamic shifts/schedules) ต้องเป็นแบบ Network-First เสมอเพื่อดึงข้อมูลตารางงานล่าสุดที่ถูกต้อง และห้าม Cache ข้อมูลตารางงานที่ออฟไลน์แล้วค้างคาคาดเคลื่อน
 
 ### Environment Variables
 

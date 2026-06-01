@@ -1,6 +1,6 @@
 # Design Standards — BLACKANDBREW ERP
 
-> **Version:** 3.1 | **Last Updated:** 2026-05-15 | **Standard:** Black-on-Pastel, High-Legibility
+> **Version:** 4.0 | **Last Updated:** 2026-06-01 | **Standard:** Black-on-Pastel, High-Legibility
 
 ---
 
@@ -169,11 +169,27 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 - **Mobile**: `fixed bottom-0 left-0 right-0 rounded-t-3xl shadow-2xl-up animate-in slide-in-from-bottom`
 - **Desktop (md:)**: `relative rounded-3xl translate-y-0` (กลับมาเป็น Modal กลางจอปกติ)
 
+### Custom Popover Calendar (DatePicker)
+- **Mobile Viewport (< md)**: แสดงผลเป็น Modal เต็มกึ่งกลางหน้าจอ (`fixed inset-0 flex items-center justify-center z-[250]`) พร้อมแผ่น Backdrop ทึบสีดำจาง 40% และฟังก์ชันคลิกนอกพื้นที่เพื่อสลับปิดแบบสมูท
+- **Desktop Viewport (md:)**: แสดงผลเป็น Dropdown Popover ขนาดเล็กใต้กล่องอินพุตปกติ (`absolute mt-2 z-[200] rounded-3xl border border-black/5 bg-white shadow-xl`)
+- **Design Elements**: ปุ่มเปลี่ยนเดือนและเลือกวันจัดเรียงแบบแคปซูลมินิมัลพาสเทล (`rounded-full`)
+
+### Date Picker Hitbox (Global Rules)
+- กรอบ Container ของอินพุตเลือกวันที่ทั้งหมดต้องสามารถกดคลิกได้เต็มพื้นที่ (`w-full cursor-pointer`) ไม่จำกัดให้กดที่รูปไอคอนเท่านั้น เพื่อเพิ่มความสะดวกในการใช้งานผ่านหน้าจอสัมผัส
+
+### iOS Safe Zones Layout Padding
+- เพื่อไม่ให้ UI แถบเมนูด้านล่างหรือกล่อง Modal ไปทับซ้อนกับ iOS Home Indicator (แถบปัดด้านล่างของ iPhone/iPad) ทุกคอนเทนเนอร์ล่างสุดของแอปและปุ่ม Action ต้องมีการสอดแทรก Padding ระยะปลอดภัย:
+  ```css
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  ```
+  หรือเทียบเท่า Tailwind Utility: `max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]`
+
 ---
 
-## 8. Responsive Strategy
+## 9. Responsive Strategy
 
 - **Desktop-First** for table/spreadsheet layouts
 - **Fluid Width** — `w-fit mx-auto` containers
 - Breakpoints: `md:` for tablet+ layouts
 - Mobile: Stack columns vertically, full-width inputs
+- **PWA Capabilities**: 100% App-like shell responsive with fluid scaling and offline capability on any mobile screen.

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 import { setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
@@ -6,6 +6,7 @@ import SidebarLayout from '@/components/sidebar/SidebarLayout';
 import I18nProvider from '@/components/providers/I18nProvider';
 import AIChatOverlay from '@/components/ai/AIChatWrapper';
 import PinGateway from '@/components/auth/PinGateway';
+import PwaRegister from '@/components/PwaRegister';
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -13,9 +14,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: "BLACK-AND-BREW — Scheduling System",
   description: "High-Availability & Real-time Scheduling System for BLACK-AND-BREW",
+  appleWebApp: {
+    capable: true,
+    title: "BLACKANDBREW",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export function generateStaticParams() {
@@ -37,6 +54,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-[#fdfcf0] text-[#000000]">
+        <PwaRegister />
         <PinGateway>
           <SidebarLayout>
             <Suspense fallback={

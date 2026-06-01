@@ -24,6 +24,7 @@ import { format, parseISO } from 'date-fns';
 import { th } from 'date-fns/locale';
 import Image from 'next/image';
 import React from 'react';
+import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 
 // Simple Toast implementation
 const useToast = () => {
@@ -538,22 +539,14 @@ export default function MaintenancePage() {
               <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar bg-white">
                 {/* Row 1: Date & Type */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1.5 cursor-pointer" onClick={() => dateInputRef.current?.showPicker()}>
+                  <div className="space-y-1.5 flex-1">
                     <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">วันที่รับบริการ</label>
-                    <div className="relative h-11 flex items-center bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 cursor-pointer hover:bg-black/[0.04] transition-all">
-                      <span className="text-sm text-black font-medium flex-1">
-                        {formData.start_date ? format(parseISO(formData.start_date), 'dd/MM/yyyy') : ''}
-                      </span>
-                      <input
-                        ref={dateInputRef}
-                        type="date"
-                        required
-                        value={formData.start_date}
-                        onChange={e => setFormData({ ...formData, start_date: e.target.value })}
-                        className="sr-only"
-                      />
-                      <Calendar className="w-4 h-4 text-black/30" />
-                    </div>
+                    <ClickableDatePicker
+                      value={formData.start_date}
+                      onChange={e => setFormData({ ...formData, start_date: e.target.value })}
+                      placeholder="เลือกวันที่"
+                      containerClassName="bg-black/[0.02] border-black/[0.05] hover:border-black/10 hover:bg-black/[0.04] transition-all"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ประเภทงาน</label>

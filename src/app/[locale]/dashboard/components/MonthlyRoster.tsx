@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { fetchRosterData } from '@/app/actions/shift-actions';
+import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 
 interface Profile {
   id: string;
@@ -103,7 +104,7 @@ export default function MonthlyRoster() {
   return (
     <div className="w-full bg-[#fdfcf0] rounded-[32px] p-4 md:p-8 border border-black/5 shadow-sm min-h-[700px] antialiased">
       {/* Header Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
+      <div className="relative z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-black flex items-center justify-center rounded-2xl shadow-lg">
             <CalendarIcon className="w-6 h-6 text-[#fdfcf0]" />
@@ -111,35 +112,25 @@ export default function MonthlyRoster() {
           <h2 className="text-2xl text-black font-normal tracking-tight">ตารางเวรและภาพรวมช่วงวันที่</h2>
         </div>
 
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-3">
-            {/* กล่องแคปซูลวันที่เริ่มต้น (Double Capsule Design) */}
-            <div className="relative group">
-              <input 
-                type="date" 
+        <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-4 md:gap-6 w-full lg:w-auto">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="flex-1">
+              <ClickableDatePicker
                 value={startDate}
                 onChange={handleStartDateChange}
-                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                placeholder="เริ่ม"
+                containerClassName="w-full"
               />
-              <div className="bg-white px-6 py-2.5 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal min-w-[130px] text-center transition-all group-hover:border-black/20 antialiased">
-                {startDate && isValid(parseISO(startDate)) ? format(parseISO(startDate), 'dd/MM/yyyy') : 'เริ่ม'}
-              </div>
             </div>
-
-            <span className="text-black font-normal select-none">—</span>
-
-            {/* กล่องแคปซูลวันที่สิ้นสุด (Double Capsule Design) */}
-            <div className="relative group">
-              <input 
-                type="date" 
+            <span className="text-black font-normal select-none shrink-0">—</span>
+            <div className="flex-1">
+              <ClickableDatePicker
                 value={endDate}
                 onChange={handleEndDateChange}
                 min={startDate}
-                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                placeholder="สิ้นสุด"
+                containerClassName="w-full"
               />
-              <div className="bg-white px-6 py-2.5 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal min-w-[130px] text-center transition-all group-hover:border-black/20 antialiased">
-                {endDate && isValid(parseISO(endDate)) ? format(parseISO(endDate), 'dd/MM/yyyy') : 'สิ้นสุด'}
-              </div>
             </div>
           </div>
 

@@ -343,6 +343,30 @@ export default function ScheduleClient({
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [redoStack, setRedoStack] = useState<any[]>([]);
 
+  const [showRegularHolidayModal, setShowRegularHolidayModal] = useState(false);
+  const [regularHolidays, setRegularHolidays] = useState<Record<string, number[]>>({});
+  const [holidayFormEmployee, setHolidayFormEmployee] = useState<string>('');
+  const [holidayFormDays, setHolidayFormDays] = useState<number[]>([]);
+  const [toastAlert, setToastAlert] = useState<{message: string, x: number, y: number} | null>(null);
+  const [holidaySaveSuccess, setHolidaySaveSuccess] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('blackandbrew-regular-holidays');
+      if (saved) setRegularHolidays(JSON.parse(saved));
+    } catch(e) {}
+  }, []);
+
+  const handleSaveRegularHolidays = () => {
+    if (!holidayFormEmployee) return;
+    const newHolidays = { ...regularHolidays, [holidayFormEmployee]: holidayFormDays };
+    setRegularHolidays(newHolidays);
+    localStorage.setItem('blackandbrew-regular-holidays', JSON.stringify(newHolidays));
+    
+    setHolidaySaveSuccess(true);
+    setTimeout(() => setHolidaySaveSuccess(false), 2000);
+  };
+
   const weekDays = useMemo(() => {
     const monday = startOfWeek(new Date(currentDate), { weekStartsOn: 1 });
     return [...Array(7)].map((_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
@@ -761,6 +785,18 @@ export default function ScheduleClient({
     setSelectedCell(null);
 
     const isLeave = type === 'on_leave' || type === 'ลา';
+
+    const assignDay = new Date(date).getDay();
+    if (!isLeave && regularHolidays[employeeId] && regularHolidays[employeeId].includes(assignDay)) {
+      const empName = profiles.find(p => p.id === employeeId)?.full_name || 'พนักงาน';
+      setToastAlert({
+        message: `แจ้งเตือน: วันนี้เป็นวันหยุดประจำของ ${empName} ค่ะ`,
+        x: selectedCell.x,
+        y: selectedCell.y
+      });
+      setTimeout(() => setToastAlert(null), 3000);
+    }
+
     const payload = {
       employee_id: employeeId,
       start_time: date + 'T00:00:00',
@@ -938,8 +974,16 @@ export default function ScheduleClient({
 
         <div className="flex items-center gap-2 w-full overflow-x-auto whitespace-nowrap pb-2 scrollbar-none md:overflow-visible md:pb-0 md:justify-end">
           <button
+            onClick={() => setShowRegularHolidayModal(true)}
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+          >
+            <Calendar className="w-4 h-4" />
+            วันหยุดประจำ
+          </button>
+
+          <button
             onClick={() => setShowManagementModal(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-3xl border border-emerald-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <UserCog className="w-4 h-4" />
             การลา/เปลี่ยนกะ
@@ -947,7 +991,7 @@ export default function ScheduleClient({
 
           <button
             onClick={() => setShowClearConfirm(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-red-600 bg-red-50 hover:bg-red-100 rounded-3xl border border-red-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <Trash2 className="w-4 h-4" />
             ล้างทั้งหมด
@@ -955,7 +999,7 @@ export default function ScheduleClient({
 
           <button
             onClick={exportScheduleImage}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-3xl border border-slate-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <Download className="w-4 h-4" />
             บันทึกรูปภาพ
@@ -963,7 +1007,7 @@ export default function ScheduleClient({
 
           <button
             onClick={() => setShowAddEmployeeModal(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-gray-100 hover:bg-gray-200 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <Plus className="w-4 h-4" />
             เพิ่มพนักงาน
@@ -1153,7 +1197,7 @@ export default function ScheduleClient({
 
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 text-black text-center space-y-4">
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-black text-center space-y-4">
             <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-6 md:hidden" />
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
               <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -1254,34 +1298,24 @@ export default function ScheduleClient({
 
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-normal text-black uppercase tracking-widest px-1">ระบุช่วงวันที่</label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative group flex-1">
-                      <input 
-                        type="date" 
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex-1 w-full">
+                      <ClickableDatePicker
                         value={managementForm.startDate}
                         onChange={(e) => setManagementForm(prev => ({ ...prev, startDate: e.target.value }))}
-                        className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                        placeholder="เริ่ม"
+                        containerClassName="w-full"
                       />
-                      <div className="bg-white px-3 py-3 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal w-full text-center transition-all group-hover:border-black/20 antialiased">
-                        {managementForm.startDate && isValid(parseISO(managementForm.startDate)) 
-                          ? format(parseISO(managementForm.startDate), 'dd/MM/yyyy') 
-                          : 'เริ่ม'}
-                      </div>
                     </div>
-                    <span className="text-black font-normal select-none">—</span>
-                    <div className="relative group flex-1">
-                      <input 
-                        type="date" 
+                    <span className="text-black font-normal select-none hidden sm:block shrink-0">—</span>
+                    <div className="flex-1 w-full">
+                      <ClickableDatePicker
                         value={managementForm.endDate}
                         onChange={(e) => setManagementForm(prev => ({ ...prev, endDate: e.target.value }))}
                         min={managementForm.startDate}
-                        className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full"
+                        placeholder="สิ้นสุด"
+                        containerClassName="w-full"
                       />
-                      <div className="bg-white px-3 py-3 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal w-full text-center transition-all group-hover:border-black/20 antialiased">
-                        {managementForm.endDate && isValid(parseISO(managementForm.endDate)) 
-                          ? format(parseISO(managementForm.endDate), 'dd/MM/yyyy') 
-                          : 'สิ้นสุด'}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1327,33 +1361,23 @@ export default function ScheduleClient({
               </div>
 
               <div className="p-4 border-b border-[#000000]/5 bg-[#fdfcf0]">
-                  <div className="flex items-center gap-2 max-w-sm">
-                    <div className="relative group flex-1">
-                      <input 
-                        type="date" 
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 max-w-sm">
+                    <div className="flex-1 w-full">
+                      <ClickableDatePicker
                         value={historyFilter.start}
                         onChange={(e) => setHistoryFilter(prev => ({ ...prev, start: e.target.value }))}
-                        className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-11"
+                        placeholder="กรองตั้งแต่วันที่"
+                        containerClassName="w-full"
                       />
-                      <div className="bg-white px-3 py-2 rounded-full border border-black/5 shadow-sm text-black text-[13px] font-normal w-full text-center transition-all group-hover:border-black/20 antialiased">
-                        {historyFilter.start && isValid(parseISO(historyFilter.start)) 
-                          ? format(parseISO(historyFilter.start), 'dd/MM/yyyy') 
-                          : 'กรองตั้งแต่วันที่'}
-                      </div>
                     </div>
-                    <span className="text-black font-normal select-none text-xs">—</span>
-                    <div className="relative group flex-1">
-                      <input 
-                        type="date" 
+                    <span className="text-black font-normal select-none text-xs hidden sm:block shrink-0">—</span>
+                    <div className="flex-1 w-full">
+                      <ClickableDatePicker
                         value={historyFilter.end}
                         onChange={(e) => setHistoryFilter(prev => ({ ...prev, end: e.target.value }))}
-                        className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-11"
+                        placeholder="ถึงวันที่"
+                        containerClassName="w-full"
                       />
-                      <div className="bg-white px-3 py-2 rounded-full border border-black/5 shadow-sm text-black text-[13px] font-normal w-full text-center transition-all group-hover:border-black/20 antialiased">
-                        {historyFilter.end && isValid(parseISO(historyFilter.end)) 
-                          ? format(parseISO(historyFilter.end), 'dd/MM/yyyy') 
-                          : 'ถึงวันที่'}
-                      </div>
                     </div>
                   </div>
               </div>
@@ -1431,7 +1455,7 @@ export default function ScheduleClient({
       {showAddEmployeeModal && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
           <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setShowAddEmployeeModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 text-black border border-gray-100">
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-black border border-gray-100">
             <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-6 md:hidden" />
             <h3 className="text-xl font-normal text-black mb-4 uppercase tracking-tight">เพิ่มพนักงานใหม่</h3>
             <div className="space-y-4">
@@ -1464,6 +1488,159 @@ export default function ScheduleClient({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showRegularHolidayModal && (
+        <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
+          <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setShowRegularHolidayModal(false)} />
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-black border border-gray-100">
+            <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-6 md:hidden" />
+            <h3 className="text-xl font-normal text-black mb-6 uppercase tracking-tight flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-gray-400" />
+              จัดการวันหยุดประจำ
+            </h3>
+            
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Left Column: Form */}
+              <div className="flex flex-col w-full md:w-[260px] shrink-0">
+                <div className="flex-1 flex flex-col space-y-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">พนักงาน</label>
+                    <div className="relative">
+                      <select
+                        className="w-full h-11 px-4 pr-10 rounded-3xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer text-[14px] font-normal appearance-none text-[#000000]"
+                        value={holidayFormEmployee}
+                        onChange={(e) => {
+                          setHolidayFormEmployee(e.target.value);
+                          setHolidayFormDays(regularHolidays[e.target.value] || []);
+                          setHolidaySaveSuccess(false);
+                        }}
+                      >
+                        <option value="">เลือกพนักงาน...</option>
+                        {profiles.map(p => (
+                          <option key={p.id} value={p.id}>{p.full_name}</option>
+                        ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {holidayFormEmployee && (
+                    <div className="space-y-2.5">
+                      <label className="text-[13px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">เลือกวันหยุดประจำสัปดาห์</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { id: 1, label: 'จ.' },
+                          { id: 2, label: 'อ.' },
+                          { id: 3, label: 'พ.' },
+                          { id: 4, label: 'พฤ.' },
+                          { id: 5, label: 'ศ.' },
+                          { id: 6, label: 'ส.' },
+                          { id: 0, label: 'อา.' },
+                        ].map(day => {
+                          const isSelected = holidayFormDays.includes(day.id);
+                          return (
+                            <button
+                              key={day.id}
+                              onClick={() => {
+                                setHolidayFormDays(prev => 
+                                  prev.includes(day.id) ? prev.filter(d => d !== day.id) : [...prev, day.id]
+                                );
+                                setHolidaySaveSuccess(false);
+                              }}
+                              className={`py-2 rounded-xl text-[13px] font-normal transition-all cursor-pointer ${
+                                isSelected 
+                                  ? 'bg-black text-white shadow-md' 
+                                  : 'bg-white border border-gray-200 text-black hover:bg-gray-50'
+                              }`}
+                            >
+                              {day.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-black/5 mt-6 space-y-3">
+                  {holidaySaveSuccess && (
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 flex items-center justify-center gap-2 animate-in fade-in duration-300">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                      <span className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลสำเร็จนะคะ</span>
+                    </div>
+                  )}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowRegularHolidayModal(false)}
+                      className="flex-1 py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-sm cursor-pointer"
+                    >
+                      ปิดหน้าต่าง
+                    </button>
+                    <button
+                      onClick={handleSaveRegularHolidays}
+                      disabled={!holidayFormEmployee}
+                      className="flex-1 py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm cursor-pointer"
+                    >
+                      บันทึกข้อมูล
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Summary Table */}
+              <div className="flex-1 w-full h-full overflow-x-auto border border-black/5 rounded-3xl p-4 bg-white/50 hidden md:block">
+                <h4 className="text-[14px] font-normal text-black mb-3 px-1">สรุปวันหยุดประจำของพนักงาน</h4>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-black/5 text-[12px] text-gray-500 uppercase tracking-widest">
+                      <th className="py-2 px-2 font-normal">พนักงาน</th>
+                      <th className="py-2 px-2 font-normal">วันหยุดประจำ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-[13px] text-black">
+                    {profiles.map(p => {
+                      const days = regularHolidays[p.id] || [];
+                      if (days.length === 0) return null;
+                      const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+                      
+                      const sortedDays = [...days].sort((a,b) => (a===0?7:a) - (b===0?7:b)); 
+                      
+                      return (
+                        <tr key={p.id} className="border-b border-black/5 last:border-0 hover:bg-black/5 transition-colors">
+                          <td className="py-2 px-2 font-normal">{p.full_name}</td>
+                          <td className="py-2 px-2 font-normal">
+                            {sortedDays.map(d => dayLabels[d]).join(', ')}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toastAlert && (
+        <div
+          className="fixed z-[200] pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+          style={{
+            top: `${toastAlert.y - 45}px`,
+            left: `${toastAlert.x}px`,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <div className="bg-white border border-black/5 shadow-xl rounded-2xl py-2 px-4 flex items-center gap-2">
+            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+            <p className="text-[13px] font-normal text-black tracking-tight whitespace-nowrap">
+              {toastAlert.message}
+            </p>
           </div>
         </div>
       )}

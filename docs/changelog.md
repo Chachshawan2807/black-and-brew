@@ -97,3 +97,19 @@ pm run build ? (Exit Code 0)
 * **Action**: แก้ไขสถาปัตยกรรม Vercel AI SDK ใน `api/chat/route.ts` โดยเปลี่ยนจาก `streamText` เป็น `ToolLoopAgent` เนื่องจากเวอร์ชัน `ai@6.0.190` ถูกถอด `maxSteps` ใน `streamText` ออกไป ทำให้ AI ไม่สามารถรัน Multi-step tool calls แบบเก่าได้
 * **Action**: อัปเดต `COLUMN_ALIASES` ใน `database-tools.ts` เพื่อดักจับ (Intercept) ความผิดพลาดที่ AI มักเดาชื่อ Column ใน Database ผิด (เช่น `shift_date` เป็น `start_time` และ `name` เป็น `full_name`) ทำให้ AI ตอบคำถามได้ถูกต้องโดยไม่ Crash
 * **Result**: AI กลับมาประมวลผลตารางงาน (Shifts) และสภาพอากาศได้อย่างสมบูรณ์แบบ ตอบเป็นภาษาไทยตาม System Prompt ที่วางไว้
+
+## 2026-06-01 (v6.1 - PWA & Mobile UI/UX Overhaul)
+
+* **Execution**: [GLOBAL ARCHITECTURE: IMPLEMENT 100% PWA SUPPORT WITH ZERO DESKTOP IMPACT]
+* **Action**: พัฒนาระบบตารางงานและอินเตอร์เฟสให้รองรับการทำงานในรูปแบบ Progressive Web App (PWA) สากลอย่างเต็มรูปแบบ โดยคำนึงถึง Zero Desktop Impact
+  * **PWA Setup**: สร้างไฟล์โครงสร้างหลักสำหรับบริการ PWA ประกอบด้วย `src/app/manifest.ts` (ข้อมูล Metadata สำหรับการติดตั้งแอป) และ `public/sw.js` (Service Worker ที่ใช้กลยุทธ์ Network-First แบบมี Cache Busting เพื่อความสดใหม่ของตารางงาน)
+  * **App Shell & Register**: พัฒนาคอมโพเนนต์ `PwaRegister.tsx` เพื่อตรวจสอบและลงทะเบียน Service Worker ในฝั่งไคลเอนต์แบบออฟไลน์ พร้อมทั้งเชื่อมโยงเข้าสู่ `src/app/[locale]/layout.tsx` ของแอปพลิเคชันหลัก
+  * **PWA Metadata**: ฝัง Meta Tags สำหรับ iOS และ Mobile Add-to-Home-Screen เช่น `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style` และสระสี Theme ใน Root Layout
+* **Execution**: [MOBILE UI/UX RESPONSIVE OVERHAUL & ACCESSIBILITY ENHANCEMENTS]
+* **Action**: ปรับปรุงการออกแบบและการจัดวางเลย์เอาต์บนอุปกรณ์เคลื่อนที่เพื่อตอบรับมาตรฐาน Mobile-First & Touch Target Standards
+  * **Custom Popover Calendar**: พัฒนาปฏิทินแบบกำหนดเองแทนดีฟอลต์ของเบราว์เซอร์ โดยแสดงผลเป็น Modal กึ่งกลางหน้าจออย่างสมบูรณ์แบบบนมือถือ (`max-md:fixed max-md:inset-0`) พร้อม Backdrop ปิด และออกแบบปุ่มแบบ Capsule สวยงามเข้ากับสไตล์มินิมัลพาสเทล
+  * **Global Date Picker Accessibility**: ปรับให้พื้นที่ทั้งหมดของกรอบ Input วันที่สามารถกดคลิกได้ (Full-width clickable area) โดยขยาย Hitbox ให้ครอบคลุมทั้ง Container
+  * **Mobile Safe Zones & Layout Padding**: ปรับปรุงหน้าจอ Modals และแถบเมนูด้านล่างให้รอบรับ iOS Home Indicator ผ่าน Tailwind Utility `max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]` เพื่อหลีกเลี่ยงแถบระบบบังปุ่ม
+  * **Card Grid Representation**: ปรับหน้าแดชบอร์ดพนักงาน (`LiveShiftList.tsx`) และหน้าตารางงานพนักงานให้อ่านง่าย จัดวางการ์ดแบบ Fluid และแก้ไขปัญหา z-index ซ้อนทับระหว่างปุ่มเลือกวันที่กับการ์ดสรุปผลงาน
+* **Result**: ระบบผ่านการรันและคอมไพล์ในรูปแบบ PWA ได้อย่างไร้รอยต่อ แสดงผลบนอุปกรณ์มือถือได้อย่างลื่นไหลเทียบเท่า Native App โดยไม่มีการเปลี่ยนแปลงหรือส่งผลกระทบใดๆ ต่อหน้าจอเวอร์ชันเดสก์ท็อป
+* **Verification**: `npm run build` ✓ (25/25 Pages, Build pass perfectly with Zero-Bold policy compliance)

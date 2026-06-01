@@ -88,6 +88,21 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 - **NextConfig cacheComponents compatibility**: Route-level configurations such as `export const dynamic = 'force-dynamic';` are strictly avoided inside layout/page definitions because they conflict with custom configurations such as `nextConfig.cacheComponents` in Turbopack. Route freshness is instead maintained by applying `cache: 'no-store'` inside fetches and utilizing server actions for path revalidation.
 
+### 10. Progressive Web App (PWA) & Mobile-First Standards (v6.1)
+
+- **Dynamic App Manifest (`src/app/manifest.ts`)**: Defines metadata, standalone display mode, orientation, app icons (192x192, 512x512 maskable/any) and the Morning Latte Cream `#fdfcf0` theme/background color.
+- **Service Worker Cache Strategy (`public/sw.js`)**:
+  - Implements a Network-First strategy with aggressive cache-busting to ensure that dynamically modified rosters, schedules, and inventory levels are always up-to-date while offering offline baseline rendering.
+  - Skips waiting on install and takes immediate control of clients.
+- **PWA Registry Component (`src/components/PwaRegister.tsx`)**: Integrates within the main App Shell to quietly register the Service Worker in client environments without interrupting user flows.
+- **Full-Width Clickable Input Accessibility (Global Interaction Rules)**:
+  - All date pickers across the app are wrapped in parent containers that render their entire horizontal hitbox interactive. Clicking anywhere within the border triggers the popover calendar.
+- **Responsive Calendar & Centered Mobile Date Modal**:
+  - Leverages Framer Motion popovers styled as clean minimalist capsules.
+  - On mobile viewports (`max-md:`), the calendar transitions dynamically into a fixed centered modal backdrop layer with a tap-to-close overlay, ensuring seamless touch targeting (Fat-finger protection).
+- **iOS Safe Zones Padding**:
+  - Bottom menu controllers and modal panels leverage iOS-specific home indicator safe area parameters using Tailwind utilities: `max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]` to avoid overlapping system navigation controls.
+
 ## 📂 Module Status
 
 | Module | DnD Status | Persistence | UI Mirroring |
@@ -109,5 +124,5 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ---
 
-Last Updated: 2026-06-01 [v6.0 AI Engine Integration]
+Last Updated: 2026-06-01 [v6.1 PWA & Mobile Overhaul]
 

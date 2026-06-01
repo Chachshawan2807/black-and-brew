@@ -7,6 +7,7 @@ import { CalendarDays, Users, GripVertical } from 'lucide-react';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter } from 'next/navigation';
 import { format, parseISO, isValid } from 'date-fns';
+import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import {
   DndContext,
   closestCorners,
@@ -226,41 +227,33 @@ export default function LiveShiftList({
 
   return (
     <div className="space-y-4 p-4 md:p-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 md:p-5 bg-white/80 backdrop-blur-xl border border-black/5 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.02)] mb-6">
+      <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 md:p-5 bg-white/80 backdrop-blur-xl border border-black/5 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.02)] mb-6">
         
         {/* แผงควบคุมฝั่งซ้าย: ไอคอน และ Double Capsule Date Picker */}
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-2xl bg-black/5">
-            <CalendarDays className="w-5 h-5 text-black/60" strokeWidth={1.5} />
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {/* กล่องแคปซูลวันที่เริ่มต้น */}
-            <div className="relative group">
-              <input 
-                type="date" 
-                value={startDate}
-                onChange={(e) => handleDateChange(e.target.value, endDate)}
-                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-11"
-              />
-              <div className="bg-white px-6 py-2.5 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal min-w-[130px] text-center transition-all group-hover:border-black/20 antialiased">
-                {startDate && isValid(parseISO(startDate)) ? format(parseISO(startDate), 'dd/MM/yyyy') : 'เริ่ม'}
-              </div>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto">
+          <div className="flex items-center gap-3 w-full">
+            <div className="p-3 rounded-2xl bg-black/5 shrink-0 hidden sm:flex">
+              <CalendarDays className="w-5 h-5 text-black/60" strokeWidth={1.5} />
             </div>
-
-            <span className="text-black font-normal select-none">—</span>
-
-            {/* กล่องแคปซูลวันที่สิ้นสุด */}
-            <div className="relative group">
-              <input 
-                type="date" 
-                value={endDate}
-                onChange={(e) => handleDateChange(startDate, e.target.value)}
-                min={startDate}
-                className="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-11"
-              />
-              <div className="bg-white px-6 py-2.5 rounded-full border border-black/5 shadow-sm text-black text-sm font-normal min-w-[130px] text-center transition-all group-hover:border-black/20 antialiased">
-                {endDate && isValid(parseISO(endDate)) ? format(parseISO(endDate), 'dd/MM/yyyy') : 'สิ้นสุด'}
+            
+            <div className="flex items-center gap-2 w-full">
+              <div className="flex-1">
+                <ClickableDatePicker
+                  value={startDate}
+                  onChange={(e) => handleDateChange(e.target.value, endDate)}
+                  placeholder="เริ่ม"
+                  containerClassName="w-full"
+                />
+              </div>
+              <span className="text-black font-normal select-none shrink-0">—</span>
+              <div className="flex-1">
+                <ClickableDatePicker
+                  value={endDate}
+                  onChange={(e) => handleDateChange(startDate, e.target.value)}
+                  min={startDate}
+                  placeholder="สิ้นสุด"
+                  containerClassName="w-full"
+                />
               </div>
             </div>
           </div>
