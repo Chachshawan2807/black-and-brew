@@ -2,7 +2,8 @@ import { google } from '@ai-sdk/google';
 import { streamText, stepCountIs } from 'ai';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { readTableTool } from '@/app/actions/tools/database-tools';
+import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
+import { weatherTool } from '@/app/actions/tools/internal-sources-tools';
 import { internetSearchTool } from '@/app/actions/tools/search-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
@@ -48,7 +49,7 @@ function classifyIntent(text: string): IntentScores {
     { pattern: /กะงาน|เวร|ตารางงาน/i, weight: 3 },
     { pattern: /shift/i, weight: 3 },
     { pattern: /พนักงาน|สต้าฟ|staff/i, weight: 2 },
-    { pattern: /ใครทำงาน|ใครเข้า|ใครออก/i, weight: 3 },
+    { pattern: /ใครทำงาน|ใครเข้า|ใครออก|เข้ากะ/i, weight: 3 },
     { pattern: /วันนี้|พรุ่งนี้|สัปดาห์นี้/i, weight: 1 }, // context signal เท่านั้น
   ];
 
@@ -225,7 +226,9 @@ function buildSystemPrompt(
 คุณคือ "บรู" (Bru) ผู้ช่วยสาวแสนสวยประจำร้านกาแฟ BLACKANDBREW
 - คุณเป็นผู้หญิง: ต้องใช้คำลงท้ายว่า "ค่ะ" หรือ "นะคะ" เท่านั้น
 - กฎเหล็ก: ห้าม! ใช้คำว่า "ครับ" หรือแทนตัวเองว่า "ผม" อย่างเด็ดขาด
-- ผู้ใช้คือ "คุณลูกค้า" หรือ "ผู้จัดการ" ห้ามทักทายผู้ใช้ว่า "บรู" เพราะนั่นคือชื่อของคุณ
+- ผู้ใช้คือ "คุณ" หรือ "ผู้จัดการ" ห้ามเรียกผู้ใช้ว่า "คุณลูกค้า" หากเป็นการคุยกับทีมงานหรือผู้จัดการ
+- คุณมีเครื่องมือ (Tools) สำหรับการดึงข้อมูลตารางกะงาน วันหยุด และสภาพอากาศ ให้เรียกใช้เครื่องมือเหล่านี้ทันทีเมื่อผู้ใช้สอบถาม ห้ามตอบปฏิเสธว่าไม่มีเครื่องมือเด็ดขาด
+- [CRITICAL] เมื่อคุณเรียกใช้งานเครื่องมือ (เช่น getDailyShifts หรือเช็คสภาพอากาศ) เสร็จสิ้นและได้ผลลัพธ์กลับมาแล้ว คุณมีหน้าที่ต้องนำข้อมูลผลลัพธ์นั้นมาประมวลผลและพิมพ์ข้อความสรุปคำตอบเป็นภาษาไทยภาษาพูดที่สั้น กระชับ ตรงประเด็นทันที ห้ามหยุดทำงานหรือส่งข้อความว่างเปล่า (Empty Response) กลับมาเด็ดขาด
 `.trim();
 
   // --- BASE SECTION (ส่งทุกครั้ง) ---
@@ -242,6 +245,7 @@ function buildSystemPrompt(
   1. ให้สันนิษฐานตามปีปัจจุบัน (${currentIsoDate}) โดยเลข 69 คือ พ.ศ. 2569 (ค.ศ. 2026) และ 26 คือ ค.ศ. 2026
   2. แปลงเป็นรูปแบบ YYYY-MM-DD เพื่อใช้กับ Tools ทันทีโดยไม่ต้องถามซ้ำหากสามารถอนุมานได้
   3. หากระบุเพียง "3/6" ให้ถือว่าเป็นวันที่ 3 เดือนมิถุนายน ของปีปัจจุบัน (${currentIsoDate.split('-')[0]})
+  4. สำหรับคำระบุเวลาเชิงสัมพัทธ์ (เช่น "วันนี้", "พรุ่งนี้", "เมื่อวาน"): ให้คำนวณวันที่ที่ถูกต้องโดยอ้างอิงจาก "วันที่ปัจจุบัน (ISO)" ที่ระบุไว้ในระบบ แล้วส่งค่า YYYY-MM-DD เข้าสู่ Tools ทันที
 
 [UI_INTEGRITY_RULES]
 - ทุกตาราง (Table) รวมถึงบน Desktop และภายใน Modal ต้องหุ้มด้วย <div className="w-full overflow-x-auto scrollbar-thin pb-8"> เสมอ ห้ามให้ตารางล้นขอบคอนเทนเนอร์เด็ดขาด และต้องมีระยะ pb-8 เพื่อไม่ให้ Scrollbar บดบังแถวสุดท้าย
@@ -252,7 +256,10 @@ function buildSystemPrompt(
 
 [DATA INTEGRITY & PRIVACY]
 - ห้ามแสดง UUID (เช่น 7777d2fc...) ในคำตอบเด็ดขาด ให้ใช้ชื่อบุคคลแทนเสมอ
-- ห้ามตอบเป็นตาราง ห้ามใช้ตัวหนา ตอบเป็นภาษาไทยเท่านั้น
+- ห้ามตอบเป็นตาราง ห้ามใช้ตัวหนา (ห้ามใช้ **) ตอบเป็นภาษาไทยเท่านั้น โดยใช้ \n สำหรับขึ้นบรรทัดใหม่
+- [CRITICAL] ส่วนของ "คำแนะนำ" ต้อง Hyper-Concise: สั้น กระชับ ตรงประเด็นขั้นสูงสุด
+- รูปแบบ: Bullet Points (เครื่องหมาย "-") เท่านั้น (ไม่เกิน 2-3 ข้อสั้นๆ) ห้ามเขียนเป็นพารากราฟยาว
+- ห้ามใช้คำเกริ่นนำที่เยิ่นเย้อ และห้ามใส่ประโยคห่วงใยหรือคำอวยพรปิดท้ายย่อหน้าเด็ดขาด
 - ห้ามเดาข้อมูลจากความรู้เดิม ยึด Tool output เป็น Source of Truth
 
 [หลักการใช้ข้อมูล]
@@ -314,7 +321,10 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
   if (intents.weather > 0) {
     sections.push(`
 [กฎการวิเคราะห์สภาพอากาศ]
+- ให้ใช้เครื่องมือ weatherTool ในการดึงข้อมูลพยากรณ์อากาศล่าสุด
 - อ้างอิงพิกัดร้านเสมอ: Lat ${STORE_LAT}, Lon ${STORE_LON}
+- [OPERATIONAL FILTER] วิเคราะห์และพยากรณ์อากาศเฉพาะช่วงเวลา 06:00 - 18:00 (Asia/Bangkok) เท่านั้น
+- ข้อมูลสภาพอากาศหรือฝนตกนอกช่วงเวลานี้ให้ตัดทิ้งทั้งหมด ไม่ต้องนำมาคำนวณหรือแสดงผล
 - เชื่อมโยงสภาพอากาศกับผลกระทบต่อธุรกิจ:
   เช่น ฝนตก → ลูกค้าน้อยลง / ส่งของล่าช้า / พนักงานมาสาย
 - ถ้ามีทั้ง weather + schedule/inventory ให้วิเคราะห์ผลกระทบร่วมด้วย
@@ -357,8 +367,17 @@ function selectTools(intents: IntentScores): {
   const tools: Record<string, any> = {};
   let maxSteps = 1;
 
-  const needsDB = intents.schedule >= INTENT_THRESHOLD
-    || intents.inventory >= INTENT_THRESHOLD
+  if (intents.schedule >= INTENT_THRESHOLD) {
+    tools.getDailyShifts = wrapTool(getDailyShiftsTool);
+    maxSteps = Math.max(maxSteps, 5);
+  }
+
+  if (intents.weather >= INTENT_THRESHOLD) {
+    tools.weatherTool = wrapTool(weatherTool);
+    maxSteps = Math.max(maxSteps, 3);
+  }
+
+  const needsDB = intents.inventory >= INTENT_THRESHOLD
     || intents.maintenance >= INTENT_THRESHOLD
     || intents.holiday >= INTENT_THRESHOLD;
 
@@ -431,7 +450,7 @@ export async function POST(req: Request) {
     const result = await streamText({
       model: google('gemini-2.5-flash'),
       messages: coreMessages,
-      stopWhen: stepCountIs(maxSteps),
+      maxSteps: maxSteps,
       system: systemPrompt,
       providerOptions: {
         google: {
@@ -460,7 +479,7 @@ export async function POST(req: Request) {
         : undefined,
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toDataStreamResponse();
 
   } catch (error) {
     // [UPGRADE 8] Structured error response พร้อม error type

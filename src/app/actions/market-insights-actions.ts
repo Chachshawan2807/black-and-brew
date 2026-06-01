@@ -121,7 +121,7 @@ export async function getMarketInsights() {
       ? internalData.map(i => `${i.name} (${i.count} units)`).join(', ')
       : 'ไม่มีข้อมูลยอดขายสะสมในช่วง 6 เดือนที่ผ่านมาค่ะ';
 
-    const { text } = await generateText({
+    const { text } = await generateText({ // ปรับใช้ตามคำสั่งเพื่อให้สอดคล้องกับเวอร์ชันที่ใช้งานได้
       model: google('gemini-2.5-flash'),
       system: `คุณคือ "บรู" AI ผู้ช่วยผู้จัดการหญิงของร้าน BLACKANDBREW 
       สรุปอินไซต์ตลาดและพฤติกรรมผู้บริโภคย่านลำลูกกาให้กระชับ ตรงประเด็นขั้นสูงสุด (Hyper-Concise)

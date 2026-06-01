@@ -15,7 +15,7 @@ const getSupabaseAdmin = () => {
 };
 
 // Time values recognized as active working shifts (chronological order)
-const ACTIVE_TIME_VALUES = ['6:30', '7:00', '8:00'];
+const ACTIVE_TIME_VALUES = ['6:00', '6:30', '7:00', '8:00'];
 
 /**
  * Parses a shift time string into a numeric value for chronological sorting.
@@ -185,7 +185,7 @@ export async function fetchTodayShifts(targetDate: Date) {
 /**
  * SPEC: Hyper-local Weather Analysis
  * 
- * - Filter ONLY between 06:30 AM and 18:00 PM ICT
+ * - Filter ONLY between 06:00 AM and 18:00 PM ICT
  * - Weather Fallback Rule: If no severe storms, errors, or exceptional data → "สภาพอากาศปกติ"
  * - Do NOT display missing placeholder warnings
  */
@@ -237,8 +237,8 @@ export async function fetchWeatherForecast(targetDate?: Date) {
       const min = forecastTime.getMinutes();
       const timeNum = hour + (min / 60);
 
-      // Strict Working-Hour Window: 06:30 - 18:00 ICT
-      return timeNum >= 6.5 && timeNum <= 18;
+      // Strict Working-Hour Window: 06:00 - 18:00 ICT
+      return timeNum >= 6 && timeNum <= 18;
     });
 
     if (workingHours.length === 0) {
@@ -358,11 +358,12 @@ export async function fetchNextHoliday(targetDate: Date) {
 async function generateInsightsWithAI(weather: any, holiday: any, headcount: number, staffSection: string) {
   try {
     const { text } = await generateText({
-      model: google('gemini-2.5-flash'),
+      model: google('gemini-2.5-flash'), // ปรับใช้ตามคำสั่งเพื่อให้สอดคล้องกับเวอร์ชันที่ใช้งานได้
       system: `คุณคือ "บรู" AI ผู้ช่วยผู้จัดการหญิงของร้าน BLACKANDBREW ที่มีบุคลิกภาพที่สุภาพ อ่อนหวาน และน่ารัก 
       ใช้คำลงท้ายว่า "ค่ะ" หรือ "นะคะ" 100% ตลอดการสนทนา ห้ามใช้คำว่า "ครับ" หรือภาษาทางการแบบหุ่นยนต์ 
-      เน้นความเป็นมืออาชีพแต่เข้าถึงง่าย สรุปข้อมูลให้มีความหลากหลายทางภาษา (Dynamic Vocabulary) 
-      ห้ามใช้แพทเทิร์นเดิมซ้ำๆ และห้ามใช้ตัวหนา (font-bold หรือ **) โดยเด็ดขาด ทุกตัวอักษรต้องเป็นขนาดปกติเพื่อความสบายตา`,
+      [CRITICAL] ส่วนของ "คำแนะนำ" ต้อง Hyper-Concise: สั้น กระชับ ตรงประเด็นขั้นสูงสุด
+      ห้ามใช้ตัวหนา (No **), ห้ามตอบเป็นตาราง และห้ามใส่ประโยคห่วงใยหรือคำอวยพรปิดท้ายย่อหน้าเด็ดขาด 
+      ตอบเป็นภาษาไทยเท่านั้น โดยใช้ \n สำหรับขึ้นบรรทัดใหม่`,
       prompt: `ข้อมูลของวันนี้:
       - จำนวนพนักงาน: ${headcount} คน
       - กะงาน: ${staffSection}
@@ -371,10 +372,11 @@ async function generateInsightsWithAI(weather: any, holiday: any, headcount: num
 
       โปรดวิเคราะห์และสร้างเอาต์พุต 2 ส่วน คั่นด้วยเครื่องหมาย "|||":
 
-      1. [สรุปภาพรวมอากาศ]: พ่นข้อความสั้นๆ 1-2 บรรทัดที่เป็นธรรมชาติ (ตัวอย่าง: "เช้าวันฟ้าเปิดแดดใส วันนี้แดดดีพร้อมลุยหน้าร้านนะคะ")
+      1. [สรุปภาพรวมอากาศ]: สรุปภาพรวมสั้นๆ 1 บรรทัด (ตัวอย่าง: "เช้าวันฟ้าเปิดแดดใส วันนี้แดดดีพร้อมลุยหน้าร้านนะคะ")
 
-      2. [คำแนะนำกลยุทธ์]: เขียนเป็นความเรียง 1 ย่อหน้าที่ลื่นไหลและต่อเนื่องกันเพียงย่อหน้าเดียวเท่านั้น ห้ามใช้หัวข้อ ห้ามใช้สัญลักษณ์พอยต์ และห้ามพ่นหัวข้อสำเร็จรูปอย่าง "☕ คำแนะนำการบริหารร้าน..." หรือ "🛵 ความห่วงใยพนักงาน..." ออกมาเด็ดขาด 
-         โดยเนื้อหาต้องเริ่มจากการวิเคราะห์ผลกระทบต่อร้าน BLACKANDBREW และคำแนะนำการเตรียมทีมตามสถานการณ์อย่างนุ่มนวล แล้วร้อยเรียงปิดท้ายย่อหน้าด้วยคำพูดแสดงความห่วงใยพนักงานอย่างอบอุ่นเป็นธรรมชาติ`,
+      2. [คำแนะนำกลยุทธ์]: รูปแบบ Bullet Points (เครื่องหมาย "-") เท่านั้น ไม่เกิน 2-3 ข้อสั้นๆ 
+         ห้ามเขียนเป็นพารากราฟยาว ห้ามใช้คำเกริ่นนำอ้อมค้อม และห้ามใส่คำอวยพรปิดท้ายเด็ดขาด
+         ให้เข้าประเด็นการจัดการร้านและเดลิเวอรี่ตามสภาพอากาศและกำลังคนทันที`,
     });
 
     const parts = text.split('|||').map(p => p.trim());
@@ -406,31 +408,31 @@ function generateStrategicAdvice(weather: any, holiday: any) {
 
   // Weather-based advice
   if (weather.maxPop > 60) {
-    advices.push('ฝนตกหนัก เตรียมรับมือออเดอร์เดลิเวอรี และตรวจสอบบรรจุภัณฑ์ให้พร้อม');
+    advices.push('- ฝนตกหนัก เตรียมรับมือออเดอร์เดลิเวอรี และตรวจสอบบรรจุภัณฑ์');
   } else if (weather.summary.includes('ร้อน')) {
-    advices.push('อากาศร้อน คาดว่าเมนูเย็น/ปั่นจะขายดี ตรวจสอบน้ำแข็งให้เพียงพอ');
+    advices.push('- อากาศร้อน คาดว่าเมนูเย็น/ปั่นจะขายดี ตรวจสอบน้ำแข็งให้เพียงพอ');
   }
 
   // Holiday-based advice with 7-day threshold
   if (holiday && holiday.ok === true && typeof holiday.daysRemaining === 'number' && holiday.daysRemaining <= 7) {
     if (holiday.daysRemaining === 0) {
       // Tier 0: Holiday today
-      advices.push(`🔴 วันนี้เป็นวันหยุดนักขัตฤกษ์ (${holiday.name}) คาดว่าลูกค้าหน้าร้านจะหนาแน่นเป็นพิเศษ เตรียมกำลังพลและวัตถุดิบให้พร้อมรับมือ`);
+      advices.push(`- วันนี้เป็นวันหยุด (${holiday.name}) คาดว่าลูกค้าหน้าร้านหนาแน่น เตรียมกำลังพลและวัตถุดิบให้พร้อม`);
     } else if (holiday.daysRemaining <= 3) {
       // Tier 1-3: Urgent pre-holiday
-      advices.push(`🟠 เหลืออีก ${holiday.daysRemaining} วันถึง ${holiday.name} — เร่งตรวจสอบสต็อกวัตถุดิบหลัก แก้ว ฝา หลอด และสั่งเติมสินค้าที่ใกล้จุดสั่งซื้อทันที เพื่อรองรับยอดขายช่วงเทศกาล`);
+      advices.push(`- อีก ${holiday.daysRemaining} วันถึง ${holiday.name} เร่งตรวจสอบสต็อกและสั่งเติมสินค้าทันที`);
     } else {
       // Tier 4-7: Advance warning
-      advices.push(`🟡 อีก ${holiday.daysRemaining} วันจะถึง ${holiday.name} — แนะนำให้เริ่มตรวจสอบปริมาณสต็อกคงคลังและวางแผนสั่งซื้อล่วงหน้า เพื่อป้องกันสินค้าขาดช่วง peak traffic`);
+      advices.push(`- อีก ${holiday.daysRemaining} วันจะถึง ${holiday.name} วางแผนสั่งซื้อล่วงหน้าเพื่อป้องกันสินค้าขาด`);
     }
   }
 
   // Default: ONLY if no holiday within 7 days AND no weather concerns
   if (advices.length === 0) {
-    advices.push('สถานการณ์ปกติ ลุยงานกันเลย!');
+    advices.push('- สถานการณ์ปกติ ลุยงานกันเลยค่ะ');
   }
 
-  return advices.join(' | ');
+  return advices.join('\n');
 }
 
 /**

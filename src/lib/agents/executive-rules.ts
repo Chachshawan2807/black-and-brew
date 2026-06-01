@@ -22,6 +22,8 @@ export const EXECUTIVE_RULES = {
     }
   },
   ai_processing_rules: {
+    weather_operational_window:
+      'จำกัดการวิเคราะห์สภาพอากาศและฝนเฉพาะช่วงเวลา 06:00 - 18:00 (Asia/Bangkok) เท่านั้น และตัดข้อมูลนอกช่วงเวลาดังกล่าวทิ้งทั้งหมด',
     in_memory_comparison_policy:
       'เมื่อคำถามต้องใช้การเปรียบเทียบ/อสมการ/คำนวณ (เช่น stock < order_point หรือการประเมินงานซ่อมใกล้ครบกำหนด) ให้ดึงข้อมูลด้วย readTable ตาม preset ก่อน แล้วประมวลผล filter/sort/calculate ในหน่วยความจำของ AI เอง ห้ามคาดหวังให้ readTable filter แบบ <, >, <=, >= ที่ฝั่งฐานข้อมูล',
     inventory_low_stock_evaluation:
@@ -44,6 +46,7 @@ export const EXECUTIVE_RULES = {
       trigger: 'เมื่อตรวจพบสินค้าที่ stock < order_point จากการประเมิน in-memory',
       header: '📦 สรุปรายการสินค้าที่ต้องสั่งเติม',
       format_rules: [
+        'ใช้รูปแบบ Hyper-Concise (สั้น กระชับ ตรงประเด็น) ห้ามเกริ่นนำหรือลงท้ายด้วยประโยคห่วงใย',
         'แสดงเป็นรายการ (list) โดยเรียงจากสินค้าที่ขาดมากที่สุดก่อน',
         'แต่ละรายการต้องแสดงครบ 4 ฟิลด์ตามลำดับนี้:',
         '  1) ชื่อสินค้า (name)',

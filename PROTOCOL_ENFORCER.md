@@ -21,7 +21,7 @@
 ## Table Responsiveness Standard (DEC-056/057)
 
 - **Standard**: ทุกตารางข้อมูล (รวมถึงบน Desktop และ Modal) ต้องไม่ล้นขอบคอนเทนเนอร์และรองรับการเลื่อนในแนวนอน
-- **Implementation**: 
+- **Implementation**:
   1. ต้องห่อหุ้มตารางด้วย `<div className="w-full overflow-x-auto scrollbar-thin border border-black/5 rounded-3xl pb-8">` เสมอ (เพิ่ม pb-8 เพื่อกัน Scrollbar บังเนื้อหา)
   2. ตัวตารางต้องมี `w-full` และ `min-width` ที่เหมาะสม (เช่น `min-w-[1000px]` สำหรับตารางจัดการกะ)
   3. ปรับลด Padding ของเซลล์ให้กระชับ (`px-2 py-2` หรือ `p-2`) เพื่อความหนาแน่นของข้อมูลที่เหมาะสม
@@ -35,7 +35,7 @@
 ## Modal Vertical Centering & Overflow (DEC-058)
 
 - **Standard**: หน้าต่างย่อย (Modal) ต้องไม่ยืดตัวจนล้นขอบจอแนวตั้ง และต้องอยู่กึ่งกลางหน้าจอเสมอ
-- **Implementation**: 
+- **Implementation**:
   1. บังคับใช้ `max-h-[90vh]` และ `overflow-y-auto scrollbar-thin` ที่กล่องเนื้อหาหลัก (White Box)
   2. บังคับใช้ `flex items-center justify-center p-4` ที่ Overlay ฉากหลัง
 
