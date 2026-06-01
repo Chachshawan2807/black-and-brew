@@ -1,9 +1,8 @@
 import { google } from '@ai-sdk/google';
-import { streamText, stepCountIs } from 'ai';
+import { streamText, stepCountIs, ToolLoopAgent } from 'ai';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
-import { weatherTool } from '@/app/actions/tools/internal-sources-tools';
+import { readTableTool } from '@/app/actions/tools/database-tools';
 import { internetSearchTool } from '@/app/actions/tools/search-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
@@ -367,35 +366,24 @@ function selectTools(intents: IntentScores): {
   const tools: Record<string, any> = {};
   let maxSteps = 1;
 
-  if (intents.schedule >= INTENT_THRESHOLD) {
-    tools.getDailyShifts = wrapTool(getDailyShiftsTool);
-    maxSteps = Math.max(maxSteps, 5);
-  }
-
-  if (intents.weather >= INTENT_THRESHOLD) {
-    tools.weatherTool = wrapTool(weatherTool);
-    maxSteps = Math.max(maxSteps, 3);
-  }
-
   const needsDB = intents.inventory >= INTENT_THRESHOLD
     || intents.maintenance >= INTENT_THRESHOLD
-    || intents.holiday >= INTENT_THRESHOLD;
+    || intents.holiday >= INTENT_THRESHOLD
+    || intents.schedule >= INTENT_THRESHOLD; // schedule uses readTable now
 
   if (needsDB) {
     tools.readTable = wrapTool(readTableTool);
-    maxSteps = Math.max(maxSteps, 3);
+    maxSteps = Math.max(maxSteps, 5); // higher maxSteps for DB operations
   }
 
-  if (intents.externalSearch >= INTENT_THRESHOLD) {
+  if (intents.externalSearch >= INTENT_THRESHOLD || intents.weather >= INTENT_THRESHOLD) {
+    // weather can use internet search
     tools.internetSearchTool = wrapTool(internetSearchTool);
     maxSteps = Math.max(maxSteps, 4);
   }
 
-  // [UPGRADE 5.1] Composite intent: ถ้าต้องการทั้ง weather + schedule
-  // เพิ่ม steps เพราะ reasoning ซับซ้อนขึ้น
-  const isComposite = (intents.weather >= INTENT_THRESHOLD)
-    && (intents.schedule >= INTENT_THRESHOLD || intents.inventory >= INTENT_THRESHOLD);
-  if (isComposite) {
+  // Composite intent
+  if (needsDB && (intents.externalSearch >= INTENT_THRESHOLD || intents.weather >= INTENT_THRESHOLD)) {
     maxSteps = Math.max(maxSteps, 5);
   }
 
@@ -447,26 +435,25 @@ export async function POST(req: Request) {
     // [UPGRADE 4] Dynamic system prompt
     const systemPrompt = buildSystemPrompt(intents, currentIsoDate, currentThaiDate);
 
-    const result = await streamText({
+    const agent = new ToolLoopAgent({
       model: google('gemini-2.5-flash'),
-      messages: coreMessages,
-      maxSteps: maxSteps,
-      system: systemPrompt,
+      instructions: systemPrompt,
+      ...(enabledTools ? { 
+        tools: enabledTools,
+        stopWhen: stepCountIs(maxSteps)
+      } : {}),
       providerOptions: {
         google: {
           generationConfig: {
             maxOutputTokens: 1200,
-            // [UPGRADE 6] ปรับ temperature แบบ dynamic
-            // คำถามที่ต้องการข้อมูลจาก DB → temperature ต่ำ (แม่นยำ)
-            // คำถามทั่วไป → temperature สูงขึ้นเล็กน้อย (เป็นธรรมชาติ)
             temperature: enabledTools ? 0.05 : 0.3,
           },
         },
       },
-      tools: enabledTools,
+    });
 
-      // [UPGRADE 7] onStepFinish: logging แบบ lightweight สำหรับ debug
-      // จะ log เฉพาะ development mode เท่านั้น ไม่กระทบ production
+    const result = await agent.stream({
+      messages: coreMessages,
       onStepFinish: process.env.NODE_ENV === 'development'
         ? ({ toolCalls, toolResults }) => {
             if (toolCalls && toolCalls.length > 0) {
@@ -479,7 +466,7 @@ export async function POST(req: Request) {
         : undefined,
     });
 
-    return result.toDataStreamResponse();
+    return result.toUIMessageStreamResponse();
 
   } catch (error) {
     // [UPGRADE 8] Structured error response พร้อม error type

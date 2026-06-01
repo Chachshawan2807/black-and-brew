@@ -4,6 +4,14 @@
 
 ---
 
+### DEC-061: AI Multi-Step Reasoning & SDK Upgrades (v6.0)
+
+- **Date:** June 1, 2026
+- **Context:** `streamText` ใน AI SDK (`ai@6.0.190`) ถูกตัดคุณสมบัติ `maxSteps` ออกไป ทำให้ AI ไม่สามารถวนลูปใช้งาน Tool และตอบสนองในแชทได้อย่างต่อเนื่อง ทำให้เกิดปัญหาเครื่องมือทำงานได้แต่แชทไม่ตอบ
+- **Decision:** เปลี่ยนโค้ดจากการใช้ `streamText` เป็นการใช้ `ToolLoopAgent` ของระบบ เพื่อรองรับ multi-step reasoning และยุบรวม AI tools เหลือเพียงเครื่องมืออ่านสากล `readTableTool` (Universal DB Reader) และเครื่องมือค้นหาผ่านเว็บ `internetSearchTool` อย่างเข้มงวด
+- **Impact:** AI สามารถโต้ตอบในรูปแบบซับซ้อน เช่น หาสภาพอากาศแล้วคำนวณปริมาณสินค้าที่ต้องเตรียมล่วงหน้าได้ พร้อมการดึงข้อมูลจากหลายตารางตามขั้นตอนได้อย่างเสถียรที่สุด โดยไม่มีอาการพิมพ์ชะงัก
+- **Evidence:** `src/app/api/chat/route.ts`, `docs/changelog.md`
+
 ### DEC-046: AI System Prompt - Store Location & Weather Context (v4.5)
 
 - **Date:** May 30, 2026

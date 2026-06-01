@@ -90,3 +90,12 @@ pm run build ? (Exit Code 0)
 * **Action**: ยืนยันมาตรฐาน High-Contrast Black Policy สำหรับ UI และระบบพยากรณ์อากาศพิกัดบึงคำพร้อย
 * **Result**: ระบบมีความเสถียรเชิงโครงสร้างสูงสุด ผ่านการตรวจสอบ Type Safety และพร้อมสำหรับ Production
 * **Verification**: `npm run build` ✓ (25/25 Pages)
+
+## 2026-06-01 (v6.0)
+
+* **Execution**: [REBIRTH PROTOCOL: AI MULTI-STEP STREAMING REFACTOR]
+* **Action**: ค้นพบว่า Next.js AI SDK รุ่นใหม่ `ai@6.0.190` นำความสามารถการวนลูป `maxSteps` ออกจาก `streamText`
+* **Action**: รีแฟกเตอร์ระบบไปใช้ `ToolLoopAgent` ของระบบสถาปัตยกรรมใหม่ เพื่อจัดการ Multi-step reasoning ให้ AI ทำงานร่วมกับเครื่องมือได้สมบูรณ์และตอบกลับผู้ใช้สำเร็จ
+* **Action**: ลบเครื่องมือย่อยออกจาก `route.ts` ให้สอดคล้องกับสถาปัตยกรรม `readTableTool` สากล 
+* **Result**: AI สามารถตอบแชทด้วยผลลัพธ์ข้อมูลจาก DB ได้อย่างสมบูรณ์ และการทดสอบ build ผ่าน 100%
+* **Verification**: `npm run build` ✓ (Exit Code 0)

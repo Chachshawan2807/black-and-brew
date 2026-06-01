@@ -24,53 +24,59 @@ const adminClient = createClient(supabaseUrl!, supabaseServiceKey!, {
   }
 });
 
-/** Maps legacy/wrong AI column names to verified inventory_items schema. */
-const INVENTORY_ITEM_COLUMN_ALIASES: Record<string, string> = {
-  item_name: 'name',
-  quantity: 'stock',
-  min_stock: 'order_point',
+const COLUMN_ALIASES: Record<string, Record<string, string>> = {
+  inventory_items: {
+    item_name: 'name',
+    quantity: 'stock',
+    min_stock: 'order_point',
+  },
+  service_records: {
+    machine_name: 'equipment',
+    maintenance_date: 'start_date',
+    recorded_at: 'start_date',
+    operator: 'person_in_charge',
+    description: 'work_details',
+  },
+  shifts: {
+    shift_date: 'start_time',
+    date: 'start_time',
+    employee: 'employee_id'
+  },
+  profiles: {
+    name: 'full_name'
+  },
+  holidays: {
+    holiday_date: 'date',
+    holiday_name: 'name'
+  }
 };
 
 const INVENTORY_ITEMS_PRESET =
   'id, name, unit, source, order_point, target_stock, stock, order_qty';
 
-function normalizeInventoryItemColumns(columns: string): string {
-  return columns
-    .split(',')
-    .map((col) => col.trim())
-    .filter(Boolean)
-    .map((col) => INVENTORY_ITEM_COLUMN_ALIASES[col] ?? col)
-    .join(', ');
-}
-
-/** Maps legacy/wrong AI column names to verified service_records schema. */
-const SERVICE_RECORD_COLUMN_ALIASES: Record<string, string> = {
-  machine_name: 'equipment',
-  maintenance_date: 'start_date',
-  recorded_at: 'start_date',
-  operator: 'person_in_charge',
-  description: 'work_details',
-};
-
 const SERVICE_RECORDS_PRESET =
   'id, start_date, equipment, detected_problem, task_type, work_details, cost, recommended_frequency, person_in_charge, status, completion_date, notes';
 
-function normalizeServiceRecordColumns(columns: string): string {
+function getRealColumnName(tableName: string, col: string): string {
+  return COLUMN_ALIASES[tableName]?.[col] ?? col;
+}
+
+function normalizeColumns(tableName: string, columns: string): string {
   return columns
     .split(',')
     .map((col) => col.trim())
     .filter(Boolean)
-    .map((col) => SERVICE_RECORD_COLUMN_ALIASES[col] ?? col)
+    .map((col) => getRealColumnName(tableName, col))
     .join(', ');
 }
 
 export const readTableTool = tool({
   description:
-    'สแกนและอ่านข้อมูลจากตารางใดก็ได้ในฐานข้อมูล (Universal Read Access) สามารถระบุคอลัมน์และเงื่อนไขการกรองได้ — inventory_items: name/stock/order_point (ไม่ใช่ item_name/quantity/min_stock); service_records: equipment/start_date/person_in_charge (ไม่ใช่ machine_name/maintenance_date/operator/recorded_at)',
+    'สแกนและอ่านข้อมูลจากตารางใดก็ได้ในฐานข้อมูล (Universal Read Access) สามารถระบุคอลัมน์และเงื่อนไขการกรองได้ — inventory_items: name/stock/order_point (ไม่ใช่ item_name/quantity/min_stock); service_records: equipment/start_date/person_in_charge; shifts: start_time/end_time/status; profiles: full_name; holidays: date/name',
   inputSchema: z.object({
-    tableName: z.string().describe('ชื่อตารางที่ต้องการอ่าน'),
+    tableName: z.string().describe('ชื่อตารางที่ต้องการอ่าน (เช่น shifts, profiles, holidays, inventory_items, service_records)'),
     columns: z.string().optional().describe(
-      'คอลัมน์ที่ต้องการ (เช่น "id, name, stock"). inventory_items: id, name, unit, source, order_point, target_stock, stock, order_qty. service_records: id, start_date, equipment, detected_problem, task_type, work_details, cost, recommended_frequency, person_in_charge, status, completion_date, notes. หากไม่ส่ง/เป็น "*" จะใช้ preset ตามตาราง'
+      'คอลัมน์ที่ต้องการ (เช่น "id, name, stock"). หากไม่ส่ง/เป็น "*" จะใช้ preset ตามตาราง'
     ),
     filters: z.record(z.string(), z.any()).optional().describe('เงื่อนไขการกรอง (Key-Value pair สำหรับ equality check)'),
     limit: z.number().max(100).default(50).describe('จำกัดจำนวนแถวที่ดึงมา')
@@ -90,11 +96,9 @@ export const readTableTool = tool({
       const normalizedColumns = (columns ?? '').trim();
       const shouldUsePreset = !normalizedColumns || normalizedColumns === '*';
       let selectedColumns = shouldUsePreset ? (TABLE_COLUMN_PRESETS[tableName] ?? '*') : columns!;
-      if (tableName === 'inventory_items' && !shouldUsePreset) {
-        selectedColumns = normalizeInventoryItemColumns(selectedColumns);
-      }
-      if (tableName === 'service_records' && !shouldUsePreset) {
-        selectedColumns = normalizeServiceRecordColumns(selectedColumns);
+      
+      if (!shouldUsePreset) {
+        selectedColumns = normalizeColumns(tableName, selectedColumns);
       }
 
       let query = adminClient
@@ -104,7 +108,13 @@ export const readTableTool = tool({
 
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
-          query = query.eq(key, value);
+          const realKey = getRealColumnName(tableName, key);
+          // Special handling for date filtering on start_time
+          if (tableName === 'shifts' && realKey === 'start_time' && typeof value === 'string' && value.length === 10) {
+            query = query.gte('start_time', `${value}T00:00:00`).lte('start_time', `${value}T23:59:59`);
+          } else {
+            query = query.eq(realKey, value);
+          }
         });
       }
 

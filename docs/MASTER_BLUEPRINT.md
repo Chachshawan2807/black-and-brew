@@ -108,5 +108,4 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ---
 
-Last Updated: 2026-05-21 [v3.24 DAILY CLOSING]
-
+Last Updated: 2026-06-01 [v3.25 DAILY CLOSING]
