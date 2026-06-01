@@ -1,6 +1,6 @@
 # BLACKANDBREW ERP: SKILL HARVESTING & SYNERGY BUNDLING
 
-> Last Scanned & Updated: 2026-06-01
+> Last Scanned & Updated: 2026-05-25
 
 ## CAPABILITY INVENTORY (คลังความสามารถปัจจุบัน)
 
@@ -76,5 +76,8 @@
 
 
 
-* **Schema Guardrails (CSV-Verified)**: `readTableTool` ใช้ preset + alias mapping สำหรับ `inventory_items` (`name`, `stock`, `order_point`) และ `service_records` เพื่อป้องกัน Postgres 42703
-* **AI Orchestrator Slim Tools**: `/api/chat` จำกัดเครื่องมือให้เหลือเพียง `readTableTool` และ `internetSearchTool` เพื่อให้ reasoning path มีความ deterministic
+* **Schema Guardrails (CSV-Verified)**: 
+eadTableTool �� preset + alias mapping ����Ѻ inventory_items (
+ame, stock, order_point) ��� service_records (start_date, equipment, person_in_charge, ���) �����Ŵ Postgres 42703 �ҡ����������
+* **AI Orchestrator Slim Tools**: /api/chat �ӡѴ�����ͧ������� 
+eadTable + internetSearchTool ����ͤ�� reasoning path ��� deterministic

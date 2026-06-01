@@ -2,7 +2,8 @@ import { google } from '@ai-sdk/google';
 import { streamText, stepCountIs, ToolLoopAgent } from 'ai';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { readTableTool } from '@/app/actions/tools/database-tools';
+import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
+import { weatherTool } from '@/app/actions/tools/internal-sources-tools';
 import { internetSearchTool } from '@/app/actions/tools/search-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
@@ -366,24 +367,35 @@ function selectTools(intents: IntentScores): {
   const tools: Record<string, any> = {};
   let maxSteps = 1;
 
+  if (intents.schedule >= INTENT_THRESHOLD) {
+    tools.getDailyShifts = wrapTool(getDailyShiftsTool);
+    maxSteps = Math.max(maxSteps, 5);
+  }
+
+  if (intents.weather >= INTENT_THRESHOLD) {
+    tools.weatherTool = wrapTool(weatherTool);
+    maxSteps = Math.max(maxSteps, 3);
+  }
+
   const needsDB = intents.inventory >= INTENT_THRESHOLD
     || intents.maintenance >= INTENT_THRESHOLD
-    || intents.holiday >= INTENT_THRESHOLD
-    || intents.schedule >= INTENT_THRESHOLD; // schedule uses readTable now
+    || intents.holiday >= INTENT_THRESHOLD;
 
   if (needsDB) {
     tools.readTable = wrapTool(readTableTool);
-    maxSteps = Math.max(maxSteps, 5); // higher maxSteps for DB operations
+    maxSteps = Math.max(maxSteps, 3);
   }
 
-  if (intents.externalSearch >= INTENT_THRESHOLD || intents.weather >= INTENT_THRESHOLD) {
-    // weather can use internet search
+  if (intents.externalSearch >= INTENT_THRESHOLD) {
     tools.internetSearchTool = wrapTool(internetSearchTool);
     maxSteps = Math.max(maxSteps, 4);
   }
 
-  // Composite intent
-  if (needsDB && (intents.externalSearch >= INTENT_THRESHOLD || intents.weather >= INTENT_THRESHOLD)) {
+  // [UPGRADE 5.1] Composite intent: ถ้าต้องการทั้ง weather + schedule
+  // เพิ่ม steps เพราะ reasoning ซับซ้อนขึ้น
+  const isComposite = (intents.weather >= INTENT_THRESHOLD)
+    && (intents.schedule >= INTENT_THRESHOLD || intents.inventory >= INTENT_THRESHOLD);
+  if (isComposite) {
     maxSteps = Math.max(maxSteps, 5);
   }
 

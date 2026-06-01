@@ -91,11 +91,9 @@ pm run build ? (Exit Code 0)
 * **Result**: ระบบมีความเสถียรเชิงโครงสร้างสูงสุด ผ่านการตรวจสอบ Type Safety และพร้อมสำหรับ Production
 * **Verification**: `npm run build` ✓ (25/25 Pages)
 
-## 2026-06-01 (v6.0)
+## 2026-06-01 (v6.0 - AI Engine Vercel SDK Fix)
 
-* **Execution**: [REBIRTH PROTOCOL: AI MULTI-STEP STREAMING REFACTOR]
-* **Action**: ค้นพบว่า Next.js AI SDK รุ่นใหม่ `ai@6.0.190` นำความสามารถการวนลูป `maxSteps` ออกจาก `streamText`
-* **Action**: รีแฟกเตอร์ระบบไปใช้ `ToolLoopAgent` ของระบบสถาปัตยกรรมใหม่ เพื่อจัดการ Multi-step reasoning ให้ AI ทำงานร่วมกับเครื่องมือได้สมบูรณ์และตอบกลับผู้ใช้สำเร็จ
-* **Action**: ลบเครื่องมือย่อยออกจาก `route.ts` ให้สอดคล้องกับสถาปัตยกรรม `readTableTool` สากล 
-* **Result**: AI สามารถตอบแชทด้วยผลลัพธ์ข้อมูลจาก DB ได้อย่างสมบูรณ์ และการทดสอบ build ผ่าน 100%
-* **Verification**: `npm run build` ✓ (Exit Code 0)
+* **Execution**: [REPAIR PROTOCOL: VERCEL AI SDK & DB SCHEMA ALIGNMENT]
+* **Action**: แก้ไขสถาปัตยกรรม Vercel AI SDK ใน `api/chat/route.ts` โดยเปลี่ยนจาก `streamText` เป็น `ToolLoopAgent` เนื่องจากเวอร์ชัน `ai@6.0.190` ถูกถอด `maxSteps` ใน `streamText` ออกไป ทำให้ AI ไม่สามารถรัน Multi-step tool calls แบบเก่าได้
+* **Action**: อัปเดต `COLUMN_ALIASES` ใน `database-tools.ts` เพื่อดักจับ (Intercept) ความผิดพลาดที่ AI มักเดาชื่อ Column ใน Database ผิด (เช่น `shift_date` เป็น `start_time` และ `name` เป็น `full_name`) ทำให้ AI ตอบคำถามได้ถูกต้องโดยไม่ Crash
+* **Result**: AI กลับมาประมวลผลตารางงาน (Shifts) และสภาพอากาศได้อย่างสมบูรณ์แบบ ตอบเป็นภาษาไทยตาม System Prompt ที่วางไว้

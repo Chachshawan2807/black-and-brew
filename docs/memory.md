@@ -4,14 +4,6 @@
 
 ---
 
-### DEC-061: AI Multi-Step Reasoning & SDK Upgrades (v6.0)
-
-- **Date:** June 1, 2026
-- **Context:** `streamText` ใน AI SDK (`ai@6.0.190`) ถูกตัดคุณสมบัติ `maxSteps` ออกไป ทำให้ AI ไม่สามารถวนลูปใช้งาน Tool และตอบสนองในแชทได้อย่างต่อเนื่อง ทำให้เกิดปัญหาเครื่องมือทำงานได้แต่แชทไม่ตอบ
-- **Decision:** เปลี่ยนโค้ดจากการใช้ `streamText` เป็นการใช้ `ToolLoopAgent` ของระบบ เพื่อรองรับ multi-step reasoning และยุบรวม AI tools เหลือเพียงเครื่องมืออ่านสากล `readTableTool` (Universal DB Reader) และเครื่องมือค้นหาผ่านเว็บ `internetSearchTool` อย่างเข้มงวด
-- **Impact:** AI สามารถโต้ตอบในรูปแบบซับซ้อน เช่น หาสภาพอากาศแล้วคำนวณปริมาณสินค้าที่ต้องเตรียมล่วงหน้าได้ พร้อมการดึงข้อมูลจากหลายตารางตามขั้นตอนได้อย่างเสถียรที่สุด โดยไม่มีอาการพิมพ์ชะงัก
-- **Evidence:** `src/app/api/chat/route.ts`, `docs/changelog.md`
-
 ### DEC-046: AI System Prompt - Store Location & Weather Context (v4.5)
 
 - **Date:** May 30, 2026
@@ -620,4 +612,12 @@ eadTable ��� internetSearchTool`r
 - **Context:** ต้องการลดความซับซ้อนของ AI reasoning และปิดจบงานประจำวัน
 - **Decision:** ยุบเครื่องมือย่อยใน `route.ts` ให้เหลือเพียง `readTable` และ `internetSearch` โดยใช้ Preset Columns ที่ตรวจสอบความถูกต้องแล้ว (CSV-Verified) และยืนยันความปลอดภัย API Keys
 - **Impact:** AI ตอบคำถามแม่นยำขึ้น ไม่หลงชื่อคอลัมน์ และระบบมีความปลอดภัยเชิงสถาปัตยกรรม 100%
-- **Impact:** Ŵ branching behavior �ͧ agent ��кѧ�Ѻ��� schema map ����Ǩҡ Universal DB reader
+- **Impact:** Ŵ branching behavior ͧ agent кѧѺ schema map Ǩҡ Universal DB reader
+
+### DEC-061: Vercel AI SDK ToolLoopAgent Migration (v6.0)
+
+- **Date:** June 1, 2026
+- **Context:** `streamText` ในไลบรารี `ai@6.0.190` ถูกนำ `maxSteps` ออกไป ทำให้ AI SDK ไม่สามารถวนลูป Multi-step tool calls แบบอัตโนมัติได้ เมื่อเรียก Tool สำเร็จระบบจึงหยุดทำงาน (finishReason: "tool-calls") ทันที ส่งผลให้หน้าจอไม่แสดงคำตอบ
+- **Decision:** เปลี่ยนสถาปัตยกรรมใน `/api/chat/route.ts` จากการใช้ `streamText` เป็นการเรียกใช้ `ToolLoopAgent` และบังคับลูปด้วย `stopWhen: stepCountIs(maxSteps)` แทน เพื่อให้ระบบหลังบ้านสามารถวนลูปประมวลผล Tool output แล้วส่งกลับให้ AI สรุปผลข้อความสุดท้ายได้ตามปกติ
+- **Impact:** แก้ไขปัญหาระบบแชทค้าง/ไม่ตอบกลับ AI สามารถใช้ Tools ซ้อนกันหลายขั้นตอนและสรุปผลเป็นข้อความภาษาไทยได้อย่างสมบูรณ์
+- **Evidence:** `src/app/api/chat/route.ts`

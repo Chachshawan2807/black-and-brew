@@ -33,9 +33,10 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 - **Model**: `gemini-2.5-flash` via `@ai-sdk/google`.
 - **Transport**: `DefaultChatTransport` (useChat hook) → `POST /api/chat`.
-- **Token Optimization**: Sliding window (`messages.slice(-4)`), `maxOutputTokens: 600`, ultra-minimalist system prompt.
-- **Tools**: Surgical partitioning — `getTodaySchedule`, `getLowStockItems`, `searchInventory`, `getInventoryItemDetails`, `recordTransaction`.
-- **Security**: AI reads via Supabase Security Definer RPCs (`get_ai_store_status`, `get_ai_inventory_item_details`) — read-only data layer.
+- **Architecture**: **ToolLoopAgent** is utilized instead of `streamText` for Server-Side multi-step tool execution. The agent iterates over tool calls and results automatically (`stopWhen: stepCountIs(maxSteps)`).
+- **Token Optimization**: Sliding window (`messages.slice(-4)`), `maxOutputTokens: 1200`, ultra-minimalist system prompt.
+- **Tools**: Surgical partitioning — `readTable`, `internetSearch`, etc. (using CSV-verified `COLUMN_ALIASES` to intercept hallucinated column names).
+- **Security**: AI reads via Supabase Service Role isolated tools — read-only data layer.
 - **Hydration**: `AIChatOverlay` uses `isMounted` guard (`useEffect(() => setIsMounted(true), []`) to prevent Math.random prerender errors. Loaded via `next/dynamic ssr:false` in `AIChatWrapper`.
 - **Branding & UI Polish**: Implemented a custom branding logo loaded dynamically via `/ai-agent-logo.svg` inside standard Next.js `<Image />` tags, overriding the generic Lucide `<Bot />` icons in the header, bubble avatars, and thinking indicators for maximum brand coherence.
 - **UI Enhancements (R0 Standard)**:
@@ -108,4 +109,5 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ---
 
-Last Updated: 2026-06-01 [v3.25 DAILY CLOSING]
+Last Updated: 2026-06-01 [v6.0 AI Engine Integration]
+
