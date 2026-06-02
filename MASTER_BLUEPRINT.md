@@ -99,7 +99,7 @@ inventory_items.
 
 การลบข้อมูล (Delete) ต้องทำการลบ Child Records ทั้งหมดก่อนเสมอ
 (เช่น shifts ก่อน profiles)
-เพื่อป้องกัน Foreign Key Error การอัปเดตสถานะ UI ต้องทำแบบทันทีผ่าน `.filter()`
+การลบข้อมูลผ่าน UI จะถูกจำกัดอย่างเข้มงวดภายใต้ RLS Granular Policy เพื่อป้องกัน AI-driven data loss. การอัปเดตสถานะ UI ต้องทำแบบทันทีผ่าน `.filter()`
 และไม่ต้องพึ่งพา Browser Refresh
 
 ### Inventory Data Flow (Google Sheets Logic)

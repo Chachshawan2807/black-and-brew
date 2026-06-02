@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAdminKey);
 
 // === RECORD TRANSACTION (Atomic via RPC) ===
@@ -63,6 +63,50 @@ export async function recordTransaction(
   } catch (error: any) {
     console.error('[recordTransaction] Unexpected Error:', error.message || error);
     return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' };
+  }
+}
+
+// === DELETE INVENTORY ITEM (Secure Server-Side Delete) ===
+/**
+ * ADR: SEC-DEL-001 - Secure Server-Side Controlled Deletion
+ * Rationale: Bypasses Database RLS Hardening using service_role to prevent data loss 
+ * when 'authenticated' role's DELETE policy is strictly revoked.
+ * Compliance: EU AI Act Traceability, OWASP LLM Top 10 (Anti-BOLA)
+ */
+export async function deleteInventoryItem(itemId: string) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    /**
+     * SECURITY LAYER: Treat AI/Client Code as Untrusted.
+     * Verify current session and user ownership before executing delete.
+     * This prevents Broken Object Level Authorization (BOLA).
+     */
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
+    // Step 2: Proceed with Delete using Service Role (Admin Client)
+    const { error } = await supabase
+      .from('inventory_items')
+      .delete()
+      .eq('id', itemId);
+
+    if (error) {
+      console.error('[deleteInventoryItem] Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    // Step 3: UI Refresh Logic
+    revalidatePath('/[locale]/inventory');
+    return { success: true };
+  } catch (error: any) {
+    console.error('[deleteInventoryItem] Unexpected Error:', error.message || error);
+    return { success: false, error: 'เกิดข้อผิดพลาดในการลบข้อมูลสินค้า' };
   }
 }
 

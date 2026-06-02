@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { recordTransaction, fetchTransactionHistory, fetchFrequentItems } from '@/app/actions/inventory-actions';
+import { recordTransaction, fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem } from '@/app/actions/inventory-actions';
 import {
   DndContext,
   closestCorners,
@@ -315,6 +315,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
       {col.id === 'name' && (
         <button
           onClick={() => requestDelete(item.id)}
+          aria-label="Delete inventory item"
           className="absolute right-3 p-1.5 text-[#000000]/20 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover/cell:opacity-100"
         >
           <Trash2 className="w-4 h-4" />
@@ -625,8 +626,13 @@ export default function DynamicInventoryManager() {
 
     try {
       setSavingState('saving');
-      const { error } = await supabase.from('inventory_items').delete().eq('id', deleteId);
-      if (error) throw error;
+      /**
+       * PPR-Friendly Update: 
+       * Revalidate path to sync server state while keeping local filtering for Zero CLS.
+       */
+      const res = await deleteInventoryItem(deleteId);
+      if (!res.success) throw new Error(res.error);
+
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err: any) {

@@ -23,7 +23,8 @@ const ACTIVE_TIME_VALUES = ['6:00', '6:30', '7:00', '8:00'];
  */
 function parseShiftTimeToNumber(timeStr: string): number {
   const cleaned = timeStr.replace(/^เข้ากะ\s*/, '').trim();
-  const match = cleaned.match(/^(\d{1,2}):(\d{2})$/);
+  // ปรับให้รองรับการดึงเวลาจากข้อความที่มีรายละเอียดต่อท้าย
+  const match = cleaned.match(/^(\d{1,2}):(\d{2})/);
   if (!match) return Infinity;
   return parseInt(match[1], 10) + parseInt(match[2], 10) / 60;
 }
@@ -33,7 +34,8 @@ function parseShiftTimeToNumber(timeStr: string): number {
  */
 function isActiveShift(location: string): boolean {
   const cleaned = location.replace(/^เข้ากะ\s*/, '').trim();
-  return ACTIVE_TIME_VALUES.includes(cleaned);
+  // ปรับปรุงให้ยืดหยุ่น: ตรวจสอบรูปแบบเวลา HH:MM ที่จุดเริ่มต้น เพื่อรองรับ 8:00, 08:00 หรือเวลาที่มีข้อความต่อท้าย
+  return /^\d{1,2}:\d{2}/.test(cleaned);
 }
 
 interface StaffShiftEntry {

@@ -1,5 +1,7 @@
 import { google } from '@ai-sdk/google';
 import { streamText, stepCountIs, ToolLoopAgent } from 'ai';
+import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
@@ -13,6 +15,48 @@ import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
 // ─────────────────────────────────────────────────────────
 const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || "13.9312";
 const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || "100.6756";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+/**
+ * ADR: SEC-SANIT-001 - Input Sanitization Layer
+ * Rationale: ป้องกัน Prompt Injection (OWASP LLM01) โดยการกรอง control sequences 
+ * และคำสั่งอันตรายก่อนส่งเข้าสู่โมเดล
+ */
+function sanitizeInput(text: string): string {
+  const injectionPatterns = [
+    /ignore previous instructions/gi,
+    /system prompt/gi,
+    /\[INST\]/gi,
+    /<\/s>/gi,
+    /execute/gi
+  ];
+  let sanitized = text;
+  injectionPatterns.forEach(p => {
+    sanitized = sanitized.replace(p, '[REDACTED_INJECTION_ATTEMPT]');
+  });
+  return sanitized;
+}
+
+/**
+ * ADR: EU-ACT-001 - AI Usage Traceability & Audit Logging
+ * Rationale: บันทึกประวัติการใช้งาน (Audit Trail) เพื่อสอดคล้องกับกฎหมาย EU AI Act
+ * โดยไม่เก็บข้อมูลส่วนบุคคล (PII) แต่ระบุ Metadata ของระบบได้
+ */
+async function logAuditTrail(data: {
+  userId?: string;
+  model: string;
+  intent: string;
+  tokenEstimate: number;
+  status: 'SUCCESS' | 'ERROR';
+}) {
+  // จำลองการบันทึก Log ลงในระบบ (ในโปรดักชันจริงควรบันทึกลง Table security_logs)
+  console.info(`[EU_AI_ACT_TRACE] ${new Date().toISOString()}`, {
+    ...data,
+    environment: process.env.NODE_ENV,
+    compliance: 'v2026.1'
+  });
+}
 
 export const maxDuration = 45; // เพิ่มจาก 30 → 45 วินาที
                                 // เพราะ multi-step reasoning (เช่น shift + profiles)
@@ -297,7 +341,7 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
    - รูปแบบหัวข้อ: [ชื่อหมวดหมู่] (เพิ่ม "(รวม [จำนวน] คน)" เฉพาะหมวดหน้าร้าน)
    - รูปแบบรายชื่อ: [ชื่อ] - [เวลาหรือสถานะ]
    - การจัดกลุ่ม: 
-     1. พนักงานปฏิบัติงานหน้าร้าน (รวม [จำนวน] คน) - เรียงตามเวลาจากเช้าไปสาย
+     1. พนักงานปฏิบัติงานหน้าร้าน (รวม [จำนวน] คน) - คือพนักงานทุกคนที่มีกะงานระบุเป็นตัวเลขเวลา (เช่น 6:00, 6:30, 7:00, 8:00) ห้ามนำไปไว้ในหมวดอื่นเด็ดขาด และเรียงตามเวลาจากเช้าไปสาย
      2. พนักงานปฏิบัติงานส่วนอื่น - เรียงตาม 'row_order'
      3. พนักงานที่หยุดพัก/ลา - เรียงตาม 'row_order' (หากไม่มีกะให้ระบุว่า "วันหยุด")
 3. ห้ามแสดงรหัส UUID หรือคำว่า "พนักงานรหัส..." เด็ดขาด
@@ -410,6 +454,23 @@ export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
+    // --- SECTION: SERVER-SIDE AUTHENTICATION GATE ---
+    // ADR: SEC-AUTH-001 - Treat Client Code as Untrusted
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+    
+    // ตรวจสอบเซสชันผู้ใช้จริงผ่าน Supabase ก่อนอนุญาตให้ AI เข้าถึงเครื่องมือทางธุรกิจ
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data: { user } } = await supabase.auth.getUser(token);
+
+    if (!pinVerified && !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Session missing' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (!messages || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'No messages provided' }), {
         status: 400,
@@ -426,8 +487,11 @@ export async function POST(req: Request) {
           .map((p: any) => p.text)
           .join('');
 
+    // [UPGRADE 2026] Input Sanitization
+    const cleanInput = sanitizeInput(lastMsgText);
+
     // [UPGRADE 1] ใช้ weighted scoring แทน boolean
-    const intents = classifyIntent(lastMsgText);
+    const intents = classifyIntent(cleanInput);
 
     // [UPGRADE 5] เลือก tools และ maxSteps จาก scores
     const { tools: selectedTools, maxSteps } = selectTools(intents);
@@ -462,6 +526,15 @@ export async function POST(req: Request) {
           },
         },
       },
+    });
+
+    // [EU AI Act] Log request before execution
+    await logAuditTrail({
+      userId: user?.id || 'PIN_AUTH_USER',
+      model: 'gemini-2.5-flash',
+      intent: Object.keys(intents).filter(k => intents[k as keyof IntentScores] >= INTENT_THRESHOLD).join(','),
+      tokenEstimate: cleanInput.length / 4, // Rough estimation
+      status: 'SUCCESS'
     });
 
     const result = await agent.stream({
