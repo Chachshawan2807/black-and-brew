@@ -4,12 +4,15 @@ import { supabase } from '@/lib/supabase';
 import LiveStatusTracker from '@/components/dashboard/LiveStatusTracker';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { format, startOfDay, endOfDay } from 'date-fns';
+import { connection } from 'next/server';
 
 export default async function IndexPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations('Dashboard');
 
   // ADR: BKK-TIME-ENGINE - บังคับใช้ขอบเขตวันแบบ UTC ISO สำหรับ Database
+  // connection() signals Next.js 16 PPR that this route reads request-time data
+  await connection();
   const now = new Date();
   const bkkNow = toZonedTime(now, 'Asia/Bangkok');
   

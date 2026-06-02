@@ -3,12 +3,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shift, Profile } from '../types';
-import { CalendarDays, Users, GripVertical, Circle } from 'lucide-react';
+import { CalendarDays, Users, GripVertical } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toZonedTime } from 'date-fns-tz';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter } from 'next/navigation';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import {
   DndContext,
@@ -46,11 +46,10 @@ interface PerformanceData {
 interface SortableEmployeeCardProps {
   id: string;
   data: PerformanceData;
-  isWorking?: boolean;
   isDragging?: boolean;
 }
 
-function SortableEmployeeCard({ id, data, isWorking, isDragging }: SortableEmployeeCardProps) {
+function SortableEmployeeCard({ id, data, isDragging }: SortableEmployeeCardProps) {
   const {
     attributes,
     listeners,
@@ -65,10 +64,11 @@ function SortableEmployeeCard({ id, data, isWorking, isDragging }: SortableEmplo
   };
 
   return (
-    <div
+    <article
       ref={setNodeRef}
       style={style}
       className={isDragging ? "opacity-0 z-0" : "z-10 relative"}
+      aria-label={`สถิติสะสม: ${data.profile.full_name} — ทำงาน ${data.workDays} วัน, ลา ${data.leaveDays} วัน, นักขัตฯ ${data.publicHolidays} วัน`}
       {...attributes}
       {...listeners}
     >
@@ -86,17 +86,8 @@ function SortableEmployeeCard({ id, data, isWorking, isDragging }: SortableEmplo
               {data.profile.full_name}
             </h3>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center" aria-live="polite">
-              {isWorking ? (
-                <Circle className="w-3 h-3 fill-green-500 text-green-500 animate-pulse" />
-              ) : (
-                <Circle className="w-3 h-3 fill-red-500 text-red-500" />
-              )}
-            </div>
-            <div className="p-1 rounded-md hover:bg-black/5 transition-colors">
-              <GripVertical className="w-5 h-5 text-[#000000]" />
-            </div>
+          <div className="p-1 rounded-md hover:bg-black/5 transition-colors">
+            <GripVertical className="w-5 h-5 text-[#000000]" />
           </div>
         </div>
 
@@ -115,7 +106,7 @@ function SortableEmployeeCard({ id, data, isWorking, isDragging }: SortableEmplo
           </div>
         </div>
       </motion.div>
-    </div>
+    </article>
   );
 }
 
