@@ -84,7 +84,6 @@ export function WeatherWidget() {
           </div>
           <div className="text-sm font-normal text-black antialiased mt-2">
             💧 โอกาสเกิดฝน: {data.current.pop}%
-            {data.current.rain > 0 && ` ปริมาณ: ${data.current.rain} mm`}
           </div>
         </div>
         <div className="hidden sm:block shrink-0 opacity-80">

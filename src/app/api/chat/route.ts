@@ -345,6 +345,7 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
      2. พนักงานปฏิบัติงานส่วนอื่น - เรียงตาม 'row_order'
      3. พนักงานที่หยุดพัก/ลา - เรียงตาม 'row_order' (หากไม่มีกะให้ระบุว่า "วันหยุด")
 3. ห้ามแสดงรหัส UUID หรือคำว่า "พนักงานรหัส..." เด็ดขาด
+4. หากผู้ใช้สอบถามข้อมูลกะงานเชิงสถิติ, ข้อมูลภาพรวมรายเดือน หรือช่วงเวลาที่กว้างกว่ารายวันทั่วไป ให้เปลี่ยนไปใช้เครื่องมือ readTable เพื่อดึงข้อมูลจากตาราง shifts มาคำนวณแทนการใช้ getDailyShifts และห้ามทำการเดาชื่อพนักงานหรือสร้างชื่อสมมติขึ้นมาเองโดยเด็ดขาด
 `.trim());
   }
 
@@ -423,7 +424,8 @@ function selectTools(intents: IntentScores): {
 
   const needsDB = intents.inventory >= INTENT_THRESHOLD
     || intents.maintenance >= INTENT_THRESHOLD
-    || intents.holiday >= INTENT_THRESHOLD;
+    || intents.holiday >= INTENT_THRESHOLD
+    || intents.schedule >= INTENT_THRESHOLD;
 
   if (needsDB) {
     tools.readTable = wrapTool(readTableTool);

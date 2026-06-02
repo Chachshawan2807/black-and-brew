@@ -3,7 +3,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shift, Profile } from '../types';
-import { CalendarDays, Users, GripVertical } from 'lucide-react';
+import { CalendarDays, Users, GripVertical, Circle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { toZonedTime } from 'date-fns-tz';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter } from 'next/navigation';
 import { format, parseISO, isValid } from 'date-fns';
@@ -44,10 +46,11 @@ interface PerformanceData {
 interface SortableEmployeeCardProps {
   id: string;
   data: PerformanceData;
+  isWorking?: boolean;
   isDragging?: boolean;
 }
 
-function SortableEmployeeCard({ id, data, isDragging }: SortableEmployeeCardProps) {
+function SortableEmployeeCard({ id, data, isWorking, isDragging }: SortableEmployeeCardProps) {
   const {
     attributes,
     listeners,
@@ -83,23 +86,32 @@ function SortableEmployeeCard({ id, data, isDragging }: SortableEmployeeCardProp
               {data.profile.full_name}
             </h3>
           </div>
-          <div className="p-1 rounded-md hover:bg-gray-100 transition-colors">
-            <GripVertical className="w-5 h-5 text-gray-400" />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center" aria-live="polite">
+              {isWorking ? (
+                <Circle className="w-3 h-3 fill-green-500 text-green-500 animate-pulse" />
+              ) : (
+                <Circle className="w-3 h-3 fill-red-500 text-red-500" />
+              )}
+            </div>
+            <div className="p-1 rounded-md hover:bg-black/5 transition-colors">
+              <GripVertical className="w-5 h-5 text-[#000000]" />
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#dcfce7]">
             <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
-            <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
+            <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
           </div>
           <div className="bg-[#fff5f5] border border-[#fee2e2] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#fee2e2]">
             <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
-            <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ลา</span>
+            <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ลา</span>
           </div>
           <div className="bg-[#fffaf0] border border-[#ffedd5] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#ffedd5]">
             <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
-            <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
+            <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
           </div>
         </div>
       </motion.div>
@@ -129,6 +141,19 @@ export default function LiveShiftList({
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    const channel = supabase.channel('shifts-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => router.refresh()).subscribe();
+    return () => { clearInterval(timer); supabase.removeChannel(channel); };
+  }, [router]);
+
+  const checkIsWorking = (profileId: string) => {
+    const s = shifts.find(s => s.employee_id === profileId && s.status === 'scheduled');
+    if (!s) return false;
+    return isWithinInterval(toZonedTime(now, 'Asia/Bangkok'), { start: toZonedTime(parseISO(s.start_time), 'Asia/Bangkok'), end: toZonedTime(parseISO(s.end_time), 'Asia/Bangkok') });
+  };
 
   useEffect(() => {
     setMounted(true);
