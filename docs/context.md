@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> **Version:** 3.1 | **Last Updated:** 2026-05-15
+> **Version:** 6.3 | **Last Updated:** 2026-06-04
 
 ---
 
@@ -10,7 +10,7 @@
 | :--- | :--- |
 | **Project Name** | BLACK-AND-BREW ERP System |
 | **Type** | Enterprise Resource Planning for Coffee Shop |
-| **Current Version** | 3.1 (System Rebirth) |
+| **Current Version** | 6.3 (Mobile & PWA Overhaul) |
 | **Repository** | `Chachshawan2807/black-and-brew` |
 | **Local Path** | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -81,16 +81,28 @@
 
 ```json
 {
+  "@ai-sdk/google": "^3.0.79",
+  "@ai-sdk/react": "^3.0.192",
   "@dnd-kit/core": "^6.3.1",
+  "@dnd-kit/modifiers": "^9.0.0",
   "@dnd-kit/sortable": "^10.0.0",
+  "@dnd-kit/utilities": "^3.2.2",
+  "@line/bot-sdk": "^11.0.0",
   "@supabase/supabase-js": "^2.105.1",
+  "ai": "^6.0.190",
   "date-fns": "^4.1.0",
   "date-fns-tz": "^3.2.0",
-  "lucide-react": "^1.14.0",
+  "framer-motion": "^12.38.0",
+  "googleapis": "^172.0.0",
+  "html-to-image": "^1.11.13",
+  "lucide-react": "^1.16.0",
   "next": "16.2.4",
   "next-intl": "^4.11.0",
   "react": "19.2.4",
+  "react-dom": "19.2.4",
+  "recharts": "^3.8.1",
   "tailwind-merge": "^3.5.0",
+  "xlsx": "^0.18.5",
   "zod": "^4.4.3",
   "zustand": "^5.0.13"
 }
@@ -102,11 +114,13 @@
 
 | Module | Path | Files |
 | :--- | :--- | :--- |
-| Dashboard | `src/app/[locale]/dashboard/` | `page.tsx`, `LiveShiftList.tsx`, `ShiftCard.tsx`, `types.ts` |
+| Dashboard | `src/app/[locale]/dashboard/` | `page.tsx`, `LiveShiftList.tsx`, `ShiftCard.tsx`, `LiveStatusTracker.tsx`, `MonthlyRoster.tsx`, `types.ts` |
 | Schedule | `src/app/[locale]/schedule/` | `page.tsx`, `ScheduleClient.tsx` |
-| Inventory | `src/app/[locale]/inventory/` | `page.tsx` (1,358 lines) |
+| Inventory | `src/app/[locale]/inventory/` | `page.tsx` (smart spreadsheet), `PurchaseOrdersModal.tsx`, `count/page.tsx` (physical stock count) |
 | Maintenance | `src/app/[locale]/maintenance/` | `page.tsx` |
-| Server Actions | `src/app/actions/` | `inventory-actions.ts`, `shift-actions.ts`, `holiday-actions.ts` |
-| Shared UI | `src/components/` | sidebar/, ui/, providers/ |
+| Sales | `src/app/[locale]/sales/` | `page.tsx` (sales uploads & analysis) |
+| Market Insights | `src/app/[locale]/market-insights/` | `page.tsx` (AI market/weather analysis) |
+| Server Actions | `src/app/actions/` | `inventory-actions.ts`, `shift-actions.ts`, `holiday-actions.ts`, `sales-actions.ts`, `daily-report-actions.ts`, `market-insights-actions.ts` |
+| Shared UI | `src/components/` | sidebar/, ui/, providers/, `PwaRegister.tsx` |
 | Libraries | `src/lib/` | `supabase.ts`, `utils.ts`, `date-utils.ts`, `timezone.ts`, `menu-list.ts` |
-| Agent Tools | `src/lib/agent-tools/` | `fs_tool.ts`, `shell_tool.ts`, `search_proxy.ts` |
+| Agent Tools | `src/app/actions/tools/` | `database-tools.ts`, `search-tools.ts`, `internal-sources-tools.ts` |

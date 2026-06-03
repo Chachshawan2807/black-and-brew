@@ -124,5 +124,5 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ---
 
-Last Updated: 2026-06-01 [v6.1 PWA & Mobile Overhaul]
+Last Updated: 2026-06-04 [v6.3 Mobile Layout & Touch DnD]
 

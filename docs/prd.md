@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> **Version:** 4.0 | **Last Updated:** 2026-06-01 | **Owner:** System Architect
+> **Version:** 6.3 | **Last Updated:** 2026-06-04 | **Owner:** System Architect
 
 ---
 

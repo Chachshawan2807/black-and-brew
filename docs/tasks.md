@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> **Version:** 3.1 | **Last Updated:** 2026-05-15
+> **Version:** 6.3 | **Last Updated:** 2026-06-04
 
 ---
 
@@ -58,6 +58,17 @@
 - [x] Root redirect `/` → `/th` via page.tsx
 - [x] Transaction System Rebirth v3.1 (Two-Step Fetch + Cache Buster)
 - [x] Agent Skills System installation (FS Tool, Shell Tool, Search Proxy)
+
+### Phase 5: PWA, Real-Time Status, & Touch-Accessible DnD (June 2026)
+
+- [x] Integrate LINE Messaging API push alerts for daily baristas shifts and weather reports
+- [x] Configure standard PWA support (web manifest, service worker registration, iOS status bar, Network-First caching strategy)
+- [x] Add real-time db state tracking using custom `LiveStatusTracker`
+- [x] Add dynamic layout for collapsible sidebar nav (`Menu.tsx`, `Sidebar.tsx`, etc.)
+- [x] Implement inline-editable `/inventory/count` route with auto-save on blur/Enter
+- [x] Fix mobile layout bugs (Quick Entry card overflow, shopping cart badge truncation)
+- [x] Configure custom touch and mouse sensor thresholds (`TouchSensor` with 250ms delay) to enable drag-and-drop on mobile touch devices
+- [x] Add mobile touch-event layout test suite (`src/test/mobile_layout.test.tsx`)
 
 ---
 

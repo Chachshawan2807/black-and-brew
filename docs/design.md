@@ -1,6 +1,6 @@
 # Design Standards — BLACKANDBREW ERP
 
-> **Version:** 4.0 | **Last Updated:** 2026-06-01 | **Standard:** Black-on-Pastel, High-Legibility
+> **Version:** 6.3 | **Last Updated:** 2026-06-04 | **Standard:** Black-on-Pastel, High-Legibility
 
 ---
 

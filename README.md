@@ -70,3 +70,27 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 - **Staff Dashboard Cleanup:** Removed restricted "Inventory Management" shortcuts from the Staff Dashboard to enhance focus on core duties (Clocking & Scheduling).
 - **Entry Point Logic:** Established a mandatory root redirect from `/` to `/th` (Command Center) via `src/app/page.tsx` for a standardized user landing experience.
 - **Visual Symmetry:** Maintained R0 design standards with `rounded-3xl` and `font-normal` while streamlining layout components.
+
+### Version 6.2: Security Hardening & Chat API Alignment (June 2026)
+
+- **Security Hardening:** Parameter validation for Server Actions (`inventory-actions.ts`, etc.) and tightened RLS policies in `update_rls_policies.sql`.
+- **Chat API Alignment:** Updated API chat routes to resolve column aliases correctly.
+
+### Version 6.3: Mobile Layout, Real-Time Status & DnD Touch Support (June 2026)
+
+- **Real-Time Status & Navigation:** Added `LiveStatusTracker` and overhauled collapsible sidebar components for smooth responsive rendering.
+- **Inventory Count & Mobile Touch DnD:** Created `/inventory/count` route with inline spreadsheet editing and background syncing. Configured mouse and touch sensors (`TouchSensor` with delay/tolerance) to support fluid drag-and-drop item sorting on mobile without blocking page scrolling.
+- **Test Suite:** Added comprehensive layout and touch-event testing in `src/test/mobile_layout.test.tsx`.
+
+## Contributing
+
+Contributions to the BLACK-AND-BREW ERP System are welcome! If you want to contribute, please adhere to our strict standard operating procedures:
+1. Review the [Standard Operating Procedure (SOP)](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/docs/SOP.md) and [Design Standards](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/docs/design.md).
+2. Ensure you follow our **Zero-Bold Policy** across all UI components.
+3. Verify that your changes compile cleanly (`npm run build`) and pass the test suites (`npm test`) before creating a pull request.
+
+## License
+
+This project is proprietary and confidential. All rights reserved. Unauthorized copying, distribution, or modifications of this software is strictly prohibited.
+
+

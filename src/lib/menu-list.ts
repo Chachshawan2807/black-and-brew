@@ -7,8 +7,9 @@ import {
   Package,
   LineChart,
   ClipboardList,
+  TrendingUp,
   type LucideIcon
-} from "lucide-react";
+} from 'lucide-react';
 
 type Submenu = {
   href: string;
@@ -84,9 +85,16 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
         },
         {
           href: `${prefix}/market-insights`,
-          label: "วิเคราะห์ตลาด",
-          active: pathname.includes("/market-insights"),
+          label: 'วิเคราะห์ตลาด',
+          active: pathname.includes('/market-insights'),
           icon: LineChart,
+          submenus: []
+        },
+        {
+          href: `${prefix}/sales`,
+          label: 'จัดการยอดขาย',
+          active: pathname.includes('/sales'),
+          icon: TrendingUp,
           submenus: []
         },
       ]

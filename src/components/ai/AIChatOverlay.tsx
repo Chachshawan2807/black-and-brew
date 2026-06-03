@@ -108,7 +108,7 @@ export default function AIChatOverlay() {
       {/* Floating Trigger Button */}
       <motion.button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed bottom-6 right-6 z-[200] w-14 h-14 rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg"
+        className="fixed bottom-5 right-5 md:bottom-6 md:right-6 z-[200] w-14 h-14 rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg"
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
         aria-label="เปิดผู้ช่วย AI บรู"
@@ -159,11 +159,11 @@ export default function AIChatOverlay() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
-              className="fixed bottom-24 right-6 z-[199] w-full max-w-2xl md:w-[650px] bg-white rounded-xl shadow-2xl border-2 border-black flex flex-col overflow-hidden"
-              style={{ maxHeight: '70vh' }}
+              className="fixed bottom-20 left-4 right-4 md:bottom-24 md:left-auto md:right-6 md:w-[650px] z-[199] bg-white rounded-xl shadow-2xl border-2 border-black flex flex-col overflow-hidden"
+              style={{ maxHeight: '75vh' }}
             >
               {/* Header */}
-              <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between gap-3 bg-[#fdfcf0]">
+              <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-black flex items-center justify-between gap-3 bg-[#fdfcf0]">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-2xl bg-black/5 flex items-center justify-center shrink-0 overflow-hidden">
                     <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={24} height={24} className="w-6 h-6 object-contain" />
@@ -188,7 +188,7 @@ export default function AIChatOverlay() {
               </div>
 
               {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-[200px]">
+              <div className="flex-1 overflow-y-auto px-3 py-3 md:px-4 md:py-4 flex flex-col gap-3 min-h-[200px]">
 
 
                 {messages.map((msg) => {
@@ -226,7 +226,7 @@ export default function AIChatOverlay() {
               </div>
 
               {/* Quick Actions */}
-              <div className="px-4 flex flex-wrap gap-2 items-center justify-start mb-3">
+              <div className="px-3 md:px-4 flex flex-wrap gap-2 items-center justify-start mb-3">
                 {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.id}
@@ -238,7 +238,7 @@ export default function AIChatOverlay() {
                         { body: { clientContext: liveScreenContext } }
                       );
                     }}
-                    className="border-2 border-black px-3 py-1.5 rounded-full text-xs text-black bg-white hover:bg-black hover:text-white transition cursor-pointer whitespace-nowrap"
+                    className="border-2 border-black px-3 py-1.5 rounded-full text-[11px] md:text-xs text-black bg-white hover:bg-black hover:text-white transition cursor-pointer whitespace-nowrap"
                   >
                     {action.label}
                   </button>
@@ -248,7 +248,7 @@ export default function AIChatOverlay() {
               {/* Input Area */}
               <form
                 onSubmit={handleSubmit}
-                className="px-4 py-3 border-t-2 border-black flex items-center gap-2 bg-[#fdfcf0]"
+                className="px-3 md:px-4 py-3 border-t-2 border-black flex items-center gap-2 bg-[#fdfcf0]"
               >
                 <input
                   id="ai-chat-input"
@@ -258,7 +258,7 @@ export default function AIChatOverlay() {
                   placeholder="ถามบรู..."
                   disabled={isLoading}
                   autoComplete="off"
-                  className="flex-1 bg-white border-2 border-black rounded-2xl px-4 py-2.5 text-[13px] font-normal text-black placeholder:text-black placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-black transition-all disabled:opacity-50"
+                  className="flex-1 bg-white border-2 border-black rounded-2xl px-3 md:px-4 py-2.5 text-[13px] font-normal text-black placeholder:text-black placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-black transition-all disabled:opacity-50"
                 />
                 <motion.button
                   type="submit"

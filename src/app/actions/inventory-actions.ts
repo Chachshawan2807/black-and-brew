@@ -233,3 +233,109 @@ export async function fetchFrequentItems() {
     return { success: false, error: error.message };
   }
 }
+
+// === FETCH COMPREHENSIVE INVENTORY DATA ===
+export async function fetchComprehensiveInventoryData() {
+  noStore();
+  try {
+    // Step 1: Fetch all inventory items
+    const { data: inventoryItems, error: itemsError } = await supabase
+      .from('inventory_items')
+      .select('*')
+      .order('name');
+
+    if (itemsError) {
+      console.error('[fetchComprehensiveInventoryData] Items Error:', itemsError);
+      return { 
+        success: false, error: itemsError.message, data: null };
+    }
+
+    // Step 2: Fetch recent inventory transactions
+    const { data: inventoryTransactions, error: txError } = await supabase
+      .from('inventory_transactions')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (txError) {
+      console.error('[fetchComprehensiveInventoryData] Transactions Error:', txError);
+      return { success: false, error: txError.message, data: null };
+    }
+
+    // Validate and process inventory items
+    const validatedItems = [];
+    const validationReport = {
+      totalItems: inventoryItems?.length || 0,
+      validItems: 0,
+      invalidItems: 0,
+      itemsWithLowStock: 0,
+      validationErrors: [] as string[]
+    };
+
+    inventoryItems?.forEach((item: any) => {
+      let isValid = true;
+      const errors = [];
+
+      // Validate stock
+      if (item.stock === null || item.stock === undefined || isNaN(item.stock)) {
+        isValid = false;
+        errors.push('Stock quantity is invalid');
+      }
+
+      // Validate name
+      if (!item.name || item.name.trim() === '') {
+        isValid = false;
+        errors.push('Item name is missing');
+      }
+
+      // Check if low stock check
+      const stock = Number(item.stock || 0);
+      const orderPoint = Number(item.order_point || 0);
+      const isLowStock = stock <= orderPoint;
+
+      if (isLowStock && isValid) {
+        validationReport.itemsWithLowStock++;
+      }
+
+      if (!isValid) {
+        validationReport.invalidItems++;
+        validationReport.validationErrors.push(
+          `${item.name || 'Unknown Item'}: ${errors.join(', ')}`
+        );
+      } else {
+        validationReport.validItems++;
+        validatedItems.push({
+          id: item.id,
+          name: item.name,
+          stock: stock,
+          orderQty: Number(item.order_qty || 0),
+          orderPoint: orderPoint,
+          targetStock: Number(item.target_stock || 0),
+          unit: item.unit,
+          source: item.source,
+          isLowStock,
+          updatedAt: item.updated_at,
+          createdAt: item.created_at
+        });
+      }
+    });
+
+    // Calculate total inventory value (if we had cost data, but let's just estimate for now
+    const totalItemsInStock = validatedItems.reduce((sum, item) => sum + item.stock, 0);
+
+    return {
+      success: true,
+      data: {
+        items: validatedItems,
+        transactions: inventoryTransactions || [],
+        validationReport,
+        totalItemsInStock,
+        lastSync: new Date().toISOString()
+      }
+    };
+
+  } catch (error: any) {
+    console.error('[fetchComprehensiveInventoryData] Unexpected Error:', error);
+    return { success: false, error: error.message, data: null };
+  }
+}

@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> **Version:** 3.1 | **Last Updated:** 2026-05-15 | **Engine:** Supabase PostgreSQL
+> **Version:** 6.3 | **Last Updated:** 2026-06-04 | **Engine:** Supabase PostgreSQL
 
 ---
 

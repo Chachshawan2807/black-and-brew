@@ -220,14 +220,14 @@ export default function InventoryCountPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2, delay: index * 0.02 }}
-                className="bg-white border border-black/[0.05] rounded-2xl p-4 flex items-center justify-between shadow-sm hover:border-black/10 transition-all duration-300"
+                className="bg-white border border-black/[0.05] rounded-2xl p-4 flex items-start justify-between shadow-sm hover:border-black/10 transition-all duration-300"
               >
                 {/* Column 1: Item Name */}
-                <div className="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0 mr-4">
                   <span className="text-[12px] font-normal text-black/25 font-mono shrink-0">
                     {(index + 1).toString().padStart(2, '0')}
                   </span>
-                  <span className="text-black font-normal text-[15px] truncate leading-tight">
+                  <span className="text-black font-normal text-[15px] leading-tight">
                     {item.name} {item.unit ? `(${item.unit})` : ''}
                   </span>
                 </div>

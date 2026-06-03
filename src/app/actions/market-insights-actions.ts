@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
+import { fetchComprehensiveInventoryData } from './inventory-actions';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const getSupabaseAdmin = () => {
@@ -62,66 +63,68 @@ async function fetchLocalTrends() {
 }
 
 /**
- * Fetches popular items from internal sales (inventory transactions).
- */
-async function fetchInternalPopularity() {
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return [];
-
-  try {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-    const { data: txs, error: txError } = await supabase
-      .from('inventory_transactions')
-      .select('inventory_item_id, quantity')
-      .eq('type', 'OUT')
-      .gte('created_at', sixMonthsAgo.toISOString());
-
-    if (txError) throw txError;
-    if (!txs || txs.length === 0) return [];
-
-    const counts: Record<string, number> = {};
-    txs.forEach(t => {
-      counts[t.inventory_item_id] = (counts[t.inventory_item_id] || 0) + Number(t.quantity);
-    });
-
-    const sortedIds = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 5);
-
-    const { data: items, error: itemError } = await supabase
-      .from('inventory_items')
-      .select('id, name')
-      .in('id', sortedIds);
-
-    if (itemError) throw itemError;
-
-    return sortedIds.map(id => {
-      const item = items?.find(i => i.id === id);
-      return { name: item?.name || 'Unknown', count: counts[id] };
-    });
-  } catch (error) {
-    console.error('[fetchInternalPopularity] Error:', error);
-    return [];
-  }
-}
-
-/**
  * AI-powered Market Insights generator.
  * Persona: Bru (Professional, Sweet, Zero-Bold).
  */
-export async function getMarketInsights() {
+export async function getMarketInsights(salesData?: any) {
   try {
-    const [weatherData, externalTrends, internalData] = await Promise.all([
+    // Fetch all data sources, including inventory!
+    const [weatherData, externalTrends, inventoryResult] = await Promise.all([
       fetchWeather(),
       fetchLocalTrends(),
-      fetchInternalPopularity()
+      fetchComprehensiveInventoryData()
     ]);
 
-    const internalSummary = internalData.length > 0 
-      ? internalData.map(i => `${i.name} (${i.count} units)`).join(', ')
-      : 'ไม่มีข้อมูลยอดขายสะสมในช่วง 6 เดือนที่ผ่านมาค่ะ';
+    // Process inventory data
+    let inventorySummary = '';
+    let validationReport = null;
+    if (inventoryResult.success && inventoryResult.data) {
+      const invData = inventoryResult.data;
+      validationReport = invData.validationReport;
+      
+      const lowStockItems = invData.items.filter(item => item.isLowStock);
+      const highStockItems = invData.items.filter(item => item.stock > item.targetStock * 1.5);
+      
+      inventorySummary = `
+        - รายการสินค้าทั้งหมด: ${invData.items.length} รายการ
+        - จำนวนสินค้าคงคลังรวม: ${invData.totalItemsInStock} ${invData.items.length > 0 ? invData.items[0].unit : 'unit'}
+        - สินค้าที่มีปริมาณต่ำกว่าจุดสั่งซื้อ: ${lowStockItems.length} รายการ (${lowStockItems.map(i => i.name).join(', ')})
+        - สินค้าที่มีปริมาณมากกว่าเป้าหมาย: ${highStockItems.length} รายการ (${highStockItems.map(i => i.name).join(', ')})
+        - การตรวจสอบความถูกต้อง: ${validationReport.validItems} valid, ${validationReport.invalidItems} invalid, ${validationReport.itemsWithLowStock} low stock items
+        - การซิงโครไนซ์ล่าสุด: ${new Date(invData.lastSync).toLocaleString('th-TH')}
+      `.trim();
+    } else {
+      inventorySummary = 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลคลังสินค้าได้ค่ะ';
+    }
 
-    const { text } = await generateText({ // ปรับใช้ตามคำสั่งเพื่อให้สอดคล้องกับเวอร์ชันที่ใช้งานได้
+    let salesSummary = '';
+    if (salesData) {
+      const overview = salesData.overview || {};
+      const totalRevenue = overview.totalRevenue || 0;
+      const totalQuantity = overview.totalQuantity || 0;
+      const topProducts = salesData.topProducts || salesData.allProducts || [];
+      
+      if (topProducts.length > 0) {
+        const top5Products = topProducts.slice(0, 5).map((p: any) => {
+          const name = p.productName || p.name || 'ไม่ระบุ';
+          const quantity = p.totalQuantity || p.quantity || 0;
+          const revenue = p.totalRevenue || p.revenue || 0;
+          return `${name} (${quantity} ชิ้น, ${revenue.toLocaleString()} บาท)`;
+        }).join(', ');
+        
+        salesSummary = `ยอดขายรวม: ${totalRevenue.toLocaleString()} บาท, จำนวนชิ้นรวม: ${totalQuantity} ชิ้น, เมนูยอดนิยม: ${top5Products}`;
+      } else if (totalRevenue > 0) {
+        salesSummary = `ยอดขายรวม: ${totalRevenue.toLocaleString()} บาท, จำนวนชิ้นรวม: ${totalQuantity} ชิ้น`;
+      }
+    }
+
+    const prompt = `ข้อมูลสำหรับวิเคราะห์:
+      - สภาพอากาศภูมิภาค: ${weatherData}
+      - ข้อมูลคลังสินค้า: ${inventorySummary}
+      ${salesData ? `- ข้อมูลยอดขายจากหน้าจัดการยอดขาย: ${salesSummary}` : ''}
+      - เทรนด์พื้นที่และรีวิวรอบร้าน: ${externalTrends}`;
+
+    const { text } = await generateText({
       model: google('gemini-2.5-flash'),
       system: `คุณคือ "บรู" AI ผู้ช่วยผู้จัดการหญิงของร้าน BLACKANDBREW 
       สรุปอินไซต์ตลาดและพฤติกรรมผู้บริโภคย่านลำลูกกาให้กระชับ ตรงประเด็นขั้นสูงสุด (Hyper-Concise)
@@ -130,10 +133,7 @@ export async function getMarketInsights() {
       เน้นอินไซต์ย่านลำลูกกา, มัทฉะ Bluekoff, นมโอ๊ต และถุงซิปล็อค
       ใช้คำลงท้าย "ค่ะ" หรือ "นะคะ" 100% และห้ามใช้ตัวหนา (No ** / No bold) โดยเด็ดขาด
       [CRITICAL] ในส่วนที่ 3 ห้ามใส่ประโยคห่วงใยพนักงานหรือคำอวยพรปิดท้ายเด็ดขาด ให้จบที่เนื้อหากลยุทธ์ข้อสุดท้ายทันที`,
-      prompt: `ข้อมูลสำหรับวิเคราะห์:
-      - สภาพอากาศภูมิภาค: ${weatherData}
-      - ข้อมูลธุรกรรมสะสม 6 เดือนในร้าน: ${internalSummary}
-      - เทรนด์พื้นที่และรีวิวรอบร้าน: ${externalTrends}
+      prompt: `${prompt}
 
       โปรดวิเคราะห์และสรุปเอาต์พุต 3 ส่วน คั่นด้วยเครื่องหมาย "|||":
       ส่วนที่ 1 (behavior): พฤติกรรมผู้บริโภคในพื้นที่ (3 ข้อสั้นกระชับ เริ่มด้วย -)
@@ -155,7 +155,8 @@ export async function getMarketInsights() {
       behavior: parts[0] || 'ไม่พบข้อมูลค่ะ',
       trends: parts[1] || 'ไม่พบข้อมูลค่ะ',
       strategy: parts[2] || 'ไม่พบข้อมูลค่ะ',
-      internalTopItems: internalData
+      inventoryData: inventoryResult.data || null,
+      validationReport
     };
   } catch (error) {
     console.error('[getMarketInsights] Error:', error);

@@ -11,7 +11,8 @@ import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange } from '@/app/actions/shift-actions';
 import type { Profile, Shift } from '@/types';
-import { isSameThaiDay } from '@/lib/date-utils';
+import { isSameThaiDay, formatToThai } from '@/lib/date-utils';
+import { THAI_TIMEZONE } from '@/lib/timezone';
 
 import {
   DndContext,
@@ -946,7 +947,38 @@ export default function ScheduleClient({
     }
   };
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  // Get today's date in Thai time, and auto-update when midnight passes
+  const [todayStr, setTodayStr] = useState<string>(() => 
+    formatToThai(new Date(), 'yyyy-MM-dd')
+  );
+
+  useEffect(() => {
+    // Function to update today's date at midnight Thai time
+    const updateAtMidnight = () => {
+      const now = new Date();
+      const today = formatToThai(now, 'yyyy-MM-dd');
+      
+      if (today !== todayStr) {
+        setTodayStr(today);
+      }
+
+      // Calculate time until next midnight in Thai timezone
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 0);
+      // Convert to Thai time to get correct midnight
+      const nextMidnightThai = new Date(
+        nextMidnight.toLocaleString('en-US', { timeZone: THAI_TIMEZONE })
+      );
+      const msUntilMidnight = nextMidnightThai.getTime() - now.getTime() + 100; // +100ms to ensure we cross midnight
+      
+      setTimeout(updateAtMidnight, msUntilMidnight);
+    };
+
+    const intervalId = setInterval(updateAtMidnight, 60000); // Check every minute just to be safe
+    updateAtMidnight();
+    
+    return () => clearInterval(intervalId);
+  }, [todayStr]);
 
   return (
     <div className="flex flex-col h-screen bg-transparent text-[#000000] overflow-hidden">
