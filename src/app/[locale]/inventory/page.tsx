@@ -12,7 +12,8 @@ import {
   DndContext,
   closestCorners,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -324,6 +325,156 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
 
 SortableRow.displayName = 'SortableRow';
 
+const MobileSortableRow = React.memo(({ item, index, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus, getStockColorClass }: any) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition: transition || 'transform 150ms cubic-bezier(0.2, 0, 0, 1)',
+    zIndex: isDragging ? 100 : 1,
+    willChange: 'transform',
+  };
+
+  const stock = Number(item.stock) || 0;
+  const orderPoint = Number(item.order_point) || 0;
+  const targetStock = Number(item.target_stock) || 0;
+  const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "bg-white border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-black/10 cursor-grabbing"
+      )}
+    >
+      {/* Card Header: Item Index, Item Name (Editable), Grip Handle, Delete Button */}
+      <div className="flex items-center justify-between gap-2 border-b border-black/5 pb-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {/* Grip Handle */}
+          <div
+            className="cursor-grab active:cursor-grabbing text-black/20 hover:text-black/50 transition-colors p-1 shrink-0 touch-none"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="w-4 h-4" />
+          </div>
+          <span className="text-[12px] font-normal text-black/35 font-mono shrink-0">
+            {(index + 1).toString().padStart(2, '0')}
+          </span>
+          <input
+            type="text"
+            defaultValue={item.name}
+            onBlur={(e) => {
+              handleUpdateField(item.id, 'name', e.target.value);
+              handleSaveField(item.id, 'name', e.target.value);
+            }}
+            className="flex-1 bg-transparent border-none text-base text-black font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5 min-w-0"
+            placeholder="ชื่อสินค้า"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => requestDelete(item.id)}
+          aria-label="Delete inventory item"
+          className="p-1.5 text-black/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Card Body: Single Row Grid */}
+      <div className="grid grid-cols-6 gap-1 pt-1">
+        {/* Stock */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">คงเหลือ</span>
+          <MobileEditableCell
+            item={item}
+            col={columns.find((c: any) => c.id === 'stock')!}
+            rowIndex={index}
+            handleUpdateField={handleUpdateField}
+            handleSaveField={handleSaveField}
+            handleFocus={handleFocus}
+            className={cn(
+              "w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
+              getStockColorClass(stock, targetStock)
+            )}
+          />
+        </div>
+
+        {/* Order Qty (Computed / Read-only) */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">สั่งซื้อ</span>
+          <div className="w-full h-8 px-1 rounded-lg bg-neutral-100/50 border border-black/[0.02] flex items-center justify-center text-[13px] font-normal text-neutral-500 select-none font-mono truncate">
+            {computedOrderQty === 0 ? '-' : computedOrderQty}
+          </div>
+        </div>
+
+        {/* Order Point */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">จุดสั่ง</span>
+          <MobileEditableCell
+            item={item}
+            col={columns.find((c: any) => c.id === 'order_point')!}
+            rowIndex={index}
+            handleUpdateField={handleUpdateField}
+            handleSaveField={handleSaveField}
+            handleFocus={handleFocus}
+            className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
+          />
+        </div>
+
+        {/* Target Stock */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">ต้องมี</span>
+          <MobileEditableCell
+            item={item}
+            col={columns.find((c: any) => c.id === 'target_stock')!}
+            rowIndex={index}
+            handleUpdateField={handleUpdateField}
+            handleSaveField={handleSaveField}
+            handleFocus={handleFocus}
+            className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
+          />
+        </div>
+
+        {/* Unit */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">หน่วย</span>
+          <input
+            type="text"
+            defaultValue={item.unit}
+            onBlur={(e) => {
+              handleUpdateField(item.id, 'unit', e.target.value);
+              handleSaveField(item.id, 'unit', e.target.value);
+            }}
+            className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
+            placeholder="หน่วย"
+          />
+        </div>
+
+        {/* Source */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">ช่องทาง</span>
+          <input
+            type="text"
+            defaultValue={item.source}
+            onBlur={(e) => {
+              handleUpdateField(item.id, 'source', e.target.value);
+              handleSaveField(item.id, 'source', e.target.value);
+            }}
+            className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
+            placeholder="ช่องทาง"
+          />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+MobileSortableRow.displayName = 'MobileSortableRow';
+
 // 1. ฟังก์ชันคำนวณสีสำหรับแสดงผลยอดคงเหลือ
 function getStockColorClass(stock: number, targetStock: number): string {
   if (stock <= targetStock) return 'text-red-600';
@@ -420,29 +571,6 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         defaultValue={localValue}
         onFocus={() => { setIsFocused(true); handleFocus(); }}
         onBlur={handleBlur}
-        onChange={(e) => {
-          if (col.type === 'number') {
-            // อนุญาตเฉพาะตัวเลข, จุดทศนิยม, และเครื่องหมายลบ
-            const filtered = e.target.value.replace(/[^0-9.\-]/g, '');
-            e.target.value = filtered;
-          }
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            e.currentTarget.blur();
-            // Jump to same column in next row
-            const nextInput = document.querySelector(
-              `input[data-col-id="${col.id}"][data-row-index="${rowIndex + 1}"]`
-            ) as HTMLInputElement;
-            if (nextInput) {
-              setTimeout(() => {
-                nextInput.focus();
-                nextInput.select();
-              }, 10);
-            }
-          }
-        }}
         data-col-id={col.id}
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty'}
@@ -596,7 +724,13 @@ export default function DynamicInventoryManager() {
   const previousStateRef = useRef<{ items: InventoryItem[], cols: ColumnDef[] }>({ items: [], cols: defaultColumns });
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -1307,55 +1441,62 @@ export default function DynamicInventoryManager() {
                   </div>
 
                   {/* 2. ช่องใส่จำนวน, สวิตช์ segment และปุ่มบันทึก */}
-                  <div className="flex flex-row items-center gap-2 w-full sm:w-auto shrink-0">
-                    <div className="w-20 md:w-24 shrink-0">
-                      <input
-                        type="number"
-                        placeholder="จำนวน"
-                        value={quickQty}
-                        onChange={e => setQuickQty(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleQuickSubmit(e as any);
-                          }
-                        }}
-                        min="0"
-                        step="any"
-                        className="w-full h-11 text-base md:text-sm font-normal px-2 text-center rounded-xl border border-black bg-white placeholder-neutral-400 text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
-                      />
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+                    <div className="flex flex-row items-center gap-2 flex-1 sm:flex-initial">
+                      <div className="w-20 sm:w-24 shrink-0">
+                        <input
+                          type="number"
+                          placeholder="จำนวน"
+                          value={quickQty}
+                          onChange={e => setQuickQty(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleQuickSubmit(e as any);
+                            }
+                          }}
+                          min="0"
+                          step="any"
+                          className="w-full h-11 text-base md:text-sm font-normal px-2 text-center rounded-xl border border-black bg-white placeholder-neutral-400 text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                        />
+                      </div>
+
+                      {/* 3. สวิตช์สลับข้างสไตล์ Segmented Control */}
+                      <div className="flex-1 sm:flex-initial flex items-center bg-neutral-100 p-1 rounded-full border border-black shrink-0 h-11">
+                        <button
+                          type="button"
+                          onClick={() => setQuickType('IN')}
+                          className={cn("flex-1 sm:flex-initial flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                        >
+                          <PackagePlus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'IN' ? "text-[#84cc16]" : "text-neutral-400")} />
+                          รับเข้า
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setQuickType('OUT')}
+                          className={cn("flex-1 sm:flex-initial flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                        >
+                          <PackageMinus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'OUT' ? "text-[#f87171]" : "text-neutral-400")} />
+                          นำออก
+                        </button>
+                      </div>
                     </div>
 
-                    {/* 3. สวิตช์สลับข้างสไตล์ Segmented Control */}
-                    <div className="flex items-center bg-neutral-100 p-1 rounded-full border border-black shrink-0 h-11">
-                      <button
-                        type="button"
-                        onClick={() => setQuickType('IN')}
-                        className={cn("flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
-                      >
-                        <PackagePlus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'IN' ? "text-[#84cc16]" : "text-neutral-400")} />
-                        รับเข้า
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setQuickType('OUT')}
-                        className={cn("flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
-                      >
-                        <PackageMinus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'OUT' ? "text-[#f87171]" : "text-neutral-400")} />
-                        นำออก
-                      </button>
-                    </div>
-
-                    <button type="submit" className="px-4 h-11 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-base md:text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0">
+                    <button type="submit" className="w-full sm:w-auto px-4 h-11 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-base md:text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0">
                       <CloudUpload className="w-4 h-4" strokeWidth={1.5} /> บันทึก
                     </button>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 w-full box-border">
-                  <button type="button" onClick={() => setShowPurchaseOrderModal(true)} className="flex items-center justify-center gap-1.5 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
-                    <ShoppingCart className="w-4 h-4 text-[#14532d]" strokeWidth={1.5} />
-                    <span className="truncate">สั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-[#14532d] text-white text-[10px] px-1.5 py-0.5 rounded-full font-normal">{itemsToOrder.length}</span>}</span>
+                  <button type="button" onClick={() => setShowPurchaseOrderModal(true)} className="flex items-center justify-center gap-1 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
+                    <ShoppingCart className="w-4 h-4 text-[#14532d] shrink-0" strokeWidth={1.5} />
+                    <span className="truncate">สั่งซื้อ</span>
+                    {itemsToOrder.length > 0 && (
+                      <span className="bg-[#14532d] text-white text-[10px] px-1.5 py-0.5 rounded-full font-normal shrink-0">
+                        {itemsToOrder.length}
+                      </span>
+                    )}
                   </button>
                   <button type="button" onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-1.5 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
                     <PlusCircle className="w-4 h-4 text-[#9a3412]" strokeWidth={1.5} />
@@ -1380,156 +1521,47 @@ export default function DynamicInventoryManager() {
             </div>
           </div>
 
-          {/* Mobile Card Stack */}
-          <div className="md:hidden w-full space-y-4 px-2 mb-8">
-            {items.length === 0 ? (
-              <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
-                ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
-              </div>
-            ) : (
-              items.map((item, index) => {
-                const stock = Number(item.stock) || 0;
-                const orderPoint = Number(item.order_point) || 0;
-                const targetStock = Number(item.target_stock) || 0;
-                const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
-
-                return (
-                  <div 
-                    key={item.id}
-                    className="bg-white border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col"
-                  >
-                    {/* Card Header: Item Index, Item Name (Editable), Delete Button */}
-                    <div className="flex items-center justify-between gap-2 border-b border-black/5 pb-2">
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="text-[12px] font-normal text-black/35 font-mono">
-                          {(index + 1).toString().padStart(2, '0')}
-                        </span>
-                        <input
-                          type="text"
-                          defaultValue={item.name}
-                          onBlur={(e) => {
-                            handleUpdateField(item.id, 'name', e.target.value);
-                            handleSaveField(item.id, 'name', e.target.value);
-                          }}
-                          className="flex-1 bg-transparent border-none text-base text-black font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5"
-                          placeholder="ชื่อสินค้า"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteId(item.id)}
-                        aria-label="Delete inventory item"
-                        className="p-1.5 text-black/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Card Body: Single Row Grid */}
-                    <div className="grid grid-cols-6 gap-1 pt-1">
-                      {/* Stock */}
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">คงเหลือ</span>
-                        <MobileEditableCell
-                          item={item}
-                          col={columns.find(c => c.id === 'stock')!}
-                          rowIndex={index}
-                          handleUpdateField={handleUpdateField}
-                          handleSaveField={handleSaveField}
-                          handleFocus={handleFocus}
-                          className={cn(
-                            "w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
-                            getStockColorClass(stock, targetStock)
-                          )}
-                        />
-                      </div>
-
-                      {/* Order Qty (Computed / Read-only) */}
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">สั่งซื้อ</span>
-                        <div className="w-full h-8 px-1 rounded-lg bg-neutral-100/50 border border-black/[0.02] flex items-center justify-center text-[13px] font-normal text-neutral-500 select-none font-mono truncate">
-                          {computedOrderQty === 0 ? '-' : computedOrderQty}
-                        </div>
-                      </div>
-
-                      {/* Order Point */}
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">จุดสั่ง</span>
-                        <MobileEditableCell
-                          item={item}
-                          col={columns.find(c => c.id === 'order_point')!}
-                          rowIndex={index}
-                          handleUpdateField={handleUpdateField}
-                          handleSaveField={handleSaveField}
-                          handleFocus={handleFocus}
-                          className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
-                        />
-                      </div>
-
-                      {/* Target Stock */}
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">ต้องมี</span>
-                        <MobileEditableCell
-                          item={item}
-                          col={columns.find(c => c.id === 'target_stock')!}
-                          rowIndex={index}
-                          handleUpdateField={handleUpdateField}
-                          handleSaveField={handleSaveField}
-                          handleFocus={handleFocus}
-                          className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
-                        />
-                      </div>
-
-                      {/* Unit */}
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">หน่วย</span>
-                        <input
-                          type="text"
-                          defaultValue={item.unit}
-                          onBlur={(e) => {
-                            handleUpdateField(item.id, 'unit', e.target.value);
-                            handleSaveField(item.id, 'unit', e.target.value);
-                          }}
-                          className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
-                          placeholder="หน่วย"
-                        />
-                      </div>
-
-                      {/* Source */}
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">ช่องทาง</span>
-                        <input
-                          type="text"
-                          defaultValue={item.source}
-                          onBlur={(e) => {
-                            handleUpdateField(item.id, 'source', e.target.value);
-                            handleSaveField(item.id, 'source', e.target.value);
-                          }}
-                          className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
-                          placeholder="ช่องทาง"
-                        />
-                      </div>
-                    </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStartRows}
+            onDragEnd={handleDragEndRows}
+            modifiers={[restrictToWindowEdges]}
+          >
+            {/* Mobile Card Stack */}
+            <div className="md:hidden w-full space-y-4 px-2 mb-8">
+              {items.length === 0 ? (
+                <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
+                  ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
+                </div>
+              ) : (
+                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-3">
+                    {items.map((item, index) => (
+                      <MobileSortableRow
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        columns={columns}
+                        handleUpdateField={handleUpdateField}
+                        handleSaveField={handleSaveField}
+                        requestDelete={setDeleteId}
+                        handleFocus={handleFocus}
+                        getStockColorClass={getStockColorClass}
+                      />
+                    ))}
                   </div>
-                );
-              })
-            )}
-          </div>
+                </SortableContext>
+              )}
+            </div>
 
-          {/* Desktop Card Grid (DnD) */}
-          <div className="hidden md:block w-full pb-6">
-            {items.length === 0 ? (
-              <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
-                ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
-              </div>
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCorners}
-                onDragStart={handleDragStartRows}
-                onDragEnd={handleDragEndRows}
-                modifiers={[restrictToWindowEdges]}
-              >
+            {/* Desktop Card Grid (DnD) */}
+            <div className="hidden md:block w-full pb-6">
+              {items.length === 0 ? (
+                <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
+                  ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
+                </div>
+              ) : (
                 <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
                     {items.map((item, index) => (
@@ -1547,9 +1579,9 @@ export default function DynamicInventoryManager() {
                     ))}
                   </div>
                 </SortableContext>
-              </DndContext>
-            )}
-          </div>
+              )}
+            </div>
+          </DndContext>
         </div>
       </div>
 

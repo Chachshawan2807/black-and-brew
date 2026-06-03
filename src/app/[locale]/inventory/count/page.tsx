@@ -17,14 +17,14 @@ interface InventoryItem {
   [key: string]: any;
 }
 
-function CountInput({ 
-  item, 
-  index, 
-  onSave 
-}: { 
-  item: InventoryItem; 
-  index: number; 
-  onSave: (id: string, value: number) => Promise<void>; 
+function CountInput({
+  item,
+  index,
+  onSave
+}: {
+  item: InventoryItem;
+  index: number;
+  onSave: (id: string, value: number) => Promise<void>;
 }) {
   const [val, setVal] = useState(item.stock === 0 ? '' : String(item.stock));
   const [isFocused, setIsFocused] = useState(false);
@@ -80,7 +80,7 @@ function CountInput({
 export default function InventoryCountPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'th';
-  
+
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
@@ -164,17 +164,17 @@ export default function InventoryCountPage() {
   return (
     <div className="min-h-screen bg-[#fdfcf0] text-black font-normal p-4 md:p-8">
       <div className="max-w-xl mx-auto flex flex-col items-stretch">
-        
+
         {/* Navigation & Header */}
         <header className="flex items-center justify-between border-b border-black/5 pb-4 mb-6">
-          <Link 
+          <Link
             href={`/${locale}/inventory`}
             className="flex items-center gap-1.5 text-black/50 hover:text-black transition-colors py-2 font-normal text-sm"
           >
             <ChevronLeft className="w-4.5 h-4.5" />
             <span>กลับไปคลังสินค้า</span>
           </Link>
-          
+
           <div className="flex items-center gap-2 text-xs font-normal">
             {savingState === 'saving' && (
               <span className="flex items-center gap-1 text-black/60">
@@ -203,7 +203,7 @@ export default function InventoryCountPage() {
             ตรวจนับคลังสินค้า
           </h1>
           <p className="text-[#000000]/40 text-[11px] font-normal uppercase tracking-[0.2em] mt-1.5">
-            บันทึกการตรวจนับสต็อกวัตถุดิบและแก้วประจำวันค่ะ
+            บันทึกการตรวจนับ
           </p>
         </div>
 
@@ -234,10 +234,10 @@ export default function InventoryCountPage() {
 
                 {/* Column 2: Stock Input Field */}
                 <div className="shrink-0">
-                  <CountInput 
-                    item={item} 
-                    index={index} 
-                    onSave={handleSaveStock} 
+                  <CountInput
+                    item={item}
+                    index={index}
+                    onSave={handleSaveStock}
                   />
                 </div>
               </motion.div>
