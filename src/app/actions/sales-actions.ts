@@ -81,11 +81,10 @@ function processSalesData(rawRecords: any[]): DataProcessingResult {
       notes: normalized.notes || normalized.note,
     };
 
-    // Validate with Zod
     const validation = SalesRecordSchema.safeParse(mapped);
     if (!validation.success) {
       auditLog.invalidRecords++;
-      auditLog.details.push(`Row ${index + 2}: Invalid - ${validation.error.errors.map(e => e.message).join(', ')}`);
+      auditLog.details.push(`Row ${index + 2}: Invalid - ${validation.error.issues.map(e => e.message).join(', ')}`);
       return;
     }
 

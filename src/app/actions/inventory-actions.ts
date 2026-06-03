@@ -263,7 +263,7 @@ export async function fetchComprehensiveInventoryData() {
     }
 
     // Validate and process inventory items
-    const validatedItems = [];
+    const validatedItems: any[] = [];
     const validationReport = {
       totalItems: inventoryItems?.length || 0,
       validItems: 0,
