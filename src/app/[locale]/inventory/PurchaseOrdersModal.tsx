@@ -137,8 +137,8 @@ export default function PurchaseOrdersModal({
                 <p className="text-[15px]">ไม่มีรายการสั่งซื้อสำหรับช่องทางนี้</p>
               </div>
             ) : (
-              <div className="bg-white rounded-3xl shadow-sm border border-black/5 overflow-hidden">
-                <table className="w-full text-left border-collapse">
+              <div className="bg-white rounded-3xl shadow-sm border border-black/5 overflow-x-auto scrollbar-thin">
+                <table className="w-full text-left border-collapse min-w-[600px]">
                   <thead>
                     <tr className="border-b border-black/5 bg-slate-50/50">
                       <th className="py-4 font-normal text-black/40 text-[13px] w-12 text-center border-r border-black/5">#</th>
@@ -153,13 +153,13 @@ export default function PurchaseOrdersModal({
                     {displayedPoItems.map((item, idx) => (
                       <tr key={item.id} className="border-b border-black/5 last:border-0 hover:bg-[#000000]/5 transition-colors">
                         <td className="py-4 text-[14px] text-black/30 text-center border-r border-black/5">{idx + 1}</td>
-                        <td className="py-4 text-[15px] text-black font-medium text-left pl-4 border-r border-black/5">{item.name}</td>
+                        <td className="py-4 text-[15px] text-black font-normal text-left pl-4 border-r border-black/5">{item.name}</td>
                         <td
                           className={`py-4 text-[15px] text-center font-mono border-r border-black/5 ${getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0)}`}
                         >
                           {Number.isInteger(item.stock) ? item.stock : Number(item.stock).toFixed(1)}
                         </td>
-                        <td className="py-4 text-[16px] text-black text-center font-mono font-medium border-r border-black/5">
+                        <td className="py-4 text-[16px] text-black text-center font-mono font-normal border-r border-black/5">
                           {Number.isInteger(item.computedOrderQty) ? item.computedOrderQty : Number(item.computedOrderQty).toFixed(1)}
                         </td>
                         <td className="py-4 text-[14px] text-black/50 text-center border-r border-black/5">{item.unit || '-'}</td>

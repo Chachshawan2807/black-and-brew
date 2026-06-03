@@ -157,6 +157,17 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition: dndTransition, isDragging } = useSortable({ id: item.id });
 
+  const stock = Number(item.stock) || 0;
+  const orderPoint = Number(item.order_point) || 0;
+  const targetStock = Number(item.target_stock) || 0;
+  const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
+
+  const stockCol = columns.find(c => c.id === 'stock')!;
+  const orderPointCol = columns.find(c => c.id === 'order_point')!;
+  const targetStockCol = columns.find(c => c.id === 'target_stock')!;
+  const unitCol = columns.find(c => c.id === 'unit')!;
+  const sourceCol = columns.find(c => c.id === 'source')!;
+
   const style = {
     transform: CSS.Translate.toString(transform),
     transition: dndTransition || 'transform 150ms cubic-bezier(0.2, 0, 0, 1)',
@@ -165,58 +176,149 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
   };
 
   return (
-    <tr
+    <div
       ref={setNodeRef}
+      style={style}
       className={cn(
-        "border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-all duration-300 group",
-        isDragging && "opacity-70 scale-[1.02] shadow-xl z-[100] bg-white ring-1 ring-black/5 rounded-3xl cursor-grabbing"
+        "bg-white border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-black/10 cursor-grabbing"
       )}
-      style={isDragging ? style : undefined}
     >
-      {/* 0. Static Row Index (Fixed) */}
-      <td className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle bg-black/[0.01]">
-        <div className="flex items-center justify-center h-full">
-          <span className="text-[10px] font-normal text-black/20 tabular-nums tracking-tighter">
+      {/* Card Header */}
+      <div className="flex items-center justify-between gap-2 border-b border-black/5 pb-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-[12px] font-normal text-black/35 font-mono shrink-0">
             {(rowIndex + 1).toString().padStart(2, '0')}
           </span>
-        </div>
-      </td>
-
-      <td
-        style={!isDragging ? style : undefined}
-        className="w-10 min-w-[40px] border-r border-[#000000]/5 p-0 text-center align-middle"
-      >
-        <div
-          className="flex items-center justify-center h-full min-h-[64px] w-full cursor-grab active:cursor-grabbing text-[#000000]/20 hover:text-[#000000] transition-all duration-300 p-3 touch-none"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="w-5 h-5" />
-        </div>
-      </td>
-
-      {columns.map((col, index) => (
-        <td
-          key={col.id}
-          style={{
-            width: col.width,
-            minWidth: col.id === 'name' ? '240px' : col.width,
-            ...(!isDragging ? style : {})
-          }}
-          className={`p-0 border-r border-[#000000]/5 relative group/cell ${index === columns.length - 1 ? 'border-r-0' : ''}`}
-        >
           <EditableCell
             item={item}
-            col={col}
+            col={columns.find(c => c.id === 'name')!}
             rowIndex={rowIndex}
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             requestDelete={requestDelete}
             handleFocus={handleFocus}
+            cardMode
           />
-        </td>
-      ))}
-    </tr>
+        </div>
+        {/* Grip Handle */}
+        <div
+          className="cursor-grab active:cursor-grabbing text-black/20 hover:text-black/50 transition-colors p-1 shrink-0 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="w-4 h-4" />
+        </div>
+      </div>
+
+      {/* Card Body: Stats Grid */}
+      <div className="grid grid-cols-6 gap-1 pt-0.5">
+        {/* Stock */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+            {columns.find(c => c.id === 'stock')?.label || 'คงเหลือ'}
+          </span>
+          {stockCol && (
+            <EditableCell
+              item={item}
+              col={stockCol}
+              rowIndex={rowIndex}
+              handleUpdateField={handleUpdateField}
+              handleSaveField={handleSaveField}
+              requestDelete={requestDelete}
+              handleFocus={handleFocus}
+              cardMode
+            />
+          )}
+        </div>
+
+        {/* Order Qty (Computed Read-only) */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+            {columns.find(c => c.id === 'order_qty')?.label || 'สั่งซื้อ'}
+          </span>
+          <div className="w-full h-8 px-1 rounded-lg bg-neutral-100/50 border border-black/[0.02] flex items-center justify-center text-[13px] font-normal text-neutral-500 select-none font-mono truncate">
+            {computedOrderQty === 0 ? '-' : computedOrderQty}
+          </div>
+        </div>
+
+        {/* Order Point */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+            {columns.find(c => c.id === 'order_point')?.label || 'จุดสั่ง'}
+          </span>
+          {orderPointCol && (
+            <EditableCell
+              item={item}
+              col={orderPointCol}
+              rowIndex={rowIndex}
+              handleUpdateField={handleUpdateField}
+              handleSaveField={handleSaveField}
+              requestDelete={requestDelete}
+              handleFocus={handleFocus}
+              cardMode
+            />
+          )}
+        </div>
+
+        {/* Target Stock */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+            {columns.find(c => c.id === 'target_stock')?.label || 'ต้องมี'}
+          </span>
+          {targetStockCol && (
+            <EditableCell
+              item={item}
+              col={targetStockCol}
+              rowIndex={rowIndex}
+              handleUpdateField={handleUpdateField}
+              handleSaveField={handleSaveField}
+              requestDelete={requestDelete}
+              handleFocus={handleFocus}
+              cardMode
+            />
+          )}
+        </div>
+
+        {/* Unit */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+            {columns.find(c => c.id === 'unit')?.label || 'หน่วย'}
+          </span>
+          {unitCol && (
+            <EditableCell
+              item={item}
+              col={unitCol}
+              rowIndex={rowIndex}
+              handleUpdateField={handleUpdateField}
+              handleSaveField={handleSaveField}
+              requestDelete={requestDelete}
+              handleFocus={handleFocus}
+              cardMode
+            />
+          )}
+        </div>
+
+        {/* Source */}
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+            {columns.find(c => c.id === 'source')?.label || 'ช่องทาง'}
+          </span>
+          {sourceCol && (
+            <EditableCell
+              item={item}
+              col={sourceCol}
+              rowIndex={rowIndex}
+              handleUpdateField={handleUpdateField}
+              handleSaveField={handleSaveField}
+              requestDelete={requestDelete}
+              handleFocus={handleFocus}
+              cardMode
+            />
+          )}
+        </div>
+      </div>
+    </div>
   );
 });
 
@@ -231,7 +333,7 @@ function getStockColorClass(stock: number, targetStock: number): string {
 
 const PurchaseOrdersModal = dynamic(() => import('./PurchaseOrdersModal'), { ssr: false });
 
-function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField, requestDelete, handleFocus }: any) {
+function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField, requestDelete, handleFocus, cardMode }: any) {
   const [localValue, setLocalValue] = useState<string>('');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -283,6 +385,76 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
     return 'text-center text-[#000000]/60';
   };
 
+  // cardMode: render as compact cell for card layout (Desktop + Mobile unified)
+  if (cardMode) {
+    if (col.id === 'name') {
+      return (
+        <div className="flex items-center relative flex-1 min-w-0">
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="text"
+            defaultValue={localValue}
+            onFocus={() => { setIsFocused(true); handleFocus(); }}
+            onBlur={handleBlur}
+            data-col-id={col.id}
+            data-row-index={rowIndex}
+            className="flex-1 min-w-0 bg-transparent border-none text-base text-black font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5 truncate"
+            placeholder="ชื่อสินค้า"
+          />
+          <button
+            onClick={() => requestDelete(item.id)}
+            aria-label="Delete"
+            className="ml-1 p-1 text-black/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      );
+    }
+    return (
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode={col.type === 'number' ? 'decimal' : 'text'}
+        defaultValue={localValue}
+        onFocus={() => { setIsFocused(true); handleFocus(); }}
+        onBlur={handleBlur}
+        onChange={(e) => {
+          if (col.type === 'number') {
+            // อนุญาตเฉพาะตัวเลข, จุดทศนิยม, และเครื่องหมายลบ
+            const filtered = e.target.value.replace(/[^0-9.\-]/g, '');
+            e.target.value = filtered;
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.currentTarget.blur();
+            // Jump to same column in next row
+            const nextInput = document.querySelector(
+              `input[data-col-id="${col.id}"][data-row-index="${rowIndex + 1}"]`
+            ) as HTMLInputElement;
+            if (nextInput) {
+              setTimeout(() => {
+                nextInput.focus();
+                nextInput.select();
+              }, 10);
+            }
+          }
+        }}
+        data-col-id={col.id}
+        data-row-index={rowIndex}
+        readOnly={col.id === 'order_qty'}
+        className={cn(
+          "w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
+          col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0),
+          col.id === 'order_qty' && 'bg-neutral-100/50 border-black/[0.02] text-neutral-400 cursor-not-allowed'
+        )}
+      />
+    );
+  }
+
   return (
     <div className="flex items-center relative h-full">
       <input
@@ -297,6 +469,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         onBlur={handleBlur}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
+            e.preventDefault();
             e.currentTarget.blur();
             const nextRowInput = document.querySelector(`input[data-col-id="${col.id}"][data-row-index="${rowIndex + 1}"]`) as HTMLInputElement;
             if (nextRowInput) {
@@ -322,6 +495,79 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         </button>
       )}
     </div>
+  );
+}
+
+function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField, handleFocus, className }: any) {
+  const [localValue, setLocalValue] = useState<string>('');
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isFocused) {
+      let val = item[col.id];
+
+      if (col.id === 'order_qty') {
+        const stock = Number(item.stock) || 0;
+        const orderPoint = Number(item.order_point) || 0;
+        const targetStock = Number(item.target_stock) || 0;
+        const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
+        val = computedOrderQty === 0 ? '' : computedOrderQty;
+      }
+
+      const displayVal = val === null || val === undefined ? '' : String(val);
+      setLocalValue(displayVal);
+      if (inputRef.current) {
+        inputRef.current.value = displayVal;
+      }
+    }
+  }, [item[col.id], item.stock, item.order_point, item.target_stock, isFocused, col.id]);
+
+  const handleBlur = () => {
+    const val = inputRef.current?.value || '';
+    let finalVal: string | number = val;
+
+    if (col.type === 'number') {
+      const numericValue = val === "" ? 0 : Number(val);
+      finalVal = isNaN(numericValue) ? 0 : numericValue;
+    }
+
+    setLocalValue(String(finalVal));
+    setIsFocused(false);
+
+    handleUpdateField(item.id, col.id, finalVal);
+    handleSaveField(item.id, col.id, finalVal);
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      inputMode={col.type === 'number' ? 'decimal' : 'text'}
+      defaultValue={localValue}
+      onFocus={() => {
+        setIsFocused(true);
+        handleFocus();
+      }}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.currentTarget.blur();
+          const nextRowInput = document.querySelector(`input[data-mobile-col-id="${col.id}"][data-mobile-row-index="${rowIndex + 1}"]`) as HTMLInputElement;
+          if (nextRowInput) {
+            setTimeout(() => {
+              nextRowInput.focus();
+              nextRowInput.select();
+            }, 10);
+          }
+        }
+      }}
+      data-mobile-col-id={col.id}
+      data-mobile-row-index={rowIndex}
+      readOnly={col.id === 'order_qty'}
+      className={className}
+    />
   );
 }
 
@@ -886,13 +1132,13 @@ export default function DynamicInventoryManager() {
     // Find item
     const item = items.find(i => i.name === quickSearch || i.id === quickSearch);
     if (!item) {
-      alert('ไม่พบสินค้าที่ระบุ');
+      alert('ไม่พบสินค้าที่ระบุค่ะ');
       return;
     }
 
     const qty = Number(quickQty);
     if (isNaN(qty) || qty <= 0) {
-      alert('กรุณาระบุจำนวนที่ถูกต้อง');
+      alert('กรุณาระบุจำนวนที่ถูกต้องค่ะ');
       return;
     }
 
@@ -950,7 +1196,7 @@ export default function DynamicInventoryManager() {
   return (
     <>
       <div className="flex-1 w-full max-w-full bg-transparent text-black font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
-        <div className="w-fit mx-auto flex flex-col items-start">
+        <div className="w-full md:w-fit mx-auto flex flex-col items-start">
           <div className="w-full flex flex-col items-center mb-8 text-center">
             <motion.h1
               initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -965,11 +1211,11 @@ export default function DynamicInventoryManager() {
               {savingState === 'saving' && (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-[#000000]" />
-                  <span className="text-[#000000]">กำลังซิงค์ข้อมูล...</span>
+                  <span className="text-[#000000]">กำลังซิงค์ข้อมูลอยู่ค่ะ</span>
                 </>
               )}
               {savingState === 'synced' && (
-                <span className="text-emerald-500">✓ ซิงค์ข้อมูลแล้ว</span>
+                <span className="text-emerald-500">✓ ซิงค์ข้อมูลแล้วค่ะ</span>
               )}
             </div>
 
@@ -1007,111 +1253,115 @@ export default function DynamicInventoryManager() {
           <div className="w-full flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-3xl border-2 border-black shadow-sm sticky top-4 md:top-8 z-[50]">
             <div className="flex-1">
               <form onSubmit={handleQuickSubmit} className="flex flex-col gap-2.5 w-full">
-                <div className="flex flex-row items-center gap-2 w-full box-border mb-0">
-                  {/* 1. ช่องค้นหาสินค้า */}
-                  <div className="flex-1 min-w-[200px] relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
-                    <input
-                      type="text"
-                      placeholder="ค้นหาสินค้า..."
-                      value={quickSearch}
-                      onChange={e => setQuickSearch(e.target.value)}
-                      onFocus={() => setIsSearchFocused(true)}
-                      onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                      className="w-full h-11 pl-9 pr-3 rounded-xl border border-black bg-white text-base md:text-sm font-normal text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
-                    />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full box-border mb-0">
+                  {/* 1. ช่องค้นหาสินค้า และยอดคงเหลือ */}
+                  <div className="flex flex-row items-center gap-2 flex-1 w-full min-w-0">
+                    <div className="flex-1 relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
+                      <input
+                        type="text"
+                        placeholder="ค้นหาสินค้า..."
+                        value={quickSearch}
+                        onChange={e => setQuickSearch(e.target.value)}
+                        onFocus={() => setIsSearchFocused(true)}
+                        onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                        className="w-full h-11 pl-9 pr-3 rounded-xl border border-black bg-white text-base md:text-sm font-normal text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                      />
 
-                    {/* Custom Dropdown */}
-                    {isSearchFocused && filteredItems.length > 0 && (
-                      <div className="absolute top-full left-0 w-full mt-2 bg-[#fdfcf0] border border-black/5 rounded-xl shadow-xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="max-h-[50vh] overflow-y-auto py-2">
-                          {filteredItems.map(item => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                setQuickSearch(item.name);
-                                setIsSearchFocused(false);
-                              }}
-                              className="w-full text-left px-5 py-3 hover:bg-black/5 transition-colors flex items-center justify-between group"
-                            >
-                              <span className="text-[14px] text-black font-normal">{item.name}</span>
-                              <span className="text-[12px] text-black/30 group-hover:text-black/50 transition-colors uppercase tracking-widest font-mono">
-                                {item.stock} {item.unit}
-                              </span>
-                            </button>
-                          ))}
+                      {/* Custom Dropdown */}
+                      {isSearchFocused && filteredItems.length > 0 && (
+                        <div className="absolute top-full left-0 w-full mt-2 bg-[#fdfcf0] border border-black/5 rounded-xl shadow-xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="max-h-[50vh] overflow-y-auto py-2">
+                            {filteredItems.map(item => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setQuickSearch(item.name);
+                                  setIsSearchFocused(false);
+                                }}
+                                className="w-full text-left px-5 py-3 hover:bg-black/5 transition-colors flex items-center justify-between group"
+                              >
+                                <span className="text-[14px] text-black font-normal">{item.name}</span>
+                                <span className="text-[12px] text-black/30 group-hover:text-black/50 transition-colors uppercase tracking-widest font-mono">
+                                  {item.stock} {item.unit}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
+                      )}
+                    </div>
+
+                    {/* 3. ยอดคงเหลือของสินค้าที่เลือกพร้อมสีไดนามิก */}
+                    {selectedQuickItem && (
+                      <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[14px] whitespace-nowrap shrink-0 transition-all duration-200 animate-in fade-in zoom-in-95 border ${quickBadgeStyles.bg}`}>
+                        <span className={`text-[13px] ${quickBadgeStyles.label}`}>คงเหลือ:</span>
+                        <span className={`font-normal antialiased font-mono ${quickBadgeStyles.val}`}>
+                          {Number.isInteger(selectedQuickItem.stock) ? selectedQuickItem.stock : Number(selectedQuickItem.stock).toFixed(1)}
+                        </span>
+                        <span className={`text-[12px] ${quickBadgeStyles.label}`}>{selectedQuickItem.unit}</span>
                       </div>
                     )}
                   </div>
 
-                  {/* 3. ยอดคงเหลือของสินค้าที่เลือกพร้อมสีไดนามิก */}
-                  {selectedQuickItem && (
-                    <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[14px] whitespace-nowrap shrink-0 transition-all duration-200 animate-in fade-in zoom-in-95 border ${quickBadgeStyles.bg}`}>
-                      <span className={`text-[13px] ${quickBadgeStyles.label}`}>คงเหลือ:</span>
-                      <span className={`font-normal antialiased font-mono ${quickBadgeStyles.val}`}>
-                        {Number.isInteger(selectedQuickItem.stock) ? selectedQuickItem.stock : Number(selectedQuickItem.stock).toFixed(1)}
-                      </span>
-                      <span className={`text-[12px] ${quickBadgeStyles.label}`}>{selectedQuickItem.unit}</span>
+                  {/* 2. ช่องใส่จำนวน, สวิตช์ segment และปุ่มบันทึก */}
+                  <div className="flex flex-row items-center gap-2 w-full sm:w-auto shrink-0">
+                    <div className="w-20 md:w-24 shrink-0">
+                      <input
+                        type="number"
+                        placeholder="จำนวน"
+                        value={quickQty}
+                        onChange={e => setQuickQty(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleQuickSubmit(e as any);
+                          }
+                        }}
+                        min="0"
+                        step="any"
+                        className="w-full h-11 text-base md:text-sm font-normal px-2 text-center rounded-xl border border-black bg-white placeholder-neutral-400 text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                      />
                     </div>
-                  )}
 
-                  {/* 2. ช่องใส่จำนวน */}
-                  <div className="w-20 md:w-24 shrink-0">
-                    <input
-                      type="number"
-                      placeholder="จำนวน"
-                      value={quickQty}
-                      onChange={e => setQuickQty(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleQuickSubmit(e as any);
-                        }
-                      }}
-                      min="0"
-                      step="any"
-                      className="w-full h-11 text-base md:text-sm font-normal px-2 text-center rounded-xl border border-black bg-white placeholder-neutral-400 text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
-                    />
-                  </div>
+                    {/* 3. สวิตช์สลับข้างสไตล์ Segmented Control */}
+                    <div className="flex items-center bg-neutral-100 p-1 rounded-full border border-black shrink-0 h-11">
+                      <button
+                        type="button"
+                        onClick={() => setQuickType('IN')}
+                        className={cn("flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                      >
+                        <PackagePlus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'IN' ? "text-[#84cc16]" : "text-neutral-400")} />
+                        รับเข้า
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuickType('OUT')}
+                        className={cn("flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
+                      >
+                        <PackageMinus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'OUT' ? "text-[#f87171]" : "text-neutral-400")} />
+                        นำออก
+                      </button>
+                    </div>
 
-                  {/* 3. สวิตช์สลับข้างสไตล์ Segmented Control */}
-                  <div className="flex items-center bg-neutral-100 p-1 rounded-full border border-black shrink-0 h-11">
-                    <button
-                      type="button"
-                      onClick={() => setQuickType('IN')}
-                      className={cn("flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
-                    >
-                      <PackagePlus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'IN' ? "text-[#84cc16]" : "text-neutral-400")} />
-                      รับเข้า
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setQuickType('OUT')}
-                      className={cn("flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
-                    >
-                      <PackageMinus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'OUT' ? "text-[#f87171]" : "text-neutral-400")} />
-                      นำออก
+                    <button type="submit" className="px-4 h-11 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-base md:text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0">
+                      <CloudUpload className="w-4 h-4" strokeWidth={1.5} /> บันทึก
                     </button>
                   </div>
-
-                  <button type="submit" className="px-4 h-11 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0">
-                    <CloudUpload className="w-4 h-4" strokeWidth={1.5} /> บันทึก
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 w-full box-border">
-                  <button type="button" onClick={() => setShowPurchaseOrderModal(true)} className="flex items-center justify-center gap-1.5 px-1 py-2.5 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-sm font-normal antialiased">
+                  <button type="button" onClick={() => setShowPurchaseOrderModal(true)} className="flex items-center justify-center gap-1.5 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
                     <ShoppingCart className="w-4 h-4 text-[#14532d]" strokeWidth={1.5} />
                     <span className="truncate">สั่งซื้อ {itemsToOrder.length > 0 && <span className="bg-[#14532d] text-white text-[10px] px-1.5 py-0.5 rounded-full font-normal">{itemsToOrder.length}</span>}</span>
                   </button>
-                  <button type="button" onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-1.5 px-1 py-2.5 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-sm font-normal antialiased">
+                  <button type="button" onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-1.5 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
                     <PlusCircle className="w-4 h-4 text-[#9a3412]" strokeWidth={1.5} />
                     <span>เพิ่มสินค้า</span>
                   </button>
-                  <button type="button" onClick={handleOpenHistory} className="flex items-center justify-center gap-1.5 px-1 py-2.5 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-[#000000] rounded-3xl transition-all text-sm font-normal antialiased">
+                  <button type="button" onClick={handleOpenHistory} className="flex items-center justify-center gap-1.5 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
                     <History className="w-4 h-4 text-[#5b21b6]" strokeWidth={1.5} />
                     <span>ประวัติ</span>
                   </button>
@@ -1121,7 +1371,7 @@ export default function DynamicInventoryManager() {
                 <div className="flex items-center gap-2 mt-6 pt-3 border-t border-black/5 overflow-x-auto pb-1 scrollbar-hide">
                   <span className="text-[12px] text-black/40 font-normal whitespace-nowrap">รายการใช้บ่อย:</span>
                   {frequentItems.map(fi => (
-                    <button key={fi.id} onClick={() => setQuickSearch(fi.name)} className="px-3 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-full text-[13px] text-black/70 whitespace-nowrap transition-colors">
+                    <button key={fi.id} onClick={() => setQuickSearch(fi.name)} className="px-3 py-1.5 min-h-[44px] md:min-h-0 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-full text-base md:text-[13px] text-black/70 whitespace-nowrap transition-colors flex items-center justify-center">
                       {fi.name}
                     </button>
                   ))}
@@ -1130,8 +1380,149 @@ export default function DynamicInventoryManager() {
             </div>
           </div>
 
-          <div className="w-full overflow-x-auto scrollbar-thin flex flex-col pb-6">
-            <div className="w-max min-w-full border border-black/5 bg-[#fdfcf0]/80 backdrop-blur-md shadow-sm rounded-3xl overflow-hidden">
+          {/* Mobile Card Stack */}
+          <div className="md:hidden w-full space-y-4 px-2 mb-8">
+            {items.length === 0 ? (
+              <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
+                ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
+              </div>
+            ) : (
+              items.map((item, index) => {
+                const stock = Number(item.stock) || 0;
+                const orderPoint = Number(item.order_point) || 0;
+                const targetStock = Number(item.target_stock) || 0;
+                const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
+
+                return (
+                  <div 
+                    key={item.id}
+                    className="bg-white border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col"
+                  >
+                    {/* Card Header: Item Index, Item Name (Editable), Delete Button */}
+                    <div className="flex items-center justify-between gap-2 border-b border-black/5 pb-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="text-[12px] font-normal text-black/35 font-mono">
+                          {(index + 1).toString().padStart(2, '0')}
+                        </span>
+                        <input
+                          type="text"
+                          defaultValue={item.name}
+                          onBlur={(e) => {
+                            handleUpdateField(item.id, 'name', e.target.value);
+                            handleSaveField(item.id, 'name', e.target.value);
+                          }}
+                          className="flex-1 bg-transparent border-none text-base text-black font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5"
+                          placeholder="ชื่อสินค้า"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteId(item.id)}
+                        aria-label="Delete inventory item"
+                        className="p-1.5 text-black/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Card Body: Single Row Grid */}
+                    <div className="grid grid-cols-6 gap-1 pt-1">
+                      {/* Stock */}
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">คงเหลือ</span>
+                        <MobileEditableCell
+                          item={item}
+                          col={columns.find(c => c.id === 'stock')!}
+                          rowIndex={index}
+                          handleUpdateField={handleUpdateField}
+                          handleSaveField={handleSaveField}
+                          handleFocus={handleFocus}
+                          className={cn(
+                            "w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
+                            getStockColorClass(stock, targetStock)
+                          )}
+                        />
+                      </div>
+
+                      {/* Order Qty (Computed / Read-only) */}
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">สั่งซื้อ</span>
+                        <div className="w-full h-8 px-1 rounded-lg bg-neutral-100/50 border border-black/[0.02] flex items-center justify-center text-[13px] font-normal text-neutral-500 select-none font-mono truncate">
+                          {computedOrderQty === 0 ? '-' : computedOrderQty}
+                        </div>
+                      </div>
+
+                      {/* Order Point */}
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">จุดสั่ง</span>
+                        <MobileEditableCell
+                          item={item}
+                          col={columns.find(c => c.id === 'order_point')!}
+                          rowIndex={index}
+                          handleUpdateField={handleUpdateField}
+                          handleSaveField={handleSaveField}
+                          handleFocus={handleFocus}
+                          className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
+                        />
+                      </div>
+
+                      {/* Target Stock */}
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">ต้องมี</span>
+                        <MobileEditableCell
+                          item={item}
+                          col={columns.find(c => c.id === 'target_stock')!}
+                          rowIndex={index}
+                          handleUpdateField={handleUpdateField}
+                          handleSaveField={handleSaveField}
+                          handleFocus={handleFocus}
+                          className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
+                        />
+                      </div>
+
+                      {/* Unit */}
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">หน่วย</span>
+                        <input
+                          type="text"
+                          defaultValue={item.unit}
+                          onBlur={(e) => {
+                            handleUpdateField(item.id, 'unit', e.target.value);
+                            handleSaveField(item.id, 'unit', e.target.value);
+                          }}
+                          className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
+                          placeholder="หน่วย"
+                        />
+                      </div>
+
+                      {/* Source */}
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">ช่องทาง</span>
+                        <input
+                          type="text"
+                          defaultValue={item.source}
+                          onBlur={(e) => {
+                            handleUpdateField(item.id, 'source', e.target.value);
+                            handleSaveField(item.id, 'source', e.target.value);
+                          }}
+                          className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
+                          placeholder="ช่องทาง"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Card Grid (DnD) */}
+          <div className="hidden md:block w-full pb-6">
+            {items.length === 0 ? (
+              <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
+                ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
+              </div>
+            ) : (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCorners}
@@ -1139,52 +1530,25 @@ export default function DynamicInventoryManager() {
                 onDragEnd={handleDragEndRows}
                 modifiers={[restrictToWindowEdges]}
               >
-                <table className="table-auto border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/50">
-                      <th className="w-10 min-w-[40px] border-r border-slate-100 text-[10px] font-normal text-black/20 uppercase tracking-widest text-center italic">#</th>
-                      <th className="w-10 min-w-[40px] border-r border-slate-100"></th>
-                      {columns.map(col => (
-                        <ColumnHeader
-                          key={col.id}
-                          col={col}
-                          updateColumnLabel={updateColumnLabel}
-                          saveColumnsConfig={() => saveColumnsConfig(columns)}
-                          onResize={handleColumnResize}
-                          onResizeEnd={handleColumnResizeEnd}
-                        />
-                      ))}
-                    </tr>
-                  </thead>
-                  <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                    <tbody>
-                      {items.length === 0 ? (
-                        <tr>
-                          <td colSpan={columns.length + 1} className="p-12 text-center text-[14px] font-normal text-[#000000]">
-                            ไม่มีข้อมูลสินค้าในระบบ กรุณกด "เพิ่มรายการ"
-                          </td>
-                        </tr>
-                      ) : (
-                        items.map((item, index) => (
-                          <SortableRow
-                            key={item.id}
-                            item={item}
-                            index={index}
-                            columns={columns}
-                            handleUpdateField={handleUpdateField}
-                            handleSaveField={handleSaveField}
-                            requestDelete={setDeleteId}
-                            handleFocus={handleFocus}
-                            totalItems={items.length}
-                          />
-                        ))
-                      )}
-                    </tbody>
-                  </SortableContext>
-                </table>
-
+                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-3">
+                    {items.map((item, index) => (
+                      <SortableRow
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        columns={columns}
+                        handleUpdateField={handleUpdateField}
+                        handleSaveField={handleSaveField}
+                        requestDelete={setDeleteId}
+                        handleFocus={handleFocus}
+                        totalItems={items.length}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
               </DndContext>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -1199,16 +1563,16 @@ export default function DynamicInventoryManager() {
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl overflow-hidden"
+              className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              <div className="px-6 h-14 border-b border-slate-100 flex items-center justify-between">
+              <div className="px-6 h-14 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <h2 className="text-lg font-normal text-black">เพิ่มรายการใหม่</h2>
                 <button onClick={() => setShowAddModal(false)} className="p-2 text-black hover:bg-slate-100 rounded-full transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <form onSubmit={handleAddItemSubmit} className="p-6">
+              <form onSubmit={handleAddItemSubmit} className="p-6 overflow-y-auto flex-1">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <div className="col-span-2 flex flex-col gap-1.5">
                     <label className="text-[12px] font-normal text-black ml-1 uppercase tracking-wider">ชื่อรายการ</label>

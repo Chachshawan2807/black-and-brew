@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useParams } from 'next/navigation';
+import { usePathname, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
@@ -15,6 +15,8 @@ import {
   TooltipContent,
   TooltipProvider
 } from '@/components/ui/tooltip';
+import { useStore } from '@/hooks/use-store';
+import { useSidebarToggle } from '@/hooks/use-sidebar-toggle';
 
 interface MenuProps {
   isOpen: boolean | undefined;
@@ -23,8 +25,30 @@ interface MenuProps {
 export default function Menu({ isOpen }: MenuProps) {
   const pathname = usePathname();
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = (params?.locale as string) || 'th';
   const menuList = getMenuList(pathname, locale);
+  const sidebar = useStore(useSidebarToggle, (state) => state);
+
+  const showHolidays = searchParams?.get('showRegularHolidays') === 'true';
+  const adjustedMenuList = menuList.map(group => ({
+    ...group,
+    menus: group.menus.map(menu => {
+      if (menu.href.includes('showRegularHolidays')) {
+        return { ...menu, active: pathname.includes('/schedule') && showHolidays };
+      }
+      if (menu.href.endsWith('/schedule')) {
+        return { ...menu, active: pathname.includes('/schedule') && !showHolidays };
+      }
+      return menu;
+    })
+  }));
+
+  const handleLinkClick = () => {
+    if (window.innerWidth < 768 && sidebar?.isOpen) {
+      sidebar.setIsOpen();
+    }
+  };
 
   return (
     <nav className="h-full w-full flex flex-col justify-between overflow-hidden">
@@ -32,7 +56,7 @@ export default function Menu({ isOpen }: MenuProps) {
         "flex flex-col gap-1 px-2 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden",
         isOpen === false ? "items-center" : "items-start"
       )}>
-        {menuList.flatMap(({ menus }) => menus).map(({ href, label, icon: Icon, active, submenus }, menuIndex) =>
+        {adjustedMenuList.flatMap(({ menus }) => menus).map(({ href, label, icon: Icon, active, submenus }, menuIndex) =>
           submenus.length === 0 ? (
             <li className="w-full" key={menuIndex}>
               <TooltipProvider disableHoverableContent>
@@ -46,7 +70,7 @@ export default function Menu({ isOpen }: MenuProps) {
                       )}
                       asChild
                     >
-                      <Link href={href}>
+                      <Link href={href} onClick={handleLinkClick}>
                         <span className={cn(isOpen === false ? '' : 'mr-4')}>
                           <Icon size={18} />
                         </span>
@@ -77,6 +101,7 @@ export default function Menu({ isOpen }: MenuProps) {
                 active={active}
                 submenus={submenus}
                 isOpen={isOpen}
+                onLinkClick={handleLinkClick}
               />
             </li>
           )

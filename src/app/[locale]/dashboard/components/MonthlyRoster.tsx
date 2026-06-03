@@ -224,21 +224,27 @@ export default function MonthlyRoster() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-7 gap-2 pb-24">
-                {['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'].map(day => (
-                  <div key={day} className="p-4 text-center text-black text-[12px] font-normal uppercase tracking-wider">{day}</div>
-                ))}
+              <div className="grid grid-cols-7 gap-1 md:gap-2 pb-24">
+                {['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'].map((day, idx) => {
+                  const fullDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+                  return (
+                    <div key={day} className="py-2 px-1 text-center text-black text-[11px] md:text-[12px] font-normal uppercase tracking-wider">
+                      <span className="md:hidden">{day}</span>
+                      <span className="hidden md:inline">{fullDays[idx]}</span>
+                    </div>
+                  );
+                })}
                 {daysInInterval.length > 0 && Array.from({ length: getDay(daysInInterval[0]) }).map((_, i) => (
-                  <div key={`empty-${i}`} className="bg-neutral-50/50 rounded-3xl h-36 border border-transparent" />
+                  <div key={`empty-${i}`} className="bg-neutral-50/50 rounded-xl sm:rounded-3xl h-20 sm:h-28 md:h-36 border border-transparent" />
                 ))}
                 {daysInInterval.map((day) => {
                   const shift = data.shifts.find(s => s.employee_id === selectedStaffId && isSameDay(parseISO(s.start_time), day));
                   const display = shift ? getShiftDisplay(shift) : null;
                   return (
-                    <div key={day.toISOString()} className="bg-neutral-50/30 h-36 p-4 flex flex-col justify-between rounded-[24px] border border-black/5 transition-all hover:bg-neutral-50 hover:shadow-lg">
-                      <span className="text-black text-lg font-normal">{format(day, 'd')}</span>
+                    <div key={day.toISOString()} className="bg-neutral-50/30 h-20 sm:h-28 md:h-36 p-1 sm:p-3 md:p-4 flex flex-col justify-between rounded-xl sm:rounded-[24px] border border-black/5 transition-all hover:bg-neutral-50 hover:shadow-lg">
+                      <span className="text-black text-sm sm:text-base md:text-lg font-normal">{format(day, 'd')}</span>
                       {shift && display && (
-                        <div className={`w-full p-2.5 rounded-xl flex items-center justify-center text-center text-[13px] text-black font-normal leading-relaxed shadow-sm min-h-[50px] ${display.color}`}>
+                        <div className={`w-full p-0.5 sm:p-2 md:p-2.5 rounded-lg sm:rounded-xl flex items-center justify-center text-center text-[10px] sm:text-xs md:text-[13px] text-black font-normal leading-tight md:leading-relaxed shadow-sm min-h-[24px] sm:min-h-[40px] md:min-h-[50px] truncate ${display.color}`}>
                           {display.text}
                         </div>
                       )}

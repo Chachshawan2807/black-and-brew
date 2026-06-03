@@ -1,10 +1,12 @@
 import {
   LayoutGrid,
   CalendarRange,
+  Calendar,
   Wrench,
   Home,
   Package,
   LineChart,
+  ClipboardList,
   type LucideIcon
 } from "lucide-react";
 
@@ -69,8 +71,15 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
         {
           href: `${prefix}/inventory`,
           label: "คลังสินค้า",
-          active: pathname.includes("/inventory"),
+          active: pathname.includes("/inventory") && !pathname.includes("/inventory/count"),
           icon: Package,
+          submenus: []
+        },
+        {
+          href: `${prefix}/inventory/count`,
+          label: "ตรวจนับคลังสินค้า",
+          active: pathname.includes("/inventory/count"),
+          icon: ClipboardList,
           submenus: []
         },
         {

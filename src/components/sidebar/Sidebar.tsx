@@ -20,26 +20,38 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed top-0 left-0 z-[100] h-screen -translate-x-full md:flex md:translate-x-0 transition-[width] ease-in-out duration-300 bg-white md:bg-transparent border-none shadow-2xl md:shadow-none',
-        isOpen === false ? 'w-20' : 'w-fit max-w-[280px]'
+        'fixed top-0 left-0 z-[100] h-screen transition-transform md:transition-[width] ease-in-out duration-300 bg-white md:bg-transparent border-none shadow-2xl md:shadow-none md:flex',
+        isOpen === false 
+          ? '-translate-x-full md:translate-x-0 md:w-20' 
+          : 'translate-x-0 w-[280px] max-w-[85vw] md:w-fit md:max-w-[280px]'
       )}
     >
       <SidebarToggle isOpen={isOpen} setIsOpen={sidebar?.setIsOpen} />
-      <div className="relative h-full flex flex-col px-3 py-4 overflow-hidden">
+      <div className="relative h-full flex flex-col pl-1 pr-3 py-4 overflow-hidden">
         <div className={cn(
           "mb-4 flex items-center transition-all duration-500",
-          isOpen === false ? "justify-center" : "justify-start px-2"
+          isOpen === false ? "justify-center" : "justify-start"
         )}>
           <div className="relative z-[110]">
-            <Image 
-              src="/images/logo.png" 
-              alt="Logo" 
-              width={isOpen === false ? 40 : 140} 
-              height={isOpen === false ? 40 : 56} 
-              className="object-contain"
-              style={{ width: 'auto', height: 'auto' }}
-              priority
-            />
+            {isOpen === false ? (
+              <Image 
+                src="/images/logo.png" 
+                alt="BLACK AND BREW" 
+                width={56} 
+                height={56} 
+                style={{ width: '56px', height: '56px', objectFit: 'contain' }}
+                priority
+              />
+            ) : (
+              <Image 
+                src="/images/logo.png" 
+                alt="BLACK AND BREW" 
+                width={240} 
+                height={90} 
+                style={{ width: '240px', height: '90px', objectFit: 'contain', objectPosition: 'left center' }}
+                priority
+              />
+            )}
           </div>
         </div>
         <div className="flex-1 overflow-hidden">

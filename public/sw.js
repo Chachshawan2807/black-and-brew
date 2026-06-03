@@ -33,6 +33,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Guard: only handle http: and https: requests — skip chrome-extension://, data:, etc.
+  const requestUrl = event.request.url;
+  if (!requestUrl.startsWith('http:') && !requestUrl.startsWith('https:')) return;
+
   // Use Network-First strategy to ensure fresh data, fallback to cache if offline
   if (event.request.method === 'GET' && !event.request.url.includes('/api/')) {
     event.respondWith(
@@ -43,9 +47,12 @@ self.addEventListener('fetch', (event) => {
             return response;
           }
           const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          // Inner guard: never cache non-HTTP/HTTPS requests (e.g. chrome-extension://)
+          if (event.request.url.startsWith('http:') || event.request.url.startsWith('https:')) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
           return response;
         })
         .catch(() => {

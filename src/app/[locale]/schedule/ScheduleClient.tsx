@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Plus, Trash2, Undo2, Redo2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Download, Pencil } from 'lucide-react';
 import { startOfWeek, addDays, format, parseISO, isValid } from 'date-fns';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange } from '@/app/actions/shift-actions';
@@ -272,6 +272,7 @@ export default function ScheduleClient({
   locale
 }: ScheduleClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [currentDate, setCurrentDate] = useState(new Date(initialDateStr));
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
@@ -285,6 +286,12 @@ export default function ScheduleClient({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (searchParams?.get('showRegularHolidays') === 'true') {
+      setShowRegularHolidayModal(true);
+    }
+  }, [searchParams]);
 
   const [selectedCell, setSelectedCell] = useState<{ employeeId: string; date: string; shift?: any; x: number; y: number } | null>(null);
   const [editingHoliday, setEditingHoliday] = useState<string | null>(null);
@@ -903,7 +910,7 @@ export default function ScheduleClient({
       setHolidayInput('');
       revalidateAppPaths(); 
     } catch {
-      alert('เกิดข้อผิดพลาดในการบันทึกวันหยุด');
+      alert('เกิดข้อผิดพลาดในการบันทึกวันหยุดค่ะ');
     }
   };
 
@@ -933,7 +940,7 @@ export default function ScheduleClient({
       link.click();
     } catch (err) {
       console.error('Failed to export image:', err);
-      alert('เกิดข้อผิดพลาดในการบันทึกตารางงานเป็นรูปภาพ');
+      alert('เกิดข้อผิดพลาดในการบันทึกตารางงานเป็นรูปภาพค่ะ');
     } finally {
       setLoading(false);
     }
@@ -1175,7 +1182,7 @@ export default function ScheduleClient({
                 <button
                   key={type.value}
                   onClick={() => handleSave(type.value)}
-                  className={`py-1.5 px-3 rounded-lg border text-[12px] font-normal shadow-sm w-full text-left transition-all duration-200 cursor-pointer hover:brightness-95 hover:shadow-md active:scale-[0.97] ${type.color}`}
+                  className={`h-11 md:h-auto py-1.5 px-3 rounded-lg border text-base md:text-[12px] font-normal shadow-sm w-full text-left transition-all duration-200 cursor-pointer hover:brightness-95 hover:shadow-md active:scale-[0.97] ${type.color}`}
                 >
                   {type.label}
                 </button>
@@ -1185,7 +1192,7 @@ export default function ScheduleClient({
               <div className="p-1.5 bg-white border-t border-gray-50">
                 <button
                   onClick={handleClear}
-                  className="w-full py-1.5 rounded-lg bg-red-50 text-red-500 text-[11px] font-normal border border-red-100 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer active:scale-[0.97]"
+                  className="w-full h-11 md:h-auto py-1.5 rounded-lg bg-red-50 text-red-500 text-base md:text-[11px] font-normal border border-red-100 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer active:scale-[0.97]"
                 >
                   Clear Entry
                 </button>
@@ -1207,13 +1214,13 @@ export default function ScheduleClient({
             <div className="grid grid-cols-2 gap-3 pt-4">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-normal transition-colors cursor-pointer"
+                className="h-11 md:h-auto py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-base md:text-sm font-normal transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
               <button
                 onClick={handleClearAll}
-                className="py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-normal transition-colors cursor-pointer"
+                className="h-11 md:h-auto py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-base md:text-sm font-normal transition-colors cursor-pointer"
               >
                 ยืนยันการลบ
               </button>
@@ -1251,7 +1258,7 @@ export default function ScheduleClient({
                     <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
                       <Plus className="w-4 h-4 text-white rotate-45" />
                     </div>
-                    <p className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลเรียบร้อยแล้ว</p>
+                    <p className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลเรียบร้อยแล้วค่ะ</p>
                   </div>
                 )}
 
@@ -1259,7 +1266,7 @@ export default function ScheduleClient({
                   <label className="text-[13px] font-normal text-black uppercase tracking-widest px-1">พนักงาน</label>
                   <div className="relative">
                     <select
-                      className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-[14px] font-normal appearance-none text-[#000000]"
+                      className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-[#000000]"
                       value={managementForm.employeeId}
                       onChange={(e) => setManagementForm(prev => ({ ...prev, employeeId: e.target.value }))}
                     >
@@ -1278,7 +1285,7 @@ export default function ScheduleClient({
                   <label className="text-[13px] font-normal text-black uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
                   <div className="relative group/select">
                     <select
-                      className={`w-full h-11 px-4 pr-10 rounded-3xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-[14px] font-normal shadow-sm appearance-none text-[#000000] ${
+                      className={`w-full h-11 px-4 pr-10 rounded-3xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal shadow-sm appearance-none text-[#000000] ${
                         shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-white border-[#000000]/5'
                       }`}
                       value={managementForm.shiftType}
@@ -1324,7 +1331,7 @@ export default function ScheduleClient({
                   <label className="text-[13px] font-normal text-black uppercase tracking-widest px-1">หมายเหตุ</label>
                   <textarea
                     placeholder="รายละเอียดเพิ่มเติม..."
-                    className="w-full h-20 p-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-[13px] leading-relaxed font-normal text-[#000000]"
+                    className="w-full h-20 p-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-base md:text-[13px] leading-relaxed font-normal text-[#000000]"
                     value={managementForm.remark}
                     onChange={(e) => setManagementForm(prev => ({ ...prev, remark: e.target.value }))}
                   />
@@ -1334,13 +1341,13 @@ export default function ScheduleClient({
               <div className="p-4 bg-[#fdfcf0] border-t border-[#000000]/5 flex gap-3">
                 <button
                   onClick={editingHistoryId ? cancelEditHistory : () => setShowManagementModal(false)}
-                  className="flex-1 py-3 rounded-3xl bg-transparent border border-[#000000]/10 text-black font-normal text-[12px] hover:bg-[#000000]/5 transition-all active:scale-95 shadow-sm cursor-pointer antialiased"
+                  className="flex-1 h-11 md:h-auto md:py-3 rounded-3xl bg-transparent border border-[#000000]/10 text-black text-base md:text-[12px] font-normal hover:bg-[#000000]/5 transition-all active:scale-95 shadow-sm cursor-pointer antialiased"
                 >
                   {editingHistoryId ? 'ยกเลิกการแก้ไข' : 'ปิดหน้าต่าง'}
                 </button>
                 <button
                   onClick={handleSaveManagement}
-                  className={`flex-1 py-3 rounded-3xl font-normal text-[12px] shadow-lg transition-all active:scale-95 cursor-pointer antialiased ${
+                  className={`flex-1 h-11 md:h-auto md:py-3 rounded-3xl font-normal text-base md:text-[12px] shadow-lg transition-all active:scale-95 cursor-pointer antialiased ${
                     editingHistoryId ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 text-white' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 text-white'
                   }`}
                 >
@@ -1468,20 +1475,20 @@ export default function ScheduleClient({
                   onChange={e => setNewEmployeeName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddEmployee()}
                   placeholder="กรอกชื่อพนักงาน"
-                  className="w-full bg-[#f8f9fa] border border-gray-100 rounded-xl px-4 py-3 text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                  className="w-full h-11 bg-[#f8f9fa] border border-gray-100 rounded-xl px-4 py-3 text-base md:text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowAddEmployeeModal(false)}
-                  className="flex-1 py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-sm cursor-pointer"
+                  className="flex-1 h-11 md:h-auto md:py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-base md:text-sm cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   onClick={handleAddEmployee}
                   disabled={loading || !newEmployeeName.trim()}
-                  className="flex-1 py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 h-11 md:h-auto md:py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   ยืนยัน
@@ -1510,7 +1517,7 @@ export default function ScheduleClient({
                     <label className="text-[13px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">พนักงาน</label>
                     <div className="relative">
                       <select
-                        className="w-full h-11 px-4 pr-10 rounded-3xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer text-[14px] font-normal appearance-none text-[#000000]"
+                        className="w-full h-11 px-4 pr-10 rounded-3xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-[#000000]"
                         value={holidayFormEmployee}
                         onChange={(e) => {
                           setHolidayFormEmployee(e.target.value);
@@ -1552,7 +1559,7 @@ export default function ScheduleClient({
                                 );
                                 setHolidaySaveSuccess(false);
                               }}
-                              className={`py-2 rounded-xl text-[13px] font-normal transition-all cursor-pointer ${
+                              className={`h-11 md:h-auto py-2 rounded-xl text-base md:text-[13px] font-normal transition-all cursor-pointer ${
                                 isSelected 
                                   ? 'bg-black text-white shadow-md' 
                                   : 'bg-white border border-gray-200 text-black hover:bg-gray-50'
@@ -1577,14 +1584,14 @@ export default function ScheduleClient({
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowRegularHolidayModal(false)}
-                      className="flex-1 py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-sm cursor-pointer"
+                      className="flex-1 h-11 md:h-auto md:py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-base md:text-sm cursor-pointer"
                     >
                       ปิดหน้าต่าง
                     </button>
                     <button
                       onClick={handleSaveRegularHolidays}
                       disabled={!holidayFormEmployee}
-                      className="flex-1 py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm cursor-pointer"
+                      className="flex-1 h-11 md:h-auto md:py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm cursor-pointer"
                     >
                       บันทึกข้อมูล
                     </button>

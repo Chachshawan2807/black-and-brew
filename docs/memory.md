@@ -4,6 +4,20 @@
 
 ---
 
+### DEC-062: Next.js Image Aspect Ratio Warning - Standard Pattern (v6.2)
+
+- **Date:** June 3, 2026
+- **Context:** Warning "Image with src has either width or height modified, but not the other" ใน SidebarLayout.tsx เกิดซ้ำซ้อน แม้แก้ไขไปแล้วในรอบก่อน เนื่องจาก Next.js จะ warn เมื่อ style กำหนดขนาดเพียงมิติเดียว เช่น height: auto โดดๆ
+- **Decision:** Standard Next.js Image Pattern บังคับใช้ทั้งโปรเจกต์:
+  1. ห้ามใช้ className ควบคุมขนาด (object-contain, w-[], h-[]) โดยไม่มี style prop คู่กัน
+  2. บังคับใช้ style ที่กำหนดทั้ง width และ height พร้อมกันเสมอ ห้ามใช้ height: auto โดดๆ
+  3. Pattern: style={{ width: 'Xpx', height: 'Ypx', objectFit: 'contain' }}
+- **Impact:** ไม่มี Warning ซ้ำ Next.js ไม่ต้องเดาว่า CSS เปลี่ยนขนาดฝั่งไหน
+- **Evidence:** src/components/sidebar/SidebarLayout.tsx (line 23), src/components/sidebar/Sidebar.tsx
+
+---
+
+
 ### DEC-046: AI System Prompt - Store Location & Weather Context (v4.5)
 
 - **Date:** May 30, 2026

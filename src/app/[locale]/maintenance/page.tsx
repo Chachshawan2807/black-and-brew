@@ -218,7 +218,7 @@ export default function MaintenancePage() {
       if (error) {
         setToast({ message: `บันทึกไม่สำเร็จ: ${error.message}`, type: 'error' });
       } else {
-        setToast({ message: 'บันทึกข้อมูลสำเร็จ', type: 'success' });
+        setToast({ message: 'บันทึกข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
         setIsModalOpen(false);
         resetForm();
         fetchRecords();
@@ -243,7 +243,7 @@ export default function MaintenancePage() {
       if (error) {
         setToast({ message: `ลบไม่สำเร็จ: ${error.message}`, type: 'error' });
       } else {
-        setToast({ message: 'ลบข้อมูลสำเร็จ', type: 'success' });
+        setToast({ message: 'ลบข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
         fetchRecords();
         setIsDeleteConfirmOpen(false);
         setRecordToDelete(null);
@@ -344,7 +344,7 @@ export default function MaintenancePage() {
               </button>
             </div>
           ) : (
-            <div className="w-full overflow-x-auto box-border bg-white rounded-3xl border border-black/5 shadow-sm">
+            <div className="w-full overflow-x-auto scrollbar-thin pb-6 box-border bg-white rounded-3xl border border-black/5 shadow-sm">
               <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '1100px' }}>
                 <thead>
                   <tr className="border-b border-neutral-200/50 bg-slate-50/50">
@@ -483,7 +483,7 @@ export default function MaintenancePage() {
                           </span>
                         </td>
                         <td className="py-4 px-5 text-center">
-                          <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center justify-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => handleEdit(record)}
                               className="p-2 hover:bg-black/5 text-black/40 hover:text-black rounded-xl transition-all active:scale-90"
@@ -519,9 +519,9 @@ export default function MaintenancePage() {
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-xl rounded-[32px] shadow-2xl overflow-hidden border border-black/5"
+              className="relative bg-white w-full max-w-xl max-h-[90vh] flex flex-col rounded-[32px] shadow-2xl overflow-hidden border border-black/5"
             >
-              <div className="p-5 border-b border-black/5 flex items-center justify-between bg-[#fff7ed]/50">
+              <div className="p-5 border-b border-black/5 flex items-center justify-between bg-[#fff7ed]/50 shrink-0">
                 <div>
                   <h2 className="text-xl font-normal text-[#000000] tracking-tight uppercase">
                     {editingRecord ? 'แก้ไขบันทึก' : 'เพิ่มบันทึกใหม่'}
@@ -536,7 +536,7 @@ export default function MaintenancePage() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar bg-white">
+              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar bg-white">
                 {/* Row 1: Date & Type */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5 flex-1">
@@ -554,7 +554,7 @@ export default function MaintenancePage() {
                       <select
                         value={formData.task_type}
                         onChange={e => setFormData({ ...formData, task_type: e.target.value })}
-                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all appearance-none cursor-pointer hover:bg-black/[0.04]"
+                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all appearance-none cursor-pointer hover:bg-black/[0.04]"
                       >
                         <option value="ซ่อมแซม">ซ่อมแซม</option>
                         <option value="บำรุงรักษา">บำรุงรักษา</option>
@@ -577,7 +577,7 @@ export default function MaintenancePage() {
                       placeholder="เช่น เครื่องชงเอสเปรสโซ"
                       value={formData.equipment}
                       onChange={e => setFormData({ ...formData, equipment: e.target.value })}
-                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
+                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -587,7 +587,7 @@ export default function MaintenancePage() {
                       placeholder="เช่น ทุก 3 เดือน"
                       value={formData.recommended_frequency}
                       onChange={e => setFormData({ ...formData, recommended_frequency: e.target.value })}
-                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
+                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
                     />
                   </div>
                 </div>
@@ -597,7 +597,7 @@ export default function MaintenancePage() {
                   <div className="space-y-1.5">
                     <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ค่าใช้จ่าย (บาท)</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30 text-sm font-normal">฿</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30 text-base md:text-sm font-normal">฿</span>
                       <input
                         type="number"
                         min="0"
@@ -606,7 +606,7 @@ export default function MaintenancePage() {
                           const val = e.target.value.replace(/^0+/, '');
                           setFormData({ ...formData, cost: val === '' ? 0 : Number(val) });
                         }}
-                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl pl-8 pr-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
+                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl pl-8 pr-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
                       />
                     </div>
                   </div>
@@ -617,7 +617,7 @@ export default function MaintenancePage() {
                       placeholder="ชื่อ"
                       value={formData.person_in_charge}
                       onChange={e => setFormData({ ...formData, person_in_charge: e.target.value })}
-                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
+                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
                     />
                   </div>
                 </div>
@@ -631,7 +631,7 @@ export default function MaintenancePage() {
                       rows={2}
                       value={formData.detected_problem}
                       onChange={e => setFormData({ ...formData, detected_problem: e.target.value })}
-                      className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-sm font-medium focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
+                      className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-base md:text-sm font-normal focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -641,7 +641,7 @@ export default function MaintenancePage() {
                       rows={2}
                       value={formData.work_details}
                       onChange={e => setFormData({ ...formData, work_details: e.target.value })}
-                      className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-sm font-medium focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
+                      className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-base md:text-sm font-normal focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
                     />
                   </div>
                 </div>
@@ -653,7 +653,7 @@ export default function MaintenancePage() {
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-normal transition-all ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
+                        className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
                       >
                         <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
                         กำลังดำเนินการ
@@ -661,7 +661,7 @@ export default function MaintenancePage() {
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-normal transition-all ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
+                        className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                         เสร็จสิ้น
@@ -675,24 +675,24 @@ export default function MaintenancePage() {
                       placeholder="หมายเหตุ"
                       value={formData.notes}
                       onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-sm font-medium focus:outline-none transition-all hover:bg-black/[0.04]"
+                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
                     />
                   </div>
                 </div>
               </form>
 
-              <div className="p-5 bg-gray-50/50 border-t border-black/5 flex gap-3">
+              <div className="p-5 bg-gray-50/50 border-t border-black/5 flex gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 text-black/60 font-normal hover:text-black transition-all text-[12px] uppercase tracking-widest"
+                  className="flex-1 h-11 md:h-auto md:py-3 text-black/60 font-normal hover:text-black transition-all text-base md:text-[12px] uppercase tracking-widest"
                 >
                   ยกเลิก
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="flex-[2] py-3 bg-black text-white font-normal rounded-2xl hover:bg-black/80 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-[12px] uppercase tracking-widest"
+                  className="flex-[2] h-11 md:h-auto md:py-3 bg-black text-white font-normal rounded-2xl hover:bg-black/80 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" strokeWidth={2} />}
                   ยืนยันบันทึก
@@ -717,13 +717,13 @@ export default function MaintenancePage() {
               <button
                 onClick={handleDelete}
                 disabled={loading}
-                className="w-full py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-sm uppercase tracking-widest"
+                className="w-full h-11 md:h-auto md:py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm uppercase tracking-widest"
               >
                 {loading ? 'Processing...' : 'Confirm Deletion'}
               </button>
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
-                className="w-full py-4 text-[#000000]/40 font-normal hover:text-[#000000] transition-all text-sm uppercase tracking-widest"
+                className="w-full h-11 md:h-auto md:py-4 text-[#000000]/40 font-normal hover:text-[#000000] transition-all text-base md:text-sm uppercase tracking-widest"
               >
                 Cancel
               </button>

@@ -202,7 +202,7 @@ describe('Daily LINE Notification Protocol Actions', () => {
       const today = toZonedTime(new Date(), 'Asia/Bangkok');
       const expectedDate = format(today, 'dd-MM-yyyy');
 
-      expect(payload).toMatch(new RegExp(`รายงานสรุปประจำวันที่ ${expectedDate.replace(/-/g, '\\-')}`));
+      expect(payload).toMatch(new RegExp(`รายงานสรุปของเช้าวันที่ ${expectedDate.replace(/-/g, '\\-')}`));
       expect(payload).toContain('- ปิ่น (6:30)');
       expect(payload).toContain('- หนูดี (วันหยุด)');
       expect(payload).toContain('- ฟิว (วันหยุด)');
@@ -319,22 +319,22 @@ describe('Daily LINE Notification Protocol Actions', () => {
       // Scenario A: Holiday Today (Tier 0)
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(0) };
       const payloadA = await compileDailyReportPayload();
-      expect(payloadA).toContain('🔴 วันนี้เป็นวันหยุดนักขัตฤกษ์ (วันวิสาขบูชา)');
+      expect(payloadA).toContain('วันนี้เป็นวันหยุด (วันวิสาขบูชา) คาดว่าลูกค้าหน้าร้านหนาแน่น เตรียมกำลังพลและวัตถุดิบให้พร้อม');
 
       // Scenario B: Urgent Pre-Holiday (Tier 1-3)
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(2) };
       const payloadB = await compileDailyReportPayload();
-      expect(payloadB).toContain('🟠 เหลืออีก 2 วันถึง วันวิสาขบูชา — เร่งตรวจสอบสต็อกวัตถุดิบหลัก แก้ว ฝา หลอด');
+      expect(payloadB).toContain('อีก 2 วันถึง วันวิสาขบูชา เร่งตรวจสอบสต็อกและสั่งเติมสินค้าทันที');
 
       // Scenario C: Advance Warning (Tier 4-7)
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(6) };
       const payloadC = await compileDailyReportPayload();
-      expect(payloadC).toContain('แนะนำให้เริ่มตรวจสอบปริมาณสต็อกคงคลังและวางแผนสั่งซื้อล่วงหน้า');
+      expect(payloadC).toContain('อีก 6 วันจะถึง วันวิสาขบูชา วางแผนสั่งซื้อล่วงหน้าเพื่อป้องกันสินค้าขาด');
 
       // Scenario D: Normal Status (> 7 Days)
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(15) };
       const payloadD = await compileDailyReportPayload();
-      expect(payloadD).toContain('สถานการณ์ปกติ ลุยงานกันเลย!');
+      expect(payloadD).toContain('สถานการณ์ปกติ ลุยงานกันเลยค่ะ');
     });
   });
 });
