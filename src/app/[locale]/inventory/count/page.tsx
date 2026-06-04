@@ -131,11 +131,15 @@ export default function InventoryCountPage() {
   }
 
   async function handleSaveStock(id: string, value: number) {
+    // Skip save if stock value hasn't actually changed
+    const currentItem = items.find(i => i.id === id);
+    if (currentItem && Number(currentItem.stock) === value) return;
+
     setSavingState('saving');
     try {
       const { error } = await supabase
         .from('inventory_items')
-        .update({ stock: value })
+        .update({ stock: value, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) {

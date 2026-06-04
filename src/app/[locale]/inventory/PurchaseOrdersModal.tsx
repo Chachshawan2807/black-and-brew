@@ -137,16 +137,16 @@ export default function PurchaseOrdersModal({
                 <p className="text-[15px]">ไม่มีรายการสั่งซื้อสำหรับช่องทางนี้</p>
               </div>
             ) : (
-              <div className="bg-white rounded-3xl shadow-sm border border-black/5 overflow-x-auto scrollbar-thin">
+              <div className="bg-white rounded-3xl shadow-sm border border-black/5 overflow-auto max-h-[calc(85vh-220px)] scrollbar-thin">
                 <table className="w-full text-left border-collapse min-w-[600px]">
                   <thead>
-                    <tr className="border-b border-black/5 bg-slate-50/50">
-                      <th className="py-4 font-normal text-black/40 text-[13px] w-12 text-center border-r border-black/5">#</th>
-                      <th className="py-4 font-normal text-black/40 text-[13px] text-left pl-4 border-r border-black/5">ชื่อรายการ</th>
-                      <th className="py-4 font-normal text-black/40 text-[13px] text-center w-24 border-r border-black/5">คงเหลือ</th>
-                      <th className="py-4 font-normal text-black/40 text-[13px] text-center w-32 border-r border-black/5">จำนวนสั่งซื้อ</th>
-                      <th className="py-4 font-normal text-black/40 text-[13px] w-24 text-center border-r border-black/5">หน่วย</th>
-                      <th className="py-4 font-normal text-black/40 text-[13px] w-32 text-center">อัปเดตล่าสุด</th>
+                    <tr className="border-b border-black/5">
+                      <th className="sticky top-0 bg-slate-50/90 backdrop-blur-sm py-4 font-normal text-black/40 text-[13px] w-12 text-center border-r border-black/5 z-10">#</th>
+                      <th className="sticky top-0 bg-slate-50/90 backdrop-blur-sm py-4 font-normal text-black/40 text-[13px] text-left pl-4 border-r border-black/5 z-10">ชื่อรายการ</th>
+                      <th className="sticky top-0 bg-slate-50/90 backdrop-blur-sm py-4 font-normal text-black/40 text-[13px] text-center w-32 border-r border-black/5 z-10">จำนวนสั่งซื้อ</th>
+                      <th className="sticky top-0 bg-slate-50/90 backdrop-blur-sm py-4 font-normal text-black/40 text-[13px] text-center w-24 border-r border-black/5 z-10">คงเหลือ</th>
+                      <th className="sticky top-0 bg-slate-50/90 backdrop-blur-sm py-4 font-normal text-black/40 text-[13px] w-24 text-center border-r border-black/5 z-10">หน่วย</th>
+                      <th className="sticky top-0 bg-slate-50/90 backdrop-blur-sm py-4 font-normal text-black/40 text-[13px] w-32 text-center z-10">อัปเดตล่าสุด</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -154,17 +154,19 @@ export default function PurchaseOrdersModal({
                       <tr key={item.id} className="border-b border-black/5 last:border-0 hover:bg-[#000000]/5 transition-colors">
                         <td className="py-4 text-[14px] text-black/30 text-center border-r border-black/5">{idx + 1}</td>
                         <td className="py-4 text-[15px] text-black font-normal text-left pl-4 border-r border-black/5">{item.name}</td>
+                        <td className="py-4 text-[16px] text-black text-center font-mono font-normal border-r border-black/5">
+                          {Number.isInteger(item.computedOrderQty) ? item.computedOrderQty : Number(item.computedOrderQty).toFixed(1)}
+                        </td>
                         <td
                           className={`py-4 text-[15px] text-center font-mono border-r border-black/5 ${getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0)}`}
                         >
                           {Number.isInteger(item.stock) ? item.stock : Number(item.stock).toFixed(1)}
                         </td>
-                        <td className="py-4 text-[16px] text-black text-center font-mono font-normal border-r border-black/5">
-                          {Number.isInteger(item.computedOrderQty) ? item.computedOrderQty : Number(item.computedOrderQty).toFixed(1)}
-                        </td>
                         <td className="py-4 text-[14px] text-black/50 text-center border-r border-black/5">{item.unit || '-'}</td>
                         <td className="py-4 text-[13px] text-black/40 text-center font-mono">
-                          {new Date(item.updated_at || Date.now()).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
+                          {item.updated_at
+                            ? new Date(item.updated_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Bangkok' })
+                            : '-'}
                         </td>
                       </tr>
                     ))}

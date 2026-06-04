@@ -755,7 +755,7 @@ export default function DynamicInventoryManager() {
       const targetStock = Number(item.target_stock) || 0;
       return {
         ...item,
-        computedOrderQty: targetStock - stock
+        computedOrderQty: Math.max(0, targetStock - stock)
       };
     });
   }, [items]);
@@ -932,7 +932,10 @@ export default function DynamicInventoryManager() {
       }
     });
 
-    delete sanitized.updated_at;
+    // คง updated_at เดิมไว้ ไม่ลบทิ้ง เพื่อไม่ให้ Supabase reset เป็น NOW() (UTC)
+    if (!sanitized.updated_at) {
+      sanitized.updated_at = new Date().toISOString();
+    }
     return sanitized;
   }
 
@@ -1042,8 +1045,14 @@ export default function DynamicInventoryManager() {
       if (isNaN(sanitizedValue as number)) sanitizedValue = 0;
     }
 
-    // Phase 2: Persistence Armor - Compare sanitized values to prevent redundant saves and keep 0
-    if (original && Number(original[field]) === Number(sanitizedValue)) return;
+    // Prevent redundant saves: compare with original value to avoid unnecessary updated_at changes
+    if (original) {
+      if (numericFields.includes(field)) {
+        if (Number(original[field]) === Number(sanitizedValue)) return;
+      } else {
+        if (String(original[field] || '') === String(sanitizedValue || '')) return;
+      }
+    }
 
     pushHistory();
     setSavingState('saving');
@@ -1051,7 +1060,7 @@ export default function DynamicInventoryManager() {
     try {
       const { error } = await supabase
         .from('inventory_items')
-        .update({ [field]: sanitizedValue })
+        .update({ [field]: sanitizedValue, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
