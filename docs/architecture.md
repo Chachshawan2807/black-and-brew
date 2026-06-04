@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> **Version:** 6.3 | **Last Updated:** 2026-06-04 | **Stack:** Next.js 16 + Supabase
+> **Version:** 6.5 | **Last Updated:** 2026-06-05 | **Stack:** Next.js 16 + Supabase
 
 ---
 
@@ -57,6 +57,8 @@ src/app/
     ├── dashboard/               # Shift overview
     ├── schedule/                # Shift management (DnD)
     ├── inventory/               # Smart inventory (spreadsheet)
+    ├── sales/                   # Sales Dashboard & analytics
+    ├── market-insights/         # Market Intelligence (AI-powered)
     └── maintenance/             # Equipment tracking
 ```
 

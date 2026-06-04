@@ -1,9 +1,8 @@
 import { getTranslations } from 'next-intl/server';
-import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
 import { supabase } from '@/lib/supabase';
 import LiveStatusTracker from '@/components/dashboard/LiveStatusTracker';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { format, startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay } from 'date-fns';
 import { connection } from 'next/server';
 
 export default async function IndexPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -39,11 +38,9 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
   return (
     <div className="min-h-[calc(100vh-2rem)] bg-inherit flex flex-col items-center justify-center relative px-[clamp(1rem,5vw,2rem)] py-[clamp(2rem,8vw,3rem)]">
       <div className="max-w-4xl w-full space-y-[clamp(2rem,8vw,3rem)]">
-        <WeatherWidget />
-
         <section aria-label="Staff Live Status" className="space-y-[1rem]">
           <h2 className="text-[clamp(1.1rem,3.5vw,1.4rem)] font-normal text-black px-[clamp(0.25rem,1vw,0.5rem)] uppercase tracking-widest leading-relaxed">
-            สถานะพนักงานหน้าร้าน — {thaiFullDate}
+            สถานะพนักงาน — {thaiFullDate}
           </h2>
           <LiveStatusTracker initialProfiles={profiles} initialShifts={shifts} currentThaiDate={thaiFullDate} />
         </section>

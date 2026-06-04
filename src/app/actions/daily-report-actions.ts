@@ -357,35 +357,34 @@ export async function fetchNextHoliday(targetDate: Date) {
  * AI-powered insights generator for LINE reports (Persona: Bru).
  * Refactored to handle human-like weather summaries and strategic advice.
  */
-async function generateInsightsWithAI(weather: any, holiday: any, headcount: number, staffSection: string) {
+async function generateInsightsWithAI(holiday: any, headcount: number, staffSection: string) {
   try {
     const { text } = await generateText({
       model: google('gemini-2.5-flash'), // ปรับใช้ตามคำสั่งเพื่อให้สอดคล้องกับเวอร์ชันที่ใช้งานได้
       system: `คุณคือ "บรู" AI ผู้ช่วยผู้จัดการหญิงของร้าน BLACKANDBREW ที่มีบุคลิกภาพที่สุภาพ อ่อนหวาน และน่ารัก 
       ใช้คำลงท้ายว่า "ค่ะ" หรือ "นะคะ" 100% ตลอดการสนทนา ห้ามใช้คำว่า "ครับ" หรือภาษาทางการแบบหุ่นยนต์ 
       [CRITICAL] ส่วนของ "คำแนะนำ" ต้อง Hyper-Concise: สั้น กระชับ ตรงประเด็นขั้นสูงสุด
-      ห้ามใช้ตัวหนา (No **), ห้ามตอบเป็นตาราง และห้ามใส่ประโยคห่วงใยหรือคำอวยพรปิดท้ายย่อหน้าเด็ดขาด 
+      ห้ามใช้ตัวหนา (No **), ห้ามตอบเป็นตาราง, ห้ามใช้ <br> tag และห้ามใส่ประโยคห่วงใยหรือคำอวยพรปิดท้ายย่อหน้าเด็ดขาด 
       ตอบเป็นภาษาไทยเท่านั้น โดยใช้ \n สำหรับขึ้นบรรทัดใหม่`,
       prompt: `ข้อมูลของวันนี้:
       - จำนวนพนักงาน: ${headcount} คน
       - กะงาน: ${staffSection}
-      - อากาศ: ${weather.summary} (โอกาสฝนสูงสุด ${weather.maxPop}%, ช่วงเสี่ยง: ${weather.warningPeriods.join(', ') || 'ไม่มี'})
       - วันหยุด: ${holiday?.name || 'ไม่มี'} (เหลืออีก ${holiday?.daysRemaining ?? 'N/A'} วัน)
 
       โปรดวิเคราะห์และสร้างเอาต์พุต 2 ส่วน คั่นด้วยเครื่องหมาย "|||":
 
-      1. [สรุปภาพรวมอากาศ]: สรุปภาพรวมสั้นๆ 1 บรรทัด (ตัวอย่าง: "เช้าวันฟ้าเปิดแดดใส วันนี้แดดดีพร้อมลุยหน้าร้านนะคะ")
+      1. [สรุปภาพรวม]: สรุปภาพรวมสั้นๆ 1 บรรทัด (ตัวอย่าง: "เช้าวันพร้อมลุยหน้าร้านนะคะ")
 
       2. [คำแนะนำกลยุทธ์]: รูปแบบ Bullet Points (เครื่องหมาย "-") เท่านั้น ไม่เกิน 2-3 ข้อสั้นๆ 
          ห้ามเขียนเป็นพารากราฟยาว ห้ามใช้คำเกริ่นนำอ้อมค้อม และห้ามใส่คำอวยพรปิดท้ายเด็ดขาด
-         ให้เข้าประเด็นการจัดการร้านและเดลิเวอรี่ตามสภาพอากาศและกำลังคนทันที`,
+         ให้เข้าประเด็นการจัดการร้านและเดลิเวอรี่ตามกำลังคนทันที`,
     });
 
     const parts = text.split('|||').map(p => p.trim());
     if (parts.length >= 2) {
       return {
-        summary: parts[0],
-        strategy: parts[1]
+        summary: parts[0].replace(/<br\s*\/?>/gi, '\n'),
+        strategy: parts[1].replace(/<br\s*\/?>/gi, '\n')
       };
     }
     return null;
@@ -405,15 +404,8 @@ async function generateInsightsWithAI(weather: any, holiday: any, headcount: num
  *   - Tier 4-7: เตือนล่วงหน้า (advance warning)
  * - If countdown > 7 days: standard operational status
  */
-function generateStrategicAdvice(weather: any, holiday: any) {
+function generateStrategicAdvice(holiday: any) {
   const advices = [];
-
-  // Weather-based advice
-  if (weather.maxPop > 60) {
-    advices.push('- ฝนตกหนัก เตรียมรับมือออเดอร์เดลิเวอรี และตรวจสอบบรรจุภัณฑ์');
-  } else if (weather.summary.includes('ร้อน')) {
-    advices.push('- อากาศร้อน คาดว่าเมนูเย็น/ปั่นจะขายดี ตรวจสอบน้ำแข็งให้เพียงพอ');
-  }
 
   // Holiday-based advice with 7-day threshold
   if (holiday && holiday.ok === true && typeof holiday.daysRemaining === 'number' && holiday.daysRemaining <= 7) {
@@ -429,7 +421,7 @@ function generateStrategicAdvice(weather: any, holiday: any) {
     }
   }
 
-  // Default: ONLY if no holiday within 7 days AND no weather concerns
+  // Default: ONLY if no holiday within 7 days
   if (advices.length === 0) {
     advices.push('- สถานการณ์ปกติ ลุยงานกันเลยค่ะ');
   }
@@ -448,23 +440,17 @@ export async function compileDailyReportPayload() {
   const today = toZonedTime(now, 'Asia/Bangkok');
   const dateStr = format(today, THAI_REPORT_DATE_FORMAT);
 
-  const [{ activeStaff, offStaff, headcount }, weather, holiday] = await Promise.all([
+  const [{ activeStaff, offStaff, headcount }, holiday] = await Promise.all([
     fetchTodayShifts(today),
-    fetchWeatherForecast(today),
     fetchNextHoliday(today)
   ]);
 
   const staffSection = formatStaffSection(activeStaff, offStaff);
 
   // Introduce AI Insights (Bru Persona)
-  const aiInsights = await generateInsightsWithAI(weather, holiday, headcount, staffSection);
-  const weatherSummary = aiInsights?.summary || weather.summary;
-  const strategy = aiInsights?.strategy || generateStrategicAdvice(weather, holiday);
-
-  // Build weather section
-  const weatherWarnings = weather.warningPeriods.length > 0
-    ? weather.warningPeriods.join(', ')
-    : 'ไม่มีช่วงเวลาเสี่ยงพิเศษ';
+  const aiInsights = await generateInsightsWithAI(holiday, headcount, staffSection);
+  const summary = aiInsights?.summary || 'เช้าวันพร้อมลุยหน้าร้านนะคะ';
+  const strategy = aiInsights?.strategy || generateStrategicAdvice(holiday);
 
   // Build holiday section
   const holidayText = holiday && holiday.ok === true
@@ -480,11 +466,6 @@ ${staffSection}
 
 📅 วันหยุดนักขัตฤกษ์
 - วันหยุดนักขัตฤกษ์ถัดไป:  ${holidayText}
-
-🌦️ สภาพอากาศ บึงคำพร้อย
-- ภาพรวม:  ${weatherSummary}
-- โอกาสเกิดฝน:  ${weather.maxPop}%
-- ช่วงเวลาที่ต้องเฝ้าระวัง:  ${weatherWarnings}
 
 💡 คำแนะนำ:
 ${strategy}`;

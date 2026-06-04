@@ -78,9 +78,9 @@ Tech Stack: Next.js 16, React 19, Supabase, Tailwind CSS, Vercel Edge Runtime.
 
 * Static Shell: Navigation และ Branding (ใช้โลโก้ที่ public/images/logo.png).
 * Dynamic Islands: ข้อมูล Real-time เชื่อมต่อกับ Supabase.
-* Root Redirect Logic: บังคับการ Redirect จาก Root URL (/) ไปยังหน้าหลักตามภาษา
-  (/th) เพื่อเข้าสู่ Command Center โดยตรงผ่าน Next.js Routing Middleware
-  (`src/middleware.ts`).
+* **Root Redirect Logic**: บังคับการ Redirect จาก Root URL (/) ไปยังหน้าหลักตามภาษา
+  (/th) เพื่อเข้าสู่ Command Center โดยตรงผ่าน Next.js Routing Proxy
+  (`src/proxy.ts`) (renamed from middleware.ts to follow Next.js 16.2.4 convention).
 
 ## 4. Database & Security Architecture (R0 Data Integrity)
 
@@ -111,6 +111,11 @@ inventory_items.
   source (text), sort_order (int4), updated_at (timestamp)`.
 * Full-Form CRUD: การเพิ่มข้อมูลทำผ่าน Modal แบบ 2-column Grid เพื่อประหยัดพื้นที่แนวตั้ง.
   Input ตัวเลขถูกจำกัดความกว้างให้พอดีกับ 3-4 หลัก.
+* Sort Order Editing: เพิ่มฟีเจอร์แก้ไขลำดับ (sort_order) ได้โดยตรงในตาราง/การ์ด, เมื่อป้อนค่าใหม่:
+  - ระบบจะตรวจสอบค่า (ต้องเป็นตัวเลข, ≥ 1, ≤ จำนวนรายการทั้งหมด)
+  - ย้ายรายการไปยังตำแหน่งใหม่
+  - ปรับค่า sort_order ของรายการทุกรายการให้เรียงต่อเนื่องใหม่ทั้งหมด (1-based index)
+  - บันทึกลง Supabase ทันที
 * Sync Logic: ทุกครั้งที่แก้ข้อมูลใน Cell (`onBlur` หรือกด Enter) ระบบจะยิง
   `supabase.update()` ทันที พร้อมอัปเดต `updated_at` โดยมี `supabase.channel()`
   คอยซิงค์ข้อมูลข้ามเครื่อง (Real-time Broadcast) แบบไร้รอยต่อ (Zero-layer DOM).

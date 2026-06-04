@@ -179,3 +179,22 @@
 * **Action**: ตั้งค่าเซนเซอร์ DND พิเศษ (`TouchSensor` มี delay: 250ms และ tolerance: 5px) เพื่อให้หน้าจอมือถือสามารถใช้นิ้วกดเพื่อลากวางเรียงลำดับสินค้าได้โดยไม่ไปขัดขวางการเลื่อนหน้าจอปกติ
 * **Action**: พัฒนาชุดทดสอบหน้าจอมือถือแบบเจาะจงใน `src/test/mobile_layout.test.tsx` เพื่อเช็คความสมบูรณ์ของคอมโพเนนต์และการตั้งค่าเซนเซอร์แบบสัมผัส
 * **Verification**: `npm run build` ✓ (25/25 Pages, Build pass perfectly with Zero-Bold policy compliance) | `npx vitest run src/test/mobile_layout.test.tsx` ✓ (All tests pass)
+
+## 2026-06-04 (v6.4 - Sales Dashboard & Market Insights UI/UX Unification)
+
+* **Execution**: [SALES DASHBOARD & MARKET INSIGHTS DESIGN UNIFICATION]
+* **Action**: ปรับปรุง UI/UX ของหน้า Sales Dashboard (`src/app/[locale]/sales/page.tsx`) ให้สอดคล้องกับธีมสีพาสเทลของแอปพลิเคชัน (ใช้ `bg-[#fdfcf0]`, `text-black font-normal` 100%)
+* **Action**: อัปเดต UI ของหน้า Market Insights (`src/app/[locale]/market-insights/page.tsx`) ให้สอดคล้องกับระบบออกแบบเดียวกัน
+* **Action**: แก้ไขปัญหา category edit button ใน Sales Dashboard (เพิ่ม `e.preventDefault()` และ `e.stopPropagation()` เพื่อป้องกันการเลื่อนหน้าจอโดยไม่ตั้งใจ)
+* **Action**: เพิ่มระบบ caching สำหรับ Market Insights ใน localStorage (manual refresh only, no expiration)
+* **Verification**: `npm run build` ✓ (No errors, 25/25 pages)
+
+## 2026-06-05 (v6.5 - Inventory Sort Order Edit Feature & Middleware → Proxy Rename)
+
+* **Execution**: [INVENTORY SORT ORDER EDIT & NEXT.JS 16 DEPRECATION FIX]
+* **Action**: เพิ่มคอลัมน์ `sort_order` ที่แก้ไขได้ในหน้า Inventory Management (`src/app/[locale]/inventory/page.tsx`)
+* **Action**: พัฒนา logic ที่จัดการการย้ายตำแหน่งสินค้าเมื่อผู้ใช้ป้อนค่า `sort_order` ใหม่, รวมถึงการปรับค่า `sort_order` ของรายการอื่นๆ ให้เรียงลำดับต่อเนื่อง (1-based index)
+* **Action**: เพิ่ม validation สำหรับค่า `sort_order` (ต้องเป็นตัวเลข, ≥ 1, และ ≤ จำนวนรายการสินค้าทั้งหมด)
+* **Action**: เปลี่ยนชื่อไฟล์ `src/middleware.ts` เป็น `src/proxy.ts` เพื่อแก้ Vercel/Next.js 16.2.4 deprecation warning (deprecated middleware convention)
+* **Action**: อัปเดต PurchaseOrdersModalProps ให้ `selectedChannels` และ `setSelectedChannels` เป็น optional (มีค่า default) เพื่อแก้ TypeScript error
+* **Verification**: `npm run build` ✓ (Exit Code 0, build pass fully) | Diagnostics check passed with no errors

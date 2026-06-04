@@ -56,6 +56,7 @@ interface ColumnDef {
 }
 
 const defaultColumns: ColumnDef[] = [
+  { id: 'sort_order', label: 'ลำดับ', width: '60px', type: 'number' },
   { id: 'name', label: 'ชื่อรายการ', width: '220px', type: 'text' },
   { id: 'stock', label: 'คงเหลือ', width: '80px', type: 'number' },
   { id: 'order_qty', label: 'จำนวนสั่งซื้อ', width: '100px', type: 'number' },
@@ -774,7 +775,7 @@ export default function DynamicInventoryManager() {
   }, [itemsToOrder, selectedChannels]);
 
   const exportPOImage = async () => {
-    const element = document.getElementById('blackandbrew-po-table');
+    const element = document.getElementById('blackandbrew-po-table-export');
     if (!element) return;
     try {
       // 1. ดึงความสูงและความกว้างที่แท้จริงของตารางทั้งหมด
@@ -922,7 +923,7 @@ export default function DynamicInventoryManager() {
 
   function sanitizeInventoryItem(item: InventoryItem) {
     const sanitized = { ...item };
-    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock'];
+    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'sort_order'];
 
     numericFields.forEach(field => {
       if (sanitized[field] === '' || sanitized[field] === null || sanitized[field] === undefined || isNaN(Number(sanitized[field]))) {
@@ -1038,6 +1039,54 @@ export default function DynamicInventoryManager() {
     setIsEditing(false);
     const original = previousStateRef.current.items.find(i => i.id === id);
 
+    // Special handling for sort_order!
+    if (field === 'sort_order') {
+      // Step 1: Validate input
+      const numValue = Number(value);
+      const totalItems = items.length;
+      
+      // Check if valid number, >= 1, <= totalItems
+      if (isNaN(numValue) || numValue < 1 || numValue > totalItems) {
+        alert(`กรุณาป้อนตัวเลขลำดับที่ถูกต้อง (1 ถึง ${totalItems})`);
+        // Reset the value to original
+        setItems(prev => prev.map(item => item.id === id ? { ...item, sort_order: original?.sort_order || item.sort_order } : item));
+        return;
+      }
+
+      // Step 2: Get current items sorted by sort_order to find current position
+      const currentSorted = [...items].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      const currentIndex = currentSorted.findIndex(i => i.id === id);
+      const targetIndex = numValue - 1; // convert to 0-based
+
+      // Step 3: Reorder the array
+      const newSorted = [...currentSorted];
+      const [movedItem] = newSorted.splice(currentIndex, 1);
+      newSorted.splice(targetIndex, 0, movedItem);
+
+      // Step 4: Renumber all sort_order to be consecutive 1-based
+      const renumberedItems = newSorted.map((item, index) => ({ ...item, sort_order: index + 1 }));
+
+      pushHistory();
+      setItems(renumberedItems);
+      setSavingState('saving');
+
+      // Step 5: Sync all updated sort_orders to Supabase
+      try {
+        const { error } = await supabase.from('inventory_items').upsert(
+          renumberedItems.map(item => ({ id: item.id, sort_order: item.sort_order }))
+        );
+        if (error) throw error;
+        setSavingState('synced');
+        setTimeout(() => setSavingState('idle'), 2000);
+      } catch (err: any) {
+        console.error('Failed to update sort_order:', err.message || err);
+        setSavingState('idle');
+        fetchConfigAndInventory(); // rollback on error
+      }
+      return;
+    }
+
+    // Normal handling for other fields
     let sanitizedValue = value;
     const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock'];
     if (numericFields.includes(field)) {
@@ -1369,7 +1418,7 @@ export default function DynamicInventoryManager() {
                   disabled={undoStack.length === 0 || isSyncing}
                   className={`p-2.5 rounded-3xl transition-all ${undoStack.length === 0 || isSyncing
                     ? 'text-[#94a3b8] cursor-default'
-                    : 'text-[#000000] hover:bg-purple-100'
+                    : 'text-[#000000] hover:bg-black/5'
                     }`}
                   title="ย้อนกลับ (Undo)"
                 >
@@ -1380,7 +1429,7 @@ export default function DynamicInventoryManager() {
                   disabled={redoStack.length === 0 || isSyncing}
                   className={`p-2.5 rounded-3xl transition-all ${redoStack.length === 0 || isSyncing
                     ? 'text-[#94a3b8] cursor-default'
-                    : 'text-[#000000] hover:bg-purple-100'
+                    : 'text-[#000000] hover:bg-black/5'
                     }`}
                   title="ทำซ้ำ (Redo)"
                 >
@@ -1621,7 +1670,7 @@ export default function DynamicInventoryManager() {
                       required
                       value={newItemData.name || ''}
                       onChange={e => setNewItemData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 focus:border-purple-300 focus:ring-2 focus:ring-purple-100 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
                     />
                   </div>
 
@@ -1692,7 +1741,7 @@ export default function DynamicInventoryManager() {
                   <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
                     ยกเลิก
                   </button>
-                  <button type="submit" className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
+                  <button type="submit" className="flex-1 py-3 px-4 bg-black hover:bg-black/90 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
                     บันทึกข้อมูล
                   </button>
                 </div>
@@ -1857,6 +1906,19 @@ export default function DynamicInventoryManager() {
           />
         )}
       </AnimatePresence>
+
+      {/* Hidden Export Purchase Orders Table */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+        <PurchaseOrdersModal
+          isExportMode={true}
+          selectedChannels={['all']}
+          setSelectedChannels={() => {}}
+          itemsToOrder={itemsToOrder}
+          poSources={poSources}
+          displayedPoItems={itemsToOrder}
+          getStockColorClass={getStockColorClass}
+        />
+      </div>
     </>
   );
 }

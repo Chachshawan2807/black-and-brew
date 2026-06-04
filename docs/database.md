@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> **Version:** 6.3 | **Last Updated:** 2026-06-04 | **Engine:** Supabase PostgreSQL
+> **Version:** 6.5 | **Last Updated:** 2026-06-05 | **Engine:** Supabase PostgreSQL
 
 ---
 
@@ -94,8 +94,9 @@ CREATE TABLE inventory_config (
 
 ```json
 {
-  "order": ["name", "stock", "order_qty", "order_point", "target_stock", "unit", "source"],
+  "order": ["sort_order", "name", "stock", "order_qty", "order_point", "target_stock", "unit", "source"],
   "labels": {
+    "sort_order": "ลำดับ",
     "name": "ชื่อรายการ",
     "stock": "คงเหลือ",
     "order_qty": "จำนวนสั่งซื้อ",
