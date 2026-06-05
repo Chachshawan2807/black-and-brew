@@ -33,12 +33,33 @@ export default function AIChatOverlay() {
     if (savedHistory) {
       try {
         const parsed = JSON.parse(savedHistory);
-        const sanitized = parsed.map((msg: any) => ({
-          ...msg,
-          content: typeof msg.content === 'string'
-            ? msg.content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').replace(/on\w+="[^"]*"/gi, '')
-            : msg.content
-        }));
+        const sanitizeString = (str: string) => {
+          // Remove dangerous tags and attributes
+          return str
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+            .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+            .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+            .replace(/on\w+="[^"]*"/gi, '')
+            .replace(/on\w+='[^']*'/gi, '')
+            .replace(/javascript:/gi, '');
+        };
+
+        const sanitized = parsed.map((msg: any) => {
+          const newMsg = { ...msg };
+          if (typeof newMsg.content === 'string') {
+            newMsg.content = sanitizeString(newMsg.content);
+          }
+          if (newMsg.parts && Array.isArray(newMsg.parts)) {
+            newMsg.parts = newMsg.parts.map((part: any) => {
+              if (part.type === 'text' && typeof part.text === 'string') {
+                return { ...part, text: sanitizeString(part.text) };
+              }
+              return part;
+            });
+          }
+          return newMsg;
+        });
         setMessages(sanitized);
       } catch (e) {
         console.error("Failed to parse chat history", e);
@@ -281,13 +302,26 @@ export default function AIChatOverlay() {
 // Chat Bubble Sub-component
 function ChatBubble({ role, content }: { role: string; content: string }) {
   const isUser = role === 'user';
+  
+  // Sanitize content for XSS protection
+  const sanitizeContent = (str: string) => {
+    return str
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+      .replace(/on\w+="[^"]*"/gi, '')
+      .replace(/on\w+='[^']*'/gi, '')
+      .replace(/javascript:/gi, '');
+  };
+
+  const safeContent = sanitizeContent(content);
 
   return (
     <div className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {/* Avatar */}
       <div
-        className={`w-7 h-7 rounded-2xl flex items-center justify-center shrink-0 ${isUser ? 'bg-[#000000]' : 'bg-black/5'
-          }`}
+        className={`w-7 h-7 rounded-2xl flex items-center justify-center shrink-0 ${isUser ? 'bg-[#000000]' : 'bg-black/5'}`}
       >
         {isUser ? (
           <User size={13} className="text-white" />
@@ -303,7 +337,7 @@ function ChatBubble({ role, content }: { role: string; content: string }) {
           : 'bg-white text-black border-2 border-black rounded-bl-md'
           }`}
       >
-        {content}
+        {safeContent}
       </div>
     </div>
   );

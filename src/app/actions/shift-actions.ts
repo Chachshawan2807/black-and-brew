@@ -13,6 +13,15 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey);
 export async function deleteShift(id: string) {
   if (!id) return { success: false, error: 'Missing shift ID' };
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
     const { error } = await supabaseAdmin.from('shifts').delete().eq('id', id);
     if (error) return { success: false, error: error.message };
 
@@ -27,6 +36,15 @@ export async function deleteShift(id: string) {
 export async function updateStaffOrder(orderedIds: string[]) {
   if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'Empty order list' };
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
     const updates = orderedIds.map((id, index) =>
       supabaseAdmin.from('profiles').update({ schedule_order: index, display_order: index }).eq('id', id)
     );
@@ -44,6 +62,15 @@ export async function updateStaffOrder(orderedIds: string[]) {
 export async function updateDashboardOrder(orderedIds: string[]) {
   if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'Empty order list' };
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
     const updates = orderedIds.map((id, index) =>
       supabaseAdmin.from('profiles').update({ dashboard_order: index }).eq('id', id)
     );
@@ -120,6 +147,15 @@ export async function saveShift(payload: any) {
 export async function deleteManagementHistoryRange(employeeId: string, startDate: string, endDate: string) {
   if (!employeeId || !startDate || !endDate) return { success: false, error: 'Missing parameters' };
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
     const { error } = await supabaseAdmin
       .from('shifts')
       .delete()

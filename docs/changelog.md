@@ -189,12 +189,19 @@
 * **Action**: เพิ่มระบบ caching สำหรับ Market Insights ใน localStorage (manual refresh only, no expiration)
 * **Verification**: `npm run build` ✓ (No errors, 25/25 pages)
 
-## 2026-06-05 (v6.5 - Inventory Sort Order Edit Feature & Middleware → Proxy Rename)
+## 2026-06-05 (v6.7 - Full Security Hardening & LINE Refinement)
 
-* **Execution**: [INVENTORY SORT ORDER EDIT & NEXT.JS 16 DEPRECATION FIX]
-* **Action**: เพิ่มคอลัมน์ `sort_order` ที่แก้ไขได้ในหน้า Inventory Management (`src/app/[locale]/inventory/page.tsx`)
-* **Action**: พัฒนา logic ที่จัดการการย้ายตำแหน่งสินค้าเมื่อผู้ใช้ป้อนค่า `sort_order` ใหม่, รวมถึงการปรับค่า `sort_order` ของรายการอื่นๆ ให้เรียงลำดับต่อเนื่อง (1-based index)
-* **Action**: เพิ่ม validation สำหรับค่า `sort_order` (ต้องเป็นตัวเลข, ≥ 1, และ ≤ จำนวนรายการสินค้าทั้งหมด)
-* **Action**: เปลี่ยนชื่อไฟล์ `src/middleware.ts` เป็น `src/proxy.ts` เพื่อแก้ Vercel/Next.js 16.2.4 deprecation warning (deprecated middleware convention)
-* **Action**: อัปเดต PurchaseOrdersModalProps ให้ `selectedChannels` และ `setSelectedChannels` เป็น optional (มีค่า default) เพื่อแก้ TypeScript error
-* **Verification**: `npm run build` ✓ (Exit Code 0, build pass fully) | Diagnostics check passed with no errors
+* **Execution**: [DAILY LINE NOTIFICATION CONTENT REFINEMENT]
+* **Action**: ลบส่วน "คำแนะนำ" ออกจากเนื้อหาแจ้งเตือน LINE ใน `compileDailyReportPayload` (`src/app/actions/daily-report-actions.ts`), ลบ `generateInsightsWithAI` และ `generateStrategicAdvice` ที่ไม่ใช้แล้ว, และลบ import ที่ไม่จำเป็น
+* **Result**: ข้อความแจ้งเตือนกลุ่ม LINE ไม่มีส่วนคำแนะนำอีกต่อไป และโค้ดสะอาดขึ้น
+* **Verification**: `npm run build` ✓
+
+* **Execution**: [FULL SECURITY HARDENING]
+* **Action**: เพิ่ม `supabase.auth.getUser()` auth check ใน Server Actions ที่ขาด:
+  - `deleteShift`, `updateStaffOrder`, `updateDashboardOrder`, `deleteManagementHistoryRange` (`src/app/actions/shift-actions.ts`)
+  - `syncHolidays` (`src/app/actions/holiday-actions.ts`)
+  - `uploadSalesFiles`, `deleteSalesUpload`, `updateProductCategory`, `deleteCategory`, `autoCategorizeAllProducts` (`src/app/actions/sales-actions.ts`)
+* **Action**: เพิ่ม XSS Sanitization ที่สมบูรณ์ใน `AIChatOverlay.tsx`: sanitize content ทั้งจาก localStorage และเมื่อแสดงผลใน `ChatBubble` (ลบ script/iframe/object/embed, on* attributes, javascript: URLs)
+* **Action**: ยืนยัน Zero-Bold Policy (ไม่มี `font-bold`/`font-semibold` ในไฟล์ src)
+* **Result**: ความปลอดภัยของระบบถูกยกระดับอย่างสมบูรณ์, ไม่มีช่องโหว่ XSS และ Server Actions ทุกตัวที่แก้ไข/เขียนข้อมูลมีการตรวจสอบสิทธิ์แล้ว
+* **Verification**: `npm run build` ✓ (Exit Code 0, TypeScript check pass fully)

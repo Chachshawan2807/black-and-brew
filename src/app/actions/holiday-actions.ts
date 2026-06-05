@@ -1,12 +1,26 @@
 'use server';
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 const CALENDAR_ID = 'th.th#holiday@group.v.calendar.google.com';
 const API_KEY = process.env.GOOGLE_CALENDAR_API_KEY;
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey);
+
 export async function syncHolidays(startDate: string, endDate: string) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('sb-access-token')?.value;
+  const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+  if (!pinVerified && (!user || authError)) {
+    return { success: false, error: 'Unauthorized: Session missing or invalid' };
+  }
+
   if (!API_KEY) {
     // Missing API Key
     return { success: false, error: 'Missing API Key' };
@@ -33,14 +47,14 @@ export async function syncHolidays(startDate: string, endDate: string) {
       const name = item.summary;
 
       // Check if already exists
-      const { data: existing } = await supabase
+      const { data: existing } = await supabaseAdmin
         .from('holidays')
         .select('id')
         .eq('date', date)
         .single();
 
       if (!existing) {
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseAdmin
           .from('holidays')
           .insert({ date, name });
         

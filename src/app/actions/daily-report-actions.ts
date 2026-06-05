@@ -1,7 +1,5 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
 import { format, differenceInDays, startOfDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
@@ -354,82 +352,6 @@ export async function fetchNextHoliday(targetDate: Date) {
 }
 
 /**
- * AI-powered insights generator for LINE reports (Persona: Bru).
- * Refactored to handle human-like weather summaries and strategic advice.
- */
-async function generateInsightsWithAI(holiday: any, headcount: number, staffSection: string) {
-  try {
-    const { text } = await generateText({
-      model: google('gemini-2.5-flash'), // ปรับใช้ตามคำสั่งเพื่อให้สอดคล้องกับเวอร์ชันที่ใช้งานได้
-      system: `คุณคือ "บรู" AI ผู้ช่วยผู้จัดการหญิงของร้าน BLACKANDBREW ที่มีบุคลิกภาพที่สุภาพ อ่อนหวาน และน่ารัก 
-      ใช้คำลงท้ายว่า "ค่ะ" หรือ "นะคะ" 100% ตลอดการสนทนา ห้ามใช้คำว่า "ครับ" หรือภาษาทางการแบบหุ่นยนต์ 
-      [CRITICAL] ส่วนของ "คำแนะนำ" ต้อง Hyper-Concise: สั้น กระชับ ตรงประเด็นขั้นสูงสุด
-      ห้ามใช้ตัวหนา (No **), ห้ามตอบเป็นตาราง, ห้ามใช้ <br> tag และห้ามใส่ประโยคห่วงใยหรือคำอวยพรปิดท้ายย่อหน้าเด็ดขาด 
-      ตอบเป็นภาษาไทยเท่านั้น โดยใช้ \n สำหรับขึ้นบรรทัดใหม่`,
-      prompt: `ข้อมูลของวันนี้:
-      - จำนวนพนักงาน: ${headcount} คน
-      - กะงาน: ${staffSection}
-      - วันหยุด: ${holiday?.name || 'ไม่มี'} (เหลืออีก ${holiday?.daysRemaining ?? 'N/A'} วัน)
-
-      โปรดวิเคราะห์และสร้างเอาต์พุต 2 ส่วน คั่นด้วยเครื่องหมาย "|||":
-
-      1. [สรุปภาพรวม]: สรุปภาพรวมสั้นๆ 1 บรรทัด (ตัวอย่าง: "เช้าวันพร้อมลุยหน้าร้านนะคะ")
-
-      2. [คำแนะนำกลยุทธ์]: รูปแบบ Bullet Points (เครื่องหมาย "-") เท่านั้น ไม่เกิน 2-3 ข้อสั้นๆ 
-         ห้ามเขียนเป็นพารากราฟยาว ห้ามใช้คำเกริ่นนำอ้อมค้อม และห้ามใส่คำอวยพรปิดท้ายเด็ดขาด
-         ให้เข้าประเด็นการจัดการร้านและเดลิเวอรี่ตามกำลังคนทันที`,
-    });
-
-    const parts = text.split('|||').map(p => p.trim());
-    if (parts.length >= 2) {
-      return {
-        summary: parts[0].replace(/<br\s*\/?>/gi, '\n'),
-        strategy: parts[1].replace(/<br\s*\/?>/gi, '\n')
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error('[AI Insights Failure]:', error);
-    return null;
-  }
-}
-
-/**
- * SPEC: Strategic Advice Generator (Rule-Based)
- * 
- * - If countdown <= 7 days: MUST pivot to proactive tactical alert
- *   - DO NOT say "สถานการณ์ปกติ" within this 7-day window
- *   - Tier 0: วันหยุดวันนี้ (holiday today)
- *   - Tier 1-3: เร่งด่วน (urgent)
- *   - Tier 4-7: เตือนล่วงหน้า (advance warning)
- * - If countdown > 7 days: standard operational status
- */
-function generateStrategicAdvice(holiday: any) {
-  const advices = [];
-
-  // Holiday-based advice with 7-day threshold
-  if (holiday && holiday.ok === true && typeof holiday.daysRemaining === 'number' && holiday.daysRemaining <= 7) {
-    if (holiday.daysRemaining === 0) {
-      // Tier 0: Holiday today
-      advices.push(`- วันนี้เป็นวันหยุด (${holiday.name}) คาดว่าลูกค้าหน้าร้านหนาแน่น เตรียมกำลังพลและวัตถุดิบให้พร้อม`);
-    } else if (holiday.daysRemaining <= 3) {
-      // Tier 1-3: Urgent pre-holiday
-      advices.push(`- อีก ${holiday.daysRemaining} วันถึง ${holiday.name} เร่งตรวจสอบสต็อกและสั่งเติมสินค้าทันที`);
-    } else {
-      // Tier 4-7: Advance warning
-      advices.push(`- อีก ${holiday.daysRemaining} วันจะถึง ${holiday.name} วางแผนสั่งซื้อล่วงหน้าเพื่อป้องกันสินค้าขาด`);
-    }
-  }
-
-  // Default: ONLY if no holiday within 7 days
-  if (advices.length === 0) {
-    advices.push('- สถานการณ์ปกติ ลุยงานกันเลยค่ะ');
-  }
-
-  return advices.join('\n');
-}
-
-/**
  * SPEC: Compile Daily Report Payload
  * 
  * Master function that compiles all data into the final LINE notification message.
@@ -447,11 +369,6 @@ export async function compileDailyReportPayload() {
 
   const staffSection = formatStaffSection(activeStaff, offStaff);
 
-  // Introduce AI Insights (Bru Persona)
-  const aiInsights = await generateInsightsWithAI(holiday, headcount, staffSection);
-  const summary = aiInsights?.summary || 'เช้าวันพร้อมลุยหน้าร้านนะคะ';
-  const strategy = aiInsights?.strategy || generateStrategicAdvice(holiday);
-
   // Build holiday section
   const holidayText = holiday && holiday.ok === true
     ? `${holiday.name} (อีก ${holiday.daysRemaining} วัน)`
@@ -465,10 +382,7 @@ export async function compileDailyReportPayload() {
 ${staffSection}
 
 📅 วันหยุดนักขัตฤกษ์
-- วันหยุดนักขัตฤกษ์ถัดไป:  ${holidayText}
-
-💡 คำแนะนำ:
-${strategy}`;
+- วันหยุดนักขัตฤกษ์ถัดไป:  ${holidayText}`;
 
   return payload;
 }

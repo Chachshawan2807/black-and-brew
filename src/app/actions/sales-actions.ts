@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
+import { cookies } from 'next/headers';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_FILES = 24;
@@ -19,6 +20,19 @@ const getSupabaseAdmin = () => {
   if (!supabaseAdminKey) return null;
   return createClient(supabaseUrl, supabaseAdminKey);
 };
+
+async function checkAuth(): Promise<{ success: false; error: string } | { success: true }> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('sb-access-token')?.value;
+  const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return { success: false, error: 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้' };
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (!pinVerified && (!user || authError)) {
+    return { success: false, error: 'Unauthorized: Session missing or invalid' };
+  }
+  return { success: true };
+}
 
 // Zod schema for sales record validation
 const SalesRecordSchema = z.object({
@@ -192,6 +206,11 @@ export async function uploadSalesFiles(formData: FormData): Promise<{
   uploadedFiles?: Array<{ fileName: string; recordCount: number; auditLog: any }>;
   error?: string;
 }> {
+  const authCheck = await checkAuth();
+  if (!authCheck.success) {
+    return authCheck;
+  }
+  
   const supabase = getSupabaseAdmin();
   
   if (!supabase) {
@@ -440,6 +459,11 @@ export async function fetchSalesHistory(page = 1, pageSize = 10) {
 
 // Function to delete a sales upload and its associated records
 export async function deleteSalesUpload(uploadId: string) {
+  const authCheck = await checkAuth();
+  if (!authCheck.success) {
+    return authCheck;
+  }
+  
   const supabase = getSupabaseAdmin();
   
   if (!supabase) {
@@ -690,6 +714,11 @@ async function logAuditEntry(supabase: any, entry: {
  * Update product category (user edit)
  */
 export async function updateProductCategory(productName: string, newCategory: string) {
+  const authCheck = await checkAuth();
+  if (!authCheck.success) {
+    return authCheck;
+  }
+  
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return { success: false, error: 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้' };
@@ -758,6 +787,11 @@ export async function updateProductCategory(productName: string, newCategory: st
  * Delete a category (removes it from all products that use it)
  */
 export async function deleteCategory(categoryName: string) {
+  const authCheck = await checkAuth();
+  if (!authCheck.success) {
+    return authCheck;
+  }
+  
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return { success: false, error: 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้' };
@@ -810,6 +844,11 @@ export async function deleteCategory(categoryName: string) {
  * Auto-categorize all uncategorized products using AI
  */
 export async function autoCategorizeAllProducts() {
+  const authCheck = await checkAuth();
+  if (!authCheck.success) {
+    return authCheck;
+  }
+  
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return { success: false, error: 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้' };
