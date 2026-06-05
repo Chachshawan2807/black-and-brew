@@ -66,6 +66,14 @@
 
 
 @layer components {
+  .thai-chat-readable {
+    font-family: 'IBM Plex Sans Thai', 'Prompt', 'Inter', system-ui, sans-serif;
+    line-height: 1.85;
+    letter-spacing: 0;
+    font-kerning: normal;
+    text-rendering: optimizeLegibility;
+  }
+
   .glass-panel {
     background-color: rgb(255 255 255 / 0.95);
     backdrop-filter: blur(24px);

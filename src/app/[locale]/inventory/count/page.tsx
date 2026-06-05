@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ChevronLeft, Loader2, CheckCircle2, ClipboardList } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw } from 'lucide-react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { cn } from '@/lib/utils';
 
 interface InventoryItem {
   id: string;
@@ -84,6 +83,32 @@ export default function InventoryCountPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const fetchInventory = useCallback(async () => {
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('id, name, stock, unit, sort_order')
+        .order('sort_order', { ascending: true });
+
+      if (error) {
+        console.error('Supabase Error (Count Fetch):', error.message, error.details);
+        throw error;
+      }
+
+      setItems(data || []);
+    } catch (err) {
+      console.error('Failed to load inventory for count:', err);
+      setItems([]);
+      setErrorMessage('ไม่สามารถเปิดหน้าตรวจนับคลังสินค้าได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchInventory();
@@ -108,27 +133,7 @@ export default function InventoryCountPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
-
-  async function fetchInventory() {
-    try {
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .select('id, name, stock, unit, sort_order')
-        .order('sort_order', { ascending: true });
-
-      if (error) {
-        console.error('Supabase Error (Count Fetch):', error.message, error.details);
-        throw error;
-      }
-
-      setItems(data || []);
-    } catch (err) {
-      console.error('Failed to load inventory for count:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  }, [fetchInventory]);
 
   async function handleSaveStock(id: string, value: number) {
     // Skip save if stock value hasn't actually changed
@@ -136,6 +141,7 @@ export default function InventoryCountPage() {
     if (currentItem && Number(currentItem.stock) === value) return;
 
     setSavingState('saving');
+    setErrorMessage(null);
     try {
       const { error } = await supabase
         .from('inventory_items')
@@ -152,6 +158,7 @@ export default function InventoryCountPage() {
     } catch (err) {
       console.error('Failed to update stock:', err);
       setSavingState('idle');
+      setErrorMessage('บันทึกจำนวนสต็อกไม่สำเร็จ ระบบได้โหลดข้อมูลล่าสุดกลับมาแล้ว');
       fetchInventory(); // Rollback to actual state
     }
   }
@@ -161,6 +168,52 @@ export default function InventoryCountPage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#fdfcf0] text-black font-normal">
         <Loader2 className="w-8 h-8 animate-spin mb-4 text-black" strokeWidth={1.5} />
         <span className="text-sm uppercase tracking-widest text-black/60 font-normal">กำลังซิงค์ข้อมูลสต็อกสินค้าอยู่ค่ะ...</span>
+      </div>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen bg-[#fdfcf0] text-black font-normal p-4 md:p-8">
+        <div className="max-w-xl mx-auto flex flex-col items-stretch gap-6">
+          <header className="flex items-center justify-between border-b border-black/5 pb-4">
+            <Link
+              href={`/${locale}/inventory`}
+              className="flex items-center gap-1.5 text-black/50 hover:text-black transition-colors py-2 font-normal text-sm"
+            >
+              <ChevronLeft className="w-4.5 h-4.5" />
+              <span>กลับไปคลังสินค้า</span>
+            </Link>
+          </header>
+
+          <div className="bg-white border border-red-100 rounded-3xl p-6 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 rounded-2xl bg-red-50 p-2.5 text-red-500">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base font-normal text-black">เปิดหน้าตรวจนับคลังสินค้าไม่สำเร็จ</h1>
+                <p className="mt-1 text-sm text-black/60">{errorMessage}</p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void fetchInventory()}
+                    className="inline-flex h-11 items-center gap-2 rounded-2xl bg-black px-4 text-sm text-white transition-colors hover:bg-black/85"
+                  >
+                    <RefreshCcw className="w-4 h-4" />
+                    <span>ลองเปิดใหม่</span>
+                  </button>
+                  <Link
+                    href={`/${locale}/inventory`}
+                    className="inline-flex h-11 items-center rounded-2xl border border-black/10 px-4 text-sm text-black/70 transition-colors hover:bg-black/[0.03]"
+                  >
+                    กลับหน้าคลังสินค้า
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

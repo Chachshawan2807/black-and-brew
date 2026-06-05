@@ -8,11 +8,17 @@ import { startOfWeek, addDays, format, parseISO, isValid } from 'date-fns';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
+import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange } from '@/app/actions/shift-actions';
 import type { Profile, Shift } from '@/types';
 import { isSameThaiDay, formatToThai } from '@/lib/date-utils';
 import { THAI_TIMEZONE } from '@/lib/timezone';
+import {
+  REGULAR_HOLIDAYS_STORAGE_KEY,
+  normalizeRegularHolidayDays,
+  type RegularHolidayMap,
+} from '@/lib/regular-holidays';
 
 import {
   DndContext,
@@ -261,6 +267,7 @@ interface ScheduleClientProps {
   initialProfiles: Profile[];
   initialShifts: Shift[];
   initialHolidays: { id: string; date: string; name: string }[];
+  initialRegularHolidays: RegularHolidayMap;
   initialDateStr: string;
   locale: string;
 }
@@ -269,6 +276,7 @@ export default function ScheduleClient({
   initialProfiles,
   initialShifts,
   initialHolidays,
+  initialRegularHolidays,
   initialDateStr,
   locale
 }: ScheduleClientProps) {
@@ -352,27 +360,147 @@ export default function ScheduleClient({
   const [redoStack, setRedoStack] = useState<any[]>([]);
 
   const [showRegularHolidayModal, setShowRegularHolidayModal] = useState(false);
-  const [regularHolidays, setRegularHolidays] = useState<Record<string, number[]>>({});
+  const [regularHolidays, setRegularHolidays] = useState<RegularHolidayMap>(initialRegularHolidays);
   const [holidayFormEmployee, setHolidayFormEmployee] = useState<string>('');
   const [holidayFormDays, setHolidayFormDays] = useState<number[]>([]);
   const [toastAlert, setToastAlert] = useState<{message: string, x: number, y: number} | null>(null);
   const [holidaySaveSuccess, setHolidaySaveSuccess] = useState(false);
+  const regularHolidayStorageReadyRef = useRef(false);
+  const regularHolidayMigrationInFlightRef = useRef(false);
+  const hasServerRegularHolidayData = useMemo(
+    () => Object.keys(initialRegularHolidays).length > 0,
+    [initialRegularHolidays]
+  );
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('blackandbrew-regular-holidays');
-      if (saved) setRegularHolidays(JSON.parse(saved));
-    } catch(e) {}
-  }, []);
+      const saved = localStorage.getItem(REGULAR_HOLIDAYS_STORAGE_KEY);
+      if (!saved) {
+        regularHolidayStorageReadyRef.current = true;
+        return;
+      }
 
-  const handleSaveRegularHolidays = () => {
+      const parsed = JSON.parse(saved) as RegularHolidayMap;
+      if (!hasServerRegularHolidayData && parsed && typeof parsed === 'object') {
+        setRegularHolidays(parsed);
+      }
+    } catch (error) {
+      console.error('Failed to load cached regular holidays:', error);
+    } finally {
+      regularHolidayStorageReadyRef.current = true;
+    }
+  }, [hasServerRegularHolidayData]);
+
+  useEffect(() => {
+    if (hasServerRegularHolidayData) {
+      setRegularHolidays(initialRegularHolidays);
+    }
+  }, [hasServerRegularHolidayData, initialRegularHolidays]);
+
+  useEffect(() => {
+    if (!regularHolidayStorageReadyRef.current) return;
+    localStorage.setItem(REGULAR_HOLIDAYS_STORAGE_KEY, JSON.stringify(regularHolidays));
+  }, [regularHolidays]);
+
+  useEffect(() => {
+    if (hasServerRegularHolidayData || regularHolidayMigrationInFlightRef.current || profiles.length === 0) {
+      return;
+    }
+
+    const saved = localStorage.getItem(REGULAR_HOLIDAYS_STORAGE_KEY);
+    if (!saved) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(saved) as RegularHolidayMap;
+      if (!parsed || typeof parsed !== 'object') {
+        return;
+      }
+
+      const validProfileIds = new Set(profiles.map((profile) => profile.id));
+      const migratableEntries = Object.entries(parsed)
+        .map(([profileId, days]) => [profileId, normalizeRegularHolidayDays(days || [])] as const)
+        .filter(([profileId, days]) => validProfileIds.has(profileId) && days.length > 0);
+
+      if (migratableEntries.length === 0) {
+        return;
+      }
+
+      regularHolidayMigrationInFlightRef.current = true;
+      let cancelled = false;
+
+      const migrateCachedRegularHolidays = async () => {
+        setLoading(true);
+
+        try {
+          for (const [profileId, days] of migratableEntries) {
+            const result = await saveRegularHolidays(profileId, days);
+            if (!result.success) {
+              throw new Error(result.error || `Failed to migrate regular holidays for ${profileId}`);
+            }
+          }
+
+          if (cancelled) return;
+
+          setRegularHolidays(
+            migratableEntries.reduce<RegularHolidayMap>((acc, [profileId, days]) => {
+              acc[profileId] = days;
+              return acc;
+            }, {})
+          );
+          router.refresh();
+        } catch (error) {
+          console.error('Failed to migrate cached regular holidays:', error);
+          regularHolidayMigrationInFlightRef.current = false;
+          alert('เกิดข้อผิดพลาดในการย้ายข้อมูลวันหยุดประจำขึ้น Supabase ข้อมูลในเครื่องยังอยู่ค่ะ');
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        }
+      };
+
+      void migrateCachedRegularHolidays();
+
+      return () => {
+        cancelled = true;
+      };
+    } catch (error) {
+      console.error('Failed to parse cached regular holidays for migration:', error);
+    }
+  }, [hasServerRegularHolidayData, profiles, router]);
+
+  const handleSaveRegularHolidays = async () => {
     if (!holidayFormEmployee) return;
-    const newHolidays = { ...regularHolidays, [holidayFormEmployee]: holidayFormDays };
-    setRegularHolidays(newHolidays);
-    localStorage.setItem('blackandbrew-regular-holidays', JSON.stringify(newHolidays));
-    
-    setHolidaySaveSuccess(true);
-    setTimeout(() => setHolidaySaveSuccess(false), 2000);
+
+    const normalizedDays = normalizeRegularHolidayDays(holidayFormDays);
+    const nextRegularHolidays = { ...regularHolidays };
+
+    if (normalizedDays.length > 0) {
+      nextRegularHolidays[holidayFormEmployee] = normalizedDays;
+    } else {
+      delete nextRegularHolidays[holidayFormEmployee];
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await saveRegularHolidays(holidayFormEmployee, normalizedDays);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save regular holidays');
+      }
+
+      setRegularHolidays(nextRegularHolidays);
+      setHolidayFormDays(normalizedDays);
+      setHolidaySaveSuccess(true);
+      setTimeout(() => setHolidaySaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('Failed to save regular holidays:', error);
+      alert('เกิดข้อผิดพลาดในการบันทึกวันหยุดประจำ ข้อมูลเดิมยังคงอยู่ค่ะ');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const weekDays = useMemo(() => {
@@ -394,7 +522,10 @@ export default function ScheduleClient({
     if (initialDateStr) {
       setCurrentDate(new Date(initialDateStr));
     }
-  }, [initialProfiles, initialShifts, initialHolidays, initialDateStr]);
+    if (hasServerRegularHolidayData) {
+      setRegularHolidays(initialRegularHolidays);
+    }
+  }, [hasServerRegularHolidayData, initialProfiles, initialShifts, initialHolidays, initialRegularHolidays, initialDateStr]);
 
   const pushToHistory = useCallback((currentProfiles: any[], currentOrder: string[], currentShifts: any[]) => {
     setUndoStack(prev => {

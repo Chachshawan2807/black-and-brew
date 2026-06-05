@@ -1,6 +1,7 @@
 import ScheduleClient from './ScheduleClient';
 import { startOfWeek, addDays, format } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
+import { groupRegularHolidayRows } from '@/lib/regular-holidays';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -28,7 +29,7 @@ export default async function SchedulePage({
   const sundayStr = format(sunday, 'yyyy-MM-dd');
 
   // ใช้ Admin Fetch เพื่อหลีกเลี่ยงการถูกบล็อกข้อมูลจาก RLS
-  const [profilesRes, shiftsRes, holidaysRes] = await Promise.all([
+  const [profilesRes, shiftsRes, holidaysRes, regularHolidaysRes] = await Promise.all([
     supabaseAdmin.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
     supabaseAdmin.from('shifts')
       .select('id, employee_id, start_time, end_time, status, metadata')
@@ -38,7 +39,8 @@ export default async function SchedulePage({
       .not('status', 'eq', '')
       .not('metadata->>location', 'is', null)
       .not('metadata->>location', 'eq', ''),
-    supabaseAdmin.from('holidays').select('id, date, name').gte('date', mondayStr).lte('date', sundayStr)
+    supabaseAdmin.from('holidays').select('id, date, name').gte('date', mondayStr).lte('date', sundayStr),
+    supabaseAdmin.from('regular_holidays').select('id, profile_id, day_of_week')
   ]);
 
   const normalizedShifts = (shiftsRes.data || []).map(s => {
@@ -46,11 +48,16 @@ export default async function SchedulePage({
     return { ...s, start_time: datePart + 'T00:00:00', end_time: datePart + 'T23:59:59' };
   });
 
+  if (regularHolidaysRes.error) {
+    console.error('Supabase Error:', regularHolidaysRes.error.message, regularHolidaysRes.error.details);
+  }
+
   return (
     <ScheduleClient
       initialProfiles={profilesRes.data || []}
       initialShifts={normalizedShifts}
       initialHolidays={holidaysRes.data || []}
+      initialRegularHolidays={groupRegularHolidayRows(regularHolidaysRes.data)}
       initialDateStr={mondayStr}
       locale={locale}
     />

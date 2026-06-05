@@ -279,7 +279,7 @@ export default function AIChatOverlay() {
                   placeholder="ถามบรู..."
                   disabled={isLoading}
                   autoComplete="off"
-                  className="flex-1 bg-white border-2 border-black rounded-2xl px-3 md:px-4 py-2.5 text-[13px] font-normal text-black placeholder:text-black placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-black transition-all disabled:opacity-50"
+                  className="thai-chat-readable flex-1 bg-white border-2 border-black rounded-2xl px-3 md:px-4 py-2.5 text-[13px] font-normal text-black placeholder:text-black placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-black transition-all disabled:opacity-50"
                 />
                 <motion.button
                   type="submit"
@@ -332,7 +332,7 @@ function ChatBubble({ role, content }: { role: string; content: string }) {
 
       {/* Bubble */}
       <div
-        className={`max-w-[80%] px-4 py-2.5 rounded-3xl text-[15px] font-normal antialiased leading-relaxed whitespace-pre-line ${isUser
+        className={`thai-chat-readable max-w-[80%] px-4 py-2.5 rounded-3xl text-[15px] font-normal antialiased whitespace-pre-line ${isUser
           ? 'bg-[#fdfcf0] text-black border-2 border-black rounded-br-md'
           : 'bg-white text-black border-2 border-black rounded-bl-md'
           }`}
