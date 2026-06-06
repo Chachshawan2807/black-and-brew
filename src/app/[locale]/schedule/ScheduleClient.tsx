@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Undo2, Redo2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Download, Pencil } from 'lucide-react';
@@ -67,6 +68,48 @@ const defaultHistoryColumns: ColumnDef[] = [
   { id: 'actions', label: 'จัดการ', width: '100px' }
 ];
 
+// ฟังก์ชันคำนวณตำแหน่ง Dropdown ไม่ให้ทะลุขอบจอ
+function getDropdownPosition(
+  anchorX: number,
+  anchorY: number,
+  menuWidth: number,
+  menuHeight: number
+) {
+  const GAP = 12;
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let left = anchorX;
+  let top = anchorY;
+
+  const spaceRight = vw - anchorX;
+  const spaceBottom = vh - anchorY;
+
+  // Flip Horizontal
+  if (spaceRight < menuWidth + GAP) {
+    left = anchorX - menuWidth;
+  }
+
+  // Flip Vertical
+  if (spaceBottom < menuHeight + GAP) {
+    top = anchorY - menuHeight;
+  }
+
+  // Clamp
+  left = Math.max(
+    GAP,
+    Math.min(left, vw - menuWidth - GAP)
+  );
+
+  top = Math.max(
+    GAP,
+    Math.min(top, vh - menuHeight - GAP)
+  );
+
+  return { left, top };
+}
+
 function ColumnHeader({ col, onResize, onResizeEnd }: {
   col: ColumnDef;
   onResize: (id: string, width: number) => void;
@@ -87,7 +130,6 @@ function ColumnHeader({ col, onResize, onResizeEnd }: {
     isResizing.current = true;
     startX.current = e.pageX;
 
-    // ใช้ offsetWidth เพื่อหาขนาดจริงในขณะนั้น ป้องกันการ "เด้ง" หรือ "กระโดด" หากตารางถูกยืดออกด้วย w-full
     const el = e.currentTarget.parentElement;
     startWidth.current = el ? el.offsetWidth : (parseInt(col.width) || 150);
 
@@ -121,7 +163,7 @@ function ColumnHeader({ col, onResize, onResizeEnd }: {
 
   const style = {
     width: col.width,
-    minWidth: '20px', // อนุญาตให้หดขนาดได้เล็กมากจนทับตัวอักษรเพื่อความอิสระสูงสุด
+    minWidth: '20px',
   };
 
   return (
@@ -197,7 +239,7 @@ const SortableEmployeeRow = React.memo(({
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing p-3 h-11 w-11 hover:bg-gray-100 rounded-3xl transition-all text-gray-300 hover:text-gray-600 touch-none flex items-center justify-center"
+          className="cursor-grab active:cursor-grabbing p-3 h-11 w-11 hover:bg-gray-100 rounded-3xl transition-all text-[#000000]/40 hover:text-[#000000]/70 touch-none flex items-center justify-center"
           title="ลากเพื่อเปลี่ยนลำดับ"
         >
           <GripVertical className="w-5 h-5" />
@@ -241,7 +283,7 @@ const SortableEmployeeRow = React.memo(({
           <div
             key={date}
             onClick={(e) => onCellClick(profile.id, date, shift, e.clientX, e.clientY)}
-            className="p-1 border-r last:border-0 border-gray-50 min-h-[52px] cursor-pointer group/cell relative"
+            className="p-1 border-r last:border-0 border-[#000000]/5 min-h-[52px] cursor-pointer group/cell relative"
             title={shift?.metadata?.remark || ''}
           >
             {shift && (shift.status && shift.metadata?.location) ? (
@@ -308,6 +350,41 @@ export default function ScheduleClient({
 
   const [mgmtColumns, setMgmtColumns] = useState<ColumnDef[]>(defaultHistoryColumns);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // States สำหรับ Portal ตำแหน่ง Dropdown
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ left: 0, top: 0 });
+
+  // อัปเดตตำแหน่งเมื่อ Scroll หรือ Resize
+  useEffect(() => {
+    if (!selectedCell) return;
+
+    const updatePosition = () => {
+      const menuHeight = dropdownRef.current?.offsetHeight || 300;
+      const menuWidth = dropdownRef.current?.offsetWidth || 192; // 192px = w-48
+
+      setDropdownPosition(
+        getDropdownPosition(
+          selectedCell.x,
+          selectedCell.y,
+          menuWidth,
+          menuHeight
+        )
+      );
+    };
+
+    // Calculate immediately
+    updatePosition();
+
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true); // true for capturing phase to catch div scrolls
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [selectedCell]);
+
 
   useEffect(() => {
     try {
@@ -1078,13 +1155,11 @@ export default function ScheduleClient({
     }
   };
 
-  // Get today's date in Thai time, and auto-update when midnight passes
   const [todayStr, setTodayStr] = useState<string>(() => 
     formatToThai(new Date(), 'yyyy-MM-dd')
   );
 
   useEffect(() => {
-    // Function to update today's date at midnight Thai time
     const updateAtMidnight = () => {
       const now = new Date();
       const today = formatToThai(now, 'yyyy-MM-dd');
@@ -1093,19 +1168,17 @@ export default function ScheduleClient({
         setTodayStr(today);
       }
 
-      // Calculate time until next midnight in Thai timezone
       const nextMidnight = new Date(now);
       nextMidnight.setHours(24, 0, 0, 0);
-      // Convert to Thai time to get correct midnight
       const nextMidnightThai = new Date(
         nextMidnight.toLocaleString('en-US', { timeZone: THAI_TIMEZONE })
       );
-      const msUntilMidnight = nextMidnightThai.getTime() - now.getTime() + 100; // +100ms to ensure we cross midnight
+      const msUntilMidnight = nextMidnightThai.getTime() - now.getTime() + 100; 
       
       setTimeout(updateAtMidnight, msUntilMidnight);
     };
 
-    const intervalId = setInterval(updateAtMidnight, 60000); // Check every minute just to be safe
+    const intervalId = setInterval(updateAtMidnight, 60000); 
     updateAtMidnight();
     
     return () => clearInterval(intervalId);
@@ -1119,7 +1192,7 @@ export default function ScheduleClient({
             <button
               onClick={undo}
               disabled={undoStack.length === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${undoStack.length > 0 ? 'hover:bg-gray-200 text-black cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
+              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${undoStack.length > 0 ? 'hover:bg-[#000000]/5 text-[#000000] cursor-pointer' : 'text-[#000000]/30 cursor-not-allowed'}`}
               title="เลิกทำ"
             >
               <Undo2 className="w-4 h-4" strokeWidth={1.5} />
@@ -1127,7 +1200,7 @@ export default function ScheduleClient({
             <button
               onClick={redo}
               disabled={redoStack.length === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${redoStack.length > 0 ? 'hover:bg-gray-200 text-black cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
+              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${redoStack.length > 0 ? 'hover:bg-[#000000]/5 text-[#000000] cursor-pointer' : 'text-[#000000]/30 cursor-not-allowed'}`}
               title="ทำซ้ำ"
             >
               <Redo2 className="w-4 h-4" strokeWidth={1.5} />
@@ -1145,7 +1218,7 @@ export default function ScheduleClient({
         <div className="flex items-center gap-2 w-full overflow-x-auto whitespace-nowrap pb-2 scrollbar-none md:overflow-visible md:pb-0 md:justify-end">
           <button
             onClick={() => setShowRegularHolidayModal(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <Calendar className="w-4 h-4" />
             วันหยุดประจำ
@@ -1153,7 +1226,7 @@ export default function ScheduleClient({
 
           <button
             onClick={() => setShowManagementModal(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <UserCog className="w-4 h-4" />
             การลา/เปลี่ยนกะ
@@ -1161,7 +1234,7 @@ export default function ScheduleClient({
 
           <button
             onClick={() => setShowClearConfirm(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <Trash2 className="w-4 h-4" />
             ล้างทั้งหมด
@@ -1169,7 +1242,7 @@ export default function ScheduleClient({
 
           <button
             onClick={exportScheduleImage}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <Download className="w-4 h-4" />
             บันทึกรูปภาพ
@@ -1177,7 +1250,7 @@ export default function ScheduleClient({
 
           <button
             onClick={() => setShowAddEmployeeModal(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <Plus className="w-4 h-4" />
             เพิ่มพนักงาน
@@ -1186,11 +1259,11 @@ export default function ScheduleClient({
       </header>
 
       <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
-        <div className="flex-1 flex flex-col bg-[#fdfcf0]/80 backdrop-blur-sm border border-black/5 rounded-3xl overflow-hidden shadow-sm">
+        <div className="flex-1 flex flex-col bg-[#fdfcf0]/80 backdrop-blur-sm border border-[#000000]/5 rounded-3xl overflow-hidden shadow-sm">
           <div className="flex-1 overflow-x-auto scrollbar-thin overflow-y-auto pb-6">
             <div id="blackandbrew-schedule-table" className="min-w-[900px] bg-[#fdfcf0] h-fit flex flex-col">
               <div className="grid grid-cols-8 border-b border-[#000000]/5 bg-red-50/10 sticky top-0 z-[16]">
-                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-[#fdfcf0] sticky left-0 z-20 text-black font-normal md:static md:bg-red-50/20">
+                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-[#fdfcf0] sticky left-0 z-20 text-[#000000] font-normal md:static md:bg-red-50/20">
                   <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
                 </div>
                 {weekDays.map(date => {
@@ -1204,7 +1277,7 @@ export default function ScheduleClient({
                       {editingHoliday === date ? (
                         <input
                           autoFocus
-                          className="w-full h-full bg-white border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400"
+                          className="w-full h-full bg-[#fdfcf0] border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400"
                           value={holidayInput}
                           onChange={(e) => setHolidayInput(e.target.value)}
                           onBlur={() => handleSaveHoliday(date)}
@@ -1220,15 +1293,15 @@ export default function ScheduleClient({
                 })}
               </div>
 
-              <div className="grid grid-cols-8 bg-gray-100 border-b border-gray-200 shrink-0 sticky top-[38px] z-[15]">
-                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-[#fdfcf0] sticky left-0 z-20 text-black font-normal md:static md:bg-gray-100">
+              <div className="grid grid-cols-8 bg-[#000000]/5 border-b border-[#000000]/10 shrink-0 sticky top-[38px] z-[15]">
+                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-[#fdfcf0] sticky left-0 z-20 text-[#000000] font-normal md:static md:bg-transparent">
                   <span className="text-[13px] text-[#000000] font-normal uppercase tracking-widest">พนักงาน</span>
                 </div>
                 {weekDays.map((date) => {
                   const d = new Date(date);
                   const isToday = date === todayStr;
                   return (
-                    <div key={date} className="p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-gray-200 transition-colors min-h-[50px] bg-gray-100">
+                    <div key={date} className="p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-[#000000]/10 transition-colors min-h-[50px] bg-transparent">
                       <div className="text-[12px] font-normal uppercase tracking-tighter mb-0 text-[#000000]">{dayLabels[d.getDay()]}</div>
                       <div className={`text-xl font-normal w-8 h-8 flex items-center justify-center mt-0.5 rounded-full ${isToday ? 'bg-[#ffda66] text-[#000000]' : 'text-[#000000]'}`}>{d.getDate()}</div>
                     </div>
@@ -1295,8 +1368,8 @@ export default function ScheduleClient({
                 </div>
               )}
 
-              <div className="grid grid-cols-8 border-t border-gray-200 bg-[#f5f5f5] sticky bottom-0">
-                <div className="p-2 border-r border-gray-100 flex items-center justify-center bg-gray-50/30">
+              <div className="grid grid-cols-8 border-t border-[#000000]/10 bg-[#000000]/5 sticky bottom-0">
+                <div className="p-2 border-r border-[#000000]/5 flex items-center justify-center bg-transparent">
                 </div>
                 {weekDays.map(date => {
                   const VALID_SHIFTS = ['6:30', '7:00', '8:00'];
@@ -1311,8 +1384,8 @@ export default function ScheduleClient({
                       .map(s => s.employee_id)
                   ).size;
                   return (
-                    <div key={`foh-${date}`} className={`p-1.5 border-r last:border-0 border-gray-100 flex items-center justify-center ${date === todayStr ? 'bg-blue-50/50' : ''}`}>
-                      <span className={`text-[15px] font-normal ${fohCount > 0 ? 'text-emerald-600' : 'text-gray-300'}`}>{fohCount}</span>
+                    <div key={`foh-${date}`} className={`p-1.5 border-r last:border-0 border-[#000000]/5 flex items-center justify-center ${date === todayStr ? 'bg-blue-50/50' : ''}`}>
+                      <span className={`text-[15px] font-normal ${fohCount > 0 ? 'text-emerald-600' : 'text-[#000000]/30'}`}>{fohCount}</span>
                     </div>
                   );
                 })}
@@ -1322,21 +1395,23 @@ export default function ScheduleClient({
         </div>
       </main>
 
-      {selectedCell && (
+      {/* สลับไปใช้งาน Portal และเชื่อม State ตำแหน่งที่คำนวณไว้ */}
+      {selectedCell && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-50 overflow-hidden"
+          className="fixed inset-0 z-[99999] overflow-hidden"
           onClick={() => setSelectedCell(null)}
         >
           <div
-            className="absolute bg-white/95 backdrop-blur-md border border-gray-200 w-48 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+            ref={dropdownRef}
+            className="absolute bg-[#fdfcf0]/95 backdrop-blur-md border border-[#000000]/10 w-48 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
             style={{
-              top: `${Math.min(window.innerHeight - 300, selectedCell.y)}px`,
-              left: `${Math.min(window.innerWidth - 200, selectedCell.x)}px`
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-2.5 border-b border-gray-50 bg-gray-50/50">
-              <h2 className="text-[13px] font-normal text-gray-900 truncate">
+            <div className="p-2.5 border-b border-[#000000]/5 bg-[#000000]/5">
+              <h2 className="text-[13px] font-normal text-[#000000] truncate">
                 {profiles.find(p => p.id === selectedCell.employeeId)?.full_name}
               </h2>
             </div>
@@ -1352,38 +1427,39 @@ export default function ScheduleClient({
               ))}
             </div>
             {selectedCell.shift && (
-              <div className="p-1.5 bg-white border-t border-gray-50">
+              <div className="p-1.5 bg-[#fdfcf0] border-t border-[#000000]/5">
                 <button
                   onClick={handleClear}
-                  className="w-full h-11 md:h-auto py-1.5 rounded-lg bg-red-50 text-red-500 text-base md:text-[11px] font-normal border border-red-100 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer active:scale-[0.97]"
+                  className="w-full h-11 md:h-auto py-1.5 rounded-lg bg-red-50 text-[#ff0000] text-base md:text-[11px] font-normal border border-red-100 hover:bg-[#ff0000] hover:text-[#ffffff] transition-all duration-200 cursor-pointer active:scale-[0.97]"
                 >
                   Clear Entry
                 </button>
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-black text-center space-y-4">
-            <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-6 md:hidden" />
+        <div className="fixed inset-0 bg-[#000000]/20 backdrop-blur-sm z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] text-center space-y-4">
+            <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
-            <h3 className="text-lg font-normal text-gray-900">ยืนยันการลบข้อมูล</h3>
-            <p className="text-sm text-gray-500">คุณแน่ใจหรือไม่ที่จะลบข้อมูลกะงาน<br />ของสัปดาห์นี้ทั้งหมด</p>
+            <h3 className="text-lg font-normal text-[#000000]">ยืนยันการลบข้อมูล</h3>
+            <p className="text-sm text-[#000000]/70">คุณแน่ใจหรือไม่ที่จะลบข้อมูลกะงาน<br />ของสัปดาห์นี้ทั้งหมด</p>
             <div className="grid grid-cols-2 gap-3 pt-4">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="h-11 md:h-auto py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-base md:text-sm font-normal transition-colors cursor-pointer"
+                className="h-11 md:h-auto py-2.5 rounded-xl bg-[#000000]/5 hover:bg-[#000000]/10 text-[#000000] text-base md:text-sm font-normal transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
               <button
                 onClick={handleClearAll}
-                className="h-11 md:h-auto py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-base md:text-sm font-normal transition-colors cursor-pointer"
+                className="h-11 md:h-auto py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-[#ffffff] text-base md:text-sm font-normal transition-colors cursor-pointer"
               >
                 ยืนยันการลบ
               </button>
@@ -1393,7 +1469,7 @@ export default function ScheduleClient({
       )}
 
       {loading && (
-        <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[100] flex flex-col items-center justify-center gap-3">
+        <div className="fixed inset-0 bg-[#fdfcf0]/60 backdrop-blur-[2px] z-[100] flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
           <p className="text-sm font-normal text-blue-600 uppercase tracking-widest">กำลังดำเนินการ...</p>
         </div>
@@ -1401,17 +1477,17 @@ export default function ScheduleClient({
 
       {showManagementModal && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
-          <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin bg-[#fdfcf0] shadow-2xl animate-in zoom-in-95 duration-300 md:max-w-5xl p-6 text-black flex flex-col md:flex-row">
+          <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin bg-[#fdfcf0] shadow-2xl animate-in zoom-in-95 duration-300 md:max-w-5xl p-6 text-[#000000] flex flex-col md:flex-row">
             <div className="w-full md:w-[340px] flex flex-col border-r border-[#000000]/5 shrink-0">
               <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]/50 management-form-container">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-emerald-50 rounded-3xl">
                     <UserCog className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <h3 className="text-lg font-normal text-black tracking-tight">การลา / เปลี่ยนกะ</h3>
+                  <h3 className="text-lg font-normal text-[#000000] tracking-tight">การลา / เปลี่ยนกะ</h3>
                 </div>
               </div>
 
@@ -1419,14 +1495,14 @@ export default function ScheduleClient({
                 {saveSuccess && (
                   <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-                      <Plus className="w-4 h-4 text-white rotate-45" />
+                      <Plus className="w-4 h-4 text-[#ffffff] rotate-45" />
                     </div>
                     <p className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลเรียบร้อยแล้วค่ะ</p>
                   </div>
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-black uppercase tracking-widest px-1">พนักงาน</label>
+                  <label className="text-[13px] font-normal text-[#000000] uppercase tracking-widest px-1">พนักงาน</label>
                   <div className="relative">
                     <select
                       className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-[#000000]"
@@ -1438,36 +1514,36 @@ export default function ScheduleClient({
                         <option key={p.id} value={p.id}>{p.full_name}</option>
                       ))}
                     </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#4B5563]">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#000000]/60">
                       <ChevronDown className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-black uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
+                  <label className="text-[13px] font-normal text-[#000000] uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
                   <div className="relative group/select">
                     <select
                       className={`w-full h-11 px-4 pr-10 rounded-3xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal shadow-sm appearance-none text-[#000000] ${
-                        shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-white border-[#000000]/5'
+                        shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-[#fdfcf0] border-[#000000]/5'
                       }`}
                       value={managementForm.shiftType}
                       onChange={(e) => setManagementForm(prev => ({ ...prev, shiftType: e.target.value }))}
                     >
                       {shiftTypes.map(t => (
-                        <option key={t.value} value={t.value} className="bg-white text-gray-900 font-normal py-2">
+                        <option key={t.value} value={t.value} className="bg-[#fdfcf0] text-[#000000] font-normal py-2">
                           {t.label}
                         </option>
                       ))}
                     </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 text-gray-900">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 text-[#000000]">
                       <ChevronDown className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-black uppercase tracking-widest px-1">ระบุช่วงวันที่</label>
+                  <label className="text-[13px] font-normal text-[#000000] uppercase tracking-widest px-1">ระบุช่วงวันที่</label>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="flex-1 w-full">
                       <ClickableDatePicker
@@ -1477,7 +1553,7 @@ export default function ScheduleClient({
                         containerClassName="w-full"
                       />
                     </div>
-                    <span className="text-black font-normal select-none hidden sm:block shrink-0">—</span>
+                    <span className="text-[#000000] font-normal select-none hidden sm:block shrink-0">—</span>
                     <div className="flex-1 w-full">
                       <ClickableDatePicker
                         value={managementForm.endDate}
@@ -1491,7 +1567,7 @@ export default function ScheduleClient({
                 </div>
 
                 <div className="space-y-1.5 pt-2">
-                  <label className="text-[13px] font-normal text-black uppercase tracking-widest px-1">หมายเหตุ</label>
+                  <label className="text-[13px] font-normal text-[#000000] uppercase tracking-widest px-1">หมายเหตุ</label>
                   <textarea
                     placeholder="รายละเอียดเพิ่มเติม..."
                     className="w-full h-20 p-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-base md:text-[13px] leading-relaxed font-normal text-[#000000]"
@@ -1504,14 +1580,14 @@ export default function ScheduleClient({
               <div className="p-4 bg-[#fdfcf0] border-t border-[#000000]/5 flex gap-3">
                 <button
                   onClick={editingHistoryId ? cancelEditHistory : () => setShowManagementModal(false)}
-                  className="flex-1 h-11 md:h-auto md:py-3 rounded-3xl bg-transparent border border-[#000000]/10 text-black text-base md:text-[12px] font-normal hover:bg-[#000000]/5 transition-all active:scale-95 shadow-sm cursor-pointer antialiased"
+                  className="flex-1 h-11 md:h-auto md:py-3 rounded-3xl bg-transparent border border-[#000000]/10 text-[#000000] text-base md:text-[12px] font-normal hover:bg-[#000000]/5 transition-all active:scale-95 shadow-sm cursor-pointer antialiased"
                 >
                   {editingHistoryId ? 'ยกเลิกการแก้ไข' : 'ปิดหน้าต่าง'}
                 </button>
                 <button
                   onClick={handleSaveManagement}
                   className={`flex-1 h-11 md:h-auto md:py-3 rounded-3xl font-normal text-base md:text-[12px] shadow-lg transition-all active:scale-95 cursor-pointer antialiased ${
-                    editingHistoryId ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 text-white' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 text-white'
+                    editingHistoryId ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 text-[#ffffff]' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 text-[#ffffff]'
                   }`}
                 >
                   {editingHistoryId ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล'}
@@ -1540,7 +1616,7 @@ export default function ScheduleClient({
                         containerClassName="w-full"
                       />
                     </div>
-                    <span className="text-black font-normal select-none text-xs hidden sm:block shrink-0">—</span>
+                    <span className="text-[#000000] font-normal select-none text-xs hidden sm:block shrink-0">—</span>
                     <div className="flex-1 w-full">
                       <ClickableDatePicker
                         value={historyFilter.end}
@@ -1559,7 +1635,7 @@ export default function ScheduleClient({
                     <p className="text-sm font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
                   </div>
                 ) : (
-                  <div className="w-full overflow-x-auto h-full scrollbar-thin border border-black/5 rounded-3xl pb-8">
+                  <div className="w-full overflow-x-auto h-full scrollbar-thin border border-[#000000]/5 rounded-3xl pb-8">
                     <table className="w-max text-left border-collapse" style={{ tableLayout: 'fixed' }}>
                       <thead className="sticky top-0 z-10 shadow-sm">
                         <tr>
@@ -1584,7 +1660,7 @@ export default function ScheduleClient({
                               {item.startDate !== item.endDate && ` → ${format(new Date(item.endDate), 'dd/MM/yyyy')}`}
                             </td>
                             <td className="p-3 text-[12px] font-normal text-[#000000] border-r border-[#000000]/5 truncate bg-transparent">
-                              <span className={`px-2 py-0.5 rounded-full ${item.color} border border-gray-100/50 inline-block`}>
+                              <span className={`px-2 py-0.5 rounded-full ${item.color} border border-[#000000]/10 inline-block`}>
                                 {item.location}
                               </span>
                             </td>
@@ -1595,7 +1671,7 @@ export default function ScheduleClient({
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
                                   onClick={() => handleEditHistory(item)}
-                                  className="p-1.5 text-[#000000]/20 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center"
+                                  className="p-1.5 text-[#000000]/40 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center"
                                   title="แก้ไขประวัติ"
                                 >
                                   <Pencil className="w-4 h-4" />
@@ -1603,7 +1679,7 @@ export default function ScheduleClient({
                                 <button
                                   onClick={() => handleDeleteHistory(item)}
                                   disabled={confirmDeleteId === item.id}
-                                  className="p-1.5 text-[#000000]/20 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center justify-center disabled:opacity-50"
+                                  className="p-1.5 text-[#000000]/40 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center justify-center disabled:opacity-50"
                                   title="ลบประวัติการจัดการ"
                                 >
                                   {confirmDeleteId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
@@ -1624,13 +1700,13 @@ export default function ScheduleClient({
 
       {showAddEmployeeModal && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setShowAddEmployeeModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-black border border-gray-100">
-            <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-6 md:hidden" />
-            <h3 className="text-xl font-normal text-black mb-4 uppercase tracking-tight">เพิ่มพนักงานใหม่</h3>
+          <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm" onClick={() => setShowAddEmployeeModal(false)} />
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
+            <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
+            <h3 className="text-xl font-normal text-[#000000] mb-4 uppercase tracking-tight">เพิ่มพนักงานใหม่</h3>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[13px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">ชื่อ</label>
+                <label className="text-[13px] font-normal uppercase tracking-wider text-[#000000]/70 ml-1">ชื่อ</label>
                 <input
                   autoFocus
                   type="text"
@@ -1638,20 +1714,20 @@ export default function ScheduleClient({
                   onChange={e => setNewEmployeeName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddEmployee()}
                   placeholder="กรอกชื่อพนักงาน"
-                  className="w-full h-11 bg-[#f8f9fa] border border-gray-100 rounded-xl px-4 py-3 text-base md:text-[14px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                  className="w-full h-11 bg-[#fdfcf0]/50 border border-[#000000]/10 rounded-xl px-4 py-3 text-base md:text-[14px] text-[#000000] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowAddEmployeeModal(false)}
-                  className="flex-1 h-11 md:h-auto md:py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-base md:text-sm cursor-pointer"
+                  className="flex-1 h-11 md:h-auto md:py-3 text-[#000000]/60 font-normal hover:bg-[#000000]/5 rounded-xl transition-all text-base md:text-sm cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   onClick={handleAddEmployee}
                   disabled={loading || !newEmployeeName.trim()}
-                  className="flex-1 h-11 md:h-auto md:py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 h-11 md:h-auto md:py-3 bg-[#000000] text-[#ffffff] font-normal rounded-xl hover:bg-[#000000]/80 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   ยืนยัน
@@ -1664,11 +1740,11 @@ export default function ScheduleClient({
 
       {showRegularHolidayModal && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" onClick={() => setShowRegularHolidayModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-black border border-gray-100">
-            <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-6 md:hidden" />
-            <h3 className="text-xl font-normal text-black mb-6 uppercase tracking-tight flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-gray-400" />
+          <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm" onClick={() => setShowRegularHolidayModal(false)} />
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
+            <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
+            <h3 className="text-xl font-normal text-[#000000] mb-6 uppercase tracking-tight flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[#000000]/40" />
               จัดการวันหยุดประจำ
             </h3>
             
@@ -1677,10 +1753,10 @@ export default function ScheduleClient({
               <div className="flex flex-col w-full md:w-[260px] shrink-0">
                 <div className="flex-1 flex flex-col space-y-6">
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">พนักงาน</label>
+                    <label className="text-[13px] font-normal uppercase tracking-wider text-[#000000]/70 ml-1">พนักงาน</label>
                     <div className="relative">
                       <select
-                        className="w-full h-11 px-4 pr-10 rounded-3xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-[#000000]"
+                        className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/10 bg-[#fdfcf0] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-[#000000]"
                         value={holidayFormEmployee}
                         onChange={(e) => {
                           setHolidayFormEmployee(e.target.value);
@@ -1693,7 +1769,7 @@ export default function ScheduleClient({
                           <option key={p.id} value={p.id}>{p.full_name}</option>
                         ))}
                       </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#000000]/40">
                         <ChevronDown className="w-4 h-4" />
                       </div>
                     </div>
@@ -1701,7 +1777,7 @@ export default function ScheduleClient({
                   
                   {holidayFormEmployee && (
                     <div className="space-y-2.5">
-                      <label className="text-[13px] font-normal uppercase tracking-wider text-[#4B5563] ml-1">เลือกวันหยุดประจำสัปดาห์</label>
+                      <label className="text-[13px] font-normal uppercase tracking-wider text-[#000000]/70 ml-1">เลือกวันหยุดประจำสัปดาห์</label>
                       <div className="grid grid-cols-4 gap-2">
                         {[
                           { id: 1, label: 'จ.' },
@@ -1724,8 +1800,8 @@ export default function ScheduleClient({
                               }}
                               className={`h-11 md:h-auto py-2 rounded-xl text-base md:text-[13px] font-normal transition-all cursor-pointer ${
                                 isSelected 
-                                  ? 'bg-black text-white shadow-md' 
-                                  : 'bg-white border border-gray-200 text-black hover:bg-gray-50'
+                                  ? 'bg-[#000000] text-[#ffffff] shadow-md' 
+                                  : 'bg-[#fdfcf0] border border-[#000000]/10 text-[#000000] hover:bg-[#000000]/5'
                               }`}
                             >
                               {day.label}
@@ -1737,7 +1813,7 @@ export default function ScheduleClient({
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-black/5 mt-6 space-y-3">
+                <div className="pt-4 border-t border-[#000000]/5 mt-6 space-y-3">
                   {holidaySaveSuccess && (
                     <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 flex items-center justify-center gap-2 animate-in fade-in duration-300">
                       <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
@@ -1747,14 +1823,14 @@ export default function ScheduleClient({
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowRegularHolidayModal(false)}
-                      className="flex-1 h-11 md:h-auto md:py-3 text-gray-500 font-normal hover:bg-gray-100 rounded-xl transition-all text-base md:text-sm cursor-pointer"
+                      className="flex-1 h-11 md:h-auto md:py-3 text-[#000000]/60 font-normal hover:bg-[#000000]/5 rounded-xl transition-all text-base md:text-sm cursor-pointer"
                     >
                       ปิดหน้าต่าง
                     </button>
                     <button
                       onClick={handleSaveRegularHolidays}
                       disabled={!holidayFormEmployee}
-                      className="flex-1 h-11 md:h-auto md:py-3 bg-black text-white font-normal rounded-xl hover:bg-gray-900 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm cursor-pointer"
+                      className="flex-1 h-11 md:h-auto md:py-3 bg-[#000000] text-[#ffffff] font-normal rounded-xl hover:bg-[#000000]/80 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm cursor-pointer"
                     >
                       บันทึกข้อมูล
                     </button>
@@ -1763,16 +1839,16 @@ export default function ScheduleClient({
               </div>
 
               {/* Right Column: Summary Table */}
-              <div className="flex-1 w-full h-full overflow-x-auto border border-black/5 rounded-3xl p-4 bg-white/50 hidden md:block">
-                <h4 className="text-[14px] font-normal text-black mb-3 px-1">สรุปวันหยุดประจำของพนักงาน</h4>
+              <div className="flex-1 w-full h-full overflow-x-auto border border-[#000000]/5 rounded-3xl p-4 bg-[#fdfcf0]/50 hidden md:block">
+                <h4 className="text-[14px] font-normal text-[#000000] mb-3 px-1">สรุปวันหยุดประจำของพนักงาน</h4>
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-black/5 text-[12px] text-gray-500 uppercase tracking-widest">
+                    <tr className="border-b border-[#000000]/5 text-[12px] text-[#000000]/60 uppercase tracking-widest">
                       <th className="py-2 px-2 font-normal">พนักงาน</th>
                       <th className="py-2 px-2 font-normal">วันหยุดประจำ</th>
                     </tr>
                   </thead>
-                  <tbody className="text-[13px] text-black">
+                  <tbody className="text-[13px] text-[#000000]">
                     {profiles.map(p => {
                       const days = regularHolidays[p.id] || [];
                       if (days.length === 0) return null;
@@ -1781,7 +1857,7 @@ export default function ScheduleClient({
                       const sortedDays = [...days].sort((a,b) => (a===0?7:a) - (b===0?7:b)); 
                       
                       return (
-                        <tr key={p.id} className="border-b border-black/5 last:border-0 hover:bg-black/5 transition-colors">
+                        <tr key={p.id} className="border-b border-[#000000]/5 last:border-0 hover:bg-[#000000]/5 transition-colors">
                           <td className="py-2 px-2 font-normal">{p.full_name}</td>
                           <td className="py-2 px-2 font-normal">
                             {sortedDays.map(d => dayLabels[d]).join(', ')}
@@ -1806,9 +1882,9 @@ export default function ScheduleClient({
             transform: 'translateX(-50%)'
           }}
         >
-          <div className="bg-white border border-black/5 shadow-xl rounded-2xl py-2 px-4 flex items-center gap-2">
+          <div className="bg-[#fdfcf0] border border-[#000000]/5 shadow-xl rounded-2xl py-2 px-4 flex items-center gap-2">
             <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-            <p className="text-[13px] font-normal text-black tracking-tight whitespace-nowrap">
+            <p className="text-[13px] font-normal text-[#000000] tracking-tight whitespace-nowrap">
               {toastAlert.message}
             </p>
           </div>
