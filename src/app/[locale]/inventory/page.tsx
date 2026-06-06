@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { recordTransaction, fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem } from '@/app/actions/inventory-actions';
+import { recordTransaction, fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem, updateInventoryStock } from '@/app/actions/inventory-actions';
+import { computeItemsToOrder, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import {
   DndContext,
   closestCorners,
@@ -744,22 +745,7 @@ export default function DynamicInventoryManager() {
   const [frequentItems, setFrequentItems] = useState<{ id: string, name: string }[]>([]);
   const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
 
-  // Phase 1 & 2: COMPUTED ORDER LOGIC
-  const itemsToOrder = useMemo(() => {
-    return items.filter(item => {
-      const stock = Number(item.stock) || 0;
-      const orderPoint = Number(item.order_point) || 0;
-      const targetStock = Number(item.target_stock) || 0;
-      return stock <= orderPoint && targetStock > stock;
-    }).map(item => {
-      const stock = Number(item.stock) || 0;
-      const targetStock = Number(item.target_stock) || 0;
-      return {
-        ...item,
-        computedOrderQty: Math.max(0, targetStock - stock)
-      };
-    });
-  }, [items]);
+  const itemsToOrder = useMemo(() => computeItemsToOrder(items), [items]);
 
   const poSources = useMemo(() => {
     const sources = new Set<string>();
@@ -834,7 +820,11 @@ export default function DynamicInventoryManager() {
             return [...prev, payload.new as InventoryItem];
           });
         } else if (payload.eventType === 'UPDATE') {
-          setItems(prev => prev.map(item => item.id === payload.new.id ? payload.new as InventoryItem : item));
+          setItems(prev => prev.map(item =>
+            item.id === payload.new.id
+              ? mergeInventoryRealtimeUpdate(item, payload.new as InventoryItem)
+              : item
+          ));
         } else if (payload.eventType === 'DELETE') {
           setItems(prev => prev.filter(item => item.id !== payload.old.id));
         }
@@ -870,6 +860,13 @@ export default function DynamicInventoryManager() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Refresh from DB when PO modal opens so stock matches other windows
+  useEffect(() => {
+    if (showPurchaseOrderModal) {
+      void fetchConfigAndInventory();
+    }
+  }, [showPurchaseOrderModal]);
 
   useEffect(() => {
     previousStateRef.current = { items, cols: columns };
@@ -1107,12 +1104,18 @@ export default function DynamicInventoryManager() {
     setSavingState('saving');
 
     try {
-      const { error } = await supabase
-        .from('inventory_items')
-        .update({ [field]: sanitizedValue, updated_at: new Date().toISOString() })
-        .eq('id', id);
+      if (field === 'stock') {
+        const result = await updateInventoryStock(id, sanitizedValue as number, 'Warehouse edit');
+        if (!result.success) throw new Error(result.error);
+        handleUpdateField(id, 'stock', result.newStock ?? sanitizedValue);
+      } else {
+        const { error } = await supabase
+          .from('inventory_items')
+          .update({ [field]: sanitizedValue, updated_at: new Date().toISOString() })
+          .eq('id', id);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err: any) {
@@ -1201,7 +1204,33 @@ export default function DynamicInventoryManager() {
     try {
       const sanitizedItems = currentItems.map((item, index) => sanitizeInventoryItem({ ...item, sort_order: index + 1 }));
       if (sanitizedItems.length > 0) {
-        const { error: upsertErr } = await supabase.from('inventory_items').upsert(sanitizedItems);
+        // Preserve live stock from DB — undo/redo must not clobber concurrent stock edits
+        const { data: liveStocks } = await supabase
+          .from('inventory_items')
+          .select('id, stock, updated_at')
+          .in('id', sanitizedItems.map(i => i.id));
+
+        const stockById = new Map(
+          (liveStocks || []).map(row => [row.id, { stock: row.stock, updated_at: row.updated_at }])
+        );
+
+        const upsertPayload = sanitizedItems.map(item => {
+          const live = stockById.get(item.id);
+          return {
+            id: item.id,
+            name: item.name,
+            order_qty: item.order_qty,
+            order_point: item.order_point,
+            target_stock: item.target_stock,
+            unit: item.unit,
+            source: item.source,
+            sort_order: item.sort_order,
+            stock: live?.stock ?? item.stock,
+            updated_at: live?.updated_at ?? item.updated_at,
+          };
+        });
+
+        const { error: upsertErr } = await supabase.from('inventory_items').upsert(upsertPayload);
         if (upsertErr) throw upsertErr;
       }
 

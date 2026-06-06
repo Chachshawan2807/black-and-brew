@@ -59,10 +59,74 @@ export async function recordTransaction(
     }
 
     revalidatePath('/[locale]/inventory', 'page');
+    revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true, newStock: data?.new_stock };
   } catch (error: any) {
     console.error('[recordTransaction] Unexpected Error:', error.message || error);
     return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' };
+  }
+}
+
+// === SET ABSOLUTE STOCK (Warehouse cell edit + Stock-taking) ===
+const stockUpdateSchema = z.object({
+  itemId: z.string().uuid(),
+  stock: z.number().min(0),
+  note: z.string().optional(),
+});
+
+export async function updateInventoryStock(
+  itemId: string,
+  stock: number,
+  note: string = 'Stock adjustment'
+) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
+    const parsed = stockUpdateSchema.safeParse({ itemId, stock, note });
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid stock update payload' };
+    }
+
+    let newStock = stock;
+    const { data, error } = await supabase.rpc('set_inventory_stock', {
+      p_item_id: itemId,
+      p_new_stock: stock,
+      p_note: note,
+    });
+
+    if (error) {
+      const rpcMissing = error.message?.includes('set_inventory_stock') || error.code === '42883';
+      if (rpcMissing) {
+        const { error: updateErr } = await supabase
+          .from('inventory_items')
+          .update({ stock, updated_at: new Date().toISOString() })
+          .eq('id', itemId);
+
+        if (updateErr) {
+          console.error('[updateInventoryStock] Fallback update error:', updateErr.message, updateErr.details);
+          return { success: false, error: updateErr.message };
+        }
+      } else {
+        console.error('[updateInventoryStock] Supabase RPC Error:', error.message, error.details, error.hint);
+        return { success: false, error: error.message };
+      }
+    } else {
+      newStock = data?.new_stock ?? stock;
+    }
+
+    revalidatePath('/[locale]/inventory', 'page');
+    revalidatePath('/[locale]/inventory/count', 'page');
+    return { success: true, newStock };
+  } catch (error: any) {
+    console.error('[updateInventoryStock] Unexpected Error:', error.message || error);
+    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการบันทึกจำนวนคงเหลือ' };
   }
 }
 

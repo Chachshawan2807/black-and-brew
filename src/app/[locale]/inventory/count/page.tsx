@@ -6,6 +6,8 @@ import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, Refresh
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { updateInventoryStock } from '@/app/actions/inventory-actions';
+import { mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 
 interface InventoryItem {
   id: string;
@@ -27,19 +29,26 @@ function CountInput({
 }) {
   const [val, setVal] = useState(item.stock === 0 ? '' : String(item.stock));
   const [isFocused, setIsFocused] = useState(false);
+  const pendingValueRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isFocused) {
-      setVal(item.stock === 0 ? '' : String(item.stock));
+      if (pendingValueRef.current !== null && Number(item.stock) === pendingValueRef.current) {
+        pendingValueRef.current = null;
+      }
+      if (pendingValueRef.current === null) {
+        setVal(item.stock === 0 ? '' : String(item.stock));
+      }
     }
   }, [item.stock, isFocused]);
 
-  const handleBlur = () => {
-    setIsFocused(false);
+  const handleBlur = async () => {
     const numberVal = val === '' ? 0 : Number(val);
     const sanitized = isNaN(numberVal) ? 0 : numberVal;
-    onSave(item.id, sanitized);
+    pendingValueRef.current = sanitized;
+    setIsFocused(false);
+    await onSave(item.id, sanitized);
   };
 
   return (
@@ -56,7 +65,7 @@ function CountInput({
         setVal(value);
       }}
       onFocus={() => setIsFocused(true)}
-      onBlur={handleBlur}
+      onBlur={() => void handleBlur()}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -84,6 +93,7 @@ export default function InventoryCountPage() {
   const [loading, setLoading] = useState(true);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
 
   const fetchInventory = useCallback(async () => {
     setLoading(true);
@@ -113,7 +123,6 @@ export default function InventoryCountPage() {
   useEffect(() => {
     fetchInventory();
 
-    // Supabase Real-time Synchronization
     const channel = supabase
       .channel('inventory_count_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items' }, (payload) => {
@@ -123,7 +132,11 @@ export default function InventoryCountPage() {
             return [...prev, payload.new as InventoryItem].sort((a, b) => a.sort_order - b.sort_order);
           });
         } else if (payload.eventType === 'UPDATE') {
-          setItems(prev => prev.map(item => item.id === payload.new.id ? payload.new as InventoryItem : item).sort((a, b) => a.sort_order - b.sort_order));
+          setItems(prev => prev.map(item =>
+            item.id === payload.new.id
+              ? mergeInventoryRealtimeUpdate(item, payload.new as InventoryItem)
+              : item
+          ).sort((a, b) => a.sort_order - b.sort_order));
         } else if (payload.eventType === 'DELETE') {
           setItems(prev => prev.filter(item => item.id !== payload.old.id));
         }
@@ -136,30 +149,41 @@ export default function InventoryCountPage() {
   }, [fetchInventory]);
 
   async function handleSaveStock(id: string, value: number) {
-    // Skip save if stock value hasn't actually changed
     const currentItem = items.find(i => i.id === id);
     if (currentItem && Number(currentItem.stock) === value) return;
 
-    setSavingState('saving');
-    setErrorMessage(null);
-    try {
-      const { error } = await supabase
-        .from('inventory_items')
-        .update({ stock: value, updated_at: new Date().toISOString() })
-        .eq('id', id);
+    const previousStock = currentItem?.stock ?? 0;
 
-      if (error) {
-        console.error('Supabase Error (Count Update):', error.message, error.details);
-        throw error;
+    // Optimistic UI update
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, stock: value } : item
+    ));
+
+    setSavingState('saving');
+    setSaveErrorMessage(null);
+
+    try {
+      const result = await updateInventoryStock(id, value, 'Stock-taking count');
+
+      if (!result.success) {
+        throw new Error(result.error);
       }
+
+      const savedStock = result.newStock ?? value;
+      setItems(prev => prev.map(item =>
+        item.id === id ? { ...item, stock: savedStock } : item
+      ));
 
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err) {
       console.error('Failed to update stock:', err);
+      setItems(prev => prev.map(item =>
+        item.id === id ? { ...item, stock: previousStock } : item
+      ));
       setSavingState('idle');
-      setErrorMessage('บันทึกจำนวนสต็อกไม่สำเร็จ ระบบได้โหลดข้อมูลล่าสุดกลับมาแล้ว');
-      fetchInventory(); // Rollback to actual state
+      setSaveErrorMessage('บันทึกจำนวนสต็อกไม่สำเร็จ ระบบได้โหลดข้อมูลล่าสุดกลับมาแล้ว');
+      fetchInventory();
     }
   }
 
@@ -222,7 +246,6 @@ export default function InventoryCountPage() {
     <div className="min-h-screen bg-[#fdfcf0] text-black font-normal p-4 md:p-8">
       <div className="max-w-xl mx-auto flex flex-col items-stretch">
 
-        {/* Navigation & Header */}
         <header className="flex items-center justify-between border-b border-black/5 pb-4 mb-6">
           <Link
             href={`/${locale}/inventory`}
@@ -251,7 +274,6 @@ export default function InventoryCountPage() {
           </div>
         </header>
 
-        {/* Title */}
         <div className="flex flex-col items-center mb-8 text-center">
           <div className="p-2.5 bg-black text-white rounded-2xl mb-4 shrink-0 shadow-md">
             <ClipboardList className="w-7 h-7" strokeWidth={1.5} />
@@ -264,7 +286,12 @@ export default function InventoryCountPage() {
           </p>
         </div>
 
-        {/* 2-Column Responsive List */}
+        {saveErrorMessage && (
+          <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {saveErrorMessage}
+          </div>
+        )}
+
         <div className="space-y-2.5 pb-20">
           {items.length === 0 ? (
             <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
@@ -279,7 +306,6 @@ export default function InventoryCountPage() {
                 transition={{ duration: 0.2, delay: index * 0.02 }}
                 className="bg-white border border-black/[0.05] rounded-2xl p-4 flex items-start justify-between shadow-sm hover:border-black/10 transition-all duration-300"
               >
-                {/* Column 1: Item Name */}
                 <div className="flex items-start gap-3 flex-1 min-w-0 mr-4">
                   <span className="text-[12px] font-normal text-black/25 font-mono shrink-0">
                     {(index + 1).toString().padStart(2, '0')}
@@ -289,7 +315,6 @@ export default function InventoryCountPage() {
                   </span>
                 </div>
 
-                {/* Column 2: Stock Input Field */}
                 <div className="shrink-0">
                   <CountInput
                     item={item}

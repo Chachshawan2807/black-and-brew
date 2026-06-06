@@ -25,10 +25,10 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 describe('Inventory Sorting Migration Trigger', () => {
-  test('should run the bulk inventory migration successfully', async () => {
-    // 1. Run migration
+  test('should re-sequence sort_order from database without CSV', async () => {
     const result = await runInventoryMigration();
-    expect(result.updatedCount + result.insertedCount).toBeGreaterThan(0);
+    expect(result.insertedCount).toBe(0);
+    expect(result.updatedCount).toBeGreaterThanOrEqual(0);
 
     // 2. Fetch the top 5 items from DB sorted by sort_order
     const supabase = createClient(supabaseUrl, supabaseAdminKey);

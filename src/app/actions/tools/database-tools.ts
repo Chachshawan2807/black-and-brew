@@ -49,7 +49,7 @@ const TABLE_COLUMN_PRESETS: Record<string, string> = {
   // [FIX 1] เพิ่ม source กลับเข้ามาและยืนยันว่าครบทุก field ที่จำเป็น
   // source = ช่องทางการสั่งซื้อ (เช่น "Makro", "Line", "สาขา 2", "สั่งพี่ต้า")
   // หากไม่ดึง source มา AI จะไม่รู้ว่าแต่ละรายการต้องสั่งผ่านช่องทางไหน
-  inventory_items: 'id, name, unit, source, order_point, target_stock, stock, order_qty',
+  inventory_items: 'id, name, unit, source, order_point, target_stock, stock, order_qty, updated_at',
 
   inventory_transactions: 'id, inventory_item_id, type, quantity, note, created_at',
   service_records:
