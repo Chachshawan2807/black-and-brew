@@ -1,15 +1,17 @@
 # BLACKANDBREW ERP: SKILL HARVESTING & SYNERGY BUNDLING
 
-> Last Scanned & Updated: 2026-06-07 (VELOCITY-REFACTOR-PROTOCOL v8.0)
+> Last Scanned & Updated: 2026-06-07 (DAILY-CLOSING v8.1)
 
 ## CAPABILITY INVENTORY (คลังความสามารถปัจจุบัน)
 
 ### 1. Data & Integration Capabilities
 
-* **Universal DB Reader (`readTableTool`)**: ดึงข้อมูลจากตารางผ่าน `adminClient` (Service Role — Bypass RLS) พร้อม `COLUMN_ALIASES`, `TABLE_COLUMN_PRESETS` (ห้าม `*`), และ table-specific row limits
-* **Slim AI Tool Surface (DEC-065)**: `/api/chat` จำกัดเครื่องมือเหลือ `readTable` + `internetSearchTool` เท่านั้น — กะงาน/วันหยุด/สต็อกผ่าน readTable, สภาพอากาศภายนอกผ่าน internetSearch
+* **Universal DB Reader (`readTableTool`)**: ดึงข้อมูลจากตารางผ่าน `adminClient` (Service Role — Bypass RLS) พร้อม `COLUMN_ALIASES`, `TABLE_COLUMN_PRESETS` (ห้าม `*`), table-specific row limits, และ `shift_type` flatten สำหรับ shifts
+* **Deterministic Daily Schedule (`DEC-068`)**: คำถามตารางงานรายวัน short-circuit ใน `/api/chat` — `fetchDailyShiftsByDate` → `formatScheduleChatResponse` → SSE โดยไม่พึ่ง LLM สรุป
+* **getDailyShiftsTool**: Fallback tool สำหรับช่วงวันที่/กรณีที่ไม่ match daily detector — คืน `formatted_text` + grouped `front_store` / `other_duty` / `off_or_leave`
+* **AI Tool Surface**: `/api/chat` expose `readTable` + `getDailyShifts` + `internetSearchTool`
 * **Internal Sources Tools (`internal-sources-tools.ts`)**: ใช้โดย daily-report cron เท่านั้น (ไม่ expose ใน chat route)
-* **Weather API Service (`/api/weather`)**: OpenWeatherMap พิกัดตำบลบึงคำพร้อย (13.9312, 100.6756), แปลงเวลา `Asia/Bangkok`, รองรับ `pop` (%) และ `rain` (mm), แคช 1800s + `Cache-Control: s-maxage=1800` บนทุก response (success + fallback)
+* **Weather API Service (`/api/weather`)**: OpenWeatherMap พิกัดจาก `NEXT_PUBLIC_STORE_LAT/LON` (fallback 13.9312, 100.6756), แปลงเวลา `Asia/Bangkok`, รองรับ `pop` (%) และ `rain` (mm), แคช 1800s + `Cache-Control: s-maxage=1800` บนทุก response (success + fallback)
 * **External Intel Search (`internetSearchTool`)**: Tavily API (`search_depth: basic`, `max_results: 3`) สำหรับข่าว / เทรนด์ / ราคาตลาดภายนอก
 * **Executive Rules Engine (`executive-rules.ts`)**: กฎธุรกิจฝังใน System Prompt — database map, inventory thresholds, weather operational window (06:00–18:00 ICT), in-memory comparison policy
 * **Inventory Stock Sync (`inventory-stock.ts`)**: Single source of truth — `mergeInventoryRealtimeUpdate`, `computeOrderQty`, `computeItemsToOrder`, `sanitizeStockValue`

@@ -4,9 +4,16 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { readTableTool } from '@/app/actions/tools/database-tools';
+import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
 import { internetSearchTool } from '@/app/actions/tools/search-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
+import { createDeterministicChatStreamResponse } from '@/lib/schedule/create-deterministic-chat-stream';
+import {
+  isDailyScheduleQuery,
+  resolveScheduleTargetDate,
+} from '@/lib/schedule/detect-schedule-query';
+import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
+import { formatScheduleChatResponse } from '@/lib/schedule/format-schedule-chat-response';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
 import { sanitizePromptInput } from '@/lib/security/sanitize';
 
@@ -70,6 +77,8 @@ function classifyIntent(text: string): IntentScores {
   // แต่ละ pattern มีน้ำหนัก (weight) สะท้อนความชัดเจนของสัญญาณ
   // คำที่ชัดเจนมากได้ weight สูง, คำกำกวมได้ weight ต่ำ
   const scheduleSignals = [
+    { pattern: /ตารางงาน.*(วันนี้|พรุ่งนี้|เมื่อวาน)/i, weight: 4 },
+    { pattern: /(วันนี้|พรุ่งนี้|เมื่อวาน).*ตารางงาน/i, weight: 4 },
     { pattern: /กะงาน|เวร|ตารางงาน/i, weight: 3 },
     { pattern: /shift/i, weight: 3 },
     { pattern: /พนักงาน|สต้าฟ|staff/i, weight: 2 },
@@ -158,8 +167,10 @@ function cleanToolOutput(output: unknown, depth = 0): unknown {
     for (const [key, value] of Object.entries(output as Record<string, unknown>)) {
       // ข้าม UUID fields ที่ไม่มีประโยชน์ต่อ AI reasoning
       if (JUNK_FIELDS.has(key)) continue;
-      // ข้าม UUID string ที่อยู่ใน value ด้วย (เช่น employee_id)
-      // แต่เก็บ FK ที่จำเป็นสำหรับ cross-reference ไว้
+      // shifts: start_time/end_time เป็นวันที่ล้วน ไม่ใช่เวลาเข้างาน — ใช้ shift_type แทน
+      if (key === 'start_time' || key === 'end_time') {
+        if ('shift_type' in (output as Record<string, unknown>)) continue;
+      }
       cleaned[key] = cleanToolOutput(value, depth + 1);
     }
     return cleaned;
@@ -251,7 +262,7 @@ function buildSystemPrompt(
 - คุณเป็นผู้หญิง: ต้องใช้คำลงท้ายว่า "ค่ะ" หรือ "นะคะ" เท่านั้น
 - กฎเหล็ก: ห้าม! ใช้คำว่า "ครับ" หรือแทนตัวเองว่า "ผม" อย่างเด็ดขาด
 - ผู้ใช้คือ "คุณ" ห้ามเรียกผู้ใช้ด้วยคำอื่น
-- คุณมีเครื่องมือ (Tools) 2 ตัว: readTable (ข้อมูลภายในร้าน) และ internetSearchTool (ข้อมูลภายนอก/สภาพอากาศ) ให้เรียกใช้ทันทีเมื่อผู้ใช้สอบถาม ห้ามตอบปฏิเสธว่าไม่มีเครื่องมือเด็ดขาด
+- คุณมีเครื่องมือ (Tools) 3 ตัว: getDailyShifts (ตารางงานรายวัน), readTable (ข้อมูลภายในร้านอื่นๆ) และ internetSearchTool (ข้อมูลภายนอก/สภาพอากาศ) ให้เรียกใช้ทันทีเมื่อผู้ใช้สอบถาม ห้ามตอบปฏิเสธว่าไม่มีเครื่องมือเด็ดขาด
 - [CRITICAL] เมื่อเรียกเครื่องมือเสร็จและได้ผลลัพธ์แล้ว ต้องนำข้อมูลมาสรุปเป็นภาษาไทยสั้น กระชับ ตรงประเด็นทันที ห้ามส่งข้อความว่างเปล่า (Empty Response) เด็ดขาด
 `.trim();
 
@@ -324,19 +335,23 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
   if (intents.schedule > 0) {
     sections.push(`
 [กฎการค้นหาข้อมูลพนักงานและกะงาน]
-1. หากถามถึงตารางงานรายวัน (เช่น วันนี้ หรือ พรุ่งนี้) "ต้อง" ใช้ readTable ดึงตาราง shifts และ profiles แล้ว join employee_id กับ full_name ใน memory
-2. คุณต้องแสดงรายชื่อพนักงานให้ครบทุกคน (รวม 9 คน) เสมอ แม้พนักงานคนนั้นจะไม่มีกะงานก็ตาม โดยใช้รูปแบบข้อความดิบ (Plain Text) ตามกฎดังนี้:
+1. หากถามถึงตารางงานรายวัน (เช่น วันนี้, พรุ่งนี้, หรือระบุวันที่) "ต้อง" ใช้ getDailyShifts ด้วยวันที่ YYYY-MM-DD เป็นหลัก ห้ามใช้ readTable shifts แทน
+2. กะงานที่มีในระบบมีเพียง: 6:30, 7:00, 8:00, วันหยุด, ลา, ไปสาขา 2, ร้านซักผ้า เท่านั้น — ห้ามสร้างเวลาอื่น (เช่น 9:00, 10:00, 11:00) เด็ดขาด
+3. ห้ามใช้ start_time หรือ end_time เป็นเวลาเข้างาน (ค่าเหล่านั้นเป็นวันที่ล้วน ไม่ใช่กะ) ให้ใช้ฟิลด์ shift หรือ formatted_text จาก getDailyShifts เท่านั้น
+4. หาก getDailyShifts คืนค่า formatted_text ให้คัดลอกข้อความนั้นเป็นคำตอบทั้งหมดโดยไม่ย่อหรือสรุงเพิ่มเติม
+5. ห้ามตอบเพียงตัวเลข headcount หรือข้อความสั้นๆ เช่น "วันนี้ 0" เด็ดขาด ต้องแสดงรายชื่อครบทุกคนเสมอ
+6. คุณต้องแสดงรายชื่อพนักงานให้ครบทุกคน (รวม 9 คน) เสมอ แม้พนักงานคนนั้นจะไม่มีกะงานก็ตาม โดยใช้รูปแบบข้อความดิบ (Plain Text) ตามกฎดังนี้:
    - ห้าม! วนลูปจากข้อมูลที่มีกะงานเท่านั้น ให้วนลูปจากรายชื่อพนักงานทั้งหมด (9 คน) เป็นหลัก
    - ห้าม! ใช้ตัวหนา (**), ห้าม! ใช้เครื่องหมายหัวข้อ (*), ห้าม! ใช้เครื่องหมายทวิภาค (:) ที่ท้ายหัวข้อ
    - ห้าม! ใช้คำนำหน้าชื่อว่า "คุณ" ให้ใช้เฉพาะชื่อพนักงานเท่านั้น (เช่น นิต้า, ปิ่น)
    - รูปแบบหัวข้อ: [ชื่อหมวดหมู่] (เพิ่ม "(รวม [จำนวน] คน)" เฉพาะหมวดหน้าร้าน)
    - รูปแบบรายชื่อ: [ชื่อ] - [เวลาหรือสถานะ]
-   - การจัดกลุ่ม: 
-     1. พนักงานปฏิบัติงานหน้าร้าน (รวม [จำนวน] คน) - คือพนักงานทุกคนที่มีกะงานระบุเป็นตัวเลขเวลา (เช่น 6:00, 6:30, 7:00, 8:00) ห้ามนำไปไว้ในหมวดอื่นเด็ดขาด และเรียงตามเวลาจากเช้าไปสาย
-     2. พนักงานปฏิบัติงานส่วนอื่น - เรียงตาม 'row_order'
-     3. พนักงานที่หยุดพัก/ลา - เรียงตาม 'row_order' (หากไม่มีกะให้ระบุว่า "วันหยุด")
-3. ห้ามแสดงรหัส UUID หรือคำว่า "พนักงานรหัส..." เด็ดขาด
-4. หากผู้ใช้สอบถามข้อมูลกะงานเชิงสถิติหรือช่วงเวลากว้าง ให้ใช้ readTable ดึง shifts + profiles มาคำนวณ และห้ามเดาชื่อพนักงานหรือสร้างชื่อสมมติขึ้นมาเองโดยเด็ดขาด
+   - การจัดกลุ่ม (ใช้ผลจาก getDailyShifts โดยตรง):
+     1. พนักงานปฏิบัติงานหน้าร้าน (รวม [จำนวน] คน) — จาก front_store เรียงตามเวลา 6:30 → 7:00 → 8:00
+     2. พนักงานปฏิบัติงานส่วนอื่น — จาก other_duty เรียงตาม row_order (schedule_order)
+     3. พนักงานที่หยุดพัก/ลา — จาก off_or_leave เรียงตาม row_order (schedule_order)
+7. ห้ามแสดงรหัส UUID หรือคำว่า "พนักงานรหัส..." เด็ดขาด
+8. หากผู้ใช้สอบถามข้อมูลกะงานเชิงสถิติหรือช่วงเวลากว้าง ให้ใช้ readTable ดึง shifts + profiles มาคำนวณ โดยใช้ shift_type (ไม่ใช่ start_time) และห้ามเดาชื่อพนักงานหรือสร้างชื่อสมมติขึ้นมาเองโดยเด็ดขาด
 `.trim());
   }
 
@@ -396,8 +411,9 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
  */
 const INTENT_THRESHOLD = 2;
 
-/** Slim tool surface: readTable + internetSearchTool only (DEC-065) */
+/** Slim tool surface: getDailyShifts + readTable + internetSearchTool */
 const SLIM_AI_TOOLS = {
+  getDailyShifts: wrapTool(getDailyShiftsTool),
   readTable: wrapTool(readTableTool),
   internetSearchTool: wrapTool(internetSearchTool),
 };
@@ -481,6 +497,26 @@ export async function POST(req: Request) {
     const todayZoned = toZonedTime(now, 'Asia/Bangkok');
     const currentThaiDate = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
     const currentIsoDate = format(todayZoned, 'yyyy-MM-dd');
+
+    if (intents.schedule >= INTENT_THRESHOLD && isDailyScheduleQuery(cleanInput)) {
+      try {
+        const targetDate = resolveScheduleTargetDate(cleanInput, currentIsoDate);
+        const formatted = await fetchDailyShiftsByDate(targetDate);
+        const responseText = formatScheduleChatResponse(targetDate, formatted);
+
+        await logAuditTrail({
+          userId: user?.id || 'PIN_AUTH_USER',
+          model: 'deterministic-schedule',
+          intent: 'schedule',
+          tokenEstimate: 0,
+          status: 'SUCCESS',
+        });
+
+        return createDeterministicChatStreamResponse(responseText);
+      } catch (scheduleError) {
+        console.error('[BRU_AI] Deterministic schedule fetch failed:', scheduleError);
+      }
+    }
 
     const systemPrompt = optimizeThaiTokens(
       buildSystemPrompt(intents, currentIsoDate, currentThaiDate)

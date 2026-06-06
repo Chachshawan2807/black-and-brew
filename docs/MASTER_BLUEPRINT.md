@@ -35,7 +35,9 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 - **Transport**: `DefaultChatTransport` (useChat hook) → `POST /api/chat`.
 - **Architecture**: **ToolLoopAgent** is utilized instead of `streamText` for Server-Side multi-step tool execution. The agent iterates over tool calls and results automatically (`stopWhen: stepCountIs(maxSteps)`).
 - **Token Optimization**: Sliding window (`messages.slice(-4)`), `maxOutputTokens: 1200`, ultra-minimalist system prompt.
-- **Tools**: Surgical partitioning — `readTable`, `internetSearch`, etc. (using CSV-verified `COLUMN_ALIASES` to intercept hallucinated column names).
+- **Tools**: Surgical partitioning — `readTable`, `getDailyShifts`, `internetSearchTool` (using CSV-verified `COLUMN_ALIASES` to intercept hallucinated column names).
+- **Deterministic Schedule Path (DEC-068)**: คำถามตารางงานรายวัน (วันนี้/พรุ่งนี้) short-circuit ผ่าน `fetchDailyShiftsByDate` + `formatScheduleChatResponse` — ไม่พึ่ง LLM สรุปผล ป้องกันคำตอบสั้นผิดพลาด (เช่น "วันนี้ 0")
+- **Shift Data Source**: กะจริงมาจาก `shifts.metadata.location` (6:30, 7:00, 8:00, ลา, ไปสาขา 2, ร้านซักผ้า, วันหยุด) — ห้ามใช้ `start_time` เป็นเวลาเข้างาน
 - **Security**: AI reads via Supabase Service Role isolated tools — read-only data layer.
 - **Hydration**: `AIChatOverlay` uses `isMounted` guard (`useEffect(() => setIsMounted(true), []`) to prevent Math.random prerender errors. Loaded via `next/dynamic ssr:false` in `AIChatWrapper`.
 - **Branding & UI Polish**: Implemented a custom branding logo loaded dynamically via `/ai-agent-logo.svg` inside standard Next.js `<Image />` tags, overriding the generic Lucide `<Bot />` icons in the header, bubble avatars, and thinking indicators for maximum brand coherence.

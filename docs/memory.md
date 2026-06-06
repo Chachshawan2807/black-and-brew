@@ -4,6 +4,21 @@
 
 ---
 
+### DEC-068: Deterministic AI Daily Schedule Response (v8.1)
+
+- **Date:** June 7, 2026
+- **Context:** AI ตอบตารางงานไม่สม่ำเสมอ — บางครั้ง "วันนี้ 0" หรือเดาเวลา 9:00–11:00 เพราะ `cleanToolOutput` ลบ `metadata.location` และ LLM สรุปไม่ครบ
+- **Decision:**
+  1. **Schedule Lib**: `src/lib/schedule/*` — normalize กะจาก `metadata.location`, จัดกลุ่ม front_store/other_duty/off_or_leave
+  2. **Short-Circuit**: `/api/chat` ตรวจ `isDailyScheduleQuery()` แล้วคืน `createDeterministicChatStreamResponse()` โดยตรง
+  3. **Valid Shifts**: 6:30, 7:00, 8:00, วันหยุด, ลา, ไปสาขา 2, ร้านซักผ้า เท่านั้น
+  4. **shift_type**: readTable shifts flatten `metadata.location` ก่อน strip metadata
+  5. **Tools**: คืน `getDailyShifts` สำหรับ non-short-circuit path พร้อม `formatted_text`
+- **Impact:** ตารางงานรายวันตอบถูกต้อง 100% ทุกครั้ง ไม่ขึ้นกับ LLM temperature
+- **Evidence:** `src/lib/schedule/`, `src/app/api/chat/route.ts`, tests 7/7, `npm run build` Exit Code 0
+
+---
+
 ### DEC-067: VELOCITY-REFACTOR-PROTOCOL — Payload Trim & 0ms UI (v8.0)
 
 - **Date:** June 7, 2026

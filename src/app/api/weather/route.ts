@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-const STORE_LAT = '13.9312';
-const STORE_LON = '100.6756';
+const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || '13.9312';
+const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || '100.6756';
 const CACHE_SECONDS = 1800;
 const CACHE_CONTROL = `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=600`;
 

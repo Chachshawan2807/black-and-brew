@@ -1,6 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { tool } from 'ai';
 import { z } from 'zod';
+import {
+  normalizeShiftLocation,
+} from '@/lib/schedule/format-daily-shifts';
+import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
+import { formatScheduleChatResponse } from '@/lib/schedule/format-schedule-chat-response';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -105,7 +110,7 @@ export const readTableTool = tool({
 - inventory_items: name, stock, order_point, target_stock, order_qty, unit, source
   (source = ช่องทางสั่งซื้อ เช่น "Makro", "Line", "สาขา 2", "สั่งพี่ต้า")
 - service_records: equipment, start_date, person_in_charge, status, detected_problem
-- shifts: start_time, end_time, status, employee_id
+- shifts: start_time, end_time, status, employee_id, shift_type (shift_type = กะจริงจาก metadata.location เช่น 6:30, 7:00, 8:00, ลา, ไปสาขา 2, ร้านซักผ้า, วันหยุด — ห้ามใช้ start_time เป็นเวลาเข้างาน)
 - profiles: full_name, schedule_order
 - holidays: date, name
 
@@ -231,7 +236,18 @@ export const readTableTool = tool({
       // ใหม่: บอก AI ด้วยว่าดึงมากี่แถว และมี source อะไรบ้าง (เฉพาะ inventory)
       // ทำไม? เพราะถ้า rowCount < effectiveLimit แปลว่าดึงมาครบแล้ว 100%
       // แต่ถ้า rowCount === effectiveLimit อาจมีข้อมูลมากกว่านี้ → AI จะรู้ว่าต้องแจ้งเตือน
-      const rows = data ?? [];
+      const rows = (data ?? []).map((row) => {
+        const record = row as unknown as Record<string, unknown>;
+        if (tableName !== 'shifts') return record;
+
+        const metadata = record.metadata as { location?: string | null } | null | undefined;
+        const status = record.status as string | null | undefined;
+
+        return {
+          ...record,
+          shift_type: normalizeShiftLocation(metadata?.location ?? undefined, status),
+        };
+      });
 
       const responseMeta: Record<string, unknown> = {
         ok: true,
@@ -275,65 +291,64 @@ export const readTableTool = tool({
 // เพิ่มเพียง type safety และ error handling ที่ดีขึ้น
 // ─────────────────────────────────────────────────────────────────────────────
 export const getDailyShiftsTool = tool({
-  description: 'ดึงข้อมูลตารางงานและกะการทำงานของพนักงานทุกคนในวันที่ระบุ (รูปแบบ YYYY-MM-DD)',
+  description: `
+ดึงตารางงานพนักงานทุกคนในวันที่ระบุ (YYYY-MM-DD) แบบจัดกลุ่มพร้อมใช้งาน
+
+[กะที่มีในระบบเท่านั้น]
+- เวลาเข้างานหน้าร้าน: 6:30, 7:00, 8:00
+- งานอื่น: ไปสาขา 2, ร้านซักผ้า
+- ไม่ทำงาน: วันหยุด (ว่าง), ลา
+
+[สำคัญ]
+- ใช้ tool นี้เป็นหลักเมื่อถามตารางงานรายวัน (วันนี้/พรุ่งนี้/วันที่ระบุ)
+- ห้ามใช้ start_time/end_time เป็นเวลาเข้างาน (ค่าเหล่านั้นเป็นวันที่ล้วน)
+- ข้อมูล shift มาจาก metadata.location ใน Supabase แล้วถูก normalize ให้แล้ว
+`.trim(),
   inputSchema: z.object({
-    date: z.string().describe('วันที่ต้องการดูตารางงาน รูปแบบ YYYY-MM-DD เช่น 2026-05-26'),
+    date: z.string().describe('วันที่ต้องการดูตารางงาน รูปแบบ YYYY-MM-DD เช่น 2026-06-08'),
   }),
   execute: async ({ date }) => {
     try {
-      const { data: profiles, error: profileError } = await adminClient
-        .from('profiles')
-        .select('id, full_name, schedule_order')
-        .order('schedule_order', { ascending: true });
+      const formatted = await fetchDailyShiftsByDate(date);
+      const formattedText = formatScheduleChatResponse(date, formatted);
 
-      if (profileError) {
-        return {
-          ok: false,
-          data: null,
-          error: {
-            message: profileError.message,
-            details: profileError.details,
-            hint: (profileError as any).hint ?? null,
-          },
-        };
-      }
+      return {
+        ok: true,
+        date,
+        total_staff: formatted.all_staff.length,
+        formatted_text: formattedText,
+        valid_shift_types: ['6:30', '7:00', '8:00', 'วันหยุด', 'ลา', 'ไปสาขา 2', 'ร้านซักผ้า'],
+        front_store: formatted.front_store.map(({ name, shift, row_order }) => ({
+          row_order,
+          name,
+          shift,
+        })),
+        other_duty: formatted.other_duty.map(({ name, shift, row_order }) => ({
+          row_order,
+          name,
+          shift,
+        })),
+        off_or_leave: formatted.off_or_leave.map(({ name, shift, row_order }) => ({
+          row_order,
+          name,
+          shift,
+        })),
+        all_staff: formatted.all_staff.map(({ name, shift, row_order, category }) => ({
+          row_order,
+          name,
+          shift,
+          category,
+        })),
+      };
 
-      const { data: shifts, error: shiftError } = await adminClient
-        .from('shifts')
-        .select('employee_id, status, start_time, metadata')
-        .gte('start_time', `${date}T00:00:00`)
-        .lte('start_time', `${date}T23:59:59`);
-
-      if (shiftError) {
-        return {
-          ok: false,
-          data: null,
-          error: {
-            message: shiftError.message,
-            details: shiftError.details,
-            hint: (shiftError as any).hint ?? null,
-          },
-        };
-      }
-
-      const payload = (profiles ?? []).map((profile, index) => {
-        const shift = (shifts ?? []).find(s => s.employee_id === profile.id);
-        return {
-          row_order: index + 1,
-          name: profile.full_name,
-          shift: shift?.metadata?.location ?? '',
-        };
-      });
-
-      return { ok: true, data: payload };
-
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       return {
         ok: false,
         data: null,
         error: {
-          message: err?.message || 'Unknown error',
-          details: err?.details ?? null,
+          message,
+          details: null,
           hint: null,
         },
       };

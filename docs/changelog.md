@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-06-07 (DAILY-CLOSING — AI Schedule Deterministic Path v8.1)
+
+* **Execution**: [DAILY-CLOSING-WORKFLOW — Architecture Integrity Sync]
+* **Action**: แก้ AI ตอบตารางงานไม่ครบ/ผิดกะ — เพิ่ม deterministic schedule pipeline, แก้ TSC build error, sync weather coords จาก env
+* **Changes**:
+
+| File | Change |
+|------|--------|
+| `src/lib/schedule/format-daily-shifts.ts` | **[NEW]** Normalize + categorize shifts จาก `metadata.location` |
+| `src/lib/schedule/fetch-daily-shifts.ts` | **[NEW]** Service-role fetch รายวัน |
+| `src/lib/schedule/format-schedule-chat-response.ts` | **[NEW]** ข้อความตอบแชทมาตรฐาน |
+| `src/lib/schedule/detect-schedule-query.ts` | **[NEW]** ตรวจจับคำถามตารางงานรายวัน |
+| `src/lib/schedule/create-deterministic-chat-stream.ts` | **[NEW]** SSE stream ไม่ผ่าน LLM |
+| `src/app/api/chat/route.ts` | Short-circuit daily schedule; tools: readTable + getDailyShifts + internetSearch |
+| `src/app/actions/tools/database-tools.ts` | `shift_type` flatten; TSC cast fix |
+| `src/app/api/weather/route.ts` | พิกัดจาก `NEXT_PUBLIC_STORE_LAT/LON` |
+| `src/test/format_daily_shifts.test.ts` | **[NEW]** |
+| `src/test/schedule_chat_response.test.ts` | **[NEW]** |
+
+* **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ | schedule tests 7/7 ✓
+
 ## 2026-06-07 (VELOCITY-REFACTOR-PROTOCOL v8.0)
 
 * **Execution**: [VELOCITY-REFACTOR-PROTOCOL — Performance One-Shot]
