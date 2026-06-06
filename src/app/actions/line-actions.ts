@@ -1,56 +1,28 @@
 'use server';
 
-import { LineBotClient } from '@line/bot-sdk';
+import { z } from 'zod';
+import { pushLineMessage } from '@/lib/line-notify';
+import { ensureServerSession } from '@/lib/security/server-auth';
 
-const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN || '';
-
-// Initialize the LINE client only if the access token is present
-const client = channelAccessToken
-  ? LineBotClient.fromChannelAccessToken({ channelAccessToken })
-  : null;
+const lineNotificationSchema = z.object({
+  targetId: z.string().min(1).max(64),
+  message: z.string().min(1).max(5000),
+});
 
 /**
  * Sends a push notification to a LINE target ID (User ID, Group ID, or Room ID).
- * 
- * @param targetId The LINE recipient ID.
- * @param message The text message to send.
- * @returns An object indicating success status or error details.
+ * Requires PIN or Supabase session — cron jobs use pushLineMessage directly.
  */
 export async function sendLineNotification(targetId: string, message: string) {
-  if (!targetId || !message) {
-    const errorMsg = 'Target ID and message content are required.';
-    console.error('[LINE Action Error]:', errorMsg);
-    return { success: false, error: errorMsg };
+  const auth = await ensureServerSession();
+  if (!auth.ok) {
+    return { success: false, error: auth.error };
   }
 
-  if (!client) {
-    const errorMsg = 'LINE client is not configured. Missing LINE_CHANNEL_ACCESS_TOKEN.';
-    console.error('[LINE Action Error]:', errorMsg);
-    return { success: false, error: errorMsg };
+  const parsed = lineNotificationSchema.safeParse({ targetId, message });
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid LINE notification payload' };
   }
 
-  try {
-    const response = await client.pushMessage({
-      to: targetId,
-      messages: [
-        {
-          type: 'text',
-          text: message,
-        },
-      ],
-    });
-
-    // Keep production logs minimal.
-    return { success: true, response };
-  } catch (err: any) {
-    console.error('[LINE Action Failure]:', err.message || err);
-    if (err.originalError?.response?.data) {
-      console.error('[LINE API Response Error]:', err.originalError.response.data);
-    }
-    return {
-      success: false,
-      error: err.message || 'Unknown error occurred while sending LINE notification.',
-      details: err.originalError?.response?.data || null,
-    };
-  }
+  return pushLineMessage(parsed.data.targetId, parsed.data.message);
 }

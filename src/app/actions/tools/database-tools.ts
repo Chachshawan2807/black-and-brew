@@ -117,9 +117,18 @@ export const readTableTool = tool({
 `.trim(),
 
   inputSchema: z.object({
-    tableName: z.string().describe(
-      'ชื่อตาราง: shifts, profiles, holidays, inventory_items, service_records, inventory_transactions'
-    ),
+    tableName: z
+      .enum([
+        'shifts',
+        'profiles',
+        'holidays',
+        'inventory_items',
+        'service_records',
+        'inventory_transactions',
+      ])
+      .describe(
+        'ชื่อตาราง: shifts, profiles, holidays, inventory_items, service_records, inventory_transactions'
+      ),
     columns: z.string().optional().describe(
       'คอลัมน์ที่ต้องการ เช่น "id, name, stock" — ถ้าไม่ระบุจะใช้ preset ของตารางนั้น'
     ),
@@ -157,8 +166,21 @@ export const readTableTool = tool({
       // ─── เลือกคอลัมน์ ────────────────────────────────────────────────────
       const normalizedColumns = (columns ?? '').trim();
       const shouldUsePreset = !normalizedColumns || normalizedColumns === '*';
+      const presetColumns = TABLE_COLUMN_PRESETS[tableName];
+      if (shouldUsePreset && !presetColumns) {
+        return {
+          ok: false,
+          data: null,
+          error: {
+            message: `No column preset defined for table: ${tableName}`,
+            details: null,
+            hint: 'Use an allowed tableName from the enum list.',
+          },
+        };
+      }
+
       let selectedColumns = shouldUsePreset
-        ? (TABLE_COLUMN_PRESETS[tableName] ?? '*')
+        ? presetColumns!
         : normalizeColumns(tableName, normalizedColumns);
 
       // ─── Build Supabase query ─────────────────────────────────────────────

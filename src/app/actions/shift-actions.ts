@@ -4,6 +4,7 @@ import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { assertWritableSession } from '@/app/actions/auth';
 
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -21,6 +22,9 @@ export async function deleteShift(id: string) {
     if (!pinVerified && (!user || authError)) {
       return { success: false, error: 'Unauthorized: Session missing or invalid' };
     }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
 
     const { error } = await supabaseAdmin.from('shifts').delete().eq('id', id);
     if (error) return { success: false, error: error.message };
@@ -44,6 +48,9 @@ export async function updateStaffOrder(orderedIds: string[]) {
     if (!pinVerified && (!user || authError)) {
       return { success: false, error: 'Unauthorized: Session missing or invalid' };
     }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
 
     const updates = orderedIds.map((id, index) =>
       supabaseAdmin.from('profiles').update({ schedule_order: index, display_order: index }).eq('id', id)
@@ -70,6 +77,9 @@ export async function updateDashboardOrder(orderedIds: string[]) {
     if (!pinVerified && (!user || authError)) {
       return { success: false, error: 'Unauthorized: Session missing or invalid' };
     }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
 
     const updates = orderedIds.map((id, index) =>
       supabaseAdmin.from('profiles').update({ dashboard_order: index }).eq('id', id)
@@ -108,6 +118,9 @@ export async function saveShift(payload: any) {
   if (!pinVerified && (!user || authError)) {
     return { success: false, error: 'Unauthorized: Session missing or invalid' };
   }
+
+  const writable = await assertWritableSession();
+  if (!writable.ok) return { success: false, error: writable.error };
 
   const parsed = shiftSchema.safeParse(payload);
   if (!parsed.success) {
@@ -155,6 +168,9 @@ export async function deleteManagementHistoryRange(employeeId: string, startDate
     if (!pinVerified && (!user || authError)) {
       return { success: false, error: 'Unauthorized: Session missing or invalid' };
     }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
 
     const { error } = await supabaseAdmin
       .from('shifts')
@@ -227,6 +243,9 @@ export async function copyWeeklyShifts(sourceStartDate: string, targetStartDate:
   if (!pinVerified) {
     return { success: false, error: 'Unauthorized: โปรดเข้าสู่ระบบด้วย PIN' };
   }
+
+  const writable = await assertWritableSession();
+  if (!writable.ok) return { success: false, error: writable.error };
 
   try {
     const sStart = sourceStartDate.split('T')[0];

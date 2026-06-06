@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { updateInventoryStock } from '@/app/actions/inventory-actions';
 import { mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 
 interface InventoryItem {
   id: string;
@@ -21,11 +23,13 @@ interface InventoryItem {
 function CountInput({
   item,
   index,
-  onSave
+  onSave,
+  disabled = false,
 }: {
   item: InventoryItem;
   index: number;
   onSave: (id: string, value: number) => Promise<void>;
+  disabled?: boolean;
 }) {
   const [val, setVal] = useState(item.stock === 0 ? '' : String(item.stock));
   const [isFocused, setIsFocused] = useState(false);
@@ -44,6 +48,7 @@ function CountInput({
   }, [item.stock, isFocused]);
 
   const handleBlur = async () => {
+    if (disabled) return;
     const numberVal = val === '' ? 0 : Number(val);
     const sanitized = isNaN(numberVal) ? 0 : numberVal;
     pendingValueRef.current = sanitized;
@@ -80,7 +85,8 @@ function CountInput({
         }
       }}
       data-count-row-index={index}
-      className="w-24 h-10 px-3 rounded-xl border border-black/10 bg-slate-50 text-base font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 text-black font-mono transition-all"
+      disabled={disabled}
+      className={`w-24 h-10 px-3 rounded-xl border border-black/10 bg-slate-50 text-base font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 text-black font-mono transition-all ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
     />
   );
 }
@@ -88,6 +94,7 @@ function CountInput({
 export default function InventoryCountPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'th';
+  const isReadOnly = useReadOnly();
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +107,7 @@ export default function InventoryCountPage() {
     setErrorMessage(null);
 
     try {
+      await ensureSupabaseSession();
       const { data, error } = await supabase
         .from('inventory_items')
         .select('id, name, stock, unit, sort_order')
@@ -149,6 +157,10 @@ export default function InventoryCountPage() {
   }, [fetchInventory]);
 
   async function handleSaveStock(id: string, value: number) {
+    if (isReadOnly) {
+      setSaveErrorMessage(READ_ONLY_DENY_MSG);
+      return;
+    }
     const currentItem = items.find(i => i.id === id);
     if (currentItem && Number(currentItem.stock) === value) return;
 
@@ -320,6 +332,7 @@ export default function InventoryCountPage() {
                     item={item}
                     index={index}
                     onSave={handleSaveStock}
+                    disabled={isReadOnly}
                   />
                 </div>
               </motion.div>

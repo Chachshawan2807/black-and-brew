@@ -4,6 +4,62 @@
 
 ---
 
+### DEC-067: VELOCITY-REFACTOR-PROTOCOL — Payload Trim & 0ms UI (v8.0)
+
+- **Date:** June 7, 2026
+- **Context:** ต้องการ one-shot performance purge โดยไม่แตะ core files (`route.ts`, `AIChatOverlay`, `WeatherWidget`, `executive-rules`, `tools/*`, `thaiTokenOptimizer`)
+- **Decision:**
+  1. **No Wildcard Selects**: `readTableTool` + server actions ใช้ column presets เท่านั้น — ห้าม fallback `*`
+  2. **Production Log Policy**: ลบ `console.log()` จาก production paths; คง `console.error` สำหรับ diagnostics
+  3. **Input Debounce**: Inventory quick search 150ms debounce แยก display state จาก filter state
+  4. **Transition Actions**: `useTransition` บน quick entry + maintenance submit/delete
+  5. **Modal Code Splitting**: `MaintenanceModals.tsx` ผ่าน `next/dynamic { ssr: false }`
+  6. **Weather Cache**: `Cache-Control` บนทุก response path รวม fallback
+- **Impact:** ลด bundle re-render, network payload, และ memory leak risk จาก event listeners (AbortController มีอยู่แล้วใน resize handlers)
+- **Evidence:** `docs/changelog.md` (2026-06-07 v8.0), `npm run build` Exit Code 0
+
+---
+
+### DEC-066: SECURE-REFACTOR-PROTOCOL — Centralized Security Layer (v7.1)
+
+- **Date:** June 7, 2026
+- **Context:** ต้องการ hardening แบบ one-shot โดยไม่ทำลาย core files (`route.ts`, `AIChatOverlay`, tools) และตัด anon-key fallback ที่เหลือ
+- **Decision:**
+  1. **Security Lib**: `src/lib/security/sanitize.ts` + `server-auth.ts` เป็น single source of truth
+  2. **LINE Split**: Cron → `pushLineMessage` (lib); UI → `sendLineNotification` (auth + Zod)
+  3. **No Anon Fallback**: `requireServiceRoleKey()` บังคับใน schedule page และ migration action
+  4. **AI Tool Schema**: `tableName` enum whitelist; search query length + injection strip
+  5. **Hydration**: AIChatOverlay history effect ใช้ `[isMounted]` เท่านั้น
+- **Impact:** ลด attack surface สำหรับ direct server-action invocation และ XSS จาก persisted chat
+- **Evidence:** `src/lib/security/`, `src/lib/line-notify.ts`, `docs/changelog.md` (2026-06-07 v7.1)
+
+---
+
+### DEC-065: OMNI-REFACTOR-MASTER — Slim AI Tools & Build Integrity (v7.0)
+
+- **Date:** June 7, 2026
+- **Context:** Chat route มีเครื่องมือซ้ำซ้อน (getDailyShifts, weatherTool) ขัดกับมาตรฐาน DEC-060/036; build ล้มจาก TS error ใน ClickableDatePicker; AIChatOverlay รวม hydration + load ใน effect เดียว
+- **Decision:**
+  1. **SLIM_AI_TOOLS**: `/api/chat` expose เฉพาะ `readTable` + `internetSearchTool` — กะงาน/สต็อก/วันหยุดผ่าน readTable, อากาศภายนอกผ่าน internetSearch
+  2. **Token Economy**: รัน `optimizeThaiTokens` บน system prompt ก่อนส่ง Gemini
+  3. **Weather Lock**: `STORE_LAT=13.9312`, `STORE_LON=100.6756`, `FALLBACK_PAYLOAD` กัน frontend crash
+  4. **UI Standard**: Chat `max-w-2xl` + `rounded-3xl` + `bg-[#fdfcf0]`; แยก useEffect mount vs load history
+  5. **Orphan Purge**: ลบ empty `api/chat/middleware.ts`
+- **Impact:** AI reasoning path deterministic ขึ้น, build ผ่าน 100%, hydration เสถียร
+- **Evidence:** `src/app/api/chat/route.ts`, `src/components/ai/AIChatOverlay.tsx`, `src/app/api/weather/route.ts`, `npm run build` Exit Code 0
+
+---
+
+### DEC-064: Full Documentation Sync (v6.9)
+
+- **Date:** June 7, 2026
+- **Context:** เอกสาร `.md` หลายไฟล์ล้าสมัย — README ยังเป็น create-next-app boilerplate, PROJECT_MAP อ้าง `middleware.ts` ที่ไม่มี, agent.md อ้าง `src/lib/agent-tools/` ที่ถูกลบ, changelog มีเนื้อหาซ้ำ, database.md ขาดตาราง sales/maintenance
+- **Decision:** อัปเดตไฟล์ `.md` ในโปรเจกต์ทั้งหมด (ยกเว้น `.agents/skills/` third-party) ให้ตรงกับโค้ด v6.9; แก้ Zero-Display Logic ใน MASTER_BLUEPRINT ให้ตรง AGENTS.md; บันทึก known gaps (READ_ONLY_PIN env vs hardcoded, proxy.ts naming)
+- **Impact:** AI agents และ developers อ่าน docs ได้ถูกต้องโดยไม่สับสนกับโครงสร้างเก่า
+- **Evidence:** `README.md`, `PROJECT_MAP.md`, `docs/changelog.md`, `docs/api.md`, `docs/database.md`
+
+---
+
 ### DEC-062: Next.js Image Aspect Ratio Warning - Standard Pattern (v6.2)
 
 - **Date:** June 3, 2026
@@ -658,3 +714,31 @@ eadTable ��� internetSearchTool`r
 - **Decision:** เปลี่ยนสถาปัตยกรรมใน `/api/chat/route.ts` จากการใช้ `streamText` เป็นการเรียกใช้ `ToolLoopAgent` และบังคับลูปด้วย `stopWhen: stepCountIs(maxSteps)` แทน เพื่อให้ระบบหลังบ้านสามารถวนลูปประมวลผล Tool output แล้วส่งกลับให้ AI สรุปผลข้อความสุดท้ายได้ตามปกติ
 - **Impact:** แก้ไขปัญหาระบบแชทค้าง/ไม่ตอบกลับ AI สามารถใช้ Tools ซ้อนกันหลายขั้นตอนและสรุปผลเป็นข้อความภาษาไทยได้อย่างสมบูรณ์
 - **Evidence:** `src/app/api/chat/route.ts`
+
+### DEC-062: Inventory Stock Single Source of Truth (v6.8)
+
+- **Date:** June 6, 2026
+- **Context:** จำนวนคงเหลือ (`stock`) ไม่สอดคล้องกันระหว่างหน้าคลังสินค้า, หน้าตรวจนับ และ modal รายการสั่งซื้อ เนื่องจาก realtime แทนที่ทั้งแถวด้วย partial payload, หน้าตรวจนับไม่มี optimistic update, undo/redo upsert ทับ stock จาก tab อื่น และ `inventory-items.csv` เสี่ยง overwrite stock เมื่อรัน migration ซ้ำ
+- **Decision:**
+  1. **Single Write Path:** สร้าง `updateInventoryStock()` + RPC `set_inventory_stock` สำหรับ warehouse cell edit และ stock-taking
+  2. **Realtime Merge:** ใช้ `mergeInventoryRealtimeUpdate()` ในทุก channel — merge `{...existing, ...payload.new}` ไม่ replace ทั้งแถว
+  3. **Computed PO:** `computeItemsToOrder()` ใน `src/lib/inventory-stock.ts` — PO modal อ่านจาก state ที่ sync กับ DB
+  4. **CSV Deprecation:** ลบ `inventory-items.csv`; `migrate-inventory-sort-order.ts` re-sequence `sort_order` จาก DB เท่านั้น
+  5. **Channel Export:** PO PNG export ใช้ `displayedPoItems` ตามช่องทางที่เลือก (Line/Makro/สาขา 2/สั่งพี่ต้า)
+- **Impact:** ทั้ง 3 หน้าต่างแสดงตัวเลข `stock` เดียวกันเสมอ; `order_qty` sync ผ่าน DB trigger ตาม DEC-005
+- **Evidence:** `sql/sync_inventory_stock.sql`, `src/lib/inventory-stock.ts`, `src/app/actions/inventory-actions.ts`, `src/test/inventory_stock_sync.test.ts`
+
+> **Note (DEC-041 superseded):** การ migrate จาก `inventory-items.csv` เสร็จสมบูรณ์แล้ว — ไฟล์ CSV ถูกลบออกจาก repo ตั้งแต่ v6.8 ไม่ควร restore หรือ re-run แบบ overwrite stock
+
+### DEC-063: Premium Motion System — Zero Desktop Impact (v6.9)
+
+- **Date:** June 6, 2026
+- **Context:** ต้องการแอนิเมชัน Premium Minimal ทั่วทั้งแอป (page transition, modal, drawer, toast, hover) โดยไม่บิดเบือน layout desktop/mobile
+- **Decision:**
+  1. **CSS Motion Layer:** กำหนด keyframes + utilities ใน `globals.css` แทนการพึ่ง `tailwindcss-animate` plugin (Tailwind v4 CSS-first)
+  2. **Framer Presets:** `src/lib/motion-presets.ts` — `fadeOverlay`, `modalContent`, `pageContent`, `toastSlide`
+  3. **Route Transition:** `<PageTransition>` ใน `SidebarLayout` — `AnimatePresence mode="wait"` + opacity fade 300ms
+  4. **Shared Components:** `FloatingAlert` (schedule holiday warning), `FloatingToast` (maintenance) — slide + auto fade-out 2.8–3s
+  5. **Micro-interactions:** `duration-200 ease-in-out` บน Button, sidebar links, ClickableInput; mobile drawer backdrop 300ms
+- **Impact:** UX ลื่นไหลขึ้นทุก module; class `animate-in` ที่ใช้อยู่แล้วใน ScheduleClient/sheet/dropdown ทำงานได้จริง
+- **Evidence:** `src/app/[locale]/globals.css`, `src/components/ui/page-transition.tsx`, `src/components/ui/floating-alert.tsx`, `src/lib/motion-presets.ts`

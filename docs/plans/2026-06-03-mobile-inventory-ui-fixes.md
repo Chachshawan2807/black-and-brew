@@ -1,5 +1,7 @@
 # Plan: Mobile Inventory UI & Drag-and-Drop Fixes
 
+> **Status:** Completed (v6.3) — Superseded by v6.8 stock sync + v6.9 motion system. See `docs/changelog.md`.
+
 Goal: Fix visual and functional issues on the mobile layout of the Inventory page:
 1. "บันทึก" (Save) button overflows outside the Quick Entry card container.
 2. "สั่งซื้อ" (Order) button does not display the badge number (truncated as three dots).

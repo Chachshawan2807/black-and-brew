@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache'; 
 import { headers } from 'next/headers';
 import { compileDailyReportPayload } from '@/app/actions/daily-report-actions';
-import { sendLineNotification } from '@/app/actions/line-actions';
+import { pushLineMessage } from '@/lib/line-notify';
 
 export const maxDuration = 30;
 
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     }
 
     const message = await compileDailyReportPayload();
-    const result = await sendLineNotification(targetRecipientId, message);
+    const result = await pushLineMessage(targetRecipientId, message);
 
     if (!result.success) {
       console.error('[CRON] Failed to send LINE notification:', result.error);

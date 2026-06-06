@@ -9,6 +9,21 @@
   /* Collapsible animations */
   --animate-collapsible-down: collapsible-down 0.2s ease-out;
   --animate-collapsible-up: collapsible-up 0.2s ease-out;
+
+  /* Premium UI motion tokens */
+  --animate-page-enter: bb-page-enter 300ms ease-in-out both;
+  --animate-fade-in: bb-fade-in 200ms ease-out both;
+  --animate-fade-out: bb-fade-out 200ms ease-in both;
+  --animate-zoom-in-95: bb-zoom-in-95 200ms ease-out both;
+  --animate-slide-in-bottom: bb-slide-in-from-bottom 300ms ease-out both;
+  --animate-slide-in-bottom-2: bb-slide-in-from-bottom-2 300ms ease-out both;
+  --animate-slide-in-top-2: bb-slide-in-from-top-2 200ms ease-out both;
+  --animate-slide-in-right: bb-slide-in-from-right-full 300ms ease-out both;
+  --animate-slide-out-bottom: bb-slide-out-to-bottom 300ms ease-in both;
+  --animate-slide-out-bottom-2: bb-slide-out-to-bottom-2 300ms ease-in both;
+  --animate-slide-out-top-2: bb-slide-out-to-top-2 200ms ease-in both;
+  --animate-slide-out-left: bb-slide-out-to-left 300ms ease-in both;
+  --animate-slide-out-right: bb-slide-out-to-right 300ms ease-in both;
 }
 
 @keyframes collapsible-down {
@@ -19,6 +34,81 @@
 @keyframes collapsible-up {
   from { height: var(--radix-collapsible-content-height); }
   to { height: 0; }
+}
+
+@keyframes bb-page-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bb-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bb-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes bb-zoom-in-95 {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes bb-slide-in-from-bottom {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bb-slide-in-from-bottom-2 {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bb-slide-in-from-top-2 {
+  from { opacity: 0; transform: translateY(-0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bb-slide-in-from-right-full {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes bb-slide-in-from-left {
+  from { opacity: 0; transform: translateX(-100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes bb-slide-in-from-right {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes bb-slide-out-to-bottom {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(100%); }
+}
+
+@keyframes bb-slide-out-to-bottom-2 {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(0.5rem); }
+}
+
+@keyframes bb-slide-out-to-top-2 {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-0.5rem); }
+}
+
+@keyframes bb-slide-out-to-left {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-100%); }
+}
+
+@keyframes bb-slide-out-to-right {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(100%); }
 }
 
 :root {
@@ -88,12 +178,168 @@
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid #f3f4f6;
     border-radius: 1rem;
-    transition-property: all;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 300ms;
+    transition: all 200ms ease-in-out;
 
     &:hover {
       box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
     }
+  }
+
+  /* Premium motion utilities */
+  .bb-transition {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+    transition-duration: 200ms;
+    transition-timing-function: ease-in-out;
+  }
+
+  .bb-modal-backdrop {
+    animation: bb-fade-in 300ms ease-in-out both;
+  }
+
+  .bb-modal-panel {
+    animation: bb-zoom-in-95 200ms ease-out both;
+  }
+
+  .bb-sheet-panel {
+    animation: bb-slide-in-from-bottom 300ms ease-out both;
+  }
+
+  .bb-toast-enter {
+    animation: bb-slide-in-from-bottom-2 300ms ease-out both, bb-fade-in 300ms ease-out both;
+  }
+
+  .bb-toast-exit {
+    animation: bb-slide-out-to-bottom-2 300ms ease-in both, bb-fade-out 300ms ease-in both;
+  }
+}
+
+@layer utilities {
+  .animate-page-enter {
+    animation: var(--animate-page-enter);
+  }
+
+  .animate-in {
+    animation-fill-mode: both;
+  }
+
+  .animate-out {
+    animation-fill-mode: both;
+  }
+
+  .fade-in {
+    animation-name: bb-fade-in;
+    animation-duration: var(--tw-animation-duration, 200ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .fade-in-0 {
+    animation-name: bb-fade-in;
+    animation-duration: var(--tw-animation-duration, 200ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .fade-out-0 {
+    animation-name: bb-fade-out;
+    animation-duration: var(--tw-animation-duration, 200ms);
+    animation-timing-function: ease-in;
+    animation-fill-mode: both;
+  }
+
+  .zoom-in-95 {
+    animation-name: bb-zoom-in-95;
+    animation-duration: var(--tw-animation-duration, 200ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-bottom {
+    animation-name: bb-slide-in-from-bottom;
+    animation-duration: var(--tw-animation-duration, 300ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-bottom-2 {
+    animation-name: bb-slide-in-from-bottom-2;
+    animation-duration: var(--tw-animation-duration, 300ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-top-2 {
+    animation-name: bb-slide-in-from-top-2;
+    animation-duration: var(--tw-animation-duration, 200ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-right-full {
+    animation-name: bb-slide-in-from-right-full;
+    animation-duration: var(--tw-animation-duration, 300ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-right {
+    animation-name: bb-slide-in-from-right;
+    animation-duration: var(--tw-animation-duration, 300ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-left {
+    animation-name: bb-slide-in-from-left;
+    animation-duration: var(--tw-animation-duration, 300ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .slide-out-to-bottom {
+    animation-name: bb-slide-out-to-bottom;
+    animation-duration: var(--tw-animation-duration, 300ms);
+    animation-timing-function: ease-in;
+    animation-fill-mode: both;
+  }
+
+  .slide-out-to-bottom-2 {
+    animation-name: bb-slide-out-to-bottom-2;
+    animation-duration: var(--tw-animation-duration, 300ms);
+    animation-timing-function: ease-in;
+    animation-fill-mode: both;
+  }
+
+  .slide-out-to-top-2 {
+    animation-name: bb-slide-out-to-top-2;
+    animation-duration: var(--tw-animation-duration, 200ms);
+    animation-timing-function: ease-in;
+    animation-fill-mode: both;
+  }
+
+  .slide-out-to-left {
+    animation-name: bb-slide-out-to-left;
+    animation-duration: var(--tw-animation-duration, 300ms);
+    animation-timing-function: ease-in;
+    animation-fill-mode: both;
+  }
+
+  .slide-out-to-right {
+    animation-name: bb-slide-out-to-right;
+    animation-duration: var(--tw-animation-duration, 300ms);
+    animation-timing-function: ease-in;
+    animation-fill-mode: both;
+  }
+
+  .duration-200 {
+    --tw-animation-duration: 200ms;
+  }
+
+  .duration-300 {
+    --tw-animation-duration: 300ms;
+  }
+
+  .duration-500 {
+    --tw-animation-duration: 500ms;
   }
 }

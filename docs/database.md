@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> **Version:** 6.5 | **Last Updated:** 2026-06-05 | **Engine:** Supabase PostgreSQL
+> **Version:** 6.9 | **Last Updated:** 2026-06-07 | **Engine:** Supabase PostgreSQL
 
 ---
 
@@ -8,18 +8,26 @@
 
 | Table | Purpose | RLS | Source SQL |
 | :--- | :--- | :--- | :--- |
-| `profiles` | ข้อมูลพนักงาน 9 คน | ✅ Enabled (ALL for authenticated) | `DB_SCHEMA.sql` |
-| `shifts` | ตารางกะงาน | ✅ Enabled (ALL for authenticated) | `DB_SCHEMA.sql` |
-| `inventory_items` | รายการสินค้าในคลัง | ✅ Enabled (ALL for public) | `DB_SCHEMA.sql` |
-| `inventory_transactions` | ประวัติการเคลื่อนไหวสต็อก | ✅ Enabled (SELECT/INSERT/DELETE for authenticated) | `setup_inventory_transactions.sql` |
-| `inventory_config` | ตั้งค่าคอลัมน์ Inventory UI | ✅ Enabled (ALL for public) | `inventory_config_schema.sql` |
-| `holidays` | วันหยุดราชการจาก Google Calendar | — | Created via `holiday-actions.ts` |
+| `profiles` | ข้อมูลพนักงาน 9 คน | ✅ authenticated | `DB_SCHEMA.sql` |
+| `shifts` | ตารางกะงาน | ✅ authenticated | `DB_SCHEMA.sql` |
+| `inventory_items` | รายการสินค้าในคลัง | ✅ authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` |
+| `inventory_transactions` | ประวัติการเคลื่อนไหวสต็อก | ✅ authenticated | `setup_inventory_transactions.sql` |
+| `inventory_config` | ตั้งค่าคอลัมน์ Inventory UI | ✅ authenticated | `inventory_config_schema.sql` |
+| `holidays` | วันหยุดราชการ | ✅ | Created via `holiday-actions.ts` |
+| `regular_holidays` | วันหยุดประจำของพนักงาน | ✅ | `regular_holidays_schema.sql` |
+| `service_records` | ประวัติซ่อมบำรุงอุปกรณ์ | ✅ | Used by maintenance module |
+| `sales_uploads` | ไฟล์ Excel ที่อัปโหลด | ✅ | `sales_schema.sql` |
+| `sales_records` | รายการยอดขาย | ✅ | `sales_schema.sql` |
+| `product_categories` | หมวดหมู่สินค้า | ✅ | `product_categories_schema.sql` |
+| `audit_logs` | บันทึก audit สำหรับ AI | ✅ | `audit_log_schema.sql` |
+
+> **Types:** Generated types in `src/lib/database.types.ts`
 
 ---
 
-## 2. Table Schemas
+## 2. Core Table Schemas
 
-### 2.1 `profiles`
+### `profiles`
 
 ```sql
 CREATE TABLE profiles (
@@ -31,7 +39,7 @@ CREATE TABLE profiles (
 );
 ```
 
-### 2.2 `shifts`
+### `shifts`
 
 ```sql
 CREATE TABLE shifts (
@@ -46,7 +54,7 @@ CREATE TABLE shifts (
 );
 ```
 
-### 2.3 `inventory_items`
+### `inventory_items`
 
 ```sql
 CREATE TABLE inventory_items (
@@ -64,7 +72,7 @@ CREATE TABLE inventory_items (
 );
 ```
 
-### 2.4 `inventory_transactions`
+### `inventory_transactions`
 
 ```sql
 CREATE TABLE inventory_transactions (
@@ -78,79 +86,52 @@ CREATE TABLE inventory_transactions (
 );
 ```
 
-> **IMPORTANT:** Column is `inventory_item_id` — renamed from `product_id` via `fix_transaction_relationships.sql`
+> Column is `inventory_item_id` — renamed from `product_id` via `fix_transaction_relationships.sql`
 
-### 2.5 `inventory_config`
+### `sales_uploads` / `sales_records`
 
 ```sql
-CREATE TABLE inventory_config (
-  id TEXT PRIMARY KEY,
-  settings JSONB NOT NULL DEFAULT '{}'::jsonb,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE sales_uploads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  file_name TEXT NOT NULL,
+  upload_date TIMESTAMPTZ DEFAULT NOW(),
+  total_records INTEGER,
+  status TEXT DEFAULT 'completed',
+  analysis_summary TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
-```
 
-#### Settings JSON Structure
-
-```json
-{
-  "order": ["sort_order", "name", "stock", "order_qty", "order_point", "target_stock", "unit", "source"],
-  "labels": {
-    "sort_order": "ลำดับ",
-    "name": "ชื่อรายการ",
-    "stock": "คงเหลือ",
-    "order_qty": "จำนวนสั่งซื้อ",
-    "order_point": "จุดสั่งซื้อ",
-    "target_stock": "จำนวนที่ต้องมี",
-    "unit": "หน่วย",
-    "source": "ช่องทางสั่งซื้อ"
-  },
-  "widths": { ... }
-}
+CREATE TABLE sales_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  upload_id UUID REFERENCES sales_uploads(id) ON DELETE CASCADE,
+  sale_date DATE,
+  product_name TEXT,
+  category TEXT,
+  quantity NUMERIC,
+  unit_price NUMERIC,
+  total_amount NUMERIC,
+  payment_method TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
 ---
 
 ## 3. RLS Policies
 
-### `profiles` & `shifts`
+### Current Standard (post `fix_inventory_rls.sql`)
+
+- `inventory_items`, `inventory_config`: `authenticated` role — SELECT/INSERT/UPDATE
+- `inventory_transactions`: `authenticated` — SELECT/INSERT/DELETE (no UPDATE — ledger immutability)
+- `profiles`, `shifts`: `authenticated` — full CRUD
+- Client must call `supabase.auth.signInAnonymously()` after PIN gate
+
+### Legacy (pre-hardening)
 
 ```sql
--- Authenticated full access (collaborative)
-CREATE POLICY "Allow authenticated users full access to profiles"
-  ON profiles FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated users full access to shifts"
-  ON shifts FOR ALL TO authenticated USING (true) WITH CHECK (true);
-```
-
-### `inventory_items`
-
-```sql
--- Public access (initial phase)
-CREATE POLICY "Public access for inventory_items"
-  ON inventory_items FOR ALL USING (true) WITH CHECK (true);
-```
-
-### `inventory_transactions`
-
-```sql
--- Authenticated: SELECT, INSERT, DELETE (no UPDATE — ledger immutability)
-CREATE POLICY "Allow authenticated users to view all transactions"
-  ON inventory_transactions FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "Allow authenticated users to insert transactions"
-  ON inventory_transactions FOR INSERT TO authenticated WITH CHECK (true);
-
-CREATE POLICY "Allow authenticated users to delete transactions"
-  ON inventory_transactions FOR DELETE TO authenticated USING (true);
-```
-
-### `inventory_config`
-
-```sql
-CREATE POLICY "Public access for inventory_config"
-  ON inventory_config FOR ALL USING (true) WITH CHECK (true);
+-- Deprecated open policies — removed by fix_inventory_rls.sql
+CREATE POLICY "Public access for inventory_items" ON inventory_items FOR ALL USING (true);
 ```
 
 ---
@@ -158,17 +139,15 @@ CREATE POLICY "Public access for inventory_config"
 ## 4. Indexes
 
 ```sql
--- shifts
 CREATE INDEX idx_shifts_time_range ON shifts (start_time, end_time);
 CREATE INDEX idx_employee_shifts ON shifts (employee_id);
-
--- inventory_items
 CREATE INDEX idx_inventory_items_name ON inventory_items (name);
 CREATE INDEX idx_inventory_items_sort ON inventory_items (sort_order);
-
--- inventory_transactions
 CREATE INDEX idx_inventory_transactions_product_id ON inventory_transactions(inventory_item_id);
 CREATE INDEX idx_inventory_transactions_created_at ON inventory_transactions(created_at DESC);
+CREATE INDEX idx_sales_uploads_date ON sales_uploads(upload_date);
+CREATE INDEX idx_sales_records_upload ON sales_records(upload_id);
+CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 ```
 
 ---
@@ -177,10 +156,25 @@ CREATE INDEX idx_inventory_transactions_created_at ON inventory_transactions(cre
 
 ### `record_inventory_transaction`
 
-- **Security:** `SECURITY DEFINER`
-- **Performs:** Row lock → stock validation → stock update → transaction insert
-- **Atomic:** Full rollback on any failure
+- Row lock → stock validation → stock update → transaction insert
 - **Source:** `fix_transaction_relationships.sql`
+- **Used by:** `recordTransaction()` Quick Entry IN/OUT
+
+### `set_inventory_stock` (v6.8)
+
+- Parameters: `p_item_id UUID`, `p_new_stock NUMERIC`, `p_note TEXT`
+- Row lock → set absolute stock → ledger entry (IN/OUT delta)
+- **Source:** `sql/sync_inventory_stock.sql`
+- **Used by:** `updateInventoryStock()` — warehouse cell + stock count
+
+### Trigger: `trg_sync_inventory_order_qty`
+
+- `BEFORE INSERT OR UPDATE OF stock, order_point, target_stock`
+- `IF stock <= order_point THEN order_qty = target_stock - stock ELSE 0`
+
+### Realtime: `REPLICA IDENTITY FULL`
+
+- Table: `inventory_items` — full row broadcast on UPDATE
 
 ---
 
@@ -188,12 +182,18 @@ CREATE INDEX idx_inventory_transactions_created_at ON inventory_transactions(cre
 
 | File | Purpose |
 | :--- | :--- |
-| `DB_SCHEMA.sql` | Core tables: profiles, shifts, inventory_items |
-| `setup_inventory_transactions.sql` | transactions table + RPC (original with `product_id`) |
-| `fix_transaction_relationships.sql` | Rename `product_id` → `inventory_item_id` + updated RPC |
-| `apply_rls_transactions.sql` | RLS policies for transactions |
+| `DB_SCHEMA.sql` | Core: profiles, shifts, inventory_items |
+| `setup_inventory_transactions.sql` | transactions table + RPC |
+| `fix_transaction_relationships.sql` | Rename `product_id` → `inventory_item_id` |
+| `sql/sync_inventory_stock.sql` | v6.8 — `set_inventory_stock`, trigger, REPLICA IDENTITY |
+| `sql/fix_inventory_rls.sql` | RLS hardening — authenticated-only |
+| `apply_rls_transactions.sql` | RLS for transactions |
 | `update_rls_policies.sql` | Open RLS for profiles & shifts |
-| `inventory_config_schema.sql` | Config table + seed data |
+| `inventory_config_schema.sql` | Config table + seed |
 | `add_inventory_sort_order.sql` | Add sort_order column |
-| `inventory_master_access.sql` | Additional access policies |
-| `inventory_schema_sync.sql` | Schema alignment script |
+| `sales_schema.sql` | Sales uploads + records |
+| `product_categories_schema.sql` | Product categories |
+| `regular_holidays_schema.sql` | Regular holidays per employee |
+| `audit_log_schema.sql` | AI audit logging |
+
+> **Deprecated:** `inventory-items.csv` — removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).

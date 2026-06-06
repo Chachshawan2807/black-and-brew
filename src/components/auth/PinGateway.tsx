@@ -3,11 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, ShieldAlert } from 'lucide-react';
-import { verifyPin, checkAuth } from '@/app/actions/auth';
+import { verifyPin } from '@/app/actions/auth';
+import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 
 export default function PinGateway({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [pin, setPin] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState(false);
   const [lockoutTimeLeft, setLockoutTimeLeft] = useState<number | null>(null);
@@ -20,8 +23,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     // Enforce sessionStorage for authenticating state
     const isVerified = sessionStorage.getItem('bb_auth_pin_verified') === 'true';
     if (isVerified) {
+      void ensureSupabaseSession();
+      setIsReadOnly(sessionStorage.getItem('bb_auth_read_only') === 'true');
       setIsAuthenticated(true);
     } else {
+      setIsReadOnly(false);
       setIsAuthenticated(false);
     }
 
@@ -87,9 +93,17 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       const res = await verifyPin(fullPin);
       if (res.success) {
         sessionStorage.setItem('bb_auth_pin_verified', 'true');
+        if (res.isReadOnly) {
+          sessionStorage.setItem('bb_auth_read_only', 'true');
+          setIsReadOnly(true);
+        } else {
+          sessionStorage.removeItem('bb_auth_read_only');
+          setIsReadOnly(false);
+        }
         localStorage.removeItem('bb_failed_attempts');
         localStorage.removeItem('bb_lockout_until');
         setFailedCountDisplay('0');
+        await ensureSupabaseSession();
         setIsAuthenticated(true);
       } else {
         setError(true);
@@ -126,7 +140,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   if (!isMounted) return null;
 
   if (isAuthenticated) {
-    return <>{children}</>;
+    return <AuthProvider isReadOnly={isReadOnly}>{children}</AuthProvider>;
   }
 
   if (lockoutTimeLeft !== null) {

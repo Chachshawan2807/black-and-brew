@@ -92,7 +92,7 @@ describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => 
   });
 
   test('should separate order count badge from truncated text to prevent truncation to ellipsis', async () => {
-    render(<Page params={{ locale: 'th' }} />);
+    render(<Page />);
     
     // We expect to find the "สั่งซื้อ" button after loading finishes
     const orderBtn = await screen.findByRole('button', { name: /สั่งซื้อ/i });

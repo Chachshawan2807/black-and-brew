@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> **Version:** 6.3 | **Last Updated:** 2026-06-04 | **Enforcement:** Mandatory
+> **Version:** 6.9 | **Last Updated:** 2026-06-07 | **Enforcement:** Mandatory
 
 ---
 
@@ -100,10 +100,21 @@
 
 ### Transaction Integrity
 
-- Stock changes MUST go through `record_inventory_transaction` RPC
+- Quick Entry IN/OUT MUST go through `record_inventory_transaction` RPC
+- Absolute stock edits (warehouse cell, stock-taking) MUST go through `updateInventoryStock()` → `set_inventory_stock` RPC
+- Realtime handlers MUST use `mergeInventoryRealtimeUpdate()` — never replace full row with partial payload
 - Transactions MUST NEVER use UI Undo/Redo stack
+- Undo/redo upsert MUST NOT overwrite live `stock` from DB (fetch current stock before sync)
 - Corrections via compensating transaction or explicit deletion in History
 - Transaction cancellation reverses stock manually + deletes record
+
+### Motion & Animation (v6.9)
+
+- ✅ Use shared presets from `src/lib/motion-presets.ts` for framer-motion modals
+- ✅ Use CSS classes `.bb-modal-backdrop`, `.bb-modal-panel`, `.bb-sheet-panel`, `.bb-transition` from `globals.css`
+- ✅ Route transitions via `<PageTransition>` in `SidebarLayout` only — do not wrap layout shell
+- ❌ Never animate width/height/margin in ways that shift desktop/mobile layout
+- ✅ Micro-interactions: `transition-all duration-200 ease-in-out` on buttons, links, inputs
 
 ### Date & Timezone
 

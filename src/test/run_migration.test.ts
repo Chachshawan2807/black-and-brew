@@ -22,7 +22,7 @@ import { runInventoryMigration } from '../app/actions/migrate-inventory-sort-ord
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 describe('Inventory Sorting Migration Trigger', () => {
   test('should re-sequence sort_order from database without CSV', async () => {

@@ -3,7 +3,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { normalizeRegularHolidayDays } from '@/lib/regular-holidays';
+import { assertWritableSession } from '@/app/actions/auth';
 
 const CALENDAR_ID = 'th.th#holiday@group.v.calendar.google.com';
 const API_KEY = process.env.GOOGLE_CALENDAR_API_KEY;
@@ -26,13 +28,28 @@ async function ensureAuthorized() {
     return { success: false, error: 'Unauthorized: Session missing or invalid' } as const;
   }
 
+  const writable = await assertWritableSession();
+  if (!writable.ok) {
+    return { success: false, error: writable.error } as const;
+  }
+
   return { success: true } as const;
 }
+
+const dateRangeSchema = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
 
 export async function syncHolidays(startDate: string, endDate: string) {
   const auth = await ensureAuthorized();
   if (!auth.success) {
     return auth;
+  }
+
+  const parsed = dateRangeSchema.safeParse({ startDate, endDate });
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid date range' };
   }
 
   if (!API_KEY) {
@@ -42,8 +59,8 @@ export async function syncHolidays(startDate: string, endDate: string) {
 
   try {
     // 1. Fetch from Google Calendar API
-    const timeMin = `${startDate}T00:00:00Z`;
-    const timeMax = `${endDate}T23:59:59Z`;
+    const timeMin = `${parsed.data.startDate}T00:00:00Z`;
+    const timeMax = `${parsed.data.endDate}T23:59:59Z`;
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true`;
 
     const response = await fetch(url);

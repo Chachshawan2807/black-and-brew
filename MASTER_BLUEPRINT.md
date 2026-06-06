@@ -88,11 +88,12 @@ Database: Supabase PostgreSQL
 Schema Design: profiles, shifts, service_records,
 inventory_items.
 
-### Data Sanitation (Persistent Zero Logic - SPEC 3.1)
+### Data Sanitation (Zero-Display Logic - SPEC 3.1)
 
-* **Persistent Zero**: ห้ามลบหรือซ่อนเลข 0 ทั้งในฐานข้อมูลและหน้าจอ (Data Integrity) ตัวเลข 0 ต้องแสดงผลอย่างชัดเจนเสมอเพื่อให้ข้อมูลมีความแม่นยำสูงสุด
-* **Empty as Zero (State Only)**: หากช่องกรอกข้อมูลถูกเว้นว่าง ระบบต้องคำนวณและบันทึกเป็น 0 ใน State และ Database แต่เมื่อมีการบันทึก 0 ลงไปแล้ว หน้าจอต้องแสดงเลข "0"
-* **Numeric Formatting**: ตัดเลข 0 นำหน้า (Leading Zeros) ออกสำหรับจำนวนเต็ม (เช่น 05 -> 5) เพื่อป้องกันความสับสน
+* **Database Zero**: ค่า 0 ต้องเก็บเป็น 0 ในฐานข้อมูลเสมอ (ห้ามส่ง empty string `""` ไปคอลัมน์ NUMERIC)
+* **Zero-Display UI**: ค่า 0 ในช่องกรอกตัวเลขต้องแสดงเป็นค่าว่าง `""` เพื่อ UI ที่สะอาด แต่ DB ยังเป็น 0
+* **Empty as Zero**: หากช่องกรอกถูกเว้นว่าง ระบบต้อง sanitize เป็น 0 ก่อนบันทึก: `value === "" ? 0 : Number(value)`
+* **Numeric Formatting**: ตัดเลข 0 นำหน้า (Leading Zeros) ออกสำหรับจำนวนเต็ม (เช่น 05 -> 5)
 * **Null Safety**: หากข้อมูลเป็น null/undefined ให้แสดงผลเป็นค่าว่างเพื่อรอการกรอกข้อมูล
 
 ### Safe Deletion & Optimistic UI
@@ -376,3 +377,22 @@ python .antigravity/tools/memory-engine/aider/aider/repomap.py .
 * **Local Run**: คัดลอก `.env.example` เป็น `.env.local` และกรอกค่าจริงก่อนรัน `npm run dev`
 
 *System Integrity Validated:* Environment structure synced with `.env.example` and verified against `src/` discovery. Zero secret leakage detected. Build integrity maintained (Exit Code 0).
+
+---
+
+## 14. Recent Architecture Updates (v6.8–v6.9, June 2026)
+
+### Inventory Stock Single Source of Truth (v6.8)
+
+* ทั้ง 3 หน้าต่าง (คลังสินค้า / ตรวจนับ / รายการสั่งซื้อ) อ่าน `inventory_items.stock` จาก Supabase
+* Write paths: `updateInventoryStock()` → RPC `set_inventory_stock`; Quick Entry → `record_inventory_transaction`
+* Realtime: `mergeInventoryRealtimeUpdate()` — ห้าม replace ทั้งแถวด้วย partial payload
+* SQL: `sql/sync_inventory_stock.sql` (RPC, order_qty trigger, REPLICA IDENTITY FULL)
+* Deprecated: `inventory-items.csv` — migration เป็น DB-only
+
+### Premium Motion System (v6.9)
+
+* Route fade: `<PageTransition>` ใน `SidebarLayout` (300ms opacity)
+* Modals: `fadeOverlay` + `modalContent` presets; CSS `.bb-modal-backdrop`, `.bb-modal-panel`
+* Toasts: `FloatingAlert` (schedule), `FloatingToast` (maintenance) — auto fade-out
+* Constraint: Zero Desktop Impact — animate opacity/transform only

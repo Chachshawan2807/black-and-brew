@@ -1,6 +1,6 @@
 # Design Standards — BLACKANDBREW ERP
 
-> **Version:** 6.3 | **Last Updated:** 2026-06-04 | **Standard:** Black-on-Pastel, High-Legibility
+> **Version:** 6.9 | **Last Updated:** 2026-06-07 | **Standard:** Black-on-Pastel, High-Legibility
 
 ---
 
@@ -128,10 +128,14 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 
 | Interaction | Standard |
 | :--- | :--- |
-| **Hover** | `transition-all duration-300` |
-| **Active/Click** | `active:scale-95` |
+| **Hover / Focus** | `transition-all duration-200 ease-in-out` (`.bb-transition`) |
+| **Active/Click** | `active:scale-[0.98]` (buttons) |
+| **Page Route Change** | `PageTransition` — opacity fade 300ms `ease-in-out` |
+| **Modal Open** | `bb-modal-backdrop` fade 300ms + `bb-modal-panel` zoom-in-95 200ms |
+| **Bottom Sheet** | `bb-sheet-panel` slide-in-from-bottom 300ms |
+| **Toast / Alert** | slide-up + fade-in 300ms → auto fade-out 2.8–3s |
 | **Drag** | `opacity-70 scale-[1.02] shadow-xl z-[100]` |
-| **Focus (Input)** | `focus:bg-[#fdfcf0]/80` or `focus:ring-1 focus:ring-black/10` |
+| **Focus (Input)** | `focus:ring-1 focus:ring-black/10` |
 | **Loading** | `Loader2` icon with `animate-spin` |
 | **Save Feedback** | `✓ Synced` (emerald-500) → fades after 2s |
 
@@ -193,3 +197,34 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 - Breakpoints: `md:` for tablet+ layouts
 - Mobile: Stack columns vertically, full-width inputs
 - **PWA Capabilities**: 100% App-like shell responsive with fluid scaling and offline capability on any mobile screen.
+
+---
+
+## 10. Motion System (v6.9)
+
+### Architecture
+
+| Component | Path | Purpose |
+| :--- | :--- | :--- |
+| CSS Keyframes | `src/app/[locale]/globals.css` | `bb-fade-in`, `bb-zoom-in-95`, `bb-slide-*` utilities |
+| Framer Presets | `src/lib/motion-presets.ts` | Shared `fadeOverlay`, `modalContent`, `pageContent`, `toastSlide` |
+| Page Transition | `src/components/ui/page-transition.tsx` | Route fade via `SidebarLayout` |
+| Floating Alerts | `src/components/ui/floating-alert.tsx` | Schedule warning + Maintenance toast |
+
+### Standard Classes
+
+```text
+.bb-transition          → hover/focus micro-interaction (200ms ease-in-out)
+.bb-modal-backdrop      → overlay fade-in 300ms
+.bb-modal-panel         → modal zoom-in-95 200ms ease-out
+.bb-sheet-panel         → bottom sheet slide-in 300ms
+.animate-in.fade-in     → generic enter animation
+.animate-out.fade-out-0 → generic exit animation
+```
+
+### Rules
+
+- ใช้ **opacity และ transform เท่านั้น** — ห้ามเปลี่ยน width/height/margin ที่กระทบ layout
+- Modal overlay: `bg-black/20 backdrop-blur-sm` + fade
+- Mobile drawer backdrop: sync 300ms กับ sidebar `transition-transform duration-300`
+- Zero-Bold Policy ยังบังคับใช้ในทุก animated element

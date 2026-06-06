@@ -34,6 +34,8 @@ import {
   snapCenterToCursor,
 } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
+import { DASHBOARD_STAT_COLORS } from '@/lib/shift-colors';
+import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 
 interface PerformanceData {
   profile: Profile;
@@ -47,9 +49,10 @@ interface SortableEmployeeCardProps {
   id: string;
   data: PerformanceData;
   isDragging?: boolean;
+  isReadOnly?: boolean;
 }
 
-function SortableEmployeeCard({ id, data, isDragging }: SortableEmployeeCardProps) {
+function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: SortableEmployeeCardProps) {
   const {
     attributes,
     listeners,
@@ -70,15 +73,15 @@ function SortableEmployeeCard({ id, data, isDragging }: SortableEmployeeCardProp
       className={isDragging ? "opacity-0 z-0" : "z-10 relative"}
       aria-label={`สถิติสะสม: ${data.profile.full_name} — ทำงาน ${data.workDays} วัน, ลา ${data.leaveDays} วัน, นักขัตฯ ${data.publicHolidays} วัน`}
       {...attributes}
-      {...listeners}
+      {...(isReadOnly ? {} : listeners)}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        whileHover={{ y: -4, scale: 1.02, transition: { duration: 0.2, ease: "easeOut" } }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={isReadOnly ? undefined : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: "easeOut" } }}
+        whileTap={isReadOnly ? undefined : { scale: 0.98 }}
         transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
-        className="glass-card p-6 flex flex-col gap-5 bg-white/80 backdrop-blur-xl select-none border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-shadow duration-300 hover:border-black/10 hover:shadow-xl rounded-3xl"
+        className={`glass-card p-6 flex flex-col gap-5 bg-white/80 backdrop-blur-xl select-none border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-shadow duration-300 rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:border-black/10 hover:shadow-xl'}`}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1 py-1">
@@ -92,15 +95,15 @@ function SortableEmployeeCard({ id, data, isDragging }: SortableEmployeeCardProp
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#dcfce7]">
+          <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
             <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
           </div>
-          <div className="bg-[#fff5f5] border border-[#fee2e2] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#fee2e2]">
+          <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
             <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ลา</span>
           </div>
-          <div className="bg-[#fffaf0] border border-[#ffedd5] rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:bg-[#ffedd5]">
+          <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
             <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
           </div>
@@ -126,6 +129,7 @@ export default function LiveShiftList({
   endDate
 }: LiveShiftListProps) {
   const router = useRouter();
+  const isReadOnly = useReadOnly();
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [holidays, setHolidays] = useState<any[]>(initialHolidays);
@@ -213,10 +217,15 @@ export default function LiveShiftList({
   }, [profiles, shifts, orderedProfileIds, holidays]);
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (isReadOnly) return;
     setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (isReadOnly) {
+      setActiveId(null);
+      return;
+    }
     const { active, over } = event;
     if (over && active.id !== over.id) {
       let newOrder: string[] = [];
@@ -296,7 +305,7 @@ export default function LiveShiftList({
           <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 relative">
             <SortableContext items={orderedProfileIds} strategy={rectSortingStrategy}>
               {performanceData.map((data) => (
-                <SortableEmployeeCard key={data.profile.id} id={data.profile.id} data={data} />
+                <SortableEmployeeCard key={data.profile.id} id={data.profile.id} data={data} isReadOnly={isReadOnly} />
               ))}
             </SortableContext>
           </div>
@@ -319,15 +328,15 @@ export default function LiveShiftList({
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-[#f0fdf4] border border-[#dcfce7] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
+                  <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.workDays}</span>
                     <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
                   </div>
-                  <div className="bg-[#fff5f5] border border-[#fee2e2] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
+                  <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.leaveDays}</span>
                     <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ลา</span>
                   </div>
-                  <div className="bg-[#fffaf0] border border-[#ffedd5] rounded-3xl p-3 flex flex-col items-center justify-center text-center">
+                  <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.publicHolidays}</span>
                     <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
                   </div>
@@ -339,7 +348,7 @@ export default function LiveShiftList({
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 relative opacity-50">
           {performanceData.map((data) => (
-            <SortableEmployeeCard key={data.profile.id} id={data.profile.id} data={data} />
+            <SortableEmployeeCard key={data.profile.id} id={data.profile.id} data={data} isReadOnly={isReadOnly} />
           ))}
         </div>
       )}

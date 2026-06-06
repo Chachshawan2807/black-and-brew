@@ -27,7 +27,7 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 - **Persistence**: All critical database mutations (reordering, stock updates) must bypass RLS using the **Supabase Service Role Key** via Server Actions.
 - **Atomic Updates**: Use `Promise.all` for batch updates (e.g., reordering entire lists) followed by `revalidatePath`.
-- **Zero-Stock Logic**: Numeric inputs must treat empty strings as `0` and explicitly persist `0` to the database.
+- **Zero-Display Logic**: Numeric 0 renders as empty string `""` in UI; empty input sanitizes to `0` in DB.
 
 ### 4. AI Agent: "บรู" (Vercel AI SDK v6)
 
@@ -105,12 +105,18 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ## 📂 Module Status
 
-| Module | DnD Status | Persistence | UI Mirroring |
-| :--- | :--- | :--- | :--- |
-| **Inventory** | SOURCE (Gold) | Service Role | 100% |
-| **Staff Dashboard** | MIRRORED | Service Role | 100% |
-| **Schedule** | MIRRORED | Service Role | 100% |
-| **AI Assistant (Bru)** | STABLE | AI SDK v6 | 100% |
+| Module | Route | Status |
+| :--- | :--- | :--- |
+| **Command Center** | `/[locale]` | Active |
+| **Inventory** | `/[locale]/inventory` | Active — DnD + Stock RPC |
+| **Stock Count** | `/[locale]/inventory/count` | Active |
+| **Staff Dashboard** | `/[locale]/dashboard` | Active |
+| **Schedule** | `/[locale]/schedule` | Active — DnD |
+| **Maintenance** | `/[locale]/maintenance` | Active |
+| **Sales** | `/[locale]/sales` | Active |
+| **Market Insights** | `/[locale]/market-insights` | Active |
+| **AI Assistant (บรู)** | Global overlay | Active — AI SDK v6 |
+| **PIN Auth** | PinGateway | Active — full + read-only |
 
 ## 🛠️ Global Rules
 
@@ -124,5 +130,5 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 
 ---
 
-Last Updated: 2026-06-04 [v6.3 Mobile Layout & Touch DnD]
+Last Updated: 2026-06-07 [v6.9 — see also root MASTER_BLUEPRINT.md for full blueprint]
 

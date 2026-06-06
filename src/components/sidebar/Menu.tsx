@@ -76,7 +76,7 @@ export default function Menu({ isOpen }: MenuProps) {
                         </span>
                         <p
                           className={cn(
-                            'max-w-[200px] truncate font-normal',
+                            'max-w-[200px] truncate font-normal transition-all duration-200 ease-in-out',
                             isOpen === false
                               ? '-translate-x-96 opacity-0 hidden'
                               : 'translate-x-0 opacity-100'
@@ -117,6 +117,7 @@ export default function Menu({ isOpen }: MenuProps) {
                 onClick={async () => {
                   await clearAuth();
                   sessionStorage.removeItem('bb_auth_pin_verified');
+                  sessionStorage.removeItem('bb_auth_read_only');
                   window.location.reload();
                 }}
                 variant="ghost"

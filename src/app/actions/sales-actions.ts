@@ -6,9 +6,13 @@ import { z } from 'zod';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { cookies } from 'next/headers';
+import { assertWritableSession } from '@/app/actions/auth';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_FILES = 24;
+const SALES_UPLOAD_COLUMNS = 'id, file_name, total_records, status, upload_date, created_at, analysis_summary';
+const SALES_RECORD_COLUMNS = 'id, product_name, quantity, total_amount, unit_price, sale_date, category, payment_method, upload_id, notes, created_at';
+const PRODUCT_CATEGORY_COLUMNS = 'id, product_name, category, is_ai_generated, created_at, updated_at';
 const ALLOWED_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel'
@@ -210,6 +214,11 @@ export async function uploadSalesFiles(formData: FormData): Promise<{
   if (!authCheck.success) {
     return authCheck;
   }
+
+  const writable = await assertWritableSession();
+  if (!writable.ok) {
+    return { success: false, error: writable.error };
+  }
   
   const supabase = getSupabaseAdmin();
   
@@ -260,14 +269,9 @@ export async function uploadSalesFiles(formData: FormData): Promise<{
       const workbook = XLSX.read(buffer, { type: 'buffer' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const rawData = XLSX.utils.sheet_to_json(firstSheet);
-      
-      console.log(`[DEBUG] Raw data from Excel (first 5 rows):`, rawData.slice(0, 5));
 
       // Process data
       const { validRecords, auditLog } = processSalesData(rawData);
-      
-      console.log(`[DEBUG] Processed valid records:`, validRecords.slice(0, 5));
-      console.log(`[DEBUG] Audit log:`, auditLog);
 
       // Create upload record in Supabase
       const { data: uploadData, error: uploadError } = await supabase
@@ -298,8 +302,6 @@ export async function uploadSalesFiles(formData: FormData): Promise<{
           upload_id: uploadId,
         }));
         
-        console.log(`[DEBUG] Inserting ${salesRecords.length} records into sales_records`);
-        
         const { error: recordsError } = await supabase
           .from('sales_records')
           .insert(salesRecords);
@@ -317,8 +319,6 @@ export async function uploadSalesFiles(formData: FormData): Promise<{
             error: `ไม่สามารถบันทึกข้อมูลยอดขายจากไฟล์ ${file.name} ไปยังฐานข้อมูลได้ (${recordsError.message})` 
           };
         }
-        
-        console.log(`[DEBUG] Successfully inserted records into sales_records`);
       }
 
       uploadedFiles.push({
@@ -421,13 +421,12 @@ export async function fetchSalesHistory(page = 1, pageSize = 10) {
     // Fetch uploads with pagination
     const { data: uploads, error: uploadsError, count } = await supabase
       .from('sales_uploads')
-      .select('*', { count: 'exact' })
+      .select(SALES_UPLOAD_COLUMNS, { count: 'exact' })
       .order('upload_date', { ascending: false })
       .range(offset, offset + pageSize - 1);
 
     if (uploadsError) {
       if (uploadsError.message?.includes('Could not find the table')) {
-        console.log('Sales tables not yet created in Supabase');
         return { uploads: [], records: [], total: 0, totalPages: 0 };
       }
       throw uploadsError;
@@ -436,12 +435,11 @@ export async function fetchSalesHistory(page = 1, pageSize = 10) {
     // Fetch all records (for other calculations)
     const { data: records, error: recordsError } = await supabase
       .from('sales_records')
-      .select('*')
+      .select(SALES_RECORD_COLUMNS)
       .order('sale_date', { ascending: false });
 
     if (recordsError) {
       if (recordsError.message?.includes('Could not find the table')) {
-        console.log('Sales tables not yet created in Supabase');
         return { uploads: uploads || [], records: [], total: count || 0, totalPages: Math.ceil((count || 0) / pageSize) };
       }
       throw recordsError;
@@ -462,6 +460,11 @@ export async function deleteSalesUpload(uploadId: string) {
   const authCheck = await checkAuth();
   if (!authCheck.success) {
     return authCheck;
+  }
+
+  const writable = await assertWritableSession();
+  if (!writable.ok) {
+    return { success: false, error: writable.error };
   }
   
   const supabase = getSupabaseAdmin();
@@ -584,8 +587,6 @@ async function saveProductCategory(productName: string, category: string, isAiGe
 
     if (error) {
       console.error('[SAVE_CATEGORY_ERROR]', error);
-    } else {
-      console.log('[SAVE_CATEGORY_SUCCESS]', data);
     }
   } catch (error) {
     console.error('[SAVE_CATEGORY_ERROR]', error);
@@ -604,12 +605,9 @@ export async function getAllProductCategories() {
   try {
     const { data, error } = await supabase
       .from('product_categories')
-      .select('*')
+      .select(PRODUCT_CATEGORY_COLUMNS)
       .order('product_name', { ascending: true });
-
-    // If the table doesn't exist, just return empty success
     if (error && (error.message?.includes('Could not find the table') || error.code === 'PGRST205')) {
-      console.log('[GET_ALL_CATEGORIES] product_categories table not found yet, returning empty');
       return { success: true, categories: [] };
     }
 
@@ -627,47 +625,17 @@ export async function getAllProductCategories() {
 // Helper function to create product_categories table if it doesn't exist
 async function ensureProductCategoriesTable(supabase: any) {
   try {
-    // Try to query to check existence
     const { error: checkError } = await supabase.from('product_categories').select('id').limit(1);
-    
-    // If table doesn't exist, try to create it
+
     if (checkError && (checkError.message?.includes('Could not find the table') || checkError.code === 'PGRST205')) {
-      console.log('[ensureProductCategoriesTable] Creating product_categories table...');
-      
-      // Use RPC or raw SQL if available, but for now we'll just log and return
-      // Since Supabase admin client can't run arbitrary SQL easily, log the schema they need to run
-      console.log('[ensureProductCategoriesTable] Please run this SQL in your Supabase SQL Editor:');
-      console.log(`
--- Product Categories Management Schema
-CREATE TABLE IF NOT EXISTS product_categories (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  product_name TEXT NOT NULL,
-  category TEXT NOT NULL,
-  is_ai_generated BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT product_categories_product_name_key UNIQUE (product_name)
-);
-
-ALTER TABLE product_categories ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Public access for product_categories"
-ON product_categories FOR ALL
-USING (true)
-WITH CHECK (true);
-
-CREATE INDEX IF NOT EXISTS idx_product_categories_name ON product_categories(product_name);
-CREATE INDEX IF NOT EXISTS idx_product_categories_category ON product_categories(category);
-      `);
-      
       return { tableExists: false };
     }
-    
+
     if (checkError) {
       console.error('[ensureProductCategoriesTable] Error checking table:', checkError);
       return { tableExists: false };
     }
-    
+
     return { tableExists: true };
   } catch (e) {
     console.error('[ensureProductCategoriesTable] Exception:', e);
@@ -688,7 +656,6 @@ async function logAuditEntry(supabase: any, entry: {
     // Check if audit_logs table exists first
     const { error: checkError } = await supabase.from('audit_logs').select('id').limit(1);
     if (checkError && (checkError.message?.includes('Could not find the table') || checkError.code === 'PGRST205')) {
-      console.log('[logAuditEntry] audit_logs table not found, skipping audit log');
       return;
     }
 
@@ -717,6 +684,11 @@ export async function updateProductCategory(productName: string, newCategory: st
   const authCheck = await checkAuth();
   if (!authCheck.success) {
     return authCheck;
+  }
+
+  const writable = await assertWritableSession();
+  if (!writable.ok) {
+    return { success: false, error: writable.error };
   }
   
   const supabase = getSupabaseAdmin();
@@ -775,7 +747,6 @@ export async function updateProductCategory(productName: string, newCategory: st
       status: 'completed'
     });
 
-    console.log('[UPDATE_CATEGORY_SUCCESS]', data);
     return { success: true };
   } catch (error) {
     console.error('[UPDATE_CATEGORY_ERROR]', error);
@@ -790,6 +761,11 @@ export async function deleteCategory(categoryName: string) {
   const authCheck = await checkAuth();
   if (!authCheck.success) {
     return authCheck;
+  }
+
+  const writable = await assertWritableSession();
+  if (!writable.ok) {
+    return { success: false, error: writable.error };
   }
   
   const supabase = getSupabaseAdmin();
@@ -847,6 +823,11 @@ export async function autoCategorizeAllProducts() {
   const authCheck = await checkAuth();
   if (!authCheck.success) {
     return authCheck;
+  }
+
+  const writable = await assertWritableSession();
+  if (!writable.ok) {
+    return { success: false, error: writable.error };
   }
   
   const supabase = getSupabaseAdmin();
@@ -919,12 +900,11 @@ export async function getSalesMetrics(startDateStr?: string, endDateStr?: string
   try {
     const { data: records, error } = await supabase
       .from('sales_records')
-      .select('*')
+      .select(SALES_RECORD_COLUMNS)
       .order('sale_date', { ascending: true });
 
     if (error) {
       if (error.message?.includes('Could not find the table')) {
-        console.log('Sales tables not yet created in Supabase');
         return null;
       }
       throw error;

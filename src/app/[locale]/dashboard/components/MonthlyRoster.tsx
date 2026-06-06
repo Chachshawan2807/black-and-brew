@@ -18,9 +18,9 @@ import {
   Users, 
   Calendar as CalendarIcon 
 } from 'lucide-react';
-import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { fetchRosterData } from '@/app/actions/shift-actions';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
+import { getShiftColorClass, getShiftDisplayText } from '@/lib/shift-colors';
 
 interface Profile {
   id: string;
@@ -87,18 +87,10 @@ export default function MonthlyRoster() {
 
   const getShiftDisplay = (shift: Shift) => {
     const loc = shift.metadata?.location || '';
-    const cleanTime = loc.replace(/^เข้ากะ\s*/, '').trim();
-    
-    if (shift.status === 'on_leave' || loc === 'ลา') 
-      return { text: 'ลา', color: 'bg-[#fff5f5] text-rose-900' };
-    if (cleanTime === '6:30' || cleanTime === '06:30') 
-      return { text: '06:30', color: 'bg-[#f0fdf4] text-emerald-900' };
-    if (cleanTime === '7:00' || cleanTime === '07:00') 
-      return { text: '07:00', color: 'bg-white border border-black/5 text-black' };
-    if (cleanTime === '8:00' || cleanTime === '08:00') 
-      return { text: '08:00', color: 'bg-[#fffbeb] text-amber-900' };
-    
-    return { text: cleanTime || 'งาน', color: 'bg-[#f0f9ff] text-sky-900' };
+    return {
+      text: getShiftDisplayText(loc, shift.status),
+      color: getShiftColorClass(loc, shift.status),
+    };
   };
 
   return (
@@ -159,55 +151,47 @@ export default function MonthlyRoster() {
           <p className="text-black font-normal animate-pulse">บรูกำลังจัดแจงข้อมูลเวรให้สักครู่นะคะ...</p>
         </div>
       ) : (
-        <div className="bg-white rounded-[32px] border border-black/5 overflow-hidden shadow-xl shadow-black/5">
+        <div className="bg-white rounded-[32px] border border-black/5 shadow-xl shadow-black/5">
           {activeTab === 'consolidated' ? (
-            <ScrollArea.Root className="w-full min-h-[500px] max-h-[750px]">
-              <ScrollArea.Viewport className="w-full pb-32">
-                <table className="w-max border-collapse mb-20">
-                  <thead className="sticky top-0 z-20">
-                    <tr className="bg-neutral-50/95 backdrop-blur-md">
-                      <th className="sticky left-0 z-30 bg-neutral-50 p-6 text-left border-b border-r border-black/10 text-black font-normal whitespace-nowrap shadow-sm">
-                        พนักงาน
+            <div className="w-full overflow-x-auto">
+              <table className="w-max min-w-full border-collapse">
+                <thead>
+                  <tr className="bg-neutral-50/95">
+                    <th className="sticky left-0 z-30 bg-neutral-50 p-4 text-left border-b border-r border-black/10 text-black font-normal whitespace-nowrap shadow-sm">
+                      พนักงาน
+                    </th>
+                    {daysInInterval.map((day) => (
+                      <th key={day.toISOString()} className="p-3 text-center border-b border-r border-black/5 text-black font-normal min-w-[75px]">
+                        <div className="text-[11px] text-black font-normal uppercase mb-1 opacity-80">{format(day, 'EEE', { locale: th })}</div>
+                        <div className="text-lg leading-none">{format(day, 'd')}</div>
                       </th>
-                      {daysInInterval.map((day) => (
-                        <th key={day.toISOString()} className="p-4 text-center border-b border-r border-black/5 text-black font-normal min-w-[75px]">
-                          <div className="text-[11px] text-black font-normal uppercase mb-1 opacity-80">{format(day, 'EEE', { locale: th })}</div>
-                          <div className="text-lg leading-none">{format(day, 'd')}</div>
-                        </th>
-                      ))}
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.profiles.map((profile) => (
+                    <tr key={profile.id} className="group hover:bg-neutral-50 transition-colors">
+                      <td className="sticky left-0 z-10 bg-white p-4 border-r border-b border-black/10 text-black font-normal text-sm group-hover:bg-neutral-50 transition-colors whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                        {profile.full_name}
+                      </td>
+                      {daysInInterval.map((day) => {
+                        const shift = data.shifts.find(s => s.employee_id === profile.id && isSameDay(parseISO(s.start_time), day));
+                        const display = shift ? getShiftDisplay(shift) : null;
+                        return (
+                          <td key={day.toISOString()} className="p-1.5 border-r border-b border-black/5 h-[4.25rem] align-middle">
+                            {display && (
+                              <div className={`w-full h-full min-h-[3rem] flex items-center justify-center rounded-xl text-[12px] text-black font-normal shadow-sm p-1 text-center ${display.color}`}>
+                                {display.text}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
                     </tr>
-                  </thead>
-                  <tbody>
-                    {/* DEC-059: วนลูปรายชื่อพนักงานทั้งหมดจาก data.profiles (ห้าม Filter ออก) */}
-                    {data.profiles.map((profile) => {
-                      return (
-                        <tr key={profile.id} className="group hover:bg-neutral-50 transition-colors">
-                          <td className="sticky left-0 z-10 bg-white p-5 border-r border-b border-black/10 text-black font-normal text-sm group-hover:bg-neutral-50 transition-colors whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] h-20">
-                          {profile.full_name}
-                        </td>
-                        {daysInInterval.map((day) => {
-                          const shift = data.shifts.find(s => s.employee_id === profile.id && isSameDay(parseISO(s.start_time), day));
-                          const display = shift ? getShiftDisplay(shift) : null;
-                          return (
-                            <td key={day.toISOString()} className="p-2 border-r border-b border-black/5 h-20">
-                              {display && (
-                                <div className={`w-full h-full flex items-center justify-center rounded-xl text-[12px] text-black font-normal shadow-sm p-1 text-center transition-transform active:scale-95 ${display.color}`}>
-                                  {display.text}
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </ScrollArea.Viewport>
-              <ScrollArea.Scrollbar orientation="horizontal" className="flex h-3 touch-none select-none bg-black/5 p-1 transition-colors hover:bg-black/10">
-                <ScrollArea.Thumb className="relative flex-1 rounded-full bg-black/20 hover:bg-black/40" />
-              </ScrollArea.Scrollbar>
-            </ScrollArea.Root>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="p-8">
               <div className="flex flex-col md:flex-row md:items-center gap-6 mb-8 p-6 bg-neutral-50 rounded-3xl border border-black/5">

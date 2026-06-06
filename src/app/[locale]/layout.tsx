@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono } from "next/font/google";
 import { setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
 import SidebarLayout from '@/components/sidebar/SidebarLayout';
@@ -8,11 +7,6 @@ import AIChatOverlay from '@/components/ai/AIChatWrapper';
 import PinGateway from '@/components/auth/PinGateway';
 import PwaRegister from '@/components/PwaRegister';
 import "./globals.css";
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const viewport: Viewport = {
   themeColor: "#ffffff",
@@ -52,7 +46,7 @@ export default async function RootLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={`${geistMono.variable} h-full antialiased`}>
+    <html lang={locale} className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-[#fdfcf0] text-[#000000]">
         <PwaRegister />
         <PinGateway>

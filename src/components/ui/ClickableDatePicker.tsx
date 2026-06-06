@@ -10,13 +10,18 @@ import {
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface ClickableDatePickerProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+interface ClickableDatePickerProps {
   containerClassName?: string;
   icon?: React.ReactNode;
   value?: string;
   placeholder?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+  min?: string;
+  max?: string;
+  className?: string;
+  id?: string;
+  name?: string;
 }
 
 // ─── Popover Position Type ────────────────────────────────────────────────────
@@ -39,7 +44,7 @@ export function ClickableDatePicker({
   value,
   placeholder,
   onChange,
-  ...props
+  disabled = false,
 }: ClickableDatePickerProps) {
   // ─── Refs ─────────────────────────────────────────────────────────────────
   const triggerRef = useRef<HTMLButtonElement>(null);  // ปุ่มที่ user กด
@@ -125,9 +130,10 @@ export function ClickableDatePicker({
 
   // ─── เปิด/ปิด calendar พร้อมคำนวณตำแหน่ง ──────────────────────────────────
   const openCalendar = useCallback(() => {
-    calculatePosition(); // คำนวณก่อนเปิดเสมอ
+    if (disabled) return;
+    calculatePosition();
     setIsOpen(true);
-  }, [calculatePosition]);
+  }, [calculatePosition, disabled]);
 
   const closeCalendar = useCallback(() => setIsOpen(false), []);
 
@@ -333,14 +339,16 @@ export function ClickableDatePicker({
       <button
         ref={triggerRef}
         type="button"
+        disabled={disabled}
         onClick={() => (isOpen ? closeCalendar() : openCalendar())}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
-        className="flex items-center justify-center gap-1.5 h-11 px-4 text-xs font-normal
+        className={`flex items-center justify-center gap-1.5 h-11 px-4 text-xs font-normal
           text-black bg-white hover:bg-gray-100 rounded-3xl border border-gray-200
-          transition-all duration-200 active:scale-95 cursor-pointer uppercase
+          transition-all duration-200 active:scale-95 uppercase
           tracking-wide shadow-sm w-full
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30"
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30
+          ${disabled ? 'opacity-60 cursor-not-allowed hover:bg-white' : 'cursor-pointer'}`}
       >
         {icon || <CalendarIcon className="w-4 h-4 text-black" />}
         <span>{displayValue}</span>
@@ -351,7 +359,7 @@ export function ClickableDatePicker({
         <>
           {/* Mobile overlay: backdrop เฉพาะมือถือ */}
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm bb-modal-backdrop md:hidden"
             style={{ zIndex: 9998 }}
             onClick={closeCalendar}
             aria-hidden="true"

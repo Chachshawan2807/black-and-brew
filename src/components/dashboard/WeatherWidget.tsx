@@ -45,7 +45,7 @@ export function WeatherWidget() {
 
   if (loading) {
     return (
-      <div className="bg-white border-2 border-black rounded-[32px] p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row gap-8 animate-pulse">
+      <div className="bg-[#fdfcf0] border-2 border-black rounded-3xl p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row gap-8 animate-pulse">
         <div className="flex-1 space-y-4">
           <div className="h-8 bg-gray-100 rounded w-1/3"></div>
           <div className="h-16 bg-gray-100 rounded w-1/2"></div>
@@ -61,14 +61,14 @@ export function WeatherWidget() {
 
   if (!data || data.error || !data.current) {
     return (
-      <div className="bg-white border-2 border-black rounded-[32px] p-8 shadow-sm w-full min-h-[220px] flex items-center justify-center">
+      <div className="bg-[#fdfcf0] border-2 border-black rounded-3xl p-8 shadow-sm w-full min-h-[220px] flex items-center justify-center">
         <p className="text-black font-normal">ไม่สามารถดึงข้อมูลสภาพอากาศได้</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#fdfcf0] border-2 border-black rounded-[32px] p-6 md:p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-[#fdfcf0] border-2 border-black rounded-3xl p-6 md:p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-md transition-shadow duration-300">
       {/* Current Weather (Left side on desktop) */}
       <div className="flex items-center gap-6">
         <div>

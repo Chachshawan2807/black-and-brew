@@ -52,7 +52,7 @@ export function ClickableInput({
   return (
     <div 
       onClick={handleContainerClick}
-      className={`group relative flex items-center gap-2 bg-white rounded-xl p-1.5 border border-gray-200 cursor-pointer shadow-sm hover:border-gray-300 transition-colors ${containerClassName}`}
+      className={`group relative flex items-center gap-2 bg-white rounded-xl p-1.5 border border-gray-200 cursor-pointer shadow-sm hover:border-gray-300 bb-transition focus-within:ring-1 focus-within:ring-black/10 ${containerClassName}`}
     >
       {icon && <div className="shrink-0 pointer-events-none">{icon}</div>}
       

@@ -30,6 +30,7 @@ import {
   updateProductCategory,
   deleteCategory
 } from '@/app/actions/sales-actions';
+import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import {
   BarChart,
   Bar,
@@ -71,6 +72,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function SalesPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'th';
+  const isReadOnly = useReadOnly();
+
+  const blockIfReadOnly = () => {
+    if (isReadOnly) {
+      setError(READ_ONLY_DENY_MSG);
+      return true;
+    }
+    return false;
+  };
 
   // State
   const [isUploading, setIsUploading] = useState(false);
@@ -220,6 +230,7 @@ export default function SalesPage() {
 
   // Update product category
   const handleUpdateCategory = async (productName: string) => {
+    if (blockIfReadOnly()) return;
     // Clear any existing debounce timer for this product
     if (debounceRef.current[productName]) {
       clearTimeout(debounceRef.current[productName]);
@@ -278,7 +289,6 @@ export default function SalesPage() {
     
     try {
       const result = await updateProductCategory(productName, currentValue);
-      console.log('[handleUpdateCategory] update result:', result);
       
       if (result.success) {
         setSuccessMessage(`อัปเดตหมวดหมู่สินค้า "${productName}" เป็น "${currentValue}" เรียบร้อยแล้ว!`);
@@ -300,6 +310,7 @@ export default function SalesPage() {
 
   // Confirm and delete category
   const confirmDeleteCategory = async () => {
+    if (blockIfReadOnly()) return;
     if (!categoryToDelete) return;
     
     setIsDeletingCategory(true);
@@ -359,7 +370,6 @@ export default function SalesPage() {
       const currentCategoriesString = JSON.stringify(Array.from(productCategories.entries()));
       
       if (previousProductCategories.current !== currentCategoriesString) {
-        console.log('[useEffect] Updating metrics with client product categories...');
         previousProductCategories.current = currentCategoriesString;
         
         const updatedMetrics = { ...metrics };
@@ -398,7 +408,6 @@ export default function SalesPage() {
           revenuePercentage: totalRevenue > 0 ? (data.revenue / totalRevenue) * 100 : 0
         })).sort((a, b) => b.totalRevenue - a.totalRevenue);
         
-        console.log('[useEffect] Updated metrics:', updatedMetrics);
         setMetrics(updatedMetrics);
       }
     }
@@ -433,6 +442,7 @@ export default function SalesPage() {
 
   const handleFileUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (blockIfReadOnly()) return;
     if (selectedFiles.length === 0) {
       setError('กรุณาเลือกไฟล์ที่จะอัปโหลดค่ะ');
       return;
@@ -461,6 +471,7 @@ export default function SalesPage() {
   };
 
   const handleDeleteUpload = async (uploadId: string) => {
+    if (blockIfReadOnly()) return;
     if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบไฟล์นี้? ข้อมูลทั้งหมดที่เกี่ยวข้องจะถูกลบออกจากระบบ')) {
       return;
     }
@@ -511,7 +522,8 @@ export default function SalesPage() {
               <div className="flex flex-wrap gap-2.5">
                 <button
                   onClick={() => setShowManageCategories(true)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-black/5 rounded-xl hover:bg-black/5 transition-all shadow-sm"
+                  disabled={isReadOnly}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-black/5 rounded-xl hover:bg-black/5 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <Edit3 className="w-4 h-4" />
                   <span className="text-sm">จัดการหมวดหมู่</span>
@@ -654,14 +666,14 @@ export default function SalesPage() {
                     <div className="flex gap-3">
                       <button
                         onClick={() => setCategoryToDelete(null)}
-                        disabled={isDeletingCategory}
+                        disabled={isReadOnly || isDeletingCategory}
                         className="flex-1 px-5 py-3 bg-black/5 border border-black/10 rounded-xl hover:bg-black/10 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         ยกเลิก
                       </button>
                       <button
                         onClick={confirmDeleteCategory}
-                        disabled={isDeletingCategory}
+                        disabled={isReadOnly || isDeletingCategory}
                         className="flex-1 px-5 py-3 bg-black text-white rounded-xl hover:bg-black/80 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {isDeletingCategory ? (
@@ -682,7 +694,7 @@ export default function SalesPage() {
 
         {/* Upload Section */}
         <div className="mb-6">
-          <div className="bg-white rounded-2xl border border-black/5 shadow-md p-5">
+          <div className={`bg-white rounded-2xl border border-black/5 shadow-md p-5 ${isReadOnly ? 'pointer-events-none opacity-60' : ''}`}>
             <form onSubmit={handleFileUpload} className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
               <div className="flex-1 w-full">
                 <div className="flex items-center gap-4">
@@ -719,7 +731,7 @@ export default function SalesPage() {
               
               <button
                 type="submit"
-                disabled={isUploading || selectedFiles.length === 0}
+                disabled={isReadOnly || isUploading || selectedFiles.length === 0}
                 className="w-full lg:w-auto bg-black text-white px-6 py-3.5 rounded-xl hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2 shadow-sm"
               >
                 {isUploading ? (
@@ -968,7 +980,7 @@ export default function SalesPage() {
                                       aria-label={`Edit category for ${product.productName}`}
                                       className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white text-xs transition-all focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                                       placeholder="ป้อนชื่อหมวดหมู่"
-                                      disabled={updatingProduct === product.productName}
+                                      disabled={isReadOnly || updatingProduct === product.productName}
                                     />
                                     <datalist id={`category-list-top-${product.productName}`}>
                                       {allCategories.map((cat, idx) => (
@@ -989,7 +1001,7 @@ export default function SalesPage() {
                                           e.stopPropagation();
                                           handleUpdateCategory(product.productName);
                                         }}
-                                        disabled={updatingProduct === product.productName}
+                                        disabled={isReadOnly || updatingProduct === product.productName}
                                         aria-label={`Save category for ${product.productName}`}
                                         className="flex-shrink-0 p-1.5 text-black hover:bg-black/5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
@@ -1006,7 +1018,7 @@ export default function SalesPage() {
                                             return newMap;
                                           });
                                         }}
-                                        disabled={updatingProduct === product.productName}
+                                        disabled={isReadOnly || updatingProduct === product.productName}
                                         aria-label={`Cancel editing category for ${product.productName}`}
                                         className="flex-shrink-0 p-1.5 text-black/40 hover:text-black hover:bg-black/5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
@@ -1184,7 +1196,7 @@ export default function SalesPage() {
                                       aria-label={`Edit category for ${product.productName}`}
                                       className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white text-xs transition-all focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                                       placeholder="ป้อนชื่อหมวดหมู่"
-                                      disabled={updatingProduct === product.productName}
+                                      disabled={isReadOnly || updatingProduct === product.productName}
                                     />
                                     <datalist id={`category-list-${product.productName}`}>
                                       {allCategories.map((cat, idx) => (
@@ -1205,7 +1217,7 @@ export default function SalesPage() {
                                           e.stopPropagation();
                                           handleUpdateCategory(product.productName);
                                         }}
-                                        disabled={updatingProduct === product.productName}
+                                        disabled={isReadOnly || updatingProduct === product.productName}
                                         aria-label={`Save category for ${product.productName}`}
                                         className="flex-shrink-0 p-1.5 text-black hover:bg-black/5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
@@ -1222,7 +1234,7 @@ export default function SalesPage() {
                                             return newMap;
                                           });
                                         }}
-                                        disabled={updatingProduct === product.productName}
+                                        disabled={isReadOnly || updatingProduct === product.productName}
                                         aria-label={`Cancel editing category for ${product.productName}`}
                                         className="flex-shrink-0 p-1.5 text-black/40 hover:text-black hover:bg-black/5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
@@ -1314,7 +1326,7 @@ export default function SalesPage() {
                             </div>
                             <button
                               onClick={() => handleDeleteUpload(upload.id)}
-                              disabled={isDeleting === upload.id}
+                              disabled={isReadOnly || isDeleting === upload.id}
                               className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
                             >
                               {isDeleting === upload.id ? (

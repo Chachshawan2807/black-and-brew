@@ -1,6 +1,6 @@
 # Agent Guidelines — BLACKANDBREW ERP
 
-> **Version:** 6.3 | **Last Updated:** 2026-06-04
+> **Version:** 6.9 | **Last Updated:** 2026-06-07
 
 ---
 
@@ -44,13 +44,14 @@ THINK → MAP → BUDGET CHECK → EXECUTE → VALIDATE → LOG
 
 ---
 
-## 3. Agent Tools
+## 3. Agent Tools (AI Chat — `/api/chat`)
 
 | Tool | Path | Capability |
 | :--- | :--- | :--- |
-| FS Tool | `src/lib/agent-tools/fs_tool.ts` | Zod-validated filesystem CRUD |
-| Shell Tool | `src/lib/agent-tools/shell_tool.ts` | Secure `child_process` execution |
-| Search Proxy | `src/lib/agent-tools/search_proxy.ts` | Unified code/docs/web search |
+| `readTableTool` | `src/app/actions/tools/database-tools.ts` | ดึงข้อมูลตาราง Supabase (Service Role) พร้อม `COLUMN_ALIASES` |
+| `internetSearchTool` | `src/app/actions/tools/search-tools.ts` | ค้นหาเว็บผ่าน Tavily API |
+| Internal Sources | `src/app/actions/tools/internal-sources-tools.ts` | ดึงบริบทภายในร้าน (schedule, inventory, weather) |
+| Executive Rules | `src/lib/agents/executive-rules.ts` | System prompt + schema mapping สำหรับ AI |
 
 ---
 

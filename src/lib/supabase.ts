@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
+export type { Database, Tables, TablesInsert, TablesUpdate } from './database.types';
+
 /**
  * BLACK-AND-BREW Supabase Client
  * 
@@ -9,9 +11,6 @@ import { createClient } from '@supabase/supabase-js';
  * - R0 Mitigation: Database uses TIMESTAMPTZ (UTC); client handles ISO strings.
  * - Strict Validation: Throws error if environment variables are missing.
  */
-
-// Future: Replace 'any' with generated Database types:
-// import { Database } from './database.types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

@@ -1,96 +1,158 @@
 # BLACK-AND-BREW ERP System
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
 
-## Getting Started
+> **Version:** 6.9 | **Stack:** Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4
 
-First, run the development server:
+---
+
+## Features
+
+| Module | Route | Description |
+| :--- | :--- | :--- |
+| Command Center | `/[locale]` | สถานะกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์ |
+| Staff Dashboard | `/[locale]/dashboard` | ลงเวลา รายชื่อกะ ตารางรายเดือน |
+| Schedule | `/[locale]/schedule` | จัดกะ Drag-and-Drop + วันหยุดราชการ |
+| Inventory | `/[locale]/inventory` | ตารางคลังสินค้าแบบ Spreadsheet + Undo/Redo |
+| Stock Count | `/[locale]/inventory/count` | ตรวจนับสต็อกจริง |
+| Maintenance | `/[locale]/maintenance` | บันทึกการซ่อมบำรุงอุปกรณ์ |
+| Sales | `/[locale]/sales` | อัปโหลด Excel วิเคราะห์ยอดขาย |
+| Market Insights | `/[locale]/market-insights` | วิเคราะห์ตลาดด้วย Gemini AI |
+| AI Chat (บรู) | Global overlay | แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน |
+
+**Locales:** `th` (หลัก), `en` — Root `/` redirect ไป `/th`
+
+---
+
+## Quick Start
 
 ```bash
+# 1. ติดตั้ง dependencies
+npm install
+
+# 2. คัดลอกและกรอก environment variables
+cp .env.example .env.local
+
+# 3. รัน dev server
 npm run dev
-
-# or
-yarn dev
-
-# or
-pnpm dev
-
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+เปิด [http://localhost:3000](http://localhost:3000) — ระบบจะ redirect ไป `/th` และแสดง PIN Gateway
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Purpose |
+| :--- | :--- |
+| `npm run dev` | Development server (Turbopack) |
+| `npm run build` | Production build |
+| `npm run start` | Production server |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest test suite |
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+คัดลอกจาก [.env.example](.env.example) → `.env.local` (local) หรือตั้งใน **Vercel Dashboard → Production** (deploy)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Legend:** `[PUBLIC]` = ฝังใน browser · `[SECRET]` = server-only · `[OPTION]` = ไม่บังคับ
 
-## Deploy on Vercel
+### Supabase
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Variable | Scope | Purpose |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | PUBLIC | Supabase project URL — client + auth gate |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | PUBLIC | Anon key สำหรับ RLS client |
+| `SUPABASE_SERVICE_ROLE_KEY` | SECRET | Admin key — Server Actions, AI tools, cron (ห้ามใส่ `NEXT_PUBLIC_`) |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Auth & Location
 
-## Changelog
+| Variable | Scope | Purpose |
+| :--- | :--- | :--- |
+| `APP_PIN` | SECRET | PIN 6 หลัก — เข้าใช้งานเต็มสิทธิ์ (`auth.ts`) |
+| `NEXT_PUBLIC_STORE_LAT` | PUBLIC | พิกัดร้าน (default `13.9312`) — chat, insights, cron |
+| `NEXT_PUBLIC_STORE_LON` | PUBLIC | พิกัดร้าน (default `100.6756`) |
 
-### Version 2.2: Global Omni-Refactor (May 2026)
+Read-only PIN `111222` ถูก hardcode ใน `src/lib/auth-constants.ts` — **ไม่ใช่ env var**
 
-- **UI Architecture:** Flattened all overlapping DOM structures (removed `absolute inset-0 z-10 opacity-0` patterns). Native inputs are now effectively hidden using `sr-only` to preserve accessibility while maximizing styling control.
-- **Data Integrity:** Implemented "Safe Deletion" globally (e.g., shifts are safely deleted prior to employee profile deletion to prevent FK violations). Optmistic UI updates now trigger instantly using `.filter()` methods.
-- **Aesthetics (R0 Constraints):** Strict typography and color policies enforced. Eradicated all `font-bold` and `font-semibold` usage (app-wide adherence to `font-normal`). Unified primary text colors to `#000000` and secondary/date accents to Deep Gray `#4b5563`.
-- **System Cleanup:** Purged deprecated testing scripts, cleaned up `.gitignore`, and streamlined Next.js server actions.
+### AI & External APIs
 
-### Version 2.6: High-End Inventory Grid (May 2026)
+| Variable | Scope | Purpose |
+| :--- | :--- | :--- |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini — AI Chat + Market Insights (`@ai-sdk/google`) |
+| `TAVILY_API_KEY` | SECRET | Internet search tool สำหรับ AI |
+| `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report, market-insights |
+| `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — sync วันหยุดราชการ (schedule) |
 
-- **Undo/Redo Stability:** Refactored history engine to include snapshot-based persistence and strict asynchronous synchronization. Resolved the "two-click" desync bug and implemented state-locking during database sync.
-- **Numeric Formatting:** Integrated a "Smart Sanitizer" to handle leading zeros (05 bug) and empty-string Supabase errors.
-- **Aesthetics:** Applied a "Super-Soft Pastel" theme with `rounded-3xl` corner radius, lavender page backgrounds, and emerald hover states.
-- **Advanced Management:** Implemented a full-form "Add Item" modal and custom confirmation dialogs to eliminate native browser alerts.
+### LINE & Vercel Cron
 
-### Version 3.0: The Great Purge — Zero-Waste Architecture (May 2026)
+| Variable | Scope | Purpose |
+| :--- | :--- | :--- |
+| `LINE_CHANNEL_ACCESS_TOKEN` | SECRET | LINE Messaging API push token |
+| `LINE_GROUP_ID` | SECRET | ปลายทาง cron (ตรวจก่อน `LINE_TARGET_*`) |
+| `LINE_TARGET_RECIPIENT_ID` | SECRET | ปลายทาง LINE fallback (user/group/room ID) |
+| `CRON_SECRET` | SECRET | ยืนยัน `GET /api/daily-report` — `Authorization: Bearer …` |
 
-- **Dead Code Elimination:** Removed 14+ orphaned files including legacy Python memory engine (`mem0.py`), unused AI libraries (`gemini.ts`, `token-utils.ts`, `memory.ts`), orphaned API routes, and debug scripts.
-- **Dependency Cleanup:** Uninstalled 3 unused npm packages (`js-tiktoken`, `tokentracker-cli`, `@google/genai`), reducing `node_modules` by 39 packages.
-- **Directory Hygiene:** Purged `__pycache__/`, `grep_ast/`, broken `[locale` bracket directory, and empty `staff/` route. Removed dead `src/app/api/` tree.
-- **Type Safety:** Fixed TypeScript type narrowing in inventory `onBlur` handler and duplicate interface property in `ScheduleClient.tsx`.
-- **Table Architecture:** Migrated inventory grid from flex-based layout to standard HTML `<table>`/`<tr>`/`<td>`. Fixed React hydration error by moving `<DndContext>` outside `<tbody>`.
-- **Build Integrity:** Verified clean `next build` — zero errors across all 5 route modules.
+รายละเอียดและ path ในโค้ดที่อ่านแต่ละตัว → [.env.example](.env.example)
 
-### Version 3.1: Staff Access Refinement & Entry Point Logic (May 2026)
+---
 
-- **Staff Dashboard Cleanup:** Removed restricted "Inventory Management" shortcuts from the Staff Dashboard to enhance focus on core duties (Clocking & Scheduling).
-- **Entry Point Logic:** Established a mandatory root redirect from `/` to `/th` (Command Center) via `src/app/page.tsx` for a standardized user landing experience.
-- **Visual Symmetry:** Maintained R0 design standards with `rounded-3xl` and `font-normal` while streamlining layout components.
+## Authentication
 
-### Version 6.2: Security Hardening & Chat API Alignment (June 2026)
+- **PIN Gateway** (`PinGateway.tsx`): ป้อน PIN 6 หลักก่อนเข้าแอป
+- **Full access:** `APP_PIN` (env) — แก้ไขข้อมูลได้ทุกโมดูล
+- **Read-only:** PIN `111222` (hardcoded ใน `src/lib/auth-constants.ts`) — ดูอย่างเดียว
+- **Dual storage:** `sessionStorage` (client gate) + httpOnly cookies (`bb_auth_pin_verified`, `bb_auth_read_only`)
+- **Write guard:** Server Actions เรียก `assertWritableSession()` ก่อน mutation
 
-- **Security Hardening:** Parameter validation for Server Actions (`inventory-actions.ts`, etc.) and tightened RLS policies in `update_rls_policies.sql`.
-- **Chat API Alignment:** Updated API chat routes to resolve column aliases correctly.
+---
 
-### Version 6.3: Mobile Layout, Real-Time Status & DnD Touch Support (June 2026)
+## Architecture
 
-- **Real-Time Status & Navigation:** Added `LiveStatusTracker` and overhauled collapsible sidebar components for smooth responsive rendering.
-- **Inventory Count & Mobile Touch DnD:** Created `/inventory/count` route with inline spreadsheet editing and background syncing. Configured mouse and touch sensors (`TouchSensor` with delay/tolerance) to support fluid drag-and-drop item sorting on mobile without blocking page scrolling.
-- **Test Suite:** Added comprehensive layout and touch-event testing in `src/test/mobile_layout.test.tsx`.
+```
+src/
+├── app/
+│   ├── page.tsx              # Redirect → /th
+│   ├── manifest.ts           # PWA manifest
+│   ├── actions/              # Server Actions (inventory, shift, auth, sales, …)
+│   ├── api/                  # chat, daily-report, weather
+│   └── [locale]/             # UI routes (th/en)
+├── components/               # auth, sidebar, ui, ai, dashboard
+├── lib/                      # supabase, motion-presets, inventory-stock, …
+├── i18n/                     # next-intl routing
+└── proxy.ts                  # next-intl middleware (Next.js 16 convention)
+```
+
+- **Database:** Supabase PostgreSQL (Thailand Edge)
+- **Stock sync:** RPC `set_inventory_stock` — ดู `sql/sync_inventory_stock.sql`
+- **RLS hardening:** `sql/fix_inventory_rls.sql` (authenticated-only หลัง anonymous sign-in)
+- **PWA:** `public/sw.js` (Network-First) + `PwaRegister.tsx`
+
+---
+
+## Documentation
+
+| Doc | Purpose |
+| :--- | :--- |
+| [docs/changelog.md](docs/changelog.md) | ประวัติการเปลี่ยนแปลง |
+| [docs/architecture.md](docs/architecture.md) | สถาปัตยกรรมและ data flow |
+| [docs/database.md](docs/database.md) | Schema, RLS, RPC |
+| [docs/api.md](docs/api.md) | Server Actions reference |
+| [docs/design.md](docs/design.md) | UI/UX standards (Zero-Bold, Pastel) |
+| [docs/SOP.md](docs/SOP.md) | Development SOP (TDD) |
+| [MASTER_BLUEPRINT.md](MASTER_BLUEPRINT.md) | Blueprint ฉบับสมบูรณ์ |
+| [AGENTS.md](AGENTS.md) | กฎสำหรับ AI agents |
+
+---
 
 ## Contributing
 
-Contributions to the BLACK-AND-BREW ERP System are welcome! If you want to contribute, please adhere to our strict standard operating procedures:
-1. Review the [Standard Operating Procedure (SOP)](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/docs/SOP.md) and [Design Standards](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/docs/design.md).
-2. Ensure you follow our **Zero-Bold Policy** across all UI components.
-3. Verify that your changes compile cleanly (`npm run build`) and pass the test suites (`npm test`) before creating a pull request.
+1. อ่าน [docs/SOP.md](docs/SOP.md) และ [docs/design.md](docs/design.md)
+2. ปฏิบัติตาม **Zero-Bold Policy** (`font-normal` เท่านั้น)
+3. รัน `npm test` และ `npm run build` ก่อน PR
+
+---
 
 ## License
 
-This project is proprietary and confidential. All rights reserved. Unauthorized copying, distribution, or modifications of this software is strictly prohibited.
-
-
+Proprietary and confidential. All rights reserved.

@@ -9,6 +9,7 @@ import { startOfWeek, addDays, format, parseISO, isValid } from 'date-fns';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
+import { FloatingAlert } from '@/components/ui/floating-alert';
 import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange } from '@/app/actions/shift-actions';
@@ -42,6 +43,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 
 // --- Constants Outside Component ---
 const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
@@ -196,11 +198,13 @@ interface SortableEmployeeRowProps {
   onNameClick: (id: string, name: string) => void;
   onSaveName: (id: string) => void;
   onDeleteEmployee: (id: string) => void;
+  isReadOnly?: boolean;
 }
 
 const SortableEmployeeRow = React.memo(({
   id, profile, weekDays, shifts, shiftTypes, onCellClick,
-  editingNameId, nameInput, setNameInput, onNameClick, onSaveName, onDeleteEmployee
+  editingNameId, nameInput, setNameInput, onNameClick, onSaveName, onDeleteEmployee,
+  isReadOnly = false,
 }: SortableEmployeeRowProps) => {
   const {
     attributes,
@@ -238,8 +242,8 @@ const SortableEmployeeRow = React.memo(({
       <div className="p-2 border-r border-[#000000]/5 flex items-center gap-2 bg-[#fdfcf0] sticky left-0 z-20 text-black font-normal md:static md:bg-transparent">
         <div
           {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing p-3 h-11 w-11 hover:bg-gray-100 rounded-3xl transition-all text-[#000000]/40 hover:text-[#000000]/70 touch-none flex items-center justify-center"
+          {...(isReadOnly ? {} : listeners)}
+          className={`p-3 h-11 w-11 rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-[#000000]/20' : 'cursor-grab active:cursor-grabbing hover:bg-gray-100 text-[#000000]/40 hover:text-[#000000]/70'}`}
           title="ลากเพื่อเปลี่ยนลำดับ"
         >
           <GripVertical className="w-5 h-5" />
@@ -249,7 +253,8 @@ const SortableEmployeeRow = React.memo(({
           {editingNameId === id ? (
             <input
               autoFocus
-              className="w-full h-11 bg-white border border-blue-400 text-base font-normal text-black px-3 rounded-3xl outline-none"
+              disabled={isReadOnly}
+              className="w-full h-11 bg-white border border-blue-400 text-base font-normal text-black px-3 rounded-3xl outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               onBlur={() => onSaveName(id)}
@@ -257,8 +262,8 @@ const SortableEmployeeRow = React.memo(({
             />
           ) : (
             <span
-              onClick={() => onNameClick(id, profile.full_name)}
-              className="text-[16px] font-normal text-[#000000] truncate leading-[1.6] tracking-tight cursor-text hover:text-blue-600 transition-colors block"
+              onClick={() => !isReadOnly && onNameClick(id, profile.full_name)}
+              className={`text-[16px] font-normal text-[#000000] truncate leading-[1.6] tracking-tight transition-colors block ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-text hover:text-blue-600'}`}
             >
               {profile.full_name}
             </span>
@@ -266,7 +271,8 @@ const SortableEmployeeRow = React.memo(({
         </div>
         <button
           onClick={() => onDeleteEmployee(id)}
-          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+          disabled={isReadOnly}
+          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           title="ลบพนักงานถาวร"
         >
           <Trash2 className="w-4 h-4" />
@@ -282,8 +288,8 @@ const SortableEmployeeRow = React.memo(({
         return (
           <div
             key={date}
-            onClick={(e) => onCellClick(profile.id, date, shift, e.clientX, e.clientY)}
-            className="p-1 border-r last:border-0 border-[#000000]/5 min-h-[52px] cursor-pointer group/cell relative"
+            onClick={(e) => !isReadOnly && onCellClick(profile.id, date, shift, e.clientX, e.clientY)}
+            className={`p-1 border-r last:border-0 border-[#000000]/5 min-h-[52px] group/cell relative ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
             title={shift?.metadata?.remark || ''}
           >
             {shift && (shift.status && shift.metadata?.location) ? (
@@ -324,6 +330,15 @@ export default function ScheduleClient({
 }: ScheduleClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isReadOnly = useReadOnly();
+
+  const blockIfReadOnly = useCallback(() => {
+    if (isReadOnly) {
+      alert(READ_ONLY_DENY_MSG);
+      return true;
+    }
+    return false;
+  }, [isReadOnly]);
 
   const [currentDate, setCurrentDate] = useState(new Date(initialDateStr));
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
@@ -549,6 +564,7 @@ export default function ScheduleClient({
   }, [hasServerRegularHolidayData, profiles, router]);
 
   const handleSaveRegularHolidays = async () => {
+    if (blockIfReadOnly()) return;
     if (!holidayFormEmployee) return;
 
     const normalizedDays = normalizeRegularHolidayDays(holidayFormDays);
@@ -617,6 +633,7 @@ export default function ScheduleClient({
   }, []);
 
   const undo = async () => {
+    if (blockIfReadOnly()) return;
     if (undoStack.length === 0) return;
     const previous = undoStack[undoStack.length - 1];
     const newUndoStack = undoStack.slice(0, -1);
@@ -651,6 +668,7 @@ export default function ScheduleClient({
   };
 
   const redo = async () => {
+    if (blockIfReadOnly()) return;
     if (redoStack.length === 0) return;
     const next = redoStack[0];
     const newRedoStack = redoStack.slice(1);
@@ -685,6 +703,7 @@ export default function ScheduleClient({
   };
 
   const handleClearAll = async () => {
+    if (blockIfReadOnly()) return;
     pushToHistory(profiles, orderedProfileIds, shifts);
     try {
       await supabase.from('shifts').delete().gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
@@ -795,6 +814,7 @@ export default function ScheduleClient({
   };
 
   const handleDeleteHistory = async (historyItem: any) => {
+    if (blockIfReadOnly()) return;
     if (!window.confirm(`คุณต้องการลบประวัติการจัดการของ ${historyItem.employee_name} วันที่ ${format(new Date(historyItem.startDate), 'dd/MM/yyyy')} ใช่หรือไม่?\n(การกระทำนี้จะลบกะการทำงานในช่วงนี้ออกด้วย)`)) {
       return;
     }
@@ -829,6 +849,7 @@ export default function ScheduleClient({
   };
 
   const handleSaveManagement = async () => {
+    if (blockIfReadOnly()) return;
     if (!managementForm.employeeId || !managementForm.startDate || !managementForm.endDate) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วน (พนักงาน, วันเริ่มต้น, วันสิ้นสุด)');
       return;
@@ -904,11 +925,13 @@ export default function ScheduleClient({
   );
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (isReadOnly) return;
     setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
+    if (isReadOnly) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -932,6 +955,7 @@ export default function ScheduleClient({
   };
 
   const handleDeleteEmployee = async (employeeId: string) => {
+    if (blockIfReadOnly()) return;
     if (!window.confirm('คุณแน่ใจหรือไม่ที่จะลบพนักงานคนนี้ถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้ และจะลบกะงานทั้งหมดที่เกี่ยวข้องด้วย')) return;
 
     setLoading(true);
@@ -954,6 +978,7 @@ export default function ScheduleClient({
   };
 
   const handleAddEmployee = async () => {
+    if (blockIfReadOnly()) return;
     if (!newEmployeeName.trim()) return;
 
     setLoading(true);
@@ -983,6 +1008,7 @@ export default function ScheduleClient({
   };
 
   const handleSaveName = async (id: string) => {
+    if (blockIfReadOnly()) return;
     if (!nameInput.trim()) return setEditingNameId(null);
     pushToHistory(profiles, orderedProfileIds, shifts);
     try {
@@ -996,6 +1022,7 @@ export default function ScheduleClient({
   };
 
   const handleSave = async (type: string) => {
+    if (blockIfReadOnly()) return;
     if (!selectedCell) return;
     const { employeeId, date } = selectedCell;
     setSelectedCell(null);
@@ -1010,7 +1037,6 @@ export default function ScheduleClient({
         x: selectedCell.x,
         y: selectedCell.y
       });
-      setTimeout(() => setToastAlert(null), 3000);
     }
 
     const payload = {
@@ -1062,6 +1088,7 @@ export default function ScheduleClient({
   };
 
   const handleClear = async () => {
+    if (blockIfReadOnly()) return;
     if (!selectedCell) return;
     const latestShift = shifts.find(s =>
       (s.employee_id === selectedCell.employeeId || (s as any).profile_id === selectedCell.employeeId) &&
@@ -1101,6 +1128,7 @@ export default function ScheduleClient({
   };
 
   const handleSaveHoliday = async (date: string) => {
+    if (blockIfReadOnly()) return;
     try {
       if (!holidayInput.trim()) {
         setHolidays(prev => prev.filter(h => h.date !== date));
@@ -1191,16 +1219,16 @@ export default function ScheduleClient({
           <div className="flex items-center gap-2">
             <button
               onClick={undo}
-              disabled={undoStack.length === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${undoStack.length > 0 ? 'hover:bg-[#000000]/5 text-[#000000] cursor-pointer' : 'text-[#000000]/30 cursor-not-allowed'}`}
+              disabled={isReadOnly || undoStack.length === 0}
+              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && undoStack.length > 0 ? 'hover:bg-[#000000]/5 text-[#000000] cursor-pointer' : 'text-[#000000]/30 cursor-not-allowed'}`}
               title="เลิกทำ"
             >
               <Undo2 className="w-4 h-4" strokeWidth={1.5} />
             </button>
             <button
               onClick={redo}
-              disabled={redoStack.length === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${redoStack.length > 0 ? 'hover:bg-[#000000]/5 text-[#000000] cursor-pointer' : 'text-[#000000]/30 cursor-not-allowed'}`}
+              disabled={isReadOnly || redoStack.length === 0}
+              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && redoStack.length > 0 ? 'hover:bg-[#000000]/5 text-[#000000] cursor-pointer' : 'text-[#000000]/30 cursor-not-allowed'}`}
               title="ทำซ้ำ"
             >
               <Redo2 className="w-4 h-4" strokeWidth={1.5} />
@@ -1218,7 +1246,8 @@ export default function ScheduleClient({
         <div className="flex items-center gap-2 w-full overflow-x-auto whitespace-nowrap pb-2 scrollbar-none md:overflow-visible md:pb-0 md:justify-end">
           <button
             onClick={() => setShowRegularHolidayModal(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            disabled={isReadOnly}
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <Calendar className="w-4 h-4" />
             วันหยุดประจำ
@@ -1226,7 +1255,8 @@ export default function ScheduleClient({
 
           <button
             onClick={() => setShowManagementModal(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            disabled={isReadOnly}
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <UserCog className="w-4 h-4" />
             การลา/เปลี่ยนกะ
@@ -1234,7 +1264,8 @@ export default function ScheduleClient({
 
           <button
             onClick={() => setShowClearConfirm(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            disabled={isReadOnly}
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />
             ล้างทั้งหมด
@@ -1250,7 +1281,8 @@ export default function ScheduleClient({
 
           <button
             onClick={() => setShowAddEmployeeModal(true)}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            disabled={isReadOnly}
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             เพิ่มพนักงาน
@@ -1271,13 +1303,14 @@ export default function ScheduleClient({
                   return (
                     <div
                       key={`holiday-${date}`}
-                      onClick={() => { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); }}
-                      className="p-1 border-r last:border-0 border-[#000000]/5 flex items-center justify-center min-h-[38px] cursor-pointer hover:bg-red-50 transition-colors"
+                      onClick={() => { if (!isReadOnly) { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); } }}
+                      className={`p-1 border-r last:border-0 border-[#000000]/5 flex items-center justify-center min-h-[38px] transition-colors ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50'}`}
                     >
                       {editingHoliday === date ? (
                         <input
                           autoFocus
-                          className="w-full h-full bg-[#fdfcf0] border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400"
+                          disabled={isReadOnly}
+                          className="w-full h-full bg-[#fdfcf0] border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400 disabled:opacity-60 disabled:cursor-not-allowed"
                           value={holidayInput}
                           onChange={(e) => setHolidayInput(e.target.value)}
                           onBlur={() => handleSaveHoliday(date)}
@@ -1337,6 +1370,7 @@ export default function ScheduleClient({
                           onNameClick={(id, name) => { setEditingNameId(id); setNameInput(name); }}
                           onSaveName={handleSaveName}
                           onDeleteEmployee={handleDeleteEmployee}
+                          isReadOnly={isReadOnly}
                         />
                       );
                     })}
@@ -1362,6 +1396,7 @@ export default function ScheduleClient({
                         onNameClick={() => { }}
                         onSaveName={() => { }}
                         onDeleteEmployee={() => { }}
+                        isReadOnly={isReadOnly}
                       />
                     );
                   })}
@@ -1420,7 +1455,8 @@ export default function ScheduleClient({
                 <button
                   key={type.value}
                   onClick={() => handleSave(type.value)}
-                  className={`h-11 md:h-auto py-1.5 px-3 rounded-lg border text-base md:text-[12px] font-normal shadow-sm w-full text-left transition-all duration-200 cursor-pointer hover:brightness-95 hover:shadow-md active:scale-[0.97] ${type.color}`}
+                  disabled={isReadOnly}
+                  className={`h-11 md:h-auto py-1.5 px-3 rounded-lg border text-base md:text-[12px] font-normal shadow-sm w-full text-left transition-all duration-200 hover:brightness-95 hover:shadow-md active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${type.color}`}
                 >
                   {type.label}
                 </button>
@@ -1430,7 +1466,8 @@ export default function ScheduleClient({
               <div className="p-1.5 bg-[#fdfcf0] border-t border-[#000000]/5">
                 <button
                   onClick={handleClear}
-                  className="w-full h-11 md:h-auto py-1.5 rounded-lg bg-red-50 text-[#ff0000] text-base md:text-[11px] font-normal border border-red-100 hover:bg-[#ff0000] hover:text-[#ffffff] transition-all duration-200 cursor-pointer active:scale-[0.97]"
+                  disabled={isReadOnly}
+                  className="w-full h-11 md:h-auto py-1.5 rounded-lg bg-red-50 text-[#ff0000] text-base md:text-[11px] font-normal border border-red-100 hover:bg-[#ff0000] hover:text-[#ffffff] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer active:scale-[0.97]"
                 >
                   Clear Entry
                 </button>
@@ -1442,8 +1479,8 @@ export default function ScheduleClient({
       )}
 
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-[#000000]/20 backdrop-blur-sm z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] text-center space-y-4">
+        <div className="fixed inset-0 bg-[#000000]/20 backdrop-blur-sm bb-modal-backdrop z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] text-center space-y-4">
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
               <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -1477,10 +1514,10 @@ export default function ScheduleClient({
 
       {showManagementModal && (
         <div
-          className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
-          <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin bg-[#fdfcf0] shadow-2xl animate-in zoom-in-95 duration-300 md:max-w-5xl p-6 text-[#000000] flex flex-col md:flex-row">
+          <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin bg-[#fdfcf0] shadow-2xl bb-modal-panel md:max-w-5xl p-6 text-[#000000] flex flex-col md:flex-row">
             <div className="w-full md:w-[340px] flex flex-col border-r border-[#000000]/5 shrink-0">
               <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]/50 management-form-container">
                 <div className="flex items-center gap-2">
@@ -1700,8 +1737,8 @@ export default function ScheduleClient({
 
       {showAddEmployeeModal && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm" onClick={() => setShowAddEmployeeModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
+          <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowAddEmployeeModal(false)} />
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
             <h3 className="text-xl font-normal text-[#000000] mb-4 uppercase tracking-tight">เพิ่มพนักงานใหม่</h3>
             <div className="space-y-4">
@@ -1740,8 +1777,8 @@ export default function ScheduleClient({
 
       {showRegularHolidayModal && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm" onClick={() => setShowRegularHolidayModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl animate-in slide-in-from-bottom duration-300 md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
+          <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowRegularHolidayModal(false)} />
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
             <h3 className="text-xl font-normal text-[#000000] mb-6 uppercase tracking-tight flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[#000000]/40" />
@@ -1874,21 +1911,15 @@ export default function ScheduleClient({
       )}
 
       {toastAlert && (
-        <div
-          className="fixed z-[200] pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        <FloatingAlert
+          message={toastAlert.message}
+          onDismiss={() => setToastAlert(null)}
           style={{
             top: `${toastAlert.y - 45}px`,
             left: `${toastAlert.x}px`,
-            transform: 'translateX(-50%)'
+            transform: 'translateX(-50%)',
           }}
-        >
-          <div className="bg-[#fdfcf0] border border-[#000000]/5 shadow-xl rounded-2xl py-2 px-4 flex items-center gap-2">
-            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-            <p className="text-[13px] font-normal text-[#000000] tracking-tight whitespace-nowrap">
-              {toastAlert.message}
-            </p>
-          </div>
-        </div>
+        />
       )}
     </div>
   );

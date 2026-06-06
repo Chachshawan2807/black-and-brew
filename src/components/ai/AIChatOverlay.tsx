@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X, Send, User, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { sanitizePromptInput, sanitizeScreenContext, sanitizeXssPayload } from '@/lib/security/sanitize';
 
 const QUICK_ACTIONS = [
   { id: 'shift', label: '👥 ตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
@@ -26,46 +27,41 @@ export default function AIChatOverlay() {
     transport: new DefaultChatTransport({ api: '/api/chat' }),
   });
 
-  // Hydration guard + load chat history once after mount
+  // Hydration guard — static dependency only
   useEffect(() => {
     setIsMounted(true);
-    const savedHistory = localStorage.getItem('bb-chat-history');
-    if (savedHistory) {
-      try {
-        const parsed = JSON.parse(savedHistory);
-        const sanitizeString = (str: string) => {
-          // Remove dangerous tags and attributes
-          return str
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-            .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-            .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-            .replace(/on\w+="[^"]*"/gi, '')
-            .replace(/on\w+='[^']*'/gi, '')
-            .replace(/javascript:/gi, '');
-        };
-
-        const sanitized = parsed.map((msg: any) => {
-          const newMsg = { ...msg };
-          if (typeof newMsg.content === 'string') {
-            newMsg.content = sanitizeString(newMsg.content);
-          }
-          if (newMsg.parts && Array.isArray(newMsg.parts)) {
-            newMsg.parts = newMsg.parts.map((part: any) => {
-              if (part.type === 'text' && typeof part.text === 'string') {
-                return { ...part, text: sanitizeString(part.text) };
-              }
-              return part;
-            });
-          }
-          return newMsg;
-        });
-        setMessages(sanitized);
-      } catch (e) {
-        console.error("Failed to parse chat history", e);
-      }
-    }
   }, []);
+
+  // Load chat history once after mount — static dependency [isMounted]
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const savedHistory = localStorage.getItem('bb-chat-history');
+    if (!savedHistory) return;
+
+    try {
+      const parsed = JSON.parse(savedHistory);
+      const sanitized = parsed.map((msg: any) => {
+        const newMsg = { ...msg };
+        if (typeof newMsg.content === 'string') {
+          newMsg.content = sanitizeXssPayload(newMsg.content);
+        }
+        if (newMsg.parts && Array.isArray(newMsg.parts)) {
+          newMsg.parts = newMsg.parts.map((part: any) => {
+            if (part.type === 'text' && typeof part.text === 'string') {
+              return { ...part, text: sanitizeXssPayload(part.text) };
+            }
+            return part;
+          });
+        }
+        return newMsg;
+      });
+      setMessages(sanitized);
+    } catch (e) {
+      console.error('Failed to parse chat history', e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- static mount gate only
+  }, [isMounted]);
 
   const isLoading = status === 'streaming' || status === 'submitted';
 
@@ -93,25 +89,13 @@ export default function AIChatOverlay() {
     const activeModal = document.querySelector('[role="dialog"]') || document.querySelector('.modal') || document.querySelector('[class*="Modal"]');
     if (!activeModal) return "Current View: Main Dashboard";
 
-    const textContent = activeModal.textContent || "";
-    // Clean up excessive whitespace/newlines to optimize tokens
-    const cleanedText = textContent
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    // MODULE 3: SYSTEM_SECURITY_HARDENING (Input Sanitization)
-    const sanitized = cleanedText
-      .replace(/```[\s\S]*?```/g, '') // ลบ code blocks
-      .replace(/\[INST\]|\[\/INST\]|<\|im_start\|>|<\|im_end\|>|###\s*(system|user|assistant)/gi, '') // ลบ injection tokens
-      .replace(/ignore previous instructions?|forget (all|your|prior)|you are now|act as|jailbreak/gi, '') // ลบ jailbreak patterns
-      .slice(0, 800); // จำกัดความยาวสูงสุด 800 ตัวอักษรเพื่อป้องกัน Token flooding
-
-    return `Active Window Data:\n${sanitized}`;
+    const textContent = activeModal.textContent || '';
+    return `Active Window Data:\n${sanitizeScreenContext(textContent)}`;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = inputValue.trim();
+    const trimmed = sanitizePromptInput(inputValue.trim());
     if (!trimmed || isLoading) return;
 
     const liveScreenContext = getActiveWindowContext();
@@ -180,7 +164,7 @@ export default function AIChatOverlay() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
-              className="fixed bottom-20 left-4 right-4 md:bottom-24 md:left-auto md:right-6 md:w-[650px] z-[199] bg-white rounded-xl shadow-2xl border-2 border-black flex flex-col overflow-hidden"
+              className="fixed bottom-20 left-4 right-4 md:bottom-24 md:left-auto md:right-6 w-full max-w-2xl z-[199] bg-[#fdfcf0] rounded-3xl shadow-2xl border-2 border-black flex flex-col overflow-hidden"
               style={{ maxHeight: '75vh' }}
             >
               {/* Header */}
@@ -255,7 +239,7 @@ export default function AIChatOverlay() {
                     onClick={() => {
                       const liveScreenContext = getActiveWindowContext();
                       sendMessage(
-                        { role: 'user', parts: [{ type: 'text', text: action.query }] },
+                        { role: 'user', parts: [{ type: 'text', text: sanitizePromptInput(action.query) }] },
                         { body: { clientContext: liveScreenContext } }
                       );
                     }}
@@ -302,20 +286,7 @@ export default function AIChatOverlay() {
 // Chat Bubble Sub-component
 function ChatBubble({ role, content }: { role: string; content: string }) {
   const isUser = role === 'user';
-  
-  // Sanitize content for XSS protection
-  const sanitizeContent = (str: string) => {
-    return str
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
-      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-      .replace(/on\w+="[^"]*"/gi, '')
-      .replace(/on\w+='[^']*'/gi, '')
-      .replace(/javascript:/gi, '');
-  };
-
-  const safeContent = sanitizeContent(content);
+  const safeContent = sanitizeXssPayload(content);
 
   return (
     <div className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>

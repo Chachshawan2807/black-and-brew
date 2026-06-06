@@ -37,13 +37,17 @@ coverage/
 mem0_storage.json
 
 # --- Environment Files & Private Data ---
-# 🔒 แก้ไขส่วนนี้: ระบุชื่อรายไฟล์เพื่อปลดล็อก .env.example ให้ผ่านได้ปลอดภัย
+# 🔒 .env.example is the only env file allowed in git (placeholders only)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 .vercel
+
+# --- API Keys & Cloud Credentials ---
+credentials.json
+service-account*.json
+*-credentials.json
+*.key
 
 # --- System & Misc ---
 .DS_Store

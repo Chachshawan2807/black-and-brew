@@ -1,37 +1,54 @@
 # Architecture — BLACKANDBREW ERP
 
-> **Version:** 6.5 | **Last Updated:** 2026-06-05 | **Stack:** Next.js 16 + Supabase
+> **Version:** 6.9 | **Last Updated:** 2026-06-07 | **Stack:** Next.js 16 + Supabase
 
 ---
 
 ## 1. Overview
 
-Hybrid PPR architecture: Static Shell (Navigation, Branding) + Dynamic Islands (Real-time data via Supabase).
+Hybrid PPR architecture: Static Shell (Navigation, Branding) + Dynamic Islands (Real-time data via Supabase `connection()`).
 
 ### Tech Stack
 
-- **Framework:** Next.js 16.2.4 (App Router) + React 19.2.4
+- **Framework:** Next.js 16.2.4 (App Router, `cacheComponents: true`) + React 19.2.4
 - **Database:** Supabase PostgreSQL (Thailand Edge Region)
 - **Styling:** Tailwind CSS 4 + PostCSS
 - **State:** Zustand (global), React useState (local)
-- **i18n:** next-intl v4.11.0 (th/en)
+- **i18n:** next-intl v4.11.0 (th/en) via `src/proxy.ts`
 - **DnD:** @dnd-kit/core + sortable
+- **AI:** Vercel AI SDK v6 + `@ai-sdk/google` (Gemini)
 - **Testing:** Vitest + Testing Library
 - **Deploy:** Vercel Edge Runtime
-- **Interaction Layer:** Decoupled DOM Separation (Dnd-kit for layout, Framer Motion for micro-interactions)
+- **Motion:** framer-motion + `src/lib/motion-presets.ts` (v6.9)
 
 ---
 
-## 2. Supabase Dual-Client Strategy
+## 2. Authentication Flow
+
+```text
+User opens app → PinGateway (sessionStorage check)
+→ verifyPin() Server Action → httpOnly cookies set
+→ ensureSupabaseSession() → anonymous auth for RLS
+→ Full access (APP_PIN) or Read-only (111222)
+→ Write actions call assertWritableSession()
+```
+
+| Layer | Storage | Keys |
+| :--- | :--- | :--- |
+| Client gate | `sessionStorage` | `bb_auth_pin_verified` |
+| Server session | httpOnly cookies | `bb_auth_pin_verified`, `bb_auth_read_only` |
+| Supabase RLS | Anonymous session | `authenticated` role |
+
+---
+
+## 3. Supabase Dual-Client Strategy
 
 | Context | Key | Purpose |
 | :--- | :--- | :--- |
 | Client Components (`src/lib/supabase.ts`) | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Real-time subs, client reads |
-| Server Actions (`inventory-actions.ts`) | `SUPABASE_SERVICE_ROLE_KEY` | Bypass RLS for admin ops |
+| Server Actions | `SUPABASE_SERVICE_ROLE_KEY` | Admin ops, AI tools, daily report |
 
-**Security:** `SUPABASE_SERVICE_ROLE_KEY` never has `NEXT_PUBLIC_` prefix — never exposed to browser.
-
-Client singleton config:
+**RLS:** `sql/fix_inventory_rls.sql` — authenticated-only policies; client must sign in anonymously after PIN.
 
 ```typescript
 export const supabase = createClient(url, anonKey, {
@@ -42,58 +59,89 @@ export const supabase = createClient(url, anonKey, {
 
 ---
 
-## 3. Route Structure
+## 4. Route Structure
 
 ```text
 src/app/
 ├── page.tsx                     # Root redirect → /th
+├── manifest.ts                  # PWA manifest
 ├── actions/
-│   ├── inventory-actions.ts     # Inventory (Service Role)
-│   ├── shift-actions.ts         # Shift CRUD & revalidation
-│   └── holiday-actions.ts       # Google Calendar sync
+│   ├── auth.ts                  # PIN verify, read-only guard
+│   ├── inventory-actions.ts     # Stock RPC, transactions
+│   ├── shift-actions.ts         # Shift CRUD
+│   ├── holiday-actions.ts       # Google Calendar + regular holidays
+│   ├── maintenance-actions.ts   # Service records
+│   ├── sales-actions.ts         # Excel upload, categories
+│   ├── market-insights-actions.ts
+│   ├── daily-report-actions.ts  # LINE report compiler
+│   ├── line-actions.ts
+│   └── tools/                   # AI agent tools
+├── api/
+│   ├── chat/route.ts            # Streaming AI (ToolLoopAgent)
+│   ├── daily-report/route.ts    # Vercel Cron endpoint
+│   └── weather/route.ts         # OpenWeatherMap proxy
 └── [locale]/
-    ├── layout.tsx               # i18n layout
+    ├── layout.tsx               # PinGateway, sidebar, AI chat, PWA
     ├── page.tsx                 # Command Center
-    ├── dashboard/               # Shift overview
+    ├── dashboard/               # Staff dashboard
     ├── schedule/                # Shift management (DnD)
-    ├── inventory/               # Smart inventory (spreadsheet)
-    ├── sales/                   # Sales Dashboard & analytics
-    ├── market-insights/         # Market Intelligence (AI-powered)
-    └── maintenance/             # Equipment tracking
+    ├── inventory/               # Warehouse spreadsheet
+    │   └── count/               # Stock-taking
+    ├── maintenance/             # Equipment tracking
+    ├── sales/                   # Sales analytics
+    └── market-insights/         # AI market analysis
 ```
+
+**i18n middleware:** `src/proxy.ts` (Next.js 16 convention — not `src/middleware.ts`)
 
 ---
 
-## 4. Data Flow Patterns
+## 5. Data Flow Patterns
 
 ### Inventory Edit (Spreadsheet)
 
 ```text
-onChange → local state → onBlur → optimistic update → supabase.update() → real-time channel
+onChange → local state → onBlur → updateInventoryStock() [RPC set_inventory_stock]
+→ optimistic update → Supabase realtime merge → all windows sync
+```
+
+### Stock-Taking Count
+
+```text
+CountInput blur → optimistic setItems → updateInventoryStock()
+→ realtime merge → warehouse PO modal recalculates via computeItemsToOrder()
 ```
 
 ### Transaction Recording (Atomic via RPC)
 
 ```text
-Server Action → supabase.rpc('record_inventory_transaction')
+Quick Entry → recordTransaction() → supabase.rpc('record_inventory_transaction')
 → Row Lock (FOR UPDATE) → Validate → UPDATE stock → INSERT transaction → RETURN
 ```
 
-### Transaction History (Two-Step Fetch)
+### AI Chat
 
 ```text
-Step 1: SELECT * FROM inventory_transactions
-Step 2: SELECT id,name FROM inventory_items WHERE id IN (...)
-Step 3: Merge in-memory → return enriched data
+AIChatOverlay → POST /api/chat → ToolLoopAgent (Gemini)
+→ tools: readTable, internetSearch, weather
+→ streaming response → XSS sanitization on display
+```
+
+### Daily LINE Report
+
+```text
+Vercel Cron → /api/daily-report → compileDailyReportPayload()
+→ shifts + inventory alerts + weather + holidays → sendLineNotification()
 ```
 
 ---
 
-## 5. State Management
+## 6. State Management
 
 | Type | Tool | Scope |
 | :--- | :--- | :--- |
 | Global UI | Zustand | Sidebar toggle |
+| Auth | AuthProvider + cookies | PIN session, read-only |
 | Page-level | useState | Items, columns, modals |
 | History | undoStack/redoStack | Inventory undo/redo |
 | Persistence | localStorage + `inventory_config` | Column widths/labels |
@@ -101,10 +149,28 @@ Step 3: Merge in-memory → return enriched data
 
 ---
 
-## 6. External Integrations
+## 7. External Integrations
 
 | Service | Auth | Purpose |
 | :--- | :--- | :--- |
-| Supabase | Anon Key + Service Role | DB, Auth, Real-time |
+| Supabase | Anon + Service Role | DB, Auth, Real-time |
 | Google Calendar API | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync |
-| Vercel | Git deployment | Edge hosting |
+| Google Gemini | `GEMINI_API_KEY` | AI Chat + Market Insights |
+| OpenWeatherMap | `OPENWEATHER_API_KEY` | Weather widget + daily report |
+| Tavily | `TAVILY_API_KEY` | AI web search |
+| LINE Messaging API | `LINE_CHANNEL_ACCESS_TOKEN` | Daily push notifications |
+| Vercel | Git deployment | Edge hosting + Cron |
+
+---
+
+## 8. Motion Architecture (v6.9)
+
+| Layer | Implementation | Scope |
+| :--- | :--- | :--- |
+| Route transitions | `PageTransition` + `motion-presets.pageContent` | All pages via `SidebarLayout` |
+| Modals / Sheets | CSS `.bb-modal-*` + framer `modalContent` | Schedule, Maintenance, Inventory PO |
+| Toasts / Alerts | `FloatingAlert`, `FloatingToast` | Schedule holiday warning, Maintenance save |
+| Micro-interactions | `.bb-transition`, Button `duration-200` | Buttons, inputs, sidebar links |
+| CSS utilities | `globals.css` `@layer utilities` | `animate-in`, `fade-in`, `zoom-in-95`, `slide-*` |
+
+**Constraint:** Motion changes opacity/transform only — no layout position or dimension changes on desktop/mobile.

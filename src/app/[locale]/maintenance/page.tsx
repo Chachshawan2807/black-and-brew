@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { saveServiceRecord, deleteServiceRecord } from '@/app/actions/maintenance-actions';
+import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import {
   Plus,
   Wrench,
@@ -10,33 +13,17 @@ import {
   Trash2,
   CheckCircle2,
   Clock,
-  DollarSign,
-  User,
-  FileText,
-  AlertCircle,
   Loader2,
-  ChevronRight,
-  Calendar,
-  ClipboardList,
-  X
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
-import { th } from 'date-fns/locale';
-import Image from 'next/image';
+import { format } from 'date-fns';
 import React from 'react';
-import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
+import { FloatingToast } from '@/components/ui/floating-alert';
+
+const MaintenanceModals = dynamic(() => import('./MaintenanceModals'), { ssr: false });
 
 // Simple Toast implementation
 const useToast = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
-
   return { toast, setToast };
 };
 
@@ -57,13 +44,13 @@ interface ServiceRecord {
 }
 
 export default function MaintenancePage() {
+  const isReadOnly = useReadOnly();
   const [records, setRecords] = useState<ServiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null);
-  const dateInputRef = React.useRef<HTMLInputElement>(null);
   const { toast, setToast } = useToast();
 
   // Form State
@@ -81,6 +68,7 @@ export default function MaintenancePage() {
   });
 
   const [isMounted, setIsMounted] = useState(false);
+  const [isSubmitPending, startSubmitTransition] = useTransition();
 
   const DEFAULT_WIDTHS = {
     date: 120,
@@ -132,31 +120,34 @@ export default function MaintenancePage() {
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     setFormData(prev => ({ ...prev, start_date: format(new Date(), 'yyyy-MM-dd') }));
-    
-    // Load column widths from localStorage safely
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('bb-maintenance-col-widths');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          // MODULE 3: SYSTEM_SECURITY_HARDENING (Type Validation Engine)
-          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            const safeWidths: Record<string, number> = {};
-            Object.entries(parsed).forEach(([key, val]) => {
-              if (typeof key === 'string' && typeof val === 'number' && val > 0 && val < 2000) {
-                safeWidths[key] = val;
-              }
-            });
-            setColWidths(safeWidths);
-          }
-        } catch (e) {
-          console.error(e);
-          localStorage.removeItem('bb-maintenance-col-widths'); // ล้างข้อมูลเสียหายออก
+
+    const saved = localStorage.getItem('bb-maintenance-col-widths');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          const safeWidths: Record<string, number> = {};
+          Object.entries(parsed).forEach(([key, val]) => {
+            if (typeof key === 'string' && typeof val === 'number' && val > 0 && val < 2000) {
+              safeWidths[key] = val;
+            }
+          });
+          setColWidths(safeWidths);
         }
+      } catch (e) {
+        console.error(e);
+        localStorage.removeItem('bb-maintenance-col-widths');
       }
     }
-    
+  }, [isMounted]);
+
+  useEffect(() => {
     fetchRecords();
   }, []);
 
@@ -180,11 +171,13 @@ export default function MaintenancePage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (isReadOnly) {
+      setToast({ message: READ_ONLY_DENY_MSG, type: 'error' });
+      return;
+    }
 
-    // Prepare payload with DB-compliant mapping and explicit sanitation
     const payload = {
       start_date: formData.start_date,
       equipment: formData.equipment,
@@ -196,64 +189,61 @@ export default function MaintenancePage() {
       person_in_charge: formData.person_in_charge.trim() === "" ? null : formData.person_in_charge,
       status: formData.status,
       notes: formData.notes.trim() === "" ? null : formData.notes,
-      // Logic Fix: Auto-set completion_date if status is 'เสร็จสมบูรณ์'
       completion_date: formData.status === 'เสร็จสมบูรณ์' ? format(new Date(), 'yyyy-MM-dd') : null
     };
 
-    try {
-      let error;
-      if (editingRecord?.id) {
-        const { error: updateError } = await supabase
-          .from('service_records')
-          .update(payload)
-          .eq('id', editingRecord.id);
-        error = updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from('service_records')
-          .insert([payload]);
-        error = insertError;
-      }
+    startSubmitTransition(() => {
+      void (async () => {
+        setLoading(true);
+        try {
+          const result = await saveServiceRecord(payload, editingRecord?.id);
 
-      if (error) {
-        setToast({ message: `บันทึกไม่สำเร็จ: ${error.message}`, type: 'error' });
-      } else {
-        setToast({ message: 'บันทึกข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
-        setIsModalOpen(false);
-        resetForm();
-        fetchRecords();
-      }
-    } catch (err: any) {
-      setToast({ message: `ระบบขัดข้อง: ${err?.message || 'โปรดลองอีกครั้ง'}`, type: 'error' });
-    } finally {
-      setLoading(false);
+          if (!result.success) {
+            setToast({ message: result.error || `บันทึกไม่สำเร็จค่ะ`, type: 'error' });
+          } else {
+            setToast({ message: 'บันทึกข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
+            setIsModalOpen(false);
+            resetForm();
+            fetchRecords();
+          }
+        } catch (err: any) {
+          setToast({ message: `ระบบขัดข้อง: ${err?.message || 'โปรดลองอีกครั้ง'}`, type: 'error' });
+        } finally {
+          setLoading(false);
+        }
+      })();
+    });
+  }, [isReadOnly, formData, editingRecord?.id, setToast]);
+
+  const handleDelete = useCallback(() => {
+    if (isReadOnly) {
+      setToast({ message: READ_ONLY_DENY_MSG, type: 'error' });
+      return;
     }
-  }
-
-  async function handleDelete() {
     if (!recordToDelete) return;
-    setLoading(true);
 
-    try {
-      const { error } = await supabase
-        .from('service_records')
-        .delete()
-        .eq('id', recordToDelete);
+    startSubmitTransition(() => {
+      void (async () => {
+        setLoading(true);
+        try {
+          const result = await deleteServiceRecord(recordToDelete);
 
-      if (error) {
-        setToast({ message: `ลบไม่สำเร็จ: ${error.message}`, type: 'error' });
-      } else {
-        setToast({ message: 'ลบข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
-        fetchRecords();
-        setIsDeleteConfirmOpen(false);
-        setRecordToDelete(null);
-      }
-    } catch (err: any) {
-      setToast({ message: `ระบบขัดข้อง: ${err?.message || 'โปรดลองอีกครั้ง'}`, type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  }
+          if (!result.success) {
+            setToast({ message: result.error || `ลบไม่สำเร็จค่ะ`, type: 'error' });
+          } else {
+            setToast({ message: 'ลบข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
+            fetchRecords();
+            setIsDeleteConfirmOpen(false);
+            setRecordToDelete(null);
+          }
+        } catch (err: any) {
+          setToast({ message: `ระบบขัดข้อง: ${err?.message || 'โปรดลองอีกครั้ง'}`, type: 'error' });
+        } finally {
+          setLoading(false);
+        }
+      })();
+    });
+  }, [isReadOnly, recordToDelete, setToast]);
 
   function resetForm() {
     setFormData({
@@ -312,10 +302,11 @@ export default function MaintenancePage() {
 
           <div className="flex items-center gap-4">
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: isReadOnly ? 1 : 1.02 }}
+              whileTap={{ scale: isReadOnly ? 1 : 0.98 }}
               onClick={() => { resetForm(); setIsModalOpen(true); }}
-              className="group flex items-center gap-2.5 bg-[#000000] hover:bg-black/80 text-white px-7 py-3.5 rounded-2xl transition-all shadow-sm"
+              disabled={isReadOnly}
+              className="group flex items-center gap-2.5 bg-[#000000] hover:bg-black/80 text-white px-7 py-3.5 rounded-2xl transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Plus className="w-4.5 h-4.5" />
               <span className="font-medium text-sm tracking-wide">เพิ่มบันทึกใหม่</span>
@@ -338,7 +329,8 @@ export default function MaintenancePage() {
               <p className="text-xl font-normal tracking-wide italic">No maintenance records discovered yet.</p>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="mt-8 text-[#000000] hover:opacity-60 transition-opacity font-normal text-xs uppercase tracking-[0.3em] border-b border-[#000000] pb-1"
+                disabled={isReadOnly}
+                className="mt-8 text-[#000000] hover:opacity-60 transition-opacity font-normal text-xs uppercase tracking-[0.3em] border-b border-[#000000] pb-1 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Begin your first entry
               </button>
@@ -486,13 +478,15 @@ export default function MaintenancePage() {
                           <div className="flex items-center justify-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => handleEdit(record)}
-                              className="p-2 hover:bg-black/5 text-black/40 hover:text-black rounded-xl transition-all active:scale-90"
+                              disabled={isReadOnly}
+                              className="p-2 hover:bg-black/5 text-black/40 hover:text-black rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               <Edit2 className="w-4 h-4" strokeWidth={1.5} />
                             </button>
                             <button
                               onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
-                              className="p-2 hover:bg-red-50 text-black/40 hover:text-red-500 rounded-xl transition-all active:scale-90"
+                              disabled={isReadOnly}
+                              className="p-2 hover:bg-red-50 text-black/40 hover:text-red-500 rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                             </button>
@@ -508,236 +502,27 @@ export default function MaintenancePage() {
         </main>
       </div>
 
-      {/* Form Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/10 backdrop-blur-sm"
-              onClick={() => setIsModalOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-white w-full max-w-xl max-h-[90vh] flex flex-col rounded-[32px] shadow-2xl overflow-hidden border border-black/5"
-            >
-              <div className="p-5 border-b border-black/5 flex items-center justify-between bg-[#fff7ed]/50 shrink-0">
-                <div>
-                  <h2 className="text-xl font-normal text-[#000000] tracking-tight uppercase">
-                    {editingRecord ? 'แก้ไขบันทึก' : 'เพิ่มบันทึกใหม่'}
-                  </h2>
-                  <p className="text-[13px] text-black/60 mt-0.5 uppercase tracking-widest font-normal">รายละเอียดการซ่อมและสถานะอุปกรณ์</p>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-2 hover:bg-black/5 rounded-2xl transition-colors text-black/40"
-                >
-                  <X className="w-5 h-5" strokeWidth={2} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar bg-white">
-                {/* Row 1: Date & Type */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1.5 flex-1">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">วันที่รับบริการ</label>
-                    <ClickableDatePicker
-                      value={formData.start_date}
-                      onChange={e => setFormData({ ...formData, start_date: e.target.value })}
-                      placeholder="เลือกวันที่"
-                      containerClassName="bg-black/[0.02] border-black/[0.05] hover:border-black/10 hover:bg-black/[0.04] transition-all"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ประเภทงาน</label>
-                    <div className="relative">
-                      <select
-                        value={formData.task_type}
-                        onChange={e => setFormData({ ...formData, task_type: e.target.value })}
-                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all appearance-none cursor-pointer hover:bg-black/[0.04]"
-                      >
-                        <option value="ซ่อมแซม">ซ่อมแซม</option>
-                        <option value="บำรุงรักษา">บำรุงรักษา</option>
-                        <option value="ติดตั้ง">ติดตั้ง</option>
-                        <option value="เปลี่ยนอะไหล่">เปลี่ยนอะไหล่</option>
-                        <option value="อื่นๆ">อื่นๆ</option>
-                      </select>
-                      <ChevronRight className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-black/30 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Row 2: Equipment & Frequency */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ชื่ออุปกรณ์</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="เช่น เครื่องชงเอสเปรสโซ"
-                      value={formData.equipment}
-                      onChange={e => setFormData({ ...formData, equipment: e.target.value })}
-                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ความถี่ที่แนะนำ</label>
-                    <input
-                      type="text"
-                      placeholder="เช่น ทุก 3 เดือน"
-                      value={formData.recommended_frequency}
-                      onChange={e => setFormData({ ...formData, recommended_frequency: e.target.value })}
-                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 3: Cost & In Charge (Moved Up) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ค่าใช้จ่าย (บาท)</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30 text-base md:text-sm font-normal">฿</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.cost === 0 ? '' : formData.cost}
-                        onChange={e => {
-                          const val = e.target.value.replace(/^0+/, '');
-                          setFormData({ ...formData, cost: val === '' ? 0 : Number(val) });
-                        }}
-                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl pl-8 pr-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ผู้รับผิดชอบ</label>
-                    <input
-                      type="text"
-                      placeholder="ชื่อ"
-                      value={formData.person_in_charge}
-                      onChange={e => setFormData({ ...formData, person_in_charge: e.target.value })}
-                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
-                    />
-                  </div>
-                </div>
-
-                {/* Textareas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">อาการที่พบ</label>
-                    <textarea
-                      placeholder="อธิบายปัญหา"
-                      rows={2}
-                      value={formData.detected_problem}
-                      onChange={e => setFormData({ ...formData, detected_problem: e.target.value })}
-                      className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-base md:text-sm font-normal focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">รายละเอียดการซ่อม</label>
-                    <textarea
-                      placeholder="ดำเนินการอะไรบ้าง?"
-                      rows={2}
-                      value={formData.work_details}
-                      onChange={e => setFormData({ ...formData, work_details: e.target.value })}
-                      className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-base md:text-sm font-normal focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">สถานะงาน</label>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
-                        className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
-                      >
-                        <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
-                        กำลังดำเนินการ
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
-                        className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                        เสร็จสิ้น
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">หมายเหตุ</label>
-                    <input
-                      type="text"
-                      placeholder="หมายเหตุ"
-                      value={formData.notes}
-                      onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                      className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
-                    />
-                  </div>
-                </div>
-              </form>
-
-              <div className="p-5 bg-gray-50/50 border-t border-black/5 flex gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-11 md:h-auto md:py-3 text-black/60 font-normal hover:text-black transition-all text-base md:text-[12px] uppercase tracking-widest"
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="flex-[2] h-11 md:h-auto md:py-3 bg-black text-white font-normal rounded-2xl hover:bg-black/80 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" strokeWidth={2} />}
-                  ยืนยันบันทึก
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Delete Confirmation Modal */}
-      {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/5 backdrop-blur-md" onClick={() => setIsDeleteConfirmOpen(false)} />
-          <div className="relative bg-white w-full max-w-sm rounded-[40px] shadow-2xl overflow-hidden border-none animate-in fade-in zoom-in duration-500 p-10 text-center">
-            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Trash2 className="w-10 h-10" strokeWidth={1} />
-            </div>
-            <h3 className="text-2xl font-normal text-[#000000] tracking-tighter mb-2 uppercase">Delete Record?</h3>
-            <p className="text-[#000000]/40 text-sm font-normal mb-8 leading-relaxed">This action is irreversible and will permanently remove this maintenance entry from the vault.</p>
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={handleDelete}
-                disabled={loading}
-                className="w-full h-11 md:h-auto md:py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm uppercase tracking-widest"
-              >
-                {loading ? 'Processing...' : 'Confirm Deletion'}
-              </button>
-              <button
-                onClick={() => setIsDeleteConfirmOpen(false)}
-                className="w-full h-11 md:h-auto md:py-4 text-[#000000]/40 font-normal hover:text-[#000000] transition-all text-base md:text-sm uppercase tracking-widest"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <MaintenanceModals
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+        isDeleteConfirmOpen={isDeleteConfirmOpen}
+        setIsDeleteConfirmOpen={setIsDeleteConfirmOpen}
+        editingRecord={editingRecord}
+        formData={formData}
+        setFormData={setFormData}
+        handleSubmit={handleSubmit}
+        handleDelete={handleDelete}
+        loading={loading || isSubmitPending}
+        isReadOnly={isReadOnly}
+      />
 
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed bottom-8 right-8 z-[200] px-6 py-4 rounded-3xl shadow-2xl border flex items-center gap-3 animate-in slide-in-from-right-full duration-300 ${toast.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
-          {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span className="font-normal">{toast.message}</span>
-        </div>
+        <FloatingToast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast(null)}
+        />
       )}
 
       <style jsx global>{`

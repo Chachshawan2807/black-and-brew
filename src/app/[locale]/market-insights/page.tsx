@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getMarketInsights } from '@/app/actions/market-insights-actions';
-import { RefreshCw, Users, Coffee, Lightbulb, Sparkles, Database, CheckCircle2, AlertCircle, XCircle, TrendingUp } from 'lucide-react';
+import { RefreshCw, Users, Coffee, Lightbulb, Sparkles, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CachedInsights {
@@ -55,15 +55,7 @@ export default function MarketInsightsPage() {
   const loadFreshInsights = async () => {
     setIsLoading(true);
     try {
-      // Load fresh data
-      let salesData = null;
-      if (typeof window !== 'undefined') {
-        const cachedSales = localStorage.getItem('salesMetrics');
-        if (cachedSales) {
-          salesData = JSON.parse(cachedSales);
-        }
-      }
-      const data = await getMarketInsights(salesData);
+      const data = await getMarketInsights();
       
       // Cache the new insights
       if (data && typeof window !== 'undefined') {
@@ -117,6 +109,9 @@ export default function MarketInsightsPage() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } }
   };
 
+  const primaryButtonClass =
+    'inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-2xl hover:bg-black/80 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed';
+
   return (
     <div className="min-h-screen bg-[#fdfcf0] text-black antialiased font-normal">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
@@ -142,7 +137,7 @@ export default function MarketInsightsPage() {
                 ข้อมูลเชิงลึกตลาด
               </h1>
               <p className="text-black/60 text-base md:text-lg max-w-2xl">
-                วิเคราะห์พฤติกรรมผู้บริโภค และกลยุทธ์เพื่อขับเคลื่อนธุรกิจของคุณ
+                AI วิเคราะห์ตลาด จับคู่ข้อมูลร้านกับเทรนด์ภายนอก เพื่อเสนอกลยุทธ์ที่ทำได้จริง
               </p>
             </div>
             {/* Only show header buttons when we have data or loading */}
@@ -152,16 +147,16 @@ export default function MarketInsightsPage() {
                   <button
                     onClick={loadFromCacheOnly}
                     disabled={isLoading}
-                    className="group inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-black/5 rounded-xl hover:bg-black/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    className={primaryButtonClass}
                   >
                     <TrendingUp className="w-4 h-4" />
-                    <span className="text-sm">โหลดข้อมูลเดิม</span>
+                    <span>โหลดข้อมูลเดิม</span>
                   </button>
                 )}
                 <button
                   onClick={loadFreshInsights}
                   disabled={isLoading}
-                  className="group inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-2xl hover:bg-black/80 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className={`group ${primaryButtonClass}`}
                 >
                   <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
                   <span>{hasLoaded ? 'วิเคราะห์ใหม่' : 'เริ่มวิเคราะห์'}</span>
@@ -186,21 +181,21 @@ export default function MarketInsightsPage() {
               </div>
               <h2 className="text-2xl mb-3">พร้อมวิเคราะห์ตลาดแล้วหรือยัง?</h2>
               <p className="text-black/60 mb-8 max-w-md mx-auto">
-                คลิกที่ปุ่มเพื่อเริ่มต้นวิเคราะห์ข้อมูลเชิงลึก ตามข้อมูลยอดขาย, ข้อมูลคลังสินค้า, สภาพอากาศ และเทรนด์ในพื้นที่ของคุณ
+                AI จะนำข้อมูลยอดขาย คลังสินค้า อากาศ และเทรนด์ในพื้นที่มาวิเคราะห์เชิงลึก — ไม่ใช่แค่สรุปตัวเลขที่คุณเห็นอยู่แล้ว
               </p>
               <div className="flex flex-col md:flex-row items-center justify-center gap-3">
                 <button
                   onClick={loadFromCacheOnly}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-black/5 text-black rounded-xl hover:bg-black/5 transition-all duration-300 shadow-sm"
+                  className={primaryButtonClass}
                 >
                   <TrendingUp className="w-4 h-4" />
                   <span>โหลดข้อมูลเดิม</span>
                 </button>
                 <button
                   onClick={loadFreshInsights}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-black text-white rounded-2xl hover:bg-black/80 transition-all duration-300"
+                  className={primaryButtonClass}
                 >
-                  <Sparkles className="w-5 h-5" />
+                  <Sparkles className="w-4 h-4" />
                   <span>เริ่มต้นวิเคราะห์ใหม่</span>
                 </button>
               </div>
@@ -258,14 +253,14 @@ export default function MarketInsightsPage() {
               <div className="flex flex-col md:flex-row items-center justify-center gap-3">
                 <button
                   onClick={loadFromCacheOnly}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-black/5 text-black rounded-xl hover:bg-black/5 transition-colors shadow-sm"
+                  className={primaryButtonClass}
                 >
                   <TrendingUp className="w-4 h-4" />
                   <span>โหลดข้อมูลเดิม</span>
                 </button>
                 <button
                   onClick={loadFreshInsights}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-xl hover:bg-black/80 transition-colors"
+                  className={primaryButtonClass}
                 >
                   <RefreshCw className="w-4 h-4" />
                   <span>ลองอีกครั้ง (ใหม่)</span>
@@ -278,101 +273,12 @@ export default function MarketInsightsPage() {
         {/* Insights Content */}
         <AnimatePresence>
           {hasLoaded && !isLoading && insights && (
-            <div className="space-y-6 md:space-y-8">
-              {/* Inventory & Validation Status Card */}
-              <motion.div
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                className="group"
-              >
-                <div className="bg-white rounded-3xl border border-black/5 hover:-translate-y-1 transition-all duration-300 p-8 md:p-10">
-                  <div className="flex items-start gap-5 mb-6">
-                    <div className="p-4 bg-black/5 rounded-2xl">
-                      <Database className="w-7 h-7 text-black" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl md:text-2xl mb-1">
-                        สถานะการเชื่อมต่อฐานข้อมูลคลังสินค้า
-                      </h2>
-                      <p className="text-black/40 text-sm">การตรวจสอบความถูกต้องและการซิงโครไนซ์ข้อมูล</p>
-                    </div>
-                  </div>
-
-                  {insights.inventoryData && insights.validationReport ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-black/[0.02] rounded-2xl p-4 border border-black/5">
-                          <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="w-5 h-5 text-black" />
-                            <span className="text-xs text-black/60">รายการที่ถูกต้อง</span>
-                          </div>
-                          <div className="text-2xl">{insights.validationReport.validItems}</div>
-                        </div>
-                        
-                        <div className="bg-black/[0.02] rounded-2xl p-4 border border-black/5">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertCircle className="w-5 h-5 text-black" />
-                            <span className="text-xs text-black/60">สินค้าต่ำกว่าจุดสั่งซื้อ</span>
-                          </div>
-                          <div className="text-2xl">{insights.validationReport.itemsWithLowStock}</div>
-                        </div>
-                        
-                        <div className="bg-black/[0.02] rounded-2xl p-4 border border-black/5">
-                          <div className="flex items-center gap-2 mb-2">
-                            <XCircle className="w-5 h-5 text-black" />
-                            <span className="text-xs text-black/60">รายการที่ไม่ถูกต้อง</span>
-                          </div>
-                          <div className="text-2xl">{insights.validationReport.invalidItems}</div>
-                        </div>
-                        
-                        <div className="bg-black/[0.02] rounded-2xl p-4 border border-black/5">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Users className="w-5 h-5 text-black" />
-                            <span className="text-xs text-black/60">รายการทั้งหมด</span>
-                          </div>
-                          <div className="text-2xl">{insights.validationReport.totalItems}</div>
-                        </div>
-                      </div>
-
-                      {insights.validationReport.validationErrors.length > 0 && (
-                        <div className="bg-black/[0.02] border border-black/5 rounded-2xl p-4">
-                          <h4 className="text-sm text-black mb-2">รายการที่มีปัญหา:</h4>
-                          <ul className="space-y-1 text-sm text-black/60">
-                            {insights.validationReport.validationErrors.slice(0, 5).map((err: string, idx: number) => (
-                              <li key={idx} className="flex items-start gap-2">
-                                <span className="text-black mt-1">•</span>
-                                <span>{err}</span>
-                              </li>
-                            ))}
-                            {insights.validationReport.validationErrors.length > 5 && (
-                              <li className="text-xs text-black/40">
-                                +{insights.validationReport.validationErrors.length - 5} รายการอื่นๆ
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      <div className="text-xs text-black/40">
-                        การซิงโครไนซ์ข้อมูลล่าสุด: {new Date(insights.inventoryData.lastSync).toLocaleString('th-TH')}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-black/60 text-base">
-                      ไม่สามารถเชื่อมต่อกับฐานข้อมูลคลังสินค้าได้ค่ะ
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-
-              {/* Insights Cards */}
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="space-y-6 md:space-y-8"
-              >
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-6 md:space-y-8"
+            >
                 {/* Card 1: Consumer Behavior */}
                 <motion.div variants={itemVariants} className="group">
                   <div className="bg-white rounded-3xl border border-black/5 hover:-translate-y-1 transition-all duration-300 p-8 md:p-10">
@@ -384,7 +290,7 @@ export default function MarketInsightsPage() {
                         <h2 className="text-xl md:text-2xl mb-1">
                           พฤติกรรมผู้บริโภคในพื้นที่
                         </h2>
-                        <p className="text-black/40 text-sm">การวิเคราะห์พฤติกรรมและแนวโน้ม</p>
+                        <p className="text-black/40 text-sm">Insight จาก AI ไม่ใช่สรุปตัวเลขดิบ</p>
                       </div>
                     </div>
                     <div className="text-black/60 text-base md:text-lg pl-2 border-l-4 border-black/10">
@@ -404,7 +310,7 @@ export default function MarketInsightsPage() {
                         <h2 className="text-xl md:text-2xl mb-1">
                           กระแสเมนูและวัตถุดิบ
                         </h2>
-                        <p className="text-black/40 text-sm">เทรนด์ยอดนิยมและความนิยม</p>
+                        <p className="text-black/40 text-sm">จับคู่เทรนด์ภายนอกกับจุดแข็งร้าน</p>
                       </div>
                     </div>
                     <div className="text-black/60 text-base md:text-lg pl-2 border-l-4 border-black/10">
@@ -424,7 +330,7 @@ export default function MarketInsightsPage() {
                         <h2 className="text-xl md:text-2xl mb-1">
                           แผนกลยุทธ์และโปรโมชั่น
                         </h2>
-                        <p className="text-black/40 text-sm">ข้อเสนอแนะและแผนปฏิบัติการ</p>
+                        <p className="text-black/40 text-sm">แผนปฏิบัติที่ทำได้ทันที</p>
                       </div>
                     </div>
                     <div className="text-black/60 text-base md:text-lg pl-2 border-l-4 border-black/10">
@@ -432,8 +338,7 @@ export default function MarketInsightsPage() {
                     </div>
                   </div>
                 </motion.div>
-              </motion.div>
-            </div>
+            </motion.div>
           )}
         </AnimatePresence>
 

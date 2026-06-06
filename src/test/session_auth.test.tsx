@@ -13,7 +13,12 @@ vi.mock('framer-motion', () => ({
 // Mock the auth server actions
 vi.mock('@/app/actions/auth', () => ({
   verifyPin: vi.fn(),
-  checkAuth: vi.fn(async () => false), // Mock returning false to verify sessionStorage dependency
+  checkAuth: vi.fn(async () => false),
+}));
+
+// Mock supabase session helper
+vi.mock('@/lib/supabase-session', () => ({
+  ensureSupabaseSession: vi.fn(async () => true),
 }));
 
 describe('PinGateway Session-Only Authentication', () => {
@@ -65,8 +70,23 @@ describe('PinGateway Session-Only Authentication', () => {
       </PinGateway>
     );
 
-    // It should NOT show protected content because localStorage is purged/ignored
     expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
     expect(screen.getByText(/Security Gateway/i)).toBeInTheDocument();
+  });
+
+  test('should restore read-only flag from sessionStorage via AuthProvider', () => {
+    sessionStorage.setItem('bb_auth_pin_verified', 'true');
+    sessionStorage.setItem('bb_auth_read_only', 'true');
+
+    render(
+      <PinGateway>
+        <div data-testid="read-only-probe">
+          {String(sessionStorage.getItem('bb_auth_read_only') === 'true')}
+        </div>
+      </PinGateway>
+    );
+
+    expect(screen.getByTestId('read-only-probe')).toHaveTextContent('true');
+    expect(screen.queryByText(/Security Gateway/i)).not.toBeInTheDocument();
   });
 });

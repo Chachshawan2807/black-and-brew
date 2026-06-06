@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> **Version:** 6.3 | **Last Updated:** 2026-06-04
+> **Version:** 6.9 | **Last Updated:** 2026-06-07
 
 ---
 
@@ -70,6 +70,30 @@
 - [x] Configure custom touch and mouse sensor thresholds (`TouchSensor` with 250ms delay) to enable drag-and-drop on mobile touch devices
 - [x] Add mobile touch-event layout test suite (`src/test/mobile_layout.test.tsx`)
 
+### Phase 6: Inventory Stock Sync & Motion System (June 2026)
+
+- [x] Unify stock writes via `updateInventoryStock()` + RPC `set_inventory_stock`
+- [x] Fix realtime merge (`mergeInventoryRealtimeUpdate`) across warehouse + count pages
+- [x] Remove `inventory-items.csv`; DB-only sort_order migration
+- [x] PO PNG export filtered by selected purchase channel
+- [x] Add `sql/sync_inventory_stock.sql` (RPC, trigger, REPLICA IDENTITY FULL)
+- [x] Add `src/lib/inventory-stock.ts` + `src/test/inventory_stock_sync.test.ts`
+- [x] Implement global motion system (`globals.css`, `motion-presets.ts`, `PageTransition`)
+- [x] Add `FloatingAlert` / `FloatingToast` with auto fade-out
+- [x] Apply premium micro-interactions (200ms) to Button, Input, Sidebar
+
+### Phase 7: Auth, Sales & Security (June 2026)
+
+- [x] PIN Gateway with server-side `verifyPin()` + httpOnly cookies
+- [x] Read-only mode (PIN `111222`) with `assertWritableSession()` guards
+- [x] Auth tests: `auth.test.ts`, `session_auth.test.tsx`, `read-only-guard.test.ts`
+- [x] Sales module — Excel upload, categories, metrics (`sales_schema.sql`)
+- [x] Market Insights — Gemini analysis with localStorage cache
+- [x] Full security hardening (v6.7) — auth checks on all write server actions
+- [x] XSS sanitization in `AIChatOverlay.tsx`
+- [x] Inventory RLS hardening (`sql/fix_inventory_rls.sql`)
+- [x] Documentation full sync (2026-06-07)
+
 ---
 
 ## Backlog 📋
@@ -87,12 +111,12 @@
 - [ ] Implement JSON-LD structured data for AI interoperability
 - [ ] Deploy Edge Functions for faster data fetching
 - [ ] Add Supabase generated Database types (replace `any`)
-- [ ] Create staff authentication flow (Supabase Auth)
+- [ ] Upgrade from PIN-only to per-staff Supabase Auth (individual accounts)
 
 ### Low Priority
 
 - [ ] Add inventory categories/groups
 - [ ] Implement inventory alerts/notifications (low stock)
-- [ ] Add export to CSV/PDF for Purchase Orders
+- [x] ~~Add export to CSV/PDF for Purchase Orders~~ — PNG export by channel (v6.8)
 - [ ] Build reporting dashboard (stock trends, shift analytics)
 - [ ] Implement multi-store support

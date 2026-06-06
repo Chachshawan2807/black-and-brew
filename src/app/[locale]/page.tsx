@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { supabase } from '@/lib/supabase';
 import LiveStatusTracker from '@/components/dashboard/LiveStatusTracker';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { connection } from 'next/server';
 
 export default async function IndexPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -27,23 +27,36 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
     year: 'numeric' 
   });
 
-  const [{ data: profilesData }, { data: shiftsData }] = await Promise.all([
+  const bkkTomorrow = addDays(bkkNow, 1);
+  const tomorrowStartUtc = fromZonedTime(startOfDay(bkkTomorrow), 'Asia/Bangkok').toISOString();
+  const tomorrowEndUtc = fromZonedTime(endOfDay(bkkTomorrow), 'Asia/Bangkok').toISOString();
+  const tomorrowThaiDate = bkkTomorrow.toLocaleDateString('th-TH', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const [{ data: profilesData }, { data: shiftsData }, { data: tomorrowShiftsData }] = await Promise.all([
     supabase.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
-    supabase.from('shifts').select('employee_id, start_time, end_time, status, metadata').gte('start_time', startUtc).lte('start_time', endUtc)
+    supabase.from('shifts').select('employee_id, start_time, end_time, status, metadata').gte('start_time', startUtc).lte('start_time', endUtc),
+    supabase.from('shifts').select('employee_id, start_time, end_time, status, metadata').gte('start_time', tomorrowStartUtc).lte('start_time', tomorrowEndUtc),
   ]);
 
   const profiles = profilesData || [];
   const shifts = shiftsData || [];
+  const tomorrowShifts = tomorrowShiftsData || [];
 
   return (
-    <div className="min-h-[calc(100vh-2rem)] bg-inherit flex flex-col items-center justify-center relative px-[clamp(1rem,5vw,2rem)] py-[clamp(2rem,8vw,3rem)]">
-      <div className="max-w-4xl w-full space-y-[clamp(2rem,8vw,3rem)]">
-        <section aria-label="Staff Live Status" className="space-y-[1rem]">
-          <h2 className="text-[clamp(1.1rem,3.5vw,1.4rem)] font-normal text-black px-[clamp(0.25rem,1vw,0.5rem)] uppercase tracking-widest leading-relaxed">
-            สถานะพนักงาน — {thaiFullDate}
-          </h2>
-          <LiveStatusTracker initialProfiles={profiles} initialShifts={shifts} currentThaiDate={thaiFullDate} />
-        </section>
+    <div className="min-h-[calc(100vh-2rem)] bg-inherit flex flex-col justify-start md:justify-center px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)]">
+      <div className="max-w-3xl mx-auto w-full">
+        <LiveStatusTracker
+          initialProfiles={profiles}
+          initialShifts={shifts}
+          currentThaiDate={thaiFullDate}
+          initialTomorrowShifts={tomorrowShifts}
+          tomorrowThaiDate={tomorrowThaiDate}
+        />
       </div>
     </div>
   );

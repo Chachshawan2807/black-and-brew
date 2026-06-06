@@ -1,18 +1,19 @@
 # PRD — BLACKANDBREW ERP System
 
-> **Version:** 6.3 | **Last Updated:** 2026-06-04 | **Owner:** System Architect
+> **Version:** 6.9 | **Last Updated:** 2026-06-07 | **Owner:** System Architect
 
 ---
 
 ## 1. Vision & Mission
 
-**BLACKANDBREW ERP** คือระบบจัดการทรัพยากรองค์กร (Enterprise Resource Planning) สำหรับร้านกาแฟ BLACK AND BREW ออกแบบมาเพื่อ **Revenue Stabilization** — ลดการสูญเสียรายได้จากการจัดการที่ไม่เป็นระบบ โดยรวมศูนย์การจัดการตารางงานพนักงาน, คลังสินค้า, และบำรุงรักษาอุปกรณ์ไว้ในแพลตฟอร์มเดียว
+**BLACKANDBREW ERP** คือระบบจัดการทรัพยากรองค์กรสำหรับร้านกาแฟ BLACK AND BREW ออกแบบมาเพื่อ **Revenue Stabilization** — ลดการสูญเสียรายได้จากการจัดการที่ไม่เป็นระบบ
 
 ### Core Objective
 
-- ลดเวลาในการจัดตารางงานจาก **หลายชั่วโมง → นาที** ผ่าน Drag-to-Shift UI
-- ป้องกัน **สินค้าขาดสต็อก** ผ่านระบบ Computed Auto-Ordering (`order_qty = target_stock - stock`)
-- เพิ่ม **ความโปร่งใส** ด้วย Real-time Sync และ Transaction Ledger
+- ลดเวลาในการจัดตารางงานผ่าน Drag-to-Shift UI
+- ป้องกันสินค้าขาดสต็อกผ่าน Computed Auto-Ordering (`order_qty = target_stock - stock`)
+- เพิ่มความโปร่งใสด้วย Real-time Sync และ Transaction Ledger
+- วิเคราะห์ยอดขายและตลาดด้วย AI
 
 ---
 
@@ -20,52 +21,76 @@
 
 | บทบาท | จำนวน | สิทธิ์การใช้งาน |
 | :--- | :--- | :--- |
-| **Owner / Manager** | 1-2 คน | Full Access ทุกโมดูล |
-| **Staff** | 9 คน (นิต้า, ปิ่น, มุก, เม, มีนา, ชัช, หนูดี, ฟิว, ล่า) | Dashboard, Schedule |
+| **Owner / Manager** | 1-2 คน | Full Access (APP_PIN) |
+| **Staff** | 9 คน | Dashboard, Schedule; Read-only PIN available |
+| **Read-only** | — | PIN `111222` — ดูอย่างเดียว |
+
+พนักงาน: นิต้า, ปิ่น, มุก, เม, มีนา, ชัช, หนูดี, ฟิว, ล่า
 
 ---
 
 ## 3. Core Modules
 
-### 3.1 Dashboard (Command Center)
+### 3.1 Command Center
 
-- **Route:** `/[locale]/dashboard/`
-- **Purpose:** ภาพรวมกะงานวันนี้ ดูรายชื่อพนักงานที่ปฏิบัติงาน
-- **Components:** `LiveShiftList.tsx`, `ShiftCard.tsx`
-- **Data Source:** `shifts` table + `profiles` table (Real-time via Supabase Channel)
+- **Route:** `/[locale]`
+- **Purpose:** ภาพรวมกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์
+- **Components:** `LiveStatusTracker`, `CommandCenterGrid`
 
-### 3.2 Schedule (Shift Management)
+### 3.2 Staff Dashboard
 
-- **Route:** `/[locale]/schedule/`
-- **Purpose:** จัดตารางงานพนักงาน, สลับกะ, ลากะงาน
-- **Components:** `ScheduleClient.tsx` (51.6 KB — Full-featured Client Component)
-- **Key Features:**
-  - Drag-and-Drop Shift Assignment
-  - Status Management: `scheduled`, `completed`, `swapped`, `cancelled`, `on_leave`
-  - Thai Holiday Integration via Google Calendar API
-  - Optimistic UI with immediate state updates
+- **Route:** `/[locale]/dashboard`
+- **Purpose:** ลงเวลา รายชื่อกะ ตารางรายเดือน
+- **Components:** `LiveShiftList`, `ShiftCard`, `MonthlyRoster`, `InventorySummaryCard`, `WeatherWidget`
 
-### 3.3 Inventory (Smart Inventory Management)
+### 3.3 Schedule
 
-- **Route:** `/[locale]/inventory/`
-- **Purpose:** จัดการคลังสินค้า, ติดตามยอดสต็อก, สั่งซื้ออัตโนมัติ
-- **Components:** `DynamicInventoryManager` (1,358 lines)
-- **Key Features:**
-  - Spreadsheet-style Inline Editing (Google Sheets Logic)
-  - Drag-and-Drop Row Reordering via `@dnd-kit`
-  - Undo/Redo with Full State Persistence (`syncFullStateToDB`)
-  - Quick Entry for Stock In/Out Transactions
-  - Computed Auto-Ordering: `order_qty = target_stock - stock` (when `stock <= order_point`)
-  - Transaction History with Two-Step Fetch Strategy
-  - Purchase Order Modal with Source Tabs
-  - Dynamic Column Labels via `inventory_config` table
-  - Real-time Cross-device Sync via Supabase Channels
+- **Route:** `/[locale]/schedule`
+- **Purpose:** จัดตารางงาน Drag-and-Drop, สลับกะ, วันหยุด
+- **Components:** `ScheduleClient.tsx`
+- **Features:** DnD shift assignment, Thai holidays (Google Calendar), regular holidays, PNG export
 
-### 3.4 Maintenance (Equipment Tracking)
+### 3.4 Inventory
 
-- **Route:** `/[locale]/maintenance/`
-- **Purpose:** บันทึกและติดตามสถานะการซ่อมบำรุงอุปกรณ์
-- **Components:** `page.tsx` (31.2 KB)
+- **Route:** `/[locale]/inventory`, `/[locale]/inventory/count`
+- **Purpose:** คลังสินค้า + ตรวจนับสต็อก
+- **Components:** `page.tsx`, `PurchaseOrdersModal.tsx`, `count/page.tsx`
+- **Features:**
+  - Spreadsheet inline editing + Undo/Redo
+  - DnD row reordering (`@dnd-kit`)
+  - Stock single source of truth (RPC `set_inventory_stock`)
+  - Quick Entry IN/OUT + Transaction History
+  - Purchase Order modal with channel tabs + PNG export
+  - Real-time cross-device sync
+
+### 3.5 Maintenance
+
+- **Route:** `/[locale]/maintenance`
+- **Purpose:** บันทึกการซ่อมบำรุงอุปกรณ์
+- **Table:** `service_records`
+
+### 3.6 Sales
+
+- **Route:** `/[locale]/sales`
+- **Purpose:** อัปโหลด Excel วิเคราะห์ยอดขาย
+- **Features:** File upload, category management, AI auto-categorize, charts (`recharts`)
+
+### 3.7 Market Insights
+
+- **Route:** `/[locale]/market-insights`
+- **Purpose:** วิเคราะห์ตลาดรอบร้านด้วย Gemini AI
+- **Features:** localStorage cache, manual refresh
+
+### 3.8 AI Assistant (บรู)
+
+- **Route:** Global overlay (ทุกหน้า)
+- **Purpose:** แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
+- **API:** `POST /api/chat` — ToolLoopAgent + Gemini 2.5 Flash
+
+### 3.9 Daily LINE Notification
+
+- **Route:** `/api/daily-report` (Vercel Cron)
+- **Purpose:** แจ้งเตือนกะงาน สต็อกต่ำ อากาศ วันหยุด ทุก 07:00 ICT
 
 ---
 
@@ -73,11 +98,13 @@
 
 | Feature | Revenue Impact | Module |
 | :--- | :--- | :--- |
-| **Auto-Ordering** | ป้องกันสินค้าขาดสต็อก → ไม่สูญเสียรายได้จากการขาดวัตถุดิบ | Inventory |
-| **Transaction Ledger** | ตรวจสอบความถูกต้องของสต็อก → ลดการสูญหาย | Inventory |
-| **Shift Scheduling** | จัดพนักงานให้เหมาะสม → ไม่ขาดคน/ไม่เกินจำเป็น | Schedule |
-| **Holiday Sync** | วางแผนล่วงหน้าตามวันหยุดราชการ → เตรียมพนักงานสำรอง | Schedule |
-| **Real-time Sync** | ข้อมูลอัปเดตทันทีข้ามเครื่อง → ลดความผิดพลาดจากข้อมูลเก่า | All |
+| **Auto-Ordering** | ป้องกันสินค้าขาดสต็อก | Inventory |
+| **Transaction Ledger** | ตรวจสอบความถูกต้องของสต็อก | Inventory |
+| **Shift Scheduling** | จัดพนักงานให้เหมาะสม | Schedule |
+| **Holiday Sync** | วางแผนล่วงหน้าตามวันหยุดราชการ | Schedule |
+| **Sales Analytics** | วิเคราะห์ยอดขายและหมวดหมู่ | Sales |
+| **Market Insights** | ตอบรับเทรนด์ตลาด | Market Insights |
+| **Real-time Sync** | ข้อมูลอัปเดตทันทีข้ามเครื่อง | All |
 
 ---
 
@@ -86,18 +113,19 @@
 | Constraint | Value |
 | :--- | :--- |
 | **Tech Stack** | Next.js 16.2.4, React 19.2.4, Supabase, Tailwind CSS 4 |
-| **Timezone** | GMT+7 (Bangkok) — Strict Enforcement |
+| **Timezone** | GMT+7 (Bangkok) |
 | **Deployment** | Vercel Edge Runtime |
-| **i18n** | Thai (primary), English — via `next-intl` |
-| **State Management** | Zustand for global state, React useState for local |
-| **PWA Compliance** | Standalone mode with Web App Manifest & Network-First Service Worker |
-| **Target INP** | < 200ms (Core Web Vitals 2026) |
+| **i18n** | Thai (primary), English — `next-intl` |
+| **Auth** | PIN Gateway + read-only mode |
+| **PWA** | Manifest + Network-First Service Worker |
+| **Target INP** | < 200ms |
 
 ---
 
 ## 6. Non-Functional Requirements
 
-- **Accessibility:** WCAG 2.2 AA Compliance (Contrast Ratio: Black text on light pastel backgrounds) & Full-width clickable hitboxes for all Date Pickers
-- **Security:** RLS enabled on all tables; Service Role Key used only in Server Actions; never exposed to browser
-- **Performance:** Hybrid PPR rendering (Static Shell + Dynamic Islands) with Network-First Service Worker caching
-- **Reliability:** Optimistic UI with Rollback on failure; Atomic transactions via PostgreSQL RPC; iOS Safe Zone (Home Indicator) compliance for mobile buttons and menus
+- **Accessibility:** WCAG 2.2 AA; full-width clickable date pickers
+- **Security:** RLS + PIN auth; Service Role Key server-only; XSS sanitization in AI chat
+- **Performance:** Hybrid PPR; explicit field selection in Supabase queries
+- **Reliability:** Optimistic UI with rollback; atomic RPC transactions
+- **Design:** Zero-Bold Policy; `rounded-3xl`; `#fdfcf0` background

@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> **Version:** 6.3 | **Last Updated:** 2026-06-04
+> **Version:** 6.9 | **Last Updated:** 2026-06-07
 
 ---
 
@@ -10,7 +10,7 @@
 | :--- | :--- |
 | **Project Name** | BLACK-AND-BREW ERP System |
 | **Type** | Enterprise Resource Planning for Coffee Shop |
-| **Current Version** | 6.3 (Mobile & PWA Overhaul) |
+| **Current Version** | 6.9 (Stock Sync + Premium Motion) |
 | **Repository** | `Chachshawan2807/black-and-brew` |
 | **Local Path** | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -21,8 +21,11 @@
 **BLACK AND BREW** คือร้านกาแฟที่ดำเนินการโดยทีมพนักงาน 9 คน ระบบ ERP นี้ถูกสร้างขึ้นเพื่อจัดการ:
 
 1. **ตารางงาน (Scheduling)** — จัดกะงานพนักงานแบบ Drag-and-Drop พร้อมรองรับการสลับกะ
-2. **คลังสินค้า (Inventory)** — ติดตามสต็อก สั่งซื้ออัตโนมัติ พร้อมประวัติ transactions
-3. **บำรุงรักษา (Maintenance)** — บันทึกสถานะอุปกรณ์
+2. **คลังสินค้า (Inventory)** — Single Source of Truth (`inventory_items.stock`), ตรวจนับ, สั่งซื้อตามช่องทาง
+3. **ยอดขาย (Sales)** — อัปโหลด Excel วิเคราะห์ยอดขายและหมวดหมู่สินค้า
+4. **วิเคราะห์ตลาด (Market Insights)** — AI วิเคราะห์เทรนด์ตลาดรอบร้าน
+5. **บำรุงรักษา (Maintenance)** — บันทึกสถานะอุปกรณ์
+6. **AI Assistant (บรู)** — แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
 
 ### Staff Roster (9 Persons)
 
@@ -36,32 +39,56 @@
 
 | Component | Version |
 | :--- | :--- |
-| Node.js | 22.x (npm 11.12) |
+| Node.js | 22.x |
 | Next.js | 16.2.4 |
 | React | 19.2.4 |
 | TypeScript | ^5 |
 | Tailwind CSS | ^4 |
 | Vitest | ^4.1.6 |
 
-### Environment Variables (`.env.local`)
+### Environment Variables
 
 | Variable | Purpose | Visibility |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Public (client) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Public (client) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase admin key (bypass RLS) | **Server only** |
-| `GOOGLE_API_KEY` | Google API key | Server only |
-| `GOOGLE_CALENDAR_API_KEY` | Google Calendar API for holiday sync | Server only |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Public |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Public |
+| `SUPABASE_SERVICE_ROLE_KEY` | Admin key (bypass RLS) | Server only |
+| `APP_PIN` | Full-access PIN | Server only |
+| `READ_ONLY_PIN` | Documented in `.env.example` (code uses hardcoded `111222`) | Server only |
+| `GOOGLE_API_KEY` | Google Cloud API | Server only |
+| `GEMINI_API_KEY` | Gemini API | Server only |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Generative AI | Server only |
+| `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync | Server only |
+| `TAVILY_API_KEY` | AI web search | Server only |
+| `OPENWEATHER_API_KEY` | Weather data | Server only |
+| `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | Store coordinates | Public |
+| `LINE_CHANNEL_ACCESS_TOKEN` | LINE push notifications | Server only |
+| `LINE_CHANNEL_ID` | LINE channel ID | Server only |
+| `LINE_TARGET_RECIPIENT_ID` | LINE recipient | Server only |
+| `CRON_SECRET` | Vercel cron auth | Server only |
 
 ### Supabase Project
 
-- **URL:** `https://yghzklvtuykziqlexnzh.supabase.co`
 - **Region:** Thailand Edge
-- **Database:** PostgreSQL with RLS enabled on all tables
+- **Database:** PostgreSQL with RLS enabled
+- **Client types:** `src/lib/database.types.ts`
 
 ---
 
-## 4. Operational Constraints
+## 4. Authentication
+
+| Mode | PIN | Capabilities |
+| :--- | :--- | :--- |
+| Full access | `APP_PIN` (env) | Read + write ทุกโมดูล |
+| Read-only | `111222` (hardcoded) | ดูอย่างเดียว — `assertWritableSession()` บล็อก writes |
+
+- Client gate: `sessionStorage` + `PinGateway.tsx`
+- Server session: httpOnly cookies `bb_auth_pin_verified`, `bb_auth_read_only`
+- Post-PIN: `ensureSupabaseSession()` → anonymous auth สำหรับ RLS `authenticated`
+
+---
+
+## 5. Operational Constraints
 
 | Constraint | Value |
 | :--- | :--- |
@@ -77,31 +104,21 @@
 
 ---
 
-## 5. Key Dependencies
+## 6. Key Dependencies
 
 ```json
 {
   "@ai-sdk/google": "^3.0.79",
   "@ai-sdk/react": "^3.0.192",
   "@dnd-kit/core": "^6.3.1",
-  "@dnd-kit/modifiers": "^9.0.0",
-  "@dnd-kit/sortable": "^10.0.0",
-  "@dnd-kit/utilities": "^3.2.2",
   "@line/bot-sdk": "^11.0.0",
   "@supabase/supabase-js": "^2.105.1",
   "ai": "^6.0.190",
-  "date-fns": "^4.1.0",
-  "date-fns-tz": "^3.2.0",
   "framer-motion": "^12.38.0",
-  "googleapis": "^172.0.0",
-  "html-to-image": "^1.11.13",
-  "lucide-react": "^1.16.0",
   "next": "16.2.4",
   "next-intl": "^4.11.0",
   "react": "19.2.4",
-  "react-dom": "19.2.4",
   "recharts": "^3.8.1",
-  "tailwind-merge": "^3.5.0",
   "xlsx": "^0.18.5",
   "zod": "^4.4.3",
   "zustand": "^5.0.13"
@@ -110,17 +127,19 @@
 
 ---
 
-## 6. File Structure Overview
+## 7. File Structure Overview
 
-| Module | Path | Files |
-| :--- | :--- | :--- |
-| Dashboard | `src/app/[locale]/dashboard/` | `page.tsx`, `LiveShiftList.tsx`, `ShiftCard.tsx`, `LiveStatusTracker.tsx`, `MonthlyRoster.tsx`, `types.ts` |
-| Schedule | `src/app/[locale]/schedule/` | `page.tsx`, `ScheduleClient.tsx` |
-| Inventory | `src/app/[locale]/inventory/` | `page.tsx` (smart spreadsheet), `PurchaseOrdersModal.tsx`, `count/page.tsx` (physical stock count) |
-| Maintenance | `src/app/[locale]/maintenance/` | `page.tsx` |
-| Sales | `src/app/[locale]/sales/` | `page.tsx` (sales uploads & analysis) |
-| Market Insights | `src/app/[locale]/market-insights/` | `page.tsx` (AI market/weather analysis) |
-| Server Actions | `src/app/actions/` | `inventory-actions.ts`, `shift-actions.ts`, `holiday-actions.ts`, `sales-actions.ts`, `daily-report-actions.ts`, `market-insights-actions.ts` |
-| Shared UI | `src/components/` | sidebar/, ui/, providers/, `PwaRegister.tsx` |
-| Libraries | `src/lib/` | `supabase.ts`, `utils.ts`, `date-utils.ts`, `timezone.ts`, `menu-list.ts` |
-| Agent Tools | `src/app/actions/tools/` | `database-tools.ts`, `search-tools.ts`, `internal-sources-tools.ts` |
+| Module | Path |
+| :--- | :--- |
+| Command Center | `src/app/[locale]/page.tsx` |
+| Dashboard | `src/app/[locale]/dashboard/` |
+| Schedule | `src/app/[locale]/schedule/` |
+| Inventory | `src/app/[locale]/inventory/` + `count/page.tsx` |
+| Maintenance | `src/app/[locale]/maintenance/` |
+| Sales | `src/app/[locale]/sales/` |
+| Market Insights | `src/app/[locale]/market-insights/` |
+| Auth | `src/components/auth/PinGateway.tsx`, `src/app/actions/auth.ts` |
+| AI Chat | `src/components/ai/`, `src/app/api/chat/route.ts` |
+| i18n Middleware | `src/proxy.ts` (next-intl, Next.js 16 convention) |
+| Server Actions | `src/app/actions/` |
+| Agent Tools | `src/app/actions/tools/` |

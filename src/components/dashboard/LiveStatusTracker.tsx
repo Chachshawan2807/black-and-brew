@@ -1,24 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
-import { Clock } from 'lucide-react';
+import { parseISO, startOfDay, endOfDay, addDays } from 'date-fns';
+import { CalendarDays, CalendarOff, CalendarX, CalendarClock, CalendarRange, Sun, type LucideIcon } from 'lucide-react';
+import {
+  getShiftColorClass,
+  getShiftDisplayText,
+  DAY_OFF_COLOR,
+} from '@/lib/shift-colors';
 
 interface Profile {
   id: string;
   full_name: string;
-  schedule_order: number; // เพิ่มเข้ามาสำหรับ sorting
+  schedule_order: number;
 }
 
 interface Shift {
   employee_id: string;
-  start_time: string; // ISO string
-  end_time: string;   // ISO string
+  start_time: string;
+  end_time: string;
   status: 'scheduled' | 'on_leave' | 'day_off';
   metadata?: {
-    location?: string; // เช่น "หน้าร้าน", "ร้านซักผ้า"
+    location?: string;
   };
 }
 
@@ -26,52 +31,226 @@ interface LiveStatusTrackerProps {
   initialProfiles: Profile[];
   initialShifts: Shift[];
   currentThaiDate?: string;
+  initialTomorrowShifts?: Shift[];
+  tomorrowThaiDate?: string;
 }
 
-/**
- * LiveStatusTracker (v2026.1)
- * ADR: Real-time Staff Presence Monitoring
- * Enforces: Zero-Gray, Zero-Bold, and Real-time Persistence.
- */
-export default function LiveStatusTracker({ initialProfiles, initialShifts, currentThaiDate }: LiveStatusTrackerProps) {
+interface EmployeeStatus {
+  displayText: string;
+  colorClass: string;
+  sortWeight: number;
+  sortTime: number;
+  isWorkShift: boolean;
+}
+
+function getEmployeeStatus(profile: Profile, shifts: Shift[]): EmployeeStatus {
+  const hasDayOff = shifts.some(
+    (s) => s.employee_id === profile.id && s.status === 'day_off'
+  );
+  const employeeShift = shifts.find(
+    (s) => s.employee_id === profile.id && s.status !== 'day_off'
+  );
+
+  if (hasDayOff || !employeeShift) {
+    return {
+      displayText: 'วันหยุด',
+      colorClass: DAY_OFF_COLOR,
+      sortWeight: 99,
+      sortTime: 0,
+      isWorkShift: false,
+    };
+  }
+
+  const startBkk = toZonedTime(parseISO(employeeShift.start_time), 'Asia/Bangkok');
+  const loc = employeeShift.metadata?.location || '';
+  const status = employeeShift.status;
+  const colorClass = getShiftColorClass(loc, status);
+
+  let displayText = getShiftDisplayText(loc, status);
+  let sortWeight = 1;
+  const sortTime = startBkk.getTime();
+  let isWorkShift = true;
+
+  if (status === 'on_leave' || loc === 'ลา') {
+    sortWeight = 98;
+    isWorkShift = false;
+  } else if (loc === 'ไปสาขา 2' || loc === 'ร้านซักผ้า') {
+    sortWeight = 2;
+  } else if (!loc.match(/\d{1,2}:\d{2}/) && displayText === 'งาน') {
+    const timeStr = startBkk
+      .toLocaleTimeString('th-TH', { hour: 'numeric', minute: '2-digit', hour12: false })
+      .replace('.', ':');
+    displayText = timeStr;
+  }
+
+  return { displayText, colorClass, sortWeight, sortTime, isWorkShift };
+}
+
+function getShiftIcon(displayText: string): LucideIcon {
+  if (displayText === 'วันหยุด') return CalendarOff;
+  if (displayText === 'ลา') return CalendarX;
+  if (displayText === 'ร้านซักผ้า' || displayText === 'ไปสาขา 2') return CalendarRange;
+  if (/^\d{1,2}:\d{2}$/.test(displayText)) return CalendarClock;
+  return CalendarDays;
+}
+
+function sortProfiles(profiles: Profile[], shifts: Shift[]): Profile[] {
+  return [...profiles].sort((a, b) => {
+    const sA = getEmployeeStatus(a, shifts);
+    const sB = getEmployeeStatus(b, shifts);
+    if (sA.sortWeight !== sB.sortWeight) return sA.sortWeight - sB.sortWeight;
+    if (sA.sortTime !== sB.sortTime) return sA.sortTime - sB.sortTime;
+    return a.schedule_order - b.schedule_order;
+  });
+}
+
+async function fetchShiftsForBkkDay(bkkDate: Date): Promise<Shift[]> {
+  const startUtc = fromZonedTime(startOfDay(bkkDate), 'Asia/Bangkok').toISOString();
+  const endUtc = fromZonedTime(endOfDay(bkkDate), 'Asia/Bangkok').toISOString();
+  const { data } = await supabase
+    .from('shifts')
+    .select('employee_id, start_time, end_time, status, metadata')
+    .gte('start_time', startUtc)
+    .lte('start_time', endUtc);
+  return data ?? [];
+}
+
+interface StatusGridProps {
+  profiles: Profile[];
+  shifts: Shift[];
+  dateLabel?: string;
+  highlightToday?: boolean;
+}
+
+function StatusGrid({ profiles, shifts, dateLabel, highlightToday = false }: StatusGridProps) {
+  const sortedProfiles = sortProfiles(profiles, shifts);
+
+  return (
+    <div className="flex flex-wrap gap-2.5">
+      {sortedProfiles.map((profile) => {
+        const { displayText, colorClass, isWorkShift } = getEmployeeStatus(profile, shifts);
+        const ShiftIcon = getShiftIcon(displayText);
+
+        return (
+          <article
+            key={profile.id}
+            aria-label={`พนักงาน: ${profile.full_name}, วันที่: ${dateLabel}, กะงาน: ${displayText}`}
+            className={`${colorClass} group relative w-[7.25rem] shrink-0 overflow-hidden rounded-2xl p-3 min-h-[4.75rem] flex flex-col justify-between gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${
+              highlightToday && isWorkShift ? 'ring-2 ring-black/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.05)]' : 'shadow-sm'
+            }`}
+          >
+            <span className="text-[0.8125rem] font-normal text-black truncate leading-snug tracking-tight">
+              {profile.full_name}
+            </span>
+            <span className="inline-flex items-center justify-center gap-1 self-center max-w-full px-2 py-0.5 rounded-full bg-black/[0.04] text-[0.6875rem] font-normal text-black/80 tracking-wide">
+              <ShiftIcon className="h-3 w-3 shrink-0 text-black/45" strokeWidth={1.5} aria-hidden />
+              <span className="truncate">{displayText}</span>
+            </span>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+interface StatusSectionProps {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  profiles: Profile[];
+  shifts: Shift[];
+  dateLabel?: string;
+  highlightToday?: boolean;
+}
+
+function StatusSection({
+  icon,
+  title,
+  subtitle,
+  profiles,
+  shifts,
+  dateLabel,
+  highlightToday,
+}: StatusSectionProps) {
+  return (
+    <section
+      aria-label={title}
+      className="rounded-[28px] border border-black/[0.04] bg-white/70 backdrop-blur-xl p-5 md:p-7 shadow-[0_8px_32px_rgba(0,0,0,0.04)]"
+    >
+      <header className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-black/[0.04]">
+            {icon}
+          </div>
+          <div>
+            <h2 className="text-[clamp(1rem,2.5vw,1.25rem)] font-normal text-black tracking-tight leading-snug">
+              {title}
+            </h2>
+            <p className="mt-1 text-[0.8rem] font-normal text-black/45 tracking-wide">{subtitle}</p>
+          </div>
+        </div>
+        <span className="text-[0.7rem] font-normal text-black/35 uppercase tracking-[0.2em] shrink-0">
+          {profiles.length} พนักงาน
+        </span>
+      </header>
+      <StatusGrid
+        profiles={profiles}
+        shifts={shifts}
+        dateLabel={dateLabel}
+        highlightToday={highlightToday}
+      />
+    </section>
+  );
+}
+
+export default function LiveStatusTracker({
+  initialProfiles,
+  initialShifts,
+  currentThaiDate,
+  initialTomorrowShifts = [],
+  tomorrowThaiDate,
+}: LiveStatusTrackerProps) {
   const [profiles, setProfiles] = useState(initialProfiles);
   const [shifts, setShifts] = useState(initialShifts);
-  const [now, setNow] = useState(new Date());
+  const [tomorrowShifts, setTomorrowShifts] = useState(initialTomorrowShifts);
 
-  // ADR: PROP-SYNC-ENFORCER - ยืนยันการอัปเดต State เมื่อ Props จาก Server เปลี่ยนแปลง
-  // ป้องกันปัญหาข้อมูลไม่อัปเดตเมื่อมีการ Refresh หน้าจอ
   useEffect(() => {
     setProfiles(initialProfiles);
     setShifts(initialShifts);
-  }, [initialProfiles, initialShifts]);
+    setTomorrowShifts(initialTomorrowShifts);
+  }, [initialProfiles, initialShifts, initialTomorrowShifts]);
 
   useEffect(() => {
-    // 1. ระบบ Real-time Listener: ฟังการเปลี่ยนแปลงกะงาน (Insert/Update/Delete)
+    const refreshShifts = async () => {
+      const bkkNow = toZonedTime(new Date(), 'Asia/Bangkok');
+      const bkkTomorrow = addDays(bkkNow, 1);
+      const [today, tomorrow] = await Promise.all([
+        fetchShiftsForBkkDay(bkkNow),
+        fetchShiftsForBkkDay(bkkTomorrow),
+      ]);
+      setShifts(today);
+      setTomorrowShifts(tomorrow);
+    };
+
+    const refreshProfiles = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, schedule_order')
+        .order('schedule_order', { ascending: true });
+      if (data) setProfiles(data);
+    };
+
     const channel = supabase
       .channel('live-shifts-presence')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'shifts' 
-      }, async () => {
-        // ADR: REALTIME-SYNC-BKK - บังคับใช้ขอบเขตวันแบบ UTC ISO สำหรับ Database
-        const nowTs = new Date();
-        const bkkNow = toZonedTime(nowTs, 'Asia/Bangkok');
-        const startUtc = fromZonedTime(startOfDay(bkkNow), 'Asia/Bangkok').toISOString();
-        const endUtc = fromZonedTime(endOfDay(bkkNow), 'Asia/Bangkok').toISOString();
-
-        const [{ data: updatedProfiles }, { data: updatedShifts }] = await Promise.all([
-          supabase.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
-          supabase.from('shifts').select('employee_id, start_time, end_time, status, metadata').gte('start_time', startUtc).lte('start_time', endUtc)
-        ]);
-        
-        if (updatedProfiles) setProfiles(updatedProfiles);
-        if (updatedShifts) setShifts(updatedShifts);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
+        refreshShifts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        refreshProfiles();
       })
       .subscribe();
 
-    // 2. ระบบ Time Engine: อัปเดตสถานะทุก 60 วินาที เพื่อคำนวณช่วงเวลาการเข้ากะ
-    const timer = setInterval(() => setNow(new Date()), 60000);
+    const timer = setInterval(refreshShifts, 60000);
 
     return () => {
       clearInterval(timer);
@@ -79,99 +258,28 @@ export default function LiveStatusTracker({ initialProfiles, initialShifts, curr
     };
   }, []);
 
-  // ตรรกะการคำนวณสถานะและเวลากะงาน
-  const getEmployeeStatus = (profile: Profile) => {
-    /**
-     * SECURITY HARDENING: Key-based Lookup
-     * ค้นหาข้อมูลกะงานที่ตรงกับ employee_id ของ profile อย่างแม่นยำ
-     * ป้องกันการสลับตัวบุคคล (Data Leakage)
-     */
-    const employeeShift = shifts.find(s => s.employee_id === profile.id && s.status !== 'day_off');
-
-    let timeLabel = "วันหยุด";
-    let isWorkingNow = false;
-    let sortWeight = 99; // 1: Normal, 2: Special, 98: Leave, 99: Day Off
-    let sortTime = 0;
-
-    if (employeeShift) {
-      const startBkk = toZonedTime(parseISO(employeeShift.start_time), 'Asia/Bangkok');
-      sortTime = startBkk.getTime();
-
-      const loc = employeeShift.metadata?.location || '';
-      const status = employeeShift.status;
-
-      if (status === 'on_leave') {
-        timeLabel = "ลา";
-        sortWeight = 98;
-      } else if (status === 'scheduled') {
-        isWorkingNow = true;
-        const isSpecial = loc === 'ไปสาขา 2' || loc === 'ร้านซักผ้า';
-        
-        // ADR: TIME-EXTRACTOR-V2 - ค้นหารูปแบบเวลา (เช่น 6:30) จาก Metadata ก่อนเป็นอันดับแรก
-        // เพื่อแก้ปัญหา "07:00 Bug" ในกรณีที่ start_time เก็บค่าเฉพาะวันที่
-        const timeMatch = loc.match(/\d{1,2}:\d{2}/);
-
-        if (isSpecial) {
-          timeLabel = loc;
-          sortWeight = 2;
-        } else if (timeMatch) {
-          timeLabel = `${timeMatch[0]} น.`;
-          sortWeight = 1;
-        } else {
-          const timeStr = startBkk.toLocaleTimeString('th-TH', { hour: 'numeric', minute: '2-digit', hour12: false }).replace('.', ':');
-          timeLabel = `${timeStr} น.`;
-          sortWeight = 1;
-        }
-      }
-    }
-
-    return { timeLabel, isWorkingNow, sortWeight, sortTime };
-  };
-
-  // จัดเรียงลำดับ: กะปกติ (ตามเวลา) -> งานนอกสถานที่ -> ลา -> วันหยุด
-  const sortedProfiles = [...profiles].sort((a, b) => {
-    const sA = getEmployeeStatus(a);
-    const sB = getEmployeeStatus(b);
-    if (sA.sortWeight !== sB.sortWeight) return sA.sortWeight - sB.sortWeight;
-    if (sA.sortTime !== sB.sortTime) return sA.sortTime - sB.sortTime;
-    return a.schedule_order - b.schedule_order;
-  });
-
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-[0.75rem]">
-      {sortedProfiles.map((profile) => {
-        const { timeLabel, isWorkingNow } = getEmployeeStatus(profile);
-        return (
-          <article 
-            key={profile.id}
-            aria-label={`พนักงาน: ${profile.full_name}, วันที่: ${currentThaiDate}, กะงาน: ${timeLabel}, สถานะปัจจุบัน: ${isWorkingNow ? 'กำลังปฏิบัติงาน' : 'อยู่นอกเวลาปฏิบัติงาน'}`}
-            className="bg-white/90 backdrop-blur-xl border border-black/[0.05] p-[1rem] rounded-3xl flex flex-col gap-[0.25rem] transition-all duration-300 hover:shadow-sm"
-          >
-            <div className="flex items-center justify-between w-full">
-              <span className="text-[0.93rem] font-normal text-black truncate">
-                {profile.full_name}
-              </span>
-              <div 
-                className="flex items-center justify-center w-[1rem] h-[1rem]"
-                aria-label={isWorkingNow ? "กำลังปฏิบัติงาน" : "ไม่อยู่ในกะ"}
-                aria-live="polite"
-              >
-                <div 
-                  className={`w-[0.55rem] h-[0.55rem] rounded-full transition-all duration-500 ${
-                    isWorkingNow 
-                      ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' 
-                      : 'bg-red-500'
-                  }`} 
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-[0.35rem] text-[0.8rem] font-normal text-black">
-              <Clock className="w-[0.85rem] h-[0.85rem] text-black" strokeWidth={1.5} />
-              <span>{timeLabel}</span>
-            </div>
-          </article>
-        );
-      })}
+    <div className="space-y-6 md:space-y-8">
+      <StatusSection
+        icon={<CalendarDays className="h-5 w-5 text-black/60" strokeWidth={1.5} />}
+        title="สถานะพนักงานวันนี้"
+        subtitle={currentThaiDate ?? ''}
+        profiles={profiles}
+        shifts={shifts}
+        dateLabel={currentThaiDate}
+        highlightToday
+      />
+
+      {tomorrowThaiDate && (
+        <StatusSection
+          icon={<Sun className="h-5 w-5 text-black/60" strokeWidth={1.5} />}
+          title="กะวันถัดไป"
+          subtitle={tomorrowThaiDate}
+          profiles={profiles}
+          shifts={tomorrowShifts}
+          dateLabel={tomorrowThaiDate}
+        />
+      )}
     </div>
   );
 }

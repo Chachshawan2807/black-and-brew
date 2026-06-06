@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
+const SHIFT_STATUS_COLUMNS = 'id, employee_id, status, start_time, end_time';
 import { supabase } from '@/lib/supabase';
 import { toZonedTime } from 'date-fns-tz';
 import { parseISO, isWithinInterval } from 'date-fns';
@@ -21,7 +23,7 @@ export default function LiveStatusTracker({ initialProfiles, initialShifts }: Li
       .channel('live-shifts-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, async () => {
         const todayStr = new Date().toISOString().split('T')[0];
-        const { data } = await supabase.from('shifts').select('*').gte('start_time', `${todayStr}T00:00:00Z`);
+        const { data } = await supabase.from('shifts').select(SHIFT_STATUS_COLUMNS).gte('start_time', `${todayStr}T00:00:00Z`);
         if (data) setShifts(data);
       })
       .subscribe();
@@ -35,7 +37,7 @@ export default function LiveStatusTracker({ initialProfiles, initialShifts }: Li
     };
   }, []);
 
-  const checkIsWorking = (profileId: string) => {
+  const checkIsWorking = useCallback((profileId: string) => {
     const employeeShift = shifts.find(s => s.employee_id === profileId && s.status === 'scheduled');
     if (!employeeShift) return false;
 
@@ -44,7 +46,7 @@ export default function LiveStatusTracker({ initialProfiles, initialShifts }: Li
     const end = toZonedTime(parseISO(employeeShift.end_time), 'Asia/Bangkok');
 
     return isWithinInterval(bkkNow, { start, end });
-  };
+  }, [shifts, now]);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-[0.75rem]">

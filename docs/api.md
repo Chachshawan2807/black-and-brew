@@ -1,178 +1,185 @@
 # API Reference — BLACKANDBREW ERP
 
-> **Version:** 6.3 | **Last Updated:** 2026-06-04
+> **Version:** 6.9 | **Last Updated:** 2026-06-07
 
 ---
 
 ## 1. Server Actions
 
-All server actions are defined with `'use server'` directive and located in `src/app/actions/`.
+All server actions use `'use server'` in `src/app/actions/`. Write operations call `assertWritableSession()` unless noted.
 
 ---
 
-### 1.1 `recordTransaction()` — Inventory Actions
+### 1.1 Auth (`auth.ts`)
 
-- **File:** `src/app/actions/inventory-actions.ts`
-- **Purpose:** บันทึก Stock In/Out แบบ Atomic ผ่าน PostgreSQL RPC
-- **Signature:**
+| Function | Purpose |
+| :--- | :--- |
+| `verifyPin(pin)` | ตรวจ PIN → set httpOnly cookies; returns `{ success, isReadOnly? }` |
+| `checkAuth()` | ตรวจว่า PIN verified หรือไม่ |
+| `isReadOnlySession()` | ตรวจ read-only mode |
+| `assertWritableSession()` | บล็อก write ถ้า read-only → `{ ok: false, error }` |
+| `clearAuth()` | ลบ auth cookies |
 
-```typescript
-async function recordTransaction(
-  productId: string,
-  type: 'IN' | 'OUT',
-  quantity: number,
-  note: string = ''
-): Promise<{ success: boolean; error?: string; newStock?: number }>
-```
-
-- **Parameters:**
-
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `productId` | `string` (UUID) | ✅ | ID ของ `inventory_items` |
-| `type` | `'IN' \| 'OUT'` | ✅ | ประเภทรายการ |
-| `quantity` | `number` | ✅ | จำนวน (ต้อง > 0) |
-| `note` | `string` | ❌ | หมายเหตุ (default: '') |
-
-- **Behavior:**
-
-- Calls `supabase.rpc('record_inventory_transaction', ...)` (SECURITY DEFINER)
-- RPC performs: row lock → validate stock → update stock → insert transaction
-- Returns `{ success: true, newStock }` on success
-- Returns `{ success: false, error: 'ยอดคงเหลือไม่เพียงพอ...' }` on insufficient stock
-- Calls `revalidatePath('/[locale]/inventory', 'page')` on success
-
-- **Supabase Client:** Service Role Key (bypasses RLS)
+- Full PIN: `APP_PIN` (env)
+- Read-only PIN: `111222` (hardcoded in `auth-constants.ts`)
 
 ---
 
-### 1.2 `fetchTransactionHistory()` — Inventory Actions
+### 1.2 Inventory (`inventory-actions.ts`)
 
-**File:** `src/app/actions/inventory-actions.ts`
+#### `recordTransaction(productId, type, quantity, note?)`
 
-**Purpose:** ดึงประวัติ transactions พร้อมชื่อสินค้า (Two-Step Fetch)
+- Atomic IN/OUT via `supabase.rpc('record_inventory_transaction')`
+- Returns `{ success, newStock? }` or insufficient stock error
+- Revalidates inventory + count pages
 
-**Signature:**
+#### `updateInventoryStock(itemId, stock, note?)` (v6.8)
 
-```typescript
-async function fetchTransactionHistory(
-  itemId?: string,
-  limit: number = 50
-): Promise<{ success: boolean; error?: string; data: any[] }>
-```
+- Absolute stock set via `supabase.rpc('set_inventory_stock')`
+- Fallback to direct UPDATE if RPC not deployed
+- Source: `sql/sync_inventory_stock.sql`
 
-- **Parameters:**
+#### `fetchTransactionHistory(itemId?, limit?)`
 
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `itemId` | `string` (UUID) | ❌ | กรองเฉพาะสินค้า (ถ้าไม่ระบุ = ดึงทั้งหมด) |
-| `limit` | `number` | ❌ | จำนวนรายการสูงสุด (default: 50) |
+- Two-Step Fetch: transactions → item names merge in-memory
+- Uses `unstable_noStore()` — no Next.js cache
 
-**Behavior:**
+#### `fetchFrequentItems()`
 
-1. `unstable_noStore()` — disable Next.js cache
-2. Step 1: `SELECT * FROM inventory_transactions` (filtered by `inventory_item_id` if provided)
-3. Step 2: `SELECT id, name FROM inventory_items WHERE id IN (unique IDs)`
-4. Step 3: Merge item names into transaction records in-memory
-5. Returns enriched data with `inventory_items: { name }` on each record
+- Top 5 items by transaction frequency (last 100 txns)
 
-**Supabase Client:** Service Role Key
+#### `deleteInventoryItem(itemId)` / `deleteInventoryItemsBulk(itemIds)`
 
----
+- Delete with `assertWritableSession()` guard
 
-### 1.3 `fetchFrequentItems()` — Inventory Actions
+#### `fetchComprehensiveInventoryData()`
 
-- **File:** `src/app/actions/inventory-actions.ts`
-- **Purpose:** ดึง Top 5 สินค้าที่มี transactions บ่อยที่สุด
-- **Signature:**
+- Full inventory dataset for AI/analysis
 
-```typescript
-async function fetchFrequentItems(): Promise<{
-  success: boolean;
-  error?: string;
-  data?: { id: string; name: string }[]
-}>
-```
-
-- **Behavior:**
-
-1. Fetch last 100 transactions
-2. Count frequency by `inventory_item_id`
-3. Select top 5 IDs
-4. Fetch names from `inventory_items`
-5. Returns `[{ id, name }, ...]`
+**Client:** Service Role Key
 
 ---
 
-### 1.4 `deleteShift()` — Shift Actions
+### 1.3 Shift (`shift-actions.ts`)
 
-- **File:** `src/app/actions/shift-actions.ts`
-- **Signature:**
-
-```typescript
-async function deleteShift(id: string): Promise<{ success: boolean; error?: string }>
-```
-
-- **Behavior:**
-
-- Deletes shift by ID from `shifts` table
-- Revalidates: `/`, `/[locale]/schedule`, `/[locale]/dashboard`
-
-- **Supabase Client:** Anon Key (via `src/lib/supabase.ts`)
+| Function | Purpose |
+| :--- | :--- |
+| `saveShift(payload)` | Create/update shift (atomic delete-then-insert) |
+| `deleteShift(id)` | Delete shift by ID |
+| `updateStaffOrder(orderedIds)` | Reorder staff in schedule |
+| `updateDashboardOrder(orderedIds)` | Reorder dashboard staff |
+| `deleteManagementHistoryRange(employeeId, start, end)` | Bulk delete shifts in range |
+| `fetchRosterData(start, end)` | Fetch roster for date range |
+| `copyWeeklyShifts(sourceStart, targetStart)` | Copy week of shifts |
+| `revalidateAppPaths()` | Revalidate all app paths |
 
 ---
 
-### 1.5 `syncHolidays()` — Holiday Actions
+### 1.4 Holiday (`holiday-actions.ts`)
 
-- **File:** `src/app/actions/holiday-actions.ts`
-- **Signature:**
-
-```typescript
-async function syncHolidays(
-  startDate: string,
-  endDate: string
-): Promise<{ success: boolean; error?: string; count?: number }>
-```
-
-- **Behavior:**
-
-- Fetches Thai holidays from Google Calendar API
-- Upserts into `holidays` table (skips existing dates)
-- Revalidates layout on success
+| Function | Purpose |
+| :--- | :--- |
+| `syncHolidays(startDate, endDate)` | Google Calendar → `holidays` table |
+| `saveRegularHolidays(profileId, days)` | Save regular holiday days per employee |
 
 ---
 
-## 2. PostgreSQL RPC Functions
+### 1.5 Maintenance (`maintenance-actions.ts`)
 
-### 2.1 `record_inventory_transaction`
-
-**Defined in:** `fix_transaction_relationships.sql`
-
-**Signature:**
-
-```sql
-FUNCTION record_inventory_transaction(
-  p_product_id UUID,
-  p_type VARCHAR,
-  p_quantity NUMERIC,
-  p_note TEXT
-) RETURNS json
-```
-
-**Behavior:**
-
-1. `SELECT stock FROM inventory_items WHERE id = p_product_id FOR UPDATE` (row lock)
-2. Validate: product exists, sufficient stock for OUT
-3. Calculate `new_stock`
-4. `UPDATE inventory_items SET stock = new_stock`
-5. `INSERT INTO inventory_transactions (inventory_item_id, type, quantity, note, balance_after)`
-6. Return `{ success: true, new_stock, balance_after }`
-
-**Security:** `SECURITY DEFINER` — executes with function owner's permissions
+| Function | Purpose |
+| :--- | :--- |
+| `saveServiceRecord(record)` | Insert/update `service_records` |
+| `deleteServiceRecord(id)` | Delete service record |
 
 ---
 
-## 3. Client-side Supabase Calls
+### 1.6 Sales (`sales-actions.ts`)
+
+| Function | Purpose |
+| :--- | :--- |
+| `uploadSalesFiles(formData)` | Parse Excel → `sales_uploads` + `sales_records` |
+| `fetchSalesHistory(page, pageSize)` | Paginated upload history |
+| `deleteSalesUpload(uploadId)` | Delete upload + cascading records |
+| `getAllProductCategories()` | List product categories |
+| `updateProductCategory(name, category)` | Update category mapping |
+| `deleteCategory(name)` | Delete category |
+| `autoCategorizeAllProducts()` | AI auto-categorize |
+| `getSalesMetrics(start?, end?)` | Sales metrics for date range |
+
+---
+
+### 1.7 Market Insights (`market-insights-actions.ts`)
+
+| Function | Purpose |
+| :--- | :--- |
+| `getMarketInsights()` | Gemini analysis combining inventory, sales, schedule, weather |
+
+---
+
+### 1.8 Daily Report (`daily-report-actions.ts`)
+
+| Function | Purpose |
+| :--- | :--- |
+| `fetchTodayShifts(date)` | Shifts for target date |
+| `fetchWeatherForecast(date?)` | OpenWeatherMap forecast |
+| `fetchNextHoliday(date)` | Next public holiday |
+| `compileDailyReportPayload()` | Full LINE report payload |
+
+---
+
+### 1.9 LINE (`line-actions.ts`)
+
+| Function | Purpose |
+| :--- | :--- |
+| `sendLineNotification(targetId, message)` | Push text via LINE Messaging API |
+
+---
+
+### 1.10 Migration (`migrate-inventory-sort-order.ts`)
+
+| Function | Purpose |
+| :--- | :--- |
+| `runInventoryMigration()` | DB-only `sort_order` re-sequence (no CSV) |
+
+---
+
+## 2. API Routes
+
+### `POST /api/chat`
+
+- Streaming AI chat via `ToolLoopAgent` (Gemini 2.5 Flash)
+- Tools: `readTable`, `internetSearch`, weather
+- Token optimization: sliding window, Thai token optimizer
+
+### `GET /api/daily-report`
+
+- Vercel Cron endpoint — protected by `CRON_SECRET`
+- Compiles + sends LINE daily notification
+
+### `GET /api/weather`
+
+- OpenWeatherMap proxy with 30-min cache (`s-maxage=1800`)
+- Coordinates: store lat/lon from env
+
+---
+
+## 3. PostgreSQL RPC Functions
+
+### `record_inventory_transaction`
+
+- **Source:** `fix_transaction_relationships.sql`
+- Row lock → validate → update stock → insert transaction
+- `SECURITY DEFINER`
+
+### `set_inventory_stock` (v6.8)
+
+- **Source:** `sql/sync_inventory_stock.sql`
+- Parameters: `p_item_id`, `p_new_stock`, `p_note`
+- Row lock → set absolute stock → ledger entry on delta
+
+---
+
+## 4. Client-side Supabase Calls
 
 ### Real-time Channel (Inventory)
 
@@ -186,15 +193,15 @@ supabase.channel('inventory_changes')
 
 | Operation | Method |
 | :--- | :--- |
-| Fetch All | `supabase.from('inventory_items').select('*').order('sort_order')` |
-| Update Field | `supabase.from('inventory_items').update({ [field]: value }).eq('id', id)` |
-| Insert Item | `supabase.from('inventory_items').insert([item]).select().single()` |
-| Delete Item | `supabase.from('inventory_items').delete().eq('id', id)` |
-| Reorder | `supabase.from('inventory_items').upsert(items.map(i => ({ id, sort_order })))` |
+| Fetch All | `.from('inventory_items').select('*').order('sort_order')` |
+| Update Field | `.update({ [field]: value }).eq('id', id)` |
+| Insert Item | `.insert([item]).select().single()` |
+| Delete Item | `.delete().eq('id', id)` |
+| Reorder | `.upsert(items.map(i => ({ id, sort_order })))` |
 
 ### Config Persistence
 
 | Operation | Method |
 | :--- | :--- |
-| Load Config | `supabase.from('inventory_config').select('settings').eq('id', 'column_labels').single()` |
-| Save Config | `supabase.from('inventory_config').upsert({ id: 'column_labels', settings })` |
+| Load Config | `.from('inventory_config').select('settings').eq('id', 'column_labels').single()` |
+| Save Config | `.from('inventory_config').upsert({ id: 'column_labels', settings })` |

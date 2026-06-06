@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { assertWritableSession } from '@/app/actions/auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
@@ -33,6 +34,9 @@ export async function recordTransaction(
     if (!pinVerified && (!user || authError)) {
       return { success: false, error: 'Unauthorized: Session missing or invalid' };
     }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
 
     const parsed = transactionSchema.safeParse({ productId, type, quantity, note });
     if (!parsed.success) {
@@ -88,6 +92,9 @@ export async function updateInventoryStock(
     if (!pinVerified && (!user || authError)) {
       return { success: false, error: 'Unauthorized: Session missing or invalid' };
     }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
 
     const parsed = stockUpdateSchema.safeParse({ itemId, stock, note });
     if (!parsed.success) {
@@ -154,6 +161,9 @@ export async function deleteInventoryItem(itemId: string) {
       return { success: false, error: 'Unauthorized: Session missing or invalid' };
     }
 
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
+
     // Step 2: Proceed with Delete using Service Role (Admin Client)
     const { error } = await supabase
       .from('inventory_items')
@@ -171,6 +181,40 @@ export async function deleteInventoryItem(itemId: string) {
   } catch (error: any) {
     console.error('[deleteInventoryItem] Unexpected Error:', error.message || error);
     return { success: false, error: 'เกิดข้อผิดพลาดในการลบข้อมูลสินค้า' };
+  }
+}
+
+export async function deleteInventoryItemsBulk(itemIds: string[]) {
+  if (itemIds.length === 0) return { success: true, deleted: 0 };
+
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid', deleted: 0 };
+    }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error, deleted: 0 };
+
+    const { error } = await supabase
+      .from('inventory_items')
+      .delete()
+      .in('id', itemIds);
+
+    if (error) {
+      console.error('[deleteInventoryItemsBulk] Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message, deleted: 0 };
+    }
+
+    revalidatePath('/[locale]/inventory');
+    return { success: true, deleted: itemIds.length };
+  } catch (error: any) {
+    console.error('[deleteInventoryItemsBulk] Unexpected Error:', error.message || error);
+    return { success: false, error: 'เกิดข้อผิดพลาดในการลบข้อมูลสินค้า', deleted: 0 };
   }
 }
 
@@ -305,7 +349,7 @@ export async function fetchComprehensiveInventoryData() {
     // Step 1: Fetch all inventory items
     const { data: inventoryItems, error: itemsError } = await supabase
       .from('inventory_items')
-      .select('*')
+      .select('id, name, stock, order_point, target_stock, order_qty, unit, source, sort_order, updated_at')
       .order('name');
 
     if (itemsError) {
@@ -317,7 +361,7 @@ export async function fetchComprehensiveInventoryData() {
     // Step 2: Fetch recent inventory transactions
     const { data: inventoryTransactions, error: txError } = await supabase
       .from('inventory_transactions')
-      .select('*')
+      .select('id, inventory_item_id, type, quantity, note, created_at')
       .order('created_at', { ascending: false })
       .limit(200);
 

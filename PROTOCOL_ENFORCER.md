@@ -9,8 +9,9 @@
 
 ## Transactional Integrity
 
-- **Standard**: Always use Postgres RPC (`record_inventory_transaction`) for stock-history synchronization to prevent data mismatch.
-- **Implementation**: Any stock change (Add/Subtract) must be performed within a single database transaction that simultaneously updates the inventory item and creates the corresponding ledger entry.
+- **Standard**: Quick Entry IN/OUT MUST use Postgres RPC (`record_inventory_transaction`). Absolute stock edits (warehouse cell, stock-taking) MUST use `updateInventoryStock()` → RPC `set_inventory_stock`.
+- **Implementation**: Stock IN/OUT via single DB transaction with ledger entry. Absolute stock SET via `set_inventory_stock` with delta ledger when quantity changes.
+- **Realtime**: All inventory realtime handlers MUST use `mergeInventoryRealtimeUpdate()` — never replace full row with partial payload.
 - **Atomicity**: If either the update or the insertion fails, the entire operation must rollback to maintain audit trail accuracy.
 
 ## Ledger Integrity
@@ -123,7 +124,18 @@
 ## Security & Session Integrity
 
 - **Standard**: Client-side authentication states must use `sessionStorage` strictly to isolate tabs and prevent cross-session memory leaks.
+- **Server Session**: `verifyPin()` in `src/app/actions/auth.ts` sets httpOnly cookies (`bb_auth_pin_verified`, `bb_auth_read_only`). Write server actions call `assertWritableSession()`.
+- **Read-Only Mode**: PIN `111222` (hardcoded in `auth-constants.ts`) grants view-only access; all mutations rejected server-side.
 - **Enforcement**:
   - `localStorage` is strictly prohibited for storing authentication tokens or verification status (`bb_auth_pin_verified`).
   - Upon starting a new tab or reopening the browser, the PIN Gateway must block rendering and request the 6-digit PIN anew.
   - Brute-force lockout state (`bb_failed_attempts` and `bb_lockout_until`) must persist in `localStorage` to prevent operators from bypassing lockouts via page refreshes or tab switching.
+  - Post-PIN: client calls `ensureSupabaseSession()` (anonymous auth) for RLS `authenticated` policies per `sql/fix_inventory_rls.sql`.
+
+## Motion & Animation Standard (v6.9)
+
+- **Standard**: Premium minimal animations via shared CSS utilities (`globals.css`) and framer presets (`src/lib/motion-presets.ts`).
+- **Route Transitions**: `<PageTransition>` in `SidebarLayout` only — 300ms opacity fade between routes.
+- **Modals/Sheets**: Use `.bb-modal-backdrop`, `.bb-modal-panel`, `.bb-sheet-panel` or `fadeOverlay`/`modalContent` presets.
+- **Toasts**: `FloatingAlert` / `FloatingToast` with auto fade-out (2.8–3s).
+- **Constraint**: Zero Desktop Impact — animate opacity/transform only; never change layout dimensions.

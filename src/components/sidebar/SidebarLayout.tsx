@@ -7,6 +7,8 @@ import { useSidebarToggle } from "@/hooks/use-sidebar-toggle";
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { PageTransition } from "@/components/ui/page-transition";
+import { fadeOverlay } from "@/lib/motion-presets";
 
 export default function SidebarLayout({
   children
@@ -31,7 +33,8 @@ export default function SidebarLayout({
         </div>
         <button 
           onClick={() => sidebar?.setIsOpen?.()}
-          className="h-10 w-10 flex items-center justify-center rounded-full active:bg-black/5 transition-colors"
+          className="h-10 w-10 flex items-center justify-center rounded-full bb-transition hover:bg-black/5 active:bg-black/10"
+          aria-label="เปิดเมนูนำทาง"
         >
           <Menu className="w-6 h-6 text-black" />
         </button>
@@ -40,10 +43,10 @@ export default function SidebarLayout({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={fadeOverlay.initial}
+            animate={fadeOverlay.animate}
+            exit={fadeOverlay.exit}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
             onClick={() => sidebar?.setIsOpen?.()}
             className="md:hidden fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm"
           />
@@ -55,7 +58,7 @@ export default function SidebarLayout({
         "min-h-screen bg-transparent transition-[margin-left] ease-in-out duration-300",
         isOpen === false ? "md:ml-20" : "md:ml-[280px]"
       )}>
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
     </>
   );

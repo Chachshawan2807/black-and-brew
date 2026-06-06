@@ -1,7 +1,10 @@
 # Sales Management System Verification Report
 
+> **Last Updated:** 2026-06-07 | **Scope:** Sales module only (see `docs/prd.md` for full ERP)
+
 ## 1. System Overview
-This report verifies the complete implementation of the sales management system with AI-powered analysis.
+
+This report verifies the complete implementation of the sales management system with AI-powered analysis. Other modules (Inventory v6.8, Auth, Motion v6.9) are documented in `docs/changelog.md`.
 
 ## 2. Verification Checklist
 

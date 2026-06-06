@@ -4,6 +4,7 @@ import type React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowDownToLine, ShoppingCart, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 
 type PurchaseOrderItem = {
   id: string;
@@ -39,7 +40,7 @@ export default function PurchaseOrdersModal({
   getStockColorClass,
   isExportMode = false,
 }: PurchaseOrdersModalProps) {
-  const itemsToShow = isExportMode ? itemsToOrder : displayedPoItems;
+  const itemsToShow = displayedPoItems;
   const tableId = isExportMode ? "blackandbrew-po-table-export" : "blackandbrew-po-table";
 
   const tableContent = (
@@ -49,6 +50,11 @@ export default function PurchaseOrdersModal({
         <div className="px-6 flex items-center justify-between mb-4">
           <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2 antialiased">
             <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ
+            {isExportMode && !selectedChannels.includes('all') && (
+              <span className="text-base text-black/50 font-normal">
+                — {selectedChannels.join(', ')}
+              </span>
+            )}
           </h2>
 
           {!isExportMode && (
@@ -178,17 +184,18 @@ export default function PurchaseOrdersModal({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={fadeOverlay.initial}
+      animate={fadeOverlay.animate}
+      exit={fadeOverlay.exit}
+      transition={fadeOverlay.transition}
       className="fixed inset-0 z-[150] flex items-center justify-center bg-black/20 backdrop-blur-md p-4"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.95, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 20 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        initial={modalContent.initial}
+        animate={modalContent.animate}
+        exit={modalContent.exit}
+        transition={modalContent.transition}
         className="bg-[#fdfcf0] rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >

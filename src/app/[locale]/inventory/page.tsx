@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, useTransition } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, History, Search, ArrowDownToLine, ArrowUpFromLine, ShoppingCart, PlusCircle, PackagePlus, PackageMinus, CloudUpload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { recordTransaction, fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem, updateInventoryStock } from '@/app/actions/inventory-actions';
+import { recordTransaction, fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem, deleteInventoryItemsBulk, updateInventoryStock } from '@/app/actions/inventory-actions';
+import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { computeItemsToOrder, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import {
   DndContext,
@@ -34,6 +35,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
+import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 
 interface InventoryItem {
   id: string;
@@ -703,6 +705,15 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
 
 export default function DynamicInventoryManager() {
   const router = useRouter();
+  const isReadOnly = useReadOnly();
+
+  const blockIfReadOnly = () => {
+    if (isReadOnly) {
+      alert(READ_ONLY_DENY_MSG);
+      return true;
+    }
+    return false;
+  };
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [columns, setColumns] = useState<ColumnDef[]>(defaultColumns);
   const [loading, setLoading] = useState(true);
@@ -738,12 +749,14 @@ export default function DynamicInventoryManager() {
 
   // Quick Entry State
   const [quickSearch, setQuickSearch] = useState('');
+  const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
   const [quickQty, setQuickQty] = useState('');
   const [quickType, setQuickType] = useState<'IN' | 'OUT'>('IN');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [frequentItems, setFrequentItems] = useState<{ id: string, name: string }[]>([]);
   const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
+  const [isQuickPending, startQuickTransition] = useTransition();
 
   const itemsToOrder = useMemo(() => computeItemsToOrder(items), [items]);
 
@@ -791,8 +804,11 @@ export default function DynamicInventoryManager() {
           return true;
         }
       });
+      const channelSuffix = selectedChannels.includes('all')
+        ? 'All'
+        : selectedChannels.join('-');
       const link = document.createElement('a');
-      link.download = `PurchaseOrders-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `PurchaseOrders-${channelSuffix}-${new Date().toISOString().split('T')[0]}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -801,11 +817,17 @@ export default function DynamicInventoryManager() {
   };
 
   const filteredItems = useMemo(() => {
-    if (!quickSearch) return [];
+    if (!debouncedQuickSearch) return [];
+    const needle = debouncedQuickSearch.toLowerCase();
     return items.filter(item =>
-      item.name.toLowerCase().includes(quickSearch.toLowerCase())
+      item.name.toLowerCase().includes(needle)
     ).slice(0, 10);
-  }, [items, quickSearch]);
+  }, [items, debouncedQuickSearch]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedQuickSearch(quickSearch), 150);
+    return () => window.clearTimeout(t);
+  }, [quickSearch]);
 
   useEffect(() => {
     loadFrequentItems();
@@ -874,6 +896,7 @@ export default function DynamicInventoryManager() {
 
   async function fetchConfigAndInventory() {
     try {
+      await ensureSupabaseSession();
       const [configRes, inventoryRes] = await Promise.all([
         supabase.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
         supabase.from('inventory_items').select('id, name, stock, order_qty, order_point, target_stock, unit, source, sort_order, updated_at').order('sort_order', { ascending: true })
@@ -944,6 +967,7 @@ export default function DynamicInventoryManager() {
 
   async function handleAddItemSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (blockIfReadOnly()) return;
     pushHistory();
 
     const initialSortOrder = items.length > 0 ? Math.max(...items.map(i => i.sort_order || 0)) + 1 : 1;
@@ -1000,6 +1024,7 @@ export default function DynamicInventoryManager() {
   }
 
   async function executeDelete() {
+    if (blockIfReadOnly()) return;
     if (!deleteId) return;
     pushHistory();
     setItems(prev => prev.filter(item => item.id !== deleteId));
@@ -1033,6 +1058,7 @@ export default function DynamicInventoryManager() {
   }
 
   async function handleSaveField(id: string, field: string, value: any) {
+    if (blockIfReadOnly()) return;
     setIsEditing(false);
     const original = previousStateRef.current.items.find(i => i.id === id);
 
@@ -1130,6 +1156,7 @@ export default function DynamicInventoryManager() {
   }
 
   async function saveColumnsConfig(currentCols: ColumnDef[] = columns) {
+    if (blockIfReadOnly()) return;
     setSavingState('saving');
 
     // Local Persistence
@@ -1169,6 +1196,7 @@ export default function DynamicInventoryManager() {
   }
 
   async function handleDragEndRows(event: DragEndEvent) {
+    if (blockIfReadOnly()) return;
     setActiveRowId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -1199,6 +1227,7 @@ export default function DynamicInventoryManager() {
   }
 
   async function syncFullStateToDB(currentItems: InventoryItem[], currentCols: ColumnDef[]) {
+    if (blockIfReadOnly()) return;
     setSavingState('saving');
     setIsSyncing(true);
     try {
@@ -1239,7 +1268,8 @@ export default function DynamicInventoryManager() {
         const snapshotIds = sanitizedItems.map(i => i.id);
         const toDelete = dbItems.filter(dbI => !snapshotIds.includes(dbI.id)).map(i => i.id);
         if (toDelete.length > 0) {
-          await supabase.from('inventory_items').delete().in('id', toDelete);
+          const delResult = await deleteInventoryItemsBulk(toDelete);
+          if (!delResult.success) throw new Error(delResult.error);
         }
       }
 
@@ -1261,6 +1291,7 @@ export default function DynamicInventoryManager() {
   }
 
   async function handleUndo() {
+    if (blockIfReadOnly()) return;
     if (undoStack.length === 0 || isSyncing) return;
     const lastState = undoStack[undoStack.length - 1];
     setUndoStack(prev => prev.slice(0, -1));
@@ -1271,6 +1302,7 @@ export default function DynamicInventoryManager() {
   }
 
   async function handleRedo() {
+    if (blockIfReadOnly()) return;
     if (redoStack.length === 0 || isSyncing) return;
     const nextState = redoStack[redoStack.length - 1];
     setRedoStack(prev => prev.slice(0, -1));
@@ -1299,6 +1331,7 @@ export default function DynamicInventoryManager() {
   }
 
   async function handleCancelTransaction(txId: string, itemId: string, type: 'IN' | 'OUT', quantity: number) {
+    if (blockIfReadOnly()) return;
     if (!window.confirm('ยืนยันการยกเลิกรายการนี้? ยอดสต็อกจะถูกปรับคืนอัตโนมัติ')) return;
 
     setSavingState('saving');
@@ -1346,11 +1379,14 @@ export default function DynamicInventoryManager() {
     }
   }
 
-  async function handleQuickSubmit(e: React.FormEvent) {
+  const handleQuickSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      alert(READ_ONLY_DENY_MSG);
+      return;
+    }
     if (!quickSearch || !quickQty) return;
 
-    // Find item
     const item = items.find(i => i.name === quickSearch || i.id === quickSearch);
     if (!item) {
       alert('ไม่พบสินค้าที่ระบุค่ะ');
@@ -1363,34 +1399,40 @@ export default function DynamicInventoryManager() {
       return;
     }
 
-    setSavingState('saving');
+    startQuickTransition(() => {
+      void (async () => {
+        setSavingState('saving');
 
-    const res = await recordTransaction(item.id, quickType, qty, 'Quick Entry');
+        const res = await recordTransaction(item.id, quickType, qty, 'Quick Entry');
 
-    if (!res.success) {
-      alert(res.error);
-      setSavingState('idle');
-      return;
-    }
+        if (!res.success) {
+          alert(res.error);
+          setSavingState('idle');
+          return;
+        }
 
-    // Optimistically update local state if not picked up by realtime yet
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, stock: res.newStock } : i));
-    setQuickSearch('');
-    setQuickQty('');
-    setSavingState('synced');
-    router.refresh();
-    setTimeout(() => setSavingState('idle'), 2000);
-    loadFrequentItems();
-    // Auto-refresh history if modal is open
-    if (showHistoryModal) {
-      const histRes = await fetchTransactionHistory();
-      if (histRes.success && histRes.data) {
-        setTransactionHistory(histRes.data);
-      }
-    }
-  }
+        setItems(prev => prev.map(i => i.id === item.id ? { ...i, stock: res.newStock } : i));
+        setQuickSearch('');
+        setDebouncedQuickSearch('');
+        setQuickQty('');
+        setSavingState('synced');
+        router.refresh();
+        setTimeout(() => setSavingState('idle'), 2000);
+        loadFrequentItems();
+        if (showHistoryModal) {
+          const histRes = await fetchTransactionHistory();
+          if (histRes.success && histRes.data) {
+            setTransactionHistory(histRes.data);
+          }
+        }
+      })();
+    });
+  }, [isReadOnly, quickSearch, quickQty, items, quickType, router, showHistoryModal]);
 
-  const selectedQuickItem = items.find(i => i.name === quickSearch || i.id === quickSearch);
+  const selectedQuickItem = useMemo(
+    () => items.find(i => i.name === quickSearch || i.id === quickSearch),
+    [items, quickSearch]
+  );
 
   // 2. คำนวณสีของป้ายคงเหลือเฉพาะเมื่อมีไอเท็มถูกเลือก
   let quickBadgeStyles = { bg: 'bg-emerald-50/60 border-emerald-100/70', label: 'text-emerald-600/70', val: 'text-emerald-900' };
@@ -1444,7 +1486,7 @@ export default function DynamicInventoryManager() {
               <div className="flex items-center gap-1 border-r border-slate-200 pr-4 mr-2">
                 <button
                   onClick={handleUndo}
-                  disabled={undoStack.length === 0 || isSyncing}
+                  disabled={isReadOnly || undoStack.length === 0 || isSyncing}
                   className={`p-2.5 rounded-3xl transition-all ${undoStack.length === 0 || isSyncing
                     ? 'text-[#94a3b8] cursor-default'
                     : 'text-[#000000] hover:bg-black/5'
@@ -1455,7 +1497,7 @@ export default function DynamicInventoryManager() {
                 </button>
                 <button
                   onClick={handleRedo}
-                  disabled={redoStack.length === 0 || isSyncing}
+                  disabled={isReadOnly || redoStack.length === 0 || isSyncing}
                   className={`p-2.5 rounded-3xl transition-all ${redoStack.length === 0 || isSyncing
                     ? 'text-[#94a3b8] cursor-default'
                     : 'text-[#000000] hover:bg-black/5'
@@ -1528,7 +1570,7 @@ export default function DynamicInventoryManager() {
                   </div>
 
                   {/* 2. ช่องใส่จำนวน, สวิตช์ segment และปุ่มบันทึก */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+                  <div className={cn("flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0", isReadOnly && "pointer-events-none opacity-60")}>
                     <div className="flex flex-row items-center gap-2 flex-1 sm:flex-initial">
                       <div className="w-20 sm:w-24 shrink-0">
                         <input
@@ -1569,13 +1611,13 @@ export default function DynamicInventoryManager() {
                       </div>
                     </div>
 
-                    <button type="submit" className="w-full sm:w-auto px-4 h-11 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-base md:text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0">
+                    <button type="submit" disabled={isQuickPending || isReadOnly} className="w-full sm:w-auto px-4 h-11 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-base md:text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0 disabled:opacity-50">
                       <CloudUpload className="w-4 h-4" strokeWidth={1.5} /> บันทึก
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 w-full box-border">
+                <div className={cn("grid grid-cols-3 gap-2 w-full box-border", isReadOnly && "pointer-events-none opacity-60")}>
                   <button type="button" onClick={() => setShowPurchaseOrderModal(true)} className="flex items-center justify-center gap-1 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
                     <ShoppingCart className="w-4 h-4 text-[#14532d] shrink-0" strokeWidth={1.5} />
                     <span className="truncate">สั่งซื้อ</span>
@@ -1596,7 +1638,7 @@ export default function DynamicInventoryManager() {
                 </div>
               </form>
               {frequentItems.length > 0 && (
-                <div className="flex items-center gap-2 mt-6 pt-3 border-t border-black/5 overflow-x-auto pb-1 scrollbar-hide">
+                <div className={cn("flex items-center gap-2 mt-6 pt-3 border-t border-black/5 overflow-x-auto pb-1 scrollbar-hide", isReadOnly && "pointer-events-none opacity-60")}>
                   <span className="text-[12px] text-black/40 font-normal whitespace-nowrap">รายการใช้บ่อย:</span>
                   {frequentItems.map(fi => (
                     <button key={fi.id} onClick={() => setQuickSearch(fi.name)} className="px-3 py-1.5 min-h-[44px] md:min-h-0 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-full text-base md:text-[13px] text-black/70 whitespace-nowrap transition-colors flex items-center justify-center">
@@ -1608,6 +1650,7 @@ export default function DynamicInventoryManager() {
             </div>
           </div>
 
+          <div className={cn(isReadOnly && 'pointer-events-none opacity-60')}>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -1669,6 +1712,7 @@ export default function DynamicInventoryManager() {
               )}
             </div>
           </DndContext>
+          </div>
         </div>
       </div>
 
@@ -1940,11 +1984,11 @@ export default function DynamicInventoryManager() {
       <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
         <PurchaseOrdersModal
           isExportMode={true}
-          selectedChannels={['all']}
+          selectedChannels={selectedChannels}
           setSelectedChannels={() => {}}
           itemsToOrder={itemsToOrder}
           poSources={poSources}
-          displayedPoItems={itemsToOrder}
+          displayedPoItems={displayedPoItems}
           getStockColorClass={getStockColorClass}
         />
       </div>

@@ -1,14 +1,14 @@
 import { google } from '@ai-sdk/google';
-import { streamText, stepCountIs, ToolLoopAgent } from 'ai';
+import { stepCountIs, ToolLoopAgent } from 'ai';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
-import { weatherTool } from '@/app/actions/tools/internal-sources-tools';
+import { readTableTool } from '@/app/actions/tools/database-tools';
 import { internetSearchTool } from '@/app/actions/tools/search-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
+import { sanitizePromptInput } from '@/lib/security/sanitize';
 
 // ─────────────────────────────────────────────────────────
 // SECTION 1: ENVIRONMENT & CONSTANTS
@@ -17,26 +17,6 @@ const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || "13.9312";
 const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || "100.6756";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-/**
- * ADR: SEC-SANIT-001 - Input Sanitization Layer
- * Rationale: ป้องกัน Prompt Injection (OWASP LLM01) โดยการกรอง control sequences 
- * และคำสั่งอันตรายก่อนส่งเข้าสู่โมเดล
- */
-function sanitizeInput(text: string): string {
-  const injectionPatterns = [
-    /ignore previous instructions/gi,
-    /system prompt/gi,
-    /\[INST\]/gi,
-    /<\/s>/gi,
-    /execute/gi
-  ];
-  let sanitized = text;
-  injectionPatterns.forEach(p => {
-    sanitized = sanitized.replace(p, '[REDACTED_INJECTION_ATTEMPT]');
-  });
-  return sanitized;
-}
 
 /**
  * ADR: EU-ACT-001 - AI Usage Traceability & Audit Logging
@@ -271,8 +251,8 @@ function buildSystemPrompt(
 - คุณเป็นผู้หญิง: ต้องใช้คำลงท้ายว่า "ค่ะ" หรือ "นะคะ" เท่านั้น
 - กฎเหล็ก: ห้าม! ใช้คำว่า "ครับ" หรือแทนตัวเองว่า "ผม" อย่างเด็ดขาด
 - ผู้ใช้คือ "คุณ" ห้ามเรียกผู้ใช้ด้วยคำอื่น
-- คุณมีเครื่องมือ (Tools) สำหรับการดึงข้อมูลตารางกะงาน วันหยุด และสภาพอากาศ ให้เรียกใช้เครื่องมือเหล่านี้ทันทีเมื่อผู้ใช้สอบถาม ห้ามตอบปฏิเสธว่าไม่มีเครื่องมือเด็ดขาด
-- [CRITICAL] เมื่อคุณเรียกใช้งานเครื่องมือ (เช่น getDailyShifts หรือเช็คสภาพอากาศ) เสร็จสิ้นและได้ผลลัพธ์กลับมาแล้ว คุณมีหน้าที่ต้องนำข้อมูลผลลัพธ์นั้นมาประมวลผลและพิมพ์ข้อความสรุปคำตอบเป็นภาษาไทยภาษาพูดที่สั้น กระชับ ตรงประเด็นทันที ห้ามหยุดทำงานหรือส่งข้อความว่างเปล่า (Empty Response) กลับมาเด็ดขาด
+- คุณมีเครื่องมือ (Tools) 2 ตัว: readTable (ข้อมูลภายในร้าน) และ internetSearchTool (ข้อมูลภายนอก/สภาพอากาศ) ให้เรียกใช้ทันทีเมื่อผู้ใช้สอบถาม ห้ามตอบปฏิเสธว่าไม่มีเครื่องมือเด็ดขาด
+- [CRITICAL] เมื่อเรียกเครื่องมือเสร็จและได้ผลลัพธ์แล้ว ต้องนำข้อมูลมาสรุปเป็นภาษาไทยสั้น กระชับ ตรงประเด็นทันที ห้ามส่งข้อความว่างเปล่า (Empty Response) เด็ดขาด
 `.trim();
 
   // --- BASE SECTION (ส่งทุกครั้ง) ---
@@ -344,7 +324,7 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
   if (intents.schedule > 0) {
     sections.push(`
 [กฎการค้นหาข้อมูลพนักงานและกะงาน]
-1. หากถามถึงตารางงานรายวัน (เช่น วันนี้ หรือ พรุ่งนี้) "ต้อง" ใช้เครื่องมือ getDailyShifts เสมอ
+1. หากถามถึงตารางงานรายวัน (เช่น วันนี้ หรือ พรุ่งนี้) "ต้อง" ใช้ readTable ดึงตาราง shifts และ profiles แล้ว join employee_id กับ full_name ใน memory
 2. คุณต้องแสดงรายชื่อพนักงานให้ครบทุกคน (รวม 9 คน) เสมอ แม้พนักงานคนนั้นจะไม่มีกะงานก็ตาม โดยใช้รูปแบบข้อความดิบ (Plain Text) ตามกฎดังนี้:
    - ห้าม! วนลูปจากข้อมูลที่มีกะงานเท่านั้น ให้วนลูปจากรายชื่อพนักงานทั้งหมด (9 คน) เป็นหลัก
    - ห้าม! ใช้ตัวหนา (**), ห้าม! ใช้เครื่องหมายหัวข้อ (*), ห้าม! ใช้เครื่องหมายทวิภาค (:) ที่ท้ายหัวข้อ
@@ -356,7 +336,7 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
      2. พนักงานปฏิบัติงานส่วนอื่น - เรียงตาม 'row_order'
      3. พนักงานที่หยุดพัก/ลา - เรียงตาม 'row_order' (หากไม่มีกะให้ระบุว่า "วันหยุด")
 3. ห้ามแสดงรหัส UUID หรือคำว่า "พนักงานรหัส..." เด็ดขาด
-4. หากผู้ใช้สอบถามข้อมูลกะงานเชิงสถิติ, ข้อมูลภาพรวมรายเดือน หรือช่วงเวลาที่กว้างกว่ารายวันทั่วไป ให้เปลี่ยนไปใช้เครื่องมือ readTable เพื่อดึงข้อมูลจากตาราง shifts มาคำนวณแทนการใช้ getDailyShifts และห้ามทำการเดาชื่อพนักงานหรือสร้างชื่อสมมติขึ้นมาเองโดยเด็ดขาด
+4. หากผู้ใช้สอบถามข้อมูลกะงานเชิงสถิติหรือช่วงเวลากว้าง ให้ใช้ readTable ดึง shifts + profiles มาคำนวณ และห้ามเดาชื่อพนักงานหรือสร้างชื่อสมมติขึ้นมาเองโดยเด็ดขาด
 `.trim());
   }
 
@@ -364,7 +344,7 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
   if (intents.inventory > 0 || intents.maintenance > 0) {
     sections.push(`
 [กฎการวิเคราะห์สต็อกและการซ่อมบำรุง]
-1. ดึงตาราง "inventory_items" หรือ "maintenance_records" ทั้งหมดมาก่อน
+1. ดึงตาราง "inventory_items" หรือ "service_records" ทั้งหมดมาก่อน
    (ห้ามคาดหวัง filter เชิงเปรียบเทียบจาก DB เช่น stock < order_point)
 2. วิเคราะห์ใน memory: ถ้า stock < order_point → จัดเป็น "low stock"
    → แนะนำ suggested_order = order_qty (ถ้า > 0) หรือ target_stock - stock
@@ -377,8 +357,8 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
   if (intents.weather > 0) {
     sections.push(`
 [กฎการวิเคราะห์สภาพอากาศ]
-- ให้ใช้เครื่องมือ weatherTool ในการดึงข้อมูลพยากรณ์อากาศล่าสุด
-- อ้างอิงพิกัดร้านเสมอ: Lat ${STORE_LAT}, Lon ${STORE_LON}
+- ให้ใช้ internetSearchTool ค้นหาสภาพอากาศบึงคำพร้อย ลำลูกกา ปทุมธานี (พิกัด Lat ${STORE_LAT}, Lon ${STORE_LON})
+- วันหยุดนักขัตฤกษ์ใช้ readTable จากตาราง holidays
 - [OPERATIONAL FILTER] วิเคราะห์และพยากรณ์อากาศเฉพาะช่วงเวลา 06:00 - 18:00 (Asia/Bangkok) เท่านั้น
 - ข้อมูลสภาพอากาศหรือฝนตกนอกช่วงเวลานี้ให้ตัดทิ้งทั้งหมด ไม่ต้องนำมาคำนวณหรือแสดงผล
 - เชื่อมโยงสภาพอากาศกับผลกระทบต่อธุรกิจ:
@@ -414,49 +394,33 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
  * threshold ต่ำ = เปิด tool บ่อยขึ้น (recall สูง)
  * threshold สูง = เปิด tool เฉพาะเมื่อชัดเจน (precision สูง)
  */
-const INTENT_THRESHOLD = 2; // คะแนนขั้นต่ำที่ถือว่า "ชัดเจนพอ"
+const INTENT_THRESHOLD = 2;
+
+/** Slim tool surface: readTable + internetSearchTool only (DEC-065) */
+const SLIM_AI_TOOLS = {
+  readTable: wrapTool(readTableTool),
+  internetSearchTool: wrapTool(internetSearchTool),
+};
 
 function selectTools(intents: IntentScores): {
-  tools: Record<string, any>;
+  tools: Record<string, ReturnType<typeof wrapTool>>;
   maxSteps: number;
 } {
-  const tools: Record<string, any> = {};
-  let maxSteps = 1;
+  let maxSteps = 3;
 
-  if (intents.schedule >= INTENT_THRESHOLD) {
-    tools.getDailyShifts = wrapTool(getDailyShiftsTool);
-    maxSteps = Math.max(maxSteps, 5);
-  }
-
-  if (intents.weather >= INTENT_THRESHOLD) {
-    tools.weatherTool = wrapTool(weatherTool);
-    maxSteps = Math.max(maxSteps, 3);
-  }
-
-  const needsDB = intents.inventory >= INTENT_THRESHOLD
+  const needsDb = intents.schedule >= INTENT_THRESHOLD
+    || intents.inventory >= INTENT_THRESHOLD
     || intents.maintenance >= INTENT_THRESHOLD
-    || intents.holiday >= INTENT_THRESHOLD
-    || intents.schedule >= INTENT_THRESHOLD;
+    || intents.holiday >= INTENT_THRESHOLD;
 
-  if (needsDB) {
-    tools.readTable = wrapTool(readTableTool);
-    maxSteps = Math.max(maxSteps, 3);
-  }
+  const needsSearch = intents.externalSearch >= INTENT_THRESHOLD
+    || intents.weather >= INTENT_THRESHOLD;
 
-  if (intents.externalSearch >= INTENT_THRESHOLD) {
-    tools.internetSearchTool = wrapTool(internetSearchTool);
-    maxSteps = Math.max(maxSteps, 4);
-  }
+  if (needsDb) maxSteps = Math.max(maxSteps, 5);
+  if (needsSearch) maxSteps = Math.max(maxSteps, 4);
+  if (needsDb && needsSearch) maxSteps = 5;
 
-  // [UPGRADE 5.1] Composite intent: ถ้าต้องการทั้ง weather + schedule
-  // เพิ่ม steps เพราะ reasoning ซับซ้อนขึ้น
-  const isComposite = (intents.weather >= INTENT_THRESHOLD)
-    && (intents.schedule >= INTENT_THRESHOLD || intents.inventory >= INTENT_THRESHOLD);
-  if (isComposite) {
-    maxSteps = Math.max(maxSteps, 5);
-  }
-
-  return { tools, maxSteps };
+  return { tools: SLIM_AI_TOOLS, maxSteps };
 }
 
 // ─────────────────────────────────────────────────────────
@@ -501,16 +465,13 @@ export async function POST(req: Request) {
           .join('');
 
     // [UPGRADE 2026] Input Sanitization
-    const cleanInput = sanitizeInput(lastMsgText);
+    const cleanInput = sanitizePromptInput(lastMsgText);
 
     // [UPGRADE 1] ใช้ weighted scoring แทน boolean
     const intents = classifyIntent(cleanInput);
 
     // [UPGRADE 5] เลือก tools และ maxSteps จาก scores
     const { tools: selectedTools, maxSteps } = selectTools(intents);
-    const enabledTools = Object.keys(selectedTools).length > 0
-      ? selectedTools
-      : undefined;
 
     // [UPGRADE 3] Smart memory window
     const coreMessages = buildSmartMemory(messages);
@@ -521,21 +482,20 @@ export async function POST(req: Request) {
     const currentThaiDate = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
     const currentIsoDate = format(todayZoned, 'yyyy-MM-dd');
 
-    // [UPGRADE 4] Dynamic system prompt
-    const systemPrompt = buildSystemPrompt(intents, currentIsoDate, currentThaiDate);
+    const systemPrompt = optimizeThaiTokens(
+      buildSystemPrompt(intents, currentIsoDate, currentThaiDate)
+    );
 
     const agent = new ToolLoopAgent({
       model: google('gemini-2.5-flash'),
       instructions: systemPrompt,
-      ...(enabledTools ? { 
-        tools: enabledTools,
-        stopWhen: stepCountIs(maxSteps)
-      } : {}),
+      tools: selectedTools,
+      stopWhen: stepCountIs(maxSteps),
       providerOptions: {
         google: {
           generationConfig: {
             maxOutputTokens: 1200,
-            temperature: enabledTools ? 0.05 : 0.3,
+            temperature: 0.05,
           },
         },
       },

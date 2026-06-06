@@ -1,52 +1,47 @@
 # Changelog
 
-## 2026-05-25
+## 2026-06-07 (VELOCITY-REFACTOR-PROTOCOL v8.0)
 
-* **Execution**: [BLACKANDBREW ERP: SKILL HARVESTING & SYNERGY BUNDLING PROTOCOL]
-* **Action**: Executed ONE-SHOT Safe Discovery Scan across `api`, `components`, `utils`, `lib`, and `actions/tools`.
-* **Result**: Extracted Data, UI/UX, and Performance capabilities.
-* **Output**: Generated and bundled 5 new Synergy Skill Sets (External Intel Set, High-Velocity UI Set, Safe Data Injector Set, Token Economy Set, Aesthetic Standardization Set) and saved to `docs/skills.md`.
-* **Update**: Executed RTK INTEGRATION & KNOWLEDGE RECONSTRUCTION. Identified "RTK: The Reconstruction ToolKit" (World-Class DND Rollback & Undo Stack). Created [Bundle 6] System Reconstruction & Recovery Set.
-* **Execution**: [REBIRTH PROTOCOL: PERFORMANCE-DRIVEN OMNI-REFACTOR] (v4.0)
-* **Action**: Executed Omni-Refactor across components and APIs. Reduced Supabase payload size by removing `select('*')`. Eliminated event listener memory leaks via `AbortController`. Addressed CLS in Weather Widget. Enforced Zero-Bold Policy in AI Chat Overlay.
-* **Execution**: [REBIRTH PROTOCOL: SECURITY-HARDENED OMNI-REFACTOR] (v4.1)
-* **Action**: Implemented backend lockdown via `supabase.auth.getUser()`, applied strict Zod validation schemas for Server Actions (`inventory-actions`, `shift-actions`), enforced Universal DB Reader tool isolation, and injected Anti-XSS Sanitization logic into AI Context and LocalStorage.
-* **Execution**: [REBIRTH PROTOCOL: PROJECT-WIDE OMNI-REFACTOR & AI SYNC] (v4.2)
-* **Action**: Scanned project for dead code, synced AI tool logic and database mapping, securely locked API keys, and enforced the 'text-black' / Zero-Bold typography rules across all components including the Weather Widget.
-* **Result**: Achieved absolute clean code (Exit Code 0 on Linter), flawless AI synchronization with system variables, and strict UI layout compliance.
-* **Enhancement**: [WEATHER SUBSYSTEM: PRECIPITATION & RAIN VOLUME INTEGRATION]
-* **Action**: Updated `api/weather/route.ts` to compute rain probability (`pop` %) and accumulate rain volume (`rain` mm). Integrated changes into the `WeatherWidget` dashboard component with full type safety, adhering strictly to the Zero-Bold design guidelines.
-* **Execution**: [REBIRTH PROTOCOL: DAILY CLOSING INTEGRITY WORKFLOW]
-* **Action**: Executed Omni-Blueprint validation, UI/UX linting, Typescript readiness check, Next.js build validation, and Git security syncing.
-* **Result**: Ensured absolute zero-functional error architecture, 100% build pass, and complete project mapping updates.
+* **Execution**: [VELOCITY-REFACTOR-PROTOCOL — Performance One-Shot]
+* **Action**: Code purge ใน `src/` — ลบ `console.log()` จาก production paths, บังคับ column-specific Supabase selects, debounce/memoization สำหรับ UI ที่ตอบสนองช้า, dynamic modal splitting, Cache-Control ครบทุก response ของ Weather API
+* **Optimized Files**:
 
-## 2026-05-26
+| File | Optimization |
+|------|--------------|
+| `src/app/actions/tools/database-tools.ts` | ห้าม fallback `select('*')` — บังคับ `TABLE_COLUMN_PRESETS` เท่านั้น |
+| `src/app/actions/sales-actions.ts` | ลบ debug logs; `SALES_*` / `PRODUCT_CATEGORY_COLUMNS` presets |
+| `src/app/actions/inventory-actions.ts` | Column-specific select สำหรับ items + transactions |
+| `src/app/actions/market-insights-actions.ts` | `ai_recent_transactions` เลือกเฉพาะฟิลด์ที่ใช้ |
+| `src/app/api/weather/route.ts` | `Cache-Control: public, s-maxage=1800, stale-while-revalidate=600` ทุก response |
+| `src/app/[locale]/inventory/page.tsx` | Debounced quick search (150ms), `useTransition` + `useCallback` บันทึกด่วน |
+| `src/app/[locale]/maintenance/page.tsx` | Split hydration `useEffect`; `useTransition` submit/delete; `next/dynamic` modals |
+| `src/app/[locale]/maintenance/MaintenanceModals.tsx` | **[NEW]** Lazy-loaded modal bundle (`ssr: false`) |
+| `src/app/[locale]/dashboard/components/LiveStatusTracker.tsx` | Shift columns preset + `useCallback` status check |
+| `src/app/[locale]/LiveStatusTracker.tsx` | Same shift payload trim |
+| `src/app/[locale]/sales/page.tsx` | ลบ metrics debug logs |
+| `src/components/PwaRegister.tsx` | ลบ SW success log; เหลือ `console.error` เท่านั้น |
 
-* **Execution**: [INVENTORY SORTING REFACTORING & CSV DATA MIGRATION]
-* **Action**: Executed comprehensive structural refactoring of the Inventory sorting system. Parsed `inventory-items.csv` (106 items) and bulk-migrated `sort_order` values (1-based index) into Supabase `inventory_items` table while preserving stock levels.
-* **Result**: All 106 items updated with sequential `sort_order` matching physical store layout. Zero insert failures on existing items.
-* **Files Modified**:
-  * `src/app/[locale]/inventory/page.tsx` — Strict `.order('sort_order', { ascending: true })` fetch, max+1 new item placement, 1-based DnD sort_order sync
-  * `src/app/actions/migrate-inventory-sort-order.ts` — [NEW] One-time CSV migration script with robust quoted-field parsing
-  * `src/test/run_migration.test.ts` — [NEW] Integration test to trigger and verify migration
-* **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0, 21/21 static pages)
-
-* **Execution**: [DAILY LINE NOTIFICATION PROTOCOL]
-* **Action**: Created Vercel Cron scheduled endpoint (`/api/daily-report`) to trigger at 00:00 UTC (07:00 ICT) every day. Built a compiler script that aggregates shift data, strictly filtered inventory alerts (`stock <= order_point + 2`), OpenWeatherMap forecast (06:30 - 18:00 ICT window), and upcoming public holidays.
-* **Result**: Implemented automated, token-free, rule-based push notifications sent daily via LINE Messaging API, protected by `CRON_SECRET`.
-* **Files Modified**:
-  * `src/app/actions/daily-report-actions.ts` — [NEW] Core data compiler logic
-  * `src/app/api/daily-report/route.ts` — [NEW] Vercel Cron Endpoint
-  * `vercel.json` — [NEW] Schedule configuration
-  * `.env.example` — Added CRON_SECRET reference
 * **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0)
 
-## 2026-05-27
+## 2026-06-07 (SECURE-REFACTOR-PROTOCOL v7.1)
 
-* **Execution**: [REBIRTH PROTOCOL: PERFORMANCE-DRIVEN OMNI-REFACTOR & CODE PURGE] (v4.4)
-* **Action**: ตัด `console.log()` ในโหมด production paths เพื่อลด CPU/latency, เพิ่ม fixed perf indexing ใน `LiveShiftList`, ปรับ `AIChatOverlay` ให้ quick actions ครบ 4 ปุ่มและรวม hydration effects 2 ตัว พร้อม debounce การ persist localStorage
-* **Action**: ลด payload ใน `ScheduleClient` โดยหลีกเลี่ยง `select('*')` และระบุคอลัมน์ที่ใช้จริงตาม UI
-# Changelog
+* **Execution**: [SECURE-REFACTOR-PROTOCOL — Security Hardening One-Shot]
+* **Action**: สแกน `src/`, `sql/`, `docs/` ยืนยัน API keys ฝั่ง Server เท่านั้น; รวมศูนย์ sanitization และ server auth; ล็อก AI tools และ Zod validation
+* **Security Fixes**:
+
+| Area | Fix |
+|------|-----|
+| Centralized Sanitization | `src/lib/security/sanitize.ts` — XSS + prompt injection สำหรับ chat route, overlay, localStorage |
+| Server Auth Gate | `src/lib/security/server-auth.ts` — `ensureServerSession()` + `requireServiceRoleKey()` |
+| LINE Push Isolation | `src/lib/line-notify.ts` — cron ใช้ `pushLineMessage` โดยตรง; `sendLineNotification` ต้อง auth + Zod |
+| Anon Key Fallback Removed | `schedule/page.tsx`, `migrate-inventory-sort-order.ts` — บังคับ SERVICE_ROLE เท่านั้น |
+| AI Tool Lockdown | `readTableTool` tableName → `z.enum`; `internetSearchTool` query 2–200 chars + sanitize |
+| Server Action Auth | `getMarketInsights`, `runInventoryMigration`, `sendLineNotification` — `getUser`/PIN gate |
+| Zod Validation | `maintenance-actions`, `holiday-actions`, `line-actions` |
+| Schedule Page Guard | Server-side `checkAuth()` + redirect ก่อน admin fetch |
+| AIChatOverlay | Shared sanitize util; history `useEffect` แยก static `[isMounted]` |
+
+* **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0)
 
 ## 2026-05-25
 
@@ -171,7 +166,7 @@
 * **Execution**: [REAL-TIME STATUS TRACKING & NAVIGATION REFACTOR]
 * **Action**: ติดตั้งคอมโพเนนต์ `LiveStatusTracker` สำหรับติดตามสถานะเรียลไทม์ และพัฒนาการเปลี่ยนสถานะบนแดชบอร์ดหลัก
 * **Action**: รีแฟกเตอร์เลย์เอาต์แถบนำทางด้านข้าง (Sidebar: `Sidebar.tsx`, `Menu.tsx`, `SidebarLayout.tsx`, `CollapseMenuButton.tsx`) ให้เปิด-ปิดได้อย่างลื่นไหลและดูสวยงาม
-* **Action**: ปรับการควบคุมเส้นทางความสดใหม่ของแอปพลิเคชันจาก `src/proxy.ts` เป็น Next.js Middleware มาตรฐานที่ `src/middleware.ts`
+* **Action**: ยืนยัน i18n routing ผ่าน `src/proxy.ts` (Next.js 16 convention สำหรับ next-intl middleware)
 * **Execution**: [INVENTORY COUNT ENTRY & TOUCH-ACCESSIBLE DnD]
 * **Action**: พัฒนาหน้าบันทึกการนับสต็อกจริง `/inventory/count` ที่มีสไตล์แบบ Spreadsheet (Inline Editing) บันทึกและซิงค์ข้อมูลกับ Supabase ทันทีเมื่อผู้ใช้ออกจากช่องอินพุตหรือกด Enter
 * **Action**: ปรับปรุงหน้าจัดการคลังสินค้าหลัก (`inventory/page.tsx` และ `PurchaseOrdersModal.tsx`) และแก้บั๊กความลื่นไหลในระบบลากวาง (Drag-and-Drop) ทั้งบนหน้าเดสก์ท็อปและมือถือ
@@ -205,3 +200,56 @@
 * **Action**: ยืนยัน Zero-Bold Policy (ไม่มี `font-bold`/`font-semibold` ในไฟล์ src)
 * **Result**: ความปลอดภัยของระบบถูกยกระดับอย่างสมบูรณ์, ไม่มีช่องโหว่ XSS และ Server Actions ทุกตัวที่แก้ไข/เขียนข้อมูลมีการตรวจสอบสิทธิ์แล้ว
 * **Verification**: `npm run build` ✓ (Exit Code 0, TypeScript check pass fully)
+
+## 2026-06-06 (v6.8 — Inventory Stock Single Source of Truth)
+
+* **Execution**: [INVENTORY STOCK SYNC & CSV DEPRECATION]
+* **Action**: แก้ไขความไม่สอดคล้องของ `stock` ระหว่าง 3 หน้าต่าง (คลังสินค้า / ตรวจนับ / รายการสั่งซื้อ) โดยผูกทุกหน้าต่างกับ `inventory_items.stock` ใน Supabase เป็นจุดเดียว
+* **Action**: สร้าง `sql/sync_inventory_stock.sql` — RPC `set_inventory_stock`, trigger `sync_inventory_order_qty`, `REPLICA IDENTITY FULL` สำหรับ realtime
+* **Action**: สร้าง `src/lib/inventory-stock.ts` (merge realtime, compute PO) และ `updateInventoryStock()` ใน `inventory-actions.ts`
+* **Action**: แก้ realtime handler ให้ merge partial payload แทนการแทนที่ทั้งแถว; optimistic update ในหน้าตรวจนับ; undo/redo ไม่ทับ stock จาก DB
+* **Action**: ลบ `inventory-items.csv` และปรับ `migrate-inventory-sort-order.ts` ให้ re-sequence `sort_order` จาก DB เท่านั้น (ไม่ overwrite stock)
+* **Action**: ปรับ PO export ให้ดาวน์โหลดรูปภาพเฉพาะช่องทางสั่งซื้อที่เลือก (`displayedPoItems`) ไม่ใช่ทุกรายการ
+* **Files**: `src/app/[locale]/inventory/page.tsx`, `count/page.tsx`, `PurchaseOrdersModal.tsx`, `src/test/inventory_stock_sync.test.ts`
+* **Verification**: `npm test -- src/test/inventory_stock_sync.test.ts` ✓ (4/4)
+
+## 2026-06-06 (v6.9 — Premium Smooth Animations, Zero Desktop Impact)
+
+* **Execution**: [GLOBAL UI/UX MOTION SYSTEM]
+* **Action**: ติดตั้งระบบแอนิเมชันกลางใน `globals.css` — keyframes/utilities สำหรับ `animate-in`, `fade-in`, `zoom-in-95`, `slide-in/out-*`, คลาส `.bb-modal-backdrop`, `.bb-modal-panel`, `.bb-sheet-panel`, `.bb-transition`
+* **Action**: สร้าง `src/lib/motion-presets.ts`, `src/components/ui/page-transition.tsx`, `src/components/ui/floating-alert.tsx`
+* **Action**: ครอบ route content ด้วย `<PageTransition>` ใน `SidebarLayout` — เฟดหน้าเมื่อสลับเส้นทาง (300ms)
+* **Action**: ปรับ modal/drawer/toast ใน ScheduleClient, Maintenance, PurchaseOrdersModal, Sidebar mobile backdrop ให้ใช้ motion presets มาตรฐาน
+* **Action**: ปรับ micro-interactions ใน `button.tsx`, `ClickableInput.tsx`, `Menu.tsx`, `Sidebar.tsx` — `transition-all duration-200 ease-in-out`
+* **Constraint**: ไม่เปลี่ยน layout position/size ของ desktop/mobile เดิม, Zero-Bold Policy คงเดิม 100%
+* **Verification**: `npm test` ✓ | dev server render ปกติ
+
+## 2026-06-07 (OMNI-REFACTOR-MASTER v7.0)
+
+* **Execution**: [OMNI-REFACTOR-MASTER: ZERO FUNCTIONAL ERRORS]
+* **PHASE 1 — Junk & Security**: ลบ orphaned `src/app/api/chat/middleware.ts` (empty); ยืนยัน `.env.local` ใน `.gitignore`; ลบ dead import `streamText`, `getDailyShiftsTool`, `weatherTool` จาก chat route
+* **PHASE 2 — AI Sync**: ยุบ AI tools เหลือ `readTable` + `internetSearchTool` (`SLIM_AI_TOOLS`); ฝัง `currentThaiDate`/`currentIsoDate` + `optimizeThaiTokens` บน system prompt; แก้ prompt อ้าง `service_records` แทน `maintenance_records`; Weather API ล็อกพิกัด 13.9312/100.6756 + fallback payload
+* **PHASE 3 — Visual & Build**: `AIChatOverlay` → `max-w-2xl`, `rounded-3xl`, `bg-[#fdfcf0]`, แยก useEffect โหลด/บันทึก localStorage; `WeatherWidget` → `rounded-3xl` + latte theme; แก้ TS error ใน `ClickableDatePicker`
+* **Verification**: `npm run build` ✓ (Exit Code 0, 32/32 pages)
+
+## 2026-06-07 (Skill Synergy Bundler — One-Shot Scan)
+
+* **Execution**: [SKILL-SYNERGY-BUNDLER: SAFE DISCOVERY SCAN]
+* **Scope**: Read-only scan ของ `src/app/api/chat/`, `src/app/api/weather/`, `src/components/`, `src/utils/`, `src/lib/`, `src/app/actions/tools/` (ยกเว้น `node_modules`, `.next`, `.git`, `.vercel`, `public`, `dist`)
+* **Capabilities Extracted**: Intent Classification Engine, ToolLoopAgent, `getDailyShiftsTool`, `weatherTool`, `getDailyReportSourcesTool`, COLUMN_ALIASES/PRESETS, EXECUTIVE_RULES, PIN read-only session, `inventory-stock.ts` truth layer, Thai Token Optimizer, XSS sanitization
+* **Bundles Created/Updated**: 14 Synergy Skill Sets ใน `docs/skills.md` — เพิ่ม Bundle 10–14 (AI Orchestrator, Session & Access Control, Inventory Truth Layer, Thai Temporal Intelligence, Secure Client Persistence)
+* **Fix**: แก้ `auth.ts` — ลบ `export { READ_ONLY_DENY_MSG }` ออกจาก `'use server'` file (Next.js invalid-use-server-value)
+
+## 2026-06-07 (Documentation Audit)
+
+* **Execution**: [FULL DOCUMENTATION SYNC]
+* **Action**: อัปเดตไฟล์ `.md` ทั้งหมดในโปรเจกต์ให้สอดคล้องกับโค้ดปัจจุบัน (v6.9)
+* **Changes**:
+  * `README.md` — เขียนใหม่ทั้งหมด (แทน create-next-app boilerplate)
+  * `PROJECT_MAP.md` — แก้ `src/proxy.ts` (ไม่ใช่ `middleware.ts`), เพิ่มโมดูล auth/sales/maintenance
+  * `docs/changelog.md` — ลบเนื้อหาซ้ำ (duplicate block 2026-05-25–27)
+  * `docs/agent.md` — อัปเดต Agent Tools ให้ตรง `src/app/actions/tools/`
+  * `docs/context.md`, `docs/architecture.md`, `docs/api.md`, `docs/database.md`, `docs/prd.md` — เพิ่ม PIN auth, sales, maintenance, market insights
+  * `MASTER_BLUEPRINT.md` — แก้ Zero-Display Logic ให้ตรง AGENTS.md
+  * `SKILLS_INVENTORY.md`, `docs/SUMMARY_REPORT.md`, `docs/skills.md` — อัปเดตเวอร์ชัน 6.9
+* **Note**: ไฟล์ใน `.agents/skills/` เป็น third-party skill references — ไม่แก้ไข
