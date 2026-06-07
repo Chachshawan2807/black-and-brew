@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 vi.mock('framer-motion', () => ({
   motion: {
@@ -117,6 +117,33 @@ describe('ScheduleClient regular holiday persistence', () => {
 
     expect(screen.getByRole('heading', { name: 'จัดการวันหยุดประจำ' })).toBeInTheDocument();
     expect(screen.getByText('จ., พ.')).toBeInTheDocument();
+  });
+
+  test('shows all-employee holiday overview without selecting an employee', async () => {
+    render(
+      <ScheduleClient
+        initialProfiles={[
+          { id: 'p1', full_name: 'นิด' },
+          { id: 'p2', full_name: 'แป้ง' },
+        ]}
+        initialShifts={[]}
+        initialHolidays={[]}
+        initialRegularHolidays={{ p1: [1, 3], p2: [5] }}
+        initialDateStr="2026-06-01"
+        locale="th"
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
+
+    const modal = screen.getByRole('heading', { name: 'จัดการวันหยุดประจำ' }).closest('.bb-sheet-panel') as HTMLElement;
+    const summary = within(modal).getByRole('heading', { name: 'สรุปวันหยุดประจำของพนักงาน' }).parentElement as HTMLElement;
+
+    expect(within(summary).getByText('นิด')).toBeInTheDocument();
+    expect(within(summary).getByText('แป้ง')).toBeInTheDocument();
+    expect(within(summary).getByText('จ., พ.')).toBeInTheDocument();
+    expect(within(summary).getByText('ศ.')).toBeInTheDocument();
+    expect(within(modal).getByDisplayValue('เลือกพนักงาน...')).toBeInTheDocument();
   });
 
   test('migrates cached recurring holidays into Supabase when the server is empty', async () => {

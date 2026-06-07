@@ -20,7 +20,7 @@ export default function SidebarLayout({
 
   return (
     <>
-      <header className="md:hidden sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-black/5 pl-1 pr-3 flex justify-between items-center h-[72px]">
+      <header className="md:hidden sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-black/5 pl-1 pr-3 flex justify-between items-center h-[72px] bb-shadow-sm">
         <div className="flex items-center">
           <Image 
             src="/images/logo.png" 
@@ -55,7 +55,7 @@ export default function SidebarLayout({
 
       <Sidebar />
       <main className={cn(
-        "min-h-screen bg-transparent transition-[margin-left] ease-in-out duration-300",
+        "min-h-[100dvh] bg-transparent transition-[margin-left] ease-in-out duration-300",
         isOpen === false ? "md:ml-20" : "md:ml-[280px]"
       )}>
         <PageTransition>{children}</PageTransition>

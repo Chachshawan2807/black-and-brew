@@ -1,4 +1,5 @@
 {
+  "markdownlint.configFile": ".markdownlint-cli2.jsonc",
   "css.lint.unknownAtRules": "ignore",
   "antigravity.autoRetry.enabled": true,
   "antigravity.autoRetry.mode": "always_proceed",

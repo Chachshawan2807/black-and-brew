@@ -110,10 +110,12 @@ export default function MarketInsightsPage() {
   };
 
   const primaryButtonClass =
-    'inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-2xl hover:bg-black/80 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center gap-1.5 md:gap-2 flex-1 md:flex-none min-w-0 px-3 py-2.5 md:px-6 md:py-3 text-[13px] md:text-base bg-black text-white rounded-3xl hover:bg-black/80 bb-transition bb-shadow-sm active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed';
+  const actionButtonRowClass =
+    'flex flex-row items-stretch gap-2 w-full md:w-auto md:gap-3';
 
   return (
-    <div className="min-h-screen bg-[#fdfcf0] text-black antialiased font-normal">
+    <div className="min-h-screen bg-transparent text-black antialiased font-normal">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
         
         {/* Header Section */}
@@ -126,7 +128,7 @@ export default function MarketInsightsPage() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-white border border-black/5 rounded-2xl">
+                <div className="p-3 bg-white border border-black/5 rounded-2xl bb-shadow-sm">
                   <Sparkles className="w-6 h-6 text-black" />
                 </div>
                 <span className="text-sm text-black/60 bg-black/5 px-3 py-1 rounded-full">
@@ -142,14 +144,14 @@ export default function MarketInsightsPage() {
             </div>
             {/* Only show header buttons when we have data or loading */}
             {(hasLoaded || isLoading) && (
-              <div className="flex flex-col md:flex-row items-end gap-3">
+              <div className={`${actionButtonRowClass} md:items-end`}>
                 {hasLoaded && (
                   <button
                     onClick={loadFromCacheOnly}
                     disabled={isLoading}
                     className={primaryButtonClass}
                   >
-                    <TrendingUp className="w-4 h-4" />
+                    <TrendingUp className="w-4 h-4 shrink-0" />
                     <span>โหลดข้อมูลเดิม</span>
                   </button>
                 )}
@@ -158,7 +160,7 @@ export default function MarketInsightsPage() {
                   disabled={isLoading}
                   className={`group ${primaryButtonClass}`}
                 >
-                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                  <RefreshCw className={`w-4 h-4 shrink-0 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
                   <span>{hasLoaded ? 'วิเคราะห์ใหม่' : 'เริ่มวิเคราะห์'}</span>
                 </button>
               </div>
@@ -174,7 +176,7 @@ export default function MarketInsightsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl border border-black/5 p-10 md:p-16 text-center"
+              className="bg-white rounded-3xl border border-black/5 bb-shadow-sm p-10 md:p-16 text-center"
             >
               <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-black/5 flex items-center justify-center">
                 <Lightbulb className="w-10 h-10 text-black" />
@@ -183,19 +185,19 @@ export default function MarketInsightsPage() {
               <p className="text-black/60 mb-8 max-w-md mx-auto">
                 AI จะนำข้อมูลยอดขาย คลังสินค้า อากาศ และเทรนด์ในพื้นที่มาวิเคราะห์เชิงลึก — ไม่ใช่แค่สรุปตัวเลขที่คุณเห็นอยู่แล้ว
               </p>
-              <div className="flex flex-col md:flex-row items-center justify-center gap-3">
+              <div className={`${actionButtonRowClass} max-w-md mx-auto`}>
                 <button
                   onClick={loadFromCacheOnly}
                   className={primaryButtonClass}
                 >
-                  <TrendingUp className="w-4 h-4" />
+                  <TrendingUp className="w-4 h-4 shrink-0" />
                   <span>โหลดข้อมูลเดิม</span>
                 </button>
                 <button
                   onClick={loadFreshInsights}
                   className={primaryButtonClass}
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4 shrink-0" />
                   <span>เริ่มต้นวิเคราะห์ใหม่</span>
                 </button>
               </div>
@@ -250,19 +252,19 @@ export default function MarketInsightsPage() {
               </div>
               <h3 className="text-xl mb-2">เกิดข้อผิดพลาด</h3>
               <p className="text-black/60 mb-6">ไม่สามารถโหลดข้อมูลวิเคราะห์ได้ในขณะนี้</p>
-              <div className="flex flex-col md:flex-row items-center justify-center gap-3">
+              <div className={`${actionButtonRowClass} max-w-md mx-auto`}>
                 <button
                   onClick={loadFromCacheOnly}
                   className={primaryButtonClass}
                 >
-                  <TrendingUp className="w-4 h-4" />
+                  <TrendingUp className="w-4 h-4 shrink-0" />
                   <span>โหลดข้อมูลเดิม</span>
                 </button>
                 <button
                   onClick={loadFreshInsights}
                   className={primaryButtonClass}
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-4 h-4 shrink-0" />
                   <span>ลองอีกครั้ง (ใหม่)</span>
                 </button>
               </div>
@@ -281,9 +283,9 @@ export default function MarketInsightsPage() {
             >
                 {/* Card 1: Consumer Behavior */}
                 <motion.div variants={itemVariants} className="group">
-                  <div className="bg-white rounded-3xl border border-black/5 hover:-translate-y-1 transition-all duration-300 p-8 md:p-10">
+                  <div className="bb-card hover:-translate-y-0.5 bb-transition p-8 md:p-10">
                     <div className="flex items-start gap-5 mb-6">
-                      <div className="p-4 bg-black/5 rounded-2xl">
+                      <div className="p-4 bg-black/[0.04] rounded-2xl bb-shadow-sm">
                         <Users className="w-7 h-7 text-black" />
                       </div>
                       <div>
@@ -293,7 +295,7 @@ export default function MarketInsightsPage() {
                         <p className="text-black/40 text-sm">Insight จาก AI ไม่ใช่สรุปตัวเลขดิบ</p>
                       </div>
                     </div>
-                    <div className="text-black/60 text-base md:text-lg pl-2 border-l-4 border-black/10">
+                    <div className="text-black/60 text-base md:text-lg pl-4 border-l-2 border-black/8">
                       {formatContent(insights.behavior)}
                     </div>
                   </div>
@@ -301,9 +303,9 @@ export default function MarketInsightsPage() {
 
                 {/* Card 2: Trends & Menu */}
                 <motion.div variants={itemVariants} className="group">
-                  <div className="bg-white rounded-3xl border border-black/5 hover:-translate-y-1 transition-all duration-300 p-8 md:p-10">
+                  <div className="bb-card hover:-translate-y-0.5 bb-transition p-8 md:p-10">
                     <div className="flex items-start gap-5 mb-6">
-                      <div className="p-4 bg-black/5 rounded-2xl">
+                      <div className="p-4 bg-black/[0.04] rounded-2xl bb-shadow-sm">
                         <Coffee className="w-7 h-7 text-black" />
                       </div>
                       <div>
@@ -313,7 +315,7 @@ export default function MarketInsightsPage() {
                         <p className="text-black/40 text-sm">จับคู่เทรนด์ภายนอกกับจุดแข็งร้าน</p>
                       </div>
                     </div>
-                    <div className="text-black/60 text-base md:text-lg pl-2 border-l-4 border-black/10">
+                    <div className="text-black/60 text-base md:text-lg pl-4 border-l-2 border-black/8">
                       {formatContent(insights.trends)}
                     </div>
                   </div>
@@ -321,9 +323,9 @@ export default function MarketInsightsPage() {
 
                 {/* Card 3: Strategy */}
                 <motion.div variants={itemVariants} className="group">
-                  <div className="bg-white rounded-3xl border border-black/5 hover:-translate-y-1 transition-all duration-300 p-8 md:p-10">
+                  <div className="bb-card hover:-translate-y-0.5 bb-transition p-8 md:p-10">
                     <div className="flex items-start gap-5 mb-6">
-                      <div className="p-4 bg-black/5 rounded-2xl">
+                      <div className="p-4 bg-black/[0.04] rounded-2xl bb-shadow-sm">
                         <Lightbulb className="w-7 h-7 text-black" />
                       </div>
                       <div>
@@ -333,7 +335,7 @@ export default function MarketInsightsPage() {
                         <p className="text-black/40 text-sm">แผนปฏิบัติที่ทำได้ทันที</p>
                       </div>
                     </div>
-                    <div className="text-black/60 text-base md:text-lg pl-2 border-l-4 border-black/10">
+                    <div className="text-black/60 text-base md:text-lg pl-4 border-l-2 border-black/8">
                       {formatContent(insights.strategy)}
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> **Version:** 6.9 | **Last Updated:** 2026-06-07 | **Engine:** Supabase PostgreSQL
+> **Version:** 8.1 | **Last Updated:** 2026-06-08 | **Engine:** Supabase PostgreSQL
 
 ---
 
@@ -179,6 +179,8 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 ---
 
 ## 6. Migration Files
+
+> **[VERIFY] Schema location:** There is no `supabase/migrations/` folder. All schema files live at the repository root (e.g. `DB_SCHEMA.sql`) plus the `sql/` subfolder (`ai_agent_views.sql`, `fix_inventory_rls.sql`, `sync_inventory_stock.sql`). `DB_SCHEMA.sql` is the primary schema. Paths below are relative to the repo root.
 
 | File | Purpose |
 | :--- | :--- |

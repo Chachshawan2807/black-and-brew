@@ -129,6 +129,8 @@
     }
     font-family: 'Prompt', 'IBM Plex Sans Thai', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     line-height: 1.6 !important;
   }
 
@@ -168,21 +170,55 @@
     background-color: rgb(255 255 255 / 0.95);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+    border: 1px solid rgb(0 0 0 / 0.05);
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.04),
+      0 4px 8px -1px rgb(0 0 0 / 0.06),
+      0 12px 24px -4px rgb(0 0 0 / 0.08);
   }
   
   .glass-card {
     background-color: #ffffff;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid #f3f4f6;
-    border-radius: 1rem;
-    transition: all 200ms ease-in-out;
+    border: 1px solid rgb(0 0 0 / 0.05);
+    border-radius: 1.5rem;
+    transition: box-shadow 200ms ease-in-out, transform 200ms ease-in-out;
 
     &:hover {
-      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+      box-shadow:
+        0 1px 2px rgb(0 0 0 / 0.04),
+        0 6px 12px -2px rgb(0 0 0 / 0.06),
+        0 16px 32px -6px rgb(0 0 0 / 0.08);
     }
+  }
+
+  .bb-card {
+    background-color: #ffffff;
+    border: 1px solid rgb(0 0 0 / 0.05);
+    border-radius: 1.5rem;
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.03),
+      0 2px 6px -1px rgb(0 0 0 / 0.04);
+    transition: box-shadow 200ms ease-in-out, transform 200ms ease-in-out;
+
+    &:hover {
+      box-shadow:
+        0 1px 2px rgb(0 0 0 / 0.04),
+        0 4px 12px -2px rgb(0 0 0 / 0.06),
+        0 12px 24px -6px rgb(0 0 0 / 0.07);
+    }
+  }
+
+  .bb-table-wrapper {
+    background-color: rgb(253 252 240 / 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgb(0 0 0 / 0.05);
+    border-radius: 1.5rem;
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.03),
+      0 2px 8px -2px rgb(0 0 0 / 0.05);
   }
 
   /* Premium motion utilities */
@@ -210,6 +246,46 @@
 
   .bb-toast-exit {
     animation: bb-slide-out-to-bottom-2 300ms ease-in both, bb-fade-out 300ms ease-in both;
+  }
+
+  .bb-input {
+    background-color: transparent;
+    border: 1px solid rgb(0 0 0 / 0.05);
+    border-radius: 1.5rem;
+    transition: border-color 200ms ease-in-out, box-shadow 200ms ease-in-out;
+
+    &:focus,
+    &:focus-within {
+      border-color: rgb(0 0 0 / 0.12);
+      box-shadow: 0 0 0 3px rgb(0 0 0 / 0.04);
+      outline: none;
+    }
+  }
+
+  .bb-shadow-sm {
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.03),
+      0 2px 6px -1px rgb(0 0 0 / 0.04);
+  }
+
+  .bb-shadow-md {
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.04),
+      0 4px 12px -2px rgb(0 0 0 / 0.06),
+      0 12px 24px -6px rgb(0 0 0 / 0.07);
+  }
+
+  .bb-shadow-lg {
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.04),
+      0 6px 16px -2px rgb(0 0 0 / 0.07),
+      0 20px 40px -8px rgb(0 0 0 / 0.1);
+  }
+
+  .bb-overlay {
+    background-color: rgb(0 0 0 / 0.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
 }
 

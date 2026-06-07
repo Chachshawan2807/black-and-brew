@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> **Version:** 6.9 | **Last Updated:** 2026-06-07
+> **Version:** 8.1 | **Last Updated:** 2026-06-08
 
 ---
 
@@ -10,7 +10,7 @@
 | :--- | :--- |
 | **Project Name** | BLACK-AND-BREW ERP System |
 | **Type** | Enterprise Resource Planning for Coffee Shop |
-| **Current Version** | 6.9 (Stock Sync + Premium Motion) |
+| **Current Version** | 8.1 (AI Schedule Deterministic Path) |
 | **Repository** | `Chachshawan2807/black-and-brew` |
 | **Local Path** | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -55,9 +55,7 @@
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin key (bypass RLS) | Server only |
 | `APP_PIN` | Full-access PIN | Server only |
 | `READ_ONLY_PIN` | Documented in `.env.example` (code uses hardcoded `111222`) | Server only |
-| `GOOGLE_API_KEY` | Google Cloud API | Server only |
-| `GEMINI_API_KEY` | Gemini API | Server only |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Generative AI | Server only |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini — AI Chat + Market Insights (`@ai-sdk/google`) | Server only |
 | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync | Server only |
 | `TAVILY_API_KEY` | AI web search | Server only |
 | `OPENWEATHER_API_KEY` | Weather data | Server only |

@@ -281,8 +281,8 @@ export default function MaintenancePage() {
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#fdfcf0] p-4 md:p-10 text-[#000000] relative font-normal" style={{ lineHeight: '1.6' }}>
-      <div className="max-w-7xl mx-auto space-y-10">
+    <div className="min-h-screen bg-transparent p-4 md:p-10 text-[#000000] relative font-normal" style={{ lineHeight: '1.6' }}>
+      <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-black/5">
@@ -306,7 +306,7 @@ export default function MaintenancePage() {
               whileTap={{ scale: isReadOnly ? 1 : 0.98 }}
               onClick={() => { resetForm(); setIsModalOpen(true); }}
               disabled={isReadOnly}
-              className="group flex items-center gap-2.5 bg-[#000000] hover:bg-black/80 text-white px-7 py-3.5 rounded-2xl transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              className="group flex items-center gap-2.5 bg-[#000000] hover:bg-black/80 text-white px-7 py-3.5 rounded-3xl bb-transition bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Plus className="w-4.5 h-4.5" />
               <span className="font-medium text-sm tracking-wide">เพิ่มบันทึกใหม่</span>
@@ -324,7 +324,7 @@ export default function MaintenancePage() {
               <span className="text-sm tracking-[0.3em] uppercase font-normal">Synchronizing Records...</span>
             </div>
           ) : records.length === 0 ? (
-            <div className="bg-white/50 border border-dashed border-[#000000]/10 rounded-[32px] py-32 flex flex-col items-center justify-center text-[#000000]/40">
+            <div className="bg-white/50 border border-dashed border-[#000000]/8 rounded-3xl py-32 flex flex-col items-center justify-center text-[#000000]/40">
               <Wrench className="w-20 h-20 mb-8 opacity-10" strokeWidth={0.5} />
               <p className="text-xl font-normal tracking-wide italic">No maintenance records discovered yet.</p>
               <button
@@ -336,10 +336,10 @@ export default function MaintenancePage() {
               </button>
             </div>
           ) : (
-            <div className="w-full overflow-x-auto scrollbar-thin pb-6 box-border bg-white rounded-3xl border border-black/5 shadow-sm">
+            <div className="w-full overflow-x-auto scrollbar-thin pb-6 box-border bg-white rounded-3xl border border-black/5 bb-shadow-sm">
               <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '1100px' }}>
                 <thead>
-                  <tr className="border-b border-neutral-200/50 bg-slate-50/50">
+                  <tr className="border-b border-black/5 bg-[#fdfcf0]/40">
                     <th 
                       style={{ width: `${colWidths.date}px` }} 
                       className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
@@ -440,7 +440,7 @@ export default function MaintenancePage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.03 }}
-                        className="group hover:bg-slate-50/80 transition-colors"
+                        className="group hover:bg-black/[0.02] bb-transition"
                       >
                         <td className="py-4 px-5 text-sm font-normal text-neutral-600 antialiased font-mono">
                           {format(new Date(record.start_date), 'dd/MM/yyyy')}
@@ -458,7 +458,7 @@ export default function MaintenancePage() {
                           {record.person_in_charge || '-'}
                         </td>
                         <td className="py-4 px-5 text-center">
-                          <span className="inline-block px-2.5 py-1 bg-black/5 rounded-lg uppercase tracking-widest font-normal text-[11px] text-black/60">
+                          <span className="inline-block px-3 py-1 bg-black/[0.04] rounded-full uppercase tracking-widest font-normal text-[11px] text-black/60">
                             {record.task_type}
                           </span>
                         </td>

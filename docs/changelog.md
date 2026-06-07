@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-08 (Documentation Sync — Code-Truth Alignment)
+
+* **Execution**: [DOCUMENTATION SYNC — read real code as source of truth]
+* **Action**: ปรับ `docs/` ให้ตรงกับโค้ดปัจจุบัน (2026-06-08) โดยอ่านโค้ดจริงเป็นหลัก ไม่เดา
+* **Changes**:
+  * Bumped header `Version` → 8.1 และ `Last Updated` → 2026-06-08 ในทุกไฟล์เป้าหมาย (`architecture.md`, `database.md`, `api.md`, `rules.md`, `design.md`, `context.md`, `tasks.md`) — เดิม header ค้างที่ 6.9 ขณะที่ changelog ไปถึง v8.1 แล้ว
+  * `architecture.md` + `api.md` — แก้รายการ AI tools ของ `/api/chat` เป็น `getDailyShifts`, `readTable`, `internetSearchTool` (weather ผ่าน `internetSearchTool` ไม่มี weather tool แยก) และระบุ deterministic schedule short-circuit ตาม `src/app/api/chat/route.ts`
+  * `database.md` — เพิ่ม `[VERIFY]` ระบุว่าไม่มีโฟลเดอร์ `supabase/migrations/`; schema อยู่ที่ root + `sql/` โดย `DB_SCHEMA.sql` เป็นหลัก
+  * `context.md` — `Current Version` → 8.1 (AI Schedule Deterministic Path)
+* **Verification**: `npm run lint:md` ✓ (Exit Code 0)
+
 ## 2026-06-07 (DAILY-CLOSING — AI Schedule Deterministic Path v8.1)
 
 * **Execution**: [DAILY-CLOSING-WORKFLOW — Architecture Integrity Sync]
@@ -7,7 +18,7 @@
 * **Changes**:
 
 | File | Change |
-|------|--------|
+| --- | --- |
 | `src/lib/schedule/format-daily-shifts.ts` | **[NEW]** Normalize + categorize shifts จาก `metadata.location` |
 | `src/lib/schedule/fetch-daily-shifts.ts` | **[NEW]** Service-role fetch รายวัน |
 | `src/lib/schedule/format-schedule-chat-response.ts` | **[NEW]** ข้อความตอบแชทมาตรฐาน |
@@ -28,7 +39,7 @@
 * **Optimized Files**:
 
 | File | Optimization |
-|------|--------------|
+| --- | --- |
 | `src/app/actions/tools/database-tools.ts` | ห้าม fallback `select('*')` — บังคับ `TABLE_COLUMN_PRESETS` เท่านั้น |
 | `src/app/actions/sales-actions.ts` | ลบ debug logs; `SALES_*` / `PRODUCT_CATEGORY_COLUMNS` presets |
 | `src/app/actions/inventory-actions.ts` | Column-specific select สำหรับ items + transactions |
@@ -51,7 +62,7 @@
 * **Security Fixes**:
 
 | Area | Fix |
-|------|-----|
+| --- | --- |
 | Centralized Sanitization | `src/lib/security/sanitize.ts` — XSS + prompt injection สำหรับ chat route, overlay, localStorage |
 | Server Auth Gate | `src/lib/security/server-auth.ts` — `ensureServerSession()` + `requireServiceRoleKey()` |
 | LINE Push Isolation | `src/lib/line-notify.ts` — cron ใช้ `pushLineMessage` โดยตรง; `sendLineNotification` ต้อง auth + Zod |
@@ -214,9 +225,9 @@
 
 * **Execution**: [FULL SECURITY HARDENING]
 * **Action**: เพิ่ม `supabase.auth.getUser()` auth check ใน Server Actions ที่ขาด:
-  - `deleteShift`, `updateStaffOrder`, `updateDashboardOrder`, `deleteManagementHistoryRange` (`src/app/actions/shift-actions.ts`)
-  - `syncHolidays` (`src/app/actions/holiday-actions.ts`)
-  - `uploadSalesFiles`, `deleteSalesUpload`, `updateProductCategory`, `deleteCategory`, `autoCategorizeAllProducts` (`src/app/actions/sales-actions.ts`)
+  * `deleteShift`, `updateStaffOrder`, `updateDashboardOrder`, `deleteManagementHistoryRange` (`src/app/actions/shift-actions.ts`)
+  * `syncHolidays` (`src/app/actions/holiday-actions.ts`)
+  * `uploadSalesFiles`, `deleteSalesUpload`, `updateProductCategory`, `deleteCategory`, `autoCategorizeAllProducts` (`src/app/actions/sales-actions.ts`)
 * **Action**: เพิ่ม XSS Sanitization ที่สมบูรณ์ใน `AIChatOverlay.tsx`: sanitize content ทั้งจาก localStorage และเมื่อแสดงผลใน `ChatBubble` (ลบ script/iframe/object/embed, on* attributes, javascript: URLs)
 * **Action**: ยืนยัน Zero-Bold Policy (ไม่มี `font-bold`/`font-semibold` ในไฟล์ src)
 * **Result**: ความปลอดภัยของระบบถูกยกระดับอย่างสมบูรณ์, ไม่มีช่องโหว่ XSS และ Server Actions ทุกตัวที่แก้ไข/เขียนข้อมูลมีการตรวจสอบสิทธิ์แล้ว

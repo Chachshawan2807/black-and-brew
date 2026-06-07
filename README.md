@@ -47,6 +47,8 @@ npm run dev
 | `npm run build` | Production build |
 | `npm run start` | Production server |
 | `npm run lint` | ESLint |
+| `npm run lint:md` | Markdownlint (scoped: `docs/**/*.md`, root `*.md`) |
+| `npm run lint:md:fix` | Markdownlint auto-fix |
 | `npm test` | Vitest test suite |
 
 ---
@@ -109,7 +111,7 @@ Read-only PIN `111222` ถูก hardcode ใน `src/lib/auth-constants.ts` —
 
 ## Architecture
 
-```
+```text
 src/
 ├── app/
 │   ├── page.tsx              # Redirect → /th

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, test, describe, vi, beforeEach } from 'vitest';
 import PinGateway from '@/components/auth/PinGateway';
 
@@ -72,6 +72,21 @@ describe('PinGateway Session-Only Authentication', () => {
 
     expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
     expect(screen.getByText(/Security Gateway/i)).toBeInTheDocument();
+  });
+
+  test('should mask PIN digits with dots immediately while typing', () => {
+    render(
+      <PinGateway>
+        <div data-testid="protected-content">Secret Dashboard</div>
+      </PinGateway>
+    );
+
+    const pinInput = screen.getByLabelText('รหัสผ่าน 6 หลัก');
+    fireEvent.change(pinInput, { target: { value: '1' } });
+
+    expect(screen.getByLabelText('รหัสผ่าน 6 หลัก')).toHaveValue('1');
+    expect(screen.queryByText('1')).not.toBeInTheDocument();
+    expect(document.querySelector('.rounded-full.bg-neutral-900')).toBeInTheDocument();
   });
 
   test('should restore read-only flag from sessionStorage via AuthProvider', () => {

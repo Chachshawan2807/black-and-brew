@@ -133,4 +133,3 @@ The system is built on **Next.js 16.2.4** (Turbopack) and **Supabase**, prioriti
 ---
 
 Last Updated: 2026-06-07 [v6.9 — see also root MASTER_BLUEPRINT.md for full blueprint]
-

@@ -14,7 +14,7 @@ export function SidebarToggle({ isOpen, setIsOpen }: SidebarToggleProps) {
     <div className="invisible lg:visible absolute top-[16px] -right-[16px] z-[9999]">
       <Button
         onClick={() => setIsOpen?.()}
-        className="rounded-full w-8 h-8 bg-white border-none shadow-md hover:bg-[#fff3dd] transition-all duration-500"
+        className="rounded-full w-8 h-8 bg-white border border-[#000000]/5 bb-shadow-sm hover:bg-[#000000]/5 bb-transition"
         variant="ghost"
         size="icon"
       >

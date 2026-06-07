@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> **Version:** 6.9 | **Last Updated:** 2026-06-07
+> **Version:** 8.1 | **Last Updated:** 2026-06-08
 
 ---
 
@@ -92,7 +92,8 @@
 - [x] Full security hardening (v6.7) — auth checks on all write server actions
 - [x] XSS sanitization in `AIChatOverlay.tsx`
 - [x] Inventory RLS hardening (`sql/fix_inventory_rls.sql`)
-- [x] Documentation full sync (2026-06-07)
+- [x] AI chat refactor — deterministic daily-schedule path + `getDailyShifts`/`readTable`/`internetSearchTool` (v8.0–8.1)
+- [x] Documentation full sync (2026-06-08)
 
 ---
 

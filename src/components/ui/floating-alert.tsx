@@ -41,7 +41,7 @@ export function FloatingAlert({
           className={cn('fixed z-[200] pointer-events-none', className)}
           style={style}
         >
-          <div className="bg-[#fdfcf0] border border-[#000000]/5 shadow-xl rounded-2xl py-2 px-4 flex items-center gap-2">
+          <div className="bg-[#fdfcf0] border border-[#000000]/5 bb-shadow-md rounded-3xl py-2.5 px-5 flex items-center gap-3">
             {icon ?? <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />}
             <p className="text-[13px] font-normal text-black tracking-tight whitespace-nowrap">
               {message}
@@ -84,7 +84,7 @@ export function FloatingToast({
           exit={{ opacity: 0, x: 24 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           className={cn(
-            'fixed bottom-8 right-8 z-[200] px-6 py-4 rounded-3xl shadow-2xl border flex items-center gap-3 font-normal',
+            'fixed bottom-8 right-8 z-[200] px-6 py-4 rounded-3xl bb-shadow-lg border flex items-center gap-3 font-normal',
             type === 'success'
               ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
               : 'bg-red-50 border-red-100 text-red-700',

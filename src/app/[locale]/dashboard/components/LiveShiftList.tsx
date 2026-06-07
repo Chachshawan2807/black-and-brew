@@ -81,7 +81,7 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
         whileHover={isReadOnly ? undefined : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: "easeOut" } }}
         whileTap={isReadOnly ? undefined : { scale: 0.98 }}
         transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
-        className={`glass-card p-6 flex flex-col gap-5 bg-white/80 backdrop-blur-xl select-none border border-black/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-shadow duration-300 rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:border-black/10 hover:shadow-xl'}`}
+        className={`glass-card p-6 flex flex-col gap-5 bg-white/80 backdrop-blur-xl select-none border border-black/5 bb-shadow-sm bb-transition rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:border-black/10 hover:bb-shadow-md'}`}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1 py-1">
@@ -252,7 +252,7 @@ export default function LiveShiftList({
 
   return (
     <div className="space-y-4 p-4 md:p-8">
-      <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 md:p-5 bg-white/80 backdrop-blur-xl border border-black/5 rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.02)] mb-6">
+      <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 md:p-5 bg-white/80 backdrop-blur-xl border border-black/5 rounded-3xl bb-shadow-sm mb-6">
         
         {/* แผงควบคุมฝั่งซ้าย: ไอคอน และ Double Capsule Date Picker */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto">
@@ -316,7 +316,7 @@ export default function LiveShiftList({
             sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }),
           }}>
             {activeId && activeProfileData ? (
-              <div className="glass-card p-6 flex flex-col gap-5 bg-white/95 shadow-2xl border border-black/10 scale-105 opacity-100 ring-2 ring-black/5 rounded-3xl backdrop-blur-xl pointer-events-none">
+              <div className="glass-card p-6 flex flex-col gap-5 bg-white/95 bb-shadow-lg border border-black/10 scale-105 opacity-100 ring-2 ring-black/5 rounded-3xl backdrop-blur-xl pointer-events-none">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 py-1">
                     <h3 className="text-[19px] font-normal tracking-tight text-[#000000] leading-[1.6]">

@@ -109,7 +109,7 @@ export default function Menu({ isOpen }: MenuProps) {
       </ul>
 
       {/* Logout Button */}
-      <div className="w-full px-2 pt-4 pb-2 max-md:pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-black/5 mt-auto">
+      <div className="w-full px-2 pt-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-black/5 mt-auto">
         <TooltipProvider disableHoverableContent>
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>

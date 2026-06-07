@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> **Version:** 6.9 | **Last Updated:** 2026-06-07 | **Stack:** Next.js 16 + Supabase
+> **Version:** 8.1 | **Last Updated:** 2026-06-08 | **Stack:** Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -122,10 +122,13 @@ Quick Entry → recordTransaction() → supabase.rpc('record_inventory_transacti
 ### AI Chat
 
 ```text
-AIChatOverlay → POST /api/chat → ToolLoopAgent (Gemini)
-→ tools: readTable, internetSearch, weather
+AIChatOverlay → POST /api/chat → ToolLoopAgent (Gemini 2.5 Flash)
+→ tools: getDailyShifts, readTable, internetSearchTool
+→ daily schedule queries short-circuit to deterministic stream (no LLM)
 → streaming response → XSS sanitization on display
 ```
+
+> **AI tools (`src/app/api/chat/route.ts`):** `getDailyShifts` (daily roster), `readTable` (other internal tables), `internetSearchTool` (external/weather). Weather is served via `internetSearchTool` — there is no separate `weather` AI tool.
 
 ### Daily LINE Report
 
@@ -155,7 +158,7 @@ Vercel Cron → /api/daily-report → compileDailyReportPayload()
 | :--- | :--- | :--- |
 | Supabase | Anon + Service Role | DB, Auth, Real-time |
 | Google Calendar API | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync |
-| Google Gemini | `GEMINI_API_KEY` | AI Chat + Market Insights |
+| Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat + Market Insights |
 | OpenWeatherMap | `OPENWEATHER_API_KEY` | Weather widget + daily report |
 | Tavily | `TAVILY_API_KEY` | AI web search |
 | LINE Messaging API | `LINE_CHANNEL_ACCESS_TOKEN` | Daily push notifications |

@@ -1,13 +1,15 @@
+# Agent Rules — BLACKANDBREW ERP
+
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:ui-ux-pro-max-skill -->
 
-# UI/UX PRO MAX STANDARDS
+## UI/UX PRO MAX STANDARDS
 
 - **Import Skill:** <https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git>
 - **Constraint:** ทุกการสร้าง UI ใน BLACKANDBREW ERP ต้องเป็น Minimalist และใช้ Pastel Palette ตามเงื่อนไขเวลาเดิมเท่านั้น (เช่น 6:30 = light green)
@@ -15,7 +17,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- END:ui-ux-pro-max-skill -->
 <!-- BEGIN:clickable-input-rules -->
 
-# GLOBAL UI INTERACTION RULES
+## GLOBAL UI INTERACTION RULES
 
 - **Date Picker Accessibility:** สำหรับ Input ประเภทวันที่ (Date Picker) ทั้งหมดในโปรเจกต์ ต้องทำให้พื้นที่ทั้งหมดของ Input Container สามารถคลิกเพื่อเรียกปฏิทินขึ้นมาได้ (Full-width clickable area) ไม่จำกัดเฉพาะการคลิกที่ไอคอน
 - **Implementation Style:** ใช้สไตล์การเขียนแบบ Shared Component หรือ Tailwind Utility ที่ขยาย Hitbox ให้ครอบคลุมทั้งกรอบ Input เพื่อให้พนักงานใช้งานได้สะดวกบนทุกอุปกรณ์
@@ -23,14 +25,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 <!-- BEGIN:data-sync-standard -->
 
-# DATA SYNCHRONIZATION STANDARD
+## DATA SYNCHRONIZATION STANDARD
 
 - **Database Rules:** Any data changes (Add, Update, Delete) connected to Supabase must trigger an immediate, automatic update to the database and reflect in the UI state without manual refresh.
 - **Optimistic UI:** Always update the local state using functional updates (`setProfiles(prev => [...prev, newProfile])`) immediately after a successful database response or simultaneously if the risk of failure is low, ensuring the UI remains responsive.
 
 <!-- BEGIN:spreadsheet-ui-maintenance -->
 
-# SPREADSHEET-STYLE UI MAINTENANCE (Editable Grid)
+## SPREADSHEET-STYLE UI MAINTENANCE (Editable Grid)
 
 - **Direct Cell Editing:** Do not use modals or "Edit" buttons for simple grids (e.g., Inventory). Use native `<input>` tags rendered directly in `<td>` elements.
 - **Auto-Save:** Inputs must use `onChange` for instant local state reflection and `onBlur`/`onKeyDown={Enter}` for firing background `.update()` calls to Supabase.
@@ -39,7 +41,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 <!-- BEGIN:error-handling-standard -->
 
-# ERROR HANDLING & SYSTEMATIC DEBUGGING STANDARD
+## ERROR HANDLING & SYSTEMATIC DEBUGGING STANDARD
 
 - **Root Cause First:** NO FIXES WITHOUT ROOT CAUSE INVESTIGATION. Follow `systematic-debugging` phases (Phase 1: Root Cause -> Phase 2: Pattern -> Phase 3: Hypothesis -> Phase 4: Fix).
 - **Failing Test First:** Every bug fix MUST start with a failing test case that reproduces the issue.
@@ -57,7 +59,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 <!-- BEGIN:superpowers-sop -->
 
-# CORE DEVELOPMENT SOP (Superpowers)
+## CORE DEVELOPMENT SOP (Superpowers)
 
 - **Writing Plans:** Use the `writing-plans` skill for any task with >3 steps. Save to `docs/plans/`. No placeholders.
 - **TDD (Test-Driven Development):** NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST. Follow Red-Green-Refactor religiously.

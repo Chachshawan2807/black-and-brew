@@ -21,6 +21,29 @@ describe('detect-schedule-query', () => {
     expect(resolveScheduleTargetDate('ตารางงานพรุ่งนี้', '2026-06-07')).toBe('2026-06-08');
     expect(resolveScheduleTargetDate('ตารางงานเมื่อวาน', '2026-06-07')).toBe('2026-06-06');
   });
+
+  test('resolves upcoming Thai weekday names without explicit calendar date', () => {
+    expect(isDailyScheduleQuery('ตารางงานของวันศุกร์ที่จะถึง')).toBe(true);
+    expect(resolveScheduleTargetDate('ตารางงานของวันศุกร์ที่จะถึง', '2026-06-07')).toBe(
+      '2026-06-12',
+    );
+    expect(resolveScheduleTargetDate('ตารางงานวันจันทร์ถัดไป', '2026-06-07')).toBe('2026-06-08');
+  });
+
+  test('resolves short Thai numeric dates as day/month in the current year', () => {
+    expect(resolveScheduleTargetDate('ตารางงานวันที่ 12/6', '2026-06-08')).toBe('2026-06-12');
+    expect(resolveScheduleTargetDate('ตารางงานวันที่ 3/6', '2026-06-08')).toBe('2026-06-03');
+    expect(resolveScheduleTargetDate('ตารางงานวันที่ 12-06-2026', '2026-06-08')).toBe('2026-06-12');
+    expect(resolveScheduleTargetDate('ตารางงาน 2026-06-12', '2026-06-08')).toBe('2026-06-12');
+  });
+
+  test('resolves Thai month names and two-digit Buddhist years', () => {
+    expect(resolveScheduleTargetDate('ตารางงานวันที่ 12 มิถุนายน', '2026-06-08')).toBe(
+      '2026-06-12',
+    );
+    expect(resolveScheduleTargetDate('ตารางงานวันที่ 12/6/69', '2026-06-08')).toBe('2026-06-12');
+    expect(resolveScheduleTargetDate('ตารางงานวันที่ 12/6/26', '2026-06-08')).toBe('2026-06-12');
+  });
 });
 
 describe('formatScheduleChatResponse', () => {

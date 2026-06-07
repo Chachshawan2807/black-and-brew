@@ -135,8 +135,8 @@ function StatusGrid({ profiles, shifts, dateLabel, highlightToday = false }: Sta
           <article
             key={profile.id}
             aria-label={`พนักงาน: ${profile.full_name}, วันที่: ${dateLabel}, กะงาน: ${displayText}`}
-            className={`${colorClass} group relative w-[7.25rem] shrink-0 overflow-hidden rounded-2xl p-3 min-h-[4.75rem] flex flex-col justify-between gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${
-              highlightToday && isWorkShift ? 'ring-2 ring-black/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.05)]' : 'shadow-sm'
+            className={`${colorClass} group relative w-[7.25rem] shrink-0 overflow-hidden rounded-2xl p-3 min-h-[4.75rem] flex flex-col justify-between gap-2 bb-transition hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${
+              highlightToday && isWorkShift ? 'ring-2 ring-black/[0.06] bb-shadow-sm' : 'shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
             }`}
           >
             <span className="text-[0.8125rem] font-normal text-black truncate leading-snug tracking-tight">
@@ -175,11 +175,11 @@ function StatusSection({
   return (
     <section
       aria-label={title}
-      className="rounded-[28px] border border-black/[0.04] bg-white/70 backdrop-blur-xl p-5 md:p-7 shadow-[0_8px_32px_rgba(0,0,0,0.04)]"
+      className="rounded-3xl border border-black/5 bg-white/80 backdrop-blur-xl p-5 md:p-7 bb-shadow-sm"
     >
       <header className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-black/[0.04]">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-black/[0.04] bb-shadow-sm">
             {icon}
           </div>
           <div>

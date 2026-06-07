@@ -1,0 +1,19 @@
+{
+  "gitignore": true,
+  "globs": [
+    "docs/**/*.md",
+    "*.md"
+  ],
+  "ignores": [
+    ".agents/**",
+    ".claude/**",
+    "graphify-out/**",
+    "scratch/**"
+  ],
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD033": false,
+    "MD041": false
+  }
+}

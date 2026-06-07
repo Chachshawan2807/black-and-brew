@@ -36,6 +36,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 
 interface InventoryItem {
   id: string;
@@ -724,6 +725,7 @@ export default function DynamicInventoryManager() {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
+  const [isExportingPO, setIsExportingPO] = useState(false);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
@@ -777,6 +779,7 @@ export default function DynamicInventoryManager() {
     const element = document.getElementById('blackandbrew-po-table-export');
     if (!element) return;
     try {
+      setIsExportingPO(true);
       // 1. ดึงความสูงและความกว้างที่แท้จริงของตารางทั้งหมด
       const fullHeight = element.scrollHeight;
       const fullWidth = element.scrollWidth;
@@ -813,6 +816,8 @@ export default function DynamicInventoryManager() {
       link.click();
     } catch (err) {
       console.error('Failed to export PO image:', err);
+    } finally {
+      setIsExportingPO(false);
     }
   };
 
@@ -1979,6 +1984,12 @@ export default function DynamicInventoryManager() {
           />
         )}
       </AnimatePresence>
+
+      <ExportProgressOverlay
+        visible={isExportingPO}
+        title="กำลังบันทึกรูปภาพ"
+        subtitle="กำลังจัดรายการสั่งซื้อ..."
+      />
 
       {/* Hidden Export Purchase Orders Table */}
       <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>

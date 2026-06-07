@@ -10,6 +10,7 @@ import { startOfWeek, addDays, format, parseISO, isValid } from 'date-fns';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { FloatingAlert } from '@/components/ui/floating-alert';
+import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange } from '@/app/actions/shift-actions';
@@ -346,6 +347,7 @@ export default function ScheduleClient({
   const [holidays, setHolidays] = useState<any[]>(initialHolidays);
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [loading, setLoading] = useState(false);
+  const [isExportingImage, setIsExportingImage] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -1157,7 +1159,7 @@ export default function ScheduleClient({
       const element = document.getElementById('blackandbrew-schedule-table');
       if (!element) return;
 
-      setLoading(true);
+      setIsExportingImage(true);
       const dataUrl = await toPng(element, {
         quality: 1.0,
         pixelRatio: 2,
@@ -1179,7 +1181,7 @@ export default function ScheduleClient({
       console.error('Failed to export image:', err);
       alert('เกิดข้อผิดพลาดในการบันทึกตารางงานเป็นรูปภาพค่ะ');
     } finally {
-      setLoading(false);
+      setIsExportingImage(false);
     }
   };
 
@@ -1505,12 +1507,16 @@ export default function ScheduleClient({
         </div>
       )}
 
-      {loading && (
-        <div className="fixed inset-0 bg-[#fdfcf0]/60 backdrop-blur-[2px] z-[100] flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-          <p className="text-sm font-normal text-blue-600 uppercase tracking-widest">กำลังดำเนินการ...</p>
-        </div>
-      )}
+      <ExportProgressOverlay
+        visible={isExportingImage}
+        title="กำลังบันทึกรูปภาพ"
+        subtitle="กำลังจัดตำแหน่งตารางงาน..."
+      />
+      <ExportProgressOverlay
+        visible={loading}
+        title="กำลังดำเนินการ"
+        subtitle="กรุณารอสักครู่..."
+      />
 
       {showManagementModal && (
         <div
@@ -1785,7 +1791,7 @@ export default function ScheduleClient({
               จัดการวันหยุดประจำ
             </h3>
             
-            <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex flex-col-reverse md:flex-row gap-6">
               {/* Left Column: Form */}
               <div className="flex flex-col w-full md:w-[260px] shrink-0">
                 <div className="flex-1 flex flex-col space-y-6">
@@ -1875,35 +1881,36 @@ export default function ScheduleClient({
                 </div>
               </div>
 
-              {/* Right Column: Summary Table */}
-              <div className="flex-1 w-full h-full overflow-x-auto border border-[#000000]/5 rounded-3xl p-4 bg-[#fdfcf0]/50 hidden md:block">
+              {/* Summary overview — visible on all screen sizes */}
+              <div className="flex-1 w-full h-full border border-[#000000]/5 rounded-3xl p-4 bg-[#fdfcf0]/50">
                 <h4 className="text-[14px] font-normal text-[#000000] mb-3 px-1">สรุปวันหยุดประจำของพนักงาน</h4>
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#000000]/5 text-[12px] text-[#000000]/60 uppercase tracking-widest">
-                      <th className="py-2 px-2 font-normal">พนักงาน</th>
-                      <th className="py-2 px-2 font-normal">วันหยุดประจำ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-[13px] text-[#000000]">
-                    {profiles.map(p => {
-                      const days = regularHolidays[p.id] || [];
-                      if (days.length === 0) return null;
-                      const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-                      
-                      const sortedDays = [...days].sort((a,b) => (a===0?7:a) - (b===0?7:b)); 
-                      
-                      return (
-                        <tr key={p.id} className="border-b border-[#000000]/5 last:border-0 hover:bg-[#000000]/5 transition-colors">
-                          <td className="py-2 px-2 font-normal">{p.full_name}</td>
-                          <td className="py-2 px-2 font-normal">
-                            {sortedDays.map(d => dayLabels[d]).join(', ')}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-2 pb-2 border-b border-[#000000]/5 text-[12px] text-[#000000]/60 uppercase tracking-widest px-1">
+                  <span>พนักงาน</span>
+                  <span>วันหยุดประจำ</span>
+                </div>
+                <div className="space-y-2 md:space-y-0">
+                  {profiles.map(p => {
+                    const days = regularHolidays[p.id] || [];
+                    if (days.length === 0) return null;
+                    const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+                    const sortedDays = [...days].sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b));
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="flex items-start justify-between gap-3 py-2.5 px-3 rounded-2xl border border-[#000000]/5 bg-[#fdfcf0] md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] md:rounded-none md:border-0 md:border-b md:border-[#000000]/5 md:bg-transparent md:px-1 md:py-2 md:hover:bg-[#000000]/5 md:transition-colors"
+                      >
+                        <span className="text-[14px] md:text-[13px] font-normal text-[#000000] shrink-0">{p.full_name}</span>
+                        <span className="text-[13px] font-normal text-[#000000]/70 md:text-[#000000] text-right md:text-left">
+                          {sortedDays.map(d => dayLabels[d]).join(', ')}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {profiles.every(p => (regularHolidays[p.id] || []).length === 0) && (
+                    <p className="text-[13px] text-[#000000]/50 px-1 py-2">ยังไม่มีการกำหนดวันหยุดประจำ</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

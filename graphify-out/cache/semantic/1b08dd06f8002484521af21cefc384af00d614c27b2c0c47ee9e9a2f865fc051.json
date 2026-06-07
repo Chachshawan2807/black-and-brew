@@ -1,0 +1,1 @@
+{"nodes": [{"id": "rpc_set_inventory_stock", "label": "Postgres RPC: set_inventory_stock", "file_type": "code", "source_file": "sql/sync_inventory_stock.sql", "source_location": null, "captured_at": "2026-06-07"}], "edges": [], "hyperedges": []}

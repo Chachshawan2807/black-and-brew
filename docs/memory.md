@@ -4,6 +4,8 @@
 
 ---
 
+## Recent Decisions
+
 ### DEC-068: Deterministic AI Daily Schedule Response (v8.1)
 
 - **Date:** June 7, 2026
@@ -87,7 +89,6 @@
 - **Evidence:** src/components/sidebar/SidebarLayout.tsx (line 23), src/components/sidebar/Sidebar.tsx
 
 ---
-
 
 ### DEC-046: AI System Prompt - Store Location & Weather Context (v4.5)
 

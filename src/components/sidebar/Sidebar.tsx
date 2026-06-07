@@ -20,14 +20,14 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed top-0 left-0 z-[100] h-screen transition-transform duration-300 ease-in-out md:transition-[width] md:duration-300 md:ease-in-out bg-white md:bg-transparent border-none shadow-2xl md:shadow-none md:flex',
+        'fixed top-0 left-0 z-[100] h-[100dvh] transition-transform duration-300 ease-in-out md:transition-[width] md:duration-300 md:ease-in-out bg-white md:bg-transparent border-none bb-shadow-lg md:shadow-none md:border-r md:border-black/5 md:flex',
         isOpen === false 
           ? '-translate-x-full md:translate-x-0 md:w-20' 
           : 'translate-x-0 w-[280px] max-w-[85vw] md:w-fit md:max-w-[280px]'
       )}
     >
       <SidebarToggle isOpen={isOpen} setIsOpen={sidebar?.setIsOpen} />
-      <div className="relative h-full flex flex-col pl-1 pr-3 py-4 overflow-hidden">
+      <div className="relative h-full flex flex-col pl-2 pr-3 py-4 overflow-hidden">
         <div className={cn(
           "mb-4 flex items-center transition-all duration-500",
           isOpen === false ? "justify-center" : "justify-start"

@@ -49,7 +49,7 @@
 
 ## Project Structure
 
-```
+```text
 black-and-brew/
 ├── docs/                    # Project documentation
 ├── messages/                # th.json, en.json (next-intl)

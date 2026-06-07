@@ -3,11 +3,13 @@
 > **Status:** Completed (v6.3) — Superseded by v6.8 stock sync + v6.9 motion system. See `docs/changelog.md`.
 
 Goal: Fix visual and functional issues on the mobile layout of the Inventory page:
+
 1. "บันทึก" (Save) button overflows outside the Quick Entry card container.
 2. "สั่งซื้อ" (Order) button does not display the badge number (truncated as three dots).
 3. The inventory items card list on mobile does not support drag-and-drop reordering.
 
 ## Tech Stack & Architecture
+
 - Next.js (App Router, Client Component)
 - TailwindCSS
 - `@dnd-kit/core` & `@dnd-kit/sortable`
@@ -16,9 +18,11 @@ Goal: Fix visual and functional issues on the mobile layout of the Inventory pag
 ## Proposed Changes
 
 ### [Component Name] Inventory Page
+
 We will modify [page.tsx](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/src/app/[locale]/inventory/page.tsx) to resolve these issues.
 
 #### [MODIFY] [page.tsx](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/src/app/[locale]/inventory/page.tsx)
+
 1. **Fix Save Button Overflow:**
    - Change the layout of the Quick Entry row containing Quantity, Transaction Type, and Save buttons.
    - On mobile, wrap Quantity input and Segmented Control in a horizontal flex container to keep them side-by-side (fits ~280px).
@@ -41,6 +45,7 @@ We will modify [page.tsx](file:///c:/Users/chach/.gemini/antigravity/scratch/bla
 ## Verification Plan
 
 ### Automated Tests
+
 - Create a new unit/integration test file [mobile_layout.test.tsx](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/src/test/mobile_layout.test.tsx) to verify:
   1. The layout elements render correctly.
   2. The Shopping Cart badge is rendered outside the text span element and does not inherit the text truncate.
@@ -48,5 +53,6 @@ We will modify [page.tsx](file:///c:/Users/chach/.gemini/antigravity/scratch/bla
 - Run tests: `npx vitest run src/test/mobile_layout.test.tsx`.
 
 ### Manual Verification
+
 - Verify compilation and build integrity: `npm run build`.
 - Review the responsive UI layout structure.

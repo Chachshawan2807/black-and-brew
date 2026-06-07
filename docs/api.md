@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> **Version:** 6.9 | **Last Updated:** 2026-06-07
+> **Version:** 8.1 | **Last Updated:** 2026-06-08
 
 ---
 
@@ -147,9 +147,11 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 ### `POST /api/chat`
 
-- Streaming AI chat via `ToolLoopAgent` (Gemini 2.5 Flash)
-- Tools: `readTable`, `internetSearch`, weather
-- Token optimization: sliding window, Thai token optimizer
+- Streaming AI chat via `ToolLoopAgent` (`google('gemini-2.5-flash')`)
+- Tools: `getDailyShifts`, `readTable`, `internetSearchTool` (weather is served through `internetSearchTool` — no separate weather tool)
+- Daily-schedule queries short-circuit to a deterministic SSE stream (no LLM) via `create-deterministic-chat-stream`
+- Server-side auth gate: PIN cookie or Supabase user required (401 otherwise)
+- Weighted intent scoring selects tools + `maxSteps`; sliding-window memory + Thai token optimizer
 
 ### `GET /api/daily-report`
 
