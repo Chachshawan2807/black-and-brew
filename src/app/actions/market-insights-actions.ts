@@ -12,6 +12,7 @@ import {
   buildScheduleContext,
   buildAnalyticalSignals,
 } from './market-insights-context';
+import { fetchTavily } from '@/lib/external/tavily-client';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const getSupabaseAdmin = (): SupabaseClient | null => {
@@ -48,30 +49,18 @@ async function fetchWeather(): Promise<string> {
 }
 
 async function fetchLocalTrends(): Promise<string> {
-  const apiKey = process.env.TAVILY_API_KEY;
   const lat = process.env.NEXT_PUBLIC_STORE_LAT || '13.929692';
   const lon = process.env.NEXT_PUBLIC_STORE_LON || '100.716932';
 
-  if (!apiKey) return 'N/A';
-
   try {
-    const response = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: apiKey,
-        query: `Coffee cafe trends Lam Luk Ka Pathum Thani ${lat},${lon} 2026`,
-        search_depth: 'basic',
-        max_results: 3,
-      }),
-    });
-
-    if (!response.ok) throw new Error('Tavily API Error');
-    const data = await response.json();
-    const raw = (data.results as { title: string; content: string }[])
+    const results = await fetchTavily(
+      `Coffee cafe trends Lam Luk Ka Pathum Thani ${lat},${lon} 2026`,
+      { userId: 'market-insights-service' }
+    );
+    const raw = results
       .map((r) => `${r.title}: ${r.content.slice(0, 120)}`)
       .join(' | ');
-    return raw.slice(0, 400);
+    return raw.slice(0, 400) || 'N/A';
   } catch (error) {
     console.error('[fetchLocalTrends] Error:', error);
     return 'N/A';

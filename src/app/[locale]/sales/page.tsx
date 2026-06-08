@@ -31,6 +31,7 @@ import {
   deleteCategory
 } from '@/app/actions/sales-actions';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { readCache, writeCache, isStale } from '@/lib/cache/client-cache';
 import {
   BarChart,
   Bar,
@@ -40,6 +41,12 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
+
+const SALES_METRICS_KEY = 'salesMetrics';
+// Separate TTL-tracking key for the server fetch; UI-editable categories
+// still use 'blackandbrew-product-categories' in legacy format (merge logic)
+const PRODUCT_CATEGORIES_SERVER_KEY = 'product-categories-server';
+const CACHE_TTL = 300_000;
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('th-TH', {
@@ -194,27 +201,65 @@ export default function SalesPage() {
     localStorage.setItem('blackandbrew-product-categories', JSON.stringify(categoriesArray));
   });
 
-  // Load data
-  const loadData = useRef(async () => {
+  // Load data — reads cache first; fetches from Supabase when stale or missing
+  const loadData = useRef(async (forceRefresh = false) => {
     setIsLoading(true);
     try {
-      const [historyData, metricsData, categoriesData] = await Promise.all([
-        fetchSalesHistory(),
-        getSalesMetrics(),
-        getAllProductCategories()
-      ]);
-      
-      if (historyData) setHistory(historyData);
-      setMetrics(metricsData);
-      
-      // Load product categories
-      if (categoriesData.success) {
-        loadCategories.current(categoriesData.categories);
+      // --- salesMetrics cache ---
+      const cachedMetrics = readCache<SalesMetrics>(SALES_METRICS_KEY);
+      const metricsStale =
+        forceRefresh ||
+        cachedMetrics.data === null ||
+        (cachedMetrics.savedAt !== null && isStale(cachedMetrics.savedAt, CACHE_TTL));
+
+      // --- product-categories cache (server fetch TTL tracking) ---
+      const cachedCategories = readCache<any[]>(PRODUCT_CATEGORIES_SERVER_KEY);
+      const categoriesStale =
+        forceRefresh ||
+        cachedCategories.data === null ||
+        (cachedCategories.savedAt !== null && isStale(cachedCategories.savedAt, CACHE_TTL));
+
+      // Use cached metrics if still fresh
+      if (!metricsStale && cachedMetrics.data) {
+        setMetrics(cachedMetrics.data);
       }
-      
-      // Save data to localStorage for insights page
-      if (metricsData) {
-        localStorage.setItem('salesMetrics', JSON.stringify(metricsData));
+
+      // Categories: loadCategories reads from blackandbrew-product-categories (legacy key)
+      // and merges server+local — call it regardless so UI gets local edits
+      if (!categoriesStale && cachedCategories.data) {
+        loadCategories.current(cachedCategories.data);
+      }
+
+      // Always load history (no cache for history to keep it fresh)
+      const historyData = await fetchSalesHistory();
+      if (historyData) setHistory(historyData);
+
+      // Fetch stale/missing data from Supabase
+      if (metricsStale || categoriesStale) {
+        const fetches: Promise<any>[] = [];
+        if (metricsStale) fetches.push(getSalesMetrics());
+        if (categoriesStale) fetches.push(getAllProductCategories());
+
+        const results = await Promise.all(fetches);
+        let resultIdx = 0;
+
+        if (metricsStale) {
+          const metricsData: SalesMetrics = results[resultIdx++];
+          if (metricsData) {
+            // Supabase confirmed — update cache then UI
+            writeCache(SALES_METRICS_KEY, metricsData, 'server');
+            setMetrics(metricsData);
+          }
+        }
+
+        if (categoriesStale) {
+          const categoriesResult = results[resultIdx++];
+          if (categoriesResult.success) {
+            // Supabase confirmed — update TTL cache then merge into UI
+            writeCache(PRODUCT_CATEGORIES_SERVER_KEY, categoriesResult.categories, 'server');
+            loadCategories.current(categoriesResult.categories);
+          }
+        }
       }
     } catch (e) {
       console.error('Error loading sales data', e);
@@ -413,13 +458,14 @@ export default function SalesPage() {
     }
   }, [productCategories, metrics]);
 
+  // Separate fetch effect (DEC-065: mount vs. fetch useEffects)
   useEffect(() => {
     loadData.current();
   }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await loadData.current();
+    await loadData.current(true);
     setIsRefreshing(false);
   };
 

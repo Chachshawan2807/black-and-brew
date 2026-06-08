@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { tool } from 'ai';
 import { z } from 'zod';
 import {
@@ -6,98 +5,17 @@ import {
 } from '@/lib/schedule/format-daily-shifts';
 import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
 import { formatScheduleChatResponse } from '@/lib/schedule/format-schedule-chat-response';
+import {
+  fetchTablePreset,
+  fetchInventorySummary,
+  fetchShiftsByDate,
+  getRealColumnName,
+  TABLE_COLUMN_PRESETS,
+} from '@/lib/ai-data-gateway';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('⚠️ [DatabaseTool] Missing Supabase Service Role configuration.');
-}
-
-const adminClient = createClient(supabaseUrl!, supabaseServiceKey!, {
-  auth: { autoRefreshToken: false, persistSession: false }
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1: COLUMN ALIASES (ไม่เปลี่ยน — ดีอยู่แล้ว)
-// ─────────────────────────────────────────────────────────────────────────────
-const COLUMN_ALIASES: Record<string, Record<string, string>> = {
-  inventory_items: {
-    item_name: 'name',
-    quantity: 'stock',
-    min_stock: 'order_point',
-  },
-  service_records: {
-    machine_name: 'equipment',
-    maintenance_date: 'start_date',
-    recorded_at: 'start_date',
-    operator: 'person_in_charge',
-    description: 'work_details',
-  },
-  shifts: {
-    shift_date: 'start_time',
-    date: 'start_time',
-    employee: 'employee_id'
-  },
-  profiles: { name: 'full_name' },
-  holidays: { holiday_date: 'date', holiday_name: 'name' }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 2: TABLE PRESETS
-// ─────────────────────────────────────────────────────────────────────────────
-const TABLE_COLUMN_PRESETS: Record<string, string> = {
-  profiles: 'id, full_name, schedule_order',
-  shifts: 'id, employee_id, status, start_time, end_time, metadata',
-  holidays: 'id, date, name',
-
-  // [FIX 1] เพิ่ม source กลับเข้ามาและยืนยันว่าครบทุก field ที่จำเป็น
-  // source = ช่องทางการสั่งซื้อ (เช่น "Makro", "Line", "สาขา 2", "สั่งพี่ต้า")
-  // หากไม่ดึง source มา AI จะไม่รู้ว่าแต่ละรายการต้องสั่งผ่านช่องทางไหน
-  inventory_items: 'id, name, unit, source, order_point, target_stock, stock, order_qty, updated_at',
-
-  inventory_transactions: 'id, inventory_item_id, type, quantity, note, created_at',
-  service_records:
-    'id, start_date, equipment, detected_problem, task_type, work_details, ' +
-    'cost, recommended_frequency, person_in_charge, status, completion_date, notes',
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 3: HELPER FUNCTIONS (ไม่เปลี่ยน — ดีอยู่แล้ว)
-// ─────────────────────────────────────────────────────────────────────────────
-function getRealColumnName(tableName: string, col: string): string {
-  return COLUMN_ALIASES[tableName]?.[col] ?? col;
-}
-
-function normalizeColumns(tableName: string, columns: string): string {
-  return columns
-    .split(',')
-    .map(col => col.trim())
-    .filter(Boolean)
-    .map(col => getRealColumnName(tableName, col))
-    .join(', ');
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 4: TABLE-SPECIFIC LIMITS
-//
-// [FIX 2] แทนที่จะให้ AI ส่ง limit มาเอง (ซึ่งมักจะ default เป็น 50)
-// เราตั้ง "safe maximum" แยกตามตาราง
-//
-// ทำไมถึงไม่ใช้ Number.MAX_SAFE_INTEGER?
-// เพราะ Supabase มี limit ของตัวเองอยู่ที่ 1,000 แถวต่อ request
-// การส่งค่าเกินกว่านั้นไม่มีความหมาย และอาจทำให้ Supabase ignore limit ทิ้ง
-// ซึ่งอาจ fallback เป็น default ของ Supabase (1,000) โดยอัตโนมัติ
-// → การตั้งค่า 1000 จึงชัดเจน ควบคุมได้ และสื่อความหมายตรงไปตรงมา
-// ─────────────────────────────────────────────────────────────────────────────
-const TABLE_MAX_LIMITS: Record<string, number> = {
-  inventory_items: 1000,      // ร้านกาแฟมีรายการสินค้าไม่เกินหลายร้อย ดึงมาทั้งหมดเลย
-  service_records: 1000,      // ประวัติซ่อมบำรุงก็เช่นกัน
-  profiles: 200,              // พนักงานมีจำนวนจำกัด
-  shifts: 500,                // กะงาน 1 เดือน ≈ 30วัน × 10คน = 300 แถว
-  holidays: 366,              // วันหยุด 1 ปีมีไม่เกิน 366 วัน
-  inventory_transactions: 500,
-};
+// NOTE (AI-GATEWAY-P3): column presets, aliases, limits, and the Service Role
+// client now live in `src/lib/ai-data-gateway.ts` — the single doorway for all
+// AI reads. readTableTool below only routes & shapes the response.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION 5: MAIN TOOL DEFINITION
@@ -154,90 +72,92 @@ export const readTableTool = tool({
 
   execute: async ({ tableName, columns, filters, limit }) => {
     try {
-      // ─── คำนวณ effectiveLimit ─────────────────────────────────────────────
-      //
-      // Priority order:
-      //   1. ถ้า AI ระบุ limit มาอย่างชัดเจน → ใช้ค่านั้น (AI รู้ว่าต้องการเท่าไหร่)
-      //   2. ถ้าไม่ระบุ → ดู TABLE_MAX_LIMITS ของตารางนั้น
-      //   3. ถ้าไม่มีใน TABLE_MAX_LIMITS → ใช้ 200 เป็น fallback ที่ปลอดภัย
-      //
-      // [เหตุผลที่ไม่ใช้ default=50 อีกต่อไป]
-      // AI มักไม่ระบุ limit เวลาถามภาพรวม เช่น "สรุปสต็อกทั้งหมด"
-      // default=50 จึงทำให้ข้อมูล 27 รายการออกมาแค่ 9 เพราะดึงมาแค่ 50 แถว
-      // แล้วหลังจาก filter ใน-memory เหลือแค่ที่ stock < order_point = 9 ตัว
-      // ──────────────────────────────────────────────────────────────────────
-      const effectiveLimit = limit ?? TABLE_MAX_LIMITS[tableName] ?? 200;
-
-      // ─── เลือกคอลัมน์ ────────────────────────────────────────────────────
-      const normalizedColumns = (columns ?? '').trim();
-      const shouldUsePreset = !normalizedColumns || normalizedColumns === '*';
+      // ─── DEC-069 column-preset enforcement (logging) ──────────────────────
+      // readTable runs through the Service Role client (RLS bypass), so the LLM
+      // must never pick columns. The gateway forces presets; here we only warn
+      // when the model tried to override them, for audit visibility.
       const presetColumns = TABLE_COLUMN_PRESETS[tableName];
-      if (shouldUsePreset && !presetColumns) {
+      const requestedColumns = (columns ?? '').trim();
+      if (
+        presetColumns &&
+        requestedColumns &&
+        requestedColumns !== '*' &&
+        requestedColumns !== presetColumns
+      ) {
+        console.warn(
+          `[AI_TOOL] readTable enforced column preset for "${tableName}"; ` +
+            `ignored AI-requested columns: ${requestedColumns}`
+        );
+      }
+
+      const hasFilters = !!filters && Object.keys(filters).length > 0;
+
+      // ─── ROUTE 1: inventory snapshot → AI Data Gateway store status ────────
+      // "สรุปสต็อกทั้งหมด" with no filters routes to get_ai_store_status, which
+      // returns DB-computed LOW/WARNING/OK status (sql/ai_agent_views.sql).
+      if (tableName === 'inventory_items' && !hasFilters) {
+        const status = await fetchInventorySummary();
+        const inventory = status.inventory_summary ?? [];
+        const lowStock = status.low_stock_items ?? [];
+
+        return {
+          ok: true,
+          row_count: inventory.length,
+          is_complete_dataset: true,
+          source: 'ai_data_gateway:get_ai_store_status',
+          data: inventory,
+          low_stock_items: lowStock,
+          low_stock_count: lowStock.length,
+        };
+      }
+
+      // ─── ROUTE 2: shifts for a specific date → canonical daily formatter ───
+      const shiftDateFilter = hasFilters
+        ? Object.entries(filters!).find(([key, value]) => {
+            const realKey = getRealColumnName('shifts', key);
+            return (
+              realKey === 'start_time' &&
+              typeof value === 'string' &&
+              (value as string).length === 10
+            );
+          })
+        : undefined;
+
+      if (tableName === 'shifts' && shiftDateFilter) {
+        const date = shiftDateFilter[1] as string;
+        const formatted = await fetchShiftsByDate(date);
+
+        return {
+          ok: true,
+          date,
+          source: 'ai_data_gateway:fetchShiftsByDate',
+          total_staff: formatted.all_staff.length,
+          data: formatted.all_staff.map(({ name, shift, row_order, category }) => ({
+            row_order,
+            name,
+            shift_type: shift,
+            category,
+          })),
+        };
+      }
+
+      // ─── ROUTE 3: generic preset-locked read ──────────────────────────────
+      const result = await fetchTablePreset(tableName, filters, limit);
+
+      if (!result.ok) {
         return {
           ok: false,
           data: null,
-          error: {
-            message: `No column preset defined for table: ${tableName}`,
+          error: result.error ?? {
+            message: `Failed to read ${tableName}`,
             details: null,
-            hint: 'Use an allowed tableName from the enum list.',
+            hint: null,
           },
         };
       }
 
-      let selectedColumns = shouldUsePreset
-        ? presetColumns!
-        : normalizeColumns(tableName, normalizedColumns);
-
-      // ─── Build Supabase query ─────────────────────────────────────────────
-      let query = adminClient
-        .from(tableName)
-        .select(selectedColumns)
-        .limit(effectiveLimit);
-
-      // ─── Apply filters ────────────────────────────────────────────────────
-      if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          const realKey = getRealColumnName(tableName, key);
-
-          // Special case: date range filter สำหรับ shifts
-          if (
-            tableName === 'shifts' &&
-            realKey === 'start_time' &&
-            typeof value === 'string' &&
-            value.length === 10
-          ) {
-            query = query
-              .gte('start_time', `${value}T00:00:00`)
-              .lte('start_time', `${value}T23:59:59`);
-          } else {
-            query = query.eq(realKey, value);
-          }
-        });
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error(`[AI_TOOL] Error reading ${tableName}:`, error);
-        return {
-          ok: false,
-          data: null,
-          error: {
-            message: error.message,
-            details: error.details,
-            hint: (error as any).hint ?? null,
-          },
-        };
-      }
-
-      // ─── [FIX 4] ส่งกลับ metadata เพิ่มเติมเพื่อให้ AI มีบริบทมากขึ้น ──
-      //
-      // เดิม: return { ok: true, data: data ?? [] }
-      // ใหม่: บอก AI ด้วยว่าดึงมากี่แถว และมี source อะไรบ้าง (เฉพาะ inventory)
-      // ทำไม? เพราะถ้า rowCount < effectiveLimit แปลว่าดึงมาครบแล้ว 100%
-      // แต่ถ้า rowCount === effectiveLimit อาจมีข้อมูลมากกว่านี้ → AI จะรู้ว่าต้องแจ้งเตือน
-      const rows = (data ?? []).map((row) => {
-        const record = row as unknown as Record<string, unknown>;
+      // Flatten shift metadata.location → shift_type (DEC-068) before strip.
+      const rows = result.rows.map((record) => {
         if (tableName !== 'shifts') return record;
 
         const metadata = record.metadata as { location?: string | null } | null | undefined;
@@ -252,17 +172,15 @@ export const readTableTool = tool({
       const responseMeta: Record<string, unknown> = {
         ok: true,
         row_count: rows.length,
-        // บอก AI ว่าดึงข้อมูลครบหรือยัง
-        is_complete_dataset: rows.length < effectiveLimit,
+        is_complete_dataset: rows.length < result.effectiveLimit,
         data: rows,
       };
 
-      // เฉพาะ inventory_items: บอก AI ว่ามี source อะไรบ้างและแต่ละ source มีกี่ items
-      // ข้อมูลนี้ช่วยให้ AI ตอบได้ว่า "27 รายการ แบ่งเป็น Makro 7, Line 3, ..."
+      // inventory (with filters): group by purchase channel for AI context.
       if (tableName === 'inventory_items' && rows.length > 0) {
         const sourceBreakdown: Record<string, number> = {};
-        rows.forEach((item: any) => {
-          const src = item.source ?? 'ไม่ระบุช่องทาง';
+        rows.forEach((item) => {
+          const src = (item as { source?: string }).source ?? 'ไม่ระบุช่องทาง';
           sourceBreakdown[src] = (sourceBreakdown[src] ?? 0) + 1;
         });
         responseMeta.source_breakdown = sourceBreakdown;

@@ -139,6 +139,41 @@ Vercel Cron → /api/daily-report → compileDailyReportPayload()
 
 ---
 
+## 5b. AI Data Access Map (AI-GATEWAY-P3)
+
+Every read the AI layer performs funnels through **`src/lib/ai-data-gateway.ts`** — the single doorway between the LLM tools and Supabase. This keeps the Service Role client, the DEC-069 column presets, and the `SECURITY DEFINER` RPCs as the only ways the model can touch data.
+
+```text
+LLM (Gemini)
+  │
+  ▼
+readTableTool.execute               ← src/app/actions/tools/database-tools.ts (routing + shaping only)
+  │
+  ├─ inventory_items, no filters ──▶ fetchInventorySummary()  ─▶ rpc('get_ai_store_status')
+  │                                                              (view_inventory_summary → LOW/WARNING/OK)
+  │
+  ├─ shifts + date filter ─────────▶ fetchShiftsByDate(date)  ─▶ fetchDailyShiftsByDate() (DEC-068)
+  │
+  └─ everything else ──────────────▶ fetchTablePreset(table, filters?, limit?)
+                                       └─ admin.from(table).select(PRESET).limit(MAX)
+```
+
+### Gateway surface
+
+| Function | Backing source | Returns | Notes |
+| :--- | :--- | :--- | :--- |
+| `fetchInventorySummary()` | `rpc('get_ai_store_status')` | `{ inventory_summary, low_stock_items, shifts, timestamp }` | DB computes stock status; no raw column select |
+| `fetchShiftsByDate(date)` | `fetchDailyShiftsByDate` | `FormattedDailyShifts` | Canonical grouped roster (front_store / other_duty / off_or_leave) |
+| `fetchTablePreset(table, filters?, limit?)` | `admin.from(table).select(PRESET)` | `{ ok, rows, effectiveLimit }` | **Only** ever selects `TABLE_COLUMN_PRESETS[table]` |
+
+### Invariants
+
+- **DEC-069 preset lockdown:** `fetchTablePreset` ignores any AI-supplied `columns`; it always selects the table preset. Arbitrary column selection (a data-exfiltration vector through the RLS-bypassing Service Role client) is impossible by construction.
+- **RPC-first for snapshots:** broad "store status / low stock" questions resolve through `get_ai_store_status` (`sql/ai_agent_views.sql`) rather than a wide table scan. **Do not delete** `sql/ai_agent_views.sql` — the gateway depends on its views/RPCs.
+- **Single doorway:** `database-tools.ts` no longer owns a Supabase client, presets, aliases, or limits — it routes and shapes only. Add new AI reads to the gateway, never directly in a tool.
+
+---
+
 ## 6. State Management
 
 | Type | Tool | Scope |

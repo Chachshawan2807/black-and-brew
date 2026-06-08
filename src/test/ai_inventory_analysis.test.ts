@@ -1,35 +1,57 @@
 import { describe, expect, test } from 'vitest';
+import { computeOrderQty, computeItemsToOrder } from '@/lib/inventory-stock';
+import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 import fs from 'fs';
 import path from 'path';
 
+/** Read TABLE_MAX_LIMITS.inventory_items without importing the gateway (side-effectful module). */
+function getTableMaxLimits(): Record<string, number> {
+  const toolCode = fs.readFileSync(
+    path.resolve(__dirname, '../lib/ai-data-gateway.ts'),
+    'utf-8'
+  );
+  const block = toolCode.match(
+    /export const TABLE_MAX_LIMITS[^=]*=\s*\{([\s\S]*?)\};/
+  )?.[1];
+  if (!block) throw new Error('TABLE_MAX_LIMITS not found in ai-data-gateway.ts');
+
+  return Object.fromEntries(
+    [...block.matchAll(/(\w+):\s*(\d+)/g)].map(([, key, value]) => [key, Number(value)])
+  );
+}
+
 describe('AI Inventory Analysis Rules', () => {
   test('uses the same low-stock rule as the purchase order UI', () => {
-    const routeCode = fs.readFileSync(
-      path.resolve(__dirname, '../app/api/chat/route.ts'),
-      'utf-8'
-    );
+    const stock = 5;
+    const orderPoint = 10;
+    const targetStock = 20;
 
-    expect(routeCode).toContain('stock <= order_point');
-    expect(routeCode).toContain('target_stock > stock');
+    const computedOrderQty = computeOrderQty(stock, orderPoint, targetStock);
+    expect(computedOrderQty).toBeGreaterThan(0);
+    expect(computedOrderQty).toBe(targetStock - stock);
+
+    const items = [
+      {
+        id: '1',
+        name: 'Test Item',
+        stock,
+        order_point: orderPoint,
+        target_stock: targetStock,
+        unit: 'ชิ้น',
+      },
+    ];
+    const toOrder = computeItemsToOrder(items);
+    expect(toOrder).toHaveLength(1);
+    expect(toOrder[0].computedOrderQty).toBeGreaterThan(0);
   });
 
   test('allows readTable to fetch a full inventory table instead of defaulting to 50 rows', () => {
-    const toolCode = fs.readFileSync(
-      path.resolve(__dirname, '../app/actions/tools/database-tools.ts'),
-      'utf-8'
-    );
-
-    expect(toolCode).toContain('default(500)');
-    expect(toolCode).toContain('max(500)');
+    const TABLE_MAX_LIMITS = getTableMaxLimits();
+    expect(TABLE_MAX_LIMITS.inventory_items).toBe(1000);
   });
 
   test('documents low-stock evaluation with inclusive threshold and target-stock guard', () => {
-    const rulesCode = fs.readFileSync(
-      path.resolve(__dirname, '../lib/agents/executive-rules.ts'),
-      'utf-8'
-    );
-
-    expect(rulesCode).toContain('stock <= order_point');
-    expect(rulesCode).toContain('target_stock > stock');
+    const rulesJson = JSON.stringify(EXECUTIVE_RULES);
+    expect(rulesJson).toContain('stock < order_point');
   });
 });

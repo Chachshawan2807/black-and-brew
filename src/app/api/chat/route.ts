@@ -1,7 +1,5 @@
 import { google } from '@ai-sdk/google';
 import { stepCountIs, ToolLoopAgent } from 'ai';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
@@ -16,14 +14,18 @@ import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
 import { formatScheduleChatResponse } from '@/lib/schedule/format-schedule-chat-response';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
 import { sanitizePromptInput } from '@/lib/security/sanitize';
+import { ensureServerSession } from '@/lib/security/server-auth';
+import { READ_ONLY_DENY_MSG } from '@/lib/auth-constants';
+import { SlidingWindowRateLimiter } from '@/lib/rate-limit/sliding-window';
+
+/** Separate rate-limiter instance dedicated to the chat endpoint (not shared with Tavily). */
+const chatRateLimiter = new SlidingWindowRateLimiter(30, 3_600_000); // 30 req / hr
 
 // ─────────────────────────────────────────────────────────
 // SECTION 1: ENVIRONMENT & CONSTANTS
 // ─────────────────────────────────────────────────────────
 const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || "13.9312";
 const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || "100.6756";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 /**
  * ADR: EU-ACT-001 - AI Usage Traceability & Audit Logging
@@ -445,24 +447,40 @@ function selectTools(intents: IntentScores): {
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
-
     // --- SECTION: SERVER-SIDE AUTHENTICATION GATE ---
-    // ADR: SEC-AUTH-001 - Treat Client Code as Untrusted
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-    
-    // ตรวจสอบเซสชันผู้ใช้จริงผ่าน Supabase ก่อนอนุญาตให้ AI เข้าถึงเครื่องมือทางธุรกิจ
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data: { user } } = await supabase.auth.getUser(token);
+    // ADR: SEC-AUTH-001 — Treat client code as untrusted; verify on the server.
+    // DEC-069: read-only PIN sessions are denied here because AI tools run via
+    // the Service Role adminClient (RLS bypass) and could otherwise be coaxed
+    // into reading the entire database from a view-only kiosk account.
+    const auth = await ensureServerSession();
 
-    if (!pinVerified && !user) {
+    if (!auth.ok) {
       return new Response(JSON.stringify({ error: 'Unauthorized: Session missing' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    if (auth.readOnly) {
+      return new Response(JSON.stringify({ error: READ_ONLY_DENY_MSG }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Chat rate-limit gate (30 requests / hour per authenticated user) ──────
+    const chatUserId = auth.userId || 'PIN_AUTH_USER';
+    const chatRateCheck = chatRateLimiter.check(chatUserId);
+    if (!chatRateCheck.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: 'คุณส่งข้อความถึงขีดจำกัดแล้ว (30 ครั้ง/ชั่วโมง) กรุณารอสักครู่แล้วลองใหม่',
+        }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { messages } = await req.json();
 
     if (!messages || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'No messages provided' }), {
@@ -505,7 +523,7 @@ export async function POST(req: Request) {
         const responseText = formatScheduleChatResponse(targetDate, formatted);
 
         await logAuditTrail({
-          userId: user?.id || 'PIN_AUTH_USER',
+          userId: auth.userId || 'PIN_AUTH_USER',
           model: 'deterministic-schedule',
           intent: 'schedule',
           tokenEstimate: 0,
@@ -539,7 +557,7 @@ export async function POST(req: Request) {
 
     // [EU AI Act] Log request before execution
     await logAuditTrail({
-      userId: user?.id || 'PIN_AUTH_USER',
+      userId: auth.userId || 'PIN_AUTH_USER',
       model: 'gemini-2.5-flash',
       intent: Object.keys(intents).filter(k => intents[k as keyof IntentScores] >= INTENT_THRESHOLD).join(','),
       tokenEstimate: cleanInput.length / 4, // Rough estimation

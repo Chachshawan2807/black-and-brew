@@ -5,49 +5,50 @@ import React, { useState, useEffect } from 'react';
 import { getMarketInsights } from '@/app/actions/market-insights-actions';
 import { RefreshCw, Users, Coffee, Lightbulb, Sparkles, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { readCache, writeCache, isStale } from '@/lib/cache/client-cache';
 
-interface CachedInsights {
-  data: any;
-  timestamp: number;
-}
+const MARKET_INSIGHTS_KEY = 'marketInsightsCache';
+const CACHE_TTL = 300_000;
 
 export default function MarketInsightsPage() {
   const [insights, setInsights] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  // Track whether the currently displayed data is stale
+  const [cacheIsStale, setCacheIsStale] = useState(false);
 
-  // Load cached data on mount (no expiration)
+  // Mount effect (DEC-065: separate mount vs. fetch effects)
   useEffect(() => {
-    const loadFromCache = () => {
-      const cached = localStorage.getItem('marketInsightsCache');
-      if (cached) {
-        try {
-          const parsed: CachedInsights = JSON.parse(cached);
-          setInsights(parsed.data);
-          setLastUpdated(new Date(parsed.timestamp));
-          setHasLoaded(true);
-        } catch (e) {
-          console.error('[MarketInsights] Failed to parse cached insights:', e);
-        }
-      }
-    };
-
-    loadFromCache();
+    setIsMounted(true);
   }, []);
+
+  // Load cached data on mount — uses cache wrapper + stale check
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const { data, savedAt } = readCache<any>(MARKET_INSIGHTS_KEY);
+    if (data) {
+      setInsights(data);
+      if (savedAt !== null) {
+        setLastUpdated(new Date(savedAt));
+        setCacheIsStale(isStale(savedAt, CACHE_TTL));
+      }
+      setHasLoaded(true);
+    }
+  }, [isMounted]);
 
   // Only load from cache (no API calls)
   const loadFromCacheOnly = () => {
-    const cached = localStorage.getItem('marketInsightsCache');
-    if (cached) {
-      try {
-        const parsed: CachedInsights = JSON.parse(cached);
-        setInsights(parsed.data);
-        setLastUpdated(new Date(parsed.timestamp));
-        setHasLoaded(true);
-      } catch (e) {
-        console.error('[MarketInsights] Failed to parse cached insights:', e);
+    const { data, savedAt } = readCache<any>(MARKET_INSIGHTS_KEY);
+    if (data) {
+      setInsights(data);
+      if (savedAt !== null) {
+        setLastUpdated(new Date(savedAt));
+        setCacheIsStale(isStale(savedAt, CACHE_TTL));
       }
+      setHasLoaded(true);
     }
   };
 
@@ -56,17 +57,14 @@ export default function MarketInsightsPage() {
     setIsLoading(true);
     try {
       const data = await getMarketInsights();
-      
-      // Cache the new insights
-      if (data && typeof window !== 'undefined') {
-        const cacheData: CachedInsights = {
-          data: data,
-          timestamp: Date.now(),
-        };
-        localStorage.setItem('marketInsightsCache', JSON.stringify(cacheData));
+
+      // Supabase/API confirmed — write to cache then update UI
+      if (data) {
+        writeCache(MARKET_INSIGHTS_KEY, data, 'server');
         setLastUpdated(new Date());
+        setCacheIsStale(false);
       }
-      
+
       setInsights(data);
       setHasLoaded(true);
     } catch (error) {
@@ -135,9 +133,16 @@ export default function MarketInsightsPage() {
                   Market Intelligence
                 </span>
               </div>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl tracking-tight">
-                ข้อมูลเชิงลึกตลาด
-              </h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl tracking-tight">
+                  ข้อมูลเชิงลึกตลาด
+                </h1>
+                {cacheIsStale && hasLoaded && (
+                  <span className="text-xs text-black/40 bg-black/5 px-2 py-0.5 rounded-full border border-black/10">
+                    ข้อมูลเก่า
+                  </span>
+                )}
+              </div>
               <p className="text-black/60 text-base md:text-lg max-w-2xl">
                 AI วิเคราะห์ตลาด จับคู่ข้อมูลร้านกับเทรนด์ภายนอก เพื่อเสนอกลยุทธ์ที่ทำได้จริง
               </p>
