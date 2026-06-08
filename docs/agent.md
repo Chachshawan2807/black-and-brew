@@ -37,7 +37,7 @@ THINK → MAP → BUDGET CHECK → EXECUTE → VALIDATE → LOG
 ### Risk Classification
 
 | Level | Classification | Examples | Protocol |
-| :--- | :--- | :--- | :--- |
+| --- | --- | --- | --- |
 | **R0** | Low Risk | UI edits, Documentation, Lints | **Auto-approve** |
 | **R1** | Medium Risk | Module-level logic, local styles | **Auto-approve** |
 | **R2** | High Risk | Core DB Schema, RLS, Global Auth | **Strict user approval** |
@@ -47,7 +47,7 @@ THINK → MAP → BUDGET CHECK → EXECUTE → VALIDATE → LOG
 ## 3. Agent Tools (AI Chat — `/api/chat`)
 
 | Tool | Path | Capability |
-| :--- | :--- | :--- |
+| --- | --- | --- |
 | `readTableTool` | `src/app/actions/tools/database-tools.ts` | ดึงข้อมูลตาราง Supabase (Service Role) พร้อม `COLUMN_ALIASES` |
 | `internetSearchTool` | `src/app/actions/tools/search-tools.ts` | ค้นหาเว็บผ่าน Tavily API |
 | Internal Sources | `src/app/actions/tools/internal-sources-tools.ts` | ดึงบริบทภายในร้าน (schedule, inventory, weather) |

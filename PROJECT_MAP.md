@@ -7,7 +7,7 @@
 ## Active Modules
 
 | Module | Path | Status |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | Command Center | `src/app/[locale]/page.tsx` | Active |
 | Dashboard | `src/app/[locale]/dashboard/` | Active |
 | Schedule | `src/app/[locale]/schedule/` | Active |
@@ -24,7 +24,7 @@
 ### Pages
 
 | Route | File |
-| :--- | :--- |
+| --- | :--- |
 | `/` | `src/app/page.tsx` → redirect `/th` |
 | `/[locale]` | `src/app/[locale]/page.tsx` |
 | `/[locale]/dashboard` | `src/app/[locale]/dashboard/page.tsx` |
@@ -40,7 +40,7 @@
 ### API
 
 | Route | File |
-| :--- | :--- |
+| --- | :--- |
 | `/api/chat` | `src/app/api/chat/route.ts` |
 | `/api/daily-report` | `src/app/api/daily-report/route.ts` |
 | `/api/weather` | `src/app/api/weather/route.ts` |
@@ -85,7 +85,7 @@ black-and-brew/
 ## Server Actions (`src/app/actions/`)
 
 | File | Purpose |
-| :--- | :--- |
+| --- | :--- |
 | `auth.ts` | PIN verify, read-only session, cookies |
 | `inventory-actions.ts` | Stock RPC, transactions, CRUD |
 | `shift-actions.ts` | Shift CRUD, roster, revalidation |
@@ -111,7 +111,7 @@ black-and-brew/
 ## Tech Stack
 
 | Package | Version |
-| :--- | :--- |
+| --- | :--- |
 | next | 16.2.4 |
 | react / react-dom | 19.2.4 |
 | @supabase/supabase-js | ^2.105.1 |

@@ -12,6 +12,21 @@ describe('AI Chat Thai Typography', () => {
     expect(source).toContain('thai-chat-readable');
   });
 
+  test('mobile chat window uses inset anchors without w-full to prevent right-edge overflow', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../components/ai/AIChatOverlay.tsx'),
+      'utf-8'
+    );
+
+    expect(source).toContain('max-md:w-auto');
+    expect(source).toContain('max-md:max-w-none');
+    expect(source).toContain('max-md:left-[calc(1rem+env(safe-area-inset-left,0px))]');
+    expect(source).toContain('max-md:right-[calc(1rem+env(safe-area-inset-right,0px))]');
+    expect(source).toContain('flex-1 min-h-0');
+    expect(source).toContain('overflow-x-hidden');
+    expect(source).toContain('shrink-0');
+  });
+
   test('defines Thai chat typography with Thai-first font fallback and readable spacing', () => {
     const css = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/globals.css'),

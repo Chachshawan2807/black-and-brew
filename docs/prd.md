@@ -20,7 +20,7 @@
 ## 2. Target Users
 
 | บทบาท | จำนวน | สิทธิ์การใช้งาน |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | **Owner / Manager** | 1-2 คน | Full Access (APP_PIN) |
 | **Staff** | 9 คน | Dashboard, Schedule; Read-only PIN available |
 | **Read-only** | — | PIN `111222` — ดูอย่างเดียว |
@@ -97,7 +97,7 @@
 ## 4. Revenue Stabilization Features
 
 | Feature | Revenue Impact | Module |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | **Auto-Ordering** | ป้องกันสินค้าขาดสต็อก | Inventory |
 | **Transaction Ledger** | ตรวจสอบความถูกต้องของสต็อก | Inventory |
 | **Shift Scheduling** | จัดพนักงานให้เหมาะสม | Schedule |
@@ -111,7 +111,7 @@
 ## 5. Technical Constraints
 
 | Constraint | Value |
-| :--- | :--- |
+| --- | :--- |
 | **Tech Stack** | Next.js 16.2.4, React 19.2.4, Supabase, Tailwind CSS 4 |
 | **Timezone** | GMT+7 (Bangkok) |
 | **Deployment** | Vercel Edge Runtime |

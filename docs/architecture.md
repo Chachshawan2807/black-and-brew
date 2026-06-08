@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> **Version:** 8.1 | **Last Updated:** 2026-06-08 | **Stack:** Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 8.2 | Last Updated: 2026-06-09 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -34,7 +34,7 @@ User opens app → PinGateway (sessionStorage check)
 ```
 
 | Layer | Storage | Keys |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | Client gate | `sessionStorage` | `bb_auth_pin_verified` |
 | Server session | httpOnly cookies | `bb_auth_pin_verified`, `bb_auth_read_only` |
 | Supabase RLS | Anonymous session | `authenticated` role |
@@ -44,7 +44,7 @@ User opens app → PinGateway (sessionStorage check)
 ## 3. Supabase Dual-Client Strategy
 
 | Context | Key | Purpose |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | Client Components (`src/lib/supabase.ts`) | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Real-time subs, client reads |
 | Server Actions | `SUPABASE_SERVICE_ROLE_KEY` | Admin ops, AI tools, daily report |
 
@@ -161,7 +161,7 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 ### Gateway surface
 
 | Function | Backing source | Returns | Notes |
-| :--- | :--- | :--- | :--- |
+| --- | :--- | --- | :--- |
 | `fetchInventorySummary()` | `rpc('get_ai_store_status')` | `{ inventory_summary, low_stock_items, shifts, timestamp }` | DB computes stock status; no raw column select |
 | `fetchShiftsByDate(date)` | `fetchDailyShiftsByDate` | `FormattedDailyShifts` | Canonical grouped roster (front_store / other_duty / off_or_leave) |
 | `fetchTablePreset(table, filters?, limit?)` | `admin.from(table).select(PRESET)` | `{ ok, rows, effectiveLimit }` | **Only** ever selects `TABLE_COLUMN_PRESETS[table]` |
@@ -177,7 +177,7 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 ## 6. State Management
 
 | Type | Tool | Scope |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | Global UI | Zustand | Sidebar toggle |
 | Auth | AuthProvider + cookies | PIN session, read-only |
 | Page-level | useState | Items, columns, modals |
@@ -190,10 +190,10 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 ## 7. External Integrations
 
 | Service | Auth | Purpose |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | Supabase | Anon + Service Role | DB, Auth, Real-time |
 | Google Calendar API | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync |
-| Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat + Market Insights |
+| Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat + Market Insights (`@ai-sdk/google` reads this env name; `GEMINI_API_KEY` / `GOOGLE_API_KEY` not used in `src/`) |
 | OpenWeatherMap | `OPENWEATHER_API_KEY` | Weather widget + daily report |
 | Tavily | `TAVILY_API_KEY` | AI web search |
 | LINE Messaging API | `LINE_CHANNEL_ACCESS_TOKEN` | Daily push notifications |
@@ -204,7 +204,7 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 ## 8. Motion Architecture (v6.9)
 
 | Layer | Implementation | Scope |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | Route transitions | `PageTransition` + `motion-presets.pageContent` | All pages via `SidebarLayout` |
 | Modals / Sheets | CSS `.bb-modal-*` + framer `modalContent` | Schedule, Maintenance, Inventory PO |
 | Toasts / Alerts | `FloatingAlert`, `FloatingToast` | Schedule holiday warning, Maintenance save |

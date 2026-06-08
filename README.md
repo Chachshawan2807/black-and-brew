@@ -9,7 +9,7 @@ Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AN
 ## Features
 
 | Module | Route | Description |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | Command Center | `/[locale]` | สถานะกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์ |
 | Staff Dashboard | `/[locale]/dashboard` | ลงเวลา รายชื่อกะ ตารางรายเดือน |
 | Schedule | `/[locale]/schedule` | จัดกะ Drag-and-Drop + วันหยุดราชการ |
@@ -42,7 +42,7 @@ npm run dev
 ### Scripts
 
 | Command | Purpose |
-| :--- | :--- |
+| --- | :--- |
 | `npm run dev` | Development server (Turbopack) |
 | `npm run build` | Production build |
 | `npm run start` | Production server |
@@ -62,7 +62,7 @@ npm run dev
 ### Supabase
 
 | Variable | Scope | Purpose |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | PUBLIC | Supabase project URL — client + auth gate |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | PUBLIC | Anon key สำหรับ RLS client |
 | `SUPABASE_SERVICE_ROLE_KEY` | SECRET | Admin key — Server Actions, AI tools, cron (ห้ามใส่ `NEXT_PUBLIC_`) |
@@ -70,7 +70,7 @@ npm run dev
 ### Auth & Location
 
 | Variable | Scope | Purpose |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | `APP_PIN` | SECRET | PIN 6 หลัก — เข้าใช้งานเต็มสิทธิ์ (`auth.ts`) |
 | `NEXT_PUBLIC_STORE_LAT` | PUBLIC | พิกัดร้าน (default `13.9312`) — chat, insights, cron |
 | `NEXT_PUBLIC_STORE_LON` | PUBLIC | พิกัดร้าน (default `100.6756`) |
@@ -80,7 +80,7 @@ Read-only PIN `111222` ถูก hardcode ใน `src/lib/auth-constants.ts` —
 ### AI & External APIs
 
 | Variable | Scope | Purpose |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini — AI Chat + Market Insights (`@ai-sdk/google`) |
 | `TAVILY_API_KEY` | SECRET | Internet search tool สำหรับ AI |
 | `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report, market-insights |
@@ -89,7 +89,7 @@ Read-only PIN `111222` ถูก hardcode ใน `src/lib/auth-constants.ts` —
 ### LINE & Vercel Cron
 
 | Variable | Scope | Purpose |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | `LINE_CHANNEL_ACCESS_TOKEN` | SECRET | LINE Messaging API push token |
 | `LINE_GROUP_ID` | SECRET | ปลายทาง cron (ตรวจก่อน `LINE_TARGET_*`) |
 | `LINE_TARGET_RECIPIENT_ID` | SECRET | ปลายทาง LINE fallback (user/group/room ID) |
@@ -135,7 +135,7 @@ src/
 ## Documentation
 
 | Doc | Purpose |
-| :--- | :--- |
+| --- | :--- |
 | [docs/changelog.md](docs/changelog.md) | ประวัติการเปลี่ยนแปลง |
 | [docs/architecture.md](docs/architecture.md) | สถาปัตยกรรมและ data flow |
 | [docs/database.md](docs/database.md) | Schema, RLS, RPC |

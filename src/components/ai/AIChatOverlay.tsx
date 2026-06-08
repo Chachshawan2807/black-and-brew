@@ -113,7 +113,7 @@ export default function AIChatOverlay() {
       {/* Floating Trigger Button */}
       <motion.button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed bottom-5 right-5 md:bottom-6 md:right-6 z-[200] w-14 h-14 rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg"
+        className="fixed z-[200] w-14 h-14 rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg max-md:bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] max-md:right-[calc(1.25rem+env(safe-area-inset-right,0px))] md:bottom-6 md:right-6"
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
         aria-label="เปิดผู้ช่วย AI บรู"
@@ -164,11 +164,17 @@ export default function AIChatOverlay() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
-              className="fixed bottom-20 left-4 right-4 md:bottom-24 md:left-auto md:right-6 w-full max-w-2xl z-[199] bg-[#fdfcf0] rounded-3xl shadow-2xl border-2 border-black flex flex-col overflow-hidden"
+              className="fixed z-[199] box-border bg-[#fdfcf0] rounded-3xl shadow-2xl border-2 border-black flex flex-col overflow-hidden max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none md:w-full md:max-w-2xl md:bottom-24 md:left-auto md:right-6"
               style={{ maxHeight: '75vh' }}
             >
+              <button
+                onClick={() => setIsOpen(false)}
+                className="absolute top-3 right-3 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
               {/* Header */}
-              <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-black flex items-center justify-between gap-3 bg-[#fdfcf0]">
+              <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-black flex items-center justify-between gap-3 bg-[#fdfcf0] pr-14">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-2xl bg-black/5 flex items-center justify-center shrink-0 overflow-hidden">
                     <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={24} height={24} className="w-6 h-6 object-contain" />
@@ -185,15 +191,15 @@ export default function AIChatOverlay() {
                     setMessages([]);
                     localStorage.removeItem('bb-chat-history');
                   }}
-                  className="text-black hover:opacity-70 transition-opacity"
+                  className="text-black hover:opacity-70 transition-opacity mr-2"
                   title="ล้างประวัติ"
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
 
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto px-3 py-3 md:px-4 md:py-4 flex flex-col gap-3 min-h-[200px]">
+              {/* Messages Area — min-h-0 lets flex shrink so quick actions + input stay visible */}
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-3 md:px-4 md:py-4 flex flex-col gap-3 min-w-0">
 
 
                 {messages.map((msg) => {
@@ -230,8 +236,8 @@ export default function AIChatOverlay() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick Actions */}
-              <div className="px-3 md:px-4 flex flex-wrap gap-2 items-center justify-start mb-3">
+              {/* Quick Actions — shrink-0 keeps chips above the input bar */}
+              <div className="shrink-0 px-3 md:px-4 pt-2 pb-1 flex flex-wrap gap-2 items-center justify-start min-w-0 bg-[#fdfcf0]">
                 {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.id}
@@ -253,7 +259,7 @@ export default function AIChatOverlay() {
               {/* Input Area */}
               <form
                 onSubmit={handleSubmit}
-                className="px-3 md:px-4 py-3 border-t-2 border-black flex items-center gap-2 bg-[#fdfcf0]"
+                className="shrink-0 px-3 md:px-4 py-3 border-t-2 border-black flex items-center gap-2 bg-[#fdfcf0] min-w-0"
               >
                 <input
                   id="ai-chat-input"
@@ -263,7 +269,7 @@ export default function AIChatOverlay() {
                   placeholder="ถามบรู..."
                   disabled={isLoading}
                   autoComplete="off"
-                  className="thai-chat-readable flex-1 bg-white border-2 border-black rounded-2xl px-3 md:px-4 py-2.5 text-[13px] font-normal text-black placeholder:text-black placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-black transition-all disabled:opacity-50"
+                  className="thai-chat-readable flex-1 min-w-0 bg-white border-2 border-black rounded-2xl px-3 md:px-4 py-2.5 text-[13px] font-normal text-black placeholder:text-black placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-black transition-all disabled:opacity-50"
                 />
                 <motion.button
                   type="submit"
@@ -289,7 +295,7 @@ function ChatBubble({ role, content }: { role: string; content: string }) {
   const safeContent = sanitizeXssPayload(content);
 
   return (
-    <div className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`flex items-end gap-2 min-w-0 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {/* Avatar */}
       <div
         className={`w-7 h-7 rounded-2xl flex items-center justify-center shrink-0 ${isUser ? 'bg-[#000000]' : 'bg-black/5'}`}
@@ -303,7 +309,7 @@ function ChatBubble({ role, content }: { role: string; content: string }) {
 
       {/* Bubble */}
       <div
-        className={`thai-chat-readable max-w-[80%] px-4 py-2.5 rounded-3xl text-[15px] font-normal antialiased whitespace-pre-line ${isUser
+        className={`thai-chat-readable max-w-[80%] min-w-0 break-words px-4 py-2.5 rounded-3xl text-[15px] font-normal antialiased whitespace-pre-line ${isUser
           ? 'bg-[#fdfcf0] text-black border-2 border-black rounded-br-md'
           : 'bg-white text-black border-2 border-black rounded-bl-md'
           }`}

@@ -1,50 +1,127 @@
-import { expect, test, describe } from 'vitest';
-import * as fs from 'fs';
-import * as path from 'path';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Load .env.local manually for the test environment
-const envPath = path.join(process.cwd(), '.env.local');
-if (fs.existsSync(envPath)) {
-  const envText = fs.readFileSync(envPath, 'utf-8');
-  envText.split(/\r?\n/).forEach(line => {
-    const parts = line.split('=');
-    if (parts.length >= 2) {
-      const key = parts[0].trim();
-      const val = parts.slice(1).join('=').trim().replace(/^['"]|['"]$/g, '');
-      if (key && !key.startsWith('#')) {
-        process.env[key] = val;
-      }
-    }
+// ── Cookie mock ──────────────────────────────────────────────────────────────
+const mockGet = vi.fn();
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn().mockImplementation(async () => ({
+    get: mockGet,
+    set: vi.fn(),
+    delete: vi.fn(),
+  })),
+}));
+
+// ── Supabase mock ─────────────────────────────────────────────────────────────
+const mockSelectOrder = vi.fn();
+const mockEq = vi.fn();
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'u1' } }, error: null }),
+    },
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnValue({ order: mockSelectOrder }),
+      update: vi.fn().mockReturnValue({ eq: mockEq }),
+    })),
+  })),
+}));
+
+import { runInventoryMigration } from '@/app/actions/migrate-inventory-sort-order';
+
+describe('Inventory Sorting Migration — unit', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
+
+    // Authenticated writable session: PIN verified, not read-only
+    mockGet.mockImplementation((name: string) => {
+      if (name === 'bb_auth_pin_verified') return { value: 'true' };
+      return undefined;
+    });
+    // Default: updates succeed
+    mockEq.mockResolvedValue({ error: null });
   });
-}
 
-import { runInventoryMigration } from '../app/actions/migrate-inventory-sort-order';
-import { createClient } from '@supabase/supabase-js';
+  it('returns updatedCount=0 when all items already have correct sort_order', async () => {
+    mockSelectOrder.mockResolvedValue({
+      data: [
+        { id: 'a', sort_order: 1 },
+        { id: 'b', sort_order: 2 },
+        { id: 'c', sort_order: 3 },
+      ],
+      error: null,
+    });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-describe('Inventory Sorting Migration Trigger', () => {
-  test('should re-sequence sort_order from database without CSV', async () => {
     const result = await runInventoryMigration();
+
+    expect(result.updatedCount).toBe(0);
     expect(result.insertedCount).toBe(0);
-    expect(result.updatedCount).toBeGreaterThanOrEqual(0);
+    expect(mockEq).not.toHaveBeenCalled();
+  });
 
-    // 2. Fetch the top 5 items from DB sorted by sort_order
-    const supabase = createClient(supabaseUrl, supabaseAdminKey);
-    const { data: items, error } = await supabase
-      .from('inventory_items')
-      .select('name, sort_order, stock')
-      .order('sort_order', { ascending: true })
-      .limit(5);
+  it('resequences all items when sort_order is completely wrong and returns correct updatedCount', async () => {
+    mockSelectOrder.mockResolvedValue({
+      data: [
+        { id: 'a', sort_order: 5 },
+        { id: 'b', sort_order: 10 },
+        { id: 'c', sort_order: 15 },
+      ],
+      error: null,
+    });
 
-    expect(error).toBeNull();
-    expect(items).not.toBeNull();
-    console.log('Top 5 Migrated Items sorted by sort_order:', items);
+    const result = await runInventoryMigration();
 
-    // Verify sort_order sequential behavior (1-based index)
-    if (items && items.length > 0) {
-      expect(items[0].sort_order).toBe(1);
-    }
-  }, 45000); // 45s timeout for DB updates
+    expect(result.updatedCount).toBe(3);
+    expect(result.insertedCount).toBe(0);
+    expect(mockEq).toHaveBeenCalledTimes(3);
+  });
+
+  it('only updates items whose sort_order differs from the 1-based index', async () => {
+    mockSelectOrder.mockResolvedValue({
+      data: [
+        { id: 'a', sort_order: 1 },  // correct → skip
+        { id: 'b', sort_order: 10 }, // should be 2 → update
+        { id: 'c', sort_order: 3 },  // correct → skip
+      ],
+      error: null,
+    });
+
+    const result = await runInventoryMigration();
+
+    expect(result.updatedCount).toBe(1);
+    expect(result.insertedCount).toBe(0);
+    expect(mockEq).toHaveBeenCalledTimes(1);
+    expect(mockEq).toHaveBeenCalledWith('id', 'b');
+  });
+
+  it('returns updatedCount=0 and insertedCount=0 when DB is empty', async () => {
+    mockSelectOrder.mockResolvedValue({ data: [], error: null });
+
+    const result = await runInventoryMigration();
+
+    expect(result).toEqual({ updatedCount: 0, insertedCount: 0 });
+    expect(mockEq).not.toHaveBeenCalled();
+  });
+
+  it('throws when fetch fails', async () => {
+    mockSelectOrder.mockResolvedValue({
+      data: null,
+      error: { message: 'connection refused', details: null },
+    });
+
+    await expect(runInventoryMigration()).rejects.toThrow();
+  });
+
+  it('throws when read-only session tries to run migration', async () => {
+    mockGet.mockImplementation((name: string) => {
+      if (name === 'bb_auth_pin_verified') return { value: 'true' };
+      if (name === 'bb_auth_read_only') return { value: 'true' };
+      return undefined;
+    });
+
+    await expect(runInventoryMigration()).rejects.toThrow();
+  });
 });

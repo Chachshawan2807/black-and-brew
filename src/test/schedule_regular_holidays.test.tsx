@@ -1,10 +1,13 @@
 import React from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { AuthProvider } from '@/components/providers/AuthProvider';
+import type { RegularHolidayMap } from '@/lib/regular-holidays';
 
 vi.mock('framer-motion', () => ({
+  AnimatePresence: ({ children }: any) => <>{children}</>,
   motion: {
-    div: ({ children, layout, layoutId, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, layout, layoutId, initial, animate, exit, transition, ...props }: any) => <div {...props}>{children}</div>,
   },
 }));
 
@@ -28,6 +31,8 @@ vi.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: any) => <div>{children}</div>,
   closestCorners: vi.fn(),
   KeyboardSensor: function KeyboardSensor() {},
+  MouseSensor: function MouseSensor() {},
+  TouchSensor: function TouchSensor() {},
   PointerSensor: function PointerSensor() {},
   useSensor: vi.fn(() => ({})),
   useSensors: vi.fn(() => []),
@@ -93,6 +98,39 @@ vi.mock('@/app/actions/holiday-actions', () => ({
 
 import ScheduleClient from '@/app/[locale]/schedule/ScheduleClient';
 
+// ── Shared props type ─────────────────────────────────────────────────────────
+interface ScheduleProps {
+  initialProfiles: { id: string; full_name: string }[];
+  initialShifts?: any[];
+  initialHolidays?: any[];
+  initialRegularHolidays: RegularHolidayMap;
+  initialDateStr?: string;
+  locale?: string;
+}
+
+function renderSchedule(props: ScheduleProps) {
+  const {
+    initialShifts = [],
+    initialHolidays = [],
+    initialDateStr = '2026-06-01',
+    locale = 'th',
+    ...rest
+  } = props;
+  return render(
+    <AuthProvider isReadOnly={false}>
+      <ScheduleClient
+        initialShifts={initialShifts}
+        initialHolidays={initialHolidays}
+        initialDateStr={initialDateStr}
+        locale={locale}
+        {...rest}
+      />
+    </AuthProvider>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 describe('ScheduleClient regular holiday persistence', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -102,16 +140,10 @@ describe('ScheduleClient regular holiday persistence', () => {
   });
 
   test('shows regular holiday data from the server on first render', async () => {
-    render(
-      <ScheduleClient
-        initialProfiles={[{ id: 'p1', full_name: 'นิด' }]}
-        initialShifts={[]}
-        initialHolidays={[]}
-        initialRegularHolidays={{ p1: [1, 3] }}
-        initialDateStr="2026-06-01"
-        locale="th"
-      />
-    );
+    renderSchedule({
+      initialProfiles: [{ id: 'p1', full_name: 'นิด' }],
+      initialRegularHolidays: { p1: [1, 3] },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
 
@@ -120,19 +152,13 @@ describe('ScheduleClient regular holiday persistence', () => {
   });
 
   test('shows all-employee holiday overview without selecting an employee', async () => {
-    render(
-      <ScheduleClient
-        initialProfiles={[
-          { id: 'p1', full_name: 'นิด' },
-          { id: 'p2', full_name: 'แป้ง' },
-        ]}
-        initialShifts={[]}
-        initialHolidays={[]}
-        initialRegularHolidays={{ p1: [1, 3], p2: [5] }}
-        initialDateStr="2026-06-01"
-        locale="th"
-      />
-    );
+    renderSchedule({
+      initialProfiles: [
+        { id: 'p1', full_name: 'นิด' },
+        { id: 'p2', full_name: 'แป้ง' },
+      ],
+      initialRegularHolidays: { p1: [1, 3], p2: [5] },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
 
@@ -149,16 +175,10 @@ describe('ScheduleClient regular holiday persistence', () => {
   test('migrates cached recurring holidays into Supabase when the server is empty', async () => {
     localStorage.setItem('blackandbrew-regular-holidays', JSON.stringify({ p1: [1, 3] }));
 
-    render(
-      <ScheduleClient
-        initialProfiles={[{ id: 'p1', full_name: 'นิด' }]}
-        initialShifts={[]}
-        initialHolidays={[]}
-        initialRegularHolidays={{}}
-        initialDateStr="2026-06-01"
-        locale="th"
-      />
-    );
+    renderSchedule({
+      initialProfiles: [{ id: 'p1', full_name: 'นิด' }],
+      initialRegularHolidays: {},
+    });
 
     await waitFor(() => {
       expect(saveRegularHolidaysMock).toHaveBeenCalledWith('p1', [1, 3]);
@@ -171,16 +191,10 @@ describe('ScheduleClient regular holiday persistence', () => {
   test('saves recurring holidays to the server and updates the cache after success', async () => {
     saveRegularHolidaysMock.mockResolvedValue({ success: true, data: [1, 3, 5] });
 
-    render(
-      <ScheduleClient
-        initialProfiles={[{ id: 'p1', full_name: 'นิด' }]}
-        initialShifts={[]}
-        initialHolidays={[]}
-        initialRegularHolidays={{ p1: [1, 3] }}
-        initialDateStr="2026-06-01"
-        locale="th"
-      />
-    );
+    renderSchedule({
+      initialProfiles: [{ id: 'p1', full_name: 'นิด' }],
+      initialRegularHolidays: { p1: [1, 3] },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
     fireEvent.change(screen.getByDisplayValue('เลือกพนักงาน...'), { target: { value: 'p1' } });
@@ -195,16 +209,10 @@ describe('ScheduleClient regular holiday persistence', () => {
   test('keeps the previous recurring holidays when the server save fails', async () => {
     saveRegularHolidaysMock.mockResolvedValue({ success: false, error: 'network issue' });
 
-    render(
-      <ScheduleClient
-        initialProfiles={[{ id: 'p1', full_name: 'นิด' }]}
-        initialShifts={[]}
-        initialHolidays={[]}
-        initialRegularHolidays={{ p1: [1, 3] }}
-        initialDateStr="2026-06-01"
-        locale="th"
-      />
-    );
+    renderSchedule({
+      initialProfiles: [{ id: 'p1', full_name: 'นิด' }],
+      initialRegularHolidays: { p1: [1, 3] },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
     fireEvent.change(screen.getByDisplayValue('เลือกพนักงาน...'), { target: { value: 'p1' } });

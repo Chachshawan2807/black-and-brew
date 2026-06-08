@@ -13,7 +13,7 @@ Last Updated: 2026-06-07 | Version: v6.9
 ### 2.1 Root Documentation
 
 | File | Changes |
-| :--- | :--- |
+| --- | --- |
 | `README.md` | เขียนใหม่ทั้งหมด — features, setup, env, auth, architecture |
 | `PROJECT_MAP.md` | โครงสร้างปัจจุบัน, `src/proxy.ts`, routes, server actions, tests |
 | `MASTER_BLUEPRINT.md` | แก้ Zero-Display Logic ให้ตรง AGENTS.md |
@@ -22,7 +22,7 @@ Last Updated: 2026-06-07 | Version: v6.9
 ### 2.2 docs/ Directory
 
 | File | Changes |
-| :--- | :--- |
+| --- | --- |
 | `changelog.md` | ลบเนื้อหาซ้ำ (2026-05-25–27); เพิ่ม entry 2026-06-07 |
 | `context.md` | env vars ครบ, auth flow, modules ใหม่ |
 | `architecture.md` | auth, AI, LINE, sales; `src/proxy.ts` |
@@ -50,7 +50,7 @@ Last Updated: 2026-06-07 | Version: v6.9
 ## 4. Known Documentation vs Code Notes
 
 | Item | Note |
-| :--- | :--- |
+| --- | --- |
 | `READ_ONLY_PIN` env | Documented in `.env.example` but code uses hardcoded `111222` |
 | i18n middleware | File is `src/proxy.ts` (Next.js 16), not `src/middleware.ts` |
 | `vercel.json` crons | Empty array — cron may be configured in Vercel Dashboard |

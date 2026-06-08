@@ -13,10 +13,6 @@ import {
 import {
   DndContext,
   closestCorners,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragStartEvent,
   DragEndEvent,
   DragOverlay,
@@ -25,10 +21,10 @@ import {
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
+import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 
 export type NavItem = {
@@ -82,11 +78,12 @@ const SortableItem = React.memo(({ item, isOverlay = false }: { item: NavItem, i
     >
       <div className="absolute top-0 left-0 w-full h-1 bg-black/5 group-hover:bg-[#1a1a1a] transition-colors duration-300" />
       
-      {/* Drag Handle */}
-      <div 
-        className="absolute top-4 right-4 p-2 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+      {/* Drag Handle — visible on mobile, subtle on desktop */}
+      <div
+        className="absolute top-4 right-4 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity touch-none"
         {...attributes}
         {...listeners}
+        aria-label="ลากเพื่อเปลี่ยนลำดับ"
       >
         <GripHorizontal className="w-5 h-5" />
       </div>
@@ -121,16 +118,7 @@ export default function CommandCenterGrid({ initialItems }: { initialItems: NavI
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 10, 
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const sensors = useSafeDndSensors();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {

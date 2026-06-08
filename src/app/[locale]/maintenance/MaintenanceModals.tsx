@@ -73,19 +73,19 @@ export default function MaintenanceModals({
               transition={modalContent.transition}
               className="relative bg-[#fdfcf0] w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden border border-black/5"
             >
-              <div className="p-5 border-b border-black/5 flex items-center justify-between shrink-0">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-black/40 z-10"
+              >
+                <X className="w-5 h-5" strokeWidth={2} />
+              </button>
+              <div className="p-5 border-b border-black/5 flex items-center justify-between shrink-0 pr-14">
                 <div>
                   <h2 className="text-xl font-normal text-black tracking-tight uppercase">
                     {editingRecord ? 'แก้ไขบันทึก' : 'เพิ่มบันทึกใหม่'}
                   </h2>
                   <p className="text-[13px] text-black/60 mt-0.5 uppercase tracking-widest font-normal">รายละเอียดการซ่อมและสถานะอุปกรณ์</p>
                 </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-2 hover:bg-black/5 rounded-2xl transition-colors text-black/40"
-                >
-                  <X className="w-5 h-5" strokeWidth={2} />
-                </button>
               </div>
 
               <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar bg-[#fdfcf0]">
@@ -261,6 +261,12 @@ export default function MaintenanceModals({
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/5 backdrop-blur-md bb-modal-backdrop" onClick={() => setIsDeleteConfirmOpen(false)} />
           <div className="relative bg-[#fdfcf0] w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-black/5 bb-modal-panel p-10 text-center">
+            <button
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-black/40 z-10"
+            >
+              <X className="w-5 h-5" strokeWidth={2} />
+            </button>
             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" strokeWidth={1} />
             </div>

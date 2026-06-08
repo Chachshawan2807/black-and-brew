@@ -1,13 +1,13 @@
 # Database Schema — BLACKANDBREW ERP
 
-> **Version:** 8.1 | **Last Updated:** 2026-06-08 | **Engine:** Supabase PostgreSQL
+> Version: 8.2 | Last Updated: 2026-06-09 | Engine: Supabase PostgreSQL
 
 ---
 
 ## 1. Table Overview
 
 | Table | Purpose | RLS | Source SQL |
-| :--- | :--- | :--- | :--- |
+| --- | --- | --- | --- |
 | `profiles` | ข้อมูลพนักงาน 9 คน | ✅ authenticated | `DB_SCHEMA.sql` |
 | `shifts` | ตารางกะงาน | ✅ authenticated | `DB_SCHEMA.sql` |
 | `inventory_items` | รายการสินค้าในคลัง | ✅ authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` |
@@ -183,7 +183,7 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 > **[VERIFY] Schema location:** There is no `supabase/migrations/` folder. All schema files live at the repository root (e.g. `DB_SCHEMA.sql`) plus the `sql/` subfolder (`ai_agent_views.sql`, `fix_inventory_rls.sql`, `sync_inventory_stock.sql`). `DB_SCHEMA.sql` is the primary schema. Paths below are relative to the repo root.
 
 | File | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `DB_SCHEMA.sql` | Core: profiles, shifts, inventory_items |
 | `setup_inventory_transactions.sql` | transactions table + RPC |
 | `fix_transaction_relationships.sql` | Rename `product_id` → `inventory_item_id` |

@@ -16,7 +16,8 @@ import {
   ArrowDown,
   ArrowUp,
   Edit3,
-  Check
+  Check,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams } from 'next/navigation';
@@ -626,20 +627,20 @@ export default function SalesPage() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative bg-white rounded-3xl border border-black/5 shadow-xl max-w-lg w-full p-6"
                   >
-                    <div className="flex items-center justify-between mb-6">
+                    <button
+                      onClick={() => setShowManageCategories(false)}
+                      className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-all text-black/40 hover:text-black z-10"
+                      aria-label="ปิด"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                    <div className="flex items-center justify-between mb-6 pr-10">
                       <div>
                         <h2 className="text-xl">จัดการหมวดหมู่</h2>
                         <p className="text-sm text-black/50 mt-1">
                           เพิ่ม, แก้ไข, หรือลบหมวดหมู่สินค้า
                         </p>
                       </div>
-                      <button
-                        onClick={() => setShowManageCategories(false)}
-                        className="p-2 hover:bg-black/5 rounded-xl transition-all"
-                        aria-label="ปิด"
-                      >
-                        <ChevronUp className="w-5 h-5 transform rotate-45" />
-                      </button>
                     </div>
 
                     <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -696,7 +697,14 @@ export default function SalesPage() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative bg-white rounded-3xl border border-black/5 shadow-xl max-w-md w-full p-6"
                   >
-                    <div className="text-center mb-6">
+                    <button
+                      onClick={() => setCategoryToDelete(null)}
+                      className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-all text-black/40 hover:text-black z-10"
+                      aria-label="ปิด"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                    <div className="text-center mb-6 mt-4">
                       <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-black/5 flex items-center justify-center">
                         <Trash2 className="w-8 h-8 text-black" />
                       </div>

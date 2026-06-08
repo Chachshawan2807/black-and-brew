@@ -1,6 +1,6 @@
 # Design Standards — BLACKANDBREW ERP
 
-> **Version:** 8.1 | **Last Updated:** 2026-06-08 | **Standard:** Black-on-Pastel, High-Legibility
+> Version: 8.2 | Last Updated: 2026-06-09 | Standard: Black-on-Pastel, High-Legibility
 
 ---
 
@@ -17,7 +17,7 @@
 ## 2. Color Palette
 
 | Token | Value | Usage |
-| :--- | :--- | :--- |
+| --- | --- | --- |
 | `--text-primary` | `#000000` | หัวข้อ, ข้อมูลหลัก, Labels |
 | `--text-secondary` | `#000000/60` (opacity 60%) | ข้อมูลรอง, คำอธิบาย |
 | `--text-muted` | `#000000/40` (opacity 40%) | Timestamps, Hints |
@@ -52,7 +52,7 @@ font-family: 'Sarabun', 'Inter', system-ui, sans-serif;
 ### Sizes
 
 | Element | Size | Line-height |
-| :--- | :--- | :--- |
+| --- | --- | --- |
 | Page Title (`h1`) | `text-3xl` (30px) | Default |
 | Section Title (`h2`) | `text-2xl` / `text-xl` / `text-lg` | Default |
 | Body Text | `text-[15px]` | `1.6` |
@@ -127,7 +127,7 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 ## 6. Interaction Standards
 
 | Interaction | Standard |
-| :--- | :--- |
+| --- | --- |
 | **Hover / Focus** | `transition-all duration-200 ease-in-out` (`.bb-transition`) |
 | **Active/Click** | `active:scale-[0.98]` (buttons) |
 | **Page Route Change** | `PageTransition` — opacity fade 300ms `ease-in-out` |
@@ -144,7 +144,7 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 ## 7. Z-Index Layering
 
 | Layer | Z-Index | Element |
-| :--- | :--- | :--- |
+| --- | --- | --- |
 | Base Content | `1` | Table rows, Cards |
 | Sidebar Logo | `110` | Brand logo in sidebar |
 | Content Headers | `50` | Sticky headers |
@@ -211,7 +211,7 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 ### Architecture
 
 | Component | Path | Purpose |
-| :--- | :--- | :--- |
+| --- | --- | --- |
 | CSS Keyframes | `src/app/[locale]/globals.css` | `bb-fade-in`, `bb-zoom-in-95`, `bb-slide-*` utilities |
 | Framer Presets | `src/lib/motion-presets.ts` | Shared `fadeOverlay`, `modalContent`, `pageContent`, `toastSlide` |
 | Page Transition | `src/components/ui/page-transition.tsx` | Route fade via `SidebarLayout` |

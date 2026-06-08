@@ -46,34 +46,36 @@ export default function PurchaseOrdersModal({
   const tableContent = (
     <div id={tableId} className={isExportMode ? "relative flex flex-col w-full bg-[#fdfcf0]" : "relative max-h-[75vh] overflow-y-auto flex flex-col w-full bg-[#fdfcf0]"}>
       {/* STICKY STYLED WRAPPER FOR THE HEADER */}
-      <div className={isExportMode ? "bg-[#fff3dd] pt-4 pb-4 w-full box-border border-b border-black/5 shadow-sm" : "sticky top-0 bg-[#fff3dd] z-30 pt-4 pb-4 w-full box-border border-b border-black/5 shadow-sm"}>
-        <div className="px-6 flex items-center justify-between mb-4">
-          <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2 antialiased">
-            <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ
-            {isExportMode && !selectedChannels.includes('all') && (
-              <span className="text-base text-black/50 font-normal">
-                — {selectedChannels.join(', ')}
-              </span>
-            )}
-          </h2>
-
+        <div className={isExportMode ? "bg-[#fff3dd] pt-4 pb-4 w-full box-border border-b border-black/5 shadow-sm" : "sticky top-0 bg-[#fff3dd] z-30 pt-4 pb-4 w-full box-border border-b border-black/5 shadow-sm"}>
           {!isExportMode && (
-            <div id="po-action-buttons" className="flex items-center gap-3">
-              <button
-                onClick={exportPOImage}
-                className="px-4 py-2 bg-white hover:bg-neutral-50 text-[#000000] text-[14px] rounded-full flex items-center gap-2 transition-colors border border-[#000000]/5 shadow-sm antialiased font-normal"
-              >
-                <ArrowDownToLine className="w-4 h-4" /> บันทึกเป็นรูปภาพ
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-40"
+            >
+              <X className="w-5 h-5" />
+            </button>
           )}
-        </div>
+          <div className="px-6 flex items-center justify-between mb-4 pr-14">
+            <h2 className="text-xl font-normal text-[#000000] flex items-center gap-2 antialiased">
+              <ShoppingCart className="w-5 h-5 text-black/60" /> รายการสั่งซื้อ
+              {isExportMode && !selectedChannels.includes('all') && (
+                <span className="text-base text-black/50 font-normal">
+                  — {selectedChannels.join(', ')}
+                </span>
+              )}
+            </h2>
+
+            {!isExportMode && (
+              <div id="po-action-buttons" className="flex items-center gap-3">
+                <button
+                  onClick={exportPOImage}
+                  className="px-4 py-2 bg-white hover:bg-neutral-50 text-[#000000] text-[14px] rounded-full flex items-center gap-2 transition-colors border border-[#000000]/5 shadow-sm antialiased font-normal"
+                >
+                  <ArrowDownToLine className="w-4 h-4" /> บันทึกเป็นรูปภาพ
+                </button>
+              </div>
+            )}
+          </div>
 
         {/* Tabs Navigation - only show in non-export mode */}
         {!isExportMode && (

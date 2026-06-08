@@ -13,11 +13,6 @@ import { computeItemsToOrder, mergeInventoryRealtimeUpdate } from '@/lib/invento
 import {
   DndContext,
   closestCorners,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
   DragEndEvent,
   DragOverlay,
   defaultDropAnimationSideEffects
@@ -29,10 +24,10 @@ import {
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable';
+import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
@@ -209,9 +204,10 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
         </div>
         {/* Grip Handle */}
         <div
-          className="cursor-grab active:cursor-grabbing text-black/20 hover:text-black/50 transition-colors p-1 shrink-0 touch-none"
+          className="cursor-grab active:cursor-grabbing text-black/20 hover:text-black/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
           {...attributes}
           {...listeners}
+          aria-label="ลากเพื่อเปลี่ยนลำดับ"
         >
           <GripVertical className="w-4 h-4" />
         </div>
@@ -350,7 +346,7 @@ const MobileSortableRow = React.memo(({ item, index, columns, handleUpdateField,
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-white border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        "w-full min-w-0 bg-white border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
         isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-black/10 cursor-grabbing"
       )}
     >
@@ -359,9 +355,10 @@ const MobileSortableRow = React.memo(({ item, index, columns, handleUpdateField,
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {/* Grip Handle */}
           <div
-            className="cursor-grab active:cursor-grabbing text-black/20 hover:text-black/50 transition-colors p-1 shrink-0 touch-none"
+            className="cursor-grab active:cursor-grabbing text-black/20 hover:text-black/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
             {...attributes}
             {...listeners}
+            aria-label="ลากเพื่อเปลี่ยนลำดับ"
           >
             <GripVertical className="w-4 h-4" />
           </div>
@@ -390,7 +387,7 @@ const MobileSortableRow = React.memo(({ item, index, columns, handleUpdateField,
       </div>
 
       {/* Card Body: Single Row Grid */}
-      <div className="grid grid-cols-6 gap-1 pt-1">
+      <div className="grid grid-cols-6 gap-1 pt-1 min-w-0 overflow-hidden">
         {/* Stock */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">คงเหลือ</span>
@@ -738,16 +735,7 @@ export default function DynamicInventoryManager() {
   const [redoStack, setRedoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
   const previousStateRef = useRef<{ items: InventoryItem[], cols: ColumnDef[] }>({ items: [], cols: defaultColumns });
 
-  const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  const sensors = useSafeDndSensors();
 
   // Quick Entry State
   const [quickSearch, setQuickSearch] = useState('');
@@ -1463,8 +1451,8 @@ export default function DynamicInventoryManager() {
 
   return (
     <>
-      <div className="flex-1 w-full max-w-full bg-transparent text-black font-normal transition-all duration-300 flex flex-col items-start p-4 md:p-8">
-        <div className="w-full md:w-fit mx-auto flex flex-col items-start">
+      <div className="flex-1 w-full max-w-full bg-transparent text-black font-normal transition-all duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
+        <div className="w-full md:w-fit mx-auto flex flex-col items-stretch md:items-start">
           <div className="w-full flex flex-col items-center mb-8 text-center">
             <motion.h1
               initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -1474,7 +1462,7 @@ export default function DynamicInventoryManager() {
             </motion.h1>
           </div>
 
-          <div className="w-full flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 px-2">
+          <div className="w-full flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 md:px-2">
             <div className="flex items-center gap-1.5 text-sm font-normal min-w-[70px]">
               {savingState === 'saving' && (
                 <>
@@ -1664,7 +1652,7 @@ export default function DynamicInventoryManager() {
             modifiers={[restrictToWindowEdges]}
           >
             {/* Mobile Card Stack */}
-            <div className="md:hidden w-full space-y-4 px-2 mb-8">
+            <div className="md:hidden w-full space-y-4 mb-8">
               {items.length === 0 ? (
                 <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
                   ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
@@ -1729,17 +1717,17 @@ export default function DynamicInventoryManager() {
             className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4"
             onClick={() => setShowAddModal(false)}
           >
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="px-6 h-14 border-b border-slate-100 flex items-center justify-between shrink-0">
-                <h2 className="text-lg font-normal text-black">เพิ่มรายการใหม่</h2>
-                <button onClick={() => setShowAddModal(false)} className="p-2 text-black hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+          <motion.div
+            initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="relative bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <button onClick={() => setShowAddModal(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="px-6 h-14 border-b border-slate-100 flex items-center justify-between shrink-0 pr-14">
+              <h2 className="text-lg font-normal text-black">เพิ่มรายการใหม่</h2>
+            </div>
               <form onSubmit={handleAddItemSubmit} className="p-6 overflow-y-auto flex-1">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <div className="col-span-2 flex flex-col gap-1.5">
@@ -1833,8 +1821,11 @@ export default function DynamicInventoryManager() {
       <AnimatePresence>
         {deleteId && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4">
-            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 text-center">
-              <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="relative bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 text-center">
+              <button onClick={() => setDeleteId(null)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
                 <Trash2 className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-normal text-[#000000] mb-2">ต้องการลบรายการนี้ใช่หรือไม่?</h3>
@@ -1862,11 +1853,17 @@ export default function DynamicInventoryManager() {
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="bg-[#fdfcf0] rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col border border-black/5"
+              className="relative bg-[#fdfcf0] rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col border border-black/5"
               onClick={e => e.stopPropagation()}
             >
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-all active:scale-95 z-10"
+              >
+                <X className="w-6 h-6" />
+              </button>
               {/* Header */}
-              <div className="px-8 py-6 border-b border-black/5 flex items-center justify-between bg-white/50 backdrop-blur-sm shrink-0">
+              <div className="px-8 py-6 border-b border-black/5 flex items-center justify-between bg-white/50 backdrop-blur-sm shrink-0 pr-16">
                 <div>
                   <h2 className="text-2xl font-normal text-[#000000] flex items-center gap-3">
                     <History className="w-6 h-6 text-black/40" />
@@ -1874,12 +1871,6 @@ export default function DynamicInventoryManager() {
                   </h2>
                   <p className="text-black/40 text-[13px] mt-1 font-normal">ตรวจสอบรายการรับเข้าและนำออกย้อนหลัง</p>
                 </div>
-                <button
-                  onClick={() => setShowHistoryModal(false)}
-                  className="p-3 text-black/30 hover:text-black hover:bg-black/5 rounded-full transition-all active:scale-95"
-                >
-                  <X className="w-6 h-6" />
-                </button>
               </div>
 
               {/* Table Content */}

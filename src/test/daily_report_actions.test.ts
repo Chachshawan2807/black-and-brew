@@ -293,15 +293,10 @@ describe('Daily LINE Notification Protocol Actions', () => {
   });
 
   describe('Strategic Advice Threshold & Message Verification', () => {
-    it('should compile complete daily report with correct advisory tiers and holiday warnings', async () => {
-      // Mock Profile and Shifts
+    it('should compile daily report holiday section from fetchNextHoliday countdown', async () => {
       mockProfilesData = [{ id: 'p1', full_name: 'ปิ่น', schedule_order: 1 }];
       mockShiftsData = [{ employee_id: 'p1', status: 'active', metadata: { location: 'เข้ากะ 6:30' } }];
 
-      // Mock Inventory (No critical items)
-      mockInventoryItemsData = [{ name: 'เมล็ดกาแฟ House Blend', stock: 10, order_point: 5 }];
-
-      // Mock Weather (Normal)
       vi.spyOn(global, 'fetch').mockResolvedValue({
         ok: true,
         json: async () => ({ list: [] })
@@ -316,25 +311,25 @@ describe('Daily LINE Notification Protocol Actions', () => {
         return format(target, 'yyyy-MM-dd');
       };
 
-      // Scenario A: Holiday Today (Tier 0)
+      // Scenario A: Holiday today (daysRemaining = 0)
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(0) };
       const payloadA = await compileDailyReportPayload();
-      expect(payloadA).toContain('วันนี้เป็นวันหยุด (วันวิสาขบูชา) คาดว่าลูกค้าหน้าร้านหนาแน่น เตรียมกำลังพลและวัตถุดิบให้พร้อม');
+      expect(payloadA).toContain('วันวิสาขบูชา (อีก 0 วัน)');
 
-      // Scenario B: Urgent Pre-Holiday (Tier 1-3)
+      // Scenario B: Holiday in 2 days
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(2) };
       const payloadB = await compileDailyReportPayload();
-      expect(payloadB).toContain('อีก 2 วันถึง วันวิสาขบูชา เร่งตรวจสอบสต็อกและสั่งเติมสินค้าทันที');
+      expect(payloadB).toContain('วันวิสาขบูชา (อีก 2 วัน)');
 
-      // Scenario C: Advance Warning (Tier 4-7)
+      // Scenario C: Holiday in 6 days
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(6) };
       const payloadC = await compileDailyReportPayload();
-      expect(payloadC).toContain('อีก 6 วันจะถึง วันวิสาขบูชา วางแผนสั่งซื้อล่วงหน้าเพื่อป้องกันสินค้าขาด');
+      expect(payloadC).toContain('วันวิสาขบูชา (อีก 6 วัน)');
 
-      // Scenario D: Normal Status (> 7 Days)
+      // Scenario D: Holiday in 15 days
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(15) };
       const payloadD = await compileDailyReportPayload();
-      expect(payloadD).toContain('สถานการณ์ปกติ ลุยงานกันเลยค่ะ');
+      expect(payloadD).toContain('วันวิสาขบูชา (อีก 15 วัน)');
     });
   });
 });

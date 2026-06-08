@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> **Version:** 8.1 | **Last Updated:** 2026-06-08
+> Version: 8.2 | Last Updated: 2026-06-09
 
 ---
 
@@ -13,7 +13,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 ### 1.1 Auth (`auth.ts`)
 
 | Function | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `verifyPin(pin)` | ตรวจ PIN → set httpOnly cookies; returns `{ success, isReadOnly? }` |
 | `checkAuth()` | ตรวจว่า PIN verified หรือไม่ |
 | `isReadOnlySession()` | ตรวจ read-only mode |
@@ -63,7 +63,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 ### 1.3 Shift (`shift-actions.ts`)
 
 | Function | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `saveShift(payload)` | Create/update shift (atomic delete-then-insert) |
 | `deleteShift(id)` | Delete shift by ID |
 | `updateStaffOrder(orderedIds)` | Reorder staff in schedule |
@@ -78,7 +78,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 ### 1.4 Holiday (`holiday-actions.ts`)
 
 | Function | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `syncHolidays(startDate, endDate)` | Google Calendar → `holidays` table |
 | `saveRegularHolidays(profileId, days)` | Save regular holiday days per employee |
 
@@ -87,7 +87,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 ### 1.5 Maintenance (`maintenance-actions.ts`)
 
 | Function | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `saveServiceRecord(record)` | Insert/update `service_records` |
 | `deleteServiceRecord(id)` | Delete service record |
 
@@ -96,7 +96,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 ### 1.6 Sales (`sales-actions.ts`)
 
 | Function | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `uploadSalesFiles(formData)` | Parse Excel → `sales_uploads` + `sales_records` |
 | `fetchSalesHistory(page, pageSize)` | Paginated upload history |
 | `deleteSalesUpload(uploadId)` | Delete upload + cascading records |
@@ -111,7 +111,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 ### 1.7 Market Insights (`market-insights-actions.ts`)
 
 | Function | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `getMarketInsights()` | Gemini analysis combining inventory, sales, schedule, weather |
 
 ---
@@ -119,7 +119,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 ### 1.8 Daily Report (`daily-report-actions.ts`)
 
 | Function | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `fetchTodayShifts(date)` | Shifts for target date |
 | `fetchWeatherForecast(date?)` | OpenWeatherMap forecast |
 | `fetchNextHoliday(date)` | Next public holiday |
@@ -130,7 +130,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 ### 1.9 LINE (`line-actions.ts`)
 
 | Function | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `sendLineNotification(targetId, message)` | Push text via LINE Messaging API |
 
 ---
@@ -138,7 +138,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 ### 1.10 Migration (`migrate-inventory-sort-order.ts`)
 
 | Function | Purpose |
-| :--- | :--- |
+| --- | --- |
 | `runInventoryMigration()` | DB-only `sort_order` re-sequence (no CSV) |
 
 ---
@@ -194,7 +194,7 @@ supabase.channel('inventory_changes')
 ### Inventory CRUD
 
 | Operation | Method |
-| :--- | :--- |
+| --- | --- |
 | Fetch All | `.from('inventory_items').select('*').order('sort_order')` |
 | Update Field | `.update({ [field]: value }).eq('id', id)` |
 | Insert Item | `.insert([item]).select().single()` |
@@ -204,6 +204,6 @@ supabase.channel('inventory_changes')
 ### Config Persistence
 
 | Operation | Method |
-| :--- | :--- |
+| --- | --- |
 | Load Config | `.from('inventory_config').select('settings').eq('id', 'column_labels').single()` |
 | Save Config | `.from('inventory_config').upsert({ id: 'column_labels', settings })` |

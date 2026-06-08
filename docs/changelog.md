@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-06-09 (Env Var & Blueprint Canonical Sync)
+
+* **Execution**: [DOCUMENTATION SYNC — `.env.example` + `src/` as source of truth]
+* **Changes**:
+  * `docs/context.md` — ลบ `READ_ONLY_PIN`, `LINE_CHANNEL_ID`; เพิ่ม `LINE_GROUP_ID`; ระบุ `GOOGLE_GENERATIVE_AI_API_KEY` เท่านั้นสำหรับ Gemini
+  * `docs/architecture.md` — ยืนยัน `GOOGLE_GENERATIVE_AI_API_KEY`; ระบุว่า `GEMINI_API_KEY`/`GOOGLE_API_KEY` ไม่ถูกใช้ใน `src/`
+  * `docs/MASTER_BLUEPRINT.md` — canonical blueprint; เพิ่ม Environment Variables; deprecate `src/lib/agent-tools/`
+  * `MASTER_BLUEPRINT.md` (root) — redirect stub + deprecated section + env var names
+  * `README.md` — ลิงก์ canonical ไป `docs/MASTER_BLUEPRINT.md`; ตาราง Scripts มี `lint:md` / `lint:md:fix` แล้ว
+* **Verification**: `npm run lint:md` ✓ (Exit Code 0)
+
+## 2026-06-09 (Documentation Sync — v8.2)
+
+* **Execution**: [DOCUMENTATION SYNC — surgical header and content patches]
+* **Changes**:
+  * Bumped Version/Last Updated header to `v8.2 / 2026-06-09` in all nine target docs (`architecture.md`, `database.md`, `api.md`, `rules.md`, `design.md`, `context.md`, `tasks.md`, `changelog.md`, `memory.md`).
+  * `context.md` — updated Current Version field to 8.2; env vars table was already corrected by prior sync (READ_ONLY_PIN and LINE_CHANNEL_ID removed, LINE_GROUP_ID present).
+  * `memory.md` — added version/date header (was missing).
+  * `tasks.md` — appended documentation sync v8.2 entry to Phase 7 completed list.
+  * All other docs had correct content — header bump only.
+* **Verification**: `npm run lint:md` ✓ (Exit Code 0)
+
+## 2026-06-09 (Skill Synergy Bundler — One-Shot Scan v8.2)
+
+* **Execution**: [SKILL-SYNERGY-BUNDLER: SAFE DISCOVERY SCAN]
+* **Scope**: Read-only scan ของ `src/app/api/chat/`, `src/app/api/weather/`, `src/components/`, `src/utils/`, `src/lib/`, `src/app/actions/tools/` (ยกเว้น `node_modules`, `.next`, `.git`, `.vercel`, `public`, `dist`)
+* **Capabilities Extracted**: AI Data Gateway (AI-GATEWAY-P3), `get_ai_store_status` RPC, Tavily client cache/rate-limit, Chat 30/hr rate limit, EU AI Act audit trail, Dynamic System Prompt, Smart Memory Window, `cleanToolOutput`, read-only chat deny, `client-cache`, `useSafeDndSensors`
+* **Bundles Created/Updated**: 17 Synergy Skill Sets ใน `docs/skills.md` — เพิ่ม Bundle 15–17 (API Throttle & Cache Economy, Compliance & Audit Trace, Deterministic Schedule Fast-Path); อัปเดต Bundle 1–14 ให้ตรงโค้ดปัจจุบัน
+
 ## 2026-06-08 (Documentation Sync — Code-Truth Alignment)
 
 * **Execution**: [DOCUMENTATION SYNC — read real code as source of truth]

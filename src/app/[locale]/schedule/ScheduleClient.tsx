@@ -26,10 +26,6 @@ import {
 import {
   DndContext,
   closestCorners,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragStartEvent,
   DragEndEvent,
 } from '@dnd-kit/core';
@@ -37,10 +33,10 @@ import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable';
+import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -244,8 +240,8 @@ const SortableEmployeeRow = React.memo(({
         <div
           {...attributes}
           {...(isReadOnly ? {} : listeners)}
-          className={`p-3 h-11 w-11 rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-[#000000]/20' : 'cursor-grab active:cursor-grabbing hover:bg-gray-100 text-[#000000]/40 hover:text-[#000000]/70'}`}
-          title="ลากเพื่อเปลี่ยนลำดับ"
+          className={`p-3 min-h-[44px] min-w-[44px] rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-[#000000]/20' : 'cursor-grab active:cursor-grabbing hover:bg-gray-100 text-[#000000]/40 hover:text-[#000000]/70'}`}
+          aria-label="ลากเพื่อเปลี่ยนลำดับ"
         >
           <GripVertical className="w-5 h-5" />
         </div>
@@ -921,10 +917,7 @@ export default function ScheduleClient({
     }
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  const sensors = useSafeDndSensors();
 
   const handleDragStart = (event: DragStartEvent) => {
     if (isReadOnly) return;
@@ -1483,6 +1476,9 @@ export default function ScheduleClient({
       {showClearConfirm && (
         <div className="fixed inset-0 bg-[#000000]/20 backdrop-blur-sm bb-modal-backdrop z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
           <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] text-center space-y-4">
+            <button onClick={() => setShowClearConfirm(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
+              <X className="w-5 h-5" />
+            </button>
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
               <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -1524,6 +1520,9 @@ export default function ScheduleClient({
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
           <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin bg-[#fdfcf0] shadow-2xl bb-modal-panel md:max-w-5xl p-6 text-[#000000] flex flex-col md:flex-row">
+            <button onClick={() => setShowManagementModal(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-50">
+              <X className="w-5 h-5" />
+            </button>
             <div className="w-full md:w-[340px] flex flex-col border-r border-[#000000]/5 shrink-0">
               <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]/50 management-form-container">
                 <div className="flex items-center gap-2">
@@ -1639,14 +1638,11 @@ export default function ScheduleClient({
             </div>
 
             <div className="flex-1 flex flex-col bg-[#fdfcf0]/30 min-w-0">
-              <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]">
+              <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0] pr-14">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="w-5 h-5 text-[#000000]/40" />
                   <h3 className="text-lg font-normal text-[#000000] tracking-tight">ประวัติ</h3>
                 </div>
-                <button onClick={() => setShowManagementModal(false)} className="p-2 hover:bg-[#000000]/5 rounded-full text-[#000000]/40 transition-all cursor-pointer">
-                  <X className="w-5 h-5" />
-                </button>
               </div>
 
               <div className="p-4 border-b border-[#000000]/5 bg-[#fdfcf0]">
@@ -1745,8 +1741,11 @@ export default function ScheduleClient({
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
           <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowAddEmployeeModal(false)} />
           <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
+            <button onClick={() => setShowAddEmployeeModal(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
+              <X className="w-5 h-5" />
+            </button>
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
-            <h3 className="text-xl font-normal text-[#000000] mb-4 uppercase tracking-tight">เพิ่มพนักงานใหม่</h3>
+            <h3 className="text-xl font-normal text-[#000000] mb-4 uppercase tracking-tight pr-10">เพิ่มพนักงานใหม่</h3>
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[13px] font-normal uppercase tracking-wider text-[#000000]/70 ml-1">ชื่อ</label>
@@ -1785,8 +1784,11 @@ export default function ScheduleClient({
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
           <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowRegularHolidayModal(false)} />
           <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
+            <button onClick={() => setShowRegularHolidayModal(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
+              <X className="w-5 h-5" />
+            </button>
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
-            <h3 className="text-xl font-normal text-[#000000] mb-6 uppercase tracking-tight flex items-center gap-2">
+            <h3 className="text-xl font-normal text-[#000000] mb-6 uppercase tracking-tight flex items-center gap-2 pr-10">
               <Calendar className="w-5 h-5 text-[#000000]/40" />
               จัดการวันหยุดประจำ
             </h3>

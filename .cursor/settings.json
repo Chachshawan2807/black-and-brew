@@ -5,6 +5,9 @@
     },
     "vercel": {
       "enabled": true
+    },
+    "tavily": {
+      "enabled": true
     }
   }
 }

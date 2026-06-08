@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD025 -->
 # Agent Rules — BLACKANDBREW ERP
 
 <!-- BEGIN:nextjs-agent-rules -->

@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> **Version:** 8.1 | **Last Updated:** 2026-06-08 | **Enforcement:** Mandatory
+> Version: 8.2 | Last Updated: 2026-06-09 | Enforcement: Mandatory
 
 ---
 
@@ -9,7 +9,7 @@
 ### Database Tables
 
 | Rule | Example | Anti-pattern |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | Plural table names | `inventory_items`, `inventory_transactions` | ~~`inventory_item`~~, ~~`inventory_transaction`~~ |
 | Snake_case columns | `inventory_item_id`, `order_qty`, `target_stock` | ~~`inventoryItemId`~~, ~~`orderQty`~~ |
 | UUID primary keys | `id UUID DEFAULT gen_random_uuid()` | ~~`id SERIAL`~~ |
@@ -17,7 +17,7 @@
 ### Critical Column Names (VERIFIED — DO NOT CHANGE)
 
 | Table | Column | Notes |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | `inventory_transactions` | `inventory_item_id` | FK to `inventory_items.id` — renamed from `product_id` |
 | `inventory_items` | `stock`, `order_qty`, `order_point`, `target_stock` | NUMERIC type, sanitize empty → 0 |
 | `inventory_items` | `sort_order` | INTEGER, controls drag-and-drop ordering |
@@ -26,7 +26,7 @@
 ### TypeScript/React
 
 | Rule | Example | Anti-pattern |
-| :--- | :--- | :--- |
+| --- | :--- | --- |
 | PascalCase components | `EditableCell`, `SortableRow` | ~~`editableCell`~~ |
 | camelCase functions | `handleSaveField`, `fetchTransactionHistory` | ~~`HandleSaveField`~~ |
 | Interface prefix: none | `InventoryItem`, `ColumnDef` | ~~`IInventoryItem`~~ |
@@ -35,7 +35,7 @@
 ### Files & Routes
 
 | Rule | Example |
-| :--- | :--- |
+| --- | :--- |
 | Locale-prefixed routes | `/[locale]/inventory/` |
 | Actions in `/actions/` | `src/app/actions/inventory-actions.ts` |
 | Shared components in `/components/` | `src/components/ui/button.tsx` |

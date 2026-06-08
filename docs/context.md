@@ -1,16 +1,16 @@
 # Context — BLACKANDBREW ERP
 
-> **Version:** 8.1 | **Last Updated:** 2026-06-08
+> Version: 8.2 | Last Updated: 2026-06-09
 
 ---
 
 ## 1. Project Identity
 
 | Field | Value |
-| :--- | :--- |
+| --- | --- |
 | **Project Name** | BLACK-AND-BREW ERP System |
 | **Type** | Enterprise Resource Planning for Coffee Shop |
-| **Current Version** | 8.1 (AI Schedule Deterministic Path) |
+| **Current Version** | 8.2 (Documentation Sync) |
 | **Repository** | `Chachshawan2807/black-and-brew` |
 | **Local Path** | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -38,7 +38,7 @@
 ### Runtime
 
 | Component | Version |
-| :--- | :--- |
+| --- | --- |
 | Node.js | 22.x |
 | Next.js | 16.2.4 |
 | React | 19.2.4 |
@@ -49,21 +49,24 @@
 ### Environment Variables
 
 | Variable | Purpose | Visibility |
-| :--- | :--- | :--- |
+| --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Public |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Public |
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin key (bypass RLS) | Server only |
 | `APP_PIN` | Full-access PIN | Server only |
-| `READ_ONLY_PIN` | Documented in `.env.example` (code uses hardcoded `111222`) | Server only |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini — AI Chat + Market Insights (`@ai-sdk/google`) | Server only |
-| `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync | Server only |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini — AI Chat + Market Insights (`@ai-sdk/google`, auto-read env name) | Server only |
+| `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync (OPTION) | Server only |
 | `TAVILY_API_KEY` | AI web search | Server only |
 | `OPENWEATHER_API_KEY` | Weather data | Server only |
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | Store coordinates | Public |
 | `LINE_CHANNEL_ACCESS_TOKEN` | LINE push notifications | Server only |
-| `LINE_CHANNEL_ID` | LINE channel ID | Server only |
-| `LINE_TARGET_RECIPIENT_ID` | LINE recipient | Server only |
+| `LINE_GROUP_ID` | LINE cron recipient (checked before `LINE_TARGET_RECIPIENT_ID`) | Server only |
+| `LINE_TARGET_RECIPIENT_ID` | LINE recipient fallback | Server only |
 | `CRON_SECRET` | Vercel cron auth | Server only |
+
+Read-only PIN `111222` is hardcoded in `src/lib/auth-constants.ts` — not an env var.
+
+Not referenced in `src/`: `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `LINE_CHANNEL_ID`, `READ_ONLY_PIN` (see `.env.example` NOTES).
 
 ### Supabase Project
 
@@ -76,7 +79,7 @@
 ## 4. Authentication
 
 | Mode | PIN | Capabilities |
-| :--- | :--- | :--- |
+| --- | --- | --- |
 | Full access | `APP_PIN` (env) | Read + write ทุกโมดูล |
 | Read-only | `111222` (hardcoded) | ดูอย่างเดียว — `assertWritableSession()` บล็อก writes |
 
@@ -89,7 +92,7 @@
 ## 5. Operational Constraints
 
 | Constraint | Value |
-| :--- | :--- |
+| --- | --- |
 | **Timezone** | GMT+7 (Bangkok) — Strict Enforcement |
 | **Language** | Thai (primary), English (secondary) |
 | **Deployment Target** | Vercel Edge Runtime |
@@ -128,7 +131,7 @@
 ## 7. File Structure Overview
 
 | Module | Path |
-| :--- | :--- |
+| --- | --- |
 | Command Center | `src/app/[locale]/page.tsx` |
 | Dashboard | `src/app/[locale]/dashboard/` |
 | Schedule | `src/app/[locale]/schedule/` |

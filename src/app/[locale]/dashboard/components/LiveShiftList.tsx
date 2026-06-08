@@ -13,10 +13,6 @@ import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import {
   DndContext,
   closestCorners,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
   DragStartEvent,
   DragEndEvent,
   DragOverlay,
@@ -25,10 +21,10 @@ import {
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   rectSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable';
+import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import {
   restrictToWindowEdges,
   snapCenterToCursor,
@@ -72,8 +68,6 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
       style={style}
       className={isDragging ? "opacity-0 z-0" : "z-10 relative"}
       aria-label={`สถิติสะสม: ${data.profile.full_name} — ทำงาน ${data.workDays} วัน, ลา ${data.leaveDays} วัน, นักขัตฯ ${data.publicHolidays} วัน`}
-      {...attributes}
-      {...(isReadOnly ? {} : listeners)}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -89,8 +83,14 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
               {data.profile.full_name}
             </h3>
           </div>
-          <div className="p-1 rounded-md hover:bg-black/5 transition-colors">
-            <GripVertical className="w-5 h-5 text-[#000000]" />
+          {/* Drag handle — listeners scoped here only so scroll is never hijacked */}
+          <div
+            className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors touch-none ${isReadOnly ? 'opacity-30 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:bg-black/5 text-[#000000]/50 hover:text-[#000000]/80'}`}
+            {...attributes}
+            {...(isReadOnly ? {} : listeners)}
+            aria-label="ลากเพื่อเปลี่ยนลำดับ"
+          >
+            <GripVertical className="w-5 h-5" />
           </div>
         </div>
 
@@ -161,10 +161,7 @@ export default function LiveShiftList({
     setOrderedProfileIds(initialProfiles.map(p => p.id));
   }, [initialShifts, initialProfiles, initialHolidays]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  const sensors = useSafeDndSensors();
 
   const handleDateChange = (start: string, end: string) => {
     document.cookie = `dashboard_start_date=${start}; path=/; max-age=31536000; SameSite=Lax`;
