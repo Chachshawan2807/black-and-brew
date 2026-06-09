@@ -10,7 +10,6 @@
     "lint:md": "markdownlint-cli2",
     "lint:md:fix": "markdownlint-cli2 --fix",
     "test": "vitest run",
-    "export:presentation": "node scripts/export-presentation.mjs",
     "export:infographic": "node scripts/export-infographic.mjs"
   },
   "dependencies": {
