@@ -1,0 +1,66 @@
+name: Deploy Presentation
+
+on:
+  push:
+    branches: [main, cursor/project-presentation-1db0]
+    paths:
+      - 'public/presentation/**'
+      - 'docs/presentation/export/**'
+      - '.github/workflows/presentation-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare site
+        run: |
+          mkdir -p _site/presentation _site/presentation/export/slides
+          cp public/presentation/index.html _site/presentation/
+          cp public/presentation/print.html _site/presentation/
+          cp public/presentation/gallery.html _site/presentation/
+          cp docs/presentation/export/black-and-brew-presentation.pdf _site/presentation/export/
+          cp docs/presentation/export/slides/*.png _site/presentation/export/slides/
+          cat > _site/presentation/export/index.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="th">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>BLACK AND BREW Presentation</title>
+            <style>
+              body { font-family: system-ui, sans-serif; max-width: 480px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+              a { display: block; padding: 1rem; margin: 0.5rem 0; border: 1px solid #ddd; border-radius: 12px; text-decoration: none; color: #000; background: #fdfcf0; }
+            </style>
+          </head>
+          <body>
+            <h1>BLACK AND BREW</h1>
+            <p>เลือกวิธีดู Presentation บนมือถือ</p>
+            <a href="black-and-brew-presentation.pdf">📄 เปิด PDF (12 หน้า)</a>
+            <a href="../index.html">🖥️ ดูแบบสไลด์ (ปัดซ้ายขวา)</a>
+            <a href="slides/slide-01.png">🖼️ ดูรูปสไลด์ทีละภาพ</a>
+          </body>
+          </html>
+          HTML
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

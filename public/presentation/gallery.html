@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BLACK AND BREW — Presentation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sarabun', system-ui, sans-serif;
+      background: #fdfcf0;
+      color: #000;
+      padding: 1rem 1rem 3rem;
+    }
+    header {
+      text-align: center;
+      padding: 1.5rem 0 1rem;
+      position: sticky;
+      top: 0;
+      background: rgba(253, 252, 240, 0.92);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      margin: -1rem -1rem 1rem;
+      padding: 1.5rem 1rem 1rem;
+    }
+    h1 { font-size: 1.25rem; font-weight: 400; }
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 0.75rem;
+    }
+    .links a {
+      font-size: 0.85rem;
+      color: #000;
+      text-decoration: none;
+      border: 1px solid rgba(0,0,0,0.12);
+      border-radius: 999px;
+      padding: 0.4rem 0.9rem;
+      background: #fff;
+    }
+    .slide-img {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.08);
+      margin-bottom: 1rem;
+      display: block;
+    }
+    .slide-num {
+      font-size: 0.8rem;
+      color: rgba(0,0,0,0.45);
+      text-align: center;
+      margin-bottom: 0.35rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BLACK AND BREW ERP</h1>
+    <div class="links">
+      <a href="export/black-and-brew-presentation.pdf">เปิด PDF</a>
+      <a href="index.html">โหมดสไลด์</a>
+    </div>
+  </header>
+
+  <main id="slides"></main>
+
+  <script>
+    const container = document.getElementById('slides');
+    for (let i = 1; i <= 12; i++) {
+      const num = String(i).padStart(2, '0');
+      const label = document.createElement('p');
+      label.className = 'slide-num';
+      label.textContent = `สไลด์ ${i} / 12`;
+      const img = document.createElement('img');
+      img.className = 'slide-img';
+      img.src = `export/slides/slide-${num}.png`;
+      img.alt = `สไลด์ ${i}`;
+      img.loading = i <= 2 ? 'eager' : 'lazy';
+      container.appendChild(label);
+      container.appendChild(img);
+    }
+  </script>
+</body>
+</html>
