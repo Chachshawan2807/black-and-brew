@@ -2,12 +2,13 @@
 
 import { usePathname, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useState, useEffect, useMemo } from 'react';
+import { GripVertical, LogOut } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { getMenuList } from '@/lib/menu-list';
+import { getMenuList, type MenuItem } from '@/lib/menu-list';
 import { Button } from '@/components/ui/button';
 import { CollapseMenuButton } from '@/components/sidebar/CollapseMenuButton';
-import { LogOut } from 'lucide-react';
 import { clearAuth } from '@/app/actions/auth';
 import {
   Tooltip,
@@ -17,20 +18,204 @@ import {
 } from '@/components/ui/tooltip';
 import { useStore } from '@/hooks/use-store';
 import { useSidebarToggle } from '@/hooks/use-sidebar-toggle';
+import { useReadOnly } from '@/components/providers/AuthProvider';
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { useSafeDndSensors } from '@/lib/dnd-sensors';
+import { CSS } from '@dnd-kit/utilities';
+
+const STORAGE_KEY = 'sidebar-menu-order';
 
 interface MenuProps {
   isOpen: boolean | undefined;
 }
+
+// ─── Static menu item (used as DragOverlay ghost + non-admin fallback) ───────
+
+function StaticMenuItem({
+  menu,
+  isOpen,
+  onLinkClick,
+  isOverlay = false,
+}: {
+  menu: MenuItem;
+  isOpen: boolean | undefined;
+  onLinkClick: () => void;
+  isOverlay?: boolean;
+}) {
+  const { href, label, icon: Icon, active, submenus } = menu;
+
+  if (submenus.length > 0) {
+    return (
+      <li className="w-full">
+        <CollapseMenuButton
+          icon={Icon}
+          label={label}
+          active={active}
+          submenus={submenus}
+          isOpen={isOpen}
+          onLinkClick={onLinkClick}
+        />
+      </li>
+    );
+  }
+
+  return (
+    <li className={cn("w-full flex items-center", isOverlay && "opacity-80 shadow-lg rounded-lg bg-white")}>
+      <TooltipProvider disableHoverableContent>
+        <Tooltip delayDuration={100}>
+          <TooltipTrigger asChild>
+            <Button
+              variant={active ? 'secondary' : 'ghost'}
+              className={cn(
+                'h-10 font-normal antialiased flex-1',
+                isOpen === false ? 'w-10 mx-auto justify-center' : 'w-full justify-start'
+              )}
+              asChild
+            >
+              <Link href={href} onClick={onLinkClick}>
+                <span className={cn(isOpen === false ? '' : 'mr-4')}>
+                  <Icon size={18} />
+                </span>
+                <p className={cn(
+                  'max-w-[200px] truncate font-normal transition-all duration-200 ease-in-out',
+                  isOpen === false ? '-translate-x-96 opacity-0 hidden' : 'translate-x-0 opacity-100'
+                )}>
+                  {label}
+                </p>
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          {isOpen === false && <TooltipContent side="right">{label}</TooltipContent>}
+        </Tooltip>
+      </TooltipProvider>
+    </li>
+  );
+}
+
+// ─── Sortable menu item (admin + sidebar open only) ───────────────────────────
+
+function SortableMenuItem({
+  menu,
+  isOpen,
+  onLinkClick,
+}: {
+  menu: MenuItem;
+  isOpen: boolean | undefined;
+  onLinkClick: () => void;
+}) {
+  const { href, label, icon: Icon, active, submenus } = menu;
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: menu.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: isDragging ? 'none' : (transition ?? undefined),
+    opacity: isDragging ? 0.3 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 10 : 'auto' as const,
+  };
+
+  if (submenus.length > 0) {
+    return (
+      <li ref={setNodeRef} style={style} {...attributes} className="w-full flex items-center group/menuitem">
+        <div className="flex-1 min-w-0">
+          <CollapseMenuButton
+            icon={Icon}
+            label={label}
+            active={active}
+            submenus={submenus}
+            isOpen={isOpen}
+            onLinkClick={onLinkClick}
+          />
+        </div>
+        <div
+          className="flex-shrink-0 h-10 w-6 flex items-center justify-center opacity-0 group-hover/menuitem:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none"
+          {...listeners}
+          aria-label="ลากเพื่อเปลี่ยนลำดับ"
+        >
+          <GripVertical size={14} className="text-gray-400 hover:text-gray-600" />
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li ref={setNodeRef} style={style} {...attributes} className="w-full flex items-center group/menuitem">
+      <TooltipProvider disableHoverableContent>
+        <Tooltip delayDuration={100}>
+          <TooltipTrigger asChild>
+            <Button
+              variant={active ? 'secondary' : 'ghost'}
+              className="h-10 font-normal antialiased flex-1 justify-start"
+              asChild
+            >
+              <Link href={href} onClick={onLinkClick}>
+                <span className="mr-4">
+                  <Icon size={18} />
+                </span>
+                <p className="max-w-[170px] truncate font-normal transition-all duration-200 ease-in-out translate-x-0 opacity-100">
+                  {label}
+                </p>
+              </Link>
+            </Button>
+          </TooltipTrigger>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Drag handle — scoped listeners prevent scroll hijack */}
+      <div
+        className="flex-shrink-0 h-10 w-6 flex items-center justify-center opacity-0 group-hover/menuitem:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none"
+        {...listeners}
+        aria-label="ลากเพื่อเปลี่ยนลำดับ"
+      >
+        <GripVertical size={14} className="text-gray-400 hover:text-gray-600" />
+      </div>
+    </li>
+  );
+}
+
+// ─── Main Menu component ──────────────────────────────────────────────────────
 
 export default function Menu({ isOpen }: MenuProps) {
   const pathname = usePathname();
   const params = useParams();
   const searchParams = useSearchParams();
   const locale = (params?.locale as string) || 'th';
-  const menuList = getMenuList(pathname, locale);
-  const sidebar = useStore(useSidebarToggle, (state) => state);
 
+  const sidebar = useStore(useSidebarToggle, (state) => state);
+  const isReadOnly = useReadOnly();
+  const isAdmin = !isReadOnly;
+
+  const [isMounted, setIsMounted] = useState(false);
+  const [customOrderIds, setCustomOrderIds] = useState<string[] | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSafeDndSensors();
+
+  // Build menu from pathname (active state always fresh)
+  const menuList = getMenuList(pathname, locale);
   const showHolidays = searchParams?.get('showRegularHolidays') === 'true';
+
   const adjustedMenuList = menuList.map(group => ({
     ...group,
     menus: group.menus.map(menu => {
@@ -44,11 +229,63 @@ export default function Menu({ isOpen }: MenuProps) {
     })
   }));
 
+  const flatMenus = adjustedMenuList.flatMap(({ menus }) => menus);
+
+  // Apply saved order to fresh menu items (so active state is always current)
+  const displayMenus = useMemo(() => {
+    if (!customOrderIds) return flatMenus;
+    const reordered = customOrderIds
+      .map(id => flatMenus.find(m => m.id === id))
+      .filter(Boolean) as MenuItem[];
+    const missing = flatMenus.filter(m => !customOrderIds.includes(m.id));
+    return [...reordered, ...missing];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customOrderIds, pathname, showHolidays]);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const ids = JSON.parse(saved) as string[];
+        if (Array.isArray(ids) && ids.length > 0) {
+          setCustomOrderIds(ids);
+        }
+      } catch {
+        // ignore malformed data
+      }
+    }
+  }, []);
+
   const handleLinkClick = () => {
     if (window.innerWidth < 768 && sidebar?.isOpen) {
       sidebar.setIsOpen();
     }
   };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over || active.id === over.id) return;
+
+    setCustomOrderIds(prev => {
+      const currentIds = prev ?? displayMenus.map(m => m.id);
+      const oldIdx = currentIds.indexOf(active.id as string);
+      const newIdx = currentIds.indexOf(over.id as string);
+      if (oldIdx === -1 || newIdx === -1) return prev;
+      const newOrder = arrayMove(currentIds, oldIdx, newIdx);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newOrder));
+      return newOrder;
+    });
+  };
+
+  const isDragEnabled = isMounted && isAdmin && isOpen !== false;
+
+  const activeMenu = activeId ? displayMenus.find(m => m.id === activeId) : null;
 
   return (
     <nav className="h-full w-full flex flex-col justify-between overflow-hidden">
@@ -56,55 +293,53 @@ export default function Menu({ isOpen }: MenuProps) {
         "flex flex-col gap-1 px-2 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden",
         isOpen === false ? "items-center" : "items-start"
       )}>
-        {adjustedMenuList.flatMap(({ menus }) => menus).map(({ href, label, icon: Icon, active, submenus }, menuIndex) =>
-          submenus.length === 0 ? (
-            <li className="w-full" key={menuIndex}>
-              <TooltipProvider disableHoverableContent>
-                <Tooltip delayDuration={100}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={active ? 'secondary' : 'ghost'}
-                      className={cn(
-                        'h-10 font-normal antialiased',
-                        isOpen === false ? 'w-10 mx-auto justify-center' : 'w-full justify-start'
-                      )}
-                      asChild
-                    >
-                      <Link href={href} onClick={handleLinkClick}>
-                        <span className={cn(isOpen === false ? '' : 'mr-4')}>
-                          <Icon size={18} />
-                        </span>
-                        <p
-                          className={cn(
-                            'max-w-[200px] truncate font-normal transition-all duration-200 ease-in-out',
-                            isOpen === false
-                              ? '-translate-x-96 opacity-0 hidden'
-                              : 'translate-x-0 opacity-100'
-                          )}
-                        >
-                          {label}
-                        </p>
-                      </Link>
-                    </Button>
-                  </TooltipTrigger>
-                  {isOpen === false && (
-                    <TooltipContent side="right">{label}</TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-            </li>
-          ) : (
-            <li className="w-full" key={menuIndex}>
-              <CollapseMenuButton
-                icon={Icon}
-                label={label}
-                active={active}
-                submenus={submenus}
-                isOpen={isOpen}
-                onLinkClick={handleLinkClick}
-              />
-            </li>
-          )
+        {isDragEnabled ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={displayMenus.map(m => m.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {displayMenus.map(menu => (
+                <SortableMenuItem
+                  key={menu.id}
+                  menu={menu}
+                  isOpen={isOpen}
+                  onLinkClick={handleLinkClick}
+                />
+              ))}
+            </SortableContext>
+
+            <DragOverlay dropAnimation={{
+              duration: 200,
+              easing: 'ease-in-out',
+              sideEffects: defaultDropAnimationSideEffects({
+                styles: { active: { opacity: '0.3' } },
+              }),
+            }}>
+              {activeMenu ? (
+                <StaticMenuItem
+                  menu={activeMenu}
+                  isOpen={isOpen}
+                  onLinkClick={() => {}}
+                  isOverlay
+                />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        ) : (
+          displayMenus.map((menu, i) => (
+            <StaticMenuItem
+              key={menu.id ?? i}
+              menu={menu}
+              isOpen={isOpen}
+              onLinkClick={handleLinkClick}
+            />
+          ))
         )}
       </ul>
 

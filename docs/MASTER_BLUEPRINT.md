@@ -37,7 +37,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 - Transport: `DefaultChatTransport` (useChat hook) → `POST /api/chat`.
 - Architecture: ToolLoopAgent is utilized instead of `streamText` for Server-Side multi-step tool execution. The agent iterates over tool calls and results automatically (`stopWhen: stepCountIs(maxSteps)`).
 - Token Optimization: Smart memory window (`MAX_MEMORY_MESSAGES = 8`, `messages.slice(-8)`), per-message char cap 2000, `maxOutputTokens: 1200`, dynamic intent-based system prompt.
-- Tools (`src/app/actions/tools/`): `readTable`, `getDailyShifts`, `internetSearchTool` exposed in `/api/chat`; cron-only `weatherTool` + `getDailyReportSourcesTool` in `internal-sources-tools.ts`. Deprecated: `src/lib/agent-tools/` (removed).
+- Tools (`src/app/actions/tools/`): `readTable`, `getDailyShifts`, `internetSearchTool` exposed in `/api/chat`; cron-only `weatherTool` + `getDailyReportSourcesTool` in `internal-sources-tools.ts`.
 - Deterministic Schedule Path (DEC-068): คำถามตารางงานรายวัน (วันนี้/พรุ่งนี้) short-circuit ผ่าน `fetchDailyShiftsByDate` + `formatScheduleChatResponse` — ไม่พึ่ง LLM สรุปผล ป้องกันคำตอบสั้นผิดพลาด (เช่น "วันนี้ 0")
 - Shift Data Source: กะจริงมาจาก `shifts.metadata.location` (6:30, 7:00, 8:00, ลา, ไปสาขา 2, ร้านซักผ้า, วันหยุด) — ห้ามใช้ `start_time` เป็นเวลาเข้างาน
 - Security: AI reads via Supabase Service Role isolated tools — read-only data layer.
@@ -147,9 +147,10 @@ Authoritative list: [`.env.example`](../.env.example). Keys actually read in `sr
 | `TAVILY_API_KEY` | SECRET | `internetSearchTool` |
 | `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report, market-insights |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — holiday sync |
+| `GOOGLE_PLACES_API_KEY` | SECRET | OPTION — Market Insights v2 nearby cafés |
 | `LINE_CHANNEL_ACCESS_TOKEN` | SECRET | LINE Messaging API push |
 | `LINE_GROUP_ID` | SECRET | Cron recipient (preferred) |
 | `LINE_TARGET_RECIPIENT_ID` | SECRET | Cron recipient fallback |
 | `CRON_SECRET` | SECRET | Protects `GET /api/daily-report` |
 
-Not used in `src/` (do not document as required): `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `LINE_CHANNEL_ID`, `READ_ONLY_PIN`. Read-only PIN `111222` is hardcoded in `src/lib/auth-constants.ts`.
+Read-only PIN `111222` is hardcoded in `src/lib/auth-constants.ts`.

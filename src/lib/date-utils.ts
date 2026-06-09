@@ -1,15 +1,6 @@
-import { startOfWeek, addDays, format, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { THAI_TIMEZONE } from './timezone';
-
-export function getWeekDays(monday: Date) {
-  return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
-}
-
-export function getMonday(date: Date) {
-  // force start of week to Monday (1)
-  return startOfWeek(date, { weekStartsOn: 1 });
-}
 
 export function formatToThai(date: Date | string, formatStr: string) {
   return formatInTimeZone(date, THAI_TIMEZONE, formatStr);

@@ -85,6 +85,7 @@ Read-only PIN `111222` ถูก hardcode ใน `src/lib/auth-constants.ts` —
 | `TAVILY_API_KEY` | SECRET | Internet search tool สำหรับ AI |
 | `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report, market-insights |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — sync วันหยุดราชการ (schedule) |
+| `GOOGLE_PLACES_API_KEY` | SECRET | OPTION — Market Insights v2 nearby cafés |
 
 ### LINE & Vercel Cron
 
@@ -142,7 +143,7 @@ src/
 | [docs/api.md](docs/api.md) | Server Actions reference |
 | [docs/design.md](docs/design.md) | UI/UX standards (Zero-Bold, Pastel) |
 | [docs/SOP.md](docs/SOP.md) | Development SOP (TDD) |
-| [MASTER_BLUEPRINT.md](MASTER_BLUEPRINT.md) | Blueprint ฉบับสมบูรณ์ |
+| [docs/MASTER_BLUEPRINT.md](docs/MASTER_BLUEPRINT.md) | Blueprint ฉบับสมบูรณ์ (canonical) |
 | [AGENTS.md](AGENTS.md) | กฎสำหรับ AI agents |
 
 ---

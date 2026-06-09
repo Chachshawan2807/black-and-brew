@@ -1,10 +1,28 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 8.2 | Last Updated: 2026-06-09 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
+> Version: 8.3 | Last Updated: 2026-06-09 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
 
 ---
 
 ## Recent Decisions
+
+### DEC-069: Market Insights v2 — Isolated Multi-Step Module (v8.3)
+
+- Date: June 9, 2026
+- Context: Market Insights v1 used a single action file with a single LLM call returning raw strings (behavior, trends, strategy). Output was unstructured, hard to test, and coupled weather/context fetch with AI generation.
+- Decision:
+  1. Split into five files: market-insights-types, market-insights-fetch, market-insights-places, market-insights-context, market-insights-actions. Each has a single responsibility.
+  2. Context layer is 100% deterministic (no AI) so the UI can render context even if AI steps fail.
+  3. Two-step generateObject pipeline validated by Zod schemas (behaviorTrendsSchema, strategyActionsSchema) — partial failure is recoverable.
+  4. Google Places integration is opt-in via GOOGLE_PLACES_API_KEY; fetchNearbyCompetitors() returns [] when key is absent.
+  5. Tavily queries use a per-session Map cache keyed by query string to avoid redundant API calls within a single getMarketInsights() invocation.
+  6. Optional persistRun() writes to market_insight_runs table using service-role key; fails gracefully (warns, does not throw) if table does not exist.
+  7. Cache key bumped to marketInsightsCache_v2 to isolate from legacy v1 payloads.
+  8. UI components (ContextPanel, AlertsCard, InsightCharts, ActionChecklist, SourcesList, DiffBanner) are colocated in src/app/[locale]/market-insights/components/.
+- Impact: Structured output enables chart rendering, confidence indicators, and diff tracking. Isolated fetch layer is testable independently.
+- Evidence: src/app/actions/market-insights-*.ts, docs/sql/market_insight_runs.sql, npm run lint:md Exit Code 0
+
+---
 
 ### DEC-068: Deterministic AI Daily Schedule Response (v8.1)
 

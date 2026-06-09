@@ -58,6 +58,22 @@ function normalizeColumnName(col: string): string {
     .replace(/[^a-z0-9_]/g, '');
 }
 
+/**
+ * Extract a date from a filename that encodes a date range.
+ * Handles patterns like: _20260101–20260131, _20260101-20260131, _202601
+ * Returns the first day of the encoded period, or undefined if not found.
+ */
+function extractDateFromFilename(fileName: string): Date | undefined {
+  const match = fileName.match(/(\d{4})(\d{2})(\d{2})/);
+  if (!match) return undefined;
+  const year = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10) - 1; // JS month is 0-indexed
+  const day = parseInt(match[3], 10);
+  if (year < 2000 || year > 2100 || month < 0 || month > 11) return undefined;
+  const date = new Date(year, month, day);
+  return isNaN(date.getTime()) ? undefined : date;
+}
+
 // Data processing function
 interface DataProcessingResult {
   validRecords: any[];
@@ -70,7 +86,12 @@ interface DataProcessingResult {
   };
 }
 
-function processSalesData(rawRecords: any[]): DataProcessingResult {
+/**
+ * Process raw Excel rows into valid sales records.
+ * @param rawRecords Rows parsed from XLSX
+ * @param filenameDate Fallback date extracted from the filename (used when rows have no date column)
+ */
+function processSalesData(rawRecords: any[], filenameDate?: Date): DataProcessingResult {
   const auditLog = {
     totalRecords: rawRecords.length,
     duplicatesRemoved: 0,
@@ -90,8 +111,15 @@ function processSalesData(rawRecords: any[]): DataProcessingResult {
     });
 
     // Map fields - prioritize user's column names
+    // For monthly-summary Excel files (no per-row date), fall back to the date
+    // encoded in the filename (e.g. _20260101–20260131 → Jan 1 2026).
     const mapped: any = {
-      sale_date: normalized.date || normalized.sale_date || normalized.saledate || normalized.transaction_date,
+      sale_date:
+        normalized.date ||
+        normalized.sale_date ||
+        normalized.saledate ||
+        normalized.transaction_date ||
+        filenameDate,
       product_name: normalized.product || normalized.product_name || normalized.productname || normalized.item || normalized.item_name || normalized.menu_name || normalized.menu,
       category: normalized.category || normalized.product_category,
       quantity: normalized.quantity || normalized.qty || normalized.bills,
@@ -270,8 +298,12 @@ export async function uploadSalesFiles(formData: FormData): Promise<{
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const rawData = XLSX.utils.sheet_to_json(firstSheet);
 
+      // Extract date from filename as fallback for monthly-summary files
+      // that don't have a per-row date column (e.g. อันดับเมนูขายดี_20260101–20260131.xlsx)
+      const filenameDate = extractDateFromFilename(file.name);
+
       // Process data
-      const { validRecords, auditLog } = processSalesData(rawData);
+      const { validRecords, auditLog } = processSalesData(rawData, filenameDate);
 
       // Create upload record in Supabase
       const { data: uploadData, error: uploadError } = await supabase

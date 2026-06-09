@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 8.2 | Last Updated: 2026-06-09 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 8.3 | Last Updated: 2026-06-09 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -66,16 +66,20 @@ src/app/
 ├── page.tsx                     # Root redirect → /th
 ├── manifest.ts                  # PWA manifest
 ├── actions/
-│   ├── auth.ts                  # PIN verify, read-only guard
-│   ├── inventory-actions.ts     # Stock RPC, transactions
-│   ├── shift-actions.ts         # Shift CRUD
-│   ├── holiday-actions.ts       # Google Calendar + regular holidays
-│   ├── maintenance-actions.ts   # Service records
-│   ├── sales-actions.ts         # Excel upload, categories
-│   ├── market-insights-actions.ts
-│   ├── daily-report-actions.ts  # LINE report compiler
+│   ├── auth.ts                        # PIN verify, read-only guard
+│   ├── inventory-actions.ts           # Stock RPC, transactions
+│   ├── shift-actions.ts               # Shift CRUD
+│   ├── holiday-actions.ts             # Google Calendar + regular holidays
+│   ├── maintenance-actions.ts         # Service records
+│   ├── sales-actions.ts               # Excel upload, categories
+│   ├── market-insights-types.ts       # v2 Zod schemas + TS types
+│   ├── market-insights-fetch.ts       # Weather forecast, holidays, Tavily multi-cache
+│   ├── market-insights-places.ts      # Google Places nearby competitors (OPTION)
+│   ├── market-insights-context.ts     # Deterministic context builders
+│   ├── market-insights-actions.ts     # getMarketInsights() multi-step generateObject pipeline
+│   ├── daily-report-actions.ts        # LINE report compiler
 │   ├── line-actions.ts
-│   └── tools/                   # AI agent tools
+│   └── tools/                         # AI agent tools
 ├── api/
 │   ├── chat/route.ts            # Streaming AI (ToolLoopAgent)
 │   ├── daily-report/route.ts    # Vercel Cron endpoint
@@ -89,7 +93,9 @@ src/app/
     │   └── count/               # Stock-taking
     ├── maintenance/             # Equipment tracking
     ├── sales/                   # Sales analytics
-    └── market-insights/         # AI market analysis
+    └── market-insights/         # AI market analysis (v2)
+        └── components/          # ContextPanel, AlertsCard, InsightCharts,
+                                 # ActionChecklist, SourcesList, DiffBanner
 ```
 
 **i18n middleware:** `src/proxy.ts` (Next.js 16 convention — not `src/middleware.ts`)
@@ -193,9 +199,10 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 | --- | :--- | --- |
 | Supabase | Anon + Service Role | DB, Auth, Real-time |
 | Google Calendar API | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync |
-| Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat + Market Insights (`@ai-sdk/google` reads this env name; `GEMINI_API_KEY` / `GOOGLE_API_KEY` not used in `src/`) |
+| Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat + Market Insights (`@ai-sdk/google`) |
 | OpenWeatherMap | `OPENWEATHER_API_KEY` | Weather widget + daily report |
-| Tavily | `TAVILY_API_KEY` | AI web search |
+| Tavily | `TAVILY_API_KEY` | AI web search + Market Insights multi-query cache |
+| Google Places | `GOOGLE_PLACES_API_KEY` | Nearby competitor cafes - Market Insights v2 (OPTION) |
 | LINE Messaging API | `LINE_CHANNEL_ACCESS_TOKEN` | Daily push notifications |
 | Vercel | Git deployment | Edge hosting + Cron |
 

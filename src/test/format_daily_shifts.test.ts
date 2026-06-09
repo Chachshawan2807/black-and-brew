@@ -58,6 +58,30 @@ describe('formatDailyShifts', () => {
     expect(frontStoreShifts).not.toContain('11:00');
   });
 
+  test('sorts front-store staff by shift time then schedule row order', () => {
+    const orderedProfiles = [
+      { id: 'p1', full_name: 'เม', schedule_order: 3 },
+      { id: 'p2', full_name: 'ปิ่น', schedule_order: 1 },
+      { id: 'p3', full_name: 'นิต้า', schedule_order: 0 },
+      { id: 'p4', full_name: 'มุก', schedule_order: 2 },
+      { id: 'p5', full_name: 'ชัช', schedule_order: 5 },
+      { id: 'p6', full_name: 'ล่า', schedule_order: 8 },
+    ];
+    const shifts = [
+      { employee_id: 'p1', status: 'scheduled', metadata: { location: '7:00' } },
+      { employee_id: 'p2', status: 'scheduled', metadata: { location: '7:00' } },
+      { employee_id: 'p3', status: 'scheduled', metadata: { location: '6:30' } },
+      { employee_id: 'p4', status: 'scheduled', metadata: { location: '8:00' } },
+      { employee_id: 'p5', status: 'scheduled', metadata: { location: 'ไปสาขา 2' } },
+      { employee_id: 'p6', status: 'scheduled', metadata: { location: 'ร้านซักผ้า' } },
+    ];
+
+    const result = formatDailyShifts(orderedProfiles, shifts);
+
+    expect(result.front_store.map((entry) => entry.name)).toEqual(['นิต้า', 'ปิ่น', 'เม', 'มุก']);
+    expect(result.other_duty.map((entry) => entry.name)).toEqual(['ชัช', 'ล่า']);
+  });
+
   test('normalizeShiftLocation strips เข้ากะ prefix and maps day off', () => {
     expect(normalizeShiftLocation('เข้ากะ 7:00')).toBe('7:00');
     expect(normalizeShiftLocation('')).toBe('วันหยุด');

@@ -48,7 +48,13 @@ function hashQuery(query: string): string {
  */
 export async function fetchTavily(
   query: string,
-  options?: { userId?: string }
+  options?: {
+    userId?: string;
+    /** Optional override — defaults to 'basic' to preserve existing callers. */
+    searchDepth?: 'basic' | 'advanced';
+    /** Optional override — defaults to 3 to preserve existing callers. */
+    maxResults?: number;
+  }
 ): Promise<TavilyResult[]> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
@@ -83,8 +89,8 @@ export async function fetchTavily(
     body: JSON.stringify({
       api_key: apiKey,
       query,
-      search_depth: 'basic',
-      max_results: 3,
+      search_depth: options?.searchDepth ?? 'basic',
+      max_results: options?.maxResults ?? 3,
     }),
   });
 

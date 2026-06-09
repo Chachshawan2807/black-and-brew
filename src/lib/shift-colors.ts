@@ -1,5 +1,5 @@
 /** Pastel shift colors — synced with schedule dropdown (ScheduleClient shiftTypes) */
-export const SHIFT_TYPE_COLORS = {
+const SHIFT_TYPE_COLORS = {
   '6:30': 'bg-[#d4edda] text-[#000000] border border-[#c3e6cb]',
   '06:30': 'bg-[#d4edda] text-[#000000] border border-[#c3e6cb]',
   '7:00': 'bg-[#ffffff] text-[#000000] border border-gray-300',

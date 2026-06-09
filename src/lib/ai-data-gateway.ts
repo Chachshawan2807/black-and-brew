@@ -26,7 +26,7 @@ function getAdminClient() {
 // ─────────────────────────────────────────────────────────────────────────────
 // COLUMN ALIASES — map AI-friendly names to real DB columns
 // ─────────────────────────────────────────────────────────────────────────────
-export const COLUMN_ALIASES: Record<string, Record<string, string>> = {
+const COLUMN_ALIASES: Record<string, Record<string, string>> = {
   inventory_items: {
     item_name: 'name',
     quantity: 'stock',
@@ -79,7 +79,7 @@ export function getRealColumnName(tableName: string, col: string): string {
   return COLUMN_ALIASES[tableName]?.[col] ?? col;
 }
 
-export interface GatewayError {
+interface GatewayError {
   message: string;
   details: unknown;
   hint: unknown;

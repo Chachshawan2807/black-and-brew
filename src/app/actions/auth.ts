@@ -44,7 +44,7 @@ export async function checkAuth(): Promise<boolean> {
   return cookieStore.get('bb_auth_pin_verified')?.value === 'true';
 }
 
-export async function isReadOnlySession(): Promise<boolean> {
+async function isReadOnlySession(): Promise<boolean> {
   const cookieStore = await cookies();
   return cookieStore.get('bb_auth_read_only')?.value === 'true';
 }

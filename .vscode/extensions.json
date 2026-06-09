@@ -1,6 +1,5 @@
 {
     "recommendations": [
-        "prasana.antigravity-autoretry",
         "DavidAnson.vscode-markdownlint"
     ]
 }

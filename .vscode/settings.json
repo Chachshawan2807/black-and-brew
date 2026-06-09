@@ -1,15 +1,4 @@
 {
   "markdownlint.configFile": ".markdownlint-cli2.jsonc",
-  "css.lint.unknownAtRules": "ignore",
-  "antigravity.autoRetry.enabled": true,
-  "antigravity.autoRetry.mode": "always_proceed",
-  "antigravity.notifications.suppressAll": true,
-  "antigravity.autoRetry.requiresConfirmation": false,
-  "antigravity.terminal.autoExecute": "always_proceed",
-  "antigravity.security.trustAllWorkspaceActions": true,
-  "antigravity.workspace.trustedActions": [
-    "auto-retry",
-    "vitest",
-    "build"
-  ]
+  "css.lint.unknownAtRules": "ignore"
 }

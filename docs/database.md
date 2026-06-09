@@ -1,6 +1,6 @@
-# Database Schema — BLACKANDBREW ERP
+# Database Schema ? BLACKANDBREW ERP
 
-> Version: 8.2 | Last Updated: 2026-06-09 | Engine: Supabase PostgreSQL
+> Version: 8.3 | Last Updated: 2026-06-09 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -8,18 +8,18 @@
 
 | Table | Purpose | RLS | Source SQL |
 | --- | --- | --- | --- |
-| `profiles` | ข้อมูลพนักงาน 9 คน | ✅ authenticated | `DB_SCHEMA.sql` |
-| `shifts` | ตารางกะงาน | ✅ authenticated | `DB_SCHEMA.sql` |
-| `inventory_items` | รายการสินค้าในคลัง | ✅ authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` |
-| `inventory_transactions` | ประวัติการเคลื่อนไหวสต็อก | ✅ authenticated | `setup_inventory_transactions.sql` |
-| `inventory_config` | ตั้งค่าคอลัมน์ Inventory UI | ✅ authenticated | `inventory_config_schema.sql` |
-| `holidays` | วันหยุดราชการ | ✅ | Created via `holiday-actions.ts` |
-| `regular_holidays` | วันหยุดประจำของพนักงาน | ✅ | `regular_holidays_schema.sql` |
-| `service_records` | ประวัติซ่อมบำรุงอุปกรณ์ | ✅ | Used by maintenance module |
-| `sales_uploads` | ไฟล์ Excel ที่อัปโหลด | ✅ | `sales_schema.sql` |
-| `sales_records` | รายการยอดขาย | ✅ | `sales_schema.sql` |
-| `product_categories` | หมวดหมู่สินค้า | ✅ | `product_categories_schema.sql` |
-| `audit_logs` | บันทึก audit สำหรับ AI | ✅ | `audit_log_schema.sql` |
+| `profiles` | ????????????? 9 ?? | ? authenticated | `DB_SCHEMA.sql` |
+| `shifts` | ?????????? | ? authenticated | `DB_SCHEMA.sql` |
+| `inventory_items` | ?????????????????? | ? authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` |
+| `inventory_transactions` | ????????????????????????? | ? authenticated | `setup_inventory_transactions.sql` |
+| `inventory_config` | ?????????????? Inventory UI | ? authenticated | `inventory_config_schema.sql` |
+| `holidays` | ????????????? | ? | Created via `holiday-actions.ts` |
+| `regular_holidays` | ?????????????????????? | ? | `regular_holidays_schema.sql` |
+| `service_records` | ??????????????????????? | ? | Used by maintenance module |
+| `sales_uploads` | ???? Excel ?????????? | ? | `sales_schema.sql` |
+| `sales_records` | ???????????? | ? | `sales_schema.sql` |
+| `product_categories` | ?????????????? | ? | `product_categories_schema.sql` |
+| `audit_logs` | ?????? audit ?????? AI | ? | `audit_log_schema.sql` |
 
 > **Types:** Generated types in `src/lib/database.types.ts`
 
@@ -86,7 +86,7 @@ CREATE TABLE inventory_transactions (
 );
 ```
 
-> Column is `inventory_item_id` — renamed from `product_id` via `fix_transaction_relationships.sql`
+> Column is `inventory_item_id` ? renamed from `product_id` via `fix_transaction_relationships.sql`
 
 ### `sales_uploads` / `sales_records`
 
@@ -116,21 +116,37 @@ CREATE TABLE sales_records (
 );
 ```
 
+### `market_insight_runs` (OPTIONAL)
+
+```sql
+CREATE TABLE IF NOT EXISTS public.market_insight_runs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  generated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  context_json  JSONB       NOT NULL,
+  insights_json JSONB       NOT NULL,
+  sources_json  JSONB       NOT NULL DEFAULT '[]'::jsonb,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+RLS enabled; no public policies ? written only by server actions using the service-role key.
+Source: `docs/sql/market_insight_runs.sql`. Feature works without this table (`persistRun()` fails gracefully).
+
 ---
 
 ## 3. RLS Policies
 
 ### Current Standard (post `fix_inventory_rls.sql`)
 
-- `inventory_items`, `inventory_config`: `authenticated` role — SELECT/INSERT/UPDATE
-- `inventory_transactions`: `authenticated` — SELECT/INSERT/DELETE (no UPDATE — ledger immutability)
-- `profiles`, `shifts`: `authenticated` — full CRUD
+- `inventory_items`, `inventory_config`: `authenticated` role ? SELECT/INSERT/UPDATE
+- `inventory_transactions`: `authenticated` ? SELECT/INSERT/DELETE (no UPDATE ? ledger immutability)
+- `profiles`, `shifts`: `authenticated` ? full CRUD
 - Client must call `supabase.auth.signInAnonymously()` after PIN gate
 
 ### Legacy (pre-hardening)
 
 ```sql
--- Deprecated open policies — removed by fix_inventory_rls.sql
+-- Deprecated open policies ? removed by fix_inventory_rls.sql
 CREATE POLICY "Public access for inventory_items" ON inventory_items FOR ALL USING (true);
 ```
 
@@ -156,16 +172,16 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 
 ### `record_inventory_transaction`
 
-- Row lock → stock validation → stock update → transaction insert
+- Row lock ? stock validation ? stock update ? transaction insert
 - **Source:** `fix_transaction_relationships.sql`
 - **Used by:** `recordTransaction()` Quick Entry IN/OUT
 
 ### `set_inventory_stock` (v6.8)
 
 - Parameters: `p_item_id UUID`, `p_new_stock NUMERIC`, `p_note TEXT`
-- Row lock → set absolute stock → ledger entry (IN/OUT delta)
+- Row lock ? set absolute stock ? ledger entry (IN/OUT delta)
 - **Source:** `sql/sync_inventory_stock.sql`
-- **Used by:** `updateInventoryStock()` — warehouse cell + stock count
+- **Used by:** `updateInventoryStock()` ? warehouse cell + stock count
 
 ### Trigger: `trg_sync_inventory_order_qty`
 
@@ -174,7 +190,7 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 
 ### Realtime: `REPLICA IDENTITY FULL`
 
-- Table: `inventory_items` — full row broadcast on UPDATE
+- Table: `inventory_items` ? full row broadcast on UPDATE
 
 ---
 
@@ -186,9 +202,9 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 | --- | --- |
 | `DB_SCHEMA.sql` | Core: profiles, shifts, inventory_items |
 | `setup_inventory_transactions.sql` | transactions table + RPC |
-| `fix_transaction_relationships.sql` | Rename `product_id` → `inventory_item_id` |
-| `sql/sync_inventory_stock.sql` | v6.8 — `set_inventory_stock`, trigger, REPLICA IDENTITY |
-| `sql/fix_inventory_rls.sql` | RLS hardening — authenticated-only |
+| `fix_transaction_relationships.sql` | Rename `product_id` ? `inventory_item_id` |
+| `sql/sync_inventory_stock.sql` | v6.8 ? `set_inventory_stock`, trigger, REPLICA IDENTITY |
+| `sql/fix_inventory_rls.sql` | RLS hardening ? authenticated-only |
 | `apply_rls_transactions.sql` | RLS for transactions |
 | `update_rls_policies.sql` | Open RLS for profiles & shifts |
 | `inventory_config_schema.sql` | Config table + seed |
@@ -197,5 +213,6 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 | `product_categories_schema.sql` | Product categories |
 | `regular_holidays_schema.sql` | Regular holidays per employee |
 | `audit_log_schema.sql` | AI audit logging |
+| `docs/sql/market_insight_runs.sql` | market_insight_runs table (OPTIONAL ? Market Insights v2 run history) |
 
-> **Deprecated:** `inventory-items.csv` — removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).
+> **Deprecated:** `inventory-items.csv` ? removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).

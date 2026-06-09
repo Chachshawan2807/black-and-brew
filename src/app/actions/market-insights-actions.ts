@@ -2,17 +2,39 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
+import { formatInTimeZone } from 'date-fns-tz';
 import { ensureServerSession } from '@/lib/security/server-auth';
+import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
+import { THAI_TIMEZONE } from '@/lib/timezone';
 import { fetchComprehensiveInventoryData } from './inventory-actions';
 import { getSalesMetrics } from './sales-actions';
 import {
   buildSalesContext,
   buildInventoryContext,
-  buildScheduleContext,
-  buildAnalyticalSignals,
+  buildScheduleContextFromFormatted,
+  buildSignalsList,
+  buildSalesSnapshot,
+  buildScheduleEntriesFromFormattedShifts,
+  buildAlerts,
+  buildDiff,
 } from './market-insights-context';
-import { fetchTavily } from '@/lib/external/tavily-client';
+import {
+  fetchWeatherForecast,
+  fetchUpcomingHolidays,
+  fetchMarketTrends,
+  STORE_LAT,
+  STORE_LON,
+} from './market-insights-fetch';
+import { fetchNearbyCompetitors } from './market-insights-places';
+import {
+  behaviorTrendsSchema,
+  strategyActionsSchema,
+  isMarketInsightsV2,
+  type MarketInsightsV2,
+  type MarketContext,
+  type ActionItem,
+} from './market-insights-types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const getSupabaseAdmin = (): SupabaseClient | null => {
@@ -21,175 +43,231 @@ const getSupabaseAdmin = (): SupabaseClient | null => {
   return createClient(supabaseUrl, supabaseAdminKey);
 };
 
-const SYSTEM_PROMPT = `คุณคือ "บรู" ที่ปรึกษากลยุทธ์ตลาด BLACKANDBREW ย่านลำลูกกา
-ข้อมูลด้านล่างเป็นข้อมูลดิบภายใน — ห้ามอ่านซ้ำ ห้ามแจ้งเตือนสต็อก/ยอดขาย/จำนวนที่ผู้จัดการเห็นอยู่แล้ว
-งาน: วิเคราะห์เชิงลึก ประกอบข้อมูลภายใน + อากาศ + เทรนด์ภายนอก + ความรู้ตลาดกาแฟไทย
-ให้ insight ที่นำไปทำได้จริง: โอกาส ความเสี่ยง แนวโน้มพฤติกรรม กลยุทธ์เมนู/โปรโมชั่น
-กฎรูปแบบ: ไม่ทักทาย ไม่หัวข้อซ้ำ ไม่ตัวหนา แต่ละข้อ ≤30 คำ ลงท้าย ค่ะ/นะคะ ขึ้นต้น -
-Output 3 ส่วนคั่น ||| ไม่ใส่ label ส่วนที่
-strategy จบที่ bullet สุดท้าย ห้ามประโยคปิดท้าย`;
+const MODEL = google('gemini-2.5-flash');
 
-async function fetchWeather(): Promise<string> {
-  const apiKey = process.env.OPENWEATHER_API_KEY;
-  const lat = process.env.NEXT_PUBLIC_STORE_LAT || '13.929692';
-  const lon = process.env.NEXT_PUBLIC_STORE_LON || '100.716932';
+const PERSONA_RULES = `คุณคือ "บรู" ที่ปรึกษากลยุทธ์ตลาด BLACKANDBREW ย่านลำลูกกา
+ข้อมูลภายในด้านล่างเป็นข้อมูลดิบ — ห้ามอ่านซ้ำตัวเลข/รายการสต็อก/สถานะ DB ที่ผู้จัดการเห็นอยู่แล้ว
+อนุญาตให้อ้างถึง "แนวโน้ม" ได้ เช่น ยอดโตขึ้น/หมวดไหนแข็ง-อ่อน แต่ห้ามพ่นตัวเลขดิบ
+สไตล์: ไม่ทักทาย ไม่ตัวหนา ใช้ภาษาผู้หญิงลงท้าย ค่ะ/นะคะ กระชับ ทำได้จริง`;
 
-  if (!apiKey) return 'N/A';
-
-  try {
-    const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=th`
-    );
-    if (!response.ok) return 'N/A';
-    const data = await response.json();
-    return `${data.weather[0]?.description} ${data.main?.temp}°C`;
-  } catch {
-    return 'N/A';
-  }
-}
-
-async function fetchLocalTrends(): Promise<string> {
-  const lat = process.env.NEXT_PUBLIC_STORE_LAT || '13.929692';
-  const lon = process.env.NEXT_PUBLIC_STORE_LON || '100.716932';
-
-  try {
-    const results = await fetchTavily(
-      `Coffee cafe trends Lam Luk Ka Pathum Thani ${lat},${lon} 2026`,
-      { userId: 'market-insights-service' }
-    );
-    const raw = results
-      .map((r) => `${r.title}: ${r.content.slice(0, 120)}`)
-      .join(' | ');
-    return raw.slice(0, 400) || 'N/A';
-  } catch (error) {
-    console.error('[fetchLocalTrends] Error:', error);
-    return 'N/A';
-  }
-}
+// ─── Internal Supabase context (read-only) ─────────────────────────────────────
 
 async function fetchSupabaseContext(supabase: SupabaseClient) {
-  const [
-    storeStatusRes,
-    purchaseOrdersRes,
-    recentTxRes,
-    todayScheduleRes,
-  ] = await Promise.all([
+  const [storeStatusRes, purchaseOrdersRes, recentTxRes] = await Promise.all([
     supabase.rpc('get_ai_store_status'),
     supabase.from('ai_purchase_orders_needed').select('name, qty_to_order, unit, source'),
-    supabase.from('ai_recent_transactions').select('item_name, type, quantity, balance_after, note, created_at_local').limit(10),
-    supabase.rpc('get_today_schedule'),
+    supabase
+      .from('ai_recent_transactions')
+      .select('item_name, type, quantity, balance_after, note, created_at_local')
+      .limit(10),
   ]);
 
-  if (storeStatusRes.error) {
-    console.error('[fetchSupabaseContext] store status:', storeStatusRes.error.message);
-  }
-  if (purchaseOrdersRes.error) {
-    console.error('[fetchSupabaseContext] purchase orders:', purchaseOrdersRes.error.message);
-  }
-  if (recentTxRes.error) {
-    console.error('[fetchSupabaseContext] recent tx:', recentTxRes.error.message);
-  }
-  if (todayScheduleRes.error) {
-    console.error('[fetchSupabaseContext] schedule:', todayScheduleRes.error.message);
+  for (const [label, res] of [
+    ['store status', storeStatusRes],
+    ['purchase orders', purchaseOrdersRes],
+    ['recent tx', recentTxRes],
+  ] as const) {
+    if (res.error) console.error(`[fetchSupabaseContext] ${label}:`, res.error.message);
   }
 
   return {
     storeStatus: storeStatusRes.data,
     purchaseOrders: purchaseOrdersRes.data ?? [],
     recentTransactions: recentTxRes.data ?? [],
-    todaySchedule: todayScheduleRes.data ?? [],
   };
 }
 
-/**
- * AI-powered Market Insights generator.
- * Fetches all Supabase data server-side; uses external APIs for weather/trends only.
- */
-export async function getMarketInsights(_legacySalesData?: unknown) {
-  void _legacySalesData;
+// ─── Best-effort history persistence (never blocks the response) ───────────────
 
-  const auth = await ensureServerSession();
-  if (!auth.ok) {
-    return null;
+async function persistRun(supabase: SupabaseClient | null, payload: MarketInsightsV2): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { error } = await supabase.from('market_insight_runs').insert({
+      generated_at: payload.generatedAt,
+      context_json: payload.context,
+      insights_json: { insights: payload.insights, actions: payload.actions },
+      sources_json: payload.sources,
+    });
+    if (error) {
+      // Table may not exist yet — log and continue (see docs/sql/market_insight_runs.sql).
+      console.error('[persistRun] skipped:', error.message);
+    }
+  } catch (error) {
+    console.error('[persistRun] Error:', error);
   }
+}
+
+// ─── Public v2 generator ───────────────────────────────────────────────────────
+
+/**
+ * AI-powered Market Insights v2.
+ * Returns a structured payload: deterministic context + AI insights + actions +
+ * external sources. Fully isolated; does not mutate shared modules.
+ *
+ * @param previous previously cached v2 payload (client-supplied) for diffing.
+ */
+export async function getMarketInsights(
+  previous?: MarketInsightsV2 | null
+): Promise<MarketInsightsV2 | null> {
+  const auth = await ensureServerSession();
+  if (!auth.ok) return null;
+
+  const prev = isMarketInsightsV2(previous) ? previous : null;
 
   try {
     const supabase = getSupabaseAdmin();
 
-    const [weatherData, externalTrends, inventoryResult, salesMetrics, supabaseCtx] =
+    const todayBkk = formatInTimeZone(new Date(), THAI_TIMEZONE, 'yyyy-MM-dd');
+
+    const [weather, trends, inventoryResult, salesMetrics, supabaseCtx, competitors, dailyShifts] =
       await Promise.all([
-        fetchWeather(),
-        fetchLocalTrends(),
+        fetchWeatherForecast(),
+        fetchMarketTrends(),
         fetchComprehensiveInventoryData(),
         getSalesMetrics(),
         supabase ? fetchSupabaseContext(supabase) : Promise.resolve(null),
+        fetchNearbyCompetitors(STORE_LAT, STORE_LON),
+        fetchDailyShiftsByDate(todayBkk).catch((error) => {
+          console.error('[getMarketInsights] daily shifts:', error);
+          return null;
+        }),
       ]);
 
+    const upcomingHolidays = supabase ? await fetchUpcomingHolidays(supabase) : [];
+
+    // ── Inventory ────────────────────────────────────────────────────────────
     let inventorySummary = 'N/A';
-    let invItems: { name: string; stock: number; isLowStock: boolean }[] = [];
+    let invItems: {
+      name: string;
+      stock: number;
+      orderPoint: number;
+      targetStock: number;
+      unit: string;
+      isLowStock: boolean;
+    }[] = [];
 
     if (inventoryResult.success && inventoryResult.data) {
-      const invData = inventoryResult.data;
-      invItems = invData.items;
+      invItems = inventoryResult.data.items;
       inventorySummary = buildInventoryContext(
-        invData.items,
+        invItems,
         supabaseCtx?.purchaseOrders ?? [],
         supabaseCtx?.recentTransactions ?? []
       );
     }
 
     const salesSummary = buildSalesContext(salesMetrics);
-    const scheduleSummary = supabaseCtx
-      ? buildScheduleContext(supabaseCtx.todaySchedule)
-      : 'N/A';
+    const scheduleSummary = dailyShifts ? buildScheduleContextFromFormatted(dailyShifts) : 'N/A';
     const shiftCount = supabaseCtx?.storeStatus
       ? ((supabaseCtx.storeStatus as { shifts?: unknown[] }).shifts?.length ?? 0)
       : 0;
 
     const topProductNames = salesMetrics?.topProducts.slice(0, 5).map((p) => p.productName) ?? [];
-    const signals = buildAnalyticalSignals(
+    const weatherStr = weather.operatingSummary;
+
+    const signals = buildSignalsList(
       salesMetrics,
       invItems,
       topProductNames,
-      weatherData,
-      externalTrends
+      weatherStr,
+      trends.raw
     );
+    const alerts = buildAlerts(invItems, topProductNames, weatherStr);
+
+    // ── Deterministic context object (UI renders this even if AI fails) ───────
+    const context: MarketContext = {
+      weather,
+      signals,
+      salesSnapshot: buildSalesSnapshot(salesMetrics),
+      scheduleToday: dailyShifts ? buildScheduleEntriesFromFormattedShifts(dailyShifts) : [],
+      shiftCount,
+      upcomingHolidays,
+      alerts,
+      competitors,
+    };
 
     const dataBlock = [
-      `[INTERNAL — ห้ามอ่านซ้ำในคำตอบ]`,
+      `[INTERNAL — ห้ามอ่านซ้ำตัวเลขดิบ]`,
       `SALES: ${salesSummary}`,
       `INV: ${inventorySummary}`,
       shiftCount ? `SHIFTS: ${shiftCount} | ${scheduleSummary}` : `SCHEDULE: ${scheduleSummary}`,
-      `WEATHER: ${weatherData}`,
-      `TRENDS: ${externalTrends}`,
-      `SIGNALS: ${signals}`,
+      `WEATHER: ${weatherStr}`,
+      `HOLIDAYS: ${upcomingHolidays.map((h) => `${h.date} ${h.name}`).join(', ') || 'N/A'}`,
+      `COMPETITORS: ${competitors.map((c) => `${c.name}(${c.rating ?? '-'})`).join(', ') || 'N/A'}`,
+      `TRENDS: ${trends.raw}`,
+      `SIGNALS: ${signals.join(', ') || 'baseline'}`,
     ].join('\n');
 
-    const { text } = await generateText({
-      model: google('gemini-2.5-flash'),
-      system: SYSTEM_PROMPT,
+    // ── Step A — behavior + trends ────────────────────────────────────────────
+    const stepA = await generateObject({
+      model: MODEL,
+      schema: behaviorTrendsSchema,
+      system: PERSONA_RULES,
+      temperature: 0.5,
       prompt: `${dataBlock}
 
-วิเคราะห์เชิงลึก (ห้ามพูดถึงตัวเลขดิบ/รายการสต็อก/สถานะ DB):
-ส่วน1 พฤติกรรมผู้บริโภค — ทำไมลูกค้าย่านนี้ซื้อ/ไม่ซื้อ โอกาสจากอากาศและเทรนด์ (3 bullets) |||
-ส่วน2 กระแสเมนูและวัตถุดิบ — จับคู่เทรนด์ภายนอกกับจุดแข็งร้าน (3 bullets) |||
-ส่วน3 กลยุทธ์และโปรโมชั่น — แผนปฏิบัติสัปดาห์นี้ที่ทำได้ทันที (3 bullets จบที่ bullet สุดท้าย)`,
-      providerOptions: {
-        google: {
-          generationConfig: {
-            maxOutputTokens: 700,
-            temperature: 0.45,
-          },
-        },
-      },
+วิเคราะห์เชิงลึก 2 ส่วน (ห้ามพูดตัวเลขดิบ/รายการสต็อก):
+- behavior: พฤติกรรมผู้บริโภคย่านนี้ ทำไมซื้อ/ไม่ซื้อ โอกาสจากอากาศ+วันหยุด+คู่แข่ง (3-4 ข้อ)
+- trends: จับคู่เทรนด์ภายนอกกับจุดแข็งร้าน เมนู/วัตถุดิบที่ควรดัน (3-4 ข้อ)
+แต่ละข้อใส่ confidence (high/medium/low) และ reason สั้นๆ ว่าอ้างอิงสัญญาณใด`,
     });
 
-    const parts = text.split('|||').map((p) => p.trim());
-    return {
-      behavior: parts[0] || 'ไม่พบข้อมูลค่ะ',
-      trends: parts[1] || 'ไม่พบข้อมูลค่ะ',
-      strategy: parts[2] || 'ไม่พบข้อมูลค่ะ',
+    // ── Step B — strategy + actions (depends on Step A) ───────────────────────
+    const behaviorTrendsDigest = [
+      'BEHAVIOR:',
+      ...stepA.object.behavior.map((b) => `- ${b.text}`),
+      'TRENDS:',
+      ...stepA.object.trends.map((t) => `- ${t.text}`),
+    ].join('\n');
+
+    const constraints = [
+      `ALERTS: ${alerts.map((a) => `${a.type}:${a.message}`).join(' | ') || 'none'}`,
+      `LOW_STOCK_LINKED: ${alerts.find((a) => a.type === 'stockout_risk')?.linkedItems?.join(',') || 'none'}`,
+    ].join('\n');
+
+    const stepB = await generateObject({
+      model: MODEL,
+      schema: strategyActionsSchema,
+      system: PERSONA_RULES,
+      temperature: 0.45,
+      prompt: `จากบทวิเคราะห์ด้านล่างและข้อจำกัดสต็อก ออกแบบแผนปฏิบัติสัปดาห์นี้
+
+${behaviorTrendsDigest}
+
+${constraints}
+
+- strategy: แผนกลยุทธ์/โปรโมชั่นเชิงภาพรวม (3-4 ข้อ พร้อม confidence + reason)
+- actions: รายการที่ลงมือทำได้ทันที 3-5 ข้อ แต่ละข้อมี title, priority (1=สูงสุด), timeframe, expectedImpact, linkedProducts
+ห้ามแนะนำให้ดันเมนูที่วัตถุดิบกำลังจะหมด เว้นแต่ระบุให้สั่งเติมก่อน`,
+    });
+
+    const actions: ActionItem[] = stepB.object.actions
+      .slice()
+      .sort((a, b) => a.priority - b.priority)
+      .map((a, idx) => ({ ...a, id: `act-${idx + 1}` }));
+
+    const generatedAt = new Date().toISOString();
+    const diff = buildDiff(
+      { signals, actionTitles: actions.map((a) => a.title) },
+      prev
+    );
+
+    const payload: MarketInsightsV2 = {
+      version: 2,
+      generatedAt,
+      context,
+      insights: {
+        behavior: stepA.object.behavior,
+        trends: stepA.object.trends,
+        strategy: stepB.object.strategy,
+      },
+      actions,
+      sources: trends.sources,
+      diff,
     };
+
+    await persistRun(supabase, payload);
+
+    return payload;
   } catch (error) {
     console.error('[getMarketInsights] Error:', error);
     return null;

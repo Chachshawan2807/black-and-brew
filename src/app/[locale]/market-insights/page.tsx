@@ -1,35 +1,85 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { getMarketInsights } from '@/app/actions/market-insights-actions';
-import { RefreshCw, Users, Coffee, Lightbulb, Sparkles, TrendingUp } from 'lucide-react';
+import {
+  RefreshCw,
+  Users,
+  Coffee,
+  Lightbulb,
+  Sparkles,
+  TrendingUp,
+  ShieldAlert,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { readCache, writeCache, isStale } from '@/lib/cache/client-cache';
+import {
+  MARKET_INSIGHTS_CACHE_KEY_V2,
+  isMarketInsightsV2,
+  type MarketInsightsV2,
+  type InsightBullet,
+} from '@/app/actions/market-insights-types';
+import ContextPanel from './components/ContextPanel';
+import AlertsCard from './components/AlertsCard';
+import InsightCharts from './components/InsightCharts';
+import ActionChecklist from './components/ActionChecklist';
+import SourcesList from './components/SourcesList';
+import DiffBanner from './components/DiffBanner';
 
-const MARKET_INSIGHTS_KEY = 'marketInsightsCache';
 const CACHE_TTL = 300_000;
 
+const CONFIDENCE_STYLE: Record<InsightBullet['confidence'], string> = {
+  high: 'bg-[#eef6ee] text-green-800/70',
+  medium: 'bg-[#fff6e6] text-amber-700/80',
+  low: 'bg-black/[0.04] text-black/50',
+};
+
+const CONFIDENCE_LABEL: Record<InsightBullet['confidence'], string> = {
+  high: 'มั่นใจสูง',
+  medium: 'ปานกลาง',
+  low: 'เบื้องต้น',
+};
+
+function BulletList({ bullets }: { bullets: InsightBullet[] }) {
+  return (
+    <div className="space-y-3">
+      {bullets.map((b, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: i * 0.06 }}
+          className="pl-4 border-l-2 border-black/8"
+        >
+          <div className="flex items-start gap-2">
+            <span className={`text-[11px] px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${CONFIDENCE_STYLE[b.confidence]}`}>
+              {CONFIDENCE_LABEL[b.confidence]}
+            </span>
+            <p className="text-black/70 leading-relaxed">{b.text}</p>
+          </div>
+          {b.reason && <p className="text-xs text-black/40 mt-1 pl-1">เพราะ: {b.reason}</p>}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 export default function MarketInsightsPage() {
-  const [insights, setInsights] = useState<any>(null);
+  const [insights, setInsights] = useState<MarketInsightsV2 | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  // Track whether the currently displayed data is stale
   const [cacheIsStale, setCacheIsStale] = useState(false);
 
-  // Mount effect (DEC-065: separate mount vs. fetch effects)
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Load cached data on mount — uses cache wrapper + stale check
   useEffect(() => {
     if (!isMounted) return;
-
-    const { data, savedAt } = readCache<any>(MARKET_INSIGHTS_KEY);
-    if (data) {
+    const { data, savedAt } = readCache<unknown>(MARKET_INSIGHTS_CACHE_KEY_V2);
+    if (isMarketInsightsV2(data)) {
       setInsights(data);
       if (savedAt !== null) {
         setLastUpdated(new Date(savedAt));
@@ -39,10 +89,9 @@ export default function MarketInsightsPage() {
     }
   }, [isMounted]);
 
-  // Only load from cache (no API calls)
   const loadFromCacheOnly = () => {
-    const { data, savedAt } = readCache<any>(MARKET_INSIGHTS_KEY);
-    if (data) {
+    const { data, savedAt } = readCache<unknown>(MARKET_INSIGHTS_CACHE_KEY_V2);
+    if (isMarketInsightsV2(data)) {
       setInsights(data);
       if (savedAt !== null) {
         setLastUpdated(new Date(savedAt));
@@ -52,76 +101,38 @@ export default function MarketInsightsPage() {
     }
   };
 
-  // Force refresh from APIs
   const loadFreshInsights = async () => {
     setIsLoading(true);
     try {
-      const data = await getMarketInsights();
-
-      // Supabase/API confirmed — write to cache then update UI
+      const data = await getMarketInsights(insights);
       if (data) {
-        writeCache(MARKET_INSIGHTS_KEY, data, 'server');
+        writeCache(MARKET_INSIGHTS_CACHE_KEY_V2, data, 'server');
         setLastUpdated(new Date());
         setCacheIsStale(false);
+        setInsights(data);
       }
-
-      setInsights(data);
       setHasLoaded(true);
     } catch (error) {
       console.error('[MarketInsights] Error:', error);
+      setHasLoaded(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatContent = (text: string) => {
-    return text.split('\n').map((line, index) => {
-      // Check if line starts with bullet point marker (-, •, etc.)
-      const hasBullet = /^(\s*[-*•])/.test(line.trim());
-      return (
-        <motion.p
-          key={index}
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.1 }}
-          className={`mb-3 leading-relaxed ${hasBullet ? 'pl-5 -indent-5' : ''}`}
-        >
-          {line}
-        </motion.p>
-      );
-    });
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } }
-  };
-
   const primaryButtonClass =
     'inline-flex items-center justify-center gap-1.5 md:gap-2 flex-1 md:flex-none min-w-0 px-3 py-2.5 md:px-6 md:py-3 text-[13px] md:text-base bg-black text-white rounded-3xl hover:bg-black/80 bb-transition bb-shadow-sm active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed';
-  const actionButtonRowClass =
-    'flex flex-row items-stretch gap-2 w-full md:w-auto md:gap-3';
+  const actionButtonRowClass = 'flex flex-row items-stretch gap-2 w-full md:w-auto md:gap-3';
 
   return (
     <div className="min-h-screen bg-transparent text-black antialiased font-normal">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
-        
-        {/* Header Section */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-10 md:mb-14"
+          className="mb-8 md:mb-10"
         >
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div className="space-y-3">
@@ -134,9 +145,7 @@ export default function MarketInsightsPage() {
                 </span>
               </div>
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl tracking-tight">
-                  ข้อมูลเชิงลึกตลาด
-                </h1>
+                <h1 className="text-3xl md:text-4xl lg:text-5xl tracking-tight">ข้อมูลเชิงลึกตลาด</h1>
                 {cacheIsStale && hasLoaded && (
                   <span className="text-xs text-black/40 bg-black/5 px-2 py-0.5 rounded-full border border-black/10">
                     ข้อมูลเก่า
@@ -144,27 +153,18 @@ export default function MarketInsightsPage() {
                 )}
               </div>
               <p className="text-black/60 text-base md:text-lg max-w-2xl">
-                AI วิเคราะห์ตลาด จับคู่ข้อมูลร้านกับเทรนด์ภายนอก เพื่อเสนอกลยุทธ์ที่ทำได้จริง
+                ศูนย์วิเคราะห์ตลาด — ประกอบยอดขาย คลังสินค้า อากาศ วันหยุด คู่แข่ง และเทรนด์ภายนอก เป็นแผนที่ลงมือทำได้จริง
               </p>
             </div>
-            {/* Only show header buttons when we have data or loading */}
             {(hasLoaded || isLoading) && (
               <div className={`${actionButtonRowClass} md:items-end`}>
                 {hasLoaded && (
-                  <button
-                    onClick={loadFromCacheOnly}
-                    disabled={isLoading}
-                    className={primaryButtonClass}
-                  >
+                  <button onClick={loadFromCacheOnly} disabled={isLoading} className={primaryButtonClass}>
                     <TrendingUp className="w-4 h-4 shrink-0" />
                     <span>โหลดข้อมูลเดิม</span>
                   </button>
                 )}
-                <button
-                  onClick={loadFreshInsights}
-                  disabled={isLoading}
-                  className={`group ${primaryButtonClass}`}
-                >
+                <button onClick={loadFreshInsights} disabled={isLoading} className={`group ${primaryButtonClass}`}>
                   <RefreshCw className={`w-4 h-4 shrink-0 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
                   <span>{hasLoaded ? 'วิเคราะห์ใหม่' : 'เริ่มวิเคราะห์'}</span>
                 </button>
@@ -173,7 +173,7 @@ export default function MarketInsightsPage() {
           </div>
         </motion.div>
 
-        {/* Initial State - No Data Loaded */}
+        {/* Initial */}
         <AnimatePresence>
           {!hasLoaded && !isLoading && (
             <motion.div
@@ -188,180 +188,146 @@ export default function MarketInsightsPage() {
               </div>
               <h2 className="text-2xl mb-3">พร้อมวิเคราะห์ตลาดแล้วหรือยัง?</h2>
               <p className="text-black/60 mb-8 max-w-md mx-auto">
-                AI จะนำข้อมูลยอดขาย คลังสินค้า อากาศ และเทรนด์ในพื้นที่มาวิเคราะห์เชิงลึก — ไม่ใช่แค่สรุปตัวเลขที่คุณเห็นอยู่แล้ว
+                AI จะรวมยอดขาย คลังสินค้า อากาศ วันหยุด คู่แข่งรอบร้าน และเทรนด์ภายนอก มาวิเคราะห์เชิงลึกพร้อมแผนปฏิบัติ
               </p>
               <div className={`${actionButtonRowClass} max-w-md mx-auto`}>
-                <button
-                  onClick={loadFromCacheOnly}
-                  className={primaryButtonClass}
-                >
+                <button onClick={loadFromCacheOnly} className={primaryButtonClass}>
                   <TrendingUp className="w-4 h-4 shrink-0" />
                   <span>โหลดข้อมูลเดิม</span>
                 </button>
-                <button
-                  onClick={loadFreshInsights}
-                  className={primaryButtonClass}
-                >
+                <button onClick={loadFreshInsights} className={primaryButtonClass}>
                   <Sparkles className="w-4 h-4 shrink-0" />
-                  <span>เริ่มต้นวิเคราะห์ใหม่</span>
+                  <span>เริ่มต้นวิเคราะห์</span>
                 </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Loading State */}
+        {/* Loading */}
         <AnimatePresence>
           {isLoading && (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-6"
-            >
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bb-card p-5 h-24 animate-pulse bg-black/[0.02]" />
+                ))}
+              </div>
               {[1, 2, 3].map((i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white rounded-3xl border border-black/5 p-8"
-                >
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-black/5 animate-pulse" />
-                    <div className="h-6 w-48 bg-black/5 rounded-lg animate-pulse" />
-                  </div>
+                <div key={i} className="bb-card p-8">
+                  <div className="h-6 w-48 bg-black/5 rounded-lg animate-pulse mb-4" />
                   <div className="space-y-3">
                     <div className="h-4 w-full bg-black/5 rounded-lg animate-pulse" />
                     <div className="h-4 w-3/4 bg-black/5 rounded-lg animate-pulse" />
-                    <div className="h-4 w-5/6 bg-black/5 rounded-lg animate-pulse" />
                   </div>
-                </motion.div>
+                </div>
               ))}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Error State */}
+        {/* Error */}
         <AnimatePresence>
-          {hasLoaded && !isLoading && !insights && (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white border border-black/5 rounded-3xl p-8 text-center"
-            >
+          {hasLoaded && !isLoading && !insights?.context && (
+            <motion.div key="error" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-black/5 rounded-3xl p-8 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-black/5 flex items-center justify-center">
                 <span className="text-2xl">⚠️</span>
               </div>
               <h3 className="text-xl mb-2">เกิดข้อผิดพลาด</h3>
               <p className="text-black/60 mb-6">ไม่สามารถโหลดข้อมูลวิเคราะห์ได้ในขณะนี้</p>
               <div className={`${actionButtonRowClass} max-w-md mx-auto`}>
-                <button
-                  onClick={loadFromCacheOnly}
-                  className={primaryButtonClass}
-                >
-                  <TrendingUp className="w-4 h-4 shrink-0" />
-                  <span>โหลดข้อมูลเดิม</span>
-                </button>
-                <button
-                  onClick={loadFreshInsights}
-                  className={primaryButtonClass}
-                >
+                <button onClick={loadFreshInsights} className={primaryButtonClass}>
                   <RefreshCw className="w-4 h-4 shrink-0" />
-                  <span>ลองอีกครั้ง (ใหม่)</span>
+                  <span>ลองอีกครั้ง</span>
                 </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Insights Content */}
+        {/* Content */}
         <AnimatePresence>
-          {hasLoaded && !isLoading && insights && (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-6 md:space-y-8"
-            >
-                {/* Card 1: Consumer Behavior */}
-                <motion.div variants={itemVariants} className="group">
-                  <div className="bb-card hover:-translate-y-0.5 bb-transition p-8 md:p-10">
-                    <div className="flex items-start gap-5 mb-6">
-                      <div className="p-4 bg-black/[0.04] rounded-2xl bb-shadow-sm">
-                        <Users className="w-7 h-7 text-black" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl md:text-2xl mb-1">
-                          พฤติกรรมผู้บริโภคในพื้นที่
-                        </h2>
-                        <p className="text-black/40 text-sm">Insight จาก AI ไม่ใช่สรุปตัวเลขดิบ</p>
-                      </div>
-                    </div>
-                    <div className="text-black/60 text-base md:text-lg pl-4 border-l-2 border-black/8">
-                      {formatContent(insights.behavior)}
-                    </div>
-                  </div>
-                </motion.div>
+          {hasLoaded && !isLoading && insights?.context && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 md:space-y-8">
+              {insights.diff && <DiffBanner diff={insights.diff} />}
 
-                {/* Card 2: Trends & Menu */}
-                <motion.div variants={itemVariants} className="group">
-                  <div className="bb-card hover:-translate-y-0.5 bb-transition p-8 md:p-10">
-                    <div className="flex items-start gap-5 mb-6">
-                      <div className="p-4 bg-black/[0.04] rounded-2xl bb-shadow-sm">
-                        <Coffee className="w-7 h-7 text-black" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl md:text-2xl mb-1">
-                          กระแสเมนูและวัตถุดิบ
-                        </h2>
-                        <p className="text-black/40 text-sm">จับคู่เทรนด์ภายนอกกับจุดแข็งร้าน</p>
-                      </div>
-                    </div>
-                    <div className="text-black/60 text-base md:text-lg pl-4 border-l-2 border-black/8">
-                      {formatContent(insights.trends)}
-                    </div>
-                  </div>
-                </motion.div>
+              <ContextPanel context={insights.context} />
 
-                {/* Card 3: Strategy */}
-                <motion.div variants={itemVariants} className="group">
-                  <div className="bb-card hover:-translate-y-0.5 bb-transition p-8 md:p-10">
-                    <div className="flex items-start gap-5 mb-6">
-                      <div className="p-4 bg-black/[0.04] rounded-2xl bb-shadow-sm">
-                        <Lightbulb className="w-7 h-7 text-black" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl md:text-2xl mb-1">
-                          แผนกลยุทธ์และโปรโมชั่น
-                        </h2>
-                        <p className="text-black/40 text-sm">แผนปฏิบัติที่ทำได้ทันที</p>
-                      </div>
+              {insights.context.alerts.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2 text-black/70">
+                    <ShieldAlert className="w-5 h-5" />
+                    <h2 className="text-lg md:text-xl">สิ่งที่ต้องระวัง</h2>
+                  </div>
+                  <AlertsCard alerts={insights.context.alerts} />
+                </section>
+              )}
+
+              <InsightCharts snapshot={insights.context.salesSnapshot} />
+
+              {/* AI narrative */}
+              <div className="space-y-6">
+                <div className="bb-card p-6 md:p-8">
+                  <div className="flex items-start gap-4 mb-5">
+                    <div className="p-3 bg-black/[0.04] rounded-2xl bb-shadow-sm">
+                      <Users className="w-6 h-6 text-black" />
                     </div>
-                    <div className="text-black/60 text-base md:text-lg pl-4 border-l-2 border-black/8">
-                      {formatContent(insights.strategy)}
+                    <div>
+                      <h2 className="text-lg md:text-xl mb-0.5">พฤติกรรมผู้บริโภคในพื้นที่</h2>
+                      <p className="text-black/40 text-sm">Insight จาก AI ไม่ใช่สรุปตัวเลขดิบ</p>
                     </div>
                   </div>
-                </motion.div>
+                  <BulletList bullets={insights.insights.behavior} />
+                </div>
+
+                <div className="bb-card p-6 md:p-8">
+                  <div className="flex items-start gap-4 mb-5">
+                    <div className="p-3 bg-black/[0.04] rounded-2xl bb-shadow-sm">
+                      <Coffee className="w-6 h-6 text-black" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg md:text-xl mb-0.5">กระแสเมนูและวัตถุดิบ</h2>
+                      <p className="text-black/40 text-sm">จับคู่เทรนด์ภายนอกกับจุดแข็งร้าน</p>
+                    </div>
+                  </div>
+                  <BulletList bullets={insights.insights.trends} />
+                </div>
+
+                <div className="bb-card p-6 md:p-8">
+                  <div className="flex items-start gap-4 mb-5">
+                    <div className="p-3 bg-black/[0.04] rounded-2xl bb-shadow-sm">
+                      <Lightbulb className="w-6 h-6 text-black" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg md:text-xl mb-0.5">แผนกลยุทธ์และโปรโมชั่น</h2>
+                      <p className="text-black/40 text-sm">มุมมองเชิงกลยุทธ์</p>
+                    </div>
+                  </div>
+                  <BulletList bullets={insights.insights.strategy} />
+                </div>
+              </div>
+
+              {/* Action checklist */}
+              {insights.actions.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2 text-black/70">
+                    <TrendingUp className="w-5 h-5" />
+                    <h2 className="text-lg md:text-xl">แผนปฏิบัติสัปดาห์นี้</h2>
+                  </div>
+                  <ActionChecklist actions={insights.actions} />
+                </section>
+              )}
+
+              <SourcesList sources={insights.sources} />
+
+              <div className="text-center pt-4">
+                <p className="text-black/40 text-sm">
+                  อัปเดตครั้งล่าสุด: {lastUpdated?.toLocaleString('th-TH')}
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Footer Section */}
-        {hasLoaded && insights && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-12 text-center"
-          >
-            <p className="text-black/40 text-sm">
-              อัปเดตครั้งล่าสุด: {lastUpdated?.toLocaleString('th-TH')}
-            </p>
-          </motion.div>
-        )}
       </div>
     </div>
   );

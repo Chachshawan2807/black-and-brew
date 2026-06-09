@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 8.2 | Last Updated: 2026-06-09
+> Version: 8.3 | Last Updated: 2026-06-09
 
 ---
 
@@ -95,6 +95,8 @@
 - [x] AI chat refactor — deterministic daily-schedule path + `getDailyShifts`/`readTable`/`internetSearchTool` (v8.0–8.1)
 - [x] Documentation full sync (2026-06-08)
 - [x] Documentation sync v8.2 — version/date headers, env var corrections, changelog entry (2026-06-09)
+- [x] Market Insights v2 — isolated module with multi-step generateObject pipeline, Zod-validated output, weather/holidays/Tavily context builders, optional Google Places competitors, market_insight_runs Supabase table, ContextPanel/AlertsCard/InsightCharts/ActionChecklist/SourcesList/DiffBanner components (2026-06-09)
+- [x] Documentation sync v8.3 — Market Insights v2 reflected in architecture/database/api/context/tasks/changelog/memory (2026-06-09)
 
 ---
 

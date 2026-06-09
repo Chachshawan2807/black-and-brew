@@ -11,13 +11,14 @@ import {
   type LucideIcon
 } from 'lucide-react';
 
-type Submenu = {
+export type Submenu = {
   href: string;
   label: string;
   active: boolean;
 };
 
-type Menu = {
+export type MenuItem = {
+  id: string;
   href: string;
   label: string;
   active: boolean;
@@ -25,18 +26,19 @@ type Menu = {
   submenus: Submenu[];
 };
 
-type Group = {
+export type MenuGroup = {
   groupLabel: string;
-  menus: Menu[];
+  menus: MenuItem[];
 };
 
-export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
+export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[] {
   const prefix = `/${locale}`;
   return [
     {
       groupLabel: "",
       menus: [
         {
+          id: 'home',
           href: `${prefix}`,
           label: "หน้าหลัก",
           active: pathname === `${prefix}` || pathname === `${prefix}/`,
@@ -44,6 +46,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
           submenus: []
         },
         {
+          id: 'dashboard',
           href: `${prefix}/dashboard`,
           label: "แดชบอร์ดพนักงาน",
           active: pathname.includes("/dashboard"),
@@ -56,6 +59,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
       groupLabel: "การจัดการ",
       menus: [
         {
+          id: 'schedule',
           href: `${prefix}/schedule`,
           label: "ตารางงาน",
           active: pathname.includes("/schedule"),
@@ -63,6 +67,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
           submenus: []
         },
         {
+          id: 'maintenance',
           href: `${prefix}/maintenance`,
           label: "บันทึกการซ่อม",
           active: pathname.includes("/maintenance"),
@@ -70,6 +75,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
           submenus: []
         },
         {
+          id: 'inventory',
           href: `${prefix}/inventory`,
           label: "คลังสินค้า",
           active: pathname.includes("/inventory") && !pathname.includes("/inventory/count"),
@@ -77,6 +83,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
           submenus: []
         },
         {
+          id: 'inventory-count',
           href: `${prefix}/inventory/count`,
           label: "ตรวจนับคลังสินค้า",
           active: pathname.includes("/inventory/count"),
@@ -84,6 +91,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
           submenus: []
         },
         {
+          id: 'market-insights',
           href: `${prefix}/market-insights`,
           label: 'วิเคราะห์ตลาด',
           active: pathname.includes('/market-insights'),
@@ -91,6 +99,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): Group[] {
           submenus: []
         },
         {
+          id: 'sales',
           href: `${prefix}/sales`,
           label: 'จัดการยอดขาย',
           active: pathname.includes('/sales'),

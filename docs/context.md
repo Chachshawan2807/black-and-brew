@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 8.2 | Last Updated: 2026-06-09
+> Version: 8.3 | Last Updated: 2026-06-09
 
 ---
 
@@ -54,8 +54,10 @@
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Public |
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin key (bypass RLS) | Server only |
 | `APP_PIN` | Full-access PIN | Server only |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini — AI Chat + Market Insights (`@ai-sdk/google`, auto-read env name) | Server only |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini — AI Chat + Market Insights (`@ai-sdk/google`) | Server only |
 | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync (OPTION) | Server only |
+| `GOOGLE_PLACES_API_KEY` | Nearby competitor cafes - Market Insights v2 (OPTION) | Server only |
+| `GOOGLE_PLACES_API_KEY` | Market Insights v2 — nearby cafés (OPTION) | Server only |
 | `TAVILY_API_KEY` | AI web search | Server only |
 | `OPENWEATHER_API_KEY` | Weather data | Server only |
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | Store coordinates | Public |
@@ -66,7 +68,7 @@
 
 Read-only PIN `111222` is hardcoded in `src/lib/auth-constants.ts` — not an env var.
 
-Not referenced in `src/`: `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `LINE_CHANNEL_ID`, `READ_ONLY_PIN` (see `.env.example` NOTES).
+Authoritative env list: [`.env.example`](../.env.example)
 
 ### Supabase Project
 

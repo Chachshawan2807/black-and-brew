@@ -146,7 +146,66 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onR
   );
 }
 
-const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus }: {
+/**
+ * Inline editable sort-order badge.
+ * Click/tap to enter edit mode; blur or Enter commits via handleSaveField.
+ */
+function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
+  id: string;
+  displayIndex: number;
+  totalItems: number;
+  handleSaveField: (id: string, field: string, value: any) => void;
+}) {
+  const [editing, setEditing] = React.useState(false);
+  const [localVal, setLocalVal] = React.useState('');
+
+  const commit = () => {
+    setEditing(false);
+    const raw = localVal.replace(/^0+(?=\d)/, '');
+    const num = raw === '' ? displayIndex : Number(raw);
+    if (!isNaN(num) && num >= 1 && num <= totalItems) {
+      handleSaveField(id, 'sort_order', num);
+    }
+  };
+
+  if (editing) {
+    return (
+      <input
+        data-testid="sort-order-input"
+        autoFocus
+        type="text"
+        inputMode="numeric"
+        value={localVal}
+        onChange={e => {
+          let v = e.target.value.replace(/[^0-9]/g, '');
+          v = v.replace(/^0+(?=\d)/, '');
+          setLocalVal(v);
+        }}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { e.preventDefault(); commit(); }
+          if (e.key === 'Escape') setEditing(false);
+        }}
+        className="w-8 h-5 text-[12px] font-mono text-center bg-black/5 border border-black/20 rounded focus:outline-none focus:ring-1 focus:ring-black/30 shrink-0"
+        style={{ width: '2rem' }}
+      />
+    );
+  }
+
+  return (
+    <button
+      data-testid="sort-order-input"
+      type="button"
+      title={`แตะเพื่อเปลี่ยนลำดับ (1–${totalItems})`}
+      onClick={() => { setLocalVal(String(displayIndex)); setEditing(true); }}
+      className="text-[12px] font-normal text-black/35 font-mono shrink-0 hover:text-black/60 hover:bg-black/5 rounded px-1 transition-colors leading-none cursor-pointer"
+    >
+      {displayIndex.toString().padStart(2, '0')}
+    </button>
+  );
+}
+
+const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus, totalItems }: {
   item: InventoryItem;
   index: number;
   columns: ColumnDef[];
@@ -188,9 +247,12 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
       {/* Card Header */}
       <div className="flex items-center justify-between gap-2 border-b border-black/5 pb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-[12px] font-normal text-black/35 font-mono shrink-0">
-            {(rowIndex + 1).toString().padStart(2, '0')}
-          </span>
+          <EditableSortIndex
+            id={item.id}
+            displayIndex={rowIndex + 1}
+            totalItems={totalItems}
+            handleSaveField={handleSaveField}
+          />
           <EditableCell
             item={item}
             col={columns.find(c => c.id === 'name')!}
@@ -326,7 +388,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
 
 SortableRow.displayName = 'SortableRow';
 
-const MobileSortableRow = React.memo(({ item, index, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus, getStockColorClass }: any) => {
+const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus, getStockColorClass }: any) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
   const style = {
@@ -362,9 +424,12 @@ const MobileSortableRow = React.memo(({ item, index, columns, handleUpdateField,
           >
             <GripVertical className="w-4 h-4" />
           </div>
-          <span className="text-[12px] font-normal text-black/35 font-mono shrink-0">
-            {(index + 1).toString().padStart(2, '0')}
-          </span>
+          <EditableSortIndex
+            id={item.id}
+            displayIndex={index + 1}
+            totalItems={totalItems}
+            handleSaveField={handleSaveField}
+          />
           <input
             type="text"
             defaultValue={item.name}
@@ -729,6 +794,7 @@ export default function DynamicInventoryManager() {
 
   // Add Form State
   const [newItemData, setNewItemData] = useState<Partial<InventoryItem>>({});
+  const [newItemInsertPosition, setNewItemInsertPosition] = useState<string>('');
 
   // History State
   const [undoStack, setUndoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
@@ -963,7 +1029,10 @@ export default function DynamicInventoryManager() {
     if (blockIfReadOnly()) return;
     pushHistory();
 
-    const initialSortOrder = items.length > 0 ? Math.max(...items.map(i => i.sort_order || 0)) + 1 : 1;
+    // Determine insertion position
+    const rawPos = newItemInsertPosition === '' ? items.length + 1 : Number(newItemInsertPosition);
+    const insertPos = isNaN(rawPos) ? items.length + 1 : Math.max(1, Math.min(items.length + 1, rawPos));
+    const isAppend = insertPos >= items.length + 1;
 
     const newItem = {
       name: newItemData.name || '',
@@ -973,40 +1042,75 @@ export default function DynamicInventoryManager() {
       target_stock: (newItemData.target_stock as unknown as string === "" || newItemData.target_stock === undefined || newItemData.target_stock === null) ? 0 : Number(newItemData.target_stock),
       unit: newItemData.unit || '',
       source: newItemData.source || '',
-      sort_order: initialSortOrder
+      sort_order: insertPos
     };
 
     const tempId = crypto.randomUUID();
-    setItems(prev => [...prev, { ...newItem, id: tempId }]);
+
+    // Optimistic update: pre-compute renumbered array so we have it for DB sync
+    let renumberedItems: InventoryItem[];
+    if (isAppend) {
+      renumberedItems = [...items, { ...newItem, id: tempId }];
+    } else {
+      const sorted = [...items].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      sorted.splice(insertPos - 1, 0, { ...newItem, id: tempId });
+      renumberedItems = sorted.map((item, idx) => ({ ...item, sort_order: idx + 1 }));
+    }
+
+    setItems(renumberedItems);
     setShowAddModal(false);
     setNewItemData({});
+    setNewItemInsertPosition('');
 
     try {
       setSavingState('saving');
 
-      // Query maximum sort_order from Supabase to assign max + 1
-      const { data: maxOrderData, error: maxOrderErr } = await supabase
-        .from('inventory_items')
-        .select('sort_order')
-        .order('sort_order', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      if (isAppend) {
+        // Original append path: trust DB max sort_order to avoid race conditions
+        const { data: maxOrderData, error: maxOrderErr } = await supabase
+          .from('inventory_items')
+          .select('sort_order')
+          .order('sort_order', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      const nextSortOrder = (maxOrderErr || !maxOrderData) ? initialSortOrder : (maxOrderData.sort_order || 0) + 1;
+        const nextSortOrder = (maxOrderErr || !maxOrderData) ? insertPos : (maxOrderData.sort_order || 0) + 1;
+        const dbNewItem = { ...newItem, sort_order: nextSortOrder };
 
-      const dbNewItem = {
-        ...newItem,
-        sort_order: nextSortOrder
-      };
+        const { data, error } = await supabase
+          .from('inventory_items')
+          .insert([dbNewItem])
+          .select()
+          .single();
 
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .insert([dbNewItem])
-        .select()
-        .single();
+        if (error) throw error;
+        setItems(prev => prev.map(item => item.id === tempId ? data : item));
+      } else {
+        // Insert-at-position path: insert new item, then sync all displaced sort_orders
+        const newItemSortOrder = renumberedItems.find(i => i.id === tempId)?.sort_order ?? insertPos;
+        const dbNewItem = { ...newItem, sort_order: newItemSortOrder };
 
-      if (error) throw error;
-      setItems(prev => prev.map(item => item.id === tempId ? data : item));
+        const { data, error } = await supabase
+          .from('inventory_items')
+          .insert([dbNewItem])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Replace tempId with real DB id, preserve sort_order from renumbered list
+        const finalItems = renumberedItems.map(i =>
+          i.id === tempId ? { ...data, sort_order: i.sort_order } : i
+        );
+        setItems(finalItems);
+
+        // Sync all sort_orders to Supabase (renumbered items that were displaced)
+        const { error: upsertError } = await supabase.from('inventory_items').upsert(
+          finalItems.map(i => ({ id: i.id, sort_order: i.sort_order }))
+        );
+        if (upsertError) throw upsertError;
+      }
+
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err: any) {
@@ -1665,6 +1769,7 @@ export default function DynamicInventoryManager() {
                         key={item.id}
                         item={item}
                         index={index}
+                        totalItems={items.length}
                         columns={columns}
                         handleUpdateField={handleUpdateField}
                         handleSaveField={handleSaveField}
@@ -1715,14 +1820,14 @@ export default function DynamicInventoryManager() {
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4"
-            onClick={() => setShowAddModal(false)}
+            onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }}
           >
           <motion.div
             initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="relative bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
-            <button onClick={() => setShowAddModal(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
+            <button onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
               <X className="w-5 h-5" />
             </button>
             <div className="px-6 h-14 border-b border-slate-100 flex items-center justify-between shrink-0 pr-14">
@@ -1802,9 +1907,29 @@ export default function DynamicInventoryManager() {
                       className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
                     />
                   </div>
+
+                  <div className="col-span-2 flex flex-col gap-1.5">
+                    <label className="text-[12px] font-normal text-slate-600 ml-1 flex items-center gap-1">
+                      แทรกที่ลำดับ
+                      <span className="text-black/30">(ค่าเริ่มต้น: ท้ายสุด = {items.length + 1})</span>
+                    </label>
+                    <input
+                      data-testid="insert-position-input"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder={String(items.length + 1)}
+                      value={newItemInsertPosition}
+                      onChange={e => {
+                        let v = e.target.value.replace(/[^0-9]/g, '');
+                        v = v.replace(/^0+(?=\d)/, '');
+                        setNewItemInsertPosition(v);
+                      }}
+                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
+                    />
+                  </div>
                 </div>
                 <div className="mt-8 flex gap-3">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
+                  <button type="button" onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
                     ยกเลิก
                   </button>
                   <button type="submit" className="flex-1 py-3 px-4 bg-black hover:bg-black/90 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">

@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
 import { groupRegularHolidayRows } from '@/lib/regular-holidays';
+import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -35,6 +36,11 @@ export default async function SchedulePage({
 
   const mondayStr = format(monday, 'yyyy-MM-dd');
   const sundayStr = format(sunday, 'yyyy-MM-dd');
+
+  const holidaySync = await fetchAndPersistHolidays(mondayStr, sundayStr);
+  if (!holidaySync.success && holidaySync.error !== 'Missing API Key') {
+    console.error('Holiday sync failed:', holidaySync.error);
+  }
 
   // ใช้ Admin Fetch เพื่อหลีกเลี่ยงการถูกบล็อกข้อมูลจาก RLS
   const [profilesRes, shiftsRes, holidaysRes, regularHolidaysRes] = await Promise.all([

@@ -30,8 +30,7 @@ out/
 build/
 coverage/
 
-# --- AI Tools & Cache (Antigravity System) ---
-.antigravity/
+# --- AI Tools & Cache ---
 .aider.tags.cache.v3/
 .aider.tags.cache.v4/
 mem0_storage.json

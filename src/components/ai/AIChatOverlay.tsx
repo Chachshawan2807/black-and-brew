@@ -167,35 +167,41 @@ export default function AIChatOverlay() {
               className="fixed z-[199] box-border bg-[#fdfcf0] rounded-3xl shadow-2xl border-2 border-black flex flex-col overflow-hidden max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none md:w-full md:max-w-2xl md:bottom-24 md:left-auto md:right-6"
               style={{ maxHeight: '75vh' }}
             >
-              <button
-                onClick={() => setIsOpen(false)}
-                className="absolute top-3 right-3 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10"
-              >
-                <X className="w-5 h-5" />
-              </button>
               {/* Header */}
-              <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-black flex items-center justify-between gap-3 bg-[#fdfcf0] pr-14">
-                <div className="flex items-center gap-3">
+              <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-black flex items-center justify-between gap-3 bg-[#fdfcf0]">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-8 h-8 rounded-2xl bg-black/5 flex items-center justify-center shrink-0 overflow-hidden">
                     <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={24} height={24} className="w-6 h-6 object-contain" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[14px] font-normal text-black leading-tight">บรู</p>
                     <p className="text-[11px] font-normal text-black leading-tight">
                       AI ผู้ช่วยร้าน BLACKANDBREW
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setMessages([]);
-                    localStorage.removeItem('bb-chat-history');
-                  }}
-                  className="text-black hover:opacity-70 transition-opacity mr-2"
-                  title="ล้างประวัติ"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMessages([]);
+                      localStorage.removeItem('bb-chat-history');
+                    }}
+                    className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                    aria-label="ล้างประวัติแชท"
+                    title="ล้างประวัติ"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                    aria-label="ปิดหน้าต่างแชท"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Messages Area — min-h-0 lets flex shrink so quick actions + input stay visible */}

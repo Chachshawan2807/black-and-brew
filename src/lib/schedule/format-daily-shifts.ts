@@ -48,16 +48,35 @@ export function normalizeShiftLocation(
   return cleaned;
 }
 
-export function categorizeShift(shiftText: string): ShiftCategory {
+function categorizeShift(shiftText: string): ShiftCategory {
   if (/^\d{1,2}:\d{2}$/.test(shiftText)) return 'front_store';
   if (shiftText === 'ไปสาขา 2' || shiftText === 'ร้านซักผ้า') return 'other_duty';
   return 'off_or_leave';
 }
 
-export function parseShiftTimeToNumber(timeStr: string): number {
+function parseShiftTimeToNumber(timeStr: string): number {
   const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
   if (!match) return Infinity;
   return parseInt(match[1], 10) + parseInt(match[2], 10) / 60;
+}
+
+/** Front-store shifts: earliest time first, then schedule row order, then name. */
+export function compareShiftByTimeThenOrder(a: DailyShiftEntry, b: DailyShiftEntry): number {
+  const timeDiff = parseShiftTimeToNumber(a.shift) - parseShiftTimeToNumber(b.shift);
+  if (timeDiff !== 0) return timeDiff;
+  if (a.schedule_order !== b.schedule_order) return a.schedule_order - b.schedule_order;
+  return a.name.localeCompare(b.name, 'th');
+}
+
+/** Non-timed duties: schedule row order first, then name. */
+export function compareShiftByOrderThenName(a: DailyShiftEntry, b: DailyShiftEntry): number {
+  if (a.schedule_order !== b.schedule_order) return a.schedule_order - b.schedule_order;
+  return a.name.localeCompare(b.name, 'th');
+}
+
+/** Working staff in display order: front store (by time) then other duties (by row). */
+export function flattenWorkingShiftEntries(formatted: FormattedDailyShifts): DailyShiftEntry[] {
+  return [...formatted.front_store, ...formatted.other_duty];
 }
 
 export function formatDailyShifts(
@@ -82,15 +101,15 @@ export function formatDailyShifts(
 
   const front_store = entries
     .filter((entry) => entry.category === 'front_store')
-    .sort((a, b) => parseShiftTimeToNumber(a.shift) - parseShiftTimeToNumber(b.shift));
+    .sort(compareShiftByTimeThenOrder);
 
   const other_duty = entries
     .filter((entry) => entry.category === 'other_duty')
-    .sort((a, b) => a.row_order - b.row_order);
+    .sort(compareShiftByOrderThenName);
 
   const off_or_leave = entries
     .filter((entry) => entry.category === 'off_or_leave')
-    .sort((a, b) => a.row_order - b.row_order);
+    .sort(compareShiftByOrderThenName);
 
   return { front_store, other_duty, off_or_leave, all_staff: entries };
 }

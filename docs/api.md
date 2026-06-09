@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 8.2 | Last Updated: 2026-06-09
+> Version: 8.3 | Last Updated: 2026-06-09
 
 ---
 
@@ -108,11 +108,79 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 ---
 
-### 1.7 Market Insights (`market-insights-actions.ts`)
+### 1.7 Market Insights v2
+
+The module is split across five action files in `src/app/actions/`.
+
+#### `market-insights-types.ts`
+
+Zod schemas and TypeScript types - no side effects.
+
+| Export | Kind | Purpose |
+| --- | --- | --- |
+| `insightBulletSchema` | Zod schema | Single insight bullet: text, confidence, optional reason |
+| `behaviorTrendsSchema` | Zod schema | Step 2 output - behavior + trends arrays |
+| `strategyActionsSchema` | Zod schema | Step 3 output - strategy bullets + action checklist |
+| `MarketInsightsV2` | Interface | Full v2 payload shape (version: 2) |
+| `isMarketInsightsV2(v)` | Type guard | Validates cached payload before use |
+| `MARKET_INSIGHTS_CACHE_KEY_V2` | Constant | localStorage key `marketInsightsCache_v2` |
+
+#### `market-insights-fetch.ts`
+
+Deterministic data fetchers - no AI calls.
 
 | Function | Purpose |
 | --- | --- |
-| `getMarketInsights()` | Gemini analysis combining inventory, sales, schedule, weather |
+| `fetchWeatherForecast(supabase)` | OpenWeatherMap 5-day forecast filtered to 06:00-18:00 ICT operating window |
+| `fetchUpcomingHolidays(supabase)` | Next 30-day public holidays from holidays table |
+| `fetchMarketTrends(query)` | Tavily web search with per-query session cache |
+
+#### `market-insights-places.ts`
+
+Optional Google Places integration - skips silently when `GOOGLE_PLACES_API_KEY` is unset.
+
+| Function | Purpose |
+| --- | --- |
+| `fetchNearbyCompetitors()` | Google Places Nearby Search for cafes within 1 km of store coordinates |
+
+#### `market-insights-context.ts`
+
+Pure builders that transform raw Supabase data into context objects for the AI prompt.
+
+| Function | Purpose |
+| --- | --- |
+| `buildInventoryContext(storeStatus)` | Low-stock signals from `get_ai_store_status` RPC |
+| `buildSalesContext(metrics)` | MoM change, top products, category breakdown |
+| `buildSalesSnapshot(metrics)` | Typed `SalesSnapshot` for chart components |
+| `buildScheduleContext(schedule)` | Today shift list from `get_today_schedule` RPC |
+| `buildScheduleEntries(schedule)` | Typed `ScheduleEntry[]` for ContextPanel |
+| `buildSignalsList(ctx)` | Human-readable signal strings injected into AI prompt |
+| `buildAlerts(ctx)` | `MarketAlert[]` - stockout risk, overstock, weather, opportunity |
+| `buildDiff(prev, next)` | `MarketInsightsDiff` comparing cached vs new signals and actions |
+
+#### `market-insights-actions.ts`
+
+Main server action - multi-step `generateObject` pipeline.
+
+| Function | Purpose |
+| --- | --- |
+| `getMarketInsights(prev?)` | Full pipeline: fetch context -> Step 2 behavior+trends -> Step 3 strategy+actions -> persist run -> return `MarketInsightsV2` |
+
+Pipeline:
+
+```text
+getMarketInsights()
+  |-- fetchSupabaseContext()   -> inventory, sales, schedule, transactions (parallel)
+  |-- fetchWeatherForecast()   -> OpenWeatherMap (operating window)
+  |-- fetchUpcomingHolidays()  -> holidays table
+  |-- fetchNearbyCompetitors() -> Google Places (optional)
+  |-- fetchMarketTrends()      -> Tavily x 3 queries (cached per query string)
+  |-- buildMarketContext()     -> assembles MarketContext (deterministic, no AI)
+  |-- generateObject Step 2   -> behaviorTrendsSchema (Gemini gemini-2.5-flash)
+  |-- generateObject Step 3   -> strategyActionsSchema (Gemini gemini-2.5-flash)
+  |-- persistRun()            -> INSERT into market_insight_runs (optional, fails gracefully)
+  +-- return MarketInsightsV2  -> version: 2, cache key: marketInsightsCache_v2
+```
 
 ---
 
