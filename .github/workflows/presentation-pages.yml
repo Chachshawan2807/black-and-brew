@@ -5,7 +5,7 @@ on:
     branches: [main, cursor/project-presentation-1db0]
     paths:
       - 'public/presentation/**'
-      - 'docs/presentation/export/**'
+      - 'docs/presentation/export/black-and-brew-infographic.*'
       - '.github/workflows/presentation-pages.yml'
   workflow_dispatch:
 
@@ -29,33 +29,12 @@ jobs:
 
       - name: Prepare site
         run: |
-          mkdir -p _site/presentation _site/presentation/export/slides
+          mkdir -p _site/presentation/export
           cp public/presentation/index.html _site/presentation/
-          cp public/presentation/print.html _site/presentation/
           cp public/presentation/gallery.html _site/presentation/
-          cp docs/presentation/export/black-and-brew-presentation.pdf _site/presentation/export/
-          cp docs/presentation/export/slides/*.png _site/presentation/export/slides/
-          cat > _site/presentation/export/index.html <<'HTML'
-          <!DOCTYPE html>
-          <html lang="th">
-          <head>
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title>BLACK AND BREW Presentation</title>
-            <style>
-              body { font-family: system-ui, sans-serif; max-width: 480px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
-              a { display: block; padding: 1rem; margin: 0.5rem 0; border: 1px solid #ddd; border-radius: 12px; text-decoration: none; color: #000; background: #fdfcf0; }
-            </style>
-          </head>
-          <body>
-            <h1>BLACK AND BREW</h1>
-            <p>เลือกวิธีดู Presentation บนมือถือ</p>
-            <a href="black-and-brew-presentation.pdf">📄 เปิด PDF (12 หน้า)</a>
-            <a href="../index.html">🖥️ ดูแบบสไลด์ (ปัดซ้ายขวา)</a>
-            <a href="slides/slide-01.png">🖼️ ดูรูปสไลด์ทีละภาพ</a>
-          </body>
-          </html>
-          HTML
+          cp public/presentation/infographic.html _site/presentation/
+          cp public/presentation/export/black-and-brew-infographic.png _site/presentation/export/
+          cp public/presentation/export/black-and-brew-infographic.pdf _site/presentation/export/
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
