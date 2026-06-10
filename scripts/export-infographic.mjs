@@ -21,7 +21,7 @@ async function main() {
   });
 
   const page = await browser.newPage();
-  await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 2 });
+  await page.setViewport({ width: 1320, height: 2400, deviceScaleFactor: 2 });
   await page.goto(`file://${htmlPath}`, { waitUntil: 'networkidle0', timeout: 60000 });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForSelector('#infographic', { timeout: 10000 });
