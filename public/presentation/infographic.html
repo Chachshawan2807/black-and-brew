@@ -14,15 +14,12 @@
       --line: rgba(0, 0, 0, 0.1);
       --accent: #2d6a4f;
       --accent-soft: #d4edda;
-      --panel-header: #e6f0ff;
-      --panel-header-text: #1a3a5c;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Prompt', 'IBM Plex Sans Thai', system-ui, sans-serif;
-      font-weight: 400;
       background: #e8e6dc;
       display: flex;
       justify-content: center;
@@ -39,395 +36,131 @@
       border: 1px solid var(--line);
     }
 
-    /* ── Header (hero) ── */
     .hero {
-      padding: 48px 56px 36px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 24px;
-      align-items: center;
+      padding: 52px 56px 40px;
       border-bottom: 2px solid rgba(0,0,0,0.06);
     }
 
-    .hero-text .brand-badge {
+    .brand-badge {
       display: inline-flex;
       align-items: center;
       gap: 10px;
       background: #fff3cd;
       border: 1px solid #ffeeba;
       border-radius: 999px;
-      padding: 6px 16px 6px 10px;
+      padding: 8px 18px 8px 12px;
       font-size: 18px;
       font-weight: 500;
-      color: var(--text);
-      margin-bottom: 16px;
-    }
-
-    .hero-text .brand-badge svg { flex-shrink: 0; }
-
-    .hero h1 {
-      font-size: 60px;
-      font-weight: 600;
-      line-height: 1.15;
-      letter-spacing: -0.02em;
-      margin-bottom: 12px;
-    }
-
-    .hero h1 .accent {
-      color: var(--accent);
-    }
-
-    .hero .lead {
-      font-size: 22px;
-      font-weight: 400;
-      line-height: 1.6;
-      color: var(--text-body);
-      max-width: 620px;
-    }
-
-    .hero-visual {
-      width: 140px;
-      height: 140px;
-      border-radius: 32px;
-      background: linear-gradient(145deg, #fff0e6, #e6f0ff);
-      border: 1px solid var(--line);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text);
-    }
-
-    /* ── Quick highlights (4-up) ── */
-    .highlights {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0;
-      border-bottom: 2px solid rgba(0,0,0,0.06);
-    }
-
-    .highlight {
-      padding: 22px 20px;
-      border-right: 1px solid var(--line);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .highlight:last-child { border-right: none; }
-
-    .highlight-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: #fff;
-      border: 1px solid var(--line);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--accent);
-    }
-
-    .highlight strong {
-      font-size: 19px;
-      font-weight: 600;
-      line-height: 1.35;
-      color: var(--text);
-    }
-
-    .highlight span {
-      font-size: 17px;
-      line-height: 1.45;
-      color: var(--text-muted);
-    }
-
-    /* ── Main panels ── */
-    .main-panels {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 0;
-      min-height: 0;
-    }
-
-    .panel {
-      border-right: 2px solid rgba(0,0,0,0.06);
-    }
-
-    .panel:last-child { border-right: none; }
-
-    .panel-header {
-      padding: 16px 28px;
-      font-size: 22px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-    }
-
-    .panel-header.tech {
-      background: #f3e8ff;
-      color: #4c1d95;
-    }
-
-    .panel-header.modules {
-      background: var(--panel-header);
-      color: var(--panel-header-text);
-    }
-
-    .panel-header.assist {
-      background: #e6faed;
-      color: #1b4332;
-    }
-
-    .panel-body {
-      padding: 20px 24px 28px;
-    }
-
-    /* ── Numbered module list ── */
-    .module-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .module-item {
-      display: grid;
-      grid-template-columns: 36px 40px 1fr;
-      gap: 14px;
-      align-items: start;
-      padding: 14px 16px;
-      border-radius: 16px;
-      background: #fff;
-      border: 1px solid var(--line);
-    }
-
-    .module-num {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: var(--accent-soft);
-      border: 2px solid #a8d5b5;
-      color: var(--accent);
-      font-size: 17px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .module-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: var(--text);
-    }
-
-    .module-item.tone-cream .module-icon { background: #fffef8; border: 1px solid #eee; }
-    .module-item.tone-peach .module-icon { background: #fff0e6; border: 1px solid #ffd8c2; }
-    .module-item.tone-blue .module-icon { background: #e6f0ff; border: 1px solid #c2d6ff; }
-    .module-item.tone-green .module-icon { background: #e6faed; border: 1px solid #bbf2ce; }
-    .module-item.tone-lavender .module-icon { background: #f3e8ff; border: 1px solid #d8b4fe; }
-    .module-item.tone-mint .module-icon { background: #d4edda; border: 1px solid #c3e6cb; }
-    .module-item.tone-sky .module-icon { background: #d1ecf1; border: 1px solid #bee5eb; }
-    .module-item.tone-sand .module-icon { background: #fde8d8; border: 1px solid #f5d0b8; }
-
-    .module-item h3 {
-      font-size: 20px;
-      font-weight: 600;
-      line-height: 1.35;
-      margin-bottom: 4px;
-      color: var(--text);
-    }
-
-    .module-item p {
-      font-size: 17px;
-      line-height: 1.55;
-      color: var(--text-muted);
-    }
-
-    /* ── Assistant cards ── */
-    .assist-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .assist-card {
-      padding: 20px;
-      border-radius: 18px;
-      background: #fff;
-      border: 1px solid var(--line);
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-    }
-
-    .assist-card .module-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-    }
-
-    .assist-card.ai .module-icon { background: #e6faed; border: 1px solid #bbf2ce; }
-    .assist-card.line .module-icon { background: #e6f0ff; border: 1px solid #c2d6ff; }
-
-    .assist-card h4 {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      line-height: 1.35;
-    }
-
-    .assist-card p {
-      font-size: 17px;
-      line-height: 1.55;
-      color: var(--text-muted);
-    }
-
-    /* ── Footer benefits ── */
-    .benefits-bar {
-      padding: 24px 40px;
-      background: rgba(255,255,255,0.6);
-      border-top: 2px solid rgba(0,0,0,0.06);
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-    }
-
-    .benefit {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .benefit-check {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: var(--accent-soft);
-      border: 2px solid #a8d5b5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: var(--accent);
-    }
-
-    .benefit strong {
-      display: block;
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 2px;
-      line-height: 1.3;
-    }
-
-    .benefit span {
-      font-size: 16px;
-      line-height: 1.45;
-      color: var(--text-muted);
-    }
-
-    /* ── Tech section ── */
-    .tech-panels {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      border-top: 2px solid rgba(0,0,0,0.06);
-    }
-
-    .tech-panels .panel { border-right: 2px solid rgba(0,0,0,0.06); }
-    .tech-panels .panel:last-child { border-right: none; }
-
-    .stack-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
       margin-bottom: 20px;
     }
 
-    .stack-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      border-radius: 12px;
-      background: #fff;
-      border: 1px solid var(--line);
-      font-size: 16px;
+    .hero h1 {
+      font-size: 58px;
       font-weight: 600;
-      color: var(--text);
+      line-height: 1.15;
+      margin-bottom: 14px;
     }
 
-    .stack-chip svg { color: var(--accent); flex-shrink: 0; }
+    .hero h1 .accent { color: var(--accent); }
 
-    .tech-list {
-      list-style: none;
+    .hero .lead {
+      font-size: 22px;
+      line-height: 1.6;
+      color: var(--text-body);
+      max-width: 780px;
+    }
+
+    .section-header {
+      padding: 18px 56px;
+      font-size: 24px;
+      font-weight: 600;
+      background: var(--accent-soft);
+      color: #1b4332;
+      border-bottom: 2px solid #a8d5b5;
+    }
+
+    .usp-grid {
+      padding: 32px 48px 40px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 18px;
     }
 
-    .tech-item {
+    .usp-item {
       display: grid;
-      grid-template-columns: 40px 1fr;
-      gap: 14px;
+      grid-template-columns: 44px 52px 1fr;
+      gap: 18px;
       align-items: start;
-      padding: 14px 16px;
-      border-radius: 14px;
+      padding: 22px 24px;
+      border-radius: 20px;
       background: #fff;
       border: 1px solid var(--line);
     }
 
-    .tech-item-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: #f3e8ff;
-      border: 1px solid #d8b4fe;
+    .usp-num {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      border: 2px solid #a8d5b5;
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: 600;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #4c1d95;
     }
 
-    .tech-item h5 {
-      font-size: 18px;
+    .usp-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+    }
+
+    .tone-blue .usp-icon { background: #e6f0ff; border: 1px solid #c2d6ff; }
+    .tone-lavender .usp-icon { background: #f3e8ff; border: 1px solid #d8b4fe; }
+    .tone-green .usp-icon { background: #e6faed; border: 1px solid #bbf2ce; }
+    .tone-sky .usp-icon { background: #d1ecf1; border: 1px solid #bee5eb; }
+    .tone-peach .usp-icon { background: #fff0e6; border: 1px solid #ffd8c2; }
+    .tone-cream .usp-icon { background: #fffef8; border: 1px solid #eee; }
+
+    .usp-item h3 {
+      font-size: 22px;
       font-weight: 600;
-      margin-bottom: 4px;
       line-height: 1.35;
+      margin-bottom: 6px;
     }
 
-    .tech-item p {
-      font-size: 16px;
-      line-height: 1.5;
+    .usp-item p {
+      font-size: 18px;
+      line-height: 1.55;
       color: var(--text-muted);
     }
 
-    .flow-bar {
-      margin-top: 16px;
-      padding: 16px 18px;
-      border-radius: 14px;
-      background: #fff8e6;
-      border: 1px solid #ffeeba;
-      font-size: 16px;
-      line-height: 1.6;
-      color: var(--text-body);
-      text-align: center;
+    .usp-item .tag {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-radius: 999px;
+      padding: 4px 12px;
     }
 
-    .flow-bar strong { font-weight: 600; color: var(--text); }
-
     .tagline-bar {
-      padding: 20px 40px;
+      padding: 24px 56px;
       background: var(--accent-soft);
       border-top: 2px solid #a8d5b5;
       text-align: center;
     }
 
     .tagline-bar p {
-      font-size: 20px;
+      font-size: 22px;
       color: var(--text-body);
       line-height: 1.5;
     }
@@ -439,8 +172,8 @@
 
     .version {
       text-align: center;
-      padding: 14px;
-      font-size: 15px;
+      padding: 16px;
+      font-size: 16px;
       color: var(--text-muted);
     }
   </style>
@@ -448,188 +181,80 @@
 <body>
   <article id="infographic">
     <header class="hero">
-      <div class="hero-text">
-        <div class="brand-badge">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></svg>
-          BLACK AND BREW
-        </div>
-        <h1>ระบบจัดการร้าน<br/><span class="accent">ในที่เดียว</span></h1>
-        <p class="lead">จัดตารางงาน ดูสต็อก วิเคราะห์ยอดขาย และถาม AI ได้จากแอปเดียว — ออกแบบให้ทีมร้านใช้งานง่ายทุกวัน</p>
+      <div class="brand-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></svg>
+        BLACK AND BREW
       </div>
-      <div class="hero-visual">
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/></svg>
-      </div>
+      <h1>จุดเด่นที่<span class="accent">ไม่ซ้ำใคร</span></h1>
+      <p class="lead">ออกแบบเฉพาะร้านกาแฟของเรา — ไม่ใช่แอปสำเร็จรูป แต่เป็นระบบที่เข้าใจงานจริงของทีมร้าน</p>
     </header>
 
-    <section class="highlights">
-      <div class="highlight">
-        <div class="highlight-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></div>
-        <strong>อัปเดตทันที</strong>
-        <span>ข้อมูลซิงก์ข้ามเครื่อง</span>
-      </div>
-      <div class="highlight">
-        <div class="highlight-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg></div>
-        <strong>ใช้มือถือได้</strong>
-        <span>เปิดเหมือนแอป</span>
-      </div>
-      <div class="highlight">
-        <div class="highlight-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div>
-        <strong>เข้าใช้ด้วย PIN</strong>
-        <span>เจ้าของแก้ไขได้</span>
-      </div>
-      <div class="highlight">
-        <div class="highlight-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></div>
-        <strong>ไทย / อังกฤษ</strong>
-        <span>ใช้งานสะดวกทั้งทีม</span>
-      </div>
+    <div class="section-header">6 จุดเด่นหลัก</div>
+
+    <section class="usp-grid">
+      <article class="usp-item tone-blue">
+        <span class="usp-num">1</span>
+        <div class="usp-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M3 10h18"/><path d="M8 2v4"/></svg></div>
+        <div>
+          <h3>ตารางกะลากวาง + สีตามเวลาเข้างานจริง</h3>
+          <p>กะ 6:30 / 7:00 / 8:00 แยกสีพาสเทลให้เห็นชัด ซิงก์วันหยุดราชการอัตโนมัติ — ออกแบบตามวิธีจัดกะของร้านเราโดยตรง</p>
+          <span class="tag">ไม่มีใน Excel หรือ Google Calendar ทั่วไป</span>
+        </div>
+      </article>
+
+      <article class="usp-item tone-lavender">
+        <span class="usp-num">2</span>
+        <div class="usp-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/></svg></div>
+        <div>
+          <h3>คลังสต็อกแบบ Excel + คำนวณสั่งของให้</h3>
+          <p>แก้ในตารางได้เลย Undo ได้ ระบบคำนวณจำนวนที่ควรสั่งจากสต็อกเป้าหมาย — ลดของขาดก่อนขายไม่ได้</p>
+          <span class="tag">สต็อกซิงก์ทุกเครื่องทันที</span>
+        </div>
+      </article>
+
+      <article class="usp-item tone-green">
+        <span class="usp-num">3</span>
+        <div class="usp-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>
+        <div>
+          <h3>บรู AI — ตอบจากข้อมูลร้านจริง</h3>
+          <p>ถาม "วันนี้ใครเข้ากะ?" หรือ "ของอะไรใกล้หมด?" ได้คำตอบจากฐานข้อมูลร้าน ไม่ใช่แชทบอทเดาทั่วไป</p>
+          <span class="tag">AI Data Gateway ปลอดภัย</span>
+        </div>
+      </article>
+
+      <article class="usp-item tone-sky">
+        <span class="usp-num">4</span>
+        <div class="usp-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg></div>
+        <div>
+          <h3>LINE สรุปเช้า 6:00 น. อัตโนมัติ</h3>
+          <p>ส่งเข้ากลุ่มทีมทุกเช้า — เฉพาะกะงานวันนี้และวันหยุดราชการที่ใกล้เคียง ไม่ต้องถามกันเองตอนเปิดร้าน</p>
+          <span class="tag">เฉพาะร้านเรา ไม่มีในแอปทั่วไป</span>
+        </div>
+      </article>
+
+      <article class="usp-item tone-peach">
+        <span class="usp-num">5</span>
+        <div class="usp-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg></div>
+        <div>
+          <h3>วิเคราะห์ตลาดย่านลำลูกกา</h3>
+          <p>ดูเทรนด์เมนูฮิตและคู่แข่งรอบร้านจริง ไม่ใช่รายงานตลาดทั่วประเทศที่ใช้วางแผนไม่ได้</p>
+          <span class="tag">Hyper-local ตามพิกัดร้าน</span>
+        </div>
+      </article>
+
+      <article class="usp-item tone-cream">
+        <span class="usp-num">6</span>
+        <div class="usp-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+        <div>
+          <h3>ศูนย์บัญชาการ — เปิดแล้วรู้ทันที</h3>
+          <p>วันนี้และพรุ่งนี้ใครเข้ากะ เห็นแบบเรียลไทม์ตั้งแต่หน้าแรก ไม่ต้องเปิดแชทถามซ้ำๆ</p>
+          <span class="tag">ออกแบบให้ทีม 9 คน</span>
+        </div>
+      </article>
     </section>
 
-    <div class="main-panels">
-      <section class="panel">
-        <div class="panel-header modules">โมดูลในระบบ — 8 ฟีเจอร์หลัก</div>
-        <div class="panel-body">
-          <ol class="module-list">
-            <li class="module-item tone-cream">
-              <span class="module-num">1</span>
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
-              <div><h3>หน้าหลัก</h3><p>เห็นทันทีว่าวันนี้และพรุ่งนี้ใครเข้ากะ — อัปเดตแบบเรียลไทม์</p></div>
-            </li>
-            <li class="module-item tone-peach">
-              <span class="module-num">2</span>
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></div>
-              <div><h3>แดชบอร์ดพนักงาน</h3><p>ลงเวลา ดูรายชื่อกะ ตารางรายเดือน และสภาพอากาศ</p></div>
-            </li>
-            <li class="module-item tone-blue">
-              <span class="module-num">3</span>
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M3 10h18"/><path d="M8 2v4"/></svg></div>
-              <div><h3>ตารางงาน</h3><p>ลากวางจัดกะ 6:30 / 7:00 / 8:00 ซิงก์วันหยุดราชการ</p></div>
-            </li>
-            <li class="module-item tone-green">
-              <span class="module-num">4</span>
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></svg></div>
-              <div><h3>บันทึกการซ่อม</h3><p>จดประวัติซ่อมเครื่องชง ตู้เย็น และอุปกรณ์ในร้าน</p></div>
-            </li>
-            <li class="module-item tone-lavender">
-              <span class="module-num">5</span>
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/></svg></div>
-              <div><h3>คลังสินค้า</h3><p>แก้ไขสต็อกในตาราง บันทึกอัตโนมัติ แจ้งเตือนเมื่อของใกล้หมด</p></div>
-            </li>
-            <li class="module-item tone-mint">
-              <span class="module-num">6</span>
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/></svg></div>
-              <div><h3>ตรวจนับคลัง</h3><p>นับสต็อกจริงเทียบกับในระบบ ลดความคลาดเคลื่อน</p></div>
-            </li>
-            <li class="module-item tone-sky">
-              <span class="module-num">7</span>
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg></div>
-              <div><h3>วิเคราะห์ตลาด</h3><p>ดูเทรนด์เมนูฮิตและคู่แข่งรอบย่านลำลูกกา</p></div>
-            </li>
-            <li class="module-item tone-sand">
-              <span class="module-num">8</span>
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg></div>
-              <div><h3>จัดการยอดขาย</h3><p>อัปโหลด Excel ดูกราฟหมวดหมู่ รู้ว่าเมนูไหนขายดี</p></div>
-            </li>
-          </ol>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-header assist">ผู้ช่วย &amp; แจ้งเตือน</div>
-        <div class="panel-body">
-          <div class="assist-list">
-            <div class="assist-card ai">
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>
-              <div>
-                <h4>บรู — AI ผู้ช่วย</h4>
-                <p>ถามได้ทุกหน้า เช่น "วันนี้ใครเข้ากะ?" หรือ "ของอะไรใกล้หมด?"</p>
-              </div>
-            </div>
-            <div class="assist-card line">
-              <div class="module-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg></div>
-              <div>
-                <h4>แจ้งเตือน LINE ทุกเช้า 6:00 น.</h4>
-                <p>สรุปกะงานวันนี้และวันหยุดราชการที่ใกล้เคียง ส่งเข้ากลุ่มอัตโนมัติ</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="benefits-bar" style="margin-top:20px;padding:20px 0 0;border-top:1px solid var(--line);grid-template-columns:1fr;background:transparent;">
-            <div class="benefit">
-              <div class="benefit-check"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
-              <div><strong>ครบในแอปเดียว</strong><span>ไม่ต้องสลับหลายโปรแกรม</span></div>
-            </div>
-            <div class="benefit" style="margin-top:12px">
-              <div class="benefit-check"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
-              <div><strong>ออกแบบให้ทีมร้าน</strong><span>อ่านง่าย ใช้บนมือถือได้</span></div>
-            </div>
-            <div class="benefit" style="margin-top:12px">
-              <div class="benefit-check"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
-              <div><strong>ตัดสินใจได้เร็วขึ้น</strong><span>ข้อมูลอัปเดตทันทีทุกวัน</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="tech-panels">
-      <section class="panel">
-        <div class="panel-header tech">เทคโนโลยีหลัก (Tech Stack)</div>
-        <div class="panel-body">
-          <div class="stack-grid">
-            <span class="stack-chip"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>Next.js 16</span>
-            <span class="stack-chip"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>React 19</span>
-            <span class="stack-chip"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>Supabase</span>
-            <span class="stack-chip"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8H4.4L10.2 12l-1.9 5.8L12 14.4l3.7 3.4-1.9-5.8 5.8-3.2h-5.6z"/></svg>Tailwind 4</span>
-            <span class="stack-chip"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z"/></svg>Vercel</span>
-            <span class="stack-chip"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg>Gemini AI</span>
-          </div>
-          <ul class="tech-list">
-            <li class="tech-item">
-              <div class="tech-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-              <div><h5>ฐานข้อมูล PostgreSQL</h5><p>Supabase Edge ประเทศไทย — เก็บข้อมูลร้านบนคลาวด์</p></div>
-            </li>
-            <li class="tech-item">
-              <div class="tech-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg></div>
-              <div><h5>ซิงก์เรียลไทม์</h5><p>Supabase Realtime — แก้ไขแล้วอัปเดตทุกเครื่องทันที</p></div>
-            </li>
-            <li class="tech-item">
-              <div class="tech-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-              <div><h5>ความปลอดภัย RLS + PIN</h5><p>Row Level Security + ยืนยัน PIN ก่อนแก้ไขข้อมูล</p></div>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-header tech">สถาปัตยกรรม (Architecture)</div>
-        <div class="panel-body">
-          <ul class="tech-list">
-            <li class="tech-item">
-              <div class="tech-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></div>
-              <div><h5>Hybrid PPR</h5><p>โครงหน้าโหลดเร็ว + ข้อมูลสดจาก Server Actions</p></div>
-            </li>
-            <li class="tech-item">
-              <div class="tech-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-              <div><h5>Server Actions + API</h5><p>บันทึกข้อมูลผ่าน Server Actions, AI/LINE ผ่าน API Routes</p></div>
-            </li>
-            <li class="tech-item">
-              <div class="tech-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg></div>
-              <div><h5>AI ToolLoop + Gateway</h5><p>Gemini ดึงข้อมูลร้านผ่าน AI Data Gateway อย่างปลอดภัย</p></div>
-            </li>
-            <li class="tech-item">
-              <div class="tech-item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg></div>
-              <div><h5>PWA + 2 ภาษา</h5><p>ติดหน้าจอมือถือได้ (Service Worker) + next-intl ไทย/อังกฤษ</p></div>
-            </li>
-          </ul>
-          <div class="flow-bar">
-            <strong>Flow:</strong> เบราว์เซอร์ → Next.js App Router → Server Actions / API → Supabase PostgreSQL
-          </div>
-        </div>
-      </section>
-    </div>
-
     <footer class="tagline-bar">
-      <p>ระบบเดียว ครบทุกงานประจำวันของร้าน — <strong>BLACK AND BREW ERP</strong></p>
+      <p>ระบบเดียวที่เข้าใจงานร้านกาแฟของเรา — <strong>BLACK AND BREW ERP</strong></p>
     </footer>
 
     <p class="version">BLACK AND BREW ERP · v6.9</p>
