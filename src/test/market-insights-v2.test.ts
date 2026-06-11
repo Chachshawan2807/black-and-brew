@@ -47,6 +47,11 @@ describe('buildSalesSnapshot', () => {
   test('extracts MoM, top products and category breakdown', () => {
     const snap = buildSalesSnapshot(sampleMetrics);
     expect(snap.momChangePercentage).toBe(11.1);
+    expect(snap.momDetail).toMatchObject({
+      currentLabel: '2026-02',
+      previousLabel: '2026-01',
+      changeAbsolute: 5000,
+    });
     expect(snap.topProducts[0]).toMatchObject({ productName: 'ลาเต้', totalQuantity: 200 });
     expect(snap.categoryBreakdown[0]).toMatchObject({ category: 'กาแฟ', revenuePercentage: 60 });
     expect(snap.monthlyTrend).toHaveLength(2);
@@ -55,6 +60,7 @@ describe('buildSalesSnapshot', () => {
   test('returns empty snapshot for null metrics', () => {
     const snap = buildSalesSnapshot(null);
     expect(snap.momChangePercentage).toBeNull();
+    expect(snap.momDetail).toBeNull();
     expect(snap.topProducts).toEqual([]);
     expect(snap.monthlyTrend).toEqual([]);
   });
@@ -137,12 +143,12 @@ const prev: MarketInsightsV2 = {
   context: {
     weather: { current: null, hourly: [], operatingSummary: 'N/A' },
     signals: ['weather:hot'],
-    salesSnapshot: { momChangePercentage: null, topProducts: [], categoryBreakdown: [], monthlyTrend: [] },
+    salesSnapshot: { momChangePercentage: null, momDetail: null, topProducts: [], categoryBreakdown: [], monthlyTrend: [] },
     scheduleToday: [],
     shiftCount: 0,
     upcomingHolidays: [],
     alerts: [],
-    competitors: [],
+    competitorAnalysis: null,
   },
   insights: { behavior: [], trends: [], strategy: [] },
   actions: [{ id: 'act-1', title: 'ดันเมนูเย็น', priority: 1, timeframe: 'สัปดาห์นี้', expectedImpact: 'เพิ่มยอด', linkedProducts: [] }],

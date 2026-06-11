@@ -27,6 +27,7 @@ type PurchaseOrdersModalProps = {
   displayedPoItems: PurchaseOrderItem[];
   getStockColorClass: (stock: number, targetStock: number) => string;
   isExportMode?: boolean;
+  exportTableId?: string;
 };
 
 export default function PurchaseOrdersModal({
@@ -39,12 +40,13 @@ export default function PurchaseOrdersModal({
   displayedPoItems,
   getStockColorClass,
   isExportMode = false,
+  exportTableId = 'blackandbrew-po-table-export',
 }: PurchaseOrdersModalProps) {
   const itemsToShow = displayedPoItems;
-  const tableId = isExportMode ? "blackandbrew-po-table-export" : "blackandbrew-po-table";
+  const tableId = isExportMode ? exportTableId : 'blackandbrew-po-table';
 
   const tableContent = (
-    <div id={tableId} className={isExportMode ? "relative flex flex-col w-full bg-[#fdfcf0]" : "relative max-h-[75vh] overflow-y-auto flex flex-col w-full bg-[#fdfcf0]"}>
+    <div id={tableId} className={isExportMode ? "relative flex flex-col w-full bg-card" : "relative max-h-[75vh] overflow-y-auto flex flex-col w-full bg-card"}>
       {/* STICKY STYLED WRAPPER FOR THE HEADER */}
         <div className={isExportMode ? "bg-[#fff3dd] pt-4 pb-4 w-full box-border border-b border-black/5 shadow-sm" : "sticky top-0 bg-[#fff3dd] z-30 pt-4 pb-4 w-full box-border border-b border-black/5 shadow-sm"}>
           {!isExportMode && (
@@ -198,7 +200,7 @@ export default function PurchaseOrdersModal({
         animate={modalContent.animate}
         exit={modalContent.exit}
         transition={modalContent.transition}
-        className="bg-[#fdfcf0] rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-card rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {tableContent}

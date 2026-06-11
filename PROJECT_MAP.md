@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> **Generated:** 2026-06-07 (GMT+7) | **Root:** `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | **Version:** 6.9
+> **Generated:** 2026-06-12 (GMT+7) | **Root:** `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | **Version:** 8.4
 
 ---
 
@@ -16,6 +16,7 @@
 | Maintenance | `src/app/[locale]/maintenance/` | Active |
 | Sales | `src/app/[locale]/sales/` | Active |
 | Market Insights | `src/app/[locale]/market-insights/` | Active |
+| Settings | `src/app/[locale]/settings/` | Active |
 
 ---
 
@@ -34,6 +35,7 @@
 | `/[locale]/maintenance` | `src/app/[locale]/maintenance/page.tsx` |
 | `/[locale]/sales` | `src/app/[locale]/sales/page.tsx` |
 | `/[locale]/market-insights` | `src/app/[locale]/market-insights/page.tsx` |
+| `/[locale]/settings` | `src/app/[locale]/settings/page.tsx` |
 
 **Locales:** `th`, `en`
 
@@ -66,7 +68,7 @@ black-and-brew/
 │   │   ├── ai/              # AIChatOverlay, AIChatWrapper
 │   │   ├── auth/            # PinGateway
 │   │   ├── dashboard/       # LiveStatusTracker, WeatherWidget
-│   │   ├── providers/       # AuthProvider, I18nProvider
+│   │   ├── providers/       # AuthProvider, I18nProvider, ThemeProvider
 │   │   ├── sidebar/         # Sidebar, Menu, SheetMenu, …
 │   │   └── ui/              # button, ClickableDatePicker, page-transition, floating-alert, …
 │   ├── hooks/
@@ -116,6 +118,7 @@ black-and-brew/
 | react / react-dom | 19.2.4 |
 | @supabase/supabase-js | ^2.105.1 |
 | next-intl | ^4.11.0 |
+| next-themes | ^0.4 |
 | tailwindcss | ^4 |
 | vitest | ^4.1.6 |
 | ai / @ai-sdk/google | ^6.0 / ^3.0 |

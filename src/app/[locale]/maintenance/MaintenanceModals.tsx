@@ -71,28 +71,28 @@ export default function MaintenanceModals({
               animate={modalContent.animate}
               exit={modalContent.exit}
               transition={modalContent.transition}
-              className="relative bg-[#fdfcf0] w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden border border-black/5"
+              className="relative bg-card w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden border border-border"
             >
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-black/40 z-10"
+                className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
               >
                 <X className="w-5 h-5" strokeWidth={2} />
               </button>
-              <div className="p-5 border-b border-black/5 flex items-center justify-between shrink-0 pr-14">
+              <div className="p-5 border-b border-border flex items-center justify-between shrink-0 pr-14">
                 <div>
-                  <h2 className="text-xl font-normal text-black tracking-tight uppercase">
+                  <h2 className="text-xl font-normal text-foreground tracking-tight uppercase">
                     {editingRecord ? 'แก้ไขบันทึก' : 'เพิ่มบันทึกใหม่'}
                   </h2>
-                  <p className="text-[13px] text-black/60 mt-0.5 uppercase tracking-widest font-normal">รายละเอียดการซ่อมและสถานะอุปกรณ์</p>
+                  <p className="text-[13px] text-foreground/60 mt-0.5 uppercase tracking-widest font-normal">รายละเอียดการซ่อมและสถานะอุปกรณ์</p>
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar bg-[#fdfcf0]">
+              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar bg-card">
                 <div className={isReadOnly ? 'pointer-events-none opacity-60' : ''}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5 flex-1">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">วันที่รับบริการ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">วันที่รับบริการ</label>
                       <ClickableDatePicker
                         value={formData.start_date}
                         onChange={e => setFormData({ ...formData, start_date: e.target.value })}
@@ -102,7 +102,7 @@ export default function MaintenanceModals({
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ประเภทงาน</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ประเภทงาน</label>
                       <div className="relative">
                         <select
                           value={formData.task_type}
@@ -116,14 +116,14 @@ export default function MaintenanceModals({
                           <option value="เปลี่ยนอะไหล่">เปลี่ยนอะไหล่</option>
                           <option value="อื่นๆ">อื่นๆ</option>
                         </select>
-                        <ChevronRight className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-black/30 pointer-events-none" />
+                        <ChevronRight className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-foreground/30 pointer-events-none" />
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ชื่ออุปกรณ์</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ชื่ออุปกรณ์</label>
                       <input
                         type="text"
                         required
@@ -134,7 +134,7 @@ export default function MaintenanceModals({
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ความถี่ที่แนะนำ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ความถี่ที่แนะนำ</label>
                       <input
                         type="text"
                         placeholder="เช่น ทุก 3 เดือน"
@@ -147,9 +147,9 @@ export default function MaintenanceModals({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ค่าใช้จ่าย (บาท)</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ค่าใช้จ่าย (บาท)</label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30 text-base md:text-sm font-normal">฿</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/30 text-base md:text-sm font-normal">฿</span>
                         <input
                           type="number"
                           min="0"
@@ -163,7 +163,7 @@ export default function MaintenanceModals({
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">ผู้รับผิดชอบ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ผู้รับผิดชอบ</label>
                       <input
                         type="text"
                         placeholder="ชื่อ"
@@ -176,7 +176,7 @@ export default function MaintenanceModals({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">อาการที่พบ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">อาการที่พบ</label>
                       <textarea
                         placeholder="อธิบายปัญหา"
                         rows={2}
@@ -186,7 +186,7 @@ export default function MaintenanceModals({
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">รายละเอียดการซ่อม</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">รายละเอียดการซ่อม</label>
                       <textarea
                         placeholder="ดำเนินการอะไรบ้าง?"
                         rows={2}
@@ -199,13 +199,13 @@ export default function MaintenanceModals({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                     <div className="space-y-2">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">สถานะงาน</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">สถานะงาน</label>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
                           disabled={isReadOnly}
-                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
+                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe] shadow-sm' : 'bg-black/[0.02] text-foreground/30 hover:bg-black/[0.05]'}`}
                         >
                           <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
                           กำลังดำเนินการ
@@ -214,7 +214,7 @@ export default function MaintenanceModals({
                           type="button"
                           onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
                           disabled={isReadOnly}
-                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7] shadow-sm' : 'bg-black/[0.02] text-black/30 hover:bg-black/[0.05]'}`}
+                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7] shadow-sm' : 'bg-black/[0.02] text-foreground/30 hover:bg-black/[0.05]'}`}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                           เสร็จสิ้น
@@ -222,7 +222,7 @@ export default function MaintenanceModals({
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-black/60 ml-1">หมายเหตุ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">หมายเหตุ</label>
                       <input
                         type="text"
                         placeholder="หมายเหตุ"
@@ -235,11 +235,11 @@ export default function MaintenanceModals({
                 </div>
               </form>
 
-              <div className="p-5 bg-[#fdfcf0] border-t border-black/5 flex gap-3 shrink-0">
+              <div className="p-5 bg-card border-t border-border flex gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-11 md:h-auto md:py-3 text-black/60 font-normal hover:text-black transition-all text-base md:text-[12px] uppercase tracking-widest"
+                  className="flex-1 h-11 md:h-auto md:py-3 text-foreground/60 font-normal hover:text-foreground transition-all text-base md:text-[12px] uppercase tracking-widest"
                 >
                   ยกเลิก
                 </button>
@@ -260,18 +260,18 @@ export default function MaintenanceModals({
       {isDeleteConfirmOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/5 backdrop-blur-md bb-modal-backdrop" onClick={() => setIsDeleteConfirmOpen(false)} />
-          <div className="relative bg-[#fdfcf0] w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-black/5 bb-modal-panel p-10 text-center">
+          <div className="relative bg-card w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-border bb-modal-panel p-10 text-center">
             <button
               onClick={() => setIsDeleteConfirmOpen(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-black/40 z-10"
+              className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
             >
               <X className="w-5 h-5" strokeWidth={2} />
             </button>
             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" strokeWidth={1} />
             </div>
-            <h3 className="text-2xl font-normal text-black tracking-tighter mb-2 uppercase">Delete Record?</h3>
-            <p className="text-black/40 text-sm font-normal mb-8 leading-relaxed">This action is irreversible and will permanently remove this maintenance entry from the vault.</p>
+            <h3 className="text-2xl font-normal text-foreground tracking-tighter mb-2 uppercase">Delete Record?</h3>
+            <p className="text-foreground/40 text-sm font-normal mb-8 leading-relaxed">This action is irreversible and will permanently remove this maintenance entry from the vault.</p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleDelete}
@@ -282,7 +282,7 @@ export default function MaintenanceModals({
               </button>
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
-                className="w-full h-11 md:h-auto md:py-4 text-black/40 font-normal hover:text-black transition-all text-base md:text-sm uppercase tracking-widest"
+                className="w-full h-11 md:h-auto md:py-4 text-foreground/40 font-normal hover:text-foreground transition-all text-base md:text-sm uppercase tracking-widest"
               >
                 Cancel
               </button>

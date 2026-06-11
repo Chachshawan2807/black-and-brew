@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-06-12 (Dark Theme + Documentation Sync v8.4)
+
+- Execution: [DOCUMENTATION SYNC — dark theme work + `.md` alignment to `src/`]
+- Changes:
+  - **Theme infrastructure:** `next-themes` via `ThemeProvider` (`storageKey="bb-theme"`, `attribute="class"`); CSS tokens in `globals.css` (`:root` / `.dark` — `--background`, `--foreground`, `--card`, `--border`, etc.)
+  - **Pastel contrast pattern:** `.bb-pastel-surface` utility forces black text/icons on pastel accent cards in both light and dark themes; `PASTEL_SURFACE` constant in `src/lib/shift-colors.ts` appended to all pastel color classes
+  - **Settings page:** `/[locale]/settings` — Theme picker (light / dark / system) + login history
+  - **Pages/components migrated** from hardcoded `bg-[#fdfcf0]`, `bg-white`, `text-black` to theme tokens: inventory (page + count), sales, maintenance, schedule, dashboard, market-insights, AI chat overlay, export overlay, shared UI (PinGateway, ClickableDatePicker, floating-alert, WeatherWidget, InventoryHistoryModal, etc.)
+  - **AGENTS.md** — added dark-theme / theme-token rules for agents
+  - **docs/design.md** — dual-theme color tokens, `bb-pastel-surface` standard, component token migration
+  - **docs/rules.md** — CSS class rules updated for theme tokens (pastel exception documented)
+  - **docs/architecture.md** — `ThemeProvider`, settings route, `next-themes` in stack
+  - **docs/context.md** — Settings module, Current Version → 8.4
+  - **docs/memory.md** — DEC-070 (Dual Theme + Pastel Surface Pattern)
+  - **docs/tasks.md** — dark theme + doc sync v8.4 completed
+  - **README.md**, **PROJECT_MAP.md**, **MASTER_BLUEPRINT.md**, **SKILLS_INVENTORY.md** — version bump + settings/theme references
+  - All target docs — bumped version to **8.4**, Last Updated **2026-06-12**
+- Verification: `npm run lint:md` ✓ (Exit Code 0)
+
 ## 2026-06-09 (Market Insights v2 — Isolated Multi-Step Module)
 
 - Execution: [DOCS SYNC — Market Insights v2 reflected from src/ as source of truth]

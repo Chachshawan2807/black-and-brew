@@ -289,7 +289,7 @@ function buildSystemPrompt(
 - ตัวตารางต้องมี min-width ขั้นต่ำ (แนะนำ min-w-[800px] ถึง 1000px) และใช้ padding กระชับ (p-2) เพื่อไม่ให้ข้อมูลเบียดกัน
 - ทุก Modal Content (กล่องสีขาว) ต้องมีข้อจำกัดความสูง max-h-[90vh] และเปิด overflow-y-auto scrollbar-thin เพื่อป้องกันการล้นจอแนวตั้ง
 - Modal Overlay (ฉากหลัง) ต้องใช้ flex items-center justify-center p-4 เพื่อจัดวางกล่องเนื้อหาไว้กึ่งกลางหน้าจอเสมอ
-- ยึดถือ Zero-Bold Policy (ห้าม font-bold) และใช้ text-black เสมอตามมาตรฐานแบรนด์
+- ยึดถือ Zero-Bold Policy (ห้าม font-bold) และใช้ text-foreground เสมอตามมาตรฐานแบรนด์
 
 [DATA INTEGRITY & PRIVACY]
 - ห้ามแสดง UUID (เช่น 7777d2fc...) ในคำตอบเด็ดขาด ให้ใช้ชื่อบุคคลแทนเสมอ

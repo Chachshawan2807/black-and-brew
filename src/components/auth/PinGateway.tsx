@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, ShieldAlert } from 'lucide-react';
 import { verifyPin } from '@/app/actions/auth';
+import { recordLoginEvent } from '@/app/actions/login-history-actions';
+import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 
@@ -137,7 +139,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     isVerifyingRef.current = true;
 
     try {
-      const res = await verifyPin(nextPin);
+      const device = collectClientDeviceInfo();
+      const res = await verifyPin(nextPin, device);
       if (res.success) {
         sessionStorage.setItem('bb_auth_pin_verified', 'true');
         if (res.isReadOnly) {
@@ -166,6 +169,12 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         const lockoutUntil = new Date(Date.now() + lockoutDuration).toISOString();
         localStorage.setItem('bb_lockout_until', lockoutUntil);
         setLockoutTimeLeft(15 * 60);
+        void recordLoginEvent({
+          eventType: 'lockout',
+          status: 'blocked',
+          device,
+          failureReason: '5 consecutive failed PIN attempts',
+        });
       }
 
       window.setTimeout(() => {
@@ -188,7 +197,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
   if (lockoutTimeLeft !== null) {
     return (
-      <div className="fixed inset-0 z-[9999] bg-[#fdfcf0] flex flex-col items-center justify-center p-4 antialiased overflow-hidden">
+      <div className="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center p-4 antialiased overflow-hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -219,7 +228,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-[#fdfcf0] overflow-hidden flex flex-col items-center px-4 antialiased transition-[padding] duration-200 ${
+      className={`fixed inset-0 z-[9999] bg-background overflow-hidden flex flex-col items-center px-4 antialiased transition-[padding] duration-200 ${
         isKeyboardOpen ? 'justify-start pt-[min(16svh,128px)]' : 'justify-center'
       }`}
     >

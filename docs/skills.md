@@ -1,6 +1,6 @@
 # BLACKANDBREW ERP: SKILL HARVESTING & SYNERGY BUNDLING
 
-> Last Scanned & Updated: 2026-06-09 (SKILL-SYNERGY-BUNDLER One-Shot)
+> Last Scanned & Updated: 2026-06-12 (Documentation Sync v8.4)
 
 ## CAPABILITY INVENTORY (คลังความสามารถปัจจุบัน)
 

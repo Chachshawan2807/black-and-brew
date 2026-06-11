@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> Version: 8.3 | Last Updated: 2026-06-09 | Enforcement: Mandatory
+> Version: 8.4 | Last Updated: 2026-06-12 | Enforcement: Mandatory
 
 ---
 
@@ -64,9 +64,10 @@
 ### CSS Classes (Aesthetic Enforcer)
 
 - ✅ `rounded-3xl` for all buttons, cards, modals, inputs
-- ✅ `#000000` for primary text color
-- ✅ `border-[#000000]/5` for all separators
-- ✅ `bg-[#fdfcf0]` for primary background
+- ✅ **Theme tokens** for page/modal surfaces: `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`
+- ✅ **Pastel accent cards:** keep pastel hex backgrounds + mandatory `bb-pastel-surface` (or `PASTEL_SURFACE` from `shift-colors.ts`) — black text/icons in both themes
+- ❌ **FORBIDDEN on non-pastel surfaces:** hardcoded `bg-[#fdfcf0]`, `bg-white`, `text-black`, `text-[#000000]`, `border-black/5`
+- ✅ `#000000` text only inside `.bb-pastel-surface` or explicit pastel-active inputs (e.g. count cell on green card)
 - ✅ `transition-all duration-300` for hover effects
 
 ### Data Handling

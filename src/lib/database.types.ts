@@ -77,6 +77,69 @@ export type Database = {
         }
         Relationships: []
       }
+      login_history: {
+        Row: {
+          id: string
+          event_type: string
+          occurred_at: string
+          ip_address: string | null
+          user_agent: string | null
+          device_type: string
+          device_vendor: string | null
+          device_model: string | null
+          os_name: string | null
+          os_version: string | null
+          browser_name: string | null
+          browser_version: string | null
+          access_level: string | null
+          status: string
+          failure_reason: string | null
+          session_fingerprint: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          event_type: string
+          occurred_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          device_type?: string
+          device_vendor?: string | null
+          device_model?: string | null
+          os_name?: string | null
+          os_version?: string | null
+          browser_name?: string | null
+          browser_version?: string | null
+          access_level?: string | null
+          status?: string
+          failure_reason?: string | null
+          session_fingerprint?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          event_type?: string
+          occurred_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          device_type?: string
+          device_vendor?: string | null
+          device_model?: string | null
+          os_name?: string | null
+          os_version?: string | null
+          browser_name?: string | null
+          browser_version?: string | null
+          access_level?: string | null
+          status?: string
+          failure_reason?: string | null
+          session_fingerprint?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       inventory_config: {
         Row: {
           id: string
@@ -574,7 +637,12 @@ export type Database = {
         Returns: Json
       }
       set_inventory_stock: {
-        Args: { p_item_id: string; p_new_stock: number; p_note?: string }
+        Args: {
+          p_item_id: string
+          p_new_stock: number
+          p_note?: string
+          p_record_history?: boolean
+        }
         Returns: Json
       }
     }

@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> **Version:** 6.9 | **Last Updated:** 2026-06-07 | **Owner:** System Architect
+> **Version:** 8.4 | **Last Updated:** 2026-06-12 | **Owner:** System Architect
 
 ---
 
@@ -87,7 +87,13 @@
 - **Purpose:** แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
 - **API:** `POST /api/chat` — ToolLoopAgent + Gemini 2.5 Flash
 
-### 3.9 Daily LINE Notification
+### 3.9 Settings
+
+- **Route:** `/[locale]/settings`
+- **Purpose:** การตั้งค่าระบบสำหรับพนักงาน
+- **Features:** Theme picker (light / dark / system via `next-themes`, key `bb-theme`); login history
+
+### 3.10 Daily LINE Notification
 
 - **Route:** `/api/daily-report` (Vercel Cron)
 - **Purpose:** แจ้งเตือนกะงาน สต็อกต่ำ อากาศ วันหยุด ทุก 07:00 ICT

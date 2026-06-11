@@ -1,55 +1,92 @@
-import type { CompetitorEntry } from './market-insights-types';
+'use server';
+
+import type { CompetitorAnalysis, CompetitorDataSource } from './market-insights-types';
+import { buildCompetitorAnalysis, type RawPlaceResult } from './market-insights-competitors';
+import { fetchOsmCompetitors } from './market-insights-osm';
+import { fetchCompetitorWebContext } from './market-insights-fetch';
+import {
+  enrichCompetitorAnalysisWithReviews,
+  enrichPlacesWithWebsiteUri,
+  fetchGooglePlacesNew,
+  googlePlacesNewFailureMessage,
+} from './market-insights-places-google';
 
 /**
- * Google Places — nearby competitor cafés (OPTIONAL).
+ * Nearby competitor cafés.
  *
- * Fully optional: when `GOOGLE_PLACES_API_KEY` is absent, returns [] and the
- * rest of Market Insights works unchanged. Never throws to the caller.
+ * 1. GOOGLE_PLACES_API_KEY → Places API (New) searchNearby
+ * 2. Fallback OSM when no key or Google returns empty
  */
-export async function fetchNearbyCompetitors(
+export async function fetchCompetitorAnalysis(
   lat: string,
   lon: string
-): Promise<CompetitorEntry[]> {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return [];
+): Promise<CompetitorAnalysis | null> {
+  const latN = parseFloat(lat);
+  const lonN = parseFloat(lon);
+  if (Number.isNaN(latN) || Number.isNaN(lonN)) {
+    console.error('[fetchCompetitorAnalysis] Invalid store coordinates:', lat, lon);
+    return null;
+  }
 
   try {
-    const url =
-      `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
-      `?location=${lat},${lon}&radius=2000&type=cafe&keyword=coffee&language=th&key=${apiKey}`;
+    let rawPlaces: RawPlaceResult[] = [];
+    let dataSource: CompetitorDataSource = 'openstreetmap';
+    let placesApiMessage: string | undefined;
 
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-    if (!res.ok) {
-      console.error('[fetchNearbyCompetitors] HTTP', res.status, res.statusText);
-      return [];
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY?.trim();
+
+    if (apiKey) {
+      const google = await fetchGooglePlacesNew(lat, lon, apiKey);
+
+      if (google.results.length > 0) {
+        rawPlaces = await enrichPlacesWithWebsiteUri(google.results, apiKey);
+        dataSource = 'google_places';
+      } else if (google.status === 'OK' || google.status === 'ZERO_RESULTS') {
+        dataSource = 'google_places';
+        placesApiMessage =
+          google.status === 'ZERO_RESULTS'
+            ? 'Google Places ไม่พบร้านในรัศมี — ลอง OpenStreetMap เป็นข้อมูลสำรอง'
+            : undefined;
+        const osm = await fetchOsmCompetitors(lat, lon);
+        if (osm.length > 0) {
+          rawPlaces = osm;
+          dataSource = 'openstreetmap';
+        }
+      } else {
+        placesApiMessage = googlePlacesNewFailureMessage(google.status, google.errorMessage);
+        dataSource = 'google_places';
+        const osm = await fetchOsmCompetitors(lat, lon);
+        if (osm.length > 0) {
+          rawPlaces = osm;
+          dataSource = 'openstreetmap';
+          placesApiMessage += ' · แสดงข้อมูลสำรองจาก OpenStreetMap';
+        }
+      }
+    } else {
+      rawPlaces = await fetchOsmCompetitors(lat, lon);
+      dataSource = 'openstreetmap';
     }
 
-    const data = (await res.json()) as {
-      status?: string;
-      results?: Array<{
-        name?: string;
-        rating?: number;
-        user_ratings_total?: number;
-        vicinity?: string;
-      }>;
-    };
+    const webContext = await fetchCompetitorWebContext();
 
-    if (data.status && data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      console.error('[fetchNearbyCompetitors] Places status:', data.status);
-      return [];
+    let analysis = buildCompetitorAnalysis(lat, lon, rawPlaces, {
+      webContext: webContext || undefined,
+      dataSource,
+    });
+
+    if (apiKey && dataSource === 'google_places' && analysis.competitors.length > 0) {
+      analysis = await enrichCompetitorAnalysisWithReviews(analysis, apiKey);
     }
 
-    return (data.results ?? [])
-      .slice(0, 8)
-      .map((r) => ({
-        name: r.name ?? 'ไม่ทราบชื่อ',
-        rating: r.rating,
-        userRatingsTotal: r.user_ratings_total,
-        vicinity: r.vicinity,
-      }))
-      .filter((c) => c.name !== 'ไม่ทราบชื่อ');
+    return placesApiMessage ? { ...analysis, placesApiMessage } : analysis;
   } catch (error) {
-    console.error('[fetchNearbyCompetitors] Error:', error);
-    return [];
+    console.error('[fetchCompetitorAnalysis] Error:', error);
+    return null;
   }
+}
+
+/** @deprecated use fetchCompetitorAnalysis */
+export async function fetchNearbyCompetitors(lat: string, lon: string) {
+  const analysis = await fetchCompetitorAnalysis(lat, lon);
+  return analysis?.competitors ?? [];
 }

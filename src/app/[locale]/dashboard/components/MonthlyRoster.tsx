@@ -94,14 +94,14 @@ export default function MonthlyRoster() {
   };
 
   return (
-    <div className="w-full bg-[#fdfcf0] rounded-[32px] p-4 md:p-8 border border-black/5 shadow-sm min-h-[700px] antialiased">
+    <div className="w-full bg-card rounded-[32px] p-4 md:p-8 border border-border shadow-sm min-h-[700px] antialiased">
       {/* Header Controls */}
       <div className="relative z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-black flex items-center justify-center rounded-2xl shadow-lg">
             <CalendarIcon className="w-6 h-6 text-[#fdfcf0]" />
           </div>
-          <h2 className="text-2xl text-black font-normal tracking-tight">ตารางเวรและภาพรวมช่วงวันที่</h2>
+          <h2 className="text-2xl text-foreground font-normal tracking-tight">ตารางเวรและภาพรวมช่วงวันที่</h2>
         </div>
 
         <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-4 md:gap-6 w-full lg:w-auto">
@@ -114,7 +114,7 @@ export default function MonthlyRoster() {
                 containerClassName="w-full"
               />
             </div>
-            <span className="text-black font-normal select-none shrink-0">—</span>
+            <span className="text-foreground font-normal select-none shrink-0">—</span>
             <div className="flex-1">
               <ClickableDatePicker
                 value={endDate}
@@ -129,14 +129,14 @@ export default function MonthlyRoster() {
           <div className="flex bg-neutral-200/50 rounded-[24px] p-1.5 gap-1.5 backdrop-blur-sm">
             <button 
               onClick={() => setActiveTab('consolidated')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'consolidated' ? 'bg-white shadow-md text-black' : 'text-black hover:opacity-100 opacity-60'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'consolidated' ? 'bg-white shadow-md text-foreground' : 'text-foreground hover:opacity-100 opacity-60'}`}
             >
               <Users className="w-4 h-4" />
               <span className="text-sm font-normal">รวมพนักงาน</span>
             </button>
             <button 
               onClick={() => setActiveTab('individual')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'individual' ? 'bg-white shadow-md text-black' : 'text-black hover:opacity-100 opacity-60'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'individual' ? 'bg-white shadow-md text-foreground' : 'text-foreground hover:opacity-100 opacity-60'}`}
             >
               <User className="w-4 h-4" />
               <span className="text-sm font-normal">รายบุคคล</span>
@@ -148,7 +148,7 @@ export default function MonthlyRoster() {
       {loading ? (
         <div className="flex flex-col items-center justify-center h-[500px] gap-4">
           <div className="w-12 h-12 border-4 border-black/10 border-t-black rounded-full animate-spin" />
-          <p className="text-black font-normal animate-pulse">บรูกำลังจัดแจงข้อมูลเวรให้สักครู่นะคะ...</p>
+          <p className="text-foreground font-normal animate-pulse">บรูกำลังจัดแจงข้อมูลเวรให้สักครู่นะคะ...</p>
         </div>
       ) : (
         <div className="bg-white rounded-[32px] border border-black/5 shadow-xl shadow-black/5">
@@ -157,12 +157,12 @@ export default function MonthlyRoster() {
               <table className="w-max min-w-full border-collapse">
                 <thead>
                   <tr className="bg-neutral-50/95">
-                    <th className="sticky left-0 z-30 bg-neutral-50 p-4 text-left border-b border-r border-black/10 text-black font-normal whitespace-nowrap shadow-sm">
+                    <th className="sticky left-0 z-30 bg-neutral-50 p-4 text-left border-b border-r border-black/10 text-foreground font-normal whitespace-nowrap shadow-sm">
                       พนักงาน
                     </th>
                     {daysInInterval.map((day) => (
-                      <th key={day.toISOString()} className="p-3 text-center border-b border-r border-black/5 text-black font-normal min-w-[75px]">
-                        <div className="text-[11px] text-black font-normal uppercase mb-1 opacity-80">{format(day, 'EEE', { locale: th })}</div>
+                      <th key={day.toISOString()} className="p-3 text-center border-b border-r border-black/5 text-foreground font-normal min-w-[75px]">
+                        <div className="text-[11px] text-foreground font-normal uppercase mb-1 opacity-80">{format(day, 'EEE', { locale: th })}</div>
                         <div className="text-lg leading-none">{format(day, 'd')}</div>
                       </th>
                     ))}
@@ -171,7 +171,7 @@ export default function MonthlyRoster() {
                 <tbody>
                   {data.profiles.map((profile) => (
                     <tr key={profile.id} className="group hover:bg-neutral-50 transition-colors">
-                      <td className="sticky left-0 z-10 bg-white p-4 border-r border-b border-black/10 text-black font-normal text-sm group-hover:bg-neutral-50 transition-colors whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                      <td className="sticky left-0 z-10 bg-white p-4 border-r border-b border-black/10 text-foreground font-normal text-sm group-hover:bg-neutral-50 transition-colors whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                         {profile.full_name}
                       </td>
                       {daysInInterval.map((day) => {
@@ -180,7 +180,7 @@ export default function MonthlyRoster() {
                         return (
                           <td key={day.toISOString()} className="p-1.5 border-r border-b border-black/5 h-[4.25rem] align-middle">
                             {display && (
-                              <div className={`w-full h-full min-h-[3rem] flex items-center justify-center rounded-xl text-[12px] text-black font-normal shadow-sm p-1 text-center ${display.color}`}>
+                              <div className={`w-full h-full min-h-[3rem] flex items-center justify-center rounded-xl text-[12px] text-foreground font-normal shadow-sm p-1 text-center ${display.color}`}>
                                 {display.text}
                               </div>
                             )}
@@ -197,14 +197,14 @@ export default function MonthlyRoster() {
               <div className="flex flex-col md:flex-row md:items-center gap-6 mb-8 p-6 bg-neutral-50 rounded-3xl border border-black/5">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-black rounded-xl"><User className="w-5 h-5 text-white" /></div>
-                  <span className="text-black text-lg font-normal">เลือกพนักงาน:</span>
+                  <span className="text-foreground text-lg font-normal">เลือกพนักงาน:</span>
                 </div>
                 <select 
                   value={selectedStaffId || ''} 
                   onChange={(e) => setSelectedStaffId(e.target.value)}
-                  className="flex-1 max-w-sm bg-white border border-black/10 rounded-2xl px-5 py-3 text-md text-black focus:outline-none focus:ring-4 focus:ring-black/5 transition-all appearance-none cursor-pointer"
+                  className="flex-1 max-w-sm bg-white border border-black/10 rounded-2xl px-5 py-3 text-md text-foreground focus:outline-none focus:ring-4 focus:ring-black/5 transition-all appearance-none cursor-pointer"
                 >
-                  {data.profiles.map(p => <option key={p.id} value={p.id} className="text-black">{p.full_name}</option>)}
+                  {data.profiles.map(p => <option key={p.id} value={p.id} className="text-foreground">{p.full_name}</option>)}
                 </select>
               </div>
 
@@ -212,7 +212,7 @@ export default function MonthlyRoster() {
                 {['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'].map((day, idx) => {
                   const fullDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
                   return (
-                    <div key={day} className="py-2 px-1 text-center text-black text-[11px] md:text-[12px] font-normal uppercase tracking-wider">
+                    <div key={day} className="py-2 px-1 text-center text-foreground text-[11px] md:text-[12px] font-normal uppercase tracking-wider">
                       <span className="md:hidden">{day}</span>
                       <span className="hidden md:inline">{fullDays[idx]}</span>
                     </div>
@@ -226,9 +226,9 @@ export default function MonthlyRoster() {
                   const display = shift ? getShiftDisplay(shift) : null;
                   return (
                     <div key={day.toISOString()} className="bg-neutral-50/30 h-20 sm:h-28 md:h-36 p-1 sm:p-3 md:p-4 flex flex-col justify-between rounded-xl sm:rounded-[24px] border border-black/5 transition-all hover:bg-neutral-50 hover:shadow-lg">
-                      <span className="text-black text-sm sm:text-base md:text-lg font-normal">{format(day, 'd')}</span>
+                      <span className="text-foreground text-sm sm:text-base md:text-lg font-normal">{format(day, 'd')}</span>
                       {shift && display && (
-                        <div className={`w-full p-0.5 sm:p-2 md:p-2.5 rounded-lg sm:rounded-xl flex items-center justify-center text-center text-[10px] sm:text-xs md:text-[13px] text-black font-normal leading-tight md:leading-relaxed shadow-sm min-h-[24px] sm:min-h-[40px] md:min-h-[50px] truncate ${display.color}`}>
+                        <div className={`w-full p-0.5 sm:p-2 md:p-2.5 rounded-lg sm:rounded-xl flex items-center justify-center text-center text-[10px] sm:text-xs md:text-[13px] text-foreground font-normal leading-tight md:leading-relaxed shadow-sm min-h-[24px] sm:min-h-[40px] md:min-h-[50px] truncate ${display.color}`}>
                           {display.text}
                         </div>
                       )}

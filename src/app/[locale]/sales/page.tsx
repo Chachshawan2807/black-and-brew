@@ -32,6 +32,7 @@ import {
   deleteCategory
 } from '@/app/actions/sales-actions';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { SALES_CATEGORY_CARD_COLORS, SALES_SECTION_COLORS } from '@/lib/shift-colors';
 import { readCache, writeCache, isStale } from '@/lib/cache/client-cache';
 import {
   BarChart,
@@ -64,8 +65,8 @@ const formatNumber = (num: number) => {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-4 rounded-2xl shadow-xl border border-black/5">
-        <p className="text-sm font-medium text-black/80 mb-2">{label}</p>
+      <div className="bg-card p-4 rounded-2xl shadow-xl border border-border">
+        <p className="text-sm font-medium text-foreground/80 mb-2">{label}</p>
         {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
             {entry.name}: {entry.name.includes('รายได้') || entry.name.includes('ยอดขาย') ? `฿${formatCurrency(entry.value)}` : formatNumber(entry.value)}
@@ -541,36 +542,38 @@ export default function SalesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#fdfcf0] flex items-center justify-center font-normal">
+      <div className="min-h-screen bg-background flex items-center justify-center font-normal">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-black/30 mx-auto mb-4" />
-          <p className="text-black/40">กำลังโหลดข้อมูล...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-foreground/30 mx-auto mb-4" />
+          <p className="text-muted-foreground">กำลังโหลดข้อมูล...</p>
         </div>
       </div>
     );
   }
 
+  const hasUploadHistory = history?.uploads && history.uploads.length > 0;
+
   return (
-    <div className="min-h-screen bg-[#fdfcf0] text-black font-normal">
-      <div className="max-w-7xl mx-auto px-3 md:px-6 py-6">
+    <div className="min-h-screen bg-background text-foreground font-normal">
+      <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
         
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-3.5 bg-white border border-black/5 text-black rounded-2xl shrink-0 shadow-sm">
+                <div className={`p-3.5 rounded-2xl shrink-0 shadow-sm ${SALES_SECTION_COLORS.headerIcon}`}>
                   <TrendingUp className="w-6 h-6" strokeWidth={1.5} />
                 </div>
                 <div>
                   <h1 className="text-2xl tracking-tight">Sales Dashboard</h1>
-                  <p className="text-black/40 text-xs mt-1">จัดการและวิเคราะห์ข้อมูลยอดขายอย่างมีประสิทธิภาพ</p>
+                  <p className="text-muted-foreground text-xs mt-1">จัดการและวิเคราะห์ข้อมูลยอดขายอย่างมีประสิทธิภาพ</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2.5">
                 <button
                   onClick={() => setShowManageCategories(true)}
                   disabled={isReadOnly}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-black/5 rounded-xl hover:bg-black/5 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <Edit3 className="w-4 h-4" />
                   <span className="text-sm">จัดการหมวดหมู่</span>
@@ -578,7 +581,7 @@ export default function SalesPage() {
                 <button
                   onClick={handleRefresh}
                   disabled={isRefreshing}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-black/5 rounded-xl hover:bg-black/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                 >
                   <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                   <span className="text-sm">รีเฟรช</span>
@@ -593,7 +596,7 @@ export default function SalesPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="mt-4 p-4 bg-white border border-black/5 rounded-xl"
+                  className="mt-4 p-4 bg-card border border-border rounded-xl"
                 >
                   {successMessage}
                 </motion.div>
@@ -603,7 +606,7 @@ export default function SalesPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="mt-4 p-4 bg-white border border-black/5 rounded-xl"
+                  className="mt-4 p-4 bg-card border border-border rounded-xl"
                 >
                   {error}
                 </motion.div>
@@ -625,11 +628,11 @@ export default function SalesPage() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="relative bg-white rounded-3xl border border-black/5 shadow-xl max-w-lg w-full p-6"
+                    className="relative bg-card rounded-3xl border border-border shadow-xl max-w-lg w-full p-6"
                   >
                     <button
                       onClick={() => setShowManageCategories(false)}
-                      className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-all text-black/40 hover:text-black z-10"
+                      className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl transition-all text-muted-foreground hover:text-foreground z-10"
                       aria-label="ปิด"
                     >
                       <X className="w-5 h-5" />
@@ -637,7 +640,7 @@ export default function SalesPage() {
                     <div className="flex items-center justify-between mb-6 pr-10">
                       <div>
                         <h2 className="text-xl">จัดการหมวดหมู่</h2>
-                        <p className="text-sm text-black/50 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           เพิ่ม, แก้ไข, หรือลบหมวดหมู่สินค้า
                         </p>
                       </div>
@@ -645,19 +648,19 @@ export default function SalesPage() {
 
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                       {allCategories.length === 0 ? (
-                        <div className="text-center py-8 text-black/40">
+                        <div className="text-center py-8 text-muted-foreground">
                           ยังไม่มีหมวดหมู่ที่บันทึกไว้
                         </div>
                       ) : (
                         allCategories.map((category) => (
                           <div
                             key={category}
-                            className="flex items-center justify-between p-4 bg-black/[0.02] rounded-2xl border border-black/5"
+                            className="flex items-center justify-between p-4 bg-muted rounded-2xl border border-border"
                           >
                             <span className="text-sm">{category}</span>
                             <button
                               onClick={() => handleDeleteCategory(category)}
-                              className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-xl transition-all"
+                              className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
                               aria-label={`ลบหมวดหมู่ ${category}`}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -670,7 +673,7 @@ export default function SalesPage() {
                     <div className="mt-6 flex justify-end">
                       <button
                         onClick={() => setShowManageCategories(false)}
-                        className="px-5 py-2.5 bg-black/5 border border-black/10 rounded-xl hover:bg-black/10 transition-all text-sm"
+                        className="px-5 py-2.5 bg-muted border border-border rounded-xl hover:bg-muted/80 transition-all text-sm"
                       >
                         ปิด
                       </button>
@@ -695,23 +698,23 @@ export default function SalesPage() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="relative bg-white rounded-3xl border border-black/5 shadow-xl max-w-md w-full p-6"
+                    className="relative bg-card rounded-3xl border border-border shadow-xl max-w-md w-full p-6"
                   >
                     <button
                       onClick={() => setCategoryToDelete(null)}
-                      className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-all text-black/40 hover:text-black z-10"
+                      className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl transition-all text-muted-foreground hover:text-foreground z-10"
                       aria-label="ปิด"
                     >
                       <X className="w-5 h-5" />
                     </button>
                     <div className="text-center mb-6 mt-4">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-black/5 flex items-center justify-center">
-                        <Trash2 className="w-8 h-8 text-black" />
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                        <Trash2 className="w-8 h-8 text-foreground" />
                       </div>
                       <h3 className="text-xl mb-2">
                         ลบหมวดหมู่ "{categoryToDelete}"
                       </h3>
-                      <p className="text-black/60 text-sm">
+                      <p className="text-muted-foreground text-sm">
                         การลบหมวดหมู่นี้จะนำออกจากสินค้าทุกรายการที่ใช้หมวดหมู่นี้
                         คุณแน่ใจหรือไม่ว่าต้องการดำเนินการต่อ?
                       </p>
@@ -721,7 +724,7 @@ export default function SalesPage() {
                       <button
                         onClick={() => setCategoryToDelete(null)}
                         disabled={isReadOnly || isDeletingCategory}
-                        className="flex-1 px-5 py-3 bg-black/5 border border-black/10 rounded-xl hover:bg-black/10 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-5 py-3 bg-muted border border-border rounded-xl hover:bg-muted/80 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         ยกเลิก
                       </button>
@@ -746,47 +749,64 @@ export default function SalesPage() {
             </AnimatePresence>
         </div>
 
-        {/* Upload Section */}
-        <div className="mb-6">
-          <div className={`bg-white rounded-2xl border border-black/5 shadow-md p-5 ${isReadOnly ? 'pointer-events-none opacity-60' : ''}`}>
-            <form onSubmit={handleFileUpload} className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-              <div className="flex-1 w-full">
-                <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    id="file-upload"
-                    name="files"
-                    multiple
-                    accept=".xlsx,.xls"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer inline-flex items-center gap-3 px-5 py-3.5 border-2 border-dashed border-black/10 rounded-xl hover:border-black/20 hover:bg-black/5 transition-all"
-                  >
-                    <Upload className="w-5 h-5 text-black" strokeWidth={1.5} />
-                    <span className="text-sm">เลือกไฟล์</span>
-                  </label>
-                  {selectedFiles.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-black/60">{selectedFiles.length} ไฟล์ที่เลือก</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedFiles([])}
-                        className="text-[11px] text-black/40 hover:text-black"
-                      >
-                        (ล้าง)
-                      </button>
-                    </div>
-                  )}
-                </div>
+        {/* Upload & History — unified section */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`mb-6 rounded-2xl shadow-md overflow-hidden ${SALES_SECTION_COLORS.upload}`}
+        >
+          {/* Upload area */}
+          <div className={`p-5 ${isReadOnly ? 'pointer-events-none opacity-60' : ''}`}>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2.5 rounded-xl bg-card border border-border shrink-0">
+                <Upload className="w-5 h-5" strokeWidth={1.5} />
               </div>
-              
+              <div>
+                <h3 className="text-base font-normal">อัปโหลดไฟล์ยอดขาย</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">รองรับ .xlsx, .xls สูงสุด 24 ไฟล์</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleFileUpload} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+              <div className="flex-1 min-w-0">
+                <input
+                  type="file"
+                  id="file-upload"
+                  name="files"
+                  multiple
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer flex items-center gap-3 px-4 py-3 bg-card border-2 border-dashed border-border rounded-xl hover:bg-muted hover:border-foreground/20 transition-all"
+                >
+                  <FileSpreadsheet className="w-5 h-5 text-foreground/70 shrink-0" strokeWidth={1.5} />
+                  <span className="text-sm text-foreground/70">
+                    {selectedFiles.length > 0
+                      ? `${selectedFiles.length} ไฟล์ที่เลือก`
+                      : 'คลิกเพื่อเลือกไฟล์ Excel'}
+                  </span>
+                  {selectedFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setSelectedFiles([]);
+                      }}
+                      className="ml-auto text-[11px] text-muted-foreground hover:text-foreground shrink-0"
+                    >
+                      ล้าง
+                    </button>
+                  )}
+                </label>
+              </div>
+
               <button
                 type="submit"
                 disabled={isReadOnly || isUploading || selectedFiles.length === 0}
-                className="w-full lg:w-auto bg-black text-white px-6 py-3.5 rounded-xl hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2 shadow-sm"
+                className="shrink-0 bg-[#000000] text-white px-6 py-3 rounded-xl hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2 shadow-sm"
               >
                 {isUploading ? (
                   <>
@@ -794,7 +814,10 @@ export default function SalesPage() {
                     กำลังอัปโหลด...
                   </>
                 ) : (
-                  'อัปโหลด'
+                  <>
+                    <Upload className="w-4 h-4" />
+                    อัปโหลด
+                  </>
                 )}
               </button>
             </form>
@@ -802,18 +825,17 @@ export default function SalesPage() {
             <AnimatePresence>
               {uploadSuccess && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 p-4 bg-black/5 border border-black/10 rounded-xl"
+                  exit={{ opacity: 0, y: -8 }}
+                  className="mt-4 p-3.5 bb-pastel-surface text-black bg-[#d4edda] border border-[#c3e6cb] rounded-xl"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-5 h-5 rounded-full bg-black/10 flex items-center justify-center">
-                      <span className="text-black text-[10px]">✓</span>
-                    </div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Check className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm">อัปโหลดสำเร็จ!</span>
                   </div>
                   {uploadSuccess.map((file, index) => (
-                    <div key={index} className="text-xs text-black/60">
+                    <div key={index} className="text-xs text-muted-foreground pl-6">
                       {file.fileName}: {file.recordCount} รายการ
                     </div>
                   ))}
@@ -821,7 +843,78 @@ export default function SalesPage() {
               )}
             </AnimatePresence>
           </div>
-        </div>
+
+          {/* Upload history — collapsible, chevron on left to avoid AI chat FAB overlap */}
+          {hasUploadHistory && (
+            <>
+              <div className="border-t border-border" />
+              <button
+                type="button"
+                onClick={() => setIsHistoryCollapsed(!isHistoryCollapsed)}
+                className="w-full flex items-center gap-2.5 px-5 py-4 hover:bg-muted transition-colors text-left"
+                aria-expanded={!isHistoryCollapsed}
+              >
+                {isHistoryCollapsed ? (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                ) : (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                )}
+                <History className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-normal">ประวัติการอัปโหลด</span>
+                <span className="text-[11px] bg-card border border-border px-2 py-0.5 rounded-full text-muted-foreground">
+                  {history.uploads.length} ไฟล์
+                </span>
+              </button>
+
+              <AnimatePresence initial={false}>
+                {!isHistoryCollapsed && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-5 pb-5 space-y-2.5">
+                      {history.uploads.map((upload: any) => (
+                        <div
+                          key={upload.id}
+                          className="flex items-center justify-between p-3.5 bg-card border border-border rounded-xl hover:bg-muted transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0">
+                              <FileSpreadsheet className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm truncate">{upload.file_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {upload.total_records} รายการ •{' '}
+                                {new Date(upload.upload_date).toLocaleDateString('th-TH')}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUpload(upload.id)}
+                            disabled={isReadOnly || isDeleting === upload.id}
+                            className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50 shrink-0 ml-2"
+                            aria-label={`ลบไฟล์ ${upload.file_name}`}
+                          >
+                            {isDeleting === upload.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          )}
+        </motion.div>
 
         {/* Dashboard Content */}
         {metrics ? (
@@ -833,13 +926,13 @@ export default function SalesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0 }}
-                className="bg-white border border-black/5 rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300"
+                className={`rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 ${SALES_SECTION_COLORS.revenue}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-11 h-11 rounded-xl bg-black/5 flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-xl bg-white/50 border border-[#c3e6cb] flex items-center justify-center">
                     <TrendingUp className="w-5.5 h-5.5 text-black" />
                   </div>
-                  <p className="text-xs text-black/60">ยอดขายรวม</p>
+                  <p className="text-xs text-muted-foreground">ยอดขายรวม</p>
                 </div>
                 <p className="text-2xl tracking-tight">฿{formatCurrency(metrics.overview.totalRevenue)}</p>
               </motion.div>
@@ -849,13 +942,13 @@ export default function SalesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white border border-black/5 rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300"
+                className={`rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 ${SALES_SECTION_COLORS.quantity}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-11 h-11 rounded-xl bg-black/5 flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-xl bg-white/50 border border-[#ffeeba] flex items-center justify-center">
                     <ShoppingCart className="w-5.5 h-5.5 text-black" />
                   </div>
-                  <p className="text-xs text-black/60">จำนวนที่ขาย</p>
+                  <p className="text-xs text-muted-foreground">จำนวนที่ขาย</p>
                 </div>
                 <p className="text-2xl tracking-tight">{formatNumber(metrics.overview.totalQuantity)}</p>
               </motion.div>
@@ -865,13 +958,13 @@ export default function SalesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white border border-black/5 rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300"
+                className={`rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 ${SALES_SECTION_COLORS.menuItems}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-11 h-11 rounded-xl bg-black/5 flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-xl bg-white/50 border border-[#f5c6cb] flex items-center justify-center">
                     <FileSpreadsheet className="w-5.5 h-5.5 text-black" />
                   </div>
-                  <p className="text-xs text-black/60">รายการเมนู</p>
+                  <p className="text-xs text-muted-foreground">รายการเมนู</p>
                 </div>
                 <p className="text-2xl tracking-tight">{formatNumber(metrics.overview.totalTransactions)}</p>
               </motion.div>
@@ -883,29 +976,32 @@ export default function SalesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-white rounded-2xl border border-black/5 shadow-lg p-5"
+                className={`rounded-2xl shadow-lg p-5 ${SALES_SECTION_COLORS.categories}`}
               >
                 <div className="mb-4">
                   <h3 className="text-lg">ยอดขายแยกตามหมวดหมู่</h3>
-                  <p className="text-xs text-black/40 mt-1">ดูยอดขายของแต่ละหมวดหมู่สินค้าแบบง่าย</p>
+                  <p className="text-xs text-muted-foreground mt-1">ดูยอดขายของแต่ละหมวดหมู่สินค้าแบบง่าย</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                  {metrics.categoryMetrics.map((category, index) => (
-                    <div key={index} className="p-4 rounded-xl border border-black/5 hover:border-black/10 hover:shadow-md transition-all duration-300 bg-black/[0.02]">
+                  {metrics.categoryMetrics.map((category, index) => {
+                    const cardColor = SALES_CATEGORY_CARD_COLORS[index % SALES_CATEGORY_CARD_COLORS.length];
+                    return (
+                    <div key={index} className={`p-4 rounded-xl border hover:shadow-md transition-all duration-300 ${cardColor}`}>
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm">{category.category}</span>
-                        <span className="text-[10px] text-black bg-black/10 px-1.5 py-0.5 rounded-full">{category.revenuePercentage.toFixed(1)}%</span>
+                        <span className="text-[10px] text-black bg-white/50 border border-black/10 px-1.5 py-0.5 rounded-full">{category.revenuePercentage.toFixed(1)}%</span>
                       </div>
                       <div className="text-2xl mb-1.5">฿{formatCurrency(category.totalRevenue)}</div>
-                      <div className="text-xs text-black/60">{formatNumber(category.totalQuantity)} ชิ้น • {formatNumber(category.transactionCount)} รายการ</div>
-                      <div className="mt-2.5 h-2 bg-black/10 rounded-full overflow-hidden">
+                      <div className="text-xs text-muted-foreground">{formatNumber(category.totalQuantity)} ชิ้น • {formatNumber(category.transactionCount)} รายการ</div>
+                      <div className="mt-2.5 h-2 bg-white/50 rounded-full overflow-hidden border border-black/5">
                         <div 
-                          className="h-full bg-black/20 rounded-full transition-all duration-700"
+                          className="h-full bg-black/25 rounded-full transition-all duration-700"
                           style={{ width: `${Math.min(category.revenuePercentage, 100)}%` }}
                         />
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -915,16 +1011,18 @@ export default function SalesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="bg-white rounded-2xl border border-black/5 shadow-lg p-5"
+                className={`rounded-2xl shadow-md p-5 ${SALES_SECTION_COLORS.topProducts}`}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg">สินค้ายอดนิยม (Top 10)</h3>
-                    <p className="text-xs text-black/40 mt-1">เมนูที่มียอดขายสูงสุด</p>
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2.5 rounded-xl bg-card border border-border shrink-0">
+                    <BarChart3 className="w-5 h-5" strokeWidth={1.5} />
                   </div>
-                  <BarChart3 className="w-5 h-5 text-black" />
+                  <div>
+                    <h3 className="text-base font-normal">สินค้ายอดนิยม (Top 10)</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">เมนูที่มียอดขายสูงสุด</p>
+                  </div>
                 </div>
-                <div className="h-64 w-full">
+                <div className="h-64 w-full bg-card border border-border rounded-xl p-3">
                   {isMounted && (
                     <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={240}>
                       <BarChart data={metrics.topProducts}>
@@ -944,8 +1042,8 @@ export default function SalesPage() {
                           tick={{ fontSize: 11, fill: 'black' }}
                           tickFormatter={(value) => `฿${(value / 1000).toFixed(0)}k`}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f5f5f5' }} />
-                        <Bar dataKey="totalRevenue" name="ยอดขาย" fill="black" radius={[8, 8, 0, 0]} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+                        <Bar dataKey="totalRevenue" name="ยอดขาย" fill="#000000" radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -958,23 +1056,26 @@ export default function SalesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="bg-white rounded-2xl border border-black/5 shadow-lg p-5"
+                className={`rounded-2xl shadow-md p-5 ${SALES_SECTION_COLORS.topProducts}`}
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2.5 rounded-xl bg-card border border-border shrink-0">
+                    <ShoppingCart className="w-5 h-5" strokeWidth={1.5} />
+                  </div>
                   <div>
-                    <h3 className="text-lg">สินค้ายอดนิยม (Top 10)</h3>
-                    <p className="text-xs text-black/40 mt-1">รายละเอียดของ 10 เมนูยอดนิยม</p>
+                    <h3 className="text-base font-normal">สินค้ายอดนิยม (Top 10)</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">รายละเอียดของ 10 เมนูยอดนิยม</p>
                   </div>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto bg-card border border-border rounded-xl">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-black/10">
-                        <th className="text-left py-2.5 px-3 text-xs text-black/60 uppercase tracking-wider">อันดับ</th>
-                        <th className="text-left py-2.5 px-3 text-xs text-black/60 uppercase tracking-wider">สินค้า</th>
-                        <th className="text-left py-2.5 px-3 text-xs text-black/60 uppercase tracking-wider">หมวดหมู่</th>
-                        <th className="text-right py-2.5 px-3 text-xs text-black/60 uppercase tracking-wider">จำนวนที่ขาย</th>
-                        <th className="text-right py-2.5 px-3 text-xs text-black/60 uppercase tracking-wider">ยอดขาย</th>
+                        <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">อันดับ</th>
+                        <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">สินค้า</th>
+                        <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">หมวดหมู่</th>
+                        <th className="text-right py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">จำนวนที่ขาย</th>
+                        <th className="text-right py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">ยอดขาย</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1044,7 +1145,7 @@ export default function SalesPage() {
                                   </div>
                                   {updatingProduct === product.productName && (
                                     <div className="flex-shrink-0 p-1.5">
-                                      <Loader2 className="w-4 h-4 animate-spin text-black/40" />
+                                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                                     </div>
                                   )}
                                   {updatingProduct !== product.productName && (
@@ -1057,7 +1158,7 @@ export default function SalesPage() {
                                         }}
                                         disabled={isReadOnly || updatingProduct === product.productName}
                                         aria-label={`Save category for ${product.productName}`}
-                                        className="flex-shrink-0 p-1.5 text-black hover:bg-black/5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
                                         <Check className="w-4 h-4" />
                                       </button>
@@ -1074,7 +1175,7 @@ export default function SalesPage() {
                                         }}
                                         disabled={isReadOnly || updatingProduct === product.productName}
                                         aria-label={`Cancel editing category for ${product.productName}`}
-                                        className="flex-shrink-0 p-1.5 text-black/40 hover:text-black hover:bg-black/5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
                                         <ChevronUp className="w-4 h-4" />
                                       </button>
@@ -1101,10 +1202,10 @@ export default function SalesPage() {
                                   aria-label={`Click to edit category for ${product.productName}`}
                                   className="group inline-flex items-center px-2.5 py-1 rounded-full text-[10px] transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-black/10 focus:ring-offset-1"
                                 >
-                                  <span className={`${productWithCategory.category ? 'bg-black/[0.05] text-black' : 'bg-black/[0.02] text-black/40'} px-2 py-0.5 rounded-full group-hover:bg-black/10`}>
+                                  <span className={`${productWithCategory.category ? 'bg-black/[0.05] text-black' : 'bg-black/[0.02] text-muted-foreground'} px-2 py-0.5 rounded-full group-hover:bg-black/10`}>
                                     {productWithCategory.category || 'ยังไม่ระบุ'}
                                   </span>
-                                  <Edit3 className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-black/40 group-hover:text-black" />
+                                  <Edit3 className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground group-hover:text-black" />
                                 </button>
                               )}
                             </div>
@@ -1126,12 +1227,12 @@ export default function SalesPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="bg-white rounded-2xl border border-black/5 shadow-lg p-5"
+                className={`rounded-2xl shadow-lg p-5 ${SALES_SECTION_COLORS.table}`}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
                   <div>
                     <h3 className="text-lg">รายการสินค้าทั้งหมด</h3>
-                    <p className="text-xs text-black/40 mt-1">ทุกเมนูที่มียอดขาย</p>
+                    <p className="text-xs text-muted-foreground mt-1">ทุกเมนูที่มียอดขาย</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2.5">
                     {/* Category Filter */}
@@ -1148,7 +1249,7 @@ export default function SalesPage() {
                           <option key={idx} value={cat}>{cat}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40 pointer-events-none" />
+                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     </div>
                     {/* Sort Buttons */}
                     <button
@@ -1162,8 +1263,8 @@ export default function SalesPage() {
                       }}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-all ${
                         sortBy === 'quantity'
-                          ? 'bg-black text-white border-black'
-                          : 'bg-white border-black/10 hover:bg-black/5'
+                          ? 'bg-[#fff3cd] text-black border-[#ffeeba]'
+                          : 'bg-white/80 border-black/10 hover:bg-[#fff3cd]/50'
                       }`}
                     >
                       <span className="text-[11px]">จำนวนที่ขาย</span>
@@ -1182,8 +1283,8 @@ export default function SalesPage() {
                       }}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-all ${
                         sortBy === 'revenue'
-                          ? 'bg-black text-white border-black'
-                          : 'bg-white border-black/10 hover:bg-black/5'
+                          ? 'bg-[#d4edda] text-black border-[#c3e6cb]'
+                          : 'bg-white/80 border-black/10 hover:bg-[#d4edda]/50'
                       }`}
                     >
                       <span className="text-[11px]">ยอดขายรวม</span>
@@ -1197,10 +1298,10 @@ export default function SalesPage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-black/10">
-                        <th className="text-left py-2.5 px-3 text-xs text-black/60 uppercase tracking-wider">สินค้า</th>
-                        <th className="text-left py-2.5 px-3 text-xs text-black/60 uppercase tracking-wider">หมวดหมู่</th>
-                        <th className="text-right py-2.5 px-3 text-xs text-black/60 uppercase tracking-wider">จำนวนที่ขาย</th>
-                        <th className="text-right py-2.5 px-3 text-xs text-black/60 uppercase tracking-wider">ยอดขาย</th>
+                        <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">สินค้า</th>
+                        <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">หมวดหมู่</th>
+                        <th className="text-right py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">จำนวนที่ขาย</th>
+                        <th className="text-right py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">ยอดขาย</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1260,7 +1361,7 @@ export default function SalesPage() {
                                   </div>
                                   {updatingProduct === product.productName && (
                                     <div className="flex-shrink-0 p-1.5">
-                                      <Loader2 className="w-4 h-4 animate-spin text-black/40" />
+                                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                                     </div>
                                   )}
                                   {updatingProduct !== product.productName && (
@@ -1273,7 +1374,7 @@ export default function SalesPage() {
                                         }}
                                         disabled={isReadOnly || updatingProduct === product.productName}
                                         aria-label={`Save category for ${product.productName}`}
-                                        className="flex-shrink-0 p-1.5 text-black hover:bg-black/5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
                                         <Check className="w-4 h-4" />
                                       </button>
@@ -1290,7 +1391,7 @@ export default function SalesPage() {
                                         }}
                                         disabled={isReadOnly || updatingProduct === product.productName}
                                         aria-label={`Cancel editing category for ${product.productName}`}
-                                        className="flex-shrink-0 p-1.5 text-black/40 hover:text-black hover:bg-black/5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
                                         <ChevronUp className="w-4 h-4" />
                                       </button>
@@ -1317,10 +1418,10 @@ export default function SalesPage() {
                                   aria-label={`Click to edit category for ${product.productName}`}
                                   className="group inline-flex items-center px-2.5 py-1 rounded-full text-[10px] transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-black/10 focus:ring-offset-1"
                                 >
-                                  <span className={`${product.category ? 'bg-black/[0.05] text-black' : 'bg-black/[0.02] text-black/40'} px-2 py-0.5 rounded-full group-hover:bg-black/10`}>
+                                  <span className={`${product.category ? 'bg-black/[0.05] text-black' : 'bg-black/[0.02] text-muted-foreground'} px-2 py-0.5 rounded-full group-hover:bg-black/10`}>
                                     {product.category || 'ยังไม่ระบุ'}
                                   </span>
-                                  <Edit3 className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-black/40 group-hover:text-black" />
+                                  <Edit3 className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground group-hover:text-black" />
                                 </button>
                               )}
                             </div>
@@ -1335,80 +1436,18 @@ export default function SalesPage() {
               </motion.div>
             )}
 
-            {/* Upload History - Collapsible */}
-            {history && history.uploads && history.uploads.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="bg-white rounded-3xl border border-black/5 shadow-sm overflow-hidden"
-              >
-                <button
-                  onClick={() => setIsHistoryCollapsed(!isHistoryCollapsed)}
-                  className="w-full flex items-center justify-between p-6 hover:bg-black/[0.02] transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <History className="w-5 h-5 text-black/30" />
-                    <h3 className="text-lg font-normal">ประวัติการอัปโหลด</h3>
-                  </div>
-                  {isHistoryCollapsed ? (
-                    <ChevronDown className="w-5 h-5 text-black/30" />
-                  ) : (
-                    <ChevronUp className="w-5 h-5 text-black/30" />
-                  )}
-                </button>
-                
-                <AnimatePresence>
-                  {!isHistoryCollapsed && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="px-6 pb-6 space-y-3">
-                        {history.uploads.map((upload: any) => (
-                          <div key={upload.id} className="flex items-center justify-between p-4 border border-black/5 rounded-2xl hover:bg-black/[0.02] transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-black/[0.05] flex items-center justify-center shrink-0">
-                                <FileSpreadsheet className="w-5 h-5 text-black/60" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">{upload.file_name}</p>
-                                <p className="text-xs text-black/40">{upload.total_records} รายการ • {new Date(upload.upload_date).toLocaleDateString('th-TH')}</p>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleDeleteUpload(upload.id)}
-                              disabled={isReadOnly || isDeleting === upload.id}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
-                            >
-                              {isDeleting === upload.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
           </div>
         ) : (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-white rounded-3xl border border-black/5 shadow-sm p-16 text-center"
+            className={`rounded-3xl shadow-sm p-16 text-center ${SALES_SECTION_COLORS.empty}`}
           >
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-black/[0.05] flex items-center justify-center">
-              <BarChart3 className="w-10 h-10 text-black/30" />
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/60 border border-[#ffeeba] flex items-center justify-center">
+              <BarChart3 className="w-10 h-10 text-muted-foreground/70" />
             </div>
-            <h3 className="text-xl font-normal text-black mb-2">ยังไม่มีข้อมูลยอดขาย</h3>
-            <p className="text-black/50 mb-6">อัปโหลดไฟล์ Excel เพื่อเริ่มต้นใช้งานระบบ</p>
+            <h3 className="text-xl font-normal mb-2">ยังไม่มีข้อมูลยอดขาย</h3>
+            <p className="text-muted-foreground mb-6">อัปโหลดไฟล์ Excel ด้านบนเพื่อเริ่มต้นใช้งานระบบ</p>
           </motion.div>
         )}
       </div>

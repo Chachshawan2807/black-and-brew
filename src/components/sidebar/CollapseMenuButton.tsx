@@ -69,12 +69,12 @@ export function CollapseMenuButton({
         >
           <div className="w-full items-center flex justify-between">
             <div className="flex items-center">
-              <span className="mr-4">
-                <Icon size={18} />
+              <span className="mr-4 text-foreground">
+                <Icon size={18} strokeWidth={1.75} />
               </span>
               <p
                 className={cn(
-                  "max-w-[150px] truncate",
+                  "max-w-[150px] truncate text-foreground",
                   isOpen
                     ? "translate-x-0 opacity-100"
                     : "-translate-x-96 opacity-0"
@@ -93,7 +93,8 @@ export function CollapseMenuButton({
             >
               <ChevronDown
                 size={18}
-                className="transition-transform duration-200"
+                strokeWidth={1.75}
+                className="text-foreground transition-transform duration-200"
               />
             </div>
           </div>
@@ -108,12 +109,12 @@ export function CollapseMenuButton({
             asChild
           >
             <Link href={href} onClick={onLinkClick}>
-              <span className="mr-4 ml-2">
-                <Dot size={18} />
+              <span className="mr-4 ml-2 text-foreground">
+                <Dot size={18} strokeWidth={1.75} />
               </span>
               <p
                 className={cn(
-                  "max-w-[170px] truncate",
+                  "max-w-[170px] truncate text-foreground",
                   isOpen
                     ? "translate-x-0 opacity-100"
                     : "-translate-x-96 opacity-0"
@@ -141,8 +142,8 @@ export function CollapseMenuButton({
               >
                 <div className="w-full items-center flex justify-between">
                   <div className="flex items-center">
-                    <span className={cn(isOpen === false ? "" : "mr-4")}>
-                      <Icon size={18} />
+                    <span className={cn("text-foreground", isOpen === false ? "" : "mr-4")}>
+                      <Icon size={18} strokeWidth={1.75} />
                     </span>
                     <p
                       className={cn(

@@ -4,8 +4,10 @@ import { Suspense } from 'react';
 import SidebarLayout from '@/components/sidebar/SidebarLayout';
 import I18nProvider from '@/components/providers/I18nProvider';
 import AIChatOverlay from '@/components/ai/AIChatWrapper';
+import InventoryQuickActionWrapper from '@/components/inventory/InventoryQuickActionWrapper';
 import PinGateway from '@/components/auth/PinGateway';
 import PwaRegister from '@/components/PwaRegister';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -46,16 +48,17 @@ export default async function RootLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-[#fdfcf0] text-[#000000]">
+    <html lang={locale} className="h-full antialiased" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-background text-foreground bb-transition">
+        <ThemeProvider>
         <PwaRegister />
         <PinGateway>
           <SidebarLayout>
             <Suspense fallback={
-              <div className="flex-1 min-h-screen bg-[#fdfcf0] flex items-center justify-center">
+              <div className="flex-1 min-h-screen bg-background flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                   <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-                  <span className="text-[12px] font-normal uppercase tracking-[0.3em] text-[#000000] opacity-40">
+                  <span className="text-[12px] font-normal uppercase tracking-[0.3em] text-foreground opacity-40">
                     Streaming BLACKANDBREW...
                   </span>
                 </div>
@@ -66,8 +69,10 @@ export default async function RootLayout({
               </I18nProvider>
             </Suspense>
           </SidebarLayout>
+          <InventoryQuickActionWrapper />
           <AIChatOverlay />
         </PinGateway>
+        </ThemeProvider>
       </body>
     </html>
   );

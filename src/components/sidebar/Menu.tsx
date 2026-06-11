@@ -3,7 +3,8 @@
 import { usePathname, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
-import { GripVertical, LogOut } from 'lucide-react';
+import { GripVertical, LogOut, Settings2 } from 'lucide-react';
+import { collectClientDeviceInfo } from '@/lib/client-device-info';
 
 import { cn } from '@/lib/utils';
 import { getMenuList, type MenuItem } from '@/lib/menu-list';
@@ -73,7 +74,7 @@ function StaticMenuItem({
   }
 
   return (
-    <li className={cn("w-full flex items-center", isOverlay && "opacity-80 shadow-lg rounded-lg bg-white")}>
+    <li className={cn("w-full flex items-center", isOverlay && "opacity-80 shadow-lg rounded-lg bg-card")}>
       <TooltipProvider disableHoverableContent>
         <Tooltip delayDuration={100}>
           <TooltipTrigger asChild>
@@ -86,11 +87,11 @@ function StaticMenuItem({
               asChild
             >
               <Link href={href} onClick={onLinkClick}>
-                <span className={cn(isOpen === false ? '' : 'mr-4')}>
-                  <Icon size={18} />
+                <span className={cn("text-foreground", isOpen === false ? '' : 'mr-4')}>
+                  <Icon size={18} strokeWidth={1.75} />
                 </span>
                 <p className={cn(
-                  'max-w-[200px] truncate font-normal transition-all duration-200 ease-in-out',
+                  'max-w-[200px] truncate font-normal text-foreground transition-all duration-200 ease-in-out',
                   isOpen === false ? '-translate-x-96 opacity-0 hidden' : 'translate-x-0 opacity-100'
                 )}>
                   {label}
@@ -153,7 +154,7 @@ function SortableMenuItem({
           {...listeners}
           aria-label="ลากเพื่อเปลี่ยนลำดับ"
         >
-          <GripVertical size={14} className="text-gray-400 hover:text-gray-600" />
+          <GripVertical size={14} className="text-muted-foreground" />
         </div>
       </li>
     );
@@ -170,10 +171,10 @@ function SortableMenuItem({
               asChild
             >
               <Link href={href} onClick={onLinkClick}>
-                <span className="mr-4">
-                  <Icon size={18} />
+                <span className="mr-4 text-foreground">
+                  <Icon size={18} strokeWidth={1.75} />
                 </span>
-                <p className="max-w-[170px] truncate font-normal transition-all duration-200 ease-in-out translate-x-0 opacity-100">
+                <p className="max-w-[170px] truncate font-normal text-foreground transition-all duration-200 ease-in-out translate-x-0 opacity-100">
                   {label}
                 </p>
               </Link>
@@ -188,7 +189,7 @@ function SortableMenuItem({
         {...listeners}
         aria-label="ลากเพื่อเปลี่ยนลำดับ"
       >
-        <GripVertical size={14} className="text-gray-400 hover:text-gray-600" />
+        <GripVertical size={14} className="text-muted-foreground" />
       </div>
     </li>
   );
@@ -343,30 +344,68 @@ export default function Menu({ isOpen }: MenuProps) {
         )}
       </ul>
 
-      {/* Logout Button */}
-      <div className="w-full px-2 pt-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-black/5 mt-auto">
+      {/* Settings & Logout */}
+      <div className={cn(
+        "w-full px-2 pt-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-black/5 dark:border-white/10 mt-auto space-y-1",
+        isOpen === false && "overflow-hidden"
+      )}>
+        <TooltipProvider disableHoverableContent>
+          <Tooltip delayDuration={100}>
+            <TooltipTrigger asChild>
+              <Button
+                variant={pathname.includes('/settings') ? 'secondary' : 'ghost'}
+                className={cn(
+                  'h-10 font-normal antialiased text-foreground w-full',
+                  isOpen === false ? 'justify-center px-0 w-10 mx-auto' : 'justify-start'
+                )}
+                asChild
+              >
+                <Link href={`/${locale}/settings`} onClick={handleLinkClick}>
+                  <span className={cn(isOpen === false ? '' : 'mr-4')}>
+                    <Settings2 size={18} strokeWidth={1.75} />
+                  </span>
+                  <p
+                    className={cn(
+                      'max-w-[200px] truncate font-normal text-foreground',
+                      isOpen === false
+                        ? '-translate-x-96 opacity-0 hidden'
+                        : 'translate-x-0 opacity-100'
+                    )}
+                  >
+                    {locale === 'th' ? 'ตั้งค่า' : 'Settings'}
+                  </p>
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            {isOpen === false && (
+              <TooltipContent side="right">
+                {locale === 'th' ? 'ตั้งค่า' : 'Settings'}
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
         <TooltipProvider disableHoverableContent>
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
               <Button
                 onClick={async () => {
-                  await clearAuth();
+                  await clearAuth(collectClientDeviceInfo());
                   sessionStorage.removeItem('bb_auth_pin_verified');
                   sessionStorage.removeItem('bb_auth_read_only');
                   window.location.reload();
                 }}
                 variant="ghost"
                 className={cn(
-                  'h-10 text-red-500 hover:text-red-600 hover:bg-red-50 font-normal antialiased w-full',
+                  'h-10 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 font-normal antialiased w-full',
                   isOpen === false ? 'justify-center px-0' : 'justify-start'
                 )}
               >
                 <span className={cn(isOpen === false ? '' : 'mr-4')}>
-                  <LogOut size={18} />
+                  <LogOut size={18} strokeWidth={1.75} />
                 </span>
                 <p
                   className={cn(
-                    'max-w-[200px] truncate font-normal',
+                    'max-w-[200px] truncate font-normal text-red-500',
                     isOpen === false
                       ? '-translate-x-96 opacity-0 hidden'
                       : 'translate-x-0 opacity-100'

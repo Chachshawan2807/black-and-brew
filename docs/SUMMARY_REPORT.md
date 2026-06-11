@@ -1,16 +1,42 @@
 # Summary Report: Documentation & Feature Update
 
-Last Updated: 2026-06-07 | Version: v6.9
+Last Updated: 2026-06-12 | Version: v8.4
 
 ---
 
 ## 1. Overview
 
-รายงานสรุปการอัปเดตเอกสารทั้งหมดให้สอดคล้องกับโค้ดปัจจุบัน (v6.9)
+รายงานสรุปการอัปเดตเอกสารทั้งหมดให้สอดคล้องกับโค้ดปัจจุบัน (v8.4 — dark theme + settings)
 
-## 2. Files Updated (2026-06-07)
+## 2. Files Updated (2026-06-12)
 
 ### 2.1 Root Documentation
+
+| File | Changes |
+| --- | --- |
+| `README.md` | v8.4, Settings route, next-themes |
+| `PROJECT_MAP.md` | Settings route, ThemeProvider |
+| `AGENTS.md` | Dark theme / theme-token rules |
+| `MASTER_BLUEPRINT.md` | Date bump |
+| `SKILLS_INVENTORY.md` | v8.4 |
+
+### 2.2 docs/ Directory
+
+| File | Changes |
+| --- | --- |
+| `changelog.md` | Entry 2026-06-12 dark theme + doc sync v8.4 |
+| `design.md` | Dual theme tokens, `bb-pastel-surface`, §11 Dark Theme |
+| `rules.md` | CSS theme-token rules |
+| `memory.md` | DEC-070 |
+| `tasks.md` | Dark theme + doc sync completed |
+| `architecture.md` | Settings route, next-themes, ThemeProvider |
+| `context.md` | Settings module, v8.4 |
+| `api.md`, `database.md` | Header v8.4 |
+| `MASTER_BLUEPRINT.md` | Dual theme visual standard |
+
+## 3. Files Updated (2026-06-07) — Historical
+
+### 3.1 Root Documentation (2026-06-07)
 
 | File | Changes |
 | --- | --- |
@@ -19,7 +45,7 @@ Last Updated: 2026-06-07 | Version: v6.9
 | `MASTER_BLUEPRINT.md` | แก้ Zero-Display Logic ให้ตรง AGENTS.md |
 | `SKILLS_INVENTORY.md` | อัปเดต v6.9, เพิ่ม auth + stock sync + motion modules |
 
-### 2.2 docs/ Directory
+### 3.2 docs/ Directory (2026-06-07)
 
 | File | Changes |
 | --- | --- |
@@ -34,20 +60,20 @@ Last Updated: 2026-06-07 | Version: v6.9
 | `skills.md` | PIN auth + RLS hardening capabilities |
 | `MASTER_BLUEPRINT.md` | module table + date update |
 
-### 2.3 Not Modified
+### 3.3 Not Modified (2026-06-07)
 
 - `.agents/skills/` — third-party skill references (gemini-api, google-cloud-waf-security)
 - `docs/memory.md` — เพิ่ม DEC-064 เท่านั้น (decision log ยัง valid)
 - `docs/design.md`, `docs/rules.md`, `docs/SOP.md` — ยังตรงกับ v6.9 (อัปเดต date header)
 
-## 3. Prior Cycle (2026-06-04 to 2026-06-06) — v6.4–v6.9
+## 4. Prior Cycle (2026-06-04 to 2026-06-06) — v6.4–v6.9
 
 - v6.8: Inventory stock single source of truth, CSV removal
 - v6.9: Premium motion system (PageTransition, FloatingAlert)
 - v6.7: Full security hardening, XSS sanitization
 - v6.4: Sales + Market Insights UI unification
 
-## 4. Known Documentation vs Code Notes
+## 5. Known Documentation vs Code Notes
 
 | Item | Note |
 | --- | --- |

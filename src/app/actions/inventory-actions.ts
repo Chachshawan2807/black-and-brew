@@ -78,10 +78,16 @@ const stockUpdateSchema = z.object({
   note: z.string().optional(),
 });
 
+export type InventoryStockUpdateOptions = {
+  /** When false, stock is updated without a ledger entry (e.g. stock-taking count page). */
+  recordHistory?: boolean;
+};
+
 export async function updateInventoryStock(
   itemId: string,
   stock: number,
-  note: string = 'Stock adjustment'
+  note: string = 'Stock adjustment',
+  options?: InventoryStockUpdateOptions
 ) {
   try {
     const cookieStore = await cookies();
@@ -102,10 +108,13 @@ export async function updateInventoryStock(
     }
 
     let newStock = stock;
+    const recordHistory = options?.recordHistory ?? true;
+
     const { data, error } = await supabase.rpc('set_inventory_stock', {
       p_item_id: itemId,
       p_new_stock: stock,
       p_note: note,
+      p_record_history: recordHistory,
     });
 
     if (error) {

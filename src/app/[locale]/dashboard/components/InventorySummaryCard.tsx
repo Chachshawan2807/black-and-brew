@@ -19,15 +19,15 @@ export default function InventorySummaryCard({ locale, totalItems }: InventorySu
         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
       </div>
       <div className="mt-4">
-        <h3 className="text-xl font-normal tracking-tight text-[#000000] leading-tight">
+        <h3 className="text-xl font-normal tracking-tight text-foreground leading-tight">
           {t('title')}
         </h3>
         <p className="text-sm text-gray-500 font-normal mt-1">
           {t('description')}
         </p>
         <div className="mt-4 flex items-baseline">
-          <span className="text-3xl font-normal text-[#000000]">{totalItems}</span>
-          <span className="text-base text-[#000000] ml-2">{t('items')}</span>
+          <span className="text-3xl font-normal text-foreground">{totalItems}</span>
+          <span className="text-base text-foreground ml-2">{t('items')}</span>
         </div>
       </div>
     </Link>

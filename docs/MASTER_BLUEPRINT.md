@@ -1,18 +1,20 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 8.2 | Last Updated: 2026-06-09 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 8.4 | Last Updated: 2026-06-12 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## 🏛️ Architectural Core
 
 The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing extreme visual consistency, high-fidelity interactions, and robust data persistence.
 
-### 1. Visual Standard: "Pastel Frictionless"
+### 1. Visual Standard: "Pastel Frictionless" (Dual Theme v8.4)
 
-- Color Palette: Minimalist Pastel (`#fdfcf0` background, soft greens/blues/reds for status).
+- Color Palette: Minimalist Pastel — light theme uses Morning Latte Cream (`#fdfcf0` via `bg-background`); dark theme uses CSS tokens (`--background`, `--foreground`, `--card`, `--border`). Pastel accent cards (shift types, metrics) keep hex colors in both themes.
+- Theme: `next-themes` + Settings page (`/[locale]/settings`) — light / dark / system, persisted as `bb-theme`.
+- Pastel Contrast: All pastel accent containers must use `.bb-pastel-surface` (see `PASTEL_SURFACE` in `shift-colors.ts`) so text/icons stay black regardless of theme.
 - Typography: ZERO-BOLD POLICY. All text must use `font-normal`. Emphasis is achieved via color intensity or layout, never via font weight.
 - Navigation Chips: Category selection is rendered as lightweight, border-rounded Pill-shaped Navigation Chips (`rounded-full px-4 py-2 border font-normal`) featuring decoupled count badges inside `<span>` tags. Active states utilize solid soft black `#000000` with muted white counts, while inactive states utilize transparent backgrounds with delicate grey borders and charcoal text.
 - Interactions: Snappy, spring-based animations (Framer Motion).
-- Legibility: Pure black (`#000000`) text on pastel backgrounds for maximum contrast.
+- Legibility: Theme-aware text on page/modal surfaces (`text-foreground`); pure black (`#000000`) on pastel accent surfaces only (via `bb-pastel-surface`).
 
 ### 2. Interaction Engine: "Precision DnD"
 

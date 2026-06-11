@@ -1,6 +1,6 @@
 # Agent Guidelines — BLACKANDBREW ERP
 
-> **Version:** 6.9 | **Last Updated:** 2026-06-07
+> **Version:** 8.4 | **Last Updated:** 2026-06-12
 
 ---
 
@@ -59,7 +59,7 @@ THINK → MAP → BUDGET CHECK → EXECUTE → VALIDATE → LOG
 
 1. **PRECISION STRIKE** — Run RepoMap before any file edit/audit
 2. **BUDGET GUARDIAN** — Check token budget before heavy CLI operations
-3. **AESTHETIC ENFORCER** — Auto-validate `.tsx`/`.css` against R0 Visual Standards
+3. **AESTHETIC ENFORCER** — Auto-validate `.tsx`/`.css` against R0 Visual Standards (theme tokens + `bb-pastel-surface` on pastel cards — see `docs/design.md` §11)
 4. **RECURSIVE WISDOM** — Store lessons after any failure; search before similar tasks
 
 ---

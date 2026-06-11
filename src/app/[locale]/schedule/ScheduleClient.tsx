@@ -45,12 +45,12 @@ import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProv
 // --- Constants Outside Component ---
 const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
 const shiftTypes = [
-  { label: '6:30', value: '6:30', color: 'bg-[#d4edda] text-[#000000] border-[#c3e6cb]' },
-  { label: '7:00', value: '7:00', color: 'bg-[#ffffff] text-[#000000] border-gray-300' },
-  { label: '8:00', value: '8:00', color: 'bg-[#fff3cd] text-[#000000] border-[#ffeeba]' },
-  { label: 'ร้านซักผ้า', value: 'ร้านซักผ้า', color: 'bg-[#d1ecf1] text-[#000000] border-[#bee5eb]' },
-  { label: 'ไปสาขา 2', value: 'ไปสาขา 2', color: 'bg-[#d1ecf1] text-[#000000] border-[#bee5eb]' },
-  { label: 'ลา', value: 'ลา', color: 'bg-[#f8d7da] text-[#000000] border-[#f5c6cb]' }
+  { label: '6:30', value: '6:30', color: 'bb-pastel-surface bg-[#d4edda] text-[#000000] border-[#c3e6cb]' },
+  { label: '7:00', value: '7:00', color: 'bb-pastel-surface bg-[#ffffff] text-[#000000] border-gray-300' },
+  { label: '8:00', value: '8:00', color: 'bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]' },
+  { label: 'ร้านซักผ้า', value: 'ร้านซักผ้า', color: 'bb-pastel-surface bg-[#d1ecf1] text-[#000000] border-[#bee5eb]' },
+  { label: 'ไปสาขา 2', value: 'ไปสาขา 2', color: 'bb-pastel-surface bg-[#d1ecf1] text-[#000000] border-[#bee5eb]' },
+  { label: 'ลา', value: 'ลา', color: 'bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]' }
 ];
 
 interface ColumnDef {
@@ -168,7 +168,7 @@ function ColumnHeader({ col, onResize, onResizeEnd }: {
   return (
     <th
       style={style}
-      className="p-3 text-[13px] font-normal text-[#000000] border-b border-r border-[#000000]/10 bg-[#fdfcf0] text-center relative group select-none overflow-hidden"
+      className="p-3 text-[13px] font-normal text-foreground border-b border-r border-[#000000]/10 bg-card text-center relative group select-none overflow-hidden"
     >
       <div className="truncate w-full px-1">{col.label}</div>
       <div
@@ -236,11 +236,11 @@ const SortableEmployeeRow = React.memo(({
         isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-white ring-1 ring-black/5 rounded-3xl cursor-grabbing"
       )}
     >
-      <div className="p-2 border-r border-[#000000]/5 flex items-center gap-2 bg-[#fdfcf0] sticky left-0 z-20 text-black font-normal md:static md:bg-transparent">
+      <div className="p-2 border-r border-[#000000]/5 flex items-center gap-2 bg-card sticky left-0 z-20 text-black font-normal md:static md:bg-transparent">
         <div
           {...attributes}
           {...(isReadOnly ? {} : listeners)}
-          className={`p-3 min-h-[44px] min-w-[44px] rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-[#000000]/20' : 'cursor-grab active:cursor-grabbing hover:bg-gray-100 text-[#000000]/40 hover:text-[#000000]/70'}`}
+          className={`p-3 min-h-[44px] min-w-[44px] rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-foreground/20' : 'cursor-grab active:cursor-grabbing hover:bg-gray-100 text-foreground/40 hover:text-foreground/70'}`}
           aria-label="ลากเพื่อเปลี่ยนลำดับ"
         >
           <GripVertical className="w-5 h-5" />
@@ -260,7 +260,7 @@ const SortableEmployeeRow = React.memo(({
           ) : (
             <span
               onClick={() => !isReadOnly && onNameClick(id, profile.full_name)}
-              className={`text-[16px] font-normal text-[#000000] truncate leading-[1.6] tracking-tight transition-colors block ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-text hover:text-blue-600'}`}
+              className={`text-[16px] font-normal text-foreground truncate leading-[1.6] tracking-tight transition-colors block ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-text hover:text-blue-600'}`}
             >
               {profile.full_name}
             </span>
@@ -1208,14 +1208,14 @@ export default function ScheduleClient({
   }, [todayStr]);
 
   return (
-    <div className="flex flex-col h-screen bg-transparent text-[#000000] overflow-hidden">
+    <div className="flex flex-col h-screen bg-transparent text-foreground overflow-hidden">
       <header className="md:h-14 border-b border-[#000000]/5 px-4 md:px-6 flex flex-col md:flex-row items-center justify-between bg-transparent shrink-0 z-20 shadow-sm py-2 md:py-0">
         <div className="flex items-center justify-between w-full md:w-auto gap-6 mb-2 md:mb-0">
           <div className="flex items-center gap-2">
             <button
               onClick={undo}
               disabled={isReadOnly || undoStack.length === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && undoStack.length > 0 ? 'hover:bg-[#000000]/5 text-[#000000] cursor-pointer' : 'text-[#000000]/30 cursor-not-allowed'}`}
+              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && undoStack.length > 0 ? 'hover:bg-[#000000]/5 text-foreground cursor-pointer' : 'text-foreground/30 cursor-not-allowed'}`}
               title="เลิกทำ"
             >
               <Undo2 className="w-4 h-4" strokeWidth={1.5} />
@@ -1223,7 +1223,7 @@ export default function ScheduleClient({
             <button
               onClick={redo}
               disabled={isReadOnly || redoStack.length === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && redoStack.length > 0 ? 'hover:bg-[#000000]/5 text-[#000000] cursor-pointer' : 'text-[#000000]/30 cursor-not-allowed'}`}
+              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && redoStack.length > 0 ? 'hover:bg-[#000000]/5 text-foreground cursor-pointer' : 'text-foreground/30 cursor-not-allowed'}`}
               title="ทำซ้ำ"
             >
               <Redo2 className="w-4 h-4" strokeWidth={1.5} />
@@ -1242,7 +1242,7 @@ export default function ScheduleClient({
           <button
             onClick={() => setShowRegularHolidayModal(true)}
             disabled={isReadOnly}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <Calendar className="w-4 h-4" />
             วันหยุดประจำ
@@ -1251,7 +1251,7 @@ export default function ScheduleClient({
           <button
             onClick={() => setShowManagementModal(true)}
             disabled={isReadOnly}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <UserCog className="w-4 h-4" />
             การลา/เปลี่ยนกะ
@@ -1260,7 +1260,7 @@ export default function ScheduleClient({
           <button
             onClick={() => setShowClearConfirm(true)}
             disabled={isReadOnly}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />
             ล้างทั้งหมด
@@ -1268,7 +1268,7 @@ export default function ScheduleClient({
 
           <button
             onClick={exportScheduleImage}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
           >
             <Download className="w-4 h-4" />
             บันทึกรูปภาพ
@@ -1277,7 +1277,7 @@ export default function ScheduleClient({
           <button
             onClick={() => setShowAddEmployeeModal(true)}
             disabled={isReadOnly}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-[#000000] bg-[#fdfcf0] hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-[#000000]/5 rounded-3xl border border-[#000000]/10 transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             เพิ่มพนักงาน
@@ -1286,11 +1286,11 @@ export default function ScheduleClient({
       </header>
 
       <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
-        <div className="flex-1 flex flex-col bg-[#fdfcf0]/80 backdrop-blur-sm border border-[#000000]/5 rounded-3xl overflow-hidden shadow-sm">
+        <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm border border-[#000000]/5 rounded-3xl overflow-hidden shadow-sm">
           <div className="flex-1 overflow-x-auto scrollbar-thin overflow-y-auto pb-6">
-            <div id="blackandbrew-schedule-table" className="min-w-[900px] bg-[#fdfcf0] h-fit flex flex-col">
+            <div id="blackandbrew-schedule-table" className="min-w-[900px] bg-card h-fit flex flex-col">
               <div className="grid grid-cols-8 border-b border-[#000000]/5 bg-red-50/10 sticky top-0 z-[16]">
-                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-[#fdfcf0] sticky left-0 z-20 text-[#000000] font-normal md:static md:bg-red-50/20">
+                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal md:static md:bg-red-50/20">
                   <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
                 </div>
                 {weekDays.map(date => {
@@ -1305,7 +1305,7 @@ export default function ScheduleClient({
                         <input
                           autoFocus
                           disabled={isReadOnly}
-                          className="w-full h-full bg-[#fdfcf0] border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="w-full h-full bg-card border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400 disabled:opacity-60 disabled:cursor-not-allowed"
                           value={holidayInput}
                           onChange={(e) => setHolidayInput(e.target.value)}
                           onBlur={() => handleSaveHoliday(date)}
@@ -1322,16 +1322,16 @@ export default function ScheduleClient({
               </div>
 
               <div className="grid grid-cols-8 bg-[#000000]/5 border-b border-[#000000]/10 shrink-0 sticky top-[38px] z-[15]">
-                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-[#fdfcf0] sticky left-0 z-20 text-[#000000] font-normal md:static md:bg-transparent">
-                  <span className="text-[13px] text-[#000000] font-normal uppercase tracking-widest">พนักงาน</span>
+                <div className="p-2.5 border-r border-[#000000]/5 flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal md:static md:bg-transparent">
+                  <span className="text-[13px] text-foreground font-normal uppercase tracking-widest">พนักงาน</span>
                 </div>
                 {weekDays.map((date) => {
                   const d = new Date(date);
                   const isToday = date === todayStr;
                   return (
                     <div key={date} className="p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-[#000000]/10 transition-colors min-h-[50px] bg-transparent">
-                      <div className="text-[12px] font-normal uppercase tracking-tighter mb-0 text-[#000000]">{dayLabels[d.getDay()]}</div>
-                      <div className={`text-xl font-normal w-8 h-8 flex items-center justify-center mt-0.5 rounded-full ${isToday ? 'bg-[#ffda66] text-[#000000]' : 'text-[#000000]'}`}>{d.getDate()}</div>
+                      <div className="text-[12px] font-normal uppercase tracking-tighter mb-0 text-foreground">{dayLabels[d.getDay()]}</div>
+                      <div className={`text-xl font-normal w-8 h-8 flex items-center justify-center mt-0.5 rounded-full ${isToday ? 'bg-[#ffda66] text-black' : 'text-foreground'}`}>{d.getDate()}</div>
                     </div>
                   );
                 })}
@@ -1415,7 +1415,7 @@ export default function ScheduleClient({
                   ).size;
                   return (
                     <div key={`foh-${date}`} className={`p-1.5 border-r last:border-0 border-[#000000]/5 flex items-center justify-center ${date === todayStr ? 'bg-blue-50/50' : ''}`}>
-                      <span className={`text-[15px] font-normal ${fohCount > 0 ? 'text-emerald-600' : 'text-[#000000]/30'}`}>{fohCount}</span>
+                      <span className={`text-[15px] font-normal ${fohCount > 0 ? 'text-emerald-600' : 'text-foreground/30'}`}>{fohCount}</span>
                     </div>
                   );
                 })}
@@ -1433,7 +1433,7 @@ export default function ScheduleClient({
         >
           <div
             ref={dropdownRef}
-            className="absolute bg-[#fdfcf0]/95 backdrop-blur-md border border-[#000000]/10 w-48 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+            className="absolute bg-card/95 backdrop-blur-md border border-[#000000]/10 w-48 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`
@@ -1441,7 +1441,7 @@ export default function ScheduleClient({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-2.5 border-b border-[#000000]/5 bg-[#000000]/5">
-              <h2 className="text-[13px] font-normal text-[#000000] truncate">
+              <h2 className="text-[13px] font-normal text-foreground truncate">
                 {profiles.find(p => p.id === selectedCell.employeeId)?.full_name}
               </h2>
             </div>
@@ -1458,7 +1458,7 @@ export default function ScheduleClient({
               ))}
             </div>
             {selectedCell.shift && (
-              <div className="p-1.5 bg-[#fdfcf0] border-t border-[#000000]/5">
+              <div className="p-1.5 bg-card border-t border-[#000000]/5">
                 <button
                   onClick={handleClear}
                   disabled={isReadOnly}
@@ -1475,7 +1475,7 @@ export default function ScheduleClient({
 
       {showClearConfirm && (
         <div className="fixed inset-0 bg-[#000000]/20 backdrop-blur-sm bb-modal-backdrop z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] text-center space-y-4">
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground text-center space-y-4">
             <button onClick={() => setShowClearConfirm(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
               <X className="w-5 h-5" />
             </button>
@@ -1483,12 +1483,12 @@ export default function ScheduleClient({
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
-            <h3 className="text-lg font-normal text-[#000000]">ยืนยันการลบข้อมูล</h3>
-            <p className="text-sm text-[#000000]/70">คุณแน่ใจหรือไม่ที่จะลบข้อมูลกะงาน<br />ของสัปดาห์นี้ทั้งหมด</p>
+            <h3 className="text-lg font-normal text-foreground">ยืนยันการลบข้อมูล</h3>
+            <p className="text-sm text-foreground/70">คุณแน่ใจหรือไม่ที่จะลบข้อมูลกะงาน<br />ของสัปดาห์นี้ทั้งหมด</p>
             <div className="grid grid-cols-2 gap-3 pt-4">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="h-11 md:h-auto py-2.5 rounded-xl bg-[#000000]/5 hover:bg-[#000000]/10 text-[#000000] text-base md:text-sm font-normal transition-colors cursor-pointer"
+                className="h-11 md:h-auto py-2.5 rounded-xl bg-[#000000]/5 hover:bg-[#000000]/10 text-foreground text-base md:text-sm font-normal transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
@@ -1519,17 +1519,17 @@ export default function ScheduleClient({
           className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
-          <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin bg-[#fdfcf0] shadow-2xl bb-modal-panel md:max-w-5xl p-6 text-[#000000] flex flex-col md:flex-row">
+          <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin bg-card shadow-2xl bb-modal-panel md:max-w-5xl p-6 text-foreground flex flex-col md:flex-row">
             <button onClick={() => setShowManagementModal(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-50">
               <X className="w-5 h-5" />
             </button>
             <div className="w-full md:w-[340px] flex flex-col border-r border-[#000000]/5 shrink-0">
-              <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0]/50 management-form-container">
+              <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-card/50 management-form-container">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-emerald-50 rounded-3xl">
                     <UserCog className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <h3 className="text-lg font-normal text-[#000000] tracking-tight">การลา / เปลี่ยนกะ</h3>
+                  <h3 className="text-lg font-normal text-foreground tracking-tight">การลา / เปลี่ยนกะ</h3>
                 </div>
               </div>
 
@@ -1544,10 +1544,10 @@ export default function ScheduleClient({
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-[#000000] uppercase tracking-widest px-1">พนักงาน</label>
+                  <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">พนักงาน</label>
                   <div className="relative">
                     <select
-                      className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-[#000000]"
+                      className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/5 bg-card/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-foreground"
                       value={managementForm.employeeId}
                       onChange={(e) => setManagementForm(prev => ({ ...prev, employeeId: e.target.value }))}
                     >
@@ -1556,36 +1556,36 @@ export default function ScheduleClient({
                         <option key={p.id} value={p.id}>{p.full_name}</option>
                       ))}
                     </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#000000]/60">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-foreground/60">
                       <ChevronDown className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-[#000000] uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
+                  <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
                   <div className="relative group/select">
                     <select
-                      className={`w-full h-11 px-4 pr-10 rounded-3xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal shadow-sm appearance-none text-[#000000] ${
-                        shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-[#fdfcf0] border-[#000000]/5'
+                      className={`w-full h-11 px-4 pr-10 rounded-3xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal shadow-sm appearance-none text-foreground ${
+                        shiftTypes.find(t => t.value === managementForm.shiftType)?.color || 'bg-card border-[#000000]/5'
                       }`}
                       value={managementForm.shiftType}
                       onChange={(e) => setManagementForm(prev => ({ ...prev, shiftType: e.target.value }))}
                     >
                       {shiftTypes.map(t => (
-                        <option key={t.value} value={t.value} className="bg-[#fdfcf0] text-[#000000] font-normal py-2">
+                        <option key={t.value} value={t.value} className="bg-card text-foreground font-normal py-2">
                           {t.label}
                         </option>
                       ))}
                     </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 text-[#000000]">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 text-foreground">
                       <ChevronDown className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-[#000000] uppercase tracking-widest px-1">ระบุช่วงวันที่</label>
+                  <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">ระบุช่วงวันที่</label>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="flex-1 w-full">
                       <ClickableDatePicker
@@ -1595,7 +1595,7 @@ export default function ScheduleClient({
                         containerClassName="w-full"
                       />
                     </div>
-                    <span className="text-[#000000] font-normal select-none hidden sm:block shrink-0">—</span>
+                    <span className="text-foreground font-normal select-none hidden sm:block shrink-0">—</span>
                     <div className="flex-1 w-full">
                       <ClickableDatePicker
                         value={managementForm.endDate}
@@ -1609,20 +1609,20 @@ export default function ScheduleClient({
                 </div>
 
                 <div className="space-y-1.5 pt-2">
-                  <label className="text-[13px] font-normal text-[#000000] uppercase tracking-widest px-1">หมายเหตุ</label>
+                  <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">หมายเหตุ</label>
                   <textarea
                     placeholder="รายละเอียดเพิ่มเติม..."
-                    className="w-full h-20 p-4 rounded-3xl border border-[#000000]/5 bg-[#fdfcf0]/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-base md:text-[13px] leading-relaxed font-normal text-[#000000]"
+                    className="w-full h-20 p-4 rounded-3xl border border-[#000000]/5 bg-card/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-base md:text-[13px] leading-relaxed font-normal text-foreground"
                     value={managementForm.remark}
                     onChange={(e) => setManagementForm(prev => ({ ...prev, remark: e.target.value }))}
                   />
                 </div>
               </div>
 
-              <div className="p-4 bg-[#fdfcf0] border-t border-[#000000]/5 flex gap-3">
+              <div className="p-4 bg-card border-t border-[#000000]/5 flex gap-3">
                 <button
                   onClick={editingHistoryId ? cancelEditHistory : () => setShowManagementModal(false)}
-                  className="flex-1 h-11 md:h-auto md:py-3 rounded-3xl bg-transparent border border-[#000000]/10 text-[#000000] text-base md:text-[12px] font-normal hover:bg-[#000000]/5 transition-all active:scale-95 shadow-sm cursor-pointer antialiased"
+                  className="flex-1 h-11 md:h-auto md:py-3 rounded-3xl bg-transparent border border-[#000000]/10 text-foreground text-base md:text-[12px] font-normal hover:bg-[#000000]/5 transition-all active:scale-95 shadow-sm cursor-pointer antialiased"
                 >
                   {editingHistoryId ? 'ยกเลิกการแก้ไข' : 'ปิดหน้าต่าง'}
                 </button>
@@ -1637,15 +1637,15 @@ export default function ScheduleClient({
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col bg-[#fdfcf0]/30 min-w-0">
-              <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-[#fdfcf0] pr-14">
+            <div className="flex-1 flex flex-col bg-card/30 min-w-0">
+              <div className="p-5 border-b border-[#000000]/5 flex justify-between items-center bg-card pr-14">
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="w-5 h-5 text-[#000000]/40" />
-                  <h3 className="text-lg font-normal text-[#000000] tracking-tight">ประวัติ</h3>
+                  <CalendarDays className="w-5 h-5 text-foreground/40" />
+                  <h3 className="text-lg font-normal text-foreground tracking-tight">ประวัติ</h3>
                 </div>
               </div>
 
-              <div className="p-4 border-b border-[#000000]/5 bg-[#fdfcf0]">
+              <div className="p-4 border-b border-[#000000]/5 bg-card">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 max-w-sm">
                     <div className="flex-1 w-full">
                       <ClickableDatePicker
@@ -1655,7 +1655,7 @@ export default function ScheduleClient({
                         containerClassName="w-full"
                       />
                     </div>
-                    <span className="text-[#000000] font-normal select-none text-xs hidden sm:block shrink-0">—</span>
+                    <span className="text-foreground font-normal select-none text-xs hidden sm:block shrink-0">—</span>
                     <div className="flex-1 w-full">
                       <ClickableDatePicker
                         value={historyFilter.end}
@@ -1669,7 +1669,7 @@ export default function ScheduleClient({
 
               <div className="flex-1 overflow-y-auto p-5">
                 {mgmtHistory.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-[#000000]/20 space-y-2">
+                  <div className="h-full flex flex-col items-center justify-center text-foreground/20 space-y-2">
                     <CalendarDays className="w-8 h-8" />
                     <p className="text-sm font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
                   </div>
@@ -1691,26 +1691,26 @@ export default function ScheduleClient({
                       <tbody>
                         {mgmtHistory.map((item) => (
                           <tr key={item.id} className="border-b border-[#000000]/5 hover:bg-[#000000]/5 transition-colors">
-                            <td className="p-3 text-[13px] font-normal text-[#000000] border-r border-[#000000]/5 truncate bg-transparent">
+                            <td className="p-3 text-[13px] font-normal text-foreground border-r border-[#000000]/5 truncate bg-transparent">
                               {item.employee_name}
                             </td>
-                            <td className="p-3 text-[12px] font-normal text-[#000000] border-r border-[#000000]/5 truncate bg-transparent">
+                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-[#000000]/5 truncate bg-transparent">
                               {format(new Date(item.startDate), 'dd/MM/yyyy')}
                               {item.startDate !== item.endDate && ` → ${format(new Date(item.endDate), 'dd/MM/yyyy')}`}
                             </td>
-                            <td className="p-3 text-[12px] font-normal text-[#000000] border-r border-[#000000]/5 truncate bg-transparent">
+                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-[#000000]/5 truncate bg-transparent">
                               <span className={`px-2 py-0.5 rounded-full ${item.color} border border-[#000000]/10 inline-block`}>
                                 {item.location}
                               </span>
                             </td>
-                            <td className="p-3 text-[12px] font-normal text-[#000000]/80 border-r border-[#000000]/5 truncate bg-transparent">
+                            <td className="p-3 text-[12px] font-normal text-foreground/80 border-r border-[#000000]/5 truncate bg-transparent">
                               {item.remark || '-'}
                             </td>
                             <td className="p-3 text-center bg-transparent">
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
                                   onClick={() => handleEditHistory(item)}
-                                  className="p-1.5 text-[#000000]/40 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center"
+                                  className="p-1.5 text-foreground/40 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center"
                                   title="แก้ไขประวัติ"
                                 >
                                   <Pencil className="w-4 h-4" />
@@ -1718,7 +1718,7 @@ export default function ScheduleClient({
                                 <button
                                   onClick={() => handleDeleteHistory(item)}
                                   disabled={confirmDeleteId === item.id}
-                                  className="p-1.5 text-[#000000]/40 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center justify-center disabled:opacity-50"
+                                  className="p-1.5 text-foreground/40 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center justify-center disabled:opacity-50"
                                   title="ลบประวัติการจัดการ"
                                 >
                                   {confirmDeleteId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
@@ -1740,15 +1740,15 @@ export default function ScheduleClient({
       {showAddEmployeeModal && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
           <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowAddEmployeeModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-[#000000]/5">
             <button onClick={() => setShowAddEmployeeModal(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
               <X className="w-5 h-5" />
             </button>
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
-            <h3 className="text-xl font-normal text-[#000000] mb-4 uppercase tracking-tight pr-10">เพิ่มพนักงานใหม่</h3>
+            <h3 className="text-xl font-normal text-foreground mb-4 uppercase tracking-tight pr-10">เพิ่มพนักงานใหม่</h3>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[13px] font-normal uppercase tracking-wider text-[#000000]/70 ml-1">ชื่อ</label>
+                <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">ชื่อ</label>
                 <input
                   autoFocus
                   type="text"
@@ -1756,13 +1756,13 @@ export default function ScheduleClient({
                   onChange={e => setNewEmployeeName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddEmployee()}
                   placeholder="กรอกชื่อพนักงาน"
-                  className="w-full h-11 bg-[#fdfcf0]/50 border border-[#000000]/10 rounded-xl px-4 py-3 text-base md:text-[14px] text-[#000000] focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+                  className="w-full h-11 bg-card/50 border border-[#000000]/10 rounded-xl px-4 py-3 text-base md:text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowAddEmployeeModal(false)}
-                  className="flex-1 h-11 md:h-auto md:py-3 text-[#000000]/60 font-normal hover:bg-[#000000]/5 rounded-xl transition-all text-base md:text-sm cursor-pointer"
+                  className="flex-1 h-11 md:h-auto md:py-3 text-foreground/60 font-normal hover:bg-[#000000]/5 rounded-xl transition-all text-base md:text-sm cursor-pointer"
                 >
                   ยกเลิก
                 </button>
@@ -1783,13 +1783,13 @@ export default function ScheduleClient({
       {showRegularHolidayModal && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
           <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowRegularHolidayModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-[#fdfcf0] shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#000000] border border-[#000000]/5">
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-[#000000]/5">
             <button onClick={() => setShowRegularHolidayModal(false)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
               <X className="w-5 h-5" />
             </button>
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
-            <h3 className="text-xl font-normal text-[#000000] mb-6 uppercase tracking-tight flex items-center gap-2 pr-10">
-              <Calendar className="w-5 h-5 text-[#000000]/40" />
+            <h3 className="text-xl font-normal text-foreground mb-6 uppercase tracking-tight flex items-center gap-2 pr-10">
+              <Calendar className="w-5 h-5 text-foreground/40" />
               จัดการวันหยุดประจำ
             </h3>
             
@@ -1798,10 +1798,10 @@ export default function ScheduleClient({
               <div className="flex flex-col w-full md:w-[260px] shrink-0">
                 <div className="flex-1 flex flex-col space-y-6">
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-wider text-[#000000]/70 ml-1">พนักงาน</label>
+                    <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">พนักงาน</label>
                     <div className="relative">
                       <select
-                        className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/10 bg-[#fdfcf0] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-[#000000]"
+                        className="w-full h-11 px-4 pr-10 rounded-3xl border border-[#000000]/10 bg-card focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-foreground"
                         value={holidayFormEmployee}
                         onChange={(e) => {
                           setHolidayFormEmployee(e.target.value);
@@ -1814,7 +1814,7 @@ export default function ScheduleClient({
                           <option key={p.id} value={p.id}>{p.full_name}</option>
                         ))}
                       </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#000000]/40">
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-foreground/40">
                         <ChevronDown className="w-4 h-4" />
                       </div>
                     </div>
@@ -1822,7 +1822,7 @@ export default function ScheduleClient({
                   
                   {holidayFormEmployee && (
                     <div className="space-y-2.5">
-                      <label className="text-[13px] font-normal uppercase tracking-wider text-[#000000]/70 ml-1">เลือกวันหยุดประจำสัปดาห์</label>
+                      <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">เลือกวันหยุดประจำสัปดาห์</label>
                       <div className="grid grid-cols-4 gap-2">
                         {[
                           { id: 1, label: 'จ.' },
@@ -1846,7 +1846,7 @@ export default function ScheduleClient({
                               className={`h-11 md:h-auto py-2 rounded-xl text-base md:text-[13px] font-normal transition-all cursor-pointer ${
                                 isSelected 
                                   ? 'bg-[#000000] text-[#ffffff] shadow-md' 
-                                  : 'bg-[#fdfcf0] border border-[#000000]/10 text-[#000000] hover:bg-[#000000]/5'
+                                  : 'bg-card border border-[#000000]/10 text-foreground hover:bg-[#000000]/5'
                               }`}
                             >
                               {day.label}
@@ -1868,7 +1868,7 @@ export default function ScheduleClient({
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowRegularHolidayModal(false)}
-                      className="flex-1 h-11 md:h-auto md:py-3 text-[#000000]/60 font-normal hover:bg-[#000000]/5 rounded-xl transition-all text-base md:text-sm cursor-pointer"
+                      className="flex-1 h-11 md:h-auto md:py-3 text-foreground/60 font-normal hover:bg-[#000000]/5 rounded-xl transition-all text-base md:text-sm cursor-pointer"
                     >
                       ปิดหน้าต่าง
                     </button>
@@ -1884,9 +1884,9 @@ export default function ScheduleClient({
               </div>
 
               {/* Summary overview — visible on all screen sizes */}
-              <div className="flex-1 w-full h-full border border-[#000000]/5 rounded-3xl p-4 bg-[#fdfcf0]/50">
-                <h4 className="text-[14px] font-normal text-[#000000] mb-3 px-1">สรุปวันหยุดประจำของพนักงาน</h4>
-                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-2 pb-2 border-b border-[#000000]/5 text-[12px] text-[#000000]/60 uppercase tracking-widest px-1">
+              <div className="flex-1 w-full h-full border border-[#000000]/5 rounded-3xl p-4 bg-card/50">
+                <h4 className="text-[14px] font-normal text-foreground mb-3 px-1">สรุปวันหยุดประจำของพนักงาน</h4>
+                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-2 pb-2 border-b border-[#000000]/5 text-[12px] text-foreground/60 uppercase tracking-widest px-1">
                   <span>พนักงาน</span>
                   <span>วันหยุดประจำ</span>
                 </div>
@@ -1900,17 +1900,17 @@ export default function ScheduleClient({
                     return (
                       <div
                         key={p.id}
-                        className="flex items-start justify-between gap-3 py-2.5 px-3 rounded-2xl border border-[#000000]/5 bg-[#fdfcf0] md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] md:rounded-none md:border-0 md:border-b md:border-[#000000]/5 md:bg-transparent md:px-1 md:py-2 md:hover:bg-[#000000]/5 md:transition-colors"
+                        className="flex items-start justify-between gap-3 py-2.5 px-3 rounded-2xl border border-[#000000]/5 bg-card md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] md:rounded-none md:border-0 md:border-b md:border-[#000000]/5 md:bg-transparent md:px-1 md:py-2 md:hover:bg-[#000000]/5 md:transition-colors"
                       >
-                        <span className="text-[14px] md:text-[13px] font-normal text-[#000000] shrink-0">{p.full_name}</span>
-                        <span className="text-[13px] font-normal text-[#000000]/70 md:text-[#000000] text-right md:text-left">
+                        <span className="text-[14px] md:text-[13px] font-normal text-foreground shrink-0">{p.full_name}</span>
+                        <span className="text-[13px] font-normal text-foreground/70 md:text-foreground text-right md:text-left">
                           {sortedDays.map(d => dayLabels[d]).join(', ')}
                         </span>
                       </div>
                     );
                   })}
                   {profiles.every(p => (regularHolidays[p.id] || []).length === 0) && (
-                    <p className="text-[13px] text-[#000000]/50 px-1 py-2">ยังไม่มีการกำหนดวันหยุดประจำ</p>
+                    <p className="text-[13px] text-foreground/50 px-1 py-2">ยังไม่มีการกำหนดวันหยุดประจำ</p>
                   )}
                 </div>
               </div>

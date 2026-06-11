@@ -3,13 +3,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { updateInventoryStock } from '@/app/actions/inventory-actions';
 import { mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { cn } from '@/lib/utils';
+import { PASTEL_SURFACE } from '@/lib/shift-colors';
 
 interface InventoryItem {
   id: string;
@@ -25,11 +27,15 @@ function CountInput({
   index,
   onSave,
   disabled = false,
+  isActive = false,
+  onActiveChange,
 }: {
   item: InventoryItem;
   index: number;
   onSave: (id: string, value: number) => Promise<void>;
   disabled?: boolean;
+  isActive?: boolean;
+  onActiveChange?: (id: string | null) => void;
 }) {
   const [val, setVal] = useState(item.stock === 0 ? '' : String(item.stock));
   const [isFocused, setIsFocused] = useState(false);
@@ -53,41 +59,67 @@ function CountInput({
     const sanitized = isNaN(numberVal) ? 0 : numberVal;
     pendingValueRef.current = sanitized;
     setIsFocused(false);
+    onActiveChange?.(null);
     await onSave(item.id, sanitized);
   };
 
   return (
-    <input
-      ref={inputRef}
-      type="text"
-      inputMode="decimal"
-      value={val}
-      onChange={(e) => {
-        let value = e.target.value.replace(/[^0-9.]/g, '');
-        if (value.length > 1 && value.startsWith('0') && !value.startsWith('0.')) {
-          value = value.replace(/^0+/, '');
-        }
-        setVal(value);
-      }}
-      onFocus={() => setIsFocused(true)}
-      onBlur={() => void handleBlur()}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          e.currentTarget.blur();
-          const nextInput = document.querySelector(`input[data-count-row-index="${index + 1}"]`) as HTMLInputElement;
-          if (nextInput) {
-            setTimeout(() => {
-              nextInput.focus();
-              nextInput.select();
-            }, 10);
+    <div className="flex flex-col items-end gap-1">
+      <AnimatePresence>
+        {isActive && (
+          <motion.span
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+            className="text-[10px] font-normal uppercase tracking-[0.15em] text-black/45 pr-1"
+          >
+            จำนวนคงเหลือ
+          </motion.span>
+        )}
+      </AnimatePresence>
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="decimal"
+        value={val}
+        onChange={(e) => {
+          let value = e.target.value.replace(/[^0-9.]/g, '');
+          if (value.length > 1 && value.startsWith('0') && !value.startsWith('0.')) {
+            value = value.replace(/^0+/, '');
           }
-        }
-      }}
-      data-count-row-index={index}
-      disabled={disabled}
-      className={`w-24 h-10 px-3 rounded-xl border border-black/10 bg-slate-50 text-base font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 text-black font-mono transition-all ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-    />
+          setVal(value);
+        }}
+        onFocus={() => {
+          setIsFocused(true);
+          onActiveChange?.(item.id);
+          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }}
+        onBlur={() => void handleBlur()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.currentTarget.blur();
+            const nextInput = document.querySelector(`input[data-count-row-index="${index + 1}"]`) as HTMLInputElement;
+            if (nextInput) {
+              setTimeout(() => {
+                nextInput.focus();
+                nextInput.select();
+              }, 10);
+            }
+          }
+        }}
+        data-count-row-index={index}
+        disabled={disabled}
+        className={cn(
+          'px-3 rounded-xl border text-base font-normal text-center outline-none font-mono transition-all duration-200',
+          isActive
+            ? 'w-28 h-11 border-black/20 bg-white text-black ring-2 ring-black/10 shadow-sm'
+            : 'w-24 h-10 border-border bg-muted text-foreground focus:bg-card focus:ring-1 focus:ring-foreground/10',
+          disabled && 'opacity-60 cursor-not-allowed'
+        )}
+      />
+    </div>
   );
 }
 
@@ -101,6 +133,7 @@ export default function InventoryCountPage() {
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
 
   const fetchInventory = useCallback(async () => {
     setLoading(true);
@@ -175,7 +208,7 @@ export default function InventoryCountPage() {
     setSaveErrorMessage(null);
 
     try {
-      const result = await updateInventoryStock(id, value, 'Stock-taking count');
+      const result = await updateInventoryStock(id, value, 'Stock-taking count', { recordHistory: false });
 
       if (!result.success) {
         throw new Error(result.error);
@@ -201,35 +234,35 @@ export default function InventoryCountPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#fdfcf0] text-black font-normal">
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-black" strokeWidth={1.5} />
-        <span className="text-sm uppercase tracking-widest text-black/60 font-normal">กำลังซิงค์ข้อมูลสต็อกสินค้าอยู่ค่ะ...</span>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background text-foreground font-normal">
+        <Loader2 className="w-8 h-8 animate-spin mb-4 text-foreground" strokeWidth={1.5} />
+        <span className="text-sm uppercase tracking-widest text-muted-foreground font-normal">กำลังซิงค์ข้อมูลสต็อกสินค้าอยู่ค่ะ...</span>
       </div>
     );
   }
 
   if (errorMessage) {
     return (
-      <div className="min-h-screen bg-[#fdfcf0] text-black font-normal p-4 md:p-8">
+      <div className="min-h-screen bg-background text-foreground font-normal p-4 md:p-8">
         <div className="max-w-xl mx-auto flex flex-col items-stretch gap-6">
-          <header className="flex items-center justify-between border-b border-black/5 pb-4">
+          <header className="flex items-center justify-between border-b border-border pb-4">
             <Link
               href={`/${locale}/inventory`}
-              className="flex items-center gap-1.5 text-black/50 hover:text-black transition-colors py-2 font-normal text-sm"
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors py-2 font-normal text-sm"
             >
               <ChevronLeft className="w-4.5 h-4.5" />
               <span>กลับไปคลังสินค้า</span>
             </Link>
           </header>
 
-          <div className="bg-white border border-red-100 rounded-3xl p-6 shadow-sm">
+          <div className="bg-card border border-red-100 dark:border-red-500/20 rounded-3xl p-6 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="shrink-0 rounded-2xl bg-red-50 p-2.5 text-red-500">
+              <div className="shrink-0 rounded-2xl bg-red-50 dark:bg-red-500/10 p-2.5 text-red-500">
                 <AlertCircle className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="text-base font-normal text-black">เปิดหน้าตรวจนับคลังสินค้าไม่สำเร็จ</h1>
-                <p className="mt-1 text-sm text-black/60">{errorMessage}</p>
+                <h1 className="text-base font-normal text-foreground">เปิดหน้าตรวจนับคลังสินค้าไม่สำเร็จ</h1>
+                <p className="mt-1 text-sm text-muted-foreground">{errorMessage}</p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <button
                     type="button"
@@ -241,7 +274,7 @@ export default function InventoryCountPage() {
                   </button>
                   <Link
                     href={`/${locale}/inventory`}
-                    className="inline-flex h-11 items-center rounded-2xl border border-black/10 px-4 text-sm text-black/70 transition-colors hover:bg-black/[0.03]"
+                    className="inline-flex h-11 items-center rounded-2xl border border-border px-4 text-sm text-muted-foreground transition-colors hover:bg-muted"
                   >
                     กลับหน้าคลังสินค้า
                   </Link>
@@ -255,13 +288,13 @@ export default function InventoryCountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fdfcf0] text-black font-normal p-4 md:p-8">
+    <div className="min-h-screen bg-background text-foreground font-normal p-4 md:p-8">
       <div className="max-w-xl mx-auto flex flex-col items-stretch">
 
-        <header className="flex items-center justify-between border-b border-black/5 pb-4 mb-6">
+        <header className="flex items-center justify-between border-b border-border pb-4 mb-6">
           <Link
             href={`/${locale}/inventory`}
-            className="flex items-center gap-1.5 text-black/50 hover:text-black transition-colors py-2 font-normal text-sm"
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors py-2 font-normal text-sm"
           >
             <ChevronLeft className="w-4.5 h-4.5" />
             <span>กลับไปคลังสินค้า</span>
@@ -269,7 +302,7 @@ export default function InventoryCountPage() {
 
           <div className="flex items-center gap-2 text-xs font-normal">
             {savingState === 'saving' && (
-              <span className="flex items-center gap-1 text-black/60">
+              <span className="flex items-center gap-1 text-muted-foreground">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 <span>กำลังบันทึกข้อมูลอยู่นะคะ</span>
               </span>
@@ -281,7 +314,7 @@ export default function InventoryCountPage() {
               </span>
             )}
             {savingState === 'idle' && (
-              <span className="text-black/30">เชื่อมต่อคลังสินค้าเรียบเสร็จสมบูรณ์ค่ะ</span>
+              <span className="text-muted-foreground/60">เชื่อมต่อคลังสินค้าเรียบเสร็จสมบูรณ์ค่ะ</span>
             )}
           </div>
         </header>
@@ -290,10 +323,10 @@ export default function InventoryCountPage() {
           <div className="p-2.5 bg-black text-white rounded-2xl mb-4 shrink-0 shadow-md">
             <ClipboardList className="w-7 h-7" strokeWidth={1.5} />
           </div>
-          <h1 className="text-2xl font-normal tracking-widest uppercase text-black">
+          <h1 className="text-2xl font-normal tracking-widest uppercase text-foreground">
             ตรวจนับคลังสินค้า
           </h1>
-          <p className="text-[#000000]/40 text-[11px] font-normal uppercase tracking-[0.2em] mt-1.5">
+          <p className="text-muted-foreground text-[11px] font-normal uppercase tracking-[0.2em] mt-1.5">
             บันทึกการตรวจนับ
           </p>
         </div>
@@ -306,37 +339,69 @@ export default function InventoryCountPage() {
 
         <div className="space-y-2.5 pb-20">
           {items.length === 0 ? (
-            <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
+            <div className="p-8 text-center text-base font-normal text-muted-foreground bg-card border border-border rounded-3xl">
               ไม่มีข้อมูลสินค้าในระบบ กรุณาเพิ่มข้อมูลในหน้าคลังสินค้าหลักก่อนนะคะ
             </div>
           ) : (
-            items.map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, delay: index * 0.02 }}
-                className="bg-white border border-black/[0.05] rounded-2xl p-4 flex items-start justify-between shadow-sm hover:border-black/10 transition-all duration-300"
-              >
-                <div className="flex items-start gap-3 flex-1 min-w-0 mr-4">
-                  <span className="text-[12px] font-normal text-black/25 font-mono shrink-0">
-                    {(index + 1).toString().padStart(2, '0')}
-                  </span>
-                  <span className="text-black font-normal text-[15px] leading-tight">
-                    {item.name} {item.unit ? `(${item.unit})` : ''}
-                  </span>
-                </div>
+            items.map((item, index) => {
+              const isActive = activeItemId === item.id;
+              const isDimmed = activeItemId !== null && !isActive;
 
-                <div className="shrink-0">
-                  <CountInput
-                    item={item}
-                    index={index}
-                    onSave={handleSaveStock}
-                    disabled={isReadOnly}
-                  />
-                </div>
-              </motion.div>
-            ))
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{
+                    opacity: isDimmed ? 0.42 : 1,
+                    y: 0,
+                    scale: isActive ? 1.015 : 1,
+                  }}
+                  transition={{ duration: 0.2, delay: activeItemId ? 0 : index * 0.02 }}
+                  className={cn(
+                    'relative rounded-2xl p-4 flex items-start justify-between transition-all duration-300',
+                    isActive
+                      ? `${PASTEL_SURFACE} bg-[#d4edda] border border-[#c3e6cb] shadow-md ring-2 ring-black/8 z-10`
+                      : 'bg-card border border-border shadow-sm hover:border-foreground/10',
+                  )}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-black/70" />
+                  )}
+
+                  <div className="flex items-start gap-3 flex-1 min-w-0 mr-4 pl-1">
+                    <span
+                      className={cn(
+                        'text-[12px] font-normal font-mono shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200 tabular-nums',
+                        isActive
+                          ? 'bg-black text-white'
+                          : 'text-muted-foreground/50'
+                      )}
+                    >
+                      {(index + 1).toString().padStart(2, '0')}
+                    </span>
+                    <span
+                      className={cn(
+                        'font-normal text-[15px] leading-tight transition-colors duration-200',
+                        isActive ? 'text-black' : 'text-foreground/80'
+                      )}
+                    >
+                      {item.name} {item.unit ? `(${item.unit})` : ''}
+                    </span>
+                  </div>
+
+                  <div className="shrink-0">
+                    <CountInput
+                      item={item}
+                      index={index}
+                      onSave={handleSaveStock}
+                      disabled={isReadOnly}
+                      isActive={isActive}
+                      onActiveChange={setActiveItemId}
+                    />
+                  </div>
+                </motion.div>
+              );
+            })
           )}
         </div>
       </div>

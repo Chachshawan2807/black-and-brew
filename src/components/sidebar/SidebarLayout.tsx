@@ -20,23 +20,24 @@ export default function SidebarLayout({
 
   return (
     <>
-      <header className="md:hidden sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-black/5 pl-1 pr-3 flex justify-between items-center h-[72px] bb-shadow-sm">
+      <header className="md:hidden sticky top-0 z-50 bg-[var(--sidebar-surface)]/85 backdrop-blur-xl border-b border-black/5 dark:border-white/10 pl-1 pr-3 flex justify-between items-center h-[72px] bb-shadow-sm">
         <div className="flex items-center">
           <Image 
             src="/images/logo.png" 
             alt="BLACK AND BREW" 
             width={200} 
             height={68} 
+            className="dark:invert dark:brightness-0 dark:opacity-90"
             style={{ width: '200px', height: '68px', objectFit: 'contain', objectPosition: 'left center' }}
             priority 
           />
         </div>
         <button 
           onClick={() => sidebar?.setIsOpen?.()}
-          className="h-10 w-10 flex items-center justify-center rounded-full bb-transition hover:bg-black/5 active:bg-black/10"
+          className="h-10 w-10 flex items-center justify-center rounded-full bb-transition hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15"
           aria-label="เปิดเมนูนำทาง"
         >
-          <Menu className="w-6 h-6 text-black" />
+          <Menu className="w-6 h-6 text-foreground" strokeWidth={1.75} />
         </button>
       </header>
 

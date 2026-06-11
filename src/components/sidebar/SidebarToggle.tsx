@@ -14,15 +14,16 @@ export function SidebarToggle({ isOpen, setIsOpen }: SidebarToggleProps) {
     <div className="invisible lg:visible absolute top-[16px] -right-[16px] z-[9999]">
       <Button
         onClick={() => setIsOpen?.()}
-        className="rounded-full w-8 h-8 bg-white border border-[#000000]/5 bb-shadow-sm hover:bg-[#000000]/5 bb-transition"
+        className="rounded-full w-8 h-8 bg-white dark:bg-[#2e2e2c] border border-black/5 dark:border-white/15 bb-shadow-sm hover:bg-black/5 dark:hover:bg-white/10 bb-transition text-foreground"
         variant="ghost"
         size="icon"
       >
         <ChevronLeft
           className={cn(
-            "h-4 w-4 transition-transform ease-in-out duration-500",
+            "h-4 w-4 text-foreground transition-transform ease-in-out duration-500",
             isOpen === false ? "rotate-180" : "rotate-0"
           )}
+          strokeWidth={2}
         />
       </Button>
     </div>

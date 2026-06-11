@@ -26,7 +26,8 @@ import {
   STORE_LAT,
   STORE_LON,
 } from './market-insights-fetch';
-import { fetchNearbyCompetitors } from './market-insights-places';
+import { fetchCompetitorAnalysis } from './market-insights-places';
+import { buildCompetitorPromptDigest } from './market-insights-competitors';
 import {
   behaviorTrendsSchema,
   strategyActionsSchema,
@@ -119,14 +120,14 @@ export async function getMarketInsights(
 
     const todayBkk = formatInTimeZone(new Date(), THAI_TIMEZONE, 'yyyy-MM-dd');
 
-    const [weather, trends, inventoryResult, salesMetrics, supabaseCtx, competitors, dailyShifts] =
+    const [weather, trends, inventoryResult, salesMetrics, supabaseCtx, competitorAnalysis, dailyShifts] =
       await Promise.all([
         fetchWeatherForecast(),
         fetchMarketTrends(),
         fetchComprehensiveInventoryData(),
         getSalesMetrics(),
         supabase ? fetchSupabaseContext(supabase) : Promise.resolve(null),
-        fetchNearbyCompetitors(STORE_LAT, STORE_LON),
+        fetchCompetitorAnalysis(STORE_LAT, STORE_LON),
         fetchDailyShiftsByDate(todayBkk).catch((error) => {
           console.error('[getMarketInsights] daily shifts:', error);
           return null;
@@ -182,7 +183,7 @@ export async function getMarketInsights(
       shiftCount,
       upcomingHolidays,
       alerts,
-      competitors,
+      competitorAnalysis,
     };
 
     const dataBlock = [
@@ -192,7 +193,7 @@ export async function getMarketInsights(
       shiftCount ? `SHIFTS: ${shiftCount} | ${scheduleSummary}` : `SCHEDULE: ${scheduleSummary}`,
       `WEATHER: ${weatherStr}`,
       `HOLIDAYS: ${upcomingHolidays.map((h) => `${h.date} ${h.name}`).join(', ') || 'N/A'}`,
-      `COMPETITORS: ${competitors.map((c) => `${c.name}(${c.rating ?? '-'})`).join(', ') || 'N/A'}`,
+      `COMPETITORS: ${buildCompetitorPromptDigest(competitorAnalysis)}`,
       `TRENDS: ${trends.raw}`,
       `SIGNALS: ${signals.join(', ') || 'baseline'}`,
     ].join('\n');
@@ -206,7 +207,7 @@ export async function getMarketInsights(
       prompt: `${dataBlock}
 
 วิเคราะห์เชิงลึก 2 ส่วน (ห้ามพูดตัวเลขดิบ/รายการสต็อก):
-- behavior: พฤติกรรมผู้บริโภคย่านนี้ ทำไมซื้อ/ไม่ซื้อ โอกาสจากอากาศ+วันหยุด+คู่แข่ง (3-4 ข้อ)
+- behavior: พฤติกรรมผู้บริโภคย่านนี้ ทำไมซื้อ/ไม่ซื้อ โอกาสจากอากาศ+วันหยุด+คู่แข่ง (3-4 ข้อ) — ถ้ามีข้อมูล COMPETITORS ให้วิเคราะห์โซนใกล้/ไกลและคู่แข่งที่น่าจับตาอย่างน้อย 1 ข้อ
 - trends: จับคู่เทรนด์ภายนอกกับจุดแข็งร้าน เมนู/วัตถุดิบที่ควรดัน (3-4 ข้อ)
 แต่ละข้อใส่ confidence (high/medium/low) และ reason สั้นๆ ว่าอ้างอิงสัญญาณใด`,
     });

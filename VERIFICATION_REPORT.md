@@ -1,6 +1,6 @@
 # Sales Management System Verification Report
 
-> **Last Updated:** 2026-06-07 | **Scope:** Sales module only (see `docs/prd.md` for full ERP)
+> **Last Updated:** 2026-06-12 | **Scope:** Sales module only (see `docs/prd.md` for full ERP)
 
 ## 1. System Overview
 

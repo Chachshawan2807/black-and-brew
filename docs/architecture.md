@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 8.3 | Last Updated: 2026-06-09 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 8.4 | Last Updated: 2026-06-12 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -12,7 +12,7 @@ Hybrid PPR architecture: Static Shell (Navigation, Branding) + Dynamic Islands (
 
 - **Framework:** Next.js 16.2.4 (App Router, `cacheComponents: true`) + React 19.2.4
 - **Database:** Supabase PostgreSQL (Thailand Edge Region)
-- **Styling:** Tailwind CSS 4 + PostCSS
+- **Styling:** Tailwind CSS 4 + PostCSS + `next-themes` (light/dark/system via `bb-theme`)
 - **State:** Zustand (global), React useState (local)
 - **i18n:** next-intl v4.11.0 (th/en) via `src/proxy.ts`
 - **DnD:** @dnd-kit/core + sortable
@@ -93,6 +93,7 @@ src/app/
     │   └── count/               # Stock-taking
     ├── maintenance/             # Equipment tracking
     ├── sales/                   # Sales analytics
+    ├── settings/                # Theme picker + login history
     └── market-insights/         # AI market analysis (v2)
         └── components/          # ContextPanel, AlertsCard, InsightCharts,
                                  # ActionChecklist, SourcesList, DiffBanner

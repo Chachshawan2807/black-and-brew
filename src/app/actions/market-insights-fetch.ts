@@ -200,4 +200,45 @@ export function __clearTrendsCache(): void {
   trendsCache = null;
 }
 
+// ─── Competitor web context (single cached Tavily query) ───────────────────────
+
+const COMPETITOR_WEB_CACHE_TTL_MS = 1_800_000; // 30 minutes
+let competitorWebCache: { raw: string; expiresAt: number } | null = null;
+
+/**
+ * One lightweight Tavily query for competitor landscape news/snippets.
+ * Cached 30 min; uses basic depth + 2 results to minimise API cost.
+ */
+export async function fetchCompetitorWebContext(): Promise<string> {
+  if (competitorWebCache && competitorWebCache.expiresAt > Date.now()) {
+    return competitorWebCache.raw;
+  }
+
+  try {
+    const query = `ร้านกาแฟ คาเฟ่ ลำลูกกา บึงคำพรoye คู่แข่ง เปิดใหม่ ${new Date().getFullYear()}`;
+    const results = await fetchTavily(query, {
+      userId: 'market-insights-competitors',
+      searchDepth: 'basic',
+      maxResults: 2,
+    });
+
+    const raw =
+      results
+        .map((r) => `${r.title}: ${(r.content || '').slice(0, 100)}`)
+        .join(' | ')
+        .slice(0, 350) || '';
+
+    competitorWebCache = { raw, expiresAt: Date.now() + COMPETITOR_WEB_CACHE_TTL_MS };
+    return raw;
+  } catch (error) {
+    console.error('[fetchCompetitorWebContext] skipped:', error);
+    return '';
+  }
+}
+
+/** Test helper — clears competitor web cache. */
+export function __clearCompetitorWebCache(): void {
+  competitorWebCache = null;
+}
+
 export { STORE_LAT, STORE_LON };

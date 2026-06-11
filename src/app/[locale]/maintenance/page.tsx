@@ -281,23 +281,23 @@ export default function MaintenancePage() {
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-10 text-[#000000] relative font-normal" style={{ lineHeight: '1.6' }}>
+    <div className="min-h-screen bg-transparent p-4 md:p-10 text-foreground relative font-normal" style={{ lineHeight: '1.6' }}>
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-black/5">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border">
           <div className="space-y-1.5">
             <motion.h1
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-4xl md:text-5xl font-normal tracking-[0.1em] text-[#000000] flex items-center gap-3"
+              className="text-4xl md:text-5xl font-normal tracking-[0.1em] text-foreground flex items-center gap-3"
             >
               <div className="p-2.5 bg-black text-white rounded-2xl">
                 <Wrench className="w-8 h-8" strokeWidth={1.5} />
               </div>
               ประวัติการซ่อมบำรุง
             </motion.h1>
-            <p className="text-[#000000]/50 text-[13px] font-normal uppercase tracking-[0.3em] px-1">บันทึกการดูแลรักษาอุปกรณ์และเครื่องใช้</p>
+            <p className="text-foreground/50 text-[13px] font-normal uppercase tracking-[0.3em] px-1">บันทึกการดูแลรักษาอุปกรณ์และเครื่องใช้</p>
           </div>
 
           <div className="flex items-center gap-4">
@@ -319,30 +319,30 @@ export default function MaintenancePage() {
         {/* Records List */}
         <main className="pb-20">
           {loading && records.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-32 text-[#000000]/20">
+            <div className="flex flex-col items-center justify-center py-32 text-foreground/20">
               <Loader2 className="w-12 h-12 animate-spin mb-6" strokeWidth={1} />
               <span className="text-sm tracking-[0.3em] uppercase font-normal">Synchronizing Records...</span>
             </div>
           ) : records.length === 0 ? (
-            <div className="bg-white/50 border border-dashed border-[#000000]/8 rounded-3xl py-32 flex flex-col items-center justify-center text-[#000000]/40">
+            <div className="bg-card/50 border border-dashed border-border rounded-3xl py-32 flex flex-col items-center justify-center text-muted-foreground">
               <Wrench className="w-20 h-20 mb-8 opacity-10" strokeWidth={0.5} />
               <p className="text-xl font-normal tracking-wide italic">No maintenance records discovered yet.</p>
               <button
                 onClick={() => setIsModalOpen(true)}
                 disabled={isReadOnly}
-                className="mt-8 text-[#000000] hover:opacity-60 transition-opacity font-normal text-xs uppercase tracking-[0.3em] border-b border-[#000000] pb-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="mt-8 text-foreground hover:opacity-60 transition-opacity font-normal text-xs uppercase tracking-[0.3em] border-b border-[#000000] pb-1 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Begin your first entry
               </button>
             </div>
           ) : (
-            <div className="w-full overflow-x-auto scrollbar-thin pb-6 box-border bg-white rounded-3xl border border-black/5 bb-shadow-sm">
+            <div className="w-full overflow-x-auto scrollbar-thin pb-6 box-border bg-card rounded-3xl border border-border bb-shadow-sm">
               <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '1100px' }}>
                 <thead>
-                  <tr className="border-b border-black/5 bg-[#fdfcf0]/40">
+                  <tr className="border-b border-border bg-muted/40">
                     <th 
                       style={{ width: `${colWidths.date}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       วันที่
                       <div
@@ -352,7 +352,7 @@ export default function MaintenancePage() {
                     </th>
                     <th 
                       style={{ width: `${colWidths.equipment}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       อุปกรณ์
                       <div
@@ -362,7 +362,7 @@ export default function MaintenancePage() {
                     </th>
                     <th 
                       style={{ width: `${colWidths.issue}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       อาการ/ปัญหา
                       <div
@@ -372,7 +372,7 @@ export default function MaintenancePage() {
                     </th>
                     <th 
                       style={{ width: `${colWidths.frequency}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       ความถี่ที่แนะนำ
                       <div
@@ -382,7 +382,7 @@ export default function MaintenancePage() {
                     </th>
                     <th 
                       style={{ width: `${colWidths.technician}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       ผู้รับผิดชอบ
                       <div
@@ -392,7 +392,7 @@ export default function MaintenancePage() {
                     </th>
                     <th 
                       style={{ width: `${colWidths.taskType}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       ประเภท
                       <div
@@ -402,7 +402,7 @@ export default function MaintenancePage() {
                     </th>
                     <th 
                       style={{ width: `${colWidths.cost}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       ค่าใช้จ่าย
                       <div
@@ -412,7 +412,7 @@ export default function MaintenancePage() {
                     </th>
                     <th 
                       style={{ width: `${colWidths.status}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       สถานะ
                       <div
@@ -422,7 +422,7 @@ export default function MaintenancePage() {
                     </th>
                     <th 
                       style={{ width: `${colWidths.manage}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-black/40 uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       จัดการ
                       <div
@@ -458,7 +458,7 @@ export default function MaintenancePage() {
                           {record.person_in_charge || '-'}
                         </td>
                         <td className="py-4 px-5 text-center">
-                          <span className="inline-block px-3 py-1 bg-black/[0.04] rounded-full uppercase tracking-widest font-normal text-[11px] text-black/60">
+                          <span className="inline-block px-3 py-1 bg-muted rounded-full uppercase tracking-widest font-normal text-[11px] text-muted-foreground">
                             {record.task_type}
                           </span>
                         </td>
@@ -479,14 +479,14 @@ export default function MaintenancePage() {
                             <button
                               onClick={() => handleEdit(record)}
                               disabled={isReadOnly}
-                              className="p-2 hover:bg-black/5 text-black/40 hover:text-black rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="p-2 hover:bg-black/5 text-muted-foreground hover:text-foreground rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               <Edit2 className="w-4 h-4" strokeWidth={1.5} />
                             </button>
                             <button
                               onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
                               disabled={isReadOnly}
-                              className="p-2 hover:bg-red-50 text-black/40 hover:text-red-500 rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="p-2 hover:bg-red-50 text-muted-foreground hover:text-red-500 rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                             </button>

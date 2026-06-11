@@ -2,7 +2,7 @@
 
 Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
 
-> **Version:** 6.9 | **Stack:** Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4
+> **Version:** 8.4 | **Stack:** Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
 
 ---
 
@@ -18,6 +18,7 @@ Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AN
 | Maintenance | `/[locale]/maintenance` | บันทึกการซ่อมบำรุงอุปกรณ์ |
 | Sales | `/[locale]/sales` | อัปโหลด Excel วิเคราะห์ยอดขาย |
 | Market Insights | `/[locale]/market-insights` | วิเคราะห์ตลาดด้วย Gemini AI |
+| Settings | `/[locale]/settings` | ธีม (สว่าง/มืด/ตามระบบ) + ประวัติการเข้าใช้ |
 | AI Chat (บรู) | Global overlay | แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน |
 
 **Locales:** `th` (หลัก), `en` — Root `/` redirect ไป `/th`
@@ -141,7 +142,7 @@ src/
 | [docs/architecture.md](docs/architecture.md) | สถาปัตยกรรมและ data flow |
 | [docs/database.md](docs/database.md) | Schema, RLS, RPC |
 | [docs/api.md](docs/api.md) | Server Actions reference |
-| [docs/design.md](docs/design.md) | UI/UX standards (Zero-Bold, Pastel) |
+| [docs/design.md](docs/design.md) | UI/UX standards (Zero-Bold, Pastel, Dual Theme) |
 | [docs/SOP.md](docs/SOP.md) | Development SOP (TDD) |
 | [docs/MASTER_BLUEPRINT.md](docs/MASTER_BLUEPRINT.md) | Blueprint ฉบับสมบูรณ์ (canonical) |
 | [AGENTS.md](AGENTS.md) | กฎสำหรับ AI agents |

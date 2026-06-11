@@ -62,12 +62,12 @@ export default function ActionChecklist({ actions }: { actions: ActionItem[] }) 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
-            className={`bb-card p-4 md:p-5 ${isDone ? 'opacity-60' : ''}`}
+            className={`rounded-2xl border border-border bg-card p-3.5 md:p-4 shadow-[0_1px_3px_rgb(0,0,0,0.03)] ${isDone ? 'opacity-60' : ''}`}
           >
             <div className="flex items-start gap-3">
               <button
                 onClick={() => toggle(action.title)}
-                className="mt-0.5 shrink-0 text-black/70 hover:text-black bb-transition"
+                className="mt-0.5 shrink-0 text-foreground/70 hover:text-foreground bb-transition"
                 aria-label={isDone ? 'ทำแล้ว' : 'ยังไม่ทำ'}
               >
                 {isDone ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
@@ -75,11 +75,11 @@ export default function ActionChecklist({ actions }: { actions: ActionItem[] }) 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`text-[11px] px-2 py-0.5 rounded-full ${pr.cls}`}>{pr.text}</span>
-                  <h4 className={`text-sm md:text-base text-black/85 ${isDone ? 'line-through' : ''}`}>
+                  <h4 className={`text-sm md:text-base text-foreground/85 ${isDone ? 'line-through' : ''}`}>
                     {action.title}
                   </h4>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-black/50">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" /> {action.timeframe}
                   </span>
@@ -92,7 +92,7 @@ export default function ActionChecklist({ actions }: { actions: ActionItem[] }) 
                     {action.linkedProducts.map((p) => (
                       <span
                         key={p}
-                        className="text-xs bg-black/[0.04] text-black/60 px-2 py-0.5 rounded-full border border-black/5"
+                        className="text-xs bg-black/[0.04] text-muted-foreground px-2 py-0.5 rounded-full border border-black/5"
                       >
                         {p}
                       </span>
@@ -102,7 +102,7 @@ export default function ActionChecklist({ actions }: { actions: ActionItem[] }) 
               </div>
               <button
                 onClick={() => askBru(action)}
-                className="shrink-0 inline-flex items-center gap-1.5 text-xs text-black/60 hover:text-black border border-black/10 rounded-full px-3 py-1.5 bb-transition"
+                className="shrink-0 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-black/10 rounded-full px-3 py-1.5 bb-transition"
               >
                 {copied === action.id ? (
                   <>

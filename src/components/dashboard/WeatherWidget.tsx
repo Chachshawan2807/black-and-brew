@@ -45,7 +45,7 @@ export function WeatherWidget() {
 
   if (loading) {
     return (
-      <div className="bg-[#fdfcf0] border-2 border-black rounded-3xl p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row gap-8 animate-pulse">
+      <div className="bg-card border border-border rounded-3xl p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row gap-8 animate-pulse">
         <div className="flex-1 space-y-4">
           <div className="h-8 bg-gray-100 rounded w-1/3"></div>
           <div className="h-16 bg-gray-100 rounded w-1/2"></div>
@@ -61,28 +61,28 @@ export function WeatherWidget() {
 
   if (!data || data.error || !data.current) {
     return (
-      <div className="bg-[#fdfcf0] border-2 border-black rounded-3xl p-8 shadow-sm w-full min-h-[220px] flex items-center justify-center">
-        <p className="text-black font-normal">ไม่สามารถดึงข้อมูลสภาพอากาศได้</p>
+      <div className="bg-card border border-border rounded-3xl p-8 shadow-sm w-full min-h-[220px] flex items-center justify-center">
+        <p className="text-foreground font-normal">ไม่สามารถดึงข้อมูลสภาพอากาศได้</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#fdfcf0] border-2 border-black rounded-3xl p-6 md:p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-md transition-shadow duration-300">
+    <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm w-full min-h-[220px] flex flex-col md:flex-row md:items-center justify-between gap-8 hover:shadow-md transition-shadow duration-300">
       {/* Current Weather (Left side on desktop) */}
       <div className="flex items-center gap-6">
         <div>
-          <h2 className="text-xl font-normal text-black tracking-wide">สภาพอากาศปัจจุบัน</h2>
-          <p className="text-sm font-normal text-black mb-2">ตำบลบึงคำพร้อย ลำลูกกา</p>
+          <h2 className="text-xl font-normal text-foreground tracking-wide">สภาพอากาศปัจจุบัน</h2>
+          <p className="text-sm font-normal text-foreground mb-2">ตำบลบึงคำพร้อย ลำลูกกา</p>
           <div className="flex items-baseline gap-3">
-            <span className="text-5xl font-medium text-black tracking-tight">{data.current.temp}°C</span>
-            <span className="text-lg font-normal text-black capitalize">{data.current.description}</span>
+            <span className="text-5xl font-medium text-foreground tracking-tight">{data.current.temp}°C</span>
+            <span className="text-lg font-normal text-foreground capitalize">{data.current.description}</span>
           </div>
           <div className="flex gap-4 mt-3">
-            <span className="text-sm text-black">ความชื้น: {data.current.humidity}%</span>
-            <span className="text-sm text-black">ลม: {data.current.windSpeed} m/s</span>
+            <span className="text-sm text-foreground">ความชื้น: {data.current.humidity}%</span>
+            <span className="text-sm text-foreground">ลม: {data.current.windSpeed} m/s</span>
           </div>
-          <div className="text-sm font-normal text-black antialiased mt-2">
+          <div className="text-sm font-normal text-foreground antialiased mt-2">
             💧 โอกาสเกิดฝน: {data.current.pop}%
           </div>
         </div>
@@ -100,7 +100,7 @@ export function WeatherWidget() {
       {/* Hourly Forecast (Right side on desktop) */}
       <div className="flex-1 md:max-w-md w-full">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-black ml-1">พยากรณ์รายชั่วโมง</h3>
+          <h3 className="text-sm font-medium text-foreground ml-1">พยากรณ์รายชั่วโมง</h3>
         </div>
         <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide">
           {data.hourly.map((hour, index) => (
@@ -109,7 +109,7 @@ export function WeatherWidget() {
               className="flex flex-col items-center justify-center min-w-[72px] p-3 border-2 border-black rounded-[20px] bg-gray-50/50 hover:bg-gray-50 transition-colors"
             >
               {/* บังคับข้อความเวลากางเต็ม 100% และจัดกึ่งกลาง */}
-              <span className="w-full text-center text-sm font-medium text-black">{hour.time}</span>
+              <span className="w-full text-center text-sm font-medium text-foreground">{hour.time}</span>
               <Image
                 src={`https://openweathermap.org/img/wn/${hour.icon}@2x.png`}
                 alt="weather icon"
@@ -118,12 +118,12 @@ export function WeatherWidget() {
                 className="opacity-90 my-1 mx-auto"
               />
               {/* บังคับช่องโอกาสฝนเป็น Flex ตรงกลาง และใช้สีดำล้วน */}
-              <span className="w-full text-center flex items-center justify-center gap-1 text-xs font-normal text-black antialiased mb-1">
+              <span className="w-full text-center flex items-center justify-center gap-1 text-xs font-normal text-foreground antialiased mb-1">
                 <span>💧</span>
                 <span>{hour.pop}%</span>
               </span>
               {/* บังคับข้อความอุณหภูมิกางเต็ม 100% และจัดกึ่งกลาง */}
-              <span className="w-full text-center text-base font-medium text-black">{hour.temp}°C</span>
+              <span className="w-full text-center text-base font-medium text-foreground">{hour.temp}°C</span>
             </div>
           ))}
         </div>

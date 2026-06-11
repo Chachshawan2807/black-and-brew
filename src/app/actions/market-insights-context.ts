@@ -140,6 +140,7 @@ export function buildSalesSnapshot(metrics: SalesMetrics | null): SalesSnapshot 
   if (!metrics) {
     return {
       momChangePercentage: null,
+      momDetail: null,
       topProducts: [],
       categoryBreakdown: [],
       monthlyTrend: [],
@@ -163,10 +164,23 @@ export function buildSalesSnapshot(metrics: SalesMetrics | null): SalesSnapshot 
     totalRevenue: Math.round(m.totalRevenue),
   }));
 
+  const mom = metrics.comparisons.mom;
+  let momDetail: SalesSnapshot['momDetail'] = null;
+  if (mom && metrics.monthlyMetrics.length >= 2) {
+    const current = metrics.monthlyMetrics.at(-1)!;
+    const previous = metrics.monthlyMetrics.at(-2)!;
+    momDetail = {
+      currentLabel: `${current.year}-${String(current.month).padStart(2, '0')}`,
+      previousLabel: `${previous.year}-${String(previous.month).padStart(2, '0')}`,
+      currentRevenue: Math.round(mom.currentMonthRevenue),
+      previousRevenue: Math.round(mom.previousMonthRevenue),
+      changeAbsolute: Math.round(mom.changeAbsolute),
+    };
+  }
+
   return {
-    momChangePercentage: metrics.comparisons.mom
-      ? Number(metrics.comparisons.mom.changePercentage.toFixed(1))
-      : null,
+    momChangePercentage: mom ? Number(mom.changePercentage.toFixed(1)) : null,
+    momDetail,
     topProducts,
     categoryBreakdown,
     monthlyTrend,

@@ -90,6 +90,18 @@ describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => 
     expect(pageCode).not.toContain('useSensor(TouchSensor');
   });
 
+  test('history modal scroll area should use min-h-0 so flex children can scroll on mobile', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const modalCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
+      'utf-8',
+    );
+
+    expect(modalCode).toMatch(/flex-1 min-h-0 overflow-y-auto/);
+    expect(modalCode).toMatch(/overflow-x-auto[\s\S]*?<table/);
+  });
+
   test('should separate order count badge from truncated text to prevent truncation to ellipsis', async () => {
     render(<Page />);
     

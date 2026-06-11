@@ -139,11 +139,11 @@ function StatusGrid({ profiles, shifts, dateLabel, highlightToday = false }: Sta
               highlightToday && isWorkShift ? 'ring-2 ring-black/[0.06] bb-shadow-sm' : 'shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
             }`}
           >
-            <span className="text-[0.8125rem] font-normal text-black truncate leading-snug tracking-tight">
+            <span className="text-[0.8125rem] font-normal text-foreground truncate leading-snug tracking-tight">
               {profile.full_name}
             </span>
-            <span className="inline-flex items-center justify-center gap-1 self-center max-w-full px-2 py-0.5 rounded-full bg-black/[0.04] text-[0.6875rem] font-normal text-black/80 tracking-wide">
-              <ShiftIcon className="h-3 w-3 shrink-0 text-black/45" strokeWidth={1.5} aria-hidden />
+            <span className="inline-flex items-center justify-center gap-1 self-center max-w-full px-2 py-0.5 rounded-full bg-black/[0.04] text-[0.6875rem] font-normal text-foreground/80 tracking-wide">
+              <ShiftIcon className="h-3 w-3 shrink-0 text-muted-foreground/90" strokeWidth={1.5} aria-hidden />
               <span className="truncate">{displayText}</span>
             </span>
           </article>
@@ -183,13 +183,13 @@ function StatusSection({
             {icon}
           </div>
           <div>
-            <h2 className="text-[clamp(1rem,2.5vw,1.25rem)] font-normal text-black tracking-tight leading-snug">
+            <h2 className="text-[clamp(1rem,2.5vw,1.25rem)] font-normal text-foreground tracking-tight leading-snug">
               {title}
             </h2>
-            <p className="mt-1 text-[0.8rem] font-normal text-black/45 tracking-wide">{subtitle}</p>
+            <p className="mt-1 text-[0.8rem] font-normal text-muted-foreground/90 tracking-wide">{subtitle}</p>
           </div>
         </div>
-        <span className="text-[0.7rem] font-normal text-black/35 uppercase tracking-[0.2em] shrink-0">
+        <span className="text-[0.7rem] font-normal text-muted-foreground/70 uppercase tracking-[0.2em] shrink-0">
           {profiles.length} พนักงาน
         </span>
       </header>
@@ -261,7 +261,7 @@ export default function LiveStatusTracker({
   return (
     <div className="space-y-6 md:space-y-8">
       <StatusSection
-        icon={<CalendarDays className="h-5 w-5 text-black/60" strokeWidth={1.5} />}
+        icon={<CalendarDays className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />}
         title="สถานะพนักงานวันนี้"
         subtitle={currentThaiDate ?? ''}
         profiles={profiles}
@@ -272,7 +272,7 @@ export default function LiveStatusTracker({
 
       {tomorrowThaiDate && (
         <StatusSection
-          icon={<Sun className="h-5 w-5 text-black/60" strokeWidth={1.5} />}
+          icon={<Sun className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />}
           title="กะวันถัดไป"
           subtitle={tomorrowThaiDate}
           profiles={profiles}

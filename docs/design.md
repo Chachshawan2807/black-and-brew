@@ -1,6 +1,6 @@
 # Design Standards — BLACKANDBREW ERP
 
-> Version: 8.3 | Last Updated: 2026-06-09 | Standard: Black-on-Pastel, High-Legibility
+> Version: 8.4 | Last Updated: 2026-06-12 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
 
 ---
 
@@ -9,23 +9,46 @@
 **Minimalist Analog** — ดีไซน์ที่สื่อถึงความเรียบง่าย สะอาดตา และใช้งานง่าย เหมือนกระดาษที่ตัดมาวางบนโต๊ะ
 
 - ไม่มี Visual Clutter — ทุกพิกเซลมีหน้าที่
-- Black-on-Pastel — ตัวหนังสือดำบนพื้นหลังอ่อน
-- High-Legibility — อ่านง่ายในทุกสภาพแสง
+- Black-on-Pastel — ตัวหนังสือดำบนพื้นหลัง pastel accent (ทั้ง light และ dark theme)
+- Dual Theme — หน้า/modal ใช้ CSS tokens; pastel cards คงสีเดิม + `.bb-pastel-surface`
+- High-Legibility — อ่านง่ายในทุกสภาพแสงและทั้งสองธีม
 
 ---
 
 ## 2. Color Palette
 
-| Token | Value | Usage |
+### 2a. Theme Tokens (`globals.css`)
+
+Light (`:root`) และ dark (`.dark`) กำหนดผ่าน CSS variables — ใช้ Tailwind utilities:
+
+| Utility | CSS Variable | Light | Dark | Usage |
+| --- | --- | --- | --- | --- |
+| `bg-background` | `--background` | `#fdfcf0` | deep neutral | พื้นหลังหน้า |
+| `text-foreground` | `--foreground` | near-black | near-white | ข้อความหลัก |
+| `bg-card` | `--card` | white | dark card | Cards, modals, inputs |
+| `text-muted-foreground` | `--muted-foreground` | muted | muted light | ข้อความรอง |
+| `border-border` | `--border` | subtle | subtle dark | เส้นขอบ |
+
+Theme persistence: `next-themes` + `storageKey="bb-theme"` — ตั้งค่าที่ `/[locale]/settings`.
+
+### 2b. Pastel Accent Surfaces (Both Themes)
+
+Pastel hex backgrounds (shift types, sales metrics, inventory quick actions) **ไม่เปลี่ยนตาม theme** — ต้องใช้ class `bb-pastel-surface` (หรือ `PASTEL_SURFACE` จาก `shift-colors.ts`) เพื่อบังคับ:
+
+- ข้อความและไอคอน = `#000000`
+- Override `.text-foreground`, `h1–h6`, และ muted classes ภายใน container
+
+| Pattern | Example |
+| --- | --- |
+| Pastel card | `bg-[#d4edda] bb-pastel-surface text-[#000000]` |
+| Non-pastel page | `bg-background text-foreground` |
+| Non-pastel card | `bg-card border border-border text-foreground` |
+
+### 2c. Legacy Semantic Tokens (Reference)
+
+| Token | Light value | Usage |
 | --- | --- | --- |
-| `--text-primary` | `#000000` | หัวข้อ, ข้อมูลหลัก, Labels |
-| `--text-secondary` | `#000000/60` (opacity 60%) | ข้อมูลรอง, คำอธิบาย |
-| `--text-muted` | `#000000/40` (opacity 40%) | Timestamps, Hints |
-| `--bg-primary` | `#fdfcf0` | Morning Latte Cream — พื้นหลังหลัก |
-| `--bg-card` | `white` | Cards, Modals |
-| `--bg-input` | `#fdfcf0/50` (opacity 50%) | Input fields, Form backgrounds |
-| `--bg-hover` | `#000000/5` (opacity 5%) | Row hover, Interactive elements |
-| `--border` | `#000000/5` (opacity 5%) | Borders, Separators |
+| Morning Latte Cream | `#fdfcf0` | Light `--background` only — ใช้ `bg-background` ไม่ hardcode |
 | `--accent-save` | `emerald-500` | Sync/Save confirmation |
 | `--accent-delete` | `red-500` | Destructive actions |
 | `--accent-loading` | `purple-400` | Loading spinners |
@@ -92,7 +115,7 @@ font-family: 'Sarabun', 'Inter', system-ui, sans-serif;
 
 ```text
 Primary:   bg-black text-white rounded-3xl shadow-sm hover:bg-black/80 active:scale-95
-Secondary: bg-white text-black border border-black/5 rounded-3xl shadow-sm hover:bg-slate-50
+Secondary: bg-card text-foreground border border-border rounded-3xl shadow-sm hover:bg-muted/50
 Danger:    bg-red-500 text-white rounded-3xl hover:bg-red-600
 ```
 
@@ -100,16 +123,16 @@ Danger:    bg-red-500 text-white rounded-3xl hover:bg-red-600
 
 ```text
 Overlay:   bg-slate-900/20 backdrop-blur-sm (standard) or bg-black/40 backdrop-blur-md (heavy)
-Container: bg-white or bg-[#fdfcf0] rounded-3xl shadow-xl max-w-xl animate-in fade-in zoom-in-95
-Header:    px-6 py-5 border-b border-slate-100 flex justify-between
+Container: bg-card rounded-3xl shadow-xl max-w-xl animate-in fade-in zoom-in-95 border border-border
+Header:    px-6 py-5 border-b border-border flex justify-between text-foreground
 ```
 
 ### Table (Spreadsheet-Style)
 
 ```text
-Wrapper:   border border-black/5 bg-[#fdfcf0]/80 backdrop-blur-md rounded-3xl shadow-sm
-Header:    bg-slate-50/50 text-black/60 text-[13px] uppercase tracking-wider
-Row:       border-b border-black/5 hover:bg-black/5 transition-all duration-300
+Wrapper:   border border-border bg-background/80 backdrop-blur-md rounded-3xl shadow-sm
+Header:    bg-muted/50 text-muted-foreground text-[13px] uppercase tracking-wider
+Row:       border-b border-border hover:bg-muted/30 transition-all duration-300
 Cell:      Direct <input> in <td>, px-4 py-4 min-h-[56px] bg-transparent
 Index Cell: bg-black/[0.01], text-black/20, text-[10px], font-medium, tabular-nums
 Type Indicator: w-9 h-9, rounded-2xl, icon size w-4.5 h-4.5, flex center
@@ -234,3 +257,31 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 - Modal overlay: `bg-black/20 backdrop-blur-sm` + fade
 - Mobile drawer backdrop: sync 300ms กับ sidebar `transition-transform duration-300`
 - Zero-Bold Policy ยังบังคับใช้ในทุก animated element
+
+---
+
+## 11. Dark Theme (v8.4)
+
+### Implementation
+
+| Piece | Path | Role |
+| --- | --- | --- |
+| CSS tokens | `src/app/[locale]/globals.css` | `:root` / `.dark` variables + `.bb-pastel-surface` |
+| Provider | `src/components/providers/ThemeProvider.tsx` | `next-themes`, class on `<html>` |
+| Settings UI | `src/app/[locale]/settings/page.tsx` | Theme picker + login history |
+| Pastel constants | `src/lib/shift-colors.ts` | `PASTEL_SURFACE`, `SALES_SECTION_COLORS`, etc. |
+
+### Surface Decision Matrix
+
+| Surface type | Background | Text |
+| --- | --- | --- |
+| Page / modal / spreadsheet | `bg-background` / `bg-card` | `text-foreground` / `text-muted-foreground` |
+| Pastel accent (shift, metrics, quick actions) | Pastel hex (unchanged) | `bb-pastel-surface` → always black |
+| Borders | `border-border` | — |
+| Inputs on pastel (active count cell) | `bg-white` + `text-black` when on pastel only | explicit black |
+
+### Anti-patterns
+
+- ❌ `bg-[#fdfcf0]` or `bg-white` on page wrappers in new code
+- ❌ `text-black` / `text-[#000000]` on non-pastel dark surfaces
+- ❌ Pastel cards without `bb-pastel-surface` (white/invisible text in dark mode)

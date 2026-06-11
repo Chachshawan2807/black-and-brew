@@ -12,155 +12,196 @@ import {
   Droplets,
 } from 'lucide-react';
 import type { MarketContext } from '@/app/actions/market-insights-types';
+import MetricInfoTip from './MetricInfoTip';
+import { fmtCurrency, fmtPctChange, fmtMonthLabel } from '@/lib/market-insights/format';
+import { humanizeSignal } from '@/lib/market-insights/glossary';
+import type { GlossaryId } from '@/lib/market-insights/glossary';
 
 function KpiCard({
   icon,
   label,
+  tipId,
   value,
   sub,
 }: {
   icon: React.ReactNode;
   label: string;
+  tipId: GlossaryId;
   value: React.ReactNode;
   sub?: string;
 }) {
   return (
-    <div className="bb-card p-4 md:p-5">
-      <div className="flex items-center gap-2 text-black/50 mb-2">
+    <div className="rounded-2xl border border-border bg-card px-3.5 py-3 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
+      <div className="flex items-center gap-1 text-muted-foreground/90 mb-1.5">
         {icon}
-        <span className="text-xs md:text-sm">{label}</span>
+        <span className="text-[11px]">{label}</span>
+        <MetricInfoTip id={tipId} />
       </div>
-      <div className="text-lg md:text-xl text-black leading-tight">{value}</div>
-      {sub && <div className="text-xs text-black/40 mt-1">{sub}</div>}
+      <div className="text-base md:text-lg text-foreground leading-tight tabular-nums tracking-tight">{value}</div>
+      {sub && <div className="text-[10px] text-foreground/38 mt-0.5 line-clamp-2 leading-snug">{sub}</div>}
+    </div>
+  );
+}
+
+function StripSection({
+  icon,
+  title,
+  tipId,
+  children,
+  className = '',
+}: {
+  icon: React.ReactNode;
+  title: string;
+  tipId: GlossaryId;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`px-4 py-3 ${className}`}>
+      <div className="flex items-center gap-1 text-foreground/42 mb-2">
+        {icon}
+        <span className="text-[11px]">{title}</span>
+        <MetricInfoTip id={tipId} />
+      </div>
+      {children}
     </div>
   );
 }
 
 export default function ContextPanel({ context }: { context: MarketContext }) {
-  const { weather, salesSnapshot, scheduleToday, upcomingHolidays, signals, competitors } = context;
+  const { weather, salesSnapshot, scheduleToday, upcomingHolidays, signals } = context;
   const mom = salesSnapshot.momChangePercentage;
+  const momDetail = salesSnapshot.momDetail;
   const topCategory = salesSnapshot.categoryBreakdown[0];
-  const nextHoliday = upcomingHolidays[0];
+  const hasHolidays = upcomingHolidays.length > 0;
+  const hasRainHourly = weather.hourly.length > 0;
+  const contextCols = hasRainHourly ? 'lg:grid-cols-3' : 'lg:grid-cols-2';
+
+  const momSub = momDetail
+    ? `${fmtMonthLabel(momDetail.currentLabel)} vs ${fmtMonthLabel(momDetail.previousLabel)} · ${fmtCurrency(momDetail.changeAbsolute)}`
+    : 'เทียบเดือนก่อน';
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="space-y-4"
+      className="space-y-3"
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <KpiCard
-          icon={<CloudSun className="w-4 h-4" />}
+          icon={<CloudSun className="w-3.5 h-3.5" />}
           label="อากาศวันนี้"
+          tipId="weather_today"
           value={weather.current ? `${weather.current.temp}°C` : 'N/A'}
           sub={weather.current?.description}
         />
         <KpiCard
-          icon={mom !== null && mom >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+          icon={mom !== null && mom >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
           label="ยอดขาย MoM"
-          value={mom !== null ? `${mom >= 0 ? '+' : ''}${mom}%` : 'N/A'}
-          sub="เทียบเดือนก่อน"
+          tipId="mom_sales"
+          value={fmtPctChange(mom)}
+          sub={momSub}
         />
         <KpiCard
-          icon={<TrendingUp className="w-4 h-4" />}
+          icon={<TrendingUp className="w-3.5 h-3.5" />}
           label="หมวดเด่น"
+          tipId="top_category"
           value={topCategory ? topCategory.category : 'N/A'}
-          sub={topCategory ? `${topCategory.revenuePercentage}% ของรายได้` : undefined}
+          sub={
+            topCategory
+              ? `${topCategory.revenuePercentage.toFixed(1)}% · ${fmtCurrency(topCategory.totalRevenue)}`
+              : undefined
+          }
         />
         <KpiCard
-          icon={<Users className="w-4 h-4" />}
+          icon={<Users className="w-3.5 h-3.5" />}
           label="กะวันนี้"
+          tipId="shift_today"
           value={`${scheduleToday.length} คน`}
           sub={scheduleToday.map((s) => s.fullName).join(', ') || 'ไม่มีข้อมูล'}
         />
       </div>
 
-      {/* Weather operating window + rain hours */}
-      {weather.hourly.length > 0 && (
-        <div className="bb-card p-4 md:p-5">
-          <div className="flex items-center gap-2 text-black/50 mb-3">
-            <Droplets className="w-4 h-4" />
-            <span className="text-sm">โอกาสฝนช่วงเปิดร้าน (06:00–18:00)</span>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {weather.hourly.map((h) => (
-              <div
-                key={h.time}
-                className="flex flex-col items-center gap-1 min-w-[60px] bg-black/[0.03] rounded-xl px-2 py-2"
-              >
-                <span className="text-xs text-black/50">{h.time}</span>
-                <span className="text-sm text-black">{h.temp}°</span>
-                <span className={`text-xs ${h.pop >= 50 ? 'text-blue-600' : 'text-black/40'}`}>
-                  {h.pop}%
-                </span>
+      <div className="rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgb(0,0,0,0.03)] overflow-hidden divide-y divide-black/[0.05] lg:divide-y-0">
+        <div className={`grid grid-cols-1 ${contextCols} lg:divide-x lg:divide-black/[0.05]`}>
+          {hasRainHourly && (
+            <StripSection
+              icon={<Droplets className="w-3.5 h-3.5" />}
+              title="โอกาสฝนช่วงเปิดร้าน (06:00–18:00)"
+              tipId="rain_probability"
+              className={hasHolidays ? '' : 'lg:col-span-1'}
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {weather.hourly.map((h) => (
+                  <div
+                    key={h.time}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-black/[0.03] border border-black/[0.04] px-2 py-1"
+                  >
+                    <span className="text-[10px] text-muted-foreground/80 tabular-nums">{h.time}</span>
+                    <span className="text-[11px] text-foreground/70 tabular-nums">{h.temp}°</span>
+                    <span
+                      className={`text-[10px] tabular-nums font-medium ${h.pop >= 50 ? 'text-blue-600' : 'text-muted-foreground/70'}`}
+                    >
+                      {h.pop}%
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <p className="text-xs text-black/40 mt-2">{weather.operatingSummary}</p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-        {/* Signals */}
-        <div className="bb-card p-4 md:p-5">
-          <div className="flex items-center gap-2 text-black/50 mb-3">
-            <Store className="w-4 h-4" />
-            <span className="text-sm">สัญญาณตลาดที่ AI ใช้</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {signals.length ? (
-              signals.map((s) => (
-                <span
-                  key={s}
-                  className="text-xs bg-black/[0.04] text-black/60 px-2.5 py-1 rounded-full border border-black/5"
-                >
-                  {s}
-                </span>
-              ))
-            ) : (
-              <span className="text-sm text-black/40">baseline: ดำเนินงานปกติ</span>
-            )}
-          </div>
-        </div>
-
-        {/* Holidays + competitors */}
-        <div className="bb-card p-4 md:p-5 space-y-3">
-          <div className="flex items-center gap-2 text-black/50">
-            <CalendarDays className="w-4 h-4" />
-            <span className="text-sm">วันหยุดใกล้นี้</span>
-          </div>
-          {nextHoliday ? (
-            <div className="flex flex-wrap gap-1.5">
-              {upcomingHolidays.slice(0, 4).map((h) => (
-                <span
-                  key={h.date}
-                  className="text-xs bg-[#fff6e6] text-black/70 px-2.5 py-1 rounded-full border border-black/5"
-                >
-                  {h.date.slice(5)} {h.name}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-black/40">ไม่มีวันหยุดใน 14 วันข้างหน้า</p>
+              {weather.operatingSummary && (
+                <p className="text-[10px] text-foreground/38 mt-2 leading-snug line-clamp-2">
+                  {weather.operatingSummary}
+                </p>
+              )}
+            </StripSection>
           )}
 
-          {competitors.length > 0 && (
-            <div className="pt-2 border-t border-black/5">
-              <p className="text-xs text-black/40 mb-1.5">คาเฟ่ใกล้เคียง (รัศมี 2 กม.)</p>
-              <div className="flex flex-wrap gap-1.5">
-                {competitors.slice(0, 5).map((c) => (
+          <StripSection
+            icon={<Store className="w-3.5 h-3.5" />}
+            title="สัญญาณตลาดที่ AI ใช้"
+            tipId="market_signals"
+          >
+            <div className="flex flex-wrap gap-1">
+              {signals.length ? (
+                signals.map((s) => {
+                  const { label, tip } = humanizeSignal(s);
+                  return (
+                    <span
+                      key={s}
+                      title={tip}
+                      className="text-[10px] bg-black/[0.04] text-foreground/58 px-2 py-0.5 rounded-full border border-black/[0.05]"
+                    >
+                      {label}
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="text-[11px] text-foreground/38">ดำเนินงานปกติ</span>
+              )}
+            </div>
+          </StripSection>
+
+          <StripSection
+            icon={<CalendarDays className="w-3.5 h-3.5" />}
+            title="วันหยุดใกล้นี้"
+            tipId="holidays"
+            className="lg:max-w-[220px]"
+          >
+            {hasHolidays ? (
+              <div className="flex flex-wrap gap-1">
+                {upcomingHolidays.slice(0, 4).map((h) => (
                   <span
-                    key={c.name}
-                    className="text-xs bg-black/[0.04] text-black/60 px-2.5 py-1 rounded-full border border-black/5"
+                    key={h.date}
+                    className="text-[10px] bg-[#fff6e6] text-black/65 px-2 py-0.5 rounded-full border border-amber-100/80"
                   >
-                    {c.name}
-                    {c.rating ? ` · ${c.rating}★` : ''}
+                    {h.date.slice(5)} {h.name}
                   </span>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-[11px] text-foreground/38 leading-snug">ไม่มีวันหยุดใน 14 วันข้างหน้า</p>
+            )}
+          </StripSection>
         </div>
       </div>
     </motion.div>

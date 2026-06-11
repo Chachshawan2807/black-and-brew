@@ -41,9 +41,9 @@ export function FloatingAlert({
           className={cn('fixed z-[200] pointer-events-none', className)}
           style={style}
         >
-          <div className="bg-[#fdfcf0] border border-[#000000]/5 bb-shadow-md rounded-3xl py-2.5 px-5 flex items-center gap-3">
+          <div className="bg-card border border-border bb-shadow-md rounded-3xl py-2.5 px-5 flex items-center gap-3">
             {icon ?? <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />}
-            <p className="text-[13px] font-normal text-black tracking-tight whitespace-nowrap">
+            <p className="text-[13px] font-normal text-foreground tracking-tight whitespace-nowrap">
               {message}
             </p>
           </div>

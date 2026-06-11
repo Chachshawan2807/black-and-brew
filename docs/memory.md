@@ -1,10 +1,26 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 8.3 | Last Updated: 2026-06-09 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
+> Version: 8.4 | Last Updated: 2026-06-12 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
 
 ---
 
 ## Recent Decisions
+
+### DEC-070: Dual Theme + Pastel Surface Pattern (v8.4)
+
+- Date: June 12, 2026
+- Context: Settings page added light/dark/system theme via `next-themes`, but many pages used hardcoded `#fdfcf0` / `white` / `text-black`. In dark mode, parent `text-foreground` turned headings white inside unchanged pastel cards → unreadable contrast.
+- Decision:
+  1. CSS theme tokens in `globals.css` (`:root` / `.dark`) exposed as Tailwind utilities (`bg-background`, `text-foreground`, etc.).
+  2. `ThemeProvider` wraps app with `storageKey="bb-theme"`, `attribute="class"`.
+  3. Pastel accent surfaces (shift colors, sales metrics, inventory quick actions) keep hex backgrounds in both themes; new `.bb-pastel-surface` utility forces black text/icons and overrides inherited `text-foreground` / `h1–h6`.
+  4. `PASTEL_SURFACE` constant in `shift-colors.ts` appended to all pastel class strings for consistency.
+  5. Non-pastel UI (pages, modals, AI chat, export overlay) migrates to theme tokens — no hardcoded cream/white/black.
+  6. Settings route `/[locale]/settings` exposes theme picker to staff.
+- Impact: Readable UI in dark mode without losing pastel brand identity; single pattern for future modules.
+- Evidence: `globals.css`, `ThemeProvider.tsx`, `shift-colors.ts`, `settings/page.tsx`, docs/design.md §11
+
+---
 
 ### DEC-069: Market Insights v2 — Isolated Multi-Step Module (v8.3)
 

@@ -68,8 +68,17 @@ export interface WeatherContext {
   operatingSummary: string;
 }
 
+export interface MomDetail {
+  currentLabel: string;
+  previousLabel: string;
+  currentRevenue: number;
+  previousRevenue: number;
+  changeAbsolute: number;
+}
+
 export interface SalesSnapshot {
   momChangePercentage: number | null;
+  momDetail: MomDetail | null;
   topProducts: Array<{ productName: string; totalQuantity: number; totalRevenue: number }>;
   categoryBreakdown: Array<{ category: string; revenuePercentage: number; totalRevenue: number }>;
   monthlyTrend: Array<{ label: string; totalRevenue: number }>;
@@ -95,11 +104,57 @@ export interface MarketAlert {
   linkedItems?: string[];
 }
 
+export type CompetitorZone = 'immediate' | 'primary' | 'extended';
+
 export interface CompetitorEntry {
+  placeId?: string;
   name: string;
   rating?: number;
   userRatingsTotal?: number;
   vicinity?: string;
+  distanceMeters: number;
+  zone: CompetitorZone;
+  priceLevel?: number;
+  openNow?: boolean;
+  lat?: number;
+  lng?: number;
+  threatLevel: 'high' | 'medium' | 'low';
+  mapsUrl?: string;
+  /** Facebook fanpage when listed as website on Google Maps */
+  facebookUrl?: string;
+  websiteUrl?: string;
+  /** Snippets from Google Maps reviews for SWOT analysis */
+  reviewSnippets?: Array<{ text: string; rating?: number }>;
+  strengths?: string[];
+  weaknesses?: string[];
+  /** Why this shop passed segment filter (chain / specialty / premium) */
+  segmentLabel?: string;
+}
+
+export type CompetitorDataSource = 'google_places' | 'openstreetmap';
+
+export interface CompetitorAnalysis {
+  storeLat: string;
+  storeLon: string;
+  /** google_places when GOOGLE_PLACES_API_KEY is set; otherwise openstreetmap (free, from LAT/LON) */
+  dataSource: CompetitorDataSource;
+  impactRadiusMeters: number;
+  totalCount: number;
+  byZone: { immediate: number; primary: number; extended: number };
+  avgRating: number | null;
+  avgReviewCount: number | null;
+  topThreats: CompetitorEntry[];
+  densityLabel: 'sparse' | 'moderate' | 'dense' | 'very_dense';
+  zoneLabels: Record<CompetitorZone, string>;
+  deterministicInsights: string[];
+  /** Human-readable segment filter description */
+  segmentCriteria: string;
+  /** Raw POIs before segment filter (for transparency) */
+  scannedCount: number;
+  /** Set when GOOGLE_PLACES_API_KEY is configured but the API call failed */
+  placesApiMessage?: string;
+  webContext?: string;
+  competitors: CompetitorEntry[];
 }
 
 export interface MarketSource {
@@ -116,7 +171,9 @@ export interface MarketContext {
   shiftCount: number;
   upcomingHolidays: HolidayEntry[];
   alerts: MarketAlert[];
-  competitors: CompetitorEntry[];
+  /** @deprecated use competitorAnalysis — kept for stale cache reads */
+  competitors?: CompetitorEntry[];
+  competitorAnalysis: CompetitorAnalysis | null;
 }
 
 export interface MarketInsightsDiff {

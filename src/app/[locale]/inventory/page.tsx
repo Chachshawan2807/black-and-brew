@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback, useTransition } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, History, Search, ArrowDownToLine, ArrowUpFromLine, ShoppingCart, PlusCircle, PackagePlus, PackageMinus, CloudUpload } from 'lucide-react';
+import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toPng } from 'html-to-image';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { recordTransaction, fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem, deleteInventoryItemsBulk, updateInventoryStock } from '@/app/actions/inventory-actions';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
-import { computeItemsToOrder, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { computeItemsToOrder, getQuickBadgeStyles, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { InventoryQuickActionBar } from '@/components/inventory/InventoryQuickActionBar';
+import { InventoryHistoryModal } from '@/components/inventory/InventoryHistoryModal';
 import {
   DndContext,
   closestCorners,
@@ -132,7 +134,7 @@ function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onR
           onBlur={saveColumnsConfig}
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           onPointerDown={(e) => e.stopPropagation()}
-          className="bg-transparent border-none focus:outline-none focus:bg-white/50 text-[13px] font-normal text-[#000000]/60 uppercase tracking-wider cursor-text px-2 py-1 rounded-xl text-center w-full"
+          className="bg-transparent border-none focus:outline-none focus:bg-card/50 text-[13px] font-normal text-foreground/60 uppercase tracking-wider cursor-text px-2 py-1 rounded-xl text-center w-full"
         />
       </div>
       {/* Resizer Handle */}
@@ -198,7 +200,7 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
       type="button"
       title={`แตะเพื่อเปลี่ยนลำดับ (1–${totalItems})`}
       onClick={() => { setLocalVal(String(displayIndex)); setEditing(true); }}
-      className="text-[12px] font-normal text-black/35 font-mono shrink-0 hover:text-black/60 hover:bg-black/5 rounded px-1 transition-colors leading-none cursor-pointer"
+      className="text-[12px] font-normal text-foreground/35 font-mono shrink-0 hover:text-foreground/60 hover:bg-black/5 rounded px-1 transition-colors leading-none cursor-pointer"
     >
       {displayIndex.toString().padStart(2, '0')}
     </button>
@@ -240,12 +242,12 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-white border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        "bg-card border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
         isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-black/10 cursor-grabbing"
       )}
     >
       {/* Card Header */}
-      <div className="flex items-center justify-between gap-2 border-b border-black/5 pb-2">
+      <div className="flex items-center justify-between gap-2 border-b border-border pb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <EditableSortIndex
             id={item.id}
@@ -266,7 +268,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
         </div>
         {/* Grip Handle */}
         <div
-          className="cursor-grab active:cursor-grabbing text-black/20 hover:text-black/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="cursor-grab active:cursor-grabbing text-foreground/20 hover:text-foreground/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
           {...attributes}
           {...listeners}
           aria-label="ลากเพื่อเปลี่ยนลำดับ"
@@ -279,7 +281,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
       <div className="grid grid-cols-6 gap-1 pt-0.5">
         {/* Stock */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
             {columns.find(c => c.id === 'stock')?.label || 'คงเหลือ'}
           </span>
           {stockCol && (
@@ -298,7 +300,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
 
         {/* Order Qty (Computed Read-only) */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
             {columns.find(c => c.id === 'order_qty')?.label || 'สั่งซื้อ'}
           </span>
           <div className="w-full h-8 px-1 rounded-lg bg-neutral-100/50 border border-black/[0.02] flex items-center justify-center text-[13px] font-normal text-neutral-500 select-none font-mono truncate">
@@ -308,7 +310,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
 
         {/* Order Point */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
             {columns.find(c => c.id === 'order_point')?.label || 'จุดสั่ง'}
           </span>
           {orderPointCol && (
@@ -327,7 +329,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
 
         {/* Target Stock */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
             {columns.find(c => c.id === 'target_stock')?.label || 'ต้องมี'}
           </span>
           {targetStockCol && (
@@ -346,7 +348,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
 
         {/* Unit */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
             {columns.find(c => c.id === 'unit')?.label || 'หน่วย'}
           </span>
           {unitCol && (
@@ -365,7 +367,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
 
         {/* Source */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
             {columns.find(c => c.id === 'source')?.label || 'ช่องทาง'}
           </span>
           {sourceCol && (
@@ -408,16 +410,16 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
       ref={setNodeRef}
       style={style}
       className={cn(
-        "w-full min-w-0 bg-white border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        "w-full min-w-0 bg-card border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
         isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-black/10 cursor-grabbing"
       )}
     >
       {/* Card Header: Item Index, Item Name (Editable), Grip Handle, Delete Button */}
-      <div className="flex items-center justify-between gap-2 border-b border-black/5 pb-2">
+      <div className="flex items-center justify-between gap-2 border-b border-border pb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {/* Grip Handle */}
           <div
-            className="cursor-grab active:cursor-grabbing text-black/20 hover:text-black/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="cursor-grab active:cursor-grabbing text-foreground/20 hover:text-foreground/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
             {...attributes}
             {...listeners}
             aria-label="ลากเพื่อเปลี่ยนลำดับ"
@@ -437,7 +439,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
               handleUpdateField(item.id, 'name', e.target.value);
               handleSaveField(item.id, 'name', e.target.value);
             }}
-            className="flex-1 bg-transparent border-none text-base text-black font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5 min-w-0"
+            className="flex-1 bg-transparent border-none text-base text-foreground font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5 min-w-0"
             placeholder="ชื่อสินค้า"
           />
         </div>
@@ -445,7 +447,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
           type="button"
           onClick={() => requestDelete(item.id)}
           aria-label="Delete inventory item"
-          className="p-1.5 text-black/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
+          className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -455,7 +457,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
       <div className="grid grid-cols-6 gap-1 pt-1 min-w-0 overflow-hidden">
         {/* Stock */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">คงเหลือ</span>
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">คงเหลือ</span>
           <MobileEditableCell
             item={item}
             col={columns.find((c: any) => c.id === 'stock')!}
@@ -464,7 +466,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
             className={cn(
-              "w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
+              "w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
               getStockColorClass(stock, targetStock)
             )}
           />
@@ -472,7 +474,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
 
         {/* Order Qty (Computed / Read-only) */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">สั่งซื้อ</span>
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">สั่งซื้อ</span>
           <div className="w-full h-8 px-1 rounded-lg bg-neutral-100/50 border border-black/[0.02] flex items-center justify-center text-[13px] font-normal text-neutral-500 select-none font-mono truncate">
             {computedOrderQty === 0 ? '-' : computedOrderQty}
           </div>
@@ -480,7 +482,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
 
         {/* Order Point */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">จุดสั่ง</span>
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">จุดสั่ง</span>
           <MobileEditableCell
             item={item}
             col={columns.find((c: any) => c.id === 'order_point')!}
@@ -488,13 +490,13 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
-            className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
           />
         </div>
 
         {/* Target Stock */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">ต้องมี</span>
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">ต้องมี</span>
           <MobileEditableCell
             item={item}
             col={columns.find((c: any) => c.id === 'target_stock')!}
@@ -502,13 +504,13 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
-            className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
           />
         </div>
 
         {/* Unit */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">หน่วย</span>
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">หน่วย</span>
           <input
             type="text"
             defaultValue={item.unit}
@@ -516,14 +518,14 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
               handleUpdateField(item.id, 'unit', e.target.value);
               handleSaveField(item.id, 'unit', e.target.value);
             }}
-            className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
             placeholder="หน่วย"
           />
         </div>
 
         {/* Source */}
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-[9px] text-black/45 font-normal uppercase tracking-tight text-center truncate">ช่องทาง</span>
+          <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">ช่องทาง</span>
           <input
             type="text"
             defaultValue={item.source}
@@ -531,7 +533,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
               handleUpdateField(item.id, 'source', e.target.value);
               handleSaveField(item.id, 'source', e.target.value);
             }}
-            className="w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
             placeholder="ช่องทาง"
           />
         </div>
@@ -541,13 +543,6 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
 });
 
 MobileSortableRow.displayName = 'MobileSortableRow';
-
-// 1. ฟังก์ชันคำนวณสีสำหรับแสดงผลยอดคงเหลือ
-function getStockColorClass(stock: number, targetStock: number): string {
-  if (stock <= targetStock) return 'text-red-600';
-  if (stock <= targetStock + 1) return 'text-orange-500';
-  return 'text-green-600';
-}
 
 const PurchaseOrdersModal = dynamic(() => import('./PurchaseOrdersModal'), { ssr: false });
 
@@ -597,10 +592,10 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
 
   // ควบคุมการจัดเรียงข้อความและสีเฉพาะคอลัมน์คงเหลือ
   const getAlignmentAndColor = () => {
-    if (col.id === 'name') return 'text-left pr-10 text-[#000000]';
+    if (col.id === 'name') return 'text-left pr-10 text-foreground';
     if (col.id === 'stock') return `text-center ${getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0)}`;
-    if (col.id === 'order_qty') return 'text-center text-[#000000]';
-    return 'text-center text-[#000000]/60';
+    if (col.id === 'order_qty') return 'text-center text-foreground';
+    return 'text-center text-foreground/60';
   };
 
   // cardMode: render as compact cell for card layout (Desktop + Mobile unified)
@@ -617,13 +612,13 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
             onBlur={handleBlur}
             data-col-id={col.id}
             data-row-index={rowIndex}
-            className="flex-1 min-w-0 bg-transparent border-none text-base text-black font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5 truncate"
+            className="flex-1 min-w-0 bg-transparent border-none text-base text-foreground font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5 truncate"
             placeholder="ชื่อสินค้า"
           />
           <button
             onClick={() => requestDelete(item.id)}
             aria-label="Delete"
-            className="ml-1 p-1 text-black/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
+            className="ml-1 p-1 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -642,7 +637,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty'}
         className={cn(
-          "w-full h-8 px-1 rounded-lg border border-black/5 bg-slate-50 text-[13px] font-normal text-center focus:bg-white focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
+          "w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
           col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0),
           col.id === 'order_qty' && 'bg-neutral-100/50 border-black/[0.02] text-neutral-400 cursor-not-allowed'
         )}
@@ -678,13 +673,13 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         data-col-id={col.id}
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty'}
-        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-[#fdfcf0]/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-[#000000]/5 cursor-not-allowed select-none' : ''}`}
+        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-[#000000]/5 cursor-not-allowed select-none' : ''}`}
       />
       {col.id === 'name' && (
         <button
           onClick={() => requestDelete(item.id)}
           aria-label="Delete inventory item"
-          className="absolute right-3 p-1.5 text-[#000000]/20 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover/cell:opacity-100"
+          className="absolute right-3 p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover/cell:opacity-100"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -807,7 +802,7 @@ export default function DynamicInventoryManager() {
   const [quickSearch, setQuickSearch] = useState('');
   const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
   const [quickQty, setQuickQty] = useState('');
-  const [quickType, setQuickType] = useState<'IN' | 'OUT'>('IN');
+  const [quickType, setQuickType] = useState<'IN' | 'OUT' | 'ADJUST'>('IN');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [frequentItems, setFrequentItems] = useState<{ id: string, name: string }[]>([]);
@@ -1491,7 +1486,12 @@ export default function DynamicInventoryManager() {
     }
 
     const qty = Number(quickQty);
-    if (isNaN(qty) || qty <= 0) {
+    if (quickType === 'ADJUST') {
+      if (isNaN(qty) || qty < 0) {
+        alert('กรุณาระบุจำนวนคงเหลือที่ถูกต้องค่ะ');
+        return;
+      }
+    } else if (isNaN(qty) || qty <= 0) {
       alert('กรุณาระบุจำนวนที่ถูกต้องค่ะ');
       return;
     }
@@ -1500,7 +1500,10 @@ export default function DynamicInventoryManager() {
       void (async () => {
         setSavingState('saving');
 
-        const res = await recordTransaction(item.id, quickType, qty, 'Quick Entry');
+        const res =
+          quickType === 'ADJUST'
+            ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust')
+            : await recordTransaction(item.id, quickType, qty, 'Quick Entry');
 
         if (!res.success) {
           alert(res.error);
@@ -1531,36 +1534,31 @@ export default function DynamicInventoryManager() {
     [items, quickSearch]
   );
 
-  // 2. คำนวณสีของป้ายคงเหลือเฉพาะเมื่อมีไอเท็มถูกเลือก
-  let quickBadgeStyles = { bg: 'bg-emerald-50/60 border-emerald-100/70', label: 'text-emerald-600/70', val: 'text-emerald-900' };
-  if (selectedQuickItem) {
-    const sqStock = Number(selectedQuickItem.stock) || 0;
-    const sqTarget = Number(selectedQuickItem.target_stock) || 0;
-
-    if (sqStock <= sqTarget) {
-      quickBadgeStyles = { bg: 'bg-red-50/60 border-red-100/70', label: 'text-red-600/70', val: 'text-red-900' };
-    } else if (sqStock <= sqTarget + 1) {
-      quickBadgeStyles = { bg: 'bg-orange-50/60 border-orange-100/70', label: 'text-orange-600/70', val: 'text-orange-900' };
-    }
-  }
+  const quickBadgeStyles = useMemo(() => {
+    if (!selectedQuickItem) return getQuickBadgeStyles(0, 0);
+    return getQuickBadgeStyles(
+      Number(selectedQuickItem.stock) || 0,
+      Number(selectedQuickItem.target_stock) || 0,
+    );
+  }, [selectedQuickItem]);
 
   if (loading) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-transparent text-[#000000]">
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-[#000000]" strokeWidth={1.5} />
-        <span className="font-normal text-sm uppercase tracking-widest text-[#000000]">กำลังซิงค์ข้อมูล...</span>
+      <div className="flex h-full flex-col items-center justify-center bg-transparent text-foreground">
+        <Loader2 className="w-8 h-8 animate-spin mb-4 text-foreground" strokeWidth={1.5} />
+        <span className="font-normal text-sm uppercase tracking-widest text-foreground">กำลังซิงค์ข้อมูล...</span>
       </div>
     );
   }
 
   return (
     <>
-      <div className="flex-1 w-full max-w-full bg-transparent text-black font-normal transition-all duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
+      <div className="flex-1 w-full max-w-full bg-transparent text-foreground font-normal transition-all duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
         <div className="w-full md:w-fit mx-auto flex flex-col items-stretch md:items-start">
           <div className="w-full flex flex-col items-center mb-8 text-center">
             <motion.h1
               initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="text-3xl font-normal tracking-[0.2em] text-[#000000] uppercase"
+              className="text-3xl font-normal tracking-[0.2em] text-foreground uppercase"
             >
               คลังสินค้า
             </motion.h1>
@@ -1570,8 +1568,8 @@ export default function DynamicInventoryManager() {
             <div className="flex items-center gap-1.5 text-sm font-normal min-w-[70px]">
               {savingState === 'saving' && (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#000000]" />
-                  <span className="text-[#000000]">กำลังซิงค์ข้อมูลอยู่ค่ะ</span>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-foreground" />
+                  <span className="text-foreground">กำลังซิงค์ข้อมูลอยู่ค่ะ</span>
                 </>
               )}
               {savingState === 'synced' && (
@@ -1586,7 +1584,7 @@ export default function DynamicInventoryManager() {
                   disabled={isReadOnly || undoStack.length === 0 || isSyncing}
                   className={`p-2.5 rounded-3xl transition-all ${undoStack.length === 0 || isSyncing
                     ? 'text-[#94a3b8] cursor-default'
-                    : 'text-[#000000] hover:bg-black/5'
+                    : 'text-foreground hover:bg-black/5'
                     }`}
                   title="ย้อนกลับ (Undo)"
                 >
@@ -1597,7 +1595,7 @@ export default function DynamicInventoryManager() {
                   disabled={isReadOnly || redoStack.length === 0 || isSyncing}
                   className={`p-2.5 rounded-3xl transition-all ${redoStack.length === 0 || isSyncing
                     ? 'text-[#94a3b8] cursor-default'
-                    : 'text-[#000000] hover:bg-black/5'
+                    : 'text-foreground hover:bg-black/5'
                     }`}
                   title="ทำซ้ำ (Redo)"
                 >
@@ -1609,143 +1607,28 @@ export default function DynamicInventoryManager() {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="w-full flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-3xl border-2 border-black shadow-sm sticky top-4 md:top-8 z-[50]">
-            <div className="flex-1">
-              <form onSubmit={handleQuickSubmit} className="flex flex-col gap-2.5 w-full">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full box-border mb-0">
-                  {/* 1. ช่องค้นหาสินค้า และยอดคงเหลือ */}
-                  <div className="flex flex-row items-center gap-2 flex-1 w-full min-w-0">
-                    <div className="flex-1 relative">
-                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
-                      <input
-                        type="text"
-                        placeholder="ค้นหาสินค้า..."
-                        value={quickSearch}
-                        onChange={e => setQuickSearch(e.target.value)}
-                        onFocus={() => setIsSearchFocused(true)}
-                        onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                        className="w-full h-11 pl-9 pr-3 rounded-xl border border-black bg-white text-base md:text-sm font-normal text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
-                      />
-
-                      {/* Custom Dropdown */}
-                      {isSearchFocused && filteredItems.length > 0 && (
-                        <div className="absolute top-full left-0 w-full mt-2 bg-[#fdfcf0] border border-black/5 rounded-xl shadow-xl z-[200] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                          <div className="max-h-[50vh] overflow-y-auto py-2">
-                            {filteredItems.map(item => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setQuickSearch(item.name);
-                                  setIsSearchFocused(false);
-                                }}
-                                className="w-full text-left px-5 py-3 hover:bg-black/5 transition-colors flex items-center justify-between group"
-                              >
-                                <span className="text-[14px] text-black font-normal">{item.name}</span>
-                                <span className="text-[12px] text-black/30 group-hover:text-black/50 transition-colors uppercase tracking-widest font-mono">
-                                  {item.stock} {item.unit}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 3. ยอดคงเหลือของสินค้าที่เลือกพร้อมสีไดนามิก */}
-                    {selectedQuickItem && (
-                      <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[14px] whitespace-nowrap shrink-0 transition-all duration-200 animate-in fade-in zoom-in-95 border ${quickBadgeStyles.bg}`}>
-                        <span className={`text-[13px] ${quickBadgeStyles.label}`}>คงเหลือ:</span>
-                        <span className={`font-normal antialiased font-mono ${quickBadgeStyles.val}`}>
-                          {Number.isInteger(selectedQuickItem.stock) ? selectedQuickItem.stock : Number(selectedQuickItem.stock).toFixed(1)}
-                        </span>
-                        <span className={`text-[12px] ${quickBadgeStyles.label}`}>{selectedQuickItem.unit}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 2. ช่องใส่จำนวน, สวิตช์ segment และปุ่มบันทึก */}
-                  <div className={cn("flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0", isReadOnly && "pointer-events-none opacity-60")}>
-                    <div className="flex flex-row items-center gap-2 flex-1 sm:flex-initial">
-                      <div className="w-20 sm:w-24 shrink-0">
-                        <input
-                          type="number"
-                          placeholder="จำนวน"
-                          value={quickQty}
-                          onChange={e => setQuickQty(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleQuickSubmit(e as any);
-                            }
-                          }}
-                          min="0"
-                          step="any"
-                          className="w-full h-11 text-base md:text-sm font-normal px-2 text-center rounded-xl border border-black bg-white placeholder-neutral-400 text-black outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
-                        />
-                      </div>
-
-                      {/* 3. สวิตช์สลับข้างสไตล์ Segmented Control */}
-                      <div className="flex-1 sm:flex-initial flex items-center bg-neutral-100 p-1 rounded-full border border-black shrink-0 h-11">
-                        <button
-                          type="button"
-                          onClick={() => setQuickType('IN')}
-                          className={cn("flex-1 sm:flex-initial flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'IN' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
-                        >
-                          <PackagePlus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'IN' ? "text-[#84cc16]" : "text-neutral-400")} />
-                          รับเข้า
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setQuickType('OUT')}
-                          className={cn("flex-1 sm:flex-initial flex items-center justify-center px-3 h-full text-base md:text-sm font-normal rounded-full transition-all duration-150 antialiased", quickType === 'OUT' ? "bg-white text-black shadow-sm" : "text-neutral-500 bg-transparent hover:text-black/70")}
-                        >
-                          <PackageMinus className={cn("w-4 h-4 mr-1.5 transition-colors", quickType === 'OUT' ? "text-[#f87171]" : "text-neutral-400")} />
-                          นำออก
-                        </button>
-                      </div>
-                    </div>
-
-                    <button type="submit" disabled={isQuickPending || isReadOnly} className="w-full sm:w-auto px-4 h-11 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-base md:text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0 disabled:opacity-50">
-                      <CloudUpload className="w-4 h-4" strokeWidth={1.5} /> บันทึก
-                    </button>
-                  </div>
-                </div>
-
-                <div className={cn("grid grid-cols-3 gap-2 w-full box-border", isReadOnly && "pointer-events-none opacity-60")}>
-                  <button type="button" onClick={() => setShowPurchaseOrderModal(true)} className="flex items-center justify-center gap-1 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
-                    <ShoppingCart className="w-4 h-4 text-[#14532d] shrink-0" strokeWidth={1.5} />
-                    <span className="truncate">สั่งซื้อ</span>
-                    {itemsToOrder.length > 0 && (
-                      <span className="bg-[#14532d] text-white text-[10px] px-1.5 py-0.5 rounded-full font-normal shrink-0">
-                        {itemsToOrder.length}
-                      </span>
-                    )}
-                  </button>
-                  <button type="button" onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-1.5 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
-                    <PlusCircle className="w-4 h-4 text-[#9a3412]" strokeWidth={1.5} />
-                    <span>เพิ่มสินค้า</span>
-                  </button>
-                  <button type="button" onClick={handleOpenHistory} className="flex items-center justify-center gap-1.5 px-1 h-11 text-[#000000] rounded-3xl border border-slate-100 hover:bg-slate-100 hover:shadow-sm text-base md:text-sm font-normal antialiased">
-                    <History className="w-4 h-4 text-[#5b21b6]" strokeWidth={1.5} />
-                    <span>ประวัติ</span>
-                  </button>
-                </div>
-              </form>
-              {frequentItems.length > 0 && (
-                <div className={cn("flex items-center gap-2 mt-6 pt-3 border-t border-black/5 overflow-x-auto pb-1 scrollbar-hide", isReadOnly && "pointer-events-none opacity-60")}>
-                  <span className="text-[12px] text-black/40 font-normal whitespace-nowrap">รายการใช้บ่อย:</span>
-                  {frequentItems.map(fi => (
-                    <button key={fi.id} onClick={() => setQuickSearch(fi.name)} className="px-3 py-1.5 min-h-[44px] md:min-h-0 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-full text-base md:text-[13px] text-black/70 whitespace-nowrap transition-colors flex items-center justify-center">
-                      {fi.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <InventoryQuickActionBar
+            quickSearch={quickSearch}
+            setQuickSearch={setQuickSearch}
+            quickQty={quickQty}
+            setQuickQty={setQuickQty}
+            quickType={quickType}
+            setQuickType={setQuickType}
+            isSearchFocused={isSearchFocused}
+            setIsSearchFocused={setIsSearchFocused}
+            filteredItems={filteredItems}
+            selectedQuickItem={selectedQuickItem}
+            quickBadgeStyles={quickBadgeStyles}
+            frequentItems={frequentItems}
+            itemsToOrderCount={itemsToOrder.length}
+            isQuickPending={isQuickPending}
+            isReadOnly={isReadOnly}
+            onSubmit={handleQuickSubmit}
+            onOpenPurchaseOrder={() => setShowPurchaseOrderModal(true)}
+            onOpenAddItem={() => setShowAddModal(true)}
+            onOpenHistory={handleOpenHistory}
+            className="mb-8 sticky top-4 md:top-8 z-[50]"
+          />
 
           <div className={cn(isReadOnly && 'pointer-events-none opacity-60')}>
           <DndContext
@@ -1758,7 +1641,7 @@ export default function DynamicInventoryManager() {
             {/* Mobile Card Stack */}
             <div className="md:hidden w-full space-y-4 mb-8">
               {items.length === 0 ? (
-                <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
+                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
                   ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
                 </div>
               ) : (
@@ -1786,7 +1669,7 @@ export default function DynamicInventoryManager() {
             {/* Desktop Card Grid (DnD) */}
             <div className="hidden md:block w-full pb-6">
               {items.length === 0 ? (
-                <div className="p-8 text-center text-base font-normal text-black/40 bg-white border border-black/5 rounded-3xl">
+                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
                   ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
                 </div>
               ) : (
@@ -1824,24 +1707,24 @@ export default function DynamicInventoryManager() {
           >
           <motion.div
             initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="relative bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="relative bg-card rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
-            <button onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
+            <button onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-colors z-10">
               <X className="w-5 h-5" />
             </button>
             <div className="px-6 h-14 border-b border-slate-100 flex items-center justify-between shrink-0 pr-14">
-              <h2 className="text-lg font-normal text-black">เพิ่มรายการใหม่</h2>
+              <h2 className="text-lg font-normal text-foreground">เพิ่มรายการใหม่</h2>
             </div>
               <form onSubmit={handleAddItemSubmit} className="p-6 overflow-y-auto flex-1">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <div className="col-span-2 flex flex-col gap-1.5">
-                    <label className="text-[12px] font-normal text-black ml-1 uppercase tracking-wider">ชื่อรายการ</label>
+                    <label className="text-[12px] font-normal text-foreground ml-1 uppercase tracking-wider">ชื่อรายการ</label>
                     <input
                       required
                       value={newItemData.name || ''}
                       onChange={e => setNewItemData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 focus:border-black/20 focus:ring-1 focus:ring-black/10 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
                     />
                   </div>
 
@@ -1856,7 +1739,7 @@ export default function DynamicInventoryManager() {
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, stock: val }));
                       }}
-                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
                     />
                   </div>
 
@@ -1865,7 +1748,7 @@ export default function DynamicInventoryManager() {
                     <input
                       value={newItemData.unit === null || newItemData.unit === undefined ? '' : newItemData.unit}
                       onChange={e => setNewItemData(prev => ({ ...prev, unit: e.target.value }))}
-                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
                     />
                   </div>
 
@@ -1880,7 +1763,7 @@ export default function DynamicInventoryManager() {
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, order_point: val }));
                       }}
-                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
                     />
                   </div>
 
@@ -1895,7 +1778,7 @@ export default function DynamicInventoryManager() {
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, target_stock: val }));
                       }}
-                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
                     />
                   </div>
 
@@ -1904,14 +1787,14 @@ export default function DynamicInventoryManager() {
                     <input
                       value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}
                       onChange={e => setNewItemData(prev => ({ ...prev, source: e.target.value }))}
-                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
                     />
                   </div>
 
                   <div className="col-span-2 flex flex-col gap-1.5">
                     <label className="text-[12px] font-normal text-slate-600 ml-1 flex items-center gap-1">
                       แทรกที่ลำดับ
-                      <span className="text-black/30">(ค่าเริ่มต้น: ท้ายสุด = {items.length + 1})</span>
+                      <span className="text-foreground/30">(ค่าเริ่มต้น: ท้ายสุด = {items.length + 1})</span>
                     </label>
                     <input
                       data-testid="insert-position-input"
@@ -1924,12 +1807,12 @@ export default function DynamicInventoryManager() {
                         v = v.replace(/^0+(?=\d)/, '');
                         setNewItemInsertPosition(v);
                       }}
-                      className="w-full h-11 px-4 bg-[#fdfcf0]/50 border border-[#000000]/5 focus:border-[#000000]/20 rounded-3xl text-base md:text-sm font-normal text-black outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
                     />
                   </div>
                 </div>
                 <div className="mt-8 flex gap-3">
-                  <button type="button" onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
+                  <button type="button" onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-foreground transition-colors">
                     ยกเลิก
                   </button>
                   <button type="submit" className="flex-1 py-3 px-4 bg-black hover:bg-black/90 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
@@ -1946,17 +1829,17 @@ export default function DynamicInventoryManager() {
       <AnimatePresence>
         {deleteId && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4">
-            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="relative bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 text-center">
-              <button onClick={() => setDeleteId(null)} className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-10">
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="relative bg-card rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 text-center">
+              <button onClick={() => setDeleteId(null)} className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-colors z-10">
                 <X className="w-5 h-5" />
               </button>
               <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
                 <Trash2 className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-normal text-[#000000] mb-2">ต้องการลบรายการนี้ใช่หรือไม่?</h3>
-              <p className="text-sm font-normal text-[#000000] mb-6">ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</p>
+              <h3 className="text-lg font-normal text-foreground mb-2">ต้องการลบรายการนี้ใช่หรือไม่?</h3>
+              <p className="text-sm font-normal text-foreground mb-6">ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeleteId(null)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-[#000000] transition-colors">
+                <button onClick={() => setDeleteId(null)} className="flex-1 py-3 px-4 bg-slate-50 hover:bg-slate-100 rounded-3xl text-[14px] font-normal text-foreground transition-colors">
                   ยกเลิก
                 </button>
                 <button onClick={executeDelete} className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
@@ -1968,119 +1851,12 @@ export default function DynamicInventoryManager() {
         )}
       </AnimatePresence>
 
-      {/* Reconstructed Transaction History Modal */}
       <AnimatePresence>
         {showHistoryModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] flex items-center justify-center bg-black/20 backdrop-blur-md p-4"
-            onClick={() => setShowHistoryModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="relative bg-[#fdfcf0] rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col border border-black/5"
-              onClick={e => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setShowHistoryModal(false)}
-                className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-all active:scale-95 z-10"
-              >
-                <X className="w-6 h-6" />
-              </button>
-              {/* Header */}
-              <div className="px-8 py-6 border-b border-black/5 flex items-center justify-between bg-white/50 backdrop-blur-sm shrink-0 pr-16">
-                <div>
-                  <h2 className="text-2xl font-normal text-[#000000] flex items-center gap-3">
-                    <History className="w-6 h-6 text-black/40" />
-                    ประวัติ
-                  </h2>
-                  <p className="text-black/40 text-[13px] mt-1 font-normal">ตรวจสอบรายการรับเข้าและนำออกย้อนหลัง</p>
-                </div>
-              </div>
-
-              {/* Table Content */}
-              <div className="overflow-y-auto p-8 bg-[#fdfcf0] flex-1">
-                <div className="bg-white rounded-[2rem] border border-black/5 shadow-sm overflow-hidden">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50/50 border-b border-black/5">
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[160px]">วันที่และเวลา</th>
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center">ชื่อรายการสินค้า</th>
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[120px]">ประเภท</th>
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[110px]">จำนวน</th>
-                        <th className="py-5 px-6 font-normal text-black/40 text-[13px] uppercase tracking-wider text-center w-[110px]">คงเหลือ</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-black/[0.03]">
-                      {transactionHistory.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-20 text-center text-black/30 text-[15px] font-normal italic">
-                            <div className="flex flex-col items-center gap-3">
-                              <ShoppingCart className="w-10 h-10 opacity-10" />
-                              ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้
-                            </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        transactionHistory.map((tx: any, index: number) => (
-                          <motion.tr
-                            key={tx.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.03 }}
-                            className="group hover:bg-slate-50/80 transition-colors"
-                          >
-                            {/* Day/Time - Left */}
-                            <td className="py-3.5 px-6 text-[14px] text-black/60 font-mono text-left">
-                              {new Date(tx.created_at).toLocaleString('th-TH', {
-                                dateStyle: 'short',
-                                timeStyle: 'short'
-                              })}
-                            </td>
-
-                            {/* Item Name - Left */}
-                            <td className="py-3.5 px-6 text-[15px] text-black font-normal text-left" style={{ lineHeight: '1.6' }}>
-                              {tx.inventory_items?.name || 'ไม่ทราบชื่อสินค้า'}
-                            </td>
-
-                            {/* Type - Center (Pure Iconography) */}
-                            <td className="py-3.5 px-6 text-center">
-                              <div className="flex justify-center">
-                                <span className={cn(
-                                  "w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border",
-                                  tx.type === 'IN'
-                                    ? "bg-[#f0fdf4] text-[#14532d] border-[#dcfce7]"
-                                    : "bg-[#fff1f2] text-[#9f1239] border-[#ffe4e6]"
-                                )}>
-                                  {tx.type === 'IN' ? <PackagePlus className="w-4.5 h-4.5" /> : <PackageMinus className="w-4.5 h-4.5" />}
-                                </span>
-                              </div>
-                            </td>
-
-                            {/* Quantity - Center (Mono) */}
-                            <td className="py-3.5 px-6 text-[15px] text-center font-mono text-black font-normal">
-                              {tx.quantity}
-                            </td>
-
-                            {/* Balance After - Center (Mono) */}
-                            <td className="py-3.5 px-6 text-[15px] text-center font-mono text-black/40">
-                              {tx.balance_after}
-                            </td>
-                          </motion.tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Footer Info */}
-              <div className="px-8 py-4 bg-white/30 border-t border-black/5 flex justify-between items-center shrink-0 text-[12px] text-black/30">
-                <span>แสดง {transactionHistory.length} รายการล่าสุด</span>
-                <span className="font-mono uppercase tracking-tighter"></span>
-              </div>
-            </motion.div>
-          </motion.div>
+          <InventoryHistoryModal
+            transactionHistory={transactionHistory}
+            onClose={() => setShowHistoryModal(false)}
+          />
         )}
       </AnimatePresence>
 

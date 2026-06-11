@@ -40,11 +40,11 @@ export default async function DashboardPage({
     .lte('date', endDate);
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-12 text-[#000000] relative font-normal">
+    <div className="min-h-screen bg-transparent p-4 md:p-12 text-foreground relative font-normal">
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#000000]/5 pb-4">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-4">
           <div className="h-4">
             {/* Purified Minimalist Space */}
           </div>

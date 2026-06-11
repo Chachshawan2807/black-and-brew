@@ -7,6 +7,7 @@ import { X, Send, User, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { sanitizePromptInput, sanitizeScreenContext, sanitizeXssPayload } from '@/lib/security/sanitize';
+import { cn } from '@/lib/utils';
 
 const QUICK_ACTIONS = [
   { id: 'shift', label: '👥 ตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
@@ -113,7 +114,10 @@ export default function AIChatOverlay() {
       {/* Floating Trigger Button */}
       <motion.button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed z-[200] w-14 h-14 rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg max-md:bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] max-md:right-[calc(1.25rem+env(safe-area-inset-right,0px))] md:bottom-6 md:right-6"
+        className={cn(
+          'fixed w-14 h-14 rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg max-md:bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] max-md:right-[calc(1.25rem+env(safe-area-inset-right,0px))] md:bottom-6 md:right-6',
+          isOpen ? 'z-[204]' : 'z-[200]',
+        )}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
         aria-label="เปิดผู้ช่วย AI บรู"
@@ -156,7 +160,7 @@ export default function AIChatOverlay() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 z-[198] bg-black/0"
+              className="fixed inset-0 z-[202] bg-black/0"
             />
             <motion.div
               key="chat-window"
@@ -164,18 +168,18 @@ export default function AIChatOverlay() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
-              className="fixed z-[199] box-border bg-[#fdfcf0] rounded-3xl shadow-2xl border-2 border-black flex flex-col overflow-hidden max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none md:w-full md:max-w-2xl md:bottom-24 md:left-auto md:right-6"
+              className="fixed z-[203] box-border bg-card rounded-3xl shadow-2xl border-2 border-border flex flex-col overflow-hidden max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none md:w-full md:max-w-2xl md:bottom-24 md:left-auto md:right-6"
               style={{ maxHeight: '75vh' }}
             >
               {/* Header */}
-              <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-black flex items-center justify-between gap-3 bg-[#fdfcf0]">
+              <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-border flex items-center justify-between gap-3 bg-card">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-2xl bg-black/5 flex items-center justify-center shrink-0 overflow-hidden">
-                    <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={24} height={24} className="w-6 h-6 object-contain" />
+                  <div className="w-8 h-8 rounded-2xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                    <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={24} height={24} className="w-6 h-6 object-contain dark:invert" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[14px] font-normal text-black leading-tight">บรู</p>
-                    <p className="text-[11px] font-normal text-black leading-tight">
+                    <p className="text-[14px] font-normal text-foreground leading-tight">บรู</p>
+                    <p className="text-[11px] font-normal text-muted-foreground leading-tight">
                       AI ผู้ช่วยร้าน BLACKANDBREW
                     </p>
                   </div>
@@ -187,7 +191,7 @@ export default function AIChatOverlay() {
                       setMessages([]);
                       localStorage.removeItem('bb-chat-history');
                     }}
-                    className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
                     aria-label="ล้างประวัติแชท"
                     title="ล้างประวัติ"
                   >
@@ -196,7 +200,7 @@ export default function AIChatOverlay() {
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
                     aria-label="ปิดหน้าต่างแชท"
                   >
                     <X className="w-5 h-5" />
@@ -223,18 +227,18 @@ export default function AIChatOverlay() {
                 {/* Loading indicator */}
                 {isLoading && (
                   <div className="flex items-center gap-2 px-1">
-                    <div className="w-7 h-7 rounded-2xl bg-black/5 flex items-center justify-center shrink-0 overflow-hidden">
-                      <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={20} height={20} className="w-5 h-5 object-contain" />
+                    <div className="w-7 h-7 rounded-2xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                      <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={20} height={20} className="w-5 h-5 object-contain dark:invert" />
                     </div>
                     <div className="flex gap-1 items-center">
-                      <Loader2 size={13} className="animate-spin text-black" />
-                      <span className="text-[12px] font-normal text-black">กำลังคิด...</span>
+                      <Loader2 size={13} className="animate-spin text-foreground" />
+                      <span className="text-[12px] font-normal text-muted-foreground">กำลังคิด...</span>
                     </div>
                   </div>
                 )}
 
                 {error && (
-                  <div className="text-[12px] font-normal text-black px-1">
+                  <div className="text-[12px] font-normal text-red-500 px-1">
                     เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง
                   </div>
                 )}
@@ -243,7 +247,7 @@ export default function AIChatOverlay() {
               </div>
 
               {/* Quick Actions — shrink-0 keeps chips above the input bar */}
-              <div className="shrink-0 px-3 md:px-4 pt-2 pb-1 flex flex-wrap gap-2 items-center justify-start min-w-0 bg-[#fdfcf0]">
+              <div className="shrink-0 px-3 md:px-4 pt-2 pb-1 flex flex-wrap gap-2 items-center justify-start min-w-0 bg-card">
                 {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.id}
@@ -255,7 +259,7 @@ export default function AIChatOverlay() {
                         { body: { clientContext: liveScreenContext } }
                       );
                     }}
-                    className="border-2 border-black px-3 py-1.5 rounded-full text-[11px] md:text-xs text-black bg-white hover:bg-black hover:text-white transition cursor-pointer whitespace-nowrap"
+                    className="border border-border px-3 py-1.5 rounded-full text-[11px] md:text-xs text-foreground bg-muted hover:bg-foreground hover:text-background transition cursor-pointer whitespace-nowrap"
                   >
                     {action.label}
                   </button>
@@ -265,7 +269,7 @@ export default function AIChatOverlay() {
               {/* Input Area */}
               <form
                 onSubmit={handleSubmit}
-                className="shrink-0 px-3 md:px-4 py-3 border-t-2 border-black flex items-center gap-2 bg-[#fdfcf0] min-w-0"
+                className="shrink-0 px-3 md:px-4 py-3 border-t-2 border-border flex items-center gap-2 bg-card min-w-0"
               >
                 <input
                   id="ai-chat-input"
@@ -275,7 +279,7 @@ export default function AIChatOverlay() {
                   placeholder="ถามบรู..."
                   disabled={isLoading}
                   autoComplete="off"
-                  className="thai-chat-readable flex-1 min-w-0 bg-white border-2 border-black rounded-2xl px-3 md:px-4 py-2.5 text-[13px] font-normal text-black placeholder:text-black placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-black transition-all disabled:opacity-50"
+                  className="thai-chat-readable flex-1 min-w-0 bg-muted border border-border rounded-2xl px-3 md:px-4 py-2.5 text-[13px] font-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all disabled:opacity-50"
                 />
                 <motion.button
                   type="submit"
@@ -304,20 +308,20 @@ function ChatBubble({ role, content }: { role: string; content: string }) {
     <div className={`flex items-end gap-2 min-w-0 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {/* Avatar */}
       <div
-        className={`w-7 h-7 rounded-2xl flex items-center justify-center shrink-0 ${isUser ? 'bg-[#000000]' : 'bg-black/5'}`}
+        className={`w-7 h-7 rounded-2xl flex items-center justify-center shrink-0 ${isUser ? 'bg-foreground' : 'bg-muted'}`}
       >
         {isUser ? (
-          <User size={13} className="text-white" />
+          <User size={13} className="text-background" />
         ) : (
-          <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={20} height={20} className="w-5 h-5 object-contain" />
+          <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={20} height={20} className="w-5 h-5 object-contain dark:invert" />
         )}
       </div>
 
       {/* Bubble */}
       <div
         className={`thai-chat-readable max-w-[80%] min-w-0 break-words px-4 py-2.5 rounded-3xl text-[15px] font-normal antialiased whitespace-pre-line ${isUser
-          ? 'bg-[#fdfcf0] text-black border-2 border-black rounded-br-md'
-          : 'bg-white text-black border-2 border-black rounded-bl-md'
+          ? 'bg-muted text-foreground border-2 border-border rounded-br-md'
+          : 'bg-card text-foreground border-2 border-border rounded-bl-md'
           }`}
       >
         {safeContent}

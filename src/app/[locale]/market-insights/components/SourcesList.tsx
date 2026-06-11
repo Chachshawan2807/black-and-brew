@@ -3,15 +3,17 @@
 import React from 'react';
 import { ExternalLink, Link2 } from 'lucide-react';
 import type { MarketSource } from '@/app/actions/market-insights-types';
+import MetricInfoTip from './MetricInfoTip';
 
 export default function SourcesList({ sources }: { sources: MarketSource[] }) {
   if (!sources.length) return null;
 
   return (
-    <div className="bb-card p-5 md:p-6">
-      <div className="flex items-center gap-2 mb-4 text-black/60">
-        <Link2 className="w-4 h-4" />
-        <h3 className="text-sm md:text-base">แหล่งอ้างอิงเทรนด์ภายนอก</h3>
+    <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
+      <div className="flex items-center gap-1.5 mb-3 text-muted-foreground">
+        <Link2 className="w-3.5 h-3.5" />
+        <h3 className="text-sm tracking-tight">แหล่งอ้างอิงเทรนด์ภายนอก</h3>
+        <MetricInfoTip id="external_sources" />
       </div>
       <ul className="space-y-2">
         {sources.slice(0, 8).map((s) => (
@@ -22,10 +24,10 @@ export default function SourcesList({ sources }: { sources: MarketSource[] }) {
               rel="noopener noreferrer"
               className="group flex items-start gap-2 rounded-xl p-2.5 hover:bg-black/[0.03] bb-transition"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-black/40 mt-1 shrink-0 group-hover:text-black/70" />
+              <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/80 mt-1 shrink-0 group-hover:text-foreground/70" />
               <div className="min-w-0">
-                <p className="text-sm text-black/80 truncate">{s.title}</p>
-                {s.snippet && <p className="text-xs text-black/45 line-clamp-2">{s.snippet}</p>}
+                <p className="text-sm text-foreground/80 truncate">{s.title}</p>
+                {s.snippet && <p className="text-xs text-muted-foreground/90 line-clamp-2">{s.snippet}</p>}
               </div>
             </a>
           </li>

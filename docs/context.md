@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 8.3 | Last Updated: 2026-06-09
+> Version: 8.4 | Last Updated: 2026-06-12
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | **Project Name** | BLACK-AND-BREW ERP System |
 | **Type** | Enterprise Resource Planning for Coffee Shop |
-| **Current Version** | 8.2 (Documentation Sync) |
+| **Current Version** | 8.4 (Dark Theme + Documentation Sync) |
 | **Repository** | `Chachshawan2807/black-and-brew` |
 | **Local Path** | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -26,6 +26,7 @@
 4. **วิเคราะห์ตลาด (Market Insights)** — AI วิเคราะห์เทรนด์ตลาดรอบร้าน
 5. **บำรุงรักษา (Maintenance)** — บันทึกสถานะอุปกรณ์
 6. **AI Assistant (บรู)** — แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
+7. **การตั้งค่า (Settings)** — เลือกธีม (สว่าง/มืด/ตามระบบ) และประวัติการเข้าใช้
 
 ### Staff Roster (9 Persons)
 
@@ -44,6 +45,7 @@
 | React | 19.2.4 |
 | TypeScript | ^5 |
 | Tailwind CSS | ^4 |
+| next-themes | ^0.4 |
 | Vitest | ^4.1.6 |
 
 ### Environment Variables
@@ -57,7 +59,6 @@
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini — AI Chat + Market Insights (`@ai-sdk/google`) | Server only |
 | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync (OPTION) | Server only |
 | `GOOGLE_PLACES_API_KEY` | Nearby competitor cafes - Market Insights v2 (OPTION) | Server only |
-| `GOOGLE_PLACES_API_KEY` | Market Insights v2 — nearby cafés (OPTION) | Server only |
 | `TAVILY_API_KEY` | AI web search | Server only |
 | `OPENWEATHER_API_KEY` | Weather data | Server only |
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | Store coordinates | Public |

@@ -57,7 +57,7 @@ export function ClickableInput({
       {icon && <div className="shrink-0 pointer-events-none">{icon}</div>}
       
       <div className="flex-1 flex items-center justify-center min-w-0">
-        <span className="text-[14px] font-normal text-[#000000] text-center block w-full truncate">
+        <span className="text-[14px] font-normal text-foreground text-center block w-full truncate">
           {type === 'date' && value ? displayValue : (type === 'date' ? 'YYYY-MM-DD' : value?.toString() || '')}
         </span>
         <input

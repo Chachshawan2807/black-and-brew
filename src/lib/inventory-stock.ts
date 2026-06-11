@@ -42,6 +42,30 @@ export type PurchaseOrderCandidate = InventoryStockFields & {
   computedOrderQty: number;
 };
 
+/** Tailwind classes for stock column / badge coloring. */
+export function getStockColorClass(stock: number, targetStock: number): string {
+  if (stock <= targetStock) return 'text-red-600';
+  if (stock <= targetStock + 1) return 'text-orange-500';
+  return 'text-green-600';
+}
+
+export type QuickBadgeStyles = {
+  bg: string;
+  label: string;
+  val: string;
+};
+
+/** Pastel badge styles for the Quick Action stock indicator. */
+export function getQuickBadgeStyles(stock: number, targetStock: number): QuickBadgeStyles {
+  if (stock <= targetStock) {
+    return { bg: 'bg-red-50/60 border-red-100/70', label: 'text-red-600/70', val: 'text-red-900' };
+  }
+  if (stock <= targetStock + 1) {
+    return { bg: 'bg-orange-50/60 border-orange-100/70', label: 'text-orange-600/70', val: 'text-orange-900' };
+  }
+  return { bg: 'bg-emerald-50/60 border-emerald-100/70', label: 'text-emerald-600/70', val: 'text-emerald-900' };
+}
+
 /** Derive purchase-order list from inventory items (single source of truth). */
 export function computeItemsToOrder<T extends InventoryStockFields>(
   items: T[]

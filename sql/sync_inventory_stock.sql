@@ -10,7 +10,8 @@ ALTER TABLE public.inventory_items REPLICA IDENTITY FULL;
 CREATE OR REPLACE FUNCTION public.set_inventory_stock(
   p_item_id UUID,
   p_new_stock NUMERIC,
-  p_note TEXT DEFAULT 'Stock adjustment'
+  p_note TEXT DEFAULT 'Stock adjustment',
+  p_record_history BOOLEAN DEFAULT TRUE
 ) RETURNS json AS $$
 DECLARE
   v_old_stock NUMERIC;
@@ -34,8 +35,8 @@ BEGIN
       updated_at = timezone('utc'::text, now())
   WHERE id = p_item_id;
 
-  -- Record adjustment in ledger when quantity changed
-  IF v_old_stock IS DISTINCT FROM p_new_stock THEN
+  -- Record ADJUST in ledger when quantity changed (skip for stock-taking count page)
+  IF p_record_history AND v_old_stock IS DISTINCT FROM p_new_stock THEN
     INSERT INTO public.inventory_transactions (
       inventory_item_id,
       type,
@@ -45,7 +46,7 @@ BEGIN
     )
     VALUES (
       p_item_id,
-      CASE WHEN p_new_stock > v_old_stock THEN 'IN' ELSE 'OUT' END,
+      'ADJUST',
       ABS(p_new_stock - v_old_stock),
       p_note,
       p_new_stock

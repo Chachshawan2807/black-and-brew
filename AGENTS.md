@@ -16,6 +16,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Constraint:** ทุกการสร้าง UI ใน BLACKANDBREW ERP ต้องเป็น Minimalist และใช้ Pastel Palette ตามเงื่อนไขเวลาเดิมเท่านั้น (เช่น 6:30 = light green)
 - **Design Logic:** เน้นผลลัพธ์ที่ถูกต้องเชิงระบบ (Outcome-First) และความสมมาตรของข้อมูล
 <!-- END:ui-ux-pro-max-skill -->
+<!-- BEGIN:dark-theme-standard -->
+
+## DARK THEME & THEME TOKEN STANDARD
+
+- **Theme Provider:** `next-themes` via `ThemeProvider` — `storageKey="bb-theme"`, `attribute="class"`, `defaultTheme="system"`. User selects light/dark/system on `/[locale]/settings`.
+- **Page/modal surfaces:** Use CSS variable tokens — `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`. Never hardcode `bg-[#fdfcf0]`, `bg-white`, or `text-black` on non-pastel surfaces.
+- **Pastel accent cards:** Keep shift/time pastel hex backgrounds (e.g. 6:30 = light green). Always append `bb-pastel-surface` (via `PASTEL_SURFACE` in `shift-colors.ts`) so text/icons stay **black** on pastel in both themes.
+- **Headings on pastel:** Global `h1–h6 { color: var(--foreground) }` makes headings white in dark mode — pastel containers must use `.bb-pastel-surface` to override back to black.
+- **Logos/icons on dark:** Use `dark:invert` where a dark SVG must appear on dark headers (e.g. AI chat logo).
+<!-- END:dark-theme-standard -->
 <!-- BEGIN:clickable-input-rules -->
 
 ## GLOBAL UI INTERACTION RULES
