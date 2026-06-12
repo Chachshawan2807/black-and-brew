@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { normalizeRegularHolidayDays } from '@/lib/regular-holidays';
 import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
 import { assertWritableSession } from '@/app/actions/auth';
+import { recordDataChange } from '@/app/actions/data-change-log-actions';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -52,6 +53,17 @@ export async function syncHolidays(startDate: string, endDate: string) {
 
   const result = await fetchAndPersistHolidays(parsed.data.startDate, parsed.data.endDate);
   if (result.success && result.count > 0) {
+    await recordDataChange({
+      action: 'BULK_UPDATE',
+      module: 'holiday',
+      entityType: 'holiday',
+      metadata: {
+        operation: 'sync_holidays',
+        startDate: parsed.data.startDate,
+        endDate: parsed.data.endDate,
+        count: result.count,
+      },
+    });
     revalidatePath('/', 'layout');
     revalidatePath('/[locale]/schedule', 'page');
   }
@@ -72,6 +84,11 @@ export async function saveRegularHolidays(profileId: string, days: number[]) {
   const normalizedDays = normalizeRegularHolidayDays(days);
 
   try {
+    const { data: beforeDays } = await supabaseAdmin
+      .from('regular_holidays')
+      .select('day_of_week')
+      .eq('profile_id', profileId);
+
     const { error: deleteError } = await supabaseAdmin
       .from('regular_holidays')
       .delete()
@@ -97,6 +114,21 @@ export async function saveRegularHolidays(profileId: string, days: number[]) {
         throw insertError;
       }
     }
+
+    await recordDataChange({
+      action: 'UPDATE',
+      module: 'holiday',
+      entityType: 'regular_holiday',
+      entityId: profileId,
+      fieldChanges: [
+        {
+          field: 'days',
+          old_value: (beforeDays ?? []).map((row) => row.day_of_week),
+          new_value: normalizedDays,
+        },
+      ],
+      metadata: { operation: 'save_regular_holidays' },
+    });
 
     revalidatePath('/', 'layout');
     revalidatePath('/[locale]/schedule', 'page');

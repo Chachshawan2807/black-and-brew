@@ -5,11 +5,25 @@ import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { assertWritableSession } from '@/app/actions/auth';
+import { recordDataChange } from '@/app/actions/data-change-log-actions';
+import { computeFieldChanges } from '@/lib/data-change-log';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAdminKey);
+
+type InventoryAuditOptions = {
+  clientSessionId?: string;
+};
+
+function withAuditMetadata(
+  metadata: Record<string, unknown>,
+  options?: InventoryAuditOptions
+): Record<string, unknown> {
+  if (!options?.clientSessionId) return metadata;
+  return { ...metadata, clientSessionId: options.clientSessionId };
+}
 
 // === RECORD TRANSACTION (Atomic via RPC) ===
 const transactionSchema = z.object({
@@ -23,7 +37,8 @@ export async function recordTransaction(
   productId: string,
   type: 'IN' | 'OUT',
   quantity: number,
-  note: string = ''
+  note: string = '',
+  auditOptions?: InventoryAuditOptions
 ) {
   try {
     const cookieStore = await cookies();
@@ -56,11 +71,44 @@ export async function recordTransaction(
 
     if (error) {
       console.error('[recordTransaction] Supabase RPC Error:', error.message, error.details, error.hint);
+      await recordDataChange({
+        action: 'UPDATE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        entityId: productId,
+        status: 'failed',
+        errorMessage: error.message,
+        metadata: withAuditMetadata({ operation: 'record_transaction', type, quantity }, auditOptions),
+      });
       if (error.message.includes('Insufficient stock')) {
         return { success: false, error: 'ยอดคงเหลือไม่เพียงพอสำหรับการนำออก' };
       }
       return { success: false, error: error.message };
     }
+
+    await recordDataChange({
+      action: 'UPDATE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      entityId: productId,
+      fieldChanges: [
+        {
+          field: 'stock',
+          old_value: data?.old_stock ?? null,
+          new_value: data?.new_stock ?? null,
+        },
+      ],
+      metadata: withAuditMetadata(
+        {
+          operation: 'record_transaction',
+          type,
+          quantity,
+          note,
+          order_point: data?.order_point ?? null,
+        },
+        auditOptions
+      ),
+    });
 
     revalidatePath('/[locale]/inventory', 'page');
     revalidatePath('/[locale]/inventory/count', 'page');
@@ -81,6 +129,7 @@ const stockUpdateSchema = z.object({
 export type InventoryStockUpdateOptions = {
   /** When false, stock is updated without a ledger entry (e.g. stock-taking count page). */
   recordHistory?: boolean;
+  clientSessionId?: string;
 };
 
 export async function updateInventoryStock(
@@ -110,6 +159,12 @@ export async function updateInventoryStock(
     let newStock = stock;
     const recordHistory = options?.recordHistory ?? true;
 
+    const { data: beforeItem } = await supabase
+      .from('inventory_items')
+      .select('name, stock, order_point')
+      .eq('id', itemId)
+      .maybeSingle();
+
     const { data, error } = await supabase.rpc('set_inventory_stock', {
       p_item_id: itemId,
       p_new_stock: stock,
@@ -137,6 +192,27 @@ export async function updateInventoryStock(
       newStock = data?.new_stock ?? stock;
     }
 
+    await recordDataChange({
+      action: 'UPDATE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      entityId: itemId,
+      entityLabel: beforeItem?.name ?? null,
+      fieldChanges: computeFieldChanges(
+        { stock: beforeItem?.stock ?? null },
+        { stock: newStock }
+      ),
+      metadata: withAuditMetadata(
+        {
+          operation: 'set_stock',
+          note,
+          recordHistory,
+          order_point: beforeItem?.order_point ?? null,
+        },
+        { clientSessionId: options?.clientSessionId }
+      ),
+    });
+
     revalidatePath('/[locale]/inventory', 'page');
     revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true, newStock };
@@ -153,7 +229,7 @@ export async function updateInventoryStock(
  * when 'authenticated' role's DELETE policy is strictly revoked.
  * Compliance: EU AI Act Traceability, OWASP LLM Top 10 (Anti-BOLA)
  */
-export async function deleteInventoryItem(itemId: string) {
+export async function deleteInventoryItem(itemId: string, auditOptions?: InventoryAuditOptions) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('sb-access-token')?.value;
@@ -173,6 +249,12 @@ export async function deleteInventoryItem(itemId: string) {
     const writable = await assertWritableSession();
     if (!writable.ok) return { success: false, error: writable.error };
 
+    const { data: itemBeforeDelete } = await supabase
+      .from('inventory_items')
+      .select('id, name, stock, unit')
+      .eq('id', itemId)
+      .maybeSingle();
+
     // Step 2: Proceed with Delete using Service Role (Admin Client)
     const { error } = await supabase
       .from('inventory_items')
@@ -181,8 +263,29 @@ export async function deleteInventoryItem(itemId: string) {
 
     if (error) {
       console.error('[deleteInventoryItem] Supabase Error:', error.message, error.details);
+      await recordDataChange({
+        action: 'DELETE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        entityId: itemId,
+        entityLabel: itemBeforeDelete?.name ?? null,
+        oldValue: itemBeforeDelete ?? null,
+        status: 'failed',
+        errorMessage: error.message,
+        metadata: withAuditMetadata({}, auditOptions),
+      });
       return { success: false, error: error.message };
     }
+
+    await recordDataChange({
+      action: 'DELETE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      entityId: itemId,
+      entityLabel: itemBeforeDelete?.name ?? null,
+      oldValue: itemBeforeDelete ?? null,
+      metadata: withAuditMetadata({}, auditOptions),
+    });
 
     // Step 3: UI Refresh Logic
     revalidatePath('/[locale]/inventory');
@@ -193,7 +296,7 @@ export async function deleteInventoryItem(itemId: string) {
   }
 }
 
-export async function deleteInventoryItemsBulk(itemIds: string[]) {
+export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?: InventoryAuditOptions) {
   if (itemIds.length === 0) return { success: true, deleted: 0 };
 
   try {
@@ -209,6 +312,11 @@ export async function deleteInventoryItemsBulk(itemIds: string[]) {
     const writable = await assertWritableSession();
     if (!writable.ok) return { success: false, error: writable.error, deleted: 0 };
 
+    const { data: itemsBeforeDelete } = await supabase
+      .from('inventory_items')
+      .select('id, name')
+      .in('id', itemIds);
+
     const { error } = await supabase
       .from('inventory_items')
       .delete()
@@ -216,8 +324,30 @@ export async function deleteInventoryItemsBulk(itemIds: string[]) {
 
     if (error) {
       console.error('[deleteInventoryItemsBulk] Supabase Error:', error.message, error.details);
+      await recordDataChange({
+        action: 'BULK_DELETE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        status: 'failed',
+        errorMessage: error.message,
+        metadata: withAuditMetadata({ itemIds, count: itemIds.length }, auditOptions),
+      });
       return { success: false, error: error.message, deleted: 0 };
     }
+
+    await recordDataChange({
+      action: 'BULK_DELETE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      metadata: withAuditMetadata(
+        {
+          itemIds,
+          count: itemIds.length,
+          labels: (itemsBeforeDelete ?? []).map((item) => item.name),
+        },
+        auditOptions
+      ),
+    });
 
     revalidatePath('/[locale]/inventory');
     return { success: true, deleted: itemIds.length };

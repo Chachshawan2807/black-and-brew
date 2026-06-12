@@ -21,6 +21,7 @@ import {
   fetchTransactionHistory,
   fetchFrequentItems,
 } from '@/app/actions/inventory-actions';
+import { getClientSessionId } from '@/lib/client-session';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { InventoryQuickActionBar } from './InventoryQuickActionBar';
@@ -219,8 +220,12 @@ export default function InventoryQuickActionFAB() {
         void (async () => {
           const res =
             quickType === 'ADJUST'
-              ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust')
-              : await recordTransaction(item.id, quickType, qty, 'Quick Entry');
+              ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
+                  clientSessionId: getClientSessionId(),
+                })
+              : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
+                  clientSessionId: getClientSessionId(),
+                });
 
           if (!res.success) {
             alert(res.error);
@@ -347,7 +352,7 @@ export default function InventoryQuickActionFAB() {
               style={{ maxHeight: 'min(75vh, calc(100dvh - 12rem))' }}
             >
               {isLoadingItems && !hasLoadedItems ? (
-                <div className="bg-white rounded-3xl border-2 border-black shadow-2xl p-8 flex flex-col items-center justify-center gap-3">
+                <div className="bg-card rounded-3xl border border-border shadow-2xl p-8 flex flex-col items-center justify-center gap-3">
                   <Loader2 className="w-6 h-6 animate-spin text-foreground" strokeWidth={1.5} />
                   <span className="text-sm font-normal text-muted-foreground">กำลังโหลดข้อมูลคลัง...</span>
                 </div>

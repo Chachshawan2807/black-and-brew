@@ -55,7 +55,7 @@ export default function LiveStatusTracker({ initialProfiles, initialShifts }: Li
         return (
           <article 
             key={profile.id}
-            className="bg-white/90 backdrop-blur-xl border border-black/[0.05] p-[1rem] rounded-3xl flex items-center justify-between transition-all duration-300 hover:shadow-sm"
+            className="bg-card border border-border p-[1rem] rounded-3xl flex items-center justify-between transition-all duration-300 hover:bg-muted/30 hover:shadow-sm"
           >
             <span className="text-[0.93rem] font-normal text-foreground truncate">
               {profile.full_name}

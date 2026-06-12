@@ -1,16 +1,16 @@
 # Graph Report - black-and-brew  (2026-06-12)
 
 ## Corpus Check
-- 250 files · ~144,616 words
+- 296 files · ~177,995 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1538 nodes · 2285 edges · 122 communities (92 shown, 30 thin omitted)
+- 2273 nodes · 3209 edges · 150 communities (121 shown, 29 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 10 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `be816a79`
+- Built from commit: `37ef9415`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -124,18 +124,46 @@
 - [[_COMMUNITY_Community 119|Community 119]]
 - [[_COMMUNITY_Community 120|Community 120]]
 - [[_COMMUNITY_Community 121|Community 121]]
+- [[_COMMUNITY_Community 122|Community 122]]
+- [[_COMMUNITY_Community 123|Community 123]]
+- [[_COMMUNITY_Community 124|Community 124]]
+- [[_COMMUNITY_Community 125|Community 125]]
+- [[_COMMUNITY_Community 126|Community 126]]
+- [[_COMMUNITY_Community 127|Community 127]]
+- [[_COMMUNITY_Community 128|Community 128]]
+- [[_COMMUNITY_Community 129|Community 129]]
+- [[_COMMUNITY_Community 130|Community 130]]
+- [[_COMMUNITY_Community 131|Community 131]]
+- [[_COMMUNITY_Community 132|Community 132]]
+- [[_COMMUNITY_Community 133|Community 133]]
+- [[_COMMUNITY_Community 134|Community 134]]
+- [[_COMMUNITY_Community 135|Community 135]]
+- [[_COMMUNITY_Community 136|Community 136]]
+- [[_COMMUNITY_Community 137|Community 137]]
+- [[_COMMUNITY_Community 138|Community 138]]
+- [[_COMMUNITY_Community 139|Community 139]]
+- [[_COMMUNITY_Community 140|Community 140]]
+- [[_COMMUNITY_Community 141|Community 141]]
+- [[_COMMUNITY_Community 142|Community 142]]
+- [[_COMMUNITY_Community 143|Community 143]]
+- [[_COMMUNITY_Community 144|Community 144]]
+- [[_COMMUNITY_Community 145|Community 145]]
+- [[_COMMUNITY_Community 146|Community 146]]
+- [[_COMMUNITY_Community 147|Community 147]]
+- [[_COMMUNITY_Community 148|Community 148]]
+- [[_COMMUNITY_Community 149|Community 149]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Decision Log` - 52 edges
-2. `cn()` - 37 edges
+2. `cn()` - 48 edges
 3. `assertWritableSession()` - 27 edges
 4. `Changelog` - 27 edges
-5. `getMarketInsights()` - 26 edges
-6. `Memory Log — BLACKANDBREW ERP` - 24 edges
-7. `Recent Decisions` - 24 edges
-8. `PROTOCOL ENFORCER` - 21 edges
-9. `SYNERGY BUNDLES (ชุดทักษะมัดรวมสำหรับ AI)` - 18 edges
-10. `useReadOnly()` - 17 edges
+5. `recordDataChange()` - 26 edges
+6. `getMarketInsights()` - 26 edges
+7. `Memory Log — BLACKANDBREW ERP` - 24 edges
+8. `Recent Decisions` - 24 edges
+9. `PROTOCOL ENFORCER` - 21 edges
+10. `SYNERGY BUNDLES (ชุดทักษะมัดรวมสำหรับ AI)` - 18 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Black and Brew Coffee Logo` --references--> `Vision & Mission`  [INFERRED]
@@ -152,23 +180,27 @@
 ## Import Cycles
 - None detected.
 
-## Communities (122 total, 30 thin omitted)
+## Communities (150 total, 29 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.10
-Nodes (20): deleteInventoryItem(), deleteInventoryItemsBulk(), fetchFrequentItems(), fetchTransactionHistory(), InventoryStockUpdateOptions, recordTransaction(), stockUpdateSchema, supabase (+12 more)
+Cohesion: 0.12
+Nodes (14): InventoryHistoryModal(), InventoryHistoryModalProps, TransactionHistoryRow, TransactionTypeBadge(), ColumnDef, defaultColumns, EditableCell(), InventoryItem (+6 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.05
-Nodes (52): assertWritableSession(), checkAuth(), dateRangeSchema, ensureAuthorized(), saveRegularHolidays(), supabaseAdmin, syncHolidays(), lineNotificationSchema (+44 more)
+Cohesion: 0.11
+Nodes (22): ACTIVE_TIME_VALUES, compileDailyReportPayload(), DailyReportSchedule, fetchNextHoliday(), fetchTodayShifts(), fetchWeatherForecast(), formatStaffSection(), getSupabaseAdmin() (+14 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.12
-Nodes (12): LiveStatusTrackerProps, CompositeTypes, Constants, Database, DatabaseWithoutInternals, DefaultSchema, Enums, Json (+4 more)
+Cohesion: 0.10
+Nodes (16): LiveStatusTrackerProps, InventoryAddItemModal(), InventoryAddItemModalProps, NewInventoryItemInput, CompositeTypes, Constants, Database, DatabaseWithoutInternals (+8 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.29
-Nodes (9): buildDeviceFields(), DeviceType, parseAndroidModel(), parseAndroidVersion(), parseBrowser(), ParsedUserAgent, parseIosVersion(), parseUserAgent() (+1 more)
+Cohesion: 0.05
+Nodes (38): Admin/Debug Endpoints, Configuration Files to Check, Content Security Policy, Cookie Security, CORS Misconfiguration, Dangerous Patterns, Dangerous Patterns, Dangerous Patterns (+30 more)
+
+### Community 4 - "Community 4"
+Cohesion: 0.06
+Nodes (35): 1. Avoid Native Serialization, 2. Sign Serialized Data, 3. Type-Restricted Deserialization, 4. Input Validation, Dangerous Functions, Dangerous Patterns, Dangerous Patterns, Dangerous Patterns (+27 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.16
@@ -179,8 +211,8 @@ Cohesion: 0.06
 Nodes (31): dependencies, ai, @ai-sdk/google, @ai-sdk/react, class-variance-authority, clsx, date-fns, date-fns-tz (+23 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.11
-Nodes (29): ALLOWED_MIME_TYPES, autoCategorizeAllProducts(), categorizeProductsWithAI(), CategoryMetric, checkAuth(), DailyMetric, DataProcessingResult, deleteCategory() (+21 more)
+Cohesion: 0.10
+Nodes (28): ALLOWED_MIME_TYPES, autoCategorizeAllProducts(), categorizeProductsWithAI(), CategoryMetric, checkAuth(), DailyMetric, DataProcessingResult, deleteCategory() (+20 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.08
@@ -199,32 +231,32 @@ Cohesion: 0.11
 Nodes (17): eslintConfig, devDependencies, eslint, eslint-config-next, jsdom, markdownlint-cli2, tailwindcss, @tailwindcss/postcss (+9 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.24
-Nodes (10): updateInventoryStock(), CountInput(), InventoryItem, InventoryAddItemModal(), InventoryAddItemModalProps, NewInventoryItemInput, InventoryItem, PurchaseOrdersModal (+2 more)
+Cohesion: 0.22
+Nodes (6): RegularHolidayMap, AuthContext, AuthProvider(), mockGet, saveRegularHolidaysMock, ScheduleProps
 
 ### Community 13 - "Community 13"
 Cohesion: 0.12
 Nodes (6): AIChatOverlay, InventoryQuickActionFAB, metadata, viewport, I18nProviderProps, ThemeProvider()
 
 ### Community 14 - "Community 14"
-Cohesion: 0.12
-Nodes (19): ACTIVE_TIME_VALUES, compileDailyReportPayload(), fetchNextHoliday(), fetchTodayShifts(), fetchWeatherForecast(), formatStaffSection(), getSupabaseAdmin(), isActiveShift() (+11 more)
+Cohesion: 0.06
+Nodes (32): Base Image Issues, Build-Time Secrets, COPY vs ADD, Docker Compose Security, Docker Security Reference, Docker Socket Access, Dockerfile Security, .dockerignore (+24 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.12
-Nodes (11): AlertType, InsightBullet, MarketAlert, MarketInsightsDiff, ALERT_STYLE, GlossaryEntry, GlossaryId, humanizeSignal() (+3 more)
+Cohesion: 0.17
+Nodes (8): AlertType, MarketAlert, MarketInsightsDiff, ALERT_STYLE, GlossaryEntry, GlossaryId, humanizeSignal(), SIGNAL_LABELS
 
 ### Community 16 - "Community 16"
-Cohesion: 0.21
-Nodes (12): computedHash, skillPath, source, sourceType, computedHash, skillPath, source, sourceType (+4 more)
+Cohesion: 0.14
+Nodes (17): computedHash, skillPath, source, sourceType, computedHash, skillPath, source, sourceType (+9 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.15
-Nodes (15): MarketContext, SalesSnapshot, ContextPanel(), ChartTooltip(), PASTEL, QtyTooltip(), fmtCurrency(), fmtCurrencyCompact() (+7 more)
+Cohesion: 0.19
+Nodes (13): ContextPanel(), ChartTooltip(), PASTEL, QtyTooltip(), fmtCurrency(), fmtCurrencyCompact(), fmtInteger(), fmtMonthLabel() (+5 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.22
-Nodes (11): deleteServiceRecord(), ensureAuthorized(), recordIdSchema, saveServiceRecord(), ServiceRecordPayload, serviceRecordSchema, supabaseAdmin, MaintenanceModals (+3 more)
+Cohesion: 0.20
+Nodes (12): deleteServiceRecord(), ensureAuthorized(), recordIdSchema, saveServiceRecord(), ServiceRecordPayload, serviceRecordSchema, supabaseAdmin, MaintenanceModals (+4 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.40
@@ -247,8 +279,8 @@ Cohesion: 0.50
 Nodes (3): {Link, redirect, usePathname, useRouter, getPathname}, routing, config
 
 ### Community 25 - "Community 25"
-Cohesion: 0.05
-Nodes (59): analyzeCompetitorProfile(), analyzeReviewsFromText(), extractFacebookUrl(), isOwnStore(), OWN_STORE_PATTERNS, PlaceReviewSnippet, REVIEW_THEME_RULES, BRAND_RULES (+51 more)
+Cohesion: 0.06
+Nodes (58): analyzeCompetitorProfile(), analyzeReviewsFromText(), extractFacebookUrl(), isOwnStore(), OWN_STORE_PATTERNS, PlaceReviewSnippet, REVIEW_THEME_RULES, BRAND_RULES (+50 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.67
@@ -259,12 +291,12 @@ Cohesion: 0.17
 Nodes (11): Black-and-Brew ERP System Overview, Active Modules, API, Pages, PROJECT_MAP — BLACK-AND-BREW ERP, Project Structure, Routes, Server Actions (`src/app/actions/`) (+3 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.24
-Nodes (5): RecordLoginEventInput, collectClientDeviceInfo(), ClientDevicePayload, AuthContext, AuthProvider()
+Cohesion: 0.06
+Nodes (32): Attack Vector, Build Pipeline Security, Common Typosquatting Patterns, Dependency Confusion, Detection, Detection Patterns, Generation, Grep Patterns for Detection (+24 more)
 
 ### Community 52 - "Community 52"
 Cohesion: 0.15
-Nodes (30): fetchComprehensiveInventoryData(), fetchSupabaseContext(), getMarketInsights(), getSupabaseAdmin(), MODEL, persistRun(), buildAlerts(), buildAnalyticalSignals() (+22 more)
+Nodes (30): fetchComprehensiveInventoryData(), fetchSupabaseContext(), getMarketInsights(), getSupabaseAdmin(), MODEL, persistRun(), buildCompetitorPromptDigest(), buildAlerts() (+22 more)
 
 ### Community 57 - "Community 57"
 Cohesion: 0.04
@@ -311,8 +343,8 @@ Cohesion: 0.11
 Nodes (18): 1. Vision & Mission, 2. Target Users, 3.10 Daily LINE Notification, 3.1 Command Center, 3.2 Staff Dashboard, 3.3 Schedule, 3.4 Inventory, 3.5 Maintenance (+10 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.11
-Nodes (15): __clearTrendsCache(), EMPTY_WEATHER, fetchWeatherForecast(), TREND_QUERIES, TrendsResult, ActionItem, actionItemSchema, HolidayEntry (+7 more)
+Cohesion: 0.10
+Nodes (18): __clearTrendsCache(), EMPTY_WEATHER, fetchWeatherForecast(), TREND_QUERIES, TrendsResult, ActionItem, actionItemSchema, HolidayEntry (+10 more)
 
 ### Community 70 - "Community 70"
 Cohesion: 0.11
@@ -335,28 +367,28 @@ Cohesion: 0.14
 Nodes (13): 1.1 Autonomous Execution Privileges (สิทธิ์การทำงานอิสระ), 1. AI Autonomy Level, 2. Operational Protocol, 3. Agent Tools (AI Chat — `/api/chat`), 4. Combo Matrix (SOP), 5. Safety Net, 6. Error Handling Rules, 7. Daily Closing Workflow (+5 more)
 
 ### Community 75 - "Community 75"
-Cohesion: 0.14
-Nodes (13): Backlog 📋, Completed Tasks ✅, High Priority, Low Priority, Medium Priority, Phase 1: Environment Setup, Phase 2: Core Engine & Database, Phase 3: UI Modules (+5 more)
+Cohesion: 0.13
+Nodes (14): Backlog 📋, Completed Tasks ✅, Dark Theme Remediation (June 2026), High Priority, Low Priority, Medium Priority, Phase 1: Environment Setup, Phase 2: Core Engine & Database (+6 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.20
-Nodes (6): fetchRosterData(), Profile, Shift, ClickableDatePicker(), ClickableDatePickerProps, PopoverCoords
+Cohesion: 0.06
+Nodes (30): Always Flag, Angular, Any Type Warnings, Auto-Escaped (Do Not Flag), Auto-Escaped (Do Not Flag), Auto-Escaped (Do Not Flag), Check Context, Express / Node.js (+22 more)
 
 ### Community 77 - "Community 77"
-Cohesion: 0.13
-Nodes (18): colorMap, CommandCenterGrid(), iconMap, NavItem, SortableItem, LiveShiftList(), LiveShiftListProps, PerformanceData (+10 more)
+Cohesion: 0.21
+Nodes (11): colorMap, CommandCenterGrid(), iconMap, NavItem, SortableItem, LiveShiftList(), InventoryQuickActionFAB(), DynamicInventoryManager() (+3 more)
 
 ### Community 78 - "Community 78"
 Cohesion: 0.15
 Nodes (12): 1. Project Identity, 2. Business Context, 3. Environment, 4. Authentication, 5. Operational Constraints, 6. Key Dependencies, 7. File Structure Overview, Context — BLACKANDBREW ERP (+4 more)
 
 ### Community 80 - "Community 80"
-Cohesion: 0.22
-Nodes (9): clearAuth(), getCookieOpts(), isReadOnlySession(), verifyPin(), recordLoginEvent(), mockDelete, mockGet, mockSet (+1 more)
+Cohesion: 0.06
+Nodes (30): 1. Data Classification, 2. Minimize Data Collection, 3. Encryption at Rest, 4. Encryption in Transit, API Response Filtering, Authentication Credentials, Cache Headers, Cache Security (+22 more)
 
 ### Community 81 - "Community 81"
-Cohesion: 0.24
-Nodes (8): EXECUTIVE_RULES, ExecutiveRules, computeItemsToOrder(), computeOrderQty(), InventoryStockFields, mergeInventoryRealtimeUpdate(), PurchaseOrderCandidate, sanitizeStockValue()
+Cohesion: 0.07
+Nodes (29): API Key Security, API Security Reference, Authentication, Authorization, Batching Attack Prevention, Content-Type Validation, CORS Configuration, Disable Introspection in Production (+21 more)
 
 ### Community 82 - "Community 82"
 Cohesion: 0.25
@@ -376,7 +408,7 @@ Nodes (9): Agent Rules — BLACKANDBREW ERP, CORE DEVELOPMENT SOP (Superpowers),
 
 ### Community 86 - "Community 86"
 Cohesion: 0.06
-Nodes (48): SidebarToggleStore, useSidebarToggle, useStore(), PurchaseOrderItem, PurchaseOrdersModal(), PurchaseOrdersModalProps, getMenuList(), MenuGroup (+40 more)
+Nodes (49): SidebarToggleStore, useSidebarToggle, useStore(), PurchaseOrderItem, PurchaseOrdersModal(), PurchaseOrdersModalProps, getMenuList(), MenuGroup (+41 more)
 
 ### Community 87 - "Community 87"
 Cohesion: 0.25
@@ -443,52 +475,164 @@ Cohesion: 0.15
 Nodes (14): buildSmartMemory(), buildSystemPrompt(), chatRateLimiter, classifyIntent(), IntentScores, JUNK_FIELDS, logAuditTrail(), POST() (+6 more)
 
 ### Community 114 - "Community 114"
-Cohesion: 0.29
-Nodes (6): FrequentItem, InventoryQuickActionBar(), InventoryQuickActionBarProps, QuickActionItem, QuickBadgeStyles, INVENTORY_QUICK_ACTION_COLORS
+Cohesion: 0.07
+Nodes (29): Authentication Bypass on Error, Cleanup on Error, Dangerous Patterns, Dangerous Patterns, Differential Error Messages, Error-Based SQL Injection Indicators, Error Handling Security Reference, Exception Swallowing (+21 more)
 
 ### Community 116 - "Community 116"
 Cohesion: 0.18
 Nodes (10): compareShiftByTimeThenOrder(), DailyShiftEntry, FormattedDailyShifts, normalizeShiftLocation(), parseShiftTimeToNumber(), ProfileRow, ShiftCategory, ShiftRow (+2 more)
 
 ### Community 117 - "Community 117"
-Cohesion: 0.16
-Nodes (12): ensureAuthenticated(), fetchLoginHistory(), LoginAccessLevel, LoginEventStatus, LoginEventType, resolveClientIp(), mockGet, mockInsert (+4 more)
+Cohesion: 0.06
+Nodes (34): clearAuth(), getCookieOpts(), isReadOnlySession(), verifyPin(), buildDeviceFields(), ensureAuthenticated(), fetchLoginHistory(), LoginAccessLevel (+26 more)
 
 ### Community 118 - "Community 118"
 Cohesion: 0.27
 Nodes (10): detectThaiWeekday(), isDailyScheduleQuery(), resolveScheduleTargetDate(), resolveWeekdayTargetDate(), THAI_WEEKDAY_PATTERNS, detectThaiMonth(), inferYear(), parseExplicitScheduleDate() (+2 more)
 
 ### Community 119 - "Community 119"
-Cohesion: 0.12
-Nodes (15): EmployeeStatus, getEmployeeStatus(), LiveStatusTrackerProps, Profile, Shift, sortProfiles(), StatusGrid(), StatusGridProps (+7 more)
+Cohesion: 0.13
+Nodes (14): EmployeeStatus, getEmployeeStatus(), LiveStatusTrackerProps, Profile, Shift, sortProfiles(), StatusGrid(), StatusGridProps (+6 more)
 
 ### Community 120 - "Community 120"
 Cohesion: 0.33
 Nodes (8): AIChatOverlay(), ChatBubble(), QUICK_ACTIONS, PROMPT_INJECTION_PATTERNS, sanitizePromptInput(), sanitizeScreenContext(), sanitizeXssPayload(), XSS_PATTERNS
 
 ### Community 121 - "Community 121"
-Cohesion: 0.40
-Nodes (4): InventoryHistoryModal(), InventoryHistoryModalProps, TransactionHistoryRow, TransactionTypeBadge()
+Cohesion: 0.18
+Nodes (11): formatToThai(), isSameThaiDay(), ColumnDef, dayLabels, defaultHistoryColumns, ScheduleClientProps, shiftTypes, SortableEmployeeRow (+3 more)
+
+### Community 122 - "Community 122"
+Cohesion: 0.07
+Nodes (27): Account Lockout, Authentication Security Reference, Brute Force Protection, Concurrent Session Control, Cookie Security Attributes, Email Address Changes, Error Messages, Exponential Backoff (+19 more)
+
+### Community 123 - "Community 123"
+Cohesion: 0.07
+Nodes (27): 1. Input Validation (Allowlist), 2. Block Internal Networks (Denylist), 3. Disable Redirects, 4. DNS Rebinding Protection, 5. Cloud Metadata Protection, Alternate Representations, Attack Scenarios, AWS IMDSv2 (+19 more)
+
+### Community 124 - "Community 124"
+Cohesion: 0.07
+Nodes (26): 1. Deny by Default, 2. Enforce Least Privilege, 3. Validate Permissions on Every Request, Access Control Models, Attribute-Based Access Control (ABAC), Authorization Security Reference, Authorization Testing, Common Vulnerabilities (+18 more)
+
+### Community 125 - "Community 125"
+Cohesion: 0.07
+Nodes (26): Asymmetric Encryption, Cipher Modes, Common Vulnerabilities, Core Principles, Cryptographic Security Reference, Cryptographically Secure PRNGs (CSPRNG), ECB Mode Patterns, Encryption Algorithms (+18 more)
+
+### Community 126 - "Community 126"
+Cohesion: 0.07
+Nodes (26): Angular, Content Security Policy (CSP), Cross-Site Scripting (XSS) Prevention Reference, CSS Context, Dangerous Sources, Django/Jinja2, DOM-based XSS Prevention, Framework-Specific Considerations (+18 more)
+
+### Community 127 - "Community 127"
+Cohesion: 0.08
+Nodes (25): Archive (ZIP) Handling, Characters to Block, Dangerous File Types, Defense in Depth Approach, File Permissions, File Security Reference, File Upload Security, Filename Sanitization (+17 more)
+
+### Community 128 - "Community 128"
+Cohesion: 0.08
+Nodes (25): Alert Configuration, Attack Vector, Audit Trail Requirements, Dangerous Patterns, Events That Must Be Logged, Grep Patterns for Detection, Immutable Audit Logs, Insecure Patterns (+17 more)
+
+### Community 129 - "Community 129"
+Cohesion: 0.08
+Nodes (25): Authentication, Cross-Site WebSocket Hijacking (CSWSH), Detection, DOM Clobbering, DOM Clobbering, Grep Patterns for Detection, LLM Prompt Injection, LLM Prompt Injection (+17 more)
+
+### Community 130 - "Community 130"
+Cohesion: 0.08
+Nodes (25): 1. Detect Context, 2. Load Language Guide, 3. Load Infrastructure Guide (if applicable), 4. Research Before Flagging, 5. Verify Exploitability, 6. Report HIGH Confidence Only, Always Flag (Critical), Always Flag (High) (+17 more)
+
+### Community 131 - "Community 131"
+Cohesion: 0.08
+Nodes (24): Always Flag, Auto-Escaped (Do Not Flag), Check Context, Common Mistakes, Django, Django Security Settings, FastAPI, Flag These (+16 more)
+
+### Community 132 - "Community 132"
+Cohesion: 0.08
+Nodes (24): 1. Race Conditions, 2. Workflow Bypass, 3. Numeric Manipulation, 4. Price/Discount Manipulation, 5. Inventory/Resource Exhaustion, 6. Time-Based Attacks, 7. Parameter Tampering, Business Logic Security Reference (+16 more)
+
+### Community 133 - "Community 133"
+Cohesion: 0.09
+Nodes (22): 1. GET Requests for State Changes, 1. Synchronizer Token Pattern, 2. CORS Misconfiguration, 2. Double Submit Cookie Pattern (Stateless), 3. SameSite Cookie Attribute, 3. Token in URL, 4. Custom Request Headers, Attack Scenario (+14 more)
+
+### Community 134 - "Community 134"
+Cohesion: 0.10
+Nodes (20): Dangerous Characters, Injection Prevention Reference, Key Grep Patterns for Detection, Language-Specific Dangerous Functions, LDAP Injection, MongoDB Injection Patterns, NoSQL Injection, ORM Safety Considerations (+12 more)
+
+### Community 135 - "Community 135"
+Cohesion: 0.11
+Nodes (17): Architecture (unchanged), `bb-pastel-surface` adoption (partial), Dark Theme Remediation Plan, File inventory — `bg-white` hits (Phase 0 snapshot), Goal, Grep summary (`src/**/*.tsx`, `src/**/*.ts`), Pass criteria (per route, theme = dark), Phase 0 — Audit baseline (2026-06-12) (+9 more)
+
+### Community 136 - "Community 136"
+Cohesion: 0.13
+Nodes (19): checkAuth(), dateRangeSchema, ensureAuthorized(), saveRegularHolidays(), supabaseAdmin, syncHolidays(), dateRangeSchema, fetchAndPersistHolidays() (+11 more)
+
+### Community 137 - "Community 137"
+Cohesion: 0.14
+Nodes (16): EXECUTIVE_RULES, ExecutiveRules, FrequentItem, InventoryQuickActionBar(), InventoryQuickActionBarProps, QuickActionItem, InventoryItem, PurchaseOrdersModal (+8 more)
+
+### Community 138 - "Community 138"
+Cohesion: 0.33
+Nodes (6): CountInput(), InventoryCountPage(), InventoryItem, generateId(), getClientSessionId(), isOwnChange()
+
+### Community 139 - "Community 139"
+Cohesion: 0.14
+Nodes (17): resolveActorContext(), logClientDataChange(), computeFieldChanges(), DataChangeModule, DataChangeSource, isPlainObject(), resolveActorLabel(), ResolvedActor (+9 more)
+
+### Community 140 - "Community 140"
+Cohesion: 0.22
+Nodes (8): InsightBullet, CacheEntry, isStale(), mergeWithServer(), readCache(), writeCache(), CONFIDENCE_LABEL, CONFIDENCE_STYLE
+
+### Community 141 - "Community 141"
+Cohesion: 0.17
+Nodes (23): assertWritableSession(), recordDataChange(), deleteInventoryItem(), deleteInventoryItemsBulk(), fetchFrequentItems(), fetchTransactionHistory(), InventoryAuditOptions, InventoryStockUpdateOptions (+15 more)
+
+### Community 142 - "Community 142"
+Cohesion: 0.16
+Nodes (18): useInventoryNotifications(), DataChangeAction, loadNotificationPreferences(), saveNotificationPreferences(), shouldNotifyForAction(), countUnread(), loadStoredNotifications(), saveStoredNotifications() (+10 more)
+
+### Community 143 - "Community 143"
+Cohesion: 0.31
+Nodes (6): LiveShiftListProps, PerformanceData, SortableEmployeeCardProps, ShiftCardProps, Profile, Shift
+
+### Community 144 - "Community 144"
+Cohesion: 0.24
+Nodes (6): ACTION_LABELS, actionIcon(), DataChangeHistorySectionProps, formatDateTime(), LogEntry(), MODULE_LABELS
+
+### Community 145 - "Community 145"
+Cohesion: 0.25
+Nodes (6): fetchRosterData(), Profile, Shift, ClickableDatePicker(), ClickableDatePickerProps, PopoverCoords
+
+### Community 146 - "Community 146"
+Cohesion: 0.20
+Nodes (12): DataChangeLogRow, ensureAuthenticated(), fetchDataChangeLogs(), FetchDataChangeLogsOptions, resolveClientIp(), ActorAccessLevel, DataChangeLogInput, FieldChange (+4 more)
+
+### Community 147 - "Community 147"
+Cohesion: 0.27
+Nodes (11): ACTION_LABELS, detectLowStockCrossing(), FIELD_LABELS, formatBatchedNotification(), formatFieldChange(), formatInventoryNotification(), formatValue(), resolveNotificationPriority() (+3 more)
+
+### Community 148 - "Community 148"
+Cohesion: 0.29
+Nodes (9): formatNotificationTime(), getTimeGroupKey(), groupNotificationsByTime(), TimeGroupKey, InventoryChangeToast(), actionIcon(), NotificationPanel(), NotificationRow() (+1 more)
+
+### Community 149 - "Community 149"
+Cohesion: 0.31
+Nodes (7): runInventoryMigration(), ensureServerSession(), requireServiceRoleKey(), ServerAuthResult, mockEq, mockGet, mockSelectOrder
 
 ## Knowledge Gaps
-- **759 isolated node(s):** `PreToolUse`, `enabled`, `enabled`, `recommendations`, `version` (+754 more)
+- **1227 isolated node(s):** `PreToolUse`, `enabled`, `enabled`, `recommendations`, `version` (+1222 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `Community 86` to `Community 0`, `Community 1`, `Community 4`, `Community 12`, `Community 77`, `Community 114`, `Community 120`, `Community 121`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
-- **Why does `assertWritableSession()` connect `Community 1` to `Community 0`, `Community 7`, `Community 12`, `Community 80`, `Community 19`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
-- **Why does `fetchDailyShiftsByDate()` connect `Community 5` to `Community 116`, `Community 113`, `Community 52`?**
+- **Why does `cn()` connect `Community 86` to `Community 0`, `Community 137`, `Community 138`, `Community 77`, `Community 142`, `Community 144`, `Community 19`, `Community 148`, `Community 117`, `Community 120`, `Community 121`?**
+  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+- **Why does `MarketInsights` connect `Community 8` to `Community 140`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
+- **Why does `fetchDailyShiftsByDate()` connect `Community 5` to `Community 116`, `Community 113`, `Community 52`?**
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `cn()` (e.g. with `DynamicInventoryManager()` and `EditableCell()`) actually correct?**
   _`cn()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `PreToolUse`, `enabled`, `enabled` to the rest of the system?**
-  _766 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1234 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.09846153846153846 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.11578947368421053 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.05271629778672032 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.10887096774193548 - nodes in this community are weakly interconnected._

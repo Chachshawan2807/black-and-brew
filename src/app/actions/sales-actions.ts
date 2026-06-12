@@ -7,6 +7,8 @@ import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 import { cookies } from 'next/headers';
 import { assertWritableSession } from '@/app/actions/auth';
+import { recordDataChange } from '@/app/actions/data-change-log-actions';
+import { computeFieldChanges } from '@/lib/data-change-log';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_FILES = 24;
@@ -675,39 +677,6 @@ async function ensureProductCategoriesTable(supabase: any) {
   }
 }
 
-// Helper to log audit entries
-async function logAuditEntry(supabase: any, entry: {
-  action_type: string;
-  entity_type: string;
-  entity_id?: string;
-  old_value?: any;
-  new_value?: any;
-  status?: string;
-}) {
-  try {
-    // Check if audit_logs table exists first
-    const { error: checkError } = await supabase.from('audit_logs').select('id').limit(1);
-    if (checkError && (checkError.message?.includes('Could not find the table') || checkError.code === 'PGRST205')) {
-      return;
-    }
-
-    const { error } = await supabase.from('audit_logs').insert({
-      action_type: entry.action_type,
-      entity_type: entry.entity_type,
-      entity_id: entry.entity_id,
-      old_value: entry.old_value,
-      new_value: entry.new_value,
-      status: entry.status || 'completed',
-      timestamp: new Date().toISOString()
-    });
-
-    if (error) {
-      console.error('[logAuditEntry] Failed to write audit log:', error);
-    }
-  } catch (e) {
-    console.error('[logAuditEntry] Exception writing audit log:', e);
-  }
-}
 
 /**
  * Update product category (user edit)
@@ -758,25 +727,32 @@ export async function updateProductCategory(productName: string, newCategory: st
 
     if (error) {
       console.error('[UPDATE_CATEGORY_SUPABASE_ERROR]', error);
-      await logAuditEntry(supabase, {
-        action_type: 'category_update',
-        entity_type: 'product',
-        entity_id: productName,
-        old_value: oldCategoryData?.category,
-        new_value: newCategory,
-        status: 'failed'
+      await recordDataChange({
+        action: 'UPDATE',
+        module: 'sales',
+        entityType: 'product_category',
+        entityId: productName,
+        entityLabel: productName,
+        fieldChanges: computeFieldChanges(
+          { category: oldCategoryData?.category ?? null },
+          { category: newCategory }
+        ),
+        status: 'failed',
+        errorMessage: error.message,
       });
       return { success: false, error: error.message };
     }
 
-    // Log audit entry for success
-    await logAuditEntry(supabase, {
-      action_type: 'category_update',
-      entity_type: 'product',
-      entity_id: productName,
-      old_value: oldCategoryData?.category,
-      new_value: newCategory,
-      status: 'completed'
+    await recordDataChange({
+      action: 'UPDATE',
+      module: 'sales',
+      entityType: 'product_category',
+      entityId: productName,
+      entityLabel: productName,
+      fieldChanges: computeFieldChanges(
+        { category: oldCategoryData?.category ?? null },
+        { category: newCategory }
+      ),
     });
 
     return { success: true };
@@ -806,15 +782,6 @@ export async function deleteCategory(categoryName: string) {
   }
 
   try {
-    // Log the delete action
-    await logAuditEntry(supabase, {
-      action_type: 'category_delete',
-      entity_type: 'category',
-      entity_id: categoryName,
-      old_value: categoryName,
-      status: 'in_progress'
-    });
-
     // Delete all entries with this category
     const { error } = await supabase
       .from('product_categories')
@@ -823,22 +790,26 @@ export async function deleteCategory(categoryName: string) {
 
     if (error) {
       console.error('[DELETE_CATEGORY_ERROR]', error);
-      await logAuditEntry(supabase, {
-        action_type: 'category_delete',
-        entity_type: 'category',
-        entity_id: categoryName,
-        old_value: categoryName,
-        status: 'failed'
+      await recordDataChange({
+        action: 'DELETE',
+        module: 'sales',
+        entityType: 'category',
+        entityId: categoryName,
+        entityLabel: categoryName,
+        oldValue: categoryName,
+        status: 'failed',
+        errorMessage: error.message,
       });
       return { success: false, error: error.message };
     }
 
-    await logAuditEntry(supabase, {
-      action_type: 'category_delete',
-      entity_type: 'category',
-      entity_id: categoryName,
-      old_value: categoryName,
-      status: 'completed'
+    await recordDataChange({
+      action: 'DELETE',
+      module: 'sales',
+      entityType: 'category',
+      entityId: categoryName,
+      entityLabel: categoryName,
+      oldValue: categoryName,
     });
 
     return { success: true };

@@ -56,6 +56,75 @@ export type Database = {
         }
         Relationships: []
       }
+      data_change_logs: {
+        Row: {
+          id: string
+          occurred_at: string
+          actor_id: string | null
+          actor_label: string
+          actor_access_level: string | null
+          action: string
+          module: string
+          entity_type: string
+          entity_id: string | null
+          entity_label: string | null
+          field_changes: Json
+          old_value: Json | null
+          new_value: Json | null
+          source: string
+          ip_address: string | null
+          user_agent: string | null
+          status: string
+          error_message: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          occurred_at?: string
+          actor_id?: string | null
+          actor_label: string
+          actor_access_level?: string | null
+          action: string
+          module: string
+          entity_type: string
+          entity_id?: string | null
+          entity_label?: string | null
+          field_changes?: Json
+          old_value?: Json | null
+          new_value?: Json | null
+          source?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          status?: string
+          error_message?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          occurred_at?: string
+          actor_id?: string | null
+          actor_label?: string
+          actor_access_level?: string | null
+          action?: string
+          module?: string
+          entity_type?: string
+          entity_id?: string | null
+          entity_label?: string | null
+          field_changes?: Json
+          old_value?: Json | null
+          new_value?: Json | null
+          source?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          status?: string
+          error_message?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       holidays: {
         Row: {
           created_at: string | null

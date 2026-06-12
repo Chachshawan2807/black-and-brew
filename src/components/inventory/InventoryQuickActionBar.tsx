@@ -70,7 +70,7 @@ export function InventoryQuickActionBar({
   className,
 }: InventoryQuickActionBarProps) {
   return (
-    <div className={cn('w-full flex flex-col bg-white p-4 rounded-3xl border-2 border-black shadow-sm', className)}>
+    <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border shadow-sm', className)}>
       <form onSubmit={onSubmit} className="flex flex-col gap-2.5 w-full">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full box-border mb-0">
           <div className="flex flex-row items-center gap-2 flex-1 w-full min-w-0">
@@ -83,7 +83,7 @@ export function InventoryQuickActionBar({
                 onChange={(e) => setQuickSearch(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                className="w-full h-11 pl-9 pr-3 rounded-xl bg-card border border-border text-base md:text-sm font-normal text-foreground outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                className="w-full h-11 pl-9 pr-3 rounded-xl bg-background border border-border text-base md:text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all antialiased"
               />
 
               {isSearchFocused && filteredItems.length > 0 && (
@@ -98,7 +98,7 @@ export function InventoryQuickActionBar({
                           setQuickSearch(item.name);
                           setIsSearchFocused(false);
                         }}
-                        className="w-full text-left px-5 py-3 hover:bg-black/5 transition-colors flex items-center justify-between group"
+                        className="w-full text-left px-5 py-3 hover:bg-muted transition-colors flex items-center justify-between group"
                       >
                         <span className="text-[14px] text-foreground font-normal">{item.name}</span>
                         <span className="text-[12px] text-foreground/30 group-hover:text-foreground/50 transition-colors uppercase tracking-widest font-mono">
@@ -150,7 +150,7 @@ export function InventoryQuickActionBar({
                   }}
                   min="0"
                   step="any"
-                  className="w-full h-11 text-base md:text-sm font-normal px-2 text-center rounded-xl bg-card border border-border placeholder-neutral-400 text-foreground outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all antialiased"
+                  className="w-full h-11 text-base md:text-sm font-normal px-2 text-center rounded-xl bg-background border border-border placeholder:text-muted-foreground text-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all antialiased"
                 />
               </div>
 
@@ -220,7 +220,7 @@ export function InventoryQuickActionBar({
             <button
               type="submit"
               disabled={isQuickPending || isReadOnly}
-              className="w-full sm:w-auto px-4 h-11 bg-[#f0f9ff] border border-[#e0f2fe] hover:bg-[#bae6fd] text-[#0c4a6e] rounded-xl text-base md:text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0 disabled:opacity-50"
+              className="w-full sm:w-auto px-4 h-11 bb-pastel-surface bg-[#d1ecf1] border border-[#bee5eb] hover:brightness-95 text-[#000000] rounded-xl text-base md:text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap antialiased shrink-0 disabled:opacity-50"
             >
               <CloudUpload className="w-4 h-4" strokeWidth={1.5} /> บันทึก
             </button>
@@ -237,10 +237,10 @@ export function InventoryQuickActionBar({
               'hover:bg-[#c3e6cb]/60',
             )}
           >
-            <ShoppingCart className="w-4 h-4 shrink-0 text-foreground" strokeWidth={1.5} />
+            <ShoppingCart className="w-4 h-4 shrink-0" strokeWidth={1.5} />
             <span className="truncate">สั่งซื้อ</span>
             {itemsToOrderCount > 0 && (
-              <span className="bg-[#c3e6cb] text-foreground text-[10px] px-1.5 py-0.5 rounded-full font-normal shrink-0 border border-[#b8dfc4]">
+              <span className="bb-pastel-surface bg-[#c3e6cb] text-[10px] px-1.5 py-0.5 rounded-full font-normal shrink-0 border border-[#b8dfc4]">
                 {itemsToOrderCount}
               </span>
             )}
@@ -254,7 +254,7 @@ export function InventoryQuickActionBar({
               'hover:bg-[#ffeeba]/70',
             )}
           >
-            <PlusCircle className="w-4 h-4 text-foreground" strokeWidth={1.5} />
+            <PlusCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
             <span className="truncate">เพิ่มสินค้า</span>
           </button>
           <button
@@ -266,7 +266,7 @@ export function InventoryQuickActionBar({
               'hover:bg-[#bee5eb]/70',
             )}
           >
-            <History className="w-4 h-4 text-foreground" strokeWidth={1.5} />
+            <History className="w-4 h-4 shrink-0" strokeWidth={1.5} />
             <span className="truncate">ประวัติ</span>
           </button>
         </div>
@@ -275,7 +275,7 @@ export function InventoryQuickActionBar({
       {frequentItems.length > 0 && (
         <div
           className={cn(
-            'flex items-center gap-2 mt-6 pt-3 border-t border-black/5 overflow-x-auto pb-1 scrollbar-hide',
+            'flex items-center gap-2 mt-6 pt-3 border-t border-border overflow-x-auto pb-1 scrollbar-hide',
             isReadOnly && 'pointer-events-none opacity-60',
           )}
         >

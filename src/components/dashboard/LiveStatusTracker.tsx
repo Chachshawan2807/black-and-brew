@@ -136,14 +136,14 @@ function StatusGrid({ profiles, shifts, dateLabel, highlightToday = false }: Sta
             key={profile.id}
             aria-label={`พนักงาน: ${profile.full_name}, วันที่: ${dateLabel}, กะงาน: ${displayText}`}
             className={`${colorClass} group relative w-[7.25rem] shrink-0 overflow-hidden rounded-2xl p-3 min-h-[4.75rem] flex flex-col justify-between gap-2 bb-transition hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${
-              highlightToday && isWorkShift ? 'ring-2 ring-black/[0.06] bb-shadow-sm' : 'shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
+              highlightToday && isWorkShift ? 'ring-2 ring-border bb-shadow-sm' : 'shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
             }`}
           >
-            <span className="text-[0.8125rem] font-normal text-foreground truncate leading-snug tracking-tight">
+            <span className="text-[0.8125rem] font-normal truncate leading-snug tracking-tight">
               {profile.full_name}
             </span>
-            <span className="inline-flex items-center justify-center gap-1 self-center max-w-full px-2 py-0.5 rounded-full bg-black/[0.04] text-[0.6875rem] font-normal text-foreground/80 tracking-wide">
-              <ShiftIcon className="h-3 w-3 shrink-0 text-muted-foreground/90" strokeWidth={1.5} aria-hidden />
+            <span className="inline-flex items-center justify-center gap-1 self-center max-w-full px-2 py-0.5 rounded-full bg-black/[0.06] text-[0.6875rem] font-normal text-black/80 tracking-wide">
+              <ShiftIcon className="h-3 w-3 shrink-0 opacity-70" strokeWidth={1.5} aria-hidden />
               <span className="truncate">{displayText}</span>
             </span>
           </article>
@@ -175,11 +175,11 @@ function StatusSection({
   return (
     <section
       aria-label={title}
-      className="rounded-3xl border border-black/5 bg-white/80 backdrop-blur-xl p-5 md:p-7 bb-shadow-sm"
+      className="rounded-3xl border border-border bg-card p-5 md:p-7 bb-shadow-sm"
     >
       <header className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-black/[0.04] bb-shadow-sm">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
             {icon}
           </div>
           <div>

@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { assertWritableSession } from '@/app/actions/auth';
+import { recordDataChange } from '@/app/actions/data-change-log-actions';
 
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -26,8 +27,33 @@ export async function deleteShift(id: string) {
     const writable = await assertWritableSession();
     if (!writable.ok) return { success: false, error: writable.error };
 
+    const { data: shiftBefore } = await supabaseAdmin
+      .from('shifts')
+      .select('id, employee_id, start_time, status, metadata')
+      .eq('id', id)
+      .maybeSingle();
+
     const { error } = await supabaseAdmin.from('shifts').delete().eq('id', id);
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      await recordDataChange({
+        action: 'DELETE',
+        module: 'schedule',
+        entityType: 'shift',
+        entityId: id,
+        oldValue: shiftBefore ?? null,
+        status: 'failed',
+        errorMessage: error.message,
+      });
+      return { success: false, error: error.message };
+    }
+
+    await recordDataChange({
+      action: 'DELETE',
+      module: 'schedule',
+      entityType: 'shift',
+      entityId: id,
+      oldValue: shiftBefore ?? null,
+    });
 
     revalidateAppPaths();
     return { success: true };
@@ -57,7 +83,24 @@ export async function updateStaffOrder(orderedIds: string[]) {
     );
     const results = await Promise.all(updates);
     const firstError = results.find(r => r.error);
-    if (firstError) return { success: false, error: firstError.error?.message || 'Unknown error' };
+    if (firstError) {
+      await recordDataChange({
+        action: 'BULK_UPDATE',
+        module: 'schedule',
+        entityType: 'profile',
+        status: 'failed',
+        errorMessage: firstError.error?.message || 'Unknown error',
+        metadata: { operation: 'update_staff_order', orderedIds },
+      });
+      return { success: false, error: firstError.error?.message || 'Unknown error' };
+    }
+
+    await recordDataChange({
+      action: 'BULK_UPDATE',
+      module: 'schedule',
+      entityType: 'profile',
+      metadata: { operation: 'update_staff_order', orderedIds },
+    });
 
     revalidatePath('/[locale]/schedule', 'page');
     return { success: true };
@@ -85,6 +128,14 @@ export async function updateDashboardOrder(orderedIds: string[]) {
       supabaseAdmin.from('profiles').update({ dashboard_order: index }).eq('id', id)
     );
     await Promise.all(updates);
+
+    await recordDataChange({
+      action: 'BULK_UPDATE',
+      module: 'dashboard',
+      entityType: 'profile',
+      metadata: { operation: 'update_dashboard_order', orderedIds },
+    });
+
     revalidatePath('/[locale]/dashboard', 'page');
     return { success: true };
   } catch (err) {
@@ -132,6 +183,17 @@ export async function saveShift(payload: any) {
   const cleanEndTime = datePart + 'T23:59:59';
 
   try {
+    const isUpdate = Boolean(payload.id);
+    let shiftBefore = null;
+    if (isUpdate) {
+      const { data: existing } = await supabaseAdmin
+        .from('shifts')
+        .select('id, employee_id, start_time, status, metadata')
+        .eq('id', payload.id)
+        .maybeSingle();
+      shiftBefore = existing;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('shifts')
       .upsert({
@@ -147,8 +209,27 @@ export async function saveShift(payload: any) {
 
     if (error) {
       console.error('[saveShift] Upsert Error:', error);
+      await recordDataChange({
+        action: isUpdate ? 'UPDATE' : 'CREATE',
+        module: 'schedule',
+        entityType: 'shift',
+        entityId: payload.id ?? null,
+        oldValue: shiftBefore,
+        newValue: payload,
+        status: 'failed',
+        errorMessage: error.message,
+      });
       return { success: false, error: error.message };
     }
+
+    await recordDataChange({
+      action: isUpdate ? 'UPDATE' : 'CREATE',
+      module: 'schedule',
+      entityType: 'shift',
+      entityId: data?.id ?? payload.id ?? null,
+      oldValue: shiftBefore,
+      newValue: data ?? payload,
+    });
 
     revalidateAppPaths();
     return { success: true, data };
@@ -182,8 +263,23 @@ export async function deleteManagementHistoryRange(employeeId: string, startDate
 
     if (error) {
       console.error('[deleteManagementHistoryRange] Supabase Error:', error.message, error);
+      await recordDataChange({
+        action: 'BULK_DELETE',
+        module: 'schedule',
+        entityType: 'shift',
+        status: 'failed',
+        errorMessage: error.message,
+        metadata: { employeeId, startDate, endDate, operation: 'delete_management_history' },
+      });
       throw error;
     }
+
+    await recordDataChange({
+      action: 'BULK_DELETE',
+      module: 'schedule',
+      entityType: 'shift',
+      metadata: { employeeId, startDate, endDate, operation: 'delete_management_history' },
+    });
 
     revalidateAppPaths();
     return { success: true };

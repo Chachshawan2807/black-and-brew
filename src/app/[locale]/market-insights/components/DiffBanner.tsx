@@ -16,11 +16,11 @@ export default function DiffBanner({ diff }: { diff?: MarketInsightsDiff }) {
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-border bg-[#eef6ee] p-4 md:p-5"
+      className="rounded-2xl border border-[#c3e6cb] bb-pastel-surface bg-[#eef6ee] p-4 md:p-5"
     >
       <div className="flex items-center gap-1.5 mb-2">
-        <Sparkles className="w-4 h-4 text-foreground/70" />
-        <span className="text-sm font-medium text-foreground/80">มีอะไรเปลี่ยนไปจากรอบก่อน</span>
+        <Sparkles className="w-4 h-4" />
+        <span className="text-sm font-medium">มีอะไรเปลี่ยนไปจากรอบก่อน</span>
         <MetricInfoTip id="diff_banner" />
       </div>
       <div className="flex flex-wrap gap-2">

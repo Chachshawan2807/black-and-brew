@@ -341,6 +341,14 @@
   .bb-pastel-surface :where(.text-black) {
     color: #000000;
   }
+
+  .bb-pastel-surface :where(::placeholder) {
+    color: rgb(0 0 0 / 0.45);
+  }
+
+  .bb-pastel-surface :where(input, textarea)::placeholder {
+    color: rgb(0 0 0 / 0.45);
+  }
 }
 
 @layer utilities {

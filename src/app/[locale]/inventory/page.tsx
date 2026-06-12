@@ -8,6 +8,8 @@ import { toPng } from 'html-to-image';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { recordTransaction, fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem, deleteInventoryItemsBulk, updateInventoryStock } from '@/app/actions/inventory-actions';
+import { logClientDataChange } from '@/lib/client-data-change-log';
+import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { computeItemsToOrder, getQuickBadgeStyles, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { InventoryQuickActionBar } from '@/components/inventory/InventoryQuickActionBar';
@@ -188,7 +190,7 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
           if (e.key === 'Enter') { e.preventDefault(); commit(); }
           if (e.key === 'Escape') setEditing(false);
         }}
-        className="w-8 h-5 text-[12px] font-mono text-center bg-black/5 border border-black/20 rounded focus:outline-none focus:ring-1 focus:ring-black/30 shrink-0"
+        className="w-8 h-5 text-[12px] font-mono text-center bg-muted border border-border rounded focus:outline-none focus:ring-1 focus:ring-foreground/20 shrink-0"
         style={{ width: '2rem' }}
       />
     );
@@ -200,7 +202,7 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
       type="button"
       title={`แตะเพื่อเปลี่ยนลำดับ (1–${totalItems})`}
       onClick={() => { setLocalVal(String(displayIndex)); setEditing(true); }}
-      className="text-[12px] font-normal text-foreground/35 font-mono shrink-0 hover:text-foreground/60 hover:bg-black/5 rounded px-1 transition-colors leading-none cursor-pointer"
+      className="text-[12px] font-normal text-foreground/35 font-mono shrink-0 hover:text-foreground/60 hover:bg-muted rounded px-1 transition-colors leading-none cursor-pointer"
     >
       {displayIndex.toString().padStart(2, '0')}
     </button>
@@ -240,10 +242,11 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
   return (
     <div
       ref={setNodeRef}
+      data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "bg-card border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
-        isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-black/10 cursor-grabbing"
+        "bg-card border border-border rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
       {/* Card Header */}
@@ -303,7 +306,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
             {columns.find(c => c.id === 'order_qty')?.label || 'สั่งซื้อ'}
           </span>
-          <div className="w-full h-8 px-1 rounded-lg bg-neutral-100/50 border border-black/[0.02] flex items-center justify-center text-[13px] font-normal text-neutral-500 select-none font-mono truncate">
+          <div className="w-full h-8 px-1 rounded-lg bg-muted border border-border flex items-center justify-center text-[13px] font-normal text-muted-foreground select-none font-mono truncate">
             {computedOrderQty === 0 ? '-' : computedOrderQty}
           </div>
         </div>
@@ -408,10 +411,11 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
   return (
     <div
       ref={setNodeRef}
+      data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "w-full min-w-0 bg-card border border-black/[0.08] rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
-        isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-black/10 cursor-grabbing"
+        "w-full min-w-0 bg-card border border-border rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
       {/* Card Header: Item Index, Item Name (Editable), Grip Handle, Delete Button */}
@@ -439,7 +443,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
               handleUpdateField(item.id, 'name', e.target.value);
               handleSaveField(item.id, 'name', e.target.value);
             }}
-            className="flex-1 bg-transparent border-none text-base text-foreground font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5 min-w-0"
+            className="flex-1 bg-transparent border-none text-base text-foreground font-normal focus:bg-muted focus:outline-none rounded px-1.5 py-0.5 min-w-0"
             placeholder="ชื่อสินค้า"
           />
         </div>
@@ -466,7 +470,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
             className={cn(
-              "w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
+              "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate",
               getStockColorClass(stock, targetStock)
             )}
           />
@@ -475,7 +479,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
         {/* Order Qty (Computed / Read-only) */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">สั่งซื้อ</span>
-          <div className="w-full h-8 px-1 rounded-lg bg-neutral-100/50 border border-black/[0.02] flex items-center justify-center text-[13px] font-normal text-neutral-500 select-none font-mono truncate">
+          <div className="w-full h-8 px-1 rounded-lg bg-muted border border-border flex items-center justify-center text-[13px] font-normal text-muted-foreground select-none font-mono truncate">
             {computedOrderQty === 0 ? '-' : computedOrderQty}
           </div>
         </div>
@@ -490,7 +494,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate"
           />
         </div>
 
@@ -504,7 +508,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate"
           />
         </div>
 
@@ -518,7 +522,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
               handleUpdateField(item.id, 'unit', e.target.value);
               handleSaveField(item.id, 'unit', e.target.value);
             }}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all truncate"
             placeholder="หน่วย"
           />
         </div>
@@ -533,7 +537,7 @@ const MobileSortableRow = React.memo(({ item, index, totalItems, columns, handle
               handleUpdateField(item.id, 'source', e.target.value);
               handleSaveField(item.id, 'source', e.target.value);
             }}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all truncate"
             placeholder="ช่องทาง"
           />
         </div>
@@ -612,7 +616,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
             onBlur={handleBlur}
             data-col-id={col.id}
             data-row-index={rowIndex}
-            className="flex-1 min-w-0 bg-transparent border-none text-base text-foreground font-normal focus:bg-slate-50 focus:outline-none rounded px-1.5 py-0.5 truncate"
+            className="flex-1 min-w-0 bg-transparent border-none text-base text-foreground font-normal focus:bg-muted focus:outline-none rounded px-1.5 py-0.5 truncate"
             placeholder="ชื่อสินค้า"
           />
           <button
@@ -637,9 +641,9 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty'}
         className={cn(
-          "w-full h-8 px-1 rounded-lg border border-border bg-slate-50 text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-black/10 transition-all font-mono truncate",
+          "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate",
           col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0),
-          col.id === 'order_qty' && 'bg-neutral-100/50 border-black/[0.02] text-neutral-400 cursor-not-allowed'
+          col.id === 'order_qty' && 'bg-muted border-border text-muted-foreground cursor-not-allowed'
         )}
       />
     );
@@ -673,7 +677,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         data-col-id={col.id}
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty'}
-        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-[#000000]/5 cursor-not-allowed select-none' : ''}`}
+        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-muted cursor-not-allowed select-none' : ''}`}
       />
       {col.id === 'name' && (
         <button
@@ -948,6 +952,20 @@ export default function DynamicInventoryManager() {
     previousStateRef.current = { items, cols: columns };
   }, [items, columns]);
 
+  useEffect(() => {
+    if (loading || typeof window === 'undefined') return;
+    const highlightId = new URLSearchParams(window.location.search).get('highlight');
+    if (!highlightId) return;
+    const el = document.querySelector(`[data-inventory-item-id="${highlightId}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('ring-2', 'ring-amber-500/50');
+    const timer = window.setTimeout(() => {
+      el.classList.remove('ring-2', 'ring-amber-500/50');
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [loading, items]);
+
   async function fetchConfigAndInventory() {
     try {
       await ensureSupabaseSession();
@@ -1080,6 +1098,14 @@ export default function DynamicInventoryManager() {
 
         if (error) throw error;
         setItems(prev => prev.map(item => item.id === tempId ? data : item));
+        logClientDataChange({
+          action: 'CREATE',
+          module: 'inventory',
+          entityType: 'inventory_item',
+          entityId: data.id,
+          entityLabel: data.name,
+          after: data,
+        });
       } else {
         // Insert-at-position path: insert new item, then sync all displaced sort_orders
         const newItemSortOrder = renumberedItems.find(i => i.id === tempId)?.sort_order ?? insertPos;
@@ -1104,6 +1130,15 @@ export default function DynamicInventoryManager() {
           finalItems.map(i => ({ id: i.id, sort_order: i.sort_order }))
         );
         if (upsertError) throw upsertError;
+        logClientDataChange({
+          action: 'CREATE',
+          module: 'inventory',
+          entityType: 'inventory_item',
+          entityId: data.id,
+          entityLabel: data.name,
+          after: data,
+          metadata: { insertPosition: insertPos },
+        });
       }
 
       setSavingState('synced');
@@ -1128,7 +1163,7 @@ export default function DynamicInventoryManager() {
        * PPR-Friendly Update: 
        * Revalidate path to sync server state while keeping local filtering for Zero CLS.
        */
-      const res = await deleteInventoryItem(deleteId);
+      const res = await deleteInventoryItem(deleteId, { clientSessionId: getClientSessionId() });
       if (!res.success) throw new Error(res.error);
 
       setSavingState('synced');
@@ -1223,7 +1258,9 @@ export default function DynamicInventoryManager() {
 
     try {
       if (field === 'stock') {
-        const result = await updateInventoryStock(id, sanitizedValue as number, 'Warehouse edit');
+        const result = await updateInventoryStock(id, sanitizedValue as number, 'Warehouse edit', {
+          clientSessionId: getClientSessionId(),
+        });
         if (!result.success) throw new Error(result.error);
         handleUpdateField(id, 'stock', result.newStock ?? sanitizedValue);
       } else {
@@ -1233,6 +1270,16 @@ export default function DynamicInventoryManager() {
           .eq('id', id);
 
         if (error) throw error;
+        logClientDataChange({
+          action: 'UPDATE',
+          module: 'inventory',
+          entityType: 'inventory_item',
+          entityId: id,
+          entityLabel: original?.name,
+          before: original ? { [field]: original[field] } : null,
+          after: { [field]: sanitizedValue },
+          fields: [field],
+        });
       }
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
@@ -1263,6 +1310,14 @@ export default function DynamicInventoryManager() {
     try {
       const { error } = await supabase.from('inventory_config').upsert({ id: 'column_labels', settings });
       if (error) throw error;
+      logClientDataChange({
+        action: 'UPDATE',
+        module: 'inventory',
+        entityType: 'inventory_config',
+        entityId: 'column_labels',
+        entityLabel: 'Column settings',
+        after: settings,
+      });
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err: any) {
@@ -1308,6 +1363,15 @@ export default function DynamicInventoryManager() {
         updatedItems.map(item => ({ id: item.id, sort_order: item.sort_order }))
       );
       if (error) throw error;
+      logClientDataChange({
+        action: 'BULK_UPDATE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        metadata: {
+          operation: 'reorder_rows',
+          itemIds: updatedItems.map((item) => item.id),
+        },
+      });
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err) {
@@ -1360,7 +1424,9 @@ export default function DynamicInventoryManager() {
         const snapshotIds = sanitizedItems.map(i => i.id);
         const toDelete = dbItems.filter(dbI => !snapshotIds.includes(dbI.id)).map(i => i.id);
         if (toDelete.length > 0) {
-          const delResult = await deleteInventoryItemsBulk(toDelete);
+          const delResult = await deleteInventoryItemsBulk(toDelete, {
+            clientSessionId: getClientSessionId(),
+          });
           if (!delResult.success) throw new Error(delResult.error);
         }
       }
@@ -1370,6 +1436,16 @@ export default function DynamicInventoryManager() {
         labels: currentCols.reduce((acc, c) => ({ ...acc, [c.id]: c.label }), {})
       };
       await supabase.from('inventory_config').upsert({ id: 'column_labels', settings });
+
+      logClientDataChange({
+        action: 'BULK_UPDATE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        metadata: {
+          operation: 'undo_redo_sync',
+          itemCount: sanitizedItems.length,
+        },
+      });
 
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
@@ -1502,8 +1578,12 @@ export default function DynamicInventoryManager() {
 
         const res =
           quickType === 'ADJUST'
-            ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust')
-            : await recordTransaction(item.id, quickType, qty, 'Quick Entry');
+            ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
+                clientSessionId: getClientSessionId(),
+              })
+            : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
+                clientSessionId: getClientSessionId(),
+              });
 
         if (!res.success) {
           alert(res.error);

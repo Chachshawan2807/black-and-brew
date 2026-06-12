@@ -263,7 +263,7 @@ export function ClickableDatePicker({
         <button
           type="button"
           onClick={handlePrevMonth}
-          className="p-1.5 hover:bg-black/5 rounded-full text-foreground transition-colors cursor-pointer flex items-center justify-center"
+          className="p-1.5 hover:bg-muted rounded-full text-foreground transition-colors cursor-pointer flex items-center justify-center"
           aria-label="เดือนก่อนหน้า"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -274,7 +274,7 @@ export function ClickableDatePicker({
         <button
           type="button"
           onClick={handleNextMonth}
-          className="p-1.5 hover:bg-black/5 rounded-full text-foreground transition-colors cursor-pointer flex items-center justify-center"
+          className="p-1.5 hover:bg-muted rounded-full text-foreground transition-colors cursor-pointer flex items-center justify-center"
           aria-label="เดือนถัดไป"
         >
           <ChevronRight className="w-4 h-4" />
@@ -287,7 +287,7 @@ export function ClickableDatePicker({
           <span
             key={idx}
             className={`text-[10px] font-normal tracking-wider select-none ${
-              idx === 0 ? 'text-red-500' : 'text-gray-400'
+              idx === 0 ? 'text-red-500' : 'text-muted-foreground'
             }`}
           >
             {lbl}
@@ -314,12 +314,12 @@ export function ClickableDatePicker({
               className={`
                 aspect-square rounded-xl text-[12px] font-normal
                 flex items-center justify-center transition-all cursor-pointer
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20
                 ${isSelected
-                  ? 'bg-black text-white shadow-md'
+                  ? 'bg-foreground text-background shadow-md'
                   : isCurrent
-                  ? 'bg-[#ffda66] text-foreground'
-                  : 'hover:bg-black/5 text-foreground'
+                  ? 'bb-pastel-surface bg-[#ffda66] text-[#000000]'
+                  : 'hover:bg-muted text-foreground'
                 }
               `}
             >
@@ -344,11 +344,11 @@ export function ClickableDatePicker({
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         className={`flex items-center justify-center gap-1.5 h-11 px-4 text-xs font-normal
-          text-foreground bg-white hover:bg-gray-100 rounded-3xl border border-gray-200
+          text-foreground bg-card hover:bg-muted/50 rounded-3xl border border-border
           transition-all duration-200 active:scale-95 uppercase
           tracking-wide shadow-sm w-full
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30
-          ${disabled ? 'opacity-60 cursor-not-allowed hover:bg-white' : 'cursor-pointer'}`}
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20
+          ${disabled ? 'opacity-60 cursor-not-allowed hover:bg-card' : 'cursor-pointer'}`}
       >
         {icon || <CalendarIcon className="w-4 h-4 text-foreground" />}
         <span>{displayValue}</span>

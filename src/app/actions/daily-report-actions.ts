@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { format, differenceInDays, startOfDay } from 'date-fns';
+import { addDays, format, differenceInDays, startOfDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -351,20 +351,27 @@ export async function fetchNextHoliday(targetDate: Date) {
   }
 }
 
+/** Which calendar day the LINE schedule notification should cover. */
+export type DailyReportSchedule = 'today' | 'tomorrow';
+
 /**
  * SPEC: Compile Daily Report Payload
  * 
  * Master function that compiles all data into the final LINE notification message.
  * Output format MUST match the template exactly.
+ *
+ * - `today` (default): 05:00 ICT cron — ตารางงานของวันนั้น
+ * - `tomorrow`: 18:00 ICT cron — ตารางงานของวันถัดไป
  */
-export async function compileDailyReportPayload() {
+export async function compileDailyReportPayload(schedule: DailyReportSchedule = 'today') {
   const now = new Date();
-  const today = toZonedTime(now, 'Asia/Bangkok');
-  const dateStr = format(today, THAI_REPORT_DATE_FORMAT);
+  const bkkNow = toZonedTime(now, 'Asia/Bangkok');
+  const reportDate = schedule === 'tomorrow' ? addDays(bkkNow, 1) : bkkNow;
+  const dateStr = format(reportDate, THAI_REPORT_DATE_FORMAT);
 
   const [{ activeStaff, offStaff, headcount }, holiday] = await Promise.all([
-    fetchTodayShifts(today),
-    fetchNextHoliday(today)
+    fetchTodayShifts(reportDate),
+    fetchNextHoliday(reportDate)
   ]);
 
   const staffSection = formatStaffSection(activeStaff, offStaff);
@@ -375,7 +382,7 @@ export async function compileDailyReportPayload() {
     : 'ไม่มีข้อมูลวันหยุดในระบบ';
 
   const payload = `== ข้อความอัตโนมัติ ==
-รายงานสรุปของเช้าวันที่ ${dateStr}
+ตารางงานวันที่ ${dateStr}
 
 👥 พนักงาน
 รวมวันนี้: ${headcount} คน

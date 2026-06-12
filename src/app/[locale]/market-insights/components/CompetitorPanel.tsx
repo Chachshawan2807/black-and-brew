@@ -25,15 +25,15 @@ const DENSITY_LABEL: Record<CompetitorAnalysis['densityLabel'], string> = {
 };
 
 const ZONE_STYLE: Record<CompetitorZone, string> = {
-  immediate: 'bg-red-50 text-red-800/80 border-red-100',
-  primary: 'bg-amber-50 text-amber-800/80 border-amber-100',
-  extended: 'bg-blue-50 text-blue-800/70 border-blue-100',
+  immediate: 'bb-pastel-surface bg-[#fdeaea] text-red-800/80 border-red-100',
+  primary: 'bb-pastel-surface bg-[#fff6e6] text-amber-800/80 border-amber-100',
+  extended: 'bb-pastel-surface bg-[#e9f1fb] text-blue-800/70 border-blue-100',
 };
 
 const THREAT_STYLE: Record<CompetitorEntry['threatLevel'], string> = {
-  high: 'bg-red-100 text-red-700',
-  medium: 'bg-amber-100 text-amber-700',
-  low: 'bg-black/[0.06] text-muted-foreground',
+  high: 'bb-pastel-surface bg-[#fdeaea] text-red-700',
+  medium: 'bb-pastel-surface bg-[#fff6e6] text-amber-700',
+  low: 'bg-muted text-muted-foreground border border-border',
 };
 
 const THREAT_LABEL: Record<CompetitorEntry['threatLevel'], string> = {
@@ -50,7 +50,7 @@ const DATA_SOURCE_LABEL = {
 } as const;
 
 const CARD =
-  'rounded-2xl border border-black/[0.06] bg-card shadow-[0_1px_3px_rgb(0,0,0,0.03)]';
+  'rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgb(0,0,0,0.03)]';
 
 function ZoneBadge({ zone, labels }: { zone: CompetitorZone; labels: Record<CompetitorZone, string> }) {
   return (
@@ -67,7 +67,7 @@ function CompetitorRow({ entry, zoneLabels }: { entry: CompetitorEntry; zoneLabe
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-foreground font-medium truncate">{entry.name}</span>
           <ZoneBadge zone={entry.zone} labels={zoneLabels} />
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${THREAT_STYLE[entry.threatLevel]}`}>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${THREAT_STYLE[entry.threatLevel]}`}>
             ภัย{THREAT_LABEL[entry.threatLevel]}
           </span>
         </div>
@@ -92,7 +92,7 @@ function CompetitorRow({ entry, zoneLabels }: { entry: CompetitorEntry; zoneLabe
             </span>
           )}
           {entry.segmentLabel && (
-            <span className="text-[10px] bg-[#eef6ee] text-muted-foreground px-1.5 py-0.5 rounded-full">
+            <span className="text-[10px] bb-pastel-surface bg-[#eef6ee] text-black/70 px-1.5 py-0.5 rounded-full border border-[#c3e6cb]">
               {entry.segmentLabel}
             </span>
           )}
@@ -116,7 +116,7 @@ function CompetitorRow({ entry, zoneLabels }: { entry: CompetitorEntry; zoneLabe
             href={entry.facebookUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-xl hover:bg-black/[0.04] text-blue-600/70 hover:text-blue-700 bb-transition"
+            className="p-2 rounded-xl hover:bg-muted text-blue-600/70 hover:text-blue-700 bb-transition"
             aria-label={`เปิด Facebook ของ ${entry.name}`}
           >
             <Link2 className="w-4 h-4" />
@@ -127,7 +127,7 @@ function CompetitorRow({ entry, zoneLabels }: { entry: CompetitorEntry; zoneLabe
             href={entry.mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-xl hover:bg-black/[0.04] text-muted-foreground/80 hover:text-foreground/70 bb-transition"
+            className="p-2 rounded-xl hover:bg-muted text-muted-foreground/80 hover:text-foreground/70 bb-transition"
             aria-label={`เปิด ${entry.name} ใน Google Maps`}
           >
             <ExternalLink className="w-4 h-4" />
@@ -200,14 +200,14 @@ function StoreLocationFallback({ analysis }: { analysis: CompetitorAnalysis }) {
   return (
     <div className={`${CARD} p-4 md:p-5`}>
       <div className="flex items-start gap-3">
-        <div className="p-2 bg-black/[0.04] rounded-xl">
+        <div className="p-2 bg-muted rounded-xl">
           <Target className="w-5 h-5 text-foreground" />
         </div>
         <div className="space-y-2 min-w-0">
           <h2 className="text-sm md:text-base flex items-center gap-1.5 flex-wrap tracking-tight">
             วิเคราะห์คู่แข่งรอบร้าน
             <MetricInfoTip id="competitor_analysis" />
-            <span className="text-xs text-muted-foreground/80 bg-black/5 px-2 py-0.5 rounded-full font-normal">
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border font-normal">
               {DATA_SOURCE_LABEL[analysis.dataSource]}
             </span>
           </h2>
@@ -216,7 +216,7 @@ function StoreLocationFallback({ analysis }: { analysis: CompetitorAnalysis }) {
           </p>
           <p className="text-xs text-muted-foreground/90">{analysis.segmentCriteria}</p>
           {analysis.placesApiMessage && (
-            <p className="text-sm text-amber-800/90 bg-[#fff6e6] border border-amber-100 rounded-xl px-3 py-2 leading-relaxed">
+            <p className="text-sm text-amber-800/90 bb-pastel-surface bg-[#fff6e6] border border-[#ffeeba] rounded-xl px-3 py-2 leading-relaxed">
               {analysis.placesApiMessage}
             </p>
           )}
@@ -257,7 +257,7 @@ export default function CompetitorPanel({ analysis }: { analysis: CompetitorAnal
     return (
       <div className={`${CARD} p-4 md:p-5`}>
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-black/[0.04] rounded-xl">
+          <div className="p-2 bg-muted rounded-xl">
             <Target className="w-5 h-5 text-foreground" />
           </div>
           <div>
@@ -294,15 +294,15 @@ export default function CompetitorPanel({ analysis }: { analysis: CompetitorAnal
         <h2 className="text-base md:text-lg tracking-tight">วิเคราะห์คู่แข่งรอบร้าน</h2>
         <MetricInfoTip id="competitor_analysis" />
         <MetricInfoTip id="competitor_segment" />
-        <span className="text-xs text-muted-foreground/80 bg-black/5 px-2 py-0.5 rounded-full">
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
           รัศมี {safeAnalysis.impactRadiusMeters / 1000} กม.
         </span>
-        <span className="text-xs text-muted-foreground bg-[#eef6ee] px-2 py-0.5 rounded-full border border-border">
+        <span className="text-xs text-muted-foreground bb-pastel-surface bg-[#eef6ee] px-2 py-0.5 rounded-full border border-[#c3e6cb]">
           {DATA_SOURCE_LABEL[safeAnalysis.dataSource]}
         </span>
       </div>
       {safeAnalysis.placesApiMessage && (
-        <p className="text-sm text-amber-800/90 bg-[#fff6e6] border border-amber-100 rounded-xl px-3 py-2 leading-relaxed -mt-1">
+        <p className="text-sm text-amber-800/90 bb-pastel-surface bg-[#fff6e6] border border-[#ffeeba] rounded-xl px-3 py-2 leading-relaxed -mt-1">
           {safeAnalysis.placesApiMessage}
         </p>
       )}
@@ -366,7 +366,7 @@ export default function CompetitorPanel({ analysis }: { analysis: CompetitorAnal
           </div>
           <ul className="space-y-2">
             {deterministicInsights.map((line, i) => (
-              <li key={i} className="text-sm text-foreground/70 pl-4 border-l-2 border-black/8 leading-relaxed">
+              <li key={i} className="text-sm text-foreground/70 pl-4 border-l-2 border-border leading-relaxed">
                 {line}
               </li>
             ))}
@@ -421,7 +421,7 @@ export default function CompetitorPanel({ analysis }: { analysis: CompetitorAnal
             {topThreats.slice(0, 5).map((c) => (
               <span
                 key={c.placeId ?? c.name}
-                className="text-xs bg-black/[0.04] text-foreground/70 px-3 py-1.5 rounded-full border border-border"
+                className="text-xs bg-muted text-foreground/70 px-3 py-1.5 rounded-full border border-border"
               >
                 {c.name} · {formatDistance(c.distanceMeters)}
                 {c.rating ? ` · ${c.rating}★` : ''}

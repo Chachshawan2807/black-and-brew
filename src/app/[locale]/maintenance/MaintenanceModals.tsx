@@ -26,6 +26,12 @@ export interface MaintenanceFormData {
   notes: string;
 }
 
+const fieldClass =
+  'w-full h-11 bg-background border border-border rounded-2xl px-4 py-2 text-base md:text-sm font-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all hover:bg-muted/30';
+
+const textareaClass =
+  'w-full bg-background border border-border rounded-2xl px-4 py-2.5 text-base md:text-sm font-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all resize-none hover:bg-muted/30';
+
 type MaintenanceModalsProps = {
   isModalOpen: boolean;
   setIsModalOpen: (open: boolean) => void;
@@ -92,23 +98,23 @@ export default function MaintenanceModals({
                 <div className={isReadOnly ? 'pointer-events-none opacity-60' : ''}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5 flex-1">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">วันที่รับบริการ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">วันที่รับบริการ</label>
                       <ClickableDatePicker
                         value={formData.start_date}
                         onChange={e => setFormData({ ...formData, start_date: e.target.value })}
                         placeholder="เลือกวันที่"
                         disabled={isReadOnly}
-                        containerClassName="bg-black/[0.02] border-black/[0.05] hover:border-black/10 hover:bg-black/[0.04] transition-all"
+                        containerClassName="bg-background border-border hover:border-foreground/20 hover:bg-muted/30 transition-all"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ประเภทงาน</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ประเภทงาน</label>
                       <div className="relative">
                         <select
                           value={formData.task_type}
                           onChange={e => setFormData({ ...formData, task_type: e.target.value })}
                           disabled={isReadOnly}
-                          className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all appearance-none cursor-pointer hover:bg-black/[0.04] disabled:opacity-60 disabled:cursor-not-allowed"
+                          className={`${fieldClass} appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed`}
                         >
                           <option value="ซ่อมแซม">ซ่อมแซม</option>
                           <option value="บำรุงรักษา">บำรุงรักษา</option>
@@ -123,33 +129,33 @@ export default function MaintenanceModals({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ชื่ออุปกรณ์</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ชื่ออุปกรณ์</label>
                       <input
                         type="text"
                         required
                         placeholder="เช่น เครื่องชงเอสเปรสโซ"
                         value={formData.equipment}
                         onChange={e => setFormData({ ...formData, equipment: e.target.value })}
-                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
+                        className={fieldClass}
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ความถี่ที่แนะนำ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ความถี่ที่แนะนำ</label>
                       <input
                         type="text"
                         placeholder="เช่น ทุก 3 เดือน"
                         value={formData.recommended_frequency}
                         onChange={e => setFormData({ ...formData, recommended_frequency: e.target.value })}
-                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
+                        className={fieldClass}
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ค่าใช้จ่าย (บาท)</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ค่าใช้จ่าย (บาท)</label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/30 text-base md:text-sm font-normal">฿</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-base md:text-sm font-normal">฿</span>
                         <input
                           type="number"
                           min="0"
@@ -158,54 +164,54 @@ export default function MaintenanceModals({
                             const val = e.target.value.replace(/^0+/, '');
                             setFormData({ ...formData, cost: val === '' ? 0 : Number(val) });
                           }}
-                          className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl pl-8 pr-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
+                          className={`${fieldClass} pl-8`}
                         />
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">ผู้รับผิดชอบ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ผู้รับผิดชอบ</label>
                       <input
                         type="text"
                         placeholder="ชื่อ"
                         value={formData.person_in_charge}
                         onChange={e => setFormData({ ...formData, person_in_charge: e.target.value })}
-                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
+                        className={fieldClass}
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">อาการที่พบ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">อาการที่พบ</label>
                       <textarea
                         placeholder="อธิบายปัญหา"
                         rows={2}
                         value={formData.detected_problem}
                         onChange={e => setFormData({ ...formData, detected_problem: e.target.value })}
-                        className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-base md:text-sm font-normal focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
+                        className={textareaClass}
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">รายละเอียดการซ่อม</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">รายละเอียดการซ่อม</label>
                       <textarea
                         placeholder="ดำเนินการอะไรบ้าง?"
                         rows={2}
                         value={formData.work_details}
                         onChange={e => setFormData({ ...formData, work_details: e.target.value })}
-                        className="w-full bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2.5 text-base md:text-sm font-normal focus:outline-none transition-all resize-none hover:bg-black/[0.04]"
+                        className={textareaClass}
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                     <div className="space-y-2">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">สถานะงาน</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">สถานะงาน</label>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
                           disabled={isReadOnly}
-                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'กำลังดำเนินการ' ? 'bg-[#f0f9ff] text-[#0284c7] border border-[#e0f2fe] shadow-sm' : 'bg-black/[0.02] text-foreground/30 hover:bg-black/[0.05]'}`}
+                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'กำลังดำเนินการ' ? 'bb-pastel-surface bg-[#f0f9ff] text-[#000000] border border-[#e0f2fe] shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'}`}
                         >
                           <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
                           กำลังดำเนินการ
@@ -214,7 +220,7 @@ export default function MaintenanceModals({
                           type="button"
                           onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
                           disabled={isReadOnly}
-                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'เสร็จสมบูรณ์' ? 'bg-[#f0fdf4] text-[#10b981] border border-[#dcfce7] shadow-sm' : 'bg-black/[0.02] text-foreground/30 hover:bg-black/[0.05]'}`}
+                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'เสร็จสมบูรณ์' ? 'bb-pastel-surface bg-[#f0fdf4] text-[#000000] border border-[#dcfce7] shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'}`}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                           เสร็จสิ้น
@@ -222,13 +228,13 @@ export default function MaintenanceModals({
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground/60 ml-1">หมายเหตุ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">หมายเหตุ</label>
                       <input
                         type="text"
                         placeholder="หมายเหตุ"
                         value={formData.notes}
                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                        className="w-full h-11 bg-black/[0.02] border border-black/[0.05] rounded-2xl px-4 py-2 text-base md:text-sm font-normal focus:outline-none transition-all hover:bg-black/[0.04]"
+                        className={fieldClass}
                       />
                     </div>
                   </div>
@@ -246,7 +252,7 @@ export default function MaintenanceModals({
                 <button
                   onClick={handleSubmit}
                   disabled={loading || isReadOnly}
-                  className="flex-[2] h-11 md:h-auto md:py-3 bg-black text-white font-normal rounded-2xl hover:bg-black/80 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
+                  className="flex-[2] h-11 md:h-auto md:py-3 bg-foreground text-background font-normal rounded-2xl hover:opacity-90 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" strokeWidth={2} />}
                   ยืนยันบันทึก
@@ -267,7 +273,7 @@ export default function MaintenanceModals({
             >
               <X className="w-5 h-5" strokeWidth={2} />
             </button>
-            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" strokeWidth={1} />
             </div>
             <h3 className="text-2xl font-normal text-foreground tracking-tighter mb-2 uppercase">Delete Record?</h3>

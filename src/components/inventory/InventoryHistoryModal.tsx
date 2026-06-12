@@ -46,7 +46,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
       <span
 
-        className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bg-[#fff3cd] text-foreground border-[#ffeeba]"
+        className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
 
         title="ปรับจำนวน"
 
@@ -76,7 +76,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
         'w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border',
 
-        isIn ? 'bg-[#f0fdf4] text-[#14532d] border-[#dcfce7]' : 'bg-[#fff1f2] text-[#9f1239] border-[#ffe4e6]',
+        isIn ? 'bb-pastel-surface bg-[#d4edda] text-[#000000] border-[#c3e6cb]' : 'bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]',
 
       )}
 
@@ -148,7 +148,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="px-4 md:px-8 py-4 md:py-6 border-b border-border flex items-center justify-between bg-white/50 backdrop-blur-sm shrink-0 pr-14 md:pr-16">
+        <div className="px-4 md:px-8 py-4 md:py-6 border-b border-border flex items-center justify-between bg-card/80 backdrop-blur-sm shrink-0 pr-14 md:pr-16">
 
           <div>
 
@@ -174,13 +174,13 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y p-4 md:p-8 bg-card scrollbar-thin">
 
-          <div className="bg-white rounded-[2rem] border border-border shadow-sm overflow-x-auto">
+          <div className="bg-background rounded-[2rem] border border-border shadow-sm overflow-x-auto">
 
             <table className="w-full min-w-[640px] text-left border-collapse">
 
               <thead>
 
-                <tr className="bg-slate-50/50 border-b border-border">
+                <tr className="bg-muted/50 border-b border-border">
 
                   <th className="py-5 px-6 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-center w-[160px]">
 
@@ -216,7 +216,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
               </thead>
 
-              <tbody className="divide-y divide-black/[0.03]">
+              <tbody className="divide-y divide-border">
 
                 {transactionHistory.length === 0 ? (
 
@@ -258,7 +258,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
                         transition={{ delay: index * 0.03 }}
 
-                        className="group hover:bg-slate-50/80 transition-colors"
+                        className="group hover:bg-muted/40 transition-colors"
 
                       >
 
@@ -332,7 +332,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="px-4 md:px-8 py-3 md:py-4 bg-white/30 border-t border-border flex justify-between items-center shrink-0 text-[12px] text-foreground/30">
+        <div className="px-4 md:px-8 py-3 md:py-4 bg-card/80 border-t border-border flex justify-between items-center shrink-0 text-[12px] text-muted-foreground">
 
           <span>แสดง {transactionHistory.length} รายการล่าสุด</span>
 

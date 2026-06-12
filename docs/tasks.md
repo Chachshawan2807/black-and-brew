@@ -102,6 +102,21 @@
 
 ---
 
+### Dark Theme Remediation (June 2026)
+
+Plan: `docs/plans/2026-06-12-dark-theme-remediation.md`
+
+- [x] Phase 0 — Grep audit baseline + pass criteria + file inventory (2026-06-12)
+- [x] Phase 1 — Shared UI primitives (`ClickableInput`, `ClickableDatePicker`, inventory modals, dropdown) (2026-06-12)
+- [x] Phase 2 — Command Center + Dashboard (`LiveStatusTracker`, `LiveShiftList`, `MonthlyRoster`) (2026-06-12)
+- [x] Phase 3 — Schedule (`ScheduleClient.tsx`) (2026-06-12)
+- [x] Phase 4 — Maintenance (`page.tsx`, `MaintenanceModals.tsx`) (2026-06-12)
+- [x] Phase 5 — Inventory (`page.tsx`, PO modal, quick actions) (2026-06-12)
+- [x] Phase 6 — Sales + Market Insights + `chart-theme.ts` (2026-06-12)
+- [x] Phase 7 — Integration build + re-audit (2026-06-12); visual QA manual pass remaining
+
+---
+
 ## Backlog 📋
 
 ### High Priority

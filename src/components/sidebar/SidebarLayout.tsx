@@ -5,6 +5,7 @@ import { useStore } from "@/hooks/use-store";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { useSidebarToggle } from "@/hooks/use-sidebar-toggle";
 import { Menu } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageTransition } from "@/components/ui/page-transition";
@@ -32,13 +33,16 @@ export default function SidebarLayout({
             priority 
           />
         </div>
-        <button 
-          onClick={() => sidebar?.setIsOpen?.()}
-          className="h-10 w-10 flex items-center justify-center rounded-full bb-transition hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15"
-          aria-label="เปิดเมนูนำทาง"
-        >
-          <Menu className="w-6 h-6 text-foreground" strokeWidth={1.75} />
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell compact />
+          <button 
+            onClick={() => sidebar?.setIsOpen?.()}
+            className="h-10 w-10 flex items-center justify-center rounded-full bb-transition hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15"
+            aria-label="เปิดเมนูนำทาง"
+          >
+            <Menu className="w-6 h-6 text-foreground" strokeWidth={1.75} />
+          </button>
+        </div>
       </header>
 
       <AnimatePresence>

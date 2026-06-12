@@ -75,7 +75,7 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
         whileHover={isReadOnly ? undefined : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: "easeOut" } }}
         whileTap={isReadOnly ? undefined : { scale: 0.98 }}
         transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
-        className={`glass-card p-6 flex flex-col gap-5 bg-white/80 backdrop-blur-xl select-none border border-black/5 bb-shadow-sm bb-transition rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:border-black/10 hover:bb-shadow-md'}`}
+        className={`p-6 flex flex-col gap-5 bg-card select-none border border-border bb-shadow-sm bb-transition rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:bg-muted/30 hover:bb-shadow-md'}`}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1 py-1">
@@ -85,7 +85,7 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
           </div>
           {/* Drag handle — listeners scoped here only so scroll is never hijacked */}
           <div
-            className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors touch-none ${isReadOnly ? 'opacity-30 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:bg-black/5 text-muted-foreground hover:text-foreground/80'}`}
+            className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors touch-none ${isReadOnly ? 'opacity-30 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
             {...attributes}
             {...(isReadOnly ? {} : listeners)}
             aria-label="ลากเพื่อเปลี่ยนลำดับ"
@@ -96,16 +96,16 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
 
         <div className="grid grid-cols-3 gap-3">
           <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
-            <span className="text-[22px] font-normal text-foreground">{data.workDays}</span>
-            <span className="text-[12px] text-foreground uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
+            <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
+            <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
           </div>
           <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
-            <span className="text-[22px] font-normal text-foreground">{data.leaveDays}</span>
-            <span className="text-[12px] text-foreground uppercase tracking-widest font-normal mt-0.5">ลา</span>
+            <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
+            <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ลา</span>
           </div>
           <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
-            <span className="text-[22px] font-normal text-foreground">{data.publicHolidays}</span>
-            <span className="text-[12px] text-foreground uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
+            <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
+            <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
           </div>
         </div>
       </motion.div>
@@ -249,12 +249,12 @@ export default function LiveShiftList({
 
   return (
     <div className="space-y-4 p-4 md:p-8">
-      <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 md:p-5 bg-white/80 backdrop-blur-xl border border-black/5 rounded-3xl bb-shadow-sm mb-6">
+      <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 md:p-5 bg-card border border-border rounded-3xl bb-shadow-sm mb-6">
         
         {/* แผงควบคุมฝั่งซ้าย: ไอคอน และ Double Capsule Date Picker */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto">
           <div className="flex items-center gap-3 w-full">
-            <div className="p-3 rounded-2xl bg-black/5 shrink-0 hidden sm:flex">
+            <div className="p-3 rounded-2xl bg-muted shrink-0 hidden sm:flex">
               <CalendarDays className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             
@@ -282,7 +282,7 @@ export default function LiveShiftList({
         </div>
 
         {/* แผงควบคุมฝั่งขวา: จำนวนพนักงาน */}
-        <div className="flex items-center gap-3 px-5 h-11 bg-black/5 rounded-2xl w-fit">
+        <div className="flex items-center gap-3 px-5 h-11 bg-muted rounded-2xl w-fit">
           <Users className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
           <span className="text-lg font-normal text-foreground">{profiles.length}</span>
           <span className="text-[13px] text-muted-foreground/80 ml-1 uppercase tracking-widest font-normal">พนักงานทั้งหมด</span>
@@ -313,29 +313,29 @@ export default function LiveShiftList({
             sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }),
           }}>
             {activeId && activeProfileData ? (
-              <div className="glass-card p-6 flex flex-col gap-5 bg-white/95 bb-shadow-lg border border-black/10 scale-105 opacity-100 ring-2 ring-black/5 rounded-3xl backdrop-blur-xl pointer-events-none">
+              <div className="p-6 flex flex-col gap-5 bg-card bb-shadow-lg border border-border scale-105 opacity-100 ring-2 ring-border rounded-3xl pointer-events-none">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 py-1">
                     <h3 className="text-[19px] font-normal tracking-tight text-foreground leading-[1.6]">
                       {activeProfileData.profile.full_name}
                     </h3>
                   </div>
-                  <div className="p-1 rounded-md bg-gray-100">
-                    <GripVertical className="w-5 h-5 text-gray-600" />
+                  <div className="p-1 rounded-md bg-muted">
+                    <GripVertical className="w-5 h-5 text-muted-foreground" />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
-                    <span className="text-[22px] font-normal text-foreground">{activeProfileData.workDays}</span>
-                    <span className="text-[12px] text-foreground/80 uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
+                    <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.workDays}</span>
+                    <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
                   </div>
                   <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
-                    <span className="text-[22px] font-normal text-foreground">{activeProfileData.leaveDays}</span>
-                    <span className="text-[12px] text-foreground/80 uppercase tracking-widest font-normal mt-0.5">ลา</span>
+                    <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.leaveDays}</span>
+                    <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ลา</span>
                   </div>
                   <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
-                    <span className="text-[22px] font-normal text-foreground">{activeProfileData.publicHolidays}</span>
-                    <span className="text-[12px] text-foreground/80 uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
+                    <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.publicHolidays}</span>
+                    <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
                   </div>
                 </div>
               </div>

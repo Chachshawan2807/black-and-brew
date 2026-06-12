@@ -38,7 +38,7 @@ function KpiCard({
         <MetricInfoTip id={tipId} />
       </div>
       <div className="text-base md:text-lg text-foreground leading-tight tabular-nums tracking-tight">{value}</div>
-      {sub && <div className="text-[10px] text-foreground/38 mt-0.5 line-clamp-2 leading-snug">{sub}</div>}
+      {sub && <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2 leading-snug">{sub}</div>}
     </div>
   );
 }
@@ -58,7 +58,7 @@ function StripSection({
 }) {
   return (
     <div className={`px-4 py-3 ${className}`}>
-      <div className="flex items-center gap-1 text-foreground/42 mb-2">
+      <div className="flex items-center gap-1 text-muted-foreground mb-2">
         {icon}
         <span className="text-[11px]">{title}</span>
         <MetricInfoTip id={tipId} />
@@ -123,8 +123,8 @@ export default function ContextPanel({ context }: { context: MarketContext }) {
         />
       </div>
 
-      <div className="rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgb(0,0,0,0.03)] overflow-hidden divide-y divide-black/[0.05] lg:divide-y-0">
-        <div className={`grid grid-cols-1 ${contextCols} lg:divide-x lg:divide-black/[0.05]`}>
+      <div className="rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgb(0,0,0,0.03)] overflow-hidden divide-y divide-border lg:divide-y-0">
+        <div className={`grid grid-cols-1 ${contextCols} lg:divide-x lg:divide-border`}>
           {hasRainHourly && (
             <StripSection
               icon={<Droplets className="w-3.5 h-3.5" />}
@@ -136,7 +136,7 @@ export default function ContextPanel({ context }: { context: MarketContext }) {
                 {weather.hourly.map((h) => (
                   <div
                     key={h.time}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-black/[0.03] border border-black/[0.04] px-2 py-1"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-muted border border-border px-2 py-1"
                   >
                     <span className="text-[10px] text-muted-foreground/80 tabular-nums">{h.time}</span>
                     <span className="text-[11px] text-foreground/70 tabular-nums">{h.temp}°</span>
@@ -149,7 +149,7 @@ export default function ContextPanel({ context }: { context: MarketContext }) {
                 ))}
               </div>
               {weather.operatingSummary && (
-                <p className="text-[10px] text-foreground/38 mt-2 leading-snug line-clamp-2">
+                <p className="text-[10px] text-muted-foreground mt-2 leading-snug line-clamp-2">
                   {weather.operatingSummary}
                 </p>
               )}
@@ -169,14 +169,14 @@ export default function ContextPanel({ context }: { context: MarketContext }) {
                     <span
                       key={s}
                       title={tip}
-                      className="text-[10px] bg-black/[0.04] text-foreground/58 px-2 py-0.5 rounded-full border border-black/[0.05]"
+                      className="text-[10px] bg-muted text-foreground/80 px-2 py-0.5 rounded-full border border-border"
                     >
                       {label}
                     </span>
                   );
                 })
               ) : (
-                <span className="text-[11px] text-foreground/38">ดำเนินงานปกติ</span>
+                <span className="text-[11px] text-muted-foreground">ดำเนินงานปกติ</span>
               )}
             </div>
           </StripSection>
@@ -192,14 +192,14 @@ export default function ContextPanel({ context }: { context: MarketContext }) {
                 {upcomingHolidays.slice(0, 4).map((h) => (
                   <span
                     key={h.date}
-                    className="text-[10px] bg-[#fff6e6] text-black/65 px-2 py-0.5 rounded-full border border-amber-100/80"
+                    className="text-[10px] bb-pastel-surface bg-[#fff6e6] text-black/65 px-2 py-0.5 rounded-full border border-[#ffeeba]"
                   >
                     {h.date.slice(5)} {h.name}
                   </span>
                 ))}
               </div>
             ) : (
-              <p className="text-[11px] text-foreground/38 leading-snug">ไม่มีวันหยุดใน 14 วันข้างหน้า</p>
+              <p className="text-[11px] text-muted-foreground leading-snug">ไม่มีวันหยุดใน 14 วันข้างหน้า</p>
             )}
           </StripSection>
         </div>

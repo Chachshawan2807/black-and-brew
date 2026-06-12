@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTheme } from 'next-themes';
 import {
   BarChart,
   Bar,
@@ -15,6 +16,7 @@ import { BarChart3, PieChart } from 'lucide-react';
 import type { SalesSnapshot } from '@/app/actions/market-insights-types';
 import MetricInfoTip from './MetricInfoTip';
 import { fmtCurrency, fmtCurrencyCompact, fmtMonthLabel, fmtInteger } from '@/lib/market-insights/format';
+import { getChartColors } from '@/lib/chart-theme';
 
 const PASTEL = ['#bcd9b8', '#f4c9a8', '#a9c8e8', '#e8b8c8', '#cdbfe8', '#e8dca9'];
 
@@ -55,6 +57,8 @@ const QtyTooltip = ({
 };
 
 export default function InsightCharts({ snapshot }: { snapshot: SalesSnapshot }) {
+  const { resolvedTheme } = useTheme();
+  const chartColors = getChartColors(resolvedTheme === 'dark');
   const hasMonthly = snapshot.monthlyTrend.length > 0;
   const hasCategory = snapshot.categoryBreakdown.length > 0;
 
@@ -82,21 +86,21 @@ export default function InsightCharts({ snapshot }: { snapshot: SalesSnapshot })
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthlyData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
               <XAxis
                 dataKey="displayLabel"
-                tick={{ fontSize: 11, fill: 'rgba(0,0,0,0.4)' }}
+                tick={{ fontSize: 11, fill: chartColors.tick }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={fmtCurrencyCompact}
-                tick={{ fontSize: 11, fill: 'rgba(0,0,0,0.4)' }}
+                tick={{ fontSize: 11, fill: chartColors.tick }}
                 axisLine={false}
                 tickLine={false}
                 width={48}
               />
-              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: chartColors.cursor }} />
               <Bar dataKey="totalRevenue" radius={[6, 6, 0, 0]} fill="#bcd9b8" />
             </BarChart>
           </ResponsiveContainer>
@@ -119,7 +123,7 @@ export default function InsightCharts({ snapshot }: { snapshot: SalesSnapshot })
                     {c.revenuePercentage.toFixed(1)}% · {fmtCurrency(c.totalRevenue)}
                   </span>
                 </div>
-                <div className="h-2.5 bg-black/[0.04] rounded-full overflow-hidden">
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -147,23 +151,23 @@ export default function InsightCharts({ snapshot }: { snapshot: SalesSnapshot })
               data={snapshot.topProducts}
               margin={{ top: 0, right: 16, left: 8, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} horizontal={false} />
               <XAxis
                 type="number"
                 tickFormatter={fmtInteger}
-                tick={{ fontSize: 11, fill: 'rgba(0,0,0,0.4)' }}
+                tick={{ fontSize: 11, fill: chartColors.tick }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 type="category"
                 dataKey="productName"
-                tick={{ fontSize: 11, fill: 'rgba(0,0,0,0.55)' }}
+                tick={{ fontSize: 11, fill: chartColors.tick }}
                 axisLine={false}
                 tickLine={false}
                 width={110}
               />
-              <Tooltip content={<QtyTooltip />} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+              <Tooltip content={<QtyTooltip />} cursor={{ fill: chartColors.cursor }} />
               <Bar dataKey="totalQuantity" radius={[0, 6, 6, 0]}>
                 {snapshot.topProducts.map((_, i) => (
                   <Cell key={i} fill={PASTEL[i % PASTEL.length]} />

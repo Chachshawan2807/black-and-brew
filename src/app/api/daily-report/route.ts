@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache'; 
 import { headers } from 'next/headers';
-import { compileDailyReportPayload } from '@/app/actions/daily-report-actions';
+import {
+  compileDailyReportPayload,
+  type DailyReportSchedule,
+} from '@/app/actions/daily-report-actions';
 import { pushLineMessage } from '@/lib/line-notify';
 
 export const maxDuration = 30;
@@ -32,7 +35,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: 'Missing target ID' }, { status: 500 });
     }
 
-    const message = await compileDailyReportPayload();
+    const scheduleParam = new URL(request.url).searchParams.get('schedule');
+    const schedule: DailyReportSchedule =
+      scheduleParam === 'tomorrow' ? 'tomorrow' : 'today';
+
+    const message = await compileDailyReportPayload(schedule);
     const result = await pushLineMessage(targetRecipientId, message);
 
     if (!result.success) {
@@ -42,6 +49,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
+      schedule,
       timestamp: new Date().toISOString(),
       previewText: message.substring(0, 50) + '...'
     });

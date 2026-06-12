@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { toZonedTime } from 'date-fns-tz';
-import { format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 
 
 // Define mutable mock data variables
@@ -202,12 +202,29 @@ describe('Daily LINE Notification Protocol Actions', () => {
       const today = toZonedTime(new Date(), 'Asia/Bangkok');
       const expectedDate = format(today, 'dd-MM-yyyy');
 
-      expect(payload).toMatch(new RegExp(`รายงานสรุปของเช้าวันที่ ${expectedDate.replace(/-/g, '\\-')}`));
+      expect(payload).toContain(`ตารางงานวันที่ ${expectedDate}`);
       expect(payload).toContain('- ปิ่น (6:30)');
       expect(payload).toContain('- หนูดี (วันหยุด)');
       expect(payload).toContain('- ฟิว (วันหยุด)');
       expect(payload).toContain('- มุก (ลา)');
       expect(payload).not.toContain('ไม่มีกะ');
+    });
+
+    it('should compile tomorrow schedule when schedule=tomorrow (18:00 ICT cron)', async () => {
+      mockProfilesData = [{ id: 'p1', full_name: 'ปิ่น', schedule_order: 1 }];
+      mockShiftsData = [{ employee_id: 'p1', status: 'active', metadata: { location: 'เข้ากะ 6:30' } }];
+
+      vi.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({ list: [] }),
+      } as Response);
+      mockHolidaysData = null;
+
+      const payload = await compileDailyReportPayload('tomorrow');
+      const tomorrow = addDays(toZonedTime(new Date(), 'Asia/Bangkok'), 1);
+      const expectedDate = format(tomorrow, 'dd-MM-yyyy');
+
+      expect(payload).toContain(`ตารางงานวันที่ ${expectedDate}`);
     });
   });
 

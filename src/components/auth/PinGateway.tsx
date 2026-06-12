@@ -208,17 +208,17 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-2xl font-normal text-neutral-900 tracking-[0.2em] uppercase">Gateway Locked</h1>
-            <p className="text-sm font-normal text-neutral-500 tracking-[0.1em] uppercase px-4 leading-relaxed">
+            <h1 className="text-2xl font-normal text-foreground tracking-[0.2em] uppercase">Gateway Locked</h1>
+            <p className="text-sm font-normal text-muted-foreground tracking-[0.1em] uppercase px-4 leading-relaxed">
               ป้อนรหัสผิดครบ 5 ครั้ง บัญชีถูกล็อกชั่วคราวเพื่อความปลอดภัย
             </p>
           </div>
 
-          <div className="text-5xl font-normal text-neutral-950 tracking-wider">
+          <div className="text-5xl font-normal text-foreground tracking-wider">
             {formatTimeLeft(lockoutTimeLeft)}
           </div>
 
-          <p className="text-xs font-normal text-neutral-400 tracking-[0.05em] uppercase">
+          <p className="text-xs font-normal text-muted-foreground tracking-[0.05em] uppercase">
             กรุณารอสักครู่แล้วลองใหม่อีกครั้ง
           </p>
         </motion.div>
@@ -237,13 +237,13 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm flex flex-col items-center gap-8"
       >
-        <div className="w-16 h-16 bg-black text-white rounded-[24px] flex items-center justify-center shadow-lg">
+        <div className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center shadow-lg">
           <Lock size={32} strokeWidth={1.5} />
         </div>
 
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-normal text-neutral-900 tracking-[0.2em] uppercase">Security Gateway</h1>
-          <p className="text-sm font-normal text-neutral-500 tracking-[0.1em] uppercase">กรุณากรอกรหัสผ่าน 6 หลักเพื่อเข้าสู่ระบบ</p>
+          <h1 className="text-2xl font-normal text-foreground tracking-[0.2em] uppercase">Security Gateway</h1>
+          <p className="text-sm font-normal text-muted-foreground tracking-[0.1em] uppercase">กรุณากรอกรหัสผ่าน 6 หลักเพื่อเข้าสู่ระบบ</p>
         </div>
 
         <div className="relative w-full max-w-[320px]">
@@ -269,15 +269,15 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
                 <div
                   key={index}
                   aria-hidden="true"
-                  className={`w-12 h-14 md:w-14 md:h-16 flex items-center justify-center bg-white border rounded-2xl shadow-sm transition-all ${
+                  className={`w-12 h-14 md:w-14 md:h-16 flex items-center justify-center bg-card border rounded-2xl shadow-sm transition-all ${
                     error
-                      ? 'border-red-500 bg-red-50'
+                      ? 'border-red-500 bg-red-500/10'
                       : isActive
-                        ? 'border-black ring-2 ring-black/5'
-                        : 'border-black/10'
+                        ? 'border-foreground ring-2 ring-foreground/10'
+                        : 'border-border'
                   }`}
                 >
-                  {isFilled && <span className="block w-3.5 h-3.5 rounded-full bg-neutral-900" />}
+                  {isFilled && <span className="block w-3.5 h-3.5 rounded-full bg-foreground" />}
                 </div>
               );
             })}

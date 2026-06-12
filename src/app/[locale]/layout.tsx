@@ -7,6 +7,7 @@ import AIChatOverlay from '@/components/ai/AIChatWrapper';
 import InventoryQuickActionWrapper from '@/components/inventory/InventoryQuickActionWrapper';
 import PinGateway from '@/components/auth/PinGateway';
 import PwaRegister from '@/components/PwaRegister';
+import { NotificationProvider } from '@/components/notifications/NotificationProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import "./globals.css";
 
@@ -53,6 +54,7 @@ export default async function RootLayout({
         <ThemeProvider>
         <PwaRegister />
         <PinGateway>
+          <NotificationProvider>
           <SidebarLayout>
             <Suspense fallback={
               <div className="flex-1 min-h-screen bg-background flex items-center justify-center">
@@ -71,6 +73,7 @@ export default async function RootLayout({
           </SidebarLayout>
           <InventoryQuickActionWrapper />
           <AIChatOverlay />
+          </NotificationProvider>
         </PinGateway>
         </ThemeProvider>
       </body>

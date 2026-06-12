@@ -1,0 +1,109 @@
+import type { Json } from '@/lib/database.types';
+
+export type DataChangeAction =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'BULK_UPDATE'
+  | 'BULK_DELETE';
+
+export type DataChangeModule =
+  | 'inventory'
+  | 'schedule'
+  | 'sales'
+  | 'maintenance'
+  | 'holiday'
+  | 'dashboard'
+  | 'settings'
+  | 'market_insights';
+
+export type DataChangeSource = 'web' | 'server_action' | 'api' | 'system';
+
+export type ActorAccessLevel = 'full' | 'read_only' | 'system';
+
+export interface FieldChange {
+  field: string;
+  old_value: Json;
+  new_value: Json;
+}
+
+export interface DataChangeLogInput {
+  action: DataChangeAction;
+  module: DataChangeModule;
+  entityType: string;
+  entityId?: string | null;
+  entityLabel?: string | null;
+  fieldChanges?: FieldChange[];
+  oldValue?: Json | null;
+  newValue?: Json | null;
+  source?: DataChangeSource;
+  status?: 'success' | 'failed';
+  errorMessage?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ResolvedActor {
+  actorId: string | null;
+  actorLabel: string;
+  actorAccessLevel: ActorAccessLevel;
+}
+
+const SENSITIVE_FIELDS = new Set(['password', 'pin', 'token', 'secret', 'api_key']);
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function sanitizeJsonValue(value: unknown): Json {
+  if (value === undefined) return null;
+  if (value === null) return null;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizeJsonValue(entry)) as Json;
+  }
+  if (isPlainObject(value)) {
+    const result: Record<string, Json> = {};
+    for (const [key, entry] of Object.entries(value)) {
+      if (SENSITIVE_FIELDS.has(key.toLowerCase())) {
+        result[key] = '[REDACTED]';
+      } else {
+        result[key] = sanitizeJsonValue(entry);
+      }
+    }
+    return result;
+  }
+  return String(value);
+}
+
+export function computeFieldChanges(
+  before: Record<string, unknown> | null | undefined,
+  after: Record<string, unknown> | null | undefined,
+  fields?: string[]
+): FieldChange[] {
+  const keys = fields ?? Array.from(new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})]));
+  const changes: FieldChange[] = [];
+
+  for (const field of keys) {
+    if (SENSITIVE_FIELDS.has(field.toLowerCase())) continue;
+
+    const oldRaw = before?.[field] ?? null;
+    const newRaw = after?.[field] ?? null;
+    const oldValue = sanitizeJsonValue(oldRaw);
+    const newValue = sanitizeJsonValue(newRaw);
+
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      changes.push({ field, old_value: oldValue, new_value: newValue });
+    }
+  }
+
+  return changes;
+}
+
+export function resolveActorLabel(accessLevel: ActorAccessLevel, email?: string | null): string {
+  if (email) return email;
+  if (accessLevel === 'full') return 'ผู้ใช้งาน (สิทธิ์แก้ไข)';
+  if (accessLevel === 'read_only') return 'ผู้ใช้งาน (อ่านอย่างเดียว)';
+  return 'ระบบ';
+}

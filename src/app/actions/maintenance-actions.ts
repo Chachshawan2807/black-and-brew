@@ -5,6 +5,8 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { assertWritableSession } from '@/app/actions/auth';
+import { recordDataChange } from '@/app/actions/data-change-log-actions';
+import { computeFieldChanges } from '@/lib/data-change-log';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -72,6 +74,12 @@ export async function saveServiceRecord(
   try {
     const validated = parsedPayload.data;
     if (parsedId.data) {
+      const { data: beforeRecord } = await supabaseAdmin
+        .from('service_records')
+        .select('*')
+        .eq('id', parsedId.data)
+        .maybeSingle();
+
       const { error } = await supabaseAdmin
         .from('service_records')
         .update(validated)
@@ -79,15 +87,57 @@ export async function saveServiceRecord(
 
       if (error) {
         console.error('[saveServiceRecord] Supabase Error:', error.message, error.details);
+        await recordDataChange({
+          action: 'UPDATE',
+          module: 'maintenance',
+          entityType: 'service_record',
+          entityId: parsedId.data,
+          entityLabel: validated.equipment,
+          status: 'failed',
+          errorMessage: error.message,
+        });
         return { success: false, error: error.message };
       }
+
+      await recordDataChange({
+        action: 'UPDATE',
+        module: 'maintenance',
+        entityType: 'service_record',
+        entityId: parsedId.data,
+        entityLabel: validated.equipment,
+        fieldChanges: computeFieldChanges(beforeRecord ?? {}, validated),
+        oldValue: beforeRecord ?? null,
+        newValue: validated,
+      });
     } else {
-      const { error } = await supabaseAdmin.from('service_records').insert([validated]);
+      const { data: inserted, error } = await supabaseAdmin
+        .from('service_records')
+        .insert([validated])
+        .select()
+        .single();
 
       if (error) {
         console.error('[saveServiceRecord] Supabase Error:', error.message, error.details);
+        await recordDataChange({
+          action: 'CREATE',
+          module: 'maintenance',
+          entityType: 'service_record',
+          entityLabel: validated.equipment,
+          newValue: validated,
+          status: 'failed',
+          errorMessage: error.message,
+        });
         return { success: false, error: error.message };
       }
+
+      await recordDataChange({
+        action: 'CREATE',
+        module: 'maintenance',
+        entityType: 'service_record',
+        entityId: inserted?.id ?? null,
+        entityLabel: validated.equipment,
+        newValue: validated,
+      });
     }
 
     revalidatePath('/[locale]/maintenance', 'page');
@@ -113,6 +163,12 @@ export async function deleteServiceRecord(
   }
 
   try {
+    const { data: beforeRecord } = await supabaseAdmin
+      .from('service_records')
+      .select('*')
+      .eq('id', parsedId.data)
+      .maybeSingle();
+
     const { error } = await supabaseAdmin
       .from('service_records')
       .delete()
@@ -120,8 +176,27 @@ export async function deleteServiceRecord(
 
     if (error) {
       console.error('[deleteServiceRecord] Supabase Error:', error.message, error.details);
+      await recordDataChange({
+        action: 'DELETE',
+        module: 'maintenance',
+        entityType: 'service_record',
+        entityId: parsedId.data,
+        entityLabel: beforeRecord?.equipment ?? null,
+        oldValue: beforeRecord ?? null,
+        status: 'failed',
+        errorMessage: error.message,
+      });
       return { success: false, error: error.message };
     }
+
+    await recordDataChange({
+      action: 'DELETE',
+      module: 'maintenance',
+      entityType: 'service_record',
+      entityId: parsedId.data,
+      entityLabel: beforeRecord?.equipment ?? null,
+      oldValue: beforeRecord ?? null,
+    });
 
     revalidatePath('/[locale]/maintenance', 'page');
     return { success: true };

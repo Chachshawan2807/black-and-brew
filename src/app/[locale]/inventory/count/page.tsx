@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { updateInventoryStock } from '@/app/actions/inventory-actions';
+import { getClientSessionId } from '@/lib/client-session';
 import { mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
@@ -72,7 +73,7 @@ function CountInput({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15 }}
-            className="text-[10px] font-normal uppercase tracking-[0.15em] text-black/45 pr-1"
+            className="text-[10px] font-normal uppercase tracking-[0.15em] text-black/45 pr-1 bb-pastel-surface"
           >
             จำนวนคงเหลือ
           </motion.span>
@@ -114,7 +115,7 @@ function CountInput({
         className={cn(
           'px-3 rounded-xl border text-base font-normal text-center outline-none font-mono transition-all duration-200',
           isActive
-            ? 'w-28 h-11 border-black/20 bg-white text-black ring-2 ring-black/10 shadow-sm'
+            ? 'w-28 h-11 border-black/20 bg-white text-black ring-2 ring-black/10 shadow-sm bb-pastel-surface'
             : 'w-24 h-10 border-border bg-muted text-foreground focus:bg-card focus:ring-1 focus:ring-foreground/10',
           disabled && 'opacity-60 cursor-not-allowed'
         )}
@@ -208,7 +209,10 @@ export default function InventoryCountPage() {
     setSaveErrorMessage(null);
 
     try {
-      const result = await updateInventoryStock(id, value, 'Stock-taking count', { recordHistory: false });
+      const result = await updateInventoryStock(id, value, 'Stock-taking count', {
+        recordHistory: false,
+        clientSessionId: getClientSessionId(),
+      });
 
       if (!result.success) {
         throw new Error(result.error);

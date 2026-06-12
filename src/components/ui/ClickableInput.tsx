@@ -52,12 +52,16 @@ export function ClickableInput({
   return (
     <div 
       onClick={handleContainerClick}
-      className={`group relative flex items-center gap-2 bg-white rounded-3xl p-1.5 border border-[#000000]/5 cursor-pointer bb-shadow-sm hover:border-[#000000]/10 bb-transition focus-within:ring-2 focus-within:ring-[#000000]/8 ${containerClassName}`}
+      className={`group relative flex items-center gap-2 bg-card rounded-3xl p-1.5 border border-border cursor-pointer bb-shadow-sm hover:bg-muted/30 hover:border-border bb-transition focus-within:ring-2 focus-within:ring-foreground/10 ${containerClassName}`}
     >
       {icon && <div className="shrink-0 pointer-events-none">{icon}</div>}
       
       <div className="flex-1 flex items-center justify-center min-w-0">
-        <span className="text-[14px] font-normal text-foreground text-center block w-full truncate">
+        <span
+          className={`text-[14px] font-normal text-center block w-full truncate ${
+            type === 'date' && !value ? 'text-muted-foreground' : 'text-foreground'
+          }`}
+        >
           {type === 'date' && value ? displayValue : (type === 'date' ? 'YYYY-MM-DD' : value?.toString() || '')}
         </span>
         <input

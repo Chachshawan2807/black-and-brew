@@ -6,9 +6,9 @@ import { CheckCircle2, Circle, Copy, Check, Clock, Target } from 'lucide-react';
 import { MARKET_INSIGHTS_ACTIONS_KEY_V2, type ActionItem } from '@/app/actions/market-insights-types';
 
 const PRIORITY_LABEL: Record<number, { text: string; cls: string }> = {
-  1: { text: 'ด่วน', cls: 'bg-[#fdeaea] text-red-700/80' },
-  2: { text: 'ปานกลาง', cls: 'bg-[#fff6e6] text-amber-700/80' },
-  3: { text: 'ทั่วไป', cls: 'bg-[#eef6ee] text-green-800/70' },
+  1: { text: 'ด่วน', cls: 'bb-pastel-surface bg-[#fdeaea] text-red-700/80 border border-[#f5c6cb]' },
+  2: { text: 'ปานกลาง', cls: 'bb-pastel-surface bg-[#fff6e6] text-amber-700/80 border border-[#ffeeba]' },
+  3: { text: 'ทั่วไป', cls: 'bb-pastel-surface bg-[#eef6ee] text-green-800/70 border border-[#c3e6cb]' },
 };
 
 export default function ActionChecklist({ actions }: { actions: ActionItem[] }) {
@@ -92,7 +92,7 @@ export default function ActionChecklist({ actions }: { actions: ActionItem[] }) 
                     {action.linkedProducts.map((p) => (
                       <span
                         key={p}
-                        className="text-xs bg-black/[0.04] text-muted-foreground px-2 py-0.5 rounded-full border border-black/5"
+                        className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full border border-border"
                       >
                         {p}
                       </span>
@@ -102,7 +102,7 @@ export default function ActionChecklist({ actions }: { actions: ActionItem[] }) 
               </div>
               <button
                 onClick={() => askBru(action)}
-                className="shrink-0 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-black/10 rounded-full px-3 py-1.5 bb-transition"
+                className="shrink-0 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-full px-3 py-1.5 bb-transition"
               >
                 {copied === action.id ? (
                   <>

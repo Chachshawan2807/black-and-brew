@@ -306,10 +306,10 @@ export default function MaintenancePage() {
               whileTap={{ scale: isReadOnly ? 1 : 0.98 }}
               onClick={() => { resetForm(); setIsModalOpen(true); }}
               disabled={isReadOnly}
-              className="group flex items-center gap-2.5 bg-[#000000] hover:bg-black/80 text-white px-7 py-3.5 rounded-3xl bb-transition bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              className="group flex items-center gap-2.5 bg-foreground hover:opacity-90 text-background px-7 py-3.5 rounded-3xl bb-transition bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Plus className="w-4.5 h-4.5" />
-              <span className="font-medium text-sm tracking-wide">เพิ่มบันทึกใหม่</span>
+              <span className="font-normal text-sm tracking-wide">เพิ่มบันทึกใหม่</span>
             </motion.button>
           </div>
         </header>
@@ -330,7 +330,7 @@ export default function MaintenancePage() {
               <button
                 onClick={() => setIsModalOpen(true)}
                 disabled={isReadOnly}
-                className="mt-8 text-foreground hover:opacity-60 transition-opacity font-normal text-xs uppercase tracking-[0.3em] border-b border-[#000000] pb-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="mt-8 text-foreground hover:opacity-60 transition-opacity font-normal text-xs uppercase tracking-[0.3em] border-b border-foreground pb-1 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Begin your first entry
               </button>
@@ -432,7 +432,7 @@ export default function MaintenancePage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/[0.03]">
+                <tbody className="divide-y divide-border">
                   <AnimatePresence>
                     {records.map((record, index) => (
                       <motion.tr
@@ -440,21 +440,21 @@ export default function MaintenancePage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.03 }}
-                        className="group hover:bg-black/[0.02] bb-transition"
+                        className="group hover:bg-muted/30 bb-transition"
                       >
-                        <td className="py-4 px-5 text-sm font-normal text-neutral-600 antialiased font-mono">
+                        <td className="py-4 px-5 text-sm font-normal text-muted-foreground antialiased font-mono">
                           {format(new Date(record.start_date), 'dd/MM/yyyy')}
                         </td>
-                        <td className="py-4 px-5 text-[15px] font-normal text-neutral-900 antialiased whitespace-normal break-words">
+                        <td className="py-4 px-5 text-[15px] font-normal text-foreground antialiased whitespace-normal break-words">
                           {record.equipment}
                         </td>
-                        <td className="py-4 px-5 text-[14px] font-normal text-neutral-800 antialiased whitespace-normal break-words" title={record.detected_problem || '-'}>
+                        <td className="py-4 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words" title={record.detected_problem || '-'}>
                           {record.detected_problem || '-'}
                         </td>
-                        <td className="py-4 px-5 text-[14px] font-normal text-neutral-800 antialiased whitespace-normal break-words">
+                        <td className="py-4 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words">
                           {record.recommended_frequency || '-'}
                         </td>
-                        <td className="py-4 px-5 text-[14px] font-normal text-neutral-800 antialiased whitespace-normal break-words">
+                        <td className="py-4 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words">
                           {record.person_in_charge || '-'}
                         </td>
                         <td className="py-4 px-5 text-center">
@@ -462,13 +462,13 @@ export default function MaintenancePage() {
                             {record.task_type}
                           </span>
                         </td>
-                        <td className="py-4 px-5 text-[15px] font-normal text-neutral-900 antialiased text-right font-mono">
+                        <td className="py-4 px-5 text-[15px] font-normal text-foreground antialiased text-right font-mono">
                           ฿{(record.cost || 0).toLocaleString()}
                         </td>
                         <td className="py-4 px-5 text-sm font-normal antialiased text-center">
                           <span className={`inline-flex px-3 py-1.5 text-xs rounded-2xl items-center justify-center gap-1.5 transition-all shadow-sm border ${record.status === 'เสร็จสมบูรณ์'
-                            ? 'bg-[#f0fdf4] text-[#14532d] border-[#dcfce7]'
-                            : 'bg-[#f0f9ff] text-[#0c4a6e] border-[#e0f2fe]'
+                            ? 'bb-pastel-surface bg-[#f0fdf4] text-[#000000] border-[#dcfce7]'
+                            : 'bb-pastel-surface bg-[#f0f9ff] text-[#000000] border-[#e0f2fe]'
                             }`}>
                             {record.status === 'เสร็จสมบูรณ์' ? <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} /> : <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />}
                             {record.status}
@@ -479,14 +479,14 @@ export default function MaintenancePage() {
                             <button
                               onClick={() => handleEdit(record)}
                               disabled={isReadOnly}
-                              className="p-2 hover:bg-black/5 text-muted-foreground hover:text-foreground rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="p-2 hover:bg-muted/30 text-muted-foreground hover:text-foreground rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               <Edit2 className="w-4 h-4" strokeWidth={1.5} />
                             </button>
                             <button
                               onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
                               disabled={isReadOnly}
-                              className="p-2 hover:bg-red-50 text-muted-foreground hover:text-red-500 rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="p-2 hover:bg-red-50 dark:hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                             </button>

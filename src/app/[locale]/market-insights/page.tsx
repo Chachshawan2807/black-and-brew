@@ -33,9 +33,9 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const CACHE_TTL = 300_000;
 
 const CONFIDENCE_STYLE: Record<InsightBullet['confidence'], string> = {
-  high: 'bg-[#eef6ee] text-green-800/70',
-  medium: 'bg-[#fff6e6] text-amber-700/80',
-  low: 'bg-black/[0.04] text-muted-foreground',
+  high: 'bb-pastel-surface bg-[#eef6ee] text-green-800/70 border border-[#c3e6cb]',
+  medium: 'bb-pastel-surface bg-[#fff6e6] text-amber-700/80 border border-[#ffeeba]',
+  low: 'bg-muted text-muted-foreground border border-border',
 };
 
 const CONFIDENCE_LABEL: Record<InsightBullet['confidence'], string> = {
@@ -58,9 +58,9 @@ function InsightSection({
   bullets: InsightBullet[];
 }) {
   return (
-    <div className="rounded-2xl border border-black/[0.06] bg-card p-4 md:p-5 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
-      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-black/[0.05]">
-        <div className="p-2 bg-black/[0.04] rounded-xl text-foreground/80">{icon}</div>
+    <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
+      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border">
+        <div className="p-2 bg-muted rounded-xl text-foreground/80">{icon}</div>
         <div className="min-w-0">
           <h2 className="text-sm md:text-base tracking-tight flex items-center gap-1.5">
             {title}
@@ -83,7 +83,7 @@ function BulletList({ bullets }: { bullets: InsightBullet[] }) {
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.06 }}
-          className="pl-3 border-l-2 border-black/[0.07]"
+          className="pl-3 border-l-2 border-border"
         >
           <div className="flex items-start gap-2">
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 mt-0.5 ${CONFIDENCE_STYLE[b.confidence]}`}>
@@ -91,7 +91,7 @@ function BulletList({ bullets }: { bullets: InsightBullet[] }) {
             </span>
             <p className="text-sm text-foreground/68 leading-relaxed">{b.text}</p>
           </div>
-          {b.reason && <p className="text-[11px] text-foreground/38 mt-0.5 pl-1">เพราะ: {b.reason}</p>}
+          {b.reason && <p className="text-[11px] text-muted-foreground mt-0.5 pl-1">เพราะ: {b.reason}</p>}
         </motion.div>
       ))}
     </div>
@@ -175,14 +175,14 @@ export default function MarketInsightsPage() {
                 <div className="p-2.5 bg-card border border-border rounded-xl shadow-[0_1px_3px_rgb(0,0,0,0.04)]">
                   <Sparkles className="w-5 h-5 text-foreground" />
                 </div>
-                <span className="text-xs text-muted-foreground bg-black/[0.04] px-2.5 py-0.5 rounded-full border border-black/[0.05]">
+                <span className="text-xs text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full border border-border">
                   Market Intelligence
                 </span>
               </div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl tracking-tight">ข้อมูลเชิงลึกตลาด</h1>
                 {cacheIsStale && hasLoaded && (
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/80 bg-black/5 px-2 py-0.5 rounded-full border border-black/10">
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border">
                     ข้อมูลเก่า
                     <MetricInfoTip id="data_freshness" />
                   </span>
@@ -219,7 +219,7 @@ export default function MarketInsightsPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-card rounded-3xl border border-border bb-shadow-sm p-10 md:p-16 text-center"
             >
-              <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-black/5 flex items-center justify-center">
+              <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-muted flex items-center justify-center">
                 <Lightbulb className="w-10 h-10 text-foreground" />
               </div>
               <h2 className="text-2xl mb-3">พร้อมวิเคราะห์ตลาดแล้วหรือยัง?</h2>
@@ -246,15 +246,15 @@ export default function MarketInsightsPage() {
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bb-card p-5 h-24 animate-pulse bg-black/[0.02]" />
+                  <div key={i} className="bb-card p-5 h-24 animate-pulse bg-muted/50" />
                 ))}
               </div>
               {[1, 2, 3].map((i) => (
                 <div key={i} className="bb-card p-8">
-                  <div className="h-6 w-48 bg-black/5 rounded-lg animate-pulse mb-4" />
+                  <div className="h-6 w-48 bg-muted rounded-lg animate-pulse mb-4" />
                   <div className="space-y-3">
-                    <div className="h-4 w-full bg-black/5 rounded-lg animate-pulse" />
-                    <div className="h-4 w-3/4 bg-black/5 rounded-lg animate-pulse" />
+                    <div className="h-4 w-full bg-muted rounded-lg animate-pulse" />
+                    <div className="h-4 w-3/4 bg-muted rounded-lg animate-pulse" />
                   </div>
                 </div>
               ))}
@@ -266,7 +266,7 @@ export default function MarketInsightsPage() {
         <AnimatePresence>
           {hasLoaded && !isLoading && !insights?.context && (
             <motion.div key="error" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border rounded-3xl p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-black/5 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
                 <span className="text-2xl">⚠️</span>
               </div>
               <h3 className="text-xl mb-2">เกิดข้อผิดพลาด</h3>

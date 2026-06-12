@@ -32,6 +32,8 @@ import {
   deleteCategory
 } from '@/app/actions/sales-actions';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { useTheme } from 'next-themes';
+import { getChartColors } from '@/lib/chart-theme';
 import { SALES_CATEGORY_CARD_COLORS, SALES_SECTION_COLORS } from '@/lib/shift-colors';
 import { readCache, writeCache, isStale } from '@/lib/cache/client-cache';
 import {
@@ -82,6 +84,8 @@ export default function SalesPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'th';
   const isReadOnly = useReadOnly();
+  const { resolvedTheme } = useTheme();
+  const chartColors = getChartColors(resolvedTheme === 'dark');
 
   const blockIfReadOnly = () => {
     if (isReadOnly) {
@@ -992,7 +996,7 @@ export default function SalesPage() {
                         <span className="text-[10px] text-black bg-white/50 border border-black/10 px-1.5 py-0.5 rounded-full">{category.revenuePercentage.toFixed(1)}%</span>
                       </div>
                       <div className="text-2xl mb-1.5">฿{formatCurrency(category.totalRevenue)}</div>
-                      <div className="text-xs text-muted-foreground">{formatNumber(category.totalQuantity)} ชิ้น • {formatNumber(category.transactionCount)} รายการ</div>
+                      <div className="text-xs text-black/55">{formatNumber(category.totalQuantity)} ชิ้น • {formatNumber(category.transactionCount)} รายการ</div>
                       <div className="mt-2.5 h-2 bg-white/50 rounded-full overflow-hidden border border-black/5">
                         <div 
                           className="h-full bg-black/25 rounded-full transition-all duration-700"
@@ -1026,12 +1030,12 @@ export default function SalesPage() {
                   {isMounted && (
                     <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={240}>
                       <BarChart data={metrics.topProducts}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.grid} />
                         <XAxis 
                           dataKey="productName" 
                           axisLine={false} 
                           tickLine={false}
-                          tick={{ fontSize: 11, fill: 'black' }}
+                          tick={{ fontSize: 11, fill: chartColors.tick }}
                           angle={-45}
                           textAnchor="end"
                           height={80}
@@ -1039,11 +1043,11 @@ export default function SalesPage() {
                         <YAxis 
                           axisLine={false} 
                           tickLine={false}
-                          tick={{ fontSize: 11, fill: 'black' }}
+                          tick={{ fontSize: 11, fill: chartColors.tick }}
                           tickFormatter={(value) => `฿${(value / 1000).toFixed(0)}k`}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-                        <Bar dataKey="totalRevenue" name="ยอดขาย" fill="#000000" radius={[8, 8, 0, 0]} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: chartColors.cursor }} />
+                        <Bar dataKey="totalRevenue" name="ยอดขาย" fill={chartColors.bar} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -1202,10 +1206,10 @@ export default function SalesPage() {
                                   aria-label={`Click to edit category for ${product.productName}`}
                                   className="group inline-flex items-center px-2.5 py-1 rounded-full text-[10px] transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-black/10 focus:ring-offset-1"
                                 >
-                                  <span className={`${productWithCategory.category ? 'bg-black/[0.05] text-black' : 'bg-black/[0.02] text-muted-foreground'} px-2 py-0.5 rounded-full group-hover:bg-black/10`}>
+                                  <span className={`${productWithCategory.category ? 'bg-muted text-foreground' : 'bg-muted/50 text-muted-foreground'} px-2 py-0.5 rounded-full group-hover:bg-muted/80`}>
                                     {productWithCategory.category || 'ยังไม่ระบุ'}
                                   </span>
-                                  <Edit3 className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground group-hover:text-black" />
+                                  <Edit3 className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground group-hover:text-foreground" />
                                 </button>
                               )}
                             </div>
@@ -1418,10 +1422,10 @@ export default function SalesPage() {
                                   aria-label={`Click to edit category for ${product.productName}`}
                                   className="group inline-flex items-center px-2.5 py-1 rounded-full text-[10px] transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-black/10 focus:ring-offset-1"
                                 >
-                                  <span className={`${product.category ? 'bg-black/[0.05] text-black' : 'bg-black/[0.02] text-muted-foreground'} px-2 py-0.5 rounded-full group-hover:bg-black/10`}>
+                                  <span className={`${product.category ? 'bg-muted text-foreground' : 'bg-muted/50 text-muted-foreground'} px-2 py-0.5 rounded-full group-hover:bg-muted/80`}>
                                     {product.category || 'ยังไม่ระบุ'}
                                   </span>
-                                  <Edit3 className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground group-hover:text-black" />
+                                  <Edit3 className="w-3 h-3 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground group-hover:text-foreground" />
                                 </button>
                               )}
                             </div>

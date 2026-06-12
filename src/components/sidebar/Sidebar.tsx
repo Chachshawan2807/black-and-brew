@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useStore } from "@/hooks/use-store";
 
 import Menu from "@/components/sidebar/Menu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useSidebarToggle } from "@/hooks/use-sidebar-toggle";
 import { SidebarToggle } from "@/components/sidebar/SidebarToggle";
 import Image from "next/image";
@@ -30,9 +31,9 @@ export function Sidebar() {
       <div className="relative h-full flex flex-col pl-2 pr-3 py-4 overflow-hidden">
         <div className={cn(
           "mb-4 flex items-center transition-all duration-500",
-          isOpen === false ? "justify-center" : "justify-start"
+          isOpen === false ? "justify-center" : "justify-between gap-2"
         )}>
-          <div className="relative z-[110]">
+          <div className="relative z-[110] min-w-0">
             {isOpen === false ? (
               <Image 
                 src="/images/logo.png" 
@@ -55,6 +56,7 @@ export function Sidebar() {
               />
             )}
           </div>
+          <NotificationBell compact className={cn(isOpen === false && "absolute top-14 left-1/2 -translate-x-1/2")} />
         </div>
         <div className="flex-1 overflow-hidden">
           <Menu isOpen={sidebar?.isOpen} />

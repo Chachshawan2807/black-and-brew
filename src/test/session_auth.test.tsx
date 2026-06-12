@@ -86,7 +86,7 @@ describe('PinGateway Session-Only Authentication', () => {
 
     expect(screen.getByLabelText('รหัสผ่าน 6 หลัก')).toHaveValue('1');
     expect(screen.queryByText('1')).not.toBeInTheDocument();
-    expect(document.querySelector('.rounded-full.bg-neutral-900')).toBeInTheDocument();
+    expect(document.querySelector('.rounded-full.bg-foreground')).toBeInTheDocument();
   });
 
   test('should restore read-only flag from sessionStorage via AuthProvider', () => {
