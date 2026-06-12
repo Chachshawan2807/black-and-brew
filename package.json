@@ -9,7 +9,8 @@
     "lint": "eslint",
     "lint:md": "markdownlint-cli2",
     "lint:md:fix": "markdownlint-cli2 --fix",
-    "test": "vitest run"
+    "test": "vitest run",
+    "export:infographic": "node scripts/export-infographic.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.79",

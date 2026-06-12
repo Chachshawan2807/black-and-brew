@@ -1,0 +1,45 @@
+name: Deploy Presentation
+
+on:
+  push:
+    branches: [main, cursor/project-presentation-1db0]
+    paths:
+      - 'public/presentation/**'
+      - 'docs/presentation/export/black-and-brew-infographic.*'
+      - '.github/workflows/presentation-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare site
+        run: |
+          mkdir -p _site/presentation/export
+          cp public/presentation/index.html _site/presentation/
+          cp public/presentation/gallery.html _site/presentation/
+          cp public/presentation/infographic.html _site/presentation/
+          cp public/presentation/export/black-and-brew-infographic.png _site/presentation/export/
+          cp public/presentation/export/black-and-brew-infographic.pdf _site/presentation/export/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
