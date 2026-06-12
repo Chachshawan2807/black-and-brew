@@ -15,7 +15,9 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = json.loads((ROOT / "graphify-out/.ring_data.json").read_text(encoding="utf-8"))
-OUT = ROOT / "graphify-out/system-ring-diagram.png"
+OUT_GRAPHIFY = ROOT / "graphify-out/system-ring-diagram.png"
+OUT = ROOT / "docs/assets/system-ring-diagram.png"
+OUT_PREVIEW = ROOT / "docs/assets/system-ring-diagram-preview.jpg"
 
 communities = DATA["communities"]
 edges = DATA["edges"]
@@ -131,6 +133,20 @@ ax.set_xlim(-1.55, 1.55)
 ax.set_ylim(-1.55, 1.55)
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
-fig.savefig(OUT, dpi=150, facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.1)
+OUT_GRAPHIFY.parent.mkdir(parents=True, exist_ok=True)
+fig.savefig(OUT_GRAPHIFY, dpi=150, facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.1)
+
+from PIL import Image
+
+full = Image.open(OUT_GRAPHIFY)
+max_px = 2400
+if max(full.size) > max_px:
+    ratio = max_px / max(full.size)
+    full = full.resize((int(full.width * ratio), int(full.height * ratio)), Image.LANCZOS)
+full.save(OUT, "PNG", optimize=True)
+full.resize((1200, 1200), Image.LANCZOS).convert("RGB").save(
+    OUT_PREVIEW, "JPEG", quality=88, optimize=True
+)
 plt.close()
 print(f"Saved: {OUT} ({OUT.stat().st_size // 1024} KB)")
+print(f"Saved: {OUT_PREVIEW} ({OUT_PREVIEW.stat().st_size // 1024} KB)")
