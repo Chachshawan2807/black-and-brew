@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 8.4 | Last Updated: 2026-06-12 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 8.5 | Last Updated: 2026-06-12 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## 🏛️ Architectural Core
 

@@ -24,8 +24,8 @@ const chatRateLimiter = new SlidingWindowRateLimiter(30, 3_600_000); // 30 req /
 // ─────────────────────────────────────────────────────────
 // SECTION 1: ENVIRONMENT & CONSTANTS
 // ─────────────────────────────────────────────────────────
-const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || "13.9312";
-const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || "100.6756";
+const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || '13.929692';
+const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || '100.716933';
 
 /**
  * ADR: EU-ACT-001 - AI Usage Traceability & Audit Logging

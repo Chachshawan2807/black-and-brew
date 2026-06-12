@@ -63,6 +63,53 @@ export async function deleteShift(id: string) {
   }
 }
 
+export async function batchUpdateProfileNames(updates: { id: string; full_name: string }[]) {
+  if (!updates || updates.length === 0) return { success: true };
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
+
+    const results = await Promise.all(
+      updates.map((u) =>
+        supabaseAdmin.from('profiles').update({ full_name: u.full_name }).eq('id', u.id)
+      )
+    );
+    const firstError = results.find((r) => r.error);
+    if (firstError) {
+      await recordDataChange({
+        action: 'BULK_UPDATE',
+        module: 'schedule',
+        entityType: 'profile',
+        status: 'failed',
+        errorMessage: firstError.error?.message || 'Unknown error',
+        metadata: { operation: 'batch_update_profile_names', count: updates.length },
+      });
+      return { success: false, error: firstError.error?.message || 'Unknown error' };
+    }
+
+    await recordDataChange({
+      action: 'BULK_UPDATE',
+      module: 'schedule',
+      entityType: 'profile',
+      metadata: { operation: 'batch_update_profile_names', count: updates.length },
+    });
+
+    revalidatePath('/[locale]/schedule', 'page');
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
 export async function updateStaffOrder(orderedIds: string[]) {
   if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'Empty order list' };
   try {
@@ -427,5 +474,61 @@ export async function copyWeeklyShifts(sourceStartDate: string, targetStartDate:
   } catch (err: any) {
     console.error('[copyWeeklyShifts] CRITICAL FAILURE:', err);
     return { success: false, error: err.message || 'เกิดข้อผิดพลาดรุนแรงในการคัดลอกข้อมูล' };
+  }
+}
+
+/** Rename metadata.location across all shifts when a shift type label/value changes */
+export async function renameShiftLocations(renames: { oldValue: string; newValue: string }[]) {
+  const valid = renames.filter(
+    (r) => r.oldValue?.trim() && r.newValue?.trim() && r.oldValue !== r.newValue
+  );
+  if (valid.length === 0) return { success: true, updated: 0 };
+
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
+
+    let totalUpdated = 0;
+
+    for (const { oldValue, newValue } of valid) {
+      const { data: rows, error: fetchError } = await supabaseAdmin
+        .from('shifts')
+        .select('id, metadata')
+        .filter('metadata->>location', 'eq', oldValue);
+
+      if (fetchError) {
+        console.error('Supabase Error:', fetchError.message, fetchError.details);
+        return { success: false, error: fetchError.message };
+      }
+
+      for (const row of rows || []) {
+        const metadata = (row.metadata as Record<string, unknown>) || {};
+        const { error: updateError } = await supabaseAdmin
+          .from('shifts')
+          .update({ metadata: { ...metadata, location: newValue } })
+          .eq('id', row.id);
+
+        if (updateError) {
+          console.error('Supabase Error:', updateError.message, updateError.details);
+          return { success: false, error: updateError.message };
+        }
+        totalUpdated += 1;
+      }
+    }
+
+    revalidateAppPaths();
+    return { success: true, updated: totalUpdated };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    return { success: false, error: errorMsg };
   }
 }

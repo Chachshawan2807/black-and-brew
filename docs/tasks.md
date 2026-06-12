@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 8.4 | Last Updated: 2026-06-12
+> Version: 8.5 | Last Updated: 2026-06-12
 
 ---
 
@@ -99,6 +99,9 @@
 - [x] Documentation sync v8.3 — Market Insights v2 reflected in architecture/database/api/context/tasks/changelog/memory (2026-06-09)
 - [x] Dark theme — `next-themes` + CSS tokens + `bb-pastel-surface` pattern; Settings page theme picker; migrate inventory/sales/maintenance/schedule/market-insights/AI chat/export overlay (2026-06-12)
 - [x] Documentation sync v8.4 — dark theme + settings route reflected in all project `.md` files (2026-06-12)
+- [x] Security audit tables — `login_history`, `data_change_logs`, `revoked_sessions` migrations + Settings session management (2026-06-12)
+- [x] Inventory in-app notifications — Realtime on `data_change_logs`, notification prefs in Settings, `InventoryQuickActionFAB` (2026-06-12)
+- [x] Documentation sync v8.5 — security + notifications reflected in docs; graphify refresh (2026-06-12)
 
 ---
 
@@ -137,7 +140,8 @@ Plan: `docs/plans/2026-06-12-dark-theme-remediation.md`
 ### Low Priority
 
 - [ ] Add inventory categories/groups
-- [ ] Implement inventory alerts/notifications (low stock)
+- [x] Inventory in-app notifications via `data_change_logs` Realtime + PWA push prefs (v8.5)
+- [ ] Implement low-stock LINE/push alerts (threshold-based)
 - [x] ~~Add export to CSV/PDF for Purchase Orders~~ — PNG export by channel (v6.8)
 - [ ] Build reporting dashboard (stock trends, shift analytics)
 - [ ] Implement multi-store support

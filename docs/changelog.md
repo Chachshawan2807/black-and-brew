@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-12 (Security + Notifications Doc Sync v8.5)
+
+- Execution: [DOCUMENTATION SYNC — security migrations, inventory notifications, graphify refresh]
+- Changes:
+  - **Security migrations:** `login_history`, `data_change_logs`, `revoked_sessions` documented in `docs/database.md`; auth flow updated in `docs/architecture.md`
+  - **Session revocation:** `forceRevokeDeviceSession()` / `forceRevokeAllRemoteSessions()` in `docs/api.md`; `src/lib/session-revocation.ts`
+  - **Inventory notifications:** Realtime on `data_change_logs` + `NotificationPreferencesSection` in Settings; `InventoryQuickActionFAB` noted in README/architecture
+  - **docs/database.md:** Fixed corrupted Thai text and `?` encoding; added `supabase/migrations/` table; transaction types ADD/DELETE
+  - **graphify:** `graphify update . --force` → 2447 nodes, 3925 edges, 147 communities
+  - **README.md**, **docs/context.md**, **docs/tasks.md**, **PROJECT_MAP.md** — version bump to **8.5**
+- Verification: `graphify update . --force` ✓ | `npm run lint:md` ✓
+
 ## 2026-06-12 (Dark Theme + Documentation Sync v8.4)
 
 - Execution: [DOCUMENTATION SYNC — dark theme work + `.md` alignment to `src/`]

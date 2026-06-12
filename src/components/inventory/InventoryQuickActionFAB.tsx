@@ -4,17 +4,18 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Package, X, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { toPng } from 'html-to-image';
-import { supabase } from '@/lib/supabase';
-import { ensureSupabaseSession } from '@/lib/supabase-session';
 import {
   computeItemsToOrder,
   getQuickBadgeStyles,
   getStockColorClass,
-  mergeInventoryRealtimeUpdate,
   type InventoryStockFields,
 } from '@/lib/inventory-stock';
+import {
+  useInventoryRealtime,
+  type InventoryRealtimeItem,
+} from '@/contexts/InventoryRealtimeContext';
 import {
   recordTransaction,
   updateInventoryStock,
@@ -22,6 +23,14 @@ import {
   fetchFrequentItems,
 } from '@/app/actions/inventory-actions';
 import { getClientSessionId } from '@/lib/client-session';
+import {
+  FAB_BASE_CLASS,
+  FAB_BOTTOM_QUICK_ACTION_CLASS,
+  FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
+} from '@/lib/floating-action-layout';
+import { getFabPanelKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
+import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { InventoryQuickActionBar } from './InventoryQuickActionBar';
@@ -30,25 +39,22 @@ import { InventoryAddItemModal } from './InventoryAddItemModal';
 
 const PurchaseOrdersModal = dynamic(() => import('@/app/[locale]/inventory/PurchaseOrdersModal'), { ssr: false });
 
-type InventoryItem = InventoryStockFields & {
-  id: string;
-  name: string;
-  stock: number;
-  target_stock: number;
-  unit: string;
-  source: string;
-  sort_order: number;
-};
+type InventoryItem = InventoryRealtimeItem & InventoryStockFields;
 
 export default function InventoryQuickActionFAB() {
   const router = useRouter();
   const isReadOnly = useReadOnly();
+  const { fabStackHidden, isAnyOtherOpen, setOverlayOpen } = useFloatingOverlay();
+  const {
+    items,
+    setItems,
+    refresh,
+    isLoading: isLoadingItems,
+    hasLoaded: hasLoadedItems,
+  } = useInventoryRealtime();
 
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const [hasLoadedItems, setHasLoadedItems] = useState(false);
 
   const [quickSearch, setQuickSearch] = useState('');
   const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
@@ -65,37 +71,38 @@ export default function InventoryQuickActionFAB() {
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [isExportingPO, setIsExportingPO] = useState(false);
 
+  const viewportInsets = useVisualViewportInsets(isMounted && isOpen);
+  const quickPanelStyle = getFabPanelKeyboardAwareStyle({ insets: viewportInsets });
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const quickOverlayActive =
+    isOpen || showAddModal || showHistoryModal || showPurchaseOrderModal;
+  const hideQuickActionButton =
+    fabStackHidden ||
+    isAnyOtherOpen('quick-action') ||
+    showAddModal ||
+    showHistoryModal ||
+    showPurchaseOrderModal;
+
+  useEffect(() => {
+    setOverlayOpen('quick-action', quickOverlayActive);
+  }, [quickOverlayActive, setOverlayOpen]);
+
+  useEffect(() => {
+    if (!fabStackHidden) return;
+    setIsOpen(false);
+    setShowAddModal(false);
+    setShowHistoryModal(false);
+    setShowPurchaseOrderModal(false);
+  }, [fabStackHidden]);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedQuickSearch(quickSearch), 150);
     return () => window.clearTimeout(t);
   }, [quickSearch]);
-
-  const fetchItems = useCallback(async () => {
-    setIsLoadingItems(true);
-    try {
-      await ensureSupabaseSession();
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .select('id, name, stock, order_qty, order_point, target_stock, unit, source, sort_order, updated_at')
-        .order('sort_order', { ascending: true });
-
-      if (error) {
-        console.error('Supabase Error:', error.message, error.details);
-        throw error;
-      }
-
-      setItems((data as InventoryItem[]) || []);
-      setHasLoadedItems(true);
-    } catch (err) {
-      console.error('Failed to fetch inventory items:', err);
-    } finally {
-      setIsLoadingItems(false);
-    }
-  }, []);
 
   const loadFrequentItems = useCallback(async () => {
     const res = await fetchFrequentItems();
@@ -107,39 +114,15 @@ export default function InventoryQuickActionFAB() {
   useEffect(() => {
     if (!isMounted || !isOpen) return;
 
-    void fetchItems();
+    void refresh();
     void loadFrequentItems();
-
-    const channel = supabase
-      .channel('inventory_quick_action_fab')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setItems((prev) => {
-            if (prev.find((i) => i.id === payload.new.id)) return prev;
-            return [...prev, payload.new as InventoryItem];
-          });
-        } else if (payload.eventType === 'UPDATE') {
-          setItems((prev) =>
-            prev.map((item) =>
-              item.id === payload.new.id ? mergeInventoryRealtimeUpdate(item, payload.new as InventoryItem) : item,
-            ),
-          );
-        } else if (payload.eventType === 'DELETE') {
-          setItems((prev) => prev.filter((item) => item.id !== payload.old.id));
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isMounted, isOpen, fetchItems, loadFrequentItems]);
+  }, [isMounted, isOpen, refresh, loadFrequentItems]);
 
   useEffect(() => {
     if (showPurchaseOrderModal && isOpen) {
-      void fetchItems();
+      void refresh();
     }
-  }, [showPurchaseOrderModal, isOpen, fetchItems]);
+  }, [showPurchaseOrderModal, isOpen, refresh]);
 
   const filteredItems = useMemo(() => {
     if (!debouncedQuickSearch) return [];
@@ -259,6 +242,7 @@ export default function InventoryQuickActionFAB() {
       const fullHeight = element.scrollHeight;
       const fullWidth = element.scrollWidth;
 
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(element, {
         quality: 1.0,
         pixelRatio: 2,
@@ -296,39 +280,41 @@ export default function InventoryQuickActionFAB() {
 
   return (
     <>
-      <motion.button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed z-[201] w-11 h-11 rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:right-[calc(1.25rem+env(safe-area-inset-right,0px))] md:bottom-[5.5rem] md:right-6"
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.94 }}
-        aria-label={isOpen ? 'ปิด Quick Action' : 'เปิด Quick Action คลังสินค้า'}
-        aria-expanded={isOpen}
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          {isOpen ? (
-            <motion.span
-              key="close"
-              initial={{ rotate: -90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: 90, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <X size={18} strokeWidth={1.5} />
-            </motion.span>
-          ) : (
-            <motion.span
-              key="open"
-              initial={{ rotate: 90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: -90, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Package size={18} className="text-white" strokeWidth={1.5} />
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </motion.button>
+      {!hideQuickActionButton && (
+        <motion.button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={cn(FAB_BASE_CLASS, FAB_BOTTOM_QUICK_ACTION_CLASS, 'z-[201]')}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.94 }}
+          aria-label={isOpen ? 'ปิด Quick Action' : 'เปิด Quick Action คลังสินค้า'}
+          aria-expanded={isOpen}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            {isOpen ? (
+              <motion.span
+                key="close"
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <X size={18} strokeWidth={1.5} />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="open"
+                initial={{ rotate: 90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: -90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Package size={18} className="text-white" strokeWidth={1.5} />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      )}
 
       <AnimatePresence>
         {isOpen && (
@@ -348,13 +334,19 @@ export default function InventoryQuickActionFAB() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
-              className="fixed z-[199] box-border flex flex-col overflow-hidden max-md:bottom-[calc(10rem+env(safe-area-inset-bottom,0px))] max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none md:w-full md:max-w-2xl md:bottom-[10rem] md:left-auto md:right-6"
-              style={{ maxHeight: 'min(75vh, calc(100dvh - 12rem))' }}
+              className={cn(
+                'fixed z-[199] box-border flex flex-col overflow-hidden',
+                'max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none',
+                'max-md:transition-[top,max-height,bottom] max-md:duration-200',
+                'md:w-full md:max-w-2xl md:left-auto md:right-6',
+                FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
+              )}
+              style={quickPanelStyle}
             >
               {isLoadingItems && !hasLoadedItems ? (
                 <div className="bg-card rounded-3xl border border-border shadow-2xl p-8 flex flex-col items-center justify-center gap-3">
                   <Loader2 className="w-6 h-6 animate-spin text-foreground" strokeWidth={1.5} />
-                  <span className="text-sm font-normal text-muted-foreground">กำลังโหลดข้อมูลคลัง...</span>
+                  <span className="text-sm font-normal text-muted-foreground">กำลังโหลดข้อมูลคลังสินค้า...</span>
                 </div>
               ) : (
                 <InventoryQuickActionBar
@@ -396,6 +388,13 @@ export default function InventoryQuickActionFAB() {
                 return [...prev, item as InventoryItem];
               });
               void loadFrequentItems();
+              if (showHistoryModal) {
+                void fetchTransactionHistory().then((histRes) => {
+                  if (histRes.success && histRes.data) {
+                    setTransactionHistory(histRes.data);
+                  }
+                });
+              }
             }}
           />
         )}

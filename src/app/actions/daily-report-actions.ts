@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { addDays, format, differenceInDays, startOfDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { categorizeShift } from '@/lib/schedule/format-daily-shifts';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const getSupabaseAdmin = () => {
@@ -27,18 +28,28 @@ function parseShiftTimeToNumber(timeStr: string): number {
   return parseInt(match[1], 10) + parseInt(match[2], 10) / 60;
 }
 
-/**
- * Determines if a shift location value represents an active working time slot.
- */
-function isActiveShift(location: string): boolean {
-  const cleaned = location.replace(/^เข้ากะ\s*/, '').trim();
-  // ปรับปรุงให้ยืดหยุ่น: ตรวจสอบรูปแบบเวลา HH:MM ที่จุดเริ่มต้น เพื่อรองรับ 8:00, 08:00 หรือเวลาที่มีข้อความต่อท้าย
-  return /^\d{1,2}:\d{2}/.test(cleaned);
+function classifyShiftText(shiftText: string): 'timed' | 'other_duty' | 'off' {
+  const category = categorizeShift(shiftText);
+  if (category === 'front_store') return 'timed';
+  if (category === 'other_duty') return 'other_duty';
+  return 'off';
 }
 
-interface StaffShiftEntry {
+export interface StaffShiftEntry {
   name: string;
   shiftText: string;
+}
+
+export interface DailyReportData {
+  schedule: DailyReportSchedule;
+  dateStr: string;
+  /** Timed front-store shifts only (6:30, 7:00, 8:00, …) — counted in headcount */
+  activeStaff: StaffShiftEntry[];
+  /** Non-timed duties (ร้านซักผ้า, ไปสาขา 2) — shown under เข้างาน, not counted */
+  otherDutyStaff: StaffShiftEntry[];
+  offStaff: StaffShiftEntry[];
+  headcount: number;
+  holiday: { name: string; daysRemaining: number } | null;
 }
 
 /** Thai display format for report header (DD/MM/YYYY). */
@@ -57,51 +68,23 @@ function normalizeShiftText(shiftText: string): string {
   return trimmed;
 }
 
-function formatStaffLine(name: string, value: string): string {
-  return `- ${name} (${value})`;
-}
-
-/**
- * Builds the staff block into exactly two groups:
- * 1) Active shift lines
- * 2) Non-working / special status lines
- * Groups are separated by exactly one blank line when both exist.
- */
-function formatStaffSection(activeStaff: StaffShiftEntry[], offStaff: StaffShiftEntry[]): string {
-  const normalizedOffStaff = offStaff.map((entry) => ({
-    ...entry,
-    shiftText: normalizeShiftText(entry.shiftText),
-  }));
-
-  const activeLines = activeStaff.map((s) => formatStaffLine(s.name, s.shiftText));
-  const nonWorkingLines = normalizedOffStaff.map((s) => formatStaffLine(s.name, s.shiftText));
-
-  if (activeLines.length > 0 && nonWorkingLines.length > 0) {
-    return `${activeLines.join('\n')}\n\n${nonWorkingLines.join('\n')}`;
-  }
-
-  if (activeLines.length > 0) return activeLines.join('\n');
-  if (nonWorkingLines.length > 0) return nonWorkingLines.join('\n');
-  return '- ไม่มีข้อมูลพนักงานในระบบ';
-}
-
 /**
  * SPEC: Staff Shift Chronological Sorting
  * 
- * Fetches daily shifts and splits into two blocks:
- * a) Active Block (Top): Employees with explicit working time slots, sorted chronologically
- * b) Off/Leave Block (Bottom): Employees marked as วันหยุด, ลา, or non-time custom text
- * 
+ * Fetches daily shifts and splits into three blocks:
+ * a) Timed shifts — HH:MM slots, sorted chronologically, counted in headcount
+ * b) Other duties — ร้านซักผ้า / ไปสาขา 2, profile order, not counted
+ * c) Off/Leave — วันหยุด, ลา
+ *
  * - If shift field is empty/null/blank → default to "วันหยุด"
  * - Strip prefix "เข้ากะ" entirely
- * - Headcount based ONLY on active working staff in the Top block
  */
 export async function fetchTodayShifts(targetDate: Date) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
     if (!supabaseAdmin) {
       console.error('[fetchTodayShifts] Missing SUPABASE_SERVICE_ROLE_KEY');
-      return { activeStaff: [], offStaff: [], headcount: 0 };
+      return { activeStaff: [], otherDutyStaff: [], offStaff: [], headcount: 0 };
     }
 
     const dateStr = format(targetDate, 'yyyy-MM-dd');
@@ -119,6 +102,7 @@ export async function fetchTodayShifts(targetDate: Date) {
     const shifts = shiftsRes.data || [];
 
     const activeStaff: StaffShiftEntry[] = [];
+    const otherDutyStaff: StaffShiftEntry[] = [];
     const offStaff: StaffShiftEntry[] = [];
 
     // Exhaustive loop: process every staff profile entry, no early break.
@@ -150,11 +134,14 @@ export async function fetchTodayShifts(targetDate: Date) {
 
         shiftText = normalizeShiftText(shiftText);
 
-        // Classify into Active or Off/Leave block
-        if (isActiveShift(shiftText)) {
-          activeStaff.push({ name: profileName, shiftText });
+        const bucket = classifyShiftText(shiftText);
+        const entry = { name: profileName, shiftText };
+        if (bucket === 'timed') {
+          activeStaff.push(entry);
+        } else if (bucket === 'other_duty') {
+          otherDutyStaff.push(entry);
         } else {
-          offStaff.push({ name: profileName, shiftText });
+          offStaff.push(entry);
         }
       } catch (profileError: any) {
         // Never let one broken profile mapping truncate the whole report.
@@ -173,145 +160,13 @@ export async function fetchTodayShifts(targetDate: Date) {
 
     const headcount = activeStaff.length;
 
-    return { activeStaff, offStaff, headcount };
+    return { activeStaff, otherDutyStaff, offStaff, headcount };
   } catch (error) {
     console.error('[fetchTodayShifts] Error:', error);
-    return { activeStaff: [], offStaff: [], headcount: 0 };
+    return { activeStaff: [], otherDutyStaff: [], offStaff: [], headcount: 0 };
   }
 }
 
-
-
-/**
- * SPEC: Hyper-local Weather Analysis
- * 
- * - Filter ONLY between 06:00 AM and 18:00 PM ICT
- * - Weather Fallback Rule: If no severe storms, errors, or exceptional data → "สภาพอากาศปกติ"
- * - Do NOT display missing placeholder warnings
- */
-export async function fetchWeatherForecast(targetDate?: Date) {
-  try {
-    const apiKey = process.env.OPENWEATHER_API_KEY;
-    if (!apiKey) {
-      return {
-        ok: false,
-        error: { message: 'Missing OPENWEATHER_API_KEY', details: null },
-        summary: 'สภาพอากาศปกติ',
-        maxPop: 0,
-        warningPeriods: [],
-      };
-    }
-
-    // Lat/Lon for Lam Luk Ka, Pathum Thani as specified
-    const lat = process.env.NEXT_PUBLIC_STORE_LAT || '13.929692';
-    const lon = process.env.NEXT_PUBLIC_STORE_LON || '100.716932';
-    const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=th`;
-
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) {
-      // Fallback: return normal weather status on API error
-      return {
-        ok: false,
-        error: { message: 'OpenWeatherMap responded with error', details: response.statusText },
-        summary: 'สภาพอากาศปกติ',
-        maxPop: 0,
-        warningPeriods: [],
-      };
-    }
-
-    const data = await response.json();
-
-    // Get target day's start/end in Asia/Bangkok for 06:30 - 18:00 ICT
-    const base = targetDate ?? new Date();
-    const today = toZonedTime(base, 'Asia/Bangkok');
-    today.setHours(0, 0, 0, 0);
-    const dateStr = format(today, 'yyyy-MM-dd');
-
-    const workingHours = (data.list || []).filter((item: any) => {
-      const forecastTime = toZonedTime(new Date(item.dt * 1000), 'Asia/Bangkok');
-      const forecastDateStr = format(forecastTime, 'yyyy-MM-dd');
-
-      if (forecastDateStr !== dateStr) return false;
-
-      const hour = forecastTime.getHours();
-      const min = forecastTime.getMinutes();
-      const timeNum = hour + (min / 60);
-
-      // Strict Working-Hour Window: 06:00 - 18:00 ICT
-      return timeNum >= 6 && timeNum <= 18;
-    });
-
-    if (workingHours.length === 0) {
-      // No data in working hours → default to normal (no placeholder warning)
-      return {
-        ok: true,
-        dataWindowEmpty: true,
-        summary: 'สภาพอากาศปกติ',
-        maxPop: 0,
-        warningPeriods: [],
-      };
-    }
-
-    let maxPop = 0;
-    const warnings: string[] = [];
-    let hasSevereWeather = false;
-
-    workingHours.forEach((item: any) => {
-      const pop = Math.round((item.pop || 0) * 100);
-      if (pop > maxPop) maxPop = pop;
-
-      // Check for severe weather conditions (thunderstorm, heavy rain, etc.)
-      if (item.weather && item.weather[0]) {
-        const mainWeather = item.weather[0].main?.toLowerCase() || '';
-        if (mainWeather === 'thunderstorm' || mainWeather === 'squall' || mainWeather === 'tornado') {
-          hasSevereWeather = true;
-        }
-      }
-
-      if (pop >= 50 || (item.rain && item.rain['3h'] > 5)) {
-        const time = toZonedTime(new Date(item.dt * 1000), 'Asia/Bangkok');
-        const hour = time.getHours();
-        warnings.push(`${hour}:00-${hour + 3}:00 น. (โอกาสฝน ${pop}%)`);
-      }
-    });
-
-    // Determine summary based on severity
-    let summary: string;
-    if (hasSevereWeather) {
-      const severeConditions = new Set<string>();
-      workingHours.forEach((item: any) => {
-        if (item.weather && item.weather[0]) {
-          severeConditions.add(item.weather[0].description);
-        }
-      });
-      summary = Array.from(severeConditions).join(', ');
-    } else if (maxPop >= 50) {
-      // High rain probability but not severe storm
-      summary = 'มีโอกาสฝนตกในช่วงเวลาทำงาน';
-    } else {
-      // No severe anomalies → "สภาพอากาศปกติ"
-      summary = 'สภาพอากาศปกติ';
-    }
-
-    return {
-      ok: true,
-      summary,
-      maxPop,
-      warningPeriods: warnings
-    };
-
-  } catch (error) {
-    console.error('[fetchWeatherForecast] Error:', error);
-    // Fallback: return normal status on any error (no placeholder warnings)
-    return {
-      ok: false,
-      error: { message: (error as any)?.message || 'Unknown error', details: (error as any)?.details ?? null },
-      summary: 'สภาพอากาศปกติ',
-      maxPop: 0,
-      warningPeriods: [],
-    };
-  }
-}
 
 /**
  * SPEC: Proactive Holiday Threshold Rule
@@ -354,42 +209,58 @@ export async function fetchNextHoliday(targetDate: Date) {
 /** Which calendar day the LINE schedule notification should cover. */
 export type DailyReportSchedule = 'today' | 'tomorrow';
 
+/** Evening cron boundary in Asia/Bangkok (18:00 ICT → tomorrow's schedule). */
+const EVENING_SCHEDULE_HOUR_ICT = 18;
+
 /**
- * SPEC: Compile Daily Report Payload
- * 
- * Master function that compiles all data into the final LINE notification message.
- * Output format MUST match the template exactly.
+ * Resolves which day's schedule the LINE notification should cover.
+ * Explicit `?schedule=` wins; otherwise infers from Bangkok wall-clock hour.
+ */
+export function resolveDailyReportSchedule(
+  explicit: string | null,
+  now: Date = new Date(),
+): DailyReportSchedule {
+  if (explicit === 'tomorrow') return 'tomorrow';
+  if (explicit === 'today') return 'today';
+
+  const bkkHour = toZonedTime(now, 'Asia/Bangkok').getHours();
+  return bkkHour >= EVENING_SCHEDULE_HOUR_ICT ? 'tomorrow' : 'today';
+}
+
+/**
+ * Compiles shift + holiday data for the LINE daily report Flex Message.
  *
  * - `today` (default): 05:00 ICT cron — ตารางงานของวันนั้น
  * - `tomorrow`: 18:00 ICT cron — ตารางงานของวันถัดไป
  */
-export async function compileDailyReportPayload(schedule: DailyReportSchedule = 'today') {
+export async function compileDailyReportData(
+  schedule: DailyReportSchedule = 'today',
+): Promise<DailyReportData> {
   const now = new Date();
   const bkkNow = toZonedTime(now, 'Asia/Bangkok');
   const reportDate = schedule === 'tomorrow' ? addDays(bkkNow, 1) : bkkNow;
   const dateStr = format(reportDate, THAI_REPORT_DATE_FORMAT);
 
-  const [{ activeStaff, offStaff, headcount }, holiday] = await Promise.all([
+  const [{ activeStaff, otherDutyStaff, offStaff, headcount }, holiday] = await Promise.all([
     fetchTodayShifts(reportDate),
-    fetchNextHoliday(reportDate)
+    fetchNextHoliday(reportDate),
   ]);
 
-  const staffSection = formatStaffSection(activeStaff, offStaff);
+  const normalizedOffStaff = offStaff.map((entry) => ({
+    ...entry,
+    shiftText: normalizeShiftText(entry.shiftText),
+  }));
 
-  // Build holiday section
-  const holidayText = holiday && holiday.ok === true
-    ? `${holiday.name} (อีก ${holiday.daysRemaining} วัน)`
-    : 'ไม่มีข้อมูลวันหยุดในระบบ';
-
-  const payload = `== ข้อความอัตโนมัติ ==
-ตารางงานวันที่ ${dateStr}
-
-👥 พนักงาน
-รวมวันนี้: ${headcount} คน
-${staffSection}
-
-📅 วันหยุดนักขัตฤกษ์
-- วันหยุดนักขัตฤกษ์ถัดไป:  ${holidayText}`;
-
-  return payload;
+  return {
+    schedule,
+    dateStr,
+    activeStaff,
+    otherDutyStaff,
+    offStaff: normalizedOffStaff,
+    headcount,
+    holiday:
+      holiday && holiday.ok === true && typeof holiday.daysRemaining === 'number'
+        ? { name: holiday.name, daysRemaining: holiday.daysRemaining }
+        : null,
+  };
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import type { MarketInsightsDiff } from '@/app/actions/market-insights-types';
 import MetricInfoTip from './MetricInfoTip';
@@ -13,11 +12,7 @@ export default function DiffBanner({ diff }: { diff?: MarketInsightsDiff }) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-[#c3e6cb] bb-pastel-surface bg-[#eef6ee] p-4 md:p-5"
-    >
+    <div className="rounded-2xl border border-[#c3e6cb] bb-pastel-surface bg-[#eef6ee] p-4 md:p-5">
       <div className="flex items-center gap-1.5 mb-2">
         <Sparkles className="w-4 h-4" />
         <span className="text-sm font-medium">มีอะไรเปลี่ยนไปจากรอบก่อน</span>
@@ -41,6 +36,6 @@ export default function DiffBanner({ diff }: { diff?: MarketInsightsDiff }) {
           </span>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }

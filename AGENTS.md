@@ -77,3 +77,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Verification:** Always verify "RED" (test fails) and "GREEN" (test passes) before proceeding.
 - **Documentation Reference:** Full SOP details are available in [SOP.md](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/docs/SOP.md).
 <!-- END:superpowers-sop -->
+
+<!-- BEGIN:graphify-standard -->
+
+## KNOWLEDGE GRAPH (graphify)
+
+- **Location:** `graphify-out/` — `graph.json`, `GRAPH_REPORT.md`, `graph.html`
+- **Query first:** For codebase questions, run `graphify query "<question>"` before broad grep or raw file reads.
+- **After code changes:** Run `graphify update .` from the project root (AST-only, no API cost).
+- **Navigation:** Use `graphify path "<A>" "<B>"` for relationships; `graphify explain "<concept>"` for focused concepts.
+<!-- END:graphify-standard -->

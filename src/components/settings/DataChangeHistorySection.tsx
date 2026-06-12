@@ -1,23 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Layers,
-  ChevronDown,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   fetchDataChangeLogs,
   type DataChangeLogRow,
 } from "@/app/actions/data-change-log-actions";
-import type { FieldChange } from "@/lib/data-change-log";
+import {
+  filterChangesForDisplay,
+  formatFieldChange,
+} from "@/lib/inventory-notification-formatter";
+import { ExpandableLines } from "@/components/ui/expandable-lines";
+import { ExpandMoreButton } from "@/components/ui/expand-more-button";
 
 interface DataChangeHistorySectionProps {
   locale: string;
 }
+
+const PREVIEW_COUNT = 3;
 
 const MODULE_LABELS: Record<string, { th: string; en: string }> = {
   inventory: { th: "คลังสินค้า", en: "Inventory" },
@@ -31,10 +32,10 @@ const MODULE_LABELS: Record<string, { th: string; en: string }> = {
 };
 
 const ACTION_LABELS: Record<string, { th: string; en: string }> = {
-  CREATE: { th: "สร้าง", en: "Create" },
-  UPDATE: { th: "แก้ไข", en: "Update" },
-  DELETE: { th: "ลบ", en: "Delete" },
-  BULK_UPDATE: { th: "แก้ไขหลายรายการ", en: "Bulk update" },
+  CREATE: { th: "เพิ่ม", en: "Added" },
+  UPDATE: { th: "แก้ไข", en: "Edited" },
+  DELETE: { th: "ลบ", en: "Deleted" },
+  BULK_UPDATE: { th: "แก้ไขหลายรายการ", en: "Bulk edit" },
   BULK_DELETE: { th: "ลบหลายรายการ", en: "Bulk delete" },
 };
 
@@ -61,158 +62,76 @@ function formatDateTime(iso: string, locale: string) {
   }).format(new Date(iso));
 }
 
-function formatValue(value: unknown, isTh: boolean): string {
-  if (value === null || value === undefined || value === "") {
-    return isTh ? "(ว่าง)" : "(empty)";
-  }
-  if (typeof value === "object") {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  }
-  return String(value);
+function accessLabel(level: string | null, isTh: boolean): string | null {
+  if (!level) return null;
+  if (level === "read_only") return isTh ? "ดูอย่างเดียว" : "View only";
+  if (level === "full") return isTh ? "แก้ไขได้" : "Can edit";
+  return isTh ? "ระบบ" : "System";
 }
 
-function FieldChangesList({
-  changes,
-  isTh,
-}: {
-  changes: FieldChange[];
-  isTh: boolean;
-}) {
-  if (changes.length === 0) return null;
+function buildChangeLines(row: DataChangeLogRow, isTh: boolean): string[] {
+  const lines: string[] = [];
+  const actionLabel = ACTION_LABELS[row.action]?.[isTh ? "th" : "en"] ?? row.action;
+  const moduleLabel = MODULE_LABELS[row.module]?.[isTh ? "th" : "en"] ?? row.module;
+  const itemName = row.entity_label;
 
-  return (
-    <ul className="mt-2 space-y-1">
-      {changes.map((change) => (
-        <li
-          key={change.field}
-          className="text-[12px] text-muted-foreground/90 leading-normal"
-        >
-          <span className="font-mono text-foreground/80">{change.field}</span>
-          {": "}
-          <span className="line-through opacity-70">
-            {formatValue(change.old_value, isTh)}
-          </span>
-          {" → "}
-          <span className="text-foreground/90">
-            {formatValue(change.new_value, isTh)}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
+  if (itemName) {
+    lines.push(`${actionLabel}: ${itemName}`);
+  } else {
+    lines.push(`${actionLabel} · ${moduleLabel}`);
+  }
+
+  const changes = filterChangesForDisplay(row.field_changes ?? [])
+    .filter((c) => c.field !== "name")
+    .map((c) => formatFieldChange(c, isTh))
+    .filter((t) => t.length > 0);
+
+  lines.push(...changes);
+
+  const access = accessLabel(row.actor_access_level, isTh);
+  const metaParts = [row.actor_label, access, formatDateTime(row.occurred_at, isTh ? "th" : "en")].filter(
+    Boolean
+  ) as string[];
+  lines.push(metaParts.join(" · "));
+
+  if (row.status === "failed") {
+    lines.push(
+      row.error_message ??
+        (isTh ? "บันทึกไม่สำเร็จ" : "Save failed")
+    );
+  }
+
+  if (row.ip_address) {
+    lines.push(isTh ? `จากเครือข่าย ${row.ip_address}` : `From ${row.ip_address}`);
+  }
+
+  return lines;
 }
 
 function LogEntry({ row, locale }: { row: DataChangeLogRow; locale: string }) {
-  const [expanded, setExpanded] = useState(false);
   const isTh = locale === "th";
   const Icon = actionIcon(row.action);
   const isFailed = row.status === "failed";
-  const moduleLabel =
-    MODULE_LABELS[row.module]?.[isTh ? "th" : "en"] ?? row.module;
-  const actionLabel =
-    ACTION_LABELS[row.action]?.[isTh ? "th" : "en"] ?? row.action;
-  const hasDetails =
-    (row.field_changes?.length ?? 0) > 0 || row.entity_label || row.error_message;
+  const lines = buildChangeLines(row, isTh);
 
   return (
     <div
       className={cn(
-        "rounded-2xl border px-3.5 py-3.5 bb-transition",
+        "flex items-start gap-3 rounded-2xl border px-3.5 py-3 bb-transition",
         isFailed
           ? "border-red-500/15 bg-red-500/[0.04]"
           : "border-black/5 dark:border-white/10 bg-card"
       )}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-            isFailed ? "bg-red-500/10 text-red-500" : "bg-muted text-foreground/70"
-          )}
-        >
-          <Icon size={16} strokeWidth={1.75} />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-[14px] font-normal text-foreground leading-snug">
-                {actionLabel}
-                {row.entity_label ? ` · ${row.entity_label}` : ""}
-              </p>
-              <p className="text-[12px] text-muted-foreground/90 mt-0.5">
-                {moduleLabel} · {row.entity_type}
-              </p>
-            </div>
-            <time className="shrink-0 text-[12px] text-muted-foreground/90 whitespace-nowrap leading-normal">
-              {formatDateTime(row.occurred_at, locale)}
-            </time>
-          </div>
-
-          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-muted-foreground/85 leading-normal">
-            <span>{row.actor_label}</span>
-            {row.actor_access_level && (
-              <span>
-                {row.actor_access_level === "read_only"
-                  ? isTh
-                    ? "อ่านอย่างเดียว"
-                    : "Read-only"
-                  : row.actor_access_level === "full"
-                    ? isTh
-                      ? "สิทธิ์แก้ไข"
-                      : "Full access"
-                    : isTh
-                      ? "ระบบ"
-                      : "System"}
-              </span>
-            )}
-            {row.ip_address && <span>IP {row.ip_address}</span>}
-          </div>
-
-          {!expanded && row.field_changes?.length > 0 && (
-            <p className="mt-1.5 text-[12px] text-muted-foreground/90 truncate">
-              {row.field_changes
-                .slice(0, 2)
-                .map((c) => c.field)
-                .join(", ")}
-              {row.field_changes.length > 2 ? "…" : ""}
-            </p>
-          )}
-
-          {expanded && (
-            <>
-              <FieldChangesList changes={row.field_changes ?? []} isTh={isTh} />
-              {row.error_message && (
-                <p className="mt-2 text-[12px] text-red-500/80">{row.error_message}</p>
-              )}
-            </>
-          )}
-
-          {hasDetails && (
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className="mt-2 inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground bb-transition"
-            >
-              <ChevronDown
-                size={13}
-                className={cn("bb-transition", expanded && "rotate-180")}
-              />
-              {expanded
-                ? isTh
-                  ? "ซ่อนรายละเอียด"
-                  : "Hide details"
-                : isTh
-                  ? "ดูรายละเอียด"
-                  : "View details"}
-            </button>
-          )}
-        </div>
+      <div
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
+          isFailed ? "bg-red-500/10 text-red-500" : "bg-muted text-foreground/70"
+        )}
+      >
+        <Icon size={14} strokeWidth={1.75} />
       </div>
+      <ExpandableLines lines={lines} isTh={isTh} className="min-w-0 flex-1" />
     </div>
   );
 }
@@ -224,6 +143,7 @@ export default function DataChangeHistorySection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [moduleFilter, setModuleFilter] = useState<string>("all");
+  const [showAll, setShowAll] = useState(false);
   const isTh = locale === "th";
 
   useEffect(() => {
@@ -252,6 +172,10 @@ export default function DataChangeHistorySection({
     };
   }, [moduleFilter]);
 
+  useEffect(() => {
+    setShowAll(false);
+  }, [moduleFilter]);
+
   const filterOptions = [
     { value: "all", label: isTh ? "ทั้งหมด" : "All" },
     ...Object.entries(MODULE_LABELS).map(([value, labels]) => ({
@@ -263,8 +187,8 @@ export default function DataChangeHistorySection({
   if (loading) {
     return (
       <div className="space-y-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-2xl bg-muted/40 animate-pulse" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-14 rounded-2xl bg-muted/40 animate-pulse" />
         ))}
       </div>
     );
@@ -272,11 +196,14 @@ export default function DataChangeHistorySection({
 
   if (error) {
     return (
-      <p className="text-[14px] leading-relaxed text-red-500 font-normal py-4 text-center">
-        {isTh ? "ไม่สามารถโหลดประวัติได้" : "Unable to load history"}
+      <p className="text-[13px] leading-relaxed text-red-500 font-normal py-4 text-center">
+        {isTh ? "โหลดประวัติไม่ได้ ลองใหม่อีกครั้ง" : "Could not load history. Try again."}
       </p>
     );
   }
+
+  const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);
+  const hasMoreRows = rows.length > PREVIEW_COUNT;
 
   return (
     <div className="space-y-3">
@@ -299,15 +226,27 @@ export default function DataChangeHistorySection({
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-[14px] leading-relaxed text-muted-foreground font-normal py-8 text-center">
-          {isTh ? "ยังไม่มีประวัติการแก้ไขข้อมูล" : "No data change history yet"}
+        <p className="text-[13px] leading-relaxed text-muted-foreground font-normal py-6 text-center">
+          {isTh ? "ยังไม่มีประวัติการแก้ไข" : "No edit history yet"}
         </p>
       ) : (
-        <div className="space-y-2">
-          {rows.map((row) => (
-            <LogEntry key={row.id} row={row} locale={locale} />
-          ))}
-        </div>
+        <>
+          <div className="space-y-2">
+            {visibleRows.map((row) => (
+              <LogEntry key={row.id} row={row} locale={locale} />
+            ))}
+          </div>
+          {hasMoreRows && (
+            <ExpandMoreButton
+              expanded={showAll}
+              onClick={() => setShowAll((v) => !v)}
+              isTh={isTh}
+              moreLabel={isTh ? "ดูรายละเอียด" : "View details"}
+              lessLabel={isTh ? "ย่อรายการ" : "Show less"}
+              className="mt-1"
+            />
+          )}
+        </>
       )}
     </div>
   );

@@ -72,10 +72,11 @@ const originalEnv = process.env;
 // Import the actions under test after mocking is set up
 import {
   fetchTodayShifts,
-  fetchWeatherForecast,
   fetchNextHoliday,
-  compileDailyReportPayload
+  compileDailyReportData,
+  resolveDailyReportSchedule,
 } from '@/app/actions/daily-report-actions';
+import { buildDailyReportAltText } from '@/lib/line/daily-report-flex';
 
 describe('Daily LINE Notification Protocol Actions', () => {
   beforeEach(() => {
@@ -87,7 +88,6 @@ describe('Daily LINE Notification Protocol Actions', () => {
       NEXT_PUBLIC_SUPABASE_URL: 'https://test.supabase.co',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test_key',
       SUPABASE_SERVICE_ROLE_KEY: 'test_service_role_key',
-      OPENWEATHER_API_KEY: 'weather_key'
     };
 
     // Reset mock data
@@ -165,7 +165,32 @@ describe('Daily LINE Notification Protocol Actions', () => {
       mockProfilesError = new Error('Database connection failed');
 
       const result = await fetchTodayShifts(new Date('2026-05-26'));
-      expect(result).toEqual({ activeStaff: [], offStaff: [], headcount: 0 });
+      expect(result).toEqual({
+        activeStaff: [],
+        otherDutyStaff: [],
+        offStaff: [],
+        headcount: 0,
+      });
+    });
+
+    it('should classify other-duty staff separately and exclude from headcount', async () => {
+      mockProfilesData = [
+        { id: 'p1', full_name: 'ปิ่น', schedule_order: 1 },
+        { id: 'p2', full_name: 'ล่า', schedule_order: 8 },
+        { id: 'p3', full_name: 'นิต้า', schedule_order: 2 },
+      ];
+      mockShiftsData = [
+        { employee_id: 'p1', status: 'active', metadata: { location: 'เข้ากะ 6:30' } },
+        { employee_id: 'p2', status: 'active', metadata: { location: 'ร้านซักผ้า' } },
+        { employee_id: 'p3', status: 'active', metadata: { location: 'วันหยุด' } },
+      ];
+
+      const result = await fetchTodayShifts(new Date('2026-05-26'));
+
+      expect(result.activeStaff).toEqual([{ name: 'ปิ่น', shiftText: '6:30' }]);
+      expect(result.otherDutyStaff).toEqual([{ name: 'ล่า', shiftText: 'ร้านซักผ้า' }]);
+      expect(result.offStaff).toEqual([{ name: 'นิต้า', shiftText: 'วันหยุด' }]);
+      expect(result.headcount).toBe(1);
     });
 
     it('should normalize legacy "ไม่มีกะ" to day-off status', async () => {
@@ -179,8 +204,8 @@ describe('Daily LINE Notification Protocol Actions', () => {
     });
   });
 
-  describe('compileDailyReportPayload() staff formatting', () => {
-    it('should use DD-MM-YYYY header and group day-off staff with Thai "และ"', async () => {
+  describe('compileDailyReportData() staff formatting', () => {
+    it('should use DD-MM-YYYY date and normalize day-off staff labels', async () => {
       mockProfilesData = [
         { id: 'p1', full_name: 'ปิ่น', schedule_order: 1 },
         { id: 'p2', full_name: 'หนูดี', schedule_order: 2 },
@@ -198,16 +223,19 @@ describe('Daily LINE Notification Protocol Actions', () => {
       } as Response);
       mockHolidaysData = null;
 
-      const payload = await compileDailyReportPayload();
+      const data = await compileDailyReportData();
       const today = toZonedTime(new Date(), 'Asia/Bangkok');
       const expectedDate = format(today, 'dd-MM-yyyy');
+      const altText = buildDailyReportAltText(data);
 
-      expect(payload).toContain(`ตารางงานวันที่ ${expectedDate}`);
-      expect(payload).toContain('- ปิ่น (6:30)');
-      expect(payload).toContain('- หนูดี (วันหยุด)');
-      expect(payload).toContain('- ฟิว (วันหยุด)');
-      expect(payload).toContain('- มุก (ลา)');
-      expect(payload).not.toContain('ไม่มีกะ');
+      expect(data.dateStr).toBe(expectedDate);
+      expect(data.activeStaff).toContainEqual({ name: 'ปิ่น', shiftText: '6:30' });
+      expect(data.offStaff).toContainEqual({ name: 'หนูดี', shiftText: 'วันหยุด' });
+      expect(data.offStaff).toContainEqual({ name: 'ฟิว', shiftText: 'วันหยุด' });
+      expect(data.offStaff).toContainEqual({ name: 'มุก', shiftText: 'ลา' });
+      expect(altText).toContain(expectedDate);
+      expect(altText).toContain('ปิ่น 6:30');
+      expect(altText).not.toContain('ไม่มีกะ');
     });
 
     it('should compile tomorrow schedule when schedule=tomorrow (18:00 ICT cron)', async () => {
@@ -220,74 +248,35 @@ describe('Daily LINE Notification Protocol Actions', () => {
       } as Response);
       mockHolidaysData = null;
 
-      const payload = await compileDailyReportPayload('tomorrow');
+      const data = await compileDailyReportData('tomorrow');
       const tomorrow = addDays(toZonedTime(new Date(), 'Asia/Bangkok'), 1);
       const expectedDate = format(tomorrow, 'dd-MM-yyyy');
 
-      expect(payload).toContain(`ตารางงานวันที่ ${expectedDate}`);
+      expect(data.dateStr).toBe(expectedDate);
+      expect(data.schedule).toBe('tomorrow');
     });
   });
 
 
-  describe('fetchWeatherForecast()', () => {
-    const mockSuccessResponse = (list: any[]) => {
-      return {
-        ok: true,
-        json: async () => ({ list })
-      } as Response;
-    };
-
-    it('should return "สภาพอากาศปกติ" if API key is missing', async () => {
-      delete process.env.OPENWEATHER_API_KEY;
-      const result = await fetchWeatherForecast();
-      expect(result.summary).toBe('สภาพอากาศปกติ');
-      expect(result.maxPop).toBe(0);
-      expect(result.warningPeriods).toHaveLength(0);
+  describe('resolveDailyReportSchedule()', () => {
+    it('returns tomorrow at 18:00 ICT when cron omits ?schedule=', () => {
+      const at1800Ict = new Date('2026-06-12T11:00:00.000Z');
+      expect(resolveDailyReportSchedule(null, at1800Ict)).toBe('tomorrow');
     });
 
-    it('should parse working hour rain forecasts and identify peak periods', async () => {
-      const mockList = [
-        // Out of working hours (03:00 ICT)
-        { dt: Math.floor(new Date('2026-05-26T03:00:00+07:00').getTime() / 1000), pop: 0.8 },
-        // Working hours (09:00 ICT)
-        { dt: Math.floor(new Date('2026-05-26T09:00:00+07:00').getTime() / 1000), pop: 0.6, weather: [{ main: 'Rain', description: 'ฝนตกเล็กน้อย' }] },
-        // Working hours (15:00 ICT)
-        { dt: Math.floor(new Date('2026-05-26T15:00:00+07:00').getTime() / 1000), pop: 0.4, weather: [{ main: 'Clouds', description: 'เมฆมาก' }] },
-        // Out of working hours (21:00 ICT)
-        { dt: Math.floor(new Date('2026-05-26T21:00:00+07:00').getTime() / 1000), pop: 0.9 }
-      ];
-
-      vi.spyOn(global, 'fetch').mockResolvedValue(mockSuccessResponse(mockList));
-
-      const result = await fetchWeatherForecast();
-      expect(result.maxPop).toBe(60); // 0.6 * 100
-      expect(result.summary).toBe('มีโอกาสฝนตกในช่วงเวลาทำงาน'); // maxPop >= 50%
-      expect(result.warningPeriods).toHaveLength(1);
-      expect(result.warningPeriods[0]).toContain('9:00-12:00 น. (โอกาสฝน 60%)');
+    it('returns today at 05:00 ICT when cron omits ?schedule=', () => {
+      const at0500Ict = new Date('2026-06-11T22:00:00.000Z');
+      expect(resolveDailyReportSchedule(null, at0500Ict)).toBe('today');
     });
 
-    it('should alert severe storms when thunderstorm or squall conditions are forecasted', async () => {
-      const mockList = [
-        {
-          dt: Math.floor(new Date('2026-05-26T12:00:00+07:00').getTime() / 1000),
-          pop: 0.85,
-          weather: [{ main: 'Thunderstorm', description: 'พายุฝนฟ้าคะนอง' }]
-        }
-      ];
-
-      vi.spyOn(global, 'fetch').mockResolvedValue(mockSuccessResponse(mockList));
-
-      const result = await fetchWeatherForecast();
-      expect(result.maxPop).toBe(85);
-      expect(result.summary).toBe('พายุฝนฟ้าคะนอง'); // Severe weather description takes precedence
+    it('honours explicit schedule=tomorrow before 18:00 ICT', () => {
+      const at0500Ict = new Date('2026-06-11T22:00:00.000Z');
+      expect(resolveDailyReportSchedule('tomorrow', at0500Ict)).toBe('tomorrow');
     });
 
-    it('should return "สภาพอากาศปกติ" if response is not ok or fetches error out', async () => {
-      vi.spyOn(global, 'fetch').mockResolvedValue({ ok: false } as Response);
-
-      const result = await fetchWeatherForecast();
-      expect(result.summary).toBe('สภาพอากาศปกติ');
-      expect(result.maxPop).toBe(0);
+    it('honours explicit schedule=today after 18:00 ICT', () => {
+      const at1800Ict = new Date('2026-06-12T11:00:00.000Z');
+      expect(resolveDailyReportSchedule('today', at1800Ict)).toBe('today');
     });
   });
 
@@ -330,23 +319,23 @@ describe('Daily LINE Notification Protocol Actions', () => {
 
       // Scenario A: Holiday today (daysRemaining = 0)
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(0) };
-      const payloadA = await compileDailyReportPayload();
-      expect(payloadA).toContain('วันวิสาขบูชา (อีก 0 วัน)');
+      const dataA = await compileDailyReportData();
+      expect(dataA.holiday).toEqual({ name: 'วันวิสาขบูชา', daysRemaining: 0 });
 
       // Scenario B: Holiday in 2 days
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(2) };
-      const payloadB = await compileDailyReportPayload();
-      expect(payloadB).toContain('วันวิสาขบูชา (อีก 2 วัน)');
+      const dataB = await compileDailyReportData();
+      expect(dataB.holiday).toEqual({ name: 'วันวิสาขบูชา', daysRemaining: 2 });
 
       // Scenario C: Holiday in 6 days
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(6) };
-      const payloadC = await compileDailyReportPayload();
-      expect(payloadC).toContain('วันวิสาขบูชา (อีก 6 วัน)');
+      const dataC = await compileDailyReportData();
+      expect(dataC.holiday).toEqual({ name: 'วันวิสาขบูชา', daysRemaining: 6 });
 
       // Scenario D: Holiday in 15 days
       mockHolidaysData = { name: 'วันวิสาขบูชา', date: getRelativeDateStr(15) };
-      const payloadD = await compileDailyReportPayload();
-      expect(payloadD).toContain('วันวิสาขบูชา (อีก 15 วัน)');
+      const dataD = await compileDailyReportData();
+      expect(dataD.holiday).toEqual({ name: 'วันวิสาขบูชา', daysRemaining: 15 });
     });
   });
 });

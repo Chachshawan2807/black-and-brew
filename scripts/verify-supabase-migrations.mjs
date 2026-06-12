@@ -38,6 +38,8 @@ const sb = createClient(url, key);
 const checks = [
   { name: 'login_history table', run: () => sb.from('login_history').select('id').limit(1) },
   { name: 'data_change_logs table', run: () => sb.from('data_change_logs').select('id').limit(1) },
+  { name: 'revoked_sessions table', run: () => sb.from('revoked_sessions').select('session_id').limit(1) },
+  { name: 'inventory_transactions table', run: () => sb.from('inventory_transactions').select('id, type').limit(1) },
 ];
 
 let failed = 0;

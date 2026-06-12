@@ -2,9 +2,9 @@ import type { DataChangeAction } from '@/lib/data-change-log';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 
 export const NOTIFICATION_STORAGE_KEY = 'bb-inventory-notifications';
-export const NOTIFICATION_PREFS_KEY = 'bb-notification-prefs';
+export const NOTIFICATION_PREFS_KEY = 'bb-notification-prefs-v2';
 export const MAX_STORED_NOTIFICATIONS = 50;
-export const BATCH_WINDOW_MS = 2000;
+export const BATCH_WINDOW_MS = 800;
 
 export type NotificationPriority = 'normal' | 'high';
 
@@ -27,7 +27,8 @@ export interface InventoryNotification {
 
 export interface NotificationPreferences {
   enabled: boolean;
-  showToast: boolean;
+  /** System / home-screen badge + OS notification banner */
+  systemNotifications: boolean;
   notifyOwnChanges: boolean;
   notifyCreate: boolean;
   notifyUpdate: boolean;
@@ -36,17 +37,12 @@ export interface NotificationPreferences {
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   enabled: true,
-  showToast: true,
-  notifyOwnChanges: false,
+  systemNotifications: true,
+  notifyOwnChanges: true,
   notifyCreate: true,
   notifyUpdate: true,
   notifyDelete: true,
 };
-
-export interface NotificationToastState {
-  notification: InventoryNotification;
-  visible: boolean;
-}
 
 export function logRowToNotificationInput(row: DataChangeLogRow): Omit<InventoryNotification, 'title' | 'summary' | 'fieldSummary' | 'priority'> {
   return {

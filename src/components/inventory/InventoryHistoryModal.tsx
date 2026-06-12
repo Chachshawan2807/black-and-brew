@@ -2,11 +2,20 @@
 
 
 
+import { useEffect, useState } from 'react';
+
 import { motion } from 'framer-motion';
 
-import { History, PackageMinus, PackagePlus, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
+import { History, PackageMinus, PackagePlus, Plus, ShoppingCart, SlidersHorizontal, Trash2, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+
+import {
+  getModalBackdropKeyboardAwareStyle,
+  getModalContentKeyboardAwareStyle,
+} from '@/lib/keyboard-aware-panel-style';
+
+import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 
 
 
@@ -16,7 +25,7 @@ export type TransactionHistoryRow = {
 
   created_at: string;
 
-  type: 'IN' | 'OUT' | 'ADJUST';
+  type: 'IN' | 'OUT' | 'ADJUST' | 'ADD' | 'DELETE';
 
   quantity: number;
 
@@ -37,6 +46,23 @@ type InventoryHistoryModalProps = {
 };
 
 
+
+function transactionTypeLabel(type: TransactionHistoryRow['type']) {
+  switch (type) {
+    case 'IN':
+      return 'รับเข้า';
+    case 'OUT':
+      return 'นำออก';
+    case 'ADJUST':
+      return 'ปรับจำนวน';
+    case 'ADD':
+      return 'เพิ่มรายการ';
+    case 'DELETE':
+      return 'ลบรายการ';
+    default:
+      return 'ปรับจำนวน';
+  }
+}
 
 function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] }) {
 
@@ -62,7 +88,29 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
   }
 
+  if (type === 'ADD') {
+    return (
+      <span
+        className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
+        title="เพิ่มรายการ"
+        aria-label="เพิ่มรายการ"
+      >
+        <Plus className="w-4.5 h-4.5" />
+      </span>
+    );
+  }
 
+  if (type === 'DELETE') {
+    return (
+      <span
+        className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]"
+        title="ลบรายการ"
+        aria-label="ลบรายการ"
+      >
+        <Trash2 className="w-4.5 h-4.5" />
+      </span>
+    );
+  }
 
   const isIn = type === 'IN';
 
@@ -98,6 +146,24 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
 export function InventoryHistoryModal({ transactionHistory, onClose }: InventoryHistoryModalProps) {
 
+  const [isMounted, setIsMounted] = useState(false);
+
+  const viewportInsets = useVisualViewportInsets(isMounted);
+
+  const modalBackdropStyle = getModalBackdropKeyboardAwareStyle({ insets: viewportInsets });
+
+  const modalContentStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
+
+
+
+  useEffect(() => {
+
+    setIsMounted(true);
+
+  }, []);
+
+
+
   return (
 
     <motion.div
@@ -108,7 +174,9 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
       exit={{ opacity: 0 }}
 
-      className="fixed inset-0 z-[210] flex items-end md:items-center justify-center bg-black/20 backdrop-blur-md p-0 md:p-4"
+      className="fixed inset-0 z-[210] flex items-end md:items-center justify-center bg-black/20 backdrop-blur-md p-0 md:p-4 transition-[padding,height] duration-200"
+
+      style={modalBackdropStyle}
 
       onClick={onClose}
 
@@ -124,7 +192,9 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
 
-        className="relative bg-card rounded-t-3xl md:rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-5xl max-h-[85vh] overflow-hidden flex flex-col border border-border min-h-0 pb-[env(safe-area-inset-bottom)]"
+        className="relative bg-card rounded-t-3xl md:rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full md:w-fit md:max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-hidden flex flex-col border border-border min-h-0 pb-[env(safe-area-inset-bottom)] transition-[max-height] duration-200"
+
+        style={modalContentStyle}
 
         onClick={(e) => e.stopPropagation()}
 
@@ -148,7 +218,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="px-4 md:px-8 py-4 md:py-6 border-b border-border flex items-center justify-between bg-card/80 backdrop-blur-sm shrink-0 pr-14 md:pr-16">
+        <div className="px-4 md:px-6 py-4 md:py-5 border-b border-border flex items-center justify-between bg-card/80 backdrop-blur-sm shrink-0 pr-14">
 
           <div>
 
@@ -160,9 +230,9 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
             </h2>
 
-            <p className="text-foreground/40 text-[13px] mt-1 font-normal">
+            <p className="text-foreground/40 text-[13px] mt-1 font-normal max-w-[32rem]">
 
-              ตรวจสอบรายการรับเข้า นำออก และปรับจำนวนย้อนหลัง
+              ตรวจสอบรายการรับเข้า นำออก ปรับจำนวน เพิ่ม และลบรายการย้อนหลัง
 
             </p>
 
@@ -172,41 +242,41 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y p-4 md:p-8 bg-card scrollbar-thin">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto overscroll-contain touch-pan-y px-4 py-4 md:px-6 md:py-4 bg-card scrollbar-thin">
 
-          <div className="bg-background rounded-[2rem] border border-border shadow-sm overflow-x-auto">
+          <div className="inline-block w-fit max-w-full bg-background rounded-[2rem] border border-border shadow-sm">
 
-            <table className="w-full min-w-[640px] text-left border-collapse">
+            <table className="w-max text-left border-collapse table-auto">
 
               <thead>
 
                 <tr className="bg-muted/50 border-b border-border">
 
-                  <th className="py-5 px-6 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-center w-[160px]">
+                  <th className="py-5 px-4 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-left whitespace-nowrap">
 
                     วันที่และเวลา
 
                   </th>
 
-                  <th className="py-5 px-6 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-center">
+                  <th className="py-5 px-4 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-left">
 
                     ชื่อรายการสินค้า
 
                   </th>
 
-                  <th className="py-5 px-6 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-center w-[120px]">
+                  <th className="py-5 px-4 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-center whitespace-nowrap w-[1%]">
 
                     ประเภท
 
                   </th>
 
-                  <th className="py-5 px-6 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-center w-[110px]">
+                  <th className="py-5 px-4 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-center whitespace-nowrap w-[1%]">
 
                     จำนวน
 
                   </th>
 
-                  <th className="py-5 px-6 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-center w-[110px]">
+                  <th className="py-5 px-4 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-center whitespace-nowrap w-[1%]">
 
                     คงเหลือ
 
@@ -241,8 +311,13 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
                   transactionHistory.map((tx, index) => {
 
                     const txType: TransactionHistoryRow['type'] =
-
-                      tx.type === 'IN' || tx.type === 'OUT' || tx.type === 'ADJUST' ? tx.type : 'ADJUST';
+                      tx.type === 'IN' ||
+                      tx.type === 'OUT' ||
+                      tx.type === 'ADJUST' ||
+                      tx.type === 'ADD' ||
+                      tx.type === 'DELETE'
+                        ? tx.type
+                        : 'ADJUST';
 
 
 
@@ -262,7 +337,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
                       >
 
-                        <td className="py-3.5 px-6 text-[14px] text-foreground/60 font-mono text-left">
+                        <td className="py-3.5 px-4 text-[14px] text-foreground/60 font-mono text-left whitespace-nowrap">
 
                           {new Date(tx.created_at).toLocaleString('th-TH', {
 
@@ -276,7 +351,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
                         <td
 
-                          className="py-3.5 px-6 text-[15px] text-foreground font-normal text-left"
+                          className="py-3.5 px-4 text-[15px] text-foreground font-normal text-left align-middle whitespace-nowrap"
 
                           style={{ lineHeight: '1.6' }}
 
@@ -286,7 +361,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
                         </td>
 
-                        <td className="py-3.5 px-6 text-center">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap w-[1%]">
 
                           <div className="flex flex-col items-center gap-1">
 
@@ -294,7 +369,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
                             <span className="text-[11px] text-foreground/45 font-normal">
 
-                              {txType === 'IN' ? 'รับเข้า' : txType === 'OUT' ? 'นำออก' : 'ปรับจำนวน'}
+                              {transactionTypeLabel(txType)}
 
                             </span>
 
@@ -302,13 +377,13 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
                         </td>
 
-                        <td className="py-3.5 px-6 text-[15px] text-center font-mono text-foreground font-normal">
+                        <td className="py-3.5 px-4 text-[15px] text-center font-mono text-foreground font-normal whitespace-nowrap w-[1%]">
 
                           {tx.quantity}
 
                         </td>
 
-                        <td className="py-3.5 px-6 text-[15px] text-center font-mono text-foreground/40">
+                        <td className="py-3.5 px-4 text-[15px] text-center font-mono text-foreground/40 whitespace-nowrap w-[1%]">
 
                           {tx.balance_after}
 
@@ -332,7 +407,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="px-4 md:px-8 py-3 md:py-4 bg-card/80 border-t border-border flex justify-between items-center shrink-0 text-[12px] text-muted-foreground">
+        <div className="px-4 md:px-6 py-3 md:py-4 bg-card/80 border-t border-border flex justify-between items-center shrink-0 text-[12px] text-muted-foreground">
 
           <span>แสดง {transactionHistory.length} รายการล่าสุด</span>
 

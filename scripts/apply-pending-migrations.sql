@@ -1,6 +1,11 @@
--- BLACKANDBREW: pending migrations for project yghzklvtuykziqlexnzh
--- Run in Supabase Dashboard → SQL Editor → New query → Run
--- login_history already exists on remote — only run sections below.
+-- BLACKANDBREW: รันไฟล์นี้ไฟล์เดียวใน Supabase Dashboard → SQL Editor → New query → Run
+-- Project: yghzklvtuykziqlexnzh
+--
+-- รวม migration ที่ค้างทั้งหมด (data_change_logs, inventory notifications,
+-- inventory ADD/DELETE history, revoked_sessions)
+-- login_history มีบน remote แล้ว — ไม่ต้องรันซ้ำ
+--
+-- ไม่ต้องรัน sql/revoked_sessions.sql หรือ migration แยก — อยู่ในไฟล์นี้แล้ว
 
 -- === 20260612120000_create_data_change_logs.sql ===
 CREATE TABLE IF NOT EXISTS public.data_change_logs (
@@ -44,6 +49,8 @@ CREATE INDEX IF NOT EXISTS idx_data_change_logs_action
 
 ALTER TABLE public.data_change_logs ENABLE ROW LEVEL SECURITY;
 
+GRANT SELECT ON public.data_change_logs TO anon, authenticated;
+
 COMMENT ON TABLE public.data_change_logs IS
   'Immutable append-only log of web-initiated data mutations with actor, field-level diffs, and request context.';
 
@@ -77,3 +84,47 @@ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.data_change_logs;
   END IF;
 END $$;
+
+-- === 20260612140000_inventory_add_delete_history.sql ===
+ALTER TABLE public.inventory_transactions
+  DROP CONSTRAINT IF EXISTS inventory_transactions_type_check;
+
+ALTER TABLE public.inventory_transactions
+  ADD CONSTRAINT inventory_transactions_type_check
+  CHECK (type IN ('IN', 'OUT', 'ADJUST', 'ADD', 'DELETE'));
+
+ALTER TABLE public.inventory_transactions
+  DROP CONSTRAINT IF EXISTS inventory_transactions_quantity_check;
+
+ALTER TABLE public.inventory_transactions
+  ADD CONSTRAINT inventory_transactions_quantity_check
+  CHECK (quantity >= 0);
+
+ALTER TABLE public.inventory_transactions
+  DROP CONSTRAINT IF EXISTS inventory_transactions_inventory_item_id_fkey;
+
+ALTER TABLE public.inventory_transactions
+  DROP CONSTRAINT IF EXISTS inventory_transactions_product_id_fkey;
+
+ALTER TABLE public.inventory_transactions
+  ALTER COLUMN inventory_item_id DROP NOT NULL;
+
+ALTER TABLE public.inventory_transactions
+  ADD CONSTRAINT inventory_transactions_inventory_item_id_fkey
+  FOREIGN KEY (inventory_item_id) REFERENCES public.inventory_items(id) ON DELETE SET NULL;
+
+-- === 20260612200000_revoked_sessions.sql ===
+-- บังคับออกจากระบบอุปกรณ์อื่น (ตั้งค่า → ประวัติการเข้าสู่ระบบ)
+CREATE TABLE IF NOT EXISTS public.revoked_sessions (
+  session_fingerprint TEXT PRIMARY KEY,
+  revoked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  revoked_reason TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_revoked_sessions_revoked_at
+  ON public.revoked_sessions (revoked_at DESC);
+
+ALTER TABLE public.revoked_sessions ENABLE ROW LEVEL SECURITY;
+
+COMMENT ON TABLE public.revoked_sessions IS
+  'Fingerprints of login sessions revoked remotely; checked on each auth validation.';

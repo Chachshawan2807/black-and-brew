@@ -4,13 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import { supabase } from '@/lib/supabase';
+import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { isOwnChange, getClientSessionId } from '@/lib/client-session';
 import { createBatchAccumulator } from '@/lib/inventory-notification-batching';
 import {
   formatBatchedNotification,
   formatInventoryNotification,
-  shouldShowToast,
 } from '@/lib/inventory-notification-formatter';
+import { isSuppressedInventoryNotification } from '@/lib/inventory-notification-filter';
 import {
   loadNotificationPreferences,
   shouldNotifyForAction,
@@ -23,10 +24,13 @@ import {
 import type {
   InventoryNotification,
   NotificationPreferences,
-  NotificationToastState,
 } from '@/lib/notification-types';
 import { MAX_STORED_NOTIFICATIONS } from '@/lib/notification-types';
 import type { DataChangeAction } from '@/lib/data-change-log';
+import {
+  showSystemNotification,
+  syncAppBadge,
+} from '@/lib/pwa-notification-bridge';
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
   const row = payload.new;
@@ -68,7 +72,6 @@ export function useInventoryNotifications() {
   const [notifications, setNotifications] = useState<InventoryNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [toast, setToast] = useState<NotificationToastState | null>(null);
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
 
   const prefsRef = useRef(prefs);
@@ -90,6 +93,10 @@ export function useInventoryNotifications() {
     setUnreadCount(countUnread(stored));
   }, []);
 
+  useEffect(() => {
+    void syncAppBadge(unreadCount);
+  }, [unreadCount]);
+
   const persist = useCallback((next: InventoryNotification[]) => {
     setNotifications(next);
     setUnreadCount(countUnread(next));
@@ -106,8 +113,21 @@ export function useInventoryNotifications() {
       });
 
       const currentPrefs = prefsRef.current;
-      if (currentPrefs.showToast && shouldShowToast(notification)) {
-        setToast({ notification, visible: true });
+      if (currentPrefs.enabled && currentPrefs.systemNotifications) {
+        const loc = localeRef.current;
+        const inventoryPath = `/${loc}/inventory`;
+        const shouldShowOsBanner =
+          typeof document !== 'undefined' &&
+          (document.hidden || !document.hasFocus());
+
+        if (shouldShowOsBanner) {
+          void showSystemNotification(notification.title, notification.summary, {
+            tag: notification.logId,
+            url: notification.entityId
+              ? `${inventoryPath}?highlight=${notification.entityId}`
+              : inventoryPath,
+          });
+        }
       }
     },
     []
@@ -121,6 +141,7 @@ export function useInventoryNotifications() {
 
       const eligible = rows.filter((row) => {
         if (row.module !== 'inventory' || row.status !== 'success') return false;
+        if (isSuppressedInventoryNotification(row.metadata)) return false;
         if (!shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) return false;
         if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;
         return true;
@@ -140,20 +161,67 @@ export function useInventoryNotifications() {
   );
 
   useEffect(() => {
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let retryCount = 0;
+    let warnedUnavailable = false;
     const batcher = createBatchAccumulator((rows) => processRows(rows));
 
-    const channel = supabase
-      .channel('inventory_change_notifications')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'data_change_logs', filter: 'module=eq.inventory' },
-        (payload) => {
-          if (!payload.new) return;
-          const row = rowFromPayload(payload as { new: Record<string, unknown> });
-          batcher.add(row);
-        }
-      )
-      .subscribe();
+    const subscribe = async () => {
+      await ensureSupabaseSession();
+      if (cancelled) return;
+
+      if (channel) {
+        await supabase.removeChannel(channel);
+        channel = null;
+      }
+
+      channel = supabase
+        .channel(`inventory_change_notifications_${retryCount}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'data_change_logs',
+            filter: 'module=eq.inventory',
+          },
+          (payload) => {
+            if (!payload.new) return;
+            const row = rowFromPayload(payload as { new: Record<string, unknown> });
+            batcher.add(row);
+          }
+        )
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            retryCount = 0;
+            return;
+          }
+
+          if (status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT' && status !== 'CLOSED') {
+            return;
+          }
+
+          if (retryCount < 4 && !cancelled) {
+            retryCount += 1;
+            retryTimer = setTimeout(() => {
+              void subscribe();
+            }, Math.min(1000 * 2 ** retryCount, 12_000));
+            return;
+          }
+
+          if (!warnedUnavailable) {
+            warnedUnavailable = true;
+            console.warn(
+              '[inventory notifications] Realtime unavailable — run scripts/apply-pending-migrations.sql on Supabase if not applied',
+              err?.message ?? status
+            );
+          }
+        });
+    };
+
+    void subscribe();
 
     const onPrefsChange = (event: Event) => {
       const detail = (event as CustomEvent<NotificationPreferences>).detail;
@@ -164,8 +232,10 @@ export function useInventoryNotifications() {
     window.addEventListener('bb-notification-prefs-changed', onPrefsChange);
 
     return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
       batcher.dispose();
-      supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
       window.removeEventListener('bb-notification-prefs-changed', onPrefsChange);
     };
   }, [processRows]);
@@ -175,6 +245,7 @@ export function useInventoryNotifications() {
       const next = prev.map((n) => ({ ...n, read: true }));
       setUnreadCount(0);
       saveStoredNotifications(next);
+      void syncAppBadge(0);
       return next;
     });
   }, []);
@@ -182,8 +253,10 @@ export function useInventoryNotifications() {
   const markRead = useCallback((id: string) => {
     setNotifications((prev) => {
       const next = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
-      setUnreadCount(countUnread(next));
+      const unread = countUnread(next);
+      setUnreadCount(unread);
       saveStoredNotifications(next);
+      void syncAppBadge(unread);
       return next;
     });
   }, []);
@@ -192,10 +265,6 @@ export function useInventoryNotifications() {
     persist([]);
   }, [persist]);
 
-  const dismissToast = useCallback(() => {
-    setToast((prev) => (prev ? { ...prev, visible: false } : null));
-  }, []);
-
   const openPanel = useCallback(() => setPanelOpen(true), []);
   const closePanel = useCallback(() => setPanelOpen(false), []);
 
@@ -203,13 +272,11 @@ export function useInventoryNotifications() {
     notifications,
     unreadCount,
     panelOpen,
-    toast,
     prefs,
     setPrefs,
     markAllRead,
     markRead,
     clearAll,
-    dismissToast,
     openPanel,
     closePanel,
     setPanelOpen,

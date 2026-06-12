@@ -1,38 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Smartphone,
-  Tablet,
-  Monitor,
-  HelpCircle,
-  LogIn,
-  LogOut,
-  ShieldAlert,
-  ShieldX,
-} from "lucide-react";
+import { HelpCircle, LogIn, LogOut, ShieldAlert, ShieldX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   fetchLoginHistory,
   type LoginHistoryRow,
 } from "@/app/actions/login-history-actions";
+import { ExpandableLines } from "@/components/ui/expandable-lines";
+import { ExpandMoreButton } from "@/components/ui/expand-more-button";
+import ActiveRemoteSessionsPanel from "@/components/settings/ActiveRemoteSessionsPanel";
+import {
+  formatLoginDeviceLabel,
+  formatLoginDeviceMetadata,
+} from "@/lib/format-login-device";
 
 interface LoginHistorySectionProps {
   locale: string;
 }
 
-function deviceIcon(type: string) {
-  switch (type) {
-    case "mobile":
-      return Smartphone;
-    case "tablet":
-      return Tablet;
-    case "desktop":
-      return Monitor;
-    default:
-      return HelpCircle;
-  }
-}
+const PREVIEW_COUNT = 3;
 
 function eventIcon(type: LoginHistoryRow["event_type"]) {
   switch (type) {
@@ -51,34 +38,12 @@ function eventIcon(type: LoginHistoryRow["event_type"]) {
 
 function eventLabel(type: LoginHistoryRow["event_type"], isTh: boolean) {
   const labels: Record<LoginHistoryRow["event_type"], { th: string; en: string }> = {
-    login_success: { th: "เข้าสู่ระบบสำเร็จ", en: "Login success" },
-    login_failure: { th: "เข้าสู่ระบบล้มเหลว", en: "Login failed" },
-    logout: { th: "ออกจากระบบ", en: "Logout" },
-    lockout: { th: "ถูกล็อกชั่วคราว", en: "Temporary lockout" },
+    login_success: { th: "เข้าสู่ระบบสำเร็จ", en: "Signed in" },
+    login_failure: { th: "เข้าสู่ระบบไม่สำเร็จ", en: "Sign-in failed" },
+    logout: { th: "ออกจากระบบ", en: "Signed out" },
+    lockout: { th: "ถูกล็อกชั่วคราว", en: "Temporarily locked" },
   };
   return isTh ? labels[type].th : labels[type].en;
-}
-
-function formatDevice(row: LoginHistoryRow, isTh: boolean) {
-  const parts = [
-    row.device_vendor,
-    row.device_model,
-    row.os_name && row.os_version ? `${row.os_name} ${row.os_version}` : row.os_name,
-    row.browser_name,
-  ].filter(Boolean);
-
-  if (parts.length > 0) return parts.join(" · ");
-
-  const typeLabels: Record<string, { th: string; en: string }> = {
-    mobile: { th: "มือถือ", en: "Mobile" },
-    tablet: { th: "แท็บเล็ต", en: "Tablet" },
-    desktop: { th: "เดสก์ท็อป", en: "Desktop" },
-    unknown: { th: "ไม่ทราบอุปกรณ์", en: "Unknown device" },
-  };
-
-  return isTh
-    ? typeLabels[row.device_type]?.th ?? typeLabels.unknown.th
-    : typeLabels[row.device_type]?.en ?? typeLabels.unknown.en;
 }
 
 function formatDateTime(iso: string, locale: string) {
@@ -89,10 +54,87 @@ function formatDateTime(iso: string, locale: string) {
   }).format(new Date(iso));
 }
 
+function buildLoginLines(row: LoginHistoryRow, locale: string, isTh: boolean): string[] {
+  const lines: string[] = [];
+  lines.push(eventLabel(row.event_type, isTh));
+  lines.push(
+    formatLoginDeviceLabel(
+      {
+        deviceType: row.device_type,
+        deviceVendor: row.device_vendor,
+        deviceModel: row.device_model,
+        osName: row.os_name,
+        osVersion: row.os_version,
+        browserName: row.browser_name,
+        browserVersion: row.browser_version,
+        metadata: row.metadata,
+      },
+      isTh
+    )
+  );
+  lines.push(formatDateTime(row.occurred_at, locale));
+
+  const metadataLine = formatLoginDeviceMetadata(row.metadata, isTh);
+  if (metadataLine) {
+    lines.push(metadataLine);
+  }
+
+  if (row.access_level) {
+    lines.push(
+      row.access_level === "read_only"
+        ? isTh
+          ? "สิทธิ์: ดูอย่างเดียว"
+          : "Access: view only"
+        : isTh
+          ? "สิทธิ์: แก้ไขได้"
+          : "Access: can edit"
+    );
+  }
+
+  if (row.ip_address) {
+    lines.push(isTh ? `จากเครือข่าย ${row.ip_address}` : `From ${row.ip_address}`);
+  }
+
+  if (row.failure_reason) {
+    lines.push(row.failure_reason);
+  }
+
+  return lines;
+}
+
+function LoginEntry({ row, locale }: { row: LoginHistoryRow; locale: string }) {
+  const isTh = locale === "th";
+  const EventIcon = eventIcon(row.event_type);
+  const isFailure = row.status !== "success";
+  const lines = buildLoginLines(row, locale, isTh);
+
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-3 rounded-2xl border px-3.5 py-3 bb-transition",
+        isFailure
+          ? "border-red-500/15 bg-red-500/[0.04]"
+          : "border-black/5 dark:border-white/10 bg-card"
+      )}
+    >
+      <div
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
+          isFailure ? "bg-red-500/10 text-red-500" : "bg-muted text-foreground/70"
+        )}
+      >
+        <EventIcon size={14} strokeWidth={1.75} />
+      </div>
+      <ExpandableLines lines={lines} isTh={isTh} className="min-w-0 flex-1" />
+    </div>
+  );
+}
+
 export default function LoginHistorySection({ locale }: LoginHistorySectionProps) {
   const [rows, setRows] = useState<LoginHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const isTh = locale === "th";
 
   useEffect(() => {
@@ -120,90 +162,56 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
 
   if (loading) {
     return (
-      <div className="space-y-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-2xl bg-muted/40 animate-pulse" />
-        ))}
+      <div className="space-y-3">
+        <ActiveRemoteSessionsPanel locale={locale} />
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-14 rounded-2xl bg-muted/40 animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <p className="text-[14px] leading-relaxed text-red-500 font-normal py-4 text-center">
-        {isTh ? "ไม่สามารถโหลดประวัติได้" : "Unable to load history"}
-      </p>
+      <div className="space-y-3">
+        <ActiveRemoteSessionsPanel locale={locale} />
+        <p className="text-[13px] leading-relaxed text-red-500 font-normal py-4 text-center">
+          {isTh ? "โหลดประวัติไม่ได้ ลองใหม่อีกครั้ง" : "Could not load history. Try again."}
+        </p>
+      </div>
     );
   }
 
-  if (rows.length === 0) {
-    return (
-      <p className="text-[14px] leading-relaxed text-muted-foreground font-normal py-8 text-center">
-        {isTh ? "ยังไม่มีประวัติการเข้าสู่ระบบ" : "No login history yet"}
-      </p>
-    );
-  }
+  const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);
+  const hasMoreRows = rows.length > PREVIEW_COUNT;
 
   return (
-    <div className="space-y-2">
-      {rows.map((row) => {
-        const DeviceIcon = deviceIcon(row.device_type);
-        const EventIcon = eventIcon(row.event_type);
-        const isFailure = row.status !== "success";
+    <div className="space-y-3">
+      <ActiveRemoteSessionsPanel locale={locale} />
 
-        return (
-          <div
-            key={row.id}
-            className={cn(
-              "flex items-start gap-3 rounded-2xl border px-3.5 py-3.5 bb-transition",
-              isFailure
-                ? "border-red-500/15 bg-red-500/[0.04]"
-                : "border-black/5 dark:border-white/10 bg-card"
-            )}
-          >
-            <div
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                isFailure ? "bg-red-500/10 text-red-500" : "bg-muted text-foreground/70"
-              )}
-            >
-              <EventIcon size={16} strokeWidth={1.75} />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-[14px] font-normal text-foreground leading-snug">
-                  {eventLabel(row.event_type, isTh)}
-                </p>
-                <time className="shrink-0 text-[12px] text-muted-foreground/90 whitespace-nowrap leading-normal">
-                  {formatDateTime(row.occurred_at, locale)}
-                </time>
-              </div>
-
-              <div className="mt-1.5 flex items-center gap-1.5 text-[13px] text-muted-foreground leading-normal">
-                <DeviceIcon size={13} strokeWidth={1.75} />
-                <span className="truncate">{formatDevice(row, isTh)}</span>
-              </div>
-
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-muted-foreground/85 leading-normal">
-                {row.ip_address && (
-                  <span>IP {row.ip_address}</span>
-                )}
-                {row.access_level && (
-                  <span>
-                    {row.access_level === "read_only"
-                      ? isTh ? "แก้ไขข้อมูลไม่ได้" : "Cannot edit data"
-                      : isTh ? "แก้ไขข้อมูลได้" : "Can edit data"}
-                  </span>
-                )}
-                {row.failure_reason && (
-                  <span className="text-red-500/80">{row.failure_reason}</span>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      {rows.length === 0 ? (
+        <p className="text-[13px] leading-relaxed text-muted-foreground font-normal py-4 text-center">
+          {isTh ? "ยังไม่มีประวัติการเข้าสู่ระบบ" : "No sign-in history yet"}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {visibleRows.map((row) => (
+            <LoginEntry key={row.id} row={row} locale={locale} />
+          ))}
+          {hasMoreRows && (
+            <ExpandMoreButton
+              expanded={showAll}
+              onClick={() => setShowAll((v) => !v)}
+              isTh={isTh}
+              moreLabel={isTh ? "ดูรายละเอียด" : "View details"}
+              lessLabel={isTh ? "ย่อรายการ" : "Show less"}
+              className="mt-1"
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

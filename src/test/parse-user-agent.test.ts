@@ -39,6 +39,18 @@ describe('parseUserAgent', () => {
     expect(result.browserName).toBe('Chrome');
   });
 
+  test('ignores Chrome Android privacy placeholder model K', () => {
+    const result = parseUserAgent(
+      'Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'
+    );
+
+    expect(result.deviceType).toBe('mobile');
+    expect(result.deviceModel).toBeNull();
+    expect(result.osName).toBe('Android');
+    expect(result.osVersion).toBe('14');
+    expect(result.browserName).toBe('Chrome');
+  });
+
   test('detects desktop Windows Chrome', () => {
     const result = parseUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'

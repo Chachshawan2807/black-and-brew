@@ -8,6 +8,9 @@ import InventoryQuickActionWrapper from '@/components/inventory/InventoryQuickAc
 import PinGateway from '@/components/auth/PinGateway';
 import PwaRegister from '@/components/PwaRegister';
 import { NotificationProvider } from '@/components/notifications/NotificationProvider';
+import { InventoryNotificationFAB } from '@/components/notifications/InventoryNotificationFAB';
+import { FloatingOverlayProvider } from '@/components/floating/FloatingOverlayContext';
+import { FabStackHideToggle } from '@/components/floating/FabStackHideToggle';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import "./globals.css";
 
@@ -55,6 +58,7 @@ export default async function RootLayout({
         <PwaRegister />
         <PinGateway>
           <NotificationProvider>
+          <FloatingOverlayProvider>
           <SidebarLayout>
             <Suspense fallback={
               <div className="flex-1 min-h-screen bg-background flex items-center justify-center">
@@ -72,7 +76,10 @@ export default async function RootLayout({
             </Suspense>
           </SidebarLayout>
           <InventoryQuickActionWrapper />
+          <InventoryNotificationFAB />
           <AIChatOverlay />
+          <FabStackHideToggle />
+          </FloatingOverlayProvider>
           </NotificationProvider>
         </PinGateway>
         </ThemeProvider>

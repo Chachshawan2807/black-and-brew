@@ -76,14 +76,16 @@ vi.mock('next/dynamic', () => ({
   default: () => () => <div data-testid="mock-dynamic">Dynamic Modal</div>,
 }));
 
-// Import the Page component
-import Page from '../app/[locale]/inventory/page';
+// Import the client component
+import InventoryClient from '../app/[locale]/inventory/InventoryClient';
+import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 
 describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => {
   test('should use shared useSafeDndSensors instead of inline PointerSensor', async () => {
     const fs = require('fs');
     const path = require('path');
-    const pageCode = fs.readFileSync(path.resolve(__dirname, '../app/[locale]/inventory/page.tsx'), 'utf-8');
+    const pageCode = fs.readFileSync(path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'), 'utf-8');
 
     expect(pageCode).toContain('useSafeDndSensors');
     expect(pageCode).not.toContain('useSensor(PointerSensor');
@@ -104,7 +106,13 @@ describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => 
   });
 
   test('should separate order count badge from truncated text to prevent truncation to ellipsis', async () => {
-    render(<Page />);
+    render(
+      <AuthProvider isReadOnly={false}>
+        <InventoryRealtimeProvider>
+          <InventoryClient initialItems={mockInventoryItems} locale="th" />
+        </InventoryRealtimeProvider>
+      </AuthProvider>,
+    );
     
     // We expect to find the "สั่งซื้อ" button after loading finishes
     const orderBtn = await screen.findByRole('button', { name: /สั่งซื้อ/i });
@@ -161,7 +169,7 @@ describe('Safe DnD Sensors — mobile long-press guard', () => {
       '../components/CommandCenterGrid.tsx',
       '../app/[locale]/dashboard/components/LiveShiftList.tsx',
       '../app/[locale]/schedule/ScheduleClient.tsx',
-      '../app/[locale]/inventory/page.tsx',
+      '../app/[locale]/inventory/InventoryClient.tsx',
     ];
 
     for (const file of files) {

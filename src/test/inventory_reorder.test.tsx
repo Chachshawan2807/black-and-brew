@@ -8,7 +8,7 @@ import { describe, test, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const PAGE_PATH = path.resolve(__dirname, '../app/[locale]/inventory/page.tsx');
+const PAGE_PATH = path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx');
 
 describe('Phase 1: Editable sort-order badge on cards', () => {
   test('SortableRow renders an editable sort-order input (data-testid="sort-order-input")', () => {

@@ -1,10 +1,25 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 8.4 | Last Updated: 2026-06-12 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
+> Version: 8.5 | Last Updated: 2026-06-12 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
 
 ---
 
 ## Recent Decisions
+
+### DEC-071: Session Audit + Remote Revocation + Inventory Notifications (v8.5)
+
+- Date: June 12, 2026
+- Context: PIN-only auth needed audit trail (login events), ability to force sign-out other devices, and in-app alerts when inventory changes — without exposing full `data_change_logs` to clients.
+- Decision:
+  1. `login_history` table — immutable auth events with device fingerprinting; written via service-role in `login-history-actions.ts`.
+  2. `revoked_sessions` table — fingerprint blocklist checked on `checkAuth()` via `session-revocation.ts`; populated from Settings via `forceRevokeDeviceSession()` / `forceRevokeAllRemoteSessions()`.
+  3. `data_change_logs` — append-only mutation audit; selective RLS policy `anon_read_inventory_change_logs` exposes only `module = 'inventory'` rows for Realtime notifications.
+  4. `useInventoryNotifications()` subscribes to `data_change_logs` INSERTs; user prefs in `notification-preferences.ts` (localStorage) + optional PWA push via `pwa-notification-bridge.ts`.
+  5. Official migrations in `supabase/migrations/`; bundled manual apply in `scripts/apply-pending-migrations.sql`; verify with `npm run db:verify`.
+- Impact: Security visibility in Settings; remote session control; staff see inventory edits without polling.
+- Evidence: `supabase/migrations/20260611*.sql`–`20260612200000_*.sql`, `NotificationPreferencesSection.tsx`, `InventoryQuickActionFAB.tsx`
+
+---
 
 ### DEC-070: Dual Theme + Pastel Surface Pattern (v8.4)
 

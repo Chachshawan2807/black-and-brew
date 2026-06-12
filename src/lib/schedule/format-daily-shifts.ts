@@ -48,7 +48,7 @@ export function normalizeShiftLocation(
   return cleaned;
 }
 
-function categorizeShift(shiftText: string): ShiftCategory {
+export function categorizeShift(shiftText: string): ShiftCategory {
   if (/^\d{1,2}:\d{2}$/.test(shiftText)) return 'front_store';
   if (shiftText === 'ไปสาขา 2' || shiftText === 'ร้านซักผ้า') return 'other_duty';
   return 'off_or_leave';

@@ -7,6 +7,10 @@ import {
   loadNotificationPreferences,
   saveNotificationPreferences,
 } from '@/lib/notification-preferences';
+import {
+  getNotificationPermissionState,
+  requestNotificationPermission,
+} from '@/lib/pwa-notification-bridge';
 import type { NotificationPreferences } from '@/lib/notification-types';
 
 interface NotificationPreferencesSectionProps {
@@ -27,13 +31,13 @@ function ToggleRow({
   disabled?: boolean;
 }) {
   return (
-    <label
+    <div
       className={cn(
         'flex items-start justify-between gap-4 py-3 border-b border-border last:border-0',
-        disabled && 'opacity-50 pointer-events-none'
+        disabled && 'opacity-50'
       )}
     >
-      <div className="min-w-0">
+      <div className="min-w-0 select-none">
         <p className="text-[14px] text-foreground leading-snug">{label}</p>
         {description && (
           <p className="text-[12px] text-muted-foreground mt-0.5 leading-normal">{description}</p>
@@ -43,11 +47,13 @@ function ToggleRow({
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
           'relative h-7 w-12 shrink-0 rounded-full bb-transition',
-          checked ? 'bg-foreground/80' : 'bg-muted'
+          checked ? 'bg-foreground/80' : 'bg-muted',
+          disabled && 'cursor-not-allowed'
         )}
       >
         <span
@@ -57,7 +63,7 @@ function ToggleRow({
           )}
         />
       </button>
-    </label>
+    </div>
   );
 }
 
@@ -66,6 +72,7 @@ export default function NotificationPreferencesSection({
 }: NotificationPreferencesSectionProps) {
   const isTh = locale === 'th';
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
+  const [permission, setPermission] = useState(() => getNotificationPermissionState());
 
   useEffect(() => {
     saveNotificationPreferences(prefs);
@@ -75,49 +82,86 @@ export default function NotificationPreferencesSection({
     setPrefs((prev) => ({ ...prev, ...patch }));
   };
 
+  const handleSystemNotifications = async (enabled: boolean) => {
+    if (!enabled) {
+      update({ systemNotifications: false });
+      return;
+    }
+    const state = await requestNotificationPermission();
+    setPermission(state);
+    update({ systemNotifications: state === 'granted' });
+  };
+
   return (
     <div>
       <ToggleRow
         label={isTh ? 'เปิดแจ้งเตือนคลังสินค้า' : 'Inventory notifications'}
         description={
           isTh
-            ? 'รับการแจ้งเตือนเมื่อมีการเปลี่ยนแปลงข้อมูลคลัง'
+            ? 'รับการแจ้งเตือนเมื่อมีการเปลี่ยนแปลงข้อมูลคลังสินค้า'
             : 'Get alerts when inventory data changes'
         }
         checked={prefs.enabled}
         onChange={(v) => update({ enabled: v })}
       />
       <ToggleRow
-        label={isTh ? 'แสดง Toast' : 'Show toast alerts'}
+        label={isTh ? 'แจ้งเตือนบนหน้าจอ / ไอคอนแอป' : 'Home-screen & OS alerts'}
         description={
           isTh
-            ? 'แจ้งเตือนด่วนสำหรับการลบและสต็อกต่ำ'
-            : 'Quick toasts for deletes and low stock'
+            ? 'ตัวเลขสีแดงบนไอคอนทางลัด และแบนเนอร์เมื่อแอปอยู่เบื้องหลัง (ต้องอนุญาตการแจ้งเตือน)'
+            : 'Red badge on the app icon and banners when the app is in the background'
         }
-        checked={prefs.showToast}
-        onChange={(v) => update({ showToast: v })}
-        disabled={!prefs.enabled}
+        checked={prefs.systemNotifications}
+        onChange={(v) => void handleSystemNotifications(v)}
+        disabled={!prefs.enabled || permission === 'unsupported'}
       />
+      {permission === 'denied' && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2">
+          {isTh
+            ? 'การแจ้งเตือนถูกปิดในระบบ — เปิดได้จากการตั้งค่าของเบราว์เซอร์หรืออุปกรณ์'
+            : 'Notifications are blocked — enable them in browser or device settings'}
+        </p>
+      )}
       <ToggleRow
         label={isTh ? 'แจ้งการเปลี่ยนแปลงของตัวเอง' : 'Notify my own changes'}
+        description={
+          isTh
+            ? 'แจ้งเตือนแม้คุณเป็นคนแก้ไขเองบนเครื่องนี้ — ปิดเพื่อไม่ให้รบกวนเมื่อทำงานคนเดียว'
+            : 'Alert even when you edit on this device — turn off to avoid noise when working alone'
+        }
         checked={prefs.notifyOwnChanges}
         onChange={(v) => update({ notifyOwnChanges: v })}
         disabled={!prefs.enabled}
       />
       <ToggleRow
         label={isTh ? 'แจ้งเมื่อเพิ่มรายการ' : 'Notify on create'}
+        description={
+          isTh
+            ? 'แจ้งเมื่อมีการเพิ่มสินค้าใหม่ในคลัง'
+            : 'Alert when a new inventory item is added'
+        }
         checked={prefs.notifyCreate}
         onChange={(v) => update({ notifyCreate: v })}
         disabled={!prefs.enabled}
       />
       <ToggleRow
         label={isTh ? 'แจ้งเมื่อแก้ไข' : 'Notify on update'}
+        description={
+          isTh
+            ? 'แจ้งเมื่อมีการเปลี่ยนจำนวน ชื่อ หรือข้อมูลอื่นของสินค้า'
+            : 'Alert when stock, name, or other item details change'
+        }
         checked={prefs.notifyUpdate}
         onChange={(v) => update({ notifyUpdate: v })}
         disabled={!prefs.enabled}
       />
       <ToggleRow
         label={isTh ? 'แจ้งเมื่อลบ' : 'Notify on delete'}
+        description={
+          isTh
+            ? 'แจ้งเมื่อมีการลบสินค้าออกจากคลัง'
+            : 'Alert when an item is removed from inventory'
+        }
         checked={prefs.notifyDelete}
         onChange={(v) => update({ notifyDelete: v })}
         disabled={!prefs.enabled}

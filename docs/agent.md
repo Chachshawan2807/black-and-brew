@@ -1,6 +1,6 @@
 # Agent Guidelines — BLACKANDBREW ERP
 
-> **Version:** 8.4 | **Last Updated:** 2026-06-12
+> **Version:** 8.5 | **Last Updated:** 2026-06-12
 
 ---
 
@@ -50,7 +50,7 @@ THINK → MAP → BUDGET CHECK → EXECUTE → VALIDATE → LOG
 | --- | --- | --- |
 | `readTableTool` | `src/app/actions/tools/database-tools.ts` | ดึงข้อมูลตาราง Supabase (Service Role) พร้อม `COLUMN_ALIASES` |
 | `internetSearchTool` | `src/app/actions/tools/search-tools.ts` | ค้นหาเว็บผ่าน Tavily API |
-| Internal Sources | `src/app/actions/tools/internal-sources-tools.ts` | ดึงบริบทภายในร้าน (schedule, inventory, weather) |
+| Internal Sources | *(removed — daily report uses `compileDailyReportData` directly)* | — |
 | Executive Rules | `src/lib/agents/executive-rules.ts` | System prompt + schema mapping สำหรับ AI |
 
 ---

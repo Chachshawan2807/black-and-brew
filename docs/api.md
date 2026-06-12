@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 8.4 | Last Updated: 2026-06-12
+> Version: 8.5 | Last Updated: 2026-06-12
 
 ---
 
@@ -14,11 +14,15 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 | Function | Purpose |
 | --- | --- |
-| `verifyPin(pin)` | ตรวจ PIN → set httpOnly cookies; returns `{ success, isReadOnly? }` |
-| `checkAuth()` | ตรวจว่า PIN verified หรือไม่ |
+| `verifyPin(pin, device?)` | ตรวจ PIN → set httpOnly cookies + session fingerprint; returns `{ success, isReadOnly? }` |
+| `checkAuth()` | ตรวจว่า PIN verified หรือไม่ (รวม revoked fingerprint) |
+| `getAuthSessionInfo()` | คืนสถานะ session ปัจจุบัน |
+| `getCurrentSessionFingerprint()` | คืน fingerprint ของ session ปัจจุบัน |
 | `isReadOnlySession()` | ตรวจ read-only mode |
 | `assertWritableSession()` | บล็อก write ถ้า read-only → `{ ok: false, error }` |
-| `clearAuth()` | ลบ auth cookies |
+| `clearAuth(device?)` | ลบ auth cookies + บันทึก logout event |
+| `forceRevokeDeviceSession(fingerprint)` | Revoke session อุปกรณ์เดียว → `revoked_sessions` |
+| `forceRevokeAllRemoteSessions(exceptCurrent?)` | Revoke ทุก session ยกเว้นปัจจุบัน (ถ้าระบุ) |
 
 - Full PIN: `APP_PIN` (env)
 - Read-only PIN: `111222` (hardcoded in `auth-constants.ts`)
@@ -203,7 +207,17 @@ getMarketInsights()
 
 ---
 
-### 1.10 Migration (`migrate-inventory-sort-order.ts`)
+### 1.10 Login History (`login-history-actions.ts`)
+
+| Function | Purpose |
+| --- | --- |
+| `recordLoginEvent(input)` | บันทึก login/logout/lockout → `login_history` (service-role) |
+| `fetchLoginHistory(limit?)` | ดึงประวัติการเข้าใช้สำหรับ Settings |
+| `fetchActiveLoginSessions()` | คืน active sessions พร้อมสถานะ revoked |
+
+---
+
+### 1.11 Migration (`migrate-inventory-sort-order.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -251,11 +265,21 @@ getMarketInsights()
 
 ## 4. Client-side Supabase Calls
 
-### Real-time Channel (Inventory)
+### Real-time Channels
+
+**Inventory stock sync:**
 
 ```typescript
 supabase.channel('inventory_changes')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_items' }, callback)
+  .subscribe()
+```
+
+**Inventory change notifications** (`use-inventory-notifications.ts`):
+
+```typescript
+supabase.channel('inventory_change_logs')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'data_change_logs', filter: 'module=eq.inventory' }, callback)
   .subscribe()
 ```
 

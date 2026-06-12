@@ -5,7 +5,6 @@ import {
   formatFieldChange,
   formatInventoryNotification,
   resolveNotificationPriority,
-  shouldShowToast,
   summarizeFieldChanges,
 } from '@/lib/inventory-notification-formatter';
 
@@ -38,7 +37,7 @@ describe('formatFieldChange', () => {
   test('formats stock diff in Thai', () => {
     expect(
       formatFieldChange({ field: 'stock', old_value: 10, new_value: 8 }, true)
-    ).toBe('สต็อก: 10 → 8');
+    ).toBe('คงเหลือ: 10 → 8');
   });
 
   test('formats stock diff in English', () => {
@@ -53,13 +52,53 @@ describe('summarizeFieldChanges', () => {
     const summary = summarizeFieldChanges(
       [
         { field: 'stock', old_value: 1, new_value: 2 },
-        { field: 'name', old_value: 'A', new_value: 'B' },
         { field: 'unit', old_value: 'kg', new_value: 'g' },
+        { field: 'order_point', old_value: 5, new_value: 10 },
       ],
       true,
       2
     );
-    expect(summary).toContain('+1 ฟิลด์');
+    expect(summary).toContain('และอีก');
+  });
+
+  test('hides technical id fields', () => {
+    const summary = summarizeFieldChanges(
+      [
+        {
+          field: 'id',
+          old_value: null,
+          new_value: '918198da-d6b9-4272-9474-e28acf5e88cb',
+        },
+        { field: 'name', old_value: null, new_value: 'ทดสอบ' },
+        { field: 'stock', old_value: null, new_value: 0 },
+      ],
+      true,
+      3
+    );
+    expect(summary).not.toContain('918198da');
+    expect(summary).not.toContain('id:');
+    expect(summary).toContain('คงเหลือ');
+  });
+});
+
+describe('formatInventoryNotification CREATE', () => {
+  test('uses readable summary without uuid for new items', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        action: 'CREATE',
+        entity_label: 'ทดสอบ',
+        field_changes: [
+          { field: 'id', old_value: null, new_value: '918198da-d6b9-4272-9474-e28acf5e88cb' },
+          { field: 'name', old_value: null, new_value: 'ทดสอบ' },
+          { field: 'stock', old_value: null, new_value: 0 },
+          { field: 'unit', old_value: null, new_value: 'ถุง' },
+        ],
+      }),
+      'th'
+    );
+    expect(n.title).toBe('เพิ่มรายการ: ทดสอบ');
+    expect(n.summary).not.toContain('918198da');
+    expect(n.summary).toContain('คงเหลือ');
   });
 });
 
@@ -105,7 +144,7 @@ describe('formatInventoryNotification', () => {
   test('builds Thai title and summary', () => {
     const n = formatInventoryNotification(makeRow(), 'th');
     expect(n.title).toContain('เมล็ดกาแฟ');
-    expect(n.summary).toContain('สต็อก');
+    expect(n.summary).toContain('คงเหลือ');
     expect(n.actorLabel).toBe('ผู้ใช้เต็มสิทธิ์');
   });
 
@@ -122,14 +161,3 @@ describe('formatInventoryNotification', () => {
   });
 });
 
-describe('shouldShowToast', () => {
-  test('shows toast for high priority', () => {
-    const n = formatInventoryNotification(makeRow({ action: 'DELETE' }), 'th');
-    expect(shouldShowToast(n)).toBe(true);
-  });
-
-  test('hides toast for normal priority', () => {
-    const n = formatInventoryNotification(makeRow(), 'th');
-    expect(shouldShowToast(n)).toBe(false);
-  });
-});

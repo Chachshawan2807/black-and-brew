@@ -322,33 +322,6 @@
     color: #000000;
   }
 
-  .bb-pastel-surface :where(h1, h2, h3, h4, h5, h6) {
-    color: #000000;
-  }
-
-  .bb-pastel-surface :where(svg) {
-    color: #000000;
-  }
-
-  .bb-pastel-surface :where(.text-foreground) {
-    color: #000000;
-  }
-
-  .bb-pastel-surface :where(.text-muted-foreground) {
-    color: rgb(0 0 0 / 0.55);
-  }
-
-  .bb-pastel-surface :where(.text-black) {
-    color: #000000;
-  }
-
-  .bb-pastel-surface :where(::placeholder) {
-    color: rgb(0 0 0 / 0.45);
-  }
-
-  .bb-pastel-surface :where(input, textarea)::placeholder {
-    color: rgb(0 0 0 / 0.45);
-  }
 }
 
 @layer utilities {
@@ -479,5 +452,30 @@
 
   .duration-500 {
     --tw-animation-duration: 500ms;
+  }
+
+  /* Pastel surfaces keep dark text in dark mode — must live in utilities to beat text-foreground */
+  .bb-pastel-surface :where(h1, h2, h3, h4, h5, h6) {
+    color: #000000;
+  }
+
+  .bb-pastel-surface :where(svg:not([class*='text-'])) {
+    color: #000000;
+  }
+
+  .bb-pastel-surface :where(.text-foreground) {
+    color: #000000;
+  }
+
+  .bb-pastel-surface :where(.text-muted-foreground) {
+    color: rgb(0 0 0 / 0.55);
+  }
+
+  .bb-pastel-surface :where(.text-black) {
+    color: #000000;
+  }
+
+  .bb-pastel-surface :where(input, textarea)::placeholder {
+    color: rgb(0 0 0 / 0.45);
   }
 }

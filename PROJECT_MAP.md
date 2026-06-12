@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> **Generated:** 2026-06-12 (GMT+7) | **Root:** `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | **Version:** 8.4
+> **Generated:** 2026-06-12 (GMT+7) | **Root:** `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | **Version:** 8.5
 
 ---
 
@@ -56,7 +56,9 @@ black-and-brew/
 ├── docs/                    # Project documentation
 ├── messages/                # th.json, en.json (next-intl)
 ├── public/                  # sw.js (PWA), images, ai-agent-logo.svg
+├── supabase/migrations/     # Versioned DB migrations (login_history, data_change_logs, revoked_sessions)
 ├── sql/                     # sync_inventory_stock.sql, fix_inventory_rls.sql, ai_agent_views.sql
+├── scripts/                 # apply-pending-migrations.sql, db:verify
 ├── src/
 │   ├── app/
 │   │   ├── [locale]/        # UI pages + layout + globals.css
@@ -67,14 +69,17 @@ black-and-brew/
 │   ├── components/
 │   │   ├── ai/              # AIChatOverlay, AIChatWrapper
 │   │   ├── auth/            # PinGateway
+│   │   ├── inventory/       # InventoryQuickActionFAB, InventoryQuickActionWrapper
+│   │   ├── notifications/   # NotificationProvider
+│   │   ├── settings/        # NotificationPreferencesSection
 │   │   ├── dashboard/       # LiveStatusTracker, WeatherWidget
 │   │   ├── providers/       # AuthProvider, I18nProvider, ThemeProvider
 │   │   ├── sidebar/         # Sidebar, Menu, SheetMenu, …
 │   │   └── ui/              # button, ClickableDatePicker, page-transition, floating-alert, …
 │   ├── hooks/
 │   ├── i18n/                # request.ts, routing.ts
-│   ├── lib/                 # supabase, motion-presets, inventory-stock, auth-constants, …
-│   ├── test/                # 17 Vitest test files
+│   ├── lib/                 # supabase, session-revocation, notification-preferences, …
+│   ├── test/                # 40+ Vitest test files
 │   └── proxy.ts             # next-intl middleware (Next.js 16 convention)
 ├── *.sql                    # Root-level schema/migration scripts
 ├── AGENTS.md, CLAUDE.md, MASTER_BLUEPRINT.md, README.md
@@ -88,7 +93,8 @@ black-and-brew/
 
 | File | Purpose |
 | --- | :--- |
-| `auth.ts` | PIN verify, read-only session, cookies |
+| `auth.ts` | PIN verify, session revocation, read-only session, cookies |
+| `login-history-actions.ts` | Login audit trail + active sessions |
 | `inventory-actions.ts` | Stock RPC, transactions, CRUD |
 | `shift-actions.ts` | Shift CRUD, roster, revalidation |
 | `holiday-actions.ts` | Google Calendar + regular holidays |

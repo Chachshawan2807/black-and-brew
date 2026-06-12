@@ -4,21 +4,20 @@ import { usePathname, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import { GripVertical, LogOut, Settings2 } from 'lucide-react';
-import { collectClientDeviceInfo } from '@/lib/client-device-info';
 
 import { cn } from '@/lib/utils';
 import { getMenuList, type MenuItem } from '@/lib/menu-list';
 import { Button } from '@/components/ui/button';
 import { CollapseMenuButton } from '@/components/sidebar/CollapseMenuButton';
-import { clearAuth } from '@/app/actions/auth';
+import SidebarThemeToggle from '@/components/sidebar/SidebarThemeToggle';
+import { performClientLogout } from '@/lib/logout-client';
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
   TooltipProvider
 } from '@/components/ui/tooltip';
-import { useStore } from '@/hooks/use-store';
-import { useSidebarToggle } from '@/hooks/use-sidebar-toggle';
+import { useSidebarToggle, useSidebarHydrated } from '@/hooks/use-sidebar-toggle';
 import { useReadOnly } from '@/components/providers/AuthProvider';
 import {
   DndContext,
@@ -203,7 +202,10 @@ export default function Menu({ isOpen }: MenuProps) {
   const searchParams = useSearchParams();
   const locale = (params?.locale as string) || 'th';
 
-  const sidebar = useStore(useSidebarToggle, (state) => state);
+  const hydrated = useSidebarHydrated();
+  const sidebarIsOpen = useSidebarToggle((state) => state.isOpen);
+  const setSidebarOpen = useSidebarToggle((state) => state.setIsOpen);
+  const sidebarOpen = hydrated ? sidebarIsOpen : true;
   const isReadOnly = useReadOnly();
   const isAdmin = !isReadOnly;
 
@@ -259,8 +261,8 @@ export default function Menu({ isOpen }: MenuProps) {
   }, []);
 
   const handleLinkClick = () => {
-    if (window.innerWidth < 768 && sidebar?.isOpen) {
-      sidebar.setIsOpen();
+    if (window.innerWidth < 768 && sidebarOpen) {
+      setSidebarOpen();
     }
   };
 
@@ -344,11 +346,12 @@ export default function Menu({ isOpen }: MenuProps) {
         )}
       </ul>
 
-      {/* Settings & Logout */}
+      {/* Theme, Settings & Logout */}
       <div className={cn(
-        "w-full px-2 pt-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-black/5 dark:border-white/10 mt-auto space-y-1",
+        "w-full px-2 pt-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-black/5 dark:border-white/10 mt-auto space-y-2",
         isOpen === false && "overflow-hidden"
       )}>
+        <SidebarThemeToggle locale={locale} isOpen={isOpen} />
         <TooltipProvider disableHoverableContent>
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
@@ -388,12 +391,7 @@ export default function Menu({ isOpen }: MenuProps) {
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
               <Button
-                onClick={async () => {
-                  await clearAuth(collectClientDeviceInfo());
-                  sessionStorage.removeItem('bb_auth_pin_verified');
-                  sessionStorage.removeItem('bb_auth_read_only');
-                  window.location.reload();
-                }}
+                onClick={() => void performClientLogout()}
                 variant="ghost"
                 className={cn(
                   'h-10 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 font-normal antialiased w-full',

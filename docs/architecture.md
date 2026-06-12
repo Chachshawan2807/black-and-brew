@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 8.4 | Last Updated: 2026-06-12 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 8.5 | Last Updated: 2026-06-12 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -27,16 +27,21 @@ Hybrid PPR architecture: Static Shell (Navigation, Branding) + Dynamic Islands (
 
 ```text
 User opens app → PinGateway (sessionStorage check)
-→ verifyPin() Server Action → httpOnly cookies set
+→ verifyPin() Server Action → httpOnly cookies + session fingerprint
+→ recordLoginEvent() → login_history row
 → ensureSupabaseSession() → anonymous auth for RLS
+→ isSessionFingerprintRevoked() on each validation
 → Full access (APP_PIN) or Read-only (111222)
 → Write actions call assertWritableSession()
+→ Settings: forceRevokeDeviceSession() / forceRevokeAllRemoteSessions()
 ```
 
 | Layer | Storage | Keys |
 | --- | :--- | --- |
 | Client gate | `sessionStorage` | `bb_auth_pin_verified` |
-| Server session | httpOnly cookies | `bb_auth_pin_verified`, `bb_auth_read_only` |
+| Server session | httpOnly cookies | `bb_auth_pin_verified`, `bb_auth_read_only`, `bb_session_fp` |
+| Session revocation | `revoked_sessions` table | `session_fingerprint` |
+| Login audit | `login_history` table | device + IP + access level |
 | Supabase RLS | Anonymous session | `authenticated` role |
 
 ---
@@ -66,7 +71,8 @@ src/app/
 ├── page.tsx                     # Root redirect → /th
 ├── manifest.ts                  # PWA manifest
 ├── actions/
-│   ├── auth.ts                        # PIN verify, read-only guard
+│   ├── auth.ts                        # PIN verify, session revocation, read-only guard
+│   ├── login-history-actions.ts       # login_history CRUD + active sessions
 │   ├── inventory-actions.ts           # Stock RPC, transactions
 │   ├── shift-actions.ts               # Shift CRUD
 │   ├── holiday-actions.ts             # Google Calendar + regular holidays
@@ -89,11 +95,11 @@ src/app/
     ├── page.tsx                 # Command Center
     ├── dashboard/               # Staff dashboard
     ├── schedule/                # Shift management (DnD)
-    ├── inventory/               # Warehouse spreadsheet
+    ├── inventory/               # Warehouse spreadsheet + InventoryQuickActionFAB
     │   └── count/               # Stock-taking
     ├── maintenance/             # Equipment tracking
     ├── sales/                   # Sales analytics
-    ├── settings/                # Theme picker + login history
+    ├── settings/                # Theme picker, login history, notification prefs
     └── market-insights/         # AI market analysis (v2)
         └── components/          # ContextPanel, AlertsCard, InsightCharts,
                                  # ActionChecklist, SourcesList, DiffBanner
@@ -122,8 +128,17 @@ CountInput blur → optimistic setItems → updateInventoryStock()
 ### Transaction Recording (Atomic via RPC)
 
 ```text
-Quick Entry → recordTransaction() → supabase.rpc('record_inventory_transaction')
+Quick Entry / FAB → recordTransaction() → supabase.rpc('record_inventory_transaction')
 → Row Lock (FOR UPDATE) → Validate → UPDATE stock → INSERT transaction → RETURN
+```
+
+### Inventory In-App Notifications
+
+```text
+Server mutation → data_change_logs INSERT (module=inventory)
+→ Supabase Realtime on data_change_logs
+→ useInventoryNotifications() + NotificationProvider
+→ browser push when prefs enabled (NotificationPreferencesSection in Settings)
 ```
 
 ### AI Chat

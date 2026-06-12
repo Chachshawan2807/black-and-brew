@@ -3,11 +3,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, ShieldAlert } from 'lucide-react';
-import { verifyPin } from '@/app/actions/auth';
+import { getAuthSessionInfo, verifyPin } from '@/app/actions/auth';
+import {
+  clearClientAuthSession,
+  isClientAuthVerified,
+  setClientAuthSession,
+} from '@/lib/client-auth-storage';
 import { recordLoginEvent } from '@/app/actions/login-history-actions';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
 
 const PIN_LENGTH = 6;
 
@@ -26,15 +32,22 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     setIsMounted(true);
 
-    const isVerified = sessionStorage.getItem('bb_auth_pin_verified') === 'true';
-    if (isVerified) {
-      void ensureSupabaseSession();
-      setIsReadOnly(sessionStorage.getItem('bb_auth_read_only') === 'true');
-      setIsAuthenticated(true);
-    } else {
+    void (async () => {
+      const serverSession = await getAuthSessionInfo();
+      if (serverSession.verified) {
+        setClientAuthSession(serverSession.readOnly);
+        await ensureSupabaseSession();
+        setIsReadOnly(serverSession.readOnly);
+        setIsAuthenticated(true);
+        return;
+      }
+
+      if (isClientAuthVerified()) {
+        clearClientAuthSession();
+      }
       setIsReadOnly(false);
       setIsAuthenticated(false);
-    }
+    })();
 
     const storedLockout = localStorage.getItem('bb_lockout_until');
     const storedAttempts = localStorage.getItem('bb_failed_attempts') || '0';
@@ -142,14 +155,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       const device = collectClientDeviceInfo();
       const res = await verifyPin(nextPin, device);
       if (res.success) {
-        sessionStorage.setItem('bb_auth_pin_verified', 'true');
-        if (res.isReadOnly) {
-          sessionStorage.setItem('bb_auth_read_only', 'true');
-          setIsReadOnly(true);
-        } else {
-          sessionStorage.removeItem('bb_auth_read_only');
-          setIsReadOnly(false);
-        }
+        setClientAuthSession(Boolean(res.isReadOnly));
+        setIsReadOnly(Boolean(res.isReadOnly));
         localStorage.removeItem('bb_failed_attempts');
         localStorage.removeItem('bb_lockout_until');
         setFailedCountDisplay('0');
@@ -192,7 +199,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   if (!isMounted) return null;
 
   if (isAuthenticated) {
-    return <AuthProvider isReadOnly={isReadOnly}>{children}</AuthProvider>;
+    return (
+      <AuthProvider isReadOnly={isReadOnly}>
+        <InventoryRealtimeProvider>{children}</InventoryRealtimeProvider>
+      </AuthProvider>
+    );
   }
 
   if (lockoutTimeLeft !== null) {

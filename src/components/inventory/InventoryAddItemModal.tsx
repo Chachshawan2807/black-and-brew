@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import {
+  getModalBackdropKeyboardAwareStyle,
+  getModalContentKeyboardAwareStyle,
+} from '@/lib/keyboard-aware-panel-style';
+import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { logClientDataChange } from '@/lib/client-data-change-log';
+import { recordItemAddHistory } from '@/app/actions/inventory-actions';
 
 export type NewInventoryItemInput = {
   name: string;
@@ -28,6 +34,15 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
   const [newItemData, setNewItemData] = useState<Record<string, string | number>>({});
   const [insertPosition, setInsertPosition] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  const viewportInsets = useVisualViewportInsets(isMounted);
+  const modalBackdropStyle = getModalBackdropKeyboardAwareStyle({ insets: viewportInsets });
+  const modalContentStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +99,12 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
         entityLabel: data.name,
         after: data,
       });
+
+      const historyRes = await recordItemAddHistory(data.id, Number(data.stock ?? 0), data.name);
+      if (!historyRes.success) {
+        console.error('[InventoryAddItemModal] recordItemAddHistory:', historyRes.error);
+      }
+
       onSuccess(data);
       onClose();
     } catch (err: unknown) {
@@ -100,7 +121,8 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[210] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[210] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 transition-[padding,height] duration-200"
+      style={modalBackdropStyle}
       onClick={onClose}
     >
       <motion.div
@@ -108,7 +130,8 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="relative bg-card border border-border rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="relative bg-card border border-border rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden transition-[max-height] duration-200"
+        style={modalContentStyle}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -139,7 +162,11 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
               <input
                 type="text"
                 inputMode="decimal"
-                value={newItemData.stock ?? ''}
+                value={
+                  newItemData.stock === undefined || newItemData.stock === null || newItemData.stock === ''
+                    ? ''
+                    : String(newItemData.stock)
+                }
                 onChange={(e) => {
                   let val = e.target.value.replace(/[^0-9.]/g, '');
                   if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
@@ -163,7 +190,11 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
               <input
                 type="text"
                 inputMode="decimal"
-                value={newItemData.order_point ?? ''}
+                value={
+                  newItemData.order_point === undefined || newItemData.order_point === null || newItemData.order_point === ''
+                    ? ''
+                    : String(newItemData.order_point)
+                }
                 onChange={(e) => {
                   let val = e.target.value.replace(/[^0-9.]/g, '');
                   if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
@@ -178,7 +209,11 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
               <input
                 type="text"
                 inputMode="decimal"
-                value={newItemData.target_stock ?? ''}
+                value={
+                  newItemData.target_stock === undefined || newItemData.target_stock === null || newItemData.target_stock === ''
+                    ? ''
+                    : String(newItemData.target_stock)
+                }
                 onChange={(e) => {
                   let val = e.target.value.replace(/[^0-9.]/g, '');
                   if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');

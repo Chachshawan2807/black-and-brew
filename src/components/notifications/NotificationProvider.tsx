@@ -1,49 +1,96 @@
 'use client';
 
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { useInventoryNotifications } from '@/hooks/use-inventory-notifications';
 import type {
   InventoryNotification,
   NotificationPreferences,
-  NotificationToastState,
 } from '@/lib/notification-types';
-import { InventoryChangeToast } from '@/components/notifications/InventoryChangeToast';
 import { NotificationPanel } from '@/components/notifications/NotificationPanel';
 
-interface NotificationContextValue {
+export interface NotificationState {
   notifications: InventoryNotification[];
   unreadCount: number;
   panelOpen: boolean;
-  toast: NotificationToastState | null;
   prefs: NotificationPreferences;
+}
+
+export interface NotificationActions {
   setPrefs: (prefs: NotificationPreferences) => void;
   markAllRead: () => void;
   markRead: (id: string) => void;
   clearAll: () => void;
-  dismissToast: () => void;
   openPanel: () => void;
   closePanel: () => void;
   setPanelOpen: (open: boolean) => void;
 }
 
-const NotificationContext = createContext<NotificationContextValue | null>(null);
+export type NotificationContextValue = NotificationState & NotificationActions;
 
-export function useNotifications() {
-  const ctx = useContext(NotificationContext);
+const NotificationStateContext = createContext<NotificationState | null>(null);
+const NotificationActionsContext = createContext<NotificationActions | null>(null);
+
+export function useNotificationState(): NotificationState {
+  const ctx = useContext(NotificationStateContext);
   if (!ctx) {
-    throw new Error('useNotifications must be used within NotificationProvider');
+    throw new Error('useNotificationState must be used within NotificationProvider');
   }
   return ctx;
 }
 
+export function useNotificationActions(): NotificationActions {
+  const ctx = useContext(NotificationActionsContext);
+  if (!ctx) {
+    throw new Error('useNotificationActions must be used within NotificationProvider');
+  }
+  return ctx;
+}
+
+/** Combined hook — prefer useNotificationState / useNotificationActions when possible. */
+export function useNotifications(): NotificationContextValue {
+  return { ...useNotificationState(), ...useNotificationActions() };
+}
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const value = useInventoryNotifications();
+  const hook = useInventoryNotifications();
+
+  const state = useMemo(
+    () => ({
+      notifications: hook.notifications,
+      unreadCount: hook.unreadCount,
+      panelOpen: hook.panelOpen,
+      prefs: hook.prefs,
+    }),
+    [hook.notifications, hook.unreadCount, hook.panelOpen, hook.prefs]
+  );
+
+  const actions = useMemo(
+    () => ({
+      setPrefs: hook.setPrefs,
+      markAllRead: hook.markAllRead,
+      markRead: hook.markRead,
+      clearAll: hook.clearAll,
+      openPanel: hook.openPanel,
+      closePanel: hook.closePanel,
+      setPanelOpen: hook.setPanelOpen,
+    }),
+    [
+      hook.setPrefs,
+      hook.markAllRead,
+      hook.markRead,
+      hook.clearAll,
+      hook.openPanel,
+      hook.closePanel,
+      hook.setPanelOpen,
+    ]
+  );
 
   return (
-    <NotificationContext.Provider value={value}>
-      {children}
-      <NotificationPanel />
-      <InventoryChangeToast />
-    </NotificationContext.Provider>
+    <NotificationActionsContext.Provider value={actions}>
+      <NotificationStateContext.Provider value={state}>
+        {children}
+        <NotificationPanel />
+      </NotificationStateContext.Provider>
+    </NotificationActionsContext.Provider>
   );
 }

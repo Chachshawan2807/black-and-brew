@@ -7,8 +7,10 @@ import { parseISO, startOfDay, endOfDay, addDays } from 'date-fns';
 import { CalendarDays, CalendarOff, CalendarX, CalendarClock, CalendarRange, Sun, type LucideIcon } from 'lucide-react';
 import {
   getShiftColorClass,
+  getShiftColorStyle,
   getShiftDisplayText,
   DAY_OFF_COLOR,
+  type ShiftColorStyle,
 } from '@/lib/shift-colors';
 
 interface Profile {
@@ -38,6 +40,7 @@ interface LiveStatusTrackerProps {
 interface EmployeeStatus {
   displayText: string;
   colorClass: string;
+  colorStyle?: ShiftColorStyle;
   sortWeight: number;
   sortTime: number;
   isWorkShift: boolean;
@@ -65,6 +68,7 @@ function getEmployeeStatus(profile: Profile, shifts: Shift[]): EmployeeStatus {
   const loc = employeeShift.metadata?.location || '';
   const status = employeeShift.status;
   const colorClass = getShiftColorClass(loc, status);
+  const colorStyle = getShiftColorStyle(loc, status);
 
   let displayText = getShiftDisplayText(loc, status);
   let sortWeight = 1;
@@ -83,7 +87,7 @@ function getEmployeeStatus(profile: Profile, shifts: Shift[]): EmployeeStatus {
     displayText = timeStr;
   }
 
-  return { displayText, colorClass, sortWeight, sortTime, isWorkShift };
+  return { displayText, colorClass, colorStyle, sortWeight, sortTime, isWorkShift };
 }
 
 function getShiftIcon(displayText: string): LucideIcon {
@@ -128,7 +132,7 @@ function StatusGrid({ profiles, shifts, dateLabel, highlightToday = false }: Sta
   return (
     <div className="flex flex-wrap gap-2.5">
       {sortedProfiles.map((profile) => {
-        const { displayText, colorClass, isWorkShift } = getEmployeeStatus(profile, shifts);
+        const { displayText, colorClass, colorStyle, isWorkShift } = getEmployeeStatus(profile, shifts);
         const ShiftIcon = getShiftIcon(displayText);
 
         return (
@@ -138,6 +142,7 @@ function StatusGrid({ profiles, shifts, dateLabel, highlightToday = false }: Sta
             className={`${colorClass} group relative w-[7.25rem] shrink-0 overflow-hidden rounded-2xl p-3 min-h-[4.75rem] flex flex-col justify-between gap-2 bb-transition hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${
               highlightToday && isWorkShift ? 'ring-2 ring-border bb-shadow-sm' : 'shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
             }`}
+            style={colorStyle}
           >
             <span className="text-[0.8125rem] font-normal truncate leading-snug tracking-tight">
               {profile.full_name}
@@ -250,10 +255,7 @@ export default function LiveStatusTracker({
       })
       .subscribe();
 
-    const timer = setInterval(refreshShifts, 60000);
-
     return () => {
-      clearInterval(timer);
       supabase.removeChannel(channel);
     };
   }, []);

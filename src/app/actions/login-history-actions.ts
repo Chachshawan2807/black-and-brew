@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies, headers } from 'next/headers';
 import { parseUserAgent } from '@/lib/parse-user-agent';
 import type { ClientDevicePayload } from '@/lib/login-history-types';
+import { SESSION_FP_COOKIE } from '@/lib/auth-constants';
+import { computeActiveLoginSessions, type ActiveLoginSession } from '@/lib/login-session-status';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -112,6 +114,20 @@ export async function recordLoginEvent(input: RecordLoginEventInput): Promise<vo
   } catch (error) {
     console.error('[recordLoginEvent] Exception:', error);
   }
+}
+
+export async function fetchActiveLoginSessions(): Promise<
+  { success: true; sessions: ActiveLoginSession[] } | { success: false; error: string }
+> {
+  const history = await fetchLoginHistory(200);
+  if (!history.success) {
+    return history;
+  }
+
+  const cookieStore = await cookies();
+  const currentFp = cookieStore.get(SESSION_FP_COOKIE)?.value ?? null;
+  const sessions = computeActiveLoginSessions(history.rows, currentFp);
+  return { success: true, sessions };
 }
 
 export async function fetchLoginHistory(

@@ -8,6 +8,14 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { sanitizePromptInput, sanitizeScreenContext, sanitizeXssPayload } from '@/lib/security/sanitize';
 import { cn } from '@/lib/utils';
+import {
+  FAB_BASE_CLASS,
+  FAB_BOTTOM_AI_CLASS,
+  FAB_PANEL_ABOVE_AI_CLASS,
+} from '@/lib/floating-action-layout';
+import { getFabPanelKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
+import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 
 const QUICK_ACTIONS = [
   { id: 'shift', label: '👥 ตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
@@ -18,6 +26,7 @@ const QUICK_ACTIONS = [
 
 // Actual chat component containing useChat (only runs on client)
 export default function AIChatOverlay() {
+  const { fabStackHidden, isAnyOtherOpen, setOverlayOpen } = useFloatingOverlay();
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [isMounted, setIsMounted] = useState(false);
@@ -32,6 +41,24 @@ export default function AIChatOverlay() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    setOverlayOpen('ai-chat', isOpen);
+  }, [isOpen, setOverlayOpen]);
+
+  const hideAiChatButton = fabStackHidden || isAnyOtherOpen('ai-chat');
+
+  useEffect(() => {
+    if (fabStackHidden && isOpen) {
+      setIsOpen(false);
+    }
+  }, [fabStackHidden, isOpen]);
+
+  const viewportInsets = useVisualViewportInsets(isMounted && isOpen);
+  const chatPanelStyle = getFabPanelKeyboardAwareStyle({
+    insets: viewportInsets,
+    defaultMaxHeight: '75vh',
+  });
 
   // Load chat history once after mount — static dependency [isMounted]
   useEffect(() => {
@@ -112,41 +139,40 @@ export default function AIChatOverlay() {
   return (
     <>
       {/* Floating Trigger Button */}
-      <motion.button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={cn(
-          'fixed w-14 h-14 rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg max-md:bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] max-md:right-[calc(1.25rem+env(safe-area-inset-right,0px))] md:bottom-6 md:right-6',
-          isOpen ? 'z-[204]' : 'z-[200]',
-        )}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.94 }}
-        aria-label="เปิดผู้ช่วย AI บรู"
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          {isOpen ? (
-            <motion.span
-              key="close"
-              initial={{ rotate: -90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: 90, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <X size={22} />
-            </motion.span>
-          ) : (
-            <motion.span
-              key="open"
-              initial={{ rotate: 90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: -90, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex items-center justify-center"
-            >
-              <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={26} height={26} className="w-[26px] h-[26px] object-contain invert" />
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </motion.button>
+      {!hideAiChatButton && (
+        <motion.button
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={cn(FAB_BASE_CLASS, FAB_BOTTOM_AI_CLASS, isOpen ? 'z-[204]' : 'z-[200]')}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.94 }}
+          aria-label="เปิดผู้ช่วย AI บรู"
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            {isOpen ? (
+              <motion.span
+                key="close"
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <X size={22} />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="open"
+                initial={{ rotate: 90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: -90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex items-center justify-center"
+              >
+                <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={26} height={26} className="w-[26px] h-[26px] object-contain invert" />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      )}
 
       {/* Chat Window */}
       <AnimatePresence>
@@ -168,8 +194,14 @@ export default function AIChatOverlay() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
-              className="fixed z-[203] box-border bg-card rounded-3xl shadow-2xl border-2 border-border flex flex-col overflow-hidden max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none md:w-full md:max-w-2xl md:bottom-24 md:left-auto md:right-6"
-              style={{ maxHeight: '75vh' }}
+              className={cn(
+                'fixed z-[203] box-border bg-card rounded-3xl shadow-2xl border-2 border-border flex flex-col overflow-hidden',
+                'max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none',
+                'max-md:transition-[top,max-height,bottom] max-md:duration-200',
+                'md:w-full md:max-w-2xl md:left-auto md:right-6',
+                FAB_PANEL_ABOVE_AI_CLASS,
+              )}
+              style={chatPanelStyle}
             >
               {/* Header */}
               <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-border flex items-center justify-between gap-3 bg-card">

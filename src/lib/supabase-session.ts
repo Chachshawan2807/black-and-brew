@@ -16,3 +16,10 @@ export async function ensureSupabaseSession(): Promise<boolean> {
   }
   return true;
 }
+
+export async function clearSupabaseSession(): Promise<void> {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error('[Supabase] Sign-out failed:', error.message);
+  }
+}

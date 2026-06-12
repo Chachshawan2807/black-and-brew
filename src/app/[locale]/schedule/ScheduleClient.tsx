@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Undo2, Redo2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Download, Pencil } from 'lucide-react';
+import { Plus, Trash2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Pencil } from 'lucide-react';
 import { startOfWeek, addDays, format, parseISO, isValid } from 'date-fns';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -13,7 +13,19 @@ import { FloatingAlert } from '@/components/ui/floating-alert';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 
-import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange } from '@/app/actions/shift-actions';
+import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations } from '@/app/actions/shift-actions';
+import ShiftSettingsModal from '@/components/schedule/ShiftSettingsModal';
+import {
+  loadShiftTypesFromStorage,
+  saveShiftTypesToStorage,
+  collectShiftRenames,
+  getFohCountValues,
+  SHIFT_TYPES_UPDATED_EVENT,
+  type ShiftTypeDisplay,
+  type ShiftTypeEntry,
+} from '@/lib/shift-type-config';
+import { useScheduleUndo } from '@/hooks/useScheduleUndo';
+import ScheduleToolbar from './ScheduleToolbar';
 import type { Profile, Shift } from '@/types';
 import { isSameThaiDay, formatToThai } from '@/lib/date-utils';
 import { THAI_TIMEZONE } from '@/lib/timezone';
@@ -44,14 +56,6 @@ import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProv
 
 // --- Constants Outside Component ---
 const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-const shiftTypes = [
-  { label: '6:30', value: '6:30', color: 'bb-pastel-surface bg-[#d4edda] text-[#000000] border-[#c3e6cb]' },
-  { label: '7:00', value: '7:00', color: 'bb-pastel-surface bg-[#ffffff] text-[#000000] border-gray-300' },
-  { label: '8:00', value: '8:00', color: 'bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]' },
-  { label: 'ร้านซักผ้า', value: 'ร้านซักผ้า', color: 'bb-pastel-surface bg-[#d1ecf1] text-[#000000] border-[#bee5eb]' },
-  { label: 'ไปสาขา 2', value: 'ไปสาขา 2', color: 'bb-pastel-surface bg-[#d1ecf1] text-[#000000] border-[#bee5eb]' },
-  { label: 'ลา', value: 'ลา', color: 'bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]' }
-];
 
 interface ColumnDef {
   id: string;
@@ -187,7 +191,7 @@ interface SortableEmployeeRowProps {
   profile: Profile;
   weekDays: string[];
   shifts: Shift[];
-  shiftTypes: typeof shiftTypes;
+  shiftTypes: ShiftTypeDisplay[];
   onCellClick: (employeeId: string, date: string, shift: Shift | undefined, x: number, y: number) => void;
   editingNameId: string | null;
   nameInput: string;
@@ -290,7 +294,10 @@ const SortableEmployeeRow = React.memo(({
             title={shift?.metadata?.remark || ''}
           >
             {shift && (shift.status && shift.metadata?.location) ? (
-              <div className={`h-full w-full rounded-lg border p-1.5 flex flex-col justify-center items-center text-center transition-all duration-200 group-hover/cell:scale-[0.97] group-hover/cell:shadow-md shadow-sm ${type?.color || 'bb-pastel-surface bg-card border-border text-[#000000]'}`}>
+              <div
+                className={`h-full w-full rounded-lg border p-1.5 flex flex-col justify-center items-center text-center transition-all duration-200 group-hover/cell:scale-[0.97] group-hover/cell:shadow-md shadow-sm ${type?.className || 'bb-pastel-surface bg-card border-border text-[#000000]'}`}
+                style={type?.style}
+              >
                 <span className="text-[14.5px] font-normal leading-none tracking-tight">{type?.label || shift.metadata?.location}</span>
                 {shift.metadata?.remark && (
                   <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-400/60" />
@@ -346,9 +353,22 @@ export default function ScheduleClient({
   const [isExportingImage, setIsExportingImage] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [shiftTypes, setShiftTypes] = useState<ShiftTypeDisplay[]>(() => loadShiftTypesFromStorage());
+  const [showShiftSettingsModal, setShowShiftSettingsModal] = useState(false);
+  const [shiftSettingsSaving, setShiftSettingsSaving] = useState(false);
+  const shiftTypesRef = useRef<ShiftTypeEntry[]>(shiftTypes);
+
+  useEffect(() => {
+    shiftTypesRef.current = shiftTypes;
+  }, [shiftTypes]);
 
   useEffect(() => {
     setMounted(true);
+    setShiftTypes(loadShiftTypesFromStorage());
+
+    const onUpdated = () => setShiftTypes(loadShiftTypesFromStorage());
+    window.addEventListener(SHIFT_TYPES_UPDATED_EVENT, onUpdated);
+    return () => window.removeEventListener(SHIFT_TYPES_UPDATED_EVENT, onUpdated);
   }, []);
 
   useEffect(() => {
@@ -446,8 +466,45 @@ export default function ScheduleClient({
   const [historyFilter, setHistoryFilter] = useState({ start: '', end: '' });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const [undoStack, setUndoStack] = useState<any[]>([]);
-  const [redoStack, setRedoStack] = useState<any[]>([]);
+  const handleSaveShiftSettings = useCallback(async (entries: ShiftTypeEntry[]) => {
+    if (blockIfReadOnly()) return;
+
+    setShiftSettingsSaving(true);
+    try {
+      const renames = collectShiftRenames(shiftTypesRef.current, entries);
+
+      if (renames.length > 0) {
+        const result = await renameShiftLocations(renames);
+        if (!result.success) {
+          alert(result.error || 'ไม่สามารถอัปเดตชื่อกะในฐานข้อมูลได้');
+          return;
+        }
+
+        if (result.updated && result.updated > 0) {
+          setShifts((prev) =>
+            prev.map((s) => {
+              const loc = s.metadata?.location;
+              const rename = renames.find((r) => r.oldValue === loc);
+              if (!rename) return s;
+              return {
+                ...s,
+                metadata: { ...s.metadata, location: rename.newValue },
+              };
+            })
+          );
+        }
+      }
+
+      const saved = saveShiftTypesToStorage(entries);
+      setShiftTypes(saved);
+      setShowShiftSettingsModal(false);
+    } catch (err) {
+      console.error('Failed to save shift settings:', err);
+      alert('เกิดข้อผิดพลาดในการบันทึกการตั้งค่า');
+    } finally {
+      setShiftSettingsSaving(false);
+    }
+  }, [blockIfReadOnly]);
 
   const [showRegularHolidayModal, setShowRegularHolidayModal] = useState(false);
   const [regularHolidays, setRegularHolidays] = useState<RegularHolidayMap>(initialRegularHolidays);
@@ -618,87 +675,16 @@ export default function ScheduleClient({
     }
   }, [hasServerRegularHolidayData, initialProfiles, initialShifts, initialHolidays, initialRegularHolidays, initialDateStr]);
 
-  const pushToHistory = useCallback((currentProfiles: any[], currentOrder: string[], currentShifts: any[]) => {
-    setUndoStack(prev => {
-      const newStack = [...prev, {
-        profiles: JSON.parse(JSON.stringify(currentProfiles)),
-        orderedProfileIds: [...currentOrder],
-        shifts: JSON.parse(JSON.stringify(currentShifts))
-      }];
-      return newStack.slice(-20);
-    });
-    setRedoStack([]);
-  }, []);
-
-  const undo = async () => {
-    if (blockIfReadOnly()) return;
-    if (undoStack.length === 0) return;
-    const previous = undoStack[undoStack.length - 1];
-    const newUndoStack = undoStack.slice(0, -1);
-
-    setRedoStack(prev => [{
-      profiles: JSON.parse(JSON.stringify(profiles)),
-      orderedProfileIds: [...orderedProfileIds],
-      shifts: JSON.parse(JSON.stringify(shifts))
-    }, ...prev].slice(0, 20));
-    setUndoStack(newUndoStack);
-
-    setProfiles(previous.profiles);
-    setOrderedProfileIds(previous.orderedProfileIds);
-    setShifts(previous.shifts);
-
-    try {
-      await updateStaffOrder(previous.orderedProfileIds);
-      const profileUpdates = previous.profiles.map((p: any) =>
-        supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id)
-      );
-      await Promise.all(profileUpdates);
-      await supabase.from('shifts').delete().gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
-
-      if (previous.shifts.length > 0) {
-        await supabase.from('shifts').insert(previous.shifts.map((s: any) => {
-          const { id, created_at, ...rest } = s; 
-          return rest;
-        }));
-      }
-      await revalidateAppPaths();
-    } catch { }
-  };
-
-  const redo = async () => {
-    if (blockIfReadOnly()) return;
-    if (redoStack.length === 0) return;
-    const next = redoStack[0];
-    const newRedoStack = redoStack.slice(1);
-
-    setUndoStack(prev => [...prev, {
-      profiles: JSON.parse(JSON.stringify(profiles)),
-      orderedProfileIds: [...orderedProfileIds],
-      shifts: JSON.parse(JSON.stringify(shifts))
-    }].slice(-20));
-    setRedoStack(newRedoStack);
-
-    setProfiles(next.profiles);
-    setOrderedProfileIds(next.orderedProfileIds);
-    setShifts(next.shifts);
-
-    try {
-      await updateStaffOrder(next.orderedProfileIds);
-      const profileUpdates = next.profiles.map((p: any) =>
-        supabase.from('profiles').update({ full_name: p.full_name }).eq('id', p.id)
-      );
-      await Promise.all(profileUpdates);
-      await supabase.from('shifts').delete().gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
-
-      if (next.shifts.length > 0) {
-        await supabase.from('shifts').insert(next.shifts.map((s: any) => {
-          const { id, created_at, ...rest } = s;
-          return rest;
-        }));
-      }
-      await revalidateAppPaths();
-    } catch { }
-  };
+  const { undoStack, redoStack, pushToHistory, undo, redo } = useScheduleUndo({
+    profiles,
+    orderedProfileIds,
+    shifts,
+    weekDays,
+    setProfiles,
+    setOrderedProfileIds,
+    setShifts,
+    blockIfReadOnly,
+  });
 
   const handleClearAll = async () => {
     if (blockIfReadOnly()) return;
@@ -751,7 +737,8 @@ export default function ScheduleClient({
             remark: shift.metadata?.remark,
             startDate: shift.start_time,
             endDate: shift.start_time,
-            color: shiftTypes.find(t => t.value === shift.metadata?.location)?.color || 'bb-pastel-surface bg-card border-border text-[#000000]',
+            color: shiftTypes.find(t => t.value === shift.metadata?.location)?.className || 'bb-pastel-surface bg-card border-border text-[#000000]',
+            colorStyle: shiftTypes.find(t => t.value === shift.metadata?.location)?.style,
             metadata: { ...shift.metadata }
           });
         }
@@ -759,7 +746,7 @@ export default function ScheduleClient({
 
       setMgmtHistory(grouped.reverse());
     } catch { }
-  }, [historyFilter]);
+  }, [historyFilter, shiftTypes]);
 
   useEffect(() => {
     if (showManagementModal) {
@@ -1209,81 +1196,21 @@ export default function ScheduleClient({
 
   return (
     <div className="flex flex-col h-screen bg-transparent text-foreground overflow-hidden">
-      <header className="md:h-14 border-b border-border px-4 md:px-6 flex flex-col md:flex-row items-center justify-between bg-transparent shrink-0 z-20 shadow-sm py-2 md:py-0">
-        <div className="flex items-center justify-between w-full md:w-auto gap-6 mb-2 md:mb-0">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={undo}
-              disabled={isReadOnly || undoStack.length === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && undoStack.length > 0 ? 'hover:bg-muted/30 text-foreground cursor-pointer' : 'text-foreground/30 cursor-not-allowed'}`}
-              title="เลิกทำ"
-            >
-              <Undo2 className="w-4 h-4" strokeWidth={1.5} />
-            </button>
-            <button
-              onClick={redo}
-              disabled={isReadOnly || redoStack.length === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && redoStack.length > 0 ? 'hover:bg-muted/30 text-foreground cursor-pointer' : 'text-foreground/30 cursor-not-allowed'}`}
-              title="ทำซ้ำ"
-            >
-              <Redo2 className="w-4 h-4" strokeWidth={1.5} />
-            </button>
-          </div>
-          <div className="flex items-center">
-            <ClickableDatePicker
-              value={initialDateStr}
-              onChange={handleDateChange}
-              containerClassName="w-fit h-11 scale-100 origin-right"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 w-full overflow-x-auto whitespace-nowrap pb-2 scrollbar-none md:overflow-visible md:pb-0 md:justify-end">
-          <button
-            onClick={() => setShowRegularHolidayModal(true)}
-            disabled={isReadOnly}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <Calendar className="w-4 h-4" />
-            วันหยุดประจำ
-          </button>
-
-          <button
-            onClick={() => setShowManagementModal(true)}
-            disabled={isReadOnly}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <UserCog className="w-4 h-4" />
-            การลา/เปลี่ยนกะ
-          </button>
-
-          <button
-            onClick={() => setShowClearConfirm(true)}
-            disabled={isReadOnly}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <Trash2 className="w-4 h-4" />
-            ล้างทั้งหมด
-          </button>
-
-          <button
-            onClick={exportScheduleImage}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
-          >
-            <Download className="w-4 h-4" />
-            บันทึกรูปภาพ
-          </button>
-
-          <button
-            onClick={() => setShowAddEmployeeModal(true)}
-            disabled={isReadOnly}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            เพิ่มพนักงาน
-          </button>
-        </div>
-      </header>
+      <ScheduleToolbar
+        isReadOnly={isReadOnly}
+        undoStackLength={undoStack.length}
+        redoStackLength={redoStack.length}
+        onUndo={undo}
+        onRedo={redo}
+        initialDateStr={initialDateStr}
+        onDateChange={handleDateChange}
+        onShowRegularHolidayModal={() => setShowRegularHolidayModal(true)}
+        onShowManagementModal={() => setShowManagementModal(true)}
+        onShowClearConfirm={() => setShowClearConfirm(true)}
+        onExportScheduleImage={exportScheduleImage}
+        onShowAddEmployeeModal={() => setShowAddEmployeeModal(true)}
+        onShowShiftSettings={() => setShowShiftSettingsModal(true)}
+      />
 
       <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
         <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm border border-border rounded-3xl overflow-hidden shadow-sm">
@@ -1402,7 +1329,7 @@ export default function ScheduleClient({
                 <div className="p-2 border-r border-border flex items-center justify-center bg-transparent">
                 </div>
                 {weekDays.map(date => {
-                  const VALID_SHIFTS = ['6:30', '7:00', '8:00'];
+                  const VALID_SHIFTS = getFohCountValues(shiftTypes);
                   const fohCount = new Set(
                     shifts
                       .filter(s => {
@@ -1451,7 +1378,8 @@ export default function ScheduleClient({
                   key={type.value}
                   onClick={() => handleSave(type.value)}
                   disabled={isReadOnly}
-                  className={`h-11 md:h-auto py-1.5 px-3 rounded-lg border text-base md:text-[12px] font-normal shadow-sm w-full text-left transition-all duration-200 hover:brightness-95 hover:shadow-md active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${type.color}`}
+                  className={`h-11 md:h-auto py-1.5 px-3 rounded-lg border text-base md:text-[12px] font-normal shadow-sm w-full text-left transition-all duration-200 hover:brightness-95 hover:shadow-md active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${type.className}`}
+                  style={type.style}
                 >
                   {type.label}
                 </button>
@@ -1514,6 +1442,15 @@ export default function ScheduleClient({
         subtitle="กรุณารอสักครู่..."
       />
 
+      {showShiftSettingsModal && (
+        <ShiftSettingsModal
+          shiftTypes={shiftTypes}
+          isSaving={shiftSettingsSaving}
+          onClose={() => !shiftSettingsSaving && setShowShiftSettingsModal(false)}
+          onSave={handleSaveShiftSettings}
+        />
+      )}
+
       {showManagementModal && (
         <div
           className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
@@ -1572,9 +1509,10 @@ export default function ScheduleClient({
                         onClick={() => setManagementForm(prev => ({ ...prev, shiftType: t.value }))}
                         className={cn(
                           'h-9 px-3 rounded-full border text-[13px] font-normal shadow-sm transition-all active:scale-[0.97] cursor-pointer',
-                          t.color,
+                          t.className,
                           managementForm.shiftType === t.value && 'ring-2 ring-emerald-500/40 ring-offset-1 ring-offset-card'
                         )}
+                        style={t.style}
                       >
                         {t.label}
                       </button>
@@ -1697,8 +1635,11 @@ export default function ScheduleClient({
                               {item.startDate !== item.endDate && ` → ${format(new Date(item.endDate), 'dd/MM/yyyy')}`}
                             </td>
                             <td className="p-3 text-[12px] font-normal text-foreground border-r border-border truncate bg-transparent">
-                              <span className={`px-2 py-0.5 rounded-full ${item.color} border border-border inline-block`}>
-                                {item.location}
+                              <span
+                                className={`px-2 py-0.5 rounded-full ${item.color} border inline-block bb-pastel-surface`}
+                                style={item.colorStyle}
+                              >
+                                {shiftTypes.find((t) => t.value === item.location)?.label || item.location}
                               </span>
                             </td>
                             <td className="p-3 text-[12px] font-normal text-foreground border-r border-border truncate bg-transparent">

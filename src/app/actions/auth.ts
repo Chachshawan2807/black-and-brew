@@ -1,17 +1,84 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { READ_ONLY_PIN, READ_ONLY_DENY_MSG } from '@/lib/auth-constants';
+import {
+  AUTH_SESSION_MAX_AGE_SEC,
+  FORCE_LOGOUT_DENY_MSG,
+  READ_ONLY_PIN,
+  READ_ONLY_DENY_MSG,
+  SESSION_FP_COOKIE,
+} from '@/lib/auth-constants';
 import { recordLoginEvent } from '@/app/actions/login-history-actions';
 import type { ClientDevicePayload } from '@/lib/login-history-types';
+import {
+  clearSessionRevocation,
+  isSessionFingerprintRevoked,
+  revokeSessionFingerprints,
+} from '@/lib/session-revocation';
 
 const getCookieOpts = () => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict' as const,
-  maxAge: 60 * 60 * 24,
+  maxAge: AUTH_SESSION_MAX_AGE_SEC,
   path: '/',
 });
+
+async function assertMasterPin(
+  pin: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const systemPin = process.env.APP_PIN;
+  if (!systemPin) {
+    console.error('[AUTH_ACTION] APP_PIN environment variable is not defined.');
+    return { ok: false, error: 'System configuration error' };
+  }
+  if (pin !== systemPin) {
+    return { ok: false, error: FORCE_LOGOUT_DENY_MSG };
+  }
+  return { ok: true };
+}
+
+function setAuthCookies(
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+  readOnly: boolean,
+  device?: ClientDevicePayload | null
+) {
+  cookieStore.set('bb_auth_pin_verified', 'true', getCookieOpts());
+  if (readOnly) {
+    cookieStore.set('bb_auth_read_only', 'true', getCookieOpts());
+  } else {
+    cookieStore.delete('bb_auth_read_only');
+  }
+  if (device?.sessionFingerprint) {
+    cookieStore.set(SESSION_FP_COOKIE, device.sessionFingerprint, getCookieOpts());
+  }
+}
+
+function clearAuthCookies(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  cookieStore.delete('bb_auth_pin_verified');
+  cookieStore.delete('bb_auth_read_only');
+  cookieStore.delete(SESSION_FP_COOKIE);
+}
+
+async function resolveAuthSession(
+  cookieStore: Awaited<ReturnType<typeof cookies>>
+): Promise<{ verified: boolean; readOnly: boolean }> {
+  const verified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+  if (!verified) {
+    return { verified: false, readOnly: false };
+  }
+
+  const fingerprint = cookieStore.get(SESSION_FP_COOKIE)?.value;
+  if (fingerprint && (await isSessionFingerprintRevoked(fingerprint))) {
+    clearAuthCookies(cookieStore);
+    return { verified: false, readOnly: false };
+  }
+
+  return {
+    verified: true,
+    readOnly: cookieStore.get('bb_auth_read_only')?.value === 'true',
+  };
+}
 
 export async function verifyPin(
   pin: string,
@@ -28,8 +95,10 @@ export async function verifyPin(
   const cookieStore = await cookies();
 
   if (pin === READ_ONLY_PIN) {
-    cookieStore.set('bb_auth_pin_verified', 'true', getCookieOpts());
-    cookieStore.set('bb_auth_read_only', 'true', getCookieOpts());
+    if (device?.sessionFingerprint) {
+      await clearSessionRevocation(device.sessionFingerprint);
+    }
+    setAuthCookies(cookieStore, true, device);
     await recordLoginEvent({
       eventType: 'login_success',
       status: 'success',
@@ -40,8 +109,10 @@ export async function verifyPin(
   }
 
   if (pin === systemPin) {
-    cookieStore.set('bb_auth_pin_verified', 'true', getCookieOpts());
-    cookieStore.delete('bb_auth_read_only');
+    if (device?.sessionFingerprint) {
+      await clearSessionRevocation(device.sessionFingerprint);
+    }
+    setAuthCookies(cookieStore, false, device);
     await recordLoginEvent({
       eventType: 'login_success',
       status: 'success',
@@ -63,7 +134,21 @@ export async function verifyPin(
 
 export async function checkAuth(): Promise<boolean> {
   const cookieStore = await cookies();
-  return cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+  const session = await resolveAuthSession(cookieStore);
+  return session.verified;
+}
+
+export async function getAuthSessionInfo(): Promise<{
+  verified: boolean;
+  readOnly: boolean;
+}> {
+  const cookieStore = await cookies();
+  return resolveAuthSession(cookieStore);
+}
+
+export async function getCurrentSessionFingerprint(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(SESSION_FP_COOKIE)?.value ?? null;
 }
 
 async function isReadOnlySession(): Promise<boolean> {
@@ -94,6 +179,86 @@ export async function clearAuth(device?: ClientDevicePayload | null): Promise<vo
     });
   }
 
-  cookieStore.delete('bb_auth_pin_verified');
-  cookieStore.delete('bb_auth_read_only');
+  clearAuthCookies(cookieStore);
+}
+
+/** Revoke one remote device session (master PIN required). */
+export async function forceRevokeDeviceSession(
+  pin: string,
+  sessionFingerprint: string,
+  actorDevice?: ClientDevicePayload | null
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await assertMasterPin(pin);
+  if (!gate.ok) return { success: false, error: gate.error };
+
+  if (!sessionFingerprint) {
+    return { success: false, error: 'ไม่พบข้อมูลอุปกรณ์' };
+  }
+
+  const currentFp = actorDevice?.sessionFingerprint ?? (await getCurrentSessionFingerprint());
+  if (sessionFingerprint === currentFp) {
+    return {
+      success: false,
+      error: 'ใช้เมนูออกจากระบบสำหรับเครื่องนี้ — บังคับออกใช้กับอุปกรณ์อื่น',
+    };
+  }
+
+  try {
+    await revokeSessionFingerprints([sessionFingerprint], 'forced_by_master');
+    await recordLoginEvent({
+      eventType: 'logout',
+      status: 'success',
+      device: {
+        userAgent: 'remote-revoke',
+        screenWidth: 0,
+        screenHeight: 0,
+        language: 'th',
+        timezone: 'Asia/Bangkok',
+        sessionFingerprint,
+      },
+      accessLevel: 'full',
+    });
+    return { success: true };
+  } catch {
+    return { success: false, error: 'บังคับออกจากระบบไม่สำเร็จ' };
+  }
+}
+
+/** Revoke all active remote sessions except the current device. */
+export async function forceRevokeAllRemoteSessions(
+  pin: string,
+  sessionFingerprints: string[],
+  actorDevice?: ClientDevicePayload | null
+): Promise<{ success: boolean; error?: string; revokedCount?: number }> {
+  const gate = await assertMasterPin(pin);
+  if (!gate.ok) return { success: false, error: gate.error };
+
+  const currentFp = actorDevice?.sessionFingerprint ?? (await getCurrentSessionFingerprint());
+  const targets = sessionFingerprints.filter((fp) => fp && fp !== currentFp);
+
+  if (targets.length === 0) {
+    return { success: true, revokedCount: 0 };
+  }
+
+  try {
+    await revokeSessionFingerprints(targets, 'forced_by_master_all');
+    for (const fp of targets) {
+      await recordLoginEvent({
+        eventType: 'logout',
+        status: 'success',
+        device: {
+          userAgent: 'remote-revoke',
+          screenWidth: 0,
+          screenHeight: 0,
+          language: 'th',
+          timezone: 'Asia/Bangkok',
+          sessionFingerprint: fp,
+        },
+        accessLevel: 'full',
+      });
+    }
+    return { success: true, revokedCount: targets.length };
+  } catch {
+    return { success: false, error: 'บังคับออกจากระบบไม่สำเร็จ' };
+  }
 }

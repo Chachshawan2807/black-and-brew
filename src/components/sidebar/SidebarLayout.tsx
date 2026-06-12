@@ -1,12 +1,15 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useStore } from "@/hooks/use-store";
 import { Sidebar } from "@/components/sidebar/Sidebar";
-import { useSidebarToggle } from "@/hooks/use-sidebar-toggle";
+import { useSidebarToggle, useSidebarHydrated } from "@/hooks/use-sidebar-toggle";
 import { Menu } from "lucide-react";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 import Image from "next/image";
+import {
+  FAB_PAGE_BOTTOM_PADDING_CLASS,
+  FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS,
+} from "@/lib/floating-action-layout";
+import { useFloatingOverlay } from "@/components/floating/FloatingOverlayContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageTransition } from "@/components/ui/page-transition";
 import { fadeOverlay } from "@/lib/motion-presets";
@@ -16,8 +19,11 @@ export default function SidebarLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const sidebar = useStore(useSidebarToggle, (state) => state);
-  const isOpen = sidebar?.isOpen ?? true;
+  const hydrated = useSidebarHydrated();
+  const isOpen = useSidebarToggle((state) => state.isOpen);
+  const setIsOpen = useSidebarToggle((state) => state.setIsOpen);
+  const { fabStackHidden } = useFloatingOverlay();
+  const sidebarOpen = hydrated ? isOpen : true;
 
   return (
     <>
@@ -34,9 +40,8 @@ export default function SidebarLayout({
           />
         </div>
         <div className="flex items-center gap-1">
-          <NotificationBell compact />
           <button 
-            onClick={() => sidebar?.setIsOpen?.()}
+            onClick={() => setIsOpen()}
             className="h-10 w-10 flex items-center justify-center rounded-full bb-transition hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15"
             aria-label="เปิดเมนูนำทาง"
           >
@@ -46,13 +51,13 @@ export default function SidebarLayout({
       </header>
 
       <AnimatePresence>
-        {isOpen && (
+        {sidebarOpen && (
           <motion.div
             initial={fadeOverlay.initial}
             animate={fadeOverlay.animate}
             exit={fadeOverlay.exit}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            onClick={() => sidebar?.setIsOpen?.()}
+            onClick={() => setIsOpen()}
             className="md:hidden fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm"
           />
         )}
@@ -61,7 +66,8 @@ export default function SidebarLayout({
       <Sidebar />
       <main className={cn(
         "min-h-[100dvh] bg-transparent transition-[margin-left] ease-in-out duration-300",
-        isOpen === false ? "md:ml-20" : "md:ml-[280px]"
+        fabStackHidden ? FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS : FAB_PAGE_BOTTOM_PADDING_CLASS,
+        sidebarOpen === false ? "md:ml-20" : "md:ml-[280px]"
       )}>
         <PageTransition>{children}</PageTransition>
       </main>

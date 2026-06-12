@@ -1,3 +1,5 @@
+import { isMeaningfulDeviceModel } from '@/lib/format-login-device';
+
 export type DeviceType = 'mobile' | 'tablet' | 'desktop' | 'unknown';
 
 export interface ParsedUserAgent {
@@ -59,6 +61,7 @@ function parseAndroidModel(ua: string): { vendor: string | null; model: string |
   if (/^Pixel/i.test(raw)) return { vendor: 'Google', model: raw };
   if (/^Redmi|^MI\s/i.test(raw)) return { vendor: 'Xiaomi', model: raw };
   if (/^HUAWEI|^HONOR/i.test(raw)) return { vendor: 'Huawei', model: raw };
+  if (!isMeaningfulDeviceModel(raw)) return { vendor: null, model: null };
   return { vendor: null, model: raw };
 }
 

@@ -2,7 +2,7 @@
 
 Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
 
-> **Version:** 8.4 | **Stack:** Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
+> **Version:** 8.5 | **Stack:** Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
 
 ---
 
@@ -13,12 +13,12 @@ Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AN
 | Command Center | `/[locale]` | สถานะกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์ |
 | Staff Dashboard | `/[locale]/dashboard` | ลงเวลา รายชื่อกะ ตารางรายเดือน |
 | Schedule | `/[locale]/schedule` | จัดกะ Drag-and-Drop + วันหยุดราชการ |
-| Inventory | `/[locale]/inventory` | ตารางคลังสินค้าแบบ Spreadsheet + Undo/Redo |
+| Inventory | `/[locale]/inventory` | ตารางคลังสินค้าแบบ Spreadsheet + FAB Quick Action + Undo/Redo |
 | Stock Count | `/[locale]/inventory/count` | ตรวจนับสต็อกจริง |
 | Maintenance | `/[locale]/maintenance` | บันทึกการซ่อมบำรุงอุปกรณ์ |
 | Sales | `/[locale]/sales` | อัปโหลด Excel วิเคราะห์ยอดขาย |
 | Market Insights | `/[locale]/market-insights` | วิเคราะห์ตลาดด้วย Gemini AI |
-| Settings | `/[locale]/settings` | ธีม (สว่าง/มืด/ตามระบบ) + ประวัติการเข้าใช้ |
+| Settings | `/[locale]/settings` | ธีม (สว่าง/มืด/ตามระบบ) + ประวัติการเข้าใช้ + การแจ้งเตือน |
 | AI Chat (บรู) | Global overlay | แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน |
 
 **Locales:** `th` (หลัก), `en` — Root `/` redirect ไป `/th`
@@ -51,6 +51,7 @@ npm run dev
 | `npm run lint:md` | Markdownlint (scoped: `docs/**/*.md`, root `*.md`) |
 | `npm run lint:md:fix` | Markdownlint auto-fix |
 | `npm test` | Vitest test suite |
+| `npm run db:verify` | Verify Supabase migration state |
 
 ---
 
@@ -106,7 +107,9 @@ Read-only PIN `111222` ถูก hardcode ใน `src/lib/auth-constants.ts` —
 - **PIN Gateway** (`PinGateway.tsx`): ป้อน PIN 6 หลักก่อนเข้าแอป
 - **Full access:** `APP_PIN` (env) — แก้ไขข้อมูลได้ทุกโมดูล
 - **Read-only:** PIN `111222` (hardcoded ใน `src/lib/auth-constants.ts`) — ดูอย่างเดียว
-- **Dual storage:** `sessionStorage` (client gate) + httpOnly cookies (`bb_auth_pin_verified`, `bb_auth_read_only`)
+- **Dual storage:** `sessionStorage` (client gate) + httpOnly cookies (`bb_auth_pin_verified`, `bb_auth_read_only`, `bb_session_fp`)
+- **Session audit:** `login_history` table — บันทึก login/logout พร้อม device fingerprint
+- **Remote revocation:** `revoked_sessions` table — บังคับออกจากระบบต่ออุปกรณ์จาก Settings
 - **Write guard:** Server Actions เรียก `assertWritableSession()` ก่อน mutation
 
 ---

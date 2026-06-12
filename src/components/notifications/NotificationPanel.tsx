@@ -10,6 +10,7 @@ import {
   groupNotificationsByTime,
 } from '@/lib/notification-time-groups';
 import type { InventoryNotification } from '@/lib/notification-types';
+import { ExpandableLines } from '@/components/ui/expandable-lines';
 
 function actionIcon(action: string) {
   switch (action) {
@@ -30,20 +31,34 @@ function NotificationRow({
   item,
   locale,
   onNavigate,
+  isTh,
 }: {
   item: InventoryNotification;
   locale: string;
+  isTh: boolean;
   onNavigate: (item: InventoryNotification) => void;
 }) {
   const Icon = actionIcon(item.action);
   const isHigh = item.priority === 'high';
+  const lines = [
+    item.title,
+    item.summary,
+    `${item.actorLabel} · ${formatNotificationTime(item.occurredAt, locale)}`,
+  ].filter(Boolean);
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onNavigate(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onNavigate(item);
+        }
+      }}
       className={cn(
-        'w-full text-left rounded-2xl border px-3.5 py-3 bb-transition',
+        'w-full text-left rounded-2xl border px-3.5 py-3 bb-transition cursor-pointer',
         'border-border bg-card hover:bg-muted/40',
         !item.read && 'border-amber-500/20 bg-amber-500/[0.03]'
       )}
@@ -51,30 +66,30 @@ function NotificationRow({
       <div className="flex items-start gap-3">
         <div
           className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
             isHigh ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-muted text-foreground/70'
           )}
         >
-          <Icon size={16} strokeWidth={1.75} />
+          <Icon size={14} strokeWidth={1.75} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[13px] font-normal text-foreground leading-snug line-clamp-2">
-              {item.title}
-            </p>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] text-foreground leading-snug">{item.title}</p>
+              <ExpandableLines
+                lines={lines.slice(1)}
+                isTh={isTh}
+                lineClassName="text-[12px] text-muted-foreground leading-normal"
+                className="mt-0.5"
+              />
+            </div>
             {!item.read && (
-              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+              <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
             )}
-          </div>
-          <p className="text-[12px] text-muted-foreground mt-0.5 line-clamp-2">{item.summary}</p>
-          <div className="mt-1.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground/85">
-            <span>{item.actorLabel}</span>
-            <span>·</span>
-            <time>{formatNotificationTime(item.occurredAt, locale)}</time>
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -114,7 +129,7 @@ export function NotificationPanel() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[190] bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[214] bg-black/40 backdrop-blur-sm"
             onClick={closePanel}
             aria-hidden
           />
@@ -124,7 +139,7 @@ export function NotificationPanel() {
             exit={{ x: '100%' }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className={cn(
-              'fixed top-0 right-0 z-[200] h-[100dvh] w-full max-w-md',
+              'fixed top-0 right-0 z-[215] h-[100dvh] w-full max-w-md',
               'bg-background border-l border-border bb-shadow-lg',
               'flex flex-col'
             )}
@@ -202,6 +217,7 @@ export function NotificationPanel() {
                           key={item.id}
                           item={item}
                           locale={locale}
+                          isTh={isTh}
                           onNavigate={handleNavigate}
                         />
                       ))}

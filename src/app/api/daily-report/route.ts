@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache'; 
 import { headers } from 'next/headers';
 import {
-  compileDailyReportPayload,
-  type DailyReportSchedule,
+  compileDailyReportData,
+  resolveDailyReportSchedule,
 } from '@/app/actions/daily-report-actions';
-import { pushLineMessage } from '@/lib/line-notify';
+import { buildDailyReportAltText, buildDailyReportFlexMessage } from '@/lib/line/daily-report-flex';
+import { pushLineMessages } from '@/lib/line-notify';
 
 export const maxDuration = 30;
 
@@ -36,22 +37,25 @@ export async function GET(request: Request) {
     }
 
     const scheduleParam = new URL(request.url).searchParams.get('schedule');
-    const schedule: DailyReportSchedule =
-      scheduleParam === 'tomorrow' ? 'tomorrow' : 'today';
+    const schedule = resolveDailyReportSchedule(scheduleParam);
 
-    const message = await compileDailyReportPayload(schedule);
-    const result = await pushLineMessage(targetRecipientId, message);
+    const reportData = await compileDailyReportData(schedule);
+    const flexMessage = buildDailyReportFlexMessage(reportData);
+    const result = await pushLineMessages(targetRecipientId, [flexMessage]);
 
     if (!result.success) {
       console.error('[CRON] Failed to send LINE notification:', result.error);
       return NextResponse.json({ success: false, error: result.error }, { status: 500 });
     }
 
+    const previewText = buildDailyReportAltText(reportData);
+
     return NextResponse.json({
       success: true,
       schedule,
+      format: 'flex',
       timestamp: new Date().toISOString(),
-      previewText: message.substring(0, 50) + '...'
+      previewText: previewText.substring(0, 80) + (previewText.length > 80 ? '…' : ''),
     });
 
   } catch (error: any) {

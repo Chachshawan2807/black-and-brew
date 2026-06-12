@@ -20,7 +20,11 @@ import {
 } from 'lucide-react';
 import { fetchRosterData } from '@/app/actions/shift-actions';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
-import { getShiftColorClass, getShiftDisplayText } from '@/lib/shift-colors';
+import {
+  getShiftColorClass,
+  getShiftColorStyle,
+  getShiftDisplayText,
+} from '@/lib/shift-colors';
 
 interface Profile {
   id: string;
@@ -90,6 +94,7 @@ export default function MonthlyRoster() {
     return {
       text: getShiftDisplayText(loc, shift.status),
       color: getShiftColorClass(loc, shift.status),
+      colorStyle: getShiftColorStyle(loc, shift.status),
     };
   };
 
@@ -180,7 +185,10 @@ export default function MonthlyRoster() {
                         return (
                           <td key={day.toISOString()} className="p-1.5 border-r border-b border-border h-[4.25rem] align-middle">
                             {display && (
-                              <div className={`w-full h-full min-h-[3rem] flex items-center justify-center rounded-xl text-[12px] font-normal shadow-sm p-1 text-center ${display.color}`}>
+                              <div
+                                className={`w-full h-full min-h-[3rem] flex items-center justify-center rounded-xl text-[12px] font-normal shadow-sm p-1 text-center border ${display.color}`}
+                                style={display.colorStyle}
+                              >
                                 {display.text}
                               </div>
                             )}
@@ -228,7 +236,10 @@ export default function MonthlyRoster() {
                     <div key={day.toISOString()} className="bg-muted/30 h-20 sm:h-28 md:h-36 p-1 sm:p-3 md:p-4 flex flex-col justify-between rounded-xl sm:rounded-[24px] border border-border transition-all hover:bg-muted/30 hover:shadow-lg">
                       <span className="text-foreground text-sm sm:text-base md:text-lg font-normal">{format(day, 'd')}</span>
                       {shift && display && (
-                        <div className={`w-full p-0.5 sm:p-2 md:p-2.5 rounded-lg sm:rounded-xl flex items-center justify-center text-center text-[10px] sm:text-xs md:text-[13px] font-normal leading-tight md:leading-relaxed shadow-sm min-h-[24px] sm:min-h-[40px] md:min-h-[50px] truncate ${display.color}`}>
+                        <div
+                          className={`w-full p-0.5 sm:p-2 md:p-2.5 rounded-lg sm:rounded-xl flex items-center justify-center text-center text-[10px] sm:text-xs md:text-[13px] font-normal leading-tight md:leading-relaxed shadow-sm min-h-[24px] sm:min-h-[40px] md:min-h-[50px] truncate border ${display.color}`}
+                          style={display.colorStyle}
+                        >
                           {display.text}
                         </div>
                       )}

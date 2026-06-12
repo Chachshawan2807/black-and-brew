@@ -26,6 +26,12 @@ export function sanitizeStockValue(value: unknown): number {
   return isNaN(num) ? 0 : num;
 }
 
+/** Inventory UI: always show numeric zero as "0" (never blank). */
+export function formatInventoryNumericDisplay(value: unknown): string {
+  const num = sanitizeStockValue(value);
+  return String(num);
+}
+
 /** DEC-005: computed order quantity from stock thresholds. */
 export function computeOrderQty(
   stock: number,

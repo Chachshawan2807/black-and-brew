@@ -8,7 +8,7 @@ import type {
 } from './market-insights-types';
 
 const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || '13.929692';
-const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || '100.716932';
+const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || '100.716933';
 
 const EMPTY_WEATHER: WeatherContext = {
   current: null,

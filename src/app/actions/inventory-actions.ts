@@ -15,14 +15,91 @@ const supabase = createClient(supabaseUrl, supabaseAdminKey);
 
 type InventoryAuditOptions = {
   clientSessionId?: string;
+  /** When true, in-app inventory notifications are skipped (e.g. stock-taking count page). */
+  suppressNotification?: boolean;
+  notificationContext?: 'inventory_count' | 'inventory';
 };
+
+type InventoryLifecycleType = 'ADD' | 'DELETE';
+
+async function insertInventoryLifecycleTransaction(
+  itemId: string | null,
+  type: InventoryLifecycleType,
+  quantity: number,
+  balanceAfter: number,
+  note: string = ''
+) {
+  const { error } = await supabase.from('inventory_transactions').insert({
+    inventory_item_id: itemId,
+    type,
+    quantity,
+    balance_after: balanceAfter,
+    note,
+  });
+
+  if (error) {
+    console.error(
+      `[insertInventoryLifecycleTransaction] Supabase Error:`,
+      error.message,
+      error.details,
+      error.hint
+    );
+    throw error;
+  }
+}
+
+/** Record ADD ledger entry after a new inventory item is created. */
+export async function recordItemAddHistory(
+  itemId: string,
+  stock: number = 0,
+  itemName?: string
+) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('sb-access-token')?.value;
+    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (!pinVerified && (!user || authError)) {
+      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    }
+
+    const writable = await assertWritableSession();
+    if (!writable.ok) return { success: false, error: writable.error };
+
+    const sanitizedStock = stock < 0 ? 0 : stock;
+    await insertInventoryLifecycleTransaction(
+      itemId,
+      'ADD',
+      sanitizedStock,
+      sanitizedStock,
+      itemName ?? ''
+    );
+
+    revalidatePath('/[locale]/inventory', 'page');
+    return { success: true };
+  } catch (error: any) {
+    console.error('[recordItemAddHistory] Unexpected Error:', error.message || error);
+    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการบันทึกประวัติเพิ่มรายการ' };
+  }
+}
 
 function withAuditMetadata(
   metadata: Record<string, unknown>,
   options?: InventoryAuditOptions
 ): Record<string, unknown> {
-  if (!options?.clientSessionId) return metadata;
-  return { ...metadata, clientSessionId: options.clientSessionId };
+  if (!options) return metadata;
+  const result = { ...metadata };
+  if (options.clientSessionId) {
+    result.clientSessionId = options.clientSessionId;
+  }
+  if (options.suppressNotification) {
+    result.suppressNotification = true;
+  }
+  if (options.notificationContext) {
+    result.notificationContext = options.notificationContext;
+  }
+  return result;
 }
 
 // === RECORD TRANSACTION (Atomic via RPC) ===
@@ -126,10 +203,9 @@ const stockUpdateSchema = z.object({
   note: z.string().optional(),
 });
 
-export type InventoryStockUpdateOptions = {
+export type InventoryStockUpdateOptions = InventoryAuditOptions & {
   /** When false, stock is updated without a ledger entry (e.g. stock-taking count page). */
   recordHistory?: boolean;
-  clientSessionId?: string;
 };
 
 export async function updateInventoryStock(
@@ -209,7 +285,7 @@ export async function updateInventoryStock(
           recordHistory,
           order_point: beforeItem?.order_point ?? null,
         },
-        { clientSessionId: options?.clientSessionId }
+        options
       ),
     });
 
@@ -254,6 +330,15 @@ export async function deleteInventoryItem(itemId: string, auditOptions?: Invento
       .select('id, name, stock, unit')
       .eq('id', itemId)
       .maybeSingle();
+
+    const stockAtDelete = Number(itemBeforeDelete?.stock ?? 0);
+    await insertInventoryLifecycleTransaction(
+      itemId,
+      'DELETE',
+      stockAtDelete < 0 ? 0 : stockAtDelete,
+      0,
+      itemBeforeDelete?.name ?? ''
+    );
 
     // Step 2: Proceed with Delete using Service Role (Admin Client)
     const { error } = await supabase
@@ -314,8 +399,19 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
 
     const { data: itemsBeforeDelete } = await supabase
       .from('inventory_items')
-      .select('id, name')
+      .select('id, name, stock')
       .in('id', itemIds);
+
+    for (const item of itemsBeforeDelete ?? []) {
+      const stockAtDelete = Number(item.stock ?? 0);
+      await insertInventoryLifecycleTransaction(
+        item.id,
+        'DELETE',
+        stockAtDelete < 0 ? 0 : stockAtDelete,
+        0,
+        item.name ?? ''
+      );
+    }
 
     const { error } = await supabase
       .from('inventory_items')
@@ -413,12 +509,20 @@ export async function fetchTransactionHistory(itemId?: string, limit: number = 5
 
     // Step 3: Merge names into transaction data
     // Uses inventory_item_id — VERIFIED column name in actual DB
-    const enrichedData = transactions.map((tx: any) => ({
-      ...tx,
-      inventory_items: {
-        name: itemNameMap[tx.inventory_item_id] || 'ไม่ทราบชื่อสินค้า'
-      }
-    }));
+    const enrichedData = transactions.map((tx: any) => {
+      const resolvedName =
+        (tx.inventory_item_id && itemNameMap[tx.inventory_item_id]) ||
+        (tx.type === 'DELETE' && tx.note ? tx.note : null) ||
+        (tx.type === 'ADD' && tx.note ? tx.note : null) ||
+        'ไม่ทราบชื่อสินค้า';
+
+      return {
+        ...tx,
+        inventory_items: {
+          name: resolvedName,
+        },
+      };
+    });
 
     return { success: true, data: enrichedData };
   } catch (error: any) {

@@ -14,6 +14,7 @@ vi.mock('framer-motion', () => ({
 vi.mock('@/app/actions/auth', () => ({
   verifyPin: vi.fn(),
   checkAuth: vi.fn(async () => false),
+  getAuthSessionInfo: vi.fn(async () => ({ verified: false, readOnly: false })),
 }));
 
 // Mock supabase session helper
@@ -21,7 +22,7 @@ vi.mock('@/lib/supabase-session', () => ({
   ensureSupabaseSession: vi.fn(async () => true),
 }));
 
-describe('PinGateway Session-Only Authentication', () => {
+describe('PinGateway Persistent Authentication', () => {
   beforeEach(() => {
     // Clear storages before each test
     sessionStorage.clear();
@@ -43,8 +44,9 @@ describe('PinGateway Session-Only Authentication', () => {
     expect(screen.getByText(/Security Gateway/i)).toBeInTheDocument();
   });
 
-  test('should allow access immediately if sessionStorage verified key is present', () => {
-    sessionStorage.setItem('bb_auth_pin_verified', 'true');
+  test('should allow access when server session cookie is verified', async () => {
+    const { getAuthSessionInfo } = await import('@/app/actions/auth');
+    vi.mocked(getAuthSessionInfo).mockResolvedValueOnce({ verified: true, readOnly: false });
 
     render(
       <PinGateway>
@@ -52,17 +54,12 @@ describe('PinGateway Session-Only Authentication', () => {
       </PinGateway>
     );
 
-    // It should render the protected content
-    expect(screen.getByTestId('protected-content')).toBeInTheDocument();
-    expect(screen.getByText('Secret Dashboard')).toBeInTheDocument();
-
-    // It should NOT show the PIN prompt
+    expect(await screen.findByTestId('protected-content')).toBeInTheDocument();
     expect(screen.queryByText(/Security Gateway/i)).not.toBeInTheDocument();
   });
 
-  test('should NOT allow access if only localStorage has auth keys (purge proof)', () => {
+  test('should NOT allow access if only localStorage has auth keys without server cookie', () => {
     localStorage.setItem('bb_auth_pin_verified', 'true');
-    localStorage.setItem('AUTH_TOKEN', 'some-token');
 
     render(
       <PinGateway>
@@ -89,19 +86,18 @@ describe('PinGateway Session-Only Authentication', () => {
     expect(document.querySelector('.rounded-full.bg-foreground')).toBeInTheDocument();
   });
 
-  test('should restore read-only flag from sessionStorage via AuthProvider', () => {
-    sessionStorage.setItem('bb_auth_pin_verified', 'true');
-    sessionStorage.setItem('bb_auth_read_only', 'true');
+  test('should restore read-only flag from server session via AuthProvider', async () => {
+    const { getAuthSessionInfo } = await import('@/app/actions/auth');
+    vi.mocked(getAuthSessionInfo).mockResolvedValueOnce({ verified: true, readOnly: true });
 
     render(
       <PinGateway>
-        <div data-testid="read-only-probe">
-          {String(sessionStorage.getItem('bb_auth_read_only') === 'true')}
-        </div>
+        <div data-testid="read-only-probe">ok</div>
       </PinGateway>
     );
 
-    expect(screen.getByTestId('read-only-probe')).toHaveTextContent('true');
+    expect(await screen.findByTestId('read-only-probe')).toBeInTheDocument();
+    expect(localStorage.getItem('bb_auth_read_only')).toBe('true');
     expect(screen.queryByText(/Security Gateway/i)).not.toBeInTheDocument();
   });
 });

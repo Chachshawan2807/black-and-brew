@@ -32,6 +32,42 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  const data = event.data;
+  if (!data || data.type !== 'SET_BADGE') return;
+  const count = Number(data.count) || 0;
+  try {
+    if (self.navigator?.setAppBadge) {
+      if (count > 0) {
+        void self.navigator.setAppBadge(count);
+      } else if (self.navigator?.clearAppBadge) {
+        void self.navigator.clearAppBadge();
+      }
+    }
+  } catch {
+    // ignore
+  }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const rawUrl = event.notification?.data?.url || '/';
+  const url = new URL(rawUrl, self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if ('focus' in client) {
+          client.postMessage({ type: 'NOTIFICATION_CLICK', url });
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(url);
+      }
+    })
+  );
+});
+
 self.addEventListener('fetch', (event) => {
   // Guard: only handle http: and https: requests — skip chrome-extension://, data:, etc.
   const requestUrl = event.request.url;

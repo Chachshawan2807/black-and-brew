@@ -1,6 +1,6 @@
 # SKILLS INVENTORY
 
-> Version: 8.4 | Last Updated: 2026-06-12 | Format: Zero-Bold Policy Active
+> Version: 8.5 | Last Updated: 2026-06-12 | Format: Zero-Bold Policy Active
 เอกสารฉบับนี้รวบรวมทักษะระบบ (System Skills) และความสามารถเชิงเทคนิคของโปรเจกต์ BLACKANDBREW ERP โดยจัดกลุ่มเป็น 4 โมดูลหลัก เพื่อลด Context Tax ขจัดข้อความซ้ำซ้อน และเพิ่มความแม่นยำในการเรียกใช้เครื่องมือของ Agent
 
 ---

@@ -140,9 +140,32 @@ export default function LiveShiftList({
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
-    const channel = supabase.channel('shifts-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => router.refresh()).subscribe();
-    return () => { clearInterval(timer); supabase.removeChannel(channel); };
-  }, [router]);
+
+    const refreshShiftsForRange = async () => {
+      const { data, error } = await supabase
+        .from('shifts')
+        .select('id, employee_id, start_time, end_time, status, metadata')
+        .gte('start_time', `${startDate}T00:00:00`)
+        .lte('start_time', `${endDate}T23:59:59`);
+      if (error) {
+        console.error('Supabase Error (LiveShiftList refresh):', error.message, error.details);
+        return;
+      }
+      if (data) setShifts(data as Shift[]);
+    };
+
+    const channel = supabase
+      .channel('shifts-realtime-live-shift-list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
+        void refreshShiftsForRange();
+      })
+      .subscribe();
+
+    return () => {
+      clearInterval(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [startDate, endDate]);
 
   const checkIsWorking = (profileId: string) => {
     const s = shifts.find(s => s.employee_id === profileId && s.status === 'scheduled');

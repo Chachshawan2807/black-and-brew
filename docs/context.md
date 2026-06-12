@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 8.4 | Last Updated: 2026-06-12
+> Version: 8.5 | Last Updated: 2026-06-12
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | **Project Name** | BLACK-AND-BREW ERP System |
 | **Type** | Enterprise Resource Planning for Coffee Shop |
-| **Current Version** | 8.4 (Dark Theme + Documentation Sync) |
+| **Current Version** | 8.5 (Security Audit + Inventory Notifications) |
 | **Repository** | `Chachshawan2807/black-and-brew` |
 | **Local Path** | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -26,7 +26,7 @@
 4. **วิเคราะห์ตลาด (Market Insights)** — AI วิเคราะห์เทรนด์ตลาดรอบร้าน
 5. **บำรุงรักษา (Maintenance)** — บันทึกสถานะอุปกรณ์
 6. **AI Assistant (บรู)** — แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
-7. **การตั้งค่า (Settings)** — เลือกธีม (สว่าง/มืด/ตามระบบ) และประวัติการเข้าใช้
+7. **การตั้งค่า (Settings)** — เลือกธีม (สว่าง/มืด/ตามระบบ), ประวัติการเข้าใช้, และการแจ้งเตือนคลังสินค้า
 
 ### Staff Roster (9 Persons)
 
@@ -89,6 +89,8 @@ Authoritative env list: [`.env.example`](../.env.example)
 - Client gate: `sessionStorage` + `PinGateway.tsx`
 - Server session: httpOnly cookies `bb_auth_pin_verified`, `bb_auth_read_only`
 - Post-PIN: `ensureSupabaseSession()` → anonymous auth สำหรับ RLS `authenticated`
+- Session fingerprint: cookie `bb_session_fp` + `revoked_sessions` table สำหรับ remote sign-out
+- Login events: `login_history` (service-role write) แสดงใน Settings
 
 ---
 

@@ -1,15 +1,15 @@
-'use client';
-
-import { useParams } from 'next/navigation';
-import { Settings2, Palette, Shield, History, Bell } from 'lucide-react';
-import ThemePicker from '@/components/settings/ThemePicker';
+import { Settings2, Bell } from 'lucide-react';
 import LoginHistorySection from '@/components/settings/LoginHistorySection';
 import DataChangeHistorySection from '@/components/settings/DataChangeHistorySection';
 import NotificationPreferencesSection from '@/components/settings/NotificationPreferencesSection';
+import SettingsCollapsibleSection from '@/components/settings/SettingsCollapsibleSection';
 
-export default function SettingsPage() {
-  const params = useParams();
-  const locale = (params?.locale as string) || 'th';
+export default async function SettingsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
   const isTh = locale === 'th';
 
   return (
@@ -24,25 +24,15 @@ export default function SettingsPage() {
               {isTh ? 'ตั้งค่า' : 'Settings'}
             </h1>
             <p className="text-[13px] text-muted-foreground/90 font-normal mt-0.5 leading-normal">
-              {isTh ? 'ธีม ประวัติการแก้ไข และความปลอดภัย' : 'Theme, edit history & security'}
+              {isTh ? 'ประวัติการแก้ไข การแจ้งเตือน และความปลอดภัย' : 'Edit history, notifications & security'}
             </p>
           </div>
         </div>
       </header>
 
-      <div className="space-y-5">
+      <div className="space-y-3">
         <section className="bb-card p-4 md:p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Palette size={14} strokeWidth={1.75} className="text-muted-foreground" />
-            <h2 className="text-[13px] font-normal text-muted-foreground">
-              {isTh ? 'ธีม' : 'Theme'}
-            </h2>
-          </div>
-          <ThemePicker locale={locale} />
-        </section>
-
-        <section className="bb-card p-4 md:p-5">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-1">
             <Bell size={14} strokeWidth={1.75} className="text-muted-foreground" />
             <h2 className="text-[13px] font-normal text-muted-foreground">
               {isTh ? 'การแจ้งเตือน' : 'Notifications'}
@@ -51,25 +41,19 @@ export default function SettingsPage() {
           <NotificationPreferencesSection locale={locale} />
         </section>
 
-        <section className="bb-card p-4 md:p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <History size={14} strokeWidth={1.75} className="text-muted-foreground" />
-            <h2 className="text-[13px] font-normal text-muted-foreground">
-              {isTh ? 'ประวัติการแก้ไขข้อมูล' : 'Data change history'}
-            </h2>
-          </div>
+        <SettingsCollapsibleSection
+          icon="history"
+          title={isTh ? 'ประวัติการแก้ไขข้อมูล' : 'Data change history'}
+        >
           <DataChangeHistorySection locale={locale} />
-        </section>
+        </SettingsCollapsibleSection>
 
-        <section className="bb-card p-4 md:p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Shield size={14} strokeWidth={1.75} className="text-muted-foreground" />
-            <h2 className="text-[13px] font-normal text-muted-foreground">
-              {isTh ? 'ประวัติการเข้าสู่ระบบ' : 'Login history'}
-            </h2>
-          </div>
+        <SettingsCollapsibleSection
+          icon="shield"
+          title={isTh ? 'ประวัติการเข้าสู่ระบบ' : 'Login history'}
+        >
           <LoginHistorySection locale={locale} />
-        </section>
+        </SettingsCollapsibleSection>
       </div>
     </div>
   );

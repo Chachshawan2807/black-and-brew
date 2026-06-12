@@ -1,6 +1,6 @@
-# Database Schema ? BLACKANDBREW ERP
+# Database Schema — BLACKANDBREW ERP
 
-> Version: 8.4 | Last Updated: 2026-06-12 | Engine: Supabase PostgreSQL
+> Version: 8.5 | Last Updated: 2026-06-12 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -8,18 +8,22 @@
 
 | Table | Purpose | RLS | Source SQL |
 | --- | --- | --- | --- |
-| `profiles` | ????????????? 9 ?? | ? authenticated | `DB_SCHEMA.sql` |
-| `shifts` | ?????????? | ? authenticated | `DB_SCHEMA.sql` |
-| `inventory_items` | ?????????????????? | ? authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` |
-| `inventory_transactions` | ????????????????????????? | ? authenticated | `setup_inventory_transactions.sql` |
-| `inventory_config` | ?????????????? Inventory UI | ? authenticated | `inventory_config_schema.sql` |
-| `holidays` | ????????????? | ? | Created via `holiday-actions.ts` |
-| `regular_holidays` | ?????????????????????? | ? | `regular_holidays_schema.sql` |
-| `service_records` | ??????????????????????? | ? | Used by maintenance module |
-| `sales_uploads` | ???? Excel ?????????? | ? | `sales_schema.sql` |
-| `sales_records` | ???????????? | ? | `sales_schema.sql` |
-| `product_categories` | ?????????????? | ? | `product_categories_schema.sql` |
-| `audit_logs` | ?????? audit ?????? AI | ? | `audit_log_schema.sql` |
+| `profiles` | ข้อมูลพนักงาน 9 คน | ✓ authenticated | `DB_SCHEMA.sql` |
+| `shifts` | ตารางกะงาน | ✓ authenticated | `DB_SCHEMA.sql` |
+| `inventory_items` | รายการคลังสินค้าและสต็อก | ✓ authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` |
+| `inventory_transactions` | บันทึกการเคลื่อนไหวสต็อก (IN/OUT/ADD/DELETE) | ✓ authenticated | `setup_inventory_transactions.sql` |
+| `inventory_config` | การตั้งค่าคอลัมน์ Inventory UI | ✓ authenticated | `inventory_config_schema.sql` |
+| `holidays` | วันหยุดราชการ | ✓ | Created via `holiday-actions.ts` |
+| `regular_holidays` | วันหยุดประจำของพนักงาน | ✓ | `regular_holidays_schema.sql` |
+| `service_records` | บันทึกการซ่อมบำรุงอุปกรณ์ | ✓ | Used by maintenance module |
+| `sales_uploads` | ไฟล์ Excel ที่อัปโหลด | ✓ | `sales_schema.sql` |
+| `sales_records` | รายการยอดขาย | ✓ | `sales_schema.sql` |
+| `product_categories` | หมวดหมู่สินค้า | ✓ | `product_categories_schema.sql` |
+| `audit_logs` | บันทึก audit สำหรับ AI | ✓ | `audit_log_schema.sql` |
+| `login_history` | บันทึกเหตุการณ์เข้าใช้ระบบ (PIN) | ✓ RLS enabled | `supabase/migrations/20260611120000_create_login_history.sql` |
+| `data_change_logs` | บันทึกการเปลี่ยนแปลงข้อมูล (actor, field diff) | ✓ RLS + selective read | `supabase/migrations/20260612120000_create_data_change_logs.sql` |
+| `revoked_sessions` | fingerprint ที่ถูก revoke จากระยะไกล | ✓ RLS enabled | `supabase/migrations/20260612200000_revoked_sessions.sql` |
+| `market_insight_runs` | ประวัติการรัน Market Insights v2 (OPTIONAL) | ✓ | `docs/sql/market_insight_runs.sql` |
 
 > **Types:** Generated types in `src/lib/database.types.ts`
 
@@ -77,16 +81,16 @@ CREATE TABLE inventory_items (
 ```sql
 CREATE TABLE inventory_transactions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  inventory_item_id UUID REFERENCES inventory_items(id) ON DELETE CASCADE,
-  type VARCHAR(10) CHECK (type IN ('IN', 'OUT')),
-  quantity NUMERIC NOT NULL CHECK (quantity > 0),
+  inventory_item_id UUID REFERENCES inventory_items(id) ON DELETE SET NULL,
+  type VARCHAR(10) CHECK (type IN ('IN', 'OUT', 'ADJUST', 'ADD', 'DELETE')),
+  quantity NUMERIC NOT NULL CHECK (quantity >= 0),
   note TEXT,
   balance_after NUMERIC NOT NULL,
   created_at TIMESTAMPTZ DEFAULT timezone('utc', now()) NOT NULL
 );
 ```
 
-> Column is `inventory_item_id` ? renamed from `product_id` via `fix_transaction_relationships.sql`
+> Column is `inventory_item_id` — renamed from `product_id` via `fix_transaction_relationships.sql`. ADD/DELETE types added in `supabase/migrations/20260612140000_inventory_add_delete_history.sql`.
 
 ### `sales_uploads` / `sales_records`
 
@@ -116,6 +120,26 @@ CREATE TABLE sales_records (
 );
 ```
 
+### `login_history`
+
+Immutable authentication event log with device fingerprinting. Written by `login-history-actions.ts` using the service-role key.
+
+### `data_change_logs`
+
+Immutable append-only mutation log (actor, module, field-level diffs). Inventory module rows are readable by `anon`/`authenticated` for in-app notifications (`supabase/migrations/20260612130000_inventory_notifications.sql`).
+
+### `revoked_sessions`
+
+```sql
+CREATE TABLE IF NOT EXISTS public.revoked_sessions (
+  session_fingerprint TEXT PRIMARY KEY,
+  revoked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  revoked_reason TEXT
+);
+```
+
+Checked on each auth validation via `src/lib/session-revocation.ts`. Populated by `forceRevokeDeviceSession()` / `forceRevokeAllRemoteSessions()` in `auth.ts`.
+
 ### `market_insight_runs` (OPTIONAL)
 
 ```sql
@@ -129,7 +153,7 @@ CREATE TABLE IF NOT EXISTS public.market_insight_runs (
 );
 ```
 
-RLS enabled; no public policies ? written only by server actions using the service-role key.
+RLS enabled; no public policies — written only by server actions using the service-role key.
 Source: `docs/sql/market_insight_runs.sql`. Feature works without this table (`persistRun()` fails gracefully).
 
 ---
@@ -138,15 +162,16 @@ Source: `docs/sql/market_insight_runs.sql`. Feature works without this table (`p
 
 ### Current Standard (post `fix_inventory_rls.sql`)
 
-- `inventory_items`, `inventory_config`: `authenticated` role ? SELECT/INSERT/UPDATE
-- `inventory_transactions`: `authenticated` ? SELECT/INSERT/DELETE (no UPDATE ? ledger immutability)
-- `profiles`, `shifts`: `authenticated` ? full CRUD
+- `inventory_items`, `inventory_config`: `authenticated` role → SELECT/INSERT/UPDATE
+- `inventory_transactions`: `authenticated` → SELECT/INSERT/DELETE (no UPDATE — ledger immutability)
+- `profiles`, `shifts`: `authenticated` → full CRUD
+- `data_change_logs`: `anon_read_inventory_change_logs` — SELECT where `module = 'inventory'` (in-app notifications)
 - Client must call `supabase.auth.signInAnonymously()` after PIN gate
 
 ### Legacy (pre-hardening)
 
 ```sql
--- Deprecated open policies ? removed by fix_inventory_rls.sql
+-- Deprecated open policies — removed by fix_inventory_rls.sql
 CREATE POLICY "Public access for inventory_items" ON inventory_items FOR ALL USING (true);
 ```
 
@@ -164,6 +189,9 @@ CREATE INDEX idx_inventory_transactions_created_at ON inventory_transactions(cre
 CREATE INDEX idx_sales_uploads_date ON sales_uploads(upload_date);
 CREATE INDEX idx_sales_records_upload ON sales_records(upload_id);
 CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
+CREATE INDEX idx_login_history_occurred_at ON login_history (occurred_at DESC);
+CREATE INDEX idx_data_change_logs_module_occurred ON data_change_logs (module, occurred_at DESC);
+CREATE INDEX idx_revoked_sessions_revoked_at ON revoked_sessions (revoked_at DESC);
 ```
 
 ---
@@ -172,16 +200,16 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 
 ### `record_inventory_transaction`
 
-- Row lock ? stock validation ? stock update ? transaction insert
+- Row lock → stock validation → stock update → transaction insert
 - **Source:** `fix_transaction_relationships.sql`
 - **Used by:** `recordTransaction()` Quick Entry IN/OUT
 
 ### `set_inventory_stock` (v6.8)
 
 - Parameters: `p_item_id UUID`, `p_new_stock NUMERIC`, `p_note TEXT`
-- Row lock ? set absolute stock ? ledger entry (IN/OUT delta)
+- Row lock → set absolute stock → ledger entry (IN/OUT delta)
 - **Source:** `sql/sync_inventory_stock.sql`
-- **Used by:** `updateInventoryStock()` ? warehouse cell + stock count
+- **Used by:** `updateInventoryStock()` — warehouse cell + stock count
 
 ### Trigger: `trg_sync_inventory_order_qty`
 
@@ -190,21 +218,34 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 
 ### Realtime: `REPLICA IDENTITY FULL`
 
-- Table: `inventory_items` ? full row broadcast on UPDATE
+- Table: `inventory_items` — full row broadcast on UPDATE
+- Table: `data_change_logs` — added to `supabase_realtime` publication for inventory notifications
 
 ---
 
 ## 6. Migration Files
 
-> **[VERIFY] Schema location:** There is no `supabase/migrations/` folder. All schema files live at the repository root (e.g. `DB_SCHEMA.sql`) plus the `sql/` subfolder (`ai_agent_views.sql`, `fix_inventory_rls.sql`, `sync_inventory_stock.sql`). `DB_SCHEMA.sql` is the primary schema. Paths below are relative to the repo root.
+> **Schema location:** Official migrations live in `supabase/migrations/`. Historical one-shot schemas remain at the repository root (e.g. `DB_SCHEMA.sql`) plus the `sql/` subfolder. `DB_SCHEMA.sql` is the primary reference schema. Use `scripts/apply-pending-migrations.sql` for manual Supabase Dashboard apply when CLI is unavailable. Verify remote state: `npm run db:verify`.
+
+### Versioned (`supabase/migrations/`)
+
+| File | Purpose |
+| --- | --- |
+| `20260611120000_create_login_history.sql` | Login audit trail + device fingerprinting |
+| `20260612120000_create_data_change_logs.sql` | Data mutation audit log |
+| `20260612130000_inventory_notifications.sql` | Realtime + RLS read for inventory `data_change_logs` |
+| `20260612140000_inventory_add_delete_history.sql` | Transaction types ADD/DELETE; nullable `inventory_item_id` |
+| `20260612200000_revoked_sessions.sql` | Remote session revocation by fingerprint |
+
+### Historical (root + `sql/`)
 
 | File | Purpose |
 | --- | --- |
 | `DB_SCHEMA.sql` | Core: profiles, shifts, inventory_items |
 | `setup_inventory_transactions.sql` | transactions table + RPC |
-| `fix_transaction_relationships.sql` | Rename `product_id` ? `inventory_item_id` |
-| `sql/sync_inventory_stock.sql` | v6.8 ? `set_inventory_stock`, trigger, REPLICA IDENTITY |
-| `sql/fix_inventory_rls.sql` | RLS hardening ? authenticated-only |
+| `fix_transaction_relationships.sql` | Rename `product_id` → `inventory_item_id` |
+| `sql/sync_inventory_stock.sql` | v6.8 — `set_inventory_stock`, trigger, REPLICA IDENTITY |
+| `sql/fix_inventory_rls.sql` | RLS hardening — authenticated-only |
 | `apply_rls_transactions.sql` | RLS for transactions |
 | `update_rls_policies.sql` | Open RLS for profiles & shifts |
 | `inventory_config_schema.sql` | Config table + seed |
@@ -213,6 +254,6 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 | `product_categories_schema.sql` | Product categories |
 | `regular_holidays_schema.sql` | Regular holidays per employee |
 | `audit_log_schema.sql` | AI audit logging |
-| `docs/sql/market_insight_runs.sql` | market_insight_runs table (OPTIONAL ? Market Insights v2 run history) |
+| `docs/sql/market_insight_runs.sql` | market_insight_runs table (OPTIONAL — Market Insights v2 run history) |
 
-> **Deprecated:** `inventory-items.csv` ? removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).
+> **Deprecated:** `inventory-items.csv` — removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).

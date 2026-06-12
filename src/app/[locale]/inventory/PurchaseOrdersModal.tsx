@@ -10,9 +10,9 @@ import { PASTEL_SURFACE } from '@/lib/shift-colors';
 type PurchaseOrderItem = {
   id: string;
   name: string;
-  stock: any;
-  target_stock: any;
-  computedOrderQty: any;
+  stock: number;
+  target_stock: number;
+  computedOrderQty: number;
   unit: string;
   source?: string | null;
   updated_at?: string;
@@ -76,7 +76,7 @@ export default function PurchaseOrdersModal({
               <div id="po-action-buttons" className="flex items-center gap-3">
                 <button
                   onClick={exportPOImage}
-                  className="px-4 py-2 bg-card hover:bg-muted text-foreground text-[14px] rounded-full flex items-center gap-2 transition-colors border border-border shadow-sm antialiased font-normal"
+                  className="px-4 py-2 bg-white/80 hover:bg-white text-black/85 text-[14px] rounded-full flex items-center gap-2 transition-colors border border-black/10 shadow-sm antialiased font-normal"
                 >
                   <ArrowDownToLine className="w-4 h-4" /> บันทึกเป็นรูปภาพ
                 </button>
@@ -94,11 +94,11 @@ export default function PurchaseOrdersModal({
                   'px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
                   selectedChannels.includes('all')
                     ? 'bg-[#000000] border-[#000000] text-white shadow-sm'
-                    : 'border-border bg-transparent text-foreground hover:bg-muted',
+                    : 'border-black/15 bg-transparent text-black/85 hover:bg-black/5',
                 )}
               >
                 ทั้งหมด{' '}
-                <span className={selectedChannels.includes('all') ? 'text-white/60 text-[12px] ml-1 font-mono font-normal' : 'text-muted-foreground text-[12px] ml-1 font-mono font-normal'}>
+                <span className={selectedChannels.includes('all') ? 'text-white/60 text-[12px] ml-1 font-mono font-normal' : 'text-black/50 text-[12px] ml-1 font-mono font-normal'}>
                   ({itemsToOrder.length})
                 </span>
               </button>
@@ -123,11 +123,11 @@ export default function PurchaseOrdersModal({
                       'px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
                       isActive
                         ? 'bg-[#000000] border-[#000000] text-white shadow-sm'
-                        : 'border-border bg-transparent text-foreground hover:bg-muted',
+                        : 'border-black/15 bg-transparent text-black/85 hover:bg-black/5',
                     )}
                   >
                     {source}{' '}
-                    <span className={isActive ? 'text-white/60 text-[12px] ml-1 font-mono font-normal' : 'text-muted-foreground text-[12px] ml-1 font-mono font-normal'}>
+                    <span className={isActive ? 'text-white/60 text-[12px] ml-1 font-mono font-normal' : 'text-black/50 text-[12px] ml-1 font-mono font-normal'}>
                       ({count})
                     </span>
                   </button>

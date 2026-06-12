@@ -75,7 +75,7 @@ export function InventoryQuickActionBar({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full box-border mb-0">
           <div className="flex flex-row items-center gap-2 flex-1 w-full min-w-0">
             <div className="flex-1 relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="ค้นหาสินค้า..."
@@ -165,17 +165,13 @@ export function InventoryQuickActionBar({
                   onClick={() => setQuickType('IN')}
                   title="รับเข้า"
                   aria-label="รับเข้า"
+                  aria-pressed={quickType === 'IN'}
                   className={cn(
-                    'flex-1 min-w-0 flex items-center justify-center px-2 sm:px-3 h-full text-[13px] sm:text-sm font-normal rounded-full transition-all duration-150 antialiased',
+                    'flex-1 min-w-0 flex items-center justify-center gap-1 px-2 sm:px-3 h-full text-[13px] sm:text-sm font-normal rounded-full transition-all duration-150 antialiased',
                     quickType === 'IN' ? INVENTORY_QUICK_ACTION_COLORS.in : INVENTORY_QUICK_ACTION_COLORS.inactive,
                   )}
                 >
-                  <PackagePlus
-                    className={cn(
-                      'w-4 h-4 shrink-0 sm:mr-1 transition-colors',
-                      quickType === 'IN' ? 'text-foreground' : 'text-foreground/40',
-                    )}
-                  />
+                  <PackagePlus className="w-4 h-4 shrink-0" strokeWidth={1.75} />
                   <span className="hidden sm:inline truncate">รับเข้า</span>
                 </button>
                 <button
@@ -183,17 +179,13 @@ export function InventoryQuickActionBar({
                   onClick={() => setQuickType('OUT')}
                   title="นำออก"
                   aria-label="นำออก"
+                  aria-pressed={quickType === 'OUT'}
                   className={cn(
-                    'flex-1 min-w-0 flex items-center justify-center px-2 sm:px-3 h-full text-[13px] sm:text-sm font-normal rounded-full transition-all duration-150 antialiased',
+                    'flex-1 min-w-0 flex items-center justify-center gap-1 px-2 sm:px-3 h-full text-[13px] sm:text-sm font-normal rounded-full transition-all duration-150 antialiased',
                     quickType === 'OUT' ? INVENTORY_QUICK_ACTION_COLORS.out : INVENTORY_QUICK_ACTION_COLORS.inactive,
                   )}
                 >
-                  <PackageMinus
-                    className={cn(
-                      'w-4 h-4 shrink-0 sm:mr-1 transition-colors',
-                      quickType === 'OUT' ? 'text-foreground' : 'text-foreground/40',
-                    )}
-                  />
+                  <PackageMinus className="w-4 h-4 shrink-0" strokeWidth={1.75} />
                   <span className="hidden sm:inline truncate">นำออก</span>
                 </button>
                 <button
@@ -201,17 +193,13 @@ export function InventoryQuickActionBar({
                   onClick={() => setQuickType('ADJUST')}
                   title="ปรับจำนวน"
                   aria-label="ปรับจำนวน"
+                  aria-pressed={quickType === 'ADJUST'}
                   className={cn(
-                    'flex-1 min-w-0 flex items-center justify-center px-2 sm:px-3 h-full text-[13px] sm:text-sm font-normal rounded-full transition-all duration-150 antialiased',
+                    'flex-1 min-w-0 flex items-center justify-center gap-1 px-2 sm:px-3 h-full text-[13px] sm:text-sm font-normal rounded-full transition-all duration-150 antialiased',
                     quickType === 'ADJUST' ? INVENTORY_QUICK_ACTION_COLORS.adjust : INVENTORY_QUICK_ACTION_COLORS.inactive,
                   )}
                 >
-                  <SlidersHorizontal
-                    className={cn(
-                      'w-4 h-4 shrink-0 sm:mr-1 transition-colors',
-                      quickType === 'ADJUST' ? 'text-foreground' : 'text-foreground/40',
-                    )}
-                  />
+                  <SlidersHorizontal className="w-4 h-4 shrink-0" strokeWidth={1.75} />
                   <span className="hidden min-[420px]:inline truncate">ปรับจำนวน</span>
                 </button>
               </div>
@@ -279,7 +267,7 @@ export function InventoryQuickActionBar({
             isReadOnly && 'pointer-events-none opacity-60',
           )}
         >
-          <span className="text-[12px] text-foreground/40 font-normal whitespace-nowrap">รายการใช้บ่อย:</span>
+          <span className="text-[12px] text-muted-foreground font-normal whitespace-nowrap">รายการใช้บ่อย:</span>
           {frequentItems.map((fi) => (
             <button
               key={fi.id}

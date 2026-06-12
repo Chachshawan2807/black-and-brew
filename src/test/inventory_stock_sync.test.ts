@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   computeItemsToOrder,
   computeOrderQty,
+  formatInventoryNumericDisplay,
   mergeInventoryRealtimeUpdate,
   sanitizeStockValue,
 } from '@/lib/inventory-stock';
@@ -67,5 +68,12 @@ describe('inventory stock sync utilities', () => {
     expect(sanitizeStockValue(null)).toBe(0);
     expect(sanitizeStockValue('12.5')).toBe(12.5);
     expect(sanitizeStockValue('abc')).toBe(0);
+  });
+
+  test('formatInventoryNumericDisplay shows zero instead of blank', () => {
+    expect(formatInventoryNumericDisplay(0)).toBe('0');
+    expect(formatInventoryNumericDisplay('')).toBe('0');
+    expect(formatInventoryNumericDisplay(null)).toBe('0');
+    expect(formatInventoryNumericDisplay(12)).toBe('12');
   });
 });
