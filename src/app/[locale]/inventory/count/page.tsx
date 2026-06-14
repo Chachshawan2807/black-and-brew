@@ -1,10 +1,8 @@
 import InventoryCountClient from './InventoryCountClient';
-import { createClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
-import { requireServiceRoleKey } from '@/lib/security/server-auth';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
 
 export default async function InventoryCountPage({
   params,
@@ -18,15 +16,9 @@ export default async function InventoryCountPage({
     redirect(`/${locale}`);
   }
 
-  const supabaseAdmin = createClient(supabaseUrl, requireServiceRoleKey(), {
-    global: {
-      fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }),
-    },
-  });
-
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('inventory_items')
-    .select('id, name, stock, unit, sort_order')
+    .select(INVENTORY_COUNT_SELECT)
     .order('sort_order', { ascending: true });
 
   if (error) {

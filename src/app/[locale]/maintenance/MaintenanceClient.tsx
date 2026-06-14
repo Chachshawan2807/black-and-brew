@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { saveServiceRecord, deleteServiceRecord } from '@/app/actions/maintenance-actions';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import {
@@ -18,6 +19,7 @@ import {
 import { format } from 'date-fns';
 import React from 'react';
 import { FloatingToast } from '@/components/ui/floating-alert';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 const MaintenanceModals = dynamic(() => import('./MaintenanceModals'), { ssr: false });
 
@@ -154,6 +156,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
   async function fetchRecords() {
     setLoading(true);
     try {
+      await ensureSupabaseSession();
       const { data, error } = await supabase
         .from('service_records')
         .select('id, start_date, equipment, detected_problem, task_type, work_details, recommended_frequency, cost, person_in_charge, status, notes, completion_date, created_at')
@@ -336,7 +339,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
               </button>
             </div>
           ) : (
-            <div className="w-full overflow-x-auto scrollbar-thin pb-6 box-border bg-card rounded-3xl border border-border bb-shadow-sm">
+            <div className="w-full overflow-x-auto bb-smooth-scroll scrollbar-thin pb-6 box-border bg-card rounded-3xl border border-border bb-shadow-sm">
               <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '1100px' }}>
                 <thead>
                   <tr className="border-b border-border bg-muted/40">
@@ -476,20 +479,26 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                         </td>
                         <td className="py-4 px-5 text-center">
                           <div className="flex items-center justify-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => handleEdit(record)}
-                              disabled={isReadOnly}
-                              className="p-2 hover:bg-muted/30 text-muted-foreground hover:text-foreground rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                              <Edit2 className="w-4 h-4" strokeWidth={1.5} />
-                            </button>
-                            <button
-                              onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
-                              disabled={isReadOnly}
-                              className="p-2 hover:bg-red-50 dark:hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                              <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-                            </button>
+                            <HintTooltip tip="แก้ไขบันทึก">
+                              <button
+                                onClick={() => handleEdit(record)}
+                                disabled={isReadOnly}
+                                className="p-2 hover:bg-muted/30 text-muted-foreground hover:text-foreground rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                                aria-label="แก้ไขบันทึก"
+                              >
+                                <Edit2 className="w-4 h-4" strokeWidth={1.5} />
+                              </button>
+                            </HintTooltip>
+                            <HintTooltip tip="ลบบันทึก">
+                              <button
+                                onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
+                                disabled={isReadOnly}
+                                className="p-2 hover:bg-red-50 dark:hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                                aria-label="ลบบันทึก"
+                              >
+                                <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                              </button>
+                            </HintTooltip>
                           </div>
                         </td>
                       </motion.tr>

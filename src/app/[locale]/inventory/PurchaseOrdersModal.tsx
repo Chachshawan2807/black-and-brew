@@ -6,6 +6,7 @@ import { ArrowDownToLine, ShoppingCart, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 type PurchaseOrderItem = {
   id: string;
@@ -47,7 +48,7 @@ export default function PurchaseOrdersModal({
   const tableId = isExportMode ? exportTableId : 'blackandbrew-po-table';
 
   const tableContent = (
-    <div id={tableId} className={isExportMode ? "relative flex flex-col w-full bg-card" : "relative max-h-[75vh] overflow-y-auto flex flex-col w-full bg-card"}>
+    <div id={tableId} className={isExportMode ? "relative flex flex-col w-full bg-card" : "relative max-h-[75vh] overflow-y-auto bb-smooth-scroll flex flex-col w-full bg-card"}>
       {/* STICKY STYLED WRAPPER FOR THE HEADER */}
         <div className={cn(
           PASTEL_SURFACE,
@@ -55,12 +56,15 @@ export default function PurchaseOrdersModal({
           !isExportMode && "sticky top-0 z-30",
         )}>
           {!isExportMode && (
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-40"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <HintTooltip tip="ปิดรายการสั่งซื้อ">
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-40"
+                aria-label="ปิดรายการสั่งซื้อ"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </HintTooltip>
           )}
           <div className="px-6 flex items-center justify-between mb-4 pr-14">
             <h2 className="text-xl font-normal flex items-center gap-2 antialiased">
@@ -87,7 +91,7 @@ export default function PurchaseOrdersModal({
         {/* Tabs Navigation - only show in non-export mode */}
         {!isExportMode && (
           <div className="px-6">
-            <div className="flex flex-wrap gap-2.5 items-center overflow-x-auto scrollbar-hide">
+            <div className="flex flex-wrap gap-2.5 items-center overflow-x-auto bb-smooth-scroll scrollbar-hide">
               <button
                 onClick={() => setSelectedChannels(['all'])}
                 className={cn(

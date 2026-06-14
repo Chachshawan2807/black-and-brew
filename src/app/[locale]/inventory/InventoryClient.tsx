@@ -1,16 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback, useTransition } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { recordTransaction, fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem, deleteInventoryItemsBulk, updateInventoryStock, recordItemAddHistory } from '@/app/actions/inventory-actions';
+import { fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem, deleteInventoryItemsBulk, updateInventoryStock, recordItemAddHistory } from '@/app/actions/inventory-actions';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
-import { computeItemsToOrder, formatInventoryNumericDisplay, getQuickBadgeStyles, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
+import { computeItemsToOrder, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from '@/components/inventory/InventoryQuickActionBar';
 import { InventoryHistoryModal } from '@/components/inventory/InventoryHistoryModal';
@@ -37,6 +39,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 import {
   type InventoryItem,
   type ColumnDef,
@@ -187,15 +190,16 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
   }
 
   return (
-    <button
-      data-testid="sort-order-input"
-      type="button"
-      title={`แตะเพื่อเปลี่ยนลำดับ (1–${totalItems})`}
-      onClick={() => { setLocalVal(String(displayIndex)); setEditing(true); }}
-      className="text-[12px] font-normal text-foreground/35 font-mono shrink-0 hover:text-foreground/60 hover:bg-muted rounded px-1 transition-colors leading-none cursor-pointer"
-    >
-      {displayIndex.toString().padStart(2, '0')}
-    </button>
+    <HintTooltip tip={`แตะเพื่อเปลี่ยนลำดับ (1–${totalItems})`}>
+      <button
+        data-testid="sort-order-input"
+        type="button"
+        onClick={() => { setLocalVal(String(displayIndex)); setEditing(true); }}
+        className="text-[12px] font-normal text-foreground/35 font-mono shrink-0 hover:text-foreground/60 hover:bg-muted rounded px-1 transition-colors leading-none cursor-pointer"
+      >
+        {displayIndex.toString().padStart(2, '0')}
+      </button>
+    </HintTooltip>
   );
 }
 
@@ -260,14 +264,16 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
           />
         </div>
         {/* Grip Handle */}
-        <div
-          className="cursor-grab active:cursor-grabbing text-foreground/20 hover:text-foreground/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
-          {...attributes}
-          {...listeners}
-          aria-label="ลากเพื่อเปลี่ยนลำดับ"
-        >
-          <GripVertical className="w-4 h-4" />
-        </div>
+        <HintTooltip tip="ลากเพื่อเปลี่ยนลำดับ">
+          <div
+            className="cursor-grab active:cursor-grabbing text-foreground/20 hover:text-foreground/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
+            {...attributes}
+            {...listeners}
+            aria-label="ลากเพื่อเปลี่ยนลำดับ"
+          >
+            <GripVertical className="w-4 h-4" />
+          </div>
+        </HintTooltip>
       </div>
 
       {/* Card Body: Stats Grid */}
@@ -428,14 +434,16 @@ const MobileSortableRow = React.memo(({
       <div className="flex items-center justify-between gap-2 border-b border-border pb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {/* Grip Handle */}
-          <div
-            className="cursor-grab active:cursor-grabbing text-foreground/20 hover:text-foreground/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
-            {...attributes}
-            {...listeners}
-            aria-label="ลากเพื่อเปลี่ยนลำดับ"
-          >
-            <GripVertical className="w-4 h-4" />
-          </div>
+          <HintTooltip tip="ลากเพื่อเปลี่ยนลำดับ">
+            <div
+              className="cursor-grab active:cursor-grabbing text-foreground/20 hover:text-foreground/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
+              {...attributes}
+              {...listeners}
+              aria-label="ลากเพื่อเปลี่ยนลำดับ"
+            >
+              <GripVertical className="w-4 h-4" />
+            </div>
+          </HintTooltip>
           <EditableSortIndex
             id={item.id}
             displayIndex={index + 1}
@@ -453,14 +461,16 @@ const MobileSortableRow = React.memo(({
             placeholder="ชื่อสินค้า"
           />
         </div>
-        <button
-          type="button"
-          onClick={() => requestDelete(item.id)}
-          aria-label="Delete inventory item"
-          className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <HintTooltip tip="ลบรายการ">
+          <button
+            type="button"
+            onClick={() => requestDelete(item.id)}
+            aria-label="ลบรายการ"
+            className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </HintTooltip>
       </div>
 
       {/* Card Body: Single Row Grid */}
@@ -633,13 +643,15 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
             className="flex-1 min-w-0 bg-transparent border-none text-base text-foreground font-normal focus:bg-muted focus:outline-none rounded px-1.5 py-0.5 truncate"
             placeholder="ชื่อสินค้า"
           />
-          <button
-            onClick={() => requestDelete(item.id)}
-            aria-label="Delete"
-            className="ml-1 p-1 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <HintTooltip tip="ลบรายการ">
+            <button
+              onClick={() => requestDelete(item.id)}
+              aria-label="ลบรายการ"
+              className="ml-1 p-1 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </HintTooltip>
         </div>
       );
     }
@@ -694,13 +706,15 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-muted cursor-not-allowed select-none' : ''}`}
       />
       {col.id === 'name' && (
-        <button
-          onClick={() => requestDelete(item.id)}
-          aria-label="Delete inventory item"
-          className="absolute right-3 p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover/cell:opacity-100"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <HintTooltip tip="ลบรายการ">
+          <button
+            onClick={() => requestDelete(item.id)}
+            aria-label="ลบรายการ"
+            className="absolute right-3 p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover/cell:opacity-100"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </HintTooltip>
       )}
     </div>
   );
@@ -831,15 +845,26 @@ export default function InventoryClient({
   const sensors = useSafeDndSensors();
 
   // Quick Entry State
-  const [quickSearch, setQuickSearch] = useState('');
-  const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
-  const [quickQty, setQuickQty] = useState('');
-  const [quickType, setQuickType] = useState<'IN' | 'OUT' | 'ADJUST'>('IN');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [frequentItems, setFrequentItems] = useState<{ id: string, name: string }[]>([]);
   const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
-  const [isQuickPending, startQuickTransition] = useTransition();
+
+  const quickAction = useInventoryQuickAction({
+    items,
+    setItems,
+    isReadOnly,
+    showHistoryModal,
+    onHistoryRefresh: setTransactionHistory,
+    onBeforeSave: () => setSavingState('saving'),
+    onAfterSave: () => {
+      setSavingState('synced');
+      setTimeout(() => setSavingState('idle'), 2000);
+      void fetchFrequentItems().then((res) => {
+        if (res.success && res.data) setFrequentItems(res.data);
+      });
+    },
+    onSaveError: () => setSavingState('idle'),
+  });
 
   const itemsToOrder = useMemo(() => computeItemsToOrder(items), [items]);
 
@@ -900,19 +925,6 @@ export default function InventoryClient({
       setIsExportingPO(false);
     }
   };
-
-  const filteredItems = useMemo(() => {
-    if (!debouncedQuickSearch) return [];
-    const needle = debouncedQuickSearch.toLowerCase();
-    return items.filter(item =>
-      item.name.toLowerCase().includes(needle)
-    ).slice(0, 10);
-  }, [items, debouncedQuickSearch]);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedQuickSearch(quickSearch), 150);
-    return () => window.clearTimeout(t);
-  }, [quickSearch]);
 
   useEffect(() => {
     loadFrequentItems();
@@ -977,7 +989,7 @@ export default function InventoryClient({
       await ensureSupabaseSession();
       const [configRes, inventoryRes] = await Promise.all([
         supabase.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
-        supabase.from('inventory_items').select('id, name, stock, order_qty, order_point, target_stock, unit, source, sort_order, updated_at').order('sort_order', { ascending: true })
+        supabase.from('inventory_items').select(INVENTORY_ITEM_SELECT).order('sort_order', { ascending: true })
       ]);
 
       if (inventoryRes.error) {
@@ -1242,6 +1254,15 @@ export default function InventoryClient({
           renumberedItems.map(item => ({ id: item.id, sort_order: item.sort_order }))
         );
         if (error) throw error;
+        logClientDataChange({
+          action: 'BULK_UPDATE',
+          module: 'inventory',
+          entityType: 'inventory_item',
+          metadata: {
+            operation: 'reorder_sort_order',
+            itemIds: renumberedItems.map((item) => item.id),
+          },
+        });
         setSavingState('synced');
         setTimeout(() => setSavingState('idle'), 2000);
       } catch (err: unknown) {
@@ -1568,81 +1589,6 @@ export default function InventoryClient({
     }
   }
 
-  const handleQuickSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (isReadOnly) {
-      alert(READ_ONLY_DENY_MSG);
-      return;
-    }
-    if (!quickSearch || !quickQty) return;
-
-    const item = items.find(i => i.name === quickSearch || i.id === quickSearch);
-    if (!item) {
-      alert('ไม่พบสินค้าที่ระบุค่ะ');
-      return;
-    }
-
-    const qty = Number(quickQty);
-    if (quickType === 'ADJUST') {
-      if (isNaN(qty) || qty < 0) {
-        alert('กรุณาระบุจำนวนคงเหลือที่ถูกต้องค่ะ');
-        return;
-      }
-    } else if (isNaN(qty) || qty <= 0) {
-      alert('กรุณาระบุจำนวนที่ถูกต้องค่ะ');
-      return;
-    }
-
-    startQuickTransition(() => {
-      void (async () => {
-        setSavingState('saving');
-
-        const res =
-          quickType === 'ADJUST'
-            ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
-                clientSessionId: getClientSessionId(),
-              })
-            : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
-                clientSessionId: getClientSessionId(),
-              });
-
-        if (!res.success) {
-          alert(res.error);
-          setSavingState('idle');
-          return;
-        }
-
-        setItems(prev => prev.map(i => i.id === item.id ? { ...i, stock: res.newStock } : i));
-        setQuickSearch('');
-        setDebouncedQuickSearch('');
-        setQuickQty('');
-        setSavingState('synced');
-        router.refresh();
-        setTimeout(() => setSavingState('idle'), 2000);
-        loadFrequentItems();
-        if (showHistoryModal) {
-          const histRes = await fetchTransactionHistory();
-          if (histRes.success && histRes.data) {
-            setTransactionHistory(histRes.data);
-          }
-        }
-      })();
-    });
-  }, [isReadOnly, quickSearch, quickQty, items, quickType, router, showHistoryModal]);
-
-  const selectedQuickItem = useMemo(
-    () => items.find(i => i.name === quickSearch || i.id === quickSearch),
-    [items, quickSearch]
-  );
-
-  const quickBadgeStyles = useMemo(() => {
-    if (!selectedQuickItem) return getQuickBadgeStyles(0, 0);
-    return getQuickBadgeStyles(
-      Number(selectedQuickItem.stock) || 0,
-      Number(selectedQuickItem.target_stock) || 0,
-    );
-  }, [selectedQuickItem]);
-
   if (loading) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-transparent text-foreground">
@@ -1680,28 +1626,32 @@ export default function InventoryClient({
 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1 border-r border-slate-200 pr-4 mr-2">
-                <button
-                  onClick={handleUndo}
-                  disabled={isReadOnly || undoStack.length === 0 || isSyncing}
-                  className={`p-2.5 rounded-3xl transition-all ${undoStack.length === 0 || isSyncing
-                    ? 'text-[#94a3b8] cursor-default'
-                    : 'text-foreground hover:bg-black/5'
-                    }`}
-                  title="ย้อนกลับ (Undo)"
-                >
-                  <Undo2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={handleRedo}
-                  disabled={isReadOnly || redoStack.length === 0 || isSyncing}
-                  className={`p-2.5 rounded-3xl transition-all ${redoStack.length === 0 || isSyncing
-                    ? 'text-[#94a3b8] cursor-default'
-                    : 'text-foreground hover:bg-black/5'
-                    }`}
-                  title="ทำซ้ำ (Redo)"
-                >
-                  <Redo2 className="w-4 h-4" />
-                </button>
+                <HintTooltip tip="ย้อนกลับ">
+                  <button
+                    onClick={handleUndo}
+                    disabled={isReadOnly || undoStack.length === 0 || isSyncing}
+                    className={`p-2.5 rounded-3xl transition-all ${undoStack.length === 0 || isSyncing
+                      ? 'text-[#94a3b8] cursor-default'
+                      : 'text-foreground hover:bg-black/5'
+                      }`}
+                    aria-label="ย้อนกลับ"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </button>
+                </HintTooltip>
+                <HintTooltip tip="ทำซ้ำ">
+                  <button
+                    onClick={handleRedo}
+                    disabled={isReadOnly || redoStack.length === 0 || isSyncing}
+                    className={`p-2.5 rounded-3xl transition-all ${redoStack.length === 0 || isSyncing
+                      ? 'text-[#94a3b8] cursor-default'
+                      : 'text-foreground hover:bg-black/5'
+                      }`}
+                    aria-label="ทำซ้ำ"
+                  >
+                    <Redo2 className="w-4 h-4" />
+                  </button>
+                </HintTooltip>
               </div>
 
 
@@ -1709,25 +1659,36 @@ export default function InventoryClient({
           </div>
 
           <InventoryQuickActionBar
-            quickSearch={quickSearch}
-            setQuickSearch={setQuickSearch}
-            quickQty={quickQty}
-            setQuickQty={setQuickQty}
-            quickType={quickType}
-            setQuickType={setQuickType}
-            isSearchFocused={isSearchFocused}
-            setIsSearchFocused={setIsSearchFocused}
-            filteredItems={filteredItems}
-            selectedQuickItem={selectedQuickItem}
-            quickBadgeStyles={quickBadgeStyles}
+            quickSearch={quickAction.quickSearch}
+            setQuickSearch={quickAction.setQuickSearch}
+            quickQty={quickAction.quickQty}
+            setQuickQty={quickAction.setQuickQty}
+            quickType={quickAction.quickType}
+            setQuickType={quickAction.setQuickType}
+            isSearchFocused={quickAction.isSearchFocused}
+            setIsSearchFocused={quickAction.setIsSearchFocused}
+            filteredItems={quickAction.filteredItems}
+            selectedQuickItem={quickAction.selectedQuickItem}
+            quickBadgeStyles={quickAction.quickBadgeStyles}
             frequentItems={frequentItems}
             itemsToOrderCount={itemsToOrder.length}
-            isQuickPending={isQuickPending}
+            isQuickPending={quickAction.isQuickPending}
             isReadOnly={isReadOnly}
-            onSubmit={handleQuickSubmit}
+            onSubmit={quickAction.handleQuickSubmit}
             onOpenPurchaseOrder={() => setShowPurchaseOrderModal(true)}
             onOpenAddItem={() => setShowAddModal(true)}
             onOpenHistory={handleOpenHistory}
+            bulkMode={quickAction.bulkMode}
+            onBulkModeChange={quickAction.setBulkMode}
+            bulkQueue={quickAction.bulkQueue}
+            bulkPreviews={quickAction.bulkPreviews}
+            bulkSubmitReady={quickAction.bulkSubmitReady}
+            onSelectBulkItem={quickAction.selectBulkQuickItem}
+            onAddBulkFromSearch={quickAction.addBulkItemFromSearch}
+            onBulkPaste={quickAction.handleBulkPaste}
+            onRemoveBulkItem={quickAction.removeBulkItem}
+            onBulkLineQtyChange={quickAction.setBulkLineQty}
+            onClearBulkQueue={quickAction.clearBulkQueue}
             className="mb-8 sticky top-4 md:top-8 z-[50]"
           />
 
@@ -1811,13 +1772,15 @@ export default function InventoryClient({
             className="relative bg-card border border-border rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
-            <button onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors z-10">
-              <X className="w-5 h-5" />
-            </button>
+            <HintTooltip tip="ปิด">
+              <button onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors z-10" aria-label="ปิด">
+                <X className="w-5 h-5" />
+              </button>
+            </HintTooltip>
             <div className="px-6 h-14 border-b border-border flex items-center justify-between shrink-0 pr-14">
               <h2 className="text-lg font-normal text-foreground">เพิ่มรายการใหม่</h2>
             </div>
-              <form onSubmit={handleAddItemSubmit} className="p-6 overflow-y-auto flex-1">
+              <form onSubmit={handleAddItemSubmit} className="p-6 overflow-y-auto bb-smooth-scroll flex-1 min-h-0">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                   <div className="col-span-2 flex flex-col gap-1.5">
                     <label className="text-[12px] font-normal text-muted-foreground ml-1 uppercase tracking-wider">ชื่อรายการ</label>
@@ -1931,9 +1894,11 @@ export default function InventoryClient({
         {deleteId && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
             <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="relative bg-card rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 text-center">
-              <button onClick={() => setDeleteId(null)} className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-colors z-10">
-                <X className="w-5 h-5" />
-              </button>
+              <HintTooltip tip="ปิด">
+                <button onClick={() => setDeleteId(null)} className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-colors z-10" aria-label="ปิด">
+                  <X className="w-5 h-5" />
+                </button>
+              </HintTooltip>
               <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
                 <Trash2 className="w-6 h-6" />
               </div>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 export interface MaintenanceFormData {
   start_date: string;
@@ -79,12 +80,15 @@ export default function MaintenanceModals({
               transition={modalContent.transition}
               className="relative bg-card w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden border border-border"
             >
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
-              >
-                <X className="w-5 h-5" strokeWidth={2} />
-              </button>
+              <HintTooltip tip="ปิด">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
+                  aria-label="ปิด"
+                >
+                  <X className="w-5 h-5" strokeWidth={2} />
+                </button>
+              </HintTooltip>
               <div className="p-5 border-b border-border flex items-center justify-between shrink-0 pr-14">
                 <div>
                   <h2 className="text-xl font-normal text-foreground tracking-tight uppercase">
@@ -94,7 +98,7 @@ export default function MaintenanceModals({
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar bg-card">
+              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 min-h-0 overflow-y-auto bb-smooth-scroll custom-scrollbar bg-card">
                 <div className={isReadOnly ? 'pointer-events-none opacity-60' : ''}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5 flex-1">
@@ -267,12 +271,15 @@ export default function MaintenanceModals({
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/5 backdrop-blur-md bb-modal-backdrop" onClick={() => setIsDeleteConfirmOpen(false)} />
           <div className="relative bg-card w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-border bb-modal-panel p-10 text-center">
-            <button
-              onClick={() => setIsDeleteConfirmOpen(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
-            >
-              <X className="w-5 h-5" strokeWidth={2} />
-            </button>
+            <HintTooltip tip="ปิด">
+              <button
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
+                aria-label="ปิด"
+              >
+                <X className="w-5 h-5" strokeWidth={2} />
+              </button>
+            </HintTooltip>
             <div className="w-20 h-20 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" strokeWidth={1} />
             </div>

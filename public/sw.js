@@ -1,9 +1,11 @@
-const CACHE_NAME = 'blackandbrew-cache-v1';
+const CACHE_NAME = 'blackandbrew-cache-v2';
 
 // Add list of files to cache here.
 const urlsToCache = [
   '/',
   '/ai-agent-logo.svg',
+  '/images/notification-icon.png',
+  '/images/notification-icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {

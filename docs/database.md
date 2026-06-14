@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 8.5 | Last Updated: 2026-06-12 | Engine: Supabase PostgreSQL
+> Version: 8.6 | Last Updated: 2026-06-15 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -11,7 +11,8 @@
 | `profiles` | ข้อมูลพนักงาน 9 คน | ✓ authenticated | `DB_SCHEMA.sql` |
 | `shifts` | ตารางกะงาน | ✓ authenticated | `DB_SCHEMA.sql` |
 | `inventory_items` | รายการคลังสินค้าและสต็อก | ✓ authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` |
-| `inventory_transactions` | บันทึกการเคลื่อนไหวสต็อก (IN/OUT/ADD/DELETE) | ✓ authenticated | `setup_inventory_transactions.sql` |
+| `inventory_transactions` | บันทึกการเคลื่อนไหวสต็อก (IN/OUT/ADJUST/ADD/DELETE) | ✓ authenticated | `sql/record_inventory_transaction.sql` + migrations |
+| `inventory_count_verifications` | บันทึกผลตรวจนับ vs สต็อกทฤษฎี IN/OUT | ✓ authenticated | `supabase/migrations/20260614120000_inventory_count_verifications.sql` |
 | `inventory_config` | การตั้งค่าคอลัมน์ Inventory UI | ✓ authenticated | `inventory_config_schema.sql` |
 | `holidays` | วันหยุดราชการ | ✓ | Created via `holiday-actions.ts` |
 | `regular_holidays` | วันหยุดประจำของพนักงาน | ✓ | `regular_holidays_schema.sql` |
@@ -90,7 +91,23 @@ CREATE TABLE inventory_transactions (
 );
 ```
 
-> Column is `inventory_item_id` — renamed from `product_id` via `fix_transaction_relationships.sql`. ADD/DELETE types added in `supabase/migrations/20260612140000_inventory_add_delete_history.sql`.
+> Column is `inventory_item_id` — renamed from `product_id` (historical). ADD/DELETE types added in `supabase/migrations/20260612140000_inventory_add_delete_history.sql`.
+
+### `inventory_count_verifications`
+
+```sql
+CREATE TABLE inventory_count_verifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inventory_item_id UUID NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
+  counted_qty NUMERIC NOT NULL CHECK (counted_qty >= 0),
+  in_out_theoretical_qty NUMERIC NOT NULL,
+  matched BOOLEAN NOT NULL,
+  counted_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+```
+
+Written by `recordCountVerification()` in `inventory-actions.ts`. Theoretical qty computed via `computeInOutTheoreticalStock()` (`src/lib/inventory-in-out-theoretical.ts`).
 
 ### `sales_uploads` / `sales_records`
 
@@ -192,6 +209,8 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 CREATE INDEX idx_login_history_occurred_at ON login_history (occurred_at DESC);
 CREATE INDEX idx_data_change_logs_module_occurred ON data_change_logs (module, occurred_at DESC);
 CREATE INDEX idx_revoked_sessions_revoked_at ON revoked_sessions (revoked_at DESC);
+CREATE INDEX idx_count_verifications_item ON inventory_count_verifications(inventory_item_id);
+CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications(counted_at DESC);
 ```
 
 ---
@@ -200,16 +219,16 @@ CREATE INDEX idx_revoked_sessions_revoked_at ON revoked_sessions (revoked_at DES
 
 ### `record_inventory_transaction`
 
-- Row lock → stock validation → stock update → transaction insert
-- **Source:** `fix_transaction_relationships.sql`
-- **Used by:** `recordTransaction()` Quick Entry IN/OUT
+- Row lock → stock validation → stock update → transaction insert (IN/OUT only)
+- **Source:** `sql/record_inventory_transaction.sql`
+- **Used by:** `recordTransaction()`, `recordBulkInventoryTransactions()`
 
-### `set_inventory_stock` (v6.8)
+### `set_inventory_stock` (v6.8+)
 
-- Parameters: `p_item_id UUID`, `p_new_stock NUMERIC`, `p_note TEXT`
-- Row lock → set absolute stock → ledger entry (IN/OUT delta)
+- Parameters: `p_item_id UUID`, `p_new_stock NUMERIC`, `p_note TEXT`, `p_record_history BOOLEAN DEFAULT TRUE`
+- Row lock → set absolute stock → optional ADJUST ledger entry on delta
 - **Source:** `sql/sync_inventory_stock.sql`
-- **Used by:** `updateInventoryStock()` — warehouse cell + stock count
+- **Used by:** `updateInventoryStock()` — warehouse cell + stock count (`recordHistory: false` on count page)
 
 ### Trigger: `trg_sync_inventory_order_qty`
 
@@ -225,7 +244,7 @@ CREATE INDEX idx_revoked_sessions_revoked_at ON revoked_sessions (revoked_at DES
 
 ## 6. Migration Files
 
-> **Schema location:** Official migrations live in `supabase/migrations/`. Historical one-shot schemas remain at the repository root (e.g. `DB_SCHEMA.sql`) plus the `sql/` subfolder. `DB_SCHEMA.sql` is the primary reference schema. Use `scripts/apply-pending-migrations.sql` for manual Supabase Dashboard apply when CLI is unavailable. Verify remote state: `npm run db:verify`.
+> **Schema location:** Official migrations live in `supabase/migrations/`. Historical one-shot schemas remain at the repository root (e.g. `DB_SCHEMA.sql`) plus the `sql/` subfolder. `DB_SCHEMA.sql` is the primary reference schema. Apply via `supabase db push` or run migration files in the Supabase Dashboard SQL Editor. Verify remote state: `npm run db:verify`.
 
 ### Versioned (`supabase/migrations/`)
 
@@ -236,20 +255,17 @@ CREATE INDEX idx_revoked_sessions_revoked_at ON revoked_sessions (revoked_at DES
 | `20260612130000_inventory_notifications.sql` | Realtime + RLS read for inventory `data_change_logs` |
 | `20260612140000_inventory_add_delete_history.sql` | Transaction types ADD/DELETE; nullable `inventory_item_id` |
 | `20260612200000_revoked_sessions.sql` | Remote session revocation by fingerprint |
+| `20260614120000_inventory_count_verifications.sql` | Count accuracy ledger (theoretical vs counted qty) |
 
 ### Historical (root + `sql/`)
 
 | File | Purpose |
 | --- | --- |
 | `DB_SCHEMA.sql` | Core: profiles, shifts, inventory_items |
-| `setup_inventory_transactions.sql` | transactions table + RPC |
-| `fix_transaction_relationships.sql` | Rename `product_id` → `inventory_item_id` |
+| `sql/record_inventory_transaction.sql` | Atomic IN/OUT RPC reference blueprint |
 | `sql/sync_inventory_stock.sql` | v6.8 — `set_inventory_stock`, trigger, REPLICA IDENTITY |
 | `sql/fix_inventory_rls.sql` | RLS hardening — authenticated-only |
-| `apply_rls_transactions.sql` | RLS for transactions |
-| `update_rls_policies.sql` | Open RLS for profiles & shifts |
 | `inventory_config_schema.sql` | Config table + seed |
-| `add_inventory_sort_order.sql` | Add sort_order column |
 | `sales_schema.sql` | Sales uploads + records |
 | `product_categories_schema.sql` | Product categories |
 | `regular_holidays_schema.sql` | Regular holidays per employee |

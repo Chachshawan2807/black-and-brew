@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 8.5 | Last Updated: 2026-06-12 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 8.6 | Last Updated: 2026-06-15 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -52,6 +52,7 @@ User opens app → PinGateway (sessionStorage check)
 | --- | :--- | --- |
 | Client Components (`src/lib/supabase.ts`) | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Real-time subs, client reads |
 | Server Actions | `SUPABASE_SERVICE_ROLE_KEY` | Admin ops, AI tools, daily report |
+| Server Components | `getSupabaseAdmin()` (`src/lib/supabase-server.ts`) | Singleton admin client, `cache: 'no-store'` |
 
 **RLS:** `sql/fix_inventory_rls.sql` — authenticated-only policies; client must sign in anonymously after PIN.
 
@@ -96,7 +97,7 @@ src/app/
     ├── dashboard/               # Staff dashboard
     ├── schedule/                # Shift management (DnD)
     ├── inventory/               # Warehouse spreadsheet + InventoryQuickActionFAB
-    │   └── count/               # Stock-taking
+    │   └── count/               # Stock-taking + count accuracy verification
     ├── maintenance/             # Equipment tracking
     ├── sales/                   # Sales analytics
     ├── settings/                # Theme picker, login history, notification prefs
@@ -118,11 +119,32 @@ onChange → local state → onBlur → updateInventoryStock() [RPC set_inventor
 → optimistic update → Supabase realtime merge → all windows sync
 ```
 
-### Stock-Taking Count
+### Stock-Taking Count + Accuracy Verification (v8.6)
 
 ```text
-CountInput blur → optimistic setItems → updateInventoryStock()
-→ realtime merge → warehouse PO modal recalculates via computeItemsToOrder()
+CountInput blur → optimistic setItems → updateInventoryStock(recordHistory: false)
+→ recordCountVerification() → computeInOutTheoreticalStockForItem()
+→ INSERT inventory_count_verifications (matched flag)
+→ fetchCountAccuracyStats() for per-item accuracy badges
+```
+
+### Inventory Realtime Context (v8.6)
+
+```text
+InventoryRealtimeProvider → shared items state + Supabase channel on inventory_items
+→ mergeInventoryRealtimeUpdate() across warehouse + count pages
+→ src/contexts/InventoryRealtimeContext.tsx + src/lib/inventory-queries.ts
+```
+
+### Inventory Quick Action libs (v8.6)
+
+```text
+InventoryQuickActionFAB → use-inventory-quick-action hook
+→ inventory-quick-action-draft.ts   — draft persistence
+→ inventory-quick-bulk.ts           — bulk entry batching
+→ inventory-quick-qty-step.ts         — qty stepper logic
+→ inventory-quick-search-filter.ts  — item search/filter
+→ recordBulkInventoryTransactions() server action
 ```
 
 ### Transaction Recording (Atomic via RPC)
@@ -205,7 +227,8 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 | Page-level | useState | Items, columns, modals |
 | History | undoStack/redoStack | Inventory undo/redo |
 | Persistence | localStorage + `inventory_config` | Column widths/labels |
-| Real-time | Supabase Channels | Cross-device sync |
+| Real-time | Supabase Channels + `InventoryRealtimeContext` | Cross-device sync |
+| Tooltips | `AppTooltipProvider` + `HintTooltip` | Global tooltip delay + icon hints |
 
 ---
 

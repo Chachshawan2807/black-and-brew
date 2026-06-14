@@ -1,14 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Package, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
 import {
   computeItemsToOrder,
-  getQuickBadgeStyles,
   getStockColorClass,
   type InventoryStockFields,
 } from '@/lib/inventory-stock';
@@ -17,12 +15,10 @@ import {
   type InventoryRealtimeItem,
 } from '@/contexts/InventoryRealtimeContext';
 import {
-  recordTransaction,
-  updateInventoryStock,
   fetchTransactionHistory,
   fetchFrequentItems,
 } from '@/app/actions/inventory-actions';
-import { getClientSessionId } from '@/lib/client-session';
+import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import {
   FAB_BASE_CLASS,
   FAB_BOTTOM_QUICK_ACTION_CLASS,
@@ -31,7 +27,8 @@ import {
 import { getFabPanelKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
-import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { useReadOnly } from '@/components/providers/AuthProvider';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { InventoryQuickActionBar } from './InventoryQuickActionBar';
 import { InventoryHistoryModal } from './InventoryHistoryModal';
@@ -42,7 +39,6 @@ const PurchaseOrdersModal = dynamic(() => import('@/app/[locale]/inventory/Purch
 type InventoryItem = InventoryRealtimeItem & InventoryStockFields;
 
 export default function InventoryQuickActionFAB() {
-  const router = useRouter();
   const isReadOnly = useReadOnly();
   const { fabStackHidden, isAnyOtherOpen, setOverlayOpen } = useFloatingOverlay();
   const {
@@ -55,14 +51,7 @@ export default function InventoryQuickActionFAB() {
 
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-
-  const [quickSearch, setQuickSearch] = useState('');
-  const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
-  const [quickQty, setQuickQty] = useState('');
-  const [quickType, setQuickType] = useState<'IN' | 'OUT' | 'ADJUST'>('IN');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [frequentItems, setFrequentItems] = useState<{ id: string; name: string }[]>([]);
-  const [isQuickPending, startQuickTransition] = useTransition();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
@@ -73,6 +62,24 @@ export default function InventoryQuickActionFAB() {
 
   const viewportInsets = useVisualViewportInsets(isMounted && isOpen);
   const quickPanelStyle = getFabPanelKeyboardAwareStyle({ insets: viewportInsets });
+
+  const loadFrequentItems = useCallback(async () => {
+    const res = await fetchFrequentItems();
+    if (res.success && res.data) {
+      setFrequentItems(res.data);
+    }
+  }, []);
+
+  const quickAction = useInventoryQuickAction({
+    items,
+    setItems,
+    isReadOnly,
+    showHistoryModal,
+    onHistoryRefresh: setTransactionHistory,
+    onAfterSave: () => {
+      void loadFrequentItems();
+    },
+  });
 
   useEffect(() => {
     setIsMounted(true);
@@ -100,18 +107,6 @@ export default function InventoryQuickActionFAB() {
   }, [fabStackHidden]);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedQuickSearch(quickSearch), 150);
-    return () => window.clearTimeout(t);
-  }, [quickSearch]);
-
-  const loadFrequentItems = useCallback(async () => {
-    const res = await fetchFrequentItems();
-    if (res.success && res.data) {
-      setFrequentItems(res.data);
-    }
-  }, []);
-
-  useEffect(() => {
     if (!isMounted || !isOpen) return;
 
     void refresh();
@@ -123,14 +118,6 @@ export default function InventoryQuickActionFAB() {
       void refresh();
     }
   }, [showPurchaseOrderModal, isOpen, refresh]);
-
-  const filteredItems = useMemo(() => {
-    if (!debouncedQuickSearch) return [];
-    const needle = debouncedQuickSearch.toLowerCase();
-    return items
-      .filter((item) => item.name.toLowerCase().includes(needle))
-      .slice(0, 10);
-  }, [items, debouncedQuickSearch]);
 
   const itemsToOrder = useMemo(() => computeItemsToOrder(items), [items]);
 
@@ -147,21 +134,6 @@ export default function InventoryQuickActionFAB() {
     return itemsToOrder.filter((i) => selectedChannels.includes(i.source || 'ไม่ได้ระบุแหล่งที่มา'));
   }, [itemsToOrder, selectedChannels]);
 
-  const selectedQuickItem = useMemo(
-    () => items.find((i) => i.name === quickSearch || i.id === quickSearch),
-    [items, quickSearch],
-  );
-
-  const quickBadgeStyles = useMemo(() => {
-    if (!selectedQuickItem) {
-      return getQuickBadgeStyles(0, 0);
-    }
-    return getQuickBadgeStyles(
-      Number(selectedQuickItem.stock) || 0,
-      Number(selectedQuickItem.target_stock) || 0,
-    );
-  }, [selectedQuickItem]);
-
   const handleOpenHistory = useCallback(async () => {
     setTransactionHistory([]);
     setShowHistoryModal(true);
@@ -172,67 +144,6 @@ export default function InventoryQuickActionFAB() {
       console.error('[UI] History fetch failed:', res.error);
     }
   }, []);
-
-  const handleQuickSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      if (isReadOnly) {
-        alert(READ_ONLY_DENY_MSG);
-        return;
-      }
-      if (!quickSearch || !quickQty) return;
-
-      const item = items.find((i) => i.name === quickSearch || i.id === quickSearch);
-      if (!item) {
-        alert('ไม่พบสินค้าที่ระบุค่ะ');
-        return;
-      }
-
-      const qty = Number(quickQty);
-      if (quickType === 'ADJUST') {
-        if (Number.isNaN(qty) || qty < 0) {
-          alert('กรุณาระบุจำนวนคงเหลือที่ถูกต้องค่ะ');
-          return;
-        }
-      } else if (Number.isNaN(qty) || qty <= 0) {
-        alert('กรุณาระบุจำนวนที่ถูกต้องค่ะ');
-        return;
-      }
-
-      startQuickTransition(() => {
-        void (async () => {
-          const res =
-            quickType === 'ADJUST'
-              ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
-                  clientSessionId: getClientSessionId(),
-                })
-              : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
-                  clientSessionId: getClientSessionId(),
-                });
-
-          if (!res.success) {
-            alert(res.error);
-            return;
-          }
-
-          setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, stock: res.newStock } : i)));
-          setQuickSearch('');
-          setDebouncedQuickSearch('');
-          setQuickQty('');
-          router.refresh();
-          void loadFrequentItems();
-
-          if (showHistoryModal) {
-            const histRes = await fetchTransactionHistory();
-            if (histRes.success && histRes.data) {
-              setTransactionHistory(histRes.data);
-            }
-          }
-        })();
-      });
-    },
-    [isReadOnly, quickSearch, quickQty, items, quickType, router, showHistoryModal, loadFrequentItems],
-  );
 
   const exportPOImage = async () => {
     const element = document.getElementById('blackandbrew-po-table-export-fab');
@@ -281,15 +192,16 @@ export default function InventoryQuickActionFAB() {
   return (
     <>
       {!hideQuickActionButton && (
-        <motion.button
-          type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
-          className={cn(FAB_BASE_CLASS, FAB_BOTTOM_QUICK_ACTION_CLASS, 'z-[201]')}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.94 }}
-          aria-label={isOpen ? 'ปิด Quick Action' : 'เปิด Quick Action คลังสินค้า'}
-          aria-expanded={isOpen}
-        >
+        <HintTooltip tip={isOpen ? 'ปิดปรับสต็อกด่วน' : 'ปรับสต็อกด่วน'} side="left">
+          <motion.button
+            type="button"
+            onClick={() => setIsOpen((prev) => !prev)}
+            className={cn(FAB_BASE_CLASS, FAB_BOTTOM_QUICK_ACTION_CLASS, 'z-[201]')}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            aria-label={isOpen ? 'ปิด Quick Action' : 'เปิด Quick Action คลังสินค้า'}
+            aria-expanded={isOpen}
+          >
           <AnimatePresence mode="wait" initial={false}>
             {isOpen ? (
               <motion.span
@@ -314,6 +226,7 @@ export default function InventoryQuickActionFAB() {
             )}
           </AnimatePresence>
         </motion.button>
+        </HintTooltip>
       )}
 
       <AnimatePresence>
@@ -335,7 +248,7 @@ export default function InventoryQuickActionFAB() {
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
               className={cn(
-                'fixed z-[199] box-border flex flex-col overflow-hidden',
+                'fixed z-[199] box-border flex flex-col overflow-visible',
                 'max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none',
                 'max-md:transition-[top,max-height,bottom] max-md:duration-200',
                 'md:w-full md:max-w-2xl md:left-auto md:right-6',
@@ -350,26 +263,37 @@ export default function InventoryQuickActionFAB() {
                 </div>
               ) : (
                 <InventoryQuickActionBar
-                  quickSearch={quickSearch}
-                  setQuickSearch={setQuickSearch}
-                  quickQty={quickQty}
-                  setQuickQty={setQuickQty}
-                  quickType={quickType}
-                  setQuickType={setQuickType}
-                  isSearchFocused={isSearchFocused}
-                  setIsSearchFocused={setIsSearchFocused}
-                  filteredItems={filteredItems}
-                  selectedQuickItem={selectedQuickItem}
-                  quickBadgeStyles={quickBadgeStyles}
+                  quickSearch={quickAction.quickSearch}
+                  setQuickSearch={quickAction.setQuickSearch}
+                  quickQty={quickAction.quickQty}
+                  setQuickQty={quickAction.setQuickQty}
+                  quickType={quickAction.quickType}
+                  setQuickType={quickAction.setQuickType}
+                  isSearchFocused={quickAction.isSearchFocused}
+                  setIsSearchFocused={quickAction.setIsSearchFocused}
+                  filteredItems={quickAction.filteredItems}
+                  selectedQuickItem={quickAction.selectedQuickItem}
+                  quickBadgeStyles={quickAction.quickBadgeStyles}
                   frequentItems={frequentItems}
                   itemsToOrderCount={itemsToOrder.length}
-                  isQuickPending={isQuickPending}
+                  isQuickPending={quickAction.isQuickPending}
                   isReadOnly={isReadOnly}
-                  onSubmit={handleQuickSubmit}
+                  onSubmit={quickAction.handleQuickSubmit}
                   onOpenPurchaseOrder={() => setShowPurchaseOrderModal(true)}
                   onOpenAddItem={() => setShowAddModal(true)}
                   onOpenHistory={() => void handleOpenHistory()}
-                  className="shadow-2xl overflow-y-auto max-h-full"
+                  bulkMode={quickAction.bulkMode}
+                  onBulkModeChange={quickAction.setBulkMode}
+                  bulkQueue={quickAction.bulkQueue}
+                  bulkPreviews={quickAction.bulkPreviews}
+                  bulkSubmitReady={quickAction.bulkSubmitReady}
+                  onSelectBulkItem={quickAction.selectBulkQuickItem}
+                  onAddBulkFromSearch={quickAction.addBulkItemFromSearch}
+                  onBulkPaste={quickAction.handleBulkPaste}
+                  onRemoveBulkItem={quickAction.removeBulkItem}
+                  onBulkLineQtyChange={quickAction.setBulkLineQty}
+                  onClearBulkQueue={quickAction.clearBulkQueue}
+                  className="shadow-2xl"
                 />
               )}
             </motion.div>

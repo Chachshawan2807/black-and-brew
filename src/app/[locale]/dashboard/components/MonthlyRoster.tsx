@@ -158,7 +158,7 @@ export default function MonthlyRoster() {
       ) : (
         <div className="bg-card rounded-[32px] border border-border shadow-xl shadow-black/5">
           {activeTab === 'consolidated' ? (
-            <div className="w-full overflow-x-auto">
+            <div className="w-full overflow-x-auto bb-smooth-scroll">
               <table className="w-max min-w-full border-collapse">
                 <thead>
                   <tr className="bg-muted/50">

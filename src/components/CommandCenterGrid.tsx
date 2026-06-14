@@ -10,6 +10,7 @@ import {
   GripHorizontal,
   Package
 } from 'lucide-react';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 import {
   DndContext,
   closestCorners,
@@ -79,14 +80,16 @@ const SortableItem = React.memo(({ item, isOverlay = false }: { item: NavItem, i
       <div className="absolute top-0 left-0 w-full h-1 bg-black/5 group-hover:bg-[#1a1a1a] transition-colors duration-300" />
       
       {/* Drag Handle — visible on mobile, subtle on desktop */}
-      <div
-        className="absolute top-4 right-4 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity touch-none"
-        {...attributes}
-        {...listeners}
-        aria-label="ลากเพื่อเปลี่ยนลำดับ"
-      >
-        <GripHorizontal className="w-5 h-5" />
-      </div>
+      <HintTooltip tip="ลากเพื่อเปลี่ยนลำดับ">
+        <div
+          className="absolute top-4 right-4 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity touch-none"
+          {...attributes}
+          {...listeners}
+          aria-label="ลากเพื่อเปลี่ยนลำดับ"
+        >
+          <GripHorizontal className="w-5 h-5" />
+        </div>
+      </HintTooltip>
 
       <Link
         href={item.href}

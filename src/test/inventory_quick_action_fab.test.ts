@@ -45,6 +45,8 @@ describe('Inventory Quick Action FAB', () => {
     expect(layoutCode).toContain('md:bottom-[7.75rem]');
     expect(layoutCode).toContain('max-md:bottom-[calc(11rem+env(safe-area-inset-bottom,0px))]');
     expect(fabCode).toContain('InventoryQuickActionBar');
+    expect(fabCode).toContain('overflow-visible');
+    expect(fabCode).not.toContain('overflow-y-auto max-h-full');
     expect(fabCode).toContain('FAB_BASE_CLASS');
     expect(fabCode).toContain('<Package');
     expect(fabCode).not.toContain('PackagePlus');
@@ -68,7 +70,11 @@ describe('Inventory Quick Action FAB', () => {
     expect(layoutCode).toMatch(/<InventoryQuickActionWrapper\s*\/>\s*\r?\n\s*<InventoryNotificationFAB/);
     expect(notifyCode).toContain('variant="fab"');
     expect(notifyCode).not.toContain('/inventory');
-    expect(bellCode).toContain('FAB_BOTTOM_NOTIFICATION_CLASS');
+    expect(notifyCode).not.toContain('isAnyOtherOpen');
+    expect(notifyCode).toContain('const hidden = panelOpen');
+    expect(notifyCode).toContain('FAB_BOTTOM_NOTIFICATION_CLASS');
+    expect(notifyCode).toContain('FAB_BOTTOM_AI_CLASS');
+    expect(bellCode).toContain('bg-red-500');
     expect(bellCode).toContain('bg-[#000000]');
   });
 
@@ -77,9 +83,15 @@ describe('Inventory Quick Action FAB', () => {
       path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
       'utf-8',
     );
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/inventory/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
 
     expect(pageCode).toContain('InventoryQuickActionBar');
     expect(pageCode).not.toContain('placeholder="ค้นหาสินค้า..."');
+    expect(fabCode).not.toContain('debouncedQuickSearch');
+    expect(pageCode).not.toContain('debouncedQuickSearch');
   });
 
   test('FAB stack hide toggle is smaller, translucent, and wired to shared context', () => {
@@ -107,6 +119,25 @@ describe('Inventory Quick Action FAB', () => {
     expect(layoutCode).toContain('w-8 h-8');
   });
 
+  test('sort_order reorder logs audit for notifications', () => {
+    const pageCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
+      'utf-8',
+    );
+
+    expect(pageCode).toContain("operation: 'reorder_sort_order'");
+    expect(pageCode).toMatch(/field === 'sort_order'[\s\S]*logClientDataChange/);
+  });
+
+  test('inventory count page does not suppress notifications', () => {
+    const countCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/count/InventoryCountClient.tsx'),
+      'utf-8',
+    );
+
+    expect(countCode).not.toContain('suppressNotification: true');
+  });
+
   test('main FAB triggers respect fabStackHidden', () => {
     const notifyCode = fs.readFileSync(
       path.resolve(__dirname, '../components/notifications/InventoryNotificationFAB.tsx'),
@@ -123,7 +154,23 @@ describe('Inventory Quick Action FAB', () => {
 
     expect(notifyCode).toContain('fabStackHidden');
     expect(fabCode).toContain('fabStackHidden');
-    expect(chatCode).toContain('fabStackHidden');
+  });
+
+  test('quick action bar uses aligned 3-column mobile action grid', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/inventory/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+
+    expect(barCode).toContain('grid grid-cols-3 gap-2 w-full box-border sm:hidden');
+    expect(barCode).toContain('ACTION_CELL_CLASS');
+    expect(barCode).toContain('QuickActionTypeToggle');
+    expect(barCode).toContain('stepQuickQtyValue');
+    expect(barCode).toContain('aria-label="เพิ่มจำนวน"');
+    expect(barCode).toContain('sm:flex-1 sm:min-w-0');
+    expect(barCode).toContain('sm:flex-1 sm:min-w-[9rem]');
+    expect(barCode).toContain('w-[6rem] shrink-0');
+    expect(barCode).not.toContain('bb-quick-search-fit');
   });
 
   test('quick action wrapper renders FAB on every page (global layout)', () => {

@@ -1,9 +1,7 @@
-/** Skip in-app notifications for changes that should not alert inventory users. */
+/** Skip in-app notifications only when explicitly suppressed (rare server-side opt-out). */
 export function isSuppressedInventoryNotification(
   metadata?: Record<string, unknown>
 ): boolean {
   if (!metadata) return false;
-  if (metadata.suppressNotification === true) return true;
-  if (metadata.notificationContext === 'inventory_count') return true;
-  return false;
+  return metadata.suppressNotification === true;
 }

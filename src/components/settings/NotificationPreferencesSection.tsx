@@ -108,8 +108,8 @@ export default function NotificationPreferencesSection({
         label={isTh ? 'แจ้งเตือนบนหน้าจอ / ไอคอนแอป' : 'Home-screen & OS alerts'}
         description={
           isTh
-            ? 'ตัวเลขสีแดงบนไอคอนทางลัด และแบนเนอร์เมื่อแอปอยู่เบื้องหลัง (ต้องอนุญาตการแจ้งเตือน)'
-            : 'Red badge on the app icon and banners when the app is in the background'
+            ? 'ตัวเลขบนไอคอนแอป แบนเนอร์แจ้งเตือนทันที (รวมเมื่อเปิดแอปอยู่) — อนุญาตการแจ้งเตือนใน iOS/Android/iPad'
+            : 'App icon badge and instant OS alerts (including while the app is open) — allow notifications on iOS/Android/iPad'
         }
         checked={prefs.systemNotifications}
         onChange={(v) => void handleSystemNotifications(v)}

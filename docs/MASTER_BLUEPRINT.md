@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 8.5 | Last Updated: 2026-06-12 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 8.6 | Last Updated: 2026-06-15 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## 🏛️ Architectural Core
 
@@ -96,7 +96,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 
 ### 10. Progressive Web App (PWA) & Mobile-First Standards (v6.1)
 
-- Dynamic App Manifest (`src/app/manifest.ts`): Defines metadata, standalone display mode, orientation, app icons (192x192, 512x512 maskable/any) and the Morning Latte Cream `#fdfcf0` theme/background color.
+- Dynamic App Manifest (`src/app/manifest.ts`): Defines metadata, standalone display mode, app icons at `/images/notification-icon.png` (192×192) and `/images/notification-icon-512.png` (512×512), theme color `#000000`, background `#ffffff`.
 - Service Worker Cache Strategy (`public/sw.js`):
   - Implements a Network-First strategy with aggressive cache-busting to ensure that dynamically modified rosters, schedules, and inventory levels are always up-to-date while offering offline baseline rendering.
   - Skips waiting on install and takes immediate control of clients.

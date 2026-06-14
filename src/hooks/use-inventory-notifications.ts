@@ -30,6 +30,9 @@ import type { DataChangeAction } from '@/lib/data-change-log';
 import {
   showSystemNotification,
   syncAppBadge,
+  dispatchInventoryNotificationEvent,
+  getNotificationPermissionState,
+  requestNotificationPermission,
 } from '@/lib/pwa-notification-bridge';
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
@@ -97,6 +100,12 @@ export function useInventoryNotifications() {
     void syncAppBadge(unreadCount);
   }, [unreadCount]);
 
+  useEffect(() => {
+    if (!prefs.enabled || !prefs.systemNotifications) return;
+    if (getNotificationPermissionState() !== 'default') return;
+    void requestNotificationPermission();
+  }, [prefs.enabled, prefs.systemNotifications]);
+
   const persist = useCallback((next: InventoryNotification[]) => {
     setNotifications(next);
     setUnreadCount(countUnread(next));
@@ -105,30 +114,34 @@ export function useInventoryNotifications() {
 
   const pushNotification = useCallback(
     (notification: InventoryNotification) => {
+      let nextUnread = 0;
       setNotifications((prev) => {
         const next = prependNotification(prev, notification);
-        setUnreadCount(countUnread(next));
+        nextUnread = countUnread(next);
+        setUnreadCount(nextUnread);
         saveStoredNotifications(next);
         return next;
       });
 
-      const currentPrefs = prefsRef.current;
-      if (currentPrefs.enabled && currentPrefs.systemNotifications) {
-        const loc = localeRef.current;
-        const inventoryPath = `/${loc}/inventory`;
-        const shouldShowOsBanner =
-          typeof document !== 'undefined' &&
-          (document.hidden || !document.hasFocus());
+      void syncAppBadge(nextUnread);
+      dispatchInventoryNotificationEvent(nextUnread);
 
-        if (shouldShowOsBanner) {
-          void showSystemNotification(notification.title, notification.summary, {
-            tag: notification.logId,
-            url: notification.entityId
-              ? `${inventoryPath}?highlight=${notification.entityId}`
-              : inventoryPath,
-          });
-        }
-      }
+      const currentPrefs = prefsRef.current;
+      if (!currentPrefs.enabled || !currentPrefs.systemNotifications) return;
+      if (getNotificationPermissionState() !== 'granted') return;
+
+      const loc = localeRef.current;
+      const isTh = loc === 'th';
+      const inventoryPath = `/${loc}/inventory`;
+
+      void showSystemNotification(notification.title, notification.summary, {
+        tag: notification.logId,
+        url: notification.entityId
+          ? `${inventoryPath}?highlight=${notification.entityId}`
+          : inventoryPath,
+        unreadCount: nextUnread,
+        isTh,
+      });
     },
     []
   );
@@ -214,7 +227,7 @@ export function useInventoryNotifications() {
           if (!warnedUnavailable) {
             warnedUnavailable = true;
             console.warn(
-              '[inventory notifications] Realtime unavailable — run scripts/apply-pending-migrations.sql on Supabase if not applied',
+              '[inventory notifications] Realtime unavailable — apply pending migrations from supabase/migrations/ via Supabase CLI or dashboard if not applied',
               err?.message ?? status
             );
           }

@@ -102,7 +102,7 @@ export function WeatherWidget() {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-foreground ml-1">พยากรณ์รายชั่วโมง</h3>
         </div>
-        <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide">
+        <div className="flex overflow-x-auto bb-smooth-scroll gap-3 pb-2 scrollbar-hide">
           {data.hourly.map((hour, index) => (
             <div
               key={index}

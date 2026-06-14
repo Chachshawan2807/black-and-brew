@@ -2,13 +2,13 @@ import { describe, expect, test } from 'vitest';
 import { isSuppressedInventoryNotification } from '@/lib/inventory-notification-filter';
 
 describe('isSuppressedInventoryNotification', () => {
-  test('suppresses inventory count context', () => {
+  test('allows inventory count context (stock-taking)', () => {
     expect(
       isSuppressedInventoryNotification({ notificationContext: 'inventory_count' })
-    ).toBe(true);
+    ).toBe(false);
   });
 
-  test('suppresses explicit flag', () => {
+  test('suppresses explicit flag only', () => {
     expect(isSuppressedInventoryNotification({ suppressNotification: true })).toBe(true);
   });
 

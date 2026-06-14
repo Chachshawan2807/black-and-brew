@@ -48,6 +48,22 @@ const ACTION_LABELS: Record<string, { th: string; en: string }> = {
 
 
 
+const STOCK_OPERATION_LABELS: Record<'IN' | 'OUT' | 'ADJUST', { th: string; en: string }> = {
+
+  IN: { th: 'รับเข้า', en: 'Stock in' },
+
+  OUT: { th: 'นำออก', en: 'Stock out' },
+
+  ADJUST: { th: 'ปรับจำนวน', en: 'Stock adjusted' },
+
+};
+
+
+
+type StockOperation = 'IN' | 'OUT' | 'ADJUST';
+
+
+
 /** Never show these in user-facing notification text */
 
 const HIDDEN_NOTIFICATION_FIELDS = new Set([
@@ -334,11 +350,149 @@ function buildActionSummary(row: DataChangeLogRow, isTh: boolean): string {
 
       return isTh ? 'แก้ไขหลายรายการในคลัง' : 'Multiple inventory items updated';
 
-    default:
+    default: {
+
+      const stockOp = detectStockOperation(row);
+
+      if (stockOp) return buildStockOperationSummary(row, stockOp, isTh);
 
       return summarizeFieldChanges(row.field_changes ?? [], isTh);
 
+    }
+
   }
+
+}
+
+
+
+export function detectStockOperation(row: DataChangeLogRow): StockOperation | null {
+
+  if (row.module !== 'inventory') return null;
+
+  const meta = row.metadata ?? {};
+
+  const operation = meta.operation as string | undefined;
+
+  if (operation === 'record_transaction') {
+
+    const type = meta.type as string | undefined;
+
+    if (type === 'IN') return 'IN';
+
+    if (type === 'OUT') return 'OUT';
+
+  }
+
+  if (operation === 'set_stock') return 'ADJUST';
+
+  return null;
+
+}
+
+
+
+export function resolveEntityName(row: DataChangeLogRow, isTh: boolean): string {
+
+  if (row.entity_label?.trim()) return row.entity_label.trim();
+
+  const meta = row.metadata ?? {};
+
+  if (typeof meta.itemName === 'string' && meta.itemName.trim()) {
+
+    return meta.itemName.trim();
+
+  }
+
+  const nameChange = row.field_changes?.find((c) => c.field === 'name');
+
+  const fromChange = nameChange?.new_value ?? nameChange?.old_value;
+
+  if (typeof fromChange === 'string' && fromChange.trim()) {
+
+    return fromChange.trim();
+
+  }
+
+  if (row.action === 'DELETE' || row.action === 'BULK_DELETE') {
+
+    const oldRow = row.old_value as Record<string, unknown> | null;
+
+    if (typeof oldRow?.name === 'string' && oldRow.name.trim()) {
+
+      return oldRow.name.trim();
+
+    }
+
+  }
+
+  return isTh ? 'รายการคลังสินค้า' : 'Inventory item';
+
+}
+
+
+
+function buildStockOperationSummary(
+
+  row: DataChangeLogRow,
+
+  operation: StockOperation,
+
+  isTh: boolean
+
+): string {
+
+  const meta = row.metadata ?? {};
+
+  const stockChange = row.field_changes?.find((c) => c.field === 'stock');
+
+  const stockLine = stockChange ? formatFieldChange(stockChange, isTh) : '';
+
+  const qty = meta.quantity != null ? Number(meta.quantity) : NaN;
+
+
+
+  if (operation === 'IN' && !Number.isNaN(qty)) {
+
+    const lead = isTh ? `รับ ${qty}` : `Received ${qty}`;
+
+    return stockLine ? `${lead} · ${stockLine}` : lead;
+
+  }
+
+  if (operation === 'OUT' && !Number.isNaN(qty)) {
+
+    const lead = isTh ? `นำออก ${qty}` : `Removed ${qty}`;
+
+    return stockLine ? `${lead} · ${stockLine}` : lead;
+
+  }
+
+  if (operation === 'ADJUST' && stockChange) {
+
+    const newVal = formatDisplayValue(stockChange.new_value, isTh);
+
+    const lead =
+
+      newVal != null
+
+        ? isTh
+
+          ? `ปรับเป็น ${newVal}`
+
+          : `Set to ${newVal}`
+
+        : isTh
+
+          ? 'ปรับจำนวนคงเหลือ'
+
+          : 'Stock level adjusted';
+
+    return stockLine ? `${lead} · ${stockLine}` : lead;
+
+  }
+
+  return stockLine || (isTh ? 'อัปเดตสต็อกแล้ว' : 'Stock updated');
 
 }
 
@@ -430,7 +584,9 @@ export function formatInventoryNotification(
 
   const actionLabel = ACTION_LABELS[row.action]?.[isTh ? 'th' : 'en'] ?? row.action;
 
-  const entityName = row.entity_label || (isTh ? 'รายการคลังสินค้า' : 'Inventory item');
+  const entityName = resolveEntityName(row, isTh);
+
+  const stockOp = detectStockOperation(row);
 
   const fieldSummary = buildActionSummary(row, isTh);
 
@@ -465,6 +621,14 @@ export function formatInventoryNotification(
       ? `${row.actor_label} แก้ไข ${batchedCount} รายการ`
 
       : `${row.actor_label} changed ${batchedCount} items`;
+
+  } else if (stockOp) {
+
+    const opLabel = STOCK_OPERATION_LABELS[stockOp][isTh ? 'th' : 'en'];
+
+    title = `${opLabel}: ${entityName}`;
+
+    summary = fieldSummary;
 
   } else {
 
@@ -507,6 +671,112 @@ export function formatBatchedNotification(
 ): InventoryNotification {
 
   return formatInventoryNotification(latest, locale, count);
+
+}
+
+
+
+const GENERIC_MODULE_LABELS: Record<string, { th: string; en: string }> = {
+
+  inventory: { th: 'คลังสินค้า', en: 'Inventory' },
+
+  schedule: { th: 'ตารางงาน', en: 'Schedule' },
+
+  sales: { th: 'ยอดขาย', en: 'Sales' },
+
+  maintenance: { th: 'ซ่อมบำรุง', en: 'Maintenance' },
+
+  holiday: { th: 'วันหยุด', en: 'Holidays' },
+
+  dashboard: { th: 'แดชบอร์ด', en: 'Dashboard' },
+
+  settings: { th: 'ตั้งค่า', en: 'Settings' },
+
+  market_insights: { th: 'ข้อมูลตลาด', en: 'Market insights' },
+
+};
+
+
+
+const GENERIC_ACTION_LABELS: Record<string, { th: string; en: string }> = {
+
+  CREATE: { th: 'เพิ่ม', en: 'Added' },
+
+  UPDATE: { th: 'แก้ไข', en: 'Edited' },
+
+  DELETE: { th: 'ลบ', en: 'Deleted' },
+
+  BULK_UPDATE: { th: 'แก้ไขหลายรายการ', en: 'Bulk edit' },
+
+  BULK_DELETE: { th: 'ลบหลายรายการ', en: 'Bulk delete' },
+
+};
+
+
+
+/** Shared headline + detail for settings history and in-app notifications. */
+
+export function formatDataChangeLogDisplay(
+
+  row: DataChangeLogRow,
+
+  locale: string
+
+): { headline: string; detail: string } {
+
+  if (row.module === 'inventory') {
+
+    const formatted = formatInventoryNotification(row, locale);
+
+    return { headline: formatted.title, detail: formatted.summary };
+
+  }
+
+
+
+  const isTh = locale === 'th';
+
+  const actionLabel = GENERIC_ACTION_LABELS[row.action]?.[isTh ? 'th' : 'en'] ?? row.action;
+
+  const moduleLabel = GENERIC_MODULE_LABELS[row.module]?.[isTh ? 'th' : 'en'] ?? row.module;
+
+  const entityName = row.entity_label?.trim();
+
+
+
+  const headline = entityName
+
+    ? `${actionLabel}: ${entityName}`
+
+    : `${actionLabel} · ${moduleLabel}`;
+
+
+
+  const changes = filterChangesForDisplay(row.field_changes ?? [])
+
+    .filter((c) => c.field !== 'name')
+
+    .map((c) => formatFieldChange(c, isTh))
+
+    .filter((line) => line.length > 0);
+
+
+
+  const detail =
+
+    changes.length > 0
+
+      ? changes.join(' · ')
+
+      : isTh
+
+        ? 'อัปเดตข้อมูลแล้ว'
+
+        : 'Data updated';
+
+
+
+  return { headline, detail };
 
 }
 

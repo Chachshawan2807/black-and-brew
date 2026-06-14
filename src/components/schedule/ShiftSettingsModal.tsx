@@ -11,6 +11,7 @@ import {
   isDefaultShiftType,
   type ShiftTypeEntry,
 } from '@/lib/shift-type-config';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 const SELECT_NEW_CUSTOM = '__new_custom__';
 
@@ -71,24 +72,26 @@ function CollapsibleColorPicker({
             {PASTEL_COLOR_PRESETS.map((preset) => {
               const selected = entry.bgColor === preset.bg && entry.borderColor === preset.border;
               return (
-                <button
-                  key={`${preset.bg}-${preset.border}`}
-                  type="button"
-                  title={preset.name}
-                  onClick={() => onChange(preset.bg, preset.border)}
-                  className={cn(
-                    'flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all active:scale-95 cursor-pointer',
-                    selected
-                      ? 'border-emerald-500/50 bg-card shadow-sm ring-1 ring-emerald-500/20'
-                      : 'border-transparent hover:border-border hover:bg-card/80'
-                  )}
-                >
+                <HintTooltip tip={preset.name}>
+                  <button
+                    key={`${preset.bg}-${preset.border}`}
+                    type="button"
+                    onClick={() => onChange(preset.bg, preset.border)}
+                    className={cn(
+                      'flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all active:scale-95 cursor-pointer',
+                      selected
+                        ? 'border-emerald-500/50 bg-card shadow-sm ring-1 ring-emerald-500/20'
+                        : 'border-transparent hover:border-border hover:bg-card/80'
+                    )}
+                    aria-label={preset.name}
+                  >
                   <span
                     className="h-8 w-8 rounded-full border-2"
                     style={{ backgroundColor: preset.bg, borderColor: preset.border }}
                   />
                   <span className="text-[10px] text-muted-foreground leading-none">{preset.name}</span>
                 </button>
+                </HintTooltip>
               );
             })}
           </div>
@@ -220,18 +223,21 @@ export default function ShiftSettingsModal({
               เลือกกะ ปรับสีพาสเทล หรือกำหนดกะใหม่
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="p-2 -mr-1 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors disabled:opacity-50"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <HintTooltip tip="ปิดตั้งค่ากะ">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              className="p-2 -mr-1 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors disabled:opacity-50"
+              aria-label="ปิดตั้งค่ากะ"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </HintTooltip>
         </div>
 
         {/* Main editor */}
-        <div className="px-5 pb-5 space-y-3 shrink-0">
+        <div className="px-5 pb-5 space-y-3 shrink-0 flex-1 min-h-0 overflow-y-auto bb-smooth-scroll">
           {/* Row: preview + เลือกกะ */}
           <div className="flex items-end gap-2.5">
             {preview && selectedEntry && !isCreating && (
@@ -241,7 +247,6 @@ export default function ShiftSettingsModal({
                   preview.className
                 )}
                 style={preview.style}
-                title="ตัวอย่าง"
               >
                 {selectedEntry.label}
               </div>
@@ -269,15 +274,17 @@ export default function ShiftSettingsModal({
             </div>
 
             {canDelete && (
-              <button
-                type="button"
-                onClick={() => handleRemoveShift(selectedEntry!.id)}
-                disabled={isSaving || draft.length <= 1}
-                className="shrink-0 flex items-center justify-center h-11 w-11 mb-0 text-red-500/80 hover:text-red-600 hover:bg-red-50 rounded-xl border border-border transition-all disabled:opacity-50 cursor-pointer"
-                title="ลบกะนี้"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <HintTooltip tip="ลบกะนี้">
+                <button
+                  type="button"
+                  onClick={() => handleRemoveShift(selectedEntry!.id)}
+                  disabled={isSaving || draft.length <= 1}
+                  className="shrink-0 flex items-center justify-center h-11 w-11 mb-0 text-red-500/80 hover:text-red-600 hover:bg-red-50 rounded-xl border border-border transition-all disabled:opacity-50 cursor-pointer"
+                  aria-label="ลบกะนี้"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </HintTooltip>
             )}
           </div>
 

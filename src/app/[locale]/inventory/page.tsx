@@ -1,11 +1,9 @@
 import InventoryClient from './InventoryClient';
-import { createClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
-import { requireServiceRoleKey } from '@/lib/security/server-auth';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import type { ColumnSettings } from './types';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 export default async function InventoryPage({
   params,
@@ -19,17 +17,13 @@ export default async function InventoryPage({
     redirect(`/${locale}`);
   }
 
-  const supabaseAdmin = createClient(supabaseUrl, requireServiceRoleKey(), {
-    global: {
-      fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }),
-    },
-  });
+  const supabaseAdmin = getSupabaseAdmin();
 
   const [configRes, inventoryRes] = await Promise.all([
     supabaseAdmin.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
     supabaseAdmin
       .from('inventory_items')
-      .select('id, name, stock, order_qty, order_point, target_stock, unit, source, sort_order, updated_at')
+      .select(INVENTORY_ITEM_SELECT)
       .order('sort_order', { ascending: true }),
   ]);
 

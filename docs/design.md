@@ -1,6 +1,6 @@
 # Design Standards — BLACKANDBREW ERP
 
-> Version: 8.5 | Last Updated: 2026-06-12 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
+> Version: 8.6 | Last Updated: 2026-06-15 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
 
 ---
 
@@ -226,6 +226,19 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 - Breakpoints: `md:` for tablet+ layouts
 - Mobile: Stack columns vertically, full-width inputs
 - **PWA Capabilities**: 100% App-like shell responsive with fluid scaling and offline capability on any mobile screen.
+- **PWA Manifest** (`src/app/manifest.ts`): icons at `/images/notification-icon.png` (192×192) and `/images/notification-icon-512.png` (512×512); `theme_color: #000000`, `background_color: #ffffff`.
+
+---
+
+## 9b. Tooltip Standards (v8.6)
+
+| Component | Path | Purpose |
+| --- | --- | --- |
+| `AppTooltipProvider` | `src/components/providers/AppTooltipProvider.tsx` | Root `TooltipProvider` — `delayDuration={150}` |
+| `HintTooltip` | `src/components/ui/hint-tooltip.tsx` | Styled hover/focus hints for icon buttons; no native `title` |
+| `Tooltip` primitives | `src/components/ui/tooltip.tsx` | Radix-based tooltip building blocks |
+
+**Usage:** Wrap app shell with `AppTooltipProvider` in layout. Use `HintTooltip` for compact controls (FAB icons, toolbar buttons). Pass copy via `tip` prop only.
 
 ---
 

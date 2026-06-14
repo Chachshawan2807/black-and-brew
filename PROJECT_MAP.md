@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> **Generated:** 2026-06-12 (GMT+7) | **Root:** `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | **Version:** 8.5
+> **Generated:** 2026-06-15 (GMT+7) | **Root:** `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | **Version:** 8.6
 
 ---
 
@@ -56,9 +56,8 @@ black-and-brew/
 ├── docs/                    # Project documentation
 ├── messages/                # th.json, en.json (next-intl)
 ├── public/                  # sw.js (PWA), images, ai-agent-logo.svg
-├── supabase/migrations/     # Versioned DB migrations (login_history, data_change_logs, revoked_sessions)
-├── sql/                     # sync_inventory_stock.sql, fix_inventory_rls.sql, ai_agent_views.sql
-├── scripts/                 # apply-pending-migrations.sql, db:verify
+├── supabase/migrations/     # Versioned DB migrations (6 files — see docs/database.md)
+├── sql/                     # record_inventory_transaction.sql, sync_inventory_stock.sql, fix_inventory_rls.sql, ai_agent_views.sql
 ├── src/
 │   ├── app/
 │   │   ├── [locale]/        # UI pages + layout + globals.css
@@ -69,17 +68,18 @@ black-and-brew/
 │   ├── components/
 │   │   ├── ai/              # AIChatOverlay, AIChatWrapper
 │   │   ├── auth/            # PinGateway
-│   │   ├── inventory/       # InventoryQuickActionFAB, InventoryQuickActionWrapper
-│   │   ├── notifications/   # NotificationProvider
-│   │   ├── settings/        # NotificationPreferencesSection
+│   │   ├── inventory/       # InventoryQuickActionFAB, InventoryQuickActionBar, InventoryHistoryModal
+│   │   ├── notifications/   # NotificationBell, NotificationPanel, InventoryNotificationFAB
+│   │   ├── settings/        # NotificationPreferencesSection, DataChangeHistorySection
 │   │   ├── dashboard/       # LiveStatusTracker, WeatherWidget
-│   │   ├── providers/       # AuthProvider, I18nProvider, ThemeProvider
+│   │   ├── providers/       # AuthProvider, I18nProvider, ThemeProvider, AppTooltipProvider
 │   │   ├── sidebar/         # Sidebar, Menu, SheetMenu, …
-│   │   └── ui/              # button, ClickableDatePicker, page-transition, floating-alert, …
-│   ├── hooks/
+│   │   └── ui/              # button, hint-tooltip, tooltip, ClickableDatePicker, page-transition, …
+│   ├── contexts/            # InventoryRealtimeContext
+│   ├── hooks/               # use-inventory-notifications, use-inventory-quick-action
 │   ├── i18n/                # request.ts, routing.ts
-│   ├── lib/                 # supabase, session-revocation, notification-preferences, …
-│   ├── test/                # 40+ Vitest test files
+│   ├── lib/                 # supabase, supabase-server, inventory-in-out-theoretical, inventory-quick-*, …
+│   ├── test/                # 58 Vitest test files
 │   └── proxy.ts             # next-intl middleware (Next.js 16 convention)
 ├── *.sql                    # Root-level schema/migration scripts
 ├── AGENTS.md, CLAUDE.md, MASTER_BLUEPRINT.md, README.md
@@ -110,9 +110,9 @@ black-and-brew/
 
 ---
 
-## Tests (`src/test/`)
+## Tests (`src/test/` — 58 files)
 
-`auth.test.ts`, `session_auth.test.tsx`, `read-only-guard.test.ts`, `inventory_stock_sync.test.ts`, `daily_report_actions.test.ts`, `mobile_layout.test.tsx`, `schedule_regular_holidays.test.tsx`, `dashboard_date_cookies.test.ts`, `date_compliance.test.ts`, `ai_chat_typography.test.ts`, `ai_inventory_analysis.test.ts`, `market-insights-context.test.ts`, `run_migration.test.ts`, `zero_persistence.test.ts`, `basic.test.ts`, `setup.ts`
+Key suites: `inventory-count-accuracy.test.ts`, `inventory-in-out-theoretical.test.ts`, `inventory-quick-bulk.test.ts`, `inventory-quick-action-draft.test.ts`, `inventory-quick-qty-step.test.ts`, `inventory-quick-search-filter.test.ts`, `inventory_stock_sync.test.ts`, `inventory_quick_action_fab.test.ts`, `supabase-session.test.ts`, `pwa-notification-bridge.test.ts`, `market-insights-v2.test.ts`, `auth.test.ts`, `read-only-guard.test.ts`, `basic.test.ts`, `setup.ts`
 
 ---
 

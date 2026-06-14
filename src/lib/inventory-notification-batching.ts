@@ -34,7 +34,7 @@ export function createBatchAccumulator(flush: BatchFlushHandler, windowMs = BATC
     const batch: PendingBatch = {
       actorLabel: key,
       rows: [row],
-      timer: setTimeout(() => flushBatch(key), windowMs),
+      timer: setTimeout(() => flushBatch(key), 0),
     };
     pending.set(key, batch);
   }

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, Copy, Check, Clock, Target } from 'lucide-react';
 import { MARKET_INSIGHTS_ACTIONS_KEY_V2, type ActionItem } from '@/app/actions/market-insights-types';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 const PRIORITY_LABEL: Record<number, { text: string; cls: string }> = {
   1: { text: 'ด่วน', cls: 'bb-pastel-surface bg-[#fdeaea] text-red-700/80 border border-[#f5c6cb]' },
@@ -53,25 +53,24 @@ export default function ActionChecklist({ actions }: { actions: ActionItem[] }) 
 
   return (
     <div className="space-y-3">
-      {actions.map((action, i) => {
+      {actions.map((action) => {
         const isDone = mounted && done[action.title];
         const pr = PRIORITY_LABEL[action.priority] ?? PRIORITY_LABEL[3];
         return (
-          <motion.div
+          <div
             key={action.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06 }}
             className={`rounded-2xl border border-border bg-card p-3.5 md:p-4 shadow-[0_1px_3px_rgb(0,0,0,0.03)] ${isDone ? 'opacity-60' : ''}`}
           >
             <div className="flex items-start gap-3">
-              <button
-                onClick={() => toggle(action.title)}
-                className="mt-0.5 shrink-0 text-foreground/70 hover:text-foreground bb-transition"
-                aria-label={isDone ? 'ทำแล้ว' : 'ยังไม่ทำ'}
-              >
-                {isDone ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
-              </button>
+              <HintTooltip tip={isDone ? 'ทำแล้ว — แตะเพื่อยกเลิก' : 'ยังไม่ทำ — แตะเมื่อเสร็จ'}>
+                <button
+                  onClick={() => toggle(action.title)}
+                  className="mt-0.5 shrink-0 text-foreground/70 hover:text-foreground bb-transition"
+                  aria-label={isDone ? 'ทำแล้ว' : 'ยังไม่ทำ'}
+                >
+                  {isDone ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                </button>
+              </HintTooltip>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`text-[11px] px-2 py-0.5 rounded-full ${pr.cls}`}>{pr.text}</span>
@@ -115,7 +114,7 @@ export default function ActionChecklist({ actions }: { actions: ActionItem[] }) 
                 )}
               </button>
             </div>
-          </motion.div>
+          </div>
         );
       })}
     </div>

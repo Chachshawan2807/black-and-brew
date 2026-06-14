@@ -20,8 +20,7 @@ export function getFabPanelKeyboardAwareStyle({
   }
 
   return {
-    bottom: 'auto',
-    top: insets.offsetTop + marginTop,
+    bottom: insets.bottomInset + marginBottom,
     maxHeight: Math.max(120, insets.visibleHeight - marginTop - marginBottom),
   };
 }

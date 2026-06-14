@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 8.5 | Last Updated: 2026-06-12
+> Version: 8.6 | Last Updated: 2026-06-15
 
 ---
 
@@ -31,17 +31,49 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 ### 1.2 Inventory (`inventory-actions.ts`)
 
-#### `recordTransaction(productId, type, quantity, note?)`
+#### `recordTransaction(productId, type, quantity, note?, auditOptions?)`
 
 - Atomic IN/OUT via `supabase.rpc('record_inventory_transaction')`
 - Returns `{ success, newStock? }` or insufficient stock error
 - Revalidates inventory + count pages
 
-#### `updateInventoryStock(itemId, stock, note?)` (v6.8)
+#### `recordBulkInventoryTransactions(entries, note?, auditOptions?)` (v8.6)
+
+- Bulk Quick Entry — sequential RPC calls per entry
+- `entries`: `{ itemId, type: 'IN'|'OUT', quantity }[]`
+- Returns `{ success, results: BulkInventoryTransactionResult[], error? }`
+
+#### `updateInventoryStock(itemId, stock, note?, options?)` (v6.8+)
 
 - Absolute stock set via `supabase.rpc('set_inventory_stock')`
+- `options.recordHistory` (default `true`) — when `false`, skips ADJUST ledger (stock-taking count page)
 - Fallback to direct UPDATE if RPC not deployed
 - Source: `sql/sync_inventory_stock.sql`
+
+#### `recordCountVerification(itemId, countedQty)` (v8.6)
+
+- Computes IN/OUT theoretical qty via `computeInOutTheoreticalStockForItem()`
+- Inserts into `inventory_count_verifications` with `matched` flag
+- Returns `{ success, matched, theoreticalQty, countedQty }`
+
+#### `fetchCountAccuracyStats()` (v8.6)
+
+- Aggregates per-item and overall accuracy from `inventory_count_verifications`
+- Returns `{ perItem, overall: { totalChecks, matchChecks, accuracyPct } }`
+
+#### `fetchInOutTheoreticalQtyMap(itemIds)` (v8.6)
+
+- Batch theoretical stock from ledger rows (ADD/IN/OUT/ADJUST/DELETE)
+- Returns `{ success, data: Record<itemId, theoreticalQty> }`
+
+#### `computeInOutTheoreticalStockForItem(itemId)` (v8.6)
+
+- Single-item theoretical stock baseline for count accuracy
+- Returns `{ success, theoreticalQty }`
+
+#### `recordItemAddHistory(itemId, stock?, itemName?)`
+
+- Inserts ADD lifecycle ledger row after new item creation
 
 #### `fetchTransactionHistory(itemId?, limit?)`
 
@@ -251,15 +283,15 @@ getMarketInsights()
 
 ### `record_inventory_transaction`
 
-- **Source:** `fix_transaction_relationships.sql`
-- Row lock → validate → update stock → insert transaction
+- **Source:** `sql/record_inventory_transaction.sql`
+- Row lock → validate → update stock → insert transaction (IN/OUT only)
 - `SECURITY DEFINER`
 
-### `set_inventory_stock` (v6.8)
+### `set_inventory_stock` (v6.8+)
 
 - **Source:** `sql/sync_inventory_stock.sql`
-- Parameters: `p_item_id`, `p_new_stock`, `p_note`
-- Row lock → set absolute stock → ledger entry on delta
+- Parameters: `p_item_id`, `p_new_stock`, `p_note`, `p_record_history` (default `true`)
+- Row lock → set absolute stock → optional ADJUST ledger entry on delta
 
 ---
 

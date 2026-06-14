@@ -12,6 +12,7 @@ import {
 import { useFloatingOverlay } from "@/components/floating/FloatingOverlayContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageTransition } from "@/components/ui/page-transition";
+import { HintTooltip } from "@/components/ui/hint-tooltip";
 import { fadeOverlay } from "@/lib/motion-presets";
 
 export default function SidebarLayout({
@@ -27,7 +28,7 @@ export default function SidebarLayout({
 
   return (
     <>
-      <header className="md:hidden sticky top-0 z-50 bg-[var(--sidebar-surface)]/85 backdrop-blur-xl border-b border-black/5 dark:border-white/10 pl-1 pr-3 flex justify-between items-center h-[72px] bb-shadow-sm">
+      <header className="md:hidden sticky top-0 z-50 bg-[var(--sidebar-surface)] border-b border-black/5 dark:border-white/10 pl-1 pr-3 flex justify-between items-center h-[72px] bb-shadow-sm">
         <div className="flex items-center">
           <Image 
             src="/images/logo.png" 
@@ -40,13 +41,15 @@ export default function SidebarLayout({
           />
         </div>
         <div className="flex items-center gap-1">
-          <button 
-            onClick={() => setIsOpen()}
-            className="h-10 w-10 flex items-center justify-center rounded-full bb-transition hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15"
-            aria-label="เปิดเมนูนำทาง"
-          >
-            <Menu className="w-6 h-6 text-foreground" strokeWidth={1.75} />
-          </button>
+          <HintTooltip tip="เปิดเมนูนำทาง" side="bottom">
+            <button 
+              onClick={() => setIsOpen()}
+              className="h-10 w-10 flex items-center justify-center rounded-full bb-transition hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15"
+              aria-label="เปิดเมนูนำทาง"
+            >
+              <Menu className="w-6 h-6 text-foreground" strokeWidth={1.75} />
+            </button>
+          </HintTooltip>
         </div>
       </header>
 

@@ -1,4 +1,0 @@
--- ย้ายแล้ว — รันไฟล์เดียวนี้แทน:
---   scripts/apply-pending-migrations.sql
---
--- ส่วน revoked_sessions อยู่ท้ายไฟล์ (หัวข้อ 20260612200000_revoked_sessions.sql)

@@ -31,6 +31,7 @@ import {
   deleteCategory
 } from '@/app/actions/sales-actions';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { useTheme } from 'next-themes';
 import { getChartColors } from '@/lib/chart-theme';
 import { SALES_CATEGORY_CARD_COLORS, SALES_SECTION_COLORS } from '@/lib/shift-colors';
@@ -630,13 +631,15 @@ export default function SalesClient({
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative bg-card rounded-3xl border border-border shadow-xl max-w-lg w-full p-6"
                   >
-                    <button
-                      onClick={() => setShowManageCategories(false)}
-                      className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl transition-all text-muted-foreground hover:text-foreground z-10"
-                      aria-label="ปิด"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                    <HintTooltip tip="ปิด">
+                      <button
+                        onClick={() => setShowManageCategories(false)}
+                        className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl transition-all text-muted-foreground hover:text-foreground z-10"
+                        aria-label="ปิด"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </HintTooltip>
                     <div className="flex items-center justify-between mb-6 pr-10">
                       <div>
                         <h2 className="text-xl">จัดการหมวดหมู่</h2>
@@ -646,7 +649,7 @@ export default function SalesClient({
                       </div>
                     </div>
 
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                    <div className="space-y-3 max-h-96 overflow-y-auto bb-smooth-scroll">
                       {allCategories.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                           ยังไม่มีหมวดหมู่ที่บันทึกไว้
@@ -658,13 +661,15 @@ export default function SalesClient({
                             className="flex items-center justify-between p-4 bg-muted rounded-2xl border border-border"
                           >
                             <span className="text-sm">{category}</span>
-                            <button
-                              onClick={() => handleDeleteCategory(category)}
-                              className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
-                              aria-label={`ลบหมวดหมู่ ${category}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <HintTooltip tip="ลบหมวดหมู่">
+                              <button
+                                onClick={() => handleDeleteCategory(category)}
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
+                                aria-label={`ลบหมวดหมู่ ${category}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </HintTooltip>
                           </div>
                         ))
                       )}
@@ -700,13 +705,15 @@ export default function SalesClient({
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative bg-card rounded-3xl border border-border shadow-xl max-w-md w-full p-6"
                   >
-                    <button
-                      onClick={() => setCategoryToDelete(null)}
-                      className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl transition-all text-muted-foreground hover:text-foreground z-10"
-                      aria-label="ปิด"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                    <HintTooltip tip="ปิด">
+                      <button
+                        onClick={() => setCategoryToDelete(null)}
+                        className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl transition-all text-muted-foreground hover:text-foreground z-10"
+                        aria-label="ปิด"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </HintTooltip>
                     <div className="text-center mb-6 mt-4">
                       <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
                         <Trash2 className="w-8 h-8 text-foreground" />
@@ -893,19 +900,21 @@ export default function SalesClient({
                               </p>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteUpload(upload.id)}
-                            disabled={isReadOnly || isDeleting === upload.id}
-                            className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50 shrink-0 ml-2"
-                            aria-label={`ลบไฟล์ ${upload.file_name}`}
-                          >
-                            {isDeleting === upload.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
+                          <HintTooltip tip="ลบไฟล์">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUpload(upload.id)}
+                              disabled={isReadOnly || isDeleting === upload.id}
+                              className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50 shrink-0 ml-2"
+                              aria-label={`ลบไฟล์ ${upload.file_name}`}
+                            >
+                              {isDeleting === upload.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          </HintTooltip>
                         </div>
                       ))}
                     </div>
@@ -1051,7 +1060,7 @@ export default function SalesClient({
                     <p className="text-xs text-muted-foreground mt-0.5">รายละเอียดของ 10 เมนูยอดนิยม</p>
                   </div>
                 </div>
-                <div className="overflow-x-auto bg-card border border-border rounded-xl">
+                <div className="overflow-x-auto bb-smooth-scroll bg-card border border-border rounded-xl">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-black/10">
@@ -1134,35 +1143,39 @@ export default function SalesClient({
                                   )}
                                   {updatingProduct !== product.productName && (
                                     <>
-                                      <button
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          handleUpdateCategory(product.productName);
-                                        }}
-                                        disabled={isReadOnly || updatingProduct === product.productName}
-                                        aria-label={`Save category for ${product.productName}`}
-                                        className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        <Check className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          setEditingProduct(null);
-                                          setTempCategoryValues(prev => {
-                                            const newMap = new Map(prev);
-                                            newMap.delete(product.productName);
-                                            return newMap;
-                                          });
-                                        }}
-                                        disabled={isReadOnly || updatingProduct === product.productName}
-                                        aria-label={`Cancel editing category for ${product.productName}`}
-                                        className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        <ChevronUp className="w-4 h-4" />
-                                      </button>
+                                      <HintTooltip tip="บันทึกหมวดหมู่">
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleUpdateCategory(product.productName);
+                                          }}
+                                          disabled={isReadOnly || updatingProduct === product.productName}
+                                          aria-label={`Save category for ${product.productName}`}
+                                          className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          <Check className="w-4 h-4" />
+                                        </button>
+                                      </HintTooltip>
+                                      <HintTooltip tip="ยกเลิก">
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setEditingProduct(null);
+                                            setTempCategoryValues(prev => {
+                                              const newMap = new Map(prev);
+                                              newMap.delete(product.productName);
+                                              return newMap;
+                                            });
+                                          }}
+                                          disabled={isReadOnly || updatingProduct === product.productName}
+                                          aria-label={`Cancel editing category for ${product.productName}`}
+                                          className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          <ChevronUp className="w-4 h-4" />
+                                        </button>
+                                      </HintTooltip>
                                     </>
                                   )}
                                 </motion.div>
@@ -1278,7 +1291,7 @@ export default function SalesClient({
                     </button>
                   </div>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto bb-smooth-scroll">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-black/10">
@@ -1350,35 +1363,39 @@ export default function SalesClient({
                                   )}
                                   {updatingProduct !== product.productName && (
                                     <>
-                                      <button
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          handleUpdateCategory(product.productName);
-                                        }}
-                                        disabled={isReadOnly || updatingProduct === product.productName}
-                                        aria-label={`Save category for ${product.productName}`}
-                                        className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        <Check className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          setEditingProduct(null);
-                                          setTempCategoryValues(prev => {
-                                            const newMap = new Map(prev);
-                                            newMap.delete(product.productName);
-                                            return newMap;
-                                          });
-                                        }}
-                                        disabled={isReadOnly || updatingProduct === product.productName}
-                                        aria-label={`Cancel editing category for ${product.productName}`}
-                                        className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        <ChevronUp className="w-4 h-4" />
-                                      </button>
+                                      <HintTooltip tip="บันทึกหมวดหมู่">
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleUpdateCategory(product.productName);
+                                          }}
+                                          disabled={isReadOnly || updatingProduct === product.productName}
+                                          aria-label={`Save category for ${product.productName}`}
+                                          className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          <Check className="w-4 h-4" />
+                                        </button>
+                                      </HintTooltip>
+                                      <HintTooltip tip="ยกเลิก">
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setEditingProduct(null);
+                                            setTempCategoryValues(prev => {
+                                              const newMap = new Map(prev);
+                                              newMap.delete(product.productName);
+                                              return newMap;
+                                            });
+                                          }}
+                                          disabled={isReadOnly || updatingProduct === product.productName}
+                                          aria-label={`Cancel editing category for ${product.productName}`}
+                                          className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          <ChevronUp className="w-4 h-4" />
+                                        </button>
+                                      </HintTooltip>
                                     </>
                                   )}
                                 </motion.div>

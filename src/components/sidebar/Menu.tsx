@@ -293,7 +293,7 @@ export default function Menu({ isOpen }: MenuProps) {
   return (
     <nav className="h-full w-full flex flex-col justify-between overflow-hidden">
       <ul className={cn(
-        "flex flex-col gap-1 px-2 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden",
+        "flex flex-col gap-1 px-2 overflow-y-auto bb-smooth-scroll scrollbar-none [&::-webkit-scrollbar]:hidden",
         isOpen === false ? "items-center" : "items-start"
       )}>
         {isDragEnabled ? (

@@ -20,14 +20,17 @@ const closedInsets = {
 };
 
 describe('keyboard-aware panel styles', () => {
-  test('FAB panel moves to top of visible viewport when keyboard is open', () => {
+  test('FAB panel anchors above keyboard when keyboard is open', () => {
     const style = getFabPanelKeyboardAwareStyle({
       insets: keyboardInsets,
     });
 
-    expect(style.bottom).toBe('auto');
-    expect(style.top).toBe(8);
+    expect(style.bottom).toBe(288);
+    expect(style.top).toBeUndefined();
     expect(style.maxHeight).toBe(404);
+    expect(style.maxHeight).toBeLessThanOrEqual(
+      keyboardInsets.visibleHeight - 8 - 8,
+    );
   });
 
   test('FAB panel keeps default max-height when keyboard is closed', () => {

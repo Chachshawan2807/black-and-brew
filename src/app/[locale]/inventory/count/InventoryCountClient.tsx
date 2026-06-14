@@ -5,11 +5,13 @@ import { supabase } from '@/lib/supabase';
 import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { updateInventoryStock } from '@/app/actions/inventory-actions';
+import { updateInventoryStock, fetchCountAccuracyStats, recordCountVerification, fetchInOutTheoreticalQtyMap } from '@/app/actions/inventory-actions';
+import type { CountAccuracyStatsResult, ItemCountAccuracyStats } from '@/app/actions/inventory-actions';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { getClientSessionId } from '@/lib/client-session';
 import { mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
@@ -140,6 +142,28 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [accuracyStats, setAccuracyStats] = useState<CountAccuracyStatsResult | null>(null);
+  const [theoreticalByItem, setTheoreticalByItem] = useState<Record<string, number>>({});
+  const [lastVerification, setLastVerification] = useState<Record<string, { matched: boolean; theoreticalQty: number; countedQty: number }>>({});
+
+  const loadAccuracyStats = useCallback(async () => {
+    const res = await fetchCountAccuracyStats();
+    if (res.success && res.data) {
+      setAccuracyStats(res.data);
+    }
+  }, []);
+
+  const loadTheoreticalQtyForItems = useCallback(async (itemList: InventoryItem[]) => {
+    const res = await fetchInOutTheoreticalQtyMap(itemList.map((item) => item.id));
+    if (res.success && res.data) {
+      setTheoreticalByItem(res.data);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAccuracyStats();
+    void loadTheoreticalQtyForItems(initialItems);
+  }, [loadAccuracyStats, loadTheoreticalQtyForItems, initialItems]);
 
   const fetchInventory = useCallback(async () => {
     setLoading(true);
@@ -149,7 +173,7 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
       await ensureSupabaseSession();
       const { data, error } = await supabase
         .from('inventory_items')
-        .select('id, name, stock, unit, sort_order')
+        .select(INVENTORY_COUNT_SELECT)
         .order('sort_order', { ascending: true });
 
       if (error) {
@@ -158,6 +182,7 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
       }
 
       setItems(data || []);
+      void loadTheoreticalQtyForItems(data || []);
     } catch (err) {
       console.error('Failed to load inventory for count:', err);
       setItems([]);
@@ -165,7 +190,7 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadTheoreticalQtyForItems]);
 
   useEffect(() => {
     return subscribe((payload) => {
@@ -212,7 +237,6 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
       const result = await updateInventoryStock(id, value, 'Stock-taking count', {
         recordHistory: false,
         clientSessionId: getClientSessionId(),
-        suppressNotification: true,
         notificationContext: 'inventory_count',
       });
 
@@ -227,6 +251,22 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
 
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
+
+      const verification = await recordCountVerification(id, savedStock);
+      if (verification.success) {
+        setLastVerification((prev) => ({
+          ...prev,
+          [id]: {
+            matched: verification.matched ?? false,
+            theoreticalQty: verification.theoreticalQty ?? 0,
+            countedQty: verification.countedQty ?? savedStock,
+          },
+        }));
+        if (verification.theoreticalQty !== undefined) {
+          setTheoreticalByItem((prev) => ({ ...prev, [id]: verification.theoreticalQty! }));
+        }
+        await loadAccuracyStats();
+      }
     } catch (err) {
       console.error('Failed to update stock:', err);
       setItems(prev => prev.map(item =>
@@ -325,7 +365,7 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
           </div>
         </header>
 
-        <div className="flex flex-col items-center mb-8 text-center">
+        <div className="flex flex-col items-center mb-6 text-center">
           <div className="p-2.5 bg-black text-white rounded-2xl mb-4 shrink-0 shadow-md">
             <ClipboardList className="w-7 h-7" strokeWidth={1.5} />
           </div>
@@ -335,6 +375,24 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
           <p className="text-muted-foreground text-[11px] font-normal uppercase tracking-[0.2em] mt-1.5">
             บันทึกการตรวจนับ
           </p>
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-border bg-card p-4 text-center shadow-sm">
+          <p className="text-[11px] font-normal uppercase tracking-[0.2em] text-muted-foreground">
+            ความแม่นยำการบันทึกรับเข้า/นำออก
+          </p>
+          {accuracyStats && accuracyStats.overall.totalChecks > 0 ? (
+            <>
+              <p className="mt-2 text-3xl font-normal tabular-nums text-foreground">
+                {accuracyStats.overall.accuracyPct}%
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                ตรง {accuracyStats.overall.matchChecks} จาก {accuracyStats.overall.totalChecks} ครั้งที่ตรวจนับ (ไม่รวมการปรับจำนวน)
+              </p>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground">ยังไม่มีข้อมูลการตรวจนับ</p>
+          )}
         </div>
 
         {saveErrorMessage && (
@@ -352,6 +410,9 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
             items.map((item, index) => {
               const isActive = activeItemId === item.id;
               const isDimmed = activeItemId !== null && !isActive;
+              const itemStats: ItemCountAccuracyStats | undefined = accuracyStats?.perItem[item.id];
+              const theoreticalQty = theoreticalByItem[item.id];
+              const recentVerification = lastVerification[item.id];
 
               return (
                 <motion.div
@@ -364,7 +425,7 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
                   }}
                   transition={{ duration: 0.2, delay: activeItemId ? 0 : index * 0.02 }}
                   className={cn(
-                    'relative rounded-2xl p-4 flex items-start justify-between transition-all duration-300',
+                    'relative rounded-2xl p-4 flex items-start justify-between gap-3 transition-all duration-300',
                     isActive
                       ? `${PASTEL_SURFACE} bg-[#d4edda] border border-[#c3e6cb] shadow-md ring-2 ring-black/8 z-10`
                       : 'bg-card border border-border shadow-sm hover:border-foreground/10',
@@ -374,7 +435,7 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
                     <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-black/70" />
                   )}
 
-                  <div className="flex items-start gap-3 flex-1 min-w-0 mr-4 pl-1">
+                  <div className="flex items-start gap-3 flex-1 min-w-0 pl-1">
                     <span
                       className={cn(
                         'text-[12px] font-normal font-mono shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200 tabular-nums',
@@ -385,14 +446,44 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
                     >
                       {(index + 1).toString().padStart(2, '0')}
                     </span>
-                    <span
-                      className={cn(
-                        'font-normal text-[15px] leading-tight transition-colors duration-200',
-                        isActive ? 'text-black' : 'text-foreground/80'
+                    <div className="min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          'font-normal text-[15px] leading-tight transition-colors duration-200 block',
+                          isActive ? 'text-black' : 'text-foreground/80'
+                        )}
+                      >
+                        {item.name} {item.unit ? `(${item.unit})` : ''}
+                      </span>
+                      {theoreticalQty !== undefined && (
+                        <p className={cn('mt-1 text-xs tabular-nums', isActive ? 'text-black/70 bb-pastel-surface' : 'text-muted-foreground')}>
+                          ตามบันทึก IN/OUT: {theoreticalQty}
+                        </p>
                       )}
-                    >
-                      {item.name} {item.unit ? `(${item.unit})` : ''}
-                    </span>
+                      {itemStats && itemStats.totalChecks > 0 ? (
+                        <p className={cn('mt-0.5 text-xs tabular-nums', isActive ? 'text-black/70 bb-pastel-surface' : 'text-muted-foreground')}>
+                          ความแม่นยำ {itemStats.accuracyPct}% ({itemStats.matchChecks}/{itemStats.totalChecks})
+                        </p>
+                      ) : (
+                        <p className={cn('mt-0.5 text-xs', isActive ? 'text-black/50 bb-pastel-surface' : 'text-muted-foreground/70')}>
+                          ยังไม่มีข้อมูลการตรวจนับ
+                        </p>
+                      )}
+                      {recentVerification && (
+                        <p
+                          className={cn(
+                            'mt-1 text-xs rounded-lg px-2 py-0.5 inline-block bb-pastel-surface',
+                            recentVerification.matched
+                              ? 'bg-[#d4edda] text-black border border-[#c3e6cb]'
+                              : 'bg-[#fff3cd] text-black border border-[#ffeeba]',
+                          )}
+                        >
+                          {recentVerification.matched
+                            ? '✓ ตรงครั้งนี้'
+                            : `✗ ไม่ตรง (นับได้ ${recentVerification.countedQty}, บันทึก IN/OUT: ${recentVerification.theoreticalQty})`}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="shrink-0">

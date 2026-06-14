@@ -16,6 +16,7 @@ import {
 import { getFabPanelKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 const QUICK_ACTIONS = [
   { id: 'shift', label: '👥 ตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
@@ -140,13 +141,14 @@ export default function AIChatOverlay() {
     <>
       {/* Floating Trigger Button */}
       {!hideAiChatButton && (
-        <motion.button
-          onClick={() => setIsOpen((prev) => !prev)}
-          className={cn(FAB_BASE_CLASS, FAB_BOTTOM_AI_CLASS, isOpen ? 'z-[204]' : 'z-[200]')}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.94 }}
-          aria-label="เปิดผู้ช่วย AI บรู"
-        >
+        <HintTooltip tip={isOpen ? 'ปิดแชทบรู' : 'ถามบรู AI'} side="left">
+          <motion.button
+            onClick={() => setIsOpen((prev) => !prev)}
+            className={cn(FAB_BASE_CLASS, FAB_BOTTOM_AI_CLASS, isOpen ? 'z-[204]' : 'z-[200]')}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            aria-label={isOpen ? 'ปิดแชทบรู' : 'เปิดผู้ช่วย AI บรู'}
+          >
           <AnimatePresence mode="wait" initial={false}>
             {isOpen ? (
               <motion.span
@@ -172,6 +174,7 @@ export default function AIChatOverlay() {
             )}
           </AnimatePresence>
         </motion.button>
+        </HintTooltip>
       )}
 
       {/* Chat Window */}
@@ -217,31 +220,34 @@ export default function AIChatOverlay() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMessages([]);
-                      localStorage.removeItem('bb-chat-history');
-                    }}
-                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
-                    aria-label="ล้างประวัติแชท"
-                    title="ล้างประวัติ"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
-                    aria-label="ปิดหน้าต่างแชท"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                  <HintTooltip tip="ล้างประวัติแชท">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMessages([]);
+                        localStorage.removeItem('bb-chat-history');
+                      }}
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
+                      aria-label="ล้างประวัติแชท"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </HintTooltip>
+                  <HintTooltip tip="ปิดหน้าต่างแชท">
+                    <button
+                      type="button"
+                      onClick={() => setIsOpen(false)}
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
+                      aria-label="ปิดหน้าต่างแชท"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </HintTooltip>
                 </div>
               </div>
 
               {/* Messages Area — min-h-0 lets flex shrink so quick actions + input stay visible */}
-              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 py-3 md:px-4 md:py-4 flex flex-col gap-3 min-w-0">
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bb-smooth-scroll px-3 py-3 md:px-4 md:py-4 flex flex-col gap-3 min-w-0">
 
 
                 {messages.map((msg) => {
@@ -313,15 +319,17 @@ export default function AIChatOverlay() {
                   autoComplete="off"
                   className="thai-chat-readable flex-1 min-w-0 bg-muted border border-border rounded-2xl px-3 md:px-4 py-2.5 text-[13px] font-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 transition-all disabled:opacity-50"
                 />
-                <motion.button
-                  type="submit"
-                  disabled={isLoading || !inputValue.trim()}
-                  className="w-9 h-9 rounded-3xl bg-[#000000] text-white flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity"
-                  whileTap={{ scale: 0.9 }}
-                  aria-label="ส่งข้อความ"
-                >
-                  <Send size={15} />
-                </motion.button>
+                <HintTooltip tip="ส่งข้อความ">
+                  <motion.button
+                    type="submit"
+                    disabled={isLoading || !inputValue.trim()}
+                    className="w-9 h-9 rounded-3xl bg-[#000000] text-white flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity"
+                    whileTap={{ scale: 0.9 }}
+                    aria-label="ส่งข้อความ"
+                  >
+                    <Send size={15} />
+                  </motion.button>
+                </HintTooltip>
               </form>
             </motion.div>
           </>

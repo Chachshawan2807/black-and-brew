@@ -1,4 +1,14 @@
 {
   "markdownlint.configFile": ".markdownlint-cli2.jsonc",
-  "css.lint.unknownAtRules": "ignore"
+  "css.lint.unknownAtRules": "ignore",
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/.turbo/**": true,
+    "**/graphify-out/**": true,
+    "**/coverage/**": true
+  }
 }

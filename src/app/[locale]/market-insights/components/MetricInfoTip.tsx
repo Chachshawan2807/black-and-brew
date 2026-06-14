@@ -35,15 +35,15 @@ export default function MetricInfoTip({
         align="start"
         className="max-w-[min(300px,calc(100vw-2rem))] p-3 text-left leading-relaxed"
       >
-        <p className="font-medium text-white mb-1">{entry.title}</p>
-        <p className="text-white/80 text-[11px] leading-relaxed">{entry.description}</p>
+        <p className="font-medium mb-1">{entry.title}</p>
+        <p className="opacity-80 text-[11px] leading-relaxed">{entry.description}</p>
         {entry.formula && (
-          <p className="text-white/55 text-[10px] mt-2 font-mono leading-snug border-t border-white/10 pt-2">
+          <p className="opacity-55 text-[10px] mt-2 font-mono leading-snug border-t border-current/10 pt-2">
             {entry.formula}
           </p>
         )}
         {entry.source && (
-          <p className="text-white/45 text-[10px] mt-1.5">ที่มา: {entry.source}</p>
+          <p className="opacity-45 text-[10px] mt-1.5">ที่มา: {entry.source}</p>
         )}
       </TooltipContent>
     </Tooltip>

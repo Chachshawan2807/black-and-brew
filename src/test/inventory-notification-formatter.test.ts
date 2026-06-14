@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import {
   detectLowStockCrossing,
+  formatDataChangeLogDisplay,
   formatFieldChange,
   formatInventoryNotification,
   resolveNotificationPriority,
@@ -137,6 +138,91 @@ describe('resolveNotificationPriority', () => {
     expect(
       resolveNotificationPriority('UPDATE', [{ field: 'name', old_value: 'A', new_value: 'B' }])
     ).toBe('normal');
+  });
+});
+
+describe('formatInventoryNotification stock operations', () => {
+  test('shows รับเข้า title with item name and quantity for IN transaction', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: null,
+        field_changes: [{ field: 'stock', old_value: 0, new_value: 2 }],
+        metadata: { operation: 'record_transaction', type: 'IN', quantity: 2, itemName: 'ฝาใส (แบบแพ็ค)' },
+      }),
+      'th'
+    );
+    expect(n.title).toBe('รับเข้า: ฝาใส (แบบแพ็ค)');
+    expect(n.summary).toContain('รับ 2');
+    expect(n.summary).toContain('คงเหลือ: 0 → 2');
+  });
+
+  test('shows นำออก title for OUT transaction', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: 'เมล็ดกาแฟ',
+        field_changes: [{ field: 'stock', old_value: 10, new_value: 8 }],
+        metadata: { operation: 'record_transaction', type: 'OUT', quantity: 2 },
+      }),
+      'th'
+    );
+    expect(n.title).toBe('นำออก: เมล็ดกาแฟ');
+    expect(n.summary).toContain('นำออก 2');
+    expect(n.summary).toContain('คงเหลือ: 10 → 8');
+  });
+
+  test('shows ปรับจำนวน title for set_stock adjustment', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: 'ถ้วยกระดาษ',
+        field_changes: [{ field: 'stock', old_value: 5, new_value: 12 }],
+        metadata: { operation: 'set_stock' },
+      }),
+      'th'
+    );
+    expect(n.title).toBe('ปรับจำนวน: ถ้วยกระดาษ');
+    expect(n.summary).toContain('ปรับเป็น 12');
+    expect(n.summary).toContain('คงเหลือ: 5 → 12');
+  });
+
+  test('shows English stock-in title and summary', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: 'Coffee beans',
+        field_changes: [{ field: 'stock', old_value: 0, new_value: 2 }],
+        metadata: { operation: 'record_transaction', type: 'IN', quantity: 2 },
+      }),
+      'en'
+    );
+    expect(n.title).toBe('Stock in: Coffee beans');
+    expect(n.summary).toContain('Received 2');
+    expect(n.summary).toContain('Stock: 0 → 2');
+  });
+});
+
+describe('formatDataChangeLogDisplay', () => {
+  test('reuses inventory notification formatting for inventory module', () => {
+    const row = makeRow({
+      entity_label: null,
+      field_changes: [{ field: 'stock', old_value: 0, new_value: 10 }],
+      metadata: { operation: 'record_transaction', type: 'IN', quantity: 10, itemName: 'ฝาใส' },
+    });
+    const display = formatDataChangeLogDisplay(row, 'th');
+    expect(display.headline).toBe('รับเข้า: ฝาใส');
+    expect(display.detail).toContain('รับ 10');
+    expect(display.detail).toContain('คงเหลือ: 0 → 10');
+  });
+
+  test('uses generic headline for non-inventory modules', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        module: 'schedule',
+        entity_label: 'กะเช้า',
+        field_changes: [{ field: 'start_time', old_value: '08:00', new_value: '09:00' }],
+      }),
+      'th'
+    );
+    expect(display.headline).toBe('แก้ไข: กะเช้า');
+    expect(display.detail).toContain('08:00');
   });
 });
 

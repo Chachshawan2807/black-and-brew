@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 8.5 | Last Updated: 2026-06-12
+> Version: 8.6 | Last Updated: 2026-06-15
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | **Project Name** | BLACK-AND-BREW ERP System |
 | **Type** | Enterprise Resource Planning for Coffee Shop |
-| **Current Version** | 8.5 (Security Audit + Inventory Notifications) |
+| **Current Version** | 8.6 (Count Accuracy + Quick Action + Doc/SQL Cleanup) |
 | **Repository** | `Chachshawan2807/black-and-brew` |
 | **Local Path** | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -149,3 +149,18 @@ Authoritative env list: [`.env.example`](../.env.example)
 | i18n Middleware | `src/proxy.ts` (next-intl, Next.js 16 convention) |
 | Server Actions | `src/app/actions/` |
 | Agent Tools | `src/app/actions/tools/` |
+
+---
+
+## 8. v8.6 Feature Highlights
+
+| Feature | Key paths |
+| --- | --- |
+| Count accuracy | `inventory_count_verifications`, `recordCountVerification()`, `src/lib/inventory-in-out-theoretical.ts` |
+| Quick action bulk | `recordBulkInventoryTransactions()`, `inventory-quick-*` libs, `InventoryQuickActionFAB` |
+| Realtime context | `src/contexts/InventoryRealtimeContext.tsx` |
+| Tooltips | `AppTooltipProvider`, `HintTooltip` |
+| Server admin singleton | `src/lib/supabase-server.ts` (`getSupabaseAdmin()`) |
+| Data change history UI | `DataChangeHistorySection` in Settings |
+| PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |
+| SQL blueprint | `sql/record_inventory_transaction.sql` |

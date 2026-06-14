@@ -8,8 +8,7 @@ import {
   type DataChangeLogRow,
 } from "@/app/actions/data-change-log-actions";
 import {
-  filterChangesForDisplay,
-  formatFieldChange,
+  formatDataChangeLogDisplay,
 } from "@/lib/inventory-notification-formatter";
 import { ExpandableLines } from "@/components/ui/expandable-lines";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
@@ -29,14 +28,6 @@ const MODULE_LABELS: Record<string, { th: string; en: string }> = {
   dashboard: { th: "แดชบอร์ด", en: "Dashboard" },
   settings: { th: "ตั้งค่า", en: "Settings" },
   market_insights: { th: "ข้อมูลตลาด", en: "Market insights" },
-};
-
-const ACTION_LABELS: Record<string, { th: string; en: string }> = {
-  CREATE: { th: "เพิ่ม", en: "Added" },
-  UPDATE: { th: "แก้ไข", en: "Edited" },
-  DELETE: { th: "ลบ", en: "Deleted" },
-  BULK_UPDATE: { th: "แก้ไขหลายรายการ", en: "Bulk edit" },
-  BULK_DELETE: { th: "ลบหลายรายการ", en: "Bulk delete" },
 };
 
 function actionIcon(action: string) {
@@ -62,34 +53,14 @@ function formatDateTime(iso: string, locale: string) {
   }).format(new Date(iso));
 }
 
-function accessLabel(level: string | null, isTh: boolean): string | null {
-  if (!level) return null;
-  if (level === "read_only") return isTh ? "ดูอย่างเดียว" : "View only";
-  if (level === "full") return isTh ? "แก้ไขได้" : "Can edit";
-  return isTh ? "ระบบ" : "System";
-}
+function buildChangeLines(row: DataChangeLogRow, locale: string): string[] {
+  const isTh = locale === "th";
+  const { headline, detail } = formatDataChangeLogDisplay(row, locale);
+  const lines: string[] = [headline];
+  if (detail) lines.push(detail);
 
-function buildChangeLines(row: DataChangeLogRow, isTh: boolean): string[] {
-  const lines: string[] = [];
-  const actionLabel = ACTION_LABELS[row.action]?.[isTh ? "th" : "en"] ?? row.action;
-  const moduleLabel = MODULE_LABELS[row.module]?.[isTh ? "th" : "en"] ?? row.module;
-  const itemName = row.entity_label;
-
-  if (itemName) {
-    lines.push(`${actionLabel}: ${itemName}`);
-  } else {
-    lines.push(`${actionLabel} · ${moduleLabel}`);
-  }
-
-  const changes = filterChangesForDisplay(row.field_changes ?? [])
-    .filter((c) => c.field !== "name")
-    .map((c) => formatFieldChange(c, isTh))
-    .filter((t) => t.length > 0);
-
-  lines.push(...changes);
-
-  const access = accessLabel(row.actor_access_level, isTh);
-  const metaParts = [row.actor_label, access, formatDateTime(row.occurred_at, isTh ? "th" : "en")].filter(
+  const editedAtLabel = isTh ? "แก้ไขเมื่อ" : "Edited on";
+  const metaParts = [row.actor_label, editedAtLabel, formatDateTime(row.occurred_at, isTh ? "th" : "en")].filter(
     Boolean
   ) as string[];
   lines.push(metaParts.join(" · "));
@@ -112,7 +83,7 @@ function LogEntry({ row, locale }: { row: DataChangeLogRow; locale: string }) {
   const isTh = locale === "th";
   const Icon = actionIcon(row.action);
   const isFailed = row.status === "failed";
-  const lines = buildChangeLines(row, isTh);
+  const lines = buildChangeLines(row, locale);
 
   return (
     <div

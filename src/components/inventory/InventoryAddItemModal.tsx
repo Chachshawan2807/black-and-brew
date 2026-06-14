@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { recordItemAddHistory } from '@/app/actions/inventory-actions';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 export type NewInventoryItemInput = {
   name: string;
@@ -134,18 +135,20 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
         style={modalContentStyle}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors z-10"
-          aria-label="ปิด"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <HintTooltip tip="ปิด">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors z-10"
+            aria-label="ปิด"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </HintTooltip>
         <div className="px-6 h-14 border-b border-border flex items-center justify-between shrink-0 pr-14">
           <h2 className="text-lg font-normal text-foreground">เพิ่มรายการใหม่</h2>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto bb-smooth-scroll flex-1 min-h-0">
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <div className="col-span-2 flex flex-col gap-1.5">
               <label className="text-[12px] font-normal text-muted-foreground ml-1 uppercase tracking-wider">ชื่อรายการ</label>

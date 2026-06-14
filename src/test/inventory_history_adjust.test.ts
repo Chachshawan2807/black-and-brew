@@ -23,6 +23,10 @@ describe('inventory history adjust type', () => {
     expect(barCode).toContain('ปรับจำนวน');
     expect(barCode).toContain('aria-pressed={quickType === \'IN\'}');
     expect(barCode).not.toMatch(/PackagePlus[\s\S]*text-foreground\/40/);
+    expect(barCode).toContain('z-[210]');
+    expect(barCode).toContain('truncate min-w-0 flex-1');
+    expect(barCode).toContain('flex flex-row items-center gap-2 w-full min-w-0');
+    expect(barCode).not.toContain('hidden sm:inline');
   });
 
   test('history modal renders adjust transaction type label', () => {

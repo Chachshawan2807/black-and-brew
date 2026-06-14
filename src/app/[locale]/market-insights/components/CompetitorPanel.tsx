@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import {
   MapPin,
   Star,
@@ -14,6 +13,7 @@ import {
   Link2,
 } from 'lucide-react';
 import type { CompetitorAnalysis, CompetitorEntry, CompetitorZone } from '@/app/actions/market-insights-types';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { formatDistance, sanitizeCompetitorAnalysis } from '@/app/actions/market-insights-competitors';
 import MetricInfoTip from './MetricInfoTip';
 
@@ -112,26 +112,30 @@ function CompetitorRow({ entry, zoneLabels }: { entry: CompetitorEntry; zoneLabe
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
         {entry.facebookUrl && (
-          <a
-            href={entry.facebookUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-xl hover:bg-muted text-blue-600/70 hover:text-blue-700 bb-transition"
-            aria-label={`เปิด Facebook ของ ${entry.name}`}
-          >
-            <Link2 className="w-4 h-4" />
-          </a>
+          <HintTooltip tip="เปิด Facebook">
+            <a
+              href={entry.facebookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-xl hover:bg-muted text-blue-600/70 hover:text-blue-700 bb-transition"
+              aria-label={`เปิด Facebook ของ ${entry.name}`}
+            >
+              <Link2 className="w-4 h-4" />
+            </a>
+          </HintTooltip>
         )}
         {entry.mapsUrl && (
-          <a
-            href={entry.mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-xl hover:bg-muted text-muted-foreground/80 hover:text-foreground/70 bb-transition"
-            aria-label={`เปิด ${entry.name} ใน Google Maps`}
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
+          <HintTooltip tip="เปิดใน Google Maps">
+            <a
+              href={entry.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-xl hover:bg-muted text-muted-foreground/80 hover:text-foreground/70 bb-transition"
+              aria-label={`เปิด ${entry.name} ใน Google Maps`}
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </HintTooltip>
         )}
       </div>
     </div>
@@ -283,12 +287,7 @@ export default function CompetitorPanel({ analysis }: { analysis: CompetitorAnal
   const storeMapsUrl = `https://www.google.com/maps/search/?api=1&query=${safeAnalysis.storeLat},${safeAnalysis.storeLon}`;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.1 }}
-      className="space-y-3"
-    >
+    <section className="space-y-3">
       <div className="flex items-center gap-1.5 text-foreground/65 flex-wrap">
         <Target className="w-4 h-4" />
         <h2 className="text-base md:text-lg tracking-tight">วิเคราะห์คู่แข่งรอบร้าน</h2>
@@ -468,6 +467,6 @@ export default function CompetitorPanel({ analysis }: { analysis: CompetitorAnal
           </button>
         )}
       </div>
-    </motion.section>
+    </section>
   );
 }

@@ -212,7 +212,7 @@
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: 1.5rem;
-    transition: box-shadow 200ms ease-in-out, transform 200ms ease-in-out;
+    transition: box-shadow 200ms ease-in-out;
 
     &:hover {
       box-shadow:
@@ -229,13 +229,23 @@
     box-shadow:
       0 1px 2px rgb(0 0 0 / 0.03),
       0 2px 6px -1px rgb(0 0 0 / 0.04);
-    transition: box-shadow 200ms ease-in-out, transform 200ms ease-in-out;
+    transition: box-shadow 200ms ease-in-out;
 
     &:hover {
       box-shadow:
         0 1px 2px rgb(0 0 0 / 0.04),
         0 4px 12px -2px rgb(0 0 0 / 0.06),
         0 12px 24px -6px rgb(0 0 0 / 0.07);
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .glass-card {
+      transition: box-shadow 200ms ease-in-out, transform 200ms ease-in-out;
+    }
+
+    .bb-card {
+      transition: box-shadow 200ms ease-in-out, transform 200ms ease-in-out;
     }
   }
 
@@ -320,6 +330,13 @@
   /* Pastel cards keep light backgrounds in both themes — force readable dark text/icons */
   .bb-pastel-surface {
     color: #000000;
+  }
+
+  /* Quick Action: optional content-sized search (mobile fallback) */
+  .bb-quick-search-fit {
+    field-sizing: content;
+    min-width: 6.5rem;
+    max-width: 100%;
   }
 
 }
@@ -477,5 +494,12 @@
 
   .bb-pastel-surface :where(input, textarea)::placeholder {
     color: rgb(0 0 0 / 0.45);
+  }
+
+  /* Momentum scrolling for dense tables/modals on touch devices */
+  .bb-smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    overscroll-behavior: contain;
   }
 }

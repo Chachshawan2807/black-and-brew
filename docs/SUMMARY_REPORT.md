@@ -1,39 +1,44 @@
 # Documentation Summary Report
 
-Last Updated: 2026-06-12 | Version: v8.5
+Last Updated: 2026-06-15 | Version: v8.6
 
 ---
 
 ## Purpose
 
-รายงานสรุปการอัปเดตเอกสารทั้งหมดให้สอดคล้องกับโค้ดปัจจุบัน (v8.5 — security audit + inventory notifications + graphify refresh)
+รายงานสรุปการอัปเดตเอกสารทั้งหมดให้สอดคล้องกับโค้ดปัจจุบัน (v8.6 — count accuracy, quick action bulk, tooltips, PWA icons, SQL/doc cleanup)
 
 ---
 
-## Files Updated (2026-06-12 v8.5)
+## Files Updated (2026-06-15 v8.6)
 
 | File | Key changes |
 | --- | --- |
-| `README.md` | v8.5, FAB, notification prefs, session revocation, `db:verify` |
-| `AGENTS.md` | graphify knowledge-graph section |
-| `docs/database.md` | Fixed Thai/encoding corruption; new tables + migrations |
-| `docs/architecture.md` | Auth audit flow, inventory notifications, FAB |
-| `docs/api.md` | Session revocation, login history, Realtime channels |
-| `docs/context.md` | v8.5 features |
-| `docs/changelog.md` | v8.5 entry |
-| `docs/memory.md` | DEC-071 |
-| `docs/tasks.md` | Security + notifications completed |
-| `PROJECT_MAP.md` | Migrations, components, test count |
-| `docs/design.md`, `docs/rules.md`, `docs/skills.md` | Header v8.5 |
-| `docs/MASTER_BLUEPRINT.md`, `SKILLS_INVENTORY.md` | Header v8.5 |
-| `docs/refactor-regression-checklist.md` | Table lint fix |
+| `sql/record_inventory_transaction.sql` | **Created** — RPC reference blueprint |
+| `sql/README.md` | Removed apply-pending-migrations; added blueprint + migration 20260614120000 |
+| `docs/database.md` | `inventory_count_verifications` table; full migration list; RPC source paths |
+| `docs/api.md` | Count verification, IN/OUT theoretical, bulk transactions; `p_record_history` |
+| `docs/architecture.md` | InventoryRealtimeContext, inventory-quick-* libs, count flow, tooltips, supabase-server |
+| `docs/changelog.md` | v8.6 entry |
+| `docs/tasks.md` | Phase 7 count accuracy + quick action + SQL cleanup completed |
+| `docs/prd.md` | DataChangeHistorySection, count accuracy, Market Insights v2 |
+| `docs/MASTER_BLUEPRINT.md` | PWA theme colors + icon paths |
+| `PROJECT_MAP.md` | 58 tests, new libs/components, migrations |
+| `docs/context.md` | v8.6 features |
+| `docs/memory.md` | DEC-072, DEC-073 |
+| `README.md` | PWA manifest paths and theme colors |
+| `docs/design.md` | HintTooltip/AppTooltipProvider, PWA manifest section |
+| `docs/refactor-regression-checklist.md` | Count verification, tooltips, quick bulk smoke tests |
+
+## Files Deleted (2026-06-15)
+
+11 legacy SQL files removed after RPC extraction (see changelog v8.6).
 
 ## Graphify
 
-- `graphify update . --force` → **2447 nodes**, **3925 edges**, **147 communities**
+- `graphify update .` run post-change
 - Outputs: `graphify-out/graph.json`, `GRAPH_REPORT.md`, `graph.html`
-- No `graphify-out/wiki/index.md` (wiki not generated)
 
 ## Verification
 
-- `npm run lint:md` ✓
+- Targeted Vitest: inventory count accuracy + quick action suites

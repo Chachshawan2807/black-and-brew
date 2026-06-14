@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shift, Profile } from '../types';
 import { CalendarDays, Users, GripVertical } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { toZonedTime } from 'date-fns-tz';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter } from 'next/navigation';
 import { format, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 import {
   DndContext,
   closestCorners,
@@ -84,14 +86,16 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
             </h3>
           </div>
           {/* Drag handle — listeners scoped here only so scroll is never hijacked */}
-          <div
-            className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors touch-none ${isReadOnly ? 'opacity-30 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
-            {...attributes}
-            {...(isReadOnly ? {} : listeners)}
-            aria-label="ลากเพื่อเปลี่ยนลำดับ"
-          >
-            <GripVertical className="w-5 h-5" />
-          </div>
+          <HintTooltip tip="ลากเพื่อเปลี่ยนลำดับ">
+            <div
+              className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors touch-none ${isReadOnly ? 'opacity-30 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
+              {...attributes}
+              {...(isReadOnly ? {} : listeners)}
+              aria-label="ลากเพื่อเปลี่ยนลำดับ"
+            >
+              <GripVertical className="w-5 h-5" />
+            </div>
+          </HintTooltip>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -154,16 +158,25 @@ export default function LiveShiftList({
       if (data) setShifts(data as Shift[]);
     };
 
-    const channel = supabase
-      .channel('shifts-realtime-live-shift-list')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
-        void refreshShiftsForRange();
-      })
-      .subscribe();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    void (async () => {
+      await ensureSupabaseSession();
+      if (cancelled) return;
+
+      channel = supabase
+        .channel('shifts-realtime-live-shift-list')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
+          void refreshShiftsForRange();
+        })
+        .subscribe();
+    })();
 
     return () => {
+      cancelled = true;
       clearInterval(timer);
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [startDate, endDate]);
 

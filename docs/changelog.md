@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-15 (Count Accuracy + Quick Action + Doc/SQL Cleanup v8.6)
+
+- Execution: [DOCUMENTATION SYNC & REPOSITORY SANITIZATION]
+- Changes:
+  - **Count accuracy:** `inventory_count_verifications` table + migration `20260614120000`; `recordCountVerification()`, `fetchCountAccuracyStats()`, `computeInOutTheoreticalStock()` in `src/lib/inventory-in-out-theoretical.ts`
+  - **Inventory quick action:** `recordBulkInventoryTransactions()`, `inventory-quick-*` libs, `InventoryRealtimeContext`, `use-inventory-quick-action` hook
+  - **Tooltips:** `AppTooltipProvider` + `HintTooltip` global hint pattern
+  - **PWA icons:** manifest theme `#ffffff`/`#000000`; icons at `/images/notification-icon*.png`
+  - **SQL cleanup:** Extracted `sql/record_inventory_transaction.sql` blueprint; deleted 11 legacy SQL files; updated `sql/README.md`
+  - **Server admin client:** `src/lib/supabase-server.ts` (`getSupabaseAdmin()` singleton)
+  - **Settings:** `DataChangeHistorySection` for mutation audit display
+  - All target docs — version bump to **8.6**
+- Verification: `graphify update .` | targeted Vitest (inventory count/quick action)
+
 ## 2026-06-12 (Security + Notifications Doc Sync v8.5)
 
 - Execution: [DOCUMENTATION SYNC — security migrations, inventory notifications, graphify refresh]

@@ -1,10 +1,32 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 8.5 | Last Updated: 2026-06-12 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
+> Version: 8.6 | Last Updated: 2026-06-15 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
 
 ---
 
 ## Recent Decisions
+
+### DEC-073: IN/OUT Theoretical Stock for Count Accuracy (v8.6)
+
+- Date: June 15, 2026
+- Context: Stock-taking count page needed to measure how accurately staff record IN/OUT transactions — separate from absolute stock edits (ADJUST) and lifecycle events (ADD/DELETE).
+- Decision:
+  1. `computeInOutTheoreticalStock()` in `src/lib/inventory-in-out-theoretical.ts` — replays ADD baseline + IN/OUT; latest ADJUST rebaselines to `balance_after`.
+  2. `inventory_count_verifications` table — stores `counted_qty`, `in_out_theoretical_qty`, `matched` per verification event.
+  3. Server actions: `recordCountVerification()`, `fetchCountAccuracyStats()`, `fetchInOutTheoreticalQtyMap()`, `computeInOutTheoreticalStockForItem()`.
+- Impact: Count page shows per-item accuracy % without conflating warehouse edits with IN/OUT recording quality.
+- Evidence: `supabase/migrations/20260614120000_inventory_count_verifications.sql`, `src/test/inventory-count-accuracy.test.ts`, `src/test/inventory-in-out-theoretical.test.ts`
+
+### DEC-072: Inventory Quick Action Bulk + Realtime Context (v8.6)
+
+- Date: June 15, 2026
+- Context: Quick Entry FAB needed bulk IN/OUT for multiple items and shared realtime state across warehouse + count pages.
+- Decision:
+  1. `recordBulkInventoryTransactions()` — sequential RPC calls with per-entry results.
+  2. `InventoryRealtimeContext` — shared items state + Supabase channel subscription.
+  3. `inventory-quick-*` libs — draft persistence, bulk batching, qty stepper, search filter.
+- Impact: Faster multi-item stock updates; consistent cross-page realtime merge.
+- Evidence: `src/contexts/InventoryRealtimeContext.tsx`, `src/lib/inventory-quick-bulk.ts`, `src/test/inventory-quick-bulk.test.ts`
 
 ### DEC-071: Session Audit + Remote Revocation + Inventory Notifications (v8.5)
 
@@ -15,7 +37,7 @@
   2. `revoked_sessions` table — fingerprint blocklist checked on `checkAuth()` via `session-revocation.ts`; populated from Settings via `forceRevokeDeviceSession()` / `forceRevokeAllRemoteSessions()`.
   3. `data_change_logs` — append-only mutation audit; selective RLS policy `anon_read_inventory_change_logs` exposes only `module = 'inventory'` rows for Realtime notifications.
   4. `useInventoryNotifications()` subscribes to `data_change_logs` INSERTs; user prefs in `notification-preferences.ts` (localStorage) + optional PWA push via `pwa-notification-bridge.ts`.
-  5. Official migrations in `supabase/migrations/`; bundled manual apply in `scripts/apply-pending-migrations.sql`; verify with `npm run db:verify`.
+  5. Official migrations in `supabase/migrations/`; apply via `supabase db push` or Dashboard SQL Editor; verify with `npm run db:verify`.
 - Impact: Security visibility in Settings; remote session control; staff see inventory edits without polling.
 - Evidence: `supabase/migrations/20260611*.sql`–`20260612200000_*.sql`, `NotificationPreferencesSection.tsx`, `InventoryQuickActionFAB.tsx`
 
@@ -337,7 +359,7 @@
 - **Context:** การ update stock + insert transaction แยกกันทำให้เกิด race condition
 - **Decision:** สร้าง RPC function `record_inventory_transaction` ที่ทำทั้งสองอย่างในหนึ่ง transaction พร้อม row lock (`FOR UPDATE`)
 - **Impact:** Zero race condition, Zero data mismatch
-- **Evidence:** `setup_inventory_transactions.sql`, `fix_transaction_relationships.sql`
+- **Evidence:** `setup_inventory_transactions.sql` (archived), `sql/record_inventory_transaction.sql`
 
 ### DEC-005: Computed Order Quantity (Read-Only Field)
 

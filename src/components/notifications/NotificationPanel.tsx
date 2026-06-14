@@ -11,6 +11,7 @@ import {
 } from '@/lib/notification-time-groups';
 import type { InventoryNotification } from '@/lib/notification-types';
 import { ExpandableLines } from '@/components/ui/expandable-lines';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 function actionIcon(action: string) {
   switch (action) {
@@ -102,6 +103,7 @@ export function NotificationPanel() {
   const {
     notifications,
     panelOpen,
+    unreadCount,
     closePanel,
     markAllRead,
     markRead,
@@ -139,9 +141,12 @@ export function NotificationPanel() {
             exit={{ x: '100%' }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className={cn(
-              'fixed top-0 right-0 z-[215] h-[100dvh] w-full max-w-md',
+              'fixed top-0 right-0 z-[215] h-[100dvh]',
               'bg-background border-l border-border bb-shadow-lg',
-              'flex flex-col'
+              'flex flex-col',
+              'w-full max-w-md',
+              // Leave a left tap strip on non-desktop so the backdrop can dismiss the panel.
+              'max-md:w-[85vw] max-md:max-w-none',
             )}
             role="dialog"
             aria-label={isTh ? 'ศูนย์แจ้งเตือนคลังสินค้า' : 'Inventory notifications'}
@@ -156,18 +161,26 @@ export function NotificationPanel() {
                     {isTh ? 'แจ้งเตือนคลังสินค้า' : 'Inventory alerts'}
                   </h2>
                   <p className="text-[12px] text-muted-foreground">
-                    {isTh ? 'การเปลี่ยนแปลงล่าสุด' : 'Recent changes'}
+                    {unreadCount > 0
+                      ? isTh
+                        ? `${unreadCount} รายการยังไม่ได้อ่าน`
+                        : `${unreadCount} unread`
+                      : isTh
+                        ? 'การเปลี่ยนแปลงล่าสุด'
+                        : 'Recent changes · live updates'}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={closePanel}
-                className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-muted bb-transition"
-                aria-label={isTh ? 'ปิด' : 'Close'}
-              >
-                <X size={18} strokeWidth={1.75} />
-              </button>
+              <HintTooltip tip={isTh ? 'ปิดศูนย์แจ้งเตือน' : 'Close notifications'}>
+                <button
+                  type="button"
+                  onClick={closePanel}
+                  className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-muted bb-transition"
+                  aria-label={isTh ? 'ปิด' : 'Close'}
+                >
+                  <X size={18} strokeWidth={1.75} />
+                </button>
+              </HintTooltip>
             </header>
 
             {notifications.length > 0 && (
@@ -190,7 +203,7 @@ export function NotificationPanel() {
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+            <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll px-4 py-4 space-y-5">
               {groups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted mb-3">

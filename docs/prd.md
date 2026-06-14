@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> **Version:** 8.5 | **Last Updated:** 2026-06-12 | **Owner:** System Architect
+> **Version:** 8.6 | **Last Updated:** 2026-06-15 | **Owner:** System Architect
 
 ---
 
@@ -59,9 +59,10 @@
   - Spreadsheet inline editing + Undo/Redo
   - DnD row reordering (`@dnd-kit`)
   - Stock single source of truth (RPC `set_inventory_stock`)
-  - Quick Entry IN/OUT + Transaction History
+  - Quick Entry IN/OUT + bulk quick action (`recordBulkInventoryTransactions`)
+  - Transaction History + count accuracy verification (IN/OUT theoretical baseline)
   - Purchase Order modal with channel tabs + PNG export
-  - Real-time cross-device sync
+  - Real-time cross-device sync via `InventoryRealtimeContext`
 
 ### 3.5 Maintenance
 
@@ -78,8 +79,8 @@
 ### 3.7 Market Insights
 
 - **Route:** `/[locale]/market-insights`
-- **Purpose:** วิเคราะห์ตลาดรอบร้านด้วย Gemini AI
-- **Features:** localStorage cache, manual refresh
+- **Purpose:** วิเคราะห์ตลาดรอบร้านด้วย Gemini AI (v2 multi-step pipeline)
+- **Features:** Zod-validated output, ContextPanel/AlertsCard/ActionChecklist, localStorage cache v2, optional Google Places competitors
 
 ### 3.8 AI Assistant (บรู)
 
@@ -91,7 +92,7 @@
 
 - **Route:** `/[locale]/settings`
 - **Purpose:** การตั้งค่าระบบสำหรับพนักงาน
-- **Features:** Theme picker (light / dark / system via `next-themes`, key `bb-theme`); login history
+- **Features:** Theme picker (light / dark / system via `next-themes`, key `bb-theme`); login history; notification preferences; data change history (`DataChangeHistorySection`)
 
 ### 3.10 Daily LINE Notification
 

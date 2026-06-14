@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { parseISO, startOfDay, endOfDay, addDays } from 'date-fns';
 import { CalendarDays, CalendarOff, CalendarX, CalendarClock, CalendarRange, Sun, type LucideIcon } from 'lucide-react';
@@ -245,18 +246,27 @@ export default function LiveStatusTracker({
       if (data) setProfiles(data);
     };
 
-    const channel = supabase
-      .channel('live-shifts-presence')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
-        refreshShifts();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        refreshProfiles();
-      })
-      .subscribe();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    void (async () => {
+      await ensureSupabaseSession();
+      if (cancelled) return;
+
+      channel = supabase
+        .channel('live-shifts-presence')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
+          void refreshShifts();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          void refreshProfiles();
+        })
+        .subscribe();
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 

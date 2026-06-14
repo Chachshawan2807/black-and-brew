@@ -44,12 +44,18 @@ type FlexSeparator = { type: 'separator'; margin?: string; color?: string };
 
 type FlexComponent = FlexText | FlexBox | FlexSeparator;
 
+/** Show public-holiday footer only when the holiday falls within this many days. */
+export const HOLIDAY_FOOTER_MAX_DAYS = 14;
+
+/** LINE Flex bubble size — single source of truth for type + payload. */
+export const DAILY_REPORT_BUBBLE_SIZE = 'kilo' as const;
+
 export type DailyReportFlexMessage = {
   type: 'flex';
   altText: string;
   contents: {
     type: 'bubble';
-    size: 'mega';
+    size: typeof DAILY_REPORT_BUBBLE_SIZE;
     header: FlexBox;
     body: FlexBox;
     footer?: FlexBox;
@@ -108,27 +114,36 @@ function staffRow(name: string, shiftText: string): FlexBox {
     ],
     spacing: 'sm',
     alignItems: 'center',
-    margin: 'sm',
+    margin: 'xs',
   };
 }
 
-function sectionTitle(label: string): FlexText {
+function sectionTitle(label: string, margin: FlexText['margin'] = 'sm'): FlexText {
   return {
     type: 'text',
     text: label,
     size: 'xs',
     weight: 'bold',
     color: FLEX_MUTED_TEXT,
-    margin: 'md',
+    margin,
   };
 }
 
-function buildStaffSection(
-  title: string,
-  staff: DailyReportData['activeStaff'],
-): FlexComponent[] {
-  if (staff.length === 0) return [];
-  return [sectionTitle(title), ...staff.map((s) => staffRow(s.name, s.shiftText))];
+function staffList(staff: DailyReportData['activeStaff']): FlexComponent[] {
+  return staff.map((s) => staffRow(s.name, s.shiftText));
+}
+
+export function shouldShowHolidayFooter(
+  holiday: DailyReportData['holiday'],
+): boolean {
+  return holiday != null && holiday.daysRemaining <= HOLIDAY_FOOTER_MAX_DAYS;
+}
+
+function formatHolidayFooterText(holiday: NonNullable<DailyReportData['holiday']>): string {
+  if (holiday.daysRemaining === 0) {
+    return `${truncate(holiday.name, 100)} · วันนี้`;
+  }
+  return `${truncate(holiday.name, 100)} · อีก ${holiday.daysRemaining} วัน`;
 }
 
 export function buildDailyReportAltText(data: DailyReportData): string {
@@ -142,12 +157,12 @@ export function buildDailyReportAltText(data: DailyReportData): string {
 
   const parts = [
     `ตารางงาน ${data.dateStr} (${scheduleLabel(data.schedule)})`,
-    `เข้ากะ ${data.headcount} คน`,
+    `เข้างาน ${data.headcount} คน`,
     timedSummary || undefined,
     otherDutySummary ? `งานอื่น: ${otherDutySummary}` : undefined,
     offSummary ? `หยุด: ${offSummary}` : undefined,
-    data.holiday
-      ? `วันหยุดถัดไป: ${data.holiday.name} (อีก ${data.holiday.daysRemaining} วัน)`
+    shouldShowHolidayFooter(data.holiday)
+      ? `วันหยุด: ${data.holiday!.name} (อีก ${data.holiday!.daysRemaining} วัน)`
       : undefined,
   ].filter(Boolean);
 
@@ -160,39 +175,61 @@ function buildWorkingSection(data: DailyReportData): FlexComponent[] {
 
   if (!hasTimed && !hasOtherDuty) return [];
 
-  const contents: FlexComponent[] = [sectionTitle('เข้างาน')];
+  const contents: FlexComponent[] = [
+    sectionTitle(`เข้างาน ${data.headcount} คน`, 'none'),
+  ];
 
   if (hasTimed) {
-    contents.push(...data.activeStaff.map((s) => staffRow(s.name, s.shiftText)));
+    contents.push(...staffList(data.activeStaff));
   }
 
   if (hasOtherDuty) {
     if (hasTimed) {
-      contents.push({ type: 'separator', margin: 'md', color: '#e5e7eb' });
+      contents.push({ type: 'separator', margin: 'sm', color: '#e5e7eb' });
     }
-    contents.push(...data.otherDutyStaff.map((s) => staffRow(s.name, s.shiftText)));
+    contents.push(...staffList(data.otherDutyStaff));
   }
 
   return contents;
 }
 
+function buildHolidayFooter(holiday: NonNullable<DailyReportData['holiday']>): FlexBox {
+  return {
+    type: 'box',
+    layout: 'vertical',
+    backgroundColor: FLEX_HOLIDAY_PALETTE.backgroundColor,
+    borderColor: FLEX_HOLIDAY_PALETTE.borderColor,
+    borderWidth: '1px',
+    cornerRadius: '10px',
+    paddingAll: '12px',
+    contents: [
+      {
+        type: 'text',
+        text: 'วันหยุดนักขัตฤกษ์',
+        size: 'xs',
+        weight: 'bold',
+        color: FLEX_MUTED_TEXT,
+      },
+      {
+        type: 'text',
+        text: formatHolidayFooterText(holiday),
+        size: 'sm',
+        color: FLEX_BODY_TEXT,
+        wrap: true,
+        margin: 'xs',
+      },
+    ],
+  };
+}
+
 export function buildDailyReportFlexMessage(data: DailyReportData): DailyReportFlexMessage {
-  const bodyContents: FlexComponent[] = [
-    {
-      type: 'text',
-      text: `เข้ากะ ${data.headcount} คน`,
-      size: 'sm',
-      weight: 'bold',
-      color: FLEX_BODY_TEXT,
-    },
-    ...buildWorkingSection(data),
-  ];
+  const bodyContents: FlexComponent[] = [...buildWorkingSection(data)];
 
   if (data.offStaff.length > 0) {
     if (data.activeStaff.length > 0 || data.otherDutyStaff.length > 0) {
-      bodyContents.push({ type: 'separator', margin: 'lg', color: '#e5e7eb' });
+      bodyContents.push({ type: 'separator', margin: 'md', color: '#e5e7eb' });
     }
-    bodyContents.push(...buildStaffSection('ไม่เข้ากะ', data.offStaff));
+    bodyContents.push(...staffList(data.offStaff));
   }
 
   if (
@@ -205,46 +242,37 @@ export function buildDailyReportFlexMessage(data: DailyReportData): DailyReportF
       text: 'ไม่มีข้อมูลพนักงานในระบบ',
       size: 'sm',
       color: FLEX_MUTED_TEXT,
-      margin: 'md',
+      margin: 'sm',
     });
   }
 
-  const holidayText = data.holiday
-    ? truncate(`${data.holiday.name} (อีก ${data.holiday.daysRemaining} วัน)`, 120)
-    : 'ไม่มีข้อมูลวันหยุดในระบบ';
-
-  return {
+  const message: DailyReportFlexMessage = {
     type: 'flex',
     altText: buildDailyReportAltText(data),
     contents: {
       type: 'bubble',
-      size: 'mega',
+      size: DAILY_REPORT_BUBBLE_SIZE,
       header: {
         type: 'box',
         layout: 'vertical',
         backgroundColor: FLEX_HEADER_PALETTE.backgroundColor,
         borderColor: FLEX_HEADER_PALETTE.borderColor,
         borderWidth: '1px',
-        paddingAll: '18px',
+        paddingAll: '14px',
+        paddingBottom: '12px',
         contents: [
           {
             type: 'text',
-            text: 'Bru AI · ตารางงาน',
-            size: 'xs',
-            color: FLEX_MUTED_TEXT,
-          },
-          {
-            type: 'text',
             text: data.dateStr,
-            size: 'xl',
+            size: 'lg',
             weight: 'bold',
             color: FLEX_BODY_TEXT,
-            margin: 'xs',
           },
           {
             type: 'text',
             text: scheduleLabel(data.schedule),
-            size: 'sm',
+            size: 'xs',
+            weight: 'bold',
             color: FLEX_MUTED_TEXT,
             margin: 'xs',
           },
@@ -253,37 +281,17 @@ export function buildDailyReportFlexMessage(data: DailyReportData): DailyReportF
       body: {
         type: 'box',
         layout: 'vertical',
-        paddingAll: '16px',
+        paddingAll: '12px',
+        paddingTop: '10px',
         spacing: 'none',
         contents: bodyContents,
       },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        backgroundColor: FLEX_HOLIDAY_PALETTE.backgroundColor,
-        borderColor: FLEX_HOLIDAY_PALETTE.borderColor,
-        borderWidth: '1px',
-        cornerRadius: '12px',
-        margin: 'md',
-        paddingAll: '14px',
-        contents: [
-          {
-            type: 'text',
-            text: 'วันหยุดนักขัตฤกษ์ถัดไป',
-            size: 'xs',
-            weight: 'bold',
-            color: FLEX_MUTED_TEXT,
-          },
-          {
-            type: 'text',
-            text: holidayText,
-            size: 'sm',
-            color: FLEX_BODY_TEXT,
-            wrap: true,
-            margin: 'xs',
-          },
-        ],
-      },
     },
   };
+
+  if (shouldShowHolidayFooter(data.holiday)) {
+    message.contents.footer = buildHolidayFooter(data.holiday!);
+  }
+
+  return message;
 }

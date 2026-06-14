@@ -29,15 +29,17 @@ export default async function DashboardPage({
   const endDate = endParam || savedEnd || format(sunday, 'yyyy-MM-dd');
 
   // Fetch Data on Server (รักษาฐานข้อมูลและความปลอดภัยเดิมไว้ครบถ้วน)
-  const { data: profiles } = await supabase.from('profiles').select('id, full_name, dashboard_order').order('dashboard_order', { ascending: true });
-  const { data: shifts } = await supabase.from('shifts')
-    .select('id, employee_id, start_time, end_time, status, metadata')
-    .gte('start_time', startDate + 'T00:00:00')
-    .lte('start_time', endDate + 'T23:59:59');
-  const { data: holidays } = await supabase.from('holidays')
-    .select('id, date, name')
-    .gte('date', startDate)
-    .lte('date', endDate);
+  const [{ data: profiles }, { data: shifts }, { data: holidays }] = await Promise.all([
+    supabase.from('profiles').select('id, full_name, dashboard_order').order('dashboard_order', { ascending: true }),
+    supabase.from('shifts')
+      .select('id, employee_id, start_time, end_time, status, metadata')
+      .gte('start_time', startDate + 'T00:00:00')
+      .lte('start_time', endDate + 'T23:59:59'),
+    supabase.from('holidays')
+      .select('id, date, name')
+      .gte('date', startDate)
+      .lte('date', endDate),
+  ]);
 
   return (
     <div className="min-h-screen bg-transparent p-4 md:p-12 text-foreground relative font-normal">

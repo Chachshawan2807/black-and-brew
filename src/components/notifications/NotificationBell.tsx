@@ -1,10 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { FAB_BOTTOM_NOTIFICATION_CLASS, FAB_RIGHT_CLASS, FAB_SIZE_CLASS } from '@/lib/floating-action-layout';
+import { FAB_RIGHT_CLASS, FAB_SIZE_CLASS } from '@/lib/floating-action-layout';
+import { INVENTORY_NOTIFICATION_EVENT } from '@/lib/pwa-notification-bridge';
 import { useNotificationState, useNotificationActions } from '@/components/notifications/NotificationProvider';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 type NotificationBellProps = {
   variant?: 'sidebar' | 'fab';
@@ -14,12 +17,30 @@ type NotificationBellProps = {
 export function NotificationBell({ variant = 'sidebar', className }: NotificationBellProps) {
   const { unreadCount, panelOpen } = useNotificationState();
   const { setPanelOpen } = useNotificationActions();
+  const [pulse, setPulse] = useState(false);
   const isFab = variant === 'fab';
+
+  useEffect(() => {
+    const handler = () => {
+      setPulse(true);
+      window.setTimeout(() => setPulse(false), 1200);
+    };
+
+    window.addEventListener(INVENTORY_NOTIFICATION_EVENT, handler);
+    return () => window.removeEventListener(INVENTORY_NOTIFICATION_EVENT, handler);
+  }, []);
 
   const sharedProps = {
     type: 'button' as const,
     onClick: () => setPanelOpen(!panelOpen),
-    'aria-label': unreadCount > 0 ? `การแจ้งเตือน ${unreadCount} รายการใหม่` : 'การแจ้งเตือน',
+    'aria-label':
+      unreadCount > 0
+        ? isFab
+          ? `การแจ้งเตือนคลังสินค้า ${unreadCount} รายการใหม่`
+          : `การแจ้งเตือน ${unreadCount} รายการใหม่`
+        : isFab
+          ? 'การแจ้งเตือนคลังสินค้า'
+          : 'การแจ้งเตือน',
   };
 
   const content = (
@@ -30,49 +51,66 @@ export function NotificationBell({ variant = 'sidebar', className }: Notificatio
       />
       {unreadCount > 0 && (
         <span
+          aria-hidden
           className={cn(
-            'absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-medium',
-            isFab ? 'bg-white text-black border border-black/10' : 'bg-amber-500 text-white'
+            'absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums',
+            'bg-red-500 text-white border border-red-600/80 shadow-sm',
+            pulse && 'animate-pulse ring-2 ring-red-400/60',
           )}
         >
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {unreadCount > 0 ? `${unreadCount} unread inventory notifications` : ''}
+      </span>
     </>
   );
 
+  const bellTip =
+    unreadCount > 0
+      ? isFab
+        ? `การแจ้งเตือนคลังสินค้า (${unreadCount} ใหม่)`
+        : `การแจ้งเตือน (${unreadCount} ใหม่)`
+      : isFab
+        ? 'การแจ้งเตือนคลังสินค้า'
+        : 'การแจ้งเตือน';
+
   if (isFab) {
     return (
-      <motion.button
-        {...sharedProps}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.94 }}
-        className={cn(
-          'relative flex items-center justify-center bb-transition',
-          FAB_SIZE_CLASS,
-          FAB_RIGHT_CLASS,
-          FAB_BOTTOM_NOTIFICATION_CLASS,
-          'fixed z-[201] rounded-full bg-[#000000] text-white shadow-lg',
-          panelOpen && 'ring-2 ring-white/30',
-          className
-        )}
-      >
-        {content}
-      </motion.button>
+      <HintTooltip tip={bellTip} side="left">
+        <motion.button
+          {...sharedProps}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.94 }}
+          className={cn(
+            'relative flex items-center justify-center bb-transition',
+            FAB_SIZE_CLASS,
+            FAB_RIGHT_CLASS,
+            'fixed z-[201] rounded-full bg-[#000000] text-white shadow-lg',
+            panelOpen && 'ring-2 ring-white/30',
+            className
+          )}
+        >
+          {content}
+        </motion.button>
+      </HintTooltip>
     );
   }
 
   return (
-    <button
-      {...sharedProps}
-      className={cn(
-        'relative flex items-center justify-center rounded-2xl bb-transition h-11 w-11',
-        'hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15',
-        panelOpen && 'bg-black/5 dark:bg-white/10',
-        className
-      )}
-    >
-      {content}
-    </button>
+    <HintTooltip tip={bellTip} side="bottom">
+      <button
+        {...sharedProps}
+        className={cn(
+          'relative flex items-center justify-center rounded-2xl bb-transition h-11 w-11',
+          'hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15',
+          panelOpen && 'bg-black/5 dark:bg-white/10',
+          className
+        )}
+      >
+        {content}
+      </button>
+    </HintTooltip>
   );
 }

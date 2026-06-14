@@ -8,11 +8,12 @@ import {
 import {
   requestNotificationPermission,
   syncAppBadge,
+  canRegisterServiceWorker,
 } from '@/lib/pwa-notification-bridge';
 
 export default function PwaRegister() {
   useEffect(() => {
-    if (!('serviceWorker' in navigator) || window.location.protocol !== 'https:') return;
+    if (!canRegisterServiceWorker()) return;
 
   const syncBadgeFromStorage = () => {
     const stored = loadStoredNotifications();

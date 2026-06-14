@@ -1,13 +1,10 @@
 import ScheduleClient from './ScheduleClient';
 import { startOfWeek, addDays, format } from 'date-fns';
-import { createClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
 import { groupRegularHolidayRows } from '@/lib/regular-holidays';
 import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
-import { requireServiceRoleKey } from '@/lib/security/server-auth';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export default async function SchedulePage({
   params,
@@ -24,11 +21,7 @@ export default async function SchedulePage({
     redirect(`/${locale}`);
   }
 
-  const supabaseAdmin = createClient(supabaseUrl, requireServiceRoleKey(), {
-    global: {
-      fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' })
-    }
-  });
+  const supabaseAdmin = getSupabaseAdmin();
 
   const baseDate = weekParam ? new Date(weekParam) : new Date();
   const monday = startOfWeek(baseDate, { weekStartsOn: 1 });

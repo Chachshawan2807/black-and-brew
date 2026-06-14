@@ -11,7 +11,6 @@ import {
   TrendingUp,
   ShieldAlert,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { readCache, writeCache, isStale } from '@/lib/cache/client-cache';
 import {
   MARKET_INSIGHTS_CACHE_KEY_V2,
@@ -78,13 +77,7 @@ function BulletList({ bullets }: { bullets: InsightBullet[] }) {
   return (
     <div className="space-y-2.5">
       {bullets.map((b, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.06 }}
-          className="pl-3 border-l-2 border-border"
-        >
+        <div key={i} className="pl-3 border-l-2 border-border">
           <div className="flex items-start gap-2">
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 mt-0.5 ${CONFIDENCE_STYLE[b.confidence]}`}>
               {CONFIDENCE_LABEL[b.confidence]}
@@ -92,7 +85,7 @@ function BulletList({ bullets }: { bullets: InsightBullet[] }) {
             <p className="text-sm text-foreground/68 leading-relaxed">{b.text}</p>
           </div>
           {b.reason && <p className="text-[11px] text-muted-foreground mt-0.5 pl-1">เพราะ: {b.reason}</p>}
-        </motion.div>
+        </div>
       ))}
     </div>
   );
@@ -162,10 +155,10 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
     'inline-flex items-center justify-center gap-1.5 md:gap-2 flex-1 md:flex-none min-w-0 px-3 py-2.5 md:px-6 md:py-3 text-[13px] md:text-base bg-black text-white rounded-3xl hover:bg-black/80 bb-transition bb-shadow-sm active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed';
   const actionButtonRowClass = 'flex flex-row items-stretch gap-2 w-full md:w-auto md:gap-3';
 
-  type BodyView = 'initial' | 'loading' | 'error' | 'content';
+  type BodyView = 'initial' | 'firstLoading' | 'error' | 'content';
   let bodyView: BodyView = 'initial';
-  if (isLoading) {
-    bodyView = 'loading';
+  if (!hasLoaded && isLoading) {
+    bodyView = 'firstLoading';
   } else if (!hasLoaded) {
     bodyView = 'initial';
   } else if (!insights?.context) {
@@ -220,16 +213,20 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
+        {isLoading && hasLoaded && (
+          <div
+            className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-background/60"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <div className="w-10 h-10 border-4 border-black/5 border-t-black rounded-full animate-spin mb-3" />
+            <p className="text-sm text-muted-foreground">บรูกำลังวิเคราะห์ข้อมูลตลาดให้สักครู่นะคะ...</p>
+          </div>
+        )}
+
+        <div className="min-h-0">
           {bodyView === 'initial' && (
-            <motion.div
-              key="initial"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="bg-card rounded-3xl border border-border bb-shadow-sm p-8 md:p-16 text-center"
-            >
+            <div className="bg-card rounded-3xl border border-border bb-shadow-sm p-8 md:p-16 text-center">
               <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 md:mb-8 rounded-3xl bg-muted flex items-center justify-center">
                 <Lightbulb className="w-9 h-9 md:w-10 md:h-10 text-foreground" />
               </div>
@@ -247,44 +244,18 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
                   <span>เริ่มต้นวิเคราะห์</span>
                 </button>
               </div>
-            </motion.div>
+            </div>
           )}
 
-          {bodyView === 'loading' && (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="space-y-4"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bb-card p-5 h-24 animate-pulse bg-muted/50" />
-                ))}
-              </div>
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bb-card p-6 md:p-8">
-                  <div className="h-6 w-48 bg-muted rounded-lg animate-pulse mb-4" />
-                  <div className="space-y-3">
-                    <div className="h-4 w-full bg-muted rounded-lg animate-pulse" />
-                    <div className="h-4 w-3/4 bg-muted rounded-lg animate-pulse" />
-                  </div>
-                </div>
-              ))}
-            </motion.div>
+          {bodyView === 'firstLoading' && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-12 h-12 border-4 border-black/5 border-t-black rounded-full animate-spin mb-4" />
+              <p className="text-sm text-muted-foreground">บรูกำลังวิเคราะห์ข้อมูลตลาดให้สักครู่นะคะ...</p>
+            </div>
           )}
 
           {bodyView === 'error' && (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="bg-card border border-border rounded-3xl p-8 text-center"
-            >
+            <div className="bg-card border border-border rounded-3xl p-8 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
                 <span className="text-2xl">⚠️</span>
               </div>
@@ -296,18 +267,11 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
                   <span>ลองอีกครั้ง</span>
                 </button>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {bodyView === 'content' && insights?.context && (
-            <motion.div
-              key="content"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-5"
-            >
+            <div className="space-y-5">
               {insights.diff && <DiffBanner diff={insights.diff} />}
 
               <ContextPanel context={insights.context} />
@@ -375,9 +339,9 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
                 </p>
                 <MetricInfoTip id="data_freshness" />
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
       </div>
     </div>
     </TooltipProvider>

@@ -12,6 +12,7 @@ import { InventoryNotificationFAB } from '@/components/notifications/InventoryNo
 import { FloatingOverlayProvider } from '@/components/floating/FloatingOverlayContext';
 import { FabStackHideToggle } from '@/components/floating/FabStackHideToggle';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { AppTooltipProvider } from '@/components/providers/AppTooltipProvider';
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -25,6 +26,12 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "BLACK-AND-BREW — Scheduling System",
   description: "High-Availability & Real-time Scheduling System for BLACK-AND-BREW",
+  icons: {
+    icon: [
+      { url: '/images/favicon.png', type: 'image/png' },
+    ],
+    apple: '/images/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     title: "BLACKANDBREW",
@@ -55,6 +62,7 @@ export default async function RootLayout({
     <html lang={locale} className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground bb-transition">
         <ThemeProvider>
+        <AppTooltipProvider>
         <PwaRegister />
         <PinGateway>
           <NotificationProvider>
@@ -82,6 +90,7 @@ export default async function RootLayout({
           </FloatingOverlayProvider>
           </NotificationProvider>
         </PinGateway>
+        </AppTooltipProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -15,6 +15,7 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { mergeInventoryRealtimeUpdate, type InventoryStockFields } from '@/lib/inventory-stock';
+import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 
 export type InventoryRealtimeItem = InventoryStockFields & {
   id: string;
@@ -30,9 +31,6 @@ export type InventoryRealtimeItem = InventoryStockFields & {
 
 type InventoryChangePayload = RealtimePostgresChangesPayload<Record<string, unknown>>;
 type InventoryChangeCallback = (payload: InventoryChangePayload) => void;
-
-const INVENTORY_SELECT =
-  'id, name, stock, order_qty, order_point, target_stock, unit, source, sort_order, updated_at';
 
 interface InventoryRealtimeContextValue {
   items: InventoryRealtimeItem[];
@@ -79,21 +77,30 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
       return;
     }
 
-    const channel = supabase
-      .channel('inventory_items_shared')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'inventory_items' },
-        (payload) => {
-          const typedPayload = payload as InventoryChangePayload;
-          applyPayloadToItems(typedPayload);
-          notifySubscribers(typedPayload);
-        },
-      )
-      .subscribe();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    void (async () => {
+      await ensureSupabaseSession();
+      if (cancelled || typeof supabase.channel !== 'function') return;
+
+      channel = supabase
+        .channel('inventory_items_shared')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'inventory_items' },
+          (payload) => {
+            const typedPayload = payload as InventoryChangePayload;
+            applyPayloadToItems(typedPayload);
+            notifySubscribers(typedPayload);
+          },
+        )
+        .subscribe();
+    })();
 
     return () => {
-      if (typeof supabase.removeChannel === 'function') {
+      cancelled = true;
+      if (channel && typeof supabase.removeChannel === 'function') {
         supabase.removeChannel(channel);
       }
     };
@@ -105,7 +112,7 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
       await ensureSupabaseSession();
       const { data, error } = await supabase
         .from('inventory_items')
-        .select(INVENTORY_SELECT)
+        .select(INVENTORY_ITEM_SELECT)
         .order('sort_order', { ascending: true });
 
       if (error) {

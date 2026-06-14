@@ -4,7 +4,7 @@ import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 export const NOTIFICATION_STORAGE_KEY = 'bb-inventory-notifications';
 export const NOTIFICATION_PREFS_KEY = 'bb-notification-prefs-v2';
 export const MAX_STORED_NOTIFICATIONS = 50;
-export const BATCH_WINDOW_MS = 800;
+export const BATCH_WINDOW_MS = 350;
 
 export type NotificationPriority = 'normal' | 'high';
 

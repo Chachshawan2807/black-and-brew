@@ -11,6 +11,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations } from '@/app/actions/shift-actions';
@@ -241,14 +244,23 @@ const SortableEmployeeRow = React.memo(({
       )}
     >
       <div className="p-2 border-r border-border flex items-center gap-2 bg-card sticky left-0 z-20 text-foreground font-normal">
-        <div
-          {...attributes}
-          {...(isReadOnly ? {} : listeners)}
-          className={`p-3 min-h-[44px] min-w-[44px] rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-foreground/20' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
-          aria-label="ลากเพื่อเปลี่ยนลำดับ"
-        >
-          <GripVertical className="w-5 h-5" />
-        </div>
+        <Tooltip delayDuration={150}>
+          <TooltipTrigger asChild>
+            <div
+              {...attributes}
+              {...(isReadOnly ? {} : listeners)}
+              className={`p-3 min-h-[44px] min-w-[44px] rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-foreground/20' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
+              aria-label="ลากเพื่อเปลี่ยนลำดับ"
+            >
+              <GripVertical className="w-5 h-5" />
+            </div>
+          </TooltipTrigger>
+          <TooltipPrimitive.Portal>
+            <TooltipContent side="right" align="center" sideOffset={8}>
+              ลากเพื่อเปลี่ยนลำดับ
+            </TooltipContent>
+          </TooltipPrimitive.Portal>
+        </Tooltip>
 
         <div className="flex-1 py-1">
           {editingNameId === id ? (
@@ -270,14 +282,16 @@ const SortableEmployeeRow = React.memo(({
             </span>
           )}
         </div>
-        <button
-          onClick={() => onDeleteEmployee(id)}
-          disabled={isReadOnly}
-          className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-          title="ลบพนักงานถาวร"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <HintTooltip tip="ลบพนักงานถาวร">
+          <button
+            onClick={() => onDeleteEmployee(id)}
+            disabled={isReadOnly}
+            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            aria-label="ลบพนักงานถาวร"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </HintTooltip>
       </div>
 
       {weekDays.map(date => {
@@ -1214,7 +1228,7 @@ export default function ScheduleClient({
 
       <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
         <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm border border-border rounded-3xl overflow-hidden shadow-sm">
-          <div className="flex-1 overflow-x-auto scrollbar-thin overflow-y-auto pb-6">
+          <div className="flex-1 min-h-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll pb-6">
             <div id="blackandbrew-schedule-table" className="min-w-[900px] bg-card h-fit flex flex-col">
               <div className="grid grid-cols-8 border-b border-border bg-red-50/10 sticky top-0 z-[16]">
                 <div className="p-2.5 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal md:static md:bg-red-50/20">
@@ -1403,10 +1417,12 @@ export default function ScheduleClient({
 
       {showClearConfirm && (
         <div className="fixed inset-0 bg-[#000000]/20 backdrop-blur-sm bb-modal-backdrop z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground text-center space-y-4">
-            <button onClick={() => setShowClearConfirm(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10">
-              <X className="w-5 h-5" />
-            </button>
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground text-center space-y-4">
+            <HintTooltip tip="ปิด">
+              <button onClick={() => setShowClearConfirm(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
+                <X className="w-5 h-5" />
+              </button>
+            </HintTooltip>
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
               <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -1456,10 +1472,12 @@ export default function ScheduleClient({
           className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
-          <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin bg-card shadow-2xl bb-modal-panel md:max-w-5xl p-6 text-foreground flex flex-col md:flex-row">
-            <button onClick={() => setShowManagementModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-50">
-              <X className="w-5 h-5" />
-            </button>
+          <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto bb-smooth-scroll scrollbar-thin bg-card shadow-2xl bb-modal-panel md:max-w-5xl p-6 text-foreground flex flex-col md:flex-row">
+            <HintTooltip tip="ปิด">
+              <button onClick={() => setShowManagementModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-50" aria-label="ปิด">
+                <X className="w-5 h-5" />
+              </button>
+            </HintTooltip>
             <div className="w-full md:w-[340px] flex flex-col border-r border-border shrink-0">
               <div className="p-5 border-b border-border flex justify-between items-center bg-card management-form-container">
                 <div className="flex items-center gap-2">
@@ -1470,7 +1488,7 @@ export default function ScheduleClient({
                 </div>
               </div>
 
-              <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+              <div className="p-6 space-y-6 flex-1 min-h-0 overflow-y-auto bb-smooth-scroll">
                 {saveSuccess && (
                   <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
@@ -1603,14 +1621,14 @@ export default function ScheduleClient({
                   </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-5">
+              <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll p-5">
                 {mgmtHistory.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-foreground/20 space-y-2">
                     <CalendarDays className="w-8 h-8" />
                     <p className="text-sm font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
                   </div>
                 ) : (
-                  <div className="w-full overflow-x-auto h-full scrollbar-thin border border-border rounded-3xl pb-8">
+                  <div className="w-full overflow-x-auto bb-smooth-scroll h-full scrollbar-thin border border-border rounded-3xl pb-8">
                     <table className="w-max text-left border-collapse" style={{ tableLayout: 'fixed' }}>
                       <thead className="sticky top-0 z-10 shadow-sm">
                         <tr>
@@ -1647,21 +1665,25 @@ export default function ScheduleClient({
                             </td>
                             <td className="p-3 text-center bg-transparent">
                               <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  onClick={() => handleEditHistory(item)}
-                                  className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center"
-                                  title="แก้ไขประวัติ"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteHistory(item)}
-                                  disabled={confirmDeleteId === item.id}
-                                  className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center justify-center disabled:opacity-50"
-                                  title="ลบประวัติการจัดการ"
-                                >
-                                  {confirmDeleteId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                </button>
+                                <HintTooltip tip="แก้ไขประวัติ">
+                                  <button
+                                    onClick={() => handleEditHistory(item)}
+                                    className="p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all flex items-center justify-center"
+                                    aria-label="แก้ไขประวัติ"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </button>
+                                </HintTooltip>
+                                <HintTooltip tip="ลบประวัติการจัดการ">
+                                  <button
+                                    onClick={() => handleDeleteHistory(item)}
+                                    disabled={confirmDeleteId === item.id}
+                                    className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center justify-center disabled:opacity-50"
+                                    aria-label="ลบประวัติการจัดการ"
+                                  >
+                                    {confirmDeleteId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                  </button>
+                                </HintTooltip>
                               </div>
                             </td>
                           </tr>
@@ -1679,10 +1701,12 @@ export default function ScheduleClient({
       {showAddEmployeeModal && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
           <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowAddEmployeeModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border">
-            <button onClick={() => setShowAddEmployeeModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10">
-              <X className="w-5 h-5" />
-            </button>
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border">
+            <HintTooltip tip="ปิด">
+              <button onClick={() => setShowAddEmployeeModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
+                <X className="w-5 h-5" />
+              </button>
+            </HintTooltip>
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
             <h3 className="text-xl font-normal text-foreground mb-4 uppercase tracking-tight pr-10">เพิ่มพนักงานใหม่</h3>
             <div className="space-y-4">
@@ -1722,10 +1746,12 @@ export default function ScheduleClient({
       {showRegularHolidayModal && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
           <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowRegularHolidayModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border">
-            <button onClick={() => setShowRegularHolidayModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10">
-              <X className="w-5 h-5" />
-            </button>
+          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border">
+            <HintTooltip tip="ปิด">
+              <button onClick={() => setShowRegularHolidayModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
+                <X className="w-5 h-5" />
+              </button>
+            </HintTooltip>
             <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
             <h3 className="text-xl font-normal text-foreground mb-6 uppercase tracking-tight flex items-center gap-2 pr-10">
               <Calendar className="w-5 h-5 text-foreground/40" />

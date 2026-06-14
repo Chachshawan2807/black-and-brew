@@ -15,6 +15,8 @@ import {
   getModalContentKeyboardAwareStyle,
 } from '@/lib/keyboard-aware-panel-style';
 
+import { HintTooltip } from '@/components/ui/hint-tooltip';
+
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 
 
@@ -70,19 +72,19 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
     return (
 
-      <span
+      <HintTooltip tip="ปรับจำนวน">
+        <span
 
-        className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
+          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
 
-        title="ปรับจำนวน"
+          aria-label="ปรับจำนวน"
 
-        aria-label="ปรับจำนวน"
+        >
 
-      >
+          <SlidersHorizontal className="w-4.5 h-4.5" />
 
-        <SlidersHorizontal className="w-4.5 h-4.5" />
-
-      </span>
+        </span>
+      </HintTooltip>
 
     );
 
@@ -90,25 +92,27 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
   if (type === 'ADD') {
     return (
-      <span
-        className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
-        title="เพิ่มรายการ"
-        aria-label="เพิ่มรายการ"
-      >
-        <Plus className="w-4.5 h-4.5" />
-      </span>
+      <HintTooltip tip="เพิ่มรายการ">
+        <span
+          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
+          aria-label="เพิ่มรายการ"
+        >
+          <Plus className="w-4.5 h-4.5" />
+        </span>
+      </HintTooltip>
     );
   }
 
   if (type === 'DELETE') {
     return (
-      <span
-        className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]"
-        title="ลบรายการ"
-        aria-label="ลบรายการ"
-      >
-        <Trash2 className="w-4.5 h-4.5" />
-      </span>
+      <HintTooltip tip="ลบรายการ">
+        <span
+          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]"
+          aria-label="ลบรายการ"
+        >
+          <Trash2 className="w-4.5 h-4.5" />
+        </span>
+      </HintTooltip>
     );
   }
 
@@ -118,25 +122,25 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
   return (
 
-    <span
+    <HintTooltip tip={isIn ? 'รับเข้า' : 'นำออก'}>
+      <span
 
-      className={cn(
+        className={cn(
 
-        'w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border',
+          'w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border',
 
-        isIn ? 'bb-pastel-surface bg-[#d4edda] text-[#000000] border-[#c3e6cb]' : 'bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]',
+          isIn ? 'bb-pastel-surface bg-[#d4edda] text-[#000000] border-[#c3e6cb]' : 'bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]',
 
-      )}
+        )}
 
-      title={isIn ? 'รับเข้า' : 'นำออก'}
+        aria-label={isIn ? 'รับเข้า' : 'นำออก'}
 
-      aria-label={isIn ? 'รับเข้า' : 'นำออก'}
+      >
 
-    >
+        {isIn ? <PackagePlus className="w-4.5 h-4.5" /> : <PackageMinus className="w-4.5 h-4.5" />}
 
-      {isIn ? <PackagePlus className="w-4.5 h-4.5" /> : <PackageMinus className="w-4.5 h-4.5" />}
-
-    </span>
+      </span>
+    </HintTooltip>
 
   );
 
@@ -200,21 +204,23 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
       >
 
-        <button
+        <HintTooltip tip="ปิดประวัติ">
+          <button
 
-          type="button"
+            type="button"
 
-          onClick={onClose}
+            onClick={onClose}
 
-          className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-all active:scale-95 z-10"
+            className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-all active:scale-95 z-10"
 
-          aria-label="ปิดประวัติ"
+            aria-label="ปิดประวัติ"
 
-        >
+          >
 
-          <X className="w-6 h-6" />
+            <X className="w-6 h-6" />
 
-        </button>
+          </button>
+        </HintTooltip>
 
 
 
@@ -242,7 +248,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto overscroll-contain touch-pan-y px-4 py-4 md:px-6 md:py-4 bg-card scrollbar-thin">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto bb-smooth-scroll px-4 py-4 md:px-6 md:py-4 bg-card scrollbar-thin">
 
           <div className="inline-block w-fit max-w-full bg-background rounded-[2rem] border border-border shadow-sm">
 

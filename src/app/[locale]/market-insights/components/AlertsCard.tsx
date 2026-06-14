@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { AlertTriangle, PackageX, CloudRain, Flame } from 'lucide-react';
 import type { MarketAlert, AlertType } from '@/app/actions/market-insights-types';
 import MetricInfoTip from './MetricInfoTip';
@@ -45,11 +44,8 @@ export default function AlertsCard({ alerts }: { alerts: MarketAlert[] }) {
       {alerts.map((alert, i) => {
         const style = ALERT_STYLE[alert.type];
         return (
-          <motion.div
+          <div
             key={`${alert.type}-${i}`}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
             className={`flex items-start gap-2.5 rounded-xl border ${style.bg} px-3.5 py-3`}
           >
             <div className="p-2 bg-card/70 rounded-xl shrink-0">{style.icon}</div>
@@ -72,7 +68,7 @@ export default function AlertsCard({ alerts }: { alerts: MarketAlert[] }) {
                 </div>
               )}
             </div>
-          </motion.div>
+          </div>
         );
       })}
     </div>
