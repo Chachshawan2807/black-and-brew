@@ -2,16 +2,13 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { computeFieldChanges } from '@/lib/data-change-log';
-import {
-  computeAccuracyPct,
-  computeInOutTheoreticalStock,
-  type InOutLedgerRow,
-} from '@/lib/inventory-in-out-theoretical';
+import { isCountMatch } from '@/lib/inventory-count-accuracy';
+import { computeAccuracyPct } from '@/lib/inventory-in-out-theoretical';
+import { ensureServerSession } from '@/lib/security/server-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
@@ -23,9 +20,26 @@ type InventoryAuditOptions = {
   /** When true, in-app inventory notifications are skipped (e.g. stock-taking count page). */
   suppressNotification?: boolean;
   notificationContext?: 'inventory_count' | 'inventory';
+  /** Required for desktop/mobile stock notifications — only quick-action UI origins. */
+  notificationSource?: 'inventory_quick_action_bar' | 'inventory_quick_action_fab' | 'inventory_warehouse_grid';
 };
 
 type InventoryLifecycleType = 'ADD' | 'DELETE';
+
+/** SEC-AUTH-001 — Service Role reads require PIN or verified Supabase session. */
+async function requireAuthenticatedRead(): Promise<string | null> {
+  const auth = await ensureServerSession();
+  return auth.ok ? null : auth.error;
+}
+
+/** SEC-AUTH-001 — Mutations require valid session (incl. revocation) and writable PIN. */
+async function requireAuthenticatedMutation(): Promise<string | null> {
+  const auth = await ensureServerSession();
+  if (!auth.ok) return auth.error;
+  const writable = await assertWritableSession();
+  if (!writable.ok) return writable.error;
+  return null;
+}
 
 async function insertInventoryLifecycleTransaction(
   itemId: string | null,
@@ -60,17 +74,8 @@ export async function recordItemAddHistory(
   itemName?: string
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const authError = await requireAuthenticatedMutation();
+    if (authError) return { success: false, error: authError };
 
     const sanitizedStock = stock < 0 ? 0 : stock;
     await insertInventoryLifecycleTransaction(
@@ -104,6 +109,9 @@ function withAuditMetadata(
   if (options.notificationContext) {
     result.notificationContext = options.notificationContext;
   }
+  if (options.notificationSource) {
+    result.notificationSource = options.notificationSource;
+  }
   return result;
 }
 
@@ -123,17 +131,8 @@ export async function recordTransaction(
   auditOptions?: InventoryAuditOptions
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const authError = await requireAuthenticatedMutation();
+    if (authError) return { success: false, error: authError };
 
     const parsed = transactionSchema.safeParse({ productId, type, quantity, note });
     if (!parsed.success) {
@@ -244,18 +243,9 @@ export async function recordBulkInventoryTransactions(
   auditOptions?: InventoryAuditOptions,
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid', results: [] as BulkInventoryTransactionResult[] };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) {
-      return { success: false, error: writable.error, results: [] as BulkInventoryTransactionResult[] };
+    const authError = await requireAuthenticatedMutation();
+    if (authError) {
+      return { success: false, error: authError, results: [] as BulkInventoryTransactionResult[] };
     }
 
     const parsed = bulkTransactionsSchema.safeParse({ entries, note });
@@ -375,17 +365,8 @@ export async function updateInventoryStock(
   options?: InventoryStockUpdateOptions
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const authError = await requireAuthenticatedMutation();
+    if (authError) return { success: false, error: authError };
 
     const parsed = stockUpdateSchema.safeParse({ itemId, stock, note });
     if (!parsed.success) {
@@ -468,23 +449,13 @@ export async function updateInventoryStock(
  */
 export async function deleteInventoryItem(itemId: string, auditOptions?: InventoryAuditOptions) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
     /**
      * SECURITY LAYER: Treat AI/Client Code as Untrusted.
      * Verify current session and user ownership before executing delete.
      * This prevents Broken Object Level Authorization (BOLA).
      */
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const authError = await requireAuthenticatedMutation();
+    if (authError) return { success: false, error: authError };
 
     const { data: itemBeforeDelete } = await supabase
       .from('inventory_items')
@@ -546,17 +517,8 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
   if (itemIds.length === 0) return { success: true, deleted: 0 };
 
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid', deleted: 0 };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error, deleted: 0 };
+    const authError = await requireAuthenticatedMutation();
+    if (authError) return { success: false, error: authError, deleted: 0 };
 
     const { data: itemsBeforeDelete } = await supabase
       .from('inventory_items')
@@ -619,6 +581,11 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
 // Strategy: Two-step fetch (transactions -> item names -> merge in code)
 export async function fetchTransactionHistory(itemId?: string, limit: number = 50) {
   noStore(); // Phase 1: Force disable cache — always fetch fresh from DB
+
+  const authError = await requireAuthenticatedRead();
+  if (authError) {
+    return { success: false, error: authError, data: [] };
+  }
 
   try {
     // Step 1: Fetch raw transaction data (no join — bulletproof approach)
@@ -695,6 +662,11 @@ export async function fetchTransactionHistory(itemId?: string, limit: number = 5
 // === FETCH FREQUENT ITEMS ===
 // Uses inventory_item_id — VERIFIED column name in actual DB
 export async function fetchFrequentItems() {
+  const authError = await requireAuthenticatedRead();
+  if (authError) {
+    return { success: false, error: authError, data: [] };
+  }
+
   try {
     const { data, error } = await supabase
       .from('inventory_transactions')
@@ -749,25 +721,33 @@ export async function fetchFrequentItems() {
 // === FETCH COMPREHENSIVE INVENTORY DATA ===
 export async function fetchComprehensiveInventoryData() {
   noStore();
+
+  const authError = await requireAuthenticatedRead();
+  if (authError) {
+    return { success: false, error: authError, data: null };
+  }
+
   try {
-    // Step 1: Fetch all inventory items
-    const { data: inventoryItems, error: itemsError } = await supabase
-      .from('inventory_items')
-      .select('id, name, stock, order_point, target_stock, order_qty, unit, source, sort_order, updated_at')
-      .order('name');
+    const [itemsResult, txResult] = await Promise.all([
+      supabase
+        .from('inventory_items')
+        .select('id, name, stock, order_point, target_stock, order_qty, unit, source, sort_order, updated_at')
+        .order('name'),
+      supabase
+        .from('inventory_transactions')
+        .select('id, inventory_item_id, type, quantity, note, created_at')
+        .order('created_at', { ascending: false })
+        .limit(200),
+    ]);
+
+    const { data: inventoryItems, error: itemsError } = itemsResult;
+    const { data: inventoryTransactions, error: txError } = txResult;
 
     if (itemsError) {
       console.error('[fetchComprehensiveInventoryData] Items Error:', itemsError);
-      return { 
+      return {
         success: false, error: itemsError.message, data: null };
     }
-
-    // Step 2: Fetch recent inventory transactions
-    const { data: inventoryTransactions, error: txError } = await supabase
-      .from('inventory_transactions')
-      .select('id, inventory_item_id, type, quantity, note, created_at')
-      .order('created_at', { ascending: false })
-      .limit(200);
 
     if (txError) {
       console.error('[fetchComprehensiveInventoryData] Transactions Error:', txError);
@@ -856,7 +836,7 @@ export type ItemCountAccuracyStats = {
   totalChecks: number;
   matchChecks: number;
   accuracyPct: number | null;
-  lastTheoreticalQty: number | null;
+  lastSystemStockQty: number | null;
   lastMatched: boolean | null;
 };
 
@@ -869,138 +849,47 @@ export type CountAccuracyStatsResult = {
   };
 };
 
-async function fetchItemLedgerRows(itemId: string): Promise<InOutLedgerRow[]> {
-  const { data, error } = await supabase
-    .from('inventory_transactions')
-    .select('type, quantity, created_at, balance_after')
-    .eq('inventory_item_id', itemId)
-    .in('type', ['ADD', 'IN', 'OUT', 'ADJUST', 'DELETE'])
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    console.error('[fetchItemLedgerRows] Supabase Error:', error.message, error.details);
-    throw error;
-  }
-
-  return (data ?? []) as InOutLedgerRow[];
-}
-
-// === IN/OUT THEORETICAL STOCK (count accuracy baseline) ===
-export async function fetchInOutTheoreticalQtyMap(itemIds: string[]) {
-  noStore();
-
-  try {
-    const uniqueIds = [...new Set(itemIds.filter(Boolean))];
-    if (uniqueIds.length === 0) {
-      return { success: true, data: {} as Record<string, number> };
-    }
-
-    const { data, error } = await supabase
-      .from('inventory_transactions')
-      .select('inventory_item_id, type, quantity, created_at, balance_after')
-      .in('inventory_item_id', uniqueIds)
-      .in('type', ['ADD', 'IN', 'OUT', 'ADJUST', 'DELETE'])
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('[fetchInOutTheoreticalQtyMap] Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message, data: {} as Record<string, number> };
-    }
-
-    const rowsByItem: Record<string, InOutLedgerRow[]> = {};
-    for (const id of uniqueIds) {
-      rowsByItem[id] = [];
-    }
-
-    for (const row of data ?? []) {
-      const itemId = row.inventory_item_id as string | null;
-      if (!itemId || !rowsByItem[itemId]) continue;
-      rowsByItem[itemId].push({
-        type: row.type as InOutLedgerRow['type'],
-        quantity: Number(row.quantity) || 0,
-        created_at: row.created_at as string,
-        balance_after:
-          row.balance_after === null || row.balance_after === undefined
-            ? undefined
-            : Number(row.balance_after),
-      });
-    }
-
-    const result: Record<string, number> = {};
-    for (const [itemId, rows] of Object.entries(rowsByItem)) {
-      result[itemId] = computeInOutTheoreticalStock(rows);
-    }
-
-    return { success: true, data: result };
-  } catch (error: any) {
-    console.error('[fetchInOutTheoreticalQtyMap] Unexpected Error:', error.message || error);
-    return {
-      success: false,
-      error: error.message || 'เกิดข้อผิดพลาดในการคำนวณสต็อกจากบันทึกรับเข้า/นำออก',
-      data: {} as Record<string, number>,
-    };
-  }
-}
-
-export async function computeInOutTheoreticalStockForItem(itemId: string) {
-  noStore();
-
-  try {
-    const parsed = z.string().uuid().safeParse(itemId);
-    if (!parsed.success) {
-      return { success: false, error: 'Invalid item id', theoreticalQty: 0 };
-    }
-
-    const rows = await fetchItemLedgerRows(itemId);
-    const theoreticalQty = computeInOutTheoreticalStock(rows);
-    return { success: true, theoreticalQty };
-  } catch (error: any) {
-    console.error('[computeInOutTheoreticalStockForItem] Unexpected Error:', error.message || error);
-    return {
-      success: false,
-      error: error.message || 'เกิดข้อผิดพลาดในการคำนวณสต็อกจากบันทึกรับเข้า/นำออก',
-      theoreticalQty: 0,
-    };
-  }
-}
-
 const countVerificationSchema = z.object({
   itemId: z.string().uuid(),
   countedQty: z.number().min(0),
+  systemStockQty: z.number().min(0),
 });
 
 // === RECORD COUNT VERIFICATION ===
+/** Records accuracy only from the stock-taking count page — not manual warehouse overrides. */
 export async function recordCountVerification(itemId: string, countedQty: number) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+    const authError = await requireAuthenticatedMutation();
+    if (authError) return { success: false, error: authError };
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
+    const { data: itemRow, error: itemError } = await supabase
+      .from('inventory_items')
+      .select('stock')
+      .eq('id', itemId)
+      .maybeSingle();
+
+    if (itemError) {
+      console.error('[recordCountVerification] Supabase Error:', itemError.message, itemError.details);
+      return { success: false, error: itemError.message };
     }
 
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const baselineStock = Number(itemRow?.stock ?? 0);
 
-    const parsed = countVerificationSchema.safeParse({ itemId, countedQty });
+    const parsed = countVerificationSchema.safeParse({
+      itemId,
+      countedQty,
+      systemStockQty: baselineStock,
+    });
     if (!parsed.success) {
       return { success: false, error: 'Invalid count verification payload' };
     }
 
-    const theoreticalResult = await computeInOutTheoreticalStockForItem(itemId);
-    if (!theoreticalResult.success) {
-      return { success: false, error: theoreticalResult.error };
-    }
-
-    const theoreticalQty = theoreticalResult.theoreticalQty;
-    const matched = countedQty === theoreticalQty;
+    const matched = isCountMatch(countedQty, baselineStock);
 
     const { error } = await supabase.from('inventory_count_verifications').insert({
       inventory_item_id: itemId,
       counted_qty: countedQty,
-      in_out_theoretical_qty: theoreticalQty,
+      system_stock_qty: baselineStock,
       matched,
     });
 
@@ -1012,7 +901,7 @@ export async function recordCountVerification(itemId: string, countedQty: number
     return {
       success: true,
       matched,
-      theoreticalQty,
+      systemStockQty: baselineStock,
       countedQty,
     };
   } catch (error: any) {
@@ -1032,10 +921,15 @@ export async function fetchCountAccuracyStats(): Promise<{
 }> {
   noStore();
 
+  const authError = await requireAuthenticatedRead();
+  if (authError) {
+    return { success: false, error: authError };
+  }
+
   try {
     const { data: rows, error } = await supabase
       .from('inventory_count_verifications')
-      .select('inventory_item_id, matched, in_out_theoretical_qty, counted_at')
+      .select('inventory_item_id, matched, system_stock_qty, counted_at')
       .order('counted_at', { ascending: false });
 
     if (error) {
@@ -1054,7 +948,7 @@ export async function fetchCountAccuracyStats(): Promise<{
           totalChecks: 0,
           matchChecks: 0,
           accuracyPct: null,
-          lastTheoreticalQty: null,
+          lastSystemStockQty: null,
           lastMatched: null,
         };
       }
@@ -1063,8 +957,8 @@ export async function fetchCountAccuracyStats(): Promise<{
       stats.totalChecks += 1;
       if (row.matched) stats.matchChecks += 1;
 
-      if (stats.lastTheoreticalQty === null) {
-        stats.lastTheoreticalQty = Number(row.in_out_theoretical_qty);
+      if (stats.lastSystemStockQty === null) {
+        stats.lastSystemStockQty = Number(row.system_stock_qty);
         stats.lastMatched = Boolean(row.matched);
       }
     }

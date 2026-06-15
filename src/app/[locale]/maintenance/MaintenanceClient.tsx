@@ -339,7 +339,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
               </button>
             </div>
           ) : (
-            <div className="w-full overflow-x-auto bb-smooth-scroll scrollbar-thin pb-6 box-border bg-card rounded-3xl border border-border bb-shadow-sm">
+            <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin pb-6 box-border bg-card rounded-3xl border border-border bb-shadow-sm">
               <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '1100px' }}>
                 <thead>
                   <tr className="border-b border-border bg-muted/40">

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { computeOrderQty, computeItemsToOrder } from '@/lib/inventory-stock';
+import { computeOrderQty, computeItemsToOrder, isItemNeedingReorder } from '@/lib/inventory-stock';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 import fs from 'fs';
 import path from 'path';
@@ -50,8 +50,22 @@ describe('AI Inventory Analysis Rules', () => {
     expect(TABLE_MAX_LIMITS.inventory_items).toBe(1000);
   });
 
+  test('excludes items at order point when target stock is already met (PO modal parity)', () => {
+    const atPointButTargetMet = {
+      id: '2',
+      name: 'Oat milk',
+      stock: 10,
+      order_point: 12,
+      target_stock: 10,
+      unit: 'กล่อง',
+    };
+    expect(isItemNeedingReorder(10, 12, 10)).toBe(false);
+    expect(computeItemsToOrder([atPointButTargetMet])).toHaveLength(0);
+  });
+
   test('documents low-stock evaluation with inclusive threshold and target-stock guard', () => {
     const rulesJson = JSON.stringify(EXECUTIVE_RULES);
-    expect(rulesJson).toContain('stock < order_point');
+    expect(rulesJson).toContain('stock <= order_point');
+    expect(rulesJson).toContain('target_stock > stock');
   });
 });

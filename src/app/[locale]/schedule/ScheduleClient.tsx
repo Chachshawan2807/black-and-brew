@@ -188,6 +188,10 @@ function ColumnHeader({ col, onResize, onResizeEnd }: {
   );
 }
 
+function hasManagementIndicator(metadata?: Shift['metadata']): boolean {
+  return Boolean(metadata?.is_management || metadata?.remark);
+}
+
 // --- Sub-component: SortableEmployeeRow ---
 interface SortableEmployeeRowProps {
   id: string;
@@ -243,7 +247,7 @@ const SortableEmployeeRow = React.memo(({
         isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-card ring-1 ring-border rounded-3xl cursor-grabbing"
       )}
     >
-      <div className="p-2 border-r border-border flex items-center gap-2 bg-card sticky left-0 z-20 text-foreground font-normal">
+      <div className="p-2 border-r border-border flex items-center gap-2 bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
         <Tooltip delayDuration={150}>
           <TooltipTrigger asChild>
             <div
@@ -305,16 +309,21 @@ const SortableEmployeeRow = React.memo(({
             key={date}
             onClick={(e) => !isReadOnly && onCellClick(profile.id, date, shift, e.clientX, e.clientY)}
             className={`p-1 border-r last:border-0 border-border min-h-[52px] group/cell relative ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-            title={shift?.metadata?.remark || ''}
+            title={shift?.metadata?.remark || (shift?.metadata?.is_management ? 'ลา / เปลี่ยนกะ' : '')}
           >
             {shift && (shift.status && shift.metadata?.location) ? (
-              <div
-                className={`h-full w-full rounded-lg border p-1.5 flex flex-col justify-center items-center text-center transition-all duration-200 group-hover/cell:scale-[0.97] group-hover/cell:shadow-md shadow-sm ${type?.className || 'bb-pastel-surface bg-card border-border text-[#000000]'}`}
-                style={type?.style}
-              >
-                <span className="text-[14.5px] font-normal leading-none tracking-tight">{type?.label || shift.metadata?.location}</span>
-                {shift.metadata?.remark && (
-                  <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+              <div className="relative h-full w-full">
+                <div
+                  className={`h-full w-full rounded-lg border p-1.5 flex flex-col justify-center items-center text-center transition-all duration-200 group-hover/cell:scale-[0.97] group-hover/cell:shadow-md shadow-sm ${type?.className || 'bb-pastel-surface bg-card border-border text-[#000000]'}`}
+                  style={type?.style}
+                >
+                  <span className="text-[14.5px] font-normal leading-none tracking-tight">{type?.label || shift.metadata?.location}</span>
+                </div>
+                {hasManagementIndicator(shift.metadata) && (
+                  <div
+                    className="pointer-events-none absolute top-2.5 right-2.5 z-10 h-1.5 w-1.5 rounded-full bg-blue-400/60"
+                    aria-hidden
+                  />
                 )}
               </div>
             ) : (
@@ -869,8 +878,14 @@ export default function ScheduleClient({
 
       const start = new Date(managementForm.startDate);
       const end = new Date(managementForm.endDate);
-      const newShifts = [];
-      const datesToDelete = [];
+      const newShifts: Array<{
+        employee_id: string;
+        start_time: string;
+        end_time: string;
+        status: 'scheduled' | 'on_leave';
+        metadata: { location: string; is_management: boolean; remark: string };
+      }> = [];
+      const datesToDelete: string[] = [];
 
       for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
         const dateStr = format(d, 'yyyy-MM-dd');
@@ -899,9 +914,20 @@ export default function ScheduleClient({
       }
 
       if (newShifts.length > 0) {
-        const { error: insError } = await supabase.from('shifts')
-          .insert(newShifts);
+        const { data: insertedShifts, error: insError } = await supabase.from('shifts')
+          .insert(newShifts)
+          .select('id, employee_id, start_time, end_time, status, metadata');
         if (insError) throw insError;
+
+        const affectedDates = new Set(datesToDelete.map((d) => d.split('T')[0]));
+        setShifts((prev) => {
+          const filtered = prev.filter((s) => {
+            const sDate = s.start_time.split('T')[0];
+            const empIdMatch = s.employee_id === managementForm.employeeId || (s as any).profile_id === managementForm.employeeId;
+            return !(empIdMatch && affectedDates.has(sDate));
+          });
+          return [...filtered, ...(insertedShifts || newShifts)];
+        });
       }
 
       setSaveSuccess(true);
@@ -1228,10 +1254,10 @@ export default function ScheduleClient({
 
       <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
         <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm border border-border rounded-3xl overflow-hidden shadow-sm">
-          <div className="flex-1 min-h-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll pb-6">
+          <div className="flex-1 min-h-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-6">
             <div id="blackandbrew-schedule-table" className="min-w-[900px] bg-card h-fit flex flex-col">
               <div className="grid grid-cols-8 border-b border-border bg-red-50/10 sticky top-0 z-[16]">
-                <div className="p-2.5 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal md:static md:bg-red-50/20">
+                <div className="p-2.5 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal md:static md:bg-red-50/20 bb-sticky-scroll-cell">
                   <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
                 </div>
                 {weekDays.map(date => {
@@ -1263,7 +1289,7 @@ export default function ScheduleClient({
               </div>
 
               <div className="grid grid-cols-8 bg-[#000000]/5 border-b border-border shrink-0 sticky top-[38px] z-[15]">
-                <div className="p-2.5 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal">
+                <div className="p-2.5 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
                   <span className="text-[13px] text-foreground font-normal uppercase tracking-widest">พนักงาน</span>
                 </div>
                 {weekDays.map((date) => {
@@ -1469,17 +1495,22 @@ export default function ScheduleClient({
 
       {showManagementModal && (
         <div
-          className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[70] flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
-          <div className="relative rounded-3xl w-full max-h-[90vh] overflow-y-auto bb-smooth-scroll scrollbar-thin bg-card shadow-2xl bb-modal-panel md:max-w-5xl p-6 text-foreground flex flex-col md:flex-row">
+          <div
+            className="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90vh] min-h-0 overflow-hidden bg-card shadow-2xl bb-modal-panel md:max-w-5xl text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <HintTooltip tip="ปิด">
               <button onClick={() => setShowManagementModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-50" aria-label="ปิด">
                 <X className="w-5 h-5" />
               </button>
             </HintTooltip>
-            <div className="w-full md:w-[340px] flex flex-col border-r border-border shrink-0">
-              <div className="p-5 border-b border-border flex justify-between items-center bg-card management-form-container">
+
+            <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll flex flex-col md:flex-row md:overflow-hidden">
+            <div className="w-full md:w-[340px] flex flex-col border-b md:border-b-0 md:border-r border-border shrink-0 md:min-h-0">
+              <div className="p-5 border-b border-border flex justify-between items-center bg-card management-form-container shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-emerald-50 rounded-3xl">
                     <UserCog className="w-5 h-5 text-emerald-600" />
@@ -1488,7 +1519,7 @@ export default function ScheduleClient({
                 </div>
               </div>
 
-              <div className="p-6 space-y-6 flex-1 min-h-0 overflow-y-auto bb-smooth-scroll">
+              <div className="p-6 space-y-6 md:flex-1 md:min-h-0 md:overflow-y-auto md:bb-smooth-scroll">
                 {saveSuccess && (
                   <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
@@ -1573,7 +1604,7 @@ export default function ScheduleClient({
                 </div>
               </div>
 
-              <div className="p-4 bg-card border-t border-border flex gap-3">
+              <div className="p-4 bg-card border-t border-border flex gap-3 shrink-0">
                 <button
                   onClick={editingHistoryId ? cancelEditHistory : () => setShowManagementModal(false)}
                   className="flex-1 h-11 md:h-auto md:py-3 rounded-3xl bg-transparent border border-border text-foreground text-base md:text-[12px] font-normal hover:bg-muted/30 transition-all active:scale-95 shadow-sm cursor-pointer antialiased"
@@ -1591,15 +1622,15 @@ export default function ScheduleClient({
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col bg-card/30 min-w-0">
-              <div className="p-5 border-b border-border flex justify-between items-center bg-card pr-14">
+            <div className="flex-1 flex flex-col bg-card/30 min-w-0 md:min-h-0">
+              <div className="p-5 border-b border-border flex justify-between items-center bg-card pr-14 shrink-0">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="w-5 h-5 text-muted-foreground" />
                   <h3 className="text-lg font-normal text-foreground tracking-tight">ประวัติ</h3>
                 </div>
               </div>
 
-              <div className="p-4 border-b border-border bg-card">
+              <div className="p-4 border-b border-border bg-card shrink-0">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 max-w-sm">
                     <div className="flex-1 w-full">
                       <ClickableDatePicker
@@ -1621,14 +1652,14 @@ export default function ScheduleClient({
                   </div>
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll p-5">
+              <div className="p-5 md:flex-1 md:min-h-0 md:overflow-y-auto md:bb-smooth-scroll">
                 {mgmtHistory.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-foreground/20 space-y-2">
+                  <div className="min-h-[12rem] flex flex-col items-center justify-center text-foreground/20 space-y-2">
                     <CalendarDays className="w-8 h-8" />
                     <p className="text-sm font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
                   </div>
                 ) : (
-                  <div className="w-full overflow-x-auto bb-smooth-scroll h-full scrollbar-thin border border-border rounded-3xl pb-8">
+                  <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin border border-border rounded-3xl pb-8">
                     <table className="w-max text-left border-collapse" style={{ tableLayout: 'fixed' }}>
                       <thead className="sticky top-0 z-10 shadow-sm">
                         <tr>
@@ -1693,6 +1724,7 @@ export default function ScheduleClient({
                   </div>
                 )}
               </div>
+            </div>
             </div>
           </div>
         </div>
@@ -1887,12 +1919,8 @@ export default function ScheduleClient({
       {toastAlert && (
         <FloatingAlert
           message={toastAlert.message}
+          anchor={{ x: toastAlert.x, y: toastAlert.y }}
           onDismiss={() => setToastAlert(null)}
-          style={{
-            top: `${toastAlert.y - 45}px`,
-            left: `${toastAlert.x}px`,
-            transform: 'translateX(-50%)',
-          }}
         />
       )}
     </div>

@@ -227,6 +227,10 @@ function buildSmartMemory(messages: any[]): any[] {
 
     content = content ?? '';
 
+    if (m.role === 'user') {
+      content = sanitizePromptInput(content);
+    }
+
     // ถ้า message ยาวเกิน budget ให้ตัดและบอก AI ว่าตัดแล้ว
     // เพื่อให้ AI รู้ว่าข้อมูลอาจไม่ครบ แทนที่จะรับข้อมูลผิด
     if (content.length > MAX_CHARS_PER_MESSAGE) {
@@ -310,9 +314,10 @@ function buildSystemPrompt(
 
 เมื่อสรุปสินค้าสต็อกต่ำ ให้:
 1. ดึงข้อมูลจาก inventory_items ทั้งหมด (ไม่ระบุ filters และไม่ระบุ limit)
-2. วนตรวจทุกแถวใน memory: ถ้า stock < order_point = low stock
-3. แยกรายการตาม source เพื่อให้รู้ว่าต้องสั่งซื้อจากที่ไหน
-4. สรุปจำนวนรายการทั้งหมดพร้อม breakdown ตามช่องทาง
+2. ใช้ low_stock_count จาก Tool output เป็นจำนวนรายการที่ต้องสั่ง (ตรงกับหน้าต่าง รายการสั่งซื้อ)
+3. เงื่อนไข low stock: stock <= order_point และ target_stock > stock
+4. แยกรายการตาม source เพื่อให้รู้ว่าต้องสั่งซื้อจากที่ไหน
+5. สรุปจำนวนรายการทั้งหมดพร้อม breakdown ตามช่องทาง
    ตัวอย่าง: "พบสินค้าที่ต้องสั่งเติม 27 รายการ แบ่งเป็น Makro 7 รายการ, Line 3 รายการ..."
 
 [Business Executive Rules]
@@ -363,7 +368,8 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
 [กฎการวิเคราะห์สต็อกและการซ่อมบำรุง]
 1. ดึงตาราง "inventory_items" หรือ "service_records" ทั้งหมดมาก่อน
    (ห้ามคาดหวัง filter เชิงเปรียบเทียบจาก DB เช่น stock < order_point)
-2. วิเคราะห์ใน memory: ถ้า stock < order_point → จัดเป็น "low stock"
+2. วิเคราะห์ใน memory: ถ้า stock <= order_point และ target_stock > stock → จัดเป็น "low stock"
+   → ใช้ low_stock_count จาก Tool เป็นจำนวนรวม (ตรงกับหน้าต่าง รายการสั่งซื้อ)
    → แนะนำ suggested_order = order_qty (ถ้า > 0) หรือ target_stock - stock
 3. เรียงลำดับจากความเร่งด่วนสูงสุด (stock ใกล้ 0 มาก่อน)
 4. [CRITICAL] เรียก readTable เพียง 1 ครั้งต่อตาราง ห้ามวนซ้ำ
@@ -566,16 +572,6 @@ export async function POST(req: Request) {
 
     const result = await agent.stream({
       messages: coreMessages,
-      onStepFinish: process.env.NODE_ENV === 'development'
-        ? ({ toolCalls, toolResults }) => {
-            if (toolCalls && toolCalls.length > 0) {
-              console.debug('[BRU_AI] Tool step completed:', {
-                calls: toolCalls.map(tc => tc.toolName),
-                resultCount: toolResults?.length,
-              });
-            }
-          }
-        : undefined,
     });
 
     return result.toUIMessageStreamResponse();

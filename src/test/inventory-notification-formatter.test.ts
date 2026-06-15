@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import {
   detectLowStockCrossing,
+  formatBatchedNotificationFromRows,
   formatDataChangeLogDisplay,
   formatFieldChange,
   formatInventoryNotification,
@@ -244,6 +245,38 @@ describe('formatInventoryNotification', () => {
     const n = formatInventoryNotification(makeRow(), 'th', 4);
     expect(n.title).toContain('4 การเปลี่ยนแปลง');
     expect(n.batchedCount).toBe(4);
+  });
+
+  test('summarizes bulk quick-action IN rows in one notification', () => {
+    const rows = [
+      makeRow({
+        entity_label: 'ถ้วย A',
+        metadata: {
+          operation: 'record_transaction',
+          type: 'IN',
+          quantity: 2,
+          bulk: true,
+          notificationSource: 'inventory_quick_action_bar',
+        },
+      }),
+      makeRow({
+        id: 'log-2',
+        entity_id: 'item-2',
+        entity_label: 'ถ้วย B',
+        metadata: {
+          operation: 'record_transaction',
+          type: 'IN',
+          quantity: 5,
+          bulk: true,
+          notificationSource: 'inventory_quick_action_bar',
+        },
+      }),
+    ];
+    const n = formatBatchedNotificationFromRows(rows, 'th');
+    expect(n.title).toBe('รับเข้า: 2 รายการ');
+    expect(n.summary).toContain('ถ้วย A +2');
+    expect(n.summary).toContain('ถ้วย B +5');
+    expect(n.batchedCount).toBe(2);
   });
 });
 

@@ -27,7 +27,7 @@ export const EXECUTIVE_RULES = {
     in_memory_comparison_policy:
       'เมื่อคำถามต้องใช้การเปรียบเทียบ/อสมการ/คำนวณ (เช่น stock < order_point หรือการประเมินงานซ่อมใกล้ครบกำหนด) ให้ดึงข้อมูลด้วย readTable ตาม preset ก่อน แล้วประมวลผล filter/sort/calculate ในหน่วยความจำของ AI เอง ห้ามคาดหวังให้ readTable filter แบบ <, >, <=, >= ที่ฝั่งฐานข้อมูล',
     inventory_low_stock_evaluation:
-      'ขั้นตอนบังคับ: (1) อ่าน inventory_items ตาม preset (2) วนตรวจทุกแถว (3) ถ้า stock < order_point ให้จัดเป็น low stock (4) suggested order quantity ใช้ order_qty ถ้ามีค่ามากกว่า 0 ไม่เช่นนั้นใช้ target_stock - stock (ขั้นต่ำไม่ต่ำกว่า 0)',
+      'ขั้นตอนบังคับ: (1) อ่าน inventory_items ตาม preset (2) วนตรวจทุกแถว (3) ถ้า stock <= order_point และ target_stock > stock ให้จัดเป็น low stock — ใช้ low_stock_count จาก Tool เป็นจำนวนรายการที่ต้องสั่ง (ตรงกับหน้าต่าง รายการสั่งซื้อ) (4) suggested order quantity ใช้ order_qty ถ้ามีค่ามากกว่า 0 ไม่เช่นนั้นใช้ target_stock - stock (ขั้นต่ำไม่ต่ำกว่า 0)',
     service_records_comparison_evaluation:
       'สำหรับ service_records ที่ต้องเทียบความถี่/วันครบกำหนด ให้คำนวณจากข้อมูลในแถวทั้งหมดแบบ in-memory หลังดึงจาก readTable แล้วค่อยสรุปลำดับความเร่งด่วน',
   },
@@ -43,7 +43,7 @@ export const EXECUTIVE_RULES = {
   },
   thai_response_templates: {
     low_stock_summary: {
-      trigger: 'เมื่อตรวจพบสินค้าที่ stock < order_point จากการประเมิน in-memory',
+      trigger: 'เมื่อตรวจพบสินค้าที่ stock <= order_point และ target_stock > stock จากการประเมิน in-memory',
       header: '📦 สรุปรายการสินค้าที่ต้องสั่งเติม',
       format_rules: [
         'ใช้รูปแบบ Hyper-Concise (สั้น กระชับ ตรงประเด็น) ห้ามเกริ่นนำหรือลงท้ายด้วยประโยคห่วงใย',
@@ -57,7 +57,7 @@ export const EXECUTIVE_RULES = {
       example_format:
         '• ชื่อสินค้า — สต็อก: X หน่วย | จุดสั่งซื้อ: Y | แนะนำสั่ง: Z หน่วย',
       footer: 'ปิดท้ายด้วยจำนวนรวมของรายการที่ต้องสั่ง เช่น "รวม N รายการที่ต้องเติมสต็อก"',
-      empty_case: 'ถ้าไม่มีสินค้าใดต่ำกว่า order_point ให้ตอบว่า "สต็อกทุกรายการอยู่ในระดับปกติ ไม่มีรายการใดต้องสั่งเติมในขณะนี้"',
+      empty_case: 'ถ้าไม่มีสินค้าใดที่ตรงเงื่อนไข stock <= order_point และ target_stock > stock ให้ตอบว่า "สต็อกทุกรายการอยู่ในระดับปกติ ไม่มีรายการใดต้องสั่งเติมในขณะนี้"',
     },
     upcoming_maintenance_summary: {
       trigger: 'เมื่อผู้ใช้ถามเกี่ยวกับสถานะซ่อมบำรุงหรือความเร่งด่วนของอุปกรณ์',

@@ -23,7 +23,7 @@
 | --- | :--- | --- |
 | **Owner / Manager** | 1-2 คน | Full Access (APP_PIN) |
 | **Staff** | 9 คน | Dashboard, Schedule; Read-only PIN available |
-| **Read-only** | — | PIN `111222` — ดูอย่างเดียว |
+| Read-only | — | `APP_READ_ONLY_PIN` — ดูอย่างเดียว (dev fallback `111222`) |
 
 พนักงาน: นิต้า, ปิ่น, มุก, เม, มีนา, ชัช, หนูดี, ฟิว, ล่า
 
@@ -60,7 +60,7 @@
   - DnD row reordering (`@dnd-kit`)
   - Stock single source of truth (RPC `set_inventory_stock`)
   - Quick Entry IN/OUT + bulk quick action (`recordBulkInventoryTransactions`)
-  - Transaction History + count accuracy verification (IN/OUT theoretical baseline)
+  - Transaction History + count accuracy verification (system stock baseline via `system_stock_qty`)
   - Purchase Order modal with channel tabs + PNG export
   - Real-time cross-device sync via `InventoryRealtimeContext`
 

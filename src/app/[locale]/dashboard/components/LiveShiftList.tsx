@@ -11,7 +11,7 @@ import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter } from 'next/navigation';
 import { format, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
-import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { SortableDragHandle } from '@/components/ui/sortable-drag-handle';
 import {
   DndContext,
   closestCorners,
@@ -55,6 +55,7 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
   } = useSortable({ id });
@@ -75,7 +76,6 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         whileHover={isReadOnly ? undefined : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: "easeOut" } }}
-        whileTap={isReadOnly ? undefined : { scale: 0.98 }}
         transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
         className={`p-6 flex flex-col gap-5 bg-card select-none border border-border bb-shadow-sm bb-transition rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:bg-muted/30 hover:bb-shadow-md'}`}
       >
@@ -85,20 +85,20 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
               {data.profile.full_name}
             </h3>
           </div>
-          {/* Drag handle — listeners scoped here only so scroll is never hijacked */}
-          <HintTooltip tip="ลากเพื่อเปลี่ยนลำดับ">
-            <div
-              className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-colors touch-none ${isReadOnly ? 'opacity-30 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
-              {...attributes}
-              {...(isReadOnly ? {} : listeners)}
-              aria-label="ลากเพื่อเปลี่ยนลำดับ"
-            >
-              <GripVertical className="w-5 h-5" />
-            </div>
-          </HintTooltip>
+          <SortableDragHandle
+            attributes={attributes}
+            listeners={listeners}
+            setActivatorNodeRef={setActivatorNodeRef}
+            disabled={isReadOnly}
+            iconClassName="w-5 h-5"
+          />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <motion.div
+          whileTap={isReadOnly ? undefined : { scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
+          className="grid grid-cols-3 gap-3"
+        >
           <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
             <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
@@ -111,7 +111,7 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
             <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
     </article>
   );

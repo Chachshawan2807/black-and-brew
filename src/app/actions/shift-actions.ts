@@ -2,44 +2,48 @@
 
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
+import { ensureServerSession } from '@/lib/security/server-auth';
 
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
+import { requireServiceRoleKey } from '@/lib/security/server-auth';
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!; // บังคับใช้ Service Role เท่านั้นเพื่อความปลอดภัยของข้อมูล
-const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey);
+const supabaseAdmin = createClient(supabaseUrl, requireServiceRoleKey());
+
+const shiftIdSchema = z.string().uuid();
+
+async function ensureShiftMutationAuthorized(): Promise<string | null> {
+  const auth = await ensureServerSession();
+  if (!auth.ok) return auth.error;
+  const writable = await assertWritableSession();
+  if (!writable.ok) return writable.error;
+  return null;
+}
 
 export async function deleteShift(id: string) {
-  if (!id) return { success: false, error: 'Missing shift ID' };
+  const parsedId = shiftIdSchema.safeParse(id);
+  if (!parsedId.success) return { success: false, error: 'Invalid shift ID' };
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+    const authError = await ensureShiftMutationAuthorized();
+    if (authError) return { success: false, error: authError };
 
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
-
+    const shiftId = parsedId.data;
     const { data: shiftBefore } = await supabaseAdmin
       .from('shifts')
       .select('id, employee_id, start_time, status, metadata')
-      .eq('id', id)
+      .eq('id', shiftId)
       .maybeSingle();
 
-    const { error } = await supabaseAdmin.from('shifts').delete().eq('id', id);
+    const { error } = await supabaseAdmin.from('shifts').delete().eq('id', shiftId);
     if (error) {
       await recordDataChange({
         action: 'DELETE',
         module: 'schedule',
         entityType: 'shift',
-        entityId: id,
+        entityId: shiftId,
         oldValue: shiftBefore ?? null,
         status: 'failed',
         errorMessage: error.message,
@@ -51,7 +55,7 @@ export async function deleteShift(id: string) {
       action: 'DELETE',
       module: 'schedule',
       entityType: 'shift',
-      entityId: id,
+      entityId: shiftId,
       oldValue: shiftBefore ?? null,
     });
 
@@ -66,17 +70,8 @@ export async function deleteShift(id: string) {
 export async function batchUpdateProfileNames(updates: { id: string; full_name: string }[]) {
   if (!updates || updates.length === 0) return { success: true };
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const authError = await ensureShiftMutationAuthorized();
+    if (authError) return { success: false, error: authError };
 
     const results = await Promise.all(
       updates.map((u) =>
@@ -113,17 +108,8 @@ export async function batchUpdateProfileNames(updates: { id: string; full_name: 
 export async function updateStaffOrder(orderedIds: string[]) {
   if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'Empty order list' };
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const authError = await ensureShiftMutationAuthorized();
+    if (authError) return { success: false, error: authError };
 
     const updates = orderedIds.map((id, index) =>
       supabaseAdmin.from('profiles').update({ schedule_order: index, display_order: index }).eq('id', id)
@@ -159,17 +145,8 @@ export async function updateStaffOrder(orderedIds: string[]) {
 export async function updateDashboardOrder(orderedIds: string[]) {
   if (!orderedIds || orderedIds.length === 0) return { success: false, error: 'Empty order list' };
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const authError = await ensureShiftMutationAuthorized();
+    if (authError) return { success: false, error: authError };
 
     const updates = orderedIds.map((id, index) =>
       supabaseAdmin.from('profiles').update({ dashboard_order: index }).eq('id', id)
@@ -208,17 +185,8 @@ const shiftSchema = z.object({
 export async function saveShift(payload: any) {
   noStore();
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get('sb-access-token')?.value;
-  const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (!pinVerified && (!user || authError)) {
-    return { success: false, error: 'Unauthorized: Session missing or invalid' };
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) return { success: false, error: writable.error };
+  const authError = await ensureShiftMutationAuthorized();
+  if (authError) return { success: false, error: authError };
 
   const parsed = shiftSchema.safeParse(payload);
   if (!parsed.success) {
@@ -288,17 +256,8 @@ export async function saveShift(payload: any) {
 export async function deleteManagementHistoryRange(employeeId: string, startDate: string, endDate: string) {
   if (!employeeId || !startDate || !endDate) return { success: false, error: 'Missing parameters' };
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const authError = await ensureShiftMutationAuthorized();
+    if (authError) return { success: false, error: authError };
 
     const { error } = await supabaseAdmin
       .from('shifts')
@@ -380,15 +339,9 @@ export async function fetchRosterData(startDate: string, endDate: string) {
  */
 export async function copyWeeklyShifts(sourceStartDate: string, targetStartDate: string) {
   noStore();
-  const cookieStore = await cookies();
-  const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
 
-  if (!pinVerified) {
-    return { success: false, error: 'Unauthorized: โปรดเข้าสู่ระบบด้วย PIN' };
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) return { success: false, error: writable.error };
+  const authError = await ensureShiftMutationAuthorized();
+  if (authError) return { success: false, error: authError };
 
   try {
     const sStart = sourceStartDate.split('T')[0];
@@ -485,17 +438,8 @@ export async function renameShiftLocations(renames: { oldValue: string; newValue
   if (valid.length === 0) return { success: true, updated: 0 };
 
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-    const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (!pinVerified && (!user || authError)) {
-      return { success: false, error: 'Unauthorized: Session missing or invalid' };
-    }
-
-    const writable = await assertWritableSession();
-    if (!writable.ok) return { success: false, error: writable.error };
+    const authError = await ensureShiftMutationAuthorized();
+    if (authError) return { success: false, error: authError };
 
     let totalUpdated = 0;
 

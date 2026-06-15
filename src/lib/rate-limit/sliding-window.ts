@@ -38,4 +38,26 @@ export class SlidingWindowRateLimiter {
       resetAt: timestamps[0] + this.windowMs,
     };
   }
+
+  /** Inspect limit state without recording a new attempt. */
+  peek(key: string): { allowed: boolean; remaining: number; resetAt: number } {
+    const now = Date.now();
+    const windowStart = now - this.windowMs;
+    const timestamps = (this.store.get(key) ?? []).filter((t) => t > windowStart);
+
+    if (timestamps.length >= this.maxRequests) {
+      return { allowed: false, remaining: 0, resetAt: timestamps[0] + this.windowMs };
+    }
+
+    return {
+      allowed: true,
+      remaining: this.maxRequests - timestamps.length,
+      resetAt: timestamps.length > 0 ? timestamps[0] + this.windowMs : now + this.windowMs,
+    };
+  }
+
+  /** Clear all attempts for a key (e.g. after successful PIN). */
+  clear(key: string): void {
+    this.store.delete(key);
+  }
 }

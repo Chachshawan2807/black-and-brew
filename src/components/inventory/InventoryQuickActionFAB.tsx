@@ -19,6 +19,7 @@ import {
   fetchFrequentItems,
 } from '@/app/actions/inventory-actions';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
+import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import {
   FAB_BASE_CLASS,
   FAB_BOTTOM_QUICK_ACTION_CLASS,
@@ -76,6 +77,7 @@ export default function InventoryQuickActionFAB() {
     isReadOnly,
     showHistoryModal,
     onHistoryRefresh: setTransactionHistory,
+    notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_FAB,
     onAfterSave: () => {
       void loadFrequentItems();
     },

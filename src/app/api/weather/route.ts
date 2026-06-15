@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
+import { ensureServerSession } from '@/lib/security/server-auth';
 
 const STORE_LAT = process.env.NEXT_PUBLIC_STORE_LAT || '13.929692';
 const STORE_LON = process.env.NEXT_PUBLIC_STORE_LON || '100.716933';
 const CACHE_SECONDS = 1800;
-const CACHE_CONTROL = `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=600`;
+const CACHE_CONTROL = `private, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=600`;
 
 const FALLBACK_PAYLOAD = {
   current: null,
@@ -18,6 +19,11 @@ const FALLBACK_PAYLOAD = {
 };
 
 export async function GET() {
+  const auth = await ensureServerSession();
+  if (!auth.ok) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const apiKey = process.env.OPENWEATHER_API_KEY;
     if (!apiKey) {

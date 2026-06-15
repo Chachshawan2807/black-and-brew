@@ -24,7 +24,7 @@ SELECT
     order_point,
     target_stock,
     CASE 
-        WHEN stock <= order_point THEN 'LOW'
+        WHEN stock <= order_point AND target_stock > stock THEN 'LOW'
         WHEN stock <= (order_point * 1.5) THEN 'WARNING'
         ELSE 'OK'
     END as status

@@ -1060,7 +1060,7 @@ export default function SalesClient({
                     <p className="text-xs text-muted-foreground mt-0.5">รายละเอียดของ 10 เมนูยอดนิยม</p>
                   </div>
                 </div>
-                <div className="overflow-x-auto bb-smooth-scroll bg-card border border-border rounded-xl">
+                <div className="overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y bg-card border border-border rounded-xl">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-black/10">
@@ -1291,7 +1291,7 @@ export default function SalesClient({
                     </button>
                   </div>
                 </div>
-                <div className="overflow-x-auto bb-smooth-scroll">
+                <div className="overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-black/10">

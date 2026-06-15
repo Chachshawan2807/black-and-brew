@@ -5,10 +5,10 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
-import { cookies } from 'next/headers';
 import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { computeFieldChanges } from '@/lib/data-change-log';
+import { ensureServerSession } from '@/lib/security/server-auth';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_FILES = 24;
@@ -28,15 +28,8 @@ const getSupabaseAdmin = () => {
 };
 
 async function checkAuth(): Promise<{ success: false; error: string } | { success: true }> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('sb-access-token')?.value;
-  const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return { success: false, error: 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้' };
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (!pinVerified && (!user || authError)) {
-    return { success: false, error: 'Unauthorized: Session missing or invalid' };
-  }
+  const auth = await ensureServerSession();
+  if (!auth.ok) return { success: false, error: auth.error };
   return { success: true };
 }
 
@@ -444,6 +437,9 @@ export interface SalesMetrics {
 
 // Function to fetch sales data for history with pagination
 export async function fetchSalesHistory(page = 1, pageSize = 10) {
+  const auth = await ensureServerSession();
+  if (!auth.ok) return null;
+
   const supabase = getSupabaseAdmin();
   
   if (!supabase) return null;
@@ -631,6 +627,11 @@ async function saveProductCategory(productName: string, category: string, isAiGe
  * Get all product categories
  */
 export async function getAllProductCategories() {
+  const auth = await ensureServerSession();
+  if (!auth.ok) {
+    return { success: false, error: auth.error, categories: [] };
+  }
+
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return { success: false, error: 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้', categories: [] };
@@ -896,6 +897,9 @@ export async function autoCategorizeAllProducts() {
  * Enhanced getSalesMetrics that uses product categories
  */
 export async function getSalesMetrics(startDateStr?: string, endDateStr?: string): Promise<SalesMetrics | null> {
+  const auth = await ensureServerSession();
+  if (!auth.ok) return null;
+
   const supabase = getSupabaseAdmin();
   
   if (!supabase) return null;

@@ -19,12 +19,12 @@ export async function isSessionFingerprintRevoked(fingerprint: string): Promise<
 
     if (error) {
       console.error('Supabase Error:', error.message, error.details);
-      return false;
+      return true;
     }
     return Boolean(data);
   } catch (error) {
     console.error('[isSessionFingerprintRevoked] Exception:', error);
-    return false;
+    return true;
   }
 }
 

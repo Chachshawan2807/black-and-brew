@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
 import type { FormattedDailyShifts } from '@/lib/schedule/format-daily-shifts';
+import { isItemNeedingReorder } from '@/lib/inventory-stock';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AI DATA GATEWAY (AI-GATEWAY-P3)
@@ -113,7 +114,13 @@ export async function fetchInventorySummary(): Promise<StoreStatus> {
     throw error;
   }
 
-  return (data ?? {}) as StoreStatus;
+  const status = (data ?? {}) as StoreStatus;
+  const summary = status.inventory_summary ?? [];
+  const lowStock = summary.filter((item) =>
+    isItemNeedingReorder(item.stock, item.order_point, item.target_stock)
+  );
+
+  return { ...status, low_stock_items: lowStock };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

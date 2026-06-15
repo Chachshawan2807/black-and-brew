@@ -74,10 +74,9 @@ npm run dev
 | Variable | Scope | Purpose |
 | --- | :--- | --- |
 | `APP_PIN` | SECRET | PIN 6 หลัก — เข้าใช้งานเต็มสิทธิ์ (`auth.ts`) |
+| `APP_READ_ONLY_PIN` | SECRET | PIN 6 หลัก — โหมดดูอย่างเดียว (`resolveReadOnlyPin()`); บังคับใน production; dev fallback `111222` |
 | `NEXT_PUBLIC_STORE_LAT` | PUBLIC | พิกัดร้าน (default `13.9312`) — chat, insights, cron |
 | `NEXT_PUBLIC_STORE_LON` | PUBLIC | พิกัดร้าน (default `100.6756`) |
-
-Read-only PIN `111222` ถูก hardcode ใน `src/lib/auth-constants.ts` — **ไม่ใช่ env var**
 
 ### AI & External APIs
 
@@ -105,8 +104,8 @@ Read-only PIN `111222` ถูก hardcode ใน `src/lib/auth-constants.ts` —
 ## Authentication
 
 - **PIN Gateway** (`PinGateway.tsx`): ป้อน PIN 6 หลักก่อนเข้าแอป
-- **Full access:** `APP_PIN` (env) — แก้ไขข้อมูลได้ทุกโมดูล
-- **Read-only:** PIN `111222` (hardcoded ใน `src/lib/auth-constants.ts`) — ดูอย่างเดียว
+- Full access: `APP_PIN` (env) — แก้ไขข้อมูลได้ทุกโมดูล
+- Read-only: `APP_READ_ONLY_PIN` (env) — ดูอย่างเดียว; dev fallback `111222` via `src/lib/security/read-only-pin.ts`
 - **Dual storage:** `sessionStorage` (client gate) + httpOnly cookies (`bb_auth_pin_verified`, `bb_auth_read_only`, `bb_session_fp`)
 - **Session audit:** `login_history` table — บันทึก login/logout พร้อม device fingerprint
 - **Remote revocation:** `revoked_sessions` table — บังคับออกจากระบบต่ออุปกรณ์จาก Settings

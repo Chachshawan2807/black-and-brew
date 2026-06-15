@@ -12,6 +12,32 @@ describe('AI Chat Thai Typography', () => {
     expect(source).toContain('thai-chat-readable');
   });
 
+  test('keeps AI chat FAB visible when open and lifts panel above it', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../components/ai/AIChatOverlay.tsx'),
+      'utf-8'
+    );
+    const layoutCode = fs.readFileSync(
+      path.resolve(__dirname, '../lib/floating-action-layout.ts'),
+      'utf-8'
+    );
+
+    expect(source).not.toMatch(/hideAiChatButton\s*=\s*[^;]*\|\|\s*isOpen/);
+    expect(source).toContain('FAB_PANEL_CLEAR_OF_AI_CLASS');
+    expect(layoutCode).toContain('FAB_PANEL_CLEAR_OF_AI_CLASS');
+    expect(layoutCode).toContain('max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom,0px))]');
+  });
+
+  test('chat window shell uses morning latte cream via bg-background token', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../components/ai/AIChatOverlay.tsx'),
+      'utf-8'
+    );
+
+    expect(source).toContain('bg-background rounded-3xl');
+    expect(source).toContain('bg-background min-w-0');
+  });
+
   test('mobile chat window uses inset anchors without w-full to prevent right-edge overflow', () => {
     const source = fs.readFileSync(
       path.resolve(__dirname, '../components/ai/AIChatOverlay.tsx'),

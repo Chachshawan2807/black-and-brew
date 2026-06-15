@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Loader2, GripVertical, Undo2, Redo2, Trash2, X, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { Plus, Loader2, Undo2, Redo2, Trash2, X, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -12,6 +12,7 @@ import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import { computeItemsToOrder, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from '@/components/inventory/InventoryQuickActionBar';
@@ -40,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { SortableDragHandle } from '@/components/ui/sortable-drag-handle';
 import {
   type InventoryItem,
   type ColumnDef,
@@ -213,7 +215,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
   handleFocus: () => void;
   totalItems: number;
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition: dndTransition, isDragging } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition: dndTransition, isDragging } = useSortable({ id: item.id });
 
   const stock = Number(item.stock) || 0;
   const orderPoint = Number(item.order_point) || 0;
@@ -264,16 +266,11 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
           />
         </div>
         {/* Grip Handle */}
-        <HintTooltip tip="ลากเพื่อเปลี่ยนลำดับ">
-          <div
-            className="cursor-grab active:cursor-grabbing text-foreground/20 hover:text-foreground/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
-            {...attributes}
-            {...listeners}
-            aria-label="ลากเพื่อเปลี่ยนลำดับ"
-          >
-            <GripVertical className="w-4 h-4" />
-          </div>
-        </HintTooltip>
+        <SortableDragHandle
+          attributes={attributes}
+          listeners={listeners}
+          setActivatorNodeRef={setActivatorNodeRef}
+        />
       </div>
 
       {/* Card Body: Stats Grid */}
@@ -406,7 +403,7 @@ const MobileSortableRow = React.memo(({
   columns: ColumnDef[];
   getStockColorClass: (stock: number, targetStock: number) => string;
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -433,17 +430,12 @@ const MobileSortableRow = React.memo(({
       {/* Card Header: Item Index, Item Name (Editable), Grip Handle, Delete Button */}
       <div className="flex items-center justify-between gap-2 border-b border-border pb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {/* Grip Handle */}
-          <HintTooltip tip="ลากเพื่อเปลี่ยนลำดับ">
-            <div
-              className="cursor-grab active:cursor-grabbing text-foreground/20 hover:text-foreground/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[44px] flex items-center justify-center"
-              {...attributes}
-              {...listeners}
-              aria-label="ลากเพื่อเปลี่ยนลำดับ"
-            >
-              <GripVertical className="w-4 h-4" />
-            </div>
-          </HintTooltip>
+          <SortableDragHandle
+            attributes={attributes}
+            listeners={listeners}
+            setActivatorNodeRef={setActivatorNodeRef}
+            className="text-foreground/20 hover:text-foreground/50"
+          />
           <EditableSortIndex
             id={item.id}
             displayIndex={index + 1}
@@ -855,6 +847,7 @@ export default function InventoryClient({
     isReadOnly,
     showHistoryModal,
     onHistoryRefresh: setTransactionHistory,
+    notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_BAR,
     onBeforeSave: () => setSavingState('saving'),
     onAfterSave: () => {
       setSavingState('synced');
@@ -1298,6 +1291,7 @@ export default function InventoryClient({
       if (field === 'stock') {
         const result = await updateInventoryStock(id, sanitizedValue as number, 'Warehouse edit', {
           clientSessionId: getClientSessionId(),
+          notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
         });
         if (!result.success) throw new Error(result.error);
         handleUpdateField(id, 'stock', result.newStock ?? sanitizedValue);

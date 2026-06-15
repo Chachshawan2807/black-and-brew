@@ -23,6 +23,8 @@ export function createBatchAccumulator(flush: BatchFlushHandler, windowMs = BATC
   function add(row: DataChangeLogRow) {
     const key = row.actor_label;
     const existing = pending.get(key);
+    const isBulk = row.metadata?.bulk === true;
+    const initialDelay = isBulk ? windowMs : 0;
 
     if (existing) {
       existing.rows.push(row);
@@ -34,7 +36,7 @@ export function createBatchAccumulator(flush: BatchFlushHandler, windowMs = BATC
     const batch: PendingBatch = {
       actorLabel: key,
       rows: [row],
-      timer: setTimeout(() => flushBatch(key), 0),
+      timer: setTimeout(() => flushBatch(key), initialDelay),
     };
     pending.set(key, batch);
   }

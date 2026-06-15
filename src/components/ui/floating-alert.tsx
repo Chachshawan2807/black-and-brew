@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toastSlide } from '@/lib/motion-presets';
+import { getAnchoredFloatingPosition } from '@/lib/floating-position';
 
 type FloatingAlertProps = {
   message: string;
@@ -13,6 +15,8 @@ type FloatingAlertProps = {
   className?: string;
   style?: React.CSSProperties;
   icon?: React.ReactNode;
+  /** Viewport coordinates (e.g. click clientX/clientY) — positions alert above anchor, clamped to screen. */
+  anchor?: { x: number; y: number };
 };
 
 export function FloatingAlert({
@@ -22,28 +26,71 @@ export function FloatingAlert({
   className,
   style,
   icon,
+  anchor,
 }: FloatingAlertProps) {
   const [visible, setVisible] = useState(true);
+  const alertRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updatePosition = useCallback(() => {
+    if (!anchor || !alertRef.current) return;
+    const { width, height } = alertRef.current.getBoundingClientRect();
+    if (width === 0 || height === 0) return;
+    setPosition(getAnchoredFloatingPosition(anchor.x, anchor.y, width, height));
+  }, [anchor]);
+
+  useLayoutEffect(() => {
+    updatePosition();
+  }, [updatePosition, message]);
+
+  useEffect(() => {
+    if (!anchor) return;
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    window.visualViewport?.addEventListener('resize', updatePosition);
+    window.visualViewport?.addEventListener('scroll', updatePosition);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.visualViewport?.removeEventListener('resize', updatePosition);
+      window.visualViewport?.removeEventListener('scroll', updatePosition);
+    };
+  }, [anchor, updatePosition]);
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(false), duration);
     return () => clearTimeout(timer);
   }, [duration, message]);
 
-  return (
+  const resolvedStyle: React.CSSProperties = anchor
+    ? {
+        ...(position
+          ? { top: position.top, left: position.left }
+          : { top: anchor.y, left: anchor.x, visibility: 'hidden' as const }),
+      }
+    : (style ?? {});
+
+  const alert = (
     <AnimatePresence onExitComplete={onDismiss}>
       {visible && (
         <motion.div
+          ref={alertRef}
           initial={toastSlide.initial}
           animate={toastSlide.animate}
           exit={toastSlide.exit}
           transition={toastSlide.transition}
           className={cn('fixed z-[200] pointer-events-none', className)}
-          style={style}
+          style={resolvedStyle}
         >
-          <div className="bg-card border border-border bb-shadow-md rounded-3xl py-2.5 px-5 flex items-center gap-3">
-            {icon ?? <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />}
-            <p className="text-[13px] font-normal text-foreground tracking-tight whitespace-nowrap">
+          <div className="bg-card border border-border bb-shadow-md rounded-3xl py-2.5 px-5 flex items-center gap-3 max-w-[min(calc(100vw-24px),28rem)]">
+            {icon ?? <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse shrink-0" />}
+            <p className="text-[13px] font-normal text-foreground tracking-tight text-pretty">
               {message}
             </p>
           </div>
@@ -51,6 +98,12 @@ export function FloatingAlert({
       )}
     </AnimatePresence>
   );
+
+  if (anchor && mounted && typeof document !== 'undefined') {
+    return createPortal(alert, document.body);
+  }
+
+  return alert;
 }
 
 type FloatingToastProps = {

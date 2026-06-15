@@ -8,10 +8,10 @@ import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { isOwnChange, getClientSessionId } from '@/lib/client-session';
 import { createBatchAccumulator } from '@/lib/inventory-notification-batching';
 import {
-  formatBatchedNotification,
+  formatBatchedNotificationFromRows,
   formatInventoryNotification,
 } from '@/lib/inventory-notification-formatter';
-import { isSuppressedInventoryNotification } from '@/lib/inventory-notification-filter';
+import { isEligibleInventoryNotification } from '@/lib/inventory-notification-filter';
 import {
   loadNotificationPreferences,
   shouldNotifyForAction,
@@ -153,8 +153,7 @@ export function useInventoryNotifications() {
       const loc = localeRef.current;
 
       const eligible = rows.filter((row) => {
-        if (row.module !== 'inventory' || row.status !== 'success') return false;
-        if (isSuppressedInventoryNotification(row.metadata)) return false;
+        if (!isEligibleInventoryNotification(row)) return false;
         if (!shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) return false;
         if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;
         return true;
@@ -162,11 +161,10 @@ export function useInventoryNotifications() {
 
       if (eligible.length === 0) return;
 
-      const latest = eligible[eligible.length - 1];
       const notification =
         eligible.length > 1
-          ? formatBatchedNotification(latest, eligible.length, loc)
-          : formatInventoryNotification(latest, loc);
+          ? formatBatchedNotificationFromRows(eligible, loc)
+          : formatInventoryNotification(eligible[eligible.length - 1], loc);
 
       pushNotification(notification);
     },

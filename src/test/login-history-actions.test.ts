@@ -18,12 +18,22 @@ vi.mock('next/headers', () => ({
   })),
 }));
 
+vi.mock('@/lib/session-revocation', () => ({
+  isSessionFingerprintRevoked: vi.fn().mockResolvedValue(false),
+}));
+
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
     from: vi.fn(() => ({
       insert: mockInsert,
       select: mockSelect,
     })),
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: null },
+        error: { message: 'Invalid token' },
+      }),
+    },
   })),
 }));
 
@@ -43,11 +53,30 @@ describe('recordLoginEvent', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
     mockInsert.mockResolvedValue({ error: null });
   });
 
+  test('blocks forged login_success without verified session', async () => {
+    mockGet.mockReturnValue(undefined);
+
+    await recordLoginEvent({
+      eventType: 'login_success',
+      status: 'success',
+      device: sampleDevice,
+      accessLevel: 'full',
+    });
+
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
   test('inserts login_success with parsed device fields and client IP', async () => {
+    mockGet.mockImplementation((name: string) => {
+      if (name === 'bb_auth_pin_verified') return { value: 'true' };
+      return undefined;
+    });
+
     await recordLoginEvent({
       eventType: 'login_success',
       status: 'success',
@@ -76,8 +105,12 @@ describe('fetchLoginHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
-    mockGet.mockReturnValue({ value: 'true' });
+    mockGet.mockImplementation((name: string) => {
+      if (name === 'bb_auth_pin_verified') return { value: 'true' };
+      return undefined;
+    });
     mockLimit.mockResolvedValue({ data: [], error: null });
     mockOrder.mockReturnValue({ limit: mockLimit });
     mockSelect.mockReturnValue({ order: mockOrder });

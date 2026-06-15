@@ -4,7 +4,6 @@ import { cookies } from 'next/headers';
 import {
   AUTH_SESSION_MAX_AGE_SEC,
   FORCE_LOGOUT_DENY_MSG,
-  READ_ONLY_PIN,
   READ_ONLY_DENY_MSG,
   SESSION_FP_COOKIE,
 } from '@/lib/auth-constants';
@@ -15,6 +14,14 @@ import {
   isSessionFingerprintRevoked,
   revokeSessionFingerprints,
 } from '@/lib/session-revocation';
+import {
+  clearPinAttempts,
+  formatPinLockoutMessage,
+  getPinLockoutStatus,
+  recordPinFailure,
+} from '@/lib/security/pin-rate-limit';
+import { resolveClientIp } from '@/lib/security/request-ip';
+import { resolveReadOnlyPin } from '@/lib/security/read-only-pin';
 
 const getCookieOpts = () => ({
   httpOnly: true,
@@ -27,14 +34,26 @@ const getCookieOpts = () => ({
 async function assertMasterPin(
   pin: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const clientIp = await resolveClientIp();
+  const lockout = getPinLockoutStatus(clientIp);
+  if (!lockout.allowed) {
+    return { ok: false, error: formatPinLockoutMessage(lockout.resetAt) };
+  }
+
   const systemPin = process.env.APP_PIN;
   if (!systemPin) {
     console.error('[AUTH_ACTION] APP_PIN environment variable is not defined.');
     return { ok: false, error: 'System configuration error' };
   }
   if (pin !== systemPin) {
+    const failure = recordPinFailure(clientIp);
+    if (!failure.allowed) {
+      return { ok: false, error: formatPinLockoutMessage(failure.resetAt) };
+    }
     return { ok: false, error: FORCE_LOGOUT_DENY_MSG };
   }
+
+  clearPinAttempts(clientIp);
   return { ok: true };
 }
 
@@ -84,7 +103,13 @@ export async function verifyPin(
   pin: string,
   device?: ClientDevicePayload | null
 ): Promise<{ success: boolean; error?: string; isReadOnly?: boolean }> {
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  const clientIp = await resolveClientIp();
+  const lockout = getPinLockoutStatus(clientIp);
+  if (!lockout.allowed) {
+    return { success: false, error: formatPinLockoutMessage(lockout.resetAt) };
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 1500));
 
   const systemPin = process.env.APP_PIN;
   if (!systemPin) {
@@ -92,9 +117,11 @@ export async function verifyPin(
     return { success: false, error: 'System configuration error' };
   }
 
+  const readOnlyPin = resolveReadOnlyPin();
   const cookieStore = await cookies();
 
-  if (pin === READ_ONLY_PIN) {
+  if (readOnlyPin && pin === readOnlyPin) {
+    clearPinAttempts(clientIp);
     if (device?.sessionFingerprint) {
       await clearSessionRevocation(device.sessionFingerprint);
     }
@@ -109,6 +136,7 @@ export async function verifyPin(
   }
 
   if (pin === systemPin) {
+    clearPinAttempts(clientIp);
     if (device?.sessionFingerprint) {
       await clearSessionRevocation(device.sessionFingerprint);
     }
@@ -122,12 +150,17 @@ export async function verifyPin(
     return { success: true, isReadOnly: false };
   }
 
+  const failure = recordPinFailure(clientIp);
   await recordLoginEvent({
     eventType: 'login_failure',
     status: 'failure',
     device,
     failureReason: 'Invalid PIN',
   });
+
+  if (!failure.allowed) {
+    return { success: false, error: formatPinLockoutMessage(failure.resetAt) };
+  }
 
   return { success: false, error: 'รหัส PIN ไม่ถูกต้อง' };
 }

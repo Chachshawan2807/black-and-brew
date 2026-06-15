@@ -709,7 +709,7 @@ export function InventoryQuickActionBar({
       {frequentItems.length > 0 && (
         <div
           className={cn(
-            'flex items-center gap-2 mt-6 pt-3 border-t border-border overflow-x-auto bb-smooth-scroll pb-1 scrollbar-hide',
+            'flex items-center gap-2 mt-6 pt-3 border-t border-border overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-1 scrollbar-hide',
             isReadOnly && 'pointer-events-none opacity-60',
           )}
         >

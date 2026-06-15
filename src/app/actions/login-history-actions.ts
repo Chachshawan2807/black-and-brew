@@ -1,160 +1,410 @@
 'use server';
 
+
+
 import { createClient } from '@supabase/supabase-js';
+
 import { cookies, headers } from 'next/headers';
+
+import { z } from 'zod';
+
 import { parseUserAgent } from '@/lib/parse-user-agent';
+
 import type { ClientDevicePayload } from '@/lib/login-history-types';
+
 import { SESSION_FP_COOKIE } from '@/lib/auth-constants';
+
 import { computeActiveLoginSessions, type ActiveLoginSession } from '@/lib/login-session-status';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
+
+
+
+const clientDeviceSchema = z
+
+  .object({
+
+    userAgent: z.string().max(2000),
+
+    screenWidth: z.number().int().min(0).max(10000),
+
+    screenHeight: z.number().int().min(0).max(10000),
+
+    language: z.string().max(50),
+
+    timezone: z.string().max(100),
+
+    sessionFingerprint: z.string().max(200).optional(),
+
+  })
+
+  .nullable()
+
+  .optional();
+
+
+
+const loginEventSchema = z.object({
+
+  eventType: z.enum(['login_success', 'login_failure', 'logout', 'lockout']),
+
+  status: z.enum(['success', 'failure', 'blocked']),
+
+  device: clientDeviceSchema,
+
+  accessLevel: z.enum(['full', 'read_only']).nullable().optional(),
+
+  failureReason: z.string().max(500).nullable().optional(),
+
+});
+
+
+
+function getSupabaseAdmin() {
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl) {
+
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
+
+  }
+
+  return createClient(supabaseUrl, requireServiceRoleKey());
+
+}
+
+
 
 export type LoginEventType = 'login_success' | 'login_failure' | 'logout' | 'lockout';
+
 export type LoginAccessLevel = 'full' | 'read_only';
+
 export type LoginEventStatus = 'success' | 'failure' | 'blocked';
 
+
+
 export interface LoginHistoryRow {
+
   id: string;
+
   event_type: LoginEventType;
+
   occurred_at: string;
+
   ip_address: string | null;
+
   device_type: string;
+
   device_vendor: string | null;
+
   device_model: string | null;
+
   os_name: string | null;
+
   os_version: string | null;
+
   browser_name: string | null;
+
   browser_version: string | null;
+
   access_level: LoginAccessLevel | null;
+
   status: LoginEventStatus;
+
   failure_reason: string | null;
+
   session_fingerprint: string | null;
+
   metadata: Record<string, unknown>;
+
 }
+
+
 
 interface RecordLoginEventInput {
+
   eventType: LoginEventType;
+
   status: LoginEventStatus;
+
   device?: ClientDevicePayload | null;
+
   accessLevel?: LoginAccessLevel | null;
+
   failureReason?: string | null;
+
 }
+
+
 
 async function ensureAuthenticated(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return cookieStore.get('bb_auth_pin_verified')?.value === 'true';
+
+  const auth = await ensureServerSession();
+
+  return auth.ok;
+
 }
+
+
 
 async function resolveClientIp(): Promise<string | null> {
+
   const headerStore = await headers();
+
   const forwarded = headerStore.get('x-forwarded-for');
+
   if (forwarded) {
+
     return forwarded.split(',')[0]?.trim() ?? null;
+
   }
+
   return headerStore.get('x-real-ip') ?? headerStore.get('cf-connecting-ip') ?? null;
+
 }
 
+
+
 function buildDeviceFields(device?: ClientDevicePayload | null) {
+
   if (!device) {
+
     return {
+
       user_agent: null,
+
       device_type: 'unknown' as const,
+
       device_vendor: null,
+
       device_model: null,
+
       os_name: null,
+
       os_version: null,
+
       browser_name: null,
+
       browser_version: null,
+
       session_fingerprint: null,
+
       metadata: {},
+
     };
+
   }
+
+
 
   const parsed = parseUserAgent(device.userAgent);
 
+
+
   return {
+
     user_agent: device.userAgent,
+
     device_type: parsed.deviceType,
+
     device_vendor: parsed.deviceVendor,
+
     device_model: parsed.deviceModel,
+
     os_name: parsed.osName,
+
     os_version: parsed.osVersion,
+
     browser_name: parsed.browserName,
+
     browser_version: parsed.browserVersion,
-    session_fingerprint: device.sessionFingerprint,
+
+    session_fingerprint: device.sessionFingerprint ?? null,
+
     metadata: {
+
       screen_width: device.screenWidth,
+
       screen_height: device.screenHeight,
+
       language: device.language,
+
       timezone: device.timezone,
+
     },
+
   };
+
 }
+
+
 
 export async function recordLoginEvent(input: RecordLoginEventInput): Promise<void> {
+
+  const parsed = loginEventSchema.safeParse(input);
+
+  if (!parsed.success) {
+
+    console.error('[recordLoginEvent] Invalid input:', parsed.error.flatten());
+
+    return;
+
+  }
+
+
+
+  const { eventType } = parsed.data;
+
+
+
+  // Zero-trust: success/logout events require a verified server session.
+
+  // Prevents forging "logged in" audit rows without a valid PIN or Supabase token.
+
+  if (eventType === 'login_success' || eventType === 'logout') {
+
+    const auth = await ensureServerSession();
+
+    if (!auth.ok) {
+
+      console.warn('[recordLoginEvent] Blocked unauthenticated privileged event:', eventType);
+
+      return;
+
+    }
+
+  }
+
+
+
   try {
-    const supabase = createClient(supabaseUrl, supabaseAdminKey);
-    const deviceFields = buildDeviceFields(input.device);
+
+    const supabase = getSupabaseAdmin();
+
+    const deviceFields = buildDeviceFields(parsed.data.device ?? null);
+
     const ip = await resolveClientIp();
 
+
+
     const { error } = await supabase.from('login_history').insert({
-      event_type: input.eventType,
+
+      event_type: parsed.data.eventType,
+
       occurred_at: new Date().toISOString(),
+
       ip_address: ip,
-      access_level: input.accessLevel ?? null,
-      status: input.status,
-      failure_reason: input.failureReason ?? null,
+
+      access_level: parsed.data.accessLevel ?? null,
+
+      status: parsed.data.status,
+
+      failure_reason: parsed.data.failureReason ?? null,
+
       ...deviceFields,
+
     });
 
+
+
     if (error) {
+
       console.error('Supabase Error:', error.message, error.details);
+
     }
+
   } catch (error) {
+
     console.error('[recordLoginEvent] Exception:', error);
+
   }
+
 }
+
+
 
 export async function fetchActiveLoginSessions(): Promise<
+
   { success: true; sessions: ActiveLoginSession[] } | { success: false; error: string }
+
 > {
+
   const history = await fetchLoginHistory(200);
+
   if (!history.success) {
+
     return history;
+
   }
+
+
 
   const cookieStore = await cookies();
+
   const currentFp = cookieStore.get(SESSION_FP_COOKIE)?.value ?? null;
+
   const sessions = computeActiveLoginSessions(history.rows, currentFp);
+
   return { success: true, sessions };
+
 }
+
+
 
 export async function fetchLoginHistory(
+
   limit = 50
+
 ): Promise<{ success: true; rows: LoginHistoryRow[] } | { success: false; error: string }> {
+
   const authenticated = await ensureAuthenticated();
+
   if (!authenticated) {
+
     return { success: false, error: 'Unauthorized' };
+
   }
+
+
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseAdminKey);
+
+    const supabase = getSupabaseAdmin();
+
     const { data, error } = await supabase
+
       .from('login_history')
+
       .select(
+
         'id, event_type, occurred_at, ip_address, device_type, device_vendor, device_model, os_name, os_version, browser_name, browser_version, access_level, status, failure_reason, session_fingerprint, metadata'
+
       )
+
       .order('occurred_at', { ascending: false })
+
       .limit(limit);
 
+
+
     if (error) {
+
       console.error('Supabase Error:', error.message, error.details);
+
       throw error;
+
     }
 
+
+
     return { success: true, rows: (data ?? []) as LoginHistoryRow[] };
+
   } catch {
+
     return { success: false, error: 'Failed to load login history' };
+
   }
+
 }
+

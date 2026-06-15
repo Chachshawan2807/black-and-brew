@@ -37,6 +37,10 @@ export const FAB_BOTTOM_NOTIFICATION_CLASS =
 export const FAB_PANEL_ABOVE_AI_CLASS =
   'max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] md:bottom-[4.25rem]';
 
+/** Chat panel when AI FAB close button stays visible below the window */
+export const FAB_PANEL_CLEAR_OF_AI_CLASS =
+  'max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[7.75rem]';
+
 export const FAB_PANEL_ABOVE_NOTIFICATION_CLASS =
   'max-md:bottom-[calc(14.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[14.75rem]';
 

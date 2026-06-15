@@ -1,6 +1,7 @@
 import InventoryCountClient from './InventoryCountClient';
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
+import { fetchCountAccuracyStats } from '@/app/actions/inventory-actions';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
 
@@ -16,14 +17,28 @@ export default async function InventoryCountPage({
     redirect(`/${locale}`);
   }
 
-  const { data, error } = await getSupabaseAdmin()
-    .from('inventory_items')
-    .select(INVENTORY_COUNT_SELECT)
-    .order('sort_order', { ascending: true });
+  const [itemsResult, accuracyResult] = await Promise.all([
+    getSupabaseAdmin()
+      .from('inventory_items')
+      .select(INVENTORY_COUNT_SELECT)
+      .order('sort_order', { ascending: true }),
+    fetchCountAccuracyStats(),
+  ]);
+
+  const { data, error } = itemsResult;
 
   if (error) {
     console.error('Supabase Error (Count Fetch):', error.message, error.details);
   }
 
-  return <InventoryCountClient initialItems={data || []} locale={locale} />;
+  const initialAccuracyStats =
+    accuracyResult.success && accuracyResult.data ? accuracyResult.data : null;
+
+  return (
+    <InventoryCountClient
+      initialItems={data || []}
+      initialAccuracyStats={initialAccuracyStats}
+      locale={locale}
+    />
+  );
 }

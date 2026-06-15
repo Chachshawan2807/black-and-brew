@@ -1,5 +1,3 @@
-export const READ_ONLY_PIN = '111222';
-
 /** PIN session cookie lifetime (1 hour). */
 export const AUTH_SESSION_MAX_AGE_SEC = 60 * 60;
 

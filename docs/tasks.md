@@ -102,7 +102,7 @@
 - [x] Security audit tables — `login_history`, `data_change_logs`, `revoked_sessions` migrations + Settings session management (2026-06-12)
 - [x] Inventory in-app notifications — Realtime on `data_change_logs`, notification prefs in Settings, `InventoryQuickActionFAB` (2026-06-12)
 - [x] Documentation sync v8.5 — security + notifications reflected in docs; graphify refresh (2026-06-12)
-- [x] Inventory count accuracy — `inventory_count_verifications`, IN/OUT theoretical baseline, accuracy stats (2026-06-15)
+- [x] Inventory count accuracy — `inventory_count_verifications` (`system_stock_qty`), accuracy stats (2026-06-16 refactor)
 - [x] Inventory quick action bulk — `recordBulkInventoryTransactions()`, `inventory-quick-*` libs, `InventoryRealtimeContext` (2026-06-15)
 - [x] Global tooltips — `AppTooltipProvider` + `HintTooltip` (2026-06-15)
 - [x] PWA manifest icons — `/images/notification-icon*.png`, theme `#ffffff`/`#000000` (2026-06-15)

@@ -38,8 +38,14 @@ vi.mock('@supabase/supabase-js', () => {
           data: {
             timestamp: '2026-06-09T00:00:00Z',
             shifts: [],
-            inventory_summary: [{ name: 'Beans', stock: 2, status: 'LOW' }],
-            low_stock_items: [{ name: 'Beans', stock: 2, status: 'LOW' }],
+            inventory_summary: [
+              { name: 'Beans', stock: 2, order_point: 10, target_stock: 20, status: 'LOW' },
+              { name: 'Oat', stock: 10, order_point: 12, target_stock: 10, status: 'LOW' },
+            ],
+            low_stock_items: [
+              { name: 'Beans', stock: 2, status: 'LOW' },
+              { name: 'Oat', stock: 10, status: 'LOW' },
+            ],
           },
           error: null,
         });
@@ -97,13 +103,14 @@ describe('fetchTablePreset', () => {
 });
 
 describe('fetchInventorySummary', () => {
-  test('routes through the get_ai_store_status RPC, never a raw select', async () => {
+  test('routes through the get_ai_store_status RPC and filters low stock like PO modal', async () => {
     const status = await fetchInventorySummary();
 
     expect(captured.rpc).toBe('get_ai_store_status');
     expect(captured.select).toBe('');
     expect(status.inventory_summary?.[0]).toMatchObject({ name: 'Beans' });
     expect(status.low_stock_items).toHaveLength(1);
+    expect(status.low_stock_items?.[0]).toMatchObject({ name: 'Beans' });
   });
 });
 

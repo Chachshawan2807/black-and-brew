@@ -4,5 +4,5 @@ export interface ClientDevicePayload {
   screenHeight: number;
   language: string;
   timezone: string;
-  sessionFingerprint: string;
+  sessionFingerprint?: string;
 }

@@ -22,6 +22,10 @@ vi.mock('next/headers', () => ({
   })),
 }));
 
+vi.mock('@/lib/session-revocation', () => ({
+  isSessionFingerprintRevoked: vi.fn().mockResolvedValue(false),
+}));
+
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
     from: vi.fn(() => ({
@@ -60,13 +64,29 @@ describe('recordDataChange', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
     mockGet.mockImplementation((name: string) => {
+      if (name === 'bb_auth_pin_verified') return { value: 'true' };
       if (name === 'bb_auth_read_only') return undefined;
       return undefined;
     });
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     mockInsert.mockResolvedValue({ error: null });
+  });
+
+  test('rejects unauthenticated callers', async () => {
+    mockGet.mockReturnValue(undefined);
+
+    const result = await recordDataChange({
+      action: 'UPDATE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      entityId: 'item-1',
+    });
+
+    expect(result).toEqual({ success: false });
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 
   test('inserts audit row with actor and request context', async () => {
@@ -101,8 +121,12 @@ describe('fetchDataChangeLogs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
-    mockGet.mockReturnValue({ value: 'true' });
+    mockGet.mockImplementation((name: string) => {
+      if (name === 'bb_auth_pin_verified') return { value: 'true' };
+      return undefined;
+    });
     mockSelect.mockReturnValue({ order: mockOrder });
     mockOrder.mockReturnValue({ limit: mockLimit });
     mockLimit.mockResolvedValue({

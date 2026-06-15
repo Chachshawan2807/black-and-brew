@@ -14,6 +14,15 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
     expect(css).toMatch(/\.bb-smooth-scroll\s*\{/);
     expect(css).toMatch(/-webkit-overflow-scrolling:\s*touch/);
     expect(css).toMatch(/touch-action:\s*pan-x\s+pan-y/);
+    expect(css).toMatch(/\.bb-smooth-scroll-chain-y\s*\{/);
+    expect(css).toMatch(/overscroll-behavior-y:\s*auto/);
+    expect(css).toMatch(/\.bb-sticky-scroll-cell\s*\{/);
+  });
+
+  test('MonthlyRoster consolidated table allows vertical scroll chaining from sticky name column', () => {
+    const code = readFile('app/[locale]/dashboard/components/MonthlyRoster.tsx');
+    expect(code).toMatch(/overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y/);
+    expect(code).toMatch(/sticky left-0[\s\S]*bb-sticky-scroll-cell/);
   });
 
   const scrollSurfaces: { file: string; pattern: RegExp }[] = [
@@ -27,11 +36,11 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
     },
     {
       file: 'app/[locale]/schedule/ScheduleClient.tsx',
-      pattern: /flex-1 min-h-0 overflow-x-auto[\s\S]*overflow-y-auto[\s\S]*bb-smooth-scroll/,
+      pattern: /flex-1 min-h-0 overflow-x-auto[\s\S]*overflow-y-auto[\s\S]*bb-smooth-scroll bb-smooth-scroll-chain-y/,
     },
     {
       file: 'app/[locale]/maintenance/MaintenanceClient.tsx',
-      pattern: /overflow-x-auto[\s\S]*bb-smooth-scroll/,
+      pattern: /overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y/,
     },
     {
       file: 'app/[locale]/sales/SalesClient.tsx',

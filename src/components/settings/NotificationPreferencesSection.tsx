@@ -148,8 +148,8 @@ export default function NotificationPreferencesSection({
         label={isTh ? 'แจ้งเมื่อแก้ไข' : 'Notify on update'}
         description={
           isTh
-            ? 'แจ้งเมื่อมีการเปลี่ยนจำนวน ชื่อ หรือข้อมูลอื่นของสินค้า'
-            : 'Alert when stock, name, or other item details change'
+            ? 'แจ้งเมื่อเปลี่ยนจำนวนสต็อก (ตารางคลัง / แถบลัด) หรือรับเข้า-นำออก'
+            : 'Alert on stock changes from the inventory grid, quick actions, or In/Out entries'
         }
         checked={prefs.notifyUpdate}
         onChange={(v) => update({ notifyUpdate: v })}

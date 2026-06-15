@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-15 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 8.6 | Last Updated: 2026-06-16 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -31,7 +31,7 @@ User opens app → PinGateway (sessionStorage check)
 → recordLoginEvent() → login_history row
 → ensureSupabaseSession() → anonymous auth for RLS
 → isSessionFingerprintRevoked() on each validation
-→ Full access (APP_PIN) or Read-only (111222)
+→ Full access (APP_PIN) or Read-only (APP_READ_ONLY_PIN; dev fallback 111222)
 → Write actions call assertWritableSession()
 → Settings: forceRevokeDeviceSession() / forceRevokeAllRemoteSessions()
 ```
@@ -122,9 +122,9 @@ onChange → local state → onBlur → updateInventoryStock() [RPC set_inventor
 ### Stock-Taking Count + Accuracy Verification (v8.6)
 
 ```text
-CountInput blur → optimistic setItems → updateInventoryStock(recordHistory: false)
-→ recordCountVerification() → computeInOutTheoreticalStockForItem()
-→ INSERT inventory_count_verifications (matched flag)
+CountInput blur → read inventory_items.stock (baseline) → updateInventoryStock(recordHistory: false)
+→ recordCountVerification() → isCountMatch(countedQty, systemStockQty)
+→ INSERT inventory_count_verifications (system_stock_qty, matched)
 → fetchCountAccuracyStats() for per-item accuracy badges
 ```
 
@@ -213,7 +213,7 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 ### Invariants
 
 - **DEC-069 preset lockdown:** `fetchTablePreset` ignores any AI-supplied `columns`; it always selects the table preset. Arbitrary column selection (a data-exfiltration vector through the RLS-bypassing Service Role client) is impossible by construction.
-- **RPC-first for snapshots:** broad "store status / low stock" questions resolve through `get_ai_store_status` (`sql/ai_agent_views.sql`) rather than a wide table scan. **Do not delete** `sql/ai_agent_views.sql` — the gateway depends on its views/RPCs.
+- RPC-first for snapshots: broad "store status / low stock" questions resolve through `get_ai_store_status` (`sql/ai_agent_views.sql`) rather than a wide table scan. LOW status uses `stock <= order_point AND target_stock > stock` (migration `20260615130000`). Do not delete `sql/ai_agent_views.sql` — the gateway depends on its views/RPCs.
 - **Single doorway:** `database-tools.ts` no longer owns a Supabase client, presets, aliases, or limits — it routes and shapes only. Add new AI reads to the gateway, never directly in a tool.
 
 ---

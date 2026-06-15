@@ -502,4 +502,15 @@
     touch-action: pan-x pan-y;
     overscroll-behavior: contain;
   }
+
+  /* Nested / horizontal-only scrollers — let vertical pans reach the page or parent scroller */
+  .bb-smooth-scroll-chain-y {
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+  }
+
+  /* Sticky row/column labels inside scroll containers — never block touch pan gestures */
+  .bb-sticky-scroll-cell {
+    touch-action: pan-x pan-y;
+  }
 }

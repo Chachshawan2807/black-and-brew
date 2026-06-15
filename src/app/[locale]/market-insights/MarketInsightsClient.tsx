@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getMarketInsights } from '@/app/actions/market-insights-actions';
 import {
   RefreshCw,
@@ -120,7 +120,7 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
     }
   }, [isMounted]);
 
-  const loadFromCacheOnly = () => {
+  const loadFromCacheOnly = useCallback(() => {
     const { data, savedAt } = readCache<unknown>(MARKET_INSIGHTS_CACHE_KEY_V2);
     if (isMarketInsightsV2(data)) {
       setInsights(data);
@@ -130,9 +130,9 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
       }
       setHasLoaded(true);
     }
-  };
+  }, []);
 
-  const loadFreshInsights = async () => {
+  const loadFreshInsights = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await getMarketInsights(insights);
@@ -149,28 +149,24 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [insights]);
 
   const primaryButtonClass =
     'inline-flex items-center justify-center gap-1.5 md:gap-2 flex-1 md:flex-none min-w-0 px-3 py-2.5 md:px-6 md:py-3 text-[13px] md:text-base bg-black text-white rounded-3xl hover:bg-black/80 bb-transition bb-shadow-sm active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed';
   const actionButtonRowClass = 'flex flex-row items-stretch gap-2 w-full md:w-auto md:gap-3';
 
   type BodyView = 'initial' | 'firstLoading' | 'error' | 'content';
-  let bodyView: BodyView = 'initial';
-  if (!hasLoaded && isLoading) {
-    bodyView = 'firstLoading';
-  } else if (!hasLoaded) {
-    bodyView = 'initial';
-  } else if (!insights?.context) {
-    bodyView = 'error';
-  } else {
-    bodyView = 'content';
-  }
+  const bodyView = useMemo((): BodyView => {
+    if (!hasLoaded && isLoading) return 'firstLoading';
+    if (!hasLoaded) return 'initial';
+    if (!insights?.context) return 'error';
+    return 'content';
+  }, [hasLoaded, isLoading, insights?.context]);
 
   return (
     <TooltipProvider delayDuration={150}>
     <div className="min-h-screen bg-transparent text-foreground antialiased font-normal">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 max-md:pr-14">
         {/* Header */}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
@@ -213,18 +209,7 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
           </div>
         </div>
 
-        {isLoading && hasLoaded && (
-          <div
-            className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-background/60"
-            aria-busy="true"
-            aria-live="polite"
-          >
-            <div className="w-10 h-10 border-4 border-black/5 border-t-black rounded-full animate-spin mb-3" />
-            <p className="text-sm text-muted-foreground">บรูกำลังวิเคราะห์ข้อมูลตลาดให้สักครู่นะคะ...</p>
-          </div>
-        )}
-
-        <div className="min-h-0">
+        <div className="min-h-0 w-full">
           {bodyView === 'initial' && (
             <div className="bg-card rounded-3xl border border-border bb-shadow-sm p-8 md:p-16 text-center">
               <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 md:mb-8 rounded-3xl bg-muted flex items-center justify-center">
@@ -271,7 +256,20 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
           )}
 
           {bodyView === 'content' && insights?.context && (
-            <div className="space-y-5">
+            <div className="relative w-full space-y-5 max-md:space-y-4">
+              {isLoading && hasLoaded && (
+                <div
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-2xl bg-background/80 max-md:min-h-[12rem] md:fixed md:inset-0 md:z-40 md:rounded-none md:bg-background/60"
+                  aria-busy="true"
+                  aria-live="polite"
+                >
+                  <div className="w-10 h-10 border-4 border-black/5 border-t-black rounded-full animate-spin mb-3" />
+                  <p className="text-sm text-muted-foreground px-4 text-center">
+                    บรูกำลังวิเคราะห์ข้อมูลตลาดให้สักครู่นะคะ...
+                  </p>
+                </div>
+              )}
+
               {insights.diff && <DiffBanner diff={insights.diff} />}
 
               <ContextPanel context={insights.context} />

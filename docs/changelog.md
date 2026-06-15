@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-16 (Count Accuracy Refactor Doc Sync + Graphify Refresh v8.6)
+
+- Execution: [FULL SYSTEM SYNC & ZERO-IMPACT SANITIZATION PROTOCOL]
+- Changes:
+  - Count accuracy refactor: `system_stock_qty` replaces `in_out_theoretical_qty` (migration `20260615120000`); baseline is `inventory_items.stock` at count time
+  - AI low-stock alignment: migration `20260615130000` — `view_inventory_summary` LOW uses `stock <= order_point AND target_stock > stock`
+  - Docs synced: `docs/database.md`, `docs/api.md`, `docs/architecture.md`, `docs/memory.md`, `docs/context.md`, `sql/README.md`, `PROJECT_MAP.md` (8 migrations, 69 tests)
+  - SQL audit: all 21 `.sql` files kept (zero deletions)
+  - Read-only PIN: `APP_READ_ONLY_PIN` env (`read-only-pin.ts`); dev fallback `111222` — synced README, context, architecture, api, MASTER_BLUEPRINT, prd
+- Verification: graphify update | no code changes — tests not re-run
+
 ## 2026-06-15 (Count Accuracy + Quick Action + Doc/SQL Cleanup v8.6)
 
 - Execution: [DOCUMENTATION SYNC & REPOSITORY SANITIZATION]

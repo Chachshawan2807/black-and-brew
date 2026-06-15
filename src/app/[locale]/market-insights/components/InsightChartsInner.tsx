@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import {
   BarChart,
@@ -62,6 +62,15 @@ export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapsh
   const hasMonthly = snapshot.monthlyTrend.length > 0;
   const hasCategory = snapshot.categoryBreakdown.length > 0;
 
+  const monthlyData = useMemo(
+    () =>
+      snapshot.monthlyTrend.map((m) => ({
+        ...m,
+        displayLabel: fmtMonthLabel(m.label),
+      })),
+    [snapshot.monthlyTrend],
+  );
+
   if (!hasMonthly && !hasCategory) {
     return (
       <div className="rounded-2xl border border-border bg-card p-5 text-center text-muted-foreground/80 text-sm shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
@@ -70,20 +79,16 @@ export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapsh
     );
   }
 
-  const monthlyData = snapshot.monthlyTrend.map((m) => ({
-    ...m,
-    displayLabel: fmtMonthLabel(m.label),
-  }));
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <div className="flex w-full flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-3">
       {hasMonthly && (
-        <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
+        <div className="w-full shrink-0 rounded-2xl border border-border bg-card p-4 md:p-5 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
           <div className="flex items-center gap-1.5 mb-3 text-muted-foreground">
             <BarChart3 className="w-3.5 h-3.5" />
             <h3 className="text-sm tracking-tight">แนวโน้มรายได้รายเดือน</h3>
             <MetricInfoTip id="monthly_revenue_trend" />
           </div>
+          <div className="w-full min-h-[200px]">
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthlyData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
@@ -104,11 +109,12 @@ export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapsh
               <Bar dataKey="totalRevenue" radius={[6, 6, 0, 0]} fill="#bcd9b8" />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
       )}
 
       {hasCategory && (
-        <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
+        <div className="w-full shrink-0 rounded-2xl border border-border bg-card p-4 md:p-5 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
           <div className="flex items-center gap-1.5 mb-3 text-muted-foreground">
             <PieChart className="w-3.5 h-3.5" />
             <h3 className="text-sm tracking-tight">สัดส่วนรายได้ตามหมวด</h3>
@@ -139,12 +145,13 @@ export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapsh
       )}
 
       {snapshot.topProducts.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-4 md:p-5 lg:col-span-2 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
+        <div className="w-full shrink-0 rounded-2xl border border-border bg-card p-4 md:p-5 lg:col-span-2 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
           <div className="flex items-center gap-1.5 mb-3 text-muted-foreground">
             <BarChart3 className="w-3.5 h-3.5" />
             <h3 className="text-sm tracking-tight">เมนูขายดี (ตามจำนวน)</h3>
             <MetricInfoTip id="top_products" />
           </div>
+          <div className="w-full" style={{ minHeight: Math.max(snapshot.topProducts.length * 44, 120) }}>
           <ResponsiveContainer width="100%" height={Math.max(snapshot.topProducts.length * 44, 120)}>
             <BarChart
               layout="vertical"
@@ -175,6 +182,7 @@ export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapsh
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
       )}
     </div>

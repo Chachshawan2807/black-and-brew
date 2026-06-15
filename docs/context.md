@@ -56,6 +56,7 @@
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Public |
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin key (bypass RLS) | Server only |
 | `APP_PIN` | Full-access PIN | Server only |
+| `APP_READ_ONLY_PIN` | Read-only PIN; required in production; dev fallback `111222` | Server only |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini — AI Chat + Market Insights (`@ai-sdk/google`) | Server only |
 | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync (OPTION) | Server only |
 | `GOOGLE_PLACES_API_KEY` | Nearby competitor cafes - Market Insights v2 (OPTION) | Server only |
@@ -66,8 +67,6 @@
 | `LINE_GROUP_ID` | LINE cron recipient (checked before `LINE_TARGET_RECIPIENT_ID`) | Server only |
 | `LINE_TARGET_RECIPIENT_ID` | LINE recipient fallback | Server only |
 | `CRON_SECRET` | Vercel cron auth | Server only |
-
-Read-only PIN `111222` is hardcoded in `src/lib/auth-constants.ts` — not an env var.
 
 Authoritative env list: [`.env.example`](../.env.example)
 
@@ -84,7 +83,7 @@ Authoritative env list: [`.env.example`](../.env.example)
 | Mode | PIN | Capabilities |
 | --- | --- | --- |
 | Full access | `APP_PIN` (env) | Read + write ทุกโมดูล |
-| Read-only | `111222` (hardcoded) | ดูอย่างเดียว — `assertWritableSession()` บล็อก writes |
+| Read-only | `APP_READ_ONLY_PIN` (env; dev fallback `111222`) | ดูอย่างเดียว — `assertWritableSession()` บล็อก writes |
 
 - Client gate: `sessionStorage` + `PinGateway.tsx`
 - Server session: httpOnly cookies `bb_auth_pin_verified`, `bb_auth_read_only`
@@ -156,7 +155,7 @@ Authoritative env list: [`.env.example`](../.env.example)
 
 | Feature | Key paths |
 | --- | --- |
-| Count accuracy | `inventory_count_verifications`, `recordCountVerification()`, `src/lib/inventory-in-out-theoretical.ts` |
+| Count accuracy | `inventory_count_verifications` (`system_stock_qty`), `recordCountVerification()`, `src/lib/inventory-count-accuracy.ts` |
 | Quick action bulk | `recordBulkInventoryTransactions()`, `inventory-quick-*` libs, `InventoryQuickActionFAB` |
 | Realtime context | `src/contexts/InventoryRealtimeContext.tsx` |
 | Tooltips | `AppTooltipProvider`, `HintTooltip` |

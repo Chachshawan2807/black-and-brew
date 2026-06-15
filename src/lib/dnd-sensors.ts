@@ -24,7 +24,8 @@ export function useSafeDndSensors() {
     useSensor(TouchSensor, {
       activationConstraint: {
         delay: 1000,
-        tolerance: 8,
+        // Allow natural finger micro-movement during the 1s long-press on mobile.
+        tolerance: 12,
       },
     }),
     useSensor(KeyboardSensor, {

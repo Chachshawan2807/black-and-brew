@@ -1,30 +1,22 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { normalizeRegularHolidayDays } from '@/lib/regular-holidays';
 import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
 import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
+import { ensureServerSession } from '@/lib/security/server-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey);
 
 async function ensureAuthorized() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('sb-access-token')?.value;
-  const pinVerified = cookieStore.get('bb_auth_pin_verified')?.value === 'true';
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabaseAdmin.auth.getUser(token);
-
-  if (!pinVerified && (!user || authError)) {
-    return { success: false, error: 'Unauthorized: Session missing or invalid' } as const;
+  const auth = await ensureServerSession();
+  if (!auth.ok) {
+    return { success: false, error: auth.error } as const;
   }
 
   const writable = await assertWritableSession();

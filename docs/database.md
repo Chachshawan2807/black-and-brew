@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-15 | Engine: Supabase PostgreSQL
+> Version: 8.6 | Last Updated: 2026-06-16 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -12,7 +12,7 @@
 | `shifts` | ตารางกะงาน | ✓ authenticated | `DB_SCHEMA.sql` |
 | `inventory_items` | รายการคลังสินค้าและสต็อก | ✓ authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` |
 | `inventory_transactions` | บันทึกการเคลื่อนไหวสต็อก (IN/OUT/ADJUST/ADD/DELETE) | ✓ authenticated | `sql/record_inventory_transaction.sql` + migrations |
-| `inventory_count_verifications` | บันทึกผลตรวจนับ vs สต็อกทฤษฎี IN/OUT | ✓ authenticated | `supabase/migrations/20260614120000_inventory_count_verifications.sql` |
+| `inventory_count_verifications` | บันทึกผลตรวจนับ vs สต็อกระบบ (`inventory_items.stock`) | ✓ authenticated | `supabase/migrations/20260614120000_inventory_count_verifications.sql` + `20260615120000_inventory_count_accuracy_refactor.sql` |
 | `inventory_config` | การตั้งค่าคอลัมน์ Inventory UI | ✓ authenticated | `inventory_config_schema.sql` |
 | `holidays` | วันหยุดราชการ | ✓ | Created via `holiday-actions.ts` |
 | `regular_holidays` | วันหยุดประจำของพนักงาน | ✓ | `regular_holidays_schema.sql` |
@@ -100,14 +100,14 @@ CREATE TABLE inventory_count_verifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   inventory_item_id UUID NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
   counted_qty NUMERIC NOT NULL CHECK (counted_qty >= 0),
-  in_out_theoretical_qty NUMERIC NOT NULL,
+  system_stock_qty NUMERIC NOT NULL,
   matched BOOLEAN NOT NULL,
   counted_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 ```
 
-Written by `recordCountVerification()` in `inventory-actions.ts`. Theoretical qty computed via `computeInOutTheoreticalStock()` (`src/lib/inventory-in-out-theoretical.ts`).
+Written by `recordCountVerification()` in `inventory-actions.ts`. Baseline is `inventory_items.stock` at count time (before the count update). Match logic: `src/lib/inventory-count-accuracy.ts` (`isCountMatch`). Migration `20260615120000` renamed `in_out_theoretical_qty` → `system_stock_qty` and cleared legacy rows.
 
 ### `sales_uploads` / `sales_records`
 
@@ -255,7 +255,9 @@ CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications
 | `20260612130000_inventory_notifications.sql` | Realtime + RLS read for inventory `data_change_logs` |
 | `20260612140000_inventory_add_delete_history.sql` | Transaction types ADD/DELETE; nullable `inventory_item_id` |
 | `20260612200000_revoked_sessions.sql` | Remote session revocation by fingerprint |
-| `20260614120000_inventory_count_verifications.sql` | Count accuracy ledger (theoretical vs counted qty) |
+| `20260614120000_inventory_count_verifications.sql` | Count accuracy ledger (initial table) |
+| `20260615120000_inventory_count_accuracy_refactor.sql` | Rename to `system_stock_qty`; clear legacy IN/OUT-theoretical rows |
+| `20260615130000_align_low_stock_with_purchase_orders.sql` | `view_inventory_summary` LOW status aligned with PO modal (DEC-005) |
 
 ### Historical (root + `sql/`)
 

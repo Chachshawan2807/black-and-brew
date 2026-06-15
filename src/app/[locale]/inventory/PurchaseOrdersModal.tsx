@@ -91,7 +91,7 @@ export default function PurchaseOrdersModal({
         {/* Tabs Navigation - only show in non-export mode */}
         {!isExportMode && (
           <div className="px-6">
-            <div className="flex flex-wrap gap-2.5 items-center overflow-x-auto bb-smooth-scroll scrollbar-hide">
+            <div className="flex flex-wrap gap-2.5 items-center overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-hide">
               <button
                 onClick={() => setSelectedChannels(['all'])}
                 className={cn(

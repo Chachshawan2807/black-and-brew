@@ -66,19 +66,38 @@ describe('SlidingWindowRateLimiter', () => {
     vi.useRealTimers();
   });
 
+  it('peek reports blocked without recording a new attempt', () => {
+    const limiter = new SlidingWindowRateLimiter(2, 60_000);
+    limiter.check('peek-user');
+    limiter.check('peek-user');
+
+    const peekBefore = limiter.peek('peek-user');
+    expect(peekBefore.allowed).toBe(false);
+
+    const peekAfter = limiter.peek('peek-user');
+    expect(peekAfter.allowed).toBe(false);
+    expect(peekAfter.remaining).toBe(0);
+  });
+
+  it('clear resets the window for a key', () => {
+    const limiter = new SlidingWindowRateLimiter(1, 60_000);
+    limiter.check('clear-user');
+    expect(limiter.peek('clear-user').allowed).toBe(false);
+
+    limiter.clear('clear-user');
+    expect(limiter.peek('clear-user').allowed).toBe(true);
+  });
+
   it('does not add a timestamp when rate limit is exceeded', () => {
     const limiter = new SlidingWindowRateLimiter(2, 60_000);
     limiter.check('counter-user');
     limiter.check('counter-user');
-    // These should all be blocked and should NOT consume slots
     limiter.check('counter-user');
     limiter.check('counter-user');
     limiter.check('counter-user');
 
-    // After the window expires the count should be exactly 2 (the original 2 allowed)
     vi.useFakeTimers();
     vi.advanceTimersByTime(60_001);
-    // Now window resets — should allow again
     const result = limiter.check('counter-user');
     expect(result.allowed).toBe(true);
     vi.useRealTimers();

@@ -32,13 +32,25 @@ export function formatInventoryNumericDisplay(value: unknown): string {
   return String(num);
 }
 
+/** DEC-005: same predicate as the purchase-order modal (single source of truth). */
+export function isItemNeedingReorder(
+  stock: unknown,
+  orderPoint: unknown,
+  targetStock: unknown
+): boolean {
+  const s = sanitizeStockValue(stock);
+  const op = sanitizeStockValue(orderPoint);
+  const ts = sanitizeStockValue(targetStock);
+  return s <= op && ts > s;
+}
+
 /** DEC-005: computed order quantity from stock thresholds. */
 export function computeOrderQty(
   stock: number,
   orderPoint: number,
   targetStock: number
 ): number {
-  if (stock <= orderPoint && targetStock > stock) {
+  if (isItemNeedingReorder(stock, orderPoint, targetStock)) {
     return Math.max(0, targetStock - stock);
   }
   return 0;
@@ -77,12 +89,9 @@ export function computeItemsToOrder<T extends InventoryStockFields>(
   items: T[]
 ): Array<T & { computedOrderQty: number }> {
   return items
-    .filter((item) => {
-      const stock = sanitizeStockValue(item.stock);
-      const orderPoint = sanitizeStockValue(item.order_point);
-      const targetStock = sanitizeStockValue(item.target_stock);
-      return stock <= orderPoint && targetStock > stock;
-    })
+    .filter((item) =>
+      isItemNeedingReorder(item.stock, item.order_point, item.target_stock)
+    )
     .map((item) => {
       const stock = sanitizeStockValue(item.stock);
       const orderPoint = sanitizeStockValue(item.order_point);

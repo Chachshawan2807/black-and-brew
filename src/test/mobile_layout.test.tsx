@@ -105,6 +105,19 @@ describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => 
     expect(modalCode).toMatch(/overflow-x-auto[\s\S]*?<table/);
   });
 
+  test('history modal table surface uses morning latte cream across full scrollable width', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const modalCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
+      'utf-8',
+    );
+
+    expect(modalCode).toMatch(/overflow-x-auto[\s\S]*bg-background/);
+    expect(modalCode).not.toMatch(/inline-block w-fit max-w-full bg-background/);
+    expect(modalCode).toMatch(/inline-block w-max min-w-full bg-background/);
+  });
+
   test('should separate order count badge from truncated text to prevent truncation to ellipsis', async () => {
     render(
       <AuthProvider isReadOnly={false}>
@@ -152,13 +165,39 @@ describe('Safe DnD Sensors — mobile long-press guard', () => {
       'utf-8',
     );
 
-    // The article element must NOT carry {...listeners}
-    // We check that there is no line with both "article" and "listeners" close together
     const lines = code.split('\n');
     const articleLineIdx = lines.findIndex((l: string) => l.includes('<article'));
-    // The next ~5 lines after <article should not contain listeners spread
     const articleBlock = lines.slice(articleLineIdx, articleLineIdx + 6).join('\n');
     expect(articleBlock).not.toContain('{...listeners}');
+  });
+
+  test('mobile sortable views register activator refs via SortableDragHandle', () => {
+    const fs = require('fs');
+    const path = require('path');
+
+    const files = [
+      '../app/[locale]/dashboard/components/LiveShiftList.tsx',
+      '../app/[locale]/inventory/InventoryClient.tsx',
+    ];
+
+    for (const file of files) {
+      const code = fs.readFileSync(path.resolve(__dirname, file), 'utf-8');
+      expect(code, `${file} should use SortableDragHandle`).toContain('SortableDragHandle');
+      expect(code, `${file} should wire setActivatorNodeRef`).toContain('setActivatorNodeRef');
+    }
+  });
+
+  test('SortableDragHandle skips tooltip wrapper on coarse pointers', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const code = fs.readFileSync(
+      path.resolve(__dirname, '../components/ui/sortable-drag-handle.tsx'),
+      'utf-8',
+    );
+
+    expect(code).toContain('useCoarsePointer');
+    expect(code).toMatch(/coarsePointer[\s\S]*return handle/);
+    expect(code).toContain('onContextMenu');
   });
 
   test('all sortable components should use useSafeDndSensors', () => {

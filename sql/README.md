@@ -35,4 +35,6 @@ Verify remote state: `npm run db:verify`
 | `20260612130000_inventory_notifications.sql` | Realtime + RLS read for inventory `data_change_logs` |
 | `20260612140000_inventory_add_delete_history.sql` | Transaction types ADD/DELETE; nullable `inventory_item_id` |
 | `20260612200000_revoked_sessions.sql` | Remote session revocation by fingerprint |
-| `20260614120000_inventory_count_verifications.sql` | Count accuracy ledger (IN/OUT theoretical vs counted qty) |
+| `20260614120000_inventory_count_verifications.sql` | Count accuracy ledger (initial table) |
+| `20260615120000_inventory_count_accuracy_refactor.sql` | `system_stock_qty` column; clear legacy verification rows |
+| `20260615130000_align_low_stock_with_purchase_orders.sql` | `view_inventory_summary` LOW/WARNING/OK aligned with purchase-order modal |

@@ -316,7 +316,7 @@ export default function CompetitorPanel({ analysis }: { analysis: CompetitorAnal
       </p>
 
       {/* Zone summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div className="flex w-full flex-col gap-2.5 sm:grid sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
         <div className={`${CARD} p-3.5`}>
           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
             คู่แข่งทั้งหมด

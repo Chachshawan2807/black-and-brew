@@ -50,6 +50,20 @@ describe('createBatchAccumulator', () => {
     expect(flushed[0]).toHaveLength(2);
   });
 
+  test('defers first flush for bulk rows so siblings batch together', () => {
+    const flushed: DataChangeLogRow[][] = [];
+    const acc = createBatchAccumulator((rows) => flushed.push(rows), 2000);
+
+    acc.add({ ...makeRow('1', 'Alice'), metadata: { bulk: true } });
+    acc.add(makeRow('2', 'Alice'));
+
+    vi.advanceTimersByTime(0);
+    expect(flushed).toHaveLength(0);
+
+    vi.advanceTimersByTime(2000);
+    expect(flushed).toHaveLength(1);
+    expect(flushed[0]).toHaveLength(2);
+  });
   test('keeps separate batches per actor', () => {
     const flushed: DataChangeLogRow[][] = [];
     const acc = createBatchAccumulator((rows) => flushed.push(rows), 2000);

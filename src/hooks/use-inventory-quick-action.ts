@@ -8,6 +8,7 @@ import {
   fetchTransactionHistory,
 } from '@/app/actions/inventory-actions';
 import { getClientSessionId } from '@/lib/client-session';
+import type { InventoryNotificationSource } from '@/lib/inventory-notification-filter';
 import { filterInventoryQuickSearchItems } from '@/lib/inventory-quick-search-filter';
 import { getQuickBadgeStyles } from '@/lib/inventory-stock';
 import { READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
@@ -45,6 +46,8 @@ type UseInventoryQuickActionOptions<T extends BulkStockItem> = {
   onAfterSave?: () => void;
   onBeforeSave?: () => void;
   onSaveError?: () => void;
+  /** Tags audit logs so only this UI origin triggers notifications. */
+  notificationSource: InventoryNotificationSource;
 };
 
 function readInitialDraft(): InventoryQuickActionDraft {
@@ -63,6 +66,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   onAfterSave,
   onBeforeSave,
   onSaveError,
+  notificationSource,
 }: UseInventoryQuickActionOptions<T>) {
   const initialDraft = useMemo(() => readInitialDraft(), []);
 
@@ -195,6 +199,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
             const payload = resolveBulkSubmitPayload(bulkQueue, bulkQuickType);
             const res = await recordBulkInventoryTransactions(payload, 'Quick Entry - Bulk', {
               clientSessionId: getClientSessionId(),
+              notificationSource,
             });
 
             const succeeded = res.results.filter((row) => row.success);
@@ -259,9 +264,11 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
             quickType === 'ADJUST'
               ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
                   clientSessionId: getClientSessionId(),
+                  notificationSource,
                 })
               : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
                   clientSessionId: getClientSessionId(),
+                  notificationSource,
                 });
 
           if (!res.success) {
@@ -293,6 +300,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       onAfterSave,
       onSaveError,
       refreshHistoryIfOpen,
+      notificationSource,
     ],
   );
 

@@ -120,21 +120,28 @@ export async function getMarketInsights(
 
     const todayBkk = formatInTimeZone(new Date(), THAI_TIMEZONE, 'yyyy-MM-dd');
 
-    const [weather, trends, inventoryResult, salesMetrics, supabaseCtx, competitorAnalysis, dailyShifts] =
-      await Promise.all([
-        fetchWeatherForecast(),
-        fetchMarketTrends(),
-        fetchComprehensiveInventoryData(),
-        getSalesMetrics(),
-        supabase ? fetchSupabaseContext(supabase) : Promise.resolve(null),
-        fetchCompetitorAnalysis(STORE_LAT, STORE_LON),
-        fetchDailyShiftsByDate(todayBkk).catch((error) => {
-          console.error('[getMarketInsights] daily shifts:', error);
-          return null;
-        }),
-      ]);
-
-    const upcomingHolidays = supabase ? await fetchUpcomingHolidays(supabase) : [];
+    const [
+      weather,
+      trends,
+      inventoryResult,
+      salesMetrics,
+      supabaseCtx,
+      competitorAnalysis,
+      dailyShifts,
+      upcomingHolidays,
+    ] = await Promise.all([
+      fetchWeatherForecast(),
+      fetchMarketTrends(),
+      fetchComprehensiveInventoryData(),
+      getSalesMetrics(),
+      supabase ? fetchSupabaseContext(supabase) : Promise.resolve(null),
+      fetchCompetitorAnalysis(STORE_LAT, STORE_LON),
+      fetchDailyShiftsByDate(todayBkk).catch((error) => {
+        console.error('[getMarketInsights] daily shifts:', error);
+        return null;
+      }),
+      supabase ? fetchUpcomingHolidays(supabase) : Promise.resolve([]),
+    ]);
 
     // ── Inventory ────────────────────────────────────────────────────────────
     let inventorySummary = 'N/A';

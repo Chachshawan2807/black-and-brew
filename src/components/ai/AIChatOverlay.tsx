@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import {
   FAB_BASE_CLASS,
   FAB_BOTTOM_AI_CLASS,
-  FAB_PANEL_ABOVE_AI_CLASS,
+  FAB_PANEL_CLEAR_OF_AI_CLASS,
 } from '@/lib/floating-action-layout';
 import { getFabPanelKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
@@ -58,7 +58,7 @@ export default function AIChatOverlay() {
   const viewportInsets = useVisualViewportInsets(isMounted && isOpen);
   const chatPanelStyle = getFabPanelKeyboardAwareStyle({
     insets: viewportInsets,
-    defaultMaxHeight: '75vh',
+    defaultMaxHeight: 'min(75vh, calc(100dvh - 14rem))',
   });
 
   // Load chat history once after mount — static dependency [isMounted]
@@ -144,7 +144,7 @@ export default function AIChatOverlay() {
         <HintTooltip tip={isOpen ? 'ปิดแชทบรู' : 'ถามบรู AI'} side="left">
           <motion.button
             onClick={() => setIsOpen((prev) => !prev)}
-            className={cn(FAB_BASE_CLASS, FAB_BOTTOM_AI_CLASS, isOpen ? 'z-[204]' : 'z-[200]')}
+            className={cn(FAB_BASE_CLASS, FAB_BOTTOM_AI_CLASS, 'z-[200]')}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
             aria-label={isOpen ? 'ปิดแชทบรู' : 'เปิดผู้ช่วย AI บรู'}
@@ -198,16 +198,16 @@ export default function AIChatOverlay() {
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
               className={cn(
-                'fixed z-[203] box-border bg-card rounded-3xl shadow-2xl border-2 border-border flex flex-col overflow-hidden',
+                'fixed z-[203] box-border bg-background rounded-3xl shadow-2xl border-2 border-border flex flex-col overflow-hidden',
                 'max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none',
                 'max-md:transition-[top,max-height,bottom] max-md:duration-200',
                 'md:w-full md:max-w-2xl md:left-auto md:right-6',
-                FAB_PANEL_ABOVE_AI_CLASS,
+                FAB_PANEL_CLEAR_OF_AI_CLASS,
               )}
               style={chatPanelStyle}
             >
               {/* Header */}
-              <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-border flex items-center justify-between gap-3 bg-card">
+              <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-border flex items-center justify-between gap-3 bg-background">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-8 h-8 rounded-2xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                     <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={24} height={24} className="w-6 h-6 object-contain dark:invert" />
@@ -285,7 +285,7 @@ export default function AIChatOverlay() {
               </div>
 
               {/* Quick Actions — shrink-0 keeps chips above the input bar */}
-              <div className="shrink-0 px-3 md:px-4 pt-2 pb-1 flex flex-wrap gap-2 items-center justify-start min-w-0 bg-card">
+              <div className="shrink-0 px-3 md:px-4 pt-2 pb-1 flex flex-wrap gap-2 items-center justify-start min-w-0 bg-background">
                 {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.id}
@@ -307,7 +307,7 @@ export default function AIChatOverlay() {
               {/* Input Area */}
               <form
                 onSubmit={handleSubmit}
-                className="shrink-0 px-3 md:px-4 py-3 border-t-2 border-border flex items-center gap-2 bg-card min-w-0"
+                className="shrink-0 px-3 md:px-4 py-3 border-t-2 border-border flex items-center gap-2 bg-background min-w-0"
               >
                 <input
                   id="ai-chat-input"

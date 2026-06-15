@@ -155,4 +155,4 @@ Authoritative list: [`.env.example`](../.env.example). Keys actually read in `sr
 | `LINE_TARGET_RECIPIENT_ID` | SECRET | Cron recipient fallback |
 | `CRON_SECRET` | SECRET | Protects `GET /api/daily-report` |
 
-Read-only PIN `111222` is hardcoded in `src/lib/auth-constants.ts`.
+Read-only PIN via `APP_READ_ONLY_PIN` env (`src/lib/security/read-only-pin.ts`); dev fallback `111222`.

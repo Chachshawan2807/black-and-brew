@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-15
+> Version: 8.6 | Last Updated: 2026-06-16
 
 ---
 
@@ -25,7 +25,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 | `forceRevokeAllRemoteSessions(exceptCurrent?)` | Revoke ทุก session ยกเว้นปัจจุบัน (ถ้าระบุ) |
 
 - Full PIN: `APP_PIN` (env)
-- Read-only PIN: `111222` (hardcoded in `auth-constants.ts`)
+- Read-only PIN: `APP_READ_ONLY_PIN` (env); dev fallback `111222` in `src/lib/security/read-only-pin.ts`
 
 ---
 
@@ -52,24 +52,15 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 #### `recordCountVerification(itemId, countedQty)` (v8.6)
 
-- Computes IN/OUT theoretical qty via `computeInOutTheoreticalStockForItem()`
-- Inserts into `inventory_count_verifications` with `matched` flag
-- Returns `{ success, matched, theoreticalQty, countedQty }`
+- Reads `inventory_items.stock` as baseline before count update
+- Inserts into `inventory_count_verifications` with `system_stock_qty` and `matched` flag via `isCountMatch()` (`src/lib/inventory-count-accuracy.ts`)
+- Returns `{ success, matched, systemStockQty, countedQty }`
+- Only invoked from stock-taking count page — not manual warehouse overrides
 
 #### `fetchCountAccuracyStats()` (v8.6)
 
 - Aggregates per-item and overall accuracy from `inventory_count_verifications`
 - Returns `{ perItem, overall: { totalChecks, matchChecks, accuracyPct } }`
-
-#### `fetchInOutTheoreticalQtyMap(itemIds)` (v8.6)
-
-- Batch theoretical stock from ledger rows (ADD/IN/OUT/ADJUST/DELETE)
-- Returns `{ success, data: Record<itemId, theoreticalQty> }`
-
-#### `computeInOutTheoreticalStockForItem(itemId)` (v8.6)
-
-- Single-item theoretical stock baseline for count accuracy
-- Returns `{ success, theoreticalQty }`
 
 #### `recordItemAddHistory(itemId, stock?, itemName?)`
 

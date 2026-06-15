@@ -119,7 +119,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(layoutCode).toContain('w-8 h-8');
   });
 
-  test('sort_order reorder logs audit for notifications', () => {
+  test('sort_order reorder logs audit for history', () => {
     const pageCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
       'utf-8',
@@ -129,13 +129,33 @@ describe('Inventory Quick Action FAB', () => {
     expect(pageCode).toMatch(/field === 'sort_order'[\s\S]*logClientDataChange/);
   });
 
-  test('inventory count page does not suppress notifications', () => {
+  test('quick action hook tags audit logs with notification source', () => {
+    const hookCode = fs.readFileSync(
+      path.resolve(__dirname, '../hooks/use-inventory-quick-action.ts'),
+      'utf-8',
+    );
+    const pageCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
+      'utf-8',
+    );
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/inventory/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+
+    expect(hookCode).toContain('notificationSource');
+    expect(pageCode).toContain('QUICK_ACTION_BAR');
+    expect(fabCode).toContain('QUICK_ACTION_FAB');
+  });
+
+  test('inventory count page suppresses stock notifications', () => {
     const countCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/count/InventoryCountClient.tsx'),
       'utf-8',
     );
 
-    expect(countCode).not.toContain('suppressNotification: true');
+    expect(countCode).toContain('suppressNotification: true');
+    expect(countCode).toContain("notificationContext: 'inventory_count'");
   });
 
   test('main FAB triggers respect fabStackHidden', () => {

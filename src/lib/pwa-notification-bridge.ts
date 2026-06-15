@@ -2,7 +2,7 @@
 
 export const INVENTORY_NOTIFICATION_EVENT = 'bb-inventory-notification';
 
-/** Square black logo on white — required for OS notification header (wide logo.png renders as a white bar). */
+/** Square logo on transparent background — OS notifications and home-screen icon. */
 export const PWA_NOTIFICATION_ICON = '/images/notification-icon.png';
 
 /** Vibration pattern for inventory OS notifications (when device supports it). */

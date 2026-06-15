@@ -676,6 +676,77 @@ export function formatBatchedNotification(
 
 
 
+/** Builds one notification from a batched group (e.g. bulk quick-action entries). */
+export function formatBatchedNotificationFromRows(
+  rows: DataChangeLogRow[],
+  locale: string
+): InventoryNotification {
+  if (rows.length === 0) {
+    throw new Error('formatBatchedNotificationFromRows requires at least one row');
+  }
+  if (rows.length === 1) {
+    return formatInventoryNotification(rows[0], locale);
+  }
+
+  const isTh = locale === 'th';
+  const latest = rows[rows.length - 1];
+  const base = formatInventoryNotification(latest, locale, rows.length);
+  const stockOps = rows.map((row) => detectStockOperation(row)).filter(Boolean) as StockOperation[];
+  const allStockOps = stockOps.length === rows.length;
+
+  if (!allStockOps) {
+    return base;
+  }
+
+  const bulkType = rows[0].metadata?.type as string | undefined;
+  const sameBulkType = rows.every(
+    (row) => (row.metadata?.type as string | undefined) === bulkType
+  );
+  const op: StockOperation =
+    sameBulkType && (bulkType === 'IN' || bulkType === 'OUT')
+      ? bulkType
+      : rows.every((row) => detectStockOperation(row) === 'ADJUST')
+        ? 'ADJUST'
+        : 'IN';
+
+  const opLabel = STOCK_OPERATION_LABELS[op][isTh ? 'th' : 'en'];
+  const lines = rows
+    .map((row) => {
+      const name = resolveEntityName(row, isTh);
+      const qty = row.metadata?.quantity != null ? Number(row.metadata.quantity) : NaN;
+      if (op === 'IN' && !Number.isNaN(qty)) {
+        return isTh ? `${name} +${qty}` : `${name} +${qty}`;
+      }
+      if (op === 'OUT' && !Number.isNaN(qty)) {
+        return isTh ? `${name} −${qty}` : `${name} −${qty}`;
+      }
+      const stockChange = row.field_changes?.find((c) => c.field === 'stock');
+      const newVal = stockChange ? formatDisplayValue(stockChange.new_value, isTh) : null;
+      return newVal != null ? `${name} → ${newVal}` : name;
+    })
+    .filter(Boolean);
+
+  const maxLines = 4;
+  const shown = lines.slice(0, maxLines);
+  if (lines.length > maxLines) {
+    shown.push(
+      isTh ? `และอีก ${lines.length - maxLines} รายการ` : `and ${lines.length - maxLines} more`
+    );
+  }
+
+  return {
+    ...base,
+    title: isTh
+      ? `${opLabel}: ${rows.length} รายการ`
+      : `${opLabel}: ${rows.length} items`,
+    summary: shown.join(' · '),
+    fieldSummary: shown.join(' · '),
+    batchedCount: rows.length,
+  };
+}
+
+
+
 const GENERIC_MODULE_LABELS: Record<string, { th: string; en: string }> = {
 
   inventory: { th: 'คลังสินค้า', en: 'Inventory' },

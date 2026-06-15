@@ -70,7 +70,7 @@ export default function ScheduleToolbar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 w-full overflow-x-auto bb-smooth-scroll whitespace-nowrap pb-2 scrollbar-none md:overflow-visible md:pb-0 md:justify-end">
+      <div className="flex items-center gap-2 w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y whitespace-nowrap pb-2 scrollbar-none md:overflow-visible md:pb-0 md:justify-end">
         <button
           onClick={onShowShiftSettings}
           className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm cursor-pointer"

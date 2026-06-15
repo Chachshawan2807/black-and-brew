@@ -7,11 +7,11 @@ import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
 import { formatScheduleChatResponse } from '@/lib/schedule/format-schedule-chat-response';
 import {
   fetchTablePreset,
-  fetchInventorySummary,
   fetchShiftsByDate,
   getRealColumnName,
   TABLE_COLUMN_PRESETS,
 } from '@/lib/ai-data-gateway';
+import { computeItemsToOrder, type InventoryStockFields } from '@/lib/inventory-stock';
 
 // NOTE (AI-GATEWAY-P3): column presets, aliases, limits, and the Service Role
 // client now live in `src/lib/ai-data-gateway.ts` — the single doorway for all
@@ -92,22 +92,40 @@ export const readTableTool = tool({
 
       const hasFilters = !!filters && Object.keys(filters).length > 0;
 
-      // ─── ROUTE 1: inventory snapshot → AI Data Gateway store status ────────
-      // "สรุปสต็อกทั้งหมด" with no filters routes to get_ai_store_status, which
-      // returns DB-computed LOW/WARNING/OK status (sql/ai_agent_views.sql).
+      // ─── ROUTE 1: inventory snapshot → preset read + PO-aligned filter ─────
+      // Use computeItemsToOrder (same as รายการสั่งซื้อ modal) so AI counts match UI.
       if (tableName === 'inventory_items' && !hasFilters) {
-        const status = await fetchInventorySummary();
-        const inventory = status.inventory_summary ?? [];
-        const lowStock = status.low_stock_items ?? [];
+        const result = await fetchTablePreset(tableName, undefined, limit);
+        if (!result.ok) {
+          return {
+            ok: false,
+            data: null,
+            error: result.error ?? {
+              message: 'Failed to read inventory_items',
+              details: null,
+              hint: null,
+            },
+          };
+        }
+
+        const items = result.rows as InventoryStockFields[];
+        const lowStock = computeItemsToOrder(items);
+        const sourceBreakdown: Record<string, number> = {};
+        lowStock.forEach((item) => {
+          const src = (item.source as string | undefined) ?? 'ไม่ระบุช่องทาง';
+          sourceBreakdown[src] = (sourceBreakdown[src] ?? 0) + 1;
+        });
 
         return {
           ok: true,
-          row_count: inventory.length,
-          is_complete_dataset: true,
-          source: 'ai_data_gateway:get_ai_store_status',
-          data: inventory,
+          row_count: items.length,
+          is_complete_dataset: items.length < result.effectiveLimit,
+          source: 'ai_data_gateway:computeItemsToOrder',
+          data: items,
           low_stock_items: lowStock,
           low_stock_count: lowStock.length,
+          source_breakdown: sourceBreakdown,
+          total_items: items.length,
         };
       }
 

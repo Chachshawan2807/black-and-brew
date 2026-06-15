@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { updateInventoryStock, fetchCountAccuracyStats, recordCountVerification, fetchInOutTheoreticalQtyMap } from '@/app/actions/inventory-actions';
+import { updateInventoryStock, fetchCountAccuracyStats, recordCountVerification } from '@/app/actions/inventory-actions';
 import type { CountAccuracyStatsResult, ItemCountAccuracyStats } from '@/app/actions/inventory-actions';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { getClientSessionId } from '@/lib/client-session';
@@ -25,46 +25,40 @@ interface InventoryItem {
   [key: string]: any;
 }
 
-function CountInput({
-  item,
+const CountInput = memo(function CountInput({
   index,
   onSave,
   disabled = false,
   isActive = false,
   onActiveChange,
+  itemId,
 }: {
-  item: InventoryItem;
   index: number;
   onSave: (id: string, value: number) => Promise<void>;
   disabled?: boolean;
   isActive?: boolean;
   onActiveChange?: (id: string | null) => void;
+  itemId: string;
 }) {
-  const [val, setVal] = useState(String(item.stock ?? 0));
+  const [val, setVal] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const pendingValueRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!isFocused) {
-      if (pendingValueRef.current !== null && Number(item.stock) === pendingValueRef.current) {
-        pendingValueRef.current = null;
-      }
-      if (pendingValueRef.current === null) {
-        setVal(String(item.stock ?? 0));
-      }
-    }
-  }, [item.stock, isFocused]);
 
   const handleBlur = async () => {
     if (disabled) return;
-    const numberVal = val === '' ? 0 : Number(val);
+    if (val === '') {
+      setIsFocused(false);
+      onActiveChange?.(null);
+      return;
+    }
+
+    const numberVal = Number(val);
     const sanitized = isNaN(numberVal) ? 0 : numberVal;
-    pendingValueRef.current = sanitized;
     setVal(String(sanitized));
     setIsFocused(false);
     onActiveChange?.(null);
-    await onSave(item.id, sanitized);
+    await onSave(itemId, sanitized);
+    setVal('');
   };
 
   return (
@@ -87,6 +81,7 @@ function CountInput({
         type="text"
         inputMode="decimal"
         value={val}
+        placeholder="จำนวน"
         onChange={(e) => {
           let value = e.target.value.replace(/[^0-9.]/g, '');
           if (value.length > 1 && value.startsWith('0') && !value.startsWith('0.')) {
@@ -96,7 +91,7 @@ function CountInput({
         }}
         onFocus={() => {
           setIsFocused(true);
-          onActiveChange?.(item.id);
+          onActiveChange?.(itemId);
           inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }}
         onBlur={() => void handleBlur()}
@@ -116,7 +111,7 @@ function CountInput({
         data-count-row-index={index}
         disabled={disabled}
         className={cn(
-          'px-3 rounded-xl border text-base font-normal text-center outline-none font-mono transition-all duration-200',
+          'px-3 rounded-xl border text-base font-normal text-center outline-none font-mono transition-all duration-200 placeholder:text-muted-foreground/40',
           isActive
             ? 'w-28 h-11 border-black/20 bg-white text-black ring-2 ring-black/10 shadow-sm bb-pastel-surface'
             : 'w-24 h-10 border-border bg-muted text-foreground focus:bg-card focus:ring-1 focus:ring-foreground/10',
@@ -125,26 +120,151 @@ function CountInput({
       />
     </div>
   );
-}
+});
+
+const STAGGER_ANIMATION_CAP = 15;
+
+type CountItemRowProps = {
+  item: InventoryItem;
+  index: number;
+  isActive: boolean;
+  isDimmed: boolean;
+  animateEntrance: boolean;
+  itemStats?: ItemCountAccuracyStats;
+  recentVerification?: { matched: boolean; systemStockQty: number; countedQty: number };
+  onSave: (id: string, value: number) => Promise<void>;
+  isReadOnly: boolean;
+  onActiveChange: (id: string | null) => void;
+};
+
+const CountItemRow = memo(function CountItemRow({
+  item,
+  index,
+  isActive,
+  isDimmed,
+  animateEntrance,
+  itemStats,
+  recentVerification,
+  onSave,
+  isReadOnly,
+  onActiveChange,
+}: CountItemRowProps) {
+  return (
+    <motion.div
+      initial={animateEntrance ? { opacity: 0, y: 10 } : false}
+      animate={{
+        opacity: isDimmed ? 0.42 : 1,
+        y: 0,
+        scale: isActive ? 1.015 : 1,
+      }}
+      transition={{
+        duration: 0.2,
+        delay: animateEntrance && index < STAGGER_ANIMATION_CAP ? index * 0.02 : 0,
+      }}
+      className={cn(
+        'relative rounded-2xl p-4 flex items-start justify-between gap-3 transition-all duration-300',
+        isActive
+          ? `${PASTEL_SURFACE} bg-[#d4edda] border border-[#c3e6cb] shadow-md ring-2 ring-black/8 z-10`
+          : 'bg-card border border-border shadow-sm hover:border-foreground/10',
+      )}
+    >
+      {isActive && (
+        <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-black/70" />
+      )}
+
+      <div className="flex items-start gap-3 flex-1 min-w-0 pl-1">
+        <span
+          className={cn(
+            'text-[12px] font-normal font-mono shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200 tabular-nums',
+            isActive
+              ? 'bg-black text-white'
+              : 'text-muted-foreground/50'
+          )}
+        >
+          {(index + 1).toString().padStart(2, '0')}
+        </span>
+        <div className="min-w-0 flex-1">
+          <span
+            className={cn(
+              'font-normal text-[15px] leading-tight transition-colors duration-200 block',
+              isActive ? 'text-black' : 'text-foreground/80'
+            )}
+          >
+            {item.name} {item.unit ? `(${item.unit})` : ''}
+          </span>
+          {itemStats && itemStats.totalChecks > 0 ? (
+            <p className={cn('mt-1 text-xs tabular-nums', isActive ? 'text-black/70 bb-pastel-surface' : 'text-muted-foreground')}>
+              ค่าความแม่นยำแยกเฉพาะรายการ (Item-level Accuracy): {itemStats.accuracyPct}%
+              <span className="opacity-70"> ({itemStats.matchChecks}/{itemStats.totalChecks})</span>
+            </p>
+          ) : (
+            <p className={cn('mt-1 text-xs', isActive ? 'text-black/50 bb-pastel-surface' : 'text-muted-foreground/70')}>
+              ค่าความแม่นยำแยกเฉพาะรายการ (Item-level Accuracy): ยังไม่มีข้อมูล
+            </p>
+          )}
+          {recentVerification && (
+            <p
+              className={cn(
+                'mt-1 text-xs rounded-lg px-2 py-0.5 inline-block bb-pastel-surface',
+                recentVerification.matched
+                  ? 'bg-[#d4edda] text-black border border-[#c3e6cb]'
+                  : 'bg-[#fff3cd] text-black border border-[#ffeeba]',
+              )}
+            >
+              {recentVerification.matched
+                ? '✓ ตรงครั้งนี้'
+                : `✗ ไม่ตรง (นับได้ ${recentVerification.countedQty}, ในระบบ: ${recentVerification.systemStockQty})`}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="shrink-0">
+        <CountInput
+          itemId={item.id}
+          index={index}
+          onSave={onSave}
+          disabled={isReadOnly}
+          isActive={isActive}
+          onActiveChange={onActiveChange}
+        />
+      </div>
+    </motion.div>
+  );
+});
 
 interface InventoryCountClientProps {
   initialItems: InventoryItem[];
+  initialAccuracyStats?: CountAccuracyStatsResult | null;
   locale: string;
 }
 
-export default function InventoryCountClient({ initialItems, locale }: InventoryCountClientProps) {
+export default function InventoryCountClient({
+  initialItems,
+  initialAccuracyStats = null,
+  locale,
+}: InventoryCountClientProps) {
   const isReadOnly = useReadOnly();
   const { subscribe } = useInventoryRealtime();
 
   const [items, setItems] = useState<InventoryItem[]>(initialItems);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const [loading, setLoading] = useState(false);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  const [accuracyStats, setAccuracyStats] = useState<CountAccuracyStatsResult | null>(null);
-  const [theoreticalByItem, setTheoreticalByItem] = useState<Record<string, number>>({});
-  const [lastVerification, setLastVerification] = useState<Record<string, { matched: boolean; theoreticalQty: number; countedQty: number }>>({});
+  const [accuracyStats, setAccuracyStats] = useState<CountAccuracyStatsResult | null>(initialAccuracyStats);
+  const [lastVerification, setLastVerification] = useState<Record<string, { matched: boolean; systemStockQty: number; countedQty: number }>>({});
+  const hasAnimatedEntranceRef = useRef(false);
+  const animateEntrance = !hasAnimatedEntranceRef.current && items.length <= STAGGER_ANIMATION_CAP;
+
+  useEffect(() => {
+    if (animateEntrance) {
+      hasAnimatedEntranceRef.current = true;
+    }
+  }, [animateEntrance]);
 
   const loadAccuracyStats = useCallback(async () => {
     const res = await fetchCountAccuracyStats();
@@ -153,17 +273,10 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
     }
   }, []);
 
-  const loadTheoreticalQtyForItems = useCallback(async (itemList: InventoryItem[]) => {
-    const res = await fetchInOutTheoreticalQtyMap(itemList.map((item) => item.id));
-    if (res.success && res.data) {
-      setTheoreticalByItem(res.data);
-    }
-  }, []);
-
   useEffect(() => {
+    if (initialAccuracyStats) return;
     void loadAccuracyStats();
-    void loadTheoreticalQtyForItems(initialItems);
-  }, [loadAccuracyStats, loadTheoreticalQtyForItems, initialItems]);
+  }, [initialAccuracyStats, loadAccuracyStats]);
 
   const fetchInventory = useCallback(async () => {
     setLoading(true);
@@ -182,7 +295,6 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
       }
 
       setItems(data || []);
-      void loadTheoreticalQtyForItems(data || []);
     } catch (err) {
       console.error('Failed to load inventory for count:', err);
       setItems([]);
@@ -190,7 +302,7 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
     } finally {
       setLoading(false);
     }
-  }, [loadTheoreticalQtyForItems]);
+  }, []);
 
   useEffect(() => {
     return subscribe((payload) => {
@@ -215,68 +327,80 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
     });
   }, [subscribe]);
 
-  async function handleSaveStock(id: string, value: number) {
+  const handleSaveStock = useCallback(async (id: string, value: number) => {
     if (isReadOnly) {
       setSaveErrorMessage(READ_ONLY_DENY_MSG);
       return;
     }
-    const currentItem = items.find(i => i.id === id);
-    if (currentItem && Number(currentItem.stock) === value) return;
 
-    const previousStock = currentItem?.stock ?? 0;
+    const currentItem = itemsRef.current.find((i) => i.id === id);
+    const previousStock = Number(currentItem?.stock ?? 0);
+    const needsStockUpdate = previousStock !== value;
 
-    // Optimistic UI update
-    setItems(prev => prev.map(item =>
-      item.id === id ? { ...item, stock: value } : item
-    ));
-
-    setSavingState('saving');
     setSaveErrorMessage(null);
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, stock: value } : item)),
+    );
+    setSavingState('saving');
 
     try {
-      const result = await updateInventoryStock(id, value, 'Stock-taking count', {
-        recordHistory: false,
-        clientSessionId: getClientSessionId(),
-        notificationContext: 'inventory_count',
-      });
+      const verificationPromise = recordCountVerification(id, value);
+      const stockPromise = needsStockUpdate
+        ? updateInventoryStock(id, value, 'Stock-taking count', {
+            recordHistory: false,
+            clientSessionId: getClientSessionId(),
+            notificationContext: 'inventory_count',
+            suppressNotification: true,
+          })
+        : Promise.resolve({ success: true as const, newStock: value });
 
-      if (!result.success) {
-        throw new Error(result.error);
+      const [verification, stockResult] = await Promise.all([
+        verificationPromise,
+        stockPromise,
+      ]);
+
+      if (!verification.success) {
+        throw new Error(verification.error);
+      }
+      if (!stockResult.success) {
+        throw new Error(stockResult.error);
       }
 
-      const savedStock = result.newStock ?? value;
-      setItems(prev => prev.map(item =>
-        item.id === id ? { ...item, stock: savedStock } : item
-      ));
+      setLastVerification((prev) => ({
+        ...prev,
+        [id]: {
+          matched: verification.matched ?? false,
+          systemStockQty: verification.systemStockQty ?? previousStock,
+          countedQty: verification.countedQty ?? value,
+        },
+      }));
+      void loadAccuracyStats();
+
+      const savedStock = stockResult.newStock ?? value;
+      if (savedStock !== value) {
+        setItems((prev) =>
+          prev.map((item) => (item.id === id ? { ...item, stock: savedStock } : item)),
+        );
+      }
 
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
-
-      const verification = await recordCountVerification(id, savedStock);
-      if (verification.success) {
-        setLastVerification((prev) => ({
-          ...prev,
-          [id]: {
-            matched: verification.matched ?? false,
-            theoreticalQty: verification.theoreticalQty ?? 0,
-            countedQty: verification.countedQty ?? savedStock,
-          },
-        }));
-        if (verification.theoreticalQty !== undefined) {
-          setTheoreticalByItem((prev) => ({ ...prev, [id]: verification.theoreticalQty! }));
-        }
-        await loadAccuracyStats();
-      }
     } catch (err) {
       console.error('Failed to update stock:', err);
-      setItems(prev => prev.map(item =>
-        item.id === id ? { ...item, stock: previousStock } : item
-      ));
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, stock: previousStock } : item)),
+      );
       setSavingState('idle');
       setSaveErrorMessage('บันทึกจำนวนสต็อกไม่สำเร็จ ระบบได้โหลดข้อมูลล่าสุดกลับมาแล้ว');
       fetchInventory();
     }
-  }
+  }, [fetchInventory, isReadOnly, loadAccuracyStats]);
+
+  const handleActiveChange = useCallback((id: string | null) => {
+    setActiveItemId(id);
+  }, []);
+
+  const isDimmedByActive = activeItemId !== null;
 
   if (loading) {
     return (
@@ -379,7 +503,7 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
 
         <div className="mb-6 rounded-2xl border border-border bg-card p-4 text-center shadow-sm">
           <p className="text-[11px] font-normal uppercase tracking-[0.2em] text-muted-foreground">
-            ความแม่นยำการบันทึกรับเข้า/นำออก
+            ค่าความแม่นยำรวม (Total Accuracy)
           </p>
           {accuracyStats && accuracyStats.overall.totalChecks > 0 ? (
             <>
@@ -387,7 +511,7 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
                 {accuracyStats.overall.accuracyPct}%
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                ตรง {accuracyStats.overall.matchChecks} จาก {accuracyStats.overall.totalChecks} ครั้งที่ตรวจนับ (ไม่รวมการปรับจำนวน)
+                ตรง {accuracyStats.overall.matchChecks} จาก {accuracyStats.overall.totalChecks} ครั้งที่ตรวจนับ
               </p>
             </>
           ) : (
@@ -401,104 +525,27 @@ export default function InventoryCountClient({ initialItems, locale }: Inventory
           </div>
         )}
 
-        <div className="space-y-2.5 pb-20">
+        <div className="space-y-2.5 pb-20 bb-smooth-scroll">
           {items.length === 0 ? (
             <div className="p-8 text-center text-base font-normal text-muted-foreground bg-card border border-border rounded-3xl">
               ไม่มีข้อมูลสินค้าในระบบ กรุณาเพิ่มข้อมูลในหน้าคลังสินค้าหลักก่อนนะคะ
             </div>
           ) : (
-            items.map((item, index) => {
-              const isActive = activeItemId === item.id;
-              const isDimmed = activeItemId !== null && !isActive;
-              const itemStats: ItemCountAccuracyStats | undefined = accuracyStats?.perItem[item.id];
-              const theoreticalQty = theoreticalByItem[item.id];
-              const recentVerification = lastVerification[item.id];
-
-              return (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{
-                    opacity: isDimmed ? 0.42 : 1,
-                    y: 0,
-                    scale: isActive ? 1.015 : 1,
-                  }}
-                  transition={{ duration: 0.2, delay: activeItemId ? 0 : index * 0.02 }}
-                  className={cn(
-                    'relative rounded-2xl p-4 flex items-start justify-between gap-3 transition-all duration-300',
-                    isActive
-                      ? `${PASTEL_SURFACE} bg-[#d4edda] border border-[#c3e6cb] shadow-md ring-2 ring-black/8 z-10`
-                      : 'bg-card border border-border shadow-sm hover:border-foreground/10',
-                  )}
-                >
-                  {isActive && (
-                    <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-black/70" />
-                  )}
-
-                  <div className="flex items-start gap-3 flex-1 min-w-0 pl-1">
-                    <span
-                      className={cn(
-                        'text-[12px] font-normal font-mono shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200 tabular-nums',
-                        isActive
-                          ? 'bg-black text-white'
-                          : 'text-muted-foreground/50'
-                      )}
-                    >
-                      {(index + 1).toString().padStart(2, '0')}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <span
-                        className={cn(
-                          'font-normal text-[15px] leading-tight transition-colors duration-200 block',
-                          isActive ? 'text-black' : 'text-foreground/80'
-                        )}
-                      >
-                        {item.name} {item.unit ? `(${item.unit})` : ''}
-                      </span>
-                      {theoreticalQty !== undefined && (
-                        <p className={cn('mt-1 text-xs tabular-nums', isActive ? 'text-black/70 bb-pastel-surface' : 'text-muted-foreground')}>
-                          ตามบันทึก IN/OUT: {theoreticalQty}
-                        </p>
-                      )}
-                      {itemStats && itemStats.totalChecks > 0 ? (
-                        <p className={cn('mt-0.5 text-xs tabular-nums', isActive ? 'text-black/70 bb-pastel-surface' : 'text-muted-foreground')}>
-                          ความแม่นยำ {itemStats.accuracyPct}% ({itemStats.matchChecks}/{itemStats.totalChecks})
-                        </p>
-                      ) : (
-                        <p className={cn('mt-0.5 text-xs', isActive ? 'text-black/50 bb-pastel-surface' : 'text-muted-foreground/70')}>
-                          ยังไม่มีข้อมูลการตรวจนับ
-                        </p>
-                      )}
-                      {recentVerification && (
-                        <p
-                          className={cn(
-                            'mt-1 text-xs rounded-lg px-2 py-0.5 inline-block bb-pastel-surface',
-                            recentVerification.matched
-                              ? 'bg-[#d4edda] text-black border border-[#c3e6cb]'
-                              : 'bg-[#fff3cd] text-black border border-[#ffeeba]',
-                          )}
-                        >
-                          {recentVerification.matched
-                            ? '✓ ตรงครั้งนี้'
-                            : `✗ ไม่ตรง (นับได้ ${recentVerification.countedQty}, บันทึก IN/OUT: ${recentVerification.theoreticalQty})`}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="shrink-0">
-                    <CountInput
-                      item={item}
-                      index={index}
-                      onSave={handleSaveStock}
-                      disabled={isReadOnly}
-                      isActive={isActive}
-                      onActiveChange={setActiveItemId}
-                    />
-                  </div>
-                </motion.div>
-              );
-            })
+            items.map((item, index) => (
+              <CountItemRow
+                key={item.id}
+                item={item}
+                index={index}
+                isActive={activeItemId === item.id}
+                isDimmed={isDimmedByActive && activeItemId !== item.id}
+                animateEntrance={animateEntrance}
+                itemStats={accuracyStats?.perItem[item.id]}
+                recentVerification={lastVerification[item.id]}
+                onSave={handleSaveStock}
+                isReadOnly={isReadOnly}
+                onActiveChange={handleActiveChange}
+              />
+            ))
           )}
         </div>
       </div>

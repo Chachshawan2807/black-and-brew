@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'ระบบบริหารจัดการร้านกาแฟ BLACKANDBREW',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
+    background_color: '#fdfcf0',
     theme_color: '#000000',
     categories: ['business', 'productivity'],
     icons: [

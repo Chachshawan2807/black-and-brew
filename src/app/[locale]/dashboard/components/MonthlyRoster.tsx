@@ -158,11 +158,11 @@ export default function MonthlyRoster() {
       ) : (
         <div className="bg-card rounded-[32px] border border-border shadow-xl shadow-black/5">
           {activeTab === 'consolidated' ? (
-            <div className="w-full overflow-x-auto bb-smooth-scroll">
+            <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y">
               <table className="w-max min-w-full border-collapse">
                 <thead>
                   <tr className="bg-muted/50">
-                    <th className="sticky left-0 z-30 bg-muted/50 p-4 text-left border-b border-r border-border text-foreground font-normal whitespace-nowrap shadow-sm">
+                    <th className="sticky left-0 z-30 bg-muted/50 p-4 text-left border-b border-r border-border text-foreground font-normal whitespace-nowrap shadow-sm bb-sticky-scroll-cell">
                       พนักงาน
                     </th>
                     {daysInInterval.map((day) => (
@@ -176,7 +176,7 @@ export default function MonthlyRoster() {
                 <tbody>
                   {data.profiles.map((profile) => (
                     <tr key={profile.id} className="group hover:bg-muted/30 transition-colors">
-                      <td className="sticky left-0 z-10 bg-card p-4 border-r border-b border-border text-foreground font-normal text-sm group-hover:bg-muted/30 transition-colors whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                      <td className="sticky left-0 z-10 bg-card p-4 border-r border-b border-border text-foreground font-normal text-sm group-hover:bg-muted/30 transition-colors whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] bb-sticky-scroll-cell">
                         {profile.full_name}
                       </td>
                       {daysInInterval.map((day) => {

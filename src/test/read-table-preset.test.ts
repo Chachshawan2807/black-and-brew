@@ -7,11 +7,12 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
  * data-exfiltration vector (e.g. requesting sensitive columns on `profiles`).
  *
  * AI-GATEWAY-P3 — reads now flow through src/lib/ai-data-gateway.ts:
- *   - inventory_items + no filters → get_ai_store_status RPC (no raw select)
+ *   - inventory_items + no filters → fetchTablePreset + computeItemsToOrder
  *   - everything else → fetchTablePreset (preset-locked select)
  */
 
 const captured = { select: '', rpc: '' };
+let mockTableRows: unknown[] = [];
 
 vi.mock('@supabase/supabase-js', () => {
   const builder: Record<string, unknown> = {};
@@ -26,7 +27,7 @@ vi.mock('@supabase/supabase-js', () => {
     lte: vi.fn(() => builder),
     order: vi.fn(() => builder),
     then: (resolve: (v: { data: unknown[]; error: null }) => void) =>
-      resolve({ data: [], error: null }),
+      resolve({ data: mockTableRows, error: null }),
   });
 
   return {
@@ -60,6 +61,7 @@ describe('readTableTool — preset column enforcement', () => {
   beforeEach(() => {
     captured.select = '';
     captured.rpc = '';
+    mockTableRows = [];
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
   });
@@ -89,10 +91,22 @@ describe('readTableTool — preset column enforcement', () => {
     expect(captured.select).toBe(INVENTORY_PRESET);
   });
 
-  test('inventory_items + no filters routes through the gateway RPC, not a raw select', async () => {
-    await runReadTable({ tableName: 'inventory_items' });
+  test('inventory_items + no filters uses preset read and PO-aligned low_stock_count', async () => {
+    mockTableRows = [
+      { id: '1', name: 'Beans', stock: 2, order_point: 10, target_stock: 20, unit: 'kg', source: 'Makro' },
+      { id: '2', name: 'Oat', stock: 10, order_point: 12, target_stock: 10, unit: 'box', source: 'Line' },
+    ];
 
-    expect(captured.rpc).toBe('get_ai_store_status');
-    expect(captured.select).toBe('');
+    const result = (await runReadTable({ tableName: 'inventory_items' })) as {
+      low_stock_count: number;
+      low_stock_items: unknown[];
+      source: string;
+    };
+
+    expect(captured.select).toBe(INVENTORY_PRESET);
+    expect(captured.rpc).toBe('');
+    expect(result.source).toBe('ai_data_gateway:computeItemsToOrder');
+    expect(result.low_stock_count).toBe(1);
+    expect(result.low_stock_items).toHaveLength(1);
   });
 });

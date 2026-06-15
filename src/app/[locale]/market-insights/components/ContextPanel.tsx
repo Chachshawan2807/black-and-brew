@@ -30,7 +30,7 @@ function KpiCard({
   sub?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-border bg-card px-3.5 py-3 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
+    <div className="relative w-full min-w-0 shrink-0 rounded-2xl border border-border bg-card px-3.5 py-3 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
       <div className="flex items-center gap-1 text-muted-foreground/90 mb-1.5 min-w-0">
         {icon}
         <span className="text-[11px] truncate">{label}</span>
@@ -89,7 +89,7 @@ export default function ContextPanel({ context }: { context: MarketContext }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 isolate [contain:paint]">
+      <div className="flex w-full flex-col gap-2.5 sm:grid sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
         <KpiCard
           icon={<CloudSun className="w-3.5 h-3.5 shrink-0" />}
           label="อากาศวันนี้"

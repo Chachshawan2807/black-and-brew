@@ -1,21 +1,30 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-15 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
+> Version: 8.6 | Last Updated: 2026-06-16 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
 
 ---
 
 ## Recent Decisions
 
-### DEC-073: IN/OUT Theoretical Stock for Count Accuracy (v8.6)
+### DEC-074: Count Accuracy Uses System Stock Baseline (v8.6)
+
+- Date: June 16, 2026
+- Context: IN/OUT ledger replay (`in_out_theoretical_qty`) diverged from what staff see on the count page; manual warehouse edits also skewed accuracy metrics.
+- Decision:
+  1. Migration `20260615120000_inventory_count_accuracy_refactor.sql` — rename column to `system_stock_qty`, clear legacy rows.
+  2. `recordCountVerification()` reads `inventory_items.stock` before applying the count update.
+  3. Match via `isCountMatch()` in `src/lib/inventory-count-accuracy.ts`.
+- Impact: Accuracy badges reflect physical count vs system stock at verification time. `computeInOutTheoreticalStock()` remains in `inventory-in-out-theoretical.ts` for ledger analysis tests only — not used by count verification.
+- Evidence: `src/app/actions/inventory-actions.ts`, `src/test/record-count-verification.test.ts`, `src/test/inventory-count-accuracy.test.ts`
+
+### DEC-073: IN/OUT Theoretical Stock for Count Accuracy (v8.6) — superseded by DEC-074
 
 - Date: June 15, 2026
-- Context: Stock-taking count page needed to measure how accurately staff record IN/OUT transactions — separate from absolute stock edits (ADJUST) and lifecycle events (ADD/DELETE).
-- Decision:
+- Context: Original count accuracy design used IN/OUT ledger replay. Replaced June 16 by system-stock baseline (DEC-074).
+- Decision (historical):
   1. `computeInOutTheoreticalStock()` in `src/lib/inventory-in-out-theoretical.ts` — replays ADD baseline + IN/OUT; latest ADJUST rebaselines to `balance_after`.
-  2. `inventory_count_verifications` table — stores `counted_qty`, `in_out_theoretical_qty`, `matched` per verification event.
-  3. Server actions: `recordCountVerification()`, `fetchCountAccuracyStats()`, `fetchInOutTheoreticalQtyMap()`, `computeInOutTheoreticalStockForItem()`.
-- Impact: Count page shows per-item accuracy % without conflating warehouse edits with IN/OUT recording quality.
-- Evidence: `supabase/migrations/20260614120000_inventory_count_verifications.sql`, `src/test/inventory-count-accuracy.test.ts`, `src/test/inventory-in-out-theoretical.test.ts`
+  2. `inventory_count_verifications` table — originally stored `in_out_theoretical_qty`; now `system_stock_qty`.
+- Evidence: `supabase/migrations/20260614120000_inventory_count_verifications.sql`, `supabase/migrations/20260615120000_inventory_count_accuracy_refactor.sql`
 
 ### DEC-072: Inventory Quick Action Bulk + Realtime Context (v8.6)
 

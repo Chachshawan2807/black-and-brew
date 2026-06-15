@@ -248,9 +248,9 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto bb-smooth-scroll px-4 py-4 md:px-6 md:py-4 bg-card scrollbar-thin">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto bb-smooth-scroll px-4 py-4 md:px-6 md:py-4 bg-background scrollbar-thin">
 
-          <div className="inline-block w-fit max-w-full bg-background rounded-[2rem] border border-border shadow-sm">
+          <div className="inline-block w-max min-w-full bg-background rounded-[2rem] border border-border shadow-sm">
 
             <table className="w-max text-left border-collapse table-auto">
 

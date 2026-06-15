@@ -5,6 +5,7 @@ import {
   forceRevokeDeviceSession,
 } from '@/app/actions/auth';
 import { AUTH_SESSION_MAX_AGE_SEC, FORCE_LOGOUT_DENY_MSG, READ_ONLY_DENY_MSG } from '@/lib/auth-constants';
+import { clearPinAttempts } from '@/lib/security/pin-rate-limit';
 
 const mockSet = vi.fn();
 const mockDelete = vi.fn();
@@ -26,6 +27,12 @@ vi.mock('next/headers', () => ({
     get: mockGet,
     delete: mockDelete,
   })),
+  headers: vi.fn().mockImplementation(async () => ({
+    get: (name: string) => {
+      if (name === 'x-forwarded-for') return '198.51.100.42';
+      return null;
+    },
+  })),
 }));
 
 describe('verifyPin Security Checks', () => {
@@ -34,7 +41,8 @@ describe('verifyPin Security Checks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGet.mockReturnValue(undefined);
-    process.env = { ...originalEnv, APP_PIN: '123456' };
+    clearPinAttempts('198.51.100.42');
+    process.env = { ...originalEnv, APP_PIN: '123456', APP_READ_ONLY_PIN: '111222' };
   });
 
   test('should delay execution to deter brute force attacks (Tarpitting)', async () => {
@@ -74,7 +82,18 @@ describe('verifyPin Security Checks', () => {
     expect(mockDelete).toHaveBeenCalledWith('bb_auth_read_only');
   });
 
-  test('should set read-only cookies when PIN is 111222', async () => {
+  test('should lock out after 5 failed PIN attempts per IP', async () => {
+    for (let i = 0; i < 5; i += 1) {
+      const result = await verifyPin('wrong');
+      expect(result.success).toBe(false);
+    }
+
+    const locked = await verifyPin('wrong');
+    expect(locked.success).toBe(false);
+    expect(locked.error).toContain('ลองใส่ PIN ผิดเกิน 5 ครั้ง');
+  }, 20_000);
+
+  test('should set read-only cookies when read-only PIN matches env', async () => {
     const result = await verifyPin('111222');
 
     expect(result).toEqual({ success: true, isReadOnly: true });
@@ -90,7 +109,7 @@ describe('forceRevokeDeviceSession', () => {
       if (name === 'bb_session_fp') return { value: 'current-fp' };
       return undefined;
     });
-    process.env = { ...process.env, APP_PIN: '123456' };
+    process.env = { ...process.env, APP_PIN: '123456', APP_READ_ONLY_PIN: '111222' };
   });
 
   test('requires master PIN', async () => {
