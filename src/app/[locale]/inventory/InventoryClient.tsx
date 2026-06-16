@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase';
 import { Plus, Loader2, Undo2, Redo2, Trash2, X, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem, deleteInventoryItemsBulk, updateInventoryStock, recordItemAddHistory } from '@/app/actions/inventory-actions';
@@ -401,7 +402,7 @@ const MobileSortableRow = React.memo(({
   index: number;
   totalItems: number;
   columns: ColumnDef[];
-  getStockColorClass: (stock: number, targetStock: number) => string;
+  getStockColorClass: (stock: number, orderPoint: number) => string;
 }) => {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
@@ -479,7 +480,7 @@ const MobileSortableRow = React.memo(({
             handleFocus={handleFocus}
             className={cn(
               "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate",
-              getStockColorClass(stock, targetStock)
+              getStockColorClass(stock, orderPoint)
             )}
           />
         </div>
@@ -613,7 +614,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
   // ควบคุมการจัดเรียงข้อความและสีเฉพาะคอลัมน์คงเหลือ
   const getAlignmentAndColor = () => {
     if (col.id === 'name') return 'text-left pr-10 text-foreground';
-    if (col.id === 'stock') return `text-center ${getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0)}`;
+    if (col.id === 'stock') return `text-center ${getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0)}`;
     if (col.id === 'order_qty') return 'text-center text-foreground';
     return 'text-center text-foreground/60';
   };
@@ -660,7 +661,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         readOnly={col.id === 'order_qty'}
         className={cn(
           "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate",
-          col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0),
+          col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0),
           col.id === 'order_qty' && 'bg-muted border-border text-muted-foreground cursor-not-allowed'
         )}
       />
@@ -879,39 +880,18 @@ export default function InventoryClient({
     if (!element) return;
     try {
       setIsExportingPO(true);
-      // 1. ดึงความสูงและความกว้างที่แท้จริงของตารางทั้งหมด
-      const fullHeight = element.scrollHeight;
-      const fullWidth = element.scrollWidth;
-
-      const { toPng } = await import('html-to-image');
-      const dataUrl = await toPng(element, {
-        quality: 1.0,
-        pixelRatio: 2,
+      const { captureElementAsPng, downloadDataUrl } = await import('@/lib/capture-element-png');
+      const dataUrl = await captureElementAsPng(element, {
         backgroundColor: '#fff3dd',
-        width: fullWidth,
-        height: fullHeight,
-        style: {
-          margin: '0',
-          padding: '0',
-          border: 'none',
-          boxShadow: 'none',
-          maxHeight: 'none', // ปลดล็อกข้อจำกัดความสูง
-          overflow: 'hidden' // ป้องกันไม่ให้มี Scrollbar โผล่ในรูปภาพ
-        },
-        filter: (node: HTMLElement) => {
-          if (node?.id === 'po-action-buttons') {
-            return false;
-          }
-          return true;
-        }
+        filter: (node: HTMLElement) => node?.id !== 'po-action-buttons',
       });
       const channelSuffix = selectedChannels.includes('all')
         ? 'All'
         : selectedChannels.join('-');
-      const link = document.createElement('a');
-      link.download = `PurchaseOrders-${channelSuffix}-${new Date().toISOString().split('T')[0]}.png`;
-      link.href = dataUrl;
-      link.click();
+      downloadDataUrl(
+        dataUrl,
+        `PurchaseOrders-${channelSuffix}-${new Date().toISOString().split('T')[0]}.png`,
+      );
     } catch (err) {
       console.error('Failed to export PO image:', err);
     } finally {
@@ -1594,7 +1574,7 @@ export default function InventoryClient({
 
   return (
     <>
-      <div className="flex-1 w-full max-w-full bg-transparent text-foreground font-normal transition-all duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
+      <div className="flex-1 w-full max-w-full bg-transparent text-foreground font-normal antialiased transition-all duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
         <div className="w-full md:w-fit mx-auto flex flex-col items-stretch md:items-start">
           <div className="w-full flex flex-col items-center mb-8 text-center">
             <motion.h1
@@ -1757,12 +1737,12 @@ export default function InventoryClient({
       <AnimatePresence>
         {showAddModal && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={fadeOverlay.initial} animate={fadeOverlay.animate} exit={fadeOverlay.exit} transition={fadeOverlay.transition}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4"
             onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }}
           >
           <motion.div
-            initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            initial={modalContent.initial} animate={modalContent.animate} exit={modalContent.exit} transition={modalContent.transition}
             className="relative bg-card border border-border rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
@@ -1886,8 +1866,8 @@ export default function InventoryClient({
       {/* Delete Confirm Alert */}
       <AnimatePresence>
         {deleteId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
-            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="relative bg-card rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 text-center">
+          <motion.div initial={fadeOverlay.initial} animate={fadeOverlay.animate} exit={fadeOverlay.exit} transition={fadeOverlay.transition} className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+            <motion.div initial={modalContent.initial} animate={modalContent.animate} exit={modalContent.exit} transition={modalContent.transition} className="relative bg-card rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 text-center">
               <HintTooltip tip="ปิด">
                 <button onClick={() => setDeleteId(null)} className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-colors z-10" aria-label="ปิด">
                   <X className="w-5 h-5" />

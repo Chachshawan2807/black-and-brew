@@ -209,6 +209,45 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          client_session_id: string | null
+          user_agent: string | null
+          prefs_json: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          client_session_id?: string | null
+          user_agent?: string | null
+          prefs_json?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          client_session_id?: string | null
+          user_agent?: string | null
+          prefs_json?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory_config: {
         Row: {
           id: string

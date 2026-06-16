@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-16
+> Version: 8.7 | Last Updated: 2026-06-17
 
 ---
 
@@ -240,7 +240,20 @@ getMarketInsights()
 
 ---
 
-### 1.11 Migration (`migrate-inventory-sort-order.ts`)
+### 1.11 Push (`push-actions.ts`)
+
+| Function | Purpose |
+| --- | --- |
+| `registerPushSubscription(input)` | Upsert Web Push endpoint + keys into `push_subscriptions` (authenticated RLS) |
+| `syncPushSubscriptionPrefs(input)` | Update `prefs_json` for an existing endpoint |
+| `unregisterPushSubscription(input)` | Delete subscription row by endpoint |
+| `getPushDiagnostics()` | Admin-style counts: subscription rows, VAPID configured, latest eligible log |
+
+Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply.
+
+---
+
+### 1.12 Migration (`migrate-inventory-sort-order.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -267,6 +280,13 @@ getMarketInsights()
 
 - OpenWeatherMap proxy with 30-min cache (`s-maxage=1800`)
 - Coordinates: store lat/lon from env
+
+### `POST /api/push/webhook`
+
+- Optional Supabase Database Webhook target for inventory `data_change_logs` INSERTs
+- Protected by `PUSH_WEBHOOK_SECRET` (`Authorization: Bearer …`)
+- Dispatches `dispatchInventoryWebPush()` — backup when server-action hook is unavailable
+- Skips non-INSERT events and rows where `module !== 'inventory'` or `status !== 'success'`
 
 ---
 

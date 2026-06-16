@@ -1175,28 +1175,16 @@ export default function ScheduleClient({
 
   const exportScheduleImage = async () => {
     try {
-      const { toPng } = await import('html-to-image');
       const element = document.getElementById('blackandbrew-schedule-table');
       if (!element) return;
 
       setIsExportingImage(true);
-      const dataUrl = await toPng(element, {
-        quality: 1.0,
-        pixelRatio: 2,
+      const { captureElementAsPng, downloadDataUrl } = await import('@/lib/capture-element-png');
+      const dataUrl = await captureElementAsPng(element, {
         backgroundColor: '#fdfcf0',
-        style: {
-          transform: 'scale(1)',
-          margin: '0',
-          padding: '0',
-          border: 'none',
-          boxShadow: 'none',
-        }
       });
 
-      const link = document.createElement('a');
-      link.download = `Schedule-${new Date().toISOString().split('T')[0]}.png`;
-      link.href = dataUrl;
-      link.click();
+      downloadDataUrl(dataUrl, `Schedule-${new Date().toISOString().split('T')[0]}.png`);
     } catch (err) {
       console.error('Failed to export image:', err);
       alert('เกิดข้อผิดพลาดในการบันทึกตารางงานเป็นรูปภาพค่ะ');
@@ -1253,11 +1241,11 @@ export default function ScheduleClient({
       />
 
       <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
-        <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm border border-border rounded-3xl overflow-hidden shadow-sm">
-          <div className="flex-1 min-h-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-6">
+        <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm bb-ios-scroll-host border border-border rounded-3xl overflow-hidden shadow-sm">
+          <div className="flex-1 min-h-0 min-w-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-6">
             <div id="blackandbrew-schedule-table" className="min-w-[900px] bg-card h-fit flex flex-col">
-              <div className="grid grid-cols-8 border-b border-border bg-red-50/10 sticky top-0 z-[16]">
-                <div className="p-2.5 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal md:static md:bg-red-50/20 bb-sticky-scroll-cell">
+              <div className="grid grid-cols-8 border-b border-border dark:border-[#f5c6cb] bg-red-50/10 dark:bb-pastel-surface dark:bg-[#fdeaea] sticky top-0 z-[16]">
+                <div className="p-2.5 border-r border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
                   <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
                 </div>
                 {weekDays.map(date => {
@@ -1266,13 +1254,13 @@ export default function ScheduleClient({
                     <div
                       key={`holiday-${date}`}
                       onClick={() => { if (!isReadOnly) { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); } }}
-                      className={`p-1 border-r last:border-0 border-border flex items-center justify-center min-h-[38px] transition-colors ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50'}`}
+                      className={`p-1 border-r last:border-0 border-border dark:border-[#f5c6cb] flex items-center justify-center min-h-[38px] transition-colors ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50 dark:hover:bg-[#f5c6cb]/25'}`}
                     >
                       {editingHoliday === date ? (
                         <input
                           autoFocus
                           disabled={isReadOnly}
-                          className="w-full h-full bg-card border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="w-full h-full bg-card border border-red-200 dark:border-[#f5c6cb] text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400 dark:ring-[#f5c6cb] disabled:opacity-60 disabled:cursor-not-allowed dark:bb-pastel-surface dark:bg-white/90"
                           value={holidayInput}
                           onChange={(e) => setHolidayInput(e.target.value)}
                           onBlur={() => handleSaveHoliday(date)}
@@ -1288,7 +1276,7 @@ export default function ScheduleClient({
                 })}
               </div>
 
-              <div className="grid grid-cols-8 bg-[#000000]/5 border-b border-border shrink-0 sticky top-[38px] z-[15]">
+              <div className="grid grid-cols-8 bg-muted/40 border-b border-border shrink-0 sticky top-[38px] z-[15]">
                 <div className="p-2.5 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
                   <span className="text-[13px] text-foreground font-normal uppercase tracking-widest">พนักงาน</span>
                 </div>
@@ -1365,8 +1353,8 @@ export default function ScheduleClient({
                 </div>
               )}
 
-              <div className="grid grid-cols-8 border-t border-border bg-[#000000]/5 sticky bottom-0">
-                <div className="p-2 border-r border-border flex items-center justify-center bg-transparent">
+              <div className="grid grid-cols-8 border-t border-border bg-muted/50 sticky bottom-0 z-[15]">
+                <div className="p-2 border-r border-border flex items-center justify-center bg-card/80 sticky left-0 z-20 bb-sticky-scroll-cell">
                 </div>
                 {weekDays.map(date => {
                   const VALID_SHIFTS = getFohCountValues(shiftTypes);
@@ -1380,9 +1368,17 @@ export default function ScheduleClient({
                       })
                       .map(s => s.employee_id)
                   ).size;
+                  const isToday = date === todayStr;
                   return (
-                    <div key={`foh-${date}`} className={`p-1.5 border-r last:border-0 border-border flex items-center justify-center ${date === todayStr ? 'bg-blue-50/50' : ''}`}>
-                      <span className={`text-[15px] font-normal ${fohCount > 0 ? 'text-emerald-600' : 'text-foreground/30'}`}>{fohCount}</span>
+                    <div
+                      key={`foh-${date}`}
+                      className={`p-1.5 border-r last:border-0 border-border flex items-center justify-center ${
+                        isToday ? 'bg-amber-400/15 ring-1 ring-inset ring-amber-400/30' : ''
+                      }`}
+                    >
+                      <span className={`text-[15px] font-normal tabular-nums ${
+                        fohCount > 0 ? 'text-emerald-500' : 'text-muted-foreground'
+                      }`}>{fohCount}</span>
                     </div>
                   );
                 })}
@@ -1495,7 +1491,7 @@ export default function ScheduleClient({
 
       {showManagementModal && (
         <div
-          className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[70] flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[70] flex items-end md:items-center justify-center p-0 md:p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
         >
           <div

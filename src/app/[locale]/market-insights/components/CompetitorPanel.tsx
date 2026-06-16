@@ -46,8 +46,27 @@ const PRICE_LABEL = ['', '฿', '฿฿', '฿฿฿', '฿฿฿฿'];
 
 const DATA_SOURCE_LABEL = {
   google_places: 'Google Places (New)',
-  openstreetmap: 'OpenStreetMap (พิกัดร้าน)',
+  openstreetmap: 'OpenStreetMap (สำรอง)',
 } as const;
+
+function competitorEmptyMessage(analysis: CompetitorAnalysis): string {
+  if (analysis.scannedCount > 0) {
+    return `สแกน ${analysis.scannedCount} จุดในรัศมี ${analysis.impactRadiusMeters / 1000} กม. แต่ไม่มีร้านที่ผ่านเกณฑ์ segment (ไม่รวมตลาดล่าง)`;
+  }
+  if (analysis.placesApiMessage) {
+    return 'ตรวจสอบ Google Cloud Console (Places API New) แล้วกดวิเคราะห์ใหม่';
+  }
+  if (analysis.dataSource === 'google_places') {
+    return 'ไม่พบร้านคาเฟ่จาก Google Places ในรัศมี — กดวิเคราะห์ใหม่';
+  }
+  return 'ยังไม่พบร้านคาเฟ่ในพื้นที่ — ใส่ GOOGLE_PLACES_API_KEY แล้วกดวิเคราะห์ใหม่';
+}
+
+function competitorInsightsLabel(dataSource: CompetitorAnalysis['dataSource']): string {
+  return dataSource === 'google_places'
+    ? 'สรุปจากพิกัดและข้อมูล Google Places'
+    : 'สรุปจากพิกัดและข้อมูล OpenStreetMap';
+}
 
 const CARD =
   'rounded-2xl border border-border bg-card shadow-[0_1px_3px_rgb(0,0,0,0.03)]';
@@ -199,7 +218,6 @@ function CompetitorProfileCard({ entry }: { entry: CompetitorEntry }) {
 
 function StoreLocationFallback({ analysis }: { analysis: CompetitorAnalysis }) {
   const storeMapsUrl = `https://www.google.com/maps/search/?api=1&query=${analysis.storeLat},${analysis.storeLon}`;
-  const isOsm = analysis.dataSource === 'openstreetmap';
 
   return (
     <div className={`${CARD} p-4 md:p-5`}>
@@ -224,15 +242,7 @@ function StoreLocationFallback({ analysis }: { analysis: CompetitorAnalysis }) {
               {analysis.placesApiMessage}
             </p>
           )}
-          <p className="text-sm text-muted-foreground">
-            {analysis.scannedCount > 0
-              ? `สแกน ${analysis.scannedCount} จุดในรัศมี ${analysis.impactRadiusMeters / 1000} กม. แต่ไม่มีร้านที่ผ่านเกณฑ์ segment (ไม่รวมตลาดล่าง)`
-              : analysis.placesApiMessage
-                ? 'แก้ไขการตั้งค่า Google Cloud แล้วกดวิเคราะห์ใหม่'
-                : isOsm
-                  ? 'ยังไม่พบร้านคาเฟ่ใน OpenStreetMap บริเวณนี้ — ลองกดวิเคราะห์ใหม่'
-                  : 'ไม่พบคู่แข่งในรัศมีที่กำหนด'}
-          </p>
+          <p className="text-sm text-muted-foreground">{competitorEmptyMessage(analysis)}</p>
           <a
             href={storeMapsUrl}
             target="_blank"
@@ -316,7 +326,7 @@ export default function CompetitorPanel({ analysis }: { analysis: CompetitorAnal
       </p>
 
       {/* Zone summary */}
-      <div className="flex w-full flex-col gap-2.5 sm:grid sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
+      <div className="grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
         <div className={`${CARD} p-3.5`}>
           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
             คู่แข่งทั้งหมด
@@ -361,7 +371,7 @@ export default function CompetitorPanel({ analysis }: { analysis: CompetitorAnal
         <div className={`${CARD} p-3.5 md:p-4`}>
           <div className="flex items-center gap-2 text-muted-foreground mb-2.5">
             <Users className="w-3.5 h-3.5" />
-            <span className="text-xs md:text-sm">สรุปจากพิกัดและข้อมูล Google Places</span>
+            <span className="text-xs md:text-sm">{competitorInsightsLabel(safeAnalysis.dataSource)}</span>
           </div>
           <ul className="space-y-2">
             {deterministicInsights.map((line, i) => (

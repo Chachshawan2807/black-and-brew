@@ -4,6 +4,7 @@ import { computeFieldChanges, resolveActorLabel } from '@/lib/data-change-log';
 const mockGet = vi.fn();
 const mockInsert = vi.fn();
 const mockSelect = vi.fn();
+const mockSingle = vi.fn();
 const mockOrder = vi.fn();
 const mockLimit = vi.fn();
 const mockEq = vi.fn();
@@ -24,6 +25,11 @@ vi.mock('next/headers', () => ({
 
 vi.mock('@/lib/session-revocation', () => ({
   isSessionFingerprintRevoked: vi.fn().mockResolvedValue(false),
+}));
+
+vi.mock('@/lib/web-push', () => ({
+  dispatchInventoryWebPush: vi.fn().mockResolvedValue({ sent: 0, failed: 0, skipped: true }),
+  rowToDataChangeLogRow: vi.fn((row: Record<string, unknown>) => row),
 }));
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -72,7 +78,22 @@ describe('recordDataChange', () => {
       return undefined;
     });
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
-    mockInsert.mockResolvedValue({ error: null });
+    mockInsert.mockReturnValue({ select: mockSelect });
+    mockSelect.mockReturnValue({ single: mockSingle });
+    mockSingle.mockResolvedValue({
+      data: {
+        id: 'log-1',
+        occurred_at: '2026-06-12T10:00:00.000Z',
+        actor_label: 'ผู้ใช้งาน',
+        action: 'UPDATE',
+        module: 'inventory',
+        entity_type: 'inventory_item',
+        status: 'success',
+        metadata: {},
+        field_changes: [],
+      },
+      error: null,
+    });
   });
 
   test('rejects unauthenticated callers', async () => {
@@ -112,6 +133,28 @@ describe('recordDataChange', () => {
         ip_address: '198.51.100.42',
         user_agent: 'Vitest/1.0',
         status: 'success',
+        field_changes: [{ field: 'stock', old_value: 5, new_value: 10 }],
+      })
+    );
+    expect(mockSelect).toHaveBeenCalled();
+    expect(mockSingle).toHaveBeenCalled();
+  });
+
+  test('auto-computes field_changes from oldValue and newValue when omitted', async () => {
+    await recordDataChange({
+      action: 'UPDATE',
+      module: 'schedule',
+      entityType: 'shift',
+      entityId: 'shift-1',
+      entityLabel: 'กะเช้า',
+      oldValue: { status: 'OFF', start_time: '2026-06-10T00:00:00' },
+      newValue: { status: 'MORNING', start_time: '2026-06-10T00:00:00' },
+      source: 'server_action',
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        field_changes: [{ field: 'status', old_value: 'OFF', new_value: 'MORNING' }],
       })
     );
   });

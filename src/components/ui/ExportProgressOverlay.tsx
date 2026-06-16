@@ -1,6 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
+import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { ImageDown } from 'lucide-react';
 
 type ExportProgressOverlayProps = {
@@ -21,24 +22,19 @@ export function ExportProgressOverlay({
           role="status"
           aria-live="polite"
           aria-busy="true"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
+          initial={fadeOverlay.initial}
+          animate={fadeOverlay.animate}
+          exit={fadeOverlay.exit}
+          transition={fadeOverlay.transition}
           className="fixed inset-0 z-[200] flex items-center justify-center p-6"
         >
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/40 backdrop-blur-md"
-          />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-md" />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 14 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 6 }}
-            transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+            initial={modalContent.initial}
+            animate={modalContent.animate}
+            exit={modalContent.exit}
+            transition={modalContent.transition}
             className="relative w-full max-w-[300px] rounded-[28px] border border-border bg-card px-7 py-8 shadow-[0_20px_60px_rgb(0,0,0,0.24)] backdrop-blur-xl"
           >
             <div className="mx-auto mb-5 flex h-[72px] w-[72px] items-center justify-center">

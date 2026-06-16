@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { X } from 'lucide-react';
 import {
   getModalBackdropKeyboardAwareStyle,
@@ -119,18 +120,19 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={fadeOverlay.initial}
+      animate={fadeOverlay.animate}
+      exit={fadeOverlay.exit}
+      transition={fadeOverlay.transition}
       className="fixed inset-0 z-[210] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 transition-[padding,height] duration-200"
       style={modalBackdropStyle}
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.95, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 20 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        initial={modalContent.initial}
+        animate={modalContent.animate}
+        exit={modalContent.exit}
+        transition={modalContent.transition}
         className="relative bg-card border border-border rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden transition-[max-height] duration-200"
         style={modalContentStyle}
         onClick={(e) => e.stopPropagation()}

@@ -225,6 +225,106 @@ describe('formatDataChangeLogDisplay', () => {
     expect(display.headline).toBe('แก้ไข: กะเช้า');
     expect(display.detail).toContain('08:00');
   });
+
+  test('shows name change from-to in history detail', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        entity_label: 'ถุงซิปใส่น้ำแข็ง (ใหญ่) 18x22 ซม.',
+        field_changes: [
+          {
+            field: 'name',
+            old_value: 'ถุงซิปใส่น้ำแข็ง (ใหญ่)',
+            new_value: 'ถุงซิปใส่น้ำแข็ง (ใหญ่) 18x22 ซม.',
+          },
+        ],
+      }),
+      'th'
+    );
+    expect(display.headline).toContain('ถุงซิป');
+    expect(display.detail).toContain('ชื่อ:');
+    expect(display.detail).toContain('18x22');
+    expect(display.detail).not.toBe('มีการอัปเดตข้อมูล');
+  });
+
+  test('derives schedule shift diff from old_value and new_value when field_changes empty', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        module: 'schedule',
+        entity_label: 'กะเช้า',
+        field_changes: [],
+        old_value: { status: 'OFF', start_time: '2026-06-10T00:00:00' },
+        new_value: { status: 'MORNING', start_time: '2026-06-10T00:00:00' },
+      }),
+      'th'
+    );
+    expect(display.detail).toContain('สถานะ');
+    expect(display.detail).toContain('OFF');
+    expect(display.detail).toContain('MORNING');
+    expect(display.detail).not.toBe('อัปเดตข้อมูลแล้ว');
+  });
+
+  test('shows maintenance field diffs with Thai labels', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        module: 'maintenance',
+        entity_label: 'เครื่องชงกาแฟ',
+        field_changes: [
+          { field: 'status', old_value: 'pending', new_value: 'completed' },
+          { field: 'cost', old_value: 500, new_value: 1200 },
+        ],
+      }),
+      'th'
+    );
+    expect(display.detail).toContain('สถานะ: pending → completed');
+    expect(display.detail).toContain('ค่าใช้จ่าย: 500 → 1200');
+  });
+
+  test('shows sales category change from-to', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        module: 'sales',
+        entity_label: 'ลาเต้',
+        field_changes: [{ field: 'category', old_value: 'กาแฟร้อน', new_value: 'กาแฟเย็น' }],
+      }),
+      'th'
+    );
+    expect(display.detail).toBe('หมวดหมู่: กาแฟร้อน → กาแฟเย็น');
+  });
+
+  test('formats regular holiday day list', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        module: 'holiday',
+        action: 'UPDATE',
+        entity_label: 'พนักงาน A',
+        field_changes: [{ field: 'days', old_value: [0], new_value: [0, 6] }],
+      }),
+      'th'
+    );
+    expect(display.detail).toContain('อาทิตย์');
+    expect(display.detail).toContain('เสาร์');
+    expect(display.detail).toContain('→');
+  });
+
+  test('expands nested metadata changes for schedule', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        module: 'schedule',
+        entity_label: 'กะบ่าย',
+        field_changes: [
+          {
+            field: 'metadata',
+            old_value: { location: 'หน้าร้าน', shift_type: 'MORNING' },
+            new_value: { location: 'ครัว', shift_type: 'MORNING' },
+          },
+        ],
+      }),
+      'th'
+    );
+    expect(display.detail).toContain('สถานที่');
+    expect(display.detail).toContain('หน้าร้าน');
+    expect(display.detail).toContain('ครัว');
+  });
 });
 
 describe('formatInventoryNotification', () => {

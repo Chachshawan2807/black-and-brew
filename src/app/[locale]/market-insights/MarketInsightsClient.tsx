@@ -28,6 +28,7 @@ import DiffBanner from './components/DiffBanner';
 import CompetitorPanel from './components/CompetitorPanel';
 import MetricInfoTip from './components/MetricInfoTip';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const CACHE_TTL = 300_000;
 
@@ -256,10 +257,10 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
           )}
 
           {bodyView === 'content' && insights?.context && (
-            <div className="relative w-full space-y-5 max-md:space-y-4">
+            <div className="relative w-full">
               {isLoading && hasLoaded && (
                 <div
-                  className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-2xl bg-background/80 max-md:min-h-[12rem] md:fixed md:inset-0 md:z-40 md:rounded-none md:bg-background/60"
+                  className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-2xl bg-background max-md:min-h-[12rem] md:fixed md:inset-0 md:z-40 md:rounded-none md:bg-background/95"
                   aria-busy="true"
                   aria-live="polite"
                 >
@@ -270,6 +271,14 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
                 </div>
               )}
 
+              <div
+                className={cn(
+                  'w-full space-y-5 max-md:space-y-4',
+                  isLoading &&
+                    hasLoaded &&
+                    'max-md:invisible md:opacity-40 md:pointer-events-none md:select-none'
+                )}
+              >
               {insights.diff && <DiffBanner diff={insights.diff} />}
 
               <ContextPanel context={insights.context} />
@@ -336,6 +345,7 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
                   อัปเดตครั้งล่าสุด: {lastUpdated?.toLocaleString('th-TH')}
                 </p>
                 <MetricInfoTip id="data_freshness" />
+              </div>
               </div>
             </div>
           )}

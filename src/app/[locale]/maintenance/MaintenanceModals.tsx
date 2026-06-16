@@ -70,7 +70,7 @@ export default function MaintenanceModals({
               animate={fadeOverlay.animate}
               exit={fadeOverlay.exit}
               transition={fadeOverlay.transition}
-              className="absolute inset-0 bg-black/10 backdrop-blur-sm bb-modal-backdrop"
+              className="absolute inset-0 bg-black/10 backdrop-blur-sm"
               onClick={() => setIsModalOpen(false)}
             />
             <motion.div

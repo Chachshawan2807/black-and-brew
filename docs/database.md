@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-16 | Engine: Supabase PostgreSQL
+> Version: 8.7 | Last Updated: 2026-06-17 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -24,6 +24,7 @@
 | `login_history` | บันทึกเหตุการณ์เข้าใช้ระบบ (PIN) | ✓ RLS enabled | `supabase/migrations/20260611120000_create_login_history.sql` |
 | `data_change_logs` | บันทึกการเปลี่ยนแปลงข้อมูล (actor, field diff) | ✓ RLS + selective read | `supabase/migrations/20260612120000_create_data_change_logs.sql` |
 | `revoked_sessions` | fingerprint ที่ถูก revoke จากระยะไกล | ✓ RLS enabled | `supabase/migrations/20260612200000_revoked_sessions.sql` |
+| `push_subscriptions` | Web Push endpoints ต่ออุปกรณ์ (cross-device inventory alerts) | ✓ authenticated (own rows) | `supabase/migrations/20260616120000_push_subscriptions.sql` |
 | `market_insight_runs` | ประวัติการรัน Market Insights v2 (OPTIONAL) | ✓ | `docs/sql/market_insight_runs.sql` |
 
 > **Types:** Generated types in `src/lib/database.types.ts`
@@ -157,6 +158,26 @@ CREATE TABLE IF NOT EXISTS public.revoked_sessions (
 
 Checked on each auth validation via `src/lib/session-revocation.ts`. Populated by `forceRevokeDeviceSession()` / `forceRevokeAllRemoteSessions()` in `auth.ts`.
 
+### `push_subscriptions`
+
+```sql
+CREATE TABLE IF NOT EXISTS public.push_subscriptions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  endpoint text NOT NULL,
+  p256dh text NOT NULL,
+  auth text NOT NULL,
+  client_session_id text,
+  user_agent text,
+  prefs_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT push_subscriptions_endpoint_unique UNIQUE (endpoint)
+);
+```
+
+Registered by `registerPushSubscription()` in `push-actions.ts` via authenticated Supabase client (RLS: `auth.uid() = user_id`). Server broadcasts inventory alerts through `dispatchInventoryWebPush()` in `src/lib/web-push.ts` after `data_change_logs` INSERT (primary path) or `POST /api/push/webhook` (optional Supabase Database Webhook backup). Stale endpoints (HTTP 404/410) are auto-deleted.
+
 ### `market_insight_runs` (OPTIONAL)
 
 ```sql
@@ -209,6 +230,8 @@ CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 CREATE INDEX idx_login_history_occurred_at ON login_history (occurred_at DESC);
 CREATE INDEX idx_data_change_logs_module_occurred ON data_change_logs (module, occurred_at DESC);
 CREATE INDEX idx_revoked_sessions_revoked_at ON revoked_sessions (revoked_at DESC);
+CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions (user_id);
+CREATE INDEX idx_push_subscriptions_client_session ON push_subscriptions (client_session_id) WHERE client_session_id IS NOT NULL;
 CREATE INDEX idx_count_verifications_item ON inventory_count_verifications(inventory_item_id);
 CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications(counted_at DESC);
 ```
@@ -258,6 +281,7 @@ CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications
 | `20260614120000_inventory_count_verifications.sql` | Count accuracy ledger (initial table) |
 | `20260615120000_inventory_count_accuracy_refactor.sql` | Rename to `system_stock_qty`; clear legacy IN/OUT-theoretical rows |
 | `20260615130000_align_low_stock_with_purchase_orders.sql` | `view_inventory_summary` LOW status aligned with PO modal (DEC-005) |
+| `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (authenticated own rows) |
 
 ### Historical (root + `sql/`)
 

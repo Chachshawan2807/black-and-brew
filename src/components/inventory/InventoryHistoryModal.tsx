@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 
 import { motion } from 'framer-motion';
 
+import { fadeOverlay, modalContent } from '@/lib/motion-presets';
+
 import { History, PackageMinus, PackagePlus, Plus, ShoppingCart, SlidersHorizontal, Trash2, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -172,11 +174,13 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
     <motion.div
 
-      initial={{ opacity: 0 }}
+      initial={fadeOverlay.initial}
 
-      animate={{ opacity: 1 }}
+      animate={fadeOverlay.animate}
 
-      exit={{ opacity: 0 }}
+      exit={fadeOverlay.exit}
+
+      transition={fadeOverlay.transition}
 
       className="fixed inset-0 z-[210] flex items-end md:items-center justify-center bg-black/20 backdrop-blur-md p-0 md:p-4 transition-[padding,height] duration-200"
 
@@ -188,13 +192,13 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
       <motion.div
 
-        initial={{ scale: 0.95, y: 20 }}
+        initial={modalContent.initial}
 
-        animate={{ scale: 1, y: 0 }}
+        animate={modalContent.animate}
 
-        exit={{ scale: 0.95, y: 20 }}
+        exit={modalContent.exit}
 
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        transition={modalContent.transition}
 
         className="relative bg-card rounded-t-3xl md:rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full md:w-fit md:max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-hidden flex flex-col border border-border min-h-0 pb-[env(safe-area-inset-bottom)] transition-[max-height] duration-200"
 
@@ -248,7 +252,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto bb-smooth-scroll px-4 py-4 md:px-6 md:py-4 bg-background scrollbar-thin">
+        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto bb-smooth-scroll bb-scroll-xy px-4 py-4 md:px-6 md:py-4 bg-background scrollbar-thin">
 
           <div className="inline-block w-max min-w-full bg-background rounded-[2rem] border border-border shadow-sm">
 

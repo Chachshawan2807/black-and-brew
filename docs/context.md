@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-15
+> Version: 8.7 | Last Updated: 2026-06-17
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | **Project Name** | BLACK-AND-BREW ERP System |
 | **Type** | Enterprise Resource Planning for Coffee Shop |
-| **Current Version** | 8.6 (Count Accuracy + Quick Action + Doc/SQL Cleanup) |
+| **Current Version** | 8.7 (Web Push Cross-Device + Doc/SQL Sync) |
 | **Repository** | `Chachshawan2807/black-and-brew` |
 | **Local Path** | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -67,6 +67,10 @@
 | `LINE_GROUP_ID` | LINE cron recipient (checked before `LINE_TARGET_RECIPIENT_ID`) | Server only |
 | `LINE_TARGET_RECIPIENT_ID` | LINE recipient fallback | Server only |
 | `CRON_SECRET` | Vercel cron auth | Server only |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID public key | Public |
+| `VAPID_PRIVATE_KEY` | Web Push server signing key | Server only |
+| `VAPID_SUBJECT` | Push service contact URI | Server only |
+| `PUSH_WEBHOOK_SECRET` | OPTION — `POST /api/push/webhook` auth | Server only |
 
 Authoritative env list: [`.env.example`](../.env.example)
 

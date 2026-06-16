@@ -128,6 +128,7 @@ export async function saveServiceRecord(
         entityType: 'service_record',
         entityId: inserted?.id ?? null,
         entityLabel: validated.equipment,
+        fieldChanges: computeFieldChanges(null, validated),
         newValue: validated,
       });
     }

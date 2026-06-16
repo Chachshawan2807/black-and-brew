@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-17 (Web Push Cross-Device + Doc/SQL/Graphify Sync v8.7)
+
+- Execution: [FULL DOCUMENTATION SYNC — Web Push feature + graphify refresh]
+- Changes:
+  - **Web Push:** migration `20260616120000_push_subscriptions.sql`; `push-actions.ts`, `web-push.ts`, `PushSubscriptionManager`, `POST /api/push/webhook`
+  - **Env:** VAPID keys + `PUSH_WEBHOOK_SECRET` in `.env.example` (already present); synced README, context, MASTER_BLUEPRINT
+  - **Docs synced:** `docs/database.md`, `docs/api.md`, `docs/architecture.md`, `docs/context.md`, `sql/README.md`, `PROJECT_MAP.md`, `docs/memory.md` (DEC-075), `docs/tasks.md`
+  - **db:verify:** `push_subscriptions` table check in `scripts/verify-supabase-migrations.mjs`
+  - **Cleanup:** removed `scripts/debug-push.mjs` (one-off debug script, not in npm scripts)
+  - **SQL audit:** 21 `.sql` files kept (9 migrations + 12 reference/optional)
+- Verification: `graphify update . --force` → 2742 nodes, 4743 edges, 172 communities | `npm run lint:md`
+
 ## 2026-06-16 (Count Accuracy Refactor Doc Sync + Graphify Refresh v8.6)
 
 - Execution: [FULL SYSTEM SYNC & ZERO-IMPACT SANITIZATION PROTOCOL]

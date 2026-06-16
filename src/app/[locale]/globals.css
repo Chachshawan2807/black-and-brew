@@ -18,16 +18,17 @@
   --animate-collapsible-up: collapsible-up 0.2s ease-out;
 
   /* Premium UI motion tokens */
-  --animate-page-enter: bb-page-enter 300ms ease-in-out both;
-  --animate-fade-in: bb-fade-in 200ms ease-out both;
-  --animate-fade-out: bb-fade-out 200ms ease-in both;
-  --animate-zoom-in-95: bb-zoom-in-95 200ms ease-out both;
-  --animate-slide-in-bottom: bb-slide-in-from-bottom 300ms ease-out both;
-  --animate-slide-in-bottom-2: bb-slide-in-from-bottom-2 300ms ease-out both;
-  --animate-slide-in-top-2: bb-slide-in-from-top-2 200ms ease-out both;
-  --animate-slide-in-right: bb-slide-in-from-right-full 300ms ease-out both;
-  --animate-slide-out-bottom: bb-slide-out-to-bottom 300ms ease-in both;
-  --animate-slide-out-bottom-2: bb-slide-out-to-bottom-2 300ms ease-in both;
+  --bb-modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-page-enter: bb-page-enter 220ms var(--bb-modal-ease) both;
+  --animate-fade-in: bb-fade-in 150ms var(--bb-modal-ease) both;
+  --animate-fade-out: bb-fade-out 120ms ease-in both;
+  --animate-zoom-in-95: bb-zoom-in-95 150ms var(--bb-modal-ease) both;
+  --animate-slide-in-bottom: bb-slide-in-from-bottom 220ms var(--bb-modal-ease) both;
+  --animate-slide-in-bottom-2: bb-slide-in-from-bottom-2 160ms var(--bb-modal-ease) both;
+  --animate-slide-in-top-2: bb-slide-in-from-top-2 150ms var(--bb-modal-ease) both;
+  --animate-slide-in-right: bb-slide-in-from-right-full 220ms var(--bb-modal-ease) both;
+  --animate-slide-out-bottom: bb-slide-out-to-bottom 220ms ease-in both;
+  --animate-slide-out-bottom-2: bb-slide-out-to-bottom-2 140ms ease-in both;
   --animate-slide-out-top-2: bb-slide-out-to-top-2 200ms ease-in both;
   --animate-slide-out-left: bb-slide-out-to-left 300ms ease-in both;
   --animate-slide-out-right: bb-slide-out-to-right 300ms ease-in both;
@@ -59,8 +60,13 @@
 }
 
 @keyframes bb-zoom-in-95 {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.98) translateZ(0); }
+  to { opacity: 1; transform: scale(1) translateZ(0); }
+}
+
+@keyframes bb-modal-panel-in {
+  from { opacity: 0; transform: scale(0.98) translateY(6px) translateZ(0); }
+  to { opacity: 1; transform: scale(1) translateY(0) translateZ(0); }
 }
 
 @keyframes bb-slide-in-from-bottom {
@@ -268,23 +274,29 @@
   }
 
   .bb-modal-backdrop {
-    animation: bb-fade-in 300ms ease-in-out both;
+    animation: bb-fade-in 150ms var(--bb-modal-ease) both;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 
   .bb-modal-panel {
-    animation: bb-zoom-in-95 200ms ease-out both;
+    animation: bb-modal-panel-in 160ms var(--bb-modal-ease) both;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 
   .bb-sheet-panel {
-    animation: bb-slide-in-from-bottom 300ms ease-out both;
+    animation: bb-slide-in-from-bottom 220ms var(--bb-modal-ease) both;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 
   .bb-toast-enter {
-    animation: bb-slide-in-from-bottom-2 300ms ease-out both, bb-fade-in 300ms ease-out both;
+    animation: bb-slide-in-from-bottom-2 180ms var(--bb-modal-ease) both, bb-fade-in 150ms var(--bb-modal-ease) both;
   }
 
   .bb-toast-exit {
-    animation: bb-slide-out-to-bottom-2 300ms ease-in both, bb-fade-out 300ms ease-in both;
+    animation: bb-slide-out-to-bottom-2 140ms ease-in both, bb-fade-out 120ms ease-in both;
   }
 
   .bb-input {
@@ -498,6 +510,7 @@
 
   /* Momentum scrolling for dense tables/modals on touch devices */
   .bb-smooth-scroll {
+    min-width: 0;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
     overscroll-behavior: contain;
@@ -512,5 +525,37 @@
   /* Sticky row/column labels inside scroll containers — never block touch pan gestures */
   .bb-sticky-scroll-cell {
     touch-action: pan-x pan-y;
+  }
+
+  /*
+   * iOS Safari / iPadOS WebKit — Android keeps the rules above unchanged.
+   * Fixes: nested overflow scroll, backdrop-filter parents, sticky touch capture.
+   */
+  @supports (-webkit-touch-callout: none) {
+    .bb-smooth-scroll,
+    .bb-smooth-scroll-chain-y {
+      overscroll-behavior: auto;
+    }
+
+    .bb-scroll-xy.bb-smooth-scroll {
+      overflow-x: scroll;
+      overflow-y: scroll;
+    }
+
+    .bb-ios-scroll-host {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: var(--card);
+    }
+
+    .bb-smooth-scroll [class*='sticky'],
+    .bb-smooth-scroll [class*='backdrop-blur'] {
+      touch-action: pan-x pan-y;
+    }
+
+    .bb-smooth-scroll [class*='backdrop-blur'] {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
   }
 }

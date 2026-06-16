@@ -34,6 +34,7 @@ import {
   getNotificationPermissionState,
   requestNotificationPermission,
 } from '@/lib/pwa-notification-bridge';
+import { hasActivePushSubscription } from '@/lib/push-subscription-client';
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
   const row = payload.new;
@@ -129,6 +130,7 @@ export function useInventoryNotifications() {
       const currentPrefs = prefsRef.current;
       if (!currentPrefs.enabled || !currentPrefs.systemNotifications) return;
       if (getNotificationPermissionState() !== 'granted') return;
+      if (hasActivePushSubscription()) return;
 
       const loc = localeRef.current;
       const isTh = loc === 'th';

@@ -21,25 +21,26 @@ describe('Market Insights mobile layout — compositor-safe rendering', () => {
     expect(code).toMatch(/isLoading\s*&&\s*hasLoaded/);
   });
 
-  test('ContextPanel KPI section should stack with flex-col on mobile and grid on sm+', () => {
+  test('ContextPanel KPI section should use single-column grid on mobile and expand on sm+', () => {
     const code = readFile('app/[locale]/market-insights/components/ContextPanel.tsx');
-    expect(code).toMatch(/flex w-full flex-col gap-2\.5 sm:grid sm:grid-cols-2/);
+    expect(code).toMatch(/grid w-full grid-cols-1 gap-2\.5 sm:grid-cols-2/);
     expect(code).not.toMatch(/contain:paint/);
     expect(code).toMatch(/shrink-0/);
   });
 
-  test('MarketInsightsClient refresh overlay should be content-scoped on mobile', () => {
+  test('MarketInsightsClient refresh overlay should hide underlying content on mobile', () => {
     const code = readFile('app/[locale]/market-insights/MarketInsightsClient.tsx');
     expect(code).toMatch(/absolute inset-0 z-20/);
     expect(code).toMatch(/md:fixed md:inset-0 md:z-40/);
-    expect(code).not.toMatch(/fixed inset-0 z-40 flex flex-col/);
+    expect(code).toMatch(/max-md:invisible/);
+    expect(code).not.toMatch(/bg-background\/80/);
   });
 
   test('InsightCharts should use flex-col on mobile and grid on lg+', () => {
     const charts = readFile('app/[locale]/market-insights/components/InsightCharts.tsx');
     const inner = readFile('app/[locale]/market-insights/components/InsightChartsInner.tsx');
-    expect(charts).toMatch(/flex w-full flex-col gap-3 lg:grid lg:grid-cols-2/);
-    expect(inner).toMatch(/flex w-full flex-col gap-3 lg:grid lg:grid-cols-2/);
+    expect(charts).toMatch(/grid w-full grid-cols-1 gap-3 lg:grid-cols-2/);
+    expect(inner).toMatch(/grid w-full grid-cols-1 gap-3 lg:grid-cols-2/);
   });
 
   test('market-insights components should not use stagger x-motion', () => {

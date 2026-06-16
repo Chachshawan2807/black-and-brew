@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 8.6 | Last Updated: 2026-06-15 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 8.7 | Last Updated: 2026-06-17 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## 🏛️ Architectural Core
 
@@ -154,5 +154,9 @@ Authoritative list: [`.env.example`](../.env.example). Keys actually read in `sr
 | `LINE_GROUP_ID` | SECRET | Cron recipient (preferred) |
 | `LINE_TARGET_RECIPIENT_ID` | SECRET | Cron recipient fallback |
 | `CRON_SECRET` | SECRET | Protects `GET /api/daily-report` |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | PUBLIC | Web Push VAPID public key |
+| `VAPID_PRIVATE_KEY` | SECRET | Web Push server signing key |
+| `VAPID_SUBJECT` | SECRET | Push service contact URI |
+| `PUSH_WEBHOOK_SECRET` | SECRET | OPTION — `POST /api/push/webhook` auth |
 
 Read-only PIN via `APP_READ_ONLY_PIN` env (`src/lib/security/read-only-pin.ts`); dev fallback `111222`.

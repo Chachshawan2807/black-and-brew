@@ -6,6 +6,21 @@
 
 ## Recent Decisions
 
+### DEC-075: Cross-Device Web Push for Inventory Alerts (v8.7)
+
+- Date: June 17, 2026
+- Context: In-app Realtime notifications (`data_change_logs`) only reach open tabs on the same device. Staff need OS-level alerts on phones/tablets when inventory changes from another session.
+- Decision:
+  1. `push_subscriptions` table — one row per browser endpoint; RLS `auth.uid() = user_id`; prefs stored in `prefs_json`.
+  2. `PushSubscriptionManager` in layout registers via `registerPushSubscription()` after PIN + Supabase anonymous auth.
+  3. `recordDataChange()` fires `dispatchInventoryWebPush()` after INSERT; optional backup via `POST /api/push/webhook` + `PUSH_WEBHOOK_SECRET`.
+  4. Origin session skipped when `client_session_id` matches mutation metadata (unless `notifyOwnChanges`).
+  5. VAPID via `web-push`; stale endpoints (404/410) auto-deleted; fails gracefully when keys or table missing.
+- Impact: Cross-device inventory awareness without polling; complements existing Realtime + local PWA bridge.
+- Evidence: `supabase/migrations/20260616120000_push_subscriptions.sql`, `src/lib/web-push.ts`, `src/app/actions/push-actions.ts`, `src/test/web-push.test.ts`
+
+---
+
 ### DEC-074: Count Accuracy Uses System Stock Baseline (v8.6)
 
 - Date: June 16, 2026

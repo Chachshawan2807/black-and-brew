@@ -14,6 +14,7 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
     expect(css).toMatch(/\.bb-smooth-scroll\s*\{/);
     expect(css).toMatch(/-webkit-overflow-scrolling:\s*touch/);
     expect(css).toMatch(/touch-action:\s*pan-x\s+pan-y/);
+    expect(css).toMatch(/min-width:\s*0/);
     expect(css).toMatch(/\.bb-smooth-scroll-chain-y\s*\{/);
     expect(css).toMatch(/overscroll-behavior-y:\s*auto/);
     expect(css).toMatch(/\.bb-sticky-scroll-cell\s*\{/);
@@ -28,7 +29,7 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
   const scrollSurfaces: { file: string; pattern: RegExp }[] = [
     {
       file: 'components/inventory/InventoryHistoryModal.tsx',
-      pattern: /flex-1 min-h-0 overflow-y-auto overflow-x-auto[\s\S]*bb-smooth-scroll/,
+      pattern: /flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto[\s\S]*bb-smooth-scroll bb-scroll-xy/,
     },
     {
       file: 'components/notifications/NotificationPanel.tsx',
@@ -36,7 +37,7 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
     },
     {
       file: 'app/[locale]/schedule/ScheduleClient.tsx',
-      pattern: /flex-1 min-h-0 overflow-x-auto[\s\S]*overflow-y-auto[\s\S]*bb-smooth-scroll bb-smooth-scroll-chain-y/,
+      pattern: /flex-1 min-h-0 min-w-0 overflow-x-auto[\s\S]*overflow-y-auto[\s\S]*bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy/,
     },
     {
       file: 'app/[locale]/maintenance/MaintenanceClient.tsx',

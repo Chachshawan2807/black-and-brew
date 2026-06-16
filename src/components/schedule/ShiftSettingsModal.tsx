@@ -206,7 +206,7 @@ export default function ShiftSettingsModal({
 
   return (
     <div
-      className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[75] flex items-end justify-center md:items-center p-0 md:p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[75] flex items-end justify-center md:items-center p-0 md:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSaving) onClose();
       }}

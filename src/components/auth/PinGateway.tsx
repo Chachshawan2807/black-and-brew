@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Lock, ShieldAlert } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { modalContent, MODAL_EASE } from '@/lib/motion-presets';
+import { Lock, ShieldAlert, Loader2 } from 'lucide-react';
 import { getAuthSessionInfo, verifyPin } from '@/app/actions/auth';
 import {
   clearClientAuthSession,
@@ -26,6 +27,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   const [lockoutTimeLeft, setLockoutTimeLeft] = useState<number | null>(null);
   const [failedCountDisplay, setFailedCountDisplay] = useState('0');
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const isVerifyingRef = useRef(false);
 
@@ -39,6 +41,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         await ensureSupabaseSession();
         setIsReadOnly(serverSession.readOnly);
         setIsAuthenticated(true);
+        window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
         return;
       }
 
@@ -106,12 +109,12 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   }, []);
 
   useEffect(() => {
-    if (!isMounted || isAuthenticated || lockoutTimeLeft !== null) return;
+    if (!isMounted || isAuthenticated || lockoutTimeLeft !== null || isVerifying) return;
 
     const focusInput = () => hiddenInputRef.current?.focus({ preventScroll: true });
     const timer = window.setTimeout(focusInput, 120);
     return () => window.clearTimeout(timer);
-  }, [isMounted, isAuthenticated, lockoutTimeLeft]);
+  }, [isMounted, isAuthenticated, lockoutTimeLeft, isVerifying]);
 
   useEffect(() => {
     if (lockoutTimeLeft === null) return;
@@ -150,6 +153,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     if (nextPin.length < PIN_LENGTH) return;
 
     isVerifyingRef.current = true;
+    setIsVerifying(true);
+    hiddenInputRef.current?.blur();
 
     try {
       const device = collectClientDeviceInfo();
@@ -162,6 +167,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         setFailedCountDisplay('0');
         await ensureSupabaseSession();
         setIsAuthenticated(true);
+        window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
         return;
       }
 
@@ -193,6 +199,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       }, 500);
     } finally {
       isVerifyingRef.current = false;
+      setIsVerifying(false);
     }
   };
 
@@ -210,8 +217,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     return (
       <div className="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center p-4 antialiased overflow-hidden">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={modalContent.initial}
+          animate={modalContent.animate}
+          transition={modalContent.transition}
           className="w-full max-w-sm flex flex-col items-center gap-8 text-center"
         >
           <div className="w-16 h-16 bg-red-100 text-red-600 rounded-[24px] flex items-center justify-center shadow-sm">
@@ -239,22 +247,62 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-background overflow-hidden flex flex-col items-center px-4 antialiased transition-[padding] duration-200 ${
+      className={`fixed inset-0 z-[9999] bg-background overflow-hidden flex flex-col items-center px-4 antialiased transition-[padding] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
         isKeyboardOpen ? 'justify-start pt-[min(16svh,128px)]' : 'justify-center'
       }`}
     >
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        layout
+        initial={modalContent.initial}
+        animate={modalContent.animate}
+        transition={modalContent.transition}
         className="w-full max-w-sm flex flex-col items-center gap-8"
       >
-        <div className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center shadow-lg">
+        <motion.div
+          animate={
+            isVerifying
+              ? { scale: [1, 1.04, 1], opacity: [1, 0.88, 1] }
+              : { scale: 1, opacity: 1 }
+          }
+          transition={{
+            duration: 1.8,
+            repeat: isVerifying ? Infinity : 0,
+            ease: 'easeInOut',
+          }}
+          className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center shadow-lg"
+        >
           <Lock size={32} strokeWidth={1.5} />
-        </div>
+        </motion.div>
 
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2 min-h-[2.75rem] flex flex-col items-center justify-center">
           <h1 className="text-2xl font-normal text-foreground tracking-[0.2em] uppercase">Security Gateway</h1>
-          <p className="text-sm font-normal text-muted-foreground tracking-[0.1em] uppercase">กรุณากรอกรหัสผ่าน 6 หลักเพื่อเข้าสู่ระบบ</p>
+          <AnimatePresence mode="wait" initial={false}>
+            {isVerifying ? (
+              <motion.p
+                key="pin-verifying"
+                role="status"
+                aria-live="polite"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.16, ease: MODAL_EASE }}
+                className="text-sm font-normal text-muted-foreground tracking-[0.08em] uppercase"
+              >
+                กำลังตรวจสอบรหัสผ่าน
+              </motion.p>
+            ) : (
+              <motion.p
+                key="pin-idle"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.16, ease: MODAL_EASE }}
+                className="text-sm font-normal text-muted-foreground tracking-[0.1em] uppercase"
+              >
+                กรุณากรอกรหัสผ่าน 6 หลักเพื่อเข้าสู่ระบบ
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="relative w-full max-w-[320px]">
@@ -264,35 +312,85 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             inputMode="numeric"
             pattern="[0-9]*"
             autoComplete="one-time-code"
+            enterKeyHint="done"
             maxLength={PIN_LENGTH}
             value={pin}
+            readOnly={isVerifying}
+            aria-busy={isVerifying}
             onChange={e => void handlePinInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') e.preventDefault();
+            }}
             disabled={lockoutTimeLeft !== null}
             aria-label="รหัสผ่าน 6 หลัก"
-            className="absolute inset-0 z-10 h-full w-full cursor-text opacity-0"
+            className={`absolute inset-0 z-10 h-full w-full opacity-0 ${
+              isVerifying ? 'pointer-events-none' : 'cursor-text'
+            }`}
           />
-          <div className="pointer-events-none relative z-0 flex flex-row justify-center gap-2 w-full">
+          <motion.div
+            animate={{
+              opacity: isVerifying ? 0.5 : 1,
+              scale: isVerifying ? 0.985 : 1,
+            }}
+            transition={{ duration: 0.22, ease: MODAL_EASE }}
+            className="pointer-events-none relative z-0 flex flex-row justify-center gap-2 w-full"
+          >
             {Array.from({ length: PIN_LENGTH }, (_, index) => {
               const isFilled = Boolean(pin[index]);
-              const isActive = pin.length === index && !error;
+              const isActive = pin.length === index && !error && !isVerifying;
 
               return (
-                <div
+                <motion.div
                   key={index}
                   aria-hidden="true"
-                  className={`w-12 h-14 md:w-14 md:h-16 flex items-center justify-center bg-card border rounded-2xl shadow-sm transition-all ${
+                  layout
+                  transition={{ duration: 0.2, ease: MODAL_EASE }}
+                  className={`w-12 h-14 md:w-14 md:h-16 flex items-center justify-center bg-card border rounded-2xl shadow-sm ${
                     error
                       ? 'border-red-500 bg-red-500/10'
-                      : isActive
-                        ? 'border-foreground ring-2 ring-foreground/10'
-                        : 'border-border'
+                      : isVerifying && isFilled
+                        ? 'border-foreground/35'
+                        : isActive
+                          ? 'border-foreground ring-2 ring-foreground/10'
+                          : 'border-border'
                   }`}
                 >
-                  {isFilled && <span className="block w-3.5 h-3.5 rounded-full bg-foreground" />}
-                </div>
+                  {isFilled && (
+                    <motion.span
+                      layout
+                      initial={false}
+                      animate={{ scale: isVerifying ? 0.92 : 1, opacity: isVerifying ? 0.75 : 1 }}
+                      transition={{ duration: 0.2, ease: MODAL_EASE }}
+                      className="block w-3.5 h-3.5 rounded-full bg-foreground"
+                    />
+                  )}
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
+          <AnimatePresence>
+            {isVerifying && (
+              <motion.div
+                key="pin-verify-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.16, ease: MODAL_EASE }}
+                className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
+                aria-hidden="true"
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: -2 }}
+                  transition={{ duration: 0.18, ease: MODAL_EASE }}
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-card/90 shadow-sm backdrop-blur-sm"
+                >
+                  <Loader2 className="w-5 h-5 animate-spin text-foreground" strokeWidth={1.5} />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {error && (

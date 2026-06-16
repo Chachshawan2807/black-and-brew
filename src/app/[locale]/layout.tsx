@@ -8,6 +8,7 @@ import InventoryQuickActionWrapper from '@/components/inventory/InventoryQuickAc
 import PinGateway from '@/components/auth/PinGateway';
 import PwaRegister from '@/components/PwaRegister';
 import { NotificationProvider } from '@/components/notifications/NotificationProvider';
+import { PushSubscriptionManager } from '@/components/notifications/PushSubscriptionManager';
 import { InventoryNotificationFAB } from '@/components/notifications/InventoryNotificationFAB';
 import { FloatingOverlayProvider } from '@/components/floating/FloatingOverlayContext';
 import { FabStackHideToggle } from '@/components/floating/FabStackHideToggle';
@@ -65,6 +66,7 @@ export default async function RootLayout({
         <AppTooltipProvider>
         <PwaRegister />
         <PinGateway>
+          <PushSubscriptionManager />
           <NotificationProvider>
           <FloatingOverlayProvider>
           <SidebarLayout>

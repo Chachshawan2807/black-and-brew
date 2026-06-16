@@ -11,6 +11,8 @@ import {
   getNotificationPermissionState,
   requestNotificationPermission,
 } from '@/lib/pwa-notification-bridge';
+import { getPushDiagnostics } from '@/app/actions/push-actions';
+import { syncPushPrefsToServer } from '@/lib/push-subscription-client';
 import type { NotificationPreferences } from '@/lib/notification-types';
 
 interface NotificationPreferencesSectionProps {
@@ -73,10 +75,26 @@ export default function NotificationPreferencesSection({
   const isTh = locale === 'th';
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
   const [permission, setPermission] = useState(() => getNotificationPermissionState());
+  const [diag, setDiag] = useState<{
+    subscriptionCount: number;
+    vapidConfigured: boolean;
+  } | null>(null);
 
   useEffect(() => {
     saveNotificationPreferences(prefs);
-  }, [prefs]);
+    void syncPushPrefsToServer(prefs, locale);
+  }, [prefs, locale]);
+
+  useEffect(() => {
+    void getPushDiagnostics().then((result) => {
+      if (result.ok) {
+        setDiag({
+          subscriptionCount: result.subscriptionCount,
+          vapidConfigured: result.vapidConfigured,
+        });
+      }
+    });
+  }, [prefs.systemNotifications]);
 
   const update = (patch: Partial<NotificationPreferences>) => {
     setPrefs((prev) => ({ ...prev, ...patch }));
@@ -85,11 +103,14 @@ export default function NotificationPreferencesSection({
   const handleSystemNotifications = async (enabled: boolean) => {
     if (!enabled) {
       update({ systemNotifications: false });
+      await syncPushPrefsToServer({ ...prefs, systemNotifications: false }, locale);
       return;
     }
     const state = await requestNotificationPermission();
     setPermission(state);
+    const nextPrefs = { ...prefs, systemNotifications: state === 'granted' };
     update({ systemNotifications: state === 'granted' });
+    await syncPushPrefsToServer(nextPrefs, locale);
   };
 
   return (
@@ -108,8 +129,8 @@ export default function NotificationPreferencesSection({
         label={isTh ? 'แจ้งเตือนบนหน้าจอ / ไอคอนแอป' : 'Home-screen & OS alerts'}
         description={
           isTh
-            ? 'ตัวเลขบนไอคอนแอป แบนเนอร์แจ้งเตือนทันที (รวมเมื่อเปิดแอปอยู่) — อนุญาตการแจ้งเตือนใน iOS/Android/iPad'
-            : 'App icon badge and instant OS alerts (including while the app is open) — allow notifications on iOS/Android/iPad'
+            ? 'ตัวเลขบนไอคอนแอป + แจ้งเตือนข้ามอุปกรณ์ (แม้ปิดเว็บ) — อนุญาตการแจ้งเตือนใน iOS/Android/iPad และ Add to Home Screen บน iOS'
+            : 'App icon badge + cross-device push (even when the app is closed) — allow notifications on iOS/Android/iPad; Add to Home Screen on iOS'
         }
         checked={prefs.systemNotifications}
         onChange={(v) => void handleSystemNotifications(v)}
@@ -120,6 +141,13 @@ export default function NotificationPreferencesSection({
           {isTh
             ? 'การแจ้งเตือนถูกปิดในระบบ — เปิดได้จากการตั้งค่าของเบราว์เซอร์หรืออุปกรณ์'
             : 'Notifications are blocked — enable them in browser or device settings'}
+        </p>
+      )}
+      {diag && prefs.systemNotifications && (
+        <p className="text-[11px] text-muted-foreground mb-2">
+          {isTh
+            ? `สถานะเซิร์ฟเวอร์: VAPID ${diag.vapidConfigured ? 'พร้อม' : 'ยังไม่ตั้งค่า'} · อุปกรณ์ลงทะเบียน ${diag.subscriptionCount} เครื่อง`
+            : `Server: VAPID ${diag.vapidConfigured ? 'ready' : 'missing'} · ${diag.subscriptionCount} device(s) registered`}
         </p>
       )}
       <ToggleRow

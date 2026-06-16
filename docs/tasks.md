@@ -147,6 +147,7 @@ Plan: `docs/plans/2026-06-12-dark-theme-remediation.md`
 
 - [ ] Add inventory categories/groups
 - [x] Inventory in-app notifications via `data_change_logs` Realtime + PWA push prefs (v8.5)
+- [x] Cross-device Web Push for inventory alerts via `push_subscriptions` + VAPID (v8.7)
 - [ ] Implement low-stock LINE/push alerts (threshold-based)
 - [x] ~~Add export to CSV/PDF for Purchase Orders~~ — PNG export by channel (v6.8)
 - [ ] Build reporting dashboard (stock trends, shift analytics)

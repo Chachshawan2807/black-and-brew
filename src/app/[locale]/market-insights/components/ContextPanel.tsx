@@ -89,7 +89,7 @@ export default function ContextPanel({ context }: { context: MarketContext }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex w-full flex-col gap-2.5 sm:grid sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
+      <div className="grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
         <KpiCard
           icon={<CloudSun className="w-3.5 h-3.5 shrink-0" />}
           label="อากาศวันนี้"

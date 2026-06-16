@@ -20,6 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import {
   uploadSalesFiles,
   fetchSalesHistory,
@@ -619,16 +620,18 @@ export default function SalesClient({
               {showManageCategories && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    initial={fadeOverlay.initial}
+                    animate={fadeOverlay.animate}
+                    exit={fadeOverlay.exit}
+                    transition={fadeOverlay.transition}
                     className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                     onClick={() => setShowManageCategories(false)}
                   />
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
+                    initial={modalContent.initial}
+                    animate={modalContent.animate}
+                    exit={modalContent.exit}
+                    transition={modalContent.transition}
                     className="relative bg-card rounded-3xl border border-border shadow-xl max-w-lg w-full p-6"
                   >
                     <HintTooltip tip="ปิด">
@@ -693,16 +696,18 @@ export default function SalesClient({
               {categoryToDelete && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    initial={fadeOverlay.initial}
+                    animate={fadeOverlay.animate}
+                    exit={fadeOverlay.exit}
+                    transition={fadeOverlay.transition}
                     className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                     onClick={() => setCategoryToDelete(null)}
                   />
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
+                    initial={modalContent.initial}
+                    animate={modalContent.animate}
+                    exit={modalContent.exit}
+                    transition={modalContent.transition}
                     className="relative bg-card rounded-3xl border border-border shadow-xl max-w-md w-full p-6"
                   >
                     <HintTooltip tip="ปิด">
@@ -1063,7 +1068,7 @@ export default function SalesClient({
                 <div className="overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y bg-card border border-border rounded-xl">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-black/10">
+                      <tr className="border-b border-border">
                         <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">อันดับ</th>
                         <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">สินค้า</th>
                         <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">หมวดหมู่</th>
@@ -1078,7 +1083,7 @@ export default function SalesClient({
                           category: productCategories.get(product.productName) || ''
                         };
                         return (
-                        <tr key={product.productName} className="border-b border-black/5 last:border-0 hover:bg-black/[0.02] transition-colors">
+                        <tr key={product.productName} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                           <td className="py-2.5 px-3">
                             <span className="text-sm">
                               #{index + 1}
@@ -1126,7 +1131,7 @@ export default function SalesClient({
                                       autoFocus
                                       list={`category-list-top-${product.productName}`}
                                       aria-label={`Edit category for ${product.productName}`}
-                                      className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white text-xs transition-all focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                                       placeholder="ป้อนชื่อหมวดหมู่"
                                       disabled={isReadOnly || updatingProduct === product.productName}
                                     />
@@ -1239,7 +1244,7 @@ export default function SalesClient({
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         aria-label="Filter by product category"
-                        className="appearance-none w-full sm:w-auto px-3 pr-8 py-2 rounded-lg border border-black/10 bg-white text-xs transition-all focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30 hover:border-black/20 shadow-sm"
+                        className="appearance-none w-full sm:w-auto px-3 pr-8 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border hover:border-border shadow-sm"
                       >
                         <option value="all">ทุกหมวดหมู่</option>
                         {categories.map((cat, idx) => (
@@ -1260,8 +1265,8 @@ export default function SalesClient({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-all ${
                         sortBy === 'quantity'
-                          ? 'bg-[#fff3cd] text-black border-[#ffeeba]'
-                          : 'bg-white/80 border-black/10 hover:bg-[#fff3cd]/50'
+                          ? 'bb-pastel-surface bg-[#fff3cd] text-black border-[#ffeeba]'
+                          : 'bg-muted border-border text-foreground hover:bg-muted/80'
                       }`}
                     >
                       <span className="text-[11px]">จำนวนที่ขาย</span>
@@ -1280,8 +1285,8 @@ export default function SalesClient({
                       }}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-all ${
                         sortBy === 'revenue'
-                          ? 'bg-[#d4edda] text-black border-[#c3e6cb]'
-                          : 'bg-white/80 border-black/10 hover:bg-[#d4edda]/50'
+                          ? 'bb-pastel-surface bg-[#d4edda] text-black border-[#c3e6cb]'
+                          : 'bg-muted border-border text-foreground hover:bg-muted/80'
                       }`}
                     >
                       <span className="text-[11px]">ยอดขายรวม</span>
@@ -1294,7 +1299,7 @@ export default function SalesClient({
                 <div className="overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-black/10">
+                      <tr className="border-b border-border">
                         <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">สินค้า</th>
                         <th className="text-left py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">หมวดหมู่</th>
                         <th className="text-right py-2.5 px-3 text-xs text-muted-foreground uppercase tracking-wider">จำนวนที่ขาย</th>
@@ -1303,7 +1308,7 @@ export default function SalesClient({
                     </thead>
                     <tbody>
                       {sortedAllProducts.map((product) => (
-                        <tr key={product.productName} className="border-b border-black/5 last:border-0 hover:bg-black/[0.02] transition-colors">
+                        <tr key={product.productName} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                           <td className="py-2.5 px-3 text-sm">{product.productName}</td>
                           <td className="py-2.5 px-3">
                             <div className="flex items-center">
@@ -1346,7 +1351,7 @@ export default function SalesClient({
                                       autoFocus
                                       list={`category-list-${product.productName}`}
                                       aria-label={`Edit category for ${product.productName}`}
-                                      className="w-full px-3 py-2 rounded-lg border border-black/10 bg-white text-xs transition-all focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black/30 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                                       placeholder="ป้อนชื่อหมวดหมู่"
                                       disabled={isReadOnly || updatingProduct === product.productName}
                                     />

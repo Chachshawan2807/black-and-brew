@@ -80,7 +80,7 @@ export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapsh
   }
 
   return (
-    <div className="flex w-full flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-3">
+    <div className="grid w-full grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-3">
       {hasMonthly && (
         <div className="w-full shrink-0 rounded-2xl border border-border bg-card p-4 md:p-5 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
           <div className="flex items-center gap-1.5 mb-3 text-muted-foreground">

@@ -32,7 +32,7 @@ export interface InventoryCellBaseProps {
 }
 
 export interface InventoryRowHandlers extends InventoryCellBaseProps {
-  getStockColorClass: (stock: number, targetStock: number) => string;
+  getStockColorClass: (stock: number, orderPoint: number) => string;
 }
 
 export function readInventoryField(item: InventoryItem, fieldId: string): string | number {

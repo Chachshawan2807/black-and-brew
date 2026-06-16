@@ -127,7 +127,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     if (!selectedQuickItem) return getQuickBadgeStyles(0, 0);
     return getQuickBadgeStyles(
       Number(selectedQuickItem.stock) || 0,
-      Number((selectedQuickItem as BulkStockItem & { target_stock?: number }).target_stock) || 0,
+      Number((selectedQuickItem as BulkStockItem & { order_point?: number }).order_point) || 0,
     );
   }, [selectedQuickItem]);
 

@@ -2,6 +2,8 @@ import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 
 import type { FieldChange } from '@/lib/data-change-log';
 
+import { computeFieldChanges } from '@/lib/data-change-log';
+
 import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
 
 import { logRowToNotificationInput } from '@/lib/notification-types';
@@ -28,7 +30,87 @@ const FIELD_LABELS: Record<string, { th: string; en: string }> = {
 
   sort_order: { th: 'ลำดับ', en: 'Sort order' },
 
+  employee_id: { th: 'พนักงาน', en: 'Employee' },
+
+  start_time: { th: 'วันที่เริ่ม', en: 'Start date' },
+
+  end_time: { th: 'วันที่สิ้นสุด', en: 'End date' },
+
+  status: { th: 'สถานะ', en: 'Status' },
+
+  metadata: { th: 'รายละเอียดกะ', en: 'Shift details' },
+
+  full_name: { th: 'ชื่อพนักงาน', en: 'Staff name' },
+
+  schedule_order: { th: 'ลำดับในตาราง', en: 'Schedule order' },
+
+  display_order: { th: 'ลำดับแสดงผล', en: 'Display order' },
+
+  dashboard_order: { th: 'ลำดับแดชบอร์ด', en: 'Dashboard order' },
+
+  category: { th: 'หมวดหมู่', en: 'Category' },
+
+  product_name: { th: 'ชื่อสินค้า', en: 'Product' },
+
+  quantity: { th: 'จำนวน', en: 'Quantity' },
+
+  total_amount: { th: 'ยอดรวม', en: 'Total' },
+
+  unit_price: { th: 'ราคาต่อหน่วย', en: 'Unit price' },
+
+  sale_date: { th: 'วันที่ขาย', en: 'Sale date' },
+
+  payment_method: { th: 'ช่องทางชำระ', en: 'Payment' },
+
+  notes: { th: 'หมายเหตุ', en: 'Notes' },
+
+  is_ai_generated: { th: 'สร้างโดย AI', en: 'AI generated' },
+
+  start_date: { th: 'วันที่เริ่ม', en: 'Start date' },
+
+  equipment: { th: 'อุปกรณ์', en: 'Equipment' },
+
+  detected_problem: { th: 'ปัญหาที่พบ', en: 'Detected problem' },
+
+  task_type: { th: 'ประเภทงาน', en: 'Task type' },
+
+  work_details: { th: 'รายละเอียดงาน', en: 'Work details' },
+
+  recommended_frequency: { th: 'ความถี่แนะนำ', en: 'Recommended frequency' },
+
+  cost: { th: 'ค่าใช้จ่าย', en: 'Cost' },
+
+  person_in_charge: { th: 'ผู้รับผิดชอบ', en: 'Person in charge' },
+
+  completion_date: { th: 'วันที่เสร็จ', en: 'Completion date' },
+
+  days: { th: 'วันหยุดประจำ', en: 'Regular days off' },
+
+  date: { th: 'วันที่', en: 'Date' },
+
+  day_of_week: { th: 'วันในสัปดาห์', en: 'Day of week' },
+
 };
+
+
+
+const METADATA_FIELD_LABELS: Record<string, { th: string; en: string }> = {
+
+  location: { th: 'สถานที่', en: 'Location' },
+
+  is_management: { th: 'กะจัดการ', en: 'Management shift' },
+
+  shift_type: { th: 'ประเภทกะ', en: 'Shift type' },
+
+  note: { th: 'หมายเหตุ', en: 'Note' },
+
+};
+
+
+
+const DAY_NAMES_TH = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
+const DAY_NAMES_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 
 
@@ -110,11 +192,61 @@ const DISPLAY_PRIORITY = [
 
 
 
+function formatFieldLabel(field: string, isTh: boolean): string {
+
+  if (field.startsWith('metadata.')) {
+
+    const sub = field.slice('metadata.'.length);
+
+    return METADATA_FIELD_LABELS[sub]?.[isTh ? 'th' : 'en'] ?? sub;
+
+  }
+
+  return FIELD_LABELS[field]?.[isTh ? 'th' : 'en'] ?? field;
+
+}
+
+
+
+function formatDayList(days: unknown, isTh: boolean): string {
+
+  if (!Array.isArray(days)) return formatDisplayValue(days, isTh) ?? (isTh ? 'ไม่มี' : 'None');
+
+  const names = isTh ? DAY_NAMES_TH : DAY_NAMES_EN;
+
+  if (days.length === 0) return isTh ? 'ไม่มี' : 'None';
+
+  return days.map((d) => names[Number(d)] ?? String(d)).join(', ');
+
+}
+
+
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+
+}
+
+
+
 function formatDisplayValue(value: unknown, isTh: boolean): string | null {
 
-  if (value === null || value === undefined || value === '') {
+  if (value === null || value === undefined) {
 
     return isTh ? '0' : '0';
+
+  }
+
+  if (value === '') {
+
+    return isTh ? 'ว่าง' : 'empty';
+
+  }
+
+  if (typeof value === 'boolean') {
+
+    return value ? (isTh ? 'ใช่' : 'yes') : (isTh ? 'ไม่' : 'no');
 
   }
 
@@ -124,9 +256,51 @@ function formatDisplayValue(value: unknown, isTh: boolean): string | null {
 
   }
 
+  if (Array.isArray(value)) {
+
+    if (value.every((entry) => typeof entry === 'number' && entry >= 0 && entry <= 6)) {
+
+      return formatDayList(value, isTh);
+
+    }
+
+    const parts = value
+
+      .map((entry) => formatDisplayValue(entry, isTh))
+
+      .filter((entry): entry is string => entry != null && entry.length > 0);
+
+    return parts.length > 0 ? parts.join(', ') : (isTh ? 'ว่าง' : 'empty');
+
+  }
+
+  if (isPlainRecord(value)) {
+
+    const parts = Object.entries(value)
+
+      .map(([key, entry]) => {
+
+        const label = formatFieldLabel(key, isTh);
+
+        const formatted = formatDisplayValue(entry, isTh);
+
+        return formatted != null ? `${label}: ${formatted}` : null;
+
+      })
+
+      .filter((entry): entry is string => entry != null);
+
+    if (parts.length === 0) return null;
+
+    const joined = parts.join(', ');
+
+    return joined.length > 80 ? `${joined.slice(0, 77)}…` : joined;
+
+  }
+
   const text = String(value).trim();
 
-  if (!text) return isTh ? '0' : '0';
+  if (!text) return isTh ? 'ว่าง' : 'empty';
 
   if (isUuidString(text)) return null;
 
@@ -160,7 +334,19 @@ export function filterChangesForDisplay(changes: FieldChange[]): FieldChange[] {
 
 export function formatFieldChange(change: FieldChange, isTh: boolean): string {
 
-  const label = FIELD_LABELS[change.field]?.[isTh ? 'th' : 'en'] ?? change.field;
+  const label = formatFieldLabel(change.field, isTh);
+
+  if (change.field === 'days' || change.field === 'day_of_week') {
+
+    const oldVal = formatDayList(change.old_value, isTh);
+
+    const newVal = formatDayList(change.new_value, isTh);
+
+    if (oldVal === newVal) return '';
+
+    return `${label}: ${oldVal} → ${newVal}`;
+
+  }
 
   const oldVal = formatDisplayValue(change.old_value, isTh);
 
@@ -184,13 +370,15 @@ export function summarizeFieldChanges(
 
   isTh: boolean,
 
-  maxFields = 2
+  maxFields = 2,
+
+  options?: { includeName?: boolean }
 
 ): string {
 
   const filtered = filterChangesForDisplay(changes)
 
-    .filter((c) => c.field !== 'name')
+    .filter((c) => options?.includeName || c.field !== 'name')
 
     .sort(
 
@@ -785,7 +973,421 @@ const GENERIC_ACTION_LABELS: Record<string, { th: string; en: string }> = {
 
 
 
-/** Shared headline + detail for settings history and in-app notifications. */
+export function resolveEffectiveFieldChanges(row: DataChangeLogRow): FieldChange[] {
+
+  const explicit = row.field_changes ?? [];
+
+  if (explicit.length > 0) return explicit;
+
+
+
+  const before = isPlainRecord(row.old_value) ? row.old_value : null;
+
+  const after = isPlainRecord(row.new_value) ? row.new_value : null;
+
+  if (before || after) {
+
+    return computeFieldChanges(before, after);
+
+  }
+
+
+
+  return [];
+
+}
+
+
+
+function expandFieldChanges(changes: FieldChange[]): FieldChange[] {
+
+  const expanded: FieldChange[] = [];
+
+
+
+  for (const change of changes) {
+
+    if (change.field === 'metadata') {
+
+      const before = isPlainRecord(change.old_value) ? change.old_value : null;
+
+      const after = isPlainRecord(change.new_value) ? change.new_value : null;
+
+      const nested = computeFieldChanges(before, after);
+
+      if (nested.length > 0) {
+
+        for (const entry of nested) {
+
+          expanded.push({
+
+            field: `metadata.${entry.field}`,
+
+            old_value: entry.old_value,
+
+            new_value: entry.new_value,
+
+          });
+
+        }
+
+        continue;
+
+      }
+
+    }
+
+    expanded.push(change);
+
+  }
+
+
+
+  return expanded;
+
+}
+
+
+
+function withResolvedFieldChanges(row: DataChangeLogRow): DataChangeLogRow {
+
+  return {
+
+    ...row,
+
+    field_changes: expandFieldChanges(resolveEffectiveFieldChanges(row)),
+
+  };
+
+}
+
+
+
+function buildMetadataOperationDetail(row: DataChangeLogRow, isTh: boolean): string | null {
+
+  const operation = row.metadata?.operation as string | undefined;
+
+  if (!operation) return null;
+
+  const meta = row.metadata ?? {};
+
+
+
+  switch (operation) {
+
+    case 'batch_update_profile_names': {
+
+      const count = meta.count as number | undefined;
+
+      const nameChanges = meta.nameChanges as
+
+        | { label?: string; old_value: string | null; new_value: string }[]
+
+        | undefined;
+
+      if (nameChanges && nameChanges.length > 0) {
+
+        return nameChanges
+
+          .map((change) => {
+
+            const label = change.label?.trim() || (isTh ? 'พนักงาน' : 'Staff');
+
+            const oldVal = formatDisplayValue(change.old_value, isTh) ?? (isTh ? 'ว่าง' : 'empty');
+
+            const newVal = formatDisplayValue(change.new_value, isTh) ?? (isTh ? 'ว่าง' : 'empty');
+
+            return `${label}: ${oldVal} → ${newVal}`;
+
+          })
+
+          .join(' · ');
+
+      }
+
+      return count != null
+
+        ? isTh
+
+          ? `เปลี่ยนชื่อพนักงาน ${count} คน`
+
+          : `Renamed ${count} staff members`
+
+        : isTh
+
+          ? 'เปลี่ยนชื่อพนักงาน'
+
+          : 'Staff names updated';
+
+    }
+
+    case 'update_staff_order':
+
+      return isTh ? 'จัดลำดับพนักงานในตารางงานใหม่' : 'Reordered staff in schedule';
+
+    case 'update_dashboard_order':
+
+      return isTh ? 'จัดลำดับพนักงานในแดชบอร์ดใหม่' : 'Reordered staff on dashboard';
+
+    case 'delete_management_history': {
+
+      const start = meta.startDate as string | undefined;
+
+      const end = meta.endDate as string | undefined;
+
+      if (start && end) {
+
+        return isTh
+
+          ? `ลบประวัติกะจัดการ ${start} ถึง ${end}`
+
+          : `Deleted management shifts from ${start} to ${end}`;
+
+      }
+
+      return isTh ? 'ลบประวัติกะจัดการ' : 'Deleted management shift history';
+
+    }
+
+    case 'sync_holidays': {
+
+      const count = meta.count as number | undefined;
+
+      const start = meta.startDate as string | undefined;
+
+      const end = meta.endDate as string | undefined;
+
+      if (start && end && count != null) {
+
+        return isTh
+
+          ? `ซิงค์วันหยุด ${start}–${end} (${count} วัน)`
+
+          : `Synced holidays ${start}–${end} (${count} days)`;
+
+      }
+
+      return isTh ? 'ซิงค์วันหยุด' : 'Holidays synced';
+
+    }
+
+    case 'reorder_rows':
+
+      return isTh ? 'จัดลำดับรายการใหม่' : 'Rows reordered';
+
+    case 'reorder_sort_order': {
+
+      const ids = meta.itemIds as string[] | undefined;
+
+      const count = ids?.length;
+
+      return count != null
+
+        ? isTh
+
+          ? `จัดลำดับ ${count} รายการ`
+
+          : `Reordered ${count} items`
+
+        : isTh
+
+          ? 'จัดลำดับรายการใหม่'
+
+          : 'Items reordered';
+
+    }
+
+    case 'undo_redo_sync': {
+
+      const count = meta.itemCount as number | undefined;
+
+      return count != null
+
+        ? isTh
+
+          ? `ย้อนกลับ/ทำซ้ำ ${count} รายการ`
+
+          : `Undo/redo sync (${count} items)`
+
+        : isTh
+
+          ? 'ย้อนกลับ/ทำซ้ำ'
+
+          : 'Undo/redo sync';
+
+    }
+
+    default:
+
+      return null;
+
+  }
+
+}
+
+
+
+function buildCreateFallback(row: DataChangeLogRow, isTh: boolean): string {
+
+  const snapshot = isPlainRecord(row.new_value) ? row.new_value : null;
+
+  if (!snapshot) {
+
+    return isTh ? 'เพิ่มรายการใหม่' : 'New item added';
+
+  }
+
+  const parts = Object.entries(snapshot)
+
+    .filter(([key]) => !HIDDEN_NOTIFICATION_FIELDS.has(key))
+
+    .map(([key, value]) => {
+
+      const formatted = formatDisplayValue(value, isTh);
+
+      if (formatted == null) return '';
+
+      return `${formatFieldLabel(key, isTh)}: ${formatted}`;
+
+    })
+
+    .filter((line) => line.length > 0);
+
+  return parts.length > 0 ? parts.join(' · ') : (isTh ? 'เพิ่มรายการใหม่' : 'New item added');
+
+}
+
+
+
+function buildDeleteFallback(row: DataChangeLogRow, isTh: boolean): string {
+
+  if (row.entity_label?.trim()) {
+
+    return isTh ? `ลบ: ${row.entity_label.trim()}` : `Deleted: ${row.entity_label.trim()}`;
+
+  }
+
+  const snapshot = isPlainRecord(row.old_value) ? row.old_value : row.old_value;
+
+  if (snapshot != null) {
+
+    const formatted = formatDisplayValue(snapshot, isTh);
+
+    if (formatted != null) {
+
+      return isTh ? `ลบ: ${formatted}` : `Deleted: ${formatted}`;
+
+    }
+
+  }
+
+  return isTh ? 'ลบรายการแล้ว' : 'Item deleted';
+
+}
+
+
+
+function buildHistoryDetail(row: DataChangeLogRow, isTh: boolean): string {
+
+  const resolvedRow = withResolvedFieldChanges(row);
+
+  const metaDetail = buildMetadataOperationDetail(resolvedRow, isTh);
+
+  const changeLines = filterChangesForDisplay(resolvedRow.field_changes ?? [])
+
+    .map((c) => formatFieldChange(c, isTh))
+
+    .filter((line) => line.length > 0);
+
+
+
+  if (row.module === 'inventory') {
+
+    const stockOp = detectStockOperation(row);
+
+
+
+    switch (row.action) {
+
+      case 'CREATE':
+
+        return changeLines.length > 0 ? changeLines.join(' · ') : buildCreateSummary(resolvedRow, isTh);
+
+      case 'DELETE':
+
+      case 'BULK_DELETE':
+
+        return changeLines.length > 0 ? changeLines.join(' · ') : buildDeleteSummary(row, isTh);
+
+      case 'BULK_UPDATE': {
+
+        if (changeLines.length > 0) return changeLines.join(' · ');
+
+        if (metaDetail) return metaDetail;
+
+        return isTh ? 'แก้ไขหลายรายการในคลัง' : 'Multiple inventory items updated';
+
+      }
+
+      default: {
+
+        if (stockOp) return buildStockOperationSummary(row, stockOp, isTh);
+
+        if (changeLines.length > 0) return changeLines.join(' · ');
+
+        return summarizeFieldChanges(resolvedRow.field_changes ?? [], isTh, 50, { includeName: true });
+
+      }
+
+    }
+
+  }
+
+
+
+  switch (row.action) {
+
+    case 'CREATE':
+
+      if (changeLines.length > 0) return changeLines.join(' · ');
+
+      if (metaDetail) return metaDetail;
+
+      return buildCreateFallback(row, isTh);
+
+    case 'DELETE':
+
+    case 'BULK_DELETE':
+
+      if (changeLines.length > 0) return changeLines.join(' · ');
+
+      if (metaDetail) return metaDetail;
+
+      return buildDeleteFallback(row, isTh);
+
+    case 'BULK_UPDATE':
+
+      if (changeLines.length > 0) return changeLines.join(' · ');
+
+      if (metaDetail) return metaDetail;
+
+      return isTh ? 'แก้ไขหลายรายการ' : 'Bulk update';
+
+    default:
+
+      if (changeLines.length > 0) return changeLines.join(' · ');
+
+      if (metaDetail) return metaDetail;
+
+      return isTh ? 'อัปเดตข้อมูลแล้ว' : 'Data updated';
+
+  }
+
+}
+
+
+
+/** Headline + detail for settings edit history (shows full from→to diffs). */
 
 export function formatDataChangeLogDisplay(
 
@@ -795,17 +1397,19 @@ export function formatDataChangeLogDisplay(
 
 ): { headline: string; detail: string } {
 
+  const isTh = locale === 'th';
+
+
+
   if (row.module === 'inventory') {
 
     const formatted = formatInventoryNotification(row, locale);
 
-    return { headline: formatted.title, detail: formatted.summary };
+    return { headline: formatted.title, detail: buildHistoryDetail(row, isTh) };
 
   }
 
 
-
-  const isTh = locale === 'th';
 
   const actionLabel = GENERIC_ACTION_LABELS[row.action]?.[isTh ? 'th' : 'en'] ?? row.action;
 
@@ -823,27 +1427,7 @@ export function formatDataChangeLogDisplay(
 
 
 
-  const changes = filterChangesForDisplay(row.field_changes ?? [])
-
-    .filter((c) => c.field !== 'name')
-
-    .map((c) => formatFieldChange(c, isTh))
-
-    .filter((line) => line.length > 0);
-
-
-
-  const detail =
-
-    changes.length > 0
-
-      ? changes.join(' · ')
-
-      : isTh
-
-        ? 'อัปเดตข้อมูลแล้ว'
-
-        : 'Data updated';
+  const detail = buildHistoryDetail(row, isTh);
 
 
 

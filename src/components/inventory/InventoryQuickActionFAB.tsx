@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Package, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import {
   computeItemsToOrder,
   getStockColorClass,
@@ -152,36 +153,16 @@ export default function InventoryQuickActionFAB() {
     if (!element) return;
     try {
       setIsExportingPO(true);
-      const fullHeight = element.scrollHeight;
-      const fullWidth = element.scrollWidth;
-
-      const { toPng } = await import('html-to-image');
-      const dataUrl = await toPng(element, {
-        quality: 1.0,
-        pixelRatio: 2,
+      const { captureElementAsPng, downloadDataUrl } = await import('@/lib/capture-element-png');
+      const dataUrl = await captureElementAsPng(element, {
         backgroundColor: '#fff3dd',
-        width: fullWidth,
-        height: fullHeight,
-        style: {
-          margin: '0',
-          padding: '0',
-          border: 'none',
-          boxShadow: 'none',
-          maxHeight: 'none',
-          overflow: 'hidden',
-        },
-        filter: (node) => {
-          if ((node as HTMLElement)?.id === 'po-action-buttons') {
-            return false;
-          }
-          return true;
-        },
+        filter: (node) => (node as HTMLElement)?.id !== 'po-action-buttons',
       });
       const channelSuffix = selectedChannels.includes('all') ? 'All' : selectedChannels.join('-');
-      const link = document.createElement('a');
-      link.download = `PurchaseOrders-${channelSuffix}-${new Date().toISOString().split('T')[0]}.png`;
-      link.href = dataUrl;
-      link.click();
+      downloadDataUrl(
+        dataUrl,
+        `PurchaseOrders-${channelSuffix}-${new Date().toISOString().split('T')[0]}.png`,
+      );
     } catch (err) {
       console.error('Failed to export PO image:', err);
     } finally {
@@ -236,19 +217,19 @@ export default function InventoryQuickActionFAB() {
           <>
             <motion.div
               key="quick-action-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              initial={fadeOverlay.initial}
+              animate={fadeOverlay.animate}
+              exit={fadeOverlay.exit}
+              transition={fadeOverlay.transition}
               onClick={() => setIsOpen(false)}
               className="fixed inset-0 z-[198] bg-black/10 md:bg-black/0"
             />
             <motion.div
               key="quick-action-panel"
-              initial={{ opacity: 0, y: 20, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.96 }}
-              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              initial={modalContent.initial}
+              animate={modalContent.animate}
+              exit={modalContent.exit}
+              transition={modalContent.transition}
               className={cn(
                 'fixed z-[199] box-border flex flex-col overflow-visible',
                 'max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none',

@@ -208,5 +208,6 @@ export function isMarketInsightsV2(value: unknown): value is MarketInsightsV2 {
   return true;
 }
 
-export const MARKET_INSIGHTS_CACHE_KEY_V2 = 'marketInsightsCache_v2';
+/** Bumped when competitor data source / shape changes (e.g. Google Places rollout). */
+export const MARKET_INSIGHTS_CACHE_KEY_V2 = 'marketInsightsCache_v3';
 export const MARKET_INSIGHTS_ACTIONS_KEY_V2 = 'marketInsightsActions_v2';

@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Plus, Pencil, Trash2, Layers, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fadeOverlay, sheetPanel } from '@/lib/motion-presets';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import {
   formatNotificationTime,
@@ -127,19 +128,19 @@ export function NotificationPanel() {
       {panelOpen && (
         <>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={fadeOverlay.initial}
+            animate={fadeOverlay.animate}
+            exit={fadeOverlay.exit}
+            transition={fadeOverlay.transition}
             className="fixed inset-0 z-[214] bg-black/40 backdrop-blur-sm"
             onClick={closePanel}
             aria-hidden
           />
           <motion.aside
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            initial={sheetPanel.initial}
+            animate={sheetPanel.animate}
+            exit={sheetPanel.exit}
+            transition={sheetPanel.transition}
             className={cn(
               'fixed top-0 right-0 z-[215] h-[100dvh]',
               'bg-background border-l border-border bb-shadow-lg',

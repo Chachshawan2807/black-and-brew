@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackandbrew-cache-v2';
+const CACHE_NAME = 'blackandbrew-cache-v3';
 
 // Add list of files to cache here.
 const urlsToCache = [
@@ -32,6 +32,36 @@ self.addEventListener('activate', (event) => {
       );
     }).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('push', (event) => {
+  let payload = {
+    title: 'BLACKANDBREW',
+    body: 'มีการเปลี่ยนแปลงคลังสินค้า',
+    tag: 'bb-inventory',
+    url: '/th/inventory',
+  };
+
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      payload = { ...payload, ...parsed };
+    }
+  } catch {
+    // use defaults
+  }
+
+  const options = {
+    body: payload.body,
+    icon: '/images/notification-icon.png',
+    tag: payload.tag || 'bb-inventory',
+    silent: false,
+    requireInteraction: false,
+    vibrate: [120, 60, 120],
+    data: { url: payload.url || '/th/inventory' },
+  };
+
+  event.waitUntil(self.registration.showNotification(payload.title, options));
 });
 
 self.addEventListener('message', (event) => {

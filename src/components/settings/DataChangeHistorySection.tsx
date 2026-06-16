@@ -10,7 +10,6 @@ import {
 import {
   formatDataChangeLogDisplay,
 } from "@/lib/inventory-notification-formatter";
-import { ExpandableLines } from "@/components/ui/expandable-lines";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
 
 interface DataChangeHistorySectionProps {
@@ -56,21 +55,18 @@ function formatDateTime(iso: string, locale: string) {
 function buildChangeLines(row: DataChangeLogRow, locale: string): string[] {
   const isTh = locale === "th";
   const { headline, detail } = formatDataChangeLogDisplay(row, locale);
-  const lines: string[] = [headline];
-  if (detail) lines.push(detail);
 
   const editedAtLabel = isTh ? "แก้ไขเมื่อ" : "Edited on";
   const metaParts = [row.actor_label, editedAtLabel, formatDateTime(row.occurred_at, isTh ? "th" : "en")].filter(
     Boolean
   ) as string[];
-  lines.push(metaParts.join(" · "));
 
-  if (row.status === "failed") {
-    lines.push(
-      row.error_message ??
-        (isTh ? "บันทึกไม่สำเร็จ" : "Save failed")
-    );
-  }
+  const detailLine =
+    row.status === "failed"
+      ? row.error_message ?? (isTh ? "บันทึกไม่สำเร็จ" : "Save failed")
+      : detail;
+
+  const lines = [headline, detailLine, metaParts.join(" · ")];
 
   if (row.ip_address) {
     lines.push(isTh ? `จากเครือข่าย ${row.ip_address}` : `From ${row.ip_address}`);
@@ -79,8 +75,14 @@ function buildChangeLines(row: DataChangeLogRow, locale: string): string[] {
   return lines;
 }
 
+const HISTORY_LINE_STYLES = [
+  "text-[13px] text-foreground font-normal leading-snug",
+  "text-[12px] text-muted-foreground/90 leading-normal",
+  "text-[12px] text-muted-foreground/90 leading-normal",
+  "text-[12px] text-muted-foreground/90 leading-normal",
+] as const;
+
 function LogEntry({ row, locale }: { row: DataChangeLogRow; locale: string }) {
-  const isTh = locale === "th";
   const Icon = actionIcon(row.action);
   const isFailed = row.status === "failed";
   const lines = buildChangeLines(row, locale);
@@ -102,7 +104,16 @@ function LogEntry({ row, locale }: { row: DataChangeLogRow; locale: string }) {
       >
         <Icon size={14} strokeWidth={1.75} />
       </div>
-      <ExpandableLines lines={lines} isTh={isTh} className="min-w-0 flex-1" />
+      <div className="min-w-0 flex-1">
+        {lines.map((line, i) => (
+          <p
+            key={i}
+            className={cn(HISTORY_LINE_STYLES[i] ?? HISTORY_LINE_STYLES[3], i > 0 && "mt-0.5")}
+          >
+            {line}
+          </p>
+        ))}
+      </div>
     </div>
   );
 }

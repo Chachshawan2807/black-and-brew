@@ -73,6 +73,14 @@ export async function batchUpdateProfileNames(updates: { id: string; full_name: 
     const authError = await ensureShiftMutationAuthorized();
     if (authError) return { success: false, error: authError };
 
+    const ids = updates.map((u) => u.id);
+    const { data: beforeProfiles } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', ids);
+
+    const beforeById = new Map((beforeProfiles ?? []).map((p) => [p.id, p.full_name]));
+
     const results = await Promise.all(
       updates.map((u) =>
         supabaseAdmin.from('profiles').update({ full_name: u.full_name }).eq('id', u.id)
@@ -91,11 +99,23 @@ export async function batchUpdateProfileNames(updates: { id: string; full_name: 
       return { success: false, error: firstError.error?.message || 'Unknown error' };
     }
 
+    const nameChanges = updates
+      .filter((u) => (beforeById.get(u.id) ?? '') !== u.full_name)
+      .map((u) => ({
+        label: beforeById.get(u.id) || u.full_name,
+        old_value: beforeById.get(u.id) ?? null,
+        new_value: u.full_name,
+      }));
+
     await recordDataChange({
       action: 'BULK_UPDATE',
       module: 'schedule',
       entityType: 'profile',
-      metadata: { operation: 'batch_update_profile_names', count: updates.length },
+      metadata: {
+        operation: 'batch_update_profile_names',
+        count: updates.length,
+        nameChanges,
+      },
     });
 
     revalidatePath('/[locale]/schedule', 'page');

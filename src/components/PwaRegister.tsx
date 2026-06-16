@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { countUnread, loadStoredNotifications } from '@/lib/notification-storage';
 import {
   loadNotificationPreferences,
@@ -10,8 +11,12 @@ import {
   syncAppBadge,
   canRegisterServiceWorker,
 } from '@/lib/pwa-notification-bridge';
+import { ensurePushSubscription, refreshPushSubscriptionState } from '@/lib/push-subscription-client';
 
 export default function PwaRegister() {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'th';
+
   useEffect(() => {
     if (!canRegisterServiceWorker()) return;
 
@@ -28,6 +33,12 @@ export default function PwaRegister() {
   };
 
   navigator.serviceWorker.addEventListener('message', onNotificationClick);
+
+  const onPrefsChange = () => {
+    void refreshPushSubscriptionState(locale);
+  };
+
+  window.addEventListener('bb-notification-prefs-changed', onPrefsChange);
 
   const timeout = setTimeout(() => {
     navigator.serviceWorker
@@ -48,8 +59,9 @@ export default function PwaRegister() {
   return () => {
     clearTimeout(timeout);
     navigator.serviceWorker.removeEventListener('message', onNotificationClick);
+    window.removeEventListener('bb-notification-prefs-changed', onPrefsChange);
   };
-  }, []);
+  }, [locale]);
 
   return null;
 }

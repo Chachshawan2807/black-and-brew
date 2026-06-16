@@ -107,7 +107,7 @@ export const MARKET_GLOSSARY = {
   competitor_analysis: {
     title: 'วิเคราะห์คู่แข่ง',
     description:
-      'ร้านคาเฟ่/กาแฟในรัศมีกระทบ ณ พิกัดร้าน (NEXT_PUBLIC_STORE_LAT/LON). มี GOOGLE_PLACES_API_KEY จะเรียก Places API (New) searchNearby ก่อน · ไม่มี key หรือ Google ว่างจะใช้ OpenStreetMap',
+      'ร้านคาเฟ่/กาแฟในรัศมีกระทบ ณ พิกัดร้าน (NEXT_PUBLIC_STORE_LAT/LON). ใช้ GOOGLE_PLACES_API_KEY + Places API (New) searchNearby เป็นหลัก · ไม่มี key หรือ Google ว่าง/ล้มเหลวจึงใช้ OpenStreetMap เป็นสำรอง',
     formula: 'Haversine distance จากพิกัดร้าน',
     source: 'Places API (New) หรือ OpenStreetMap Overpass · แคช 1 ชม.',
   },

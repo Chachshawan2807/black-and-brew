@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { sanitizePromptInput, sanitizeScreenContext, sanitizeXssPayload } from '@/lib/security/sanitize';
 import { cn } from '@/lib/utils';
+import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import {
   FAB_BASE_CLASS,
   FAB_BOTTOM_AI_CLASS,
@@ -184,19 +185,19 @@ export default function AIChatOverlay() {
             {/* Click Outside Backdrop */}
             <motion.div
               key="chat-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              initial={fadeOverlay.initial}
+              animate={fadeOverlay.animate}
+              exit={fadeOverlay.exit}
+              transition={fadeOverlay.transition}
               onClick={() => setIsOpen(false)}
               className="fixed inset-0 z-[202] bg-black/0"
             />
             <motion.div
               key="chat-window"
-              initial={{ opacity: 0, y: 20, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.96 }}
-              transition={{ duration: 0.25, ease: [0.2, 0, 0, 1] }}
+              initial={modalContent.initial}
+              animate={modalContent.animate}
+              exit={modalContent.exit}
+              transition={modalContent.transition}
               className={cn(
                 'fixed z-[203] box-border bg-background rounded-3xl shadow-2xl border-2 border-border flex flex-col overflow-hidden',
                 'max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none',

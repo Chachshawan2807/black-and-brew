@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-16 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 8.7 | Last Updated: 2026-06-17 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -86,10 +86,13 @@ src/app/
 │   ├── market-insights-actions.ts     # getMarketInsights() multi-step generateObject pipeline
 │   ├── daily-report-actions.ts        # LINE report compiler
 │   ├── line-actions.ts
+│   ├── push-actions.ts                # Web Push subscription register/sync/unregister
+│   ├── data-change-log-actions.ts     # Mutation audit + dispatchInventoryWebPush hook
 │   └── tools/                         # AI agent tools
 ├── api/
 │   ├── chat/route.ts            # Streaming AI (ToolLoopAgent)
 │   ├── daily-report/route.ts    # Vercel Cron endpoint
+│   ├── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
 │   └── weather/route.ts         # OpenWeatherMap proxy
 └── [locale]/
     ├── layout.tsx               # PinGateway, sidebar, AI chat, PWA
@@ -154,14 +157,18 @@ Quick Entry / FAB → recordTransaction() → supabase.rpc('record_inventory_tra
 → Row Lock (FOR UPDATE) → Validate → UPDATE stock → INSERT transaction → RETURN
 ```
 
-### Inventory In-App Notifications
+### Inventory In-App + Cross-Device Web Push Notifications
 
 ```text
-Server mutation → data_change_logs INSERT (module=inventory)
-→ Supabase Realtime on data_change_logs
-→ useInventoryNotifications() + NotificationProvider
-→ browser push when prefs enabled (NotificationPreferencesSection in Settings)
+Server mutation → recordDataChange() → data_change_logs INSERT (module=inventory)
+→ Supabase Realtime on data_change_logs → useInventoryNotifications() (same device)
+→ dispatchInventoryWebPush() (fire-and-forget) → web-push → push_subscriptions rows
+→ PushSubscriptionManager (layout) registers endpoint via registerPushSubscription()
+→ NotificationPreferencesSection syncs prefs to push_subscriptions.prefs_json
+→ Optional backup: Supabase Database Webhook → POST /api/push/webhook (PUSH_WEBHOOK_SECRET)
 ```
+
+Skips origin device when `client_session_id` matches mutation metadata. Requires `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY`; fails gracefully when unset or table missing.
 
 ### AI Chat
 
@@ -242,6 +249,7 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 | OpenWeatherMap | `OPENWEATHER_API_KEY` | Weather widget + daily report |
 | Tavily | `TAVILY_API_KEY` | AI web search + Market Insights multi-query cache |
 | Google Places | `GOOGLE_PLACES_API_KEY` | Nearby competitor cafes - Market Insights v2 (OPTION) |
+| Web Push (VAPID) | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | Cross-device inventory alerts via `web-push` |
 | LINE Messaging API | `LINE_CHANNEL_ACCESS_TOKEN` | Daily push notifications |
 | Vercel | Git deployment | Edge hosting + Cron |
 

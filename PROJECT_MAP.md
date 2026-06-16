@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-06-16 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 8.6
+> Generated: 2026-06-17 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 8.7
 
 ---
 
@@ -46,6 +46,7 @@
 | `/api/chat` | `src/app/api/chat/route.ts` |
 | `/api/daily-report` | `src/app/api/daily-report/route.ts` |
 | `/api/weather` | `src/app/api/weather/route.ts` |
+| `/api/push/webhook` | `src/app/api/push/webhook/route.ts` |
 
 ---
 
@@ -56,20 +57,20 @@ black-and-brew/
 ├── docs/                    # Project documentation
 ├── messages/                # th.json, en.json (next-intl)
 ├── public/                  # sw.js (PWA), images, ai-agent-logo.svg
-├── supabase/migrations/     # Versioned DB migrations (8 files — see docs/database.md)
+├── supabase/migrations/     # Versioned DB migrations (9 files — see docs/database.md)
 ├── sql/                     # record_inventory_transaction.sql, sync_inventory_stock.sql, fix_inventory_rls.sql, ai_agent_views.sql
 ├── src/
 │   ├── app/
 │   │   ├── [locale]/        # UI pages + layout + globals.css
 │   │   ├── actions/         # Server Actions + tools/
-│   │   ├── api/             # chat, daily-report, weather
+│   │   ├── api/             # chat, daily-report, weather, push/webhook
 │   │   ├── manifest.ts
 │   │   └── page.tsx
 │   ├── components/
 │   │   ├── ai/              # AIChatOverlay, AIChatWrapper
 │   │   ├── auth/            # PinGateway
 │   │   ├── inventory/       # InventoryQuickActionFAB, InventoryQuickActionBar, InventoryHistoryModal
-│   │   ├── notifications/   # NotificationBell, NotificationPanel, InventoryNotificationFAB
+│   │   ├── notifications/   # NotificationPanel, PushSubscriptionManager, InventoryNotificationFAB
 │   │   ├── settings/        # NotificationPreferencesSection, DataChangeHistorySection
 │   │   ├── dashboard/       # LiveStatusTracker, WeatherWidget
 │   │   ├── providers/       # AuthProvider, I18nProvider, ThemeProvider, AppTooltipProvider
@@ -79,7 +80,7 @@ black-and-brew/
 │   ├── hooks/               # use-inventory-notifications, use-inventory-quick-action
 │   ├── i18n/                # request.ts, routing.ts
 │   ├── lib/                 # supabase, supabase-server, inventory-in-out-theoretical, inventory-quick-*, …
-│   ├── test/                # 69 Vitest test files
+│   ├── test/                # 76 Vitest test files
 │   └── proxy.ts             # next-intl middleware (Next.js 16 convention)
 ├── *.sql                    # Root-level schema/migration scripts
 ├── AGENTS.md, CLAUDE.md, MASTER_BLUEPRINT.md, README.md
@@ -103,6 +104,8 @@ black-and-brew/
 | `market-insights-actions.ts` | Gemini market analysis |
 | `daily-report-actions.ts` | LINE daily report compiler |
 | `line-actions.ts` | LINE Messaging API push |
+| `push-actions.ts` | Web Push subscription register/sync/unregister |
+| `data-change-log-actions.ts` | Mutation audit log + Web Push dispatch hook |
 | `migrate-inventory-sort-order.ts` | DB-only sort_order re-sequence |
 | `tools/database-tools.ts` | AI readTable tool |
 | `tools/search-tools.ts` | AI Tavily search |
@@ -110,9 +113,9 @@ black-and-brew/
 
 ---
 
-## Tests (`src/test/` — 58 files)
+## Tests (`src/test/` — 76 files)
 
-Key suites: `inventory-count-accuracy.test.ts`, `inventory-in-out-theoretical.test.ts`, `inventory-quick-bulk.test.ts`, `inventory-quick-action-draft.test.ts`, `inventory-quick-qty-step.test.ts`, `inventory-quick-search-filter.test.ts`, `inventory_stock_sync.test.ts`, `inventory_quick_action_fab.test.ts`, `supabase-session.test.ts`, `pwa-notification-bridge.test.ts`, `market-insights-v2.test.ts`, `auth.test.ts`, `read-only-guard.test.ts`, `basic.test.ts`, `setup.ts`
+Key suites: `web-push.test.ts`, `data-change-log.test.ts`, `inventory-count-accuracy.test.ts`, `inventory-in-out-theoretical.test.ts`, `inventory-quick-bulk.test.ts`, `inventory-quick-action-draft.test.ts`, `inventory-quick-qty-step.test.ts`, `inventory-quick-search-filter.test.ts`, `inventory_stock_sync.test.ts`, `inventory_quick_action_fab.test.ts`, `supabase-session.test.ts`, `pwa-notification-bridge.test.ts`, `market-insights-v2.test.ts`, `auth.test.ts`, `read-only-guard.test.ts`, `basic.test.ts`, `setup.ts`
 
 ---
 
@@ -127,6 +130,7 @@ Key suites: `inventory-count-accuracy.test.ts`, `inventory-in-out-theoretical.te
 | next-themes | ^0.4 |
 | tailwindcss | ^4 |
 | vitest | ^4.1.6 |
+| web-push | ^3.6.7 |
 | ai / @ai-sdk/google | ^6.0 / ^3.0 |
 
 ---

@@ -2,7 +2,7 @@
 
 Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
 
-> **Version:** 8.6 | **Stack:** Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
+> **Version:** 8.7 | **Stack:** Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
 
 ---
 
@@ -97,6 +97,17 @@ npm run dev
 | `LINE_TARGET_RECIPIENT_ID` | SECRET | ปลายทาง LINE fallback (user/group/room ID) |
 | `CRON_SECRET` | SECRET | ยืนยัน `GET /api/daily-report` — `Authorization: Bearer …` |
 
+### Web Push (Cross-Device Inventory Alerts)
+
+| Variable | Scope | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | PUBLIC | VAPID public key — `PushManager.subscribe()` |
+| `VAPID_PRIVATE_KEY` | SECRET | VAPID private key — `web-push` server sends |
+| `VAPID_SUBJECT` | SECRET | Contact URI (`mailto:` or `https:`) for push service |
+| `PUSH_WEBHOOK_SECRET` | SECRET | OPTION — auth for `POST /api/push/webhook` backup path |
+
+Generate keys: `npx web-push generate-vapid-keys`
+
 รายละเอียดและ path ในโค้ดที่อ่านแต่ละตัว → [.env.example](.env.example)
 
 ---
@@ -109,6 +120,7 @@ npm run dev
 - **Dual storage:** `sessionStorage` (client gate) + httpOnly cookies (`bb_auth_pin_verified`, `bb_auth_read_only`, `bb_session_fp`)
 - **Session audit:** `login_history` table — บันทึก login/logout พร้อม device fingerprint
 - **Remote revocation:** `revoked_sessions` table — บังคับออกจากระบบต่ออุปกรณ์จาก Settings
+- **Web Push:** `push_subscriptions` table — แจ้งเตือนคลังสินค้าข้ามอุปกรณ์ผ่าน VAPID (`PushSubscriptionManager` ใน layout)
 - **Write guard:** Server Actions เรียก `assertWritableSession()` ก่อน mutation
 
 ---
@@ -121,7 +133,7 @@ src/
 │   ├── page.tsx              # Redirect → /th
 │   ├── manifest.ts           # PWA manifest
 │   ├── actions/              # Server Actions (inventory, shift, auth, sales, …)
-│   ├── api/                  # chat, daily-report, weather
+│   ├── api/                  # chat, daily-report, weather, push/webhook
 │   └── [locale]/             # UI routes (th/en)
 ├── components/               # auth, sidebar, ui, ai, dashboard
 ├── lib/                      # supabase, motion-presets, inventory-stock, …

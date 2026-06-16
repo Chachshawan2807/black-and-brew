@@ -36,25 +36,26 @@ export async function fetchCompetitorAnalysis(
     const apiKey = process.env.GOOGLE_PLACES_API_KEY?.trim();
 
     if (apiKey) {
+      dataSource = 'google_places';
       const google = await fetchGooglePlacesNew(lat, lon, apiKey);
 
       if (google.results.length > 0) {
         rawPlaces = await enrichPlacesWithWebsiteUri(google.results, apiKey);
-        dataSource = 'google_places';
       } else if (google.status === 'OK' || google.status === 'ZERO_RESULTS') {
-        dataSource = 'google_places';
         placesApiMessage =
           google.status === 'ZERO_RESULTS'
-            ? 'Google Places ไม่พบร้านในรัศมี — ลอง OpenStreetMap เป็นข้อมูลสำรอง'
+            ? 'Google Places ไม่พบร้านคาเฟ่ในรัศมีที่กำหนด'
             : undefined;
         const osm = await fetchOsmCompetitors(lat, lon);
         if (osm.length > 0) {
           rawPlaces = osm;
           dataSource = 'openstreetmap';
+          placesApiMessage =
+            (placesApiMessage ? `${placesApiMessage} · ` : '') +
+            'แสดงข้อมูลสำรองจาก OpenStreetMap';
         }
       } else {
         placesApiMessage = googlePlacesNewFailureMessage(google.status, google.errorMessage);
-        dataSource = 'google_places';
         const osm = await fetchOsmCompetitors(lat, lon);
         if (osm.length > 0) {
           rawPlaces = osm;

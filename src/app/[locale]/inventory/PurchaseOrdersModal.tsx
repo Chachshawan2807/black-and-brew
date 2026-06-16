@@ -7,27 +7,17 @@ import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
-
-type PurchaseOrderItem = {
-  id: string;
-  name: string;
-  stock: number;
-  target_stock: number;
-  computedOrderQty: number;
-  unit: string;
-  source?: string | null;
-  updated_at?: string;
-};
+import type { PurchaseOrderCandidate } from '@/lib/inventory-stock';
 
 type PurchaseOrdersModalProps = {
   onClose?: () => void;
   exportPOImage?: () => Promise<void>;
   selectedChannels?: string[];
   setSelectedChannels?: React.Dispatch<React.SetStateAction<string[]>>;
-  itemsToOrder: PurchaseOrderItem[];
+  itemsToOrder: PurchaseOrderCandidate[];
   poSources: string[];
-  displayedPoItems: PurchaseOrderItem[];
-  getStockColorClass: (stock: number, targetStock: number) => string;
+  displayedPoItems: PurchaseOrderCandidate[];
+  getStockColorClass: (stock: number, orderPoint: number) => string;
   isExportMode?: boolean;
   exportTableId?: string;
 };
@@ -231,7 +221,7 @@ export default function PurchaseOrdersModal({
                       className={cn(
                         "py-4 text-[15px] text-center font-mono border-r",
                         isExportMode ? "border-black/5" : "border-border",
-                        getStockColorClass(Number(item.stock) || 0, Number(item.target_stock) || 0),
+                        getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0),
                       )}
                     >
                       {Number.isInteger(item.stock) ? item.stock : Number(item.stock).toFixed(1)}

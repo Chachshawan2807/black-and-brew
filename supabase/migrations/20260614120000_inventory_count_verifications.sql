@@ -19,11 +19,17 @@ CREATE INDEX IF NOT EXISTS idx_count_verifications_counted_at
 
 ALTER TABLE public.inventory_count_verifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow authenticated users to view count verifications"
+  ON public.inventory_count_verifications;
+
 CREATE POLICY "Allow authenticated users to view count verifications"
   ON public.inventory_count_verifications
   FOR SELECT
   TO authenticated
   USING (true);
+
+DROP POLICY IF EXISTS "Allow authenticated users to insert count verifications"
+  ON public.inventory_count_verifications;
 
 CREATE POLICY "Allow authenticated users to insert count verifications"
   ON public.inventory_count_verifications
