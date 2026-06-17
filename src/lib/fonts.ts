@@ -21,4 +21,8 @@ export const ibmPlexSansThai = IBM_Plex_Sans_Thai({
   display: 'swap',
 });
 
-export const appFontClassName = `${inter.variable} ${prompt.variable} ${ibmPlexSansThai.variable}`;
+export const appFontClassName = `${inter.variable} ${prompt.variable} ${ibmPlexSansThai.variable} font-sans`;
+
+/** Matches --font-sans in globals.css — use for SVG/canvas/Recharts where CSS vars apply */
+export const APP_FONT_FAMILY_CSS =
+  'var(--font-prompt), var(--font-ibm-plex-sans-thai), var(--font-inter), system-ui, sans-serif';

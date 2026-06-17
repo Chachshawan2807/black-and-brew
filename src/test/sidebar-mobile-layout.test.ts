@@ -16,37 +16,51 @@ describe('Mobile sidebar layout — Modern Web Guidance alignment', () => {
     expect(code).toMatch(/initialScale:\s*1/);
   });
 
-  test('mobile menu trigger exposes aria-expanded and aria-controls', () => {
-    const code = readFile('components/sidebar/SidebarLayout.tsx');
-    expect(code).toMatch(/aria-expanded=\{sidebarOpen\}/);
-    expect(code).toMatch(/aria-controls="bb-nav-drawer"/);
-    expect(code).toMatch(/type="button"/);
+  test('mobile nav uses dedicated MobileNavDrawer with popover manual + scroll-snap', () => {
+    const drawer = readFile('components/sidebar/MobileNavDrawer.tsx');
+    expect(drawer).toMatch(/popover="manual"/);
+    expect(drawer).toMatch(/bb-mobile-nav-drawer__scroller/);
+    expect(drawer).toMatch(/bb-mobile-nav-drawer__sheet/);
+    expect(drawer).toMatch(/IntersectionObserver/);
+    const css = readFile('app/[locale]/globals.css');
+    expect(css).toMatch(/scroll-snap-type:\s*x mandatory/);
+    expect(css).toMatch(/bb-mobile-nav-drawer::backdrop/);
+  });
+
+  test('mobile header wires aria to MobileNavDrawer', () => {
+    const header = readFile('components/sidebar/MobileNavHeader.tsx');
+    expect(header).toMatch(/aria-controls="bb-nav-drawer"/);
+    expect(header).toMatch(/useMobileNavDrawer/);
+    expect(header).toMatch(/openDrawer/);
+  });
+
+  test('desktop Sidebar is isolated from mobile drawer', () => {
+    const sidebar = readFile('components/sidebar/Sidebar.tsx');
+    expect(sidebar).not.toMatch(/translate-x-full/);
+    expect(sidebar).not.toMatch(/id="bb-nav-drawer"/);
+    const layout = readFile('components/sidebar/SidebarLayout.tsx');
+    expect(layout).toMatch(/showDesktopSidebar/);
+    expect(layout).toMatch(/showMobileNav/);
+  });
+
+  test('SidebarLayout mounts MobileNavDrawer and desktop Sidebar separately', () => {
+    const layout = readFile('components/sidebar/SidebarLayout.tsx');
+    expect(layout).toMatch(/MobileNavDrawer/);
+    expect(layout).toMatch(/MobileNavHeader/);
+    expect(layout).not.toMatch(/z-\[90\].*bg-black/);
   });
 
   test('main becomes inert while mobile drawer is open', () => {
-    const code = readFile('components/sidebar/SidebarLayout.tsx');
-    expect(code).toMatch(/inert=\{mobileDrawerInert \? true : undefined\}/);
-    expect(code).toMatch(/useMobileNavDrawerInert/);
+    const inertHook = readFile('hooks/use-mobile-nav-drawer-inert.ts');
+    expect(inertHook).toMatch(/useMobileNavDrawer/);
+    const layout = readFile('components/sidebar/SidebarLayout.tsx');
+    expect(layout).toMatch(/inert=\{mobileDrawerInert \? true : undefined\}/);
   });
 
-  test('mobile drawer dismisses on Escape', () => {
-    const code = readFile('components/sidebar/SidebarLayout.tsx');
-    expect(code).toMatch(/Escape/);
-    expect(code).toMatch(/sidebarOpen/);
-  });
-
-  test('mobile overlay should not use backdrop-blur (compositor-safe)', () => {
-    const code = readFile('components/sidebar/SidebarLayout.tsx');
-    const overlayLine = code.split('\n').find((l) => l.includes('z-[90]'));
-    expect(overlayLine).toBeDefined();
-    expect(overlayLine).not.toContain('backdrop-blur');
-  });
-
-  test('sidebar sheet uses svh and dvw width cap on mobile', () => {
-    const code = readFile('components/sidebar/Sidebar.tsx');
-    expect(code).toMatch(/100svh/);
-    expect(code).toMatch(/80dvw/);
-    expect(code).not.toMatch(/100dvh/);
+  test('Menu closes mobile drawer on navigation', () => {
+    const menu = readFile('components/sidebar/Menu.tsx');
+    expect(menu).toMatch(/closeDrawer/);
+    expect(menu).toMatch(/useMobileNavDrawer/);
   });
 
   test('main content region is a container query root', () => {

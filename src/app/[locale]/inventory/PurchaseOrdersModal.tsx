@@ -92,7 +92,7 @@ export default function PurchaseOrdersModal({
                 )}
               >
                 ทั้งหมด{' '}
-                <span className={selectedChannels.includes('all') ? 'text-white/60 text-[12px] ml-1 font-mono font-normal' : 'text-black/50 text-[12px] ml-1 font-mono font-normal'}>
+                <span className={selectedChannels.includes('all') ? 'text-white/60 text-[12px] ml-1 tabular-nums font-normal' : 'text-black/50 text-[12px] ml-1 tabular-nums font-normal'}>
                   ({itemsToOrder.length})
                 </span>
               </button>
@@ -121,7 +121,7 @@ export default function PurchaseOrdersModal({
                     )}
                   >
                     {source}{' '}
-                    <span className={isActive ? 'text-white/60 text-[12px] ml-1 font-mono font-normal' : 'text-black/50 text-[12px] ml-1 font-mono font-normal'}>
+                    <span className={isActive ? 'text-white/60 text-[12px] ml-1 tabular-nums font-normal' : 'text-black/50 text-[12px] ml-1 tabular-nums font-normal'}>
                       ({count})
                     </span>
                   </button>
@@ -212,14 +212,14 @@ export default function PurchaseOrdersModal({
                       isExportMode ? "text-black border-black/5" : "text-foreground border-border",
                     )}>{item.name}</td>
                     <td className={cn(
-                      "py-4 text-[16px] text-center font-mono font-normal border-r",
+                      "py-4 text-[16px] text-center tabular-nums font-normal border-r",
                       isExportMode ? "text-black border-black/5" : "text-foreground border-border",
                     )}>
                       {Number.isInteger(item.computedOrderQty) ? item.computedOrderQty : Number(item.computedOrderQty).toFixed(1)}
                     </td>
                     <td
                       className={cn(
-                        "py-4 text-[15px] text-center font-mono border-r",
+                        "py-4 text-[15px] text-center tabular-nums border-r",
                         isExportMode ? "border-black/5" : "border-border",
                         getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0),
                       )}
@@ -231,7 +231,7 @@ export default function PurchaseOrdersModal({
                       isExportMode ? "text-black/50 border-black/5" : "text-muted-foreground border-border",
                     )}>{item.unit || '-'}</td>
                     <td className={cn(
-                      "py-4 text-[13px] text-center font-mono",
+                      "py-4 text-[13px] text-center tabular-nums",
                       isExportMode ? "text-black/40" : "text-muted-foreground",
                     )}>
                       {item.updated_at

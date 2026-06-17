@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { modalContent, MODAL_EASE } from '@/lib/motion-presets';
-import { Lock, ShieldAlert, Loader2 } from 'lucide-react';
+import { Lock, ShieldAlert, Loader2, Fingerprint } from 'lucide-react';
 import { getAuthSessionInfo, verifyPin } from '@/app/actions/auth';
 import {
   clearClientAuthSession,
@@ -13,6 +13,12 @@ import {
 import { recordLoginEvent } from '@/app/actions/login-history-actions';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
+import {
+  isBiometricLoginAvailable,
+  loginWithDevicePasskey,
+  registerDevicePasskey,
+  shouldOfferPasskeyEnrollment,
+} from '@/lib/passkey/client-flow';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
 
@@ -28,6 +34,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   const [failedCountDisplay, setFailedCountDisplay] = useState('0');
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
+  const [showEnrollment, setShowEnrollment] = useState(false);
+  const [pendingReadOnly, setPendingReadOnly] = useState(false);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const isVerifyingRef = useRef(false);
 
@@ -70,7 +81,73 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated || lockoutTimeLeft !== null) return;
+    void isBiometricLoginAvailable().then(setBiometricSupported);
+  }, []);
+
+  const completeAuthentication = async (readOnly: boolean) => {
+    setClientAuthSession(readOnly);
+    setIsReadOnly(readOnly);
+    await ensureSupabaseSession();
+    setIsAuthenticated(true);
+    setShowEnrollment(false);
+    window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
+  };
+
+  const passkeySkipKey = (fingerprint: string) => `bb_passkey_skip_${fingerprint}`;
+
+  const handlePasskeyLogin = async () => {
+    if (passkeyBusy || isVerifyingRef.current || lockoutTimeLeft !== null) return;
+
+    setPasskeyBusy(true);
+    setPasskeyError(null);
+    hiddenInputRef.current?.blur();
+
+    try {
+      const device = collectClientDeviceInfo();
+      const res = await loginWithDevicePasskey(device);
+      if (!res.success) {
+        setPasskeyError(res.error);
+        return;
+      }
+
+      localStorage.removeItem('bb_failed_attempts');
+      localStorage.removeItem('bb_lockout_until');
+      setFailedCountDisplay('0');
+      await completeAuthentication(Boolean(res.isReadOnly));
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
+  const handleEnrollment = async () => {
+    setPasskeyBusy(true);
+    setPasskeyError(null);
+    try {
+      const device = collectClientDeviceInfo();
+      const res = await registerDevicePasskey(device);
+      if (!res.success) {
+        setPasskeyError(res.error);
+        return;
+      }
+      if (device.sessionFingerprint) {
+        localStorage.removeItem(passkeySkipKey(device.sessionFingerprint));
+      }
+      await completeAuthentication(pendingReadOnly);
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
+  const handleSkipEnrollment = async () => {
+    const device = collectClientDeviceInfo();
+    if (device.sessionFingerprint) {
+      localStorage.setItem(passkeySkipKey(device.sessionFingerprint), '1');
+    }
+    await completeAuthentication(pendingReadOnly);
+  };
+
+  useEffect(() => {
+    if (isAuthenticated || lockoutTimeLeft !== null || showEnrollment) return;
 
     const previousOverflow = document.body.style.overflow;
     const previousPosition = document.body.style.position;
@@ -88,7 +165,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       document.body.style.width = previousWidth;
       document.body.style.top = previousTop;
     };
-  }, [isAuthenticated, lockoutTimeLeft]);
+  }, [isAuthenticated, lockoutTimeLeft, showEnrollment]);
 
   useEffect(() => {
     const viewport = window.visualViewport;
@@ -161,13 +238,24 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       const res = await verifyPin(nextPin, device);
       if (res.success) {
         setClientAuthSession(Boolean(res.isReadOnly));
-        setIsReadOnly(Boolean(res.isReadOnly));
         localStorage.removeItem('bb_failed_attempts');
         localStorage.removeItem('bb_lockout_until');
         setFailedCountDisplay('0');
-        await ensureSupabaseSession();
-        setIsAuthenticated(true);
-        window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
+
+        const fingerprint = device.sessionFingerprint;
+        const skippedEnrollment =
+          fingerprint && localStorage.getItem(passkeySkipKey(fingerprint)) === '1';
+        const offerEnrollment =
+          !skippedEnrollment &&
+          (await shouldOfferPasskeyEnrollment(fingerprint));
+
+        if (offerEnrollment) {
+          setPendingReadOnly(Boolean(res.isReadOnly));
+          setShowEnrollment(true);
+          return;
+        }
+
+        await completeAuthentication(Boolean(res.isReadOnly));
         return;
       }
 
@@ -204,6 +292,60 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   };
 
   if (!isMounted) return null;
+
+  if (showEnrollment) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center p-4 antialiased overflow-hidden">
+        <motion.div
+          initial={modalContent.initial}
+          animate={modalContent.animate}
+          transition={modalContent.transition}
+          className="w-full max-w-sm flex flex-col items-center gap-6 text-center"
+        >
+          <div className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center shadow-lg">
+            <Fingerprint size={32} strokeWidth={1.5} />
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-xl font-normal text-foreground tracking-[0.12em] uppercase">
+              บันทึกเครื่องนี้
+            </h1>
+            <p className="text-sm font-normal text-muted-foreground leading-relaxed px-2">
+              ครั้งถัดไปเข้าระบบด้วยลายนิ้วมือหรือสแกนใบหน้าแทนการพิมพ์ PIN ได้
+            </p>
+          </div>
+
+          {passkeyError ? (
+            <p className="text-sm font-normal text-red-500">{passkeyError}</p>
+          ) : null}
+
+          <div className="flex flex-col w-full gap-2">
+            <button
+              type="button"
+              onClick={() => void handleEnrollment()}
+              disabled={passkeyBusy}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground text-background px-4 py-3 text-sm font-normal disabled:opacity-60"
+            >
+              {passkeyBusy ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Fingerprint size={18} strokeWidth={1.5} />
+              )}
+              บันทึกด้วยลายนิ้วมือ / ใบหน้า
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSkipEnrollment()}
+              disabled={passkeyBusy}
+              className="inline-flex w-full items-center justify-center rounded-2xl border border-border px-4 py-3 text-sm font-normal text-muted-foreground disabled:opacity-60"
+            >
+              ข้ามไปก่อน
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return (
@@ -392,6 +534,39 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             รหัสผ่านไม่ถูกต้อง (ครั้งที่ {failedCountDisplay}/5)
           </motion.p>
         )}
+
+        {passkeyError && !error ? (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-sm font-normal text-red-500 tracking-wide text-center px-2"
+          >
+            {passkeyError}
+          </motion.p>
+        ) : null}
+
+        {biometricSupported && !isVerifying ? (
+          <div className="w-full max-w-[320px] flex flex-col items-center gap-2">
+            <div className="w-full flex items-center gap-3 text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[11px] uppercase tracking-[0.12em]">หรือ</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <button
+              type="button"
+              onClick={() => void handlePasskeyLogin()}
+              disabled={passkeyBusy || lockoutTimeLeft !== null}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-normal text-foreground disabled:opacity-60"
+            >
+              {passkeyBusy ? (
+                <Loader2 size={18} className="animate-spin" strokeWidth={1.5} />
+              ) : (
+                <Fingerprint size={18} strokeWidth={1.5} />
+              )}
+              เข้าด้วยลายนิ้วมือ / ใบหน้า
+            </button>
+          </div>
+        ) : null}
       </motion.div>
     </div>
   );

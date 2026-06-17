@@ -5,6 +5,7 @@ import { ChevronDown, Dot, type LucideIcon } from "lucide-react";
 import { DropdownMenuArrow } from "@radix-ui/react-dropdown-menu";
 
 import { cn } from "@/lib/utils";
+import { sidebarLabelClass } from "@/lib/sidebar-label-classes";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -72,23 +73,16 @@ export function CollapseMenuButton({
               <span className="mr-4 text-foreground">
                 <Icon size={18} strokeWidth={1.75} />
               </span>
-              <p
-                className={cn(
-                  "max-w-[150px] truncate text-foreground",
-                  isOpen
-                    ? "translate-x-0 opacity-100"
-                    : "-translate-x-96 opacity-0"
-                )}
-              >
+              <p className={sidebarLabelClass(isOpen, "max-w-[150px] text-foreground")}>
                 {label}
               </p>
             </div>
             <div
               className={cn(
-                "whitespace-nowrap",
+                "whitespace-nowrap bb-sidebar-label",
                 isOpen
-                  ? "translate-x-0 opacity-100"
-                  : "-translate-x-96 opacity-0"
+                  ? "bb-sidebar-label--expanded"
+                  : "bb-sidebar-label--collapsed"
               )}
             >
               <ChevronDown
@@ -112,14 +106,7 @@ export function CollapseMenuButton({
               <span className="mr-4 ml-2 text-foreground">
                 <Dot size={18} strokeWidth={1.75} />
               </span>
-              <p
-                className={cn(
-                  "max-w-[170px] truncate text-foreground",
-                  isOpen
-                    ? "translate-x-0 opacity-100"
-                    : "-translate-x-96 opacity-0"
-                )}
-              >
+              <p className={sidebarLabelClass(isOpen, "max-w-[170px] text-foreground")}>
                 {label}
               </p>
             </Link>
@@ -145,12 +132,7 @@ export function CollapseMenuButton({
                     <span className={cn("text-foreground", isOpen === false ? "" : "mr-4")}>
                       <Icon size={18} strokeWidth={1.75} />
                     </span>
-                    <p
-                      className={cn(
-                        "max-w-[200px] truncate",
-                        isOpen === false ? "opacity-0" : "opacity-100"
-                      )}
-                    >
+                    <p className={sidebarLabelClass(isOpen, "text-foreground")}>
                       {label}
                     </p>
                   </div>

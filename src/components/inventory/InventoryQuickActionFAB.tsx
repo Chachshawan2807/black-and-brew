@@ -43,7 +43,7 @@ type InventoryItem = InventoryRealtimeItem & InventoryStockFields;
 
 export default function InventoryQuickActionFAB() {
   const isReadOnly = useReadOnly();
-  const { fabStackHidden, isAnyOtherOpen, setOverlayOpen } = useFloatingOverlay();
+  const { fabStackHidden, fabStackSuppressed, isAnyOtherOpen, setOverlayOpen } = useFloatingOverlay();
   const {
     items,
     setItems,
@@ -93,6 +93,7 @@ export default function InventoryQuickActionFAB() {
     isOpen || showAddModal || showHistoryModal || showPurchaseOrderModal;
   const hideQuickActionButton =
     fabStackHidden ||
+    fabStackSuppressed ||
     isAnyOtherOpen('quick-action') ||
     showAddModal ||
     showHistoryModal ||
@@ -103,12 +104,12 @@ export default function InventoryQuickActionFAB() {
   }, [quickOverlayActive, setOverlayOpen]);
 
   useEffect(() => {
-    if (!fabStackHidden) return;
+    if (!fabStackHidden && !fabStackSuppressed) return;
     setIsOpen(false);
     setShowAddModal(false);
     setShowHistoryModal(false);
     setShowPurchaseOrderModal(false);
-  }, [fabStackHidden]);
+  }, [fabStackHidden, fabStackSuppressed]);
 
   useEffect(() => {
     if (!isMounted || !isOpen) return;

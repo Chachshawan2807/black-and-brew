@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
+import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 export interface MaintenanceFormData {
@@ -267,10 +268,14 @@ export default function MaintenanceModals({
         )}
       </AnimatePresence>
 
-      {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/5 backdrop-blur-md bb-modal-backdrop" onClick={() => setIsDeleteConfirmOpen(false)} />
-          <div className="relative bg-card w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-border bb-modal-panel p-10 text-center">
+      <FadeModalScaffold
+        open={isDeleteConfirmOpen}
+          onClose={() => setIsDeleteConfirmOpen(false)}
+          zIndex={110}
+          overlayClassName="bg-black/5 backdrop-blur-md"
+          panelClassName="relative bg-card w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-border p-10 text-center"
+          aria-label="Delete Record?"
+        >
             <HintTooltip tip="ปิด">
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
@@ -300,9 +305,7 @@ export default function MaintenanceModals({
                 Cancel
               </button>
             </div>
-          </div>
-        </div>
-      )}
+        </FadeModalScaffold>
     </>
   );
 }

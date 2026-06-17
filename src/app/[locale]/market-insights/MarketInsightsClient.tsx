@@ -28,6 +28,7 @@ import DiffBanner from './components/DiffBanner';
 import CompetitorPanel from './components/CompetitorPanel';
 import MetricInfoTip from './components/MetricInfoTip';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { cn } from '@/lib/utils';
 
 const CACHE_TTL = 300_000;
@@ -97,6 +98,7 @@ interface MarketInsightsClientProps {
 }
 
 export default function MarketInsightsClient({ initialInsights = null }: MarketInsightsClientProps) {
+  const { setFabStackSuppressed } = useFloatingOverlay();
   const [insights, setInsights] = useState<MarketInsightsV2 | null>(initialInsights);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(Boolean(initialInsights));
@@ -163,6 +165,13 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
     if (!insights?.context) return 'error';
     return 'content';
   }, [hasLoaded, isLoading, insights?.context]);
+
+  const isRefreshOverlay = isLoading && hasLoaded;
+
+  useEffect(() => {
+    setFabStackSuppressed(isRefreshOverlay);
+    return () => setFabStackSuppressed(false);
+  }, [isRefreshOverlay, setFabStackSuppressed]);
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -258,7 +267,7 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
 
           {bodyView === 'content' && insights?.context && (
             <div className="relative w-full">
-              {isLoading && hasLoaded && (
+              {isRefreshOverlay && (
                 <div
                   className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-2xl bg-background max-md:min-h-[12rem] md:fixed md:inset-0 md:z-40 md:rounded-none md:bg-background/95"
                   aria-busy="true"
@@ -272,10 +281,10 @@ export default function MarketInsightsClient({ initialInsights = null }: MarketI
               )}
 
               <div
+                aria-hidden={isRefreshOverlay ? true : undefined}
                 className={cn(
                   'w-full space-y-5 max-md:space-y-4',
-                  isLoading &&
-                    hasLoaded &&
+                  isRefreshOverlay &&
                     'max-md:invisible md:opacity-40 md:pointer-events-none md:select-none'
                 )}
               >

@@ -2,19 +2,19 @@
 
 ## Source of truth
 
-Official schema changes: **`supabase/migrations/`**
+Official schema changes: `supabase/migrations/`
 
 Apply migrations via `supabase db push` when CLI is linked, or run individual migration files in the Supabase Dashboard SQL Editor.
 
 Verify remote state: `npm run db:verify`
 
-**Supabase Auth:** Enable **Anonymous Sign-ins** in Dashboard → Authentication → Providers (required for `ensureSupabaseSession()` after PIN gate). Local CLI default: `enable_anonymous_sign_ins = true` in `supabase/config.toml`.
+Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Providers (required for `ensureSupabaseSession()` after PIN gate). Local CLI default: `enable_anonymous_sign_ins = true` in `supabase/config.toml`.
 
 ## Directory roles
 
 | Location | Purpose |
 |----------|---------|
-| `supabase/migrations/` | Versioned migrations (login_history, data_change_logs, revoked_sessions, push_subscriptions, inventory ADD/DELETE, count verifications) |
+| `supabase/migrations/` | Versioned migrations (login_history, data_change_logs, revoked_sessions, push_subscriptions, device_passkeys, inventory ADD/DELETE, count verifications) |
 | `sql/` | Operational scripts and RPC reference blueprints |
 | Root `*.sql` | Historical reference schemas (`DB_SCHEMA.sql`, `sales_schema.sql`, etc.) — applied historically |
 
@@ -41,3 +41,8 @@ Verify remote state: `npm run db:verify`
 | `20260615120000_inventory_count_accuracy_refactor.sql` | `system_stock_qty` column; clear legacy verification rows |
 | `20260615130000_align_low_stock_with_purchase_orders.sql` | `view_inventory_summary` LOW/WARNING/OK aligned with purchase-order modal |
 | `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (cross-device inventory alerts) |
+| `20260617120000_device_passkeys.sql` | WebAuthn trusted-device credentials for biometric login |
+
+## Cleanup audit
+
+2026-06-17 audit result: no SQL file is safe to delete. All 22 SQL files are either migration history, active schema/RLS/RPC/view references, or optional feature schema used by current code.

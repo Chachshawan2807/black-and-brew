@@ -13,10 +13,11 @@ export default async function SchedulePage({
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ week?: string }>;
 }) {
-  const { locale } = await params;
-  const { week: weekParam } = await searchParams;
-
-  const authed = await checkAuth();
+  const [{ locale }, { week: weekParam }, authed] = await Promise.all([
+    params,
+    searchParams,
+    checkAuth(),
+  ]);
   if (!authed) {
     redirect(`/${locale}`);
   }
@@ -30,13 +31,8 @@ export default async function SchedulePage({
   const mondayStr = format(monday, 'yyyy-MM-dd');
   const sundayStr = format(sunday, 'yyyy-MM-dd');
 
-  const holidaySync = await fetchAndPersistHolidays(mondayStr, sundayStr);
-  if (!holidaySync.success && holidaySync.error !== 'Missing API Key') {
-    console.error('Holiday sync failed:', holidaySync.error);
-  }
-
-  // ใช้ Admin Fetch เพื่อหลีกเลี่ยงการถูกบล็อกข้อมูลจาก RLS
-  const [profilesRes, shiftsRes, holidaysRes, regularHolidaysRes] = await Promise.all([
+  const holidaySyncPromise = fetchAndPersistHolidays(mondayStr, sundayStr);
+  const baseDataPromise = Promise.all([
     supabaseAdmin.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
     supabaseAdmin.from('shifts')
       .select('id, employee_id, start_time, end_time, status, metadata')
@@ -46,8 +42,18 @@ export default async function SchedulePage({
       .not('status', 'eq', '')
       .not('metadata->>location', 'is', null)
       .not('metadata->>location', 'eq', ''),
-    supabaseAdmin.from('holidays').select('id, date, name').gte('date', mondayStr).lte('date', sundayStr),
     supabaseAdmin.from('regular_holidays').select('id, profile_id, day_of_week')
+  ]);
+
+  const holidaySync = await holidaySyncPromise;
+  if (!holidaySync.success && holidaySync.error !== 'Missing API Key') {
+    console.error('Holiday sync failed:', holidaySync.error);
+  }
+
+  // ใช้ Admin Fetch เพื่อหลีกเลี่ยงการถูกบล็อกข้อมูลจาก RLS
+  const [[profilesRes, shiftsRes, regularHolidaysRes], holidaysRes] = await Promise.all([
+    baseDataPromise,
+    supabaseAdmin.from('holidays').select('id, date, name').gte('date', mondayStr).lte('date', sundayStr),
   ]);
 
   const normalizedShifts = (shiftsRes.data || []).map(s => {

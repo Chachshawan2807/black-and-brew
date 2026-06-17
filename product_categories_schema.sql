@@ -17,8 +17,10 @@ ALTER TABLE product_categories ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS Policies (drop if exists first to avoid errors)
 DROP POLICY IF EXISTS "Public access for product_categories" ON product_categories;
-CREATE POLICY "Public access for product_categories"
+DROP POLICY IF EXISTS "Authenticated access for product_categories" ON product_categories;
+CREATE POLICY "Authenticated access for product_categories"
 ON product_categories FOR ALL
+TO authenticated
 USING (true)
 WITH CHECK (true);
 

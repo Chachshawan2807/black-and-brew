@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 8.7 | Last Updated: 2026-06-17 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 8.8 | Last Updated: 2026-06-17 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## 🏛️ Architectural Core
 
@@ -79,6 +79,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 - Security Gate: The authentication PIN checks are migrated 100% to the server-side via Server Actions in `src/app/actions/auth.ts`.
 - Environment Isolation: The environment variable is stored as a secret `APP_PIN` (without `NEXT_PUBLIC_`) so Next.js never leaks the key to client bundles.
 - Session Hardening & Tab Isolation: Client-side authentication checks strictly enforce `sessionStorage` tab isolation to prevent credentials persistence across tab/browser lifecycles. Any access on a fresh tab or a fresh browser session will immediately trigger the Security PIN Gate. Upon successful verification, the state is stored in `sessionStorage.getItem('bb_auth_pin_verified')`. The server action `verifyPin` also sets a secure, HTTP-Only, `SameSite=Strict` cookie (`bb_auth_pin_verified`) for supplementary server-side API requests.
+- Trusted-device Passkeys: `passkey-actions.ts` registers WebAuthn platform credentials only after a PIN-verified session and stores them in `device_passkeys` with credential ID, public key, counter, session fingerprint, and access level. Returning devices can restore auth cookies through verified biometric/passkey login.
 - Type-Guarded LocalStorage Recovery: To prevent client-side injection attacks, corruption, or UI crashes, any state deserialized from `localStorage` (such as column widths or drag orders) must be validated through the Type Validation Engine. Keys and value types, ranges, bounds, and array lengths must be checked (e.g. `typeof key === 'string' && typeof val === 'number' && val > 0 && val < 2000`) before state is updated.
 - Anti-Brute Force (Rate Limiter): If an operator enters the wrong PIN 5 times in a row, the system enforces a strict 15-minute lockout screen (`localStorage` persisted to prevent page refresh bypass). The lockout timer renders dynamically with standard `font-normal` and `antialiased` typography on Morning Latte Cream (#fdfcf0).
 
@@ -123,6 +124,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 | Market Insights | `/[locale]/market-insights` | Active |
 | AI Assistant (บรู) | Global overlay | Active — AI SDK v6 |
 | PIN Auth | PinGateway | Active — full + read-only |
+| Trusted-device Passkeys | Settings | Active — WebAuthn biometric login |
 
 ## 🛠️ Global Rules
 
@@ -144,6 +146,9 @@ Authoritative list: [`.env.example`](../.env.example). Keys actually read in `sr
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | PUBLIC | Anon key (RLS client) |
 | `SUPABASE_SERVICE_ROLE_KEY` | SECRET | Server Actions, AI tools, cron |
 | `APP_PIN` | SECRET | Full-access PIN |
+| `APP_READ_ONLY_PIN` | SECRET | Read-only PIN; production required |
+| `WEBAUTHN_RP_ID` | SECRET | OPTION — production WebAuthn relying-party ID |
+| `WEBAUTHN_ORIGIN` | SECRET | OPTION — production WebAuthn origin |
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | PUBLIC | Store coordinates |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini — `@ai-sdk/google` (AI Chat, Market Insights) |
 | `TAVILY_API_KEY` | SECRET | `internetSearchTool` |

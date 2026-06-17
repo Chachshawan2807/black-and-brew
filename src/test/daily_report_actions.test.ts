@@ -4,15 +4,26 @@ import { addDays, format } from 'date-fns';
 
 
 // Define mutable mock data variables
-let mockProfilesData: any[] = [];
-let mockShiftsData: any[] = [];
-let mockInventoryItemsData: any[] = [];
-let mockHolidaysData: any | null = null;
+type MockProfile = { id: string; full_name: string; schedule_order: number };
+type MockShift = {
+  employee_id: string;
+  status: string;
+  metadata?: {
+    location?: string | null;
+  };
+};
+type MockInventoryItem = Record<string, unknown>;
+type MockHoliday = { name: string; date: string };
 
-let mockProfilesError: any = null;
-let mockShiftsError: any = null;
-let mockInventoryItemsError: any = null;
-let mockHolidaysError: any = null;
+let mockProfilesData: MockProfile[] = [];
+let mockShiftsData: MockShift[] = [];
+let mockInventoryItemsData: MockInventoryItem[] = [];
+let mockHolidaysData: MockHoliday | null = null;
+
+let mockProfilesError: Error | null = null;
+let mockShiftsError: Error | null = null;
+let mockInventoryItemsError: Error | null = null;
+let mockHolidaysError: Error | null = null;
 
 // Mock the entire supabase-js dependency BEFORE importing modules that use it
 vi.mock('@supabase/supabase-js', () => {

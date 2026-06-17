@@ -2,6 +2,9 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { fadeOverlay, withReducedMotion } from '@/lib/motion-presets';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import {
   format, parseISO, startOfMonth, endOfMonth,
   eachDayOfInterval, isSameDay, addMonths, subMonths,
@@ -46,6 +49,8 @@ export function ClickableDatePicker({
   onChange,
   disabled = false,
 }: ClickableDatePickerProps) {
+  const reduced = usePrefersReducedMotion();
+  const overlayMotion = withReducedMotion(fadeOverlay, reduced);
   // ─── Refs ─────────────────────────────────────────────────────────────────
   const triggerRef = useRef<HTMLButtonElement>(null);  // ปุ่มที่ user กด
   const popoverRef = useRef<HTMLDivElement>(null);     // calendar popover เอง
@@ -355,17 +360,25 @@ export function ClickableDatePicker({
       </button>
 
       {/* ── Popover via Portal ── */}
-      {isOpen && isMounted && createPortal(
-        <>
-          {/* Mobile overlay: backdrop เฉพาะมือถือ */}
-          <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm bb-modal-backdrop md:hidden"
-            style={{ zIndex: 9998 }}
-            onClick={closeCalendar}
-            aria-hidden="true"
-          />
-          {calendarContent}
-        </>,
+      {isMounted && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              <motion.div
+                key="date-picker-backdrop"
+                className="fixed inset-0 bg-black/20 backdrop-blur-sm md:hidden"
+                style={{ zIndex: 9998 }}
+                initial={overlayMotion.initial}
+                animate={overlayMotion.animate}
+                exit={overlayMotion.exit}
+                transition={overlayMotion.transition}
+                onClick={closeCalendar}
+                aria-hidden="true"
+              />
+              {calendarContent}
+            </>
+          )}
+        </AnimatePresence>,
         document.body
       )}
     </div>

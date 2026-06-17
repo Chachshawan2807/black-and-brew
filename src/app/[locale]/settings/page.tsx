@@ -1,5 +1,6 @@
 import { Settings2, Bell } from 'lucide-react';
 import LoginHistorySection from '@/components/settings/LoginHistorySection';
+import PasskeyDeviceSection from '@/components/settings/PasskeyDeviceSection';
 import DataChangeHistorySection from '@/components/settings/DataChangeHistorySection';
 import NotificationPreferencesSection from '@/components/settings/NotificationPreferencesSection';
 import SettingsCollapsibleSection from '@/components/settings/SettingsCollapsibleSection';
@@ -53,6 +54,13 @@ export default async function SettingsPage({
           title={isTh ? 'ประวัติการเข้าสู่ระบบ' : 'Login history'}
         >
           <LoginHistorySection locale={locale} />
+        </SettingsCollapsibleSection>
+
+        <SettingsCollapsibleSection
+          icon="shield"
+          title={isTh ? 'เข้าด้วยลายนิ้วมือ / ใบหน้า' : 'Biometric login'}
+        >
+          <PasskeyDeviceSection locale={locale} />
         </SettingsCollapsibleSection>
       </div>
     </div>

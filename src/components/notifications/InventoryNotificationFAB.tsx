@@ -11,19 +11,19 @@ import { FAB_BOTTOM_NOTIFICATION_CLASS } from '@/lib/floating-action-layout';
 export function InventoryNotificationFAB() {
   const { panelOpen } = useNotificationState();
   const { setPanelOpen } = useNotificationActions();
-  const { fabStackHidden, setOverlayOpen } = useFloatingOverlay();
+  const { fabStackHidden, fabStackSuppressed, setOverlayOpen } = useFloatingOverlay();
 
-  const hidden = panelOpen || fabStackHidden;
+  const hidden = panelOpen || fabStackHidden || fabStackSuppressed;
 
   useEffect(() => {
     setOverlayOpen('notification', panelOpen);
   }, [panelOpen, setOverlayOpen]);
 
   useEffect(() => {
-    if (fabStackHidden && panelOpen) {
+    if ((fabStackHidden || fabStackSuppressed) && panelOpen) {
       setPanelOpen(false);
     }
-  }, [fabStackHidden, panelOpen, setPanelOpen]);
+  }, [fabStackHidden, fabStackSuppressed, panelOpen, setPanelOpen]);
 
   return (
     <FabFadePresence

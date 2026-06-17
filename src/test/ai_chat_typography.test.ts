@@ -53,14 +53,14 @@ describe('AI Chat Thai Typography', () => {
     expect(source).toContain('shrink-0');
   });
 
-  test('defines Thai chat typography with Thai-first font fallback and readable spacing', () => {
+  test('defines Thai chat typography with unified app font stack and readable spacing', () => {
     const css = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/globals.css'),
       'utf-8'
     );
 
     expect(css).toContain('.thai-chat-readable');
-    expect(css).toContain("font-family: var(--font-ibm-plex-sans-thai), var(--font-prompt), var(--font-inter), system-ui, sans-serif;");
+    expect(css).toContain('font-family: var(--font-sans);');
     expect(css).toContain('line-height: 1.85;');
     expect(css).toContain('letter-spacing: 0;');
   });

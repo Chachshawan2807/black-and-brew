@@ -2,7 +2,10 @@
 
 import { cookies } from 'next/headers';
 import {
-  AUTH_SESSION_MAX_AGE_SEC,
+  clearAuthCookies,
+  setAuthCookies,
+} from '@/lib/auth-cookies';
+import {
   FORCE_LOGOUT_DENY_MSG,
   READ_ONLY_DENY_MSG,
   SESSION_FP_COOKIE,
@@ -22,14 +25,6 @@ import {
 } from '@/lib/security/pin-rate-limit';
 import { resolveClientIp } from '@/lib/security/request-ip';
 import { resolveReadOnlyPin } from '@/lib/security/read-only-pin';
-
-const getCookieOpts = () => ({
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-  maxAge: AUTH_SESSION_MAX_AGE_SEC,
-  path: '/',
-});
 
 async function assertMasterPin(
   pin: string
@@ -55,28 +50,6 @@ async function assertMasterPin(
 
   clearPinAttempts(clientIp);
   return { ok: true };
-}
-
-function setAuthCookies(
-  cookieStore: Awaited<ReturnType<typeof cookies>>,
-  readOnly: boolean,
-  device?: ClientDevicePayload | null
-) {
-  cookieStore.set('bb_auth_pin_verified', 'true', getCookieOpts());
-  if (readOnly) {
-    cookieStore.set('bb_auth_read_only', 'true', getCookieOpts());
-  } else {
-    cookieStore.delete('bb_auth_read_only');
-  }
-  if (device?.sessionFingerprint) {
-    cookieStore.set(SESSION_FP_COOKIE, device.sessionFingerprint, getCookieOpts());
-  }
-}
-
-function clearAuthCookies(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  cookieStore.delete('bb_auth_pin_verified');
-  cookieStore.delete('bb_auth_read_only');
-  cookieStore.delete(SESSION_FP_COOKIE);
 }
 
 async function resolveAuthSession(

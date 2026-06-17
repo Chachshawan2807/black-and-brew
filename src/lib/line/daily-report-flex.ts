@@ -44,6 +44,8 @@ type FlexSeparator = { type: 'separator'; margin?: string; color?: string };
 
 type FlexComponent = FlexText | FlexBox | FlexSeparator;
 
+const FLEX_SEPARATOR_COLOR = '#e5e7eb';
+
 /** Show public-holiday footer only when the holiday falls within this many days. */
 export const HOLIDAY_FOOTER_MAX_DAYS = 14;
 
@@ -71,6 +73,56 @@ function scheduleLabel(schedule: DailyReportData['schedule']): string {
   return schedule === 'tomorrow' ? 'พรุ่งนี้' : 'วันนี้';
 }
 
+function schedulePill(schedule: DailyReportData['schedule']): FlexBox {
+  return {
+    type: 'box',
+    layout: 'vertical',
+    contents: [
+      {
+        type: 'text',
+        text: scheduleLabel(schedule),
+        size: 'xs',
+        weight: 'bold',
+        color: FLEX_MUTED_TEXT,
+        align: 'center',
+      },
+    ],
+    backgroundColor: '#ffffff',
+    borderColor: FLEX_HEADER_PALETTE.borderColor,
+    borderWidth: '1px',
+    cornerRadius: '12px',
+    paddingAll: '4px',
+    paddingStart: '10px',
+    paddingEnd: '10px',
+    flex: 0,
+  };
+}
+
+function headcountBadge(count: number): FlexBox {
+  return {
+    type: 'box',
+    layout: 'vertical',
+    contents: [
+      {
+        type: 'text',
+        text: `${count} คน`,
+        size: 'xs',
+        weight: 'bold',
+        color: FLEX_BODY_TEXT,
+        align: 'center',
+      },
+    ],
+    backgroundColor: '#d4edda',
+    borderColor: '#c3e6cb',
+    borderWidth: '1px',
+    cornerRadius: '12px',
+    paddingAll: '4px',
+    paddingStart: '8px',
+    paddingEnd: '8px',
+    flex: 0,
+  };
+}
+
 function shiftBadge(shiftText: string): FlexBox {
   const palette = getShiftFlexPalette(shiftText);
   return {
@@ -80,7 +132,7 @@ function shiftBadge(shiftText: string): FlexBox {
       {
         type: 'text',
         text: shiftText,
-        size: 'xs',
+        size: 'sm',
         weight: 'bold',
         color: FLEX_BODY_TEXT,
         align: 'center',
@@ -89,10 +141,10 @@ function shiftBadge(shiftText: string): FlexBox {
     backgroundColor: palette.backgroundColor,
     borderColor: palette.borderColor,
     borderWidth: '1px',
-    cornerRadius: '8px',
+    cornerRadius: '10px',
     paddingAll: '6px',
-    paddingStart: '10px',
-    paddingEnd: '10px',
+    paddingStart: '12px',
+    paddingEnd: '12px',
     flex: 0,
   };
 }
@@ -104,33 +156,55 @@ function staffRow(name: string, shiftText: string): FlexBox {
     contents: [
       {
         type: 'text',
-        text: name,
-        size: 'sm',
+        text: `◦ ${name}`,
+        size: 'md',
         color: FLEX_BODY_TEXT,
         flex: 4,
         wrap: true,
       },
       shiftBadge(shiftText),
     ],
+    spacing: 'md',
+    alignItems: 'center',
+    margin: 'sm',
+  };
+}
+
+function sectionTitle(headcount: number): FlexBox {
+  return {
+    type: 'box',
+    layout: 'horizontal',
     spacing: 'sm',
     alignItems: 'center',
-    margin: 'xs',
+    margin: 'none',
+    contents: [
+      {
+        type: 'text',
+        text: '👥',
+        size: 'md',
+        flex: 0,
+      },
+      {
+        type: 'text',
+        text: 'เข้างาน',
+        size: 'sm',
+        weight: 'bold',
+        color: FLEX_BODY_TEXT,
+        flex: 0,
+      },
+      headcountBadge(headcount),
+    ],
   };
 }
 
-function sectionTitle(label: string, margin: FlexText['margin'] = 'sm'): FlexText {
+function staffListBox(staff: DailyReportData['activeStaff']): FlexBox {
   return {
-    type: 'text',
-    text: label,
-    size: 'xs',
-    weight: 'bold',
-    color: FLEX_MUTED_TEXT,
-    margin,
+    type: 'box',
+    layout: 'vertical',
+    spacing: 'none',
+    margin: 'sm',
+    contents: staff.map((s) => staffRow(s.name, s.shiftText)),
   };
-}
-
-function staffList(staff: DailyReportData['activeStaff']): FlexComponent[] {
-  return staff.map((s) => staffRow(s.name, s.shiftText));
 }
 
 export function shouldShowHolidayFooter(
@@ -139,11 +213,34 @@ export function shouldShowHolidayFooter(
   return holiday != null && holiday.daysRemaining <= HOLIDAY_FOOTER_MAX_DAYS;
 }
 
-function formatHolidayFooterText(holiday: NonNullable<DailyReportData['holiday']>): string {
-  if (holiday.daysRemaining === 0) {
-    return `${truncate(holiday.name, 100)} · วันนี้`;
-  }
-  return `${truncate(holiday.name, 100)} · อีก ${holiday.daysRemaining} วัน`;
+function holidayDaysBadge(daysRemaining: number): FlexBox {
+  const text = daysRemaining === 0 ? 'วันนี้' : `อีก ${daysRemaining} วัน`;
+  return {
+    type: 'box',
+    layout: 'vertical',
+    contents: [
+      {
+        type: 'text',
+        text,
+        size: 'xs',
+        weight: 'bold',
+        color: FLEX_BODY_TEXT,
+        align: 'center',
+      },
+    ],
+    backgroundColor: FLEX_HOLIDAY_PALETTE.borderColor,
+    borderColor: FLEX_HOLIDAY_PALETTE.borderColor,
+    borderWidth: '1px',
+    cornerRadius: '10px',
+    paddingAll: '6px',
+    paddingStart: '10px',
+    paddingEnd: '10px',
+    flex: 0,
+  };
+}
+
+function formatHolidayName(holiday: NonNullable<DailyReportData['holiday']>): string {
+  return truncate(holiday.name, 100);
 }
 
 export function buildDailyReportAltText(data: DailyReportData): string {
@@ -175,19 +272,17 @@ function buildWorkingSection(data: DailyReportData): FlexComponent[] {
 
   if (!hasTimed && !hasOtherDuty) return [];
 
-  const contents: FlexComponent[] = [
-    sectionTitle(`เข้างาน ${data.headcount} คน`, 'none'),
-  ];
+  const contents: FlexComponent[] = [sectionTitle(data.headcount)];
 
   if (hasTimed) {
-    contents.push(...staffList(data.activeStaff));
+    contents.push(staffListBox(data.activeStaff));
   }
 
   if (hasOtherDuty) {
     if (hasTimed) {
-      contents.push({ type: 'separator', margin: 'sm', color: '#e5e7eb' });
+      contents.push({ type: 'separator', margin: 'md', color: FLEX_SEPARATOR_COLOR });
     }
-    contents.push(...staffList(data.otherDutyStaff));
+    contents.push(staffListBox(data.otherDutyStaff));
   }
 
   return contents;
@@ -201,22 +296,78 @@ function buildHolidayFooter(holiday: NonNullable<DailyReportData['holiday']>): F
     borderColor: FLEX_HOLIDAY_PALETTE.borderColor,
     borderWidth: '1px',
     cornerRadius: '10px',
-    paddingAll: '12px',
+    paddingAll: '14px',
+    spacing: 'sm',
     contents: [
       {
-        type: 'text',
-        text: 'วันหยุดนักขัตฤกษ์',
-        size: 'xs',
-        weight: 'bold',
-        color: FLEX_MUTED_TEXT,
+        type: 'box',
+        layout: 'horizontal',
+        spacing: 'sm',
+        alignItems: 'center',
+        contents: [
+          {
+            type: 'text',
+            text: '🗓️',
+            size: 'lg',
+            flex: 0,
+          },
+          {
+            type: 'text',
+            text: 'วันหยุดนักขัตฤกษ์',
+            size: 'xs',
+            weight: 'bold',
+            color: FLEX_MUTED_TEXT,
+            flex: 1,
+          },
+          holidayDaysBadge(holiday.daysRemaining),
+        ],
       },
       {
         type: 'text',
-        text: formatHolidayFooterText(holiday),
-        size: 'sm',
+        text: formatHolidayName(holiday),
+        size: 'md',
+        weight: 'bold',
         color: FLEX_BODY_TEXT,
         wrap: true,
         margin: 'xs',
+      },
+    ],
+  };
+}
+
+function buildHeader(data: DailyReportData): FlexBox {
+  return {
+    type: 'box',
+    layout: 'horizontal',
+    backgroundColor: FLEX_HEADER_PALETTE.backgroundColor,
+    borderColor: FLEX_HEADER_PALETTE.borderColor,
+    borderWidth: '1px',
+    paddingAll: '16px',
+    paddingBottom: '14px',
+    spacing: 'md',
+    alignItems: 'center',
+    contents: [
+      {
+        type: 'text',
+        text: '📋',
+        size: 'xl',
+        flex: 0,
+      },
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'text',
+            text: data.dateStr,
+            size: 'xl',
+            weight: 'bold',
+            color: FLEX_BODY_TEXT,
+          },
+          schedulePill(data.schedule),
+        ],
       },
     ],
   };
@@ -227,9 +378,9 @@ export function buildDailyReportFlexMessage(data: DailyReportData): DailyReportF
 
   if (data.offStaff.length > 0) {
     if (data.activeStaff.length > 0 || data.otherDutyStaff.length > 0) {
-      bodyContents.push({ type: 'separator', margin: 'md', color: '#e5e7eb' });
+      bodyContents.push({ type: 'separator', margin: 'lg', color: FLEX_SEPARATOR_COLOR });
     }
-    bodyContents.push(...staffList(data.offStaff));
+    bodyContents.push(staffListBox(data.offStaff));
   }
 
   if (
@@ -239,10 +390,11 @@ export function buildDailyReportFlexMessage(data: DailyReportData): DailyReportF
   ) {
     bodyContents.push({
       type: 'text',
-      text: 'ไม่มีข้อมูลพนักงานในระบบ',
+      text: '📭 ไม่มีข้อมูลพนักงานในระบบ',
       size: 'sm',
       color: FLEX_MUTED_TEXT,
-      margin: 'sm',
+      margin: 'md',
+      align: 'center',
     });
   }
 
@@ -252,38 +404,13 @@ export function buildDailyReportFlexMessage(data: DailyReportData): DailyReportF
     contents: {
       type: 'bubble',
       size: DAILY_REPORT_BUBBLE_SIZE,
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        backgroundColor: FLEX_HEADER_PALETTE.backgroundColor,
-        borderColor: FLEX_HEADER_PALETTE.borderColor,
-        borderWidth: '1px',
-        paddingAll: '14px',
-        paddingBottom: '12px',
-        contents: [
-          {
-            type: 'text',
-            text: data.dateStr,
-            size: 'lg',
-            weight: 'bold',
-            color: FLEX_BODY_TEXT,
-          },
-          {
-            type: 'text',
-            text: scheduleLabel(data.schedule),
-            size: 'xs',
-            weight: 'bold',
-            color: FLEX_MUTED_TEXT,
-            margin: 'xs',
-          },
-        ],
-      },
+      header: buildHeader(data),
       body: {
         type: 'box',
         layout: 'vertical',
-        paddingAll: '12px',
-        paddingTop: '10px',
-        spacing: 'none',
+        paddingAll: '16px',
+        paddingTop: '14px',
+        spacing: 'sm',
         contents: bodyContents,
       },
     },

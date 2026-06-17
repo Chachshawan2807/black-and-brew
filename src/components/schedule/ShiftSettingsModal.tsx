@@ -12,10 +12,12 @@ import {
   type ShiftTypeEntry,
 } from '@/lib/shift-type-config';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 
 const SELECT_NEW_CUSTOM = '__new_custom__';
 
 interface ShiftSettingsModalProps {
+  open: boolean;
   shiftTypes: ShiftTypeEntry[];
   isSaving: boolean;
   onClose: () => void;
@@ -102,6 +104,7 @@ function CollapsibleColorPicker({
 }
 
 export default function ShiftSettingsModal({
+  open,
   shiftTypes,
   isSaving,
   onClose,
@@ -205,13 +208,16 @@ export default function ShiftSettingsModal({
   const canDelete = selectedEntry && !isDefaultShiftType(selectedEntry.id) && !isCreating;
 
   return (
-    <div
-      className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[75] flex items-end justify-center md:items-center p-0 md:p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !isSaving) onClose();
+    <FadeModalScaffold
+      open={open}
+      onClose={() => {
+        if (!isSaving) onClose();
       }}
+      zIndex={75}
+      overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
+      panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-w-md max-h-[90vh] overflow-hidden bg-card shadow-2xl flex flex-col"
+      aria-label="ตั้งค่ากะการทำงาน"
     >
-      <div className="relative rounded-t-[32px] md:rounded-3xl w-full max-w-md max-h-[90vh] overflow-hidden bg-card shadow-2xl bb-modal-panel flex flex-col">
         {/* Header */}
         <div className="px-5 pt-5 pb-4 flex items-start gap-3 shrink-0">
           <div className="p-2 bg-muted/50 rounded-2xl mt-0.5">
@@ -355,7 +361,6 @@ export default function ShiftSettingsModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </FadeModalScaffold>
   );
 }

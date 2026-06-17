@@ -31,14 +31,16 @@ CREATE TABLE IF NOT EXISTS sales_records (
 ALTER TABLE sales_uploads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sales_records ENABLE ROW LEVEL SECURITY;
 
--- Create RLS Policies (permissive for initial use)
-CREATE POLICY "Public access for sales_uploads"
+-- Authenticated collaborative policies after PIN gate anonymous sign-in
+CREATE POLICY "Authenticated access for sales_uploads"
 ON sales_uploads FOR ALL
+TO authenticated
 USING (true)
 WITH CHECK (true);
 
-CREATE POLICY "Public access for sales_records"
+CREATE POLICY "Authenticated access for sales_records"
 ON sales_records FOR ALL
+TO authenticated
 USING (true)
 WITH CHECK (true);
 

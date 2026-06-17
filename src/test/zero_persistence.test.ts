@@ -1,7 +1,7 @@
 
 import { expect, test, describe } from 'vitest';
 
-function sanitizeNumericInput(value: any) {
+function sanitizeNumericInput(value: unknown) {
   const sanitized = value === '' || value === null || value === undefined ? 0 : Number(value);
   return isNaN(sanitized) ? 0 : sanitized;
 }

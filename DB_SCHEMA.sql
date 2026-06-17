@@ -1,9 +1,15 @@
+-- Core schema reference. Versioned changes after the initial bootstrap live in supabase/migrations/.
+
 -- 1. Profiles Table (Initial 9 Employees)
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT NOT NULL,
   avatar_url TEXT,
   is_active BOOLEAN DEFAULT true,
+  schedule_order INTEGER,
+  dashboard_order INTEGER,
+  display_order INTEGER,
+  metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -15,22 +21,24 @@ CREATE TABLE shifts (
   end_time TIMESTAMPTZ NOT NULL,
   status TEXT DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'swapped', 'cancelled', 'on_leave')),
   metadata JSONB DEFAULT '{}', -- For AI Agent Context
-  created_by UUID REFERENCES profiles(id)
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Row Level Security (RLS) - Permissive for initial phase
+-- 3. Row Level Security (RLS) - current collaborative standard
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shifts ENABLE ROW LEVEL SECURITY;
 
--- Policy: Everyone can read and write (As requested for initial group)
-CREATE POLICY "Public access for initial group" 
-ON profiles FOR ALL 
-USING (true) 
+CREATE POLICY "Authenticated access for profiles"
+ON profiles FOR ALL
+TO authenticated
+USING (true)
 WITH CHECK (true);
 
-CREATE POLICY "Public access for initial shifts" 
-ON shifts FOR ALL 
-USING (true) 
+CREATE POLICY "Authenticated access for shifts"
+ON shifts FOR ALL
+TO authenticated
+USING (true)
 WITH CHECK (true);
 
 -- 4. Optimized Indexes
@@ -56,9 +64,10 @@ CREATE TABLE inventory_items (
 -- RLS for inventory_items
 ALTER TABLE inventory_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public access for inventory_items" 
-ON inventory_items FOR ALL 
-USING (true) 
+CREATE POLICY "Authenticated access for inventory_items"
+ON inventory_items FOR ALL
+TO authenticated
+USING (true)
 WITH CHECK (true);
 
 -- Indexes for inventory_items

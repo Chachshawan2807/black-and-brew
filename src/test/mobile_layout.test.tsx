@@ -1,14 +1,24 @@
 import { render, screen } from '@testing-library/react';
 import { expect, test, describe, vi } from 'vitest';
 import React from 'react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+type MotionDivProps = React.HTMLAttributes<HTMLDivElement> & {
+  children?: React.ReactNode;
+};
+
+type MotionHeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {
+  children?: React.ReactNode;
+};
 
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
+    div: ({ children, ...props }: MotionDivProps) => <div {...props}>{children}</div>,
+    h1: ({ children, ...props }: MotionHeadingProps) => <h1 {...props}>{children}</h1>,
   },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
 
 // Mock next/navigation
@@ -83,9 +93,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 
 describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => {
   test('should use shared useSafeDndSensors instead of inline PointerSensor', async () => {
-    const fs = require('fs');
-    const path = require('path');
-    const pageCode = fs.readFileSync(path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'), 'utf-8');
+    const pageCode = readFileSync(resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'), 'utf-8');
 
     expect(pageCode).toContain('useSafeDndSensors');
     expect(pageCode).not.toContain('useSensor(PointerSensor');
@@ -94,10 +102,8 @@ describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => 
   });
 
   test('history modal scroll area should use min-h-0 so flex children can scroll on mobile', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const modalCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
+    const modalCode = readFileSync(
+      resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
       'utf-8',
     );
 
@@ -106,10 +112,8 @@ describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => 
   });
 
   test('history modal table surface uses morning latte cream across full scrollable width', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const modalCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
+    const modalCode = readFileSync(
+      resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
       'utf-8',
     );
 
@@ -142,9 +146,7 @@ describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => 
 
 describe('Safe DnD Sensors — mobile long-press guard', () => {
   test('dnd-sensors.ts should export useSafeDndSensors with TouchSensor delay >= 1000ms', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const sensorCode = fs.readFileSync(path.resolve(__dirname, '../lib/dnd-sensors.ts'), 'utf-8');
+    const sensorCode = readFileSync(resolve(__dirname, '../lib/dnd-sensors.ts'), 'utf-8');
 
     expect(sensorCode).toContain('TouchSensor');
     expect(sensorCode).toContain('MouseSensor');
@@ -158,10 +160,8 @@ describe('Safe DnD Sensors — mobile long-press guard', () => {
   });
 
   test('LiveShiftList should not spread listeners on the article container', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const code = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/dashboard/components/LiveShiftList.tsx'),
+    const code = readFileSync(
+      resolve(__dirname, '../app/[locale]/dashboard/components/LiveShiftList.tsx'),
       'utf-8',
     );
 
@@ -172,26 +172,21 @@ describe('Safe DnD Sensors — mobile long-press guard', () => {
   });
 
   test('mobile sortable views register activator refs via SortableDragHandle', () => {
-    const fs = require('fs');
-    const path = require('path');
-
     const files = [
       '../app/[locale]/dashboard/components/LiveShiftList.tsx',
       '../app/[locale]/inventory/InventoryClient.tsx',
     ];
 
     for (const file of files) {
-      const code = fs.readFileSync(path.resolve(__dirname, file), 'utf-8');
+      const code = readFileSync(resolve(__dirname, file), 'utf-8');
       expect(code, `${file} should use SortableDragHandle`).toContain('SortableDragHandle');
       expect(code, `${file} should wire setActivatorNodeRef`).toContain('setActivatorNodeRef');
     }
   });
 
   test('SortableDragHandle skips tooltip wrapper on coarse pointers', () => {
-    const fs = require('fs');
-    const path = require('path');
-    const code = fs.readFileSync(
-      path.resolve(__dirname, '../components/ui/sortable-drag-handle.tsx'),
+    const code = readFileSync(
+      resolve(__dirname, '../components/ui/sortable-drag-handle.tsx'),
       'utf-8',
     );
 
@@ -201,9 +196,6 @@ describe('Safe DnD Sensors — mobile long-press guard', () => {
   });
 
   test('all sortable components should use useSafeDndSensors', () => {
-    const fs = require('fs');
-    const path = require('path');
-
     const files = [
       '../components/CommandCenterGrid.tsx',
       '../app/[locale]/dashboard/components/LiveShiftList.tsx',
@@ -212,7 +204,7 @@ describe('Safe DnD Sensors — mobile long-press guard', () => {
     ];
 
     for (const file of files) {
-      const code = fs.readFileSync(path.resolve(__dirname, file), 'utf-8');
+      const code = readFileSync(resolve(__dirname, file), 'utf-8');
       expect(code, `${file} should use useSafeDndSensors`).toContain('useSafeDndSensors');
       expect(code, `${file} should not have inline PointerSensor`).not.toContain('useSensor(PointerSensor');
     }

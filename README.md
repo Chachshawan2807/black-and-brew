@@ -2,7 +2,7 @@
 
 Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
 
-> **Version:** 8.7 | **Stack:** Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
+> Version: 8.8 | Stack: Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
 
 ---
 
@@ -18,10 +18,10 @@ Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AN
 | Maintenance | `/[locale]/maintenance` | บันทึกการซ่อมบำรุงอุปกรณ์ |
 | Sales | `/[locale]/sales` | อัปโหลด Excel วิเคราะห์ยอดขาย |
 | Market Insights | `/[locale]/market-insights` | วิเคราะห์ตลาดด้วย Gemini AI |
-| Settings | `/[locale]/settings` | ธีม (สว่าง/มืด/ตามระบบ) + ประวัติการเข้าใช้ + การแจ้งเตือน |
+| Settings | `/[locale]/settings` | ธีม, ประวัติการเข้าใช้, trusted-device passkeys, การแจ้งเตือน |
 | AI Chat (บรู) | Global overlay | แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน |
 
-**Locales:** `th` (หลัก), `en` — Root `/` redirect ไป `/th`
+Locales: `th` (หลัก), `en` — Root `/` redirect ไป `/th`
 
 ---
 
@@ -57,9 +57,9 @@ npm run dev
 
 ## Environment Variables
 
-คัดลอกจาก [.env.example](.env.example) → `.env.local` (local) หรือตั้งใน **Vercel Dashboard → Production** (deploy)
+คัดลอกจาก [.env.example](.env.example) → `.env.local` (local) หรือตั้งใน Vercel Dashboard → Production (deploy)
 
-**Legend:** `[PUBLIC]` = ฝังใน browser · `[SECRET]` = server-only · `[OPTION]` = ไม่บังคับ
+Legend: `[PUBLIC]` = ฝังใน browser · `[SECRET]` = server-only · `[OPTION]` = ไม่บังคับ
 
 ### Supabase
 
@@ -77,6 +77,8 @@ npm run dev
 | `APP_READ_ONLY_PIN` | SECRET | PIN 6 หลัก — โหมดดูอย่างเดียว (`resolveReadOnlyPin()`); บังคับใน production; dev fallback `111222` |
 | `NEXT_PUBLIC_STORE_LAT` | PUBLIC | พิกัดร้าน (default `13.9312`) — chat, insights, cron |
 | `NEXT_PUBLIC_STORE_LON` | PUBLIC | พิกัดร้าน (default `100.6756`) |
+| `WEBAUTHN_RP_ID` | SECRET | OPTION — WebAuthn relying-party ID สำหรับ production passkeys |
+| `WEBAUTHN_ORIGIN` | SECRET | OPTION — WebAuthn origin สำหรับ production passkeys |
 
 ### AI & External APIs
 
@@ -114,14 +116,15 @@ Generate keys: `npx web-push generate-vapid-keys`
 
 ## Authentication
 
-- **PIN Gateway** (`PinGateway.tsx`): ป้อน PIN 6 หลักก่อนเข้าแอป
+- PIN Gateway (`PinGateway.tsx`): ป้อน PIN 6 หลักก่อนเข้าแอป
 - Full access: `APP_PIN` (env) — แก้ไขข้อมูลได้ทุกโมดูล
 - Read-only: `APP_READ_ONLY_PIN` (env) — ดูอย่างเดียว; dev fallback `111222` via `src/lib/security/read-only-pin.ts`
-- **Dual storage:** `sessionStorage` (client gate) + httpOnly cookies (`bb_auth_pin_verified`, `bb_auth_read_only`, `bb_session_fp`)
-- **Session audit:** `login_history` table — บันทึก login/logout พร้อม device fingerprint
-- **Remote revocation:** `revoked_sessions` table — บังคับออกจากระบบต่ออุปกรณ์จาก Settings
-- **Web Push:** `push_subscriptions` table — แจ้งเตือนคลังสินค้าข้ามอุปกรณ์ผ่าน VAPID (`PushSubscriptionManager` ใน layout)
-- **Write guard:** Server Actions เรียก `assertWritableSession()` ก่อน mutation
+- Trusted-device passkeys: `device_passkeys` table stores WebAuthn credentials for biometric login after a PIN-verified registration.
+- Dual storage: `sessionStorage` (client gate) + httpOnly cookies (`bb_auth_pin_verified`, `bb_auth_read_only`, `bb_session_fp`)
+- Session audit: `login_history` table — บันทึก login/logout พร้อม device fingerprint
+- Remote revocation: `revoked_sessions` table — บังคับออกจากระบบต่ออุปกรณ์จาก Settings
+- Web Push: `push_subscriptions` table — แจ้งเตือนคลังสินค้าข้ามอุปกรณ์ผ่าน VAPID (`PushSubscriptionManager` ใน layout)
+- Write guard: Server Actions เรียก `assertWritableSession()` ก่อน mutation
 
 ---
 
@@ -141,10 +144,10 @@ src/
 └── proxy.ts                  # next-intl middleware (Next.js 16 convention)
 ```
 
-- **Database:** Supabase PostgreSQL (Thailand Edge)
-- **Stock sync:** RPC `set_inventory_stock` — ดู `sql/sync_inventory_stock.sql`
-- **RLS hardening:** `sql/fix_inventory_rls.sql` (authenticated-only หลัง anonymous sign-in)
-- **PWA:** `src/app/manifest.ts` (icons `/images/notification-icon*.png`, theme `#000000`, background `#ffffff`) + `public/sw.js` (Network-First) + `PwaRegister.tsx`
+- Database: Supabase PostgreSQL (Thailand Edge)
+- Stock sync: RPC `set_inventory_stock` — ดู `sql/sync_inventory_stock.sql`
+- RLS hardening: `sql/fix_inventory_rls.sql` (authenticated-only หลัง anonymous sign-in)
+- PWA: `src/app/manifest.ts` (icons `/images/notification-icon*.png`, theme `#000000`, background `#ffffff`) + `public/sw.js` (Network-First) + `PwaRegister.tsx`
 
 ---
 
@@ -166,7 +169,7 @@ src/
 ## Contributing
 
 1. อ่าน [docs/SOP.md](docs/SOP.md) และ [docs/design.md](docs/design.md)
-2. ปฏิบัติตาม **Zero-Bold Policy** (`font-normal` เท่านั้น)
+2. ปฏิบัติตาม Zero-Bold Policy (`font-normal` เท่านั้น)
 3. รัน `npm test` และ `npm run build` ก่อน PR
 
 ---

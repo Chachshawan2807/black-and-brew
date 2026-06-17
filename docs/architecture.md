@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 8.7 | Last Updated: 2026-06-17 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 8.8 | Last Updated: 2026-06-17 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -10,16 +10,16 @@ Hybrid PPR architecture: Static Shell (Navigation, Branding) + Dynamic Islands (
 
 ### Tech Stack
 
-- **Framework:** Next.js 16.2.4 (App Router, `cacheComponents: true`) + React 19.2.4
-- **Database:** Supabase PostgreSQL (Thailand Edge Region)
-- **Styling:** Tailwind CSS 4 + PostCSS + `next-themes` (light/dark/system via `bb-theme`)
-- **State:** Zustand (global), React useState (local)
-- **i18n:** next-intl v4.11.0 (th/en) via `src/proxy.ts`
-- **DnD:** @dnd-kit/core + sortable
-- **AI:** Vercel AI SDK v6 + `@ai-sdk/google` (Gemini)
-- **Testing:** Vitest + Testing Library
-- **Deploy:** Vercel Edge Runtime
-- **Motion:** framer-motion + `src/lib/motion-presets.ts` (v6.9)
+- Framework: Next.js 16.2.4 (App Router, `cacheComponents: true`) + React 19.2.4
+- Database: Supabase PostgreSQL (Thailand Edge Region)
+- Styling: Tailwind CSS 4 + PostCSS + `next-themes` (light/dark/system via `bb-theme`)
+- State: Zustand (global), React useState (local)
+- i18n: next-intl v4.11.0 (th/en) via `src/proxy.ts`
+- DnD: @dnd-kit/core + sortable
+- AI: Vercel AI SDK v6 + `@ai-sdk/google` (Gemini)
+- Testing: Vitest + Testing Library
+- Deploy: Vercel Edge Runtime
+- Motion: framer-motion + `src/lib/motion-presets.ts` (v6.9)
 
 ---
 
@@ -32,6 +32,7 @@ User opens app → PinGateway (sessionStorage check)
 → ensureSupabaseSession() → anonymous auth for RLS
 → isSessionFingerprintRevoked() on each validation
 → Full access (APP_PIN) or Read-only (APP_READ_ONLY_PIN; dev fallback 111222)
+→ Optional trusted-device passkey registration after PIN verification
 → Write actions call assertWritableSession()
 → Settings: forceRevokeDeviceSession() / forceRevokeAllRemoteSessions()
 ```
@@ -43,6 +44,21 @@ User opens app → PinGateway (sessionStorage check)
 | Session revocation | `revoked_sessions` table | `session_fingerprint` |
 | Login audit | `login_history` table | device + IP + access level |
 | Supabase RLS | Anonymous session | `authenticated` role |
+| Trusted-device passkeys | `device_passkeys` table | credential ID + public key + session fingerprint |
+
+### Trusted-device Passkeys
+
+```text
+PIN verified session → getPasskeyRegistrationOptions()
+→ WebAuthn platform authenticator → verifyPasskeyRegistration()
+→ UPSERT device_passkeys (credential_id, public_key, counter, access_level)
+
+Returning device → getPasskeyLoginOptions()
+→ verifyPasskeyLogin() → counter update + revocation check
+→ setAuthCookies() + recordLoginEvent()
+```
+
+`WEBAUTHN_RP_ID` and `WEBAUTHN_ORIGIN` override production relying-party values. Without overrides, `resolveWebAuthnContext()` derives the local development context.
 
 ---
 
@@ -54,7 +70,7 @@ User opens app → PinGateway (sessionStorage check)
 | Server Actions | `SUPABASE_SERVICE_ROLE_KEY` | Admin ops, AI tools, daily report |
 | Server Components | `getSupabaseAdmin()` (`src/lib/supabase-server.ts`) | Singleton admin client, `cache: 'no-store'` |
 
-**RLS:** `sql/fix_inventory_rls.sql` — authenticated-only policies; client must sign in anonymously after PIN.
+RLS: `sql/fix_inventory_rls.sql` — authenticated-only policies; client must sign in anonymously after PIN.
 
 ```typescript
 export const supabase = createClient(url, anonKey, {
@@ -73,6 +89,7 @@ src/app/
 ├── manifest.ts                  # PWA manifest
 ├── actions/
 │   ├── auth.ts                        # PIN verify, session revocation, read-only guard
+│   ├── passkey-actions.ts             # WebAuthn trusted-device registration/login
 │   ├── login-history-actions.ts       # login_history CRUD + active sessions
 │   ├── inventory-actions.ts           # Stock RPC, transactions
 │   ├── shift-actions.ts               # Shift CRUD
@@ -103,13 +120,13 @@ src/app/
     │   └── count/               # Stock-taking + count accuracy verification
     ├── maintenance/             # Equipment tracking
     ├── sales/                   # Sales analytics
-    ├── settings/                # Theme picker, login history, notification prefs
+    ├── settings/                # Theme picker, login history, passkeys, notification prefs
     └── market-insights/         # AI market analysis (v2)
         └── components/          # ContextPanel, AlertsCard, InsightCharts,
                                  # ActionChecklist, SourcesList, DiffBanner
 ```
 
-**i18n middleware:** `src/proxy.ts` (Next.js 16 convention — not `src/middleware.ts`)
+i18n middleware: `src/proxy.ts` (Next.js 16 convention — not `src/middleware.ts`)
 
 ---
 
@@ -179,7 +196,7 @@ AIChatOverlay → POST /api/chat → ToolLoopAgent (Gemini 2.5 Flash)
 → streaming response → XSS sanitization on display
 ```
 
-> **AI tools (`src/app/api/chat/route.ts`):** `getDailyShifts` (daily roster), `readTable` (other internal tables), `internetSearchTool` (external/weather). Weather is served via `internetSearchTool` — there is no separate `weather` AI tool.
+> AI tools (`src/app/api/chat/route.ts`): `getDailyShifts` (daily roster), `readTable` (other internal tables), `internetSearchTool` (external/weather). Weather is served via `internetSearchTool` — there is no separate `weather` AI tool.
 
 ### Daily LINE Report
 
@@ -192,7 +209,7 @@ Vercel Cron → /api/daily-report → compileDailyReportPayload()
 
 ## 5b. AI Data Access Map (AI-GATEWAY-P3)
 
-Every read the AI layer performs funnels through **`src/lib/ai-data-gateway.ts`** — the single doorway between the LLM tools and Supabase. This keeps the Service Role client, the DEC-069 column presets, and the `SECURITY DEFINER` RPCs as the only ways the model can touch data.
+Every read the AI layer performs funnels through `src/lib/ai-data-gateway.ts` — the single doorway between the LLM tools and Supabase. This keeps the Service Role client, the DEC-069 column presets, and the `SECURITY DEFINER` RPCs as the only ways the model can touch data.
 
 ```text
 LLM (Gemini)
@@ -215,13 +232,13 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 | --- | :--- | --- | :--- |
 | `fetchInventorySummary()` | `rpc('get_ai_store_status')` | `{ inventory_summary, low_stock_items, shifts, timestamp }` | DB computes stock status; no raw column select |
 | `fetchShiftsByDate(date)` | `fetchDailyShiftsByDate` | `FormattedDailyShifts` | Canonical grouped roster (front_store / other_duty / off_or_leave) |
-| `fetchTablePreset(table, filters?, limit?)` | `admin.from(table).select(PRESET)` | `{ ok, rows, effectiveLimit }` | **Only** ever selects `TABLE_COLUMN_PRESETS[table]` |
+| `fetchTablePreset(table, filters?, limit?)` | `admin.from(table).select(PRESET)` | `{ ok, rows, effectiveLimit }` | Only ever selects `TABLE_COLUMN_PRESETS[table]` |
 
 ### Invariants
 
-- **DEC-069 preset lockdown:** `fetchTablePreset` ignores any AI-supplied `columns`; it always selects the table preset. Arbitrary column selection (a data-exfiltration vector through the RLS-bypassing Service Role client) is impossible by construction.
+- DEC-069 preset lockdown: `fetchTablePreset` ignores any AI-supplied `columns`; it always selects the table preset. Arbitrary column selection (a data-exfiltration vector through the RLS-bypassing Service Role client) is impossible by construction.
 - RPC-first for snapshots: broad "store status / low stock" questions resolve through `get_ai_store_status` (`sql/ai_agent_views.sql`) rather than a wide table scan. LOW status uses `stock <= order_point AND target_stock > stock` (migration `20260615130000`). Do not delete `sql/ai_agent_views.sql` — the gateway depends on its views/RPCs.
-- **Single doorway:** `database-tools.ts` no longer owns a Supabase client, presets, aliases, or limits — it routes and shapes only. Add new AI reads to the gateway, never directly in a tool.
+- Single doorway: `database-tools.ts` no longer owns a Supabase client, presets, aliases, or limits — it routes and shapes only. Add new AI reads to the gateway, never directly in a tool.
 
 ---
 
@@ -265,4 +282,4 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 | Micro-interactions | `.bb-transition`, Button `duration-200` | Buttons, inputs, sidebar links |
 | CSS utilities | `globals.css` `@layer utilities` | `animate-in`, `fade-in`, `zoom-in-95`, `slide-*` |
 
-**Constraint:** Motion changes opacity/transform only — no layout position or dimension changes on desktop/mobile.
+Constraint: Motion changes opacity/transform only — no layout position or dimension changes on desktop/mobile.

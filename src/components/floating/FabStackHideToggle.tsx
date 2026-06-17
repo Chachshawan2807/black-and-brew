@@ -13,14 +13,14 @@ import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 export function FabStackHideToggle() {
-  const { fabStackHidden, toggleFabStackHidden } = useFloatingOverlay();
+  const { fabStackHidden, fabStackSuppressed, toggleFabStackHidden } = useFloatingOverlay();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  if (!isMounted) return null;
+  if (!isMounted || fabStackSuppressed) return null;
 
   return (
     <HintTooltip

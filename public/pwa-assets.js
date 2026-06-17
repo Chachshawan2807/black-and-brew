@@ -4,7 +4,7 @@ self.PWA_ASSETS = {
   "BRAND_ICON_512": "/images/notification-icon-512.png",
   "APPLE_TOUCH_ICON": "/images/apple-touch-icon.png",
   "FAVICON": "/images/favicon.png",
-  "CACHE_VERSION": 6,
+  "CACHE_VERSION": 7,
   "VIBRATE": [
     120,
     60,

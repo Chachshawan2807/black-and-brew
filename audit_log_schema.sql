@@ -22,8 +22,10 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policy
 DROP POLICY IF EXISTS "Public access for audit_logs" ON audit_logs;
-CREATE POLICY "Public access for audit_logs"
+DROP POLICY IF EXISTS "Authenticated access for audit_logs" ON audit_logs;
+CREATE POLICY "Authenticated access for audit_logs"
 ON audit_logs FOR ALL
+TO authenticated
 USING (true)
 WITH CHECK (true);
 

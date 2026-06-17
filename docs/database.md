@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 8.7 | Last Updated: 2026-06-17 | Engine: Supabase PostgreSQL
+> Version: 8.8 | Last Updated: 2026-06-17 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -25,9 +25,10 @@
 | `data_change_logs` | บันทึกการเปลี่ยนแปลงข้อมูล (actor, field diff) | ✓ RLS + selective read | `supabase/migrations/20260612120000_create_data_change_logs.sql` |
 | `revoked_sessions` | fingerprint ที่ถูก revoke จากระยะไกล | ✓ RLS enabled | `supabase/migrations/20260612200000_revoked_sessions.sql` |
 | `push_subscriptions` | Web Push endpoints ต่ออุปกรณ์ (cross-device inventory alerts) | ✓ authenticated (own rows) | `supabase/migrations/20260616120000_push_subscriptions.sql` |
+| `device_passkeys` | WebAuthn credentials สำหรับ trusted-device biometric login | ✓ RLS enabled; service-role only | `supabase/migrations/20260617120000_device_passkeys.sql` |
 | `market_insight_runs` | ประวัติการรัน Market Insights v2 (OPTIONAL) | ✓ | `docs/sql/market_insight_runs.sql` |
 
-> **Types:** Generated types in `src/lib/database.types.ts`
+> Types: Generated types in `src/lib/database.types.ts`
 
 ---
 
@@ -178,6 +179,25 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
 
 Registered by `registerPushSubscription()` in `push-actions.ts` via authenticated Supabase client (RLS: `auth.uid() = user_id`). Server broadcasts inventory alerts through `dispatchInventoryWebPush()` in `src/lib/web-push.ts` after `data_change_logs` INSERT (primary path) or `POST /api/push/webhook` (optional Supabase Database Webhook backup). Stale endpoints (HTTP 404/410) are auto-deleted.
 
+### `device_passkeys`
+
+```sql
+CREATE TABLE IF NOT EXISTS public.device_passkeys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  credential_id TEXT NOT NULL UNIQUE,
+  public_key TEXT NOT NULL,
+  counter BIGINT NOT NULL DEFAULT 0,
+  transports TEXT[] NOT NULL DEFAULT '{}',
+  device_label TEXT,
+  session_fingerprint TEXT NOT NULL,
+  access_level TEXT NOT NULL DEFAULT 'full' CHECK (access_level IN ('full', 'read_only')),
+  registered_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_used_at TIMESTAMPTZ
+);
+```
+
+Stored and read only through service-role server actions in `passkey-actions.ts`. Registration requires an already verified PIN session; authentication verifies the WebAuthn challenge, RP ID, origin, credential counter, and session revocation state before restoring auth cookies.
+
 ### `market_insight_runs` (OPTIONAL)
 
 ```sql
@@ -234,6 +254,8 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions (user_id);
 CREATE INDEX idx_push_subscriptions_client_session ON push_subscriptions (client_session_id) WHERE client_session_id IS NOT NULL;
 CREATE INDEX idx_count_verifications_item ON inventory_count_verifications(inventory_item_id);
 CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications(counted_at DESC);
+CREATE INDEX idx_device_passkeys_session_fingerprint ON device_passkeys(session_fingerprint);
+CREATE INDEX idx_device_passkeys_last_used_at ON device_passkeys(last_used_at DESC);
 ```
 
 ---
@@ -243,15 +265,15 @@ CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications
 ### `record_inventory_transaction`
 
 - Row lock → stock validation → stock update → transaction insert (IN/OUT only)
-- **Source:** `sql/record_inventory_transaction.sql`
-- **Used by:** `recordTransaction()`, `recordBulkInventoryTransactions()`
+- Source: `sql/record_inventory_transaction.sql`
+- Used by: `recordTransaction()`, `recordBulkInventoryTransactions()`
 
 ### `set_inventory_stock` (v6.8+)
 
 - Parameters: `p_item_id UUID`, `p_new_stock NUMERIC`, `p_note TEXT`, `p_record_history BOOLEAN DEFAULT TRUE`
 - Row lock → set absolute stock → optional ADJUST ledger entry on delta
-- **Source:** `sql/sync_inventory_stock.sql`
-- **Used by:** `updateInventoryStock()` — warehouse cell + stock count (`recordHistory: false` on count page)
+- Source: `sql/sync_inventory_stock.sql`
+- Used by: `updateInventoryStock()` — warehouse cell + stock count (`recordHistory: false` on count page)
 
 ### Trigger: `trg_sync_inventory_order_qty`
 
@@ -267,7 +289,7 @@ CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications
 
 ## 6. Migration Files
 
-> **Schema location:** Official migrations live in `supabase/migrations/`. Historical one-shot schemas remain at the repository root (e.g. `DB_SCHEMA.sql`) plus the `sql/` subfolder. `DB_SCHEMA.sql` is the primary reference schema. Apply via `supabase db push` or run migration files in the Supabase Dashboard SQL Editor. Verify remote state: `npm run db:verify`.
+> Schema location: Official migrations live in `supabase/migrations/`. Historical one-shot schemas remain at the repository root (e.g. `DB_SCHEMA.sql`) plus the `sql/` subfolder. `DB_SCHEMA.sql` is the primary reference schema. Apply via `supabase db push` or run migration files in the Supabase Dashboard SQL Editor. Verify remote state: `npm run db:verify`.
 
 ### Versioned (`supabase/migrations/`)
 
@@ -282,6 +304,7 @@ CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications
 | `20260615120000_inventory_count_accuracy_refactor.sql` | Rename to `system_stock_qty`; clear legacy IN/OUT-theoretical rows |
 | `20260615130000_align_low_stock_with_purchase_orders.sql` | `view_inventory_summary` LOW status aligned with PO modal (DEC-005) |
 | `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (authenticated own rows) |
+| `20260617120000_device_passkeys.sql` | Trusted-device WebAuthn credentials for biometric login |
 
 ### Historical (root + `sql/`)
 
@@ -298,4 +321,4 @@ CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications
 | `audit_log_schema.sql` | AI audit logging |
 | `docs/sql/market_insight_runs.sql` | market_insight_runs table (OPTIONAL — Market Insights v2 run history) |
 
-> **Deprecated:** `inventory-items.csv` — removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).
+> Deprecated: `inventory-items.csv` — removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).

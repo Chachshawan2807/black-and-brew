@@ -32,7 +32,7 @@ describe('client-cache', () => {
 
     it('returns null in SSR environment (typeof window === undefined)', () => {
       const originalWindow = global.window;
-      // @ts-ignore
+      // @ts-expect-error Simulate server runtime by removing the jsdom window.
       delete global.window;
 
       const result = readCache<string>('any-key');

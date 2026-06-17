@@ -60,7 +60,7 @@ describe('verifyPin Security Checks', () => {
   });
 
   test('should set cookies securely on full-access success', async () => {
-    (process.env as any).NODE_ENV = 'production';
+    vi.stubEnv('NODE_ENV', 'production');
     const result = await verifyPin('123456', {
       userAgent: 'test',
       screenWidth: 1,

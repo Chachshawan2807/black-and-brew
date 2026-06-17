@@ -5,7 +5,6 @@ import {
   format, 
   eachDayOfInterval, 
   getDay, 
-  isSameDay, 
   parseISO,
   startOfMonth,
   endOfMonth,
@@ -25,6 +24,7 @@ import {
   getShiftColorStyle,
   getShiftDisplayText,
 } from '@/lib/shift-colors';
+import { createShiftDateLookup, getShiftForProfileDate } from '@/lib/schedule/shift-lookups';
 
 interface Profile {
   id: string;
@@ -58,6 +58,8 @@ export default function MonthlyRoster() {
       return [];
     }
   }, [startDate, endDate]);
+
+  const shiftDateLookup = useMemo(() => createShiftDateLookup(data.shifts), [data.shifts]);
 
   useEffect(() => {
     async function loadData() {
@@ -180,7 +182,7 @@ export default function MonthlyRoster() {
                         {profile.full_name}
                       </td>
                       {daysInInterval.map((day) => {
-                        const shift = data.shifts.find(s => s.employee_id === profile.id && isSameDay(parseISO(s.start_time), day));
+                        const shift = getShiftForProfileDate(shiftDateLookup, profile.id, format(day, 'yyyy-MM-dd'));
                         const display = shift ? getShiftDisplay(shift) : null;
                         return (
                           <td key={day.toISOString()} className="p-1.5 border-r border-b border-border h-[4.25rem] align-middle">
@@ -230,7 +232,9 @@ export default function MonthlyRoster() {
                   <div key={`empty-${i}`} className="bg-muted/30 rounded-xl sm:rounded-3xl h-20 sm:h-28 md:h-36 border border-transparent" />
                 ))}
                 {daysInInterval.map((day) => {
-                  const shift = data.shifts.find(s => s.employee_id === selectedStaffId && isSameDay(parseISO(s.start_time), day));
+                  const shift = selectedStaffId
+                    ? getShiftForProfileDate(shiftDateLookup, selectedStaffId, format(day, 'yyyy-MM-dd'))
+                    : undefined;
                   const display = shift ? getShiftDisplay(shift) : null;
                   return (
                     <div key={day.toISOString()} className="bg-muted/30 h-20 sm:h-28 md:h-36 p-1 sm:p-3 md:p-4 flex flex-col justify-between rounded-xl sm:rounded-[24px] border border-border transition-all hover:bg-muted/30 hover:shadow-lg">

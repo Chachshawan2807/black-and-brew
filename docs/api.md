@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 8.7 | Last Updated: 2026-06-17
+> Version: 8.8 | Last Updated: 2026-06-17
 
 ---
 
@@ -29,7 +29,23 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 ---
 
-### 1.2 Inventory (`inventory-actions.ts`)
+### 1.2 Passkeys (`passkey-actions.ts`)
+
+| Function | Purpose |
+| --- | --- |
+| `checkDeviceHasPasskey(sessionFingerprint)` | ตรวจว่า fingerprint ปัจจุบันมี credential ใน `device_passkeys` หรือไม่ |
+| `getPasskeyRegistrationOptions(device)` | สร้าง WebAuthn registration options หลัง PIN verified |
+| `verifyPasskeyRegistration(responseJSON, device)` | Verify registration แล้ว upsert credential, public key, counter, device label, access level |
+| `getPasskeyLoginOptions()` | สร้าง discoverable-credential authentication options |
+| `verifyPasskeyLogin(responseJSON, device)` | Verify assertion, update counter/last-used, restore auth cookies, clear revocation |
+| `removePasskeyForCurrentDevice()` | ลบ passkey ของอุปกรณ์ปัจจุบันจาก Settings |
+| `getCurrentDevicePasskeyStatus()` | คืนสถานะ enrolled + device label สำหรับ Settings |
+
+Requires `device_passkeys` migration and optional production env overrides `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGIN`.
+
+---
+
+### 1.3 Inventory (`inventory-actions.ts`)
 
 #### `recordTransaction(productId, type, quantity, note?, auditOptions?)`
 
@@ -83,11 +99,11 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 - Full inventory dataset for AI/analysis
 
-**Client:** Service Role Key
+Client: Service Role Key
 
 ---
 
-### 1.3 Shift (`shift-actions.ts`)
+### 1.4 Shift (`shift-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -102,7 +118,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 ---
 
-### 1.4 Holiday (`holiday-actions.ts`)
+### 1.5 Holiday (`holiday-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -111,7 +127,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 ---
 
-### 1.5 Maintenance (`maintenance-actions.ts`)
+### 1.6 Maintenance (`maintenance-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -120,7 +136,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 ---
 
-### 1.6 Sales (`sales-actions.ts`)
+### 1.7 Sales (`sales-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -135,7 +151,7 @@ All server actions use `'use server'` in `src/app/actions/`. Write operations ca
 
 ---
 
-### 1.7 Market Insights v2
+### 1.8 Market Insights v2
 
 The module is split across five action files in `src/app/actions/`.
 
@@ -211,7 +227,7 @@ getMarketInsights()
 
 ---
 
-### 1.8 Daily Report (`daily-report-actions.ts`)
+### 1.9 Daily Report (`daily-report-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -222,7 +238,7 @@ getMarketInsights()
 
 ---
 
-### 1.9 LINE (`line-actions.ts`)
+### 1.10 LINE (`line-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -230,7 +246,7 @@ getMarketInsights()
 
 ---
 
-### 1.10 Login History (`login-history-actions.ts`)
+### 1.11 Login History (`login-history-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -240,7 +256,7 @@ getMarketInsights()
 
 ---
 
-### 1.11 Push (`push-actions.ts`)
+### 1.12 Push (`push-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -253,7 +269,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply.
 
 ---
 
-### 1.12 Migration (`migrate-inventory-sort-order.ts`)
+### 1.13 Migration (`migrate-inventory-sort-order.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -294,13 +310,13 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply.
 
 ### `record_inventory_transaction`
 
-- **Source:** `sql/record_inventory_transaction.sql`
+- Source: `sql/record_inventory_transaction.sql`
 - Row lock → validate → update stock → insert transaction (IN/OUT only)
 - `SECURITY DEFINER`
 
 ### `set_inventory_stock` (v6.8+)
 
-- **Source:** `sql/sync_inventory_stock.sql`
+- Source: `sql/sync_inventory_stock.sql`
 - Parameters: `p_item_id`, `p_new_stock`, `p_note`, `p_record_history` (default `true`)
 - Row lock → set absolute stock → optional ADJUST ledger entry on delta
 
@@ -310,7 +326,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply.
 
 ### Real-time Channels
 
-**Inventory stock sync:**
+Inventory stock sync:
 
 ```typescript
 supabase.channel('inventory_changes')
@@ -318,7 +334,7 @@ supabase.channel('inventory_changes')
   .subscribe()
 ```
 
-**Inventory change notifications** (`use-inventory-notifications.ts`):
+Inventory change notifications (`use-inventory-notifications.ts`):
 
 ```typescript
 supabase.channel('inventory_change_logs')

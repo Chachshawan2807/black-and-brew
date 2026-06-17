@@ -445,7 +445,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                         transition={{ delay: index * 0.03 }}
                         className="group hover:bg-muted/30 bb-transition"
                       >
-                        <td className="py-4 px-5 text-sm font-normal text-muted-foreground antialiased font-mono">
+                        <td className="py-4 px-5 text-sm font-normal text-muted-foreground antialiased tabular-nums">
                           {format(new Date(record.start_date), 'dd/MM/yyyy')}
                         </td>
                         <td className="py-4 px-5 text-[15px] font-normal text-foreground antialiased whitespace-normal break-words">
@@ -465,7 +465,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                             {record.task_type}
                           </span>
                         </td>
-                        <td className="py-4 px-5 text-[15px] font-normal text-foreground antialiased text-right font-mono">
+                        <td className="py-4 px-5 text-[15px] font-normal text-foreground antialiased text-right tabular-nums">
                           ฿{(record.cost || 0).toLocaleString()}
                         </td>
                         <td className="py-4 px-5 text-sm font-normal antialiased text-center">

@@ -7,9 +7,7 @@ export default async function MarketInsightsPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
-
-  const authed = await checkAuth();
+  const [{ locale }, authed] = await Promise.all([params, checkAuth()]);
   if (!authed) {
     redirect(`/${locale}`);
   }

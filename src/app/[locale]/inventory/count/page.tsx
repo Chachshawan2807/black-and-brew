@@ -10,9 +10,7 @@ export default async function InventoryCountPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
-
-  const authed = await checkAuth();
+  const [{ locale }, authed] = await Promise.all([params, checkAuth()]);
   if (!authed) {
     redirect(`/${locale}`);
   }

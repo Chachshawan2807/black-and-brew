@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@property --drawer-backdrop {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
@@ -11,6 +17,7 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --font-sans: var(--font-prompt), var(--font-ibm-plex-sans-thai), var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-sans);
 
   /* Collapsible animations */
   --animate-collapsible-down: collapsible-down 0.2s ease-out;
@@ -171,6 +178,13 @@
     line-height: 1.5;
   }
 
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+  }
+
   input[type="date"]::-webkit-calendar-picker-indicator {
     background: transparent;
     bottom: 0;
@@ -189,7 +203,7 @@
 
 @layer components {
   .thai-chat-readable {
-    font-family: var(--font-ibm-plex-sans-thai), var(--font-prompt), var(--font-inter), system-ui, sans-serif;
+    font-family: var(--font-sans);
     line-height: 1.85;
     letter-spacing: 0;
     font-kerning: normal;
@@ -356,9 +370,162 @@
     container-name: bb-main;
   }
 
-  /* Mobile drawer — prevent scroll chaining during horizontal gestures */
-  .bb-mobile-drawer-surface {
-    overscroll-behavior: contain;
+  /* Mobile nav drawer — popover + horizontal scroll-snap (navigation-drawer pattern) */
+  .bb-mobile-nav-drawer {
+    --drawer-width: min(17.5rem, 80dvw);
+    --drawer-backdrop: 0;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    color: inherit;
+  }
+
+  .bb-mobile-nav-drawer::backdrop {
+    background: #000;
+    opacity: calc(var(--drawer-backdrop) / 2);
+  }
+
+  .bb-mobile-nav-drawer.bb-mobile-nav-drawer--open {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: block;
+  }
+
+  .bb-mobile-nav-drawer.bb-mobile-nav-drawer--open::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: calc(var(--drawer-backdrop) / 2);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .bb-mobile-nav-drawer {
+      timeline-scope: --drawer-fade;
+      animation: bb-fade-drawer-backdrop linear both;
+      animation-timeline: --drawer-fade;
+    }
+
+    .bb-mobile-nav-drawer__scroller {
+      scroll-timeline: --drawer-fade x;
+    }
+
+    @keyframes bb-fade-drawer-backdrop {
+      0% { --drawer-backdrop: 1; }
+      100% { --drawer-backdrop: 0; }
+    }
+  }
+
+  .bb-mobile-nav-drawer__scroller {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--drawer-width) 100%;
+    overflow-x: scroll;
+    overscroll-behavior: none;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    height: 100svh;
+    width: 100vw;
+    max-width: 100%;
+  }
+
+  .bb-mobile-nav-drawer__scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bb-mobile-nav-drawer__scroller {
+      scroll-behavior: smooth;
+    }
+  }
+
+  .bb-mobile-nav-drawer__scroller::after {
+    content: '';
+    scroll-snap-align: end;
+    scroll-initial-target: nearest;
+  }
+
+  .bb-mobile-nav-drawer__sheet {
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    width: var(--drawer-width);
+    background: var(--sidebar-surface);
+    color: var(--foreground);
+    overflow-y: auto;
+    scroll-snap-align: start;
+    scrollbar-width: none;
+    box-shadow: 0 6px 16px -2px rgb(0 0 0 / 0.07), 0 20px 40px -8px rgb(0 0 0 / 0.1);
+  }
+
+  .bb-mobile-nav-drawer__sheet::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Sidebar menu labels — smooth fade when collapsing */
+  .bb-sidebar-label {
+    overflow: hidden;
+    white-space: nowrap;
+    transition:
+      opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      max-width 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bb-sidebar-label--expanded {
+    opacity: 1;
+    max-width: 12.5rem;
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .bb-sidebar-label--collapsed {
+    opacity: 0;
+    max-width: 0;
+    transform: translateX(-0.5rem);
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bb-modal-backdrop,
+    .bb-modal-panel,
+    .bb-sheet-panel,
+    .bb-toast-enter,
+    .bb-toast-exit,
+    .bb-sidebar-label,
+    .bb-sidebar-logo,
+    .animate-page-enter,
+    .fade-in,
+    .fade-in-0,
+    .fade-out-0,
+    .zoom-in-95,
+    .slide-in-from-bottom,
+    .slide-in-from-bottom-2,
+    .slide-in-from-top-2 {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+    }
+
+    .bb-transition {
+      transition-duration: 0.01ms !important;
+    }
+
+    .bb-sidebar-label {
+      transition-duration: 0.01ms !important;
+    }
+
+    .bb-mobile-nav-drawer__scroller {
+      scroll-behavior: auto;
+    }
   }
 
   .bb-command-center {

@@ -6,6 +6,10 @@
 ## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
+**Next.js skill:** `.agents/skills/next-best-practices/SKILL.md` — App Router file conventions, RSC boundaries, async APIs, metadata, route handlers. Pair with `vercel-react-best-practices` for performance.
+
+**Caching vs ERP sync:** Supabase real-time / optimistic UI wins over aggressive route caching. Do not cache inventory, sales, or editable grid data in ways that delay post-mutation freshness unless explicitly invalidated on every write.
 <!-- END:nextjs-agent-rules -->
 
 <!-- BEGIN:modern-web-baseline-standard -->
@@ -16,7 +20,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Use interoperable web platform features that major browsers have supported for at least ~30 months. Prioritize maximum stability for staff on phones and tablets across mixed device generations. Do not ship Baseline Newly or Limited features as the only code path without a documented fallback or progressive enhancement.
 
-**Authoritative skill:** `.cursor/skills/chrome-modern-web-guidance.md` — read before any HTML/CSS/clientside JS UI work. For non-trivial features, retrieve full guides:
+**Authoritative skill:** `.cursor/skills/chrome-modern-web-guidance/SKILL.md` — read before any HTML/CSS/clientside JS UI work. For non-trivial features, retrieve full guides:
 
 ```text
 npx -y modern-web-guidance@latest search "<use case>"
@@ -27,10 +31,14 @@ Sources: [Modern Web Guidance](https://developer.chrome.com/docs/modern-web-guid
 
 ### Rule priority (when guidance conflicts)
 
-1. **ERP domain rules** (spreadsheet grids, pastel shift colors, Supabase sync) win in their context.
-2. **Baseline Widely available** — no deprecated or single-engine-only APIs without explicit approval.
-3. **Project theme tokens** — never hardcode surface colors that break dark mode.
-4. **Modern Web Guidance** — native `<dialog>`, Popover API, container queries, `:user-invalid`, etc. over legacy JS libraries.
+Apply in order — higher wins:
+
+1. **ERP domain rules** — spreadsheet grids, pastel shift colors, Supabase sync, numeric/undo rules, data symmetry (sections in this file).
+2. **chrome-modern-web-guidance** — `.cursor/skills/chrome-modern-web-guidance/SKILL.md` + **modern-web-guidance** (`npx modern-web-guidance search/retrieve`) for Baseline Widely available, native overlays, mobile layout.
+3. **React & Next.js skills** — `next-best-practices`, `vercel-react-best-practices`, `shadcn`, `webapp-testing` in `.agents/skills/` for App Router conventions, performance, components, and testing — **never** override ERP spreadsheet/pastel rules or Supabase sync freshness.
+4. **Design review skills** — `web-design-guidelines`, `impeccable` (sub-command `critique` only), `ui-ux-pro-max` — review/polish on existing UI; must stay minimalist + time-based pastel. Do not use impeccable `bolder` / `delight` / `overdrive` when they conflict with ERP tone.
+
+When React, Next.js, or design skills suggest modals for grid edits, aggressive caching of live ERP data, decorative UI, luxury/bold aesthetics, or non-pastel surfaces, **reject** and follow ERP + chrome-modern-web-guidance instead.
 
 ### Modern platform (no deprecated code)
 
@@ -80,9 +88,11 @@ Sources: [Modern Web Guidance](https://developer.chrome.com/docs/modern-web-guid
 
 ## UI/UX PRO MAX STANDARDS
 
-- **Import Skill:** <https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git>
+- **Skill:** `.agents/skills/ui-ux-pro-max/SKILL.md` — design intelligence (lowest design tier; see rule priority)
+- **Design review:** `.agents/skills/web-design-guidelines/SKILL.md` (spacing, typography, interaction, a11y) · `.agents/skills/impeccable/SKILL.md` with **`critique`** sub-command for structured UI review before ship
 - **Constraint:** ทุกการสร้าง UI ใน BLACKANDBREW ERP ต้องเป็น Minimalist และใช้ Pastel Palette ตามเงื่อนไขเวลาเดิมเท่านั้น (เช่น 6:30 = light green)
 - **Design Logic:** เน้นผลลัพธ์ที่ถูกต้องเชิงระบบ (Outcome-First) และความสมมาตรของข้อมูล
+- **Update:** `npx skills add nextlevelbuilder/ui-ux-pro-max-skill@ui-ux-pro-max -y`
 <!-- END:ui-ux-pro-max-skill -->
 <!-- BEGIN:dark-theme-standard -->
 
@@ -146,12 +156,36 @@ Sources: [Modern Web Guidance](https://developer.chrome.com/docs/modern-web-guid
 
 ## CORE DEVELOPMENT SOP (Superpowers)
 
-- **Writing Plans:** Use the `writing-plans` skill for any task with >3 steps. Save to `docs/plans/`. No placeholders.
-- **TDD (Test-Driven Development):** NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST. Follow Red-Green-Refactor religiously.
+- **TDD (Test-Driven Development):** NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST. Follow Red-Green-Refactor religiously. Use `.agents/skills/webapp-testing/SKILL.md` for test patterns when helpful.
 - **Verification:** Always verify "RED" (test fails) and "GREEN" (test passes) before proceeding.
 - **Documentation Reference:** Full SOP details are available in [SOP.md](file:///c:/Users/chach/.gemini/antigravity/scratch/black-and-brew/docs/SOP.md).
 <!-- END:superpowers-sop -->
 
+<!-- BEGIN:skills-registry -->
+
+## PROJECT SKILLS
+
+| Skill | Path | หน้าที่ |
+| ------- | ------ | -------- |
+| chrome-modern-web-guidance | `.cursor/skills/chrome-modern-web-guidance/SKILL.md` | Baseline frontend/mobile ของโปรเจกต์ (Baseline Widely available) |
+| modern-web-guidance | `.agents/skills/modern-web-guidance/SKILL.md` | ค้นหา/ดึง best practice เว็บสมัยใหม่จาก Google Chrome |
+| next-best-practices | `.agents/skills/next-best-practices/SKILL.md` | App Router, RSC boundaries, async APIs, metadata |
+| vercel-react-best-practices | `.agents/skills/vercel-react-best-practices/SKILL.md` | React/Next performance — waterfalls, bundle, re-renders |
+| shadcn | `.agents/skills/shadcn/SKILL.md` | shadcn/ui + Tailwind — ติดตั้ง, theme, compose components |
+| web-design-guidelines | `.agents/skills/web-design-guidelines/SKILL.md` | Vercel Web Interface Guidelines — spacing, type, a11y |
+| impeccable | `.agents/skills/impeccable/SKILL.md` | UI critique/review (`critique` sub-command) — ก่อน ship |
+| webapp-testing | `.agents/skills/webapp-testing/SKILL.md` | Unit/integration/E2E testing patterns (Vitest, Playwright) |
+| ui-ux-pro-max | `.agents/skills/ui-ux-pro-max/SKILL.md` | ออกแบบ/รีวิว UI·UX — ลำดับต่ำสุดในกลุ่ม design |
+| security-review | `.agents/skills/security-review/SKILL.md` | รีวิวช่องโหว่ security ในโค้ด (OWASP) |
+| google-cloud-waf-security | `.agents/skills/google-cloud-waf-security/SKILL.md` | แนวทาง security บน Google Cloud |
+| gemini-api | `.agents/skills/gemini-api/SKILL.md` | ใช้ Gemini API / Vertex AI (SDK `@google/genai`) |
+| graphify | `.claude/skills/graphify/SKILL.md` | Knowledge graph ของโค้ดเบส (`/graphify`, `graphify query`) |
+
+**ลำดับความสำคัญเมื่อขัดกัน:** ERP domain rules → chrome-modern-web-guidance → React & Next.js skills → design review skills (`web-design-guidelines`, `impeccable` critique) → ui-ux-pro-max
+
+**อัปเดต skills:** `npx skills add <owner/repo@skill> -y` (เช่น `vercel-labs/agent-skills@web-design-guidelines`, `pbakaus/impeccable@impeccable`)
+
+<!-- END:skills-registry -->
 <!-- BEGIN:graphify-standard -->
 
 ## KNOWLEDGE GRAPH (graphify)

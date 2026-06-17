@@ -146,6 +146,45 @@ export type Database = {
         }
         Relationships: []
       }
+      device_passkeys: {
+        Row: {
+          access_level: "full" | "read_only"
+          counter: number
+          credential_id: string
+          device_label: string | null
+          id: string
+          last_used_at: string | null
+          public_key: string
+          registered_at: string
+          session_fingerprint: string
+          transports: string[]
+        }
+        Insert: {
+          access_level?: "full" | "read_only"
+          counter?: number
+          credential_id: string
+          device_label?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          registered_at?: string
+          session_fingerprint: string
+          transports?: string[]
+        }
+        Update: {
+          access_level?: "full" | "read_only"
+          counter?: number
+          credential_id?: string
+          device_label?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          registered_at?: string
+          session_fingerprint?: string
+          transports?: string[]
+        }
+        Relationships: []
+      }
       login_history: {
         Row: {
           id: string
@@ -263,6 +302,44 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_count_verifications: {
+        Row: {
+          counted_at: string
+          counted_qty: number
+          created_at: string
+          id: string
+          inventory_item_id: string
+          matched: boolean
+          system_stock_qty: number
+        }
+        Insert: {
+          counted_at?: string
+          counted_qty: number
+          created_at?: string
+          id?: string
+          inventory_item_id: string
+          matched: boolean
+          system_stock_qty: number
+        }
+        Update: {
+          counted_at?: string
+          counted_qty?: number
+          created_at?: string
+          id?: string
+          inventory_item_id?: string
+          matched?: boolean
+          system_stock_qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_count_verifications_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
           id: string
@@ -339,6 +416,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      market_insight_runs: {
+        Row: {
+          context_json: Json
+          created_at: string
+          generated_at: string
+          id: string
+          insights_json: Json
+          sources_json: Json
+        }
+        Insert: {
+          context_json: Json
+          created_at?: string
+          generated_at?: string
+          id?: string
+          insights_json: Json
+          sources_json?: Json
+        }
+        Update: {
+          context_json?: Json
+          created_at?: string
+          generated_at?: string
+          id?: string
+          insights_json?: Json
+          sources_json?: Json
+        }
+        Relationships: []
       }
       product_categories: {
         Row: {
@@ -662,10 +766,10 @@ export type Database = {
       }
       ai_recent_transactions: {
         Row: {
-          balance_after: number | null
           created_at_local: string | null
           item_name: string | null
           note: string | null
+          balance_after: number | null
           quantity: number | null
           type: string | null
         }

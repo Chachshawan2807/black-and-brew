@@ -448,12 +448,22 @@ export async function fetchSalesHistory(page = 1, pageSize = 10) {
     // Calculate offset
     const offset = (page - 1) * pageSize;
 
-    // Fetch uploads with pagination
-    const { data: uploads, error: uploadsError, count } = await supabase
+    // Fetch uploads and records together; they do not depend on each other.
+    const uploadsPromise = supabase
       .from('sales_uploads')
       .select(SALES_UPLOAD_COLUMNS, { count: 'exact' })
       .order('upload_date', { ascending: false })
       .range(offset, offset + pageSize - 1);
+
+    const recordsPromise = supabase
+      .from('sales_records')
+      .select(SALES_RECORD_COLUMNS)
+      .order('sale_date', { ascending: false });
+
+    const [
+      { data: uploads, error: uploadsError, count },
+      { data: records, error: recordsError },
+    ] = await Promise.all([uploadsPromise, recordsPromise]);
 
     if (uploadsError) {
       if (uploadsError.message?.includes('Could not find the table')) {
@@ -461,12 +471,6 @@ export async function fetchSalesHistory(page = 1, pageSize = 10) {
       }
       throw uploadsError;
     }
-
-    // Fetch all records (for other calculations)
-    const { data: records, error: recordsError } = await supabase
-      .from('sales_records')
-      .select(SALES_RECORD_COLUMNS)
-      .order('sale_date', { ascending: false });
 
     if (recordsError) {
       if (recordsError.message?.includes('Could not find the table')) {
@@ -905,10 +909,19 @@ export async function getSalesMetrics(startDateStr?: string, endDateStr?: string
   if (!supabase) return null;
 
   try {
-    const { data: records, error } = await supabase
+    const recordsPromise = supabase
       .from('sales_records')
       .select(SALES_RECORD_COLUMNS)
       .order('sale_date', { ascending: true });
+
+    const productCategoriesPromise = supabase
+      .from('product_categories')
+      .select('product_name, category');
+
+    const [
+      { data: records, error },
+      { data: productCategories, error: categoriesError },
+    ] = await Promise.all([recordsPromise, productCategoriesPromise]);
 
     if (error) {
       if (error.message?.includes('Could not find the table')) {
@@ -919,11 +932,6 @@ export async function getSalesMetrics(startDateStr?: string, endDateStr?: string
 
     if (!records || records.length === 0) return null;
 
-    // Get all product categories
-    const { data: productCategories, error: categoriesError } = await supabase
-      .from('product_categories')
-      .select('product_name, category');
-      
     // If product_categories table doesn't exist, use empty array
     const categories = (categoriesError && (categoriesError.message?.includes('Could not find the table') || categoriesError.code === 'PGRST205')) 
       ? [] 

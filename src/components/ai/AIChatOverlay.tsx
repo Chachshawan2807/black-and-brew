@@ -29,7 +29,7 @@ const QUICK_ACTIONS = [
 
 // Actual chat component containing useChat (only runs on client)
 export default function AIChatOverlay() {
-  const { fabStackHidden, isAnyOtherOpen, setOverlayOpen } = useFloatingOverlay();
+  const { fabStackHidden, fabStackSuppressed, isAnyOtherOpen, setOverlayOpen } = useFloatingOverlay();
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [isMounted, setIsMounted] = useState(false);
@@ -49,13 +49,13 @@ export default function AIChatOverlay() {
     setOverlayOpen('ai-chat', isOpen);
   }, [isOpen, setOverlayOpen]);
 
-  const hideAiChatButton = fabStackHidden || isAnyOtherOpen('ai-chat');
+  const hideAiChatButton = fabStackHidden || fabStackSuppressed || isAnyOtherOpen('ai-chat');
 
   useEffect(() => {
-    if (fabStackHidden && isOpen) {
+    if ((fabStackHidden || fabStackSuppressed) && isOpen) {
       setIsOpen(false);
     }
-  }, [fabStackHidden, isOpen]);
+  }, [fabStackHidden, fabStackSuppressed, isOpen]);
 
   const viewportInsets = useVisualViewportInsets(isMounted && isOpen);
   const chatPanelStyle = getFabPanelKeyboardAwareStyle({

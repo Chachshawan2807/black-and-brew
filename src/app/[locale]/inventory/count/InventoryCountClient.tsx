@@ -111,7 +111,7 @@ const CountInput = memo(function CountInput({
         data-count-row-index={index}
         disabled={disabled}
         className={cn(
-          'px-3 rounded-xl border text-base font-normal text-center outline-none font-mono transition-all duration-200 placeholder:text-muted-foreground/40',
+          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums transition-all duration-200 placeholder:text-muted-foreground/40',
           isActive
             ? 'w-28 h-11 border-black/20 bg-white text-black ring-2 ring-black/10 shadow-sm bb-pastel-surface'
             : 'w-24 h-10 border-border bg-muted text-foreground focus:bg-card focus:ring-1 focus:ring-foreground/10',
@@ -175,7 +175,7 @@ const CountItemRow = memo(function CountItemRow({
       <div className="flex items-start gap-3 flex-1 min-w-0 pl-1">
         <span
           className={cn(
-            'text-[12px] font-normal font-mono shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200 tabular-nums',
+            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200',
             isActive
               ? 'bg-black text-white'
               : 'text-muted-foreground/50'

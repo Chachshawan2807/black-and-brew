@@ -347,7 +347,7 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
                       >
 
-                        <td className="py-3.5 px-4 text-[14px] text-foreground/60 font-mono text-left whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-[14px] text-foreground/60 tabular-nums text-left whitespace-nowrap">
 
                           {new Date(tx.created_at).toLocaleString('th-TH', {
 
@@ -387,13 +387,13 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
                         </td>
 
-                        <td className="py-3.5 px-4 text-[15px] text-center font-mono text-foreground font-normal whitespace-nowrap w-[1%]">
+                        <td className="py-3.5 px-4 text-[15px] text-center tabular-nums text-foreground font-normal whitespace-nowrap w-[1%]">
 
                           {tx.quantity}
 
                         </td>
 
-                        <td className="py-3.5 px-4 text-[15px] text-center font-mono text-foreground/40 whitespace-nowrap w-[1%]">
+                        <td className="py-3.5 px-4 text-[15px] text-center tabular-nums text-foreground/40 whitespace-nowrap w-[1%]">
 
                           {tx.balance_after}
 

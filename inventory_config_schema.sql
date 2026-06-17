@@ -29,8 +29,9 @@ ON CONFLICT (id) DO NOTHING;
 -- Enable RLS
 ALTER TABLE inventory_config ENABLE ROW LEVEL SECURITY;
 
--- Allow public access for testing
-CREATE POLICY "Public access for inventory_config" 
-ON inventory_config FOR ALL 
-USING (true) 
+-- Authenticated collaborative access after PIN gate anonymous sign-in
+CREATE POLICY "Authenticated access for inventory_config"
+ON inventory_config FOR ALL
+TO authenticated
+USING (true)
 WITH CHECK (true);

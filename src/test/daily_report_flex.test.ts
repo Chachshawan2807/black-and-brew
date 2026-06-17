@@ -44,7 +44,8 @@ describe('buildDailyReportFlexMessage()', () => {
     const message = buildDailyReportFlexMessage(sampleData);
     const body = JSON.stringify(message.contents.body);
 
-    expect(body).toContain('เข้างาน 2 คน');
+    expect(body).toContain('เข้างาน');
+    expect(body).toContain('2 คน');
   });
 
   it('uses shift pastel colors from shift-colors palette', () => {

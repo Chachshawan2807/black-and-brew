@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { GripVertical, LogOut, Settings2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { sidebarLabelClass } from '@/lib/sidebar-label-classes';
 import { getMenuList, type MenuItem } from '@/lib/menu-list';
 import { Button } from '@/components/ui/button';
 import { CollapseMenuButton } from '@/components/sidebar/CollapseMenuButton';
@@ -35,6 +36,7 @@ import {
 } from '@dnd-kit/sortable';
 import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
+import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
 
 const STORAGE_KEY = 'sidebar-menu-order';
 
@@ -89,10 +91,7 @@ function StaticMenuItem({
                 <span className={cn("text-foreground", isOpen === false ? '' : 'mr-4')}>
                   <Icon size={18} strokeWidth={1.75} />
                 </span>
-                <p className={cn(
-                  'max-w-[200px] truncate font-normal text-foreground transition-all duration-200 ease-in-out',
-                  isOpen === false ? '-translate-x-96 opacity-0 hidden' : 'translate-x-0 opacity-100'
-                )}>
+                <p className={sidebarLabelClass(isOpen, 'text-foreground')}>
                   {label}
                 </p>
               </Link>
@@ -173,7 +172,7 @@ function SortableMenuItem({
                 <span className="mr-4 text-foreground">
                   <Icon size={18} strokeWidth={1.75} />
                 </span>
-                <p className="max-w-[170px] truncate font-normal text-foreground transition-all duration-200 ease-in-out translate-x-0 opacity-100">
+                <p className={sidebarLabelClass(isOpen, 'max-w-[170px] text-foreground')}>
                   {label}
                 </p>
               </Link>
@@ -204,7 +203,7 @@ export default function Menu({ isOpen }: MenuProps) {
 
   const hydrated = useSidebarHydrated();
   const sidebarIsOpen = useSidebarToggle((state) => state.isOpen);
-  const setSidebarOpen = useSidebarToggle((state) => state.setIsOpen);
+  const closeMobileDrawer = useMobileNavDrawer((state) => state.closeDrawer);
   const sidebarOpen = hydrated ? sidebarIsOpen : true;
   const isReadOnly = useReadOnly();
   const isAdmin = !isReadOnly;
@@ -261,8 +260,8 @@ export default function Menu({ isOpen }: MenuProps) {
   }, []);
 
   const handleLinkClick = () => {
-    if (window.innerWidth < 768 && sidebarOpen) {
-      setSidebarOpen();
+    if (window.innerWidth < 768) {
+      closeMobileDrawer();
     }
   };
 
@@ -367,14 +366,7 @@ export default function Menu({ isOpen }: MenuProps) {
                   <span className={cn(isOpen === false ? '' : 'mr-4')}>
                     <Settings2 size={18} strokeWidth={1.75} />
                   </span>
-                  <p
-                    className={cn(
-                      'max-w-[200px] truncate font-normal text-foreground',
-                      isOpen === false
-                        ? '-translate-x-96 opacity-0 hidden'
-                        : 'translate-x-0 opacity-100'
-                    )}
-                  >
+                  <p className={sidebarLabelClass(isOpen, 'text-foreground')}>
                     {locale === 'th' ? 'ตั้งค่า' : 'Settings'}
                   </p>
                 </Link>
@@ -401,14 +393,7 @@ export default function Menu({ isOpen }: MenuProps) {
                 <span className={cn(isOpen === false ? '' : 'mr-4')}>
                   <LogOut size={18} strokeWidth={1.75} />
                 </span>
-                <p
-                  className={cn(
-                    'max-w-[200px] truncate font-normal text-red-500',
-                    isOpen === false
-                      ? '-translate-x-96 opacity-0 hidden'
-                      : 'translate-x-0 opacity-100'
-                  )}
-                >
+                <p className={sidebarLabelClass(isOpen, 'text-red-500')}>
                   {locale === 'th' ? 'ออกจากระบบ' : 'Logout'}
                 </p>
               </Button>

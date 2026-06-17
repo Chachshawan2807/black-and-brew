@@ -367,7 +367,7 @@ function BulkQueuePanel({
           >
             <div className="min-w-0 flex-1">
               <div className="text-sm text-foreground truncate">{line.name}</div>
-              <div className="text-[11px] text-muted-foreground font-mono tabular-nums">
+              <div className="text-[11px] text-muted-foreground tabular-nums">
                 {preview.before} → {preview.after} {line.unit}
                 {preview.error && line.qty.trim() !== '' ? ` · ${preview.error}` : ''}
               </div>
@@ -380,7 +380,7 @@ function BulkQueuePanel({
               onChange={(e) => onBulkLineQtyChange?.(line.itemId, e.target.value)}
               placeholder="จำนวน"
               aria-label={`จำนวน ${line.name}`}
-              className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground text-center text-sm font-mono tabular-nums outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground text-center text-sm tabular-nums outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             {onRemoveBulkItem && (
               <HintTooltip tip="ลบออกจากคิว">
@@ -584,7 +584,7 @@ export function InventoryQuickActionBar({
                         <span className="text-[14px] text-foreground font-normal truncate min-w-0 flex-1">
                           {item.name}
                         </span>
-                        <span className="text-[12px] text-muted-foreground group-hover:text-foreground/70 transition-colors uppercase tracking-widest font-mono shrink-0 whitespace-nowrap">
+                        <span className="text-[12px] text-muted-foreground group-hover:text-foreground/70 transition-colors uppercase tracking-widest tabular-nums shrink-0 whitespace-nowrap">
                           {item.stock} {item.unit}
                         </span>
                       </button>
@@ -602,7 +602,7 @@ export function InventoryQuickActionBar({
                 )}
               >
                 <span className={cn('shrink-0', quickBadgeStyles.label)}>คงเหลือ:</span>
-                <span className={cn('font-normal antialiased font-mono shrink-0 tabular-nums', quickBadgeStyles.val)}>
+                <span className={cn('font-normal antialiased tabular-nums shrink-0 tabular-nums', quickBadgeStyles.val)}>
                   {Number.isInteger(selectedQuickItem.stock)
                     ? selectedQuickItem.stock
                     : Number(selectedQuickItem.stock).toFixed(1)}

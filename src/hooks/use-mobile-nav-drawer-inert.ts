@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
 
 const MOBILE_NAV_MQ = '(max-width: 767px)';
 
 /**
- * True when the mobile nav drawer is open and should inert the main landmark
- * (Baseline Widely available — pairs with navigation-drawer a11y guidance).
+ * True when the mobile nav drawer is open and should inert the main landmark.
  */
-export function useMobileNavDrawerInert(sidebarOpen: boolean): boolean {
+export function useMobileNavDrawerInert(): boolean {
+  const drawerOpen = useMobileNavDrawer((s) => s.isOpen);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -19,5 +20,5 @@ export function useMobileNavDrawerInert(sidebarOpen: boolean): boolean {
     return () => mq.removeEventListener('change', sync);
   }, []);
 
-  return isMobile && sidebarOpen;
+  return isMobile && drawerOpen;
 }

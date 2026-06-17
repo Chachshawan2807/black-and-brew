@@ -18,10 +18,11 @@ BEGIN
     FROM pg_policies
     WHERE schemaname = 'public'
       AND tablename = 'regular_holidays'
-      AND policyname = 'Public access for regular_holidays'
+      AND policyname = 'Authenticated access for regular_holidays'
   ) THEN
-    CREATE POLICY "Public access for regular_holidays"
+    CREATE POLICY "Authenticated access for regular_holidays"
     ON regular_holidays FOR ALL
+    TO authenticated
     USING (true)
     WITH CHECK (true);
   END IF;

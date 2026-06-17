@@ -65,6 +65,8 @@ interface InventoryClientProps {
   locale: string;
 }
 
+type ColumnLookup = Map<string, ColumnDef>;
+
 function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onResizeEnd }: {
   col: ColumnDef;
   updateColumnLabel: (id: string, label: string) => void;
@@ -186,7 +188,7 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
           if (e.key === 'Enter') { e.preventDefault(); commit(); }
           if (e.key === 'Escape') setEditing(false);
         }}
-        className="w-8 h-5 text-[12px] font-mono text-center bg-muted border border-border rounded focus:outline-none focus:ring-1 focus:ring-foreground/20 shrink-0"
+        className="w-8 h-5 text-[12px] tabular-nums text-center bg-muted border border-border rounded focus:outline-none focus:ring-1 focus:ring-foreground/20 shrink-0"
         style={{ width: '2rem' }}
       />
     );
@@ -198,7 +200,7 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
         data-testid="sort-order-input"
         type="button"
         onClick={() => { setLocalVal(String(displayIndex)); setEditing(true); }}
-        className="text-[12px] font-normal text-foreground/35 font-mono shrink-0 hover:text-foreground/60 hover:bg-muted rounded px-1 transition-colors leading-none cursor-pointer"
+        className="text-[12px] font-normal text-foreground/35 tabular-nums shrink-0 hover:text-foreground/60 hover:bg-muted rounded px-1 transition-colors leading-none cursor-pointer"
       >
         {displayIndex.toString().padStart(2, '0')}
       </button>
@@ -206,10 +208,10 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
   );
 }
 
-const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateField, handleSaveField, requestDelete, handleFocus, totalItems }: {
+const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdateField, handleSaveField, requestDelete, handleFocus, totalItems }: {
   item: InventoryItem;
   index: number;
-  columns: ColumnDef[];
+  columnById: ColumnLookup;
   handleUpdateField: (id: string, field: string, value: InventoryFieldValue) => void;
   handleSaveField: (id: string, field: string, value: InventoryFieldValue) => void;
   requestDelete: (id: string) => void;
@@ -223,11 +225,13 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
   const targetStock = Number(item.target_stock) || 0;
   const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
 
-  const stockCol = columns.find(c => c.id === 'stock')!;
-  const orderPointCol = columns.find(c => c.id === 'order_point')!;
-  const targetStockCol = columns.find(c => c.id === 'target_stock')!;
-  const unitCol = columns.find(c => c.id === 'unit')!;
-  const sourceCol = columns.find(c => c.id === 'source')!;
+  const nameCol = columnById.get('name')!;
+  const stockCol = columnById.get('stock')!;
+  const orderQtyCol = columnById.get('order_qty');
+  const orderPointCol = columnById.get('order_point')!;
+  const targetStockCol = columnById.get('target_stock')!;
+  const unitCol = columnById.get('unit')!;
+  const sourceCol = columnById.get('source')!;
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -257,7 +261,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
           />
           <EditableCell
             item={item}
-            col={columns.find(c => c.id === 'name')!}
+            col={nameCol}
             rowIndex={rowIndex}
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
@@ -279,7 +283,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
         {/* Stock */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
-            {columns.find(c => c.id === 'stock')?.label || 'คงเหลือ'}
+            {stockCol?.label || 'คงเหลือ'}
           </span>
           {stockCol && (
             <EditableCell
@@ -298,9 +302,9 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
         {/* Order Qty (Computed Read-only) */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
-            {columns.find(c => c.id === 'order_qty')?.label || 'สั่งซื้อ'}
+            {orderQtyCol?.label || 'สั่งซื้อ'}
           </span>
-          <div className="w-full h-8 px-1 rounded-lg bg-muted border border-border flex items-center justify-center text-[13px] font-normal text-muted-foreground select-none font-mono truncate">
+          <div className="w-full h-8 px-1 rounded-lg bg-muted border border-border flex items-center justify-center text-[13px] font-normal text-muted-foreground select-none tabular-nums truncate">
             {computedOrderQty}
           </div>
         </div>
@@ -308,7 +312,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
         {/* Order Point */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
-            {columns.find(c => c.id === 'order_point')?.label || 'จุดสั่ง'}
+            {orderPointCol?.label || 'จุดสั่ง'}
           </span>
           {orderPointCol && (
             <EditableCell
@@ -327,7 +331,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
         {/* Target Stock */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
-            {columns.find(c => c.id === 'target_stock')?.label || 'ต้องมี'}
+            {targetStockCol?.label || 'ต้องมี'}
           </span>
           {targetStockCol && (
             <EditableCell
@@ -346,7 +350,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
         {/* Unit */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
-            {columns.find(c => c.id === 'unit')?.label || 'หน่วย'}
+            {unitCol?.label || 'หน่วย'}
           </span>
           {unitCol && (
             <EditableCell
@@ -365,7 +369,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columns, handleUpdateFi
         {/* Source */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
-            {columns.find(c => c.id === 'source')?.label || 'ช่องทาง'}
+            {sourceCol?.label || 'ช่องทาง'}
           </span>
           {sourceCol && (
             <EditableCell
@@ -391,7 +395,7 @@ const MobileSortableRow = React.memo(({
   item,
   index,
   totalItems,
-  columns,
+  columnById,
   handleUpdateField,
   handleSaveField,
   requestDelete,
@@ -401,7 +405,7 @@ const MobileSortableRow = React.memo(({
   item: InventoryItem;
   index: number;
   totalItems: number;
-  columns: ColumnDef[];
+  columnById: ColumnLookup;
   getStockColorClass: (stock: number, orderPoint: number) => string;
 }) => {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
@@ -417,6 +421,9 @@ const MobileSortableRow = React.memo(({
   const orderPoint = Number(item.order_point) || 0;
   const targetStock = Number(item.target_stock) || 0;
   const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
+  const stockCol = columnById.get('stock')!;
+  const orderPointCol = columnById.get('order_point')!;
+  const targetStockCol = columnById.get('target_stock')!;
 
   return (
     <div
@@ -473,13 +480,13 @@ const MobileSortableRow = React.memo(({
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">คงเหลือ</span>
           <MobileEditableCell
             item={item}
-            col={columns.find((c) => c.id === 'stock')!}
+            col={stockCol}
             rowIndex={index}
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
             className={cn(
-              "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate",
+              "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate",
               getStockColorClass(stock, orderPoint)
             )}
           />
@@ -488,7 +495,7 @@ const MobileSortableRow = React.memo(({
         {/* Order Qty (Computed / Read-only) */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">สั่งซื้อ</span>
-          <div className="w-full h-8 px-1 rounded-lg bg-muted border border-border flex items-center justify-center text-[13px] font-normal text-muted-foreground select-none font-mono truncate">
+          <div className="w-full h-8 px-1 rounded-lg bg-muted border border-border flex items-center justify-center text-[13px] font-normal text-muted-foreground select-none tabular-nums truncate">
             {computedOrderQty}
           </div>
         </div>
@@ -498,12 +505,12 @@ const MobileSortableRow = React.memo(({
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">จุดสั่ง</span>
           <MobileEditableCell
             item={item}
-            col={columns.find((c) => c.id === 'order_point')!}
+            col={orderPointCol}
             rowIndex={index}
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate"
           />
         </div>
 
@@ -512,12 +519,12 @@ const MobileSortableRow = React.memo(({
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">ต้องมี</span>
           <MobileEditableCell
             item={item}
-            col={columns.find((c) => c.id === 'target_stock')!}
+            col={targetStockCol}
             rowIndex={index}
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate"
           />
         </div>
 
@@ -660,7 +667,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty'}
         className={cn(
-          "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all font-mono truncate",
+          "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate",
           col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0),
           col.id === 'order_qty' && 'bg-muted border-border text-muted-foreground cursor-not-allowed'
         )}
@@ -696,7 +703,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         data-col-id={col.id}
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty'}
-        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'font-mono' : ''} ${col.id === 'order_qty' ? 'bg-muted cursor-not-allowed select-none' : ''}`}
+        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'tabular-nums' : ''} ${col.id === 'order_qty' ? 'bg-muted cursor-not-allowed select-none' : ''}`}
       />
       {col.id === 'name' && (
         <HintTooltip tip="ลบรายการ">
@@ -813,6 +820,8 @@ export default function InventoryClient({
   const initialCols = buildColumnsFromSettings(initialColumnSettings ?? undefined);
   const [items, setItems] = useState<InventoryItem[]>(initialItems);
   const [columns, setColumns] = useState<ColumnDef[]>(initialCols);
+  const columnById = useMemo(() => new Map(columns.map((column) => [column.id, column])), [columns]);
+  const sortableItemIds = useMemo(() => items.map((item) => item.id), [items]);
   const [loading, setLoading] = useState(false);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -1681,7 +1690,7 @@ export default function InventoryClient({
                   ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
                 </div>
               ) : (
-                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
                     {items.map((item, index) => (
                       <MobileSortableRow
@@ -1689,7 +1698,7 @@ export default function InventoryClient({
                         item={item}
                         index={index}
                         totalItems={items.length}
-                        columns={columns}
+                        columnById={columnById}
                         handleUpdateField={handleUpdateField}
                         handleSaveField={handleSaveField}
                         requestDelete={setDeleteId}
@@ -1709,14 +1718,14 @@ export default function InventoryClient({
                   ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
                 </div>
               ) : (
-                <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
                     {items.map((item, index) => (
                       <SortableRow
                         key={item.id}
                         item={item}
                         index={index}
-                        columns={columns}
+                        columnById={columnById}
                         handleUpdateField={handleUpdateField}
                         handleSaveField={handleSaveField}
                         requestDelete={setDeleteId}

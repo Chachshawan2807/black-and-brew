@@ -18,6 +18,7 @@ import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations } from '@/app/actions/shift-actions';
 import ShiftSettingsModal from '@/components/schedule/ShiftSettingsModal';
+import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import {
   loadShiftTypesFromStorage,
   saveShiftTypesToStorage,
@@ -27,6 +28,14 @@ import {
   type ShiftTypeDisplay,
   type ShiftTypeEntry,
 } from '@/lib/shift-type-config';
+import {
+  createShiftDateLookup,
+  createShiftTypeLookup,
+  getShiftForProfileDate,
+  getShiftTypeForLocation,
+  type ShiftDateLookup,
+  type ShiftTypeLookup,
+} from '@/lib/schedule/shift-lookups';
 import { useScheduleUndo } from '@/hooks/useScheduleUndo';
 import ScheduleToolbar from './ScheduleToolbar';
 import type { Profile, Shift } from '@/types';
@@ -197,8 +206,8 @@ interface SortableEmployeeRowProps {
   id: string;
   profile: Profile;
   weekDays: string[];
-  shifts: Shift[];
-  shiftTypes: ShiftTypeDisplay[];
+  shiftDateLookup: ShiftDateLookup<Shift>;
+  shiftTypeLookup: ShiftTypeLookup<ShiftTypeDisplay>;
   onCellClick: (employeeId: string, date: string, shift: Shift | undefined, x: number, y: number) => void;
   editingNameId: string | null;
   nameInput: string;
@@ -210,7 +219,7 @@ interface SortableEmployeeRowProps {
 }
 
 const SortableEmployeeRow = React.memo(({
-  id, profile, weekDays, shifts, shiftTypes, onCellClick,
+  id, profile, weekDays, shiftDateLookup, shiftTypeLookup, onCellClick,
   editingNameId, nameInput, setNameInput, onNameClick, onSaveName, onDeleteEmployee,
   isReadOnly = false,
 }: SortableEmployeeRowProps) => {
@@ -299,11 +308,8 @@ const SortableEmployeeRow = React.memo(({
       </div>
 
       {weekDays.map(date => {
-        const shift = shifts.find(s =>
-          (s.employee_id === profile.id || (s as any).profile_id === profile.id) &&
-          s.start_time.split('T')[0] === date
-        );
-        const type = shiftTypes.find(t => t.value === shift?.metadata?.location);
+        const shift = getShiftForProfileDate(shiftDateLookup, profile.id, date);
+        const type = getShiftTypeForLocation(shiftTypeLookup, shift?.metadata?.location);
         return (
           <div
             key={date}
@@ -679,6 +685,13 @@ export default function ScheduleClient({
     return [...Array(7)].map((_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
   }, [currentDate]);
 
+  const profileById = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles]);
+  const activeProfileIds = useMemo(() => new Set(orderedProfileIds), [orderedProfileIds]);
+  const holidayByDate = useMemo(() => new Map(holidays.map((holiday) => [holiday.date, holiday])), [holidays]);
+  const shiftDateLookup = useMemo(() => createShiftDateLookup(shifts), [shifts]);
+  const shiftTypeLookup = useMemo(() => createShiftTypeLookup(shiftTypes), [shiftTypes]);
+  const validShiftValues = useMemo(() => new Set(getFohCountValues(shiftTypes)), [shiftTypes]);
+
   useEffect(() => {
     if (initialProfiles && initialProfiles.length > 0) {
       setProfiles(initialProfiles);
@@ -1053,7 +1066,7 @@ export default function ScheduleClient({
 
     const assignDay = new Date(date).getDay();
     if (!isLeave && regularHolidays[employeeId] && regularHolidays[employeeId].includes(assignDay)) {
-      const empName = profiles.find(p => p.id === employeeId)?.full_name || 'พนักงาน';
+      const empName = profileById.get(employeeId)?.full_name || 'พนักงาน';
       setToastAlert({
         message: `แจ้งเตือน: วันนี้เป็นวันหยุดประจำของ ${empName} ค่ะ`,
         x: selectedCell.x,
@@ -1112,10 +1125,7 @@ export default function ScheduleClient({
   const handleClear = async () => {
     if (blockIfReadOnly()) return;
     if (!selectedCell) return;
-    const latestShift = shifts.find(s =>
-      (s.employee_id === selectedCell.employeeId || (s as any).profile_id === selectedCell.employeeId) &&
-      s.start_time.split('T')[0] === selectedCell.date
-    );
+    const latestShift = getShiftForProfileDate(shiftDateLookup, selectedCell.employeeId, selectedCell.date);
 
     if (!latestShift?.id) {
       setSelectedCell(null);
@@ -1156,7 +1166,7 @@ export default function ScheduleClient({
         setHolidays(prev => prev.filter(h => h.date !== date));
         await supabase.from('holidays').delete().eq('date', date);
       } else {
-        const existing = holidays.find(h => h.date === date);
+        const existing = holidayByDate.get(date);
         if (existing) {
           setHolidays(prev => prev.map(h => h.date === date ? { ...h, name: holidayInput } : h));
           await supabase.from('holidays').update({ name: holidayInput }).eq('id', existing.id);
@@ -1251,7 +1261,7 @@ export default function ScheduleClient({
                   <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
                 </div>
                 {weekDays.map(date => {
-                  const holiday = holidays.find(h => h.date === date);
+                  const holiday = holidayByDate.get(date);
                   return (
                     <div
                       key={`holiday-${date}`}
@@ -1305,7 +1315,7 @@ export default function ScheduleClient({
                 >
                   <SortableContext items={orderedProfileIds} strategy={verticalListSortingStrategy}>
                     {orderedProfileIds.map(pid => {
-                      const p = profiles.find(x => x.id === pid);
+                      const p = profileById.get(pid);
                       if (!p) return null;
                       return (
                         <SortableEmployeeRow
@@ -1313,8 +1323,8 @@ export default function ScheduleClient({
                           id={p.id}
                           profile={p}
                           weekDays={weekDays}
-                          shifts={shifts}
-                          shiftTypes={shiftTypes}
+                          shiftDateLookup={shiftDateLookup}
+                          shiftTypeLookup={shiftTypeLookup}
                           onCellClick={(employeeId, date, shift, x, y) => setSelectedCell({ employeeId, date, shift, x, y })}
                           editingNameId={editingNameId}
                           nameInput={nameInput}
@@ -1331,7 +1341,7 @@ export default function ScheduleClient({
               ) : (
                 <div className="opacity-50 pointer-events-none">
                   {orderedProfileIds.map(pid => {
-                    const p = profiles.find(x => x.id === pid);
+                    const p = profileById.get(pid);
                     if (!p) return null;
                     return (
                       <SortableEmployeeRow
@@ -1339,8 +1349,8 @@ export default function ScheduleClient({
                         id={p.id}
                         profile={p}
                         weekDays={weekDays}
-                        shifts={shifts}
-                        shiftTypes={shiftTypes}
+                        shiftDateLookup={shiftDateLookup}
+                        shiftTypeLookup={shiftTypeLookup}
                         onCellClick={() => { }}
                         editingNameId={null}
                         nameInput={""}
@@ -1359,14 +1369,13 @@ export default function ScheduleClient({
                 <div className="p-2 border-r border-border flex items-center justify-center bg-card/80 sticky left-0 z-20 bb-sticky-scroll-cell">
                 </div>
                 {weekDays.map(date => {
-                  const VALID_SHIFTS = getFohCountValues(shiftTypes);
                   const fohCount = new Set(
                     shifts
                       .filter(s => {
                         const loc = s.metadata?.location?.trim();
                         const isSameDay = isSameThaiDay(s.start_time, date);
-                        const isActiveEmployee = s.employee_id && orderedProfileIds.includes(s.employee_id);
-                        return isSameDay && s.status !== 'on_leave' && isActiveEmployee && VALID_SHIFTS.includes(loc || '');
+                        const isActiveEmployee = s.employee_id && activeProfileIds.has(s.employee_id);
+                        return isSameDay && s.status !== 'on_leave' && isActiveEmployee && validShiftValues.has(loc || '');
                       })
                       .map(s => s.employee_id)
                   ).size;
@@ -1407,7 +1416,7 @@ export default function ScheduleClient({
           >
             <div className="p-2.5 border-b border-border bg-[#000000]/5">
               <h2 className="text-[13px] font-normal text-foreground truncate">
-                {profiles.find(p => p.id === selectedCell.employeeId)?.full_name}
+                {profileById.get(selectedCell.employeeId)?.full_name}
               </h2>
             </div>
             <div className="p-1.5 grid gap-1">
@@ -1439,9 +1448,14 @@ export default function ScheduleClient({
         document.body
       )}
 
-      {showClearConfirm && (
-        <div className="fixed inset-0 bg-[#000000]/20 backdrop-blur-sm bb-modal-backdrop z-[60] flex items-end justify-center md:items-center p-0 md:p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowClearConfirm(false); }}>
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground text-center space-y-4">
+      <FadeModalScaffold
+        open={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        zIndex={60}
+        overlayClassName="bg-[#000000]/20 backdrop-blur-sm"
+        panelClassName="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground text-center space-y-4"
+        aria-label="ยืนยันการลบข้อมูล"
+      >
             <HintTooltip tip="ปิด">
               <button onClick={() => setShowClearConfirm(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
                 <X className="w-5 h-5" />
@@ -1467,9 +1481,7 @@ export default function ScheduleClient({
                 ยืนยันการลบ
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </FadeModalScaffold>
 
       <ExportProgressOverlay
         visible={isExportingImage}
@@ -1482,24 +1494,23 @@ export default function ScheduleClient({
         subtitle="กรุณารอสักครู่..."
       />
 
-      {showShiftSettingsModal && (
-        <ShiftSettingsModal
-          shiftTypes={shiftTypes}
-          isSaving={shiftSettingsSaving}
-          onClose={() => !shiftSettingsSaving && setShowShiftSettingsModal(false)}
-          onSave={handleSaveShiftSettings}
-        />
-      )}
+      <ShiftSettingsModal
+        open={showShiftSettingsModal}
+        shiftTypes={shiftTypes}
+        isSaving={shiftSettingsSaving}
+        onClose={() => !shiftSettingsSaving && setShowShiftSettingsModal(false)}
+        onSave={handleSaveShiftSettings}
+      />
 
-      {showManagementModal && (
-        <div
-          className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm bb-modal-backdrop z-[70] flex items-end md:items-center justify-center p-0 md:p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowManagementModal(false); }}
-        >
-          <div
-            className="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90vh] min-h-0 overflow-hidden bg-card shadow-2xl bb-modal-panel md:max-w-5xl text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
-            onClick={(e) => e.stopPropagation()}
-          >
+      <FadeModalScaffold
+        open={showManagementModal}
+        onClose={() => setShowManagementModal(false)}
+        zIndex={70}
+        overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
+        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90vh] min-h-0 overflow-hidden bg-card shadow-2xl md:max-w-5xl text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
+        panelOnClick={(e) => e.stopPropagation()}
+        aria-label="จัดการพนักงานและกะ"
+      >
             <HintTooltip tip="ปิด">
               <button onClick={() => setShowManagementModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-50" aria-label="ปิด">
                 <X className="w-5 h-5" />
@@ -1724,14 +1735,16 @@ export default function ScheduleClient({
               </div>
             </div>
             </div>
-          </div>
-        </div>
-      )}
+      </FadeModalScaffold>
 
-      {showAddEmployeeModal && (
-        <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowAddEmployeeModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border">
+      <FadeModalScaffold
+        open={showAddEmployeeModal}
+        onClose={() => setShowAddEmployeeModal(false)}
+        zIndex={110}
+        overlayClassName="bg-[#000000]/10 backdrop-blur-sm"
+        panelClassName="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border"
+        aria-label="เพิ่มพนักงานใหม่"
+      >
             <HintTooltip tip="ปิด">
               <button onClick={() => setShowAddEmployeeModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
                 <X className="w-5 h-5" />
@@ -1769,14 +1782,16 @@ export default function ScheduleClient({
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+      </FadeModalScaffold>
 
-      {showRegularHolidayModal && (
-        <div className="fixed inset-0 z-[110] flex items-end justify-center md:items-center p-0 md:p-4">
-          <div className="absolute inset-0 bg-[#000000]/10 backdrop-blur-sm bb-modal-backdrop" onClick={() => setShowRegularHolidayModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl bb-sheet-panel md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border">
+      <FadeModalScaffold
+        open={showRegularHolidayModal}
+        onClose={() => setShowRegularHolidayModal(false)}
+        zIndex={110}
+        overlayClassName="bg-[#000000]/10 backdrop-blur-sm"
+        panelClassName="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border"
+        aria-label="จัดการวันหยุดประจำ"
+      >
             <HintTooltip tip="ปิด">
               <button onClick={() => setShowRegularHolidayModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
                 <X className="w-5 h-5" />
@@ -1910,9 +1925,7 @@ export default function ScheduleClient({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+      </FadeModalScaffold>
 
       {toastAlert && (
         <FloatingAlert

@@ -17,36 +17,47 @@ const PWA_ASSETS = {
   BRAND_ICON_512: '/images/notification-icon-512.png',
   APPLE_TOUCH_ICON: '/images/apple-touch-icon.png',
   FAVICON: '/images/favicon.png',
-  CACHE_VERSION: 6,
+  CACHE_VERSION: 7,
   VIBRATE: [120, 60, 120],
 };
 
-/** Matches manifest background_color — keeps brand consistency on notifications. */
-const CREAM = { r: 253, g: 252, b: 240, alpha: 1 };
+/** Transparent canvas — black logo mark only (all platforms). */
+const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 };
 
 async function trimmedLogo() {
   return sharp(source).ensureAlpha().trim({ threshold: 1 });
 }
 
-async function writeSquareIcon(trimmed, size, filename, paddingRatio = 0.08) {
+async function renderSquareIcon(trimmed, size, paddingRatio = 0.08) {
   const inner = Math.max(1, Math.round(size * (1 - paddingRatio * 2)));
   const resized = await trimmed
     .clone()
-    .resize(inner, inner, { fit: 'inside' })
+    .resize(inner, inner, { fit: 'inside', background: TRANSPARENT })
     .png()
     .toBuffer();
 
-  await sharp({
+  return sharp({
     create: {
       width: size,
       height: size,
       channels: 4,
-      background: CREAM,
+      background: TRANSPARENT,
     },
   })
     .composite([{ input: resized, gravity: 'center' }])
-    .png({ compressionLevel: 9, adaptiveFiltering: true })
-    .toFile(path.join(outDir, filename));
+    .png({ compressionLevel: 9, adaptiveFiltering: true });
+}
+
+async function writeSquareIcon(trimmed, size, filename, paddingRatio = 0.08) {
+  const image = await renderSquareIcon(trimmed, size, paddingRatio);
+  await image.toFile(path.join(outDir, filename));
+}
+
+async function writeNextAppIcons(trimmed) {
+  const appDir = path.join(root, 'src/app');
+  await (await renderSquareIcon(trimmed, 512, 0.08)).toFile(path.join(appDir, 'icon.png'));
+  await (await renderSquareIcon(trimmed, 180, 0.08)).toFile(path.join(appDir, 'apple-icon.png'));
+  await (await renderSquareIcon(trimmed, 32, 0.06)).toFile(path.join(appDir, 'favicon.ico'));
 }
 
 function writePwaAssetsJs() {
@@ -62,6 +73,7 @@ async function main() {
   await writeSquareIcon(trimmed, 512, 'notification-icon-512.png');
   await writeSquareIcon(trimmed, 512, 'favicon.png');
   await writeSquareIcon(trimmed, 180, 'apple-touch-icon.png');
+  await writeNextAppIcons(trimmed);
   writePwaAssetsJs();
 
   const legacyBadge = path.join(outDir, 'notification-badge.png');

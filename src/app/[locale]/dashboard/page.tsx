@@ -7,15 +7,14 @@ import { supabase } from '@/lib/supabase';
 import { startOfWeek, addDays, format } from 'date-fns';
 
 export default async function DashboardPage({
-  params,
   searchParams
 }: {
-  params: Promise<{ locale: string }>;
   searchParams: Promise<{ start?: string; end?: string }>;
 }) {
-  const { locale } = await params;
-  const { start: startParam, end: endParam } = await searchParams;
-  const cookieStore = await cookies();
+  const [{ start: startParam, end: endParam }, cookieStore] = await Promise.all([
+    searchParams,
+    cookies(),
+  ]);
   
   const savedStart = cookieStore.get('dashboard_start_date')?.value;
   const savedEnd = cookieStore.get('dashboard_end_date')?.value;

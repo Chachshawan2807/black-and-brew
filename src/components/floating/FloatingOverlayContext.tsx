@@ -20,6 +20,9 @@ type FloatingOverlayContextValue = {
   setOverlayOpen: (id: FloatingOverlayId, open: boolean) => void;
   fabStackHidden: boolean;
   toggleFabStackHidden: () => void;
+  /** Temporarily hide FAB stack (e.g. full-page refresh overlay on Market Insights). */
+  fabStackSuppressed: boolean;
+  setFabStackSuppressed: (suppressed: boolean) => void;
 };
 
 const FloatingOverlayContext = createContext<FloatingOverlayContextValue | null>(null);
@@ -31,6 +34,7 @@ export function FloatingOverlayProvider({ children }: { children: ReactNode }) {
     'ai-chat': false,
   });
   const [fabStackHidden, setFabStackHidden] = useState(false);
+  const [fabStackSuppressed, setFabStackSuppressed] = useState(false);
 
   useEffect(() => {
     try {
@@ -66,8 +70,10 @@ export function FloatingOverlayProvider({ children }: { children: ReactNode }) {
       setOverlayOpen,
       fabStackHidden,
       toggleFabStackHidden,
+      fabStackSuppressed,
+      setFabStackSuppressed,
     }),
-    [openMap, setOverlayOpen, fabStackHidden, toggleFabStackHidden]
+    [openMap, setOverlayOpen, fabStackHidden, toggleFabStackHidden, fabStackSuppressed]
   );
 
   return (

@@ -1,9 +1,28 @@
+import { APP_FONT_FAMILY_CSS } from '@/lib/fonts';
+
 export type ChartColors = {
   tick: string;
   grid: string;
   bar: string;
   cursor: string;
 };
+
+export type ChartAxisTickStyle = {
+  fontSize: number;
+  fill: string;
+  fontFamily: string;
+  fontWeight: number;
+};
+
+/** Recharts axis tick — same Prompt stack as the rest of the app */
+export function getChartAxisTick(fill: string): ChartAxisTickStyle {
+  return {
+    fontSize: 11,
+    fill,
+    fontFamily: APP_FONT_FAMILY_CSS,
+    fontWeight: 400,
+  };
+}
 
 /** Theme-aware Recharts axis/grid/bar/cursor colors */
 export function getChartColors(isDark: boolean): ChartColors {

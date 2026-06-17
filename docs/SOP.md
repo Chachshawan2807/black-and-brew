@@ -2,19 +2,7 @@
 
 This document outlines the core technical standards for developing and maintaining the BLACKANDBREW ERP system. These standards are derived from the Superpowers framework and adapted for our specific architecture.
 
-## 1. Writing Plans (Standard: `writing-plans`)
-
-**Required before any multi-step implementation.**
-
-- **Granularity:** Each task must be bite-sized (2-5 minutes of execution).
-- **Format:**
-  - Every plan starts with a Header (Goal, Architecture, Tech Stack).
-  - Tasks must specify files to create/modify/test.
-  - No placeholders (TBD/TODO). Show the code and commands.
-- **TDD Integration:** Every task implementation must follow the Red-Green-Refactor cycle.
-- **Location:** Save plans to `docs/plans/YYYY-MM-DD-<feature-name>.md`.
-
-## 2. Test-Driven Development (Standard: `tdd`)
+## 1. Test-Driven Development (Standard: `tdd`)
 
 **NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST.**
 
@@ -27,7 +15,7 @@ This document outlines the core technical standards for developing and maintaini
 - **Exception:** Only for throwaway prototypes or pure configuration files, with user approval.
 - **Rule:** If code was written before the test, delete it and start over.
 
-## 3. Systematic Debugging (Standard: `debugging`)
+## 2. Systematic Debugging (Standard: `debugging`)
 
 **NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.**
 
@@ -48,7 +36,7 @@ This document outlines the core technical standards for developing and maintaini
 
 ---
 
-## 4. Daily Closing Integrity Workflow (Standard: `daily-closing`)
+## 3. Daily Closing Integrity Workflow (Standard: `daily-closing`)
 
 **Required at the end of every development session.**
 

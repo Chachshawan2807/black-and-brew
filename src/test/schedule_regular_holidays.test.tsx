@@ -3,11 +3,39 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import type { RegularHolidayMap } from '@/lib/regular-holidays';
+import type { Profile, Shift } from '@/types';
+
+type MotionDivProps = React.HTMLAttributes<HTMLDivElement> & {
+  children?: React.ReactNode;
+  layout?: unknown;
+  layoutId?: unknown;
+  initial?: unknown;
+  animate?: unknown;
+  exit?: unknown;
+  transition?: unknown;
+};
+
+type DatePickerMockProps = {
+  value?: string | null;
+  onChange: React.ChangeEventHandler<HTMLInputElement>;
+};
+
+type ScheduleHoliday = { id: string; date: string; name: string };
 
 vi.mock('framer-motion', () => ({
-  AnimatePresence: ({ children }: any) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
   motion: {
-    div: ({ children, layout, layoutId, initial, animate, exit, transition, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, ...props }: MotionDivProps) => {
+      const domProps = { ...props };
+      delete domProps.layout;
+      delete domProps.layoutId;
+      delete domProps.initial;
+      delete domProps.animate;
+      delete domProps.exit;
+      delete domProps.transition;
+
+      return <div {...domProps}>{children}</div>;
+    },
   },
 }));
 
@@ -22,13 +50,13 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/components/ui/ClickableDatePicker', () => ({
-  ClickableDatePicker: ({ value, onChange }: any) => (
+  ClickableDatePicker: ({ value, onChange }: DatePickerMockProps) => (
     <input aria-label="date-picker" value={value || ''} onChange={onChange} />
   ),
 }));
 
 vi.mock('@dnd-kit/core', () => ({
-  DndContext: ({ children }: any) => <div>{children}</div>,
+  DndContext: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   closestCorners: vi.fn(),
   KeyboardSensor: function KeyboardSensor() {},
   MouseSensor: function MouseSensor() {},
@@ -43,8 +71,8 @@ vi.mock('@dnd-kit/modifiers', () => ({
 }));
 
 vi.mock('@dnd-kit/sortable', () => ({
-  arrayMove: (items: any[]) => items,
-  SortableContext: ({ children }: any) => <div>{children}</div>,
+  arrayMove: <T,>(items: T[]) => items,
+  SortableContext: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   sortableKeyboardCoordinates: vi.fn(),
   verticalListSortingStrategy: vi.fn(),
   useSortable: () => ({
@@ -94,16 +122,16 @@ const saveRegularHolidaysMock = vi.fn();
 
 vi.mock('@/app/actions/holiday-actions', () => ({
   syncHolidays: vi.fn(),
-  saveRegularHolidays: (...args: any[]) => saveRegularHolidaysMock(...args),
+  saveRegularHolidays: (...args: unknown[]) => saveRegularHolidaysMock(...args),
 }));
 
 import ScheduleClient from '@/app/[locale]/schedule/ScheduleClient';
 
 // ── Shared props type ─────────────────────────────────────────────────────────
 interface ScheduleProps {
-  initialProfiles: { id: string; full_name: string }[];
-  initialShifts?: any[];
-  initialHolidays?: any[];
+  initialProfiles: Profile[];
+  initialShifts?: Shift[];
+  initialHolidays?: ScheduleHoliday[];
   initialRegularHolidays: RegularHolidayMap;
   initialDateStr?: string;
   locale?: string;

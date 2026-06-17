@@ -9,6 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { getChartAxisTick } from '@/lib/chart-theme';
 import { CustomTooltip, type SalesTopProductsChartProps } from './SalesTopProductsChart';
 
 export default function SalesTopProductsChartInner({
@@ -25,7 +26,7 @@ export default function SalesTopProductsChartInner({
           dataKey="productName"
           axisLine={false}
           tickLine={false}
-          tick={{ fontSize: 11, fill: chartColors.tick }}
+          tick={getChartAxisTick(chartColors.tick)}
           angle={-45}
           textAnchor="end"
           height={80}
@@ -33,7 +34,7 @@ export default function SalesTopProductsChartInner({
         <YAxis
           axisLine={false}
           tickLine={false}
-          tick={{ fontSize: 11, fill: chartColors.tick }}
+          tick={getChartAxisTick(chartColors.tick)}
           tickFormatter={(value) => `฿${(value / 1000).toFixed(0)}k`}
         />
         <Tooltip

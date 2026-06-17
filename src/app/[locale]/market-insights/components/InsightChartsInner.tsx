@@ -16,9 +16,15 @@ import { BarChart3, PieChart } from 'lucide-react';
 import type { SalesSnapshot } from '@/app/actions/market-insights-types';
 import MetricInfoTip from './MetricInfoTip';
 import { fmtCurrency, fmtCurrencyCompact, fmtMonthLabel, fmtInteger } from '@/lib/market-insights/format';
-import { getChartColors } from '@/lib/chart-theme';
+import { getChartAxisTick, getChartColors } from '@/lib/chart-theme';
+import { useMaxMd } from '@/hooks/use-max-md';
 
 const PASTEL = ['#bcd9b8', '#f4c9a8', '#a9c8e8', '#e8b8c8', '#cdbfe8', '#e8dca9'];
+
+function truncateChartLabel(label: string, maxLen: number): string {
+  if (label.length <= maxLen) return label;
+  return `${label.slice(0, maxLen - 1)}…`;
+}
 
 const ChartTooltip = ({
   active,
@@ -58,6 +64,7 @@ const QtyTooltip = ({
 
 export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapshot }) {
   const { resolvedTheme } = useTheme();
+  const isMaxMd = useMaxMd();
   const chartColors = getChartColors(resolvedTheme === 'dark');
   const hasMonthly = snapshot.monthlyTrend.length > 0;
   const hasCategory = snapshot.categoryBreakdown.length > 0;
@@ -70,6 +77,9 @@ export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapsh
       })),
     [snapshot.monthlyTrend],
   );
+
+  const topProductsYAxisWidth = isMaxMd ? 72 : 110;
+  const topProductsLabelMax = isMaxMd ? 10 : 20;
 
   if (!hasMonthly && !hasCategory) {
     return (
@@ -94,13 +104,13 @@ export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapsh
               <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
               <XAxis
                 dataKey="displayLabel"
-                tick={{ fontSize: 11, fill: chartColors.tick }}
+                tick={getChartAxisTick(chartColors.tick)}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={fmtCurrencyCompact}
-                tick={{ fontSize: 11, fill: chartColors.tick }}
+                tick={getChartAxisTick(chartColors.tick)}
                 axisLine={false}
                 tickLine={false}
                 width={48}
@@ -162,17 +172,20 @@ export default function InsightChartsInner({ snapshot }: { snapshot: SalesSnapsh
               <XAxis
                 type="number"
                 tickFormatter={fmtInteger}
-                tick={{ fontSize: 11, fill: chartColors.tick }}
+                tick={getChartAxisTick(chartColors.tick)}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 type="category"
                 dataKey="productName"
-                tick={{ fontSize: 11, fill: chartColors.tick }}
+                tick={getChartAxisTick(chartColors.tick)}
                 axisLine={false}
                 tickLine={false}
-                width={110}
+                width={topProductsYAxisWidth}
+                tickFormatter={(value: string) =>
+                  truncateChartLabel(String(value), topProductsLabelMax)
+                }
               />
               <Tooltip content={<QtyTooltip />} cursor={{ fill: chartColors.cursor }} />
               <Bar dataKey="totalQuantity" radius={[0, 6, 6, 0]}>

@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 8.7 | Last Updated: 2026-06-17
+> Version: 8.8 | Last Updated: 2026-06-17
 
 ---
 
@@ -18,10 +18,10 @@
 
 - [x] Apply `DB_SCHEMA.sql` — profiles, shifts, inventory_items tables
 - [x] Apply `inventory_config_schema.sql` — dynamic column config
-- [x] Apply `setup_inventory_transactions.sql` — transactions + RPC
-- [x] Apply `fix_transaction_relationships.sql` — rename `product_id` → `inventory_item_id`
-- [x] Apply `apply_rls_transactions.sql` — RLS for transactions table
-- [x] Apply `update_rls_policies.sql` — open RLS for profiles & shifts
+- [x] Apply historical transaction bootstrap — current reference is `sql/record_inventory_transaction.sql`
+- [x] Rename `product_id` → `inventory_item_id` — preserved in current ledger schema and migrations
+- [x] Apply inventory transaction RLS — current hardening reference is `sql/fix_inventory_rls.sql`
+- [x] Apply authenticated collaborative policies for profiles, shifts, and inventory tables
 - [x] Implement Timezone Helper Functions (UTC to GMT+7)
 - [x] Setup Supabase Singleton Client with Real-time config
 - [x] Setup Service Role Client for Server Actions
@@ -148,6 +148,7 @@ Plan: `docs/plans/2026-06-12-dark-theme-remediation.md`
 - [ ] Add inventory categories/groups
 - [x] Inventory in-app notifications via `data_change_logs` Realtime + PWA push prefs (v8.5)
 - [x] Cross-device Web Push for inventory alerts via `push_subscriptions` + VAPID (v8.7)
+- [x] Trusted-device passkeys via `device_passkeys`, WebAuthn, and `PasskeyDeviceSection` (v8.8)
 - [ ] Implement low-stock LINE/push alerts (threshold-based)
 - [x] ~~Add export to CSV/PDF for Purchase Orders~~ — PNG export by channel (v6.8)
 - [ ] Build reporting dashboard (stock trends, shift analytics)

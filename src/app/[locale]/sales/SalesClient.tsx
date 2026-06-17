@@ -44,33 +44,19 @@ const SALES_METRICS_KEY = 'salesMetrics';
 // still use 'blackandbrew-product-categories' in legacy format (merge logic)
 const PRODUCT_CATEGORIES_SERVER_KEY = 'product-categories-server';
 const CACHE_TTL = 300_000;
+const thCurrencyFormatter = new Intl.NumberFormat('th-TH', {
+  style: 'decimal',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+const thNumberFormatter = new Intl.NumberFormat('th-TH');
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('th-TH', {
-    style: 'decimal',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount);
+  return thCurrencyFormatter.format(amount);
 };
 
 const formatNumber = (num: number) => {
-  return new Intl.NumberFormat('th-TH').format(num);
-};
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-card p-4 rounded-2xl shadow-xl border border-border">
-        <p className="text-sm font-medium text-foreground/80 mb-2">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {entry.name.includes('รายได้') || entry.name.includes('ยอดขาย') ? `฿${formatCurrency(entry.value)}` : formatNumber(entry.value)}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
+  return thNumberFormatter.format(num);
 };
 
 export interface ProductCategoryRow {
@@ -281,20 +267,21 @@ export default function SalesClient({
       }
 
       // Always load history (no cache for history to keep it fresh)
-      const historyData = await fetchSalesHistory();
+      const historyPromise = fetchSalesHistory();
+      const metricsPromise = metricsStale ? getSalesMetrics() : Promise.resolve(null);
+      const categoriesPromise = categoriesStale ? getAllProductCategories() : Promise.resolve(null);
+
+      const [historyData, metricsData, categoriesResult] = await Promise.all([
+        historyPromise,
+        metricsPromise,
+        categoriesPromise,
+      ]);
+
       if (historyData) setHistory(historyData);
 
       // Fetch stale/missing data from Supabase
       if (metricsStale || categoriesStale) {
-        const fetches: Promise<any>[] = [];
-        if (metricsStale) fetches.push(getSalesMetrics());
-        if (categoriesStale) fetches.push(getAllProductCategories());
-
-        const results = await Promise.all(fetches);
-        let resultIdx = 0;
-
         if (metricsStale) {
-          const metricsData: SalesMetrics = results[resultIdx++];
           if (metricsData) {
             // Supabase confirmed — update cache then UI
             writeCache(SALES_METRICS_KEY, metricsData, 'server');
@@ -303,8 +290,7 @@ export default function SalesClient({
         }
 
         if (categoriesStale) {
-          const categoriesResult = results[resultIdx++];
-          if (categoriesResult.success) {
+          if (categoriesResult?.success) {
             // Supabase confirmed — update TTL cache then merge into UI
             writeCache(PRODUCT_CATEGORIES_SERVER_KEY, categoriesResult.categories, 'server');
             loadCategories.current(categoriesResult.categories);

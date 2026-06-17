@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 8.7 | Last Updated: 2026-06-17
+> Version: 8.8 | Last Updated: 2026-06-17
 
 ---
 
@@ -8,25 +8,25 @@
 
 | Field | Value |
 | --- | --- |
-| **Project Name** | BLACK-AND-BREW ERP System |
-| **Type** | Enterprise Resource Planning for Coffee Shop |
-| **Current Version** | 8.7 (Web Push Cross-Device + Doc/SQL Sync) |
-| **Repository** | `Chachshawan2807/black-and-brew` |
-| **Local Path** | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
+| Project Name | BLACK-AND-BREW ERP System |
+| Type | Enterprise Resource Planning for Coffee Shop |
+| Current Version | 8.8 (Passkeys + Doc/SQL Sync + Graphify refresh) |
+| Repository | `Chachshawan2807/black-and-brew` |
+| Local Path | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
 ---
 
 ## 2. Business Context
 
-**BLACK AND BREW** คือร้านกาแฟที่ดำเนินการโดยทีมพนักงาน 9 คน ระบบ ERP นี้ถูกสร้างขึ้นเพื่อจัดการ:
+BLACK AND BREW คือร้านกาแฟที่ดำเนินการโดยทีมพนักงาน 9 คน ระบบ ERP นี้ถูกสร้างขึ้นเพื่อจัดการ:
 
-1. **ตารางงาน (Scheduling)** — จัดกะงานพนักงานแบบ Drag-and-Drop พร้อมรองรับการสลับกะ
-2. **คลังสินค้า (Inventory)** — Single Source of Truth (`inventory_items.stock`), ตรวจนับ, สั่งซื้อตามช่องทาง
-3. **ยอดขาย (Sales)** — อัปโหลด Excel วิเคราะห์ยอดขายและหมวดหมู่สินค้า
-4. **วิเคราะห์ตลาด (Market Insights)** — AI วิเคราะห์เทรนด์ตลาดรอบร้าน
-5. **บำรุงรักษา (Maintenance)** — บันทึกสถานะอุปกรณ์
-6. **AI Assistant (บรู)** — แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
-7. **การตั้งค่า (Settings)** — เลือกธีม (สว่าง/มืด/ตามระบบ), ประวัติการเข้าใช้, และการแจ้งเตือนคลังสินค้า
+1. ตารางงาน (Scheduling) — จัดกะงานพนักงานแบบ Drag-and-Drop พร้อมรองรับการสลับกะ
+2. คลังสินค้า (Inventory) — Single Source of Truth (`inventory_items.stock`), ตรวจนับ, สั่งซื้อตามช่องทาง
+3. ยอดขาย (Sales) — อัปโหลด Excel วิเคราะห์ยอดขายและหมวดหมู่สินค้า
+4. วิเคราะห์ตลาด (Market Insights) — AI วิเคราะห์เทรนด์ตลาดรอบร้าน
+5. บำรุงรักษา (Maintenance) — บันทึกสถานะอุปกรณ์
+6. AI Assistant (บรู) — แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
+7. การตั้งค่า (Settings) — เลือกธีม, ประวัติการเข้าใช้, trusted-device passkeys, และการแจ้งเตือนคลังสินค้า
 
 ### Staff Roster (9 Persons)
 
@@ -57,6 +57,8 @@
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin key (bypass RLS) | Server only |
 | `APP_PIN` | Full-access PIN | Server only |
 | `APP_READ_ONLY_PIN` | Read-only PIN; required in production; dev fallback `111222` | Server only |
+| `WEBAUTHN_RP_ID` | WebAuthn relying-party ID override for production passkeys | Server only |
+| `WEBAUTHN_ORIGIN` | WebAuthn origin override for production passkeys | Server only |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini — AI Chat + Market Insights (`@ai-sdk/google`) | Server only |
 | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync (OPTION) | Server only |
 | `GOOGLE_PLACES_API_KEY` | Nearby competitor cafes - Market Insights v2 (OPTION) | Server only |
@@ -76,9 +78,9 @@ Authoritative env list: [`.env.example`](../.env.example)
 
 ### Supabase Project
 
-- **Region:** Thailand Edge
-- **Database:** PostgreSQL with RLS enabled
-- **Client types:** `src/lib/database.types.ts`
+- Region: Thailand Edge
+- Database: PostgreSQL with RLS enabled
+- Client types: `src/lib/database.types.ts`
 
 ---
 
@@ -94,6 +96,7 @@ Authoritative env list: [`.env.example`](../.env.example)
 - Post-PIN: `ensureSupabaseSession()` → anonymous auth สำหรับ RLS `authenticated`
 - Session fingerprint: cookie `bb_session_fp` + `revoked_sessions` table สำหรับ remote sign-out
 - Login events: `login_history` (service-role write) แสดงใน Settings
+- Trusted-device passkeys: `device_passkeys` table + `passkey-actions.ts`; registration requires an existing PIN-verified session.
 
 ---
 
@@ -101,15 +104,15 @@ Authoritative env list: [`.env.example`](../.env.example)
 
 | Constraint | Value |
 | --- | --- |
-| **Timezone** | GMT+7 (Bangkok) — Strict Enforcement |
-| **Language** | Thai (primary), English (secondary) |
-| **Deployment Target** | Vercel Edge Runtime |
-| **Accessibility** | WCAG 2.2 AA |
-| **Target INP** | < 200ms |
-| **Font Weight** | `font-normal` only (no bold) |
-| **Border Radius** | `rounded-3xl` (24px) everywhere |
-| **Primary Background** | `#fdfcf0` (Morning Latte Cream) |
-| **Primary Text** | `#000000` (Black) |
+| Timezone | GMT+7 (Bangkok) — Strict Enforcement |
+| Language | Thai (primary), English (secondary) |
+| Deployment Target | Vercel Edge Runtime |
+| Accessibility | WCAG 2.2 AA |
+| Target INP | < 200ms |
+| Font Weight | `font-normal` only (no bold) |
+| Border Radius | `rounded-3xl` (24px) everywhere |
+| Primary Background | `#fdfcf0` (Morning Latte Cream) |
+| Primary Text | `#000000` (Black) |
 
 ---
 
@@ -148,6 +151,7 @@ Authoritative env list: [`.env.example`](../.env.example)
 | Sales | `src/app/[locale]/sales/` |
 | Market Insights | `src/app/[locale]/market-insights/` |
 | Auth | `src/components/auth/PinGateway.tsx`, `src/app/actions/auth.ts` |
+| Passkeys | `src/components/settings/PasskeyDeviceSection.tsx`, `src/app/actions/passkey-actions.ts`, `src/lib/passkey/` |
 | AI Chat | `src/components/ai/`, `src/app/api/chat/route.ts` |
 | i18n Middleware | `src/proxy.ts` (next-intl, Next.js 16 convention) |
 | Server Actions | `src/app/actions/` |
@@ -155,7 +159,7 @@ Authoritative env list: [`.env.example`](../.env.example)
 
 ---
 
-## 8. v8.6 Feature Highlights
+## 8. Current Feature Highlights
 
 | Feature | Key paths |
 | --- | --- |
@@ -165,5 +169,6 @@ Authoritative env list: [`.env.example`](../.env.example)
 | Tooltips | `AppTooltipProvider`, `HintTooltip` |
 | Server admin singleton | `src/lib/supabase-server.ts` (`getSupabaseAdmin()`) |
 | Data change history UI | `DataChangeHistorySection` in Settings |
+| Trusted-device passkeys | `device_passkeys`, `PasskeyDeviceSection`, `passkey-actions.ts` |
 | PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |
 | SQL blueprint | `sql/record_inventory_transaction.sql` |

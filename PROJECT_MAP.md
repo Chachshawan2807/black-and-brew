@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-06-17 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 8.7
+> Generated: 2026-06-17 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 8.8
 
 ---
 
@@ -16,7 +16,7 @@
 | Maintenance | `src/app/[locale]/maintenance/` | Active |
 | Sales | `src/app/[locale]/sales/` | Active |
 | Market Insights | `src/app/[locale]/market-insights/` | Active |
-| Settings | `src/app/[locale]/settings/` | Active |
+| Settings | `src/app/[locale]/settings/` | Active — theme, sessions, passkeys, notifications |
 
 ---
 
@@ -37,7 +37,7 @@
 | `/[locale]/market-insights` | `src/app/[locale]/market-insights/page.tsx` |
 | `/[locale]/settings` | `src/app/[locale]/settings/page.tsx` |
 
-**Locales:** `th`, `en`
+Locales: `th`, `en`
 
 ### API
 
@@ -57,7 +57,7 @@ black-and-brew/
 ├── docs/                    # Project documentation
 ├── messages/                # th.json, en.json (next-intl)
 ├── public/                  # sw.js (PWA), images, ai-agent-logo.svg
-├── supabase/migrations/     # Versioned DB migrations (9 files — see docs/database.md)
+├── supabase/migrations/     # Versioned DB migrations (10 files — see docs/database.md)
 ├── sql/                     # record_inventory_transaction.sql, sync_inventory_stock.sql, fix_inventory_rls.sql, ai_agent_views.sql
 ├── src/
 │   ├── app/
@@ -71,7 +71,7 @@ black-and-brew/
 │   │   ├── auth/            # PinGateway
 │   │   ├── inventory/       # InventoryQuickActionFAB, InventoryQuickActionBar, InventoryHistoryModal
 │   │   ├── notifications/   # NotificationPanel, PushSubscriptionManager, InventoryNotificationFAB
-│   │   ├── settings/        # NotificationPreferencesSection, DataChangeHistorySection
+│   │   ├── settings/        # NotificationPreferencesSection, DataChangeHistorySection, PasskeyDeviceSection
 │   │   ├── dashboard/       # LiveStatusTracker, WeatherWidget
 │   │   ├── providers/       # AuthProvider, I18nProvider, ThemeProvider, AppTooltipProvider
 │   │   ├── sidebar/         # Sidebar, Menu, SheetMenu, …
@@ -80,7 +80,7 @@ black-and-brew/
 │   ├── hooks/               # use-inventory-notifications, use-inventory-quick-action
 │   ├── i18n/                # request.ts, routing.ts
 │   ├── lib/                 # supabase, supabase-server, inventory-in-out-theoretical, inventory-quick-*, …
-│   ├── test/                # 76 Vitest test files
+│   ├── test/                # 94 Vitest test files
 │   └── proxy.ts             # next-intl middleware (Next.js 16 convention)
 ├── *.sql                    # Root-level schema/migration scripts
 ├── AGENTS.md, CLAUDE.md, MASTER_BLUEPRINT.md, README.md
@@ -95,6 +95,7 @@ black-and-brew/
 | File | Purpose |
 | --- | :--- |
 | `auth.ts` | PIN verify, session revocation, read-only session, cookies |
+| `passkey-actions.ts` | WebAuthn trusted-device passkey registration/login |
 | `login-history-actions.ts` | Login audit trail + active sessions |
 | `inventory-actions.ts` | Stock RPC, transactions, CRUD |
 | `shift-actions.ts` | Shift CRUD, roster, revalidation |
@@ -113,7 +114,7 @@ black-and-brew/
 
 ---
 
-## Tests (`src/test/` — 76 files)
+## Tests (`src/test/` — 94 files)
 
 Key suites: `web-push.test.ts`, `data-change-log.test.ts`, `inventory-count-accuracy.test.ts`, `inventory-in-out-theoretical.test.ts`, `inventory-quick-bulk.test.ts`, `inventory-quick-action-draft.test.ts`, `inventory-quick-qty-step.test.ts`, `inventory-quick-search-filter.test.ts`, `inventory_stock_sync.test.ts`, `inventory_quick_action_fab.test.ts`, `supabase-session.test.ts`, `pwa-notification-bridge.test.ts`, `market-insights-v2.test.ts`, `auth.test.ts`, `read-only-guard.test.ts`, `basic.test.ts`, `setup.ts`
 

@@ -73,7 +73,7 @@ describe('Market Insights mobile layout — compositor-safe rendering', () => {
   });
 
   test('mobile sidebar header should not use backdrop-blur', () => {
-    const code = readFile('components/sidebar/SidebarLayout.tsx');
+    const code = readFile('components/sidebar/MobileNavHeader.tsx');
     const headerLine = code.split('\n').find((l) => l.includes('md:hidden sticky top-0'));
     expect(headerLine).toBeDefined();
     expect(headerLine).not.toContain('backdrop-blur');
