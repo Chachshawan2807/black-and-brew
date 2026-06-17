@@ -45,7 +45,6 @@
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
     "web-push": "^3.6.7",
-    "webauthn-polyfills": "^0.1.7",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3",
     "zustand": "^5.0.13"

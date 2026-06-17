@@ -1,6 +1,6 @@
 'use client';
 
-import 'webauthn-polyfills';
+import './webauthn-json-polyfill';
 import {
   checkDeviceHasPasskey,
   getPasskeyLoginOptions,
