@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { FAB_RIGHT_CLASS, FAB_SIZE_CLASS } from '@/lib/floating-action-layout';
+import { FAB_RIGHT_CLASS, FAB_SIZE_CLASS, FAB_STACK_INNER_CLASS } from '@/lib/floating-action-layout';
 import { INVENTORY_NOTIFICATION_EVENT } from '@/lib/pwa-notification-bridge';
 import { useNotificationState, useNotificationActions } from '@/components/notifications/NotificationProvider';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -12,9 +12,11 @@ import { HintTooltip } from '@/components/ui/hint-tooltip';
 type NotificationBellProps = {
   variant?: 'sidebar' | 'fab';
   className?: string;
+  /** When true, omits fixed positioning (parent FabFadePresence handles layout) */
+  stacked?: boolean;
 };
 
-export function NotificationBell({ variant = 'sidebar', className }: NotificationBellProps) {
+export function NotificationBell({ variant = 'sidebar', className, stacked = false }: NotificationBellProps) {
   const { unreadCount, panelOpen } = useNotificationState();
   const { setPanelOpen } = useNotificationActions();
   const [pulse, setPulse] = useState(false);
@@ -84,12 +86,16 @@ export function NotificationBell({ variant = 'sidebar', className }: Notificatio
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
           className={cn(
-            'relative flex items-center justify-center bb-transition',
-            FAB_SIZE_CLASS,
-            FAB_RIGHT_CLASS,
-            'fixed z-[201] rounded-full bg-[#000000] text-white shadow-lg',
-            panelOpen && 'ring-2 ring-white/30',
-            className
+            stacked
+              ? cn('relative bb-transition', FAB_STACK_INNER_CLASS, panelOpen && 'ring-2 ring-white/30', className)
+              : cn(
+                  'relative flex items-center justify-center bb-transition',
+                  FAB_SIZE_CLASS,
+                  FAB_RIGHT_CLASS,
+                  'fixed z-[201] rounded-full bg-[#000000] text-white shadow-lg',
+                  panelOpen && 'ring-2 ring-white/30',
+                  className,
+                ),
           )}
         >
           {content}

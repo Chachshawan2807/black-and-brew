@@ -22,6 +22,12 @@ export const FAB_BASE_CLASS = cn(
   FAB_RIGHT_CLASS,
 );
 
+/** Inner trigger styling when wrapped by FabFadePresence (position on parent) */
+export const FAB_STACK_INNER_CLASS = cn(
+  'rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg',
+  FAB_SIZE_CLASS,
+);
+
 export const FAB_BOTTOM_HIDE_TOGGLE_CLASS =
   'max-md:bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] md:bottom-6';
 

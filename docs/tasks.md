@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-15
+> Version: 8.7 | Last Updated: 2026-06-17
 
 ---
 

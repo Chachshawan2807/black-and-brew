@@ -4,8 +4,9 @@ import type { NotificationPreferences } from '@/lib/notification-types';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import { getClientSessionId } from '@/lib/client-session';
 import {
-  canRegisterServiceWorker,
   getNotificationPermissionState,
+  isBenignPushRegistrationError,
+  isPushManagerSupported,
   requestNotificationPermission,
 } from '@/lib/pwa-notification-bridge';
 import {
@@ -13,8 +14,7 @@ import {
   syncPushSubscriptionPrefs,
   unregisterPushSubscription,
 } from '@/app/actions/push-actions';
-import { supabase } from '@/lib/supabase';
-import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { getSupabaseAccessToken } from '@/lib/supabase-session';
 
 let activePushSubscription: PushSubscription | null = null;
 
@@ -51,16 +51,21 @@ function subscriptionToPayload(subscription: PushSubscription) {
 }
 
 async function getAccessToken(): Promise<string | null> {
-  await ensureSupabaseSession();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.access_token ?? null;
+  return getSupabaseAccessToken();
+}
+
+function logPushClientIssue(context: string, error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  if (isBenignPushRegistrationError(error)) {
+    console.warn(`[push-subscription] ${context}:`, message);
+    return;
+  }
+  console.error(`[push-subscription] ${context}:`, error);
 }
 
 export async function ensurePushSubscription(locale: string): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  if (!canRegisterServiceWorker()) return false;
+  if (!isPushManagerSupported()) return false;
   if (!getVapidPublicKey()) return false;
 
   const permission = await requestNotificationPermission();
@@ -103,7 +108,7 @@ export async function ensurePushSubscription(locale: string): Promise<boolean> {
     console.warn('[push-subscription] server register failed:', result.error);
     return false;
   } catch (error) {
-    console.error('[push-subscription] ensure failed:', error);
+    logPushClientIssue('ensure failed', error);
     return false;
   }
 }
@@ -123,7 +128,7 @@ export async function removePushSubscription(): Promise<void> {
       await subscription.unsubscribe();
     }
   } catch (error) {
-    console.error('[push-subscription] remove failed:', error);
+    logPushClientIssue('remove failed', error);
   } finally {
     activePushSubscription = null;
   }
@@ -164,7 +169,7 @@ export async function syncPushPrefsToServer(
       locale,
     });
   } catch (error) {
-    console.error('[push-subscription] sync prefs failed:', error);
+    logPushClientIssue('sync prefs failed', error);
   }
 }
 

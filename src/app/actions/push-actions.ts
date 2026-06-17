@@ -39,14 +39,24 @@ function getSupabaseAnonKey(): string {
   return key;
 }
 
-function createAuthedClient(accessToken: string) {
+/** User-scoped client — satisfies push_subscriptions RLS (auth.uid() = user_id). */
+function createUserScopedClient(accessToken: string) {
   return createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
   });
 }
 
+/** Service-role upsert after server-side JWT validation (endpoint may outlive anonymous sessions). */
+function createServiceRoleClient() {
+  return createClient(getSupabaseUrl(), requireServiceRoleKey());
+}
+
 async function resolveUserId(accessToken: string): Promise<string | null> {
-  const supabase = createAuthedClient(accessToken);
+  const supabase = createUserScopedClient(accessToken);
   const {
     data: { user },
     error,
@@ -86,9 +96,9 @@ export async function registerPushSubscription(
   }
 
   try {
-    const authed = createAuthedClient(safe.accessToken);
+    const supabase = createServiceRoleClient();
 
-    const { error } = await authed.from('push_subscriptions').upsert(
+    const { error } = await supabase.from('push_subscriptions').upsert(
       {
         user_id: userId,
         endpoint: safe.endpoint,
@@ -174,9 +184,9 @@ export async function syncPushSubscriptionPrefs(input: {
   if (!userId) return { success: false };
 
   try {
-    const authed = createAuthedClient(input.accessToken);
+    const supabase = createUserScopedClient(input.accessToken);
 
-    const { error } = await authed
+    const { error } = await supabase
       .from('push_subscriptions')
       .update({
         prefs_json: prefsWithLocale(input.prefs, input.locale),
@@ -208,9 +218,9 @@ export async function unregisterPushSubscription(input: {
   if (!userId) return { success: false };
 
   try {
-    const authed = createAuthedClient(input.accessToken);
+    const supabase = createUserScopedClient(input.accessToken);
 
-    const { error } = await authed
+    const { error } = await supabase
       .from('push_subscriptions')
       .delete()
       .eq('endpoint', input.endpoint)

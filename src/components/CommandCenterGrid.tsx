@@ -169,11 +169,13 @@ export default function CommandCenterGrid({ initialItems }: { initialItems: NavI
   // Prevent hydration mismatch by not rendering drag elements until mounted
   if (!isMounted) {
     return (
-      <main className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+      <div className="bb-command-center w-full">
+        <main className="bb-command-center-grid">
         {initialItems.map((item) => (
           <div key={item.id} className="min-h-[200px] bg-white border border-gray-200 shadow-sm p-8" />
         ))}
-      </main>
+        </main>
+      </div>
     );
   }
 
@@ -184,16 +186,18 @@ export default function CommandCenterGrid({ initialItems }: { initialItems: NavI
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
+      <div className="bb-command-center w-full">
       <SortableContext 
         items={items.map(i => i.id)}
         strategy={rectSortingStrategy}
       >
-        <main className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+        <main className="bb-command-center-grid">
           {items.map(item => (
             <SortableItem key={item.id} item={item} />
           ))}
         </main>
       </SortableContext>
+      </div>
       
       <DragOverlay dropAnimation={{
         duration: 300,

@@ -37,5 +37,7 @@ describe('inventory modals dark theme readability', () => {
     const utilitiesBlock = css.slice(utilitiesStart);
 
     expect(utilitiesBlock).toContain('.bb-pastel-surface :where(.text-foreground)');
+    expect(utilitiesBlock).toContain('.bb-pastel-surface input.bg-background::placeholder');
+    expect(utilitiesBlock).toContain('color: var(--muted-foreground)');
   });
 });

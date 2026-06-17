@@ -37,3 +37,11 @@ export const toastSlide = {
   exit: { opacity: 0, y: 6 },
   transition: { duration: 0.18, ease: MODAL_EASE },
 };
+
+/** FAB stack triggers — soft fade + scale without bounce */
+export const fabTrigger = {
+  initial: { opacity: 0, scale: 0.82, y: 8 },
+  animate: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.82, y: 8 },
+  transition: { duration: 0.26, ease: MODAL_EASE },
+};

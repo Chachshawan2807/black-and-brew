@@ -305,89 +305,79 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           </AnimatePresence>
         </div>
 
-        <div className="relative w-full max-w-[320px]">
-          <input
-            ref={hiddenInputRef}
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            autoComplete="one-time-code"
-            enterKeyHint="done"
-            maxLength={PIN_LENGTH}
-            value={pin}
-            readOnly={isVerifying}
-            aria-busy={isVerifying}
-            onChange={e => void handlePinInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') e.preventDefault();
-            }}
-            disabled={lockoutTimeLeft !== null}
-            aria-label="รหัสผ่าน 6 หลัก"
-            className={`absolute inset-0 z-10 h-full w-full opacity-0 ${
-              isVerifying ? 'pointer-events-none' : 'cursor-text'
-            }`}
-          />
-          <motion.div
-            animate={{
-              opacity: isVerifying ? 0.5 : 1,
-              scale: isVerifying ? 0.985 : 1,
-            }}
-            transition={{ duration: 0.22, ease: MODAL_EASE }}
-            className="pointer-events-none relative z-0 flex flex-row justify-center gap-2 w-full"
-          >
-            {Array.from({ length: PIN_LENGTH }, (_, index) => {
-              const isFilled = Boolean(pin[index]);
-              const isActive = pin.length === index && !error && !isVerifying;
-
-              return (
-                <motion.div
-                  key={index}
-                  aria-hidden="true"
-                  layout
-                  transition={{ duration: 0.2, ease: MODAL_EASE }}
-                  className={`w-12 h-14 md:w-14 md:h-16 flex items-center justify-center bg-card border rounded-2xl shadow-sm ${
-                    error
-                      ? 'border-red-500 bg-red-500/10'
-                      : isVerifying && isFilled
-                        ? 'border-foreground/35'
-                        : isActive
-                          ? 'border-foreground ring-2 ring-foreground/10'
-                          : 'border-border'
-                  }`}
-                >
-                  {isFilled && (
-                    <motion.span
-                      layout
-                      initial={false}
-                      animate={{ scale: isVerifying ? 0.92 : 1, opacity: isVerifying ? 0.75 : 1 }}
-                      transition={{ duration: 0.2, ease: MODAL_EASE }}
-                      className="block w-3.5 h-3.5 rounded-full bg-foreground"
-                    />
-                  )}
-                </motion.div>
-              );
-            })}
-          </motion.div>
-          <AnimatePresence>
-            {isVerifying && (
+        <div className="relative flex w-full max-w-[320px] min-h-16 items-center justify-center">
+          <AnimatePresence mode="wait" initial={false}>
+            {isVerifying ? (
               <motion.div
-                key="pin-verify-overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.16, ease: MODAL_EASE }}
-                className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
+                key="pin-verifying-spinner"
+                initial={{ opacity: 0, scale: 0.92, y: 4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: -2 }}
+                transition={{ duration: 0.18, ease: MODAL_EASE }}
+                className="flex h-16 w-16 items-center justify-center rounded-[24px] border border-border bg-card shadow-sm"
                 aria-hidden="true"
               >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: -2 }}
-                  transition={{ duration: 0.18, ease: MODAL_EASE }}
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-card/90 shadow-sm backdrop-blur-sm"
+                <Loader2 className="h-7 w-7 animate-spin text-foreground" strokeWidth={1.5} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="pin-input-fields"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.16, ease: MODAL_EASE }}
+                className="relative w-full"
+              >
+                <input
+                  ref={hiddenInputRef}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="one-time-code"
+                  enterKeyHint="done"
+                  maxLength={PIN_LENGTH}
+                  value={pin}
+                  onChange={e => void handlePinInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') e.preventDefault();
+                  }}
+                  disabled={lockoutTimeLeft !== null}
+                  aria-label="รหัสผ่าน 6 หลัก"
+                  className="absolute inset-0 z-10 h-full w-full cursor-text opacity-0"
+                />
+                <div
+                  data-testid="pin-digit-boxes"
+                  className="pointer-events-none relative z-0 flex w-full flex-row justify-center gap-2"
                 >
-                  <Loader2 className="w-5 h-5 animate-spin text-foreground" strokeWidth={1.5} />
-                </motion.div>
+                  {Array.from({ length: PIN_LENGTH }, (_, index) => {
+                    const isFilled = Boolean(pin[index]);
+                    const isActive = pin.length === index && !error;
+
+                    return (
+                      <motion.div
+                        key={index}
+                        aria-hidden="true"
+                        layout
+                        transition={{ duration: 0.2, ease: MODAL_EASE }}
+                        className={`flex h-14 w-12 items-center justify-center rounded-2xl border bg-card shadow-sm md:h-16 md:w-14 ${
+                          error
+                            ? 'border-red-500 bg-red-500/10'
+                            : isActive
+                              ? 'border-foreground ring-2 ring-foreground/10'
+                              : 'border-border'
+                        }`}
+                      >
+                        {isFilled && (
+                          <motion.span
+                            layout
+                            initial={false}
+                            className="block h-3.5 w-3.5 rounded-full bg-foreground"
+                          />
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

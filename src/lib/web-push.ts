@@ -3,12 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import { formatInventoryNotification } from '@/lib/inventory-notification-formatter';
 import { isEligibleInventoryNotification } from '@/lib/inventory-notification-filter';
-import {
-  buildInventoryOsNotification,
-  PWA_NOTIFICATION_ICON,
-  PWA_NOTIFICATION_VIBRATE,
-} from '@/lib/pwa-notification-bridge';
-import type { NotificationPreferences } from '@/lib/notification-types';
+import { buildOsNotificationOptions, resolvePwaSiteOrigin } from '@/lib/pwa-assets';
+import { buildInventoryOsNotification } from '@/lib/pwa-notification-bridge';
+import type { InventoryNotification, NotificationPreferences } from '@/lib/notification-types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notification-types';
 import { shouldNotifyForAction } from '@/lib/notification-preferences';
 import type { DataChangeAction } from '@/lib/data-change-log';
@@ -31,6 +28,9 @@ export interface WebPushPayload {
   tag: string;
   url: string;
   locale: string;
+  notification: InventoryNotification;
+  /** Hint for SW badge when IDB is unavailable (accurate count computed on device). */
+  unreadCount: number;
 }
 
 let vapidConfigured = false;
@@ -110,6 +110,8 @@ export function buildWebPushPayload(row: DataChangeLogRow, locale = 'th'): WebPu
       ? `${inventoryPath}?highlight=${notification.entityId}`
       : inventoryPath,
     locale,
+    notification,
+    unreadCount: 1,
   };
 }
 
@@ -209,13 +211,11 @@ export async function dispatchInventoryWebPush(row: DataChangeLogRow): Promise<{
 }
 
 export function buildPushNotificationOptions(payload: WebPushPayload) {
-  return {
+  return buildOsNotificationOptions({
     body: payload.body,
-    icon: PWA_NOTIFICATION_ICON,
     tag: payload.tag,
-    silent: false,
-    requireInteraction: false,
-    vibrate: [...PWA_NOTIFICATION_VIBRATE],
-    data: { url: payload.url },
-  };
+    url: payload.url,
+    enableVibrate: true,
+    origin: resolvePwaSiteOrigin() || undefined,
+  });
 }

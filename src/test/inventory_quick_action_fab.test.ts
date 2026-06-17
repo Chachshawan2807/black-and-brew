@@ -47,7 +47,8 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toContain('InventoryQuickActionBar');
     expect(fabCode).toContain('overflow-visible');
     expect(fabCode).not.toContain('overflow-y-auto max-h-full');
-    expect(fabCode).toContain('FAB_BASE_CLASS');
+    expect(fabCode).toContain('FAB_STACK_INNER_CLASS');
+    expect(fabCode).toContain('FabFadePresence');
     expect(fabCode).toContain('<Package');
     expect(fabCode).not.toContain('PackagePlus');
   });
@@ -71,9 +72,9 @@ describe('Inventory Quick Action FAB', () => {
     expect(notifyCode).toContain('variant="fab"');
     expect(notifyCode).not.toContain('/inventory');
     expect(notifyCode).not.toContain('isAnyOtherOpen');
-    expect(notifyCode).toContain('const hidden = panelOpen');
+    expect(notifyCode).toMatch(/const hidden = panelOpen \|\| fabStackHidden/);
     expect(notifyCode).toContain('FAB_BOTTOM_NOTIFICATION_CLASS');
-    expect(notifyCode).toContain('FAB_BOTTOM_AI_CLASS');
+    expect(notifyCode).not.toContain('FAB_BOTTOM_AI_CLASS');
     expect(bellCode).toContain('bg-red-500');
     expect(bellCode).toContain('bg-[#000000]');
   });
@@ -189,7 +190,8 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain('aria-label="เพิ่มจำนวน"');
     expect(barCode).toContain('sm:flex-1 sm:min-w-0');
     expect(barCode).toContain('sm:flex-1 sm:min-w-[9rem]');
-    expect(barCode).toContain('w-[6rem] shrink-0');
+    expect(barCode).toContain("bulkMode ? 'min-w-[8.75rem] w-max' : 'w-[6rem]'");
+    expect(barCode).toContain('whitespace-nowrap tabular-nums shrink-0');
     expect(barCode).not.toContain('bb-quick-search-fit');
   });
 

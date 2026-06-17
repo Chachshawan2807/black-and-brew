@@ -14,13 +14,14 @@ import { FloatingOverlayProvider } from '@/components/floating/FloatingOverlayCo
 import { FabStackHideToggle } from '@/components/floating/FabStackHideToggle';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { AppTooltipProvider } from '@/components/providers/AppTooltipProvider';
+import { PWA_APPLE_TOUCH_ICON, PWA_FAVICON } from '@/lib/pwa-assets';
+import { appFontClassName } from '@/lib/fonts';
 import "./globals.css";
 
 export const viewport: Viewport = {
   themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
 };
 
@@ -29,9 +30,9 @@ export const metadata: Metadata = {
   description: "High-Availability & Real-time Scheduling System for BLACK-AND-BREW",
   icons: {
     icon: [
-      { url: '/images/favicon.png', type: 'image/png' },
+      { url: PWA_FAVICON, type: 'image/png' },
     ],
-    apple: '/images/apple-touch-icon.png',
+    apple: PWA_APPLE_TOUCH_ICON,
   },
   appleWebApp: {
     capable: true,
@@ -60,7 +61,7 @@ export default async function RootLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className="h-full antialiased" suppressHydrationWarning>
+    <html lang={locale} className={`${appFontClassName} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground bb-transition">
         <ThemeProvider>
         <AppTooltipProvider>

@@ -1,11 +1,23 @@
-const CACHE_NAME = 'blackandbrew-cache-v3';
+importScripts('/pwa-assets.js');
+importScripts('/notification-store.js');
+importScripts('/pwa-badge.js');
+
+const { BRAND_ICON, BRAND_ICON_512, CACHE_VERSION, VIBRATE } = self.PWA_ASSETS;
+const CACHE_NAME = `blackandbrew-cache-v${CACHE_VERSION}`;
+
+function assetUrl(path) {
+  return new URL(path, self.location.origin).href;
+}
 
 // Add list of files to cache here.
 const urlsToCache = [
   '/',
+  '/pwa-assets.js',
+  '/notification-store.js',
+  '/pwa-badge.js',
   '/ai-agent-logo.svg',
-  '/images/notification-icon.png',
-  '/images/notification-icon-512.png',
+  BRAND_ICON,
+  BRAND_ICON_512,
 ];
 
 self.addEventListener('install', (event) => {
@@ -34,12 +46,44 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+async function applyHomeScreenBadge(count) {
+  if (self.BBAppBadge?.applyAppBadgeCount) {
+    return self.BBAppBadge.applyAppBadgeCount(count);
+  }
+  if (!self.navigator?.setAppBadge) return false;
+  const safe = Math.max(0, Math.min(99, Math.floor(Number(count) || 0)));
+  try {
+    if (safe > 0) await self.navigator.setAppBadge(safe);
+    else if (self.navigator.clearAppBadge) await self.navigator.clearAppBadge();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveUnreadCount(payload) {
+  if (payload.notification && self.BBNotificationStore) {
+    const result = await self.BBNotificationStore.prependNotification(payload.notification);
+    return result.unreadCount;
+  }
+  if (typeof payload.unreadCount === 'number' && payload.unreadCount > 0) {
+    return Math.min(99, Math.floor(payload.unreadCount));
+  }
+  if (self.BBNotificationStore?.getUnreadCount) {
+    const current = await self.BBNotificationStore.getUnreadCount();
+    return Math.min(99, current + 1);
+  }
+  return 1;
+}
+
 self.addEventListener('push', (event) => {
   let payload = {
     title: 'BLACKANDBREW',
     body: 'มีการเปลี่ยนแปลงคลังสินค้า',
     tag: 'bb-inventory',
     url: '/th/inventory',
+    notification: null,
+    unreadCount: null,
   };
 
   try {
@@ -51,34 +95,49 @@ self.addEventListener('push', (event) => {
     // use defaults
   }
 
-  const options = {
-    body: payload.body,
-    icon: '/images/notification-icon.png',
-    tag: payload.tag || 'bb-inventory',
-    silent: false,
-    requireInteraction: false,
-    vibrate: [120, 60, 120],
-    data: { url: payload.url || '/th/inventory' },
-  };
+  event.waitUntil(
+    (async () => {
+      const unreadCount = await resolveUnreadCount(payload);
 
-  event.waitUntil(self.registration.showNotification(payload.title, options));
+      const brandIcon = assetUrl(BRAND_ICON);
+      const options = {
+        body: payload.body,
+        icon: brandIcon,
+        badge: brandIcon,
+        tag: payload.tag || 'bb-inventory',
+        silent: false,
+        requireInteraction: false,
+        renotify: true,
+        vibrate: [...VIBRATE],
+        data: {
+          url: payload.url || '/th/inventory',
+          unreadCount,
+        },
+      };
+
+      await self.registration.showNotification(payload.title, options);
+      await applyHomeScreenBadge(unreadCount);
+
+      const windowClients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      for (const client of windowClients) {
+        client.postMessage({
+          type: 'INVENTORY_PUSH_RECEIVED',
+          notification: payload.notification,
+          unreadCount,
+        });
+      }
+    })(),
+  );
 });
 
 self.addEventListener('message', (event) => {
   const data = event.data;
   if (!data || data.type !== 'SET_BADGE') return;
   const count = Number(data.count) || 0;
-  try {
-    if (self.navigator?.setAppBadge) {
-      if (count > 0) {
-        void self.navigator.setAppBadge(count);
-      } else if (self.navigator?.clearAppBadge) {
-        void self.navigator.clearAppBadge();
-      }
-    }
-  } catch {
-    // ignore
-  }
+  event.waitUntil(applyHomeScreenBadge(count));
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -86,7 +145,19 @@ self.addEventListener('notificationclick', (event) => {
   const rawUrl = event.notification?.data?.url || '/';
   const url = new URL(rawUrl, self.location.origin).href;
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+    (async () => {
+      let unread = event.notification?.data?.unreadCount;
+      if (typeof unread !== 'number' && self.BBNotificationStore?.getUnreadCount) {
+        unread = await self.BBNotificationStore.getUnreadCount();
+      }
+      if (typeof unread === 'number') {
+        await applyHomeScreenBadge(unread);
+      }
+
+      const windowClients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
       for (const client of windowClients) {
         if ('focus' in client) {
           client.postMessage({ type: 'NOTIFICATION_CLICK', url });
@@ -96,7 +167,7 @@ self.addEventListener('notificationclick', (event) => {
       if (self.clients.openWindow) {
         return self.clients.openWindow(url);
       }
-    })
+    })(),
   );
 });
 

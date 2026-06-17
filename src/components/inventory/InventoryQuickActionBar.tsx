@@ -300,11 +300,12 @@ function BulkQueueSummaryCell({
   return (
     <div
       className={cn(
-        'flex w-full items-center justify-between gap-1 rounded-3xl border border-border bg-muted/30 px-2 text-sm text-foreground antialiased',
-        compact ? 'h-9 rounded-xl' : 'h-11',
+        'flex w-full items-center gap-1 rounded-3xl border border-border bg-muted/30 px-2 text-sm text-foreground antialiased',
+        compact ? 'h-9 rounded-xl text-xs' : 'h-11',
+        onPaste ? 'justify-between' : 'justify-center',
       )}
     >
-      <span className="truncate text-center flex-1 tabular-nums">{count} รายการ</span>
+      <span className="whitespace-nowrap tabular-nums shrink-0">{count} รายการ</span>
       {onPaste && (
         <HintTooltip tip="วางชื่อหลายรายการ">
           <button
@@ -323,15 +324,21 @@ function BulkQueueSummaryCell({
 
 function BulkQueuePanel({
   bulkPreviews,
+  quickType,
   onRemoveBulkItem,
   onBulkLineQtyChange,
   onClearBulkQueue,
 }: {
   bulkPreviews: { line: BulkQueueItem; preview: BulkPreview }[];
+  quickType: 'IN' | 'OUT' | 'ADJUST';
   onRemoveBulkItem?: (itemId: string) => void;
   onBulkLineQtyChange?: (itemId: string, qty: string) => void;
   onClearBulkQueue?: () => void;
 }) {
+  const rowTone =
+    quickType === 'OUT'
+      ? INVENTORY_QUICK_ACTION_COLORS.out
+      : INVENTORY_QUICK_ACTION_COLORS.in;
   if (bulkPreviews.length === 0) return null;
 
   return (
@@ -354,7 +361,8 @@ function BulkQueuePanel({
             key={line.itemId}
             className={cn(
               'flex items-center gap-2 px-3 py-2 min-w-0',
-              preview.error && line.qty.trim() !== '' && 'bg-[#f8d7da]/20',
+              rowTone,
+              preview.error && line.qty.trim() !== '' && 'ring-1 ring-[#f5c6cb]',
             )}
           >
             <div className="min-w-0 flex-1">
@@ -372,7 +380,7 @@ function BulkQueuePanel({
               onChange={(e) => onBulkLineQtyChange?.(line.itemId, e.target.value)}
               placeholder="จำนวน"
               aria-label={`จำนวน ${line.name}`}
-              className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-center text-sm font-mono tabular-nums outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground text-center text-sm font-mono tabular-nums outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             {onRemoveBulkItem && (
               <HintTooltip tip="ลบออกจากคิว">
@@ -412,13 +420,13 @@ function SecondaryQuickActionButtons({
         className={cn(
           'flex w-full items-center justify-center gap-1 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:shadow-sm',
           INVENTORY_QUICK_ACTION_COLORS.order,
-          'hover:bg-[#c3e6cb]/60',
+          'hover:bg-[#bee5eb]/70',
         )}
       >
         <ShoppingCart className="w-4 h-4 shrink-0" strokeWidth={1.5} />
         <span className="truncate">สั่งซื้อ</span>
         {itemsToOrderCount > 0 && (
-          <span className="bb-pastel-surface bg-[#c3e6cb] text-[10px] px-1.5 py-0.5 rounded-full font-normal shrink-0 border border-[#b8dfc4]">
+          <span className="bb-pastel-surface bg-[#bee5eb] text-[10px] px-1.5 py-0.5 rounded-full font-normal shrink-0 border border-[#a8dce3]">
             {itemsToOrderCount}
           </span>
         )}
@@ -429,7 +437,7 @@ function SecondaryQuickActionButtons({
         className={cn(
           'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:shadow-sm',
           INVENTORY_QUICK_ACTION_COLORS.addItem,
-          'hover:bg-[#ffeeba]/70',
+          'hover:bg-[#bee5eb]/70',
         )}
       >
         <PlusCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
@@ -609,7 +617,7 @@ export function InventoryQuickActionBar({
             role="group"
             aria-label="จำนวน ประเภท และบันทึก"
           >
-            <div className="w-[6rem] shrink-0">
+            <div className={cn('shrink-0', bulkMode ? 'min-w-[8.75rem] w-max' : 'w-[6rem]')}>
               {bulkMode ? (
                 <BulkQueueSummaryCell
                   count={bulkQueue.length}
@@ -645,6 +653,7 @@ export function InventoryQuickActionBar({
         {bulkMode && bulkPreviews.length > 0 && (
           <BulkQueuePanel
             bulkPreviews={bulkPreviews}
+            quickType={quickType}
             onRemoveBulkItem={onRemoveBulkItem}
             onBulkLineQtyChange={onBulkLineQtyChange}
             onClearBulkQueue={onClearBulkQueue}

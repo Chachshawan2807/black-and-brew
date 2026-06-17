@@ -73,6 +73,9 @@ describe('web-push', () => {
     expect(payload).not.toBeNull();
     expect(payload?.title).toContain('รับเข้า');
     expect(payload?.url).toContain('/th/inventory?highlight=item-1');
+    expect(payload?.notification.logId).toBe('log-1');
+    expect(payload?.notification.entityLabel).toBe('กาแฟ');
+    expect(payload?.unreadCount).toBe(1);
   });
 
   test('shouldSendPushToSubscription skips origin device session', () => {

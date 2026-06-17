@@ -10,12 +10,13 @@ import { sanitizePromptInput, sanitizeScreenContext, sanitizeXssPayload } from '
 import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import {
-  FAB_BASE_CLASS,
+  FAB_STACK_INNER_CLASS,
   FAB_BOTTOM_AI_CLASS,
   FAB_PANEL_CLEAR_OF_AI_CLASS,
 } from '@/lib/floating-action-layout';
 import { getFabPanelKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import { FabFadePresence } from '@/components/floating/FabFadePresence';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
@@ -141,11 +142,15 @@ export default function AIChatOverlay() {
   return (
     <>
       {/* Floating Trigger Button */}
-      {!hideAiChatButton && (
+      <FabFadePresence
+        visible={!hideAiChatButton}
+        presenceKey="ai-chat-fab"
+        className={cn(FAB_BOTTOM_AI_CLASS, 'z-[200]')}
+      >
         <HintTooltip tip={isOpen ? 'ปิดแชทบรู' : 'ถามบรู AI'} side="left">
           <motion.button
             onClick={() => setIsOpen((prev) => !prev)}
-            className={cn(FAB_BASE_CLASS, FAB_BOTTOM_AI_CLASS, 'z-[200]')}
+            className={FAB_STACK_INNER_CLASS}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
             aria-label={isOpen ? 'ปิดแชทบรู' : 'เปิดผู้ช่วย AI บรู'}
@@ -176,7 +181,7 @@ export default function AIChatOverlay() {
           </AnimatePresence>
         </motion.button>
         </HintTooltip>
-      )}
+      </FabFadePresence>
 
       {/* Chat Window */}
       <AnimatePresence>

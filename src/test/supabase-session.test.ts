@@ -29,7 +29,10 @@ describe('ensureSupabaseSession', () => {
           setTimeout(() => resolve({ data: { session: null } }), 20);
         }),
     );
-    signInAnonymously.mockResolvedValue({ error: null });
+    signInAnonymously.mockResolvedValue({
+      error: null,
+      data: { session: { user: { id: 'u1' }, access_token: 'tok-new' } },
+    });
 
     const { ensureSupabaseSession } = await import('@/lib/supabase-session');
 
@@ -59,7 +62,7 @@ describe('ensureSupabaseSession', () => {
   });
 
   test('clearSupabaseSession resets the cache so auth runs again', async () => {
-    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1' } } } });
+    getSession.mockResolvedValue({ data: { session: { user: { id: 'u1' }, access_token: 'tok-1' } } });
     signOut.mockResolvedValue({ error: null });
 
     const { ensureSupabaseSession, clearSupabaseSession } = await import('@/lib/supabase-session');
@@ -69,5 +72,19 @@ describe('ensureSupabaseSession', () => {
     expect(await ensureSupabaseSession()).toBe(true);
 
     expect(getSession).toHaveBeenCalledTimes(2);
+  });
+
+  test('getSupabaseAccessToken reuses ensureSupabaseSession without a second getSession', async () => {
+    getSession.mockResolvedValue({
+      data: { session: { user: { id: 'u1' }, access_token: 'tok-abc' } },
+    });
+
+    const { getSupabaseAccessToken } = await import('@/lib/supabase-session');
+
+    const [a, b] = await Promise.all([getSupabaseAccessToken(), getSupabaseAccessToken()]);
+
+    expect(a).toBe('tok-abc');
+    expect(b).toBe('tok-abc');
+    expect(getSession).toHaveBeenCalledTimes(1);
   });
 });

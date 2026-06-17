@@ -1,19 +1,25 @@
 import { supabase } from './supabase';
 
 let sessionReady = false;
+let cachedAccessToken: string | null = null;
 let ensureSessionPromise: Promise<boolean> | null = null;
 
 async function ensureSupabaseSessionInternal(): Promise<boolean> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (session) return true;
+  if (session) {
+    cachedAccessToken = session.access_token ?? null;
+    return true;
+  }
 
-  const { error } = await supabase.auth.signInAnonymously();
+  const { data, error } = await supabase.auth.signInAnonymously();
   if (error) {
     console.error('[Supabase] Anonymous sign-in failed:', error.message);
     return false;
   }
+
+  cachedAccessToken = data.session?.access_token ?? null;
   return true;
 }
 
@@ -47,8 +53,20 @@ export async function ensureSupabaseSession(): Promise<boolean> {
   return ensureSessionPromise;
 }
 
+/**
+ * Returns the browser Supabase access token after ensuring a session exists.
+ * Reuses the cached token from ensureSupabaseSession() — avoids a second
+ * auth.getSession() call that can orphan the GoTrue storage lock.
+ */
+export async function getSupabaseAccessToken(): Promise<string | null> {
+  const ok = await ensureSupabaseSession();
+  if (!ok) return null;
+  return cachedAccessToken;
+}
+
 export async function clearSupabaseSession(): Promise<void> {
   sessionReady = false;
+  cachedAccessToken = null;
   ensureSessionPromise = null;
 
   const { error } = await supabase.auth.signOut();

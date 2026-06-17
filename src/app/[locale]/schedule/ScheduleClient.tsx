@@ -1179,10 +1179,12 @@ export default function ScheduleClient({
       if (!element) return;
 
       setIsExportingImage(true);
-      const { captureElementAsPng, downloadDataUrl } = await import('@/lib/capture-element-png');
-      const dataUrl = await captureElementAsPng(element, {
-        backgroundColor: '#fdfcf0',
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       });
+
+      const { captureScheduleTableAsPng, downloadDataUrl } = await import('@/lib/schedule-export-capture');
+      const dataUrl = await captureScheduleTableAsPng(element);
 
       downloadDataUrl(dataUrl, `Schedule-${new Date().toISOString().split('T')[0]}.png`);
     } catch (err) {
@@ -1243,7 +1245,7 @@ export default function ScheduleClient({
       <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
         <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm bb-ios-scroll-host border border-border rounded-3xl overflow-hidden shadow-sm">
           <div className="flex-1 min-h-0 min-w-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-6">
-            <div id="blackandbrew-schedule-table" className="min-w-[900px] bg-card h-fit flex flex-col">
+            <div id="blackandbrew-schedule-table" className="bb-schedule-export-surface min-w-[900px] bg-card h-fit flex flex-col">
               <div className="grid grid-cols-8 border-b border-border dark:border-[#f5c6cb] bg-red-50/10 dark:bb-pastel-surface dark:bg-[#fdeaea] sticky top-0 z-[16]">
                 <div className="p-2.5 border-r border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
                   <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>

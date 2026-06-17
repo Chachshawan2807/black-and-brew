@@ -4,6 +4,8 @@ export type CaptureElementPngOptions = {
   backgroundColor?: string;
   pixelRatio?: number;
   filter?: (node: HTMLElement) => boolean;
+  /** Skip remote @font-face / @import fetches (fonts already loaded in-page). */
+  skipFonts?: boolean;
 };
 
 function resolvePixelRatio(width: number, height: number, requested = 2): number {
@@ -12,6 +14,35 @@ function resolvePixelRatio(width: number, height: number, requested = 2): number
     ratio -= 0.5;
   }
   return ratio;
+}
+
+type ShadowRestore = { boxShadow: string; filter: string };
+
+/** Inline overrides so html-to-image clones flat surfaces (iOS Safari keeps class shadows otherwise). */
+function flattenShadowsForCapture(root: HTMLElement): () => void {
+  const restores = new Map<HTMLElement, ShadowRestore>();
+  const nodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))];
+
+  for (const node of nodes) {
+    const computed = window.getComputedStyle(node);
+    const hasShadow = computed.boxShadow !== 'none';
+    const hasFilter = computed.filter !== 'none';
+    if (!hasShadow && !hasFilter) continue;
+
+    restores.set(node, {
+      boxShadow: node.style.boxShadow,
+      filter: node.style.filter,
+    });
+    if (hasShadow) node.style.boxShadow = 'none';
+    if (hasFilter) node.style.filter = 'none';
+  }
+
+  return () => {
+    restores.forEach(({ boxShadow, filter }, node) => {
+      node.style.boxShadow = boxShadow;
+      node.style.filter = filter;
+    });
+  };
 }
 
 /**
@@ -33,6 +64,8 @@ export async function captureElementAsPng(
     node.style.position = 'static';
   });
 
+  const restoreShadows = flattenShadowsForCapture(element);
+
   try {
     const { toPng } = await import('html-to-image');
     return await toPng(element, {
@@ -42,6 +75,7 @@ export async function captureElementAsPng(
       width: fullWidth,
       height: fullHeight,
       cacheBust: true,
+      skipFonts: options.skipFonts ?? true,
       style: {
         margin: '0',
         padding: '0',
@@ -53,6 +87,7 @@ export async function captureElementAsPng(
       filter: options.filter,
     });
   } finally {
+    restoreShadows();
     stickyNodes.forEach((node) => {
       const prev = previousPosition.get(node);
       node.style.position = prev ?? '';

@@ -33,9 +33,31 @@ describe('captureElementAsPng', () => {
         width: 1200,
         height: 2400,
         backgroundColor: '#fdfcf0',
+        skipFonts: true,
         style: expect.objectContaining({ maxHeight: 'none', overflow: 'visible' }),
       }),
     );
+  });
+
+  test('flattens descendant box-shadow during capture and restores after', async () => {
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'scrollWidth', { value: 400 });
+    Object.defineProperty(element, 'scrollHeight', { value: 200 });
+
+    const shiftCell = document.createElement('div');
+    shiftCell.style.boxShadow = '0 1px 2px 0 rgb(0 0 0 / 0.05)';
+    element.appendChild(shiftCell);
+
+    let shadowDuringCapture: string | undefined;
+    toPngMock.mockImplementation(async (el) => {
+      shadowDuringCapture = (el as HTMLElement).querySelector('div')?.style.boxShadow;
+      return 'data:image/png;base64,abc';
+    });
+
+    await captureElementAsPng(element);
+
+    expect(shadowDuringCapture).toBe('none');
+    expect(shiftCell.style.boxShadow).toBe('0 1px 2px 0 rgb(0 0 0 / 0.05)');
   });
 
   test('reduces pixelRatio when canvas would exceed Safari limits', async () => {

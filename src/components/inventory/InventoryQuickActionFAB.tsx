@@ -22,12 +22,13 @@ import {
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import {
-  FAB_BASE_CLASS,
+  FAB_STACK_INNER_CLASS,
   FAB_BOTTOM_QUICK_ACTION_CLASS,
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
 } from '@/lib/floating-action-layout';
 import { getFabPanelKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import { FabFadePresence } from '@/components/floating/FabFadePresence';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { useReadOnly } from '@/components/providers/AuthProvider';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -174,12 +175,16 @@ export default function InventoryQuickActionFAB() {
 
   return (
     <>
-      {!hideQuickActionButton && (
+      <FabFadePresence
+        visible={!hideQuickActionButton}
+        presenceKey="quick-action-fab"
+        className={cn(FAB_BOTTOM_QUICK_ACTION_CLASS, 'z-[201]')}
+      >
         <HintTooltip tip={isOpen ? 'ปิดปรับสต็อกด่วน' : 'ปรับสต็อกด่วน'} side="left">
           <motion.button
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className={cn(FAB_BASE_CLASS, FAB_BOTTOM_QUICK_ACTION_CLASS, 'z-[201]')}
+            className={FAB_STACK_INNER_CLASS}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
             aria-label={isOpen ? 'ปิด Quick Action' : 'เปิด Quick Action คลังสินค้า'}
@@ -210,7 +215,7 @@ export default function InventoryQuickActionFAB() {
           </AnimatePresence>
         </motion.button>
         </HintTooltip>
-      )}
+      </FabFadePresence>
 
       <AnimatePresence>
         {isOpen && (

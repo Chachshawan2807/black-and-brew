@@ -13,6 +13,12 @@
       "skillPath": "skills/cloud/google-cloud-waf-security/SKILL.md",
       "computedHash": "b49e3f41dd7758c3392cde1ff10fbed769d7e089cd8c4a8bf0c914749f1276e3"
     },
+    "modern-web-guidance": {
+      "source": "GoogleChrome/modern-web-guidance",
+      "sourceType": "github",
+      "skillPath": "skills/modern-web-guidance/SKILL.md",
+      "computedHash": "5c2b2de2ea807159b2b213471ecf78ac16a2c0b44381f3cf22204c2c9869c166"
+    },
     "security-review": {
       "source": "getsentry/skills",
       "sourceType": "github",

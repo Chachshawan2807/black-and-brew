@@ -18,14 +18,17 @@ import {
 } from '@/lib/notification-preferences';
 import {
   countUnread,
-  loadStoredNotifications,
   saveStoredNotifications,
 } from '@/lib/notification-storage';
+import {
+  mirrorNotificationsToIdb,
+} from '@/lib/notification-idb';
+import { prependToNotificationList, hydrateNotificationState, readNotificationState } from '@/lib/notification-sync';
+import { subscribeNotificationSync } from '@/lib/notification-cross-tab';
 import type {
   InventoryNotification,
   NotificationPreferences,
 } from '@/lib/notification-types';
-import { MAX_STORED_NOTIFICATIONS } from '@/lib/notification-types';
 import type { DataChangeAction } from '@/lib/data-change-log';
 import {
   showSystemNotification,
@@ -33,6 +36,7 @@ import {
   dispatchInventoryNotificationEvent,
   getNotificationPermissionState,
   requestNotificationPermission,
+  SW_INVENTORY_PUSH_RECEIVED,
 } from '@/lib/pwa-notification-bridge';
 import { hasActivePushSubscription } from '@/lib/push-subscription-client';
 
@@ -65,8 +69,7 @@ function prependNotification(
   list: InventoryNotification[],
   notification: InventoryNotification
 ): InventoryNotification[] {
-  const deduped = list.filter((n) => n.logId !== notification.logId);
-  return [notification, ...deduped].slice(0, MAX_STORED_NOTIFICATIONS);
+  return prependToNotificationList(list, notification).list;
 }
 
 export function useInventoryNotifications() {
@@ -81,6 +84,25 @@ export function useInventoryNotifications() {
   const prefsRef = useRef(prefs);
   const localeRef = useRef(locale);
   const sessionIdRef = useRef('');
+  const syncGenerationRef = useRef(0);
+
+  const applyHydratedState = useCallback(
+    (notifications: InventoryNotification[], unread: number) => {
+      setNotifications(notifications);
+      setUnreadCount(unread);
+      void syncAppBadge(unread);
+    },
+    [],
+  );
+
+  const syncFromStorage = useCallback(async (writeBack = true) => {
+    const generation = ++syncGenerationRef.current;
+    const result = writeBack
+      ? await hydrateNotificationState()
+      : await readNotificationState();
+    if (generation !== syncGenerationRef.current) return;
+    applyHydratedState(result.notifications, result.unreadCount);
+  }, [applyHydratedState]);
 
   useEffect(() => {
     prefsRef.current = prefs;
@@ -92,10 +114,8 @@ export function useInventoryNotifications() {
 
   useEffect(() => {
     sessionIdRef.current = getClientSessionId();
-    const stored = loadStoredNotifications();
-    setNotifications(stored);
-    setUnreadCount(countUnread(stored));
-  }, []);
+    void syncFromStorage();
+  }, [syncFromStorage]);
 
   useEffect(() => {
     void syncAppBadge(unreadCount);
@@ -111,6 +131,7 @@ export function useInventoryNotifications() {
     setNotifications(next);
     setUnreadCount(countUnread(next));
     saveStoredNotifications(next);
+    void mirrorNotificationsToIdb(next);
   }, []);
 
   const pushNotification = useCallback(
@@ -121,6 +142,7 @@ export function useInventoryNotifications() {
         nextUnread = countUnread(next);
         setUnreadCount(nextUnread);
         saveStoredNotifications(next);
+        void mirrorNotificationsToIdb(next);
         return next;
       });
 
@@ -253,11 +275,54 @@ export function useInventoryNotifications() {
     };
   }, [processRows]);
 
+  useEffect(() => {
+    const onResume = () => {
+      if (document.visibilityState === 'visible') {
+        void syncFromStorage();
+      }
+    };
+
+    const cleanupCrossTab = subscribeNotificationSync(() => {
+      void syncFromStorage(false);
+    });
+
+    document.addEventListener('visibilitychange', onResume);
+    window.addEventListener('focus', onResume);
+    window.addEventListener('pageshow', onResume);
+
+    return () => {
+      cleanupCrossTab();
+      document.removeEventListener('visibilitychange', onResume);
+      window.removeEventListener('focus', onResume);
+      window.removeEventListener('pageshow', onResume);
+    };
+  }, [syncFromStorage]);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.serviceWorker) return;
+
+    const onSwMessage = (event: MessageEvent) => {
+      const data = event.data as {
+        type?: string;
+        notification?: InventoryNotification;
+      } | null;
+      if (data?.type !== SW_INVENTORY_PUSH_RECEIVED || !data.notification) return;
+      pushNotification(data.notification);
+    };
+
+    navigator.serviceWorker.addEventListener('message', onSwMessage);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', onSwMessage);
+    };
+  }, [pushNotification]);
+
   const markAllRead = useCallback(() => {
     setNotifications((prev) => {
       const next = prev.map((n) => ({ ...n, read: true }));
       setUnreadCount(0);
       saveStoredNotifications(next);
+      void mirrorNotificationsToIdb(next);
       void syncAppBadge(0);
       return next;
     });
@@ -269,6 +334,7 @@ export function useInventoryNotifications() {
       const unread = countUnread(next);
       setUnreadCount(unread);
       saveStoredNotifications(next);
+      void mirrorNotificationsToIdb(next);
       void syncAppBadge(unread);
       return next;
     });

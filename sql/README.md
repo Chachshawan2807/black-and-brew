@@ -8,6 +8,8 @@ Apply migrations via `supabase db push` when CLI is linked, or run individual mi
 
 Verify remote state: `npm run db:verify`
 
+**Supabase Auth:** Enable **Anonymous Sign-ins** in Dashboard → Authentication → Providers (required for `ensureSupabaseSession()` after PIN gate). Local CLI default: `enable_anonymous_sign_ins = true` in `supabase/config.toml`.
+
 ## Directory roles
 
 | Location | Purpose |

@@ -1,16 +1,27 @@
 /** PWA home-screen badge + system notifications (iOS / Android / desktop). */
 
+import {
+  buildOsNotificationOptions,
+  type OsNotificationOptions,
+} from '@/lib/pwa-assets';
+import {
+  applyAppBadgeCount,
+  postBadgeToActiveServiceWorker,
+} from '@/lib/pwa-app-badge';
+
+export {
+  PWA_BRAND_ICON,
+  PWA_NOTIFICATION_BADGE,
+  PWA_NOTIFICATION_ICON,
+  PWA_NOTIFICATION_VIBRATE,
+  buildOsNotificationOptions,
+  resolvePwaAssetUrl,
+} from '@/lib/pwa-assets';
+
 export const INVENTORY_NOTIFICATION_EVENT = 'bb-inventory-notification';
+export const SW_INVENTORY_PUSH_RECEIVED = 'INVENTORY_PUSH_RECEIVED';
 
-/** Square logo on transparent background — OS notifications and home-screen icon. */
-export const PWA_NOTIFICATION_ICON = '/images/notification-icon.png';
-
-/** Vibration pattern for inventory OS notifications (when device supports it). */
-export const PWA_NOTIFICATION_VIBRATE = [120, 60, 120] as const;
-
-export type SystemNotificationOptions = NotificationOptions & {
-  vibrate?: number | readonly number[];
-};
+export type SystemNotificationOptions = OsNotificationOptions;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -29,6 +40,27 @@ export function canRegisterServiceWorker(): boolean {
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1'
   );
+}
+
+/** True when the browser exposes PushManager (some dev/embed contexts do not). */
+export function isPushManagerSupported(): boolean {
+  if (!canRegisterServiceWorker()) return false;
+  return typeof window !== 'undefined' && 'PushManager' in window;
+}
+
+export function isBenignPushRegistrationError(error: unknown): boolean {
+  if (!error) return false;
+  const name =
+    error instanceof DOMException
+      ? error.name
+      : typeof error === 'object' && error !== null && 'name' in error
+        ? String((error as { name?: unknown }).name)
+        : '';
+  const message = error instanceof Error ? error.message : String(error);
+  if (name === 'AbortError') return true;
+  if (/push service not available/i.test(message)) return true;
+  if (/registration failed/i.test(message)) return true;
+  return false;
 }
 
 /** OS banner title/body with optional unread count prefix. */
@@ -70,30 +102,13 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 }
 
 function postBadgeToServiceWorker(count: number): void {
-  if (typeof navigator === 'undefined' || !navigator.serviceWorker?.controller) return;
-  navigator.serviceWorker.controller.postMessage({ type: 'SET_BADGE', count });
+  void postBadgeToActiveServiceWorker(count);
 }
 
-/** Red numeric badge on home-screen app icon (where supported). */
+/** Red numeric badge on home-screen app icon (iOS / Android / iPad PWA). */
 export async function syncAppBadge(count: number): Promise<void> {
-  if (typeof navigator === 'undefined') return;
-  const safeCount = Math.max(0, Math.min(99, Math.floor(count)));
-
-  postBadgeToServiceWorker(safeCount);
-
-  try {
-    if ('setAppBadge' in navigator) {
-      if (safeCount > 0) {
-        await (navigator as Navigator & { setAppBadge: (n: number) => Promise<void> }).setAppBadge(
-          safeCount
-        );
-      } else if ('clearAppBadge' in navigator) {
-        await (navigator as Navigator & { clearAppBadge: () => Promise<void> }).clearAppBadge();
-      }
-    }
-  } catch {
-    // Badge API may reject when not installed to home screen
-  }
+  postBadgeToServiceWorker(count);
+  await applyAppBadgeCount(count);
 }
 
 export function buildSystemNotificationOptions(input: {
@@ -102,24 +117,7 @@ export function buildSystemNotificationOptions(input: {
   url?: string;
   enableVibrate?: boolean;
 }): SystemNotificationOptions {
-  const opts: SystemNotificationOptions = {
-    body: input.body,
-    icon: PWA_NOTIFICATION_ICON,
-    tag: input.tag ?? 'bb-inventory',
-    silent: false,
-    requireInteraction: false,
-    data: { url: input.url ?? '/th/inventory' },
-  };
-
-  if (
-    input.enableVibrate &&
-    typeof navigator !== 'undefined' &&
-    'vibrate' in navigator
-  ) {
-    opts.vibrate = [...PWA_NOTIFICATION_VIBRATE];
-  }
-
-  return opts;
+  return buildOsNotificationOptions(input);
 }
 
 export async function showSystemNotification(

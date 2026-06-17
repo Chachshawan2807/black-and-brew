@@ -60,7 +60,7 @@ describe('AI Chat Thai Typography', () => {
     );
 
     expect(css).toContain('.thai-chat-readable');
-    expect(css).toContain("font-family: 'IBM Plex Sans Thai', 'Prompt', 'Inter', system-ui, sans-serif;");
+    expect(css).toContain("font-family: var(--font-ibm-plex-sans-thai), var(--font-prompt), var(--font-inter), system-ui, sans-serif;");
     expect(css).toContain('line-height: 1.85;');
     expect(css).toContain('letter-spacing: 0;');
   });

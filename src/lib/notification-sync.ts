@@ -1,0 +1,66 @@
+import {
+  MAX_STORED_NOTIFICATIONS,
+  type InventoryNotification,
+} from '@/lib/notification-types';
+import { countUnread, saveStoredNotifications } from '@/lib/notification-storage';
+import {
+  loadMergedStoredNotifications,
+  mirrorNotificationsToIdb,
+} from '@/lib/notification-idb';
+
+export function prependToNotificationList(
+  list: InventoryNotification[],
+  notification: InventoryNotification,
+): { list: InventoryNotification[]; unreadCount: number } {
+  const deduped = list.filter((n) => n.logId !== notification.logId);
+  const next = [notification, ...deduped].slice(0, MAX_STORED_NOTIFICATIONS);
+  return { list: next, unreadCount: countUnread(next) };
+}
+
+export function mergeNotificationLists(
+  ...lists: InventoryNotification[][]
+): InventoryNotification[] {
+  const byLogId = new Map<string, InventoryNotification>();
+
+  for (const list of lists) {
+    for (const item of list) {
+      const existing = byLogId.get(item.logId);
+      if (!existing) {
+        byLogId.set(item.logId, item);
+        continue;
+      }
+
+      const newer = item.occurredAt >= existing.occurredAt ? item : existing;
+      const older = newer === item ? existing : item;
+      byLogId.set(item.logId, {
+        ...older,
+        ...newer,
+        read: older.read && newer.read,
+      });
+    }
+  }
+
+  return Array.from(byLogId.values())
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+    .slice(0, MAX_STORED_NOTIFICATIONS);
+}
+
+/** Read merged local + IDB notifications without writing (safe for cross-tab storage events). */
+export async function readNotificationState(): Promise<{
+  notifications: InventoryNotification[];
+  unreadCount: number;
+}> {
+  const merged = await loadMergedStoredNotifications();
+  return { notifications: merged, unreadCount: countUnread(merged) };
+}
+
+/** Load merged local + IDB notifications and mirror to both stores. */
+export async function hydrateNotificationState(): Promise<{
+  notifications: InventoryNotification[];
+  unreadCount: number;
+}> {
+  const merged = await loadMergedStoredNotifications();
+  saveStoredNotifications(merged);
+  await mirrorNotificationsToIdb(merged);
+  return { notifications: merged, unreadCount: countUnread(merged) };
+}

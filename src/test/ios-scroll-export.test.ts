@@ -34,7 +34,7 @@ describe('iOS scroll & export fixes', () => {
     const code = readFile('app/[locale]/schedule/ScheduleClient.tsx');
     expect(code).toContain('bb-ios-scroll-host');
     expect(code).toContain('bb-scroll-xy');
-    expect(code).toContain('captureElementAsPng');
+    expect(code).toContain('captureScheduleTableAsPng');
     expect(code).not.toMatch(/const\s*\{\s*toPng\s*\}\s*=\s*await\s+import\('html-to-image'\)/);
   });
 

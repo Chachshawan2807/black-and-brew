@@ -17,11 +17,12 @@ export function Sidebar() {
 
   return (
     <aside
+      id="bb-nav-drawer"
       className={cn(
-        'fixed top-0 left-0 z-[100] h-[100dvh] text-foreground transition-transform duration-300 ease-in-out md:transition-[width] md:duration-300 md:ease-in-out bg-[var(--sidebar-surface)] md:bg-transparent border-none bb-shadow-lg md:shadow-none md:border-r md:border-black/5 dark:md:border-white/10 md:flex',
+        'bb-mobile-drawer-surface fixed top-0 left-0 z-[100] h-[100svh] text-foreground transition-transform duration-300 ease-in-out motion-reduce:transition-none md:transition-[width] md:duration-300 md:ease-in-out bg-[var(--sidebar-surface)] md:bg-transparent border-none bb-shadow-lg md:shadow-none md:border-r md:border-black/5 dark:md:border-white/10 md:flex',
         sidebarOpen === false 
           ? '-translate-x-full md:translate-x-0 md:w-20' 
-          : 'translate-x-0 w-[280px] max-w-[85vw] md:w-fit md:max-w-[280px]'
+          : 'translate-x-0 w-[min(280px,80dvw)] md:w-fit md:max-w-[280px]'
       )}
     >
       <SidebarToggle isOpen={sidebarOpen} setIsOpen={setIsOpen} />

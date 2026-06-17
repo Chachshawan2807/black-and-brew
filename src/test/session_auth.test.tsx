@@ -112,7 +112,8 @@ describe('PinGateway Persistent Authentication', () => {
     await waitFor(() => {
       expect(blurSpy).toHaveBeenCalled();
       expect(screen.getByRole('status')).toHaveTextContent(/กำลังตรวจสอบ/i);
-      expect(pinInput).toHaveAttribute('readonly');
+      expect(screen.queryByLabelText('รหัสผ่าน 6 หลัก')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('pin-digit-boxes')).not.toBeInTheDocument();
     });
 
     resolveVerify({ success: true, isReadOnly: false });

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   buildInventoryOsNotification,
   buildSystemNotificationOptions,
+  isBenignPushRegistrationError,
   isUuidString,
   PWA_NOTIFICATION_ICON,
   PWA_NOTIFICATION_VIBRATE,
@@ -28,11 +29,20 @@ describe('pwa-notification-bridge', () => {
     expect(multi.body.startsWith('[5] ')).toBe(true);
   });
 
-  test('system notification uses square icon without badge (Android badge tints white)', () => {
+  test('system notification uses identical brand icon for icon and badge', () => {
     const opts = buildSystemNotificationOptions({ body: 'รับ 2 · คงเหลือ: 0 → 2' });
-    expect(opts.icon).toBe(PWA_NOTIFICATION_ICON);
-    expect(opts.icon).toBe('/images/notification-icon.png');
-    expect(opts.badge).toBeUndefined();
+    expect(opts.icon).toContain(PWA_NOTIFICATION_ICON);
+    expect(opts.badge).toBe(opts.icon);
+    expect(opts.icon).toMatch(/^https?:\/\//);
+  });
+
+  test('isBenignPushRegistrationError treats unavailable push service as expected', () => {
+    expect(
+      isBenignPushRegistrationError(
+        new DOMException('Registration failed - push service not available', 'AbortError'),
+      ),
+    ).toBe(true);
+    expect(isBenignPushRegistrationError(new Error('network down'))).toBe(false);
   });
 
   test('system notification adds vibrate when device supports it', () => {
