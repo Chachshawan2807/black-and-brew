@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 
-import { History, PackageMinus, PackagePlus, Plus, ShoppingCart, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { History, Loader2, PackageMinus, PackagePlus, Plus, ShoppingCart, SlidersHorizontal, Trash2, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -20,6 +20,7 @@ import {
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import type { InventoryTransactionFilterType, InventoryTransactionType } from '@/app/actions/inventory-actions';
 
 
 
@@ -29,7 +30,7 @@ export type TransactionHistoryRow = {
 
   created_at: string;
 
-  type: 'IN' | 'OUT' | 'ADJUST' | 'ADD' | 'DELETE';
+  type: InventoryTransactionType;
 
   quantity: number;
 
@@ -46,6 +47,16 @@ type InventoryHistoryModalProps = {
   transactionHistory: TransactionHistoryRow[];
 
   onClose: () => void;
+
+  historyTypeFilter: InventoryTransactionFilterType;
+
+  onTypeFilterChange: (type: InventoryTransactionFilterType) => void;
+
+  onLoadMore: () => void;
+
+  hasMoreHistory: boolean;
+
+  isHistoryLoading: boolean;
 
 };
 
@@ -67,6 +78,13 @@ function transactionTypeLabel(type: TransactionHistoryRow['type']) {
       return 'ปรับจำนวน';
   }
 }
+
+const HISTORY_TYPE_FILTERS: { value: InventoryTransactionFilterType; label: string }[] = [
+  { value: 'ALL', label: 'ทั้งหมด' },
+  { value: 'IN', label: 'รับเข้า' },
+  { value: 'OUT', label: 'นำออก' },
+  { value: 'ADJUST', label: 'ปรับจำนวน' },
+];
 
 function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] }) {
 
@@ -150,7 +168,15 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
 
 
-export function InventoryHistoryModal({ transactionHistory, onClose }: InventoryHistoryModalProps) {
+export function InventoryHistoryModal({
+  transactionHistory,
+  onClose,
+  historyTypeFilter,
+  onTypeFilterChange,
+  onLoadMore,
+  hasMoreHistory,
+  isHistoryLoading,
+}: InventoryHistoryModalProps) {
 
   const [isMounted, setIsMounted] = useState(false);
 
@@ -228,9 +254,11 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="px-4 md:px-6 py-4 md:py-5 border-b border-border flex items-center justify-between bg-card/80 backdrop-blur-sm shrink-0 pr-14">
+        <div className="px-4 md:px-6 py-4 md:py-5 border-b border-border bg-card/80 backdrop-blur-sm shrink-0 pr-14">
 
-          <div>
+          <div className="flex flex-col gap-4">
+
+            <div>
 
             <h2 className="text-xl md:text-2xl font-normal text-foreground flex items-center gap-3">
 
@@ -245,6 +273,35 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
               ตรวจสอบรายการรับเข้า นำออก ปรับจำนวน เพิ่ม และลบรายการย้อนหลัง
 
             </p>
+
+            </div>
+
+            <fieldset className="min-w-0">
+              <legend className="sr-only">กรองประเภทประวัติคลังสินค้า</legend>
+              <div className="flex flex-wrap gap-2" aria-label="ตัวกรองประวัติคลังสินค้า">
+                {HISTORY_TYPE_FILTERS.map((filter) => (
+                  <label
+                    key={filter.value}
+                    className={cn(
+                      'min-h-11 cursor-pointer rounded-full border px-3.5 py-2 text-[13px] font-normal transition-all flex items-center gap-2',
+                      historyTypeFilter === filter.value
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-background text-foreground/70 border-border hover:border-foreground/30',
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="historyTypeFilter"
+                      value={filter.value}
+                      checked={historyTypeFilter === filter.value}
+                      onChange={() => onTypeFilterChange(filter.value)}
+                      className="accent-current"
+                    />
+                    <span>{filter.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
           </div>
 
@@ -417,9 +474,27 @@ export function InventoryHistoryModal({ transactionHistory, onClose }: Inventory
 
 
 
-        <div className="px-4 md:px-6 py-3 md:py-4 bg-card/80 border-t border-border flex justify-between items-center shrink-0 text-[12px] text-muted-foreground">
+        <div className="px-4 md:px-6 py-3 md:py-4 bg-card/80 border-t border-border flex flex-col md:flex-row gap-3 md:items-center md:justify-between shrink-0 text-[12px] text-muted-foreground">
 
-          <span>แสดง {transactionHistory.length} รายการล่าสุด</span>
+          <span>แสดง {transactionHistory.length} รายการ</span>
+
+          {hasMoreHistory ? (
+            <button
+              type="button"
+              onClick={onLoadMore}
+              disabled={isHistoryLoading}
+              className="min-h-11 rounded-full border border-border bg-background px-4 py-2 text-[13px] font-normal text-foreground transition-all hover:border-foreground/30 hover:bg-muted disabled:opacity-50"
+            >
+              {isHistoryLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  กำลังโหลดประวัติ...
+                </span>
+              ) : (
+                'ดูเพิ่มเติม'
+              )}
+            </button>
+          ) : null}
 
         </div>
 

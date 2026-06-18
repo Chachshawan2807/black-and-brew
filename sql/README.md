@@ -14,7 +14,7 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 
 | Location | Purpose |
 |----------|---------|
-| `supabase/migrations/` | Versioned migrations (login_history, data_change_logs, revoked_sessions, push_subscriptions, device_passkeys, inventory ADD/DELETE, count verifications) |
+| `supabase/migrations/` | Versioned migrations (login_history, data_change_logs, revoked_sessions, push_subscriptions, device_passkeys, inventory ADD/DELETE, count verifications, count policy, local events) |
 | `sql/` | Operational scripts and RPC reference blueprints |
 | Root `*.sql` | Historical reference schemas (`DB_SCHEMA.sql`, `sales_schema.sql`, etc.) — applied historically |
 
@@ -42,7 +42,9 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260615130000_align_low_stock_with_purchase_orders.sql` | `view_inventory_summary` LOW/WARNING/OK aligned with purchase-order modal |
 | `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (cross-device inventory alerts) |
 | `20260617120000_device_passkeys.sql` | WebAuthn trusted-device credentials for biometric login |
+| `20260618163100_inventory_count_policy.sql` | `inventory_items.count_policy`; exact count vs sufficiency check |
+| `20260618175951_local_events.sql` | Store-managed local events for Market Insights context |
 
 ## Cleanup audit
 
-2026-06-17 audit result: no SQL file is safe to delete. All 22 SQL files are either migration history, active schema/RLS/RPC/view references, or optional feature schema used by current code.
+2026-06-19 audit result: no SQL file is safe to delete. Current versioned migrations total 12 files; SQL references are migration history, active schema/RLS/RPC/view references, or optional feature schema used by current code.

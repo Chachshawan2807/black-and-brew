@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { updateInventoryStock, fetchCountAccuracyStats, recordCountVerification } from '@/app/actions/inventory-actions';
+import { fetchCountAccuracyStats, recordInventoryCountAndUpdateStock } from '@/app/actions/inventory-actions';
 import type { CountAccuracyStatsResult, ItemCountAccuracyStats } from '@/app/actions/inventory-actions';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { getClientSessionId } from '@/lib/client-session';
@@ -22,6 +22,7 @@ interface InventoryItem {
   stock: number;
   unit: string;
   sort_order: number;
+  count_policy?: 'exact_count' | 'sufficiency_check';
   [key: string]: any;
 }
 
@@ -137,6 +138,41 @@ type CountItemRowProps = {
   onActiveChange: (id: string | null) => void;
 };
 
+function SufficiencyCheckControls({ isReadOnly }: { isReadOnly: boolean }) {
+  const [status, setStatus] = useState<'enough' | 'not_enough' | null>(null);
+
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex rounded-2xl border border-[#f5c6cb] bg-white/70 p-1 bb-pastel-surface">
+        <button
+          type="button"
+          disabled={isReadOnly}
+          onClick={() => setStatus('enough')}
+          className={cn(
+            'h-9 rounded-xl px-3 text-sm text-black transition-colors',
+            status === 'enough' ? 'bg-[#d4edda] shadow-sm' : 'hover:bg-white',
+            isReadOnly && 'opacity-60 cursor-not-allowed',
+          )}
+        >
+          พอใช้
+        </button>
+        <button
+          type="button"
+          disabled={isReadOnly}
+          onClick={() => setStatus('not_enough')}
+          className={cn(
+            'h-9 rounded-xl px-3 text-sm text-black transition-colors',
+            status === 'not_enough' ? 'bg-[#f8d7da] shadow-sm' : 'hover:bg-white',
+            isReadOnly && 'opacity-60 cursor-not-allowed',
+          )}
+        >
+          ไม่พอใช้
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const CountItemRow = memo(function CountItemRow({
   item,
   index,
@@ -149,6 +185,11 @@ const CountItemRow = memo(function CountItemRow({
   isReadOnly,
   onActiveChange,
 }: CountItemRowProps) {
+  const isSufficiencyCheck = item.count_policy === 'sufficiency_check';
+  const rowToneClass = isSufficiencyCheck
+    ? `${PASTEL_SURFACE} bg-[#f8d7da] border border-[#f5c6cb]`
+    : `${PASTEL_SURFACE} bg-[#dbeafe] border border-[#bfdbfe]`;
+
   return (
     <motion.div
       initial={animateEntrance ? { opacity: 0, y: 10 } : false}
@@ -163,9 +204,10 @@ const CountItemRow = memo(function CountItemRow({
       }}
       className={cn(
         'relative rounded-2xl p-4 flex items-start justify-between gap-3 transition-all duration-300',
+        rowToneClass,
         isActive
-          ? `${PASTEL_SURFACE} bg-[#d4edda] border border-[#c3e6cb] shadow-md ring-2 ring-black/8 z-10`
-          : 'bg-card border border-border shadow-sm hover:border-foreground/10',
+          ? 'shadow-md ring-2 ring-black/8 z-10'
+          : 'shadow-sm hover:ring-1 hover:ring-black/5',
       )}
     >
       {isActive && (
@@ -178,7 +220,7 @@ const CountItemRow = memo(function CountItemRow({
             'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200',
             isActive
               ? 'bg-black text-white'
-              : 'text-muted-foreground/50'
+              : 'bg-white/60 text-black/55'
           )}
         >
           {(index + 1).toString().padStart(2, '0')}
@@ -187,22 +229,29 @@ const CountItemRow = memo(function CountItemRow({
           <span
             className={cn(
               'font-normal text-[15px] leading-tight transition-colors duration-200 block',
-              isActive ? 'text-black' : 'text-foreground/80'
+              'text-black'
             )}
           >
             {item.name} {item.unit ? `(${item.unit})` : ''}
           </span>
-          {itemStats && itemStats.totalChecks > 0 ? (
-            <p className={cn('mt-1 text-xs tabular-nums', isActive ? 'text-black/70 bb-pastel-surface' : 'text-muted-foreground')}>
+          <p className="mt-1 text-xs font-normal text-black/70 bb-pastel-surface">
+            {isSufficiencyCheck ? 'วิธีตรวจนับ: เช็คว่าพอใช้' : 'วิธีตรวจนับ: นับจริง'}
+          </p>
+          {isSufficiencyCheck ? (
+            <p className="mt-1 text-xs text-black/60 bb-pastel-surface">
+              ไม่คิดรวมใน Accuracy
+            </p>
+          ) : itemStats && itemStats.totalChecks > 0 ? (
+            <p className="mt-1 text-xs tabular-nums text-black/70 bb-pastel-surface">
               ค่าความแม่นยำแยกเฉพาะรายการ (Item-level Accuracy): {itemStats.accuracyPct}%
-              <span className="opacity-70"> ({itemStats.matchChecks}/{itemStats.totalChecks})</span>
+              <span className="opacity-70"> (คลาดเคลื่อนรวม {itemStats.totalDiscrepancyQty} หน่วย)</span>
             </p>
           ) : (
-            <p className={cn('mt-1 text-xs', isActive ? 'text-black/50 bb-pastel-surface' : 'text-muted-foreground/70')}>
+            <p className="mt-1 text-xs text-black/50 bb-pastel-surface">
               ค่าความแม่นยำแยกเฉพาะรายการ (Item-level Accuracy): ยังไม่มีข้อมูล
             </p>
           )}
-          {recentVerification && (
+          {!isSufficiencyCheck && recentVerification && (
             <p
               className={cn(
                 'mt-1 text-xs rounded-lg px-2 py-0.5 inline-block bb-pastel-surface',
@@ -220,14 +269,18 @@ const CountItemRow = memo(function CountItemRow({
       </div>
 
       <div className="shrink-0">
-        <CountInput
-          itemId={item.id}
-          index={index}
-          onSave={onSave}
-          disabled={isReadOnly}
-          isActive={isActive}
-          onActiveChange={onActiveChange}
-        />
+        {isSufficiencyCheck ? (
+          <SufficiencyCheckControls isReadOnly={isReadOnly} />
+        ) : (
+          <CountInput
+            itemId={item.id}
+            index={index}
+            onSave={onSave}
+            disabled={isReadOnly}
+            isActive={isActive}
+            onActiveChange={onActiveChange}
+          />
+        )}
       </div>
     </motion.div>
   );
@@ -335,8 +388,6 @@ export default function InventoryCountClient({
 
     const currentItem = itemsRef.current.find((i) => i.id === id);
     const previousStock = Number(currentItem?.stock ?? 0);
-    const needsStockUpdate = previousStock !== value;
-
     setSaveErrorMessage(null);
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, stock: value } : item)),
@@ -344,26 +395,12 @@ export default function InventoryCountClient({
     setSavingState('saving');
 
     try {
-      const verificationPromise = recordCountVerification(id, value);
-      const stockPromise = needsStockUpdate
-        ? updateInventoryStock(id, value, 'Stock-taking count', {
-            recordHistory: false,
-            clientSessionId: getClientSessionId(),
-            notificationContext: 'inventory_count',
-            suppressNotification: true,
-          })
-        : Promise.resolve({ success: true as const, newStock: value });
-
-      const [verification, stockResult] = await Promise.all([
-        verificationPromise,
-        stockPromise,
-      ]);
+      const verification = await recordInventoryCountAndUpdateStock(id, value, {
+        clientSessionId: getClientSessionId(),
+      });
 
       if (!verification.success) {
         throw new Error(verification.error);
-      }
-      if (!stockResult.success) {
-        throw new Error(stockResult.error);
       }
 
       setLastVerification((prev) => ({
@@ -376,7 +413,7 @@ export default function InventoryCountClient({
       }));
       void loadAccuracyStats();
 
-      const savedStock = stockResult.newStock ?? value;
+      const savedStock = verification.newStock ?? value;
       if (savedStock !== value) {
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, stock: savedStock } : item)),
@@ -499,24 +536,6 @@ export default function InventoryCountClient({
           <p className="text-muted-foreground text-[11px] font-normal uppercase tracking-[0.2em] mt-1.5">
             บันทึกการตรวจนับ
           </p>
-        </div>
-
-        <div className="mb-6 rounded-2xl border border-border bg-card p-4 text-center shadow-sm">
-          <p className="text-[11px] font-normal uppercase tracking-[0.2em] text-muted-foreground">
-            ค่าความแม่นยำรวม (Total Accuracy)
-          </p>
-          {accuracyStats && accuracyStats.overall.totalChecks > 0 ? (
-            <>
-              <p className="mt-2 text-3xl font-normal tabular-nums text-foreground">
-                {accuracyStats.overall.accuracyPct}%
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                ตรง {accuracyStats.overall.matchChecks} จาก {accuracyStats.overall.totalChecks} ครั้งที่ตรวจนับ
-              </p>
-            </>
-          ) : (
-            <p className="mt-2 text-sm text-muted-foreground">ยังไม่มีข้อมูลการตรวจนับ</p>
-          )}
         </div>
 
         {saveErrorMessage && (

@@ -96,6 +96,14 @@ export interface HolidayEntry {
   name: string;
 }
 
+export interface LocalEventEntry {
+  date: string;
+  name: string;
+  category: string | null;
+  expectedImpact: string | null;
+  source: string | null;
+}
+
 export type AlertType = 'stockout_risk' | 'overstock' | 'weather' | 'opportunity';
 
 export interface MarketAlert {
@@ -170,6 +178,7 @@ export interface MarketContext {
   scheduleToday: ScheduleEntry[];
   shiftCount: number;
   upcomingHolidays: HolidayEntry[];
+  localEvents: LocalEventEntry[];
   alerts: MarketAlert[];
   /** @deprecated use competitorAnalysis — kept for stale cache reads */
   competitors?: CompetitorEntry[];
@@ -202,12 +211,13 @@ export function isMarketInsightsV2(value: unknown): value is MarketInsightsV2 {
   if (v.version !== 2) return false;
   if (typeof v.context !== 'object' || v.context === null) return false;
   if (!Array.isArray(v.context.alerts)) return false;
+  if (!Array.isArray(v.context.localEvents)) return false;
   if (typeof v.insights !== 'object' || v.insights === null) return false;
   if (!Array.isArray(v.actions)) return false;
   if (!Array.isArray(v.sources)) return false;
   return true;
 }
 
-/** Bumped when competitor data source / shape changes (e.g. Google Places rollout). */
-export const MARKET_INSIGHTS_CACHE_KEY_V2 = 'marketInsightsCache_v3';
+/** Bumped when prompt/context source data changes. */
+export const MARKET_INSIGHTS_CACHE_KEY_V2 = 'marketInsightsCache_v4';
 export const MARKET_INSIGHTS_ACTIONS_KEY_V2 = 'marketInsightsActions_v2';

@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 8.8 | Last Updated: 2026-06-17 | Engine: Supabase PostgreSQL
+> Version: 8.9 | Last Updated: 2026-06-19 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | `profiles` | ข้อมูลพนักงาน 9 คน | ✓ authenticated | `DB_SCHEMA.sql` |
 | `shifts` | ตารางกะงาน | ✓ authenticated | `DB_SCHEMA.sql` |
-| `inventory_items` | รายการคลังสินค้าและสต็อก | ✓ authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` |
+| `inventory_items` | รายการคลังสินค้า, สต็อก, และนโยบายการตรวจนับ | ✓ authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` + `20260618163100_inventory_count_policy.sql` |
 | `inventory_transactions` | บันทึกการเคลื่อนไหวสต็อก (IN/OUT/ADJUST/ADD/DELETE) | ✓ authenticated | `sql/record_inventory_transaction.sql` + migrations |
 | `inventory_count_verifications` | บันทึกผลตรวจนับ vs สต็อกระบบ (`inventory_items.stock`) | ✓ authenticated | `supabase/migrations/20260614120000_inventory_count_verifications.sql` + `20260615120000_inventory_count_accuracy_refactor.sql` |
 | `inventory_config` | การตั้งค่าคอลัมน์ Inventory UI | ✓ authenticated | `inventory_config_schema.sql` |
@@ -26,6 +26,7 @@
 | `revoked_sessions` | fingerprint ที่ถูก revoke จากระยะไกล | ✓ RLS enabled | `supabase/migrations/20260612200000_revoked_sessions.sql` |
 | `push_subscriptions` | Web Push endpoints ต่ออุปกรณ์ (cross-device inventory alerts) | ✓ authenticated (own rows) | `supabase/migrations/20260616120000_push_subscriptions.sql` |
 | `device_passkeys` | WebAuthn credentials สำหรับ trusted-device biometric login | ✓ RLS enabled; service-role only | `supabase/migrations/20260617120000_device_passkeys.sql` |
+| `local_events` | เหตุการณ์รอบร้านสำหรับ Market Insights context | ✓ authenticated | `supabase/migrations/20260618175951_local_events.sql` |
 | `market_insight_runs` | ประวัติการรัน Market Insights v2 (OPTIONAL) | ✓ | `docs/sql/market_insight_runs.sql` |
 
 > Types: Generated types in `src/lib/database.types.ts`
@@ -74,10 +75,17 @@ CREATE TABLE inventory_items (
   unit TEXT NOT NULL,
   source TEXT,
   sort_order INTEGER DEFAULT 0,
+  count_policy TEXT NOT NULL DEFAULT 'exact_count'
+    CHECK (count_policy IN ('exact_count', 'sufficiency_check')),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
+
+`count_policy` controls stock-taking behavior:
+
+- `exact_count`: count page records accuracy rows and purchase order quantity is computed from stock thresholds.
+- `sufficiency_check`: staff checks whether stock is enough; accuracy rows are skipped and `order_qty` is manual.
 
 ### `inventory_transactions`
 
@@ -214,6 +222,23 @@ CREATE TABLE IF NOT EXISTS public.market_insight_runs (
 RLS enabled; no public policies — written only by server actions using the service-role key.
 Source: `docs/sql/market_insight_runs.sql`. Feature works without this table (`persistRun()` fails gracefully).
 
+### `local_events`
+
+```sql
+CREATE TABLE IF NOT EXISTS public.local_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  date DATE NOT NULL,
+  name TEXT NOT NULL,
+  category TEXT,
+  expected_impact TEXT,
+  source TEXT NOT NULL DEFAULT 'manual',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+Market Insights reads upcoming rows with `fetchUpcomingLocalEvents()` and injects a compact summary into the AI prompt. Query/table failures return an empty event list so the feature degrades gracefully.
+
 ---
 
 ## 3. RLS Policies
@@ -256,6 +281,8 @@ CREATE INDEX idx_count_verifications_item ON inventory_count_verifications(inven
 CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications(counted_at DESC);
 CREATE INDEX idx_device_passkeys_session_fingerprint ON device_passkeys(session_fingerprint);
 CREATE INDEX idx_device_passkeys_last_used_at ON device_passkeys(last_used_at DESC);
+CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
+CREATE INDEX idx_local_events_date ON local_events(date);
 ```
 
 ---
@@ -278,7 +305,8 @@ CREATE INDEX idx_device_passkeys_last_used_at ON device_passkeys(last_used_at DE
 ### Trigger: `trg_sync_inventory_order_qty`
 
 - `BEFORE INSERT OR UPDATE OF stock, order_point, target_stock`
-- `IF stock <= order_point THEN order_qty = target_stock - stock ELSE 0`
+- Historical DEC-005 formula: `IF stock <= order_point THEN order_qty = target_stock - stock ELSE 0`
+- Current UI purchase-order logic branches by `count_policy`: `exact_count` uses computed quantity; `sufficiency_check` uses manual `order_qty`
 
 ### Realtime: `REPLICA IDENTITY FULL`
 
@@ -305,6 +333,8 @@ CREATE INDEX idx_device_passkeys_last_used_at ON device_passkeys(last_used_at DE
 | `20260615130000_align_low_stock_with_purchase_orders.sql` | `view_inventory_summary` LOW status aligned with PO modal (DEC-005) |
 | `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (authenticated own rows) |
 | `20260617120000_device_passkeys.sql` | Trusted-device WebAuthn credentials for biometric login |
+| `20260618163100_inventory_count_policy.sql` | Adds `inventory_items.count_policy`; resets old accuracy rows for new scoring rules |
+| `20260618175951_local_events.sql` | Store-managed local event context for Market Insights |
 
 ### Historical (root + `sql/`)
 

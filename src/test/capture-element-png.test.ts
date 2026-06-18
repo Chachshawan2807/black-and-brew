@@ -39,6 +39,17 @@ describe('captureElementAsPng', () => {
     );
   });
 
+  test('can preserve root overflow for rounded export wrappers', async () => {
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'scrollWidth', { value: 800 });
+    Object.defineProperty(element, 'scrollHeight', { value: 600 });
+
+    await captureElementAsPng(element, { preserveOverflow: true });
+
+    const options = toPngMock.mock.calls[0]?.[1] as { style: Record<string, string> };
+    expect(options.style).not.toHaveProperty('overflow');
+  });
+
   test('flattens descendant box-shadow during capture and restores after', async () => {
     const element = document.createElement('div');
     Object.defineProperty(element, 'scrollWidth', { value: 400 });

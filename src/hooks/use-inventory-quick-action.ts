@@ -5,7 +5,6 @@ import {
   recordBulkInventoryTransactions,
   recordTransaction,
   updateInventoryStock,
-  fetchTransactionHistory,
 } from '@/app/actions/inventory-actions';
 import { getClientSessionId } from '@/lib/client-session';
 import type { InventoryNotificationSource } from '@/lib/inventory-notification-filter';
@@ -42,7 +41,7 @@ type UseInventoryQuickActionOptions<T extends BulkStockItem> = {
   setItems: React.Dispatch<React.SetStateAction<T[]>>;
   isReadOnly: boolean;
   showHistoryModal?: boolean;
-  onHistoryRefresh?: (history: unknown[]) => void;
+  onHistoryRefresh?: () => void | Promise<void>;
   onAfterSave?: () => void;
   onBeforeSave?: () => void;
   onSaveError?: () => void;
@@ -176,10 +175,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
 
   const refreshHistoryIfOpen = useCallback(async () => {
     if (!showHistoryModal || !onHistoryRefresh) return;
-    const histRes = await fetchTransactionHistory();
-    if (histRes.success && histRes.data) {
-      onHistoryRefresh(histRes.data);
-    }
+    await onHistoryRefresh();
   }, [showHistoryModal, onHistoryRefresh]);
 
   const handleQuickSubmit = useCallback(

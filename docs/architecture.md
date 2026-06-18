@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 8.8 | Last Updated: 2026-06-17 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 8.9 | Last Updated: 2026-06-19 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -18,7 +18,7 @@ Hybrid PPR architecture: Static Shell (Navigation, Branding) + Dynamic Islands (
 - DnD: @dnd-kit/core + sortable
 - AI: Vercel AI SDK v6 + `@ai-sdk/google` (Gemini)
 - Testing: Vitest + Testing Library
-- Deploy: Vercel Edge Runtime
+- Deploy: Vercel (App Router runtime selected per route/API as implemented)
 - Motion: framer-motion + `src/lib/motion-presets.ts` (v6.9)
 
 ---
@@ -91,13 +91,13 @@ src/app/
 │   ├── auth.ts                        # PIN verify, session revocation, read-only guard
 │   ├── passkey-actions.ts             # WebAuthn trusted-device registration/login
 │   ├── login-history-actions.ts       # login_history CRUD + active sessions
-│   ├── inventory-actions.ts           # Stock RPC, transactions
+│   ├── inventory-actions.ts           # Stock RPC, count policy, transactions
 │   ├── shift-actions.ts               # Shift CRUD
 │   ├── holiday-actions.ts             # Google Calendar + regular holidays
 │   ├── maintenance-actions.ts         # Service records
 │   ├── sales-actions.ts               # Excel upload, categories
 │   ├── market-insights-types.ts       # v2 Zod schemas + TS types
-│   ├── market-insights-fetch.ts       # Weather forecast, holidays, Tavily multi-cache
+│   ├── market-insights-fetch.ts       # Weather forecast, holidays, local events, Tavily multi-cache
 │   ├── market-insights-places.ts      # Google Places nearby competitors (OPTION)
 │   ├── market-insights-context.ts     # Deterministic context builders
 │   ├── market-insights-actions.ts     # getMarketInsights() multi-step generateObject pipeline
@@ -117,7 +117,8 @@ src/app/
     ├── dashboard/               # Staff dashboard
     ├── schedule/                # Shift management (DnD)
     ├── inventory/               # Warehouse spreadsheet + InventoryQuickActionFAB
-    │   └── count/               # Stock-taking + count accuracy verification
+    │   ├── count/               # Stock-taking + count accuracy verification
+    │   └── accuracy/            # Accuracy report for exact-count items
     ├── maintenance/             # Equipment tracking
     ├── sales/                   # Sales analytics
     ├── settings/                # Theme picker, login history, passkeys, notification prefs
@@ -139,13 +140,14 @@ onChange → local state → onBlur → updateInventoryStock() [RPC set_inventor
 → optimistic update → Supabase realtime merge → all windows sync
 ```
 
-### Stock-Taking Count + Accuracy Verification (v8.6)
+### Stock-Taking Count + Accuracy Verification (v8.9)
 
 ```text
-CountInput blur → read inventory_items.stock (baseline) → updateInventoryStock(recordHistory: false)
-→ recordCountVerification() → isCountMatch(countedQty, systemStockQty)
-→ INSERT inventory_count_verifications (system_stock_qty, matched)
-→ fetchCountAccuracyStats() for per-item accuracy badges
+CountInput blur → read inventory_items.stock + count_policy (baseline)
+→ updateInventoryStock(recordHistory: false)
+→ exact_count: recordCountVerification() → INSERT inventory_count_verifications (system_stock_qty, matched)
+→ sufficiency_check: skip accuracy scoring; manual order_qty drives purchase order quantity
+→ fetchCountAccuracyStats() / fetchInventoryAccuracyReport() for badges and report page
 ```
 
 ### Inventory Realtime Context (v8.6)
@@ -154,6 +156,15 @@ CountInput blur → read inventory_items.stock (baseline) → updateInventorySto
 InventoryRealtimeProvider → shared items state + Supabase channel on inventory_items
 → mergeInventoryRealtimeUpdate() across warehouse + count pages
 → src/contexts/InventoryRealtimeContext.tsx + src/lib/inventory-queries.ts
+```
+
+### Inventory Count Policy (v8.9)
+
+```text
+inventory_items.count_policy
+→ exact_count: stock threshold computes order_qty; count entries affect accuracy
+→ sufficiency_check: staff checks enough/not enough; order_qty is manual and accuracy rows are skipped
+→ computeItemsToOrder() uses manual order_qty for sufficiency-check items
 ```
 
 ### Inventory Quick Action libs (v8.6)
@@ -234,6 +245,8 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 | `fetchShiftsByDate(date)` | `fetchDailyShiftsByDate` | `FormattedDailyShifts` | Canonical grouped roster (front_store / other_duty / off_or_leave) |
 | `fetchTablePreset(table, filters?, limit?)` | `admin.from(table).select(PRESET)` | `{ ok, rows, effectiveLimit }` | Only ever selects `TABLE_COLUMN_PRESETS[table]` |
 
+Market Insights also reads store-managed `local_events` through `fetchUpcomingLocalEvents()` and formats them with `buildLocalEventsContext()` before the Gemini prompt. Missing table/query errors fail closed to an empty event list.
+
 ### Invariants
 
 - DEC-069 preset lockdown: `fetchTablePreset` ignores any AI-supplied `columns`; it always selects the table preset. Arbitrary column selection (a data-exfiltration vector through the RLS-bypassing Service Role client) is impossible by construction.
@@ -268,7 +281,7 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 | Google Places | `GOOGLE_PLACES_API_KEY` | Nearby competitor cafes - Market Insights v2 (OPTION) |
 | Web Push (VAPID) | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | Cross-device inventory alerts via `web-push` |
 | LINE Messaging API | `LINE_CHANNEL_ACCESS_TOKEN` | Daily push notifications |
-| Vercel | Git deployment | Edge hosting + Cron |
+| Vercel | Git deployment | App hosting + Cron |
 
 ---
 

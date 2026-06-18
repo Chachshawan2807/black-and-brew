@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 8.8 | Last Updated: 2026-06-17
+> Version: 8.9 | Last Updated: 2026-06-19
 
 ---
 
@@ -66,17 +66,30 @@ Requires `device_passkeys` migration and optional production env overrides `WEBA
 - Fallback to direct UPDATE if RPC not deployed
 - Source: `sql/sync_inventory_stock.sql`
 
-#### `recordCountVerification(itemId, countedQty)` (v8.6)
+#### `updateInventoryItemField(itemId, field, value)` (v8.9)
 
-- Reads `inventory_items.stock` as baseline before count update
+- Field update action for editable inventory fields including `count_policy`
+- `count_policy` accepts `exact_count` or `sufficiency_check`; unknown values normalize to `exact_count`
+- `sufficiency_check` items use manual `order_qty` and are excluded from count accuracy scoring
+
+#### `recordCountVerification(itemId, countedQty)` (v8.9)
+
+- Reads `inventory_items.stock` and `count_policy` as baseline before count update
 - Inserts into `inventory_count_verifications` with `system_stock_qty` and `matched` flag via `isCountMatch()` (`src/lib/inventory-count-accuracy.ts`)
-- Returns `{ success, matched, systemStockQty, countedQty }`
+- `exact_count`: returns `{ success, matched, systemStockQty, countedQty }`
+- `sufficiency_check`: returns `{ success, skipped: true, ... }` and does not insert an accuracy row
 - Only invoked from stock-taking count page — not manual warehouse overrides
 
 #### `fetchCountAccuracyStats()` (v8.6)
 
 - Aggregates per-item and overall accuracy from `inventory_count_verifications`
 - Returns `{ perItem, overall: { totalChecks, matchChecks, accuracyPct } }`
+
+#### `fetchInventoryAccuracyReport()` (v8.9)
+
+- Report data for `/[locale]/inventory/accuracy`
+- Aggregates overall accuracy plus high-discrepancy item rows
+- Only includes items whose `count_policy` is `exact_count`
 
 #### `recordItemAddHistory(itemId, stock?, itemName?)`
 
@@ -176,6 +189,7 @@ Deterministic data fetchers - no AI calls.
 | --- | --- |
 | `fetchWeatherForecast(supabase)` | OpenWeatherMap 5-day forecast filtered to 06:00-18:00 ICT operating window |
 | `fetchUpcomingHolidays(supabase)` | Next 30-day public holidays from holidays table |
+| `fetchUpcomingLocalEvents(supabase, daysAhead?)` | Next store-managed `local_events` rows; returns `[]` on missing table/query errors |
 | `fetchMarketTrends(query)` | Tavily web search with per-query session cache |
 
 #### `market-insights-places.ts`
@@ -197,6 +211,7 @@ Pure builders that transform raw Supabase data into context objects for the AI p
 | `buildSalesSnapshot(metrics)` | Typed `SalesSnapshot` for chart components |
 | `buildScheduleContext(schedule)` | Today shift list from `get_today_schedule` RPC |
 | `buildScheduleEntries(schedule)` | Typed `ScheduleEntry[]` for ContextPanel |
+| `buildLocalEventsContext(events)` | Compact local event summary injected into the AI prompt |
 | `buildSignalsList(ctx)` | Human-readable signal strings injected into AI prompt |
 | `buildAlerts(ctx)` | `MarketAlert[]` - stockout risk, overstock, weather, opportunity |
 | `buildDiff(prev, next)` | `MarketInsightsDiff` comparing cached vs new signals and actions |
@@ -217,6 +232,7 @@ getMarketInsights()
   |-- fetchWeatherForecast()   -> OpenWeatherMap (operating window)
   |-- fetchUpcomingHolidays()  -> holidays table
   |-- fetchNearbyCompetitors() -> Google Places (optional)
+  |-- fetchUpcomingLocalEvents() -> local_events table (optional; empty fallback)
   |-- fetchMarketTrends()      -> Tavily x 3 queries (cached per query string)
   |-- buildMarketContext()     -> assembles MarketContext (deterministic, no AI)
   |-- generateObject Step 2   -> behaviorTrendsSchema (Gemini gemini-2.5-flash)
@@ -319,6 +335,13 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply.
 - Source: `sql/sync_inventory_stock.sql`
 - Parameters: `p_item_id`, `p_new_stock`, `p_note`, `p_record_history` (default `true`)
 - Row lock → set absolute stock → optional ADJUST ledger entry on delta
+
+### `inventory_items.count_policy` (v8.9)
+
+- Source: `supabase/migrations/20260618163100_inventory_count_policy.sql`
+- Values: `exact_count`, `sufficiency_check`
+- `exact_count`: participates in count accuracy and computed purchase order quantity
+- `sufficiency_check`: excluded from accuracy scoring; `order_qty` is manual
 
 ---
 

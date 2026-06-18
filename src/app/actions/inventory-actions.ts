@@ -6,8 +6,11 @@ import { z } from 'zod';
 import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { computeFieldChanges } from '@/lib/data-change-log';
-import { isCountMatch } from '@/lib/inventory-count-accuracy';
-import { computeAccuracyPct } from '@/lib/inventory-in-out-theoretical';
+import {
+  computeAggregateCountAccuracyPct,
+  computeCountDiscrepancy,
+  isCountMatch,
+} from '@/lib/inventory-count-accuracy';
 import { ensureServerSession } from '@/lib/security/server-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -440,6 +443,142 @@ export async function updateInventoryStock(
   }
 }
 
+const inventoryFieldUpdateSchema = z.object({
+  itemId: z.string().uuid(),
+  field: z.enum(['name', 'order_qty', 'order_point', 'target_stock', 'unit', 'source', 'count_policy']),
+  value: z.union([z.string(), z.number()]),
+});
+
+function sanitizeInventoryFieldValue(field: z.infer<typeof inventoryFieldUpdateSchema>['field'], value: string | number) {
+  if (['order_qty', 'order_point', 'target_stock'].includes(field)) {
+    const num = value === '' || value === null || value === undefined ? 0 : Number(value);
+    return Number.isNaN(num) ? 0 : num;
+  }
+
+  if (field === 'count_policy') {
+    return value === 'sufficiency_check' ? 'sufficiency_check' : 'exact_count';
+  }
+
+  return String(value ?? '');
+}
+
+export async function updateInventoryItemField(
+  itemId: string,
+  field: string,
+  value: string | number,
+  auditOptions?: InventoryAuditOptions,
+) {
+  try {
+    const authError = await requireAuthenticatedMutation();
+    if (authError) return { success: false, error: authError };
+
+    const parsed = inventoryFieldUpdateSchema.safeParse({ itemId, field, value });
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid inventory field update payload' };
+    }
+
+    const sanitizedValue = sanitizeInventoryFieldValue(parsed.data.field, parsed.data.value);
+    const { data: beforeItem, error: beforeError } = await supabase
+      .from('inventory_items')
+      .select('name, order_qty, order_point, target_stock, unit, source, count_policy')
+      .eq('id', itemId)
+      .maybeSingle();
+
+    if (beforeError) {
+      console.error('[updateInventoryItemField] Supabase Error:', beforeError.message, beforeError.details);
+      return { success: false, error: beforeError.message };
+    }
+
+    const { error } = await supabase
+      .from('inventory_items')
+      .update({ [parsed.data.field]: sanitizedValue, updated_at: new Date().toISOString() })
+      .eq('id', itemId);
+
+    if (error) {
+      console.error('[updateInventoryItemField] Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    await recordDataChange({
+      action: 'UPDATE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      entityId: itemId,
+      entityLabel: beforeItem?.name ?? null,
+      fieldChanges: computeFieldChanges(
+        { [parsed.data.field]: beforeItem?.[parsed.data.field] ?? null },
+        { [parsed.data.field]: sanitizedValue },
+      ),
+      metadata: withAuditMetadata(
+        {
+          operation: 'update_inventory_field',
+          field: parsed.data.field,
+          itemName: beforeItem?.name ?? null,
+        },
+        auditOptions,
+      ),
+    });
+
+    revalidatePath('/[locale]/inventory', 'page');
+    revalidatePath('/[locale]/inventory/count', 'page');
+    return { success: true, value: sanitizedValue };
+  } catch (error: any) {
+    console.error('[updateInventoryItemField] Unexpected Error:', error.message || error);
+    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลสินค้า' };
+  }
+}
+
+const inventoryReorderSchema = z.array(
+  z.object({
+    id: z.string().uuid(),
+    sort_order: z.number().int().positive(),
+  }),
+).min(1);
+
+export async function reorderInventoryItems(
+  sortOrders: Array<{ id: string; sort_order: number }>,
+  auditOptions?: InventoryAuditOptions,
+) {
+  try {
+    const authError = await requireAuthenticatedMutation();
+    if (authError) return { success: false, error: authError };
+
+    const parsed = inventoryReorderSchema.safeParse(sortOrders);
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid inventory reorder payload' };
+    }
+
+    const { error } = await supabase
+      .from('inventory_items')
+      .upsert(parsed.data);
+
+    if (error) {
+      console.error('[reorderInventoryItems] Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    await recordDataChange({
+      action: 'BULK_UPDATE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      metadata: withAuditMetadata(
+        {
+          operation: 'reorder_inventory_items',
+          itemIds: parsed.data.map((item) => item.id),
+        },
+        auditOptions,
+      ),
+    });
+
+    revalidatePath('/[locale]/inventory', 'page');
+    revalidatePath('/[locale]/inventory/count', 'page');
+    return { success: true };
+  } catch (error: any) {
+    console.error('[reorderInventoryItems] Unexpected Error:', error.message || error);
+    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการจัดลำดับสินค้า' };
+  }
+}
+
 // === DELETE INVENTORY ITEM (Secure Server-Side Delete) ===
 /**
  * ADR: SEC-DEL-001 - Secure Server-Side Controlled Deletion
@@ -576,49 +715,108 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
   }
 }
 
+export type InventoryTransactionType = 'IN' | 'OUT' | 'ADJUST' | 'ADD' | 'DELETE';
+export type InventoryTransactionFilterType = 'ALL' | Extract<InventoryTransactionType, 'IN' | 'OUT' | 'ADJUST'>;
+
+type FetchTransactionHistoryOptions = {
+  itemId?: string;
+  limit?: number;
+  offset: number;
+  type?: InventoryTransactionFilterType;
+};
+
+type RawInventoryTransaction = {
+  id: string;
+  inventory_item_id: string | null;
+  type: InventoryTransactionType;
+  quantity: number;
+  note: string | null;
+  created_at: string;
+  balance_after: number;
+};
+
+type InventoryItemNameRow = {
+  id: string;
+  name: string;
+};
+
+function sanitizeHistoryLimit(limit: number | undefined) {
+  const parsed = Math.floor(Number(limit ?? 50));
+  if (!Number.isFinite(parsed)) return 50;
+  return Math.min(Math.max(parsed, 1), 100);
+}
+
+function sanitizeHistoryOffset(offset: number | undefined) {
+  const parsed = Math.floor(Number(offset ?? 0));
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(parsed, 0);
+}
+
 // === FETCH TRANSACTION HISTORY (SPEC 3.1 — Two-Step Fetch) ===
 // Column: inventory_item_id (VERIFIED via Supabase Dashboard — DO NOT CHANGE)
 // Strategy: Two-step fetch (transactions -> item names -> merge in code)
-export async function fetchTransactionHistory(itemId?: string, limit: number = 50) {
+export async function fetchTransactionHistory(
+  optionsOrItemId?: FetchTransactionHistoryOptions | string,
+  legacyLimit: number = 50,
+) {
   noStore(); // Phase 1: Force disable cache — always fetch fresh from DB
 
   const authError = await requireAuthenticatedRead();
   if (authError) {
-    return { success: false, error: authError, data: [] };
+    return { success: false, error: authError, data: [], hasMore: false };
   }
 
   try {
+    const options =
+      typeof optionsOrItemId === 'object'
+        ? optionsOrItemId
+        : { itemId: optionsOrItemId, limit: legacyLimit, offset: 0 };
+    const itemId = options?.itemId;
+    const safeLimit = sanitizeHistoryLimit(options?.limit);
+    const offset = sanitizeHistoryOffset(options?.offset);
+    const type = options?.type && options.type !== 'ALL' ? options.type : undefined;
+
     // Step 1: Fetch raw transaction data (no join — bulletproof approach)
     // Uses inventory_item_id — VERIFIED column name in actual DB
     let query = supabase
       .from('inventory_transactions')
       .select('id, inventory_item_id, type, quantity, note, created_at, balance_after')
-      .order('created_at', { ascending: false })
-      .limit(limit);
+      .order('created_at', { ascending: false });
 
     if (itemId) {
       query = query.eq('inventory_item_id', itemId);
     }
 
-    const { data: transactions, error: txError } = await query;
+    if (type) {
+      query = query.eq('type', type);
+    }
+
+    query = query.range(offset, offset + safeLimit);
+
+    const { data: transactionRows, error: txError } = await query;
 
     if (txError) {
       console.error('[fetchTransactionHistory] Supabase Deep Error:', txError);
       console.error('[fetchTransactionHistory] Details:', txError.message, txError.details, txError.hint);
-      return { success: false, error: `DB Error: ${txError.message}`, data: [] };
+      return { success: false, error: `DB Error: ${txError.message}`, data: [], hasMore: false };
     }
 
-    if (!transactions || transactions.length === 0) {
-      return { success: true, data: [] };
+    const transactions = (transactionRows ?? []) as RawInventoryTransaction[];
+
+    if (transactions.length === 0) {
+      return { success: true, data: [], hasMore: false };
     }
+
+    const hasMore = transactions.length > safeLimit;
+    const visibleTransactions = transactions.slice(0, safeLimit);
 
     // Step 2: Get unique item IDs and fetch their names separately
     // Uses inventory_item_id — VERIFIED column name in actual DB
     const itemIds = [...new Set(
-      transactions.map((tx: any) => tx.inventory_item_id).filter(Boolean)
+      visibleTransactions.map((tx) => tx.inventory_item_id).filter(Boolean)
     )] as string[];
 
-    let itemNameMap: Record<string, string> = {};
+    const itemNameMap: Record<string, string> = {};
 
     if (itemIds.length > 0) {
       const { data: itemsData, error: itemsError } = await supabase
@@ -629,7 +827,7 @@ export async function fetchTransactionHistory(itemId?: string, limit: number = 5
       if (itemsError) {
         console.error('[fetchTransactionHistory] Items Lookup Error:', itemsError);
       } else if (itemsData) {
-        itemsData.forEach((item: any) => {
+        (itemsData as InventoryItemNameRow[]).forEach((item) => {
           itemNameMap[item.id] = item.name;
         });
       }
@@ -637,7 +835,7 @@ export async function fetchTransactionHistory(itemId?: string, limit: number = 5
 
     // Step 3: Merge names into transaction data
     // Uses inventory_item_id — VERIFIED column name in actual DB
-    const enrichedData = transactions.map((tx: any) => {
+    const enrichedData = visibleTransactions.map((tx) => {
       const resolvedName =
         (tx.inventory_item_id && itemNameMap[tx.inventory_item_id]) ||
         (tx.type === 'DELETE' && tx.note ? tx.note : null) ||
@@ -652,10 +850,11 @@ export async function fetchTransactionHistory(itemId?: string, limit: number = 5
       };
     });
 
-    return { success: true, data: enrichedData };
-  } catch (error: any) {
-    console.error('[fetchTransactionHistory] Unexpected Error:', error.message || error);
-    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการดึงประวัติ', data: [] };
+    return { success: true, data: enrichedData, hasMore };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[fetchTransactionHistory] Unexpected Error:', message);
+    return { success: false, error: message || 'เกิดข้อผิดพลาดในการดึงประวัติ', data: [], hasMore: false };
   }
 }
 
@@ -833,10 +1032,15 @@ export async function fetchComprehensiveInventoryData() {
 }
 
 export type ItemCountAccuracyStats = {
+  itemName?: string;
   totalChecks: number;
   matchChecks: number;
   accuracyPct: number | null;
+  totalDiscrepancyQty: number;
+  totalComparedQty: number;
   lastSystemStockQty: number | null;
+  lastCountedQty: number | null;
+  lastCountedAt: string | null;
   lastMatched: boolean | null;
 };
 
@@ -846,7 +1050,13 @@ export type CountAccuracyStatsResult = {
     totalChecks: number;
     matchChecks: number;
     accuracyPct: number | null;
+    totalDiscrepancyQty: number;
+    totalComparedQty: number;
   };
+};
+
+export type InventoryAccuracyReportResult = CountAccuracyStatsResult & {
+  highDiscrepancyItems: Array<ItemCountAccuracyStats & { itemId: string }>;
 };
 
 const countVerificationSchema = z.object({
@@ -864,7 +1074,7 @@ export async function recordCountVerification(itemId: string, countedQty: number
 
     const { data: itemRow, error: itemError } = await supabase
       .from('inventory_items')
-      .select('stock')
+      .select('stock, count_policy')
       .eq('id', itemId)
       .maybeSingle();
 
@@ -874,6 +1084,7 @@ export async function recordCountVerification(itemId: string, countedQty: number
     }
 
     const baselineStock = Number(itemRow?.stock ?? 0);
+    const countPolicy = itemRow?.count_policy ?? 'exact_count';
 
     const parsed = countVerificationSchema.safeParse({
       itemId,
@@ -882,6 +1093,16 @@ export async function recordCountVerification(itemId: string, countedQty: number
     });
     if (!parsed.success) {
       return { success: false, error: 'Invalid count verification payload' };
+    }
+
+    if (countPolicy !== 'exact_count') {
+      return {
+        success: true,
+        skipped: true,
+        matched: false,
+        systemStockQty: baselineStock,
+        countedQty,
+      };
     }
 
     const matched = isCountMatch(countedQty, baselineStock);
@@ -913,6 +1134,150 @@ export async function recordCountVerification(itemId: string, countedQty: number
   }
 }
 
+export type InventoryCountSaveResult = {
+  success: boolean;
+  error?: string;
+  skipped?: boolean;
+  matched?: boolean;
+  systemStockQty?: number;
+  countedQty?: number;
+  newStock?: number;
+};
+
+/** Count-page save: capture the pre-count baseline before updating stock. */
+export async function recordInventoryCountAndUpdateStock(
+  itemId: string,
+  countedQty: number,
+  options?: InventoryAuditOptions,
+): Promise<InventoryCountSaveResult> {
+  try {
+    const authError = await requireAuthenticatedMutation();
+    if (authError) return { success: false, error: authError };
+
+    const { data: itemRow, error: itemError } = await supabase
+      .from('inventory_items')
+      .select('name, stock, order_point, count_policy')
+      .eq('id', itemId)
+      .maybeSingle();
+
+    if (itemError) {
+      console.error('[recordInventoryCountAndUpdateStock] Supabase Error:', itemError.message, itemError.details);
+      return { success: false, error: itemError.message };
+    }
+
+    const baselineStock = Number(itemRow?.stock ?? 0);
+    const countPolicy = itemRow?.count_policy ?? 'exact_count';
+    const parsed = countVerificationSchema.safeParse({
+      itemId,
+      countedQty,
+      systemStockQty: baselineStock,
+    });
+
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid count verification payload' };
+    }
+
+    const matched = countPolicy === 'exact_count'
+      ? isCountMatch(countedQty, baselineStock)
+      : false;
+
+    if (countPolicy === 'exact_count') {
+      const { error: verificationError } = await supabase
+        .from('inventory_count_verifications')
+        .insert({
+          inventory_item_id: itemId,
+          counted_qty: countedQty,
+          system_stock_qty: baselineStock,
+          matched,
+        });
+
+      if (verificationError) {
+        console.error(
+          '[recordInventoryCountAndUpdateStock] Supabase Error:',
+          verificationError.message,
+          verificationError.details,
+        );
+        return { success: false, error: verificationError.message };
+      }
+    }
+
+    let newStock = countedQty;
+    if (baselineStock !== countedQty) {
+      const { data, error } = await supabase.rpc('set_inventory_stock', {
+        p_item_id: itemId,
+        p_new_stock: countedQty,
+        p_note: 'Stock-taking count',
+        p_record_history: false,
+      });
+
+      if (error) {
+        const rpcMissing = error.message?.includes('set_inventory_stock') || error.code === '42883';
+        if (rpcMissing) {
+          const { error: updateErr } = await supabase
+            .from('inventory_items')
+            .update({ stock: countedQty, updated_at: new Date().toISOString() })
+            .eq('id', itemId);
+
+          if (updateErr) {
+            console.error('[recordInventoryCountAndUpdateStock] Fallback update error:', updateErr.message, updateErr.details);
+            return { success: false, error: updateErr.message };
+          }
+        } else {
+          console.error('[recordInventoryCountAndUpdateStock] Supabase RPC Error:', error.message, error.details, error.hint);
+          return { success: false, error: error.message };
+        }
+      } else {
+        newStock = data?.new_stock ?? countedQty;
+      }
+    }
+
+    await recordDataChange({
+      action: 'UPDATE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      entityId: itemId,
+      entityLabel: itemRow?.name ?? null,
+      fieldChanges: computeFieldChanges(
+        { stock: baselineStock },
+        { stock: newStock },
+      ),
+      metadata: withAuditMetadata(
+        {
+          operation: 'count_stock_save',
+          note: 'Stock-taking count',
+          recordHistory: false,
+          itemName: itemRow?.name ?? null,
+          order_point: itemRow?.order_point ?? null,
+          countPolicy,
+        },
+        {
+          ...options,
+          notificationContext: 'inventory_count',
+          suppressNotification: true,
+        },
+      ),
+    });
+
+    revalidatePath('/[locale]/inventory', 'page');
+    revalidatePath('/[locale]/inventory/count', 'page');
+
+    return {
+      success: true,
+      skipped: countPolicy !== 'exact_count',
+      matched,
+      systemStockQty: baselineStock,
+      countedQty,
+      newStock,
+    };
+  } catch (error: any) {
+    console.error('[recordInventoryCountAndUpdateStock] Unexpected Error:', error.message || error);
+    return {
+      success: false,
+      error: error.message || 'เกิดข้อผิดพลาดในการบันทึกผลตรวจนับ',
+    };
+  }
+}
+
 // === FETCH COUNT ACCURACY STATS ===
 export async function fetchCountAccuracyStats(): Promise<{
   success: boolean;
@@ -929,7 +1294,7 @@ export async function fetchCountAccuracyStats(): Promise<{
   try {
     const { data: rows, error } = await supabase
       .from('inventory_count_verifications')
-      .select('inventory_item_id, matched, system_stock_qty, counted_at')
+      .select('inventory_item_id, matched, system_stock_qty, counted_qty, counted_at')
       .order('counted_at', { ascending: false });
 
     if (error) {
@@ -937,36 +1302,73 @@ export async function fetchCountAccuracyStats(): Promise<{
       return { success: false, error: error.message };
     }
 
+    const { data: exactItems, error: itemsError } = await supabase
+      .from('inventory_items')
+      .select('id, name, count_policy')
+      .eq('count_policy', 'exact_count');
+
+    if (itemsError) {
+      console.error('[fetchCountAccuracyStats] Supabase Error:', itemsError.message, itemsError.details);
+      return { success: false, error: itemsError.message };
+    }
+
+    const exactItemById = new Map(
+      (exactItems ?? []).map((item: { id: string; name: string | null }) => [item.id, item.name]),
+    );
+
     const perItem: Record<string, ItemCountAccuracyStats> = {};
     let overallTotal = 0;
     let overallMatch = 0;
+    let overallDiscrepancy = 0;
+    let overallCompared = 0;
 
     for (const row of rows ?? []) {
       const itemId = row.inventory_item_id as string;
+      if (!exactItemById.has(itemId)) continue;
+
       if (!perItem[itemId]) {
         perItem[itemId] = {
+          itemName: exactItemById.get(itemId) || 'ไม่ทราบชื่อสินค้า',
           totalChecks: 0,
           matchChecks: 0,
           accuracyPct: null,
+          totalDiscrepancyQty: 0,
+          totalComparedQty: 0,
           lastSystemStockQty: null,
+          lastCountedQty: null,
+          lastCountedAt: null,
           lastMatched: null,
         };
       }
 
       const stats = perItem[itemId];
+      const systemStockQty = Number(row.system_stock_qty) || 0;
+      const countedQty = Number(row.counted_qty) || 0;
+      const discrepancyQty = computeCountDiscrepancy(countedQty, systemStockQty);
+      const comparedQty = Math.max(countedQty, systemStockQty, 1);
+
       stats.totalChecks += 1;
       if (row.matched) stats.matchChecks += 1;
+      stats.totalDiscrepancyQty += discrepancyQty;
+      stats.totalComparedQty += comparedQty;
 
       if (stats.lastSystemStockQty === null) {
-        stats.lastSystemStockQty = Number(row.system_stock_qty);
+        stats.lastSystemStockQty = systemStockQty;
+        stats.lastCountedQty = countedQty;
+        stats.lastCountedAt = row.counted_at as string;
         stats.lastMatched = Boolean(row.matched);
       }
     }
 
     for (const stats of Object.values(perItem)) {
-      stats.accuracyPct = computeAccuracyPct(stats.matchChecks, stats.totalChecks);
+      stats.accuracyPct = computeAggregateCountAccuracyPct(
+        stats.totalDiscrepancyQty,
+        stats.totalComparedQty,
+      );
       overallTotal += stats.totalChecks;
       overallMatch += stats.matchChecks;
+      overallDiscrepancy += stats.totalDiscrepancyQty;
+      overallCompared += stats.totalComparedQty;
     }
 
     return {
@@ -976,7 +1378,9 @@ export async function fetchCountAccuracyStats(): Promise<{
         overall: {
           totalChecks: overallTotal,
           matchChecks: overallMatch,
-          accuracyPct: computeAccuracyPct(overallMatch, overallTotal),
+          accuracyPct: computeAggregateCountAccuracyPct(overallDiscrepancy, overallCompared),
+          totalDiscrepancyQty: overallDiscrepancy,
+          totalComparedQty: overallCompared,
         },
       },
     };
@@ -987,4 +1391,34 @@ export async function fetchCountAccuracyStats(): Promise<{
       error: error.message || 'เกิดข้อผิดพลาดในการดึงสถิติความแม่นยำ',
     };
   }
+}
+
+export async function fetchInventoryAccuracyReport(): Promise<{
+  success: boolean;
+  data?: InventoryAccuracyReportResult;
+  error?: string;
+}> {
+  const statsResult = await fetchCountAccuracyStats();
+  if (!statsResult.success || !statsResult.data) {
+    return { success: false, error: statsResult.error || 'เกิดข้อผิดพลาดในการดึงรายงานความแม่นยำ' };
+  }
+
+  const highDiscrepancyItems = Object.entries(statsResult.data.perItem)
+    .map(([itemId, stats]) => ({ itemId, ...stats }))
+    .filter((item) => item.totalDiscrepancyQty > 0)
+    .sort((a, b) => {
+      if (b.totalDiscrepancyQty !== a.totalDiscrepancyQty) {
+        return b.totalDiscrepancyQty - a.totalDiscrepancyQty;
+      }
+      return (a.accuracyPct ?? 100) - (b.accuracyPct ?? 100);
+    })
+    .slice(0, 10);
+
+  return {
+    success: true,
+    data: {
+      ...statsResult.data,
+      highDiscrepancyItems,
+    },
+  };
 }

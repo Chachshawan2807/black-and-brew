@@ -4,6 +4,7 @@ import type {
   WeatherContext,
   WeatherHour,
   HolidayEntry,
+  LocalEventEntry,
   MarketSource,
 } from './market-insights-types';
 
@@ -129,6 +130,50 @@ export async function fetchUpcomingHolidays(
     }));
   } catch (error) {
     console.error('[fetchUpcomingHolidays] Error:', error);
+    return [];
+  }
+}
+
+// ─── Upcoming local events (manual/store-managed market context) ────────────────
+
+export async function fetchUpcomingLocalEvents(
+  supabase: SupabaseClient,
+  daysAhead = 14
+): Promise<LocalEventEntry[]> {
+  try {
+    const today = new Date();
+    const end = new Date(today.getTime() + daysAhead * 86_400_000);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+    const { data, error } = await supabase
+      .from('local_events')
+      .select('date, name, category, expected_impact, source')
+      .gte('date', fmt(today))
+      .lte('date', fmt(end))
+      .order('date', { ascending: true });
+
+    if (error) {
+      console.error('[fetchUpcomingLocalEvents] Error:', error.message);
+      return [];
+    }
+
+    return (data ?? []).map(
+      (event: {
+        date: string;
+        name: string;
+        category: string | null;
+        expected_impact: string | null;
+        source: string | null;
+      }) => ({
+        date: event.date,
+        name: event.name,
+        category: event.category,
+        expectedImpact: event.expected_impact,
+        source: event.source,
+      })
+    );
+  } catch (error) {
+    console.error('[fetchUpcomingLocalEvents] Error:', error);
     return [];
   }
 }

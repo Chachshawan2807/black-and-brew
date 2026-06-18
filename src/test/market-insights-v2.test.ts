@@ -147,6 +147,7 @@ const prev: MarketInsightsV2 = {
     scheduleToday: [],
     shiftCount: 0,
     upcomingHolidays: [],
+    localEvents: [],
     alerts: [],
     competitorAnalysis: null,
   },

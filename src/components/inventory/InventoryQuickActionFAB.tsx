@@ -7,7 +7,7 @@ import { Package, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import {
-  computeItemsToOrder,
+  computePurchaseOrderDerivedState,
   getStockColorClass,
   type InventoryStockFields,
 } from '@/lib/inventory-stock';
@@ -19,6 +19,7 @@ import {
   fetchTransactionHistory,
   fetchFrequentItems,
 } from '@/app/actions/inventory-actions';
+import type { InventoryTransactionFilterType } from '@/app/actions/inventory-actions';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import {
@@ -34,10 +35,12 @@ import { useReadOnly } from '@/components/providers/AuthProvider';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { InventoryQuickActionBar } from './InventoryQuickActionBar';
-import { InventoryHistoryModal } from './InventoryHistoryModal';
+import { InventoryHistoryModal, type TransactionHistoryRow } from './InventoryHistoryModal';
 import { InventoryAddItemModal } from './InventoryAddItemModal';
 
 const PurchaseOrdersModal = dynamic(() => import('@/app/[locale]/inventory/PurchaseOrdersModal'), { ssr: false });
+
+const HISTORY_PAGE_SIZE = 50;
 
 type InventoryItem = InventoryRealtimeItem & InventoryStockFields;
 
@@ -59,7 +62,10 @@ export default function InventoryQuickActionFAB() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<TransactionHistoryRow[]>([]);
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<InventoryTransactionFilterType>('ALL');
+  const [hasMoreHistory, setHasMoreHistory] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [isExportingPO, setIsExportingPO] = useState(false);
 
@@ -73,12 +79,43 @@ export default function InventoryQuickActionFAB() {
     }
   }, []);
 
+  const loadHistoryPage = useCallback(
+    async ({
+      type = historyTypeFilter,
+      offset = 0,
+      append = false,
+    }: {
+      type?: InventoryTransactionFilterType;
+      offset?: number;
+      append?: boolean;
+    } = {}) => {
+      setIsHistoryLoading(true);
+      try {
+        const res = await fetchTransactionHistory({
+          type,
+          offset,
+          limit: HISTORY_PAGE_SIZE,
+        });
+        if (res.success && res.data) {
+          setTransactionHistory((prev) => (append ? [...prev, ...res.data] : res.data));
+          setHasMoreHistory(Boolean(res.hasMore));
+        } else if (res.error) {
+          console.error('[UI] History fetch failed:', res.error);
+          setHasMoreHistory(false);
+        }
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    },
+    [historyTypeFilter],
+  );
+
   const quickAction = useInventoryQuickAction({
     items,
     setItems,
     isReadOnly,
     showHistoryModal,
-    onHistoryRefresh: setTransactionHistory,
+    onHistoryRefresh: () => loadHistoryPage({ offset: 0 }),
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_FAB,
     onAfterSave: () => {
       void loadFrequentItems();
@@ -124,31 +161,33 @@ export default function InventoryQuickActionFAB() {
     }
   }, [showPurchaseOrderModal, isOpen, refresh]);
 
-  const itemsToOrder = useMemo(() => computeItemsToOrder(items), [items]);
-
-  const poSources = useMemo(() => {
-    const sources = new Set<string>();
-    itemsToOrder.forEach((item) => {
-      sources.add(item.source || 'ไม่ได้ระบุแหล่งที่มา');
-    });
-    return Array.from(sources);
-  }, [itemsToOrder]);
-
-  const displayedPoItems = useMemo(() => {
-    if (selectedChannels.includes('all')) return itemsToOrder;
-    return itemsToOrder.filter((i) => selectedChannels.includes(i.source || 'ไม่ได้ระบุแหล่งที่มา'));
-  }, [itemsToOrder, selectedChannels]);
+  const { itemsToOrder, poSources, displayedPoItems } = useMemo(
+    () => computePurchaseOrderDerivedState(items, selectedChannels),
+    [items, selectedChannels],
+  );
 
   const handleOpenHistory = useCallback(async () => {
     setTransactionHistory([]);
+    setHistoryTypeFilter('ALL');
+    setHasMoreHistory(false);
     setShowHistoryModal(true);
-    const res = await fetchTransactionHistory();
-    if (res.success && res.data) {
-      setTransactionHistory(res.data);
-    } else if (res.error) {
-      console.error('[UI] History fetch failed:', res.error);
-    }
-  }, []);
+    await loadHistoryPage({ type: 'ALL', offset: 0 });
+  }, [loadHistoryPage]);
+
+  const handleHistoryTypeFilterChange = useCallback(
+    (nextType: InventoryTransactionFilterType) => {
+      setHistoryTypeFilter(nextType);
+      setTransactionHistory([]);
+      setHasMoreHistory(false);
+      void loadHistoryPage({ type: nextType, offset: 0 });
+    },
+    [loadHistoryPage],
+  );
+
+  const handleLoadMoreHistory = useCallback(() => {
+    if (isHistoryLoading || !hasMoreHistory) return;
+    void loadHistoryPage({ offset: transactionHistory.length, append: true });
+  }, [hasMoreHistory, isHistoryLoading, loadHistoryPage, transactionHistory.length]);
 
   const exportPOImage = async () => {
     const element = document.getElementById('blackandbrew-po-table-export-fab');
@@ -158,6 +197,7 @@ export default function InventoryQuickActionFAB() {
       const { captureElementAsPng, downloadDataUrl } = await import('@/lib/capture-element-png');
       const dataUrl = await captureElementAsPng(element, {
         backgroundColor: '#fff3dd',
+        preserveOverflow: true,
         filter: (node) => (node as HTMLElement)?.id !== 'po-action-buttons',
       });
       const channelSuffix = selectedChannels.includes('all') ? 'All' : selectedChannels.join('-');
@@ -302,11 +342,7 @@ export default function InventoryQuickActionFAB() {
               });
               void loadFrequentItems();
               if (showHistoryModal) {
-                void fetchTransactionHistory().then((histRes) => {
-                  if (histRes.success && histRes.data) {
-                    setTransactionHistory(histRes.data);
-                  }
-                });
+                void loadHistoryPage({ offset: 0 });
               }
             }}
           />
@@ -315,7 +351,15 @@ export default function InventoryQuickActionFAB() {
 
       <AnimatePresence>
         {showHistoryModal && (
-          <InventoryHistoryModal transactionHistory={transactionHistory} onClose={() => setShowHistoryModal(false)} />
+          <InventoryHistoryModal
+            transactionHistory={transactionHistory}
+            onClose={() => setShowHistoryModal(false)}
+            historyTypeFilter={historyTypeFilter}
+            onTypeFilterChange={handleHistoryTypeFilterChange}
+            onLoadMore={handleLoadMoreHistory}
+            hasMoreHistory={hasMoreHistory}
+            isHistoryLoading={isHistoryLoading}
+          />
         )}
       </AnimatePresence>
 

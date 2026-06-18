@@ -9,6 +9,11 @@ const mockOrder = vi.fn();
 const mockLimit = vi.fn();
 const mockEq = vi.fn();
 const mockGetUser = vi.fn();
+const { mockAfter } = vi.hoisted(() => ({
+  mockAfter: vi.fn((callback: () => void | Promise<void>) => {
+    void callback();
+  }),
+}));
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn().mockImplementation(async () => ({
@@ -21,6 +26,10 @@ vi.mock('next/headers', () => ({
       return null;
     },
   })),
+}));
+
+vi.mock('next/server', () => ({
+  after: mockAfter,
 }));
 
 vi.mock('@/lib/session-revocation', () => ({
@@ -45,6 +54,7 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 import { recordDataChange, fetchDataChangeLogs } from '@/app/actions/data-change-log-actions';
+import { dispatchInventoryWebPush } from '@/lib/web-push';
 
 describe('computeFieldChanges', () => {
   test('detects changed fields and redacts sensitive keys', () => {
@@ -156,6 +166,28 @@ describe('recordDataChange', () => {
       expect.objectContaining({
         field_changes: [{ field: 'status', old_value: 'OFF', new_value: 'MORNING' }],
       })
+    );
+  });
+
+  test('schedules inventory web push with after so serverless does not drop cross-device alerts', async () => {
+    await recordDataChange({
+      action: 'UPDATE',
+      module: 'inventory',
+      entityType: 'inventory_item',
+      entityId: 'item-1',
+      fieldChanges: [{ field: 'stock', old_value: 0, new_value: 1 }],
+      metadata: {
+        notificationSource: 'inventory_warehouse_grid',
+        clientSessionId: 'android-tab',
+      },
+    });
+
+    expect(mockAfter).toHaveBeenCalledTimes(1);
+    expect(dispatchInventoryWebPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'log-1',
+        module: 'inventory',
+      }),
     );
   });
 });

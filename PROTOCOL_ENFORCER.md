@@ -23,10 +23,10 @@
 
 - **Standard**: ทุกตารางข้อมูล (รวมถึงบน Desktop และ Modal) ต้องไม่ล้นขอบคอนเทนเนอร์และรองรับการเลื่อนในแนวนอน
 - **Implementation**:
-  1. ต้องห่อหุ้มตารางด้วย `<div className="w-full overflow-x-auto scrollbar-thin border border-black/5 rounded-3xl pb-8">` เสมอ (เพิ่ม pb-8 เพื่อกัน Scrollbar บังเนื้อหา)
+  1. ต้องห่อหุ้มตารางด้วย `<div className="w-full overflow-x-auto scrollbar-thin border border-border rounded-3xl pb-8">` เสมอ (เพิ่ม pb-8 เพื่อกัน Scrollbar บังเนื้อหา)
   2. ตัวตารางต้องมี `w-full` และ `min-width` ที่เหมาะสม (เช่น `min-w-[1000px]` สำหรับตารางจัดการกะ)
   3. ปรับลด Padding ของเซลล์ให้กระชับ (`px-2 py-2` หรือ `p-2`) เพื่อความหนาแน่นของข้อมูลที่เหมาะสม
-  4. บังคับใช้ `text-black` และ `font-normal` ตาม Zero-Bold Policy 100%
+  4. บังคับใช้ `text-foreground` บน non-pastel surfaces และ `font-normal` ตาม Zero-Bold Policy 100%; ใช้ `text-black` เฉพาะใน `.bb-pastel-surface`
 
 ## Employee Data Integrity (DEC-059)
 
@@ -44,12 +44,12 @@
 
 - **Standard**: Item names are left-aligned; all other PO data is centered.
 - **Implementation**: Large datasets must be segmented by Source via a Tabbed Interface to minimize scrolling and provide a Focused View.
-- **Aesthetic**: Modal uses `bg-[#fdfcf0]`, `rounded-3xl`, and `border-black/5` with Mono font for numeric alignment.
+- **Aesthetic**: Modal uses theme-token surfaces (`bg-card`, `text-foreground`, `border-border`), `rounded-3xl`, and Mono font for numeric alignment. Pastel metric cards must include `bb-pastel-surface`.
 
 ## Automated Ordering Standards
 
-- **Standard**: Order Quantity is a computed field based on stock/order_point triggers. Manual overrides are disabled.
-- **Logic**: `IF stock <= order_point THEN computedOrderQty = target_stock - stock ELSE 0`.
+- **Standard**: Order Quantity is computed for `exact_count` items and manual for `sufficiency_check` items.
+- **Logic**: `exact_count`: `IF stock <= order_point THEN computedOrderQty = target_stock - stock ELSE 0`; `sufficiency_check`: use manual `order_qty` and skip accuracy scoring.
 - **UI Element**: Purchase Orders must be displayed in a consolidated view grouping by source for ease of procurement.
 
 ## State Resolution Standard
@@ -84,7 +84,7 @@
 
 - **Search UI**: Hover-based activation for search results is strictly prohibited.
 - **Search Behavior**: Search results (Product List) must only show during active input and must be displayed as a modular dropdown below the search box.
-- **Search Styling**: Use Black-on-Pastel theme (`bg-[#fdfcf0]`, `#000000`, `rounded-3xl`, subtle shadow).
+- **Search Styling**: Use theme-token surfaces (`bg-card`, `text-foreground`, `border-border`, `rounded-3xl`, subtle shadow); use Black-on-Pastel only inside `bb-pastel-surface`.
 - **Transaction Logic**: Transaction history must update the running balance atomically. Use Postgres RPC (`record_inventory_transaction`) to ensure zero-guard and prevent race conditions.
 
 ## High-Performance Drag Standards (World-Class Velocity)

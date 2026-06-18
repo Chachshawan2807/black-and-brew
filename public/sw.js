@@ -2,7 +2,7 @@ importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/pwa-badge.js');
 
-const { BRAND_ICON, BRAND_ICON_512, CACHE_VERSION, VIBRATE } = self.PWA_ASSETS;
+const { BRAND_ICON, BRAND_ICON_512, NOTIFICATION_BADGE, CACHE_VERSION, VIBRATE } = self.PWA_ASSETS;
 const CACHE_NAME = `blackandbrew-cache-v${CACHE_VERSION}`;
 
 function assetUrl(path) {
@@ -18,6 +18,7 @@ const urlsToCache = [
   '/ai-agent-logo.svg',
   BRAND_ICON,
   BRAND_ICON_512,
+  NOTIFICATION_BADGE,
 ];
 
 self.addEventListener('install', (event) => {
@@ -100,10 +101,11 @@ self.addEventListener('push', (event) => {
       const unreadCount = await resolveUnreadCount(payload);
 
       const brandIcon = assetUrl(BRAND_ICON);
+      const notificationBadge = assetUrl(NOTIFICATION_BADGE);
       const options = {
         body: payload.body,
         icon: brandIcon,
-        badge: brandIcon,
+        badge: notificationBadge,
         tag: payload.tag || 'bb-inventory',
         silent: false,
         requireInteraction: false,

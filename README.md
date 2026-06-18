@@ -1,8 +1,8 @@
 # BLACK-AND-BREW ERP System
 
-Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
+Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา วิเคราะห์ตลาด และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
 
-> Version: 8.8 | Stack: Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
+> Version: 8.9 | Stack: Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
 
 ---
 
@@ -13,11 +13,12 @@ Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AN
 | Command Center | `/[locale]` | สถานะกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์ |
 | Staff Dashboard | `/[locale]/dashboard` | ลงเวลา รายชื่อกะ ตารางรายเดือน |
 | Schedule | `/[locale]/schedule` | จัดกะ Drag-and-Drop + วันหยุดราชการ |
-| Inventory | `/[locale]/inventory` | ตารางคลังสินค้าแบบ Spreadsheet + FAB Quick Action + Undo/Redo |
-| Stock Count | `/[locale]/inventory/count` | ตรวจนับสต็อกจริง + ความแม่นยำ IN/OUT |
+| Inventory | `/[locale]/inventory` | ตารางคลังสินค้าแบบ Spreadsheet + FAB Quick Action + Undo/Redo + นโยบายการนับสินค้า |
+| Stock Count | `/[locale]/inventory/count` | ตรวจนับสต็อกจริง; แยก `exact_count` กับ `sufficiency_check` |
+| Inventory Accuracy | `/[locale]/inventory/accuracy` | รายงานความแม่นยำเฉพาะสินค้าที่ตั้งค่าเป็นนับจริง |
 | Maintenance | `/[locale]/maintenance` | บันทึกการซ่อมบำรุงอุปกรณ์ |
 | Sales | `/[locale]/sales` | อัปโหลด Excel วิเคราะห์ยอดขาย |
-| Market Insights | `/[locale]/market-insights` | วิเคราะห์ตลาดด้วย Gemini AI |
+| Market Insights | `/[locale]/market-insights` | วิเคราะห์ตลาดด้วย Gemini AI โดยรวม weather, holidays, local events, sales และ stock signals |
 | Settings | `/[locale]/settings` | ธีม, ประวัติการเข้าใช้, trusted-device passkeys, การแจ้งเตือน |
 | AI Chat (บรู) | Global overlay | แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน |
 
@@ -146,6 +147,7 @@ src/
 
 - Database: Supabase PostgreSQL (Thailand Edge)
 - Stock sync: RPC `set_inventory_stock` — ดู `sql/sync_inventory_stock.sql`
+- Count policy: `inventory_items.count_policy` — `exact_count` คิดรวม accuracy; `sufficiency_check` ใช้ `order_qty` แบบ manual และไม่คิดรวมคะแนน
 - RLS hardening: `sql/fix_inventory_rls.sql` (authenticated-only หลัง anonymous sign-in)
 - PWA: `src/app/manifest.ts` (icons `/images/notification-icon*.png`, theme `#000000`, background `#ffffff`) + `public/sw.js` (Network-First) + `PwaRegister.tsx`
 

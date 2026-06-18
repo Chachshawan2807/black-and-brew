@@ -11,9 +11,10 @@ import { FAB_BOTTOM_NOTIFICATION_CLASS } from '@/lib/floating-action-layout';
 export function InventoryNotificationFAB() {
   const { panelOpen } = useNotificationState();
   const { setPanelOpen } = useNotificationActions();
-  const { fabStackHidden, fabStackSuppressed, setOverlayOpen } = useFloatingOverlay();
+  const { fabStackHidden, fabStackSuppressed, isAnyOtherOpen, setOverlayOpen } = useFloatingOverlay();
 
-  const hidden = panelOpen || fabStackHidden || fabStackSuppressed;
+  const hidden =
+    panelOpen || fabStackHidden || fabStackSuppressed || isAnyOtherOpen('notification');
 
   useEffect(() => {
     setOverlayOpen('notification', panelOpen);

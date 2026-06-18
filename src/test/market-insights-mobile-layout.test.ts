@@ -21,11 +21,12 @@ describe('Market Insights mobile layout — compositor-safe rendering', () => {
     expect(code).toMatch(/isLoading\s*&&\s*hasLoaded/);
   });
 
-  test('ContextPanel KPI section should use single-column grid on mobile and expand on sm+', () => {
+  test('ContextPanel KPI section should use stable auto-height rows on mobile and expand on sm+', () => {
     const code = readFile('app/[locale]/market-insights/components/ContextPanel.tsx');
-    expect(code).toMatch(/grid w-full grid-cols-1 gap-2\.5 sm:grid-cols-2/);
+    expect(code).toMatch(/grid w-full grid-cols-1 auto-rows-min items-start gap-3 sm:grid-cols-2/);
     expect(code).not.toMatch(/contain:paint/);
-    expect(code).toMatch(/shrink-0/);
+    expect(code).not.toMatch(/w-full min-w-0 shrink-0 rounded-2xl/);
+    expect(code).toMatch(/overflow-hidden/);
   });
 
   test('MarketInsightsClient refresh overlay should hide underlying content on mobile', () => {

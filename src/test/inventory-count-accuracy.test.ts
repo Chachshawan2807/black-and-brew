@@ -1,13 +1,19 @@
 import { describe, expect, test } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { isCountMatch } from '@/lib/inventory-count-accuracy';
+import { computeCountAccuracyPct, isCountMatch } from '@/lib/inventory-count-accuracy';
 
 describe('inventory count accuracy', () => {
   test('isCountMatch compares counted qty against system stock', () => {
     expect(isCountMatch(10, 10)).toBe(true);
     expect(isCountMatch(10, 9)).toBe(false);
     expect(isCountMatch(0, 0)).toBe(true);
+  });
+
+  test('count accuracy uses quantity discrepancy proportion', () => {
+    expect(computeCountAccuracyPct(9, 10)).toBe(90);
+    expect(computeCountAccuracyPct(99, 100)).toBe(99);
+    expect(computeCountAccuracyPct(0, 1)).toBe(0);
   });
 
   test('migration resets legacy rows and renames baseline column', () => {
@@ -26,24 +32,26 @@ describe('inventory count accuracy', () => {
     );
     expect(actionsCode).toContain('isCountMatch');
     expect(actionsCode).toContain('recordCountVerification');
+    expect(actionsCode).toContain('recordInventoryCountAndUpdateStock');
     expect(actionsCode).toContain('fetchCountAccuracyStats');
     expect(actionsCode).toContain('system_stock_qty');
-    expect(actionsCode).toContain(".select('stock')");
+    expect(actionsCode).toContain(".select('stock, count_policy')");
+    expect(actionsCode).toContain("count_policy', 'exact_count'");
     expect(actionsCode).not.toContain('computeInOutTheoreticalStockForItem');
-    expect(actionsCode).not.toMatch(/recordCountVerification\([\s\S]*systemStockQty\?:/);
   });
 
-  test('count page shows total and item-level accuracy with empty count inputs', () => {
+  test('count page shows item-level accuracy with empty count inputs', () => {
     const countPage = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/count/InventoryCountClient.tsx'),
       'utf-8',
     );
     expect(countPage).toContain('fetchCountAccuracyStats');
-    expect(countPage).toContain('recordCountVerification');
-    expect(countPage).toContain('Promise.all');
+    expect(countPage).toContain('recordInventoryCountAndUpdateStock');
+    expect(countPage).not.toContain('recordCountVerification');
+    expect(countPage).not.toContain('Promise.all');
     expect(countPage).toContain('void loadAccuracyStats');
-    expect(countPage).toContain('ค่าความแม่นยำรวม');
-    expect(countPage).toContain('Total Accuracy');
+    expect(countPage).not.toContain('ค่าความแม่นยำรวม');
+    expect(countPage).not.toContain('Total Accuracy');
     expect(countPage).toContain('Item-level Accuracy');
     expect(countPage).toContain('placeholder="จำนวน"');
     expect(countPage).not.toContain('fetchInOutTheoreticalQtyMap');

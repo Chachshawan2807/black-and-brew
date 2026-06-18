@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-06-19 (Inventory Count Policy + Local Events Doc Sync v8.9)
+
+- Execution: [Markdown documentation sync — current repo structure and migrations]
+- Changes:
+  - **Inventory count policy:** documented `inventory_items.count_policy` (`exact_count` / `sufficiency_check`), manual `order_qty` behavior, skipped accuracy scoring, and `/[locale]/inventory/accuracy`
+  - **Market Insights context:** documented `local_events`, `fetchUpcomingLocalEvents()`, and `buildLocalEventsContext()`
+  - **Docs synced:** `README.md`, `docs/architecture.md`, `docs/api.md`, `docs/database.md`, `docs/context.md`, `docs/prd.md`, `docs/tasks.md`, `docs/design.md`, `docs/rules.md`, `docs/memory.md`, `docs/MASTER_BLUEPRINT.md`, `PROJECT_MAP.md`, `MASTER_BLUEPRINT.md`, `sql/README.md`, `docs/SUMMARY_REPORT.md`
+  - **Counts corrected:** `supabase/migrations/` = 12 migration files; `src/test/` = 95 test files
+- Verification: `graphify query` first; `git diff -- *.md`; `npm run lint:md`; graphify update attempted after docs edits
+
 ## 2026-06-17 (Web Push Cross-Device + Doc/SQL/Graphify Sync v8.7)
 
 - Execution: [FULL DOCUMENTATION SYNC — Web Push feature + graphify refresh]

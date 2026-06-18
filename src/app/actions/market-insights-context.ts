@@ -9,6 +9,7 @@ import type {
   MarketAlert,
   MarketInsightsV2,
   MarketInsightsDiff,
+  LocalEventEntry,
 } from './market-insights-types';
 
 export function buildSalesContext(metrics: SalesMetrics | null): string {
@@ -214,6 +215,24 @@ export function buildScheduleContextFromFormatted(formatted: FormattedDailyShift
   const entries = flattenWorkingShiftEntries(formatted);
   if (!entries.length) return 'N/A';
   return entries.map((entry) => `${entry.name} ${entry.shift}`).join(', ');
+}
+
+export function buildLocalEventsContext(events: LocalEventEntry[]): string {
+  if (!events.length) return 'N/A';
+
+  return events
+    .slice(0, 6)
+    .map((event) => {
+      const details = [
+        event.category,
+        event.expectedImpact ? `impact=${event.expectedImpact}` : null,
+        event.source ? `source=${event.source}` : null,
+      ]
+        .filter(Boolean)
+        .join(',');
+      return details ? `${event.date} ${event.name}(${details})` : `${event.date} ${event.name}`;
+    })
+    .join(' | ');
 }
 
 /**

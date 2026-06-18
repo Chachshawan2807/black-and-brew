@@ -10,16 +10,53 @@ import {
 } from '@/app/actions/passkey-actions';
 import type { ClientDevicePayload } from '@/lib/login-history-types';
 
-export async function isBiometricLoginAvailable(): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
-  if (!window.PublicKeyCredential) return false;
+export interface BiometricLoginAvailability {
+  supported: boolean;
+  canAutoTrigger: boolean;
+  hasPlatformAuthenticator: boolean;
+}
+
+export async function getBiometricLoginAvailability(): Promise<BiometricLoginAvailability> {
+  if (typeof window === 'undefined') {
+    return { supported: false, canAutoTrigger: false, hasPlatformAuthenticator: false };
+  }
+
+  if (!window.PublicKeyCredential || !navigator.credentials?.get) {
+    return { supported: false, canAutoTrigger: false, hasPlatformAuthenticator: false };
+  }
+
+  if (window.isSecureContext === false) {
+    return { supported: false, canAutoTrigger: false, hasPlatformAuthenticator: false };
+  }
 
   try {
-    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    return available;
+    const hasPlatformAuthenticator =
+      await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+
+    return {
+      supported: true,
+      canAutoTrigger: hasPlatformAuthenticator,
+      hasPlatformAuthenticator,
+    };
   } catch {
-    return false;
+    // Some desktop browsers support passkey sign-in but fail platform probing.
+    // Keep manual Windows Hello/passkey entry available and skip auto prompts.
+    return { supported: true, canAutoTrigger: false, hasPlatformAuthenticator: false };
   }
+}
+
+export async function isBiometricLoginAvailable(): Promise<boolean> {
+  const availability = await getBiometricLoginAvailability();
+  return availability.supported;
+}
+
+function getWebAuthnErrorName(error: unknown): string {
+  return typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    typeof error.name === 'string'
+    ? error.name
+    : '';
 }
 
 async function createCredentialFromOptions(optionsJSON: string): Promise<RegistrationResponseJSON> {
@@ -54,9 +91,12 @@ export async function registerDevicePasskey(
     const response = await createCredentialFromOptions(optionsResult.optionsJSON);
     return verifyPasskeyRegistration(JSON.stringify(response), device);
   } catch (error) {
-    const name = error instanceof Error ? error.name : '';
+    const name = getWebAuthnErrorName(error);
     if (name === 'NotAllowedError') {
       return { success: false, error: 'ยกเลิกการสแกนลายนิ้วมือ/ใบหน้า' };
+    }
+    if (name === 'AbortError') {
+      return { success: false, error: 'การสแกนลายนิ้วมือ/ใบหน้าถูกยกเลิก' };
     }
     console.error('[registerDevicePasskey]', error);
     return { success: false, error: 'ลงทะเบียนลายนิ้วมือไม่สำเร็จ' };
@@ -77,9 +117,12 @@ export async function loginWithDevicePasskey(
     const response = await getCredentialFromOptions(optionsResult.optionsJSON);
     return verifyPasskeyLogin(JSON.stringify(response), device);
   } catch (error) {
-    const name = error instanceof Error ? error.name : '';
+    const name = getWebAuthnErrorName(error);
     if (name === 'NotAllowedError') {
       return { success: false, error: 'ยกเลิกการสแกนลายนิ้วมือ/ใบหน้า' };
+    }
+    if (name === 'AbortError') {
+      return { success: false, error: 'การสแกนลายนิ้วมือ/ใบหน้าถูกยกเลิก' };
     }
     console.error('[loginWithDevicePasskey]', error);
     return { success: false, error: 'เข้าสู่ระบบด้วยลายนิ้วมือไม่สำเร็จ' };
@@ -90,8 +133,8 @@ export async function shouldOfferPasskeyEnrollment(
   sessionFingerprint: string | undefined
 ): Promise<boolean> {
   if (!sessionFingerprint) return false;
-  const biometric = await isBiometricLoginAvailable();
-  if (!biometric) return false;
+  const biometric = await getBiometricLoginAvailability();
+  if (!biometric.hasPlatformAuthenticator) return false;
   const { hasPasskey } = await checkDeviceHasPasskey(sessionFingerprint);
   return !hasPasskey;
 }

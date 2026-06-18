@@ -38,6 +38,43 @@ describe('iOS scroll & export fixes', () => {
     expect(code).not.toMatch(/const\s*\{\s*toPng\s*\}\s*=\s*await\s+import\('html-to-image'\)/);
   });
 
+  test('ScheduleClient keeps employee and shift text on one line', () => {
+    const code = readFile('app/[locale]/schedule/ScheduleClient.tsx');
+    expect(code).toContain('SCHEDULE_GRID_TEMPLATE');
+    expect(code).toMatch(/minmax\(180px,\s*max-content\)\s+repeat\(7,\s*minmax\(104px,\s*1fr\)\)/);
+    expect(code).toContain('bb-schedule-grid');
+    expect(code).toContain('bb-schedule-nowrap');
+    expect(code).toContain('whitespace-nowrap');
+    expect(code).not.toContain('grid grid-cols-8 border-b border-border hover:bg-muted/30');
+    expect(code).not.toContain('text-foreground truncate leading');
+  });
+
+  test('schedule export preserves nowrap schedule layout', () => {
+    const code = readFile('lib/schedule-export-capture.ts');
+    expect(code).toContain('bb-schedule-grid');
+    expect(code).toContain('bb-schedule-nowrap');
+    expect(code).toContain('grid-template-columns');
+    expect(code).toContain('white-space');
+    expect(code).toContain('nowrap');
+  });
+
+  test('schedule export uses the same app font stack as the website', () => {
+    const code = readFile('lib/schedule-export-capture.ts');
+    expect(code).toContain("import { APP_FONT_FAMILY_CSS } from '@/lib/fonts'");
+    expect(code).toContain('resolveScheduleExportFontFamily');
+    expect(code).toContain('document.fonts.ready');
+    expect(code).toContain("setInline(restores, node, 'font-family'");
+    expect(code).toContain('skipFonts: false');
+  });
+
+  test('MonthlyRoster table gives names and shift labels enough width', () => {
+    const code = readFile('app/[locale]/dashboard/components/MonthlyRoster.tsx');
+    expect(code).toContain('min-w-[9.5rem] w-max');
+    expect(code).toContain('min-w-[6.5rem]');
+    expect(code).toContain('whitespace-nowrap');
+    expect(code).not.toContain('min-w-[75px]');
+  });
+
   test('InventoryHistoryModal uses bidirectional iOS scroll class', () => {
     const code = readFile('components/inventory/InventoryHistoryModal.tsx');
     expect(code).toMatch(/bb-smooth-scroll bb-scroll-xy/);

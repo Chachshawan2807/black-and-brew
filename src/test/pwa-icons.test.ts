@@ -15,9 +15,11 @@ import {
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const ICON = path.join(ROOT, 'public/images/notification-icon.png');
+const BADGE = path.join(ROOT, 'public/images/notification-badge.png');
 
 const TRANSPARENT_BRAND_ICON_PATHS = [
   'public/images/notification-icon.png',
+  'public/images/notification-badge.png',
   'public/images/notification-icon-512.png',
   'public/images/favicon.png',
   'public/images/apple-touch-icon.png',
@@ -40,6 +42,18 @@ async function cornerPixels(filePath: string) {
   });
 }
 
+async function opaquePixelsAreBlack(filePath: string) {
+  const { data } = await sharp(filePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let opaqueCount = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha < 16) continue;
+    opaqueCount += 1;
+    if (data[i] > 8 || data[i + 1] > 8 || data[i + 2] > 8) return false;
+  }
+  return opaqueCount > 100;
+}
+
 describe('PWA notification icons', () => {
   test('brand icons use transparent background corners (black mark only)', async () => {
     for (const rel of TRANSPARENT_BRAND_ICON_PATHS) {
@@ -56,15 +70,18 @@ describe('PWA notification icons', () => {
     expect(meta.height).toBe(192);
   });
 
-  test('legacy notification-badge.png is not used', () => {
-    expect(fs.existsSync(path.join(ROOT, 'public/images/notification-badge.png'))).toBe(false);
+  test('notification badge is monochrome mask sized for mobile OS badges', async () => {
+    const meta = await sharp(BADGE).metadata();
+    expect(meta.width).toBe(96);
+    expect(meta.height).toBe(96);
+    expect(await opaquePixelsAreBlack(BADGE)).toBe(true);
   });
 });
 
 describe('PWA cross-platform asset consistency', () => {
-  test('icon and badge constants point to the same brand asset', () => {
+  test('notification icon and badge use separate mobile OS assets', () => {
     expect(PWA_NOTIFICATION_ICON).toBe(PWA_BRAND_ICON);
-    expect(PWA_NOTIFICATION_BADGE).toBe(PWA_BRAND_ICON);
+    expect(PWA_NOTIFICATION_BADGE).toBe('/images/notification-badge.png');
   });
 
   test('manifest, favicon, and apple-touch icons use shared brand paths', () => {
@@ -83,22 +100,23 @@ describe('PWA cross-platform asset consistency', () => {
     expect(m.scope).toBe('/');
   });
 
-  test('OS notification options use identical icon and badge URLs', () => {
+  test('OS notification options use separate icon and badge URLs', () => {
     const opts = buildOsNotificationOptions({
       body: 'รับ 2 · คงเหลือ: 0 → 2',
       origin: 'https://blackandbrew.vercel.app',
     });
     expect(opts.icon).toBe('https://blackandbrew.vercel.app/images/notification-icon.png');
-    expect(opts.badge).toBe(opts.icon);
+    expect(opts.badge).toBe('https://blackandbrew.vercel.app/images/notification-badge.png');
   });
 
-  test('service worker and pwa-assets.js reference the same brand icon path', () => {
+  test('service worker and pwa-assets.js reference the notification badge path', () => {
     const sw = fs.readFileSync(path.join(ROOT, 'public/sw.js'), 'utf8');
     const assets = fs.readFileSync(path.join(ROOT, 'public/pwa-assets.js'), 'utf8');
     expect(sw).toContain("importScripts('/pwa-assets.js')");
     expect(sw).toContain("importScripts('/pwa-badge.js')");
-    expect(sw).toContain('badge: brandIcon');
+    expect(sw).toContain('badge: notificationBadge');
     expect(sw).toContain('renotify: true');
     expect(assets).toContain(`"BRAND_ICON": "${PWA_BRAND_ICON}"`);
+    expect(assets).toContain(`"NOTIFICATION_BADGE": "${PWA_NOTIFICATION_BADGE}"`);
   });
 });

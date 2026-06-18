@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> Version: 8.5 | Last Updated: 2026-06-12 | Enforcement: Mandatory
+> Version: 8.9 | Last Updated: 2026-06-19 | Enforcement: Mandatory
 
 ---
 
@@ -20,8 +20,10 @@
 | --- | :--- | --- |
 | `inventory_transactions` | `inventory_item_id` | FK to `inventory_items.id` — renamed from `product_id` |
 | `inventory_items` | `stock`, `order_qty`, `order_point`, `target_stock` | NUMERIC type, sanitize empty → 0 |
+| `inventory_items` | `count_policy` | `exact_count` or `sufficiency_check`; controls count accuracy and manual PO quantity |
 | `inventory_items` | `sort_order` | INTEGER, controls drag-and-drop ordering |
 | `inventory_config` | `settings` | JSONB containing `order`, `labels`, `widths` |
+| `local_events` | `date`, `name`, `expected_impact` | Store-managed Market Insights context |
 
 ### TypeScript/React
 
@@ -103,6 +105,7 @@
 
 - Quick Entry IN/OUT MUST go through `record_inventory_transaction` RPC
 - Absolute stock edits (warehouse cell, stock-taking) MUST go through `updateInventoryStock()` → `set_inventory_stock` RPC
+- `exact_count` items record accuracy rows; `sufficiency_check` items MUST skip accuracy scoring and use manual `order_qty`
 - Realtime handlers MUST use `mergeInventoryRealtimeUpdate()` — never replace full row with partial payload
 - Transactions MUST NEVER use UI Undo/Redo stack
 - Undo/redo upsert MUST NOT overwrite live `stock` from DB (fetch current stock before sync)

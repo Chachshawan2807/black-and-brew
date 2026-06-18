@@ -1,6 +1,6 @@
 # Design Standards — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-15 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
+> Version: 8.9 | Last Updated: 2026-06-19 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
 
 ---
 
@@ -298,3 +298,17 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 - ❌ `bg-[#fdfcf0]` or `bg-white` on page wrappers in new code
 - ❌ `text-black` / `text-[#000000]` on non-pastel dark surfaces
 - ❌ Pastel cards without `bb-pastel-surface` (white/invisible text in dark mode)
+
+---
+
+## 12. Inventory Count Policy UI (v8.9)
+
+| Policy | UI label | Behavior |
+| --- | --- | --- |
+| `exact_count` | นับจริง | Count entries are compared to system stock and included in accuracy metrics |
+| `sufficiency_check` | เช็คพอใช้ | Count entries skip accuracy scoring; purchase-order quantity uses manual `order_qty` |
+
+Design rules:
+
+- Policy controls are compact spreadsheet controls inside the inventory table, not separate edit modals.
+- The `/[locale]/inventory/accuracy` report uses normal theme-token surfaces and pastel metric cards with `bb-pastel-surface`.

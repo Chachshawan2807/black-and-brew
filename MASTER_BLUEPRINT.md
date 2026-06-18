@@ -1,6 +1,6 @@
 # MASTER BLUEPRINT — BLACKANDBREW ERP
 
-> Last Updated: 2026-06-17 | Version: 8.8
+> Last Updated: 2026-06-19 | Version: 8.9
 
 This file is a redirect stub. The canonical Master Blueprint lives in [`docs/MASTER_BLUEPRINT.md`](docs/MASTER_BLUEPRINT.md).
 

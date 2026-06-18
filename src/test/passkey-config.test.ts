@@ -22,6 +22,10 @@ describe('passkey webauthn origin', () => {
   test('builds origin from host for production', () => {
     expect(resolveOriginFromHost('erp.example.com', 'https')).toBe('https://erp.example.com');
   });
+
+  test('keeps localhost port in WebAuthn expected origin', () => {
+    expect(resolveOriginFromHost('localhost:3000', 'http')).toBe('http://localhost:3000');
+  });
 });
 
 describe('fingerprintToPasskeyUserId', () => {

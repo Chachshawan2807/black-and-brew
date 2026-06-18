@@ -8,9 +8,12 @@ export interface InventoryItem {
   unit: string;
   source: string;
   sort_order: number;
+  count_policy?: InventoryCountPolicy;
   updated_at?: string;
   [key: string]: string | number | undefined;
 }
+
+export type InventoryCountPolicy = 'exact_count' | 'sufficiency_check';
 
 /** Value accepted by inventory cell editors and save handlers */
 export type InventoryFieldValue = string | number;
@@ -119,9 +122,11 @@ export function parseLocalColumnWidths(): Record<string, string> {
     if (widths && typeof widths === 'object' && !Array.isArray(widths)) {
       const safeWidths: Record<string, string> = {};
       Object.entries(widths).forEach(([key, val]) => {
-        const numVal = Number(val);
+        const raw = typeof val === 'string' ? val.trim() : String(val);
+        const match = raw.match(/^(\d+(?:\.\d+)?)(px)?$/);
+        const numVal = match ? Number(match[1]) : NaN;
         if (typeof key === 'string' && !isNaN(numVal) && numVal > 0 && numVal < 2000) {
-          safeWidths[key] = String(numVal);
+          safeWidths[key] = `${numVal}px`;
         }
       });
       return safeWidths;

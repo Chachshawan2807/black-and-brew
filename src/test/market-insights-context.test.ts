@@ -4,6 +4,7 @@ import {
   buildInventoryContext,
   buildScheduleContext,
   buildAnalyticalSignals,
+  buildLocalEventsContext,
 } from '@/app/actions/market-insights-context';
 import type { SalesMetrics } from '@/app/actions/sales-actions';
 
@@ -62,6 +63,22 @@ describe('Market Insights Context Builders', () => {
       { full_name: 'แอน', start_time_local: '08:00', end_time_local: '16:00', status: 'active' },
     ]);
     expect(ctx).toContain('แอน 08:00-16:00(active)');
+  });
+
+  test('buildLocalEventsContext summarizes nearby events for the AI prompt', () => {
+    const ctx = buildLocalEventsContext([
+      {
+        date: '2026-06-21',
+        name: 'ตลาดนัดหน้าหมู่บ้าน',
+        category: 'market',
+        expectedImpact: 'คนเดินผ่านร้านเพิ่มช่วงเย็น',
+        source: 'manual',
+      },
+    ]);
+
+    expect(ctx).toContain('2026-06-21 ตลาดนัดหน้าหมู่บ้าน');
+    expect(ctx).toContain('market');
+    expect(ctx).toContain('คนเดินผ่านร้านเพิ่มช่วงเย็น');
   });
 
   test('buildAnalyticalSignals detects momentum and weather patterns', () => {

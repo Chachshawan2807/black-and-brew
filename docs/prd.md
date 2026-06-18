@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> Version: 8.8 | Last Updated: 2026-06-17 | Owner: System Architect
+> Version: 8.9 | Last Updated: 2026-06-19 | Owner: System Architect
 
 ---
 
@@ -11,7 +11,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 ### Core Objective
 
 - ลดเวลาในการจัดตารางงานผ่าน Drag-to-Shift UI
-- ป้องกันสินค้าขาดสต็อกผ่าน Computed Auto-Ordering (`order_qty = target_stock - stock`)
+- ป้องกันสินค้าขาดสต็อกผ่าน Computed Auto-Ordering สำหรับสินค้านับจริง และ manual `order_qty` สำหรับรายการเช็คว่าพอใช้
 - เพิ่มความโปร่งใสด้วย Real-time Sync และ Transaction Ledger
 - วิเคราะห์ยอดขายและตลาดด้วย AI
 
@@ -52,15 +52,16 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 ### 3.4 Inventory
 
-- Route: `/[locale]/inventory`, `/[locale]/inventory/count`
+- Route: `/[locale]/inventory`, `/[locale]/inventory/count`, `/[locale]/inventory/accuracy`
 - Purpose: คลังสินค้า + ตรวจนับสต็อก
 - Components: `page.tsx`, `PurchaseOrdersModal.tsx`, `count/page.tsx`
 - Features:
   - Spreadsheet inline editing + Undo/Redo
   - DnD row reordering (`@dnd-kit`)
   - Stock single source of truth (RPC `set_inventory_stock`)
+  - Count policy: `exact_count` คิดรวม accuracy; `sufficiency_check` ไม่คิดรวมคะแนนและใช้ `order_qty` manual
   - Quick Entry IN/OUT + bulk quick action (`recordBulkInventoryTransactions`)
-  - Transaction History + count accuracy verification (system stock baseline via `system_stock_qty`)
+  - Transaction History + count accuracy verification/report (system stock baseline via `system_stock_qty`)
   - Purchase Order modal with channel tabs + PNG export
   - Real-time cross-device sync via `InventoryRealtimeContext`
 
@@ -80,7 +81,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 - Route: `/[locale]/market-insights`
 - Purpose: วิเคราะห์ตลาดรอบร้านด้วย Gemini AI (v2 multi-step pipeline)
-- Features: Zod-validated output, ContextPanel/AlertsCard/ActionChecklist, localStorage cache v2, optional Google Places competitors
+- Features: Zod-validated output, ContextPanel/AlertsCard/ActionChecklist, localStorage cache v2, optional Google Places competitors, store-managed local events context
 
 ### 3.8 AI Assistant (บรู)
 
@@ -122,7 +123,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 | --- | :--- |
 | Tech Stack | Next.js 16.2.4, React 19.2.4, Supabase, Tailwind CSS 4 |
 | Timezone | GMT+7 (Bangkok) |
-| Deployment | Vercel Edge Runtime |
+| Deployment | Vercel App Router on Vercel; runtime selected per route/API |
 | i18n | Thai (primary), English — `next-intl` |
 | Auth | PIN Gateway + read-only mode + trusted-device passkeys |
 | PWA | Manifest + Network-First Service Worker |
@@ -136,4 +137,4 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - Security: RLS + PIN auth + WebAuthn passkeys; Service Role Key server-only; XSS sanitization in AI chat
 - Performance: Hybrid PPR; explicit field selection in Supabase queries
 - Reliability: Optimistic UI with rollback; atomic RPC transactions
-- Design: Zero-Bold Policy; `rounded-3xl`; `#fdfcf0` background
+- Design: Zero-Bold Policy; `rounded-3xl`; theme-token page/modal surfaces; pastel accent cards use `bb-pastel-surface`

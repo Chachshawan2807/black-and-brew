@@ -30,10 +30,10 @@ function KpiCard({
   sub?: string;
 }) {
   return (
-    <div className="relative w-full min-w-0 shrink-0 rounded-2xl border border-border bg-card px-3.5 py-3 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
-      <div className="flex items-center gap-1 text-muted-foreground/90 mb-1.5 min-w-0">
+    <div className="relative w-full min-w-0 overflow-hidden rounded-2xl border border-border bg-card px-3.5 py-3 shadow-[0_1px_3px_rgb(0,0,0,0.03)]">
+      <div className="flex max-w-full items-center gap-1 text-muted-foreground/90 mb-1.5 min-w-0">
         {icon}
-        <span className="text-[11px] truncate">{label}</span>
+        <span className="min-w-0 flex-1 text-[11px] truncate">{label}</span>
         <MetricInfoTip id={tipId} />
       </div>
       <div className="text-base md:text-lg text-foreground leading-tight tabular-nums tracking-tight break-words">
@@ -88,8 +88,8 @@ export default function ContextPanel({ context }: { context: MarketContext }) {
   const shiftNames = scheduleToday.map((s) => s.fullName).join(', ') || 'ไม่มีข้อมูล';
 
   return (
-    <div className="space-y-3">
-      <div className="grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-4">
+    <div className="min-w-0 space-y-3">
+      <div className="grid w-full grid-cols-1 auto-rows-min items-start gap-3 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
         <KpiCard
           icon={<CloudSun className="w-3.5 h-3.5 shrink-0" />}
           label="อากาศวันนี้"

@@ -68,6 +68,10 @@ import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProv
 
 // --- Constants Outside Component ---
 const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+const SCHEDULE_GRID_TEMPLATE = 'minmax(180px, max-content) repeat(7, minmax(104px, 1fr))';
+const SCHEDULE_GRID_STYLE: React.CSSProperties = {
+  gridTemplateColumns: SCHEDULE_GRID_TEMPLATE,
+};
 
 interface ColumnDef {
   id: string;
@@ -232,7 +236,8 @@ const SortableEmployeeRow = React.memo(({
     isDragging
   } = useSortable({ id });
 
-  const style = {
+  const style: React.CSSProperties = {
+    ...SCHEDULE_GRID_STYLE,
     transform: CSS.Translate.toString(transform),
     transition: dndTransition || 'transform 150ms cubic-bezier(0.2, 0, 0, 1)',
     zIndex: isDragging ? 100 : 1,
@@ -252,7 +257,7 @@ const SortableEmployeeRow = React.memo(({
         layout: { duration: 0.3 }
       }}
       className={cn(
-        "grid grid-cols-8 border-b border-border hover:bg-muted/30 transition-all duration-300 group relative bg-transparent",
+        "bb-schedule-grid grid border-b border-border hover:bg-muted/30 transition-all duration-300 group relative bg-transparent",
         isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-card ring-1 ring-border rounded-3xl cursor-grabbing"
       )}
     >
@@ -280,7 +285,7 @@ const SortableEmployeeRow = React.memo(({
             <input
               autoFocus
               disabled={isReadOnly}
-              className="w-full h-11 bg-card border border-blue-400 text-base font-normal text-foreground px-3 rounded-3xl outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-11 bg-card border border-blue-400 text-base font-normal text-foreground px-3 rounded-3xl outline-none disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               onBlur={() => onSaveName(id)}
@@ -289,7 +294,7 @@ const SortableEmployeeRow = React.memo(({
           ) : (
             <span
               onClick={() => !isReadOnly && onNameClick(id, profile.full_name)}
-              className={`text-[16px] font-normal text-foreground truncate leading-[1.6] tracking-tight transition-colors block ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-text hover:text-blue-600'}`}
+              className={`bb-schedule-nowrap text-[16px] font-normal text-foreground whitespace-nowrap leading-[1.6] tracking-tight transition-colors block ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-text hover:text-blue-600'}`}
             >
               {profile.full_name}
             </span>
@@ -320,10 +325,10 @@ const SortableEmployeeRow = React.memo(({
             {shift && (shift.status && shift.metadata?.location) ? (
               <div className="relative h-full w-full">
                 <div
-                  className={`h-full w-full rounded-lg border p-1.5 flex flex-col justify-center items-center text-center transition-all duration-200 group-hover/cell:scale-[0.97] group-hover/cell:shadow-md shadow-sm ${type?.className || 'bb-pastel-surface bg-card border-border text-[#000000]'}`}
+                  className={`bb-schedule-nowrap h-full w-full rounded-lg border px-2 py-1.5 flex justify-center items-center text-center whitespace-nowrap transition-all duration-200 group-hover/cell:scale-[0.97] group-hover/cell:shadow-md shadow-sm ${type?.className || 'bb-pastel-surface bg-card border-border text-[#000000]'}`}
                   style={type?.style}
                 >
-                  <span className="text-[14.5px] font-normal leading-none tracking-tight">{type?.label || shift.metadata?.location}</span>
+                  <span className="bb-schedule-nowrap text-[14.5px] font-normal leading-none tracking-tight whitespace-nowrap">{type?.label || shift.metadata?.location}</span>
                 </div>
                 {hasManagementIndicator(shift.metadata) && (
                   <div
@@ -1255,10 +1260,13 @@ export default function ScheduleClient({
       <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
         <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm bb-ios-scroll-host border border-border rounded-3xl overflow-hidden shadow-sm">
           <div className="flex-1 min-h-0 min-w-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-6">
-            <div id="blackandbrew-schedule-table" className="bb-schedule-export-surface min-w-[900px] bg-card h-fit flex flex-col">
-              <div className="grid grid-cols-8 border-b border-border dark:border-[#f5c6cb] bg-red-50/10 dark:bb-pastel-surface dark:bg-[#fdeaea] sticky top-0 z-[16]">
+            <div id="blackandbrew-schedule-table" className="bb-schedule-export-surface min-w-[980px] bg-card h-fit flex flex-col">
+              <div
+                className="bb-schedule-grid grid border-b border-border dark:border-[#f5c6cb] bg-red-50/10 dark:bb-pastel-surface dark:bg-[#fdeaea] sticky top-0 z-[16]"
+                style={SCHEDULE_GRID_STYLE}
+              >
                 <div className="p-2.5 border-r border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
-                  <span className="text-[12px] text-[#991b1b] font-normal uppercase tracking-widest">นักขัตฤกษ์</span>
+                  <span className="bb-schedule-nowrap text-[12px] text-[#991b1b] font-normal uppercase tracking-widest whitespace-nowrap">นักขัตฤกษ์</span>
                 </div>
                 {weekDays.map(date => {
                   const holiday = holidayByDate.get(date);
@@ -1279,7 +1287,7 @@ export default function ScheduleClient({
                           onKeyDown={(e) => e.key === 'Enter' && handleSaveHoliday(date)}
                         />
                       ) : (
-                        <span className="text-[14px] font-normal text-[#7f1d1d] text-center leading-tight tracking-tight px-1 uppercase">
+                        <span className="bb-schedule-nowrap text-[14px] font-normal text-[#7f1d1d] text-center leading-tight tracking-tight px-1 uppercase whitespace-nowrap">
                           {holiday?.name || ''}
                         </span>
                       )}
@@ -1288,9 +1296,12 @@ export default function ScheduleClient({
                 })}
               </div>
 
-              <div className="grid grid-cols-8 bg-muted/40 border-b border-border shrink-0 sticky top-[38px] z-[15]">
+              <div
+                className="bb-schedule-grid grid bg-muted/40 border-b border-border shrink-0 sticky top-[38px] z-[15]"
+                style={SCHEDULE_GRID_STYLE}
+              >
                 <div className="p-2.5 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
-                  <span className="text-[13px] text-foreground font-normal uppercase tracking-widest">พนักงาน</span>
+                  <span className="bb-schedule-nowrap text-[13px] text-foreground font-normal uppercase tracking-widest whitespace-nowrap">พนักงาน</span>
                 </div>
                 {weekDays.map((date) => {
                   const d = new Date(date);
@@ -1365,7 +1376,10 @@ export default function ScheduleClient({
                 </div>
               )}
 
-              <div className="grid grid-cols-8 border-t border-border bg-muted/50 sticky bottom-0 z-[15]">
+              <div
+                className="bb-schedule-grid grid border-t border-border bg-muted/50 sticky bottom-0 z-[15]"
+                style={SCHEDULE_GRID_STYLE}
+              >
                 <div className="p-2 border-r border-border flex items-center justify-center bg-card/80 sticky left-0 z-20 bb-sticky-scroll-cell">
                 </div>
                 {weekDays.map(date => {

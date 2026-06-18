@@ -342,6 +342,7 @@ export type Database = {
       }
       inventory_items: {
         Row: {
+          count_policy: string
           id: string
           name: string | null
           order_point: number | null
@@ -354,6 +355,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          count_policy?: string
           id?: string
           name?: string | null
           order_point?: number | null
@@ -366,6 +368,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          count_policy?: string
           id?: string
           name?: string | null
           order_point?: number | null

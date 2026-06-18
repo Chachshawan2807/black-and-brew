@@ -98,6 +98,25 @@ describe('buildDailyReportFlexMessage()', () => {
 
     expect(headerText).toContain('วันนี้');
   });
+
+  it('left-aligns header date and schedule pill without clipboard icon', () => {
+    const message = buildDailyReportFlexMessage(sampleData);
+    const header = message.contents.header;
+    const headerText = JSON.stringify(header);
+
+    expect(headerText).not.toContain('📋');
+    expect(header.layout).toBe('vertical');
+    expect(header.contents[0]).toMatchObject({
+      type: 'text',
+      text: '13-06-2026',
+      align: 'start',
+    });
+    expect(header.contents[1]).toMatchObject({
+      type: 'box',
+      layout: 'horizontal',
+      justifyContent: 'flex-start',
+    });
+  });
 });
 
 describe('shouldShowHolidayFooter()', () => {

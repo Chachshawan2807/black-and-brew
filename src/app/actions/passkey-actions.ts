@@ -61,6 +61,11 @@ function deviceLabelFromPayload(device: ClientDevicePayload): string {
   return `${model} (${device.screenWidth}×${device.screenHeight})`;
 }
 
+function parseClientDevicePayload(device: ClientDevicePayload): ClientDevicePayload | null {
+  const parsed = clientDeviceSchema.safeParse(device);
+  return parsed.success ? parsed.data : null;
+}
+
 async function fetchPasskeyByCredentialId(
   credentialId: string
 ): Promise<StoredPasskeyRow | null> {
@@ -119,27 +124,27 @@ export async function getPasskeyRegistrationOptions(
     return { success: false, error: 'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อนบันทึกเครื่องนี้' };
   }
 
-  if (!device.sessionFingerprint) {
+  const safeDevice = parseClientDevicePayload(device);
+  if (!safeDevice?.sessionFingerprint) {
     return { success: false, error: 'ไม่พบข้อมูลอุปกรณ์' };
   }
 
   try {
     const { rpId } = await resolveWebAuthnContext();
-    const existing = await fetchPasskeysForFingerprint(device.sessionFingerprint);
+    const existing = await fetchPasskeysForFingerprint(safeDevice.sessionFingerprint);
 
     const options = await generateRegistrationOptions({
       rpName: RP_NAME,
       rpID: rpId,
-      userName: deviceLabelFromPayload(device),
+      userName: deviceLabelFromPayload(safeDevice),
       userDisplayName: 'BLACKANDBREW',
-      userID: fingerprintToPasskeyUserId(device.sessionFingerprint),
+      userID: fingerprintToPasskeyUserId(safeDevice.sessionFingerprint),
       attestationType: 'none',
       excludeCredentials: existing.map((row) => ({
         id: row.credential_id,
         transports: row.transports as AuthenticatorTransport[],
       })),
       authenticatorSelection: {
-        authenticatorAttachment: 'platform',
         residentKey: 'required',
         userVerification: 'required',
       },
@@ -163,7 +168,8 @@ export async function verifyPasskeyRegistration(
     return { success: false, error: 'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อน' };
   }
 
-  if (!device.sessionFingerprint) {
+  const safeDevice = parseClientDevicePayload(device);
+  if (!safeDevice?.sessionFingerprint) {
     return { success: false, error: 'ไม่พบข้อมูลอุปกรณ์' };
   }
 
@@ -202,8 +208,8 @@ export async function verifyPasskeyRegistration(
         public_key: Buffer.from(credential.publicKey).toString('base64url'),
         counter: credential.counter,
         transports: credential.transports ?? [],
-        device_label: deviceLabelFromPayload(device),
-        session_fingerprint: device.sessionFingerprint,
+        device_label: deviceLabelFromPayload(safeDevice),
+        session_fingerprint: safeDevice.sessionFingerprint,
         access_level: session.readOnly ? 'read_only' : 'full',
         registered_at: new Date().toISOString(),
         last_used_at: new Date().toISOString(),
@@ -250,6 +256,11 @@ export async function verifyPasskeyLogin(
 ): Promise<
   { success: true; isReadOnly: boolean } | { success: false; error: string }
 > {
+  const safeDevice = parseClientDevicePayload(device);
+  if (!safeDevice) {
+    return { success: false, error: 'ไม่พบข้อมูลอุปกรณ์' };
+  }
+
   let response: AuthenticationResponseJSON;
   try {
     response = JSON.parse(responseJSON) as AuthenticationResponseJSON;
@@ -268,7 +279,7 @@ export async function verifyPasskeyLogin(
       await recordLoginEvent({
         eventType: 'login_failure',
         status: 'failure',
-        device,
+        device: safeDevice,
         failureReason: 'Unknown passkey credential',
       });
       return { success: false, error: 'ไม่พบลายนิ้วมือที่ลงทะเบียนไว้' };
@@ -297,7 +308,7 @@ export async function verifyPasskeyLogin(
       await recordLoginEvent({
         eventType: 'login_failure',
         status: 'failure',
-        device,
+        device: safeDevice,
         failureReason: 'Passkey verification failed',
       });
       return { success: false, error: 'ยืนยันลายนิ้วมือไม่สำเร็จ' };
@@ -320,7 +331,7 @@ export async function verifyPasskeyLogin(
     const readOnly = stored.access_level === 'read_only';
     const cookieStore = await cookies();
     const deviceWithFp: ClientDevicePayload = {
-      ...device,
+      ...safeDevice,
       sessionFingerprint: stored.session_fingerprint,
     };
 
@@ -340,7 +351,7 @@ export async function verifyPasskeyLogin(
     await recordLoginEvent({
       eventType: 'login_failure',
       status: 'failure',
-      device,
+      device: safeDevice,
       failureReason: 'Passkey login exception',
     });
     return { success: false, error: 'เข้าสู่ระบบด้วยลายนิ้วมือไม่สำเร็จ' };

@@ -7,17 +7,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { fetchTransactionHistory, fetchFrequentItems, deleteInventoryItem, deleteInventoryItemsBulk, updateInventoryStock, recordItemAddHistory } from '@/app/actions/inventory-actions';
+import {
+  fetchTransactionHistory,
+  fetchFrequentItems,
+  deleteInventoryItem,
+  deleteInventoryItemsBulk,
+  updateInventoryStock,
+  recordItemAddHistory,
+  updateInventoryItemField,
+  reorderInventoryItems,
+} from '@/app/actions/inventory-actions';
+import type { InventoryTransactionFilterType } from '@/app/actions/inventory-actions';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
-import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
-import { computeItemsToOrder, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { computePurchaseOrderDerivedState, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from '@/components/inventory/InventoryQuickActionBar';
-import { InventoryHistoryModal } from '@/components/inventory/InventoryHistoryModal';
+import { InventoryHistoryModal, type TransactionHistoryRow } from '@/components/inventory/InventoryHistoryModal';
 import {
   DndContext,
   closestCorners,
@@ -48,6 +57,7 @@ import {
   type ColumnDef,
   type NewItemFormData,
   type ColumnSettings,
+  type InventoryCountPolicy,
   type InventoryFieldValue,
   type InventoryCellBaseProps,
   type InventoryRowHandlers,
@@ -66,6 +76,57 @@ interface InventoryClientProps {
 }
 
 type ColumnLookup = Map<string, ColumnDef>;
+
+const COUNT_POLICY_OPTIONS: Array<{ value: InventoryCountPolicy; label: string; description: string }> = [
+  { value: 'exact_count', label: 'นับจริง', description: 'คิดรวมใน Accuracy' },
+  { value: 'sufficiency_check', label: 'เช็คว่าพอใช้', description: 'ไม่คิดรวมใน Accuracy' },
+];
+
+function normalizeCountPolicy(value: unknown): InventoryCountPolicy {
+  return value === 'sufficiency_check' ? 'sufficiency_check' : 'exact_count';
+}
+
+function isManualOrderQty(item: InventoryItem): boolean {
+  return normalizeCountPolicy(item.count_policy) === 'sufficiency_check';
+}
+
+function CountPolicyToggle({
+  item,
+  handleUpdateField,
+  handleSaveField,
+  handleFocus,
+}: {
+  item: InventoryItem;
+  handleUpdateField: (id: string, field: string, value: InventoryFieldValue) => void;
+  handleSaveField: (id: string, field: string, value: InventoryFieldValue) => void | Promise<void>;
+  handleFocus: () => void;
+}) {
+  const policy = normalizeCountPolicy(item.count_policy);
+  const nextPolicy: InventoryCountPolicy = policy === 'exact_count' ? 'sufficiency_check' : 'exact_count';
+
+  const savePolicy = () => {
+    handleFocus();
+    handleUpdateField(item.id, 'count_policy', nextPolicy);
+    void handleSaveField(item.id, 'count_policy', nextPolicy);
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label="สลับวิธีตรวจนับ"
+      onClick={savePolicy}
+      className={cn(
+        'bb-pastel-surface inline-flex h-8 shrink-0 items-center rounded-full border px-2.5 text-[12px] text-black shadow-sm transition-all hover:scale-[1.02] active:scale-95',
+        policy === 'exact_count'
+          ? 'border-[#bfdbfe] bg-[#dbeafe]'
+          : 'border-[#f5c6cb] bg-[#f8d7da]',
+      )}
+    >
+      <span className="mr-1.5 h-2 w-2 rounded-full bg-black/55" aria-hidden="true" />
+      <span className="whitespace-nowrap">{policy === 'exact_count' ? 'นับจริง' : 'เช็คพอใช้'}</span>
+    </button>
+  );
+}
 
 function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onResizeEnd }: {
   col: ColumnDef;
@@ -223,7 +284,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
   const stock = Number(item.stock) || 0;
   const orderPoint = Number(item.order_point) || 0;
   const targetStock = Number(item.target_stock) || 0;
-  const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
+  const manualOrderQty = isManualOrderQty(item);
 
   const nameCol = columnById.get('name')!;
   const stockCol = columnById.get('stock')!;
@@ -268,14 +329,32 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
             requestDelete={requestDelete}
             handleFocus={handleFocus}
             cardMode
+            showDeleteButton={false}
           />
         </div>
-        {/* Grip Handle */}
-        <SortableDragHandle
-          attributes={attributes}
-          listeners={listeners}
-          setActivatorNodeRef={setActivatorNodeRef}
-        />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <CountPolicyToggle
+            item={item}
+            handleUpdateField={handleUpdateField}
+            handleSaveField={handleSaveField}
+            handleFocus={handleFocus}
+          />
+          <HintTooltip tip="ลบรายการ">
+            <button
+              type="button"
+              onClick={() => requestDelete(item.id)}
+              aria-label="ลบรายการ"
+              className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </HintTooltip>
+          <SortableDragHandle
+            attributes={attributes}
+            listeners={listeners}
+            setActivatorNodeRef={setActivatorNodeRef}
+          />
+        </div>
       </div>
 
       {/* Card Body: Stats Grid */}
@@ -304,9 +383,19 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">
             {orderQtyCol?.label || 'สั่งซื้อ'}
           </span>
-          <div className="w-full h-8 px-1 rounded-lg bg-muted border border-border flex items-center justify-center text-[13px] font-normal text-muted-foreground select-none tabular-nums truncate">
-            {computedOrderQty}
-          </div>
+          {orderQtyCol && (
+            <EditableCell
+              item={item}
+              col={orderQtyCol}
+              rowIndex={rowIndex}
+              handleUpdateField={handleUpdateField}
+              handleSaveField={handleSaveField}
+              requestDelete={requestDelete}
+              handleFocus={handleFocus}
+              cardMode
+              className={manualOrderQty ? 'bb-pastel-surface border-[#f5c6cb] bg-[#f8d7da] text-black' : undefined}
+            />
+          )}
         </div>
 
         {/* Order Point */}
@@ -419,11 +508,11 @@ const MobileSortableRow = React.memo(({
 
   const stock = Number(item.stock) || 0;
   const orderPoint = Number(item.order_point) || 0;
-  const targetStock = Number(item.target_stock) || 0;
-  const computedOrderQty = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
   const stockCol = columnById.get('stock')!;
+  const orderQtyCol = columnById.get('order_qty');
   const orderPointCol = columnById.get('order_point')!;
   const targetStockCol = columnById.get('target_stock')!;
+  const manualOrderQty = isManualOrderQty(item);
 
   return (
     <div
@@ -461,16 +550,24 @@ const MobileSortableRow = React.memo(({
             placeholder="ชื่อสินค้า"
           />
         </div>
-        <HintTooltip tip="ลบรายการ">
-          <button
-            type="button"
-            onClick={() => requestDelete(item.id)}
-            aria-label="ลบรายการ"
-            className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </HintTooltip>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <CountPolicyToggle
+            item={item}
+            handleUpdateField={handleUpdateField}
+            handleSaveField={handleSaveField}
+            handleFocus={handleFocus}
+          />
+          <HintTooltip tip="ลบรายการ">
+            <button
+              type="button"
+              onClick={() => requestDelete(item.id)}
+              aria-label="ลบรายการ"
+              className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </HintTooltip>
+        </div>
       </div>
 
       {/* Card Body: Single Row Grid */}
@@ -495,9 +592,22 @@ const MobileSortableRow = React.memo(({
         {/* Order Qty (Computed / Read-only) */}
         <div className="flex flex-col gap-1 min-w-0">
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">สั่งซื้อ</span>
-          <div className="w-full h-8 px-1 rounded-lg bg-muted border border-border flex items-center justify-center text-[13px] font-normal text-muted-foreground select-none tabular-nums truncate">
-            {computedOrderQty}
-          </div>
+          {orderQtyCol && (
+            <MobileEditableCell
+              item={item}
+              col={orderQtyCol}
+              rowIndex={index}
+              handleUpdateField={handleUpdateField}
+              handleSaveField={handleSaveField}
+              handleFocus={handleFocus}
+              className={cn(
+                "w-full h-8 px-1 rounded-lg border text-[13px] font-normal text-center focus:outline-none focus:ring-1 transition-all tabular-nums truncate",
+                manualOrderQty
+                  ? 'bb-pastel-surface border-[#f5c6cb] bg-[#f8d7da] text-black focus:bg-[#f8d7da]'
+                  : 'border-border bg-muted text-muted-foreground focus:bg-card focus:ring-foreground/10 cursor-not-allowed'
+              )}
+            />
+          )}
         </div>
 
         {/* Order Point */}
@@ -566,10 +676,24 @@ MobileSortableRow.displayName = 'MobileSortableRow';
 
 const PurchaseOrdersModal = dynamic(() => import('./PurchaseOrdersModal'), { ssr: false });
 
-function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField, requestDelete, handleFocus, cardMode }: InventoryCellBaseProps & { cardMode?: boolean }) {
+const HISTORY_PAGE_SIZE = 50;
+
+function EditableCell({
+  item,
+  col,
+  rowIndex,
+  handleUpdateField,
+  handleSaveField,
+  requestDelete,
+  handleFocus,
+  cardMode,
+  showDeleteButton = true,
+  className,
+}: InventoryCellBaseProps & { cardMode?: boolean; showDeleteButton?: boolean; className?: string }) {
   const [localValue, setLocalValue] = useState<string>('');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const manualOrderQty = isManualOrderQty(item);
 
   // Sync with global state when not focused
   useEffect(() => {
@@ -577,7 +701,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
       let val = readInventoryField(item, col.id);
 
       // Phase 1: COMPUTED LOGIC INTEGRATION
-      if (col.id === 'order_qty') {
+      if (col.id === 'order_qty' && !manualOrderQty) {
         const stock = Number(item.stock) || 0;
         const orderPoint = Number(item.order_point) || 0;
         const targetStock = Number(item.target_stock) || 0;
@@ -595,7 +719,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         inputRef.current.value = displayVal;
       }
     }
-  }, [item, col.id, item.stock, item.order_point, item.target_stock, isFocused]);
+  }, [item, col.id, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
 
   const handleBlur = () => {
     const val = inputRef.current?.value || '';
@@ -622,7 +746,7 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
   const getAlignmentAndColor = () => {
     if (col.id === 'name') return 'text-left pr-10 text-foreground';
     if (col.id === 'stock') return `text-center ${getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0)}`;
-    if (col.id === 'order_qty') return 'text-center text-foreground';
+    if (col.id === 'order_qty') return manualOrderQty ? 'text-center text-black' : 'text-center text-foreground';
     return 'text-center text-foreground/60';
   };
 
@@ -643,15 +767,17 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
             className="flex-1 min-w-0 bg-transparent border-none text-base text-foreground font-normal focus:bg-muted focus:outline-none rounded px-1.5 py-0.5 truncate"
             placeholder="ชื่อสินค้า"
           />
-          <HintTooltip tip="ลบรายการ">
-            <button
-              onClick={() => requestDelete(item.id)}
-              aria-label="ลบรายการ"
-              className="ml-1 p-1 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </HintTooltip>
+          {showDeleteButton && (
+            <HintTooltip tip="ลบรายการ">
+              <button
+                onClick={() => requestDelete(item.id)}
+                aria-label="ลบรายการ"
+                className="ml-1 p-1 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </HintTooltip>
+          )}
         </div>
       );
     }
@@ -665,11 +791,12 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         onBlur={handleBlur}
         data-col-id={col.id}
         data-row-index={rowIndex}
-        readOnly={col.id === 'order_qty'}
+        readOnly={col.id === 'order_qty' && !manualOrderQty}
         className={cn(
           "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate",
           col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0),
-          col.id === 'order_qty' && 'bg-muted border-border text-muted-foreground cursor-not-allowed'
+          col.id === 'order_qty' && !manualOrderQty && 'bg-muted border-border text-muted-foreground cursor-not-allowed',
+          className,
         )}
       />
     );
@@ -702,8 +829,12 @@ function EditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField,
         }}
         data-col-id={col.id}
         data-row-index={rowIndex}
-        readOnly={col.id === 'order_qty'}
-        className={`w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'tabular-nums' : ''} ${col.id === 'order_qty' ? 'bg-muted cursor-not-allowed select-none' : ''}`}
+        readOnly={col.id === 'order_qty' && !manualOrderQty}
+        className={cn(
+          `w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'tabular-nums' : ''}`,
+          col.id === 'order_qty' && !manualOrderQty && 'bg-muted cursor-not-allowed select-none',
+          col.id === 'order_qty' && manualOrderQty && 'bb-pastel-surface bg-[#f8d7da] text-black',
+        )}
       />
       {col.id === 'name' && (
         <HintTooltip tip="ลบรายการ">
@@ -724,12 +855,13 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
   const [localValue, setLocalValue] = useState<string>('');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const manualOrderQty = isManualOrderQty(item);
 
   useEffect(() => {
     if (!isFocused) {
       let val = readInventoryField(item, col.id);
 
-      if (col.id === 'order_qty') {
+      if (col.id === 'order_qty' && !manualOrderQty) {
         const stock = Number(item.stock) || 0;
         const orderPoint = Number(item.order_point) || 0;
         const targetStock = Number(item.target_stock) || 0;
@@ -747,7 +879,7 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
         inputRef.current.value = displayVal;
       }
     }
-  }, [item, col.id, item.stock, item.order_point, item.target_stock, isFocused]);
+  }, [item, col.id, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
 
   const handleBlur = () => {
     const val = inputRef.current?.value || '';
@@ -795,7 +927,7 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
       }}
       data-mobile-col-id={col.id}
       data-mobile-row-index={rowIndex}
-      readOnly={col.id === 'order_qty'}
+      readOnly={col.id === 'order_qty' && !manualOrderQty}
       className={className}
     />
   );
@@ -808,7 +940,7 @@ export default function InventoryClient({
 }: InventoryClientProps) {
   const router = useRouter();
   const isReadOnly = useReadOnly();
-  const { subscribe } = useInventoryRealtime();
+  const { subscribe, refresh } = useInventoryRealtime();
 
   const blockIfReadOnly = () => {
     if (isReadOnly) {
@@ -826,6 +958,7 @@ export default function InventoryClient({
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
   const [isSyncing, setIsSyncing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -849,14 +982,48 @@ export default function InventoryClient({
   // Quick Entry State
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [frequentItems, setFrequentItems] = useState<{ id: string, name: string }[]>([]);
-  const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<TransactionHistoryRow[]>([]);
+  const [historyTypeFilter, setHistoryTypeFilter] = useState<InventoryTransactionFilterType>('ALL');
+  const [hasMoreHistory, setHasMoreHistory] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+  const loadHistoryPage = useCallback(
+    async ({
+      type = historyTypeFilter,
+      offset = 0,
+      append = false,
+    }: {
+      type?: InventoryTransactionFilterType;
+      offset?: number;
+      append?: boolean;
+    } = {}) => {
+      setIsHistoryLoading(true);
+      try {
+        const res = await fetchTransactionHistory({
+          type,
+          offset,
+          limit: HISTORY_PAGE_SIZE,
+        });
+        if (res.success && res.data) {
+          setTransactionHistory((prev) => (append ? [...prev, ...res.data] : res.data));
+          setHasMoreHistory(Boolean(res.hasMore));
+        } else if (res.error) {
+          console.error('[UI] History fetch failed:', res.error);
+          setHasMoreHistory(false);
+        }
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    },
+    [historyTypeFilter],
+  );
 
   const quickAction = useInventoryQuickAction({
     items,
     setItems,
     isReadOnly,
     showHistoryModal,
-    onHistoryRefresh: setTransactionHistory,
+    onHistoryRefresh: () => loadHistoryPage({ offset: 0 }),
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_BAR,
     onBeforeSave: () => setSavingState('saving'),
     onAfterSave: () => {
@@ -869,20 +1036,18 @@ export default function InventoryClient({
     onSaveError: () => setSavingState('idle'),
   });
 
-  const itemsToOrder = useMemo(() => computeItemsToOrder(items), [items]);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 768px)');
+    const updateLayout = () => setIsDesktopLayout(media.matches);
+    updateLayout();
+    media.addEventListener('change', updateLayout);
+    return () => media.removeEventListener('change', updateLayout);
+  }, []);
 
-  const poSources = useMemo(() => {
-    const sources = new Set<string>();
-    itemsToOrder.forEach(item => {
-      sources.add(item.source || 'ไม่ได้ระบุแหล่งที่มา');
-    });
-    return Array.from(sources);
-  }, [itemsToOrder]);
-
-  const displayedPoItems = useMemo(() => {
-    if (selectedChannels.includes('all')) return itemsToOrder;
-    return itemsToOrder.filter(i => selectedChannels.includes(i.source || 'ไม่ได้ระบุแหล่งที่มา'));
-  }, [itemsToOrder, selectedChannels]);
+  const { itemsToOrder, poSources, displayedPoItems } = useMemo(
+    () => computePurchaseOrderDerivedState(items, selectedChannels),
+    [items, selectedChannels],
+  );
 
   const exportPOImage = async () => {
     const element = document.getElementById('blackandbrew-po-table-export');
@@ -892,6 +1057,7 @@ export default function InventoryClient({
       const { captureElementAsPng, downloadDataUrl } = await import('@/lib/capture-element-png');
       const dataUrl = await captureElementAsPng(element, {
         backgroundColor: '#fff3dd',
+        preserveOverflow: true,
         filter: (node: HTMLElement) => node?.id !== 'po-action-buttons',
       });
       const channelSuffix = selectedChannels.includes('all')
@@ -969,21 +1135,16 @@ export default function InventoryClient({
   async function fetchConfigAndInventory() {
     try {
       await ensureSupabaseSession();
-      const [configRes, inventoryRes] = await Promise.all([
+      const [configRes, loadedItems] = await Promise.all([
         supabase.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
-        supabase.from('inventory_items').select(INVENTORY_ITEM_SELECT).order('sort_order', { ascending: true })
+        refresh(),
       ]);
 
-      if (inventoryRes.error) {
-        console.error('Supabase Error (Fetch):', inventoryRes.error.message, inventoryRes.error.details);
-        throw inventoryRes.error;
-      }
-
-      const loadedItems = inventoryRes.data || [];
-      setItems(loadedItems);
+      const sanitizedLoadedItems = loadedItems.map((item) => sanitizeInventoryItem(item as InventoryItem));
+      setItems(sanitizedLoadedItems);
 
       const localWidths = parseLocalColumnWidths();
-      let loadedCols = buildColumnsFromSettings(
+      const loadedCols = buildColumnsFromSettings(
         configRes.data?.settings as ColumnSettings | undefined,
         localWidths,
       );
@@ -991,7 +1152,7 @@ export default function InventoryClient({
         setColumns(loadedCols);
       }
 
-      previousStateRef.current = { items: loadedItems, cols: loadedCols };
+      previousStateRef.current = { items: sanitizedLoadedItems, cols: loadedCols };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error('Failed to fetch inventory:', message);
@@ -1015,6 +1176,7 @@ export default function InventoryClient({
     });
 
     // คง updated_at เดิมไว้ ไม่ลบทิ้ง เพื่อไม่ให้ Supabase reset เป็น NOW() (UTC)
+    sanitized.count_policy = normalizeCountPolicy(sanitized.count_policy);
     if (!sanitized.updated_at) {
       sanitized.updated_at = new Date().toISOString();
     }
@@ -1044,6 +1206,7 @@ export default function InventoryClient({
       target_stock: parseNumericFormValue(newItemData.target_stock),
       unit: newItemData.unit || '',
       source: newItemData.source || '',
+      count_policy: normalizeCountPolicy(newItemData.count_policy),
       sort_order: insertPos
     };
 
@@ -1099,8 +1262,7 @@ export default function InventoryClient({
         if (!historyRes.success) {
           console.error('[handleAddItemSubmit] recordItemAddHistory:', historyRes.error);
         } else if (showHistoryModal) {
-          const histRes = await fetchTransactionHistory();
-          if (histRes.success && histRes.data) setTransactionHistory(histRes.data);
+          await loadHistoryPage({ offset: 0 });
         }
       } else {
         // Insert-at-position path: insert new item, then sync all displaced sort_orders
@@ -1139,8 +1301,7 @@ export default function InventoryClient({
         if (!historyRes.success) {
           console.error('[handleAddItemSubmit] recordItemAddHistory:', historyRes.error);
         } else if (showHistoryModal) {
-          const histRes = await fetchTransactionHistory();
-          if (histRes.success && histRes.data) setTransactionHistory(histRes.data);
+          await loadHistoryPage({ offset: 0 });
         }
       }
 
@@ -1171,8 +1332,7 @@ export default function InventoryClient({
       if (!res.success) throw new Error(res.error);
 
       if (showHistoryModal) {
-        const histRes = await fetchTransactionHistory();
-        if (histRes.success && histRes.data) setTransactionHistory(histRes.data);
+        await loadHistoryPage({ offset: 0 });
       }
 
       setSavingState('synced');
@@ -1232,19 +1392,15 @@ export default function InventoryClient({
 
       // Step 5: Sync all updated sort_orders to Supabase
       try {
-        const { error } = await supabase.from('inventory_items').upsert(
-          renumberedItems.map(item => ({ id: item.id, sort_order: item.sort_order }))
-        );
-        if (error) throw error;
-        logClientDataChange({
-          action: 'BULK_UPDATE',
-          module: 'inventory',
-          entityType: 'inventory_item',
-          metadata: {
-            operation: 'reorder_sort_order',
-            itemIds: renumberedItems.map((item) => item.id),
+        const result = await reorderInventoryItems(
+          renumberedItems.map(item => ({ id: item.id, sort_order: item.sort_order })),
+          {
+            clientSessionId: getClientSessionId(),
           },
-        });
+        );
+        if (!result.success) {
+          throw new Error(result.error);
+        }
         setSavingState('synced');
         setTimeout(() => setSavingState('idle'), 2000);
       } catch (err: unknown) {
@@ -1262,6 +1418,9 @@ export default function InventoryClient({
     if (numericFields.includes(field)) {
       sanitizedValue = value === '' || value === null || value === undefined ? 0 : Number(value);
       if (isNaN(sanitizedValue as number)) sanitizedValue = 0;
+    }
+    if (field === 'count_policy') {
+      sanitizedValue = normalizeCountPolicy(value);
     }
 
     // Prevent redundant saves: compare with original value to avoid unnecessary updated_at changes
@@ -1285,22 +1444,10 @@ export default function InventoryClient({
         if (!result.success) throw new Error(result.error);
         handleUpdateField(id, 'stock', result.newStock ?? sanitizedValue);
       } else {
-        const { error } = await supabase
-          .from('inventory_items')
-          .update({ [field]: sanitizedValue, updated_at: new Date().toISOString() })
-          .eq('id', id);
-
-        if (error) throw error;
-        logClientDataChange({
-          action: 'UPDATE',
-          module: 'inventory',
-          entityType: 'inventory_item',
-          entityId: id,
-          entityLabel: original?.name,
-          before: original ? { [field]: original[field] } : null,
-          after: { [field]: sanitizedValue },
-          fields: [field],
+        const result = await updateInventoryItemField(id, field, sanitizedValue, {
+          clientSessionId: getClientSessionId(),
         });
+        if (!result.success) throw new Error(result.error);
       }
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
@@ -1382,19 +1529,15 @@ export default function InventoryClient({
 
     // Background Sync
     try {
-      const { error } = await supabase.from('inventory_items').upsert(
-        updatedItems.map(item => ({ id: item.id, sort_order: item.sort_order }))
-      );
-      if (error) throw error;
-      logClientDataChange({
-        action: 'BULK_UPDATE',
-        module: 'inventory',
-        entityType: 'inventory_item',
-        metadata: {
-          operation: 'reorder_rows',
-          itemIds: updatedItems.map((item) => item.id),
+      const result = await reorderInventoryItems(
+        updatedItems.map(item => ({ id: item.id, sort_order: item.sort_order })),
+        {
+          clientSessionId: getClientSessionId(),
         },
-      });
+      );
+      if (!result.success) {
+        throw new Error(result.error);
+      }
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err) {
@@ -1433,6 +1576,7 @@ export default function InventoryClient({
             unit: item.unit,
             source: item.source,
             sort_order: item.sort_order,
+            count_policy: normalizeCountPolicy(item.count_policy),
             stock: live?.stock ?? item.stock,
             updated_at: live?.updated_at ?? item.updated_at,
           };
@@ -1513,42 +1657,33 @@ export default function InventoryClient({
 
   async function handleOpenHistory() {
     setTransactionHistory([]);
+    setHistoryTypeFilter('ALL');
+    setHasMoreHistory(false);
     setShowHistoryModal(true);
-    const res = await fetchTransactionHistory();
-    if (res.success && res.data) {
-      setTransactionHistory(res.data);
-    } else if (res.error) {
-      console.error('[UI] History fetch failed:', res.error);
-    }
+    await loadHistoryPage({ type: 'ALL', offset: 0 });
+  }
+
+  function handleHistoryTypeFilterChange(nextType: InventoryTransactionFilterType) {
+    setHistoryTypeFilter(nextType);
+    setTransactionHistory([]);
+    setHasMoreHistory(false);
+    void loadHistoryPage({ type: nextType, offset: 0 });
+  }
+
+  function handleLoadMoreHistory() {
+    if (isHistoryLoading || !hasMoreHistory) return;
+    void loadHistoryPage({ offset: transactionHistory.length, append: true });
   }
 
   async function handleCancelTransaction(txId: string, itemId: string, type: 'IN' | 'OUT', quantity: number) {
     if (blockIfReadOnly()) return;
-    if (!window.confirm('ยืนยันการยกเลิกรายการนี้? ยอดสต็อกจะถูกปรับคืนอัตโนมัติ')) return;
+    void itemId;
+    void type;
+    void quantity;
+    if (!window.confirm('ลบเฉพาะประวัติรายการนี้ใช่หรือไม่? ยอดคงเหลือปัจจุบันจะไม่ถูกเปลี่ยน')) return;
 
     setSavingState('saving');
     try {
-      // 1. Get current stock
-      const { data: itemData, error: itemError } = await supabase
-        .from('inventory_items')
-        .select('stock')
-        .eq('id', itemId)
-        .single();
-
-      if (itemError) throw itemError;
-
-      const currentStock = itemData.stock || 0;
-      const newStock = type === 'IN' ? currentStock - quantity : currentStock + quantity;
-
-      // 2. Update stock
-      const { error: updateError } = await supabase
-        .from('inventory_items')
-        .update({ stock: newStock })
-        .eq('id', itemId);
-
-      if (updateError) throw updateError;
-
-      // 3. Delete transaction
       const { error: deleteError } = await supabase
         .from('inventory_transactions')
         .delete()
@@ -1557,10 +1692,7 @@ export default function InventoryClient({
       if (deleteError) throw deleteError;
 
       // Refresh history
-      const res = await fetchTransactionHistory();
-      if (res.success && res.data) {
-        setTransactionHistory(res.data);
-      }
+      await loadHistoryPage({ offset: 0 });
 
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
@@ -1683,11 +1815,37 @@ export default function InventoryClient({
             onDragEnd={handleDragEndRows}
             modifiers={[restrictToWindowEdges]}
           >
-            {/* Mobile Card Stack */}
-            <div className="md:hidden w-full space-y-4 mb-8">
+            {isDesktopLayout ? (
+            <div className="w-full pb-6">
               {items.length === 0 ? (
                 <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
-                  ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
+                  ไม่มีข้อมูลสินค้าในระบบ กรุณากด &quot;เพิ่มสินค้า&quot; นะคะ
+                </div>
+              ) : (
+                <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-3">
+                    {items.map((item, index) => (
+                      <SortableRow
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        columnById={columnById}
+                        handleUpdateField={handleUpdateField}
+                        handleSaveField={handleSaveField}
+                        requestDelete={setDeleteId}
+                        handleFocus={handleFocus}
+                        totalItems={items.length}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              )}
+            </div>
+            ) : (
+            <div className="w-full space-y-4 mb-8">
+              {items.length === 0 ? (
+                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
+                  ไม่มีข้อมูลสินค้าในระบบ กรุณากด &quot;เพิ่มสินค้า&quot; นะคะ
                 </div>
               ) : (
                 <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
@@ -1710,33 +1868,7 @@ export default function InventoryClient({
                 </SortableContext>
               )}
             </div>
-
-            {/* Desktop Card Grid (DnD) */}
-            <div className="hidden md:block w-full pb-6">
-              {items.length === 0 ? (
-                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
-                  ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ
-                </div>
-              ) : (
-                <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-3">
-                    {items.map((item, index) => (
-                      <SortableRow
-                        key={item.id}
-                        item={item}
-                        index={index}
-                        columnById={columnById}
-                        handleUpdateField={handleUpdateField}
-                        handleSaveField={handleSaveField}
-                        requestDelete={setDeleteId}
-                        handleFocus={handleFocus}
-                        totalItems={items.length}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              )}
-            </div>
+            )}
           </DndContext>
           </div>
         </div>
@@ -1838,6 +1970,40 @@ export default function InventoryClient({
                     />
                   </div>
 
+                  <fieldset className="col-span-2 flex flex-col gap-2">
+                    <legend className="text-[12px] font-normal text-muted-foreground ml-1">วิธีตรวจนับ</legend>
+                    <div className="grid grid-cols-2 gap-2">
+                      {COUNT_POLICY_OPTIONS.map((option) => {
+                        const currentPolicy = normalizeCountPolicy(newItemData.count_policy);
+                        return (
+                          <label
+                            key={option.value}
+                            className={cn(
+                              'flex min-h-12 cursor-pointer flex-col justify-center rounded-2xl border px-3 py-2 text-sm transition-colors',
+                              currentPolicy === option.value
+                                ? option.value === 'exact_count'
+                                  ? 'bb-pastel-surface border-[#bfdbfe] bg-[#dbeafe] text-black'
+                                  : 'bb-pastel-surface border-[#f5c6cb] bg-[#f8d7da] text-black'
+                                : 'border-border bg-muted text-foreground hover:bg-card',
+                            )}
+                          >
+                            <span className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name="new-item-count-policy"
+                                checked={currentPolicy === option.value}
+                                onChange={() => setNewItemData(prev => ({ ...prev, count_policy: option.value }))}
+                                className="accent-current"
+                              />
+                              <span>{option.label}</span>
+                            </span>
+                            <span className="mt-0.5 text-[11px] opacity-65">{option.description}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+
                   <div className="col-span-2 flex flex-col gap-1.5">
                     <label className="text-[12px] font-normal text-muted-foreground ml-1 flex items-center gap-1">
                       แทรกที่ลำดับ
@@ -1905,6 +2071,11 @@ export default function InventoryClient({
           <InventoryHistoryModal
             transactionHistory={transactionHistory}
             onClose={() => setShowHistoryModal(false)}
+            historyTypeFilter={historyTypeFilter}
+            onTypeFilterChange={handleHistoryTypeFilterChange}
+            onLoadMore={handleLoadMoreHistory}
+            hasMoreHistory={hasMoreHistory}
+            isHistoryLoading={isHistoryLoading}
           />
         )}
       </AnimatePresence>

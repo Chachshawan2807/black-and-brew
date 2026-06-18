@@ -5,9 +5,10 @@ import {
   Wrench,
   Home,
   Package,
-  LineChart,
+  Gauge,
+  HandCoins,
+  Radar,
   ClipboardList,
-  TrendingUp,
   type LucideIcon
 } from 'lucide-react';
 
@@ -78,7 +79,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           id: 'inventory',
           href: `${prefix}/inventory`,
           label: "คลังสินค้า",
-          active: pathname.includes("/inventory") && !pathname.includes("/inventory/count"),
+          active: pathname.includes("/inventory") && !pathname.includes("/inventory/count") && !pathname.includes("/inventory/accuracy"),
           icon: Package,
           submenus: []
         },
@@ -91,11 +92,19 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           submenus: []
         },
         {
+          id: 'inventory-accuracy',
+          href: `${prefix}/inventory/accuracy`,
+          label: "รายงานความแม่นยำ",
+          active: pathname.includes("/inventory/accuracy"),
+          icon: Gauge,
+          submenus: []
+        },
+        {
           id: 'market-insights',
           href: `${prefix}/market-insights`,
           label: 'วิเคราะห์ตลาด',
           active: pathname.includes('/market-insights'),
-          icon: LineChart,
+          icon: Radar,
           submenus: []
         },
         {
@@ -103,7 +112,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           href: `${prefix}/sales`,
           label: 'จัดการยอดขาย',
           active: pathname.includes('/sales'),
-          icon: TrendingUp,
+          icon: HandCoins,
           submenus: []
         },
       ]

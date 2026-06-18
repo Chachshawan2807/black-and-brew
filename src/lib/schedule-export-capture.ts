@@ -1,9 +1,34 @@
 import { captureElementAsPng, downloadDataUrl } from '@/lib/capture-element-png';
+import { APP_FONT_FAMILY_CSS } from '@/lib/fonts';
 
 export const SCHEDULE_EXPORT_BG = '#fdfcf0';
 export const SCHEDULE_EXPORT_TEXT = '#000000';
 export const SCHEDULE_EXPORT_MUTED = 'rgba(0, 0, 0, 0.55)';
 export const SCHEDULE_EXPORT_BORDER = 'rgba(0, 0, 0, 0.05)';
+const SCHEDULE_EXPORT_GRID_TEMPLATE = 'minmax(180px, max-content) repeat(7, minmax(104px, 1fr))';
+
+function resolveScheduleExportFontFamily(): string {
+  if (typeof window === 'undefined') return APP_FONT_FAMILY_CSS;
+
+  const rootStyle = window.getComputedStyle(document.documentElement);
+  const loadedFontFamilies = [
+    rootStyle.getPropertyValue('--font-prompt'),
+    rootStyle.getPropertyValue('--font-ibm-plex-sans-thai'),
+    rootStyle.getPropertyValue('--font-inter'),
+  ]
+    .map((family) => family.trim())
+    .filter(Boolean);
+
+  if (loadedFontFamilies.length === 0) return APP_FONT_FAMILY_CSS;
+
+  return [...loadedFontFamilies, 'system-ui', 'sans-serif'].join(', ');
+}
+
+async function waitForScheduleExportFonts(): Promise<void> {
+  if ('fonts' in document) {
+    await document.fonts.ready;
+  }
+}
 
 function setInline(
   restores: Map<HTMLElement, Map<string, string>>,
@@ -42,9 +67,11 @@ function hasBorderUtilityClass(node: Element): boolean {
 export function applyScheduleTableCaptureStyles(root: HTMLElement): () => void {
   const restores = new Map<HTMLElement, Map<string, string>>();
   const nodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))];
+  const fontFamily = resolveScheduleExportFontFamily();
 
   for (const node of nodes) {
     if (!(node instanceof HTMLElement)) continue;
+    setInline(restores, node, 'font-family', fontFamily);
     if (isPastelShiftSurface(node)) continue;
 
     if (hasClassToken(node, 'text-foreground')) {
@@ -70,6 +97,14 @@ export function applyScheduleTableCaptureStyles(root: HTMLElement): () => void {
       ] as const) {
         setInline(restores, node, prop, SCHEDULE_EXPORT_BORDER);
       }
+    }
+
+    if (node.classList.contains('bb-schedule-grid')) {
+      setInline(restores, node, 'grid-template-columns', SCHEDULE_EXPORT_GRID_TEMPLATE);
+    }
+
+    if (node.classList.contains('bb-schedule-nowrap')) {
+      setInline(restores, node, 'white-space', 'nowrap');
     }
   }
 
@@ -106,9 +141,13 @@ export async function withLightDocumentTheme<T>(fn: () => Promise<T>): Promise<T
 
 export async function captureScheduleTableAsPng(element: HTMLElement): Promise<string> {
   return withLightDocumentTheme(async () => {
+    await waitForScheduleExportFonts();
     const restoreStyles = applyScheduleTableCaptureStyles(element);
     try {
-      return await captureElementAsPng(element, { backgroundColor: SCHEDULE_EXPORT_BG });
+      return await captureElementAsPng(element, {
+        backgroundColor: SCHEDULE_EXPORT_BG,
+        skipFonts: false,
+      });
     } finally {
       restoreStyles();
     }

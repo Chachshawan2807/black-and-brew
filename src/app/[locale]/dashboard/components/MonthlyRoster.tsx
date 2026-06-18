@@ -164,11 +164,11 @@ export default function MonthlyRoster() {
               <table className="w-max min-w-full border-collapse">
                 <thead>
                   <tr className="bg-muted/50">
-                    <th className="sticky left-0 z-30 bg-muted/50 p-4 text-left border-b border-r border-border text-foreground font-normal whitespace-nowrap shadow-sm bb-sticky-scroll-cell">
+                    <th className="sticky left-0 z-30 bg-muted/50 p-4 text-left border-b border-r border-border text-foreground font-normal whitespace-nowrap min-w-[9.5rem] w-max shadow-sm bb-sticky-scroll-cell">
                       พนักงาน
                     </th>
                     {daysInInterval.map((day) => (
-                      <th key={day.toISOString()} className="p-3 text-center border-b border-r border-border text-foreground font-normal min-w-[75px]">
+                      <th key={day.toISOString()} className="p-3 text-center border-b border-r border-border text-foreground font-normal min-w-[6.5rem] whitespace-nowrap">
                         <div className="text-[11px] text-foreground font-normal uppercase mb-1 opacity-80">{format(day, 'EEE', { locale: th })}</div>
                         <div className="text-lg leading-none">{format(day, 'd')}</div>
                       </th>
@@ -178,17 +178,17 @@ export default function MonthlyRoster() {
                 <tbody>
                   {data.profiles.map((profile) => (
                     <tr key={profile.id} className="group hover:bg-muted/30 transition-colors">
-                      <td className="sticky left-0 z-10 bg-card p-4 border-r border-b border-border text-foreground font-normal text-sm group-hover:bg-muted/30 transition-colors whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] bb-sticky-scroll-cell">
+                      <td className="sticky left-0 z-10 bg-card p-4 border-r border-b border-border text-foreground font-normal text-sm group-hover:bg-muted/30 transition-colors whitespace-nowrap min-w-[9.5rem] w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] bb-sticky-scroll-cell">
                         {profile.full_name}
                       </td>
                       {daysInInterval.map((day) => {
                         const shift = getShiftForProfileDate(shiftDateLookup, profile.id, format(day, 'yyyy-MM-dd'));
                         const display = shift ? getShiftDisplay(shift) : null;
                         return (
-                          <td key={day.toISOString()} className="p-1.5 border-r border-b border-border h-[4.25rem] align-middle">
+                          <td key={day.toISOString()} className="p-1.5 border-r border-b border-border h-[4.25rem] align-middle min-w-[6.5rem]">
                             {display && (
                               <div
-                                className={`w-full h-full min-h-[3rem] flex items-center justify-center rounded-xl text-[12px] font-normal shadow-sm p-1 text-center border ${display.color}`}
+                                className={`w-full h-full min-h-[3rem] flex items-center justify-center rounded-xl text-[12px] font-normal shadow-sm px-2 py-1 text-center whitespace-nowrap border ${display.color}`}
                                 style={display.colorStyle}
                               >
                                 {display.text}

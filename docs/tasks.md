@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 8.8 | Last Updated: 2026-06-17
+> Version: 8.9 | Last Updated: 2026-06-19
 
 ---
 
@@ -108,6 +108,11 @@
 - [x] PWA manifest icons — `/images/notification-icon*.png`, theme `#ffffff`/`#000000` (2026-06-15)
 - [x] SQL/doc cleanup — extract `sql/record_inventory_transaction.sql`, delete 11 legacy SQL files (2026-06-15)
 - [x] Documentation sync v8.6 — count accuracy, quick action, tooltips, PWA, SQL cleanup (2026-06-15)
+- [x] Cross-device Web Push for inventory alerts via `push_subscriptions` + VAPID (v8.7)
+- [x] Trusted-device passkeys via `device_passkeys`, WebAuthn, and `PasskeyDeviceSection` (v8.8)
+- [x] Inventory count policy — `exact_count` vs `sufficiency_check`; manual `order_qty` for sufficiency-check items; `/inventory/accuracy` report (v8.9)
+- [x] Market Insights local events — `local_events` table + `fetchUpcomingLocalEvents()` + prompt context builder (v8.9)
+- [x] Documentation sync v8.9 — count policy, local events, migration counts, test counts, theme-token wording (2026-06-19)
 
 ---
 
@@ -140,15 +145,13 @@ Plan: `docs/plans/2026-06-12-dark-theme-remediation.md`
 - [ ] Integrate WCAG 2.2 Accessibility audit
 - [ ] Implement JSON-LD structured data for AI interoperability
 - [ ] Deploy Edge Functions for faster data fetching
-- [ ] Add Supabase generated Database types (replace `any`)
+- [x] Add Supabase generated Database types (`src/lib/database.types.ts`)
 - [ ] Upgrade from PIN-only to per-staff Supabase Auth (individual accounts)
 
 ### Low Priority
 
 - [ ] Add inventory categories/groups
 - [x] Inventory in-app notifications via `data_change_logs` Realtime + PWA push prefs (v8.5)
-- [x] Cross-device Web Push for inventory alerts via `push_subscriptions` + VAPID (v8.7)
-- [x] Trusted-device passkeys via `device_passkeys`, WebAuthn, and `PasskeyDeviceSection` (v8.8)
 - [ ] Implement low-stock LINE/push alerts (threshold-based)
 - [x] ~~Add export to CSV/PDF for Purchase Orders~~ — PNG export by channel (v6.8)
 - [ ] Build reporting dashboard (stock trends, shift analytics)

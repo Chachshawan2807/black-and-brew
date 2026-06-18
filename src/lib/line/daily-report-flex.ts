@@ -338,36 +338,28 @@ function buildHolidayFooter(holiday: NonNullable<DailyReportData['holiday']>): F
 function buildHeader(data: DailyReportData): FlexBox {
   return {
     type: 'box',
-    layout: 'horizontal',
+    layout: 'vertical',
     backgroundColor: FLEX_HEADER_PALETTE.backgroundColor,
     borderColor: FLEX_HEADER_PALETTE.borderColor,
     borderWidth: '1px',
     paddingAll: '16px',
     paddingBottom: '14px',
-    spacing: 'md',
-    alignItems: 'center',
+    spacing: 'sm',
+    alignItems: 'flex-start',
     contents: [
       {
         type: 'text',
-        text: '📋',
+        text: data.dateStr,
         size: 'xl',
-        flex: 0,
+        weight: 'bold',
+        color: FLEX_BODY_TEXT,
+        align: 'start',
       },
       {
         type: 'box',
-        layout: 'vertical',
-        flex: 1,
-        spacing: 'sm',
-        contents: [
-          {
-            type: 'text',
-            text: data.dateStr,
-            size: 'xl',
-            weight: 'bold',
-            color: FLEX_BODY_TEXT,
-          },
-          schedulePill(data.schedule),
-        ],
+        layout: 'horizontal',
+        justifyContent: 'flex-start',
+        contents: [schedulePill(data.schedule)],
       },
     ],
   };

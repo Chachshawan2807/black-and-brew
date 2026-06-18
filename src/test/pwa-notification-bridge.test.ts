@@ -4,6 +4,7 @@ import {
   buildSystemNotificationOptions,
   isBenignPushRegistrationError,
   isUuidString,
+  PWA_NOTIFICATION_BADGE,
   PWA_NOTIFICATION_ICON,
   PWA_NOTIFICATION_VIBRATE,
 } from '@/lib/pwa-notification-bridge';
@@ -29,11 +30,13 @@ describe('pwa-notification-bridge', () => {
     expect(multi.body.startsWith('[5] ')).toBe(true);
   });
 
-  test('system notification uses identical brand icon for icon and badge', () => {
+  test('system notification uses brand icon and separate mobile badge mask', () => {
     const opts = buildSystemNotificationOptions({ body: 'รับ 2 · คงเหลือ: 0 → 2' });
     expect(opts.icon).toContain(PWA_NOTIFICATION_ICON);
-    expect(opts.badge).toBe(opts.icon);
+    expect(opts.badge).toContain(PWA_NOTIFICATION_BADGE);
+    expect(opts.badge).not.toBe(opts.icon);
     expect(opts.icon).toMatch(/^https?:\/\//);
+    expect(opts.badge).toMatch(/^https?:\/\//);
   });
 
   test('isBenignPushRegistrationError treats unavailable push service as expected', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { modalContent, MODAL_EASE } from '@/lib/motion-presets';
 import { Lock, ShieldAlert, Loader2, Fingerprint } from 'lucide-react';
@@ -14,7 +14,7 @@ import { recordLoginEvent } from '@/app/actions/login-history-actions';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import {
-  isBiometricLoginAvailable,
+  getBiometricLoginAvailability,
   loginWithDevicePasskey,
   registerDevicePasskey,
   shouldOfferPasskeyEnrollment,
@@ -23,6 +23,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
 
 const PIN_LENGTH = 6;
+const BIOMETRIC_AUTO_MAX_ATTEMPTS = 3;
 
 export default function PinGateway({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
@@ -35,21 +36,53 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricAutoCapable, setBiometricAutoCapable] = useState(false);
+  const [biometricAttempts, setBiometricAttempts] = useState(0);
+  const [biometricAutoEnabled, setBiometricAutoEnabled] = useState(true);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
   const [showEnrollment, setShowEnrollment] = useState(false);
   const [pendingReadOnly, setPendingReadOnly] = useState(false);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
   const isVerifyingRef = useRef(false);
+  const passkeyPromptInFlightRef = useRef(false);
+  const biometricAttemptsRef = useRef(0);
+  const biometricAutoEnabledRef = useRef(true);
+  const biometricAutoPromptedRef = useRef(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    let cancelled = false;
 
     void (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+
+      setIsMounted(true);
+
+      const storedLockout = localStorage.getItem('bb_lockout_until');
+      const storedAttempts = localStorage.getItem('bb_failed_attempts') || '0';
+      setFailedCountDisplay(storedAttempts);
+
+      if (storedLockout) {
+        const until = new Date(storedLockout).getTime();
+        const now = Date.now();
+        if (until > now) {
+          setLockoutTimeLeft(Math.ceil((until - now) / 1000));
+        } else {
+          localStorage.removeItem('bb_lockout_until');
+          localStorage.removeItem('bb_failed_attempts');
+          setFailedCountDisplay('0');
+        }
+      }
+
       const serverSession = await getAuthSessionInfo();
+      if (cancelled) return;
+
       if (serverSession.verified) {
         setClientAuthSession(serverSession.readOnly);
         await ensureSupabaseSession();
+        if (cancelled) return;
+
         setIsReadOnly(serverSession.readOnly);
         setIsAuthenticated(true);
         window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
@@ -63,61 +96,153 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       setIsAuthenticated(false);
     })();
 
-    const storedLockout = localStorage.getItem('bb_lockout_until');
-    const storedAttempts = localStorage.getItem('bb_failed_attempts') || '0';
-    setFailedCountDisplay(storedAttempts);
-
-    if (storedLockout) {
-      const until = new Date(storedLockout).getTime();
-      const now = Date.now();
-      if (until > now) {
-        setLockoutTimeLeft(Math.ceil((until - now) / 1000));
-      } else {
-        localStorage.removeItem('bb_lockout_until');
-        localStorage.removeItem('bb_failed_attempts');
-        setFailedCountDisplay('0');
-      }
-    }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    void isBiometricLoginAvailable().then(setBiometricSupported);
+    let cancelled = false;
+
+    void getBiometricLoginAvailability().then(availability => {
+      if (cancelled) return;
+      setBiometricSupported(availability.supported);
+      setBiometricAutoCapable(availability.canAutoTrigger);
+      if (!availability.canAutoTrigger) {
+        biometricAutoEnabledRef.current = false;
+        setBiometricAutoEnabled(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const completeAuthentication = async (readOnly: boolean) => {
+  const completeAuthentication = useCallback(async (readOnly: boolean) => {
     setClientAuthSession(readOnly);
     setIsReadOnly(readOnly);
     await ensureSupabaseSession();
     setIsAuthenticated(true);
     setShowEnrollment(false);
     window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
-  };
+  }, []);
 
   const passkeySkipKey = (fingerprint: string) => `bb_passkey_skip_${fingerprint}`;
 
-  const handlePasskeyLogin = async () => {
-    if (passkeyBusy || isVerifyingRef.current || lockoutTimeLeft !== null) return;
+  const focusPinInput = useCallback(() => {
+    hiddenInputRef.current?.focus({ preventScroll: true });
+  }, []);
 
-    setPasskeyBusy(true);
-    setPasskeyError(null);
-    hiddenInputRef.current?.blur();
+  const recordBiometricFailure = useCallback(
+    () => {
+      const next = biometricAttemptsRef.current + 1;
+      biometricAttemptsRef.current = next;
+      setBiometricAttempts(next);
+      if (next >= BIOMETRIC_AUTO_MAX_ATTEMPTS) {
+        biometricAutoEnabledRef.current = false;
+        setBiometricAutoEnabled(false);
+        window.setTimeout(focusPinInput, 120);
+      }
+    },
+    [focusPinInput]
+  );
 
-    try {
-      const device = collectClientDeviceInfo();
-      const res = await loginWithDevicePasskey(device);
-      if (!res.success) {
-        setPasskeyError(res.error);
+  const handlePasskeyLogin = useCallback(
+    async (trigger: 'auto' | 'manual' = 'manual') => {
+      if (
+        passkeyPromptInFlightRef.current ||
+        isVerifyingRef.current ||
+        lockoutTimeLeft !== null
+      ) {
         return;
       }
 
-      localStorage.removeItem('bb_failed_attempts');
-      localStorage.removeItem('bb_lockout_until');
-      setFailedCountDisplay('0');
-      await completeAuthentication(Boolean(res.isReadOnly));
-    } finally {
-      setPasskeyBusy(false);
+      if (
+        trigger === 'auto' &&
+        (biometricAutoPromptedRef.current ||
+          !biometricAutoEnabledRef.current ||
+          biometricAttemptsRef.current >= BIOMETRIC_AUTO_MAX_ATTEMPTS)
+      ) {
+        return;
+      }
+
+      if (trigger === 'auto') {
+        biometricAutoPromptedRef.current = true;
+      }
+
+      if (
+        trigger === 'manual' &&
+        biometricAttemptsRef.current >= BIOMETRIC_AUTO_MAX_ATTEMPTS
+      ) {
+        biometricAttemptsRef.current = 0;
+        setBiometricAttempts(0);
+      }
+
+      if (trigger === 'manual') {
+        biometricAutoEnabledRef.current = false;
+        setBiometricAutoEnabled(false);
+      }
+
+      passkeyPromptInFlightRef.current = true;
+      setPasskeyBusy(true);
+      setPasskeyError(null);
+      hiddenInputRef.current?.blur();
+
+      try {
+        const device = collectClientDeviceInfo();
+        const res = await loginWithDevicePasskey(device);
+        if (!res.success) {
+          setPasskeyError(res.error);
+          recordBiometricFailure();
+          return;
+        }
+
+        localStorage.removeItem('bb_failed_attempts');
+        localStorage.removeItem('bb_lockout_until');
+        setFailedCountDisplay('0');
+        biometricAttemptsRef.current = 0;
+        setBiometricAttempts(0);
+        await completeAuthentication(Boolean(res.isReadOnly));
+      } finally {
+        passkeyPromptInFlightRef.current = false;
+        setPasskeyBusy(false);
+      }
+    },
+    [completeAuthentication, lockoutTimeLeft, recordBiometricFailure]
+  );
+
+  useEffect(() => {
+    if (
+      !isMounted ||
+      !biometricSupported ||
+      !biometricAutoCapable ||
+      biometricAutoPromptedRef.current ||
+      !biometricAutoEnabledRef.current ||
+      biometricAttemptsRef.current >= BIOMETRIC_AUTO_MAX_ATTEMPTS ||
+      isAuthenticated ||
+      lockoutTimeLeft !== null ||
+      showEnrollment ||
+      isVerifying ||
+      passkeyBusy
+    ) {
+      return;
     }
-  };
+
+    void handlePasskeyLogin('auto');
+  }, [
+    biometricAttempts,
+    biometricAutoEnabled,
+    biometricAutoCapable,
+    biometricSupported,
+    handlePasskeyLogin,
+    isAuthenticated,
+    isMounted,
+    isVerifying,
+    lockoutTimeLeft,
+    passkeyBusy,
+    showEnrollment,
+  ]);
 
   const handleEnrollment = async () => {
     setPasskeyBusy(true);
@@ -196,10 +321,12 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (lockoutTimeLeft === null) return;
     if (lockoutTimeLeft <= 0) {
-      setLockoutTimeLeft(null);
-      localStorage.removeItem('bb_lockout_until');
-      localStorage.removeItem('bb_failed_attempts');
-      setFailedCountDisplay('0');
+      queueMicrotask(() => {
+        setLockoutTimeLeft(null);
+        localStorage.removeItem('bb_lockout_until');
+        localStorage.removeItem('bb_failed_attempts');
+        setFailedCountDisplay('0');
+      });
       return;
     }
 
@@ -214,10 +341,6 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const focusPinInput = () => {
-    hiddenInputRef.current?.focus({ preventScroll: true });
   };
 
   const handlePinInput = async (value: string) => {
@@ -241,6 +364,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         localStorage.removeItem('bb_failed_attempts');
         localStorage.removeItem('bb_lockout_until');
         setFailedCountDisplay('0');
+        biometricAttemptsRef.current = 0;
+        setBiometricAttempts(0);
 
         const fingerprint = device.sessionFingerprint;
         const skippedEnrollment =
@@ -311,7 +436,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               บันทึกเครื่องนี้
             </h1>
             <p className="text-sm font-normal text-muted-foreground leading-relaxed px-2">
-              ครั้งถัดไปเข้าระบบด้วยลายนิ้วมือหรือสแกนใบหน้าแทนการพิมพ์ PIN ได้
+              ครั้งถัดไปเข้าระบบด้วย Windows Hello, Face ID, Touch ID หรือ Passkey แทนการพิมพ์ PIN ได้
             </p>
           </div>
 
@@ -331,7 +456,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               ) : (
                 <Fingerprint size={18} strokeWidth={1.5} />
               )}
-              บันทึกด้วยลายนิ้วมือ / ใบหน้า
+              บันทึก Windows Hello / Passkey
             </button>
             <button
               type="button"
@@ -545,6 +670,16 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           </motion.p>
         ) : null}
 
+        {!error && biometricAttempts >= BIOMETRIC_AUTO_MAX_ATTEMPTS ? (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-sm font-normal text-muted-foreground tracking-wide text-center px-2"
+          >
+            ยืนยันตัวตนไม่สำเร็จครบ 3 ครั้ง ลองใส่รหัสผ่าน 6 หลักแทน
+          </motion.p>
+        ) : null}
+
         {biometricSupported && !isVerifying ? (
           <div className="w-full max-w-[320px] flex flex-col items-center gap-2">
             <div className="w-full flex items-center gap-3 text-muted-foreground">
@@ -554,7 +689,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             </div>
             <button
               type="button"
-              onClick={() => void handlePasskeyLogin()}
+              onClick={() => void handlePasskeyLogin('manual')}
               disabled={passkeyBusy || lockoutTimeLeft !== null}
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-normal text-foreground disabled:opacity-60"
             >
@@ -563,7 +698,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               ) : (
                 <Fingerprint size={18} strokeWidth={1.5} />
               )}
-              เข้าด้วยลายนิ้วมือ / ใบหน้า
+              เข้าด้วย Windows Hello / Passkey
             </button>
           </div>
         ) : null}

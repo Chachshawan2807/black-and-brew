@@ -13,6 +13,39 @@ describe('inventory modals dark theme readability', () => {
     expect(code).not.toMatch(/inactive[\s\S]*text-foreground hover:bg-muted/);
   });
 
+  it('purchase order export image keeps header on one line and clips rounded corners', () => {
+    const code = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/PurchaseOrdersModal.tsx'),
+      'utf-8',
+    );
+
+    expect(code).toMatch(/<h2 className="[^"]*whitespace-nowrap[^"]*"/);
+    expect(code).toMatch(/isExportMode \? "relative flex flex-col w-full bg-\[#fff3dd\] rounded-3xl overflow-hidden"/);
+  });
+
+  it('purchase order detail table clips its header background to rounded top corners', () => {
+    const code = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/PurchaseOrdersModal.tsx'),
+      'utf-8',
+    );
+
+    expect(code).toContain('"rounded-3xl shadow-sm border overflow-hidden"');
+  });
+
+  it('purchase order exports preserve overflow so rounded wrappers clip in PNG capture', () => {
+    const pageCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
+      'utf-8',
+    );
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/inventory/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+
+    expect(pageCode).toContain('preserveOverflow: true');
+    expect(fabCode).toContain('preserveOverflow: true');
+  });
+
   it('inventory add modal avoids light-only slate tokens', () => {
     const code = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),

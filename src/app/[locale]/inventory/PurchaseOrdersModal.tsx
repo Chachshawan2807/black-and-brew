@@ -38,7 +38,7 @@ export default function PurchaseOrdersModal({
   const tableId = isExportMode ? exportTableId : 'blackandbrew-po-table';
 
   const tableContent = (
-    <div id={tableId} className={isExportMode ? "relative flex flex-col w-full bg-card" : "relative max-h-[75vh] overflow-y-auto bb-smooth-scroll flex flex-col w-full bg-card"}>
+    <div id={tableId} className={isExportMode ? "relative flex flex-col w-full bg-[#fff3dd] rounded-3xl overflow-hidden" : "relative max-h-[75vh] overflow-y-auto bb-smooth-scroll flex flex-col w-full bg-card"}>
       {/* STICKY STYLED WRAPPER FOR THE HEADER */}
         <div className={cn(
           PASTEL_SURFACE,
@@ -57,7 +57,7 @@ export default function PurchaseOrdersModal({
             </HintTooltip>
           )}
           <div className="px-6 flex items-center justify-between mb-4 pr-14">
-            <h2 className="text-xl font-normal flex items-center gap-2 antialiased">
+            <h2 className="text-xl font-normal flex items-center gap-2 antialiased whitespace-nowrap">
               <ShoppingCart className="w-5 h-5 opacity-60" /> รายการสั่งซื้อ
               {isExportMode && !selectedChannels.includes('all') && (
                 <span className="text-base opacity-50 font-normal">
@@ -146,7 +146,7 @@ export default function PurchaseOrdersModal({
           </div>
         ) : (
           <div className={cn(
-            "rounded-3xl shadow-sm border",
+            "rounded-3xl shadow-sm border overflow-hidden",
             isExportMode
               ? "bg-white border-black/5"
               : "bg-card border-border overflow-auto max-h-[calc(85vh-220px)] scrollbar-thin",

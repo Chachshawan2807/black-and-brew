@@ -13,6 +13,7 @@ import {
   buildSalesContext,
   buildInventoryContext,
   buildScheduleContextFromFormatted,
+  buildLocalEventsContext,
   buildSignalsList,
   buildSalesSnapshot,
   buildScheduleEntriesFromFormattedShifts,
@@ -22,6 +23,7 @@ import {
 import {
   fetchWeatherForecast,
   fetchUpcomingHolidays,
+  fetchUpcomingLocalEvents,
   fetchMarketTrends,
   STORE_LAT,
   STORE_LON,
@@ -129,6 +131,7 @@ export async function getMarketInsights(
       competitorAnalysis,
       dailyShifts,
       upcomingHolidays,
+      localEvents,
     ] = await Promise.all([
       fetchWeatherForecast(),
       fetchMarketTrends(),
@@ -141,6 +144,7 @@ export async function getMarketInsights(
         return null;
       }),
       supabase ? fetchUpcomingHolidays(supabase) : Promise.resolve([]),
+      supabase ? fetchUpcomingLocalEvents(supabase) : Promise.resolve([]),
     ]);
 
     // ── Inventory ────────────────────────────────────────────────────────────
@@ -189,6 +193,7 @@ export async function getMarketInsights(
       scheduleToday: dailyShifts ? buildScheduleEntriesFromFormattedShifts(dailyShifts) : [],
       shiftCount,
       upcomingHolidays,
+      localEvents,
       alerts,
       competitorAnalysis,
     };
@@ -200,6 +205,7 @@ export async function getMarketInsights(
       shiftCount ? `SHIFTS: ${shiftCount} | ${scheduleSummary}` : `SCHEDULE: ${scheduleSummary}`,
       `WEATHER: ${weatherStr}`,
       `HOLIDAYS: ${upcomingHolidays.map((h) => `${h.date} ${h.name}`).join(', ') || 'N/A'}`,
+      `LOCAL_EVENTS: ${buildLocalEventsContext(localEvents)}`,
       `COMPETITORS: ${buildCompetitorPromptDigest(competitorAnalysis)}`,
       `TRENDS: ${trends.raw}`,
       `SIGNALS: ${signals.join(', ') || 'baseline'}`,
@@ -214,7 +220,7 @@ export async function getMarketInsights(
       prompt: `${dataBlock}
 
 วิเคราะห์เชิงลึก 2 ส่วน (ห้ามพูดตัวเลขดิบ/รายการสต็อก):
-- behavior: พฤติกรรมผู้บริโภคย่านนี้ ทำไมซื้อ/ไม่ซื้อ โอกาสจากอากาศ+วันหยุด+คู่แข่ง (3-4 ข้อ) — ถ้ามีข้อมูล COMPETITORS ให้วิเคราะห์โซนใกล้/ไกลและคู่แข่งที่น่าจับตาอย่างน้อย 1 ข้อ
+- behavior: พฤติกรรมผู้บริโภคย่านนี้ ทำไมซื้อ/ไม่ซื้อ โอกาสจากอากาศ+วันหยุด+เหตุการณ์ท้องถิ่น+คู่แข่ง (3-4 ข้อ) — ถ้ามีข้อมูล COMPETITORS ให้วิเคราะห์โซนใกล้/ไกลและคู่แข่งที่น่าจับตาอย่างน้อย 1 ข้อ
 - trends: จับคู่เทรนด์ภายนอกกับจุดแข็งร้าน เมนู/วัตถุดิบที่ควรดัน (3-4 ข้อ)
 แต่ละข้อใส่ confidence (high/medium/low) และ reason สั้นๆ ว่าอ้างอิงสัญญาณใด`,
     });

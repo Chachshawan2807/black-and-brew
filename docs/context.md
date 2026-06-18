@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 8.8 | Last Updated: 2026-06-17
+> Version: 8.9 | Last Updated: 2026-06-19
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | Project Name | BLACK-AND-BREW ERP System |
 | Type | Enterprise Resource Planning for Coffee Shop |
-| Current Version | 8.8 (Passkeys + Doc/SQL Sync + Graphify refresh) |
+| Current Version | 8.9 (Inventory count policy + local events + doc sync) |
 | Repository | `Chachshawan2807/black-and-brew` |
 | Local Path | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -106,13 +106,13 @@ Authoritative env list: [`.env.example`](../.env.example)
 | --- | --- |
 | Timezone | GMT+7 (Bangkok) — Strict Enforcement |
 | Language | Thai (primary), English (secondary) |
-| Deployment Target | Vercel Edge Runtime |
+| Deployment Target | Vercel App Router on Vercel; runtime selected per route/API |
 | Accessibility | WCAG 2.2 AA |
 | Target INP | < 200ms |
 | Font Weight | `font-normal` only (no bold) |
 | Border Radius | `rounded-3xl` (24px) everywhere |
-| Primary Background | `#fdfcf0` (Morning Latte Cream) |
-| Primary Text | `#000000` (Black) |
+| Primary Background | `bg-background` token (light maps to Morning Latte Cream) |
+| Primary Text | `text-foreground`; black text only on pastel surfaces via `bb-pastel-surface` |
 
 ---
 
@@ -146,7 +146,7 @@ Authoritative env list: [`.env.example`](../.env.example)
 | Command Center | `src/app/[locale]/page.tsx` |
 | Dashboard | `src/app/[locale]/dashboard/` |
 | Schedule | `src/app/[locale]/schedule/` |
-| Inventory | `src/app/[locale]/inventory/` + `count/page.tsx` |
+| Inventory | `src/app/[locale]/inventory/`, `count/page.tsx`, `accuracy/page.tsx` |
 | Maintenance | `src/app/[locale]/maintenance/` |
 | Sales | `src/app/[locale]/sales/` |
 | Market Insights | `src/app/[locale]/market-insights/` |
@@ -164,11 +164,13 @@ Authoritative env list: [`.env.example`](../.env.example)
 | Feature | Key paths |
 | --- | --- |
 | Count accuracy | `inventory_count_verifications` (`system_stock_qty`), `recordCountVerification()`, `src/lib/inventory-count-accuracy.ts` |
+| Count policy | `inventory_items.count_policy`; `exact_count` scores accuracy, `sufficiency_check` skips scoring and uses manual `order_qty` |
 | Quick action bulk | `recordBulkInventoryTransactions()`, `inventory-quick-*` libs, `InventoryQuickActionFAB` |
 | Realtime context | `src/contexts/InventoryRealtimeContext.tsx` |
 | Tooltips | `AppTooltipProvider`, `HintTooltip` |
 | Server admin singleton | `src/lib/supabase-server.ts` (`getSupabaseAdmin()`) |
 | Data change history UI | `DataChangeHistorySection` in Settings |
 | Trusted-device passkeys | `device_passkeys`, `PasskeyDeviceSection`, `passkey-actions.ts` |
+| Local event market context | `local_events`, `fetchUpcomingLocalEvents()`, `buildLocalEventsContext()` |
 | PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |
 | SQL blueprint | `sql/record_inventory_transaction.sql` |

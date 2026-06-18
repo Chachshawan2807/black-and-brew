@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 8.8 | Last Updated: 2026-06-17 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 8.9 | Last Updated: 2026-06-19 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## 🏛️ Architectural Core
 
@@ -32,6 +32,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 - Persistence: All critical database mutations (reordering, stock updates) must bypass RLS using the Supabase Service Role Key via Server Actions.
 - Atomic Updates: Use `Promise.all` for batch updates (e.g., reordering entire lists) followed by `revalidatePath`.
 - Zero-Display Logic: Numeric 0 renders as empty string `""` in UI; empty input sanitizes to `0` in DB.
+- Inventory Count Policy: `exact_count` items participate in accuracy scoring; `sufficiency_check` items skip accuracy scoring and use manual `order_qty` for purchase orders.
 
 ### 4. AI Agent: "บรู" (Vercel AI SDK v6)
 
@@ -43,6 +44,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 - Deterministic Schedule Path (DEC-068): คำถามตารางงานรายวัน (วันนี้/พรุ่งนี้) short-circuit ผ่าน `fetchDailyShiftsByDate` + `formatScheduleChatResponse` — ไม่พึ่ง LLM สรุปผล ป้องกันคำตอบสั้นผิดพลาด (เช่น "วันนี้ 0")
 - Shift Data Source: กะจริงมาจาก `shifts.metadata.location` (6:30, 7:00, 8:00, ลา, ไปสาขา 2, ร้านซักผ้า, วันหยุด) — ห้ามใช้ `start_time` เป็นเวลาเข้างาน
 - Security: AI reads via Supabase Service Role isolated tools — read-only data layer.
+- Market Context: Market Insights combines deterministic Supabase context, weather, holidays, optional Google Places, Tavily trends, and store-managed `local_events`.
 - Hydration: `AIChatOverlay` uses `isMounted` guard (`useEffect(() => setIsMounted(true), []`) to prevent Math.random prerender errors. Loaded via `next/dynamic ssr:false` in `AIChatWrapper`.
 - Branding & UI Polish: Implemented a custom branding logo loaded dynamically via `/ai-agent-logo.svg` inside standard Next.js `<Image />` tags, overriding the generic Lucide `<Bot />` icons in the header, bubble avatars, and thinking indicators for maximum brand coherence.
 - UI Enhancements (R0 Standard):
@@ -115,8 +117,9 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 | Module | Route | Status |
 | --- | --- | --- |
 | Command Center | `/[locale]` | Active |
-| Inventory | `/[locale]/inventory` | Active — DnD + Stock RPC |
-| Stock Count | `/[locale]/inventory/count` | Active |
+| Inventory | `/[locale]/inventory` | Active — DnD + Stock RPC + count policy |
+| Stock Count | `/[locale]/inventory/count` | Active — exact count / sufficiency check |
+| Inventory Accuracy | `/[locale]/inventory/accuracy` | Active — exact-count report |
 | Staff Dashboard | `/[locale]/dashboard` | Active |
 | Schedule | `/[locale]/schedule` | Active — DnD |
 | Maintenance | `/[locale]/maintenance` | Active |
@@ -129,6 +132,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 ## 🛠️ Global Rules
 
 - Naming: Strictly use `inventory_item_id` for transaction foreign keys.
+- Inventory accuracy: never score `sufficiency_check` items; they are operational sufficiency checks, not exact-count variance checks.
 - Revalidation: Call `revalidateAppPaths` after any cross-module mutation.
 - Testing: Follow TDD SOP for all new logic.
 - AI Hydration: `AIChatOverlay` must include `isMounted` guard + be loaded via `next/dynamic` with `ssr: false`.

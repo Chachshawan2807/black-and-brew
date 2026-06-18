@@ -6,6 +6,7 @@ import {
   mergeInventoryRealtimeUpdate,
   sanitizeStockValue,
 } from '@/lib/inventory-stock';
+import { parseLocalColumnWidths } from '@/app/[locale]/inventory/types';
 
 describe('inventory stock sync utilities', () => {
   test('mergeInventoryRealtimeUpdate preserves fields when realtime payload is partial', () => {
@@ -61,6 +62,49 @@ describe('inventory stock sync utilities', () => {
       items.map((item) => (item.id === '2' ? { ...item, stock: 8 } : item))
     );
     expect(afterBothBelowPoint).toHaveLength(2);
+  });
+
+  test('computeItemsToOrder uses manual order_qty for sufficiency checks', () => {
+    const items = [
+      {
+        id: 'sufficient-manual',
+        name: 'Manual PO',
+        stock: 100,
+        order_qty: '7',
+        order_point: 0,
+        target_stock: 0,
+        count_policy: 'sufficiency_check',
+        unit: 'ชิ้น',
+      },
+      {
+        id: 'sufficient-zero',
+        name: 'No PO',
+        stock: 0,
+        order_qty: '',
+        order_point: 100,
+        target_stock: 200,
+        count_policy: 'sufficiency_check',
+        unit: 'ชิ้น',
+      },
+    ];
+
+    const toOrder = computeItemsToOrder(items);
+
+    expect(toOrder).toHaveLength(1);
+    expect(toOrder[0].id).toBe('sufficient-manual');
+    expect(toOrder[0].computedOrderQty).toBe(7);
+  });
+
+  test('parseLocalColumnWidths preserves persisted px column widths', () => {
+    localStorage.setItem(
+      'inventory-column-widths',
+      JSON.stringify({ stock: '80px', name: '220px', unsafe: '9999px' }),
+    );
+
+    expect(parseLocalColumnWidths()).toEqual({
+      stock: '80px',
+      name: '220px',
+    });
   });
 
   test('sanitizeStockValue never returns NaN', () => {

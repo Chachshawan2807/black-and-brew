@@ -1,10 +1,37 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 8.6 | Last Updated: 2026-06-16 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
+> Version: 8.9 | Last Updated: 2026-06-19 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
 
 ---
 
 ## Recent Decisions
+
+### DEC-077: Local Events as Market Insights Context (v8.9)
+
+- Date: June 19, 2026
+- Context: Weather, holidays, sales, inventory, and external trends do not capture store-managed events near the shop that can affect foot traffic.
+- Decision:
+  1. Add `local_events` table with date, name, category, expected impact, and source.
+  2. `fetchUpcomingLocalEvents()` reads upcoming rows and fails closed to `[]` when the table/query is unavailable.
+  3. `buildLocalEventsContext()` injects a compact event summary into the Market Insights prompt.
+- Impact: Managers can add known local context without hardcoding it into prompts or relying on Tavily to discover it.
+- Evidence: `supabase/migrations/20260618175951_local_events.sql`, `src/app/actions/market-insights-fetch.ts`, `src/app/actions/market-insights-context.ts`, `src/test/market-insights-fetch.test.ts`
+
+---
+
+### DEC-076: Inventory Count Policy Split (v8.9)
+
+- Date: June 19, 2026
+- Context: Not every inventory item should affect count accuracy. Some items only need a sufficiency check and manual purchase quantity.
+- Decision:
+  1. Add `inventory_items.count_policy` with `exact_count` and `sufficiency_check`.
+  2. `exact_count` items record count accuracy rows against `inventory_items.stock`.
+  3. `sufficiency_check` items skip accuracy scoring and use manual `order_qty` in purchase-order calculations.
+  4. `/[locale]/inventory/accuracy` reports only exact-count accuracy and high-discrepancy items.
+- Impact: Accuracy metrics stop mixing exact counts with check-only supplies; purchase orders still support manual operational quantities.
+- Evidence: `supabase/migrations/20260618163100_inventory_count_policy.sql`, `src/app/actions/inventory-actions.ts`, `src/lib/inventory-stock.ts`, `src/app/[locale]/inventory/accuracy/page.tsx`, `src/test/inventory_count_policy.test.ts`
+
+---
 
 ### DEC-075: Cross-Device Web Push for Inventory Alerts (v8.7)
 

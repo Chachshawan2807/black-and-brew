@@ -5,7 +5,11 @@ vi.mock('@/lib/external/tavily-client', () => ({
   fetchTavily: (...args: unknown[]) => fetchTavilyMock(...args),
 }));
 
-import { fetchMarketTrends, __clearTrendsCache } from '@/app/actions/market-insights-fetch';
+import {
+  fetchMarketTrends,
+  fetchUpcomingLocalEvents,
+  __clearTrendsCache,
+} from '@/app/actions/market-insights-fetch';
 
 describe('fetchMarketTrends', () => {
   beforeEach(() => {
@@ -57,5 +61,54 @@ describe('fetchMarketTrends', () => {
     await fetchMarketTrends();
 
     expect(fetchTavilyMock.mock.calls.length).toBe(callsAfterFirst);
+  });
+});
+
+describe('fetchUpcomingLocalEvents', () => {
+  test('loads local events in the upcoming window ordered by date', async () => {
+    const order = vi.fn(async () => ({
+      data: [
+        {
+          date: '2026-06-21',
+          name: 'ตลาดนัดหน้าหมู่บ้าน',
+          category: 'market',
+          expected_impact: 'คนเดินผ่านร้านเพิ่มช่วงเย็น',
+          source: 'manual',
+        },
+      ],
+      error: null,
+    }));
+    const lte = vi.fn(() => ({ order }));
+    const gte = vi.fn(() => ({ lte }));
+    const select = vi.fn(() => ({ gte }));
+    const from = vi.fn(() => ({ select }));
+
+    const events = await fetchUpcomingLocalEvents({ from } as never);
+
+    expect(from).toHaveBeenCalledWith('local_events');
+    expect(select).toHaveBeenCalledWith('date, name, category, expected_impact, source');
+    expect(gte).toHaveBeenCalledWith('date', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+    expect(lte).toHaveBeenCalledWith('date', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+    expect(order).toHaveBeenCalledWith('date', { ascending: true });
+    expect(events[0]).toEqual({
+      date: '2026-06-21',
+      name: 'ตลาดนัดหน้าหมู่บ้าน',
+      category: 'market',
+      expectedImpact: 'คนเดินผ่านร้านเพิ่มช่วงเย็น',
+      source: 'manual',
+    });
+  });
+
+  test('returns empty local events when Supabase reports an error', async () => {
+    const order = vi.fn(async () => ({
+      data: null,
+      error: { message: 'relation "local_events" does not exist' },
+    }));
+    const lte = vi.fn(() => ({ order }));
+    const gte = vi.fn(() => ({ lte }));
+    const select = vi.fn(() => ({ gte }));
+    const from = vi.fn(() => ({ select }));
+
+    await expect(fetchUpcomingLocalEvents({ from } as never)).resolves.toEqual([]);
   });
 });

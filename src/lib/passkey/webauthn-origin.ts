@@ -41,7 +41,7 @@ export async function resolveWebAuthnContext(): Promise<{ rpId: string; origin: 
   const proto = headerStore.get('x-forwarded-proto') ?? 'https';
   return {
     rpId: resolveRpIdFromHostname(hostname),
-    origin: resolveOriginFromHost(hostname, proto),
+    origin: resolveOriginFromHost(host, proto),
   };
 }
 

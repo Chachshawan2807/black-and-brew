@@ -6,6 +6,8 @@ export type CaptureElementPngOptions = {
   filter?: (node: HTMLElement) => boolean;
   /** Skip remote @font-face / @import fetches (fonts already loaded in-page). */
   skipFonts?: boolean;
+  /** Keep the root node's authored overflow, useful when border-radius must clip children. */
+  preserveOverflow?: boolean;
 };
 
 function resolvePixelRatio(width: number, height: number, requested = 2): number {
@@ -82,7 +84,7 @@ export async function captureElementAsPng(
         border: 'none',
         boxShadow: 'none',
         maxHeight: 'none',
-        overflow: 'visible',
+        ...(options.preserveOverflow ? {} : { overflow: 'visible' }),
       },
       filter: options.filter,
     });

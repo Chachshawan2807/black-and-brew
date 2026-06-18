@@ -5,6 +5,7 @@
 
 export const PWA_BRAND_ICON = '/images/notification-icon.png';
 export const PWA_BRAND_ICON_512 = '/images/notification-icon-512.png';
+export const PWA_NOTIFICATION_BADGE = '/images/notification-badge.png';
 export const PWA_APPLE_TOUCH_ICON = '/images/apple-touch-icon.png';
 export const PWA_FAVICON = '/images/favicon.png';
 
@@ -15,9 +16,6 @@ export const PWA_NOTIFICATION_VIBRATE = [120, 60, 120] as const;
 
 /** @deprecated Use PWA_BRAND_ICON — kept for existing imports. */
 export const PWA_NOTIFICATION_ICON = PWA_BRAND_ICON;
-
-/** Same asset as icon — guarantees identical look on Android badge + all platforms. */
-export const PWA_NOTIFICATION_BADGE = PWA_BRAND_ICON;
 
 export function resolvePwaSiteOrigin(): string {
   return (
@@ -43,7 +41,7 @@ export type OsNotificationOptions = NotificationOptions & {
   renotify?: boolean;
 };
 
-/** Shared notification options — icon and badge use the same brand asset everywhere. */
+/** Shared notification options — Android badge uses a dedicated transparent mask. */
 export function buildOsNotificationOptions(input: {
   body: string;
   tag?: string;
@@ -52,11 +50,12 @@ export function buildOsNotificationOptions(input: {
   origin?: string;
 }): OsNotificationOptions {
   const brandIcon = resolvePwaAssetUrl(PWA_BRAND_ICON, input.origin);
+  const notificationBadge = resolvePwaAssetUrl(PWA_NOTIFICATION_BADGE, input.origin);
 
   const opts: OsNotificationOptions = {
     body: input.body,
     icon: brandIcon,
-    badge: brandIcon,
+    badge: notificationBadge,
     tag: input.tag ?? 'bb-inventory',
     silent: false,
     requireInteraction: false,

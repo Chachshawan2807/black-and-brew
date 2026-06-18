@@ -44,6 +44,11 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('SW_INVENTORY_PUSH_RECEIVED');
   });
 
+  test('service worker push messages preserve SW unread count for launcher badges', () => {
+    expect(hookSource).toContain('unreadCount?: number');
+    expect(hookSource).toContain('pushNotification(data.notification, data.unreadCount)');
+  });
+
   test('cross-tab listener avoids write-back loops', () => {
     expect(hookSource).toContain('syncFromStorage(false)');
     expect(crossTabSource).toContain('storage');
@@ -56,5 +61,15 @@ describe('notification fab cross-platform sync', () => {
     );
     expect(fabSource).toContain('useNotificationState');
     expect(fabSource).not.toContain('localStorage');
+  });
+
+  test('notification FAB hides while another floating overlay is open', () => {
+    const fabSource = readFileSync(
+      resolve(__dirname, '../components/notifications/InventoryNotificationFAB.tsx'),
+      'utf8',
+    );
+
+    expect(fabSource).toContain('isAnyOtherOpen');
+    expect(fabSource).toContain("isAnyOtherOpen('notification')");
   });
 });

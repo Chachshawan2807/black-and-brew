@@ -5,6 +5,7 @@ export type InventoryStockFields = {
   order_qty?: number | string | null;
   order_point?: number | string | null;
   target_stock?: number | string | null;
+  count_policy?: string | null;
   unit?: string;
   source?: string;
   sort_order?: number;
@@ -83,17 +84,41 @@ export function getQuickBadgeStyles(stock: number, orderPoint: number): QuickBad
 export function computeItemsToOrder<T extends InventoryStockFields>(
   items: T[]
 ): Array<T & { computedOrderQty: number }> {
-  return items
-    .filter((item) =>
-      isItemNeedingReorder(item.stock, item.order_point, item.target_stock)
-    )
-    .map((item) => {
+  return items.flatMap((item) => {
+    if (item.count_policy === 'sufficiency_check') {
+      const manualOrderQty = sanitizeStockValue(item.order_qty);
+      return manualOrderQty > 0 ? [{ ...item, computedOrderQty: manualOrderQty }] : [];
+    }
+
       const stock = sanitizeStockValue(item.stock);
       const orderPoint = sanitizeStockValue(item.order_point);
       const targetStock = sanitizeStockValue(item.target_stock);
+    if (!isItemNeedingReorder(stock, orderPoint, targetStock)) return [];
+
       return {
         ...item,
         computedOrderQty: computeOrderQty(stock, orderPoint, targetStock),
       };
-    });
+  });
+}
+
+export function computePurchaseOrderDerivedState<T extends InventoryStockFields>(
+  items: T[],
+  selectedChannels: string[] = ['all'],
+) {
+  const itemsToOrder = computeItemsToOrder(items);
+  const poSources = Array.from(
+    new Set(itemsToOrder.map((item) => item.source || 'ไม่ได้ระบุแหล่งที่มา')),
+  );
+  const displayedPoItems = selectedChannels.includes('all')
+    ? itemsToOrder
+    : itemsToOrder.filter((item) =>
+        selectedChannels.includes(item.source || 'ไม่ได้ระบุแหล่งที่มา'),
+      );
+
+  return {
+    itemsToOrder,
+    poSources,
+    displayedPoItems,
+  };
 }

@@ -72,6 +72,15 @@ function prependNotification(
   return prependToNotificationList(list, notification).list;
 }
 
+function resolveUnreadCountWithServiceWorkerHint(
+  notifications: InventoryNotification[],
+  serviceWorkerUnreadCount?: number,
+): number {
+  const localUnreadCount = countUnread(notifications);
+  if (typeof serviceWorkerUnreadCount !== 'number') return localUnreadCount;
+  return Math.max(localUnreadCount, Math.floor(serviceWorkerUnreadCount));
+}
+
 export function useInventoryNotifications() {
   const params = useParams();
   const locale = (params?.locale as string) || 'th';
@@ -135,11 +144,11 @@ export function useInventoryNotifications() {
   }, []);
 
   const pushNotification = useCallback(
-    (notification: InventoryNotification) => {
+    (notification: InventoryNotification, serviceWorkerUnreadCount?: number) => {
       let nextUnread = 0;
       setNotifications((prev) => {
         const next = prependNotification(prev, notification);
-        nextUnread = countUnread(next);
+        nextUnread = resolveUnreadCountWithServiceWorkerHint(next, serviceWorkerUnreadCount);
         setUnreadCount(nextUnread);
         saveStoredNotifications(next);
         void mirrorNotificationsToIdb(next);
@@ -305,9 +314,11 @@ export function useInventoryNotifications() {
       const data = event.data as {
         type?: string;
         notification?: InventoryNotification;
+        unreadCount?: number;
       } | null;
       if (data?.type !== SW_INVENTORY_PUSH_RECEIVED || !data.notification) return;
-      pushNotification(data.notification);
+      pushNotification(data.notification, data.unreadCount);
+      void syncFromStorage(false);
     };
 
     navigator.serviceWorker.addEventListener('message', onSwMessage);
@@ -315,7 +326,7 @@ export function useInventoryNotifications() {
     return () => {
       navigator.serviceWorker.removeEventListener('message', onSwMessage);
     };
-  }, [pushNotification]);
+  }, [pushNotification, syncFromStorage]);
 
   const markAllRead = useCallback(() => {
     setNotifications((prev) => {

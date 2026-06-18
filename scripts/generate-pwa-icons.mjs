@@ -9,15 +9,18 @@ import sharp from 'sharp';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
-const source = path.join(root, 'public/images/logo.png');
 const outDir = path.join(root, 'public/images');
+const source = fs.existsSync(path.join(outDir, 'logo.png'))
+  ? path.join(outDir, 'logo.png')
+  : path.join(outDir, 'notification-icon-512.png');
 
 const PWA_ASSETS = {
   BRAND_ICON: '/images/notification-icon.png',
   BRAND_ICON_512: '/images/notification-icon-512.png',
+  NOTIFICATION_BADGE: '/images/notification-badge.png',
   APPLE_TOUCH_ICON: '/images/apple-touch-icon.png',
   FAVICON: '/images/favicon.png',
-  CACHE_VERSION: 7,
+  CACHE_VERSION: 8,
   VIBRATE: [120, 60, 120],
 };
 
@@ -53,6 +56,22 @@ async function writeSquareIcon(trimmed, size, filename, paddingRatio = 0.08) {
   await image.toFile(path.join(outDir, filename));
 }
 
+async function writeNotificationBadge(trimmed) {
+  const badgeSource = await (await renderSquareIcon(trimmed, 96, 0.06)).toBuffer();
+  const alpha = await sharp(badgeSource).ensureAlpha().extractChannel('alpha').toBuffer();
+  const badge = await sharp({
+    create: {
+      width: 96,
+      height: 96,
+      channels: 3,
+      background: { r: 0, g: 0, b: 0 },
+    },
+  })
+    .joinChannel(alpha)
+    .png({ compressionLevel: 9, adaptiveFiltering: true });
+  await badge.toFile(path.join(outDir, 'notification-badge.png'));
+}
+
 async function writeNextAppIcons(trimmed) {
   const appDir = path.join(root, 'src/app');
   await (await renderSquareIcon(trimmed, 512, 0.08)).toFile(path.join(appDir, 'icon.png'));
@@ -70,16 +89,12 @@ self.PWA_ASSETS = ${JSON.stringify(PWA_ASSETS, null, 2)};
 async function main() {
   const trimmed = await trimmedLogo();
   await writeSquareIcon(trimmed, 192, 'notification-icon.png');
+  await writeNotificationBadge(trimmed);
   await writeSquareIcon(trimmed, 512, 'notification-icon-512.png');
   await writeSquareIcon(trimmed, 512, 'favicon.png');
   await writeSquareIcon(trimmed, 180, 'apple-touch-icon.png');
   await writeNextAppIcons(trimmed);
   writePwaAssetsJs();
-
-  const legacyBadge = path.join(outDir, 'notification-badge.png');
-  if (fs.existsSync(legacyBadge)) {
-    fs.unlinkSync(legacyBadge);
-  }
 
   console.log('Generated PWA icons + public/pwa-assets.js');
 }

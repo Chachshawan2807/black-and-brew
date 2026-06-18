@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-06-17 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 8.8
+> Generated: 2026-06-19 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 8.9
 
 ---
 
@@ -13,6 +13,7 @@
 | Schedule | `src/app/[locale]/schedule/` | Active |
 | Inventory | `src/app/[locale]/inventory/` | Active |
 | Stock Count | `src/app/[locale]/inventory/count/` | Active |
+| Inventory Accuracy | `src/app/[locale]/inventory/accuracy/` | Active |
 | Maintenance | `src/app/[locale]/maintenance/` | Active |
 | Sales | `src/app/[locale]/sales/` | Active |
 | Market Insights | `src/app/[locale]/market-insights/` | Active |
@@ -32,6 +33,7 @@
 | `/[locale]/schedule` | `src/app/[locale]/schedule/page.tsx` |
 | `/[locale]/inventory` | `src/app/[locale]/inventory/page.tsx` |
 | `/[locale]/inventory/count` | `src/app/[locale]/inventory/count/page.tsx` |
+| `/[locale]/inventory/accuracy` | `src/app/[locale]/inventory/accuracy/page.tsx` |
 | `/[locale]/maintenance` | `src/app/[locale]/maintenance/page.tsx` |
 | `/[locale]/sales` | `src/app/[locale]/sales/page.tsx` |
 | `/[locale]/market-insights` | `src/app/[locale]/market-insights/page.tsx` |
@@ -57,7 +59,7 @@ black-and-brew/
 ├── docs/                    # Project documentation
 ├── messages/                # th.json, en.json (next-intl)
 ├── public/                  # sw.js (PWA), images, ai-agent-logo.svg
-├── supabase/migrations/     # Versioned DB migrations (10 files — see docs/database.md)
+├── supabase/migrations/     # Versioned DB migrations (12 files — see docs/database.md)
 ├── sql/                     # record_inventory_transaction.sql, sync_inventory_stock.sql, fix_inventory_rls.sql, ai_agent_views.sql
 ├── src/
 │   ├── app/
@@ -79,8 +81,8 @@ black-and-brew/
 │   ├── contexts/            # InventoryRealtimeContext
 │   ├── hooks/               # use-inventory-notifications, use-inventory-quick-action
 │   ├── i18n/                # request.ts, routing.ts
-│   ├── lib/                 # supabase, supabase-server, inventory-in-out-theoretical, inventory-quick-*, …
-│   ├── test/                # 94 Vitest test files
+│   ├── lib/                 # supabase, supabase-server, inventory-stock, inventory-quick-*, passkey, …
+│   ├── test/                # 95 Vitest test files
 │   └── proxy.ts             # next-intl middleware (Next.js 16 convention)
 ├── *.sql                    # Root-level schema/migration scripts
 ├── AGENTS.md, CLAUDE.md, MASTER_BLUEPRINT.md, README.md
@@ -97,12 +99,12 @@ black-and-brew/
 | `auth.ts` | PIN verify, session revocation, read-only session, cookies |
 | `passkey-actions.ts` | WebAuthn trusted-device passkey registration/login |
 | `login-history-actions.ts` | Login audit trail + active sessions |
-| `inventory-actions.ts` | Stock RPC, transactions, CRUD |
+| `inventory-actions.ts` | Stock RPC, count policy, transactions, CRUD |
 | `shift-actions.ts` | Shift CRUD, roster, revalidation |
 | `holiday-actions.ts` | Google Calendar + regular holidays |
 | `maintenance-actions.ts` | Service record CRUD |
 | `sales-actions.ts` | Excel upload, categories, metrics |
-| `market-insights-actions.ts` | Gemini market analysis |
+| `market-insights-actions.ts` | Gemini market analysis with local event context |
 | `daily-report-actions.ts` | LINE daily report compiler |
 | `line-actions.ts` | LINE Messaging API push |
 | `push-actions.ts` | Web Push subscription register/sync/unregister |
@@ -114,9 +116,9 @@ black-and-brew/
 
 ---
 
-## Tests (`src/test/` — 94 files)
+## Tests (`src/test/` — 95 files)
 
-Key suites: `web-push.test.ts`, `data-change-log.test.ts`, `inventory-count-accuracy.test.ts`, `inventory-in-out-theoretical.test.ts`, `inventory-quick-bulk.test.ts`, `inventory-quick-action-draft.test.ts`, `inventory-quick-qty-step.test.ts`, `inventory-quick-search-filter.test.ts`, `inventory_stock_sync.test.ts`, `inventory_quick_action_fab.test.ts`, `supabase-session.test.ts`, `pwa-notification-bridge.test.ts`, `market-insights-v2.test.ts`, `auth.test.ts`, `read-only-guard.test.ts`, `basic.test.ts`, `setup.ts`
+Key suites: `inventory_count_policy.test.ts`, `market-insights-fetch.test.ts`, `market-insights-context.test.ts`, `web-push.test.ts`, `data-change-log.test.ts`, `inventory-count-accuracy.test.ts`, `inventory-quick-bulk.test.ts`, `inventory-quick-action-draft.test.ts`, `inventory-quick-qty-step.test.ts`, `inventory-quick-search-filter.test.ts`, `inventory_stock_sync.test.ts`, `inventory_quick_action_fab.test.ts`, `supabase-session.test.ts`, `pwa-notification-bridge.test.ts`, `market-insights-v2.test.ts`, `auth.test.ts`, `read-only-guard.test.ts`, `basic.test.ts`, `setup.ts`
 
 ---
 

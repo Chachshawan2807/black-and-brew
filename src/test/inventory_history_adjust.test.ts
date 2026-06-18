@@ -105,3 +105,31 @@ describe('inventory history add and delete types', () => {
     expect(sql).toContain('ON DELETE SET NULL');
   });
 });
+
+describe('inventory history pagination and filters', () => {
+  test('inventory action fetches transaction history by page and type', () => {
+    const actionsCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
+      'utf-8',
+    );
+
+    expect(actionsCode).toContain('InventoryTransactionFilterType');
+    expect(actionsCode).toContain('offset: number');
+    expect(actionsCode).toContain('.range(offset, offset + safeLimit)');
+    expect(actionsCode).toContain("query = query.eq('type', type)");
+    expect(actionsCode).toContain('hasMore');
+  });
+
+  test('history modal exposes type filters and load more control', () => {
+    const modalCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
+      'utf-8',
+    );
+
+    expect(modalCode).toContain('historyTypeFilter');
+    expect(modalCode).toContain('onTypeFilterChange');
+    expect(modalCode).toContain('onLoadMore');
+    expect(modalCode).toContain('hasMoreHistory');
+    expect(modalCode).toContain('ดูเพิ่มเติม');
+  });
+});

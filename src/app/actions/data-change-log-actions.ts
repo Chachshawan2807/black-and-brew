@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { cookies, headers } from 'next/headers';
+import { after } from 'next/server';
 import { z } from 'zod';
 import type { Json } from '@/lib/database.types';
 import {
@@ -207,11 +208,14 @@ export async function recordDataChange(
     }
 
     if (inserted && safe.module === 'inventory' && (safe.status ?? 'success') === 'success') {
-      void dispatchInventoryWebPush(rowToDataChangeLogRow(inserted as Record<string, unknown>)).catch(
-        (pushError) => {
+      const pushRow = rowToDataChangeLogRow(inserted as Record<string, unknown>);
+      after(async () => {
+        try {
+          await dispatchInventoryWebPush(pushRow);
+        } catch (pushError) {
           console.error('[recordDataChange] Web push dispatch failed:', pushError);
         }
-      );
+      });
     }
 
     return { success: true };
