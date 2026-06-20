@@ -199,47 +199,45 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       if (bulkMode) {
         if (!bulkSubmitReady) return;
 
-        startQuickTransition(() => {
-          void (async () => {
-            onBeforeSave?.();
-            const payload = resolveBulkSubmitPayload(bulkQueue, bulkQuickType);
-            const res = await recordBulkInventoryTransactions(payload, 'Quick Entry - Bulk', {
-              clientSessionId: getClientSessionId(),
-              notificationSource,
-            });
+        startQuickTransition(async () => {
+          onBeforeSave?.();
+          const payload = resolveBulkSubmitPayload(bulkQueue, bulkQuickType);
+          const res = await recordBulkInventoryTransactions(payload, 'Quick Entry - Bulk', {
+            clientSessionId: getClientSessionId(),
+            notificationSource,
+          });
 
-            const succeeded = res.results.filter((row) => row.success);
-            const failed = res.results.filter((row) => !row.success);
+          const succeeded = res.results.filter((row) => row.success);
+          const failed = res.results.filter((row) => !row.success);
 
-            if (succeeded.length > 0) {
-              setItems((prev) =>
-                prev.map((item) => {
-                  const hit = succeeded.find((row) => row.itemId === item.id);
-                  return hit?.newStock !== undefined ? { ...item, stock: hit.newStock } : item;
-                }),
-              );
-            }
+          if (succeeded.length > 0) {
+            setItems((prev) =>
+              prev.map((item) => {
+                const hit = succeeded.find((row) => row.itemId === item.id);
+                return hit?.newStock !== undefined ? { ...item, stock: hit.newStock } : item;
+              }),
+            );
+          }
 
-            if (failed.length > 0) {
-              onSaveError?.();
-              const failedIds = new Set(failed.map((row) => row.itemId));
-              setBulkQueue((prev) => prev.filter((line) => failedIds.has(line.itemId)));
-              alert(
-                `บันทึกสำเร็จ ${succeeded.length}/${res.results.length} — ${failed
-                  .map((row) => {
-                    const name = items.find((item) => item.id === row.itemId)?.name ?? row.itemId;
-                    return `${name}: ${row.error ?? 'ล้มเหลว'}`;
-                  })
-                  .join('; ')}`,
-              );
-            } else {
-              setBulkQueue([]);
-              clearInventoryQuickActionDraft();
-              onAfterSave?.();
-            }
+          if (failed.length > 0) {
+            onSaveError?.();
+            const failedIds = new Set(failed.map((row) => row.itemId));
+            setBulkQueue((prev) => prev.filter((line) => failedIds.has(line.itemId)));
+            alert(
+              `บันทึกสำเร็จ ${succeeded.length}/${res.results.length} — ${failed
+                .map((row) => {
+                  const name = items.find((item) => item.id === row.itemId)?.name ?? row.itemId;
+                  return `${name}: ${row.error ?? 'ล้มเหลว'}`;
+                })
+                .join('; ')}`,
+            );
+          } else {
+            setBulkQueue([]);
+            clearInventoryQuickActionDraft();
+            onAfterSave?.();
+          }
 
-            await refreshHistoryIfOpen();
-          })();
+          await refreshHistoryIfOpen();
         });
         return;
       }

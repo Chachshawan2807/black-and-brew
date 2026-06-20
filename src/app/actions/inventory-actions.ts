@@ -256,79 +256,83 @@ export async function recordBulkInventoryTransactions(
       return { success: false, error: 'Invalid bulk transaction payload', results: [] as BulkInventoryTransactionResult[] };
     }
 
-    const results: BulkInventoryTransactionResult[] = [];
+    const results: BulkInventoryTransactionResult[] = await Promise.all(
+      parsed.data.entries.map(async (entry) => {
+        try {
+          const { data: beforeItem } = await supabase
+            .from('inventory_items')
+            .select('name, stock, order_point')
+            .eq('id', entry.itemId)
+            .maybeSingle();
 
-    for (const entry of parsed.data.entries) {
-      const { data: beforeItem } = await supabase
-        .from('inventory_items')
-        .select('name, stock, order_point')
-        .eq('id', entry.itemId)
-        .maybeSingle();
+          const { data, error } = await supabase.rpc('record_inventory_transaction', {
+            p_product_id: entry.itemId,
+            p_type: entry.type,
+            p_quantity: entry.quantity,
+            p_note: note,
+          });
 
-      const { data, error } = await supabase.rpc('record_inventory_transaction', {
-        p_product_id: entry.itemId,
-        p_type: entry.type,
-        p_quantity: entry.quantity,
-        p_note: note,
-      });
+          if (error) {
+            console.error('[recordBulkInventoryTransactions] Supabase RPC Error:', error.message, error.details, error.hint);
+            await recordDataChange({
+              action: 'UPDATE',
+              module: 'inventory',
+              entityType: 'inventory_item',
+              entityId: entry.itemId,
+              entityLabel: beforeItem?.name ?? null,
+              status: 'failed',
+              errorMessage: error.message,
+              metadata: withAuditMetadata(
+                {
+                  operation: 'record_transaction',
+                  type: entry.type,
+                  quantity: entry.quantity,
+                  bulk: true,
+                  itemName: beforeItem?.name ?? null,
+                },
+                auditOptions,
+              ),
+            });
+            const message = error.message.includes('Insufficient stock')
+              ? 'ยอดคงเหลือไม่เพียงพอสำหรับการนำออก'
+              : error.message;
+            return { itemId: entry.itemId, success: false, error: message };
+          }
 
-      if (error) {
-        console.error('[recordBulkInventoryTransactions] Supabase RPC Error:', error.message, error.details, error.hint);
-        await recordDataChange({
-          action: 'UPDATE',
-          module: 'inventory',
-          entityType: 'inventory_item',
-          entityId: entry.itemId,
-          entityLabel: beforeItem?.name ?? null,
-          status: 'failed',
-          errorMessage: error.message,
-          metadata: withAuditMetadata(
-            {
-              operation: 'record_transaction',
-              type: entry.type,
-              quantity: entry.quantity,
-              bulk: true,
-              itemName: beforeItem?.name ?? null,
-            },
-            auditOptions,
-          ),
-        });
-        const message = error.message.includes('Insufficient stock')
-          ? 'ยอดคงเหลือไม่เพียงพอสำหรับการนำออก'
-          : error.message;
-        results.push({ itemId: entry.itemId, success: false, error: message });
-        continue;
-      }
+          await recordDataChange({
+            action: 'UPDATE',
+            module: 'inventory',
+            entityType: 'inventory_item',
+            entityId: entry.itemId,
+            entityLabel: beforeItem?.name ?? null,
+            fieldChanges: [
+              {
+                field: 'stock',
+                old_value: data?.old_stock ?? beforeItem?.stock ?? null,
+                new_value: data?.new_stock ?? null,
+              },
+            ],
+            metadata: withAuditMetadata(
+              {
+                operation: 'record_transaction',
+                type: entry.type,
+                quantity: entry.quantity,
+                note,
+                bulk: true,
+                itemName: beforeItem?.name ?? null,
+                order_point: data?.order_point ?? beforeItem?.order_point ?? null,
+              },
+              auditOptions,
+            ),
+          });
 
-      await recordDataChange({
-        action: 'UPDATE',
-        module: 'inventory',
-        entityType: 'inventory_item',
-        entityId: entry.itemId,
-        entityLabel: beforeItem?.name ?? null,
-        fieldChanges: [
-          {
-            field: 'stock',
-            old_value: data?.old_stock ?? beforeItem?.stock ?? null,
-            new_value: data?.new_stock ?? null,
-          },
-        ],
-        metadata: withAuditMetadata(
-          {
-            operation: 'record_transaction',
-            type: entry.type,
-            quantity: entry.quantity,
-            note,
-            bulk: true,
-            itemName: beforeItem?.name ?? null,
-            order_point: data?.order_point ?? beforeItem?.order_point ?? null,
-          },
-          auditOptions,
-        ),
-      });
-
-      results.push({ itemId: entry.itemId, success: true, newStock: data?.new_stock });
-    }
+          return { itemId: entry.itemId, success: true, newStock: data?.new_stock };
+        } catch (err: any) {
+          console.error(`[recordBulkInventoryTransactions] Error on itemId ${entry.itemId}:`, err);
+          return { itemId: entry.itemId, success: false, error: err.message || 'Error processing item' };
+        }
+      })
+    );
 
     revalidatePath('/[locale]/inventory', 'page');
     revalidatePath('/[locale]/inventory/count', 'page');
