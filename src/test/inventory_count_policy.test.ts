@@ -32,17 +32,16 @@ describe('inventory count policy', () => {
 
     expect(inventoryPage).toContain('function CountPolicyToggle');
     expect(inventoryPage).toContain('aria-label="สลับวิธีตรวจนับ"');
-    expect(inventoryPage).toContain('เช็คว่าพอใช้');
+    expect(inventoryPage).toContain('ไม่ต้องเบิก');
     expect(inventoryPage).not.toContain('function CountPolicyEditor');
     expect(inventoryPage).not.toContain('function SufficiencyOrderQtyInput');
   });
 
-  test('purchase orders use manual order_qty for sufficiency checks', () => {
+  test('purchase orders use auto computed order_qty for sufficiency checks', () => {
     const stock = read('src/lib/inventory-stock.ts');
 
-    expect(stock).toContain("item.count_policy === 'sufficiency_check'");
-    expect(stock).toContain('sanitizeStockValue(item.order_qty)');
-    expect(stock).toContain('computedOrderQty: manualOrderQty');
+    expect(stock).not.toContain("item.count_policy === 'sufficiency_check'");
+    expect(stock).not.toContain('computedOrderQty: manualOrderQty');
   });
 
   test('count page visually separates exact counts and sufficiency checks', () => {
@@ -50,9 +49,9 @@ describe('inventory count policy', () => {
 
     expect(countPage).toContain('bg-[#dbeafe]');
     expect(countPage).toContain('bg-[#f8d7da]');
-    expect(countPage).toContain('นับจริง');
-    expect(countPage).toContain('เช็คว่าพอใช้');
-    expect(countPage).toContain('ไม่คิดรวมใน Accuracy');
+    expect(countPage).toContain('ต้องเบิก');
+    expect(countPage).toContain('ไม่ต้องเบิก');
+    expect(countPage).toContain('ประเภท:');
   });
 
   test('count page does not show total accuracy summary', () => {

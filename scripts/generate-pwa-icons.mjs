@@ -88,9 +88,26 @@ self.PWA_ASSETS = ${JSON.stringify(PWA_ASSETS, null, 2)};
 
 async function main() {
   const trimmed = await trimmedLogo();
-  await writeSquareIcon(trimmed, 192, 'notification-icon.png');
-  await writeNotificationBadge(trimmed);
-  await writeSquareIcon(trimmed, 512, 'notification-icon-512.png');
+  const meta = await trimmed.metadata();
+  const alpha = await trimmed.clone().extractChannel('alpha').toBuffer();
+  
+  const blackTrimmedBuffer = await sharp({
+    create: {
+      width: meta.width || 512,
+      height: meta.height || 512,
+      channels: 3,
+      background: { r: 0, g: 0, b: 0 },
+    },
+  })
+    .joinChannel(alpha)
+    .png()
+    .toBuffer();
+
+  const blackTrimmed = sharp(blackTrimmedBuffer);
+
+  await writeSquareIcon(blackTrimmed, 192, 'notification-icon.png');
+  await writeNotificationBadge(blackTrimmed);
+  await writeSquareIcon(blackTrimmed, 512, 'notification-icon-512.png');
   await writeSquareIcon(trimmed, 512, 'favicon.png');
   await writeSquareIcon(trimmed, 180, 'apple-touch-icon.png');
   await writeNextAppIcons(trimmed);

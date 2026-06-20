@@ -47,7 +47,7 @@ export default async function InventoryAccuracyPage({
                 รายงานความแม่นยำ
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                ความแม่นยำ เฉพาะรายการที่ตั้งค่าเป็นนับจริง รายการเช็คว่าพอใช้จะไม่ถูกนำมาปนกับคะแนน
+                ความแม่นยำ เฉพาะรายการที่ตั้งค่าเป็นต้องเบิก รายการไม่ต้องเบิกจะไม่ถูกนำมาปนกับคะแนน
               </p>
             </div>
           </div>
@@ -62,7 +62,7 @@ export default async function InventoryAccuracyPage({
             <section className="grid gap-3 md:grid-cols-3">
               <div className={`${METRIC_CARD_BASE} ${INVENTORY_QUICK_ACTION_COLORS.order}`}>
                 <p className={METRIC_LABEL_CLASS}>
-                  ความแม่นยำ เฉพาะส่วนที่นับจริง
+                  ความแม่นยำ เฉพาะส่วนที่ต้องเบิก
                 </p>
                 <p className={METRIC_VALUE_CLASS}>
                   {report.overall.accuracyPct ?? 0}%
@@ -104,7 +104,7 @@ export default async function InventoryAccuracyPage({
               </div>
               {report.highDiscrepancyItems.length === 0 ? (
                 <div className="rounded-2xl bg-muted p-5 text-center text-sm text-muted-foreground">
-                  ยังไม่มีรายการนับจริงที่คลาดเคลื่อน
+                  ยังไม่มีรายการต้องเบิกที่คลาดเคลื่อน
                 </div>
               ) : (
                 <div className="space-y-3">

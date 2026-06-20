@@ -78,8 +78,8 @@ interface InventoryClientProps {
 type ColumnLookup = Map<string, ColumnDef>;
 
 const COUNT_POLICY_OPTIONS: Array<{ value: InventoryCountPolicy; label: string; description: string }> = [
-  { value: 'exact_count', label: 'นับจริง', description: 'คิดรวมใน Accuracy' },
-  { value: 'sufficiency_check', label: 'เช็คว่าพอใช้', description: 'ไม่คิดรวมใน Accuracy' },
+  { value: 'exact_count', label: 'ต้องเบิก', description: 'คิดรวมใน Accuracy' },
+  { value: 'sufficiency_check', label: 'ไม่ต้องเบิก', description: 'ไม่คิดรวมใน Accuracy' },
 ];
 
 function normalizeCountPolicy(value: unknown): InventoryCountPolicy {
@@ -87,7 +87,7 @@ function normalizeCountPolicy(value: unknown): InventoryCountPolicy {
 }
 
 function isManualOrderQty(item: InventoryItem): boolean {
-  return normalizeCountPolicy(item.count_policy) === 'sufficiency_check';
+  return false;
 }
 
 function CountPolicyToggle({
@@ -123,7 +123,7 @@ function CountPolicyToggle({
       )}
     >
       <span className="mr-1.5 h-2 w-2 rounded-full bg-black/55" aria-hidden="true" />
-      <span className="whitespace-nowrap">{policy === 'exact_count' ? 'นับจริง' : 'เช็คพอใช้'}</span>
+      <span className="whitespace-nowrap">{policy === 'exact_count' ? 'ต้องเบิก' : 'ไม่ต้องเบิก'}</span>
     </button>
   );
 }
@@ -1087,24 +1087,43 @@ export default function InventoryClient({
   }, []);
 
   useEffect(() => {
-    return subscribe((payload) => {
-      if (payload.eventType === 'INSERT') {
+    // Debounce realtime events to coalesce rapid-fire updates
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let pendingPayloads: any[] = [];
+
+    const unsubscribe = subscribe((payload) => {
+      pendingPayloads.push(payload);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const payloads = pendingPayloads;
+        pendingPayloads = [];
         setItems((prev) => {
-          if (prev.find((i) => i.id === payload.new.id)) return prev;
-          return [...prev, payload.new as InventoryItem];
+          let next = prev;
+          for (const p of payloads) {
+            if (p.eventType === 'INSERT') {
+              if (!next.find((i) => i.id === p.new.id)) {
+                next = [...next, p.new as InventoryItem];
+              }
+            } else if (p.eventType === 'UPDATE') {
+              next = next.map((item) =>
+                item.id === p.new.id
+                  ? mergeInventoryRealtimeUpdate(item, p.new as InventoryItem)
+                  : item,
+              );
+            } else if (p.eventType === 'DELETE') {
+              next = next.filter((item) => item.id !== p.old.id);
+            }
+          }
+          return next;
         });
-      } else if (payload.eventType === 'UPDATE') {
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === payload.new.id
-              ? mergeInventoryRealtimeUpdate(item, payload.new as InventoryItem)
-              : item,
-          ),
-        );
-      } else if (payload.eventType === 'DELETE') {
-        setItems((prev) => prev.filter((item) => item.id !== payload.old.id));
-      }
+      }, 100);
     });
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      unsubscribe();
+    };
   }, [subscribe]);
 
   // Refresh from DB when PO modal opens so stock matches other windows

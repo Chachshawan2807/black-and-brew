@@ -4,7 +4,7 @@ import MonthlyRoster from './components/MonthlyRoster'; // เชื่อมต
 import { cookies } from 'next/headers';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { startOfWeek, addDays, format } from 'date-fns';
+import { startOfWeek, addDays, format, startOfMonth, endOfMonth } from 'date-fns';
 
 export default async function DashboardPage({
   searchParams
@@ -27,8 +27,18 @@ export default async function DashboardPage({
   const startDate = startParam || savedStart || format(monday, 'yyyy-MM-dd');
   const endDate = endParam || savedEnd || format(sunday, 'yyyy-MM-dd');
 
+  // Prefetch MonthlyRoster data (current month) in parallel with weekly data
+  const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+  const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+
   // Fetch Data on Server (รักษาฐานข้อมูลและความปลอดภัยเดิมไว้ครบถ้วน)
-  const [{ data: profiles }, { data: shifts }, { data: holidays }] = await Promise.all([
+  const [
+    { data: profiles },
+    { data: shifts },
+    { data: holidays },
+    { data: rosterProfiles },
+    { data: rosterShifts },
+  ] = await Promise.all([
     supabase.from('profiles').select('id, full_name, dashboard_order').order('dashboard_order', { ascending: true }),
     supabase.from('shifts')
       .select('id, employee_id, start_time, end_time, status, metadata')
@@ -38,6 +48,11 @@ export default async function DashboardPage({
       .select('id, date, name')
       .gte('date', startDate)
       .lte('date', endDate),
+    supabase.from('profiles').select('id, full_name').order('schedule_order', { ascending: true }),
+    supabase.from('shifts')
+      .select('id, employee_id, start_time, end_time, status, metadata')
+      .gte('start_time', monthStart + 'T00:00:00')
+      .lte('start_time', monthEnd + 'T23:59:59'),
   ]);
 
   return (
@@ -70,7 +85,12 @@ export default async function DashboardPage({
 
           {/* 2. ส่วนแสดงผลตารางเวรและตรวจสอบกะงานแบบรายเดือนภาพรวม (ส่วนที่อัปเดตเพิ่มใหม่) */}
           <div className="pt-8 border-t border-[#000000]/5">
-            <MonthlyRoster />
+            <MonthlyRoster
+              initialProfiles={rosterProfiles || []}
+              initialShifts={rosterShifts || []}
+              initialStartDate={monthStart}
+              initialEndDate={monthEnd}
+            />
           </div>
         </main>
       </div>

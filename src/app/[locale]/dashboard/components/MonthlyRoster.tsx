@@ -42,13 +42,32 @@ interface Shift {
   };
 }
 
-export default function MonthlyRoster() {
-  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+interface MonthlyRosterProps {
+  initialProfiles?: Profile[];
+  initialShifts?: Shift[];
+  initialStartDate?: string;
+  initialEndDate?: string;
+}
+
+export default function MonthlyRoster({
+  initialProfiles,
+  initialShifts,
+  initialStartDate,
+  initialEndDate,
+}: MonthlyRosterProps) {
+  const hasInitialData = Boolean(initialProfiles && initialProfiles.length > 0);
+  const [startDate, setStartDate] = useState(initialStartDate || format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(initialEndDate || format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [activeTab, setActiveTab] = useState<'consolidated' | 'individual'>('consolidated');
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const [data, setData] = useState<{ profiles: Profile[]; shifts: Shift[] }>({ profiles: [], shifts: [] });
-  const [loading, setLoading] = useState(true);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(
+    hasInitialData ? initialProfiles![0]?.id ?? null : null,
+  );
+  const [data, setData] = useState<{ profiles: Profile[]; shifts: Shift[] }>(
+    hasInitialData
+      ? { profiles: initialProfiles!, shifts: initialShifts! }
+      : { profiles: [], shifts: [] },
+  );
+  const [loading, setLoading] = useState(!hasInitialData);
 
   const daysInInterval = useMemo(() => {
     try {
@@ -61,7 +80,16 @@ export default function MonthlyRoster() {
 
   const shiftDateLookup = useMemo(() => createShiftDateLookup(data.shifts), [data.shifts]);
 
+  // Track whether the initial server data has already been consumed
+  const initialDataConsumedRef = React.useRef(false);
+
   useEffect(() => {
+    // Skip the first fetch when server-prefetched data was provided
+    if (hasInitialData && !initialDataConsumedRef.current) {
+      initialDataConsumedRef.current = true;
+      return;
+    }
+
     async function loadData() {
       if (!startDate || !endDate) return;
       setLoading(true);

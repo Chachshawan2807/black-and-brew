@@ -887,10 +887,10 @@ export async function fetchFrequentItems() {
       if (id) counts[id] = (counts[id] || 0) + 1;
     });
 
-    // Get top 5 IDs
+    // Get top 10 IDs
     const topIds = Object.entries(counts)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
+      .slice(0, 10)
       .map(([id]) => id);
 
     if (topIds.length === 0) return { success: true, data: [] };
@@ -1144,11 +1144,15 @@ export type InventoryCountSaveResult = {
   newStock?: number;
 };
 
+export type InventoryCountSaveOptions = InventoryAuditOptions & {
+  isUndo?: boolean;
+};
+
 /** Count-page save: capture the pre-count baseline before updating stock. */
 export async function recordInventoryCountAndUpdateStock(
   itemId: string,
   countedQty: number,
-  options?: InventoryAuditOptions,
+  options?: InventoryCountSaveOptions,
 ): Promise<InventoryCountSaveResult> {
   try {
     const authError = await requireAuthenticatedMutation();
@@ -1182,22 +1186,45 @@ export async function recordInventoryCountAndUpdateStock(
       : false;
 
     if (countPolicy === 'exact_count') {
-      const { error: verificationError } = await supabase
-        .from('inventory_count_verifications')
-        .insert({
-          inventory_item_id: itemId,
-          counted_qty: countedQty,
-          system_stock_qty: baselineStock,
-          matched,
-        });
+      if (options?.isUndo) {
+        // Find the latest verification ID to delete
+        const { data: latestVerifs, error: lookupError } = await supabase
+          .from('inventory_count_verifications')
+          .select('id')
+          .eq('inventory_item_id', itemId)
+          .order('counted_at', { ascending: false })
+          .limit(1);
 
-      if (verificationError) {
-        console.error(
-          '[recordInventoryCountAndUpdateStock] Supabase Error:',
-          verificationError.message,
-          verificationError.details,
-        );
-        return { success: false, error: verificationError.message };
+        if (lookupError) {
+          console.error('[recordInventoryCountAndUpdateStock] Undo Lookup Error:', lookupError.message);
+        } else if (latestVerifs && latestVerifs.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('inventory_count_verifications')
+            .delete()
+            .eq('id', latestVerifs[0].id);
+
+          if (deleteError) {
+            console.error('[recordInventoryCountAndUpdateStock] Undo Delete Error:', deleteError.message);
+          }
+        }
+      } else {
+        const { error: verificationError } = await supabase
+          .from('inventory_count_verifications')
+          .insert({
+            inventory_item_id: itemId,
+            counted_qty: countedQty,
+            system_stock_qty: baselineStock,
+            matched,
+          });
+
+        if (verificationError) {
+          console.error(
+            '[recordInventoryCountAndUpdateStock] Supabase Error:',
+            verificationError.message,
+            verificationError.details,
+          );
+          return { success: false, error: verificationError.message };
+        }
       }
     }
 

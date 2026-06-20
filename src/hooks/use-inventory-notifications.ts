@@ -38,7 +38,6 @@ import {
   requestNotificationPermission,
   SW_INVENTORY_PUSH_RECEIVED,
 } from '@/lib/pwa-notification-bridge';
-import { hasActivePushSubscription } from '@/lib/push-subscription-client';
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
   const row = payload.new;
@@ -146,7 +145,12 @@ export function useInventoryNotifications() {
   const pushNotification = useCallback(
     (notification: InventoryNotification, serviceWorkerUnreadCount?: number) => {
       let nextUnread = 0;
+      let alreadyExists = false;
       setNotifications((prev) => {
+        if (prev.some((n) => n.id === notification.id)) {
+          alreadyExists = true;
+          return prev;
+        }
         const next = prependNotification(prev, notification);
         nextUnread = resolveUnreadCountWithServiceWorkerHint(next, serviceWorkerUnreadCount);
         setUnreadCount(nextUnread);
@@ -155,13 +159,14 @@ export function useInventoryNotifications() {
         return next;
       });
 
+      if (alreadyExists) return;
+
       void syncAppBadge(nextUnread);
       dispatchInventoryNotificationEvent(nextUnread);
 
       const currentPrefs = prefsRef.current;
       if (!currentPrefs.enabled || !currentPrefs.systemNotifications) return;
       if (getNotificationPermissionState() !== 'granted') return;
-      if (hasActivePushSubscription()) return;
 
       const loc = localeRef.current;
       const isTh = loc === 'th';

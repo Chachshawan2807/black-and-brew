@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw } from 'lucide-react';
+import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw, Undo2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { fetchCountAccuracyStats, recordInventoryCountAndUpdateStock } from '@/app/actions/inventory-actions';
@@ -26,6 +26,16 @@ interface InventoryItem {
   [key: string]: any;
 }
 
+// ─── Undo state per item ──────────────────────────────────────────────────────
+type UndoEntry = {
+  prevStock: number; // The value before the last save — can be restored once
+};
+
+// ─── CountInput ───────────────────────────────────────────────────────────────
+// Rules:
+//   • Save is triggered ONLY by pressing Enter (or tapping the "ถัดไป" submit button).
+//   • Clicking / tapping elsewhere (blur) discards the draft without saving.
+//   • An animated hint below the input reminds users to press Enter to confirm.
 const CountInput = memo(function CountInput({
   index,
   onSave,
@@ -33,6 +43,7 @@ const CountInput = memo(function CountInput({
   isActive = false,
   onActiveChange,
   itemId,
+  currentStock,
 }: {
   index: number;
   onSave: (id: string, value: number) => Promise<void>;
@@ -40,43 +51,38 @@ const CountInput = memo(function CountInput({
   isActive?: boolean;
   onActiveChange?: (id: string | null) => void;
   itemId: string;
+  currentStock: number;
 }) {
   const [val, setVal] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Track whether a save is in-flight to prevent double-submission
+  const isSavingRef = useRef(false);
 
-  const handleBlur = async () => {
-    if (disabled) return;
-    if (val === '') {
-      setIsFocused(false);
+  const commitSave = useCallback(async () => {
+    if (disabled || isSavingRef.current) return;
+    if (val.trim() === '') {
+      // Empty input — discard, deactivate
+      setVal('');
       onActiveChange?.(null);
       return;
     }
-
     const numberVal = Number(val);
-    const sanitized = isNaN(numberVal) ? 0 : numberVal;
-    setVal(String(sanitized));
-    setIsFocused(false);
+    const sanitized = isNaN(numberVal) ? 0 : Math.max(0, numberVal);
+    isSavingRef.current = true;
+    setVal('');
     onActiveChange?.(null);
     await onSave(itemId, sanitized);
+    isSavingRef.current = false;
+  }, [disabled, val, onSave, itemId, onActiveChange]);
+
+  // Blur = discard (no save)
+  const handleBlur = useCallback(() => {
     setVal('');
-  };
+    onActiveChange?.(null);
+  }, [onActiveChange]);
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <AnimatePresence>
-        {isActive && (
-          <motion.span
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.15 }}
-            className="text-[10px] font-normal uppercase tracking-[0.15em] text-black/45 pr-1 bb-pastel-surface"
-          >
-            จำนวนคงเหลือ
-          </motion.span>
-        )}
-      </AnimatePresence>
+    <div className="flex flex-col items-end gap-1.5">
       <input
         ref={inputRef}
         type="text"
@@ -91,22 +97,28 @@ const CountInput = memo(function CountInput({
           setVal(value);
         }}
         onFocus={() => {
-          setIsFocused(true);
           onActiveChange?.(itemId);
           inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }}
-        onBlur={() => void handleBlur()}
+        onBlur={handleBlur}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            e.currentTarget.blur();
-            const nextInput = document.querySelector(`input[data-count-row-index="${index + 1}"]`) as HTMLInputElement;
-            if (nextInput) {
-              setTimeout(() => {
-                nextInput.focus();
-                nextInput.select();
-              }, 10);
-            }
+            // Save first, then move focus to next input
+            void commitSave().then(() => {
+              const nextInput = document.querySelector(`input[data-count-row-index="${index + 1}"]`) as HTMLInputElement;
+              if (nextInput) {
+                setTimeout(() => {
+                  nextInput.focus();
+                  nextInput.select();
+                }, 10);
+              }
+            });
+          }
+          if (e.key === 'Escape') {
+            setVal('');
+            onActiveChange?.(null);
+            inputRef.current?.blur();
           }
         }}
         data-count-row-index={index}
@@ -119,6 +131,19 @@ const CountInput = memo(function CountInput({
           disabled && 'opacity-60 cursor-not-allowed'
         )}
       />
+      <AnimatePresence>
+        {isActive && val.length > 0 && (
+          <motion.span
+            initial={{ opacity: 0, y: -2 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -2 }}
+            transition={{ duration: 0.12 }}
+            className="text-[9px] text-black/40 bb-pastel-surface tracking-wide"
+          >
+            กด Enter เพื่อยืนยัน
+          </motion.span>
+        )}
+      </AnimatePresence>
     </div>
   );
 });
@@ -133,45 +158,13 @@ type CountItemRowProps = {
   animateEntrance: boolean;
   itemStats?: ItemCountAccuracyStats;
   recentVerification?: { matched: boolean; systemStockQty: number; countedQty: number };
+  undoEntry?: UndoEntry;
   onSave: (id: string, value: number) => Promise<void>;
+  onUndo: (id: string) => void;
   isReadOnly: boolean;
   onActiveChange: (id: string | null) => void;
 };
 
-function SufficiencyCheckControls({ isReadOnly }: { isReadOnly: boolean }) {
-  const [status, setStatus] = useState<'enough' | 'not_enough' | null>(null);
-
-  return (
-    <div className="flex flex-col items-end gap-2">
-      <div className="flex rounded-2xl border border-[#f5c6cb] bg-white/70 p-1 bb-pastel-surface">
-        <button
-          type="button"
-          disabled={isReadOnly}
-          onClick={() => setStatus('enough')}
-          className={cn(
-            'h-9 rounded-xl px-3 text-sm text-black transition-colors',
-            status === 'enough' ? 'bg-[#d4edda] shadow-sm' : 'hover:bg-white',
-            isReadOnly && 'opacity-60 cursor-not-allowed',
-          )}
-        >
-          พอใช้
-        </button>
-        <button
-          type="button"
-          disabled={isReadOnly}
-          onClick={() => setStatus('not_enough')}
-          className={cn(
-            'h-9 rounded-xl px-3 text-sm text-black transition-colors',
-            status === 'not_enough' ? 'bg-[#f8d7da] shadow-sm' : 'hover:bg-white',
-            isReadOnly && 'opacity-60 cursor-not-allowed',
-          )}
-        >
-          ไม่พอใช้
-        </button>
-      </div>
-    </div>
-  );
-}
 
 const CountItemRow = memo(function CountItemRow({
   item,
@@ -181,7 +174,9 @@ const CountItemRow = memo(function CountItemRow({
   animateEntrance,
   itemStats,
   recentVerification,
+  undoEntry,
   onSave,
+  onUndo,
   isReadOnly,
   onActiveChange,
 }: CountItemRowProps) {
@@ -235,23 +230,21 @@ const CountItemRow = memo(function CountItemRow({
             {item.name} {item.unit ? `(${item.unit})` : ''}
           </span>
           <p className="mt-1 text-xs font-normal text-black/70 bb-pastel-surface">
-            {isSufficiencyCheck ? 'วิธีตรวจนับ: เช็คว่าพอใช้' : 'วิธีตรวจนับ: นับจริง'}
+            {isSufficiencyCheck ? 'ประเภท: ไม่ต้องเบิก' : 'ประเภท: ต้องเบิก'}
           </p>
-          {isSufficiencyCheck ? (
-            <p className="mt-1 text-xs text-black/60 bb-pastel-surface">
-              ไม่คิดรวมใน Accuracy
-            </p>
-          ) : itemStats && itemStats.totalChecks > 0 ? (
-            <p className="mt-1 text-xs tabular-nums text-black/70 bb-pastel-surface">
-              ค่าความแม่นยำแยกเฉพาะรายการ (Item-level Accuracy): {itemStats.accuracyPct}%
-              <span className="opacity-70"> (คลาดเคลื่อนรวม {itemStats.totalDiscrepancyQty} หน่วย)</span>
-            </p>
-          ) : (
-            <p className="mt-1 text-xs text-black/50 bb-pastel-surface">
-              ค่าความแม่นยำแยกเฉพาะรายการ (Item-level Accuracy): ยังไม่มีข้อมูล
-            </p>
+          {!isSufficiencyCheck && (
+            itemStats && itemStats.totalChecks > 0 ? (
+              <p className="mt-1 text-xs tabular-nums text-black/70 bb-pastel-surface">
+                ค่าความแม่นยำ: {itemStats.accuracyPct}%
+                <span className="opacity-70"> (คลาดเคลื่อนรวม {itemStats.totalDiscrepancyQty} หน่วย)</span>
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-black/50 bb-pastel-surface">
+                ค่าความแม่นยำ: ยังไม่มีข้อมูล
+              </p>
+            )
           )}
-          {!isSufficiencyCheck && recentVerification && (
+          {recentVerification && !isSufficiencyCheck && (
             <p
               className={cn(
                 'mt-1 text-xs rounded-lg px-2 py-0.5 inline-block bb-pastel-surface',
@@ -268,19 +261,34 @@ const CountItemRow = memo(function CountItemRow({
         </div>
       </div>
 
-      <div className="shrink-0">
-        {isSufficiencyCheck ? (
-          <SufficiencyCheckControls isReadOnly={isReadOnly} />
-        ) : (
-          <CountInput
-            itemId={item.id}
-            index={index}
-            onSave={onSave}
-            disabled={isReadOnly}
-            isActive={isActive}
-            onActiveChange={onActiveChange}
-          />
-        )}
+      <div className="shrink-0 flex flex-col items-end gap-2">
+        <CountInput
+          itemId={item.id}
+          index={index}
+          onSave={onSave}
+          disabled={isReadOnly}
+          isActive={isActive}
+          onActiveChange={onActiveChange}
+          currentStock={Number(item.stock) || 0}
+        />
+        {/* 1-time undo button per item — shown after a save, while undoEntry exists */}
+        <AnimatePresence>
+          {undoEntry && !isReadOnly && (
+            <motion.button
+              type="button"
+              initial={{ opacity: 0, y: -4, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => onUndo(item.id)}
+              className="flex items-center gap-1 rounded-xl border border-black/15 bg-white/80 bb-pastel-surface px-2.5 py-1 text-[11px] text-black/60 shadow-sm hover:bg-white hover:text-black transition-all"
+              aria-label={`ย้อนกลับค่าเดิม (${undoEntry.prevStock})`}
+            >
+              <Undo2 className="w-3 h-3" />
+              <span>ย้อนกลับ ({undoEntry.prevStock})</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
@@ -310,6 +318,8 @@ export default function InventoryCountClient({
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [accuracyStats, setAccuracyStats] = useState<CountAccuracyStatsResult | null>(initialAccuracyStats);
   const [lastVerification, setLastVerification] = useState<Record<string, { matched: boolean; systemStockQty: number; countedQty: number }>>({});
+  // Per-item undo state: maps itemId → UndoEntry. Cleared after one use.
+  const [undoMap, setUndoMap] = useState<Record<string, UndoEntry>>({});
   const hasAnimatedEntranceRef = useRef(false);
   const animateEntrance = !hasAnimatedEntranceRef.current && items.length <= STAGGER_ANIMATION_CAP;
 
@@ -380,7 +390,7 @@ export default function InventoryCountClient({
     });
   }, [subscribe]);
 
-  const handleSaveStock = useCallback(async (id: string, value: number) => {
+  const handleSaveStock = useCallback(async (id: string, value: number, isUndo = false) => {
     if (isReadOnly) {
       setSaveErrorMessage(READ_ONLY_DENY_MSG);
       return;
@@ -389,28 +399,47 @@ export default function InventoryCountClient({
     const currentItem = itemsRef.current.find((i) => i.id === id);
     const previousStock = Number(currentItem?.stock ?? 0);
     setSaveErrorMessage(null);
+
+    // Optimistic update — show the new value immediately
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, stock: value } : item)),
     );
     setSavingState('saving');
 
+    // Register undo entry for this item (overrides any prior undo)
+    if (!isUndo) {
+      setUndoMap((prev) => ({ ...prev, [id]: { prevStock: previousStock } }));
+    }
+
     try {
       const verification = await recordInventoryCountAndUpdateStock(id, value, {
         clientSessionId: getClientSessionId(),
-      });
+        suppressNotification: true,
+        notificationContext: 'inventory_count',
+        recordHistory: false,
+        isUndo,
+      } as any);
 
       if (!verification.success) {
         throw new Error(verification.error);
       }
 
-      setLastVerification((prev) => ({
-        ...prev,
-        [id]: {
-          matched: verification.matched ?? false,
-          systemStockQty: verification.systemStockQty ?? previousStock,
-          countedQty: verification.countedQty ?? value,
-        },
-      }));
+      if (isUndo) {
+        setLastVerification((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      } else {
+        setLastVerification((prev) => ({
+          ...prev,
+          [id]: {
+            matched: verification.matched ?? false,
+            systemStockQty: verification.systemStockQty ?? previousStock,
+            countedQty: verification.countedQty ?? value,
+          },
+        }));
+      }
       void loadAccuracyStats();
 
       const savedStock = verification.newStock ?? value;
@@ -424,14 +453,37 @@ export default function InventoryCountClient({
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err) {
       console.error('Failed to update stock:', err);
+      // Revert optimistic update on failure
       setItems((prev) =>
         prev.map((item) => (item.id === id ? { ...item, stock: previousStock } : item)),
       );
+      // Remove undo entry since we reverted automatically
+      setUndoMap((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       setSavingState('idle');
       setSaveErrorMessage('บันทึกจำนวนสต็อกไม่สำเร็จ ระบบได้โหลดข้อมูลล่าสุดกลับมาแล้ว');
       fetchInventory();
     }
   }, [fetchInventory, isReadOnly, loadAccuracyStats]);
+
+  // Undo the last save for a given item — restores previous stock and persists it
+  const handleUndo = useCallback(async (id: string) => {
+    const entry = undoMap[id];
+    if (!entry) return;
+
+    // Consume the undo slot immediately
+    setUndoMap((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+
+    // Restore previous stock via a new save with isUndo flag active
+    await handleSaveStock(id, entry.prevStock, true);
+  }, [undoMap, handleSaveStock]);
 
   const handleActiveChange = useCallback((id: string | null) => {
     setActiveItemId(id);
@@ -536,6 +588,9 @@ export default function InventoryCountClient({
           <p className="text-muted-foreground text-[11px] font-normal uppercase tracking-[0.2em] mt-1.5">
             บันทึกการตรวจนับ
           </p>
+          <p className="text-muted-foreground/60 text-[10px] font-normal mt-1">
+            กรอกจำนวนที่นับได้ แล้วกด Enter เพื่อยืนยัน
+          </p>
         </div>
 
         {saveErrorMessage && (
@@ -560,7 +615,9 @@ export default function InventoryCountClient({
                 animateEntrance={animateEntrance}
                 itemStats={accuracyStats?.perItem[item.id]}
                 recentVerification={lastVerification[item.id]}
+                undoEntry={undoMap[item.id]}
                 onSave={handleSaveStock}
+                onUndo={handleUndo}
                 isReadOnly={isReadOnly}
                 onActiveChange={handleActiveChange}
               />

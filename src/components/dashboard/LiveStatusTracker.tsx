@@ -73,7 +73,6 @@ function getEmployeeStatus(profile: Profile, shifts: Shift[]): EmployeeStatus {
 
   let displayText = getShiftDisplayText(loc, status);
   let sortWeight = 1;
-  const sortTime = startBkk.getTime();
   let isWorkShift = true;
 
   if (status === 'on_leave' || loc === 'ลา') {
@@ -86,6 +85,17 @@ function getEmployeeStatus(profile: Profile, shifts: Shift[]): EmployeeStatus {
       .toLocaleTimeString('th-TH', { hour: 'numeric', minute: '2-digit', hour12: false })
       .replace('.', ':');
     displayText = timeStr;
+  }
+
+  // Parse time from displayText/location to establish a solid sort time (e.g., '6:30' -> hours=6, minutes=30)
+  let sortTime = startBkk.getTime();
+  const timeMatch = displayText.match(/^(\d{1,2}):(\d{2})$/);
+  if (timeMatch) {
+    const hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    const sortDate = new Date(startBkk);
+    sortDate.setHours(hours, minutes, 0, 0);
+    sortTime = sortDate.getTime();
   }
 
   return { displayText, colorClass, colorStyle, sortWeight, sortTime, isWorkShift };
@@ -246,6 +256,20 @@ export default function LiveStatusTracker({
       if (data) setProfiles(data);
     };
 
+    // Debounce timers to coalesce rapid-fire realtime events
+    let shiftDebounce: ReturnType<typeof setTimeout> | null = null;
+    let profileDebounce: ReturnType<typeof setTimeout> | null = null;
+
+    const debouncedRefreshShifts = () => {
+      if (shiftDebounce) clearTimeout(shiftDebounce);
+      shiftDebounce = setTimeout(() => void refreshShifts(), 300);
+    };
+
+    const debouncedRefreshProfiles = () => {
+      if (profileDebounce) clearTimeout(profileDebounce);
+      profileDebounce = setTimeout(() => void refreshProfiles(), 300);
+    };
+
     let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
@@ -256,16 +280,18 @@ export default function LiveStatusTracker({
       channel = supabase
         .channel('live-shifts-presence')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
-          void refreshShifts();
+          debouncedRefreshShifts();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          void refreshProfiles();
+          debouncedRefreshProfiles();
         })
         .subscribe();
     })();
 
     return () => {
       cancelled = true;
+      if (shiftDebounce) clearTimeout(shiftDebounce);
+      if (profileDebounce) clearTimeout(profileDebounce);
       if (channel) supabase.removeChannel(channel);
     };
   }, []);

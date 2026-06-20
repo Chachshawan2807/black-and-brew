@@ -145,6 +145,7 @@ export async function getPasskeyRegistrationOptions(
         transports: row.transports as AuthenticatorTransport[],
       })),
       authenticatorSelection: {
+        authenticatorAttachment: 'platform',
         residentKey: 'required',
         userVerification: 'required',
       },
@@ -234,10 +235,21 @@ export async function getPasskeyLoginOptions(): Promise<
 > {
   try {
     const { rpId } = await resolveWebAuthnContext();
+    const cookieStore = await cookies();
+    const sessionFingerprint = cookieStore.get(SESSION_FP_COOKIE)?.value;
+
+    let allowCredentials: { id: string; transports?: AuthenticatorTransport[] }[] = [];
+    if (sessionFingerprint) {
+      const existing = await fetchPasskeysForFingerprint(sessionFingerprint);
+      allowCredentials = existing.map((row) => ({
+        id: row.credential_id,
+        transports: row.transports as AuthenticatorTransport[],
+      }));
+    }
 
     const options = await generateAuthenticationOptions({
       rpID: rpId,
-      allowCredentials: [],
+      allowCredentials,
       userVerification: 'required',
     });
 

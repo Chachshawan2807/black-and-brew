@@ -96,7 +96,7 @@ export function getDefaultInventoryQuickActionDraft(): InventoryQuickActionDraft
 }
 
 export function loadInventoryQuickActionDraft(
-  storage: DraftStorage = typeof sessionStorage !== 'undefined' ? sessionStorage : undefined!,
+  storage: DraftStorage = typeof localStorage !== 'undefined' ? localStorage : undefined!,
 ): InventoryQuickActionDraft | null {
   if (!storage) return null;
   const raw = storage.getItem(INVENTORY_QUICK_ACTION_DRAFT_KEY);
@@ -106,7 +106,7 @@ export function loadInventoryQuickActionDraft(
 
 export function saveInventoryQuickActionDraft(
   draft: InventoryQuickActionDraft,
-  storage: DraftStorage = typeof sessionStorage !== 'undefined' ? sessionStorage : undefined!,
+  storage: DraftStorage = typeof localStorage !== 'undefined' ? localStorage : undefined!,
 ): void {
   if (!storage) return;
   if (!hasInventoryQuickActionDraft(draft)) {
@@ -117,7 +117,7 @@ export function saveInventoryQuickActionDraft(
 }
 
 export function clearInventoryQuickActionDraft(
-  storage: DraftStorage = typeof sessionStorage !== 'undefined' ? sessionStorage : undefined!,
+  storage: DraftStorage = typeof localStorage !== 'undefined' ? localStorage : undefined!,
 ): void {
   if (!storage) return;
   storage.removeItem(INVENTORY_QUICK_ACTION_DRAFT_KEY);

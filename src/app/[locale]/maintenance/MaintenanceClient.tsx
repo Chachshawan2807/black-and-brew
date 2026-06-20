@@ -205,9 +205,21 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
             setToast({ message: result.error || `บันทึกไม่สำเร็จค่ะ`, type: 'error' });
           } else {
             setToast({ message: 'บันทึกข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
+            
+            // Optimistic update
+            setRecords((prev) => {
+              if (editingRecord?.id) {
+                return prev.map((r) => r.id === editingRecord.id ? { ...r, ...payload, id: editingRecord.id } as ServiceRecord : r);
+              }
+              // For new records, prepend with a temporary ID until fetchRecords syncs it
+              return [{ ...payload, id: `temp-${Date.now()}` } as ServiceRecord, ...prev];
+            });
+
             setIsModalOpen(false);
             resetForm();
-            fetchRecords();
+            
+            // Background sync
+            void fetchRecords();
           }
         } catch (err: any) {
           setToast({ message: `ระบบขัดข้อง: ${err?.message || 'โปรดลองอีกครั้ง'}`, type: 'error' });
@@ -235,9 +247,15 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
             setToast({ message: result.error || `ลบไม่สำเร็จค่ะ`, type: 'error' });
           } else {
             setToast({ message: 'ลบข้อมูลสำเร็จแล้วค่ะ', type: 'success' });
-            fetchRecords();
+            
+            // Optimistic delete
+            setRecords((prev) => prev.filter((r) => r.id !== recordToDelete));
+            
             setIsDeleteConfirmOpen(false);
             setRecordToDelete(null);
+            
+            // Background sync
+            void fetchRecords();
           }
         } catch (err: any) {
           setToast({ message: `ระบบขัดข้อง: ${err?.message || 'โปรดลองอีกครั้ง'}`, type: 'error' });

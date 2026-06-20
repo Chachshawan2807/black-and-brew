@@ -85,20 +85,15 @@ export function computeItemsToOrder<T extends InventoryStockFields>(
   items: T[]
 ): Array<T & { computedOrderQty: number }> {
   return items.flatMap((item) => {
-    if (item.count_policy === 'sufficiency_check') {
-      const manualOrderQty = sanitizeStockValue(item.order_qty);
-      return manualOrderQty > 0 ? [{ ...item, computedOrderQty: manualOrderQty }] : [];
-    }
-
-      const stock = sanitizeStockValue(item.stock);
-      const orderPoint = sanitizeStockValue(item.order_point);
-      const targetStock = sanitizeStockValue(item.target_stock);
+    const stock = sanitizeStockValue(item.stock);
+    const orderPoint = sanitizeStockValue(item.order_point);
+    const targetStock = sanitizeStockValue(item.target_stock);
     if (!isItemNeedingReorder(stock, orderPoint, targetStock)) return [];
 
-      return {
-        ...item,
-        computedOrderQty: computeOrderQty(stock, orderPoint, targetStock),
-      };
+    return {
+      ...item,
+      computedOrderQty: computeOrderQty(stock, orderPoint, targetStock),
+    };
   });
 }
 

@@ -31,8 +31,9 @@ export default async function SchedulePage({
   const mondayStr = format(monday, 'yyyy-MM-dd');
   const sundayStr = format(sunday, 'yyyy-MM-dd');
 
-  const holidaySyncPromise = fetchAndPersistHolidays(mondayStr, sundayStr);
-  const baseDataPromise = Promise.all([
+  // Refactor: Flatten to single Promise.all — all 5 fetches run in parallel
+  const [holidaySync, profilesRes, shiftsRes, regularHolidaysRes, holidaysRes] = await Promise.all([
+    fetchAndPersistHolidays(mondayStr, sundayStr),
     supabaseAdmin.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
     supabaseAdmin.from('shifts')
       .select('id, employee_id, start_time, end_time, status, metadata')
@@ -42,19 +43,13 @@ export default async function SchedulePage({
       .not('status', 'eq', '')
       .not('metadata->>location', 'is', null)
       .not('metadata->>location', 'eq', ''),
-    supabaseAdmin.from('regular_holidays').select('id, profile_id, day_of_week')
+    supabaseAdmin.from('regular_holidays').select('id, profile_id, day_of_week'),
+    supabaseAdmin.from('holidays').select('id, date, name').gte('date', mondayStr).lte('date', sundayStr),
   ]);
 
-  const holidaySync = await holidaySyncPromise;
   if (!holidaySync.success && holidaySync.error !== 'Missing API Key') {
     console.error('Holiday sync failed:', holidaySync.error);
   }
-
-  // ใช้ Admin Fetch เพื่อหลีกเลี่ยงการถูกบล็อกข้อมูลจาก RLS
-  const [[profilesRes, shiftsRes, regularHolidaysRes], holidaysRes] = await Promise.all([
-    baseDataPromise,
-    supabaseAdmin.from('holidays').select('id, date, name').gte('date', mondayStr).lte('date', sundayStr),
-  ]);
 
   const normalizedShifts = (shiftsRes.data || []).map(s => {
     const datePart = s.start_time.split('T')[0];

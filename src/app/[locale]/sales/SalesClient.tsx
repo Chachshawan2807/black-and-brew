@@ -255,9 +255,21 @@ export default function SalesClient({
         cachedCategories.data === null ||
         (cachedCategories.savedAt !== null && isStale(cachedCategories.savedAt, CACHE_TTL));
 
+      // --- salesHistory cache ---
+      const SALES_HISTORY_KEY = 'salesHistory';
+      const cachedHistory = readCache<any>(SALES_HISTORY_KEY);
+      const historyStale =
+        forceRefresh ||
+        cachedHistory.data === null ||
+        (cachedHistory.savedAt !== null && isStale(cachedHistory.savedAt, CACHE_TTL));
+
       // Use cached metrics if still fresh
       if (!metricsStale && cachedMetrics.data) {
         setBaseMetrics(cachedMetrics.data);
+      }
+
+      if (!historyStale && cachedHistory.data) {
+        setHistory(cachedHistory.data);
       }
 
       // Categories: loadCategories reads from blackandbrew-product-categories (legacy key)
@@ -266,8 +278,7 @@ export default function SalesClient({
         loadCategories.current(cachedCategories.data);
       }
 
-      // Always load history (no cache for history to keep it fresh)
-      const historyPromise = fetchSalesHistory();
+      const historyPromise = historyStale ? fetchSalesHistory() : Promise.resolve(null);
       const metricsPromise = metricsStale ? getSalesMetrics() : Promise.resolve(null);
       const categoriesPromise = categoriesStale ? getAllProductCategories() : Promise.resolve(null);
 
@@ -277,7 +288,10 @@ export default function SalesClient({
         categoriesPromise,
       ]);
 
-      if (historyData) setHistory(historyData);
+      if (historyData) {
+        writeCache(SALES_HISTORY_KEY, historyData, 'server');
+        setHistory(historyData);
+      }
 
       // Fetch stale/missing data from Supabase
       if (metricsStale || categoriesStale) {

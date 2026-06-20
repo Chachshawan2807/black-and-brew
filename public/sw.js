@@ -117,20 +117,27 @@ self.addEventListener('push', (event) => {
         },
       };
 
-      await self.registration.showNotification(payload.title, options);
-      await applyHomeScreenBadge(unreadCount);
-
       const windowClients = await self.clients.matchAll({
         type: 'window',
         includeUncontrolled: true,
       });
+
+      let isVisible = false;
       for (const client of windowClients) {
+        if (client.visibilityState === 'visible') {
+          isVisible = true;
+        }
         client.postMessage({
           type: 'INVENTORY_PUSH_RECEIVED',
           notification: payload.notification,
           unreadCount,
         });
       }
+
+      if (!isVisible) {
+        await self.registration.showNotification(payload.title, options);
+      }
+      await applyHomeScreenBadge(unreadCount);
     })(),
   );
 });
