@@ -1,3 +1,4 @@
+// v9
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/pwa-badge.js');

@@ -212,37 +212,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     [completeAuthentication, lockoutTimeLeft, recordBiometricFailure]
   );
 
-  useEffect(() => {
-    if (
-      !isMounted ||
-      !biometricSupported ||
-      !biometricAutoCapable ||
-      biometricAutoPromptedRef.current ||
-      !biometricAutoEnabledRef.current ||
-      biometricAttemptsRef.current >= BIOMETRIC_AUTO_MAX_ATTEMPTS ||
-      isAuthenticated ||
-      lockoutTimeLeft !== null ||
-      showEnrollment ||
-      isVerifying ||
-      passkeyBusy
-    ) {
-      return;
-    }
-
-    void handlePasskeyLogin('auto');
-  }, [
-    biometricAttempts,
-    biometricAutoEnabled,
-    biometricAutoCapable,
-    biometricSupported,
-    handlePasskeyLogin,
-    isAuthenticated,
-    isMounted,
-    isVerifying,
-    lockoutTimeLeft,
-    passkeyBusy,
-    showEnrollment,
-  ]);
+  // Automatic biometric prompt has been disabled per user request
+  // to prevent sudden interruptions while the app is in use.
 
   const handleEnrollment = async () => {
     setPasskeyBusy(true);

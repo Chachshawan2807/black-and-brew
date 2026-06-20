@@ -24,17 +24,70 @@ export type BulkPreview = {
 
 export type BulkQuickType = 'IN' | 'OUT';
 
-export function parseBulkPasteNames(text: string): string[] {
-  return text
-    .split(/[\n,]+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
+export function parseBulkEntry(line: string): { name: string; qty: string } {
+  const cleanedLine = line.replace(/^\s*\d+\.\s*/, '').trim();
+  const eqIndex = cleanedLine.indexOf('=');
+  if (eqIndex !== -1) {
+    const namePart = cleanedLine.substring(0, eqIndex).trim();
+    const qtyPart = cleanedLine.substring(eqIndex + 1).trim();
+    return { name: namePart, qty: qtyPart || '1' };
+  }
+  return { name: cleanedLine, qty: '1' };
 }
 
-function findItemByExactName(items: BulkStockItem[], name: string): BulkStockItem | undefined {
-  const needle = name.trim();
+export function findItemByFuzzyName<T extends BulkStockItem>(items: T[], name: string): T | undefined {
+  const needle = name.trim().toLowerCase();
   if (!needle) return undefined;
-  return items.find((item) => item.name === needle);
+
+  const exact = items.find((item) => item.name.toLowerCase() === needle);
+  if (exact) return exact;
+
+  const needleTokens = needle.split(/\s+/).filter(Boolean);
+  
+  let bestMatch: T | undefined;
+  let highestScore = -Infinity;
+
+  for (const item of items) {
+    const itemName = item.name.toLowerCase();
+    let score = 0;
+
+    if (itemName.includes(needle)) {
+      score += 50;
+    } else if (needle.includes(itemName)) {
+      score += 30;
+    }
+
+    const itemTokens = itemName.split(/\s+/).filter(Boolean);
+    let matchedTokens = 0;
+
+    for (const nt of needleTokens) {
+      for (const it of itemTokens) {
+        if (it === nt) {
+          matchedTokens += 2;
+          break;
+        } else if (it.includes(nt) || nt.includes(it)) {
+          matchedTokens += 1;
+          break;
+        }
+      }
+    }
+
+    if (matchedTokens > 0) {
+      score += matchedTokens * 10;
+      score -= Math.abs(itemName.length - needle.length) * 0.1;
+
+      if (score > highestScore) {
+        highestScore = score;
+        bestMatch = item;
+      }
+    }
+  }
+
+  if (highestScore > 0) {
+    return bestMatch;
+  }
+
+  return undefined;
 }
 
 export function toBulkQueueItem(item: BulkStockItem): BulkQueueItem {
@@ -70,22 +123,28 @@ export function buildBulkQueueFromPaste(
   items: BulkStockItem[],
   existingQueue: BulkQueueItem[],
 ): { queue: BulkQueueItem[]; added: BulkQueueItem[]; unknownNames: string[] } {
-  const names = parseBulkPasteNames(text);
+  const rawLines = text.split(/[\n,]+/).map((part) => part.trim()).filter(Boolean);
   const added: BulkQueueItem[] = [];
   const unknownNames: string[] = [];
   let queue = existingQueue;
 
-  for (const name of names) {
-    const item = findItemByExactName(items, name);
+  for (const line of rawLines) {
+    const { name, qty } = parseBulkEntry(line);
+    const item = findItemByFuzzyName(items, name);
+    
     if (!item) {
       unknownNames.push(name);
       continue;
     }
+    
     const beforeLen = queue.length;
     const result = addBulkQueueItem(queue, item);
     queue = result.queue;
+    
+    queue = setBulkLineQty(queue, item.id, qty);
+    
     if (queue.length > beforeLen) {
-      added.push(toBulkQueueItem(item));
+      added.push(queue[queue.length - 1]!);
     }
   }
 
@@ -134,9 +193,11 @@ export function resolveBulkSubmitPayload(
   queue: BulkQueueItem[],
   type: BulkQuickType,
 ): { itemId: string; type: BulkQuickType; quantity: number }[] {
-  return queue.map((line) => {
-    const preview = computeBulkPreview(line, type);
-    const qty = Number(line.qty.trim());
-    return { itemId: line.itemId, type, quantity: qty };
-  }).filter((_, index) => computeBulkPreview(queue[index]!, type).error === undefined);
+  return queue
+    .filter((line) => computeBulkPreview(line, type).error === undefined)
+    .map((line) => ({
+      itemId: line.itemId,
+      type,
+      quantity: Number(line.qty.trim()),
+    }));
 }

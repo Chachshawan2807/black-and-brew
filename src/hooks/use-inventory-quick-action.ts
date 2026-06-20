@@ -20,6 +20,8 @@ import {
   resolveBulkSubmitPayload,
   setBulkLineQty,
   toBulkQueueItem,
+  parseBulkEntry,
+  findItemByFuzzyName,
   type BulkQueueItem,
   type BulkQuickType,
   type BulkStockItem,
@@ -151,13 +153,21 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   );
 
   const addBulkItemFromSearch = useCallback(() => {
-    const item = items.find((row) => row.name === quickSearch || row.id === quickSearch);
+    const { name, qty } = parseBulkEntry(quickSearch);
+    let item = items.find((row) => row.id === name);
     if (!item) {
-      alert('ไม่พบสินค้าที่ระบุค่ะ');
+      item = findItemByFuzzyName(items, name);
+    }
+    
+    if (!item) {
+      alert(`ไม่พบสินค้าที่ระบุค่ะ (${name})`);
       return;
     }
     const result = addBulkQueueItem(bulkQueue, item);
-    setBulkQueue(result.queue);
+    let newQueue = result.queue;
+    newQueue = setBulkLineQty(newQueue, item.id, qty);
+    
+    setBulkQueue(newQueue);
     setQuickSearch('');
     setIsSearchFocused(true);
   }, [items, quickSearch, bulkQueue]);

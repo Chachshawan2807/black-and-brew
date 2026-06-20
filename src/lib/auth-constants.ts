@@ -1,5 +1,5 @@
-/** PIN session cookie lifetime (1 hour). */
-export const AUTH_SESSION_MAX_AGE_SEC = 60 * 60;
+/** PIN session cookie lifetime (30 days). */
+export const AUTH_SESSION_MAX_AGE_SEC = 30 * 24 * 60 * 60;
 
 export const SESSION_FP_COOKIE = 'bb_session_fp';
 

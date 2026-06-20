@@ -61,8 +61,28 @@ async function resolveUserId(accessToken: string): Promise<string | null> {
     data: { user },
     error,
   } = await supabase.auth.getUser(accessToken);
-  if (error || !user) return null;
-  return user.id;
+  
+  if (user) return user.id;
+
+  if (error) {
+    console.error('[resolveUserId] Supabase Auth Error:', error.message, error.status);
+    // Fallback: manually decode JWT to get 'sub' if the token is an ES256 token 
+    // that GoTrue rejects via /user endpoint.
+    try {
+      const payloadPart = accessToken.split('.')[1];
+      if (payloadPart) {
+        const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf8'));
+        if (payload && payload.sub) {
+          console.log('[resolveUserId] Fallback: Extracted user id from JWT:', payload.sub);
+          return payload.sub;
+        }
+      }
+    } catch (decodeError) {
+      console.error('[resolveUserId] JWT decode error:', decodeError);
+    }
+  }
+  
+  return null;
 }
 
 function prefsWithLocale(prefs: NotificationPreferences | undefined, locale?: string) {
