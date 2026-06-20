@@ -261,32 +261,30 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         return;
       }
 
-      startQuickTransition(() => {
-        void (async () => {
-          onBeforeSave?.();
-          const res =
-            quickType === 'ADJUST'
-              ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
-                  clientSessionId: getClientSessionId(),
-                  notificationSource,
-                })
-              : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
-                  clientSessionId: getClientSessionId(),
-                  notificationSource,
-                });
+      startQuickTransition(async () => {
+        onBeforeSave?.();
+        const res =
+          quickType === 'ADJUST'
+            ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
+                clientSessionId: getClientSessionId(),
+                notificationSource,
+              })
+            : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
+                clientSessionId: getClientSessionId(),
+                notificationSource,
+              });
 
-          if (!res.success) {
-            onSaveError?.();
-            alert(res.error);
-            return;
-          }
+        if (!res.success) {
+          onSaveError?.();
+          alert(res.error);
+          return;
+        }
 
-          setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)));
-          setQuickSearch('');
-          setQuickQty('');
-          onAfterSave?.();
-          await refreshHistoryIfOpen();
-        })();
+        setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)));
+        setQuickSearch('');
+        setQuickQty('');
+        onAfterSave?.();
+        await refreshHistoryIfOpen();
       });
     },
     [

@@ -119,6 +119,7 @@ export default function InventoryQuickActionFAB() {
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_FAB,
     onAfterSave: () => {
       void loadFrequentItems();
+      setIsOpen(false);
     },
   });
 

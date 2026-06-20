@@ -1735,7 +1735,7 @@ export default function InventoryClient({
   return (
     <>
       <div className="flex-1 w-full max-w-full bg-transparent text-foreground font-normal antialiased transition-all duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
-        <div className="w-full md:w-fit mx-auto flex flex-col items-stretch md:items-stretch">
+        <div className="w-full max-w-7xl mx-auto flex flex-col items-stretch md:items-stretch">
           <div className="w-full flex flex-col items-center mb-8 text-center">
             <motion.h1
               initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
