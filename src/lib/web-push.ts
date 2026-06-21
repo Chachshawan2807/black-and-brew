@@ -211,20 +211,19 @@ export async function dispatchInventoryWebPush(row: DataChangeLogRow): Promise<{
     return { sent: 0, failed: 0, skipped: true };
   }
 
-  let sent = 0;
-  let failed = 0;
-
-  for (const subscription of rows) {
-    if (!shouldSendPushToSubscription(row, subscription)) continue;
+  const deliveries = rows.flatMap((subscription) => {
+    if (!shouldSendPushToSubscription(row, subscription)) return [];
 
     const prefs = parsePushPrefs(subscription.prefs_json);
     const payload = buildWebPushPayload(row, prefs.locale);
-    if (!payload) continue;
+    if (!payload) return [];
 
-    const result = await deliverWebPushPayload(supabase, subscription, JSON.stringify(payload));
-    if (result === 'sent') sent += 1;
-    else failed += 1;
-  }
+    return [deliverWebPushPayload(supabase, subscription, JSON.stringify(payload))];
+  });
+
+  const results = await Promise.all(deliveries);
+  const sent = results.filter((result) => result === 'sent').length;
+  const failed = results.length - sent;
 
   return { sent, failed, skipped: false };
 }

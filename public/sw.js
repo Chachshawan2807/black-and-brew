@@ -1,4 +1,4 @@
-// v10
+// v11
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/pwa-badge.js');
@@ -145,21 +145,16 @@ self.addEventListener('push', (event) => {
         includeUncontrolled: true,
       });
 
-      let isVisible = false;
       for (const client of windowClients) {
-        if (client.visibilityState === 'visible') {
-          isVisible = true;
-        }
         client.postMessage({
           type: 'INVENTORY_PUSH_RECEIVED',
           notification: payload.notification,
           unreadCount,
+          systemNotificationShown: true,
         });
       }
 
-      if (!isVisible) {
-        await self.registration.showNotification(payload.title, options);
-      }
+      await self.registration.showNotification(payload.title, options);
       await applyHomeScreenBadge(unreadCount);
     })(),
   );

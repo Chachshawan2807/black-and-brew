@@ -28,4 +28,10 @@ describe('mobile home-screen badge (sw.js)', () => {
     expect(sw).toContain('prependNotification');
     expect(sw).toMatch(/resolveUnreadCount[\s\S]*prependNotification/);
   });
+
+  test('inventory push always shows the PWA notification banner from the service worker', () => {
+    expect(sw).toContain('systemNotificationShown: true');
+    expect(sw).toContain('await self.registration.showNotification(payload.title, options)');
+    expect(sw).not.toContain('if (!isVisible)');
+  });
 });

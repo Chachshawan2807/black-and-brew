@@ -46,7 +46,13 @@ describe('notification fab cross-platform sync', () => {
 
   test('service worker push messages preserve SW unread count for launcher badges', () => {
     expect(hookSource).toContain('unreadCount?: number');
-    expect(hookSource).toContain('pushNotification(data.notification, data.unreadCount)');
+    expect(hookSource).toMatch(/pushNotification\(\s*data\.notification,\s*data\.unreadCount/);
+  });
+
+  test('service worker push messages do not duplicate OS banners already shown by the PWA worker', () => {
+    expect(hookSource).toContain('systemNotificationShown?: boolean');
+    expect(hookSource).toContain('skipSystemNotification: data.systemNotificationShown === true');
+    expect(hookSource).toContain('options?.skipSystemNotification');
   });
 
   test('cross-tab listener avoids write-back loops', () => {

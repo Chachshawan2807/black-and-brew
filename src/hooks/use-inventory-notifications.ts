@@ -143,7 +143,11 @@ export function useInventoryNotifications() {
   }, []);
 
   const pushNotification = useCallback(
-    (notification: InventoryNotification, serviceWorkerUnreadCount?: number) => {
+    (
+      notification: InventoryNotification,
+      serviceWorkerUnreadCount?: number,
+      options?: { skipSystemNotification?: boolean },
+    ) => {
       let nextUnread = 0;
       let alreadyExists = false;
       setNotifications((prev) => {
@@ -166,6 +170,7 @@ export function useInventoryNotifications() {
 
       const currentPrefs = prefsRef.current;
       if (!currentPrefs.enabled || !currentPrefs.systemNotifications) return;
+      if (options?.skipSystemNotification) return;
       if (getNotificationPermissionState() !== 'granted') return;
 
       const loc = localeRef.current;
@@ -320,9 +325,12 @@ export function useInventoryNotifications() {
         type?: string;
         notification?: InventoryNotification;
         unreadCount?: number;
+        systemNotificationShown?: boolean;
       } | null;
       if (data?.type !== SW_INVENTORY_PUSH_RECEIVED || !data.notification) return;
-      pushNotification(data.notification, data.unreadCount);
+      pushNotification(data.notification, data.unreadCount, {
+        skipSystemNotification: data.systemNotificationShown === true,
+      });
       void syncFromStorage(false);
     };
 
