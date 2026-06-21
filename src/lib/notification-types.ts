@@ -29,6 +29,8 @@ export interface NotificationPreferences {
   enabled: boolean;
   /** System / home-screen badge + OS notification banner */
   systemNotifications: boolean;
+  /** Cron daily schedule reports at 05:00 / 18:00 ICT via Web Push */
+  dailyScheduleReports: boolean;
   notifyOwnChanges: boolean;
   notifyCreate: boolean;
   notifyUpdate: boolean;
@@ -38,6 +40,7 @@ export interface NotificationPreferences {
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   enabled: true,
   systemNotifications: true,
+  dailyScheduleReports: true,
   notifyOwnChanges: true,
   notifyCreate: true,
   notifyUpdate: true,

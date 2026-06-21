@@ -3,7 +3,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
-import type { NotificationPreferences } from '@/lib/notification-types';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  type NotificationPreferences,
+} from '@/lib/notification-types';
 
 const subscriptionSchema = z.object({
   accessToken: z.string().min(1),
@@ -19,12 +22,14 @@ const subscriptionSchema = z.object({
     .object({
       enabled: z.boolean(),
       systemNotifications: z.boolean(),
+      dailyScheduleReports: z.boolean().optional(),
       notifyOwnChanges: z.boolean(),
       notifyCreate: z.boolean(),
       notifyUpdate: z.boolean(),
       notifyDelete: z.boolean(),
     })
     .optional(),
+  branchId: z.string().max(64).optional(),
 });
 
 function getSupabaseUrl(): string {
@@ -85,11 +90,20 @@ async function resolveUserId(accessToken: string): Promise<string | null> {
   return null;
 }
 
-function prefsWithLocale(prefs: NotificationPreferences | undefined, locale?: string) {
+function prefsWithLocale(prefs: Partial<NotificationPreferences> | undefined, locale?: string) {
   return {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
     ...(prefs ?? {}),
     locale: locale ?? 'th',
   };
+}
+
+function resolveBranchId(explicit?: string): string {
+  return (
+    explicit?.trim() ||
+    process.env.NEXT_PUBLIC_STORE_BRANCH_ID?.trim() ||
+    'main'
+  );
 }
 
 export type PushRegistrationResult =
@@ -121,6 +135,8 @@ export async function registerPushSubscription(
     const { error } = await supabase.from('push_subscriptions').upsert(
       {
         user_id: userId,
+        profile_id: userId,
+        branch_id: resolveBranchId(safe.branchId),
         endpoint: safe.endpoint,
         p256dh: safe.keys.p256dh,
         auth: safe.keys.auth,

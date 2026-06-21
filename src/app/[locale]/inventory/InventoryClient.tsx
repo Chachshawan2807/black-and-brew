@@ -980,6 +980,7 @@ export default function InventoryClient({
   const sensors = useSafeDndSensors();
 
   // Quick Entry State
+  const [isQuickActionBarOpen, setIsQuickActionBarOpen] = useState(true);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [frequentItems, setFrequentItems] = useState<{ id: string, name: string }[]>([]);
   const [transactionHistory, setTransactionHistory] = useState<TransactionHistoryRow[]>([]);
@@ -1027,6 +1028,7 @@ export default function InventoryClient({
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_BAR,
     onBeforeSave: () => setSavingState('saving'),
     onAfterSave: () => {
+      setIsQuickActionBarOpen(false);
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
       void fetchFrequentItems().then((res) => {
@@ -1792,39 +1794,51 @@ export default function InventoryClient({
             </div>
           </div>
 
-          <InventoryQuickActionBar
-            quickSearch={quickAction.quickSearch}
-            setQuickSearch={quickAction.setQuickSearch}
-            quickQty={quickAction.quickQty}
-            setQuickQty={quickAction.setQuickQty}
-            quickType={quickAction.quickType}
-            setQuickType={quickAction.setQuickType}
-            isSearchFocused={quickAction.isSearchFocused}
-            setIsSearchFocused={quickAction.setIsSearchFocused}
-            filteredItems={quickAction.filteredItems}
-            selectedQuickItem={quickAction.selectedQuickItem}
-            quickBadgeStyles={quickAction.quickBadgeStyles}
-            frequentItems={frequentItems}
-            itemsToOrderCount={itemsToOrder.length}
-            isQuickPending={quickAction.isQuickPending}
-            isReadOnly={isReadOnly}
-            onSubmit={quickAction.handleQuickSubmit}
-            onOpenPurchaseOrder={() => setShowPurchaseOrderModal(true)}
-            onOpenAddItem={() => setShowAddModal(true)}
-            onOpenHistory={handleOpenHistory}
-            bulkMode={quickAction.bulkMode}
-            onBulkModeChange={quickAction.setBulkMode}
-            bulkQueue={quickAction.bulkQueue}
-            bulkPreviews={quickAction.bulkPreviews}
-            bulkSubmitReady={quickAction.bulkSubmitReady}
-            onSelectBulkItem={quickAction.selectBulkQuickItem}
-            onAddBulkFromSearch={quickAction.addBulkItemFromSearch}
-            onBulkPaste={quickAction.handleBulkPaste}
-            onRemoveBulkItem={quickAction.removeBulkItem}
-            onBulkLineQtyChange={quickAction.setBulkLineQty}
-            onClearBulkQueue={quickAction.clearBulkQueue}
-            className="mb-8 sticky top-4 md:top-8 z-[50]"
-          />
+          <div className="mb-8 sticky top-4 md:top-8 z-[50]">
+            {isQuickActionBarOpen ? (
+              <InventoryQuickActionBar
+                quickSearch={quickAction.quickSearch}
+                setQuickSearch={quickAction.setQuickSearch}
+                quickQty={quickAction.quickQty}
+                setQuickQty={quickAction.setQuickQty}
+                quickType={quickAction.quickType}
+                setQuickType={quickAction.setQuickType}
+                isSearchFocused={quickAction.isSearchFocused}
+                setIsSearchFocused={quickAction.setIsSearchFocused}
+                filteredItems={quickAction.filteredItems}
+                selectedQuickItem={quickAction.selectedQuickItem}
+                quickBadgeStyles={quickAction.quickBadgeStyles}
+                frequentItems={frequentItems}
+                itemsToOrderCount={itemsToOrder.length}
+                isQuickPending={quickAction.isQuickPending}
+                isReadOnly={isReadOnly}
+                onSubmit={quickAction.handleQuickSubmit}
+                onOpenPurchaseOrder={() => setShowPurchaseOrderModal(true)}
+                onOpenAddItem={() => setShowAddModal(true)}
+                onOpenHistory={handleOpenHistory}
+                bulkMode={quickAction.bulkMode}
+                onBulkModeChange={quickAction.setBulkMode}
+                bulkQueue={quickAction.bulkQueue}
+                bulkPreviews={quickAction.bulkPreviews}
+                bulkSubmitReady={quickAction.bulkSubmitReady}
+                onSelectBulkItem={quickAction.selectBulkQuickItem}
+                onAddBulkFromSearch={quickAction.addBulkItemFromSearch}
+                onBulkPaste={quickAction.handleBulkPaste}
+                onRemoveBulkItem={quickAction.removeBulkItem}
+                onBulkLineQtyChange={quickAction.setBulkLineQty}
+                onClearBulkQueue={quickAction.clearBulkQueue}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsQuickActionBarOpen(true)}
+                aria-expanded={false}
+                className="w-full rounded-3xl border border-border bg-card px-4 py-3 text-sm text-foreground shadow-sm transition-colors hover:bg-muted/50"
+              >
+                เปิด Quick Action
+              </button>
+            )}
+          </div>
 
           <div className={cn(isReadOnly && 'pointer-events-none opacity-60')}>
           <DndContext

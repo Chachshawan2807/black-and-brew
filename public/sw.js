@@ -1,4 +1,4 @@
-// v9
+// v10
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/pwa-badge.js');
@@ -99,6 +99,28 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(
     (async () => {
+      const isDailyReport = payload.kind === 'daily_report';
+
+      if (isDailyReport) {
+        const brandIcon = assetUrl(BRAND_ICON);
+        const notificationBadge = assetUrl(NOTIFICATION_BADGE);
+        await self.registration.showNotification(payload.title, {
+          body: payload.body,
+          icon: brandIcon,
+          badge: notificationBadge,
+          tag: payload.tag || 'bb-daily-report',
+          silent: false,
+          requireInteraction: false,
+          renotify: true,
+          vibrate: [...VIBRATE],
+          data: {
+            url: payload.url || '/th/schedule',
+            kind: 'daily_report',
+          },
+        });
+        return;
+      }
+
       const unreadCount = await resolveUnreadCount(payload);
 
       const brandIcon = assetUrl(BRAND_ICON);

@@ -100,6 +100,19 @@ export default function NotificationPreferencesSection({
     setPrefs((prev) => ({ ...prev, ...patch }));
   };
 
+  const handleDailyScheduleReports = async (enabled: boolean) => {
+    if (!enabled) {
+      update({ dailyScheduleReports: false });
+      await syncPushPrefsToServer({ ...prefs, dailyScheduleReports: false }, locale);
+      return;
+    }
+    const state = await requestNotificationPermission();
+    setPermission(state);
+    const nextPrefs = { ...prefs, dailyScheduleReports: state === 'granted' };
+    update({ dailyScheduleReports: state === 'granted' });
+    await syncPushPrefsToServer(nextPrefs, locale);
+  };
+
   const handleSystemNotifications = async (enabled: boolean) => {
     if (!enabled) {
       update({ systemNotifications: false });
@@ -116,7 +129,18 @@ export default function NotificationPreferencesSection({
   return (
     <div>
       <ToggleRow
-        label={isTh ? 'เปิดแจ้งเตือนคลังสินค้า' : 'Inventory notifications'}
+        label={isTh ? 'แจ้งตารางงานรายวัน (05:00 / 18:00)' : 'Daily schedule reports (05:00 / 18:00)'}
+        description={
+          isTh
+            ? 'รับสรุปตารางงานอัตโนมัติเช้าและเย็นผ่าน Web Push — ฟรี ไม่จำกัดจำนวนผู้รับ'
+            : 'Automatic morning and evening schedule summaries via Web Push — free, unlimited recipients'
+        }
+        checked={prefs.dailyScheduleReports}
+        onChange={(v) => void handleDailyScheduleReports(v)}
+        disabled={!prefs.enabled || permission === 'unsupported'}
+      />
+      <ToggleRow
+        label={isTh ? 'แจ้งเตือนคลังสินค้า' : 'Inventory notifications'}
         description={
           isTh
             ? 'รับการแจ้งเตือนเมื่อมีการเปลี่ยนแปลงข้อมูลคลังสินค้า'

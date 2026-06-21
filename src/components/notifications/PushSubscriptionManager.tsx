@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
-import { ensurePushSubscription } from '@/lib/push-subscription-client';
+import { ensurePushSubscription, wantsPushRegistration } from '@/lib/push-subscription-client';
 
 const RETRY_MS = [0, 2_000, 5_000, 12_000, 30_000];
 
@@ -21,7 +21,7 @@ export function PushSubscriptionManager() {
 
     const attemptRegister = async (attempt: number) => {
       const prefs = loadNotificationPreferences();
-      if (!prefs.enabled || !prefs.systemNotifications) return;
+      if (!prefs.enabled || !wantsPushRegistration(prefs)) return;
 
       const ok = await ensurePushSubscription(locale);
       if (ok || attempt >= RETRY_MS.length - 1) return;

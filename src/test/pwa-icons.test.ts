@@ -54,6 +54,35 @@ async function opaquePixelsAreBlack(filePath: string) {
   return opaqueCount > 100;
 }
 
+async function visiblePixelBounds(filePath: string) {
+  const { data, info } = await sharp(filePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let minX = info.width;
+  let minY = info.height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < info.height; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      const alpha = data[(y * info.width + x) * 4 + 3];
+      if (alpha < 16) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  const width = maxX >= minX ? maxX - minX + 1 : 0;
+  const height = maxY >= minY ? maxY - minY + 1 : 0;
+
+  return {
+    centerX: (minX + maxX + 1) / 2 / info.width,
+    centerY: (minY + maxY + 1) / 2 / info.height,
+    widthRatio: width / info.width,
+    heightRatio: height / info.height,
+  };
+}
+
 describe('PWA notification icons', () => {
   test('brand icons use transparent background corners (black mark only)', async () => {
     for (const rel of TRANSPARENT_BRAND_ICON_PATHS) {
@@ -68,6 +97,18 @@ describe('PWA notification icons', () => {
     const meta = await sharp(ICON).metadata();
     expect(meta.width).toBe(192);
     expect(meta.height).toBe(192);
+  });
+
+  test('PWA launch icons keep the brand centered and large enough for mobile splash screens', async () => {
+    for (const rel of ['public/images/notification-icon.png', 'public/images/notification-icon-512.png'] as const) {
+      const bounds = await visiblePixelBounds(path.join(ROOT, rel));
+      expect(bounds.centerX, rel).toBeGreaterThan(0.47);
+      expect(bounds.centerX, rel).toBeLessThan(0.53);
+      expect(bounds.centerY, rel).toBeGreaterThan(0.47);
+      expect(bounds.centerY, rel).toBeLessThan(0.53);
+      expect(bounds.widthRatio, rel).toBeGreaterThan(0.86);
+      expect(bounds.heightRatio, rel).toBeGreaterThan(0.5);
+    }
   });
 
   test('notification badge is monochrome mask sized for mobile OS badges', async () => {

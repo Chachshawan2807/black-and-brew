@@ -20,15 +20,34 @@ const PWA_ASSETS = {
   NOTIFICATION_BADGE: '/images/notification-badge.png',
   APPLE_TOUCH_ICON: '/images/apple-touch-icon.png',
   FAVICON: '/images/favicon.png',
-  CACHE_VERSION: 9,
+  CACHE_VERSION: 10,
   VIBRATE: [120, 60, 120],
 };
 
 /** Transparent canvas — black logo mark only (all platforms). */
 const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 };
+const SPLASH_ICON_PADDING_RATIO = 0.035;
 
 async function trimmedLogo() {
   return sharp(source).ensureAlpha().trim({ threshold: 1 });
+}
+
+async function blackSilhouette(image) {
+  const { data, info } = await image.clone().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = 0;
+    data[i + 1] = 0;
+    data[i + 2] = 0;
+  }
+
+  return sharp(data, {
+    raw: {
+      width: info.width,
+      height: info.height,
+      channels: 4,
+    },
+  }).png();
 }
 
 async function renderSquareIcon(trimmed, size, paddingRatio = 0.08) {
@@ -88,26 +107,11 @@ self.PWA_ASSETS = ${JSON.stringify(PWA_ASSETS, null, 2)};
 
 async function main() {
   const trimmed = await trimmedLogo();
-  const meta = await trimmed.metadata();
-  const alpha = await trimmed.clone().extractChannel('alpha').toBuffer();
-  
-  const blackTrimmedBuffer = await sharp({
-    create: {
-      width: meta.width || 512,
-      height: meta.height || 512,
-      channels: 3,
-      background: { r: 0, g: 0, b: 0 },
-    },
-  })
-    .joinChannel(alpha)
-    .png()
-    .toBuffer();
+  const blackTrimmed = await blackSilhouette(trimmed);
 
-  const blackTrimmed = sharp(blackTrimmedBuffer);
-
-  await writeSquareIcon(blackTrimmed, 192, 'notification-icon.png');
+  await writeSquareIcon(blackTrimmed, 192, 'notification-icon.png', SPLASH_ICON_PADDING_RATIO);
   await writeNotificationBadge(blackTrimmed);
-  await writeSquareIcon(blackTrimmed, 512, 'notification-icon-512.png');
+  await writeSquareIcon(blackTrimmed, 512, 'notification-icon-512.png', SPLASH_ICON_PADDING_RATIO);
   await writeSquareIcon(trimmed, 512, 'favicon.png');
   await writeSquareIcon(trimmed, 180, 'apple-touch-icon.png');
   await writeNextAppIcons(trimmed);

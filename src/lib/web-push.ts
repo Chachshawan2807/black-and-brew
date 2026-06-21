@@ -20,6 +20,8 @@ export interface PushSubscriptionRow {
   client_session_id: string | null;
   user_agent: string | null;
   prefs_json: Record<string, unknown>;
+  profile_id?: string | null;
+  branch_id?: string | null;
 }
 
 export interface WebPushPayload {
@@ -35,12 +37,52 @@ export interface WebPushPayload {
 
 let vapidConfigured = false;
 
-function getSupabaseAdmin() {
+export function getSupabaseAdminForPush() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) {
     throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
   }
   return createClient(supabaseUrl, requireServiceRoleKey());
+}
+
+export type WebPushDeliveryResult = 'sent' | 'failed' | 'removed';
+
+export async function deliverWebPushPayload(
+  supabase: ReturnType<typeof getSupabaseAdminForPush>,
+  subscription: PushSubscriptionRow,
+  payloadJson: string,
+  options?: { TTL?: number; urgency?: 'very-low' | 'low' | 'normal' | 'high' },
+): Promise<WebPushDeliveryResult> {
+  try {
+    await webpush.sendNotification(
+      {
+        endpoint: subscription.endpoint,
+        keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+      },
+      payloadJson,
+      {
+        TTL: options?.TTL ?? 60 * 60,
+        urgency: options?.urgency ?? 'high',
+      },
+    );
+    await supabase
+      .from('push_subscriptions')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', subscription.id);
+    return 'sent';
+  } catch (err: unknown) {
+    const statusCode =
+      err && typeof err === 'object' && 'statusCode' in err
+        ? Number((err as { statusCode: number }).statusCode)
+        : 0;
+    if (statusCode === 404 || statusCode === 410) {
+      await supabase.from('push_subscriptions').delete().eq('id', subscription.id);
+      console.error('[web-push] removed stale subscription:', subscription.id, statusCode);
+      return 'removed';
+    }
+    console.error('[web-push] send failed:', statusCode, err);
+    return 'failed';
+  }
 }
 
 export function ensureVapidConfigured(): boolean {
@@ -67,6 +109,10 @@ export function parsePushPrefs(raw: Record<string, unknown> | null | undefined):
     ...DEFAULT_NOTIFICATION_PREFERENCES,
     ...(raw as Partial<NotificationPreferences>),
     locale,
+    dailyScheduleReports:
+      typeof raw?.dailyScheduleReports === 'boolean'
+        ? raw.dailyScheduleReports
+        : DEFAULT_NOTIFICATION_PREFERENCES.dailyScheduleReports,
   };
 }
 
@@ -149,10 +195,12 @@ export async function dispatchInventoryWebPush(row: DataChangeLogRow): Promise<{
     return { sent: 0, failed: 0, skipped: true };
   }
 
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseAdminForPush();
   const { data: subscriptions, error } = await supabase
     .from('push_subscriptions')
-    .select('id, user_id, endpoint, p256dh, auth, client_session_id, user_agent, prefs_json');
+    .select(
+      'id, user_id, endpoint, p256dh, auth, client_session_id, user_agent, prefs_json, branch_id, profile_id',
+    );
 
   if (error) {
     if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
@@ -177,34 +225,9 @@ export async function dispatchInventoryWebPush(row: DataChangeLogRow): Promise<{
     const payload = buildWebPushPayload(row, prefs.locale);
     if (!payload) continue;
 
-    try {
-      await webpush.sendNotification(
-        {
-          endpoint: subscription.endpoint,
-          keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-        },
-        JSON.stringify(payload),
-        {
-          TTL: 60 * 60,
-          urgency: 'high',
-        }
-      );
-      sent += 1;
-      await supabase
-        .from('push_subscriptions')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', subscription.id);
-    } catch (err: unknown) {
-      failed += 1;
-      const statusCode =
-        err && typeof err === 'object' && 'statusCode' in err
-          ? Number((err as { statusCode: number }).statusCode)
-          : 0;
-      if (statusCode === 404 || statusCode === 410) {
-        await supabase.from('push_subscriptions').delete().eq('id', subscription.id);
-      }
-      console.error('[web-push] send failed:', statusCode, err);
-    }
+    const result = await deliverWebPushPayload(supabase, subscription, JSON.stringify(payload));
+    if (result === 'sent') sent += 1;
+    else failed += 1;
   }
 
   return { sent, failed, skipped: false };

@@ -1,17 +1,16 @@
 import { NextResponse } from 'next/server';
-import { unstable_noStore as noStore } from 'next/cache'; 
+import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import {
   compileDailyReportData,
   resolveDailyReportSchedule,
 } from '@/app/actions/daily-report-actions';
-import { buildDailyReportAltText, buildDailyReportFlexMessage } from '@/lib/line/daily-report-flex';
-import { pushLineMessages } from '@/lib/line-notify';
+import { buildDailyReportAltText } from '@/lib/line/daily-report-flex';
+import { dispatchDailyReportWebPush } from '@/lib/daily-report-web-push';
 
 export const maxDuration = 30;
 
 export async function GET(request: Request) {
-  // บังคับข้ามการทำแคช Prerender โดยใช้ dynamic api
   await headers();
   noStore();
 
@@ -29,23 +28,46 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const targetRecipientId = process.env.LINE_GROUP_ID || process.env.LINE_TARGET_RECIPIENT_ID;
-
-    if (!targetRecipientId) {
-      console.error('[CRON] Missing target ID (LINE_GROUP_ID / LINE_TARGET_RECIPIENT_ID) in environment');
-      return NextResponse.json({ success: false, error: 'Missing target ID' }, { status: 500 });
-    }
-
     const scheduleParam = new URL(request.url).searchParams.get('schedule');
     const schedule = resolveDailyReportSchedule(scheduleParam);
 
     const reportData = await compileDailyReportData(schedule);
-    const flexMessage = buildDailyReportFlexMessage(reportData);
-    const result = await pushLineMessages(targetRecipientId, [flexMessage]);
+    const pushResult = await dispatchDailyReportWebPush(reportData);
 
-    if (!result.success) {
-      console.error('[CRON] Failed to send LINE notification:', result.error);
-      return NextResponse.json({ success: false, error: result.error }, { status: 500 });
+    if (pushResult.error === 'vapid_not_configured') {
+      console.error('[CRON] Web Push not configured — set VAPID keys on Vercel');
+      return NextResponse.json(
+        { success: false, error: 'Web Push VAPID keys not configured' },
+        { status: 503 },
+      );
+    }
+
+    if (pushResult.skipped && pushResult.sent === 0) {
+      console.warn('[CRON] Daily report push skipped:', pushResult.error ?? 'unknown');
+      return NextResponse.json({
+        success: true,
+        schedule,
+        channel: 'web_push',
+        sent: 0,
+        failed: 0,
+        skipped: true,
+        reason: pushResult.error ?? 'skipped',
+        timestamp: new Date().toISOString(),
+        previewText: buildDailyReportAltText(reportData).substring(0, 80),
+      });
+    }
+
+    if (pushResult.failed > 0 && pushResult.sent === 0) {
+      console.error('[CRON] Daily report Web Push failed for all subscriptions');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'web_push_delivery_failed',
+          sent: pushResult.sent,
+          failed: pushResult.failed,
+        },
+        { status: 502 },
+      );
     }
 
     const previewText = buildDailyReportAltText(reportData);
@@ -53,13 +75,15 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       schedule,
-      format: 'flex',
+      channel: 'web_push',
+      sent: pushResult.sent,
+      failed: pushResult.failed,
       timestamp: new Date().toISOString(),
       previewText: previewText.substring(0, 80) + (previewText.length > 80 ? '…' : ''),
     });
-
-  } catch (error: any) {
-    console.error('[CRON] Unexpected Error:', error.message || error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    console.error('[CRON] Unexpected Error:', message);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

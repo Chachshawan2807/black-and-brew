@@ -149,6 +149,17 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toContain('QUICK_ACTION_FAB');
   });
 
+  test('inventory page collapses the inline quick action bar after a successful save', () => {
+    const pageCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
+      'utf-8',
+    );
+
+    expect(pageCode).toContain('isQuickActionBarOpen');
+    expect(pageCode).toMatch(/onAfterSave:[\s\S]*setIsQuickActionBarOpen\(false\)/);
+    expect(pageCode).toContain('เปิด Quick Action');
+  });
+
   test('inventory count page suppresses stock notifications', () => {
     const countCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/count/InventoryCountClient.tsx'),

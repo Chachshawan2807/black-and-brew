@@ -63,6 +63,11 @@ function logPushClientIssue(context: string, error: unknown): void {
   console.error(`[push-subscription] ${context}:`, error);
 }
 
+export function wantsPushRegistration(prefs: NotificationPreferences): boolean {
+  if (!prefs.enabled) return false;
+  return prefs.systemNotifications || prefs.dailyScheduleReports;
+}
+
 export async function ensurePushSubscription(locale: string): Promise<boolean> {
   if (typeof window === 'undefined') return false;
   if (!isPushManagerSupported()) return false;
@@ -72,7 +77,7 @@ export async function ensurePushSubscription(locale: string): Promise<boolean> {
   if (permission !== 'granted') return false;
 
   const prefs = loadNotificationPreferences();
-  if (!prefs.enabled || !prefs.systemNotifications) return false;
+  if (!wantsPushRegistration(prefs)) return false;
 
   try {
     const registration = await navigator.serviceWorker.ready;
@@ -140,7 +145,7 @@ export async function syncPushPrefsToServer(
 ): Promise<void> {
   if (typeof window === 'undefined') return;
 
-  if (!prefs.enabled || !prefs.systemNotifications) {
+  if (!prefs.enabled || !wantsPushRegistration(prefs)) {
     await removePushSubscription();
     return;
   }
@@ -177,7 +182,7 @@ export async function refreshPushSubscriptionState(locale: string): Promise<void
   if (typeof window === 'undefined') return;
 
   const prefs = loadNotificationPreferences();
-  if (!prefs.enabled || !prefs.systemNotifications) {
+  if (!prefs.enabled || !wantsPushRegistration(prefs)) {
     activePushSubscription = null;
     return;
   }
