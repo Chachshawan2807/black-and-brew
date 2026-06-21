@@ -1,4 +1,4 @@
-// v11
+// v12
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/pwa-badge.js');
@@ -102,8 +102,24 @@ self.addEventListener('push', (event) => {
       const isDailyReport = payload.kind === 'daily_report';
 
       if (isDailyReport) {
+        const unreadCount = await resolveUnreadCount(payload);
         const brandIcon = assetUrl(BRAND_ICON);
         const notificationBadge = assetUrl(NOTIFICATION_BADGE);
+
+        const windowClients = await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        });
+
+        for (const client of windowClients) {
+          client.postMessage({
+            type: 'INVENTORY_PUSH_RECEIVED',
+            notification: payload.notification,
+            unreadCount,
+            systemNotificationShown: true,
+          });
+        }
+
         await self.registration.showNotification(payload.title, {
           body: payload.body,
           icon: brandIcon,
@@ -116,8 +132,10 @@ self.addEventListener('push', (event) => {
           data: {
             url: payload.url || '/th/schedule',
             kind: 'daily_report',
+            unreadCount,
           },
         });
+        await applyHomeScreenBadge(unreadCount);
         return;
       }
 

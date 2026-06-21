@@ -2,6 +2,7 @@ import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-r
 import { buildDailyReportAltText } from '@/lib/line/daily-report-flex';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
+  type InventoryNotification,
   type NotificationPreferences,
 } from '@/lib/notification-types';
 import {
@@ -22,6 +23,8 @@ export interface DailyReportPushPayload {
   tag: string;
   url: string;
   locale: string;
+  notification: InventoryNotification;
+  unreadCount: number;
 }
 
 export function resolveDailyReportBranchId(): string {
@@ -42,15 +45,40 @@ export function buildDailyReportPushPayload(
 ): DailyReportPushPayload {
   const alt = buildDailyReportAltText(data);
   const schedulePath = `/${locale}/schedule`;
+  const tag = `bb-daily-report-${data.schedule}-${data.dateStr}`;
+  const title = scheduleTitle(data.schedule, locale);
+  const body = alt.length > 220 ? `${alt.slice(0, 217)}…` : alt;
+  const now = new Date().toISOString();
 
   return {
     kind: 'daily_report',
     schedule: data.schedule,
-    title: scheduleTitle(data.schedule, locale),
-    body: alt.length > 220 ? `${alt.slice(0, 217)}…` : alt,
-    tag: `bb-daily-report-${data.schedule}-${data.dateStr}`,
+    title,
+    body,
+    tag,
     url: schedulePath,
     locale,
+    unreadCount: 1,
+    notification: {
+      id: tag,
+      logId: tag,
+      action: 'UPDATE',
+      entityId: null,
+      entityLabel: data.dateStr,
+      actorLabel: locale === 'th' ? 'ระบบตารางงาน' : 'Schedule system',
+      occurredAt: now,
+      title,
+      summary: body,
+      fieldSummary: alt,
+      priority: 'normal',
+      read: false,
+      batchedCount: 1,
+      metadata: {
+        kind: 'daily_report',
+        schedule: data.schedule,
+        url: schedulePath,
+      },
+    },
   };
 }
 

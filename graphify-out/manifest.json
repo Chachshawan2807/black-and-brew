@@ -555,9 +555,9 @@
     "semantic_hash": "07e59eff7a84241217f38e523b0ae12e"
   },
   "src/components/notifications/NotificationPanel.tsx": {
-    "mtime": 1781631857.5166955,
-    "ast_hash": "b35583edd127d9767ccfc8552f7c54c7",
-    "semantic_hash": "b35583edd127d9767ccfc8552f7c54c7"
+    "mtime": 1782061446.4595318,
+    "ast_hash": "af15342a3edf29641b9dbdb92afc7a6e",
+    "semantic_hash": ""
   },
   "src/components/notifications/NotificationProvider.tsx": {
     "mtime": 1781274370.6340728,
@@ -1495,8 +1495,8 @@
     "semantic_hash": "11f97ca8f262bb256b3123cf1118589c"
   },
   "src/test/notification-fab-sync.test.ts": {
-    "mtime": 1782056629.4879935,
-    "ast_hash": "fa17a9376675480933026264148e07b4",
+    "mtime": 1782061460.6150594,
+    "ast_hash": "38bab183f70c1d981d0086bc588c5ee9",
     "semantic_hash": ""
   },
   "src/test/notification-panel-mobile-layout.test.ts": {
@@ -1900,8 +1900,8 @@
     "semantic_hash": ""
   },
   "public/sw.js": {
-    "mtime": 1782055523.0077996,
-    "ast_hash": "0c67f89a6bff6988dffddd8452d6cbbd",
+    "mtime": 1782061438.6323483,
+    "ast_hash": "b52e572a4597c9f248bb54b5dc28c9b0",
     "semantic_hash": ""
   },
   "scripts/generate-pwa-icons.mjs": {
@@ -2050,13 +2050,13 @@
     "semantic_hash": ""
   },
   "src/lib/daily-report-web-push.ts": {
-    "mtime": 1782058622.4077334,
-    "ast_hash": "5699a71bb86c6ae58a33926c381f9698",
+    "mtime": 1782061419.536803,
+    "ast_hash": "3a7650a04f0de5a44da162659a4f3744",
     "semantic_hash": ""
   },
   "src/test/daily-report-web-push.test.ts": {
-    "mtime": 1782050677.1181374,
-    "ast_hash": "f354407145f0ae435885b76db4ef84fd",
+    "mtime": 1782061453.6827834,
+    "ast_hash": "ae004b6445d3958a0242d38bbfd0ef40",
     "semantic_hash": ""
   },
   "supabase/migrations/20260620221500_reset_accuracy_history.sql": {

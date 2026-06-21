@@ -27,6 +27,10 @@ describe('notification fab cross-platform sync', () => {
     resolve(__dirname, '../lib/notification-cross-tab.ts'),
     'utf8',
   );
+  const serviceWorkerSource = readFileSync(
+    resolve(__dirname, '../../public/sw.js'),
+    'utf8',
+  );
 
   test('NotificationProvider wraps FAB on all pages (desktop + mobile)', () => {
     expect(layoutSource).toContain('NotificationProvider');
@@ -54,6 +58,13 @@ describe('notification fab cross-platform sync', () => {
   test('service worker push messages preserve SW unread count for launcher badges', () => {
     expect(hookSource).toContain('unreadCount?: number');
     expect(hookSource).toMatch(/pushNotification\(\s*data\.notification,\s*data\.unreadCount/);
+  });
+
+  test('daily report web pushes are stored and forwarded to the notification panel', () => {
+    expect(serviceWorkerSource).toContain("payload.kind === 'daily_report'");
+    expect(serviceWorkerSource).toContain('const unreadCount = await resolveUnreadCount(payload);');
+    expect(serviceWorkerSource).toContain("type: 'INVENTORY_PUSH_RECEIVED'");
+    expect(serviceWorkerSource).toContain('await applyHomeScreenBadge(unreadCount);');
   });
 
   test('service worker push messages do not duplicate OS banners already shown by the PWA worker', () => {

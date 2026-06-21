@@ -116,6 +116,11 @@ export function NotificationPanel() {
   const handleNavigate = (item: InventoryNotification) => {
     markRead(item.id);
     closePanel();
+    const url = typeof item.metadata?.url === 'string' ? item.metadata.url : null;
+    if (url) {
+      router.push(url);
+      return;
+    }
     if (item.entityId) {
       router.push(`/${locale}/inventory?highlight=${item.entityId}`);
     } else {

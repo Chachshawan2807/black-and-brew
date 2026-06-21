@@ -51,6 +51,9 @@ describe('daily-report-web-push', () => {
     expect(payload.body).toContain('21-06-2026');
     expect(payload.url).toBe('/th/schedule');
     expect(payload.tag).toContain('bb-daily-report-tomorrow');
+    expect(payload.notification.logId).toBe(payload.tag);
+    expect(payload.notification.metadata.url).toBe('/th/schedule');
+    expect(payload.unreadCount).toBe(1);
   });
 
   test('shouldSendDailyReportToSubscription requires dailyScheduleReports and systemNotifications', () => {
