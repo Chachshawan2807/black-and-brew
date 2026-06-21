@@ -76,6 +76,7 @@ describe('registerPushSubscription', () => {
     expect(mockUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'user-abc',
+        profile_id: null,
         endpoint: 'https://push.example/sub/1',
       }),
       { onConflict: 'endpoint' },

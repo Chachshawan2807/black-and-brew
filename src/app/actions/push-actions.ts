@@ -135,7 +135,7 @@ export async function registerPushSubscription(
     const { error } = await supabase.from('push_subscriptions').upsert(
       {
         user_id: userId,
-        profile_id: userId,
+        profile_id: null,
         branch_id: resolveBranchId(safe.branchId),
         endpoint: safe.endpoint,
         p256dh: safe.keys.p256dh,
