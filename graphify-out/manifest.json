@@ -320,8 +320,8 @@
     "semantic_hash": "d0da50145cb17b74f022ad5f45fa0ada"
   },
   "src/app/actions/data-change-log-actions.ts": {
-    "mtime": 1781970870.336087,
-    "ast_hash": "ba7bcea4f2fb1ef29128273b7906db4a",
+    "mtime": 1782054434.7697215,
+    "ast_hash": "31a2e36c44cbd69fb6a45b54e2c1f8f5",
     "semantic_hash": ""
   },
   "src/app/actions/holiday-actions.ts": {
@@ -440,8 +440,8 @@
     "semantic_hash": "e13b17163e95d87b680ab0cf3ba118f7"
   },
   "src/app/api/daily-report/route.ts": {
-    "mtime": 1782050651.6932867,
-    "ast_hash": "212eee4467c9bcfebb7ade36f27c7c8b",
+    "mtime": 1782058629.471648,
+    "ast_hash": "63599a0a063d276f868b7dcdcf34ec8c",
     "semantic_hash": ""
   },
   "src/app/api/push/webhook/route.ts": {
@@ -750,8 +750,8 @@
     "semantic_hash": "a28fed26e097eb81afc84ca603e648c2"
   },
   "src/hooks/use-inventory-notifications.ts": {
-    "mtime": 1781970882.110857,
-    "ast_hash": "65740bf6af81c0192ae7568633a5bc54",
+    "mtime": 1782056585.4967897,
+    "ast_hash": "614c4ba45621ee0e22758ead247b7c5d",
     "semantic_hash": ""
   },
   "src/hooks/use-inventory-quick-action.ts": {
@@ -1080,8 +1080,8 @@
     "semantic_hash": ""
   },
   "src/lib/push-subscription-client.ts": {
-    "mtime": 1782047939.496166,
-    "ast_hash": "77de879b127add4445fcf1f119a30ca5",
+    "mtime": 1782057823.1648786,
+    "ast_hash": "a59d13b4b2250fb39ce46a8074de227c",
     "semantic_hash": ""
   },
   "src/lib/pwa-app-badge.ts": {
@@ -1220,8 +1220,8 @@
     "semantic_hash": "ea1c194ee828369e6fcdde84b4d8b8ba"
   },
   "src/lib/web-push.ts": {
-    "mtime": 1782046585.7734418,
-    "ast_hash": "24a91b57a20dfd0fe4ba046bf079d2b4",
+    "mtime": 1782058603.515376,
+    "ast_hash": "62ae38b5896b1cbdeb5b264a5f94d17d",
     "semantic_hash": ""
   },
   "src/proxy.ts": {
@@ -1495,8 +1495,8 @@
     "semantic_hash": "11f97ca8f262bb256b3123cf1118589c"
   },
   "src/test/notification-fab-sync.test.ts": {
-    "mtime": 1781805810.0147972,
-    "ast_hash": "6b13eeffc05e26acd07a0f863619d03c",
+    "mtime": 1782056629.4879935,
+    "ast_hash": "fa17a9376675480933026264148e07b4",
     "semantic_hash": ""
   },
   "src/test/notification-panel-mobile-layout.test.ts": {
@@ -1540,9 +1540,9 @@
     "semantic_hash": ""
   },
   "src/test/pwa-mobile-badge.test.ts": {
-    "mtime": 1781685126.5881605,
-    "ast_hash": "d6fb573f94b06492bf1148b3bbe670be",
-    "semantic_hash": "d6fb573f94b06492bf1148b3bbe670be"
+    "mtime": 1782055484.7852793,
+    "ast_hash": "7c4e8addd6b2b92f049af9e1fc2acd5c",
+    "semantic_hash": ""
   },
   "src/test/pwa-notification-bridge.test.ts": {
     "mtime": 1781793172.7825646,
@@ -1670,9 +1670,9 @@
     "semantic_hash": "73864fa03d7594ac914d86b6f7dea2de"
   },
   "src/test/web-push.test.ts": {
-    "mtime": 1781685126.5235653,
-    "ast_hash": "80c5489eb5354bfd86ed62f448f3c454",
-    "semantic_hash": "80c5489eb5354bfd86ed62f448f3c454"
+    "mtime": 1782054451.1969569,
+    "ast_hash": "2dc8cd39880f91ece99b125d49139ffb",
+    "semantic_hash": ""
   },
   "src/test/webauthn-json-polyfill.test.ts": {
     "mtime": 1781715450.6659358,
@@ -1900,8 +1900,8 @@
     "semantic_hash": ""
   },
   "public/sw.js": {
-    "mtime": 1782046624.5796213,
-    "ast_hash": "2bb724b3739c731f4a2d73da90b545db",
+    "mtime": 1782055523.0077996,
+    "ast_hash": "0c67f89a6bff6988dffddd8452d6cbbd",
     "semantic_hash": ""
   },
   "scripts/generate-pwa-icons.mjs": {
@@ -2050,8 +2050,8 @@
     "semantic_hash": ""
   },
   "src/lib/daily-report-web-push.ts": {
-    "mtime": 1782050668.2424653,
-    "ast_hash": "b7a783a2140e715d1f47184f85056b2d",
+    "mtime": 1782058622.4077334,
+    "ast_hash": "5699a71bb86c6ae58a33926c381f9698",
     "semantic_hash": ""
   },
   "src/test/daily-report-web-push.test.ts": {
@@ -2072,6 +2072,11 @@
   "src/test/use-inventory-quick-action.test.tsx": {
     "mtime": 1782053955.270958,
     "ast_hash": "00d37ea10c7d850159f6a89b88167f7b",
+    "semantic_hash": ""
+  },
+  "src/test/push-subscription-client.test.ts": {
+    "mtime": 1782057784.2319777,
+    "ast_hash": "556725d88bcc9abe48e226b0960f6a39",
     "semantic_hash": ""
   }
 }

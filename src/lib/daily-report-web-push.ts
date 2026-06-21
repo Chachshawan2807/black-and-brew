@@ -124,17 +124,20 @@ export async function dispatchDailyReportWebPush(
 ): Promise<{
   sent: number;
   failed: number;
+  removed: number;
   skipped: boolean;
   error?: string;
   totalSubscriptions?: number;
   eligibleSubscriptions?: number;
   branchMatchedSubscriptions?: number;
   branchFallback?: boolean;
+  failureStatusCounts?: Record<string, number>;
 }> {
   if (!ensureVapidConfigured()) {
     return {
       sent: 0,
       failed: 0,
+      removed: 0,
       skipped: true,
       error: 'vapid_not_configured',
     };
@@ -149,7 +152,13 @@ export async function dispatchDailyReportWebPush(
 
   if (error) {
     if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
-      return { sent: 0, failed: 0, skipped: true, error: 'push_subscriptions_table_missing' };
+      return {
+        sent: 0,
+        failed: 0,
+        removed: 0,
+        skipped: true,
+        error: 'push_subscriptions_table_missing',
+      };
     }
     console.error('Supabase Error:', error.message, error.details);
     throw error;
@@ -160,6 +169,7 @@ export async function dispatchDailyReportWebPush(
     return {
       sent: 0,
       failed: 0,
+      removed: 0,
       skipped: true,
       error: 'no_subscriptions',
       totalSubscriptions: 0,
@@ -175,6 +185,8 @@ export async function dispatchDailyReportWebPush(
 
   let sent = 0;
   let failed = 0;
+  let removed = 0;
+  const failureStatusCounts: Record<string, number> = {};
 
   for (const subscription of targetRows) {
     const prefs = parseDailyReportPushPrefs(subscription.prefs_json);
@@ -184,30 +196,43 @@ export async function dispatchDailyReportWebPush(
       urgency: 'high',
     });
 
-    if (result === 'sent') sent += 1;
-    else failed += 1;
+    if (result.status === 'sent') {
+      sent += 1;
+    } else if (result.status === 'removed') {
+      removed += 1;
+      const key = String(result.statusCode);
+      failureStatusCounts[key] = (failureStatusCounts[key] ?? 0) + 1;
+    } else {
+      failed += 1;
+      const key = String(result.statusCode);
+      failureStatusCounts[key] = (failureStatusCounts[key] ?? 0) + 1;
+    }
   }
 
-  if (sent === 0 && failed === 0) {
+  if (sent === 0 && failed === 0 && removed === 0) {
     return {
       sent: 0,
       failed: 0,
+      removed: 0,
       skipped: true,
       error: 'no_eligible_subscriptions',
       totalSubscriptions: rows.length,
       eligibleSubscriptions: eligibleRows.length,
       branchMatchedSubscriptions: branchRows.length,
       branchFallback,
+      failureStatusCounts,
     };
   }
 
   return {
     sent,
     failed,
+    removed,
     skipped: false,
     totalSubscriptions: rows.length,
     eligibleSubscriptions: eligibleRows.length,
     branchMatchedSubscriptions: branchRows.length,
     branchFallback,
+    failureStatusCounts,
   };
 }

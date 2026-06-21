@@ -45,7 +45,12 @@ export function getSupabaseAdminForPush() {
   return createClient(supabaseUrl, requireServiceRoleKey());
 }
 
-export type WebPushDeliveryResult = 'sent' | 'failed' | 'removed';
+export type WebPushDeliveryResult =
+  | { status: 'sent' }
+  | { status: 'failed'; statusCode: number }
+  | { status: 'removed'; statusCode: number };
+
+const STALE_SUBSCRIPTION_STATUS_CODES = new Set([400, 403, 404, 410]);
 
 export async function deliverWebPushPayload(
   supabase: ReturnType<typeof getSupabaseAdminForPush>,
@@ -69,19 +74,19 @@ export async function deliverWebPushPayload(
       .from('push_subscriptions')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', subscription.id);
-    return 'sent';
+    return { status: 'sent' };
   } catch (err: unknown) {
     const statusCode =
       err && typeof err === 'object' && 'statusCode' in err
         ? Number((err as { statusCode: number }).statusCode)
         : 0;
-    if (statusCode === 404 || statusCode === 410) {
+    if (STALE_SUBSCRIPTION_STATUS_CODES.has(statusCode)) {
       await supabase.from('push_subscriptions').delete().eq('id', subscription.id);
       console.error('[web-push] removed stale subscription:', subscription.id, statusCode);
-      return 'removed';
+      return { status: 'removed', statusCode };
     }
     console.error('[web-push] send failed:', statusCode, err);
-    return 'failed';
+    return { status: 'failed', statusCode };
   }
 }
 
@@ -222,7 +227,7 @@ export async function dispatchInventoryWebPush(row: DataChangeLogRow): Promise<{
   });
 
   const results = await Promise.all(deliveries);
-  const sent = results.filter((result) => result === 'sent').length;
+  const sent = results.filter((result) => result.status === 'sent').length;
   const failed = results.length - sent;
 
   return { sent, failed, skipped: false };
