@@ -11,7 +11,6 @@ import {
 } from '@/lib/pwa-notification-bridge';
 import {
   registerPushSubscription,
-  syncPushSubscriptionPrefs,
   unregisterPushSubscription,
 } from '@/app/actions/push-actions';
 import { getSupabaseAccessToken } from '@/lib/supabase-session';
@@ -190,11 +189,16 @@ export async function syncPushPrefsToServer(
     const accessToken = await getAccessToken();
     if (!accessToken) return;
 
-    await syncPushSubscriptionPrefs({
+    const payload = subscriptionToPayload(subscription);
+    if (!payload) return;
+
+    await registerPushSubscription({
       accessToken,
-      endpoint: subscription.endpoint,
+      ...payload,
+      clientSessionId: getClientSessionId(),
       prefs,
       locale,
+      userAgent: navigator.userAgent,
     });
   } catch (error) {
     logPushClientIssue('sync prefs failed', error);

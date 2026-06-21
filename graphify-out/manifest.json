@@ -1080,8 +1080,8 @@
     "semantic_hash": ""
   },
   "src/lib/push-subscription-client.ts": {
-    "mtime": 1782057823.1648786,
-    "ast_hash": "a59d13b4b2250fb39ce46a8074de227c",
+    "mtime": 1782059327.8658552,
+    "ast_hash": "b38b54572ff1b73494f9d08fa30f4a02",
     "semantic_hash": ""
   },
   "src/lib/pwa-app-badge.ts": {
