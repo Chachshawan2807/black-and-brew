@@ -1,4 +1,4 @@
-// v12
+// v13
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/pwa-badge.js');
@@ -78,6 +78,17 @@ async function resolveUnreadCount(payload) {
   return 1;
 }
 
+async function safeResolveUnreadCount(payload) {
+  try {
+    return await resolveUnreadCount(payload);
+  } catch (error) {
+    console.warn('[sw] notification store unavailable:', error);
+    return typeof payload.unreadCount === 'number' && payload.unreadCount > 0
+      ? Math.min(99, Math.floor(payload.unreadCount))
+      : 1;
+  }
+}
+
 self.addEventListener('push', (event) => {
   let payload = {
     title: 'BLACKANDBREW',
@@ -102,7 +113,7 @@ self.addEventListener('push', (event) => {
       const isDailyReport = payload.kind === 'daily_report';
 
       if (isDailyReport) {
-        const unreadCount = await resolveUnreadCount(payload);
+        const unreadCount = await safeResolveUnreadCount(payload);
         const brandIcon = assetUrl(BRAND_ICON);
         const notificationBadge = assetUrl(NOTIFICATION_BADGE);
 
@@ -124,11 +135,12 @@ self.addEventListener('push', (event) => {
           body: payload.body,
           icon: brandIcon,
           badge: notificationBadge,
-          tag: payload.tag || 'bb-daily-report',
+          tag: `${payload.tag || 'bb-daily-report'}-${Date.now()}`,
           silent: false,
-          requireInteraction: false,
+          requireInteraction: true,
           renotify: true,
           vibrate: [...VIBRATE],
+          timestamp: Date.now(),
           data: {
             url: payload.url || '/th/schedule',
             kind: 'daily_report',
@@ -139,7 +151,7 @@ self.addEventListener('push', (event) => {
         return;
       }
 
-      const unreadCount = await resolveUnreadCount(payload);
+      const unreadCount = await safeResolveUnreadCount(payload);
 
       const brandIcon = assetUrl(BRAND_ICON);
       const notificationBadge = assetUrl(NOTIFICATION_BADGE);

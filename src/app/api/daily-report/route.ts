@@ -58,6 +58,10 @@ export async function GET(request: Request) {
         branchMatchedSubscriptions: pushResult.branchMatchedSubscriptions ?? 0,
         branchFallback: pushResult.branchFallback ?? false,
         failureStatusCounts: pushResult.failureStatusCounts ?? {},
+        targetDeviceCounts: pushResult.targetDeviceCounts ?? {},
+        sentDeviceCounts: pushResult.sentDeviceCounts ?? {},
+        failedDeviceCounts: pushResult.failedDeviceCounts ?? {},
+        removedDeviceCounts: pushResult.removedDeviceCounts ?? {},
         timestamp: new Date().toISOString(),
         previewText: buildDailyReportAltText(reportData).substring(0, 80),
       });
@@ -77,6 +81,10 @@ export async function GET(request: Request) {
           branchMatchedSubscriptions: pushResult.branchMatchedSubscriptions ?? 0,
           branchFallback: pushResult.branchFallback ?? false,
           failureStatusCounts: pushResult.failureStatusCounts ?? {},
+          targetDeviceCounts: pushResult.targetDeviceCounts ?? {},
+          sentDeviceCounts: pushResult.sentDeviceCounts ?? {},
+          failedDeviceCounts: pushResult.failedDeviceCounts ?? {},
+          removedDeviceCounts: pushResult.removedDeviceCounts ?? {},
         },
         { status: 502 },
       );
@@ -96,6 +104,10 @@ export async function GET(request: Request) {
       branchMatchedSubscriptions: pushResult.branchMatchedSubscriptions ?? 0,
       branchFallback: pushResult.branchFallback ?? false,
       failureStatusCounts: pushResult.failureStatusCounts ?? {},
+      targetDeviceCounts: pushResult.targetDeviceCounts ?? {},
+      sentDeviceCounts: pushResult.sentDeviceCounts ?? {},
+      failedDeviceCounts: pushResult.failedDeviceCounts ?? {},
+      removedDeviceCounts: pushResult.removedDeviceCounts ?? {},
       timestamp: new Date().toISOString(),
       previewText: previewText.substring(0, 80) + (previewText.length > 80 ? '…' : ''),
     });

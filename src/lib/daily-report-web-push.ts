@@ -146,6 +146,15 @@ export function selectDailyReportTargetSubscriptions(
   };
 }
 
+function getSubscriptionDeviceKind(subscription: PushSubscriptionRow): 'mobile' | 'desktop' {
+  const userAgent = subscription.user_agent?.toLowerCase() ?? '';
+  return /iphone|ipad|android|mobile/.test(userAgent) ? 'mobile' : 'desktop';
+}
+
+function incrementCount(record: Record<string, number>, key: string): void {
+  record[key] = (record[key] ?? 0) + 1;
+}
+
 export async function dispatchDailyReportWebPush(
   data: DailyReportData,
   branchId: string = resolveDailyReportBranchId(),
@@ -160,6 +169,10 @@ export async function dispatchDailyReportWebPush(
   branchMatchedSubscriptions?: number;
   branchFallback?: boolean;
   failureStatusCounts?: Record<string, number>;
+  targetDeviceCounts?: Record<string, number>;
+  sentDeviceCounts?: Record<string, number>;
+  failedDeviceCounts?: Record<string, number>;
+  removedDeviceCounts?: Record<string, number>;
 }> {
   if (!ensureVapidConfigured()) {
     return {
@@ -215,8 +228,14 @@ export async function dispatchDailyReportWebPush(
   let failed = 0;
   let removed = 0;
   const failureStatusCounts: Record<string, number> = {};
+  const targetDeviceCounts: Record<string, number> = {};
+  const sentDeviceCounts: Record<string, number> = {};
+  const failedDeviceCounts: Record<string, number> = {};
+  const removedDeviceCounts: Record<string, number> = {};
 
-  for (const subscription of targetRows) {
+  const deliveries = targetRows.map(async (subscription) => {
+    const deviceKind = getSubscriptionDeviceKind(subscription);
+    incrementCount(targetDeviceCounts, deviceKind);
     const prefs = parseDailyReportPushPrefs(subscription.prefs_json);
     const payload = buildDailyReportPushPayload(data, prefs.locale);
     const result = await deliverWebPushPayload(supabase, subscription, JSON.stringify(payload), {
@@ -225,17 +244,23 @@ export async function dispatchDailyReportWebPush(
     });
 
     if (result.status === 'sent') {
-      sent += 1;
+      incrementCount(sentDeviceCounts, deviceKind);
     } else if (result.status === 'removed') {
-      removed += 1;
+      incrementCount(removedDeviceCounts, deviceKind);
       const key = String(result.statusCode);
       failureStatusCounts[key] = (failureStatusCounts[key] ?? 0) + 1;
     } else {
-      failed += 1;
+      incrementCount(failedDeviceCounts, deviceKind);
       const key = String(result.statusCode);
       failureStatusCounts[key] = (failureStatusCounts[key] ?? 0) + 1;
     }
-  }
+    return result.status;
+  });
+
+  const results = await Promise.all(deliveries);
+  sent = results.filter((status) => status === 'sent').length;
+  failed = results.filter((status) => status === 'failed').length;
+  removed = results.filter((status) => status === 'removed').length;
 
   if (sent === 0 && failed === 0 && removed === 0) {
     return {
@@ -249,6 +274,10 @@ export async function dispatchDailyReportWebPush(
       branchMatchedSubscriptions: branchRows.length,
       branchFallback,
       failureStatusCounts,
+      targetDeviceCounts,
+      sentDeviceCounts,
+      failedDeviceCounts,
+      removedDeviceCounts,
     };
   }
 
@@ -262,5 +291,9 @@ export async function dispatchDailyReportWebPush(
     branchMatchedSubscriptions: branchRows.length,
     branchFallback,
     failureStatusCounts,
+    targetDeviceCounts,
+    sentDeviceCounts,
+    failedDeviceCounts,
+    removedDeviceCounts,
   };
 }

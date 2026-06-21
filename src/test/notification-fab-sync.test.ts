@@ -62,7 +62,7 @@ describe('notification fab cross-platform sync', () => {
 
   test('daily report web pushes are stored and forwarded to the notification panel', () => {
     expect(serviceWorkerSource).toContain("payload.kind === 'daily_report'");
-    expect(serviceWorkerSource).toContain('const unreadCount = await resolveUnreadCount(payload);');
+    expect(serviceWorkerSource).toContain('const unreadCount = await safeResolveUnreadCount(payload);');
     expect(serviceWorkerSource).toContain("type: 'INVENTORY_PUSH_RECEIVED'");
     expect(serviceWorkerSource).toContain('await applyHomeScreenBadge(unreadCount);');
   });
