@@ -44,6 +44,13 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('SW_INVENTORY_PUSH_RECEIVED');
   });
 
+  test('hook catches up missed cross-device inventory logs from the server for mobile FAB sync', () => {
+    expect(hookSource).toContain('fetchDataChangeLogs');
+    expect(hookSource).toContain('syncInventoryNotificationCatchUp');
+    expect(hookSource).toContain("fetchDataChangeLogs({ module: 'inventory'");
+    expect(hookSource).toContain('skipSystemNotification: true');
+  });
+
   test('service worker push messages preserve SW unread count for launcher badges', () => {
     expect(hookSource).toContain('unreadCount?: number');
     expect(hookSource).toMatch(/pushNotification\(\s*data\.notification,\s*data\.unreadCount/);
@@ -56,7 +63,7 @@ describe('notification fab cross-platform sync', () => {
   });
 
   test('cross-tab listener avoids write-back loops', () => {
-    expect(hookSource).toContain('syncFromStorage(false)');
+    expect(hookSource).toContain('syncFromStorageAndServerSoon(false)');
     expect(crossTabSource).toContain('storage');
   });
 

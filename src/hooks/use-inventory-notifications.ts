@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
+import {
+  fetchDataChangeLogs,
+  type DataChangeLogRow,
+} from '@/app/actions/data-change-log-actions';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { isOwnChange, getClientSessionId } from '@/lib/client-session';
@@ -189,18 +192,22 @@ export function useInventoryNotifications() {
     []
   );
 
+  const filterEligibleRows = useCallback((rows: DataChangeLogRow[]) => {
+    const currentPrefs = prefsRef.current;
+    const sessionId = sessionIdRef.current;
+
+    return rows.filter((row) => {
+      if (!isEligibleInventoryNotification(row)) return false;
+      if (!shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) return false;
+      if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;
+      return true;
+    });
+  }, []);
+
   const processRows = useCallback(
     (rows: DataChangeLogRow[]) => {
-      const currentPrefs = prefsRef.current;
-      const sessionId = sessionIdRef.current;
       const loc = localeRef.current;
-
-      const eligible = rows.filter((row) => {
-        if (!isEligibleInventoryNotification(row)) return false;
-        if (!shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) return false;
-        if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;
-        return true;
-      });
+      const eligible = filterEligibleRows(rows);
 
       if (eligible.length === 0) return;
 
@@ -211,7 +218,38 @@ export function useInventoryNotifications() {
 
       pushNotification(notification);
     },
-    [pushNotification]
+    [filterEligibleRows, pushNotification]
+  );
+
+  const syncInventoryNotificationCatchUp = useCallback(async () => {
+    const result = await fetchDataChangeLogs({ module: 'inventory', limit: 50 });
+    if (!result.success) return;
+
+    const eligible = filterEligibleRows(result.rows);
+    if (eligible.length === 0) return;
+
+    const loc = localeRef.current;
+    for (const row of [...eligible].reverse()) {
+      pushNotification(formatInventoryNotification(row, loc), undefined, {
+        skipSystemNotification: true,
+      });
+    }
+  }, [filterEligibleRows, pushNotification]);
+
+  const syncFromStorageAndServer = useCallback(async (writeBack = true) => {
+    await syncFromStorage(writeBack);
+    await syncInventoryNotificationCatchUp();
+  }, [syncFromStorage, syncInventoryNotificationCatchUp]);
+
+  const syncFromServerOnly = useCallback(() => {
+    void syncInventoryNotificationCatchUp();
+  }, [syncInventoryNotificationCatchUp]);
+
+  const syncFromStorageAndServerSoon = useCallback(
+    (writeBack = true) => {
+      void syncFromStorageAndServer(writeBack);
+    },
+    [syncFromStorageAndServer],
   );
 
   useEffect(() => {
@@ -250,6 +288,7 @@ export function useInventoryNotifications() {
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
             retryCount = 0;
+            syncFromServerOnly();
             return;
           }
 
@@ -292,17 +331,17 @@ export function useInventoryNotifications() {
       if (channel) void supabase.removeChannel(channel);
       window.removeEventListener('bb-notification-prefs-changed', onPrefsChange);
     };
-  }, [processRows]);
+  }, [processRows, syncFromServerOnly]);
 
   useEffect(() => {
     const onResume = () => {
       if (document.visibilityState === 'visible') {
-        void syncFromStorage();
+        syncFromStorageAndServerSoon();
       }
     };
 
     const cleanupCrossTab = subscribeNotificationSync(() => {
-      void syncFromStorage(false);
+      syncFromStorageAndServerSoon(false);
     });
 
     document.addEventListener('visibilitychange', onResume);
@@ -315,7 +354,7 @@ export function useInventoryNotifications() {
       window.removeEventListener('focus', onResume);
       window.removeEventListener('pageshow', onResume);
     };
-  }, [syncFromStorage]);
+  }, [syncFromStorageAndServerSoon]);
 
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.serviceWorker) return;
@@ -331,7 +370,7 @@ export function useInventoryNotifications() {
       pushNotification(data.notification, data.unreadCount, {
         skipSystemNotification: data.systemNotificationShown === true,
       });
-      void syncFromStorage(false);
+      syncFromStorageAndServerSoon(false);
     };
 
     navigator.serviceWorker.addEventListener('message', onSwMessage);
@@ -339,7 +378,7 @@ export function useInventoryNotifications() {
     return () => {
       navigator.serviceWorker.removeEventListener('message', onSwMessage);
     };
-  }, [pushNotification, syncFromStorage]);
+  }, [pushNotification, syncFromStorageAndServerSoon]);
 
   const markAllRead = useCallback(() => {
     setNotifications((prev) => {
