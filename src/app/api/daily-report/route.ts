@@ -52,6 +52,10 @@ export async function GET(request: Request) {
         failed: 0,
         skipped: true,
         reason: pushResult.error ?? 'skipped',
+        totalSubscriptions: pushResult.totalSubscriptions ?? 0,
+        eligibleSubscriptions: pushResult.eligibleSubscriptions ?? 0,
+        branchMatchedSubscriptions: pushResult.branchMatchedSubscriptions ?? 0,
+        branchFallback: pushResult.branchFallback ?? false,
         timestamp: new Date().toISOString(),
         previewText: buildDailyReportAltText(reportData).substring(0, 80),
       });
@@ -78,6 +82,10 @@ export async function GET(request: Request) {
       channel: 'web_push',
       sent: pushResult.sent,
       failed: pushResult.failed,
+      totalSubscriptions: pushResult.totalSubscriptions ?? 0,
+      eligibleSubscriptions: pushResult.eligibleSubscriptions ?? 0,
+      branchMatchedSubscriptions: pushResult.branchMatchedSubscriptions ?? 0,
+      branchFallback: pushResult.branchFallback ?? false,
       timestamp: new Date().toISOString(),
       previewText: previewText.substring(0, 80) + (previewText.length > 80 ? '…' : ''),
     });

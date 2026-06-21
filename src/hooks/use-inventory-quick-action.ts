@@ -47,12 +47,13 @@ type UseInventoryQuickActionOptions<T extends BulkStockItem> = {
   onAfterSave?: () => void;
   onBeforeSave?: () => void;
   onSaveError?: () => void;
+  isItemsLoaded?: boolean;
   /** Tags audit logs so only this UI origin triggers notifications. */
   notificationSource: InventoryNotificationSource;
 };
 
 function readInitialDraft(): InventoryQuickActionDraft {
-  if (typeof sessionStorage === 'undefined') {
+  if (typeof localStorage === 'undefined') {
     return getDefaultInventoryQuickActionDraft();
   }
   return loadInventoryQuickActionDraft() ?? getDefaultInventoryQuickActionDraft();
@@ -67,6 +68,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   onAfterSave,
   onBeforeSave,
   onSaveError,
+  isItemsLoaded = true,
   notificationSource,
 }: UseInventoryQuickActionOptions<T>) {
   const initialDraft = useMemo(() => readInitialDraft(), []);
@@ -85,24 +87,31 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     setQuickType(type);
   }, []);
 
+  const resetQuickEntryFields = useCallback(() => {
+    setQuickSearch('');
+    setQuickQty('');
+    setIsSearchFocused(false);
+  }, []);
+
   const setBulkModeSafe = useCallback((next: boolean) => {
     setBulkMode(next);
     if (next) {
-      if (quickType === 'ADJUST') setQuickType('IN');
-      setQuickSearch('');
-      setQuickQty('');
+      setQuickType((prev) => (prev === 'OUT' ? 'OUT' : 'IN'));
+      resetQuickEntryFields();
     } else {
       setBulkQueue([]);
+      resetQuickEntryFields();
     }
-  }, [quickType]);
+  }, [resetQuickEntryFields]);
 
   useEffect(() => {
     setBulkQueue((prev) => {
       if (prev.length === 0) return prev;
+      if (!isItemsLoaded || items.length === 0) return prev;
       const hydrated = hydrateBulkQueueFromItems(prev, items);
       return JSON.stringify(prev) === JSON.stringify(hydrated) ? prev : hydrated;
     });
-  }, [items]);
+  }, [items, isItemsLoaded]);
 
   useEffect(() => {
     saveInventoryQuickActionDraft({
@@ -223,6 +232,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
             onSaveError?.();
             const failedIds = new Set(failed.map((row) => row.itemId));
             setBulkQueue((prev) => prev.filter((line) => failedIds.has(line.itemId)));
+            resetQuickEntryFields();
             alert(
               `บันทึกสำเร็จ ${succeeded.length}/${res.results.length} — ${failed
                 .map((row) => {
@@ -233,6 +243,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
             );
           } else {
             setBulkQueue([]);
+            resetQuickEntryFields();
             clearInventoryQuickActionDraft();
             onAfterSave?.();
           }
@@ -281,8 +292,8 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         }
 
         setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)));
-        setQuickSearch('');
-        setQuickQty('');
+        resetQuickEntryFields();
+        clearInventoryQuickActionDraft();
         onAfterSave?.();
         await refreshHistoryIfOpen();
       });
@@ -303,6 +314,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       onSaveError,
       refreshHistoryIfOpen,
       notificationSource,
+      resetQuickEntryFields,
     ],
   );
 

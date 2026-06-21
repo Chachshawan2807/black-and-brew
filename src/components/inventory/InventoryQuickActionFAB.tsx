@@ -116,6 +116,7 @@ export default function InventoryQuickActionFAB() {
     isReadOnly,
     showHistoryModal,
     onHistoryRefresh: () => loadHistoryPage({ offset: 0 }),
+    isItemsLoaded: hasLoadedItems,
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_FAB,
     onAfterSave: () => {
       void loadFrequentItems();

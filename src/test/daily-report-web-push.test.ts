@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import type { DailyReportData } from '@/app/actions/daily-report-actions';
 import {
   buildDailyReportPushPayload,
+  selectDailyReportTargetSubscriptions,
   shouldSendDailyReportToSubscription,
   type DailyReportPushPayload,
 } from '@/lib/daily-report-web-push';
@@ -85,6 +86,23 @@ describe('daily-report-web-push', () => {
         'main'
       )
     ).toBe(true);
+  });
+
+  test('selectDailyReportTargetSubscriptions falls back to all eligible rows when branch has no match', () => {
+    const main = sampleSubscription({ id: 'main-sub', branch_id: 'main' });
+    const other = sampleSubscription({ id: 'other-sub', branch_id: 'other' });
+    const disabled = sampleSubscription({
+      id: 'disabled-sub',
+      branch_id: 'main',
+      prefs_json: { enabled: false, dailyScheduleReports: true },
+    });
+
+    const result = selectDailyReportTargetSubscriptions([main, other, disabled], 'missing');
+
+    expect(result.branchRows).toHaveLength(0);
+    expect(result.eligibleRows).toHaveLength(2);
+    expect(result.targetRows.map((row) => row.id).sort()).toEqual(['main-sub', 'other-sub']);
+    expect(result.branchFallback).toBe(true);
   });
 
   test('payload is JSON-serializable for web-push', () => {

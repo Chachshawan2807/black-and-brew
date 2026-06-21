@@ -82,6 +82,42 @@ export function shouldSendDailyReportToSubscription(
   return subscriptionBranch === branchId;
 }
 
+function hasDailyReportPrefs(subscription: PushSubscriptionRow): boolean {
+  const prefs = parseDailyReportPushPrefs(subscription.prefs_json);
+  return prefs.enabled && prefs.dailyScheduleReports;
+}
+
+function matchesDailyReportBranch(
+  subscription: PushSubscriptionRow,
+  branchId: string,
+): boolean {
+  const subscriptionBranch = subscription.branch_id?.trim() || DEFAULT_DAILY_REPORT_BRANCH_ID;
+  return subscriptionBranch === branchId;
+}
+
+export function selectDailyReportTargetSubscriptions(
+  subscriptions: PushSubscriptionRow[],
+  branchId: string = resolveDailyReportBranchId(),
+): {
+  targetRows: PushSubscriptionRow[];
+  eligibleRows: PushSubscriptionRow[];
+  branchRows: PushSubscriptionRow[];
+  branchFallback: boolean;
+} {
+  const eligibleRows = subscriptions.filter(hasDailyReportPrefs);
+  const branchRows = eligibleRows.filter((subscription) =>
+    matchesDailyReportBranch(subscription, branchId),
+  );
+  const targetRows = branchRows.length > 0 ? branchRows : eligibleRows;
+
+  return {
+    targetRows,
+    eligibleRows,
+    branchRows,
+    branchFallback: branchRows.length === 0 && eligibleRows.length > 0,
+  };
+}
+
 export async function dispatchDailyReportWebPush(
   data: DailyReportData,
   branchId: string = resolveDailyReportBranchId(),
@@ -90,6 +126,10 @@ export async function dispatchDailyReportWebPush(
   failed: number;
   skipped: boolean;
   error?: string;
+  totalSubscriptions?: number;
+  eligibleSubscriptions?: number;
+  branchMatchedSubscriptions?: number;
+  branchFallback?: boolean;
 }> {
   if (!ensureVapidConfigured()) {
     return {
@@ -117,15 +157,26 @@ export async function dispatchDailyReportWebPush(
 
   const rows = (subscriptions ?? []) as PushSubscriptionRow[];
   if (rows.length === 0) {
-    return { sent: 0, failed: 0, skipped: true, error: 'no_subscriptions' };
+    return {
+      sent: 0,
+      failed: 0,
+      skipped: true,
+      error: 'no_subscriptions',
+      totalSubscriptions: 0,
+      eligibleSubscriptions: 0,
+      branchMatchedSubscriptions: 0,
+    };
   }
+
+  // Single-store safety: do not drop every recipient because a production
+  // branch env var drifted from existing subscription rows.
+  const { targetRows, eligibleRows, branchRows, branchFallback } =
+    selectDailyReportTargetSubscriptions(rows, branchId);
 
   let sent = 0;
   let failed = 0;
 
-  for (const subscription of rows) {
-    if (!shouldSendDailyReportToSubscription(data, subscription, branchId)) continue;
-
+  for (const subscription of targetRows) {
     const prefs = parseDailyReportPushPrefs(subscription.prefs_json);
     const payload = buildDailyReportPushPayload(data, prefs.locale);
     const result = await deliverWebPushPayload(supabase, subscription, JSON.stringify(payload), {
@@ -138,8 +189,25 @@ export async function dispatchDailyReportWebPush(
   }
 
   if (sent === 0 && failed === 0) {
-    return { sent: 0, failed: 0, skipped: true, error: 'no_eligible_subscriptions' };
+    return {
+      sent: 0,
+      failed: 0,
+      skipped: true,
+      error: 'no_eligible_subscriptions',
+      totalSubscriptions: rows.length,
+      eligibleSubscriptions: eligibleRows.length,
+      branchMatchedSubscriptions: branchRows.length,
+      branchFallback,
+    };
   }
 
-  return { sent, failed, skipped: false };
+  return {
+    sent,
+    failed,
+    skipped: false,
+    totalSubscriptions: rows.length,
+    eligibleSubscriptions: eligibleRows.length,
+    branchMatchedSubscriptions: branchRows.length,
+    branchFallback,
+  };
 }
