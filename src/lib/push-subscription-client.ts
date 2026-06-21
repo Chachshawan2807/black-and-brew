@@ -33,6 +33,23 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
+export function hasMatchingApplicationServerKey(
+  subscription: PushSubscription,
+  vapidPublicKey: string,
+): boolean {
+  const existingKey = subscription.options.applicationServerKey;
+  if (!existingKey) return false;
+
+  const expected = urlBase64ToUint8Array(vapidPublicKey);
+  const current = new Uint8Array(existingKey);
+  if (current.byteLength !== expected.byteLength) return false;
+
+  for (let i = 0; i < current.byteLength; i += 1) {
+    if (current[i] !== expected[i]) return false;
+  }
+  return true;
+}
+
 function getVapidPublicKey(): string | null {
   const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   return key && key.length > 0 ? key : null;
@@ -81,8 +98,16 @@ export async function ensurePushSubscription(locale: string): Promise<boolean> {
 
   try {
     const registration = await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
     const vapidKey = getVapidPublicKey()!;
+    const accessToken = await getAccessToken();
+    if (!accessToken) return false;
+
+    let existing = await registration.pushManager.getSubscription();
+    if (existing && !hasMatchingApplicationServerKey(existing, vapidKey)) {
+      await unregisterPushSubscription({ accessToken, endpoint: existing.endpoint });
+      await existing.unsubscribe();
+      existing = null;
+    }
 
     const subscription =
       existing ??
@@ -93,9 +118,6 @@ export async function ensurePushSubscription(locale: string): Promise<boolean> {
 
     const payload = subscriptionToPayload(subscription);
     if (!payload) return false;
-
-    const accessToken = await getAccessToken();
-    if (!accessToken) return false;
 
     const result = await registerPushSubscription({
       accessToken,
@@ -158,7 +180,8 @@ export async function syncPushPrefsToServer(
   try {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
+    const vapidKey = getVapidPublicKey();
+    if (!subscription || !vapidKey || !hasMatchingApplicationServerKey(subscription, vapidKey)) {
       await ensurePushSubscription(locale);
       return;
     }
