@@ -292,7 +292,11 @@ export function useInventoryNotifications() {
             return;
           }
 
-          if (status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT' && status !== 'CLOSED') {
+          if (status === 'CLOSED') {
+            return;
+          }
+
+          if (status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT') {
             return;
           }
 

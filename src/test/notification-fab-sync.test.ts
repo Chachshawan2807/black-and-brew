@@ -48,6 +48,12 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('SW_INVENTORY_PUSH_RECEIVED');
   });
 
+  test('hook does not warn that realtime is unavailable for normal CLOSED channel cleanup', () => {
+    expect(hookSource).not.toMatch(
+      /status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT' && status !== 'CLOSED'/,
+    );
+  });
+
   test('hook catches up missed cross-device inventory logs from the server for mobile FAB sync', () => {
     expect(hookSource).toContain('fetchDataChangeLogs');
     expect(hookSource).toContain('syncInventoryNotificationCatchUp');

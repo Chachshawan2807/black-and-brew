@@ -10,7 +10,10 @@ import {
   canRegisterServiceWorker,
   isBenignPushRegistrationError,
 } from '@/lib/pwa-notification-bridge';
-import { refreshPushSubscriptionState } from '@/lib/push-subscription-client';
+import {
+  refreshPushSubscriptionState,
+  wantsPushRegistration,
+} from '@/lib/push-subscription-client';
 
 export default function PwaRegister() {
   const params = useParams();
@@ -56,8 +59,9 @@ export default function PwaRegister() {
         .then(() => {
           syncBadgeFromStorage();
           const prefs = loadNotificationPreferences();
-          if (prefs.enabled && prefs.systemNotifications) {
+          if (wantsPushRegistration(prefs)) {
             void requestNotificationPermission();
+            void refreshPushSubscriptionState(locale);
           }
         })
         .catch((registrationError) => {

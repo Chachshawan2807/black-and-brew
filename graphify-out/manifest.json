@@ -470,9 +470,9 @@
     "semantic_hash": "be6764c4c053fe458c2c155c68a6a409"
   },
   "src/components/PwaRegister.tsx": {
-    "mtime": 1781685126.63458,
-    "ast_hash": "b35bf1e39bef77633192b2506f84f028",
-    "semantic_hash": "b35bf1e39bef77633192b2506f84f028"
+    "mtime": 1782063749.974095,
+    "ast_hash": "a859dc85ca388ef6fea423196aa543a1",
+    "semantic_hash": ""
   },
   "src/components/ai/AIChatOverlay.tsx": {
     "mtime": 1781707435.7701623,
@@ -740,9 +740,9 @@
     "semantic_hash": "4f241e3e01c30a9a0137f309e2a6c47f"
   },
   "src/contexts/InventoryRealtimeContext.tsx": {
-    "mtime": 1781463426.1677225,
-    "ast_hash": "692f5aa5de87d754edabad892fa41b65",
-    "semantic_hash": "692f5aa5de87d754edabad892fa41b65"
+    "mtime": 1782064496.2229593,
+    "ast_hash": "6643a09937f408c39ac1068bb9c6c856",
+    "semantic_hash": ""
   },
   "src/hooks/use-coarse-pointer.ts": {
     "mtime": 1781551558.0969229,
@@ -750,8 +750,8 @@
     "semantic_hash": "a28fed26e097eb81afc84ca603e648c2"
   },
   "src/hooks/use-inventory-notifications.ts": {
-    "mtime": 1782056585.4967897,
-    "ast_hash": "614c4ba45621ee0e22758ead247b7c5d",
+    "mtime": 1782064751.297216,
+    "ast_hash": "15923fdc1820d1084766da3835740933",
     "semantic_hash": ""
   },
   "src/hooks/use-inventory-quick-action.ts": {
@@ -1495,8 +1495,8 @@
     "semantic_hash": "11f97ca8f262bb256b3123cf1118589c"
   },
   "src/test/notification-fab-sync.test.ts": {
-    "mtime": 1782062895.529276,
-    "ast_hash": "2a9c836920c70db7dad707f62aecfd34",
+    "mtime": 1782064713.9716227,
+    "ast_hash": "7e61946082a8dc0766794200c2d63251",
     "semantic_hash": ""
   },
   "src/test/notification-panel-mobile-layout.test.ts": {
@@ -1535,8 +1535,8 @@
     "semantic_hash": "9654ac62029b886b1bdc93f06683dfee"
   },
   "src/test/pwa-icons.test.ts": {
-    "mtime": 1782048718.4500043,
-    "ast_hash": "ae2bea764960551c1684e842433479de",
+    "mtime": 1782063710.7004995,
+    "ast_hash": "25c832c21aeea35cfe7f4680b379eb5c",
     "semantic_hash": ""
   },
   "src/test/pwa-mobile-badge.test.ts": {
@@ -2077,6 +2077,11 @@
   "src/test/push-subscription-client.test.ts": {
     "mtime": 1782057784.2319777,
     "ast_hash": "556725d88bcc9abe48e226b0960f6a39",
+    "semantic_hash": ""
+  },
+  "src/test/inventory-realtime-provider.test.tsx": {
+    "mtime": 1782064275.4554572,
+    "ast_hash": "3bb2c797851259f9671cb88c96ea8e2f",
     "semantic_hash": ""
   }
 }

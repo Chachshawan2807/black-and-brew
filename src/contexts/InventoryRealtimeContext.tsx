@@ -48,6 +48,8 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const subscribersRef = useRef<Set<InventoryChangeCallback>>(new Set());
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const startChannelPromiseRef = useRef<Promise<void> | null>(null);
 
   const notifySubscribers = useCallback((payload: InventoryChangePayload) => {
     subscribersRef.current.forEach((cb) => cb(payload));
@@ -72,19 +74,29 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
     }
   }, []);
 
-  useEffect(() => {
+  const stopRealtimeChannel = useCallback(() => {
+    const channel = channelRef.current;
+    channelRef.current = null;
+
+    if (channel && typeof supabase.removeChannel === 'function') {
+      void supabase.removeChannel(channel);
+    }
+  }, []);
+
+  const startRealtimeChannel = useCallback(() => {
     if (typeof supabase.channel !== 'function') {
       return;
     }
 
-    let cancelled = false;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    if (channelRef.current || startChannelPromiseRef.current) {
+      return;
+    }
 
-    void (async () => {
+    startChannelPromiseRef.current = (async () => {
       await ensureSupabaseSession();
-      if (cancelled || typeof supabase.channel !== 'function') return;
+      if (subscribersRef.current.size === 0 || typeof supabase.channel !== 'function') return;
 
-      channel = supabase
+      channelRef.current = supabase
         .channel('inventory_items_shared')
         .on(
           'postgres_changes',
@@ -96,15 +108,23 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
           },
         )
         .subscribe();
-    })();
+    })()
+      .catch((error) => {
+        console.error('[inventory realtime] Failed to start channel:', error);
+      })
+      .finally(() => {
+        startChannelPromiseRef.current = null;
+        if (subscribersRef.current.size === 0) {
+          stopRealtimeChannel();
+        }
+      });
+  }, [applyPayloadToItems, notifySubscribers, stopRealtimeChannel]);
 
+  useEffect(() => {
     return () => {
-      cancelled = true;
-      if (channel && typeof supabase.removeChannel === 'function') {
-        supabase.removeChannel(channel);
-      }
+      stopRealtimeChannel();
     };
-  }, [applyPayloadToItems, notifySubscribers]);
+  }, [stopRealtimeChannel]);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -134,10 +154,15 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
 
   const subscribe = useCallback((callback: InventoryChangeCallback) => {
     subscribersRef.current.add(callback);
+    startRealtimeChannel();
+
     return () => {
       subscribersRef.current.delete(callback);
+      if (subscribersRef.current.size === 0) {
+        stopRealtimeChannel();
+      }
     };
-  }, []);
+  }, [startRealtimeChannel, stopRealtimeChannel]);
 
   return (
     <InventoryRealtimeContext.Provider
