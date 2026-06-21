@@ -59,6 +59,7 @@ function QuickActionHarness({
       <output data-testid="quick-search">{quickAction.quickSearch}</output>
       <output data-testid="quick-qty">{quickAction.quickQty}</output>
       <output data-testid="search-focused">{String(quickAction.isSearchFocused)}</output>
+      <output data-testid="quick-pending">{String(quickAction.isQuickPending)}</output>
       <output data-testid="bulk-ready">{String(quickAction.bulkSubmitReady)}</output>
       <output data-testid="bulk-count">{String(quickAction.bulkQueue.length)}</output>
       <output data-testid="bulk-mode">{String(quickAction.bulkMode)}</output>
@@ -109,9 +110,10 @@ describe('useInventoryQuickAction save reset behavior', () => {
   });
 
   test('clears and closes normal quick entry state after a successful save', async () => {
+    const onAfterSave = vi.fn();
     vi.mocked(recordTransaction).mockResolvedValue({ success: true, newStock: 7 });
 
-    render(<QuickActionHarness />);
+    render(<QuickActionHarness onAfterSave={onAfterSave} />);
 
     fireEvent.click(screen.getByText('fill-normal-in'));
     fireEvent.click(screen.getByText('save'));
@@ -121,16 +123,40 @@ describe('useInventoryQuickAction save reset behavior', () => {
 
     expect(screen.getByTestId('quick-qty')).toHaveTextContent('');
     expect(screen.getByTestId('search-focused')).toHaveTextContent('false');
+    expect(onAfterSave).toHaveBeenCalledTimes(1);
+  });
+
+  test('keeps quick submit pending until the server action settles', async () => {
+    let resolveSave: (value: { success: true; newStock: number }) => void = () => {};
+    vi.mocked(recordTransaction).mockReturnValue(
+      new Promise((resolve) => {
+        resolveSave = resolve;
+      }) as ReturnType<typeof recordTransaction>,
+    );
+
+    render(<QuickActionHarness />);
+
+    fireEvent.click(screen.getByText('fill-normal-in'));
+    fireEvent.click(screen.getByText('save'));
+
+    await waitFor(() => expect(recordTransaction).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('quick-pending')).toHaveTextContent('true');
+
+    resolveSave({ success: true, newStock: 7 });
+
+    await waitFor(() => expect(screen.getByTestId('quick-pending')).toHaveTextContent('false'));
+    expect(screen.getByTestId('quick-search')).toHaveTextContent('');
   });
 
   test('can save bulk entries after a normal adjust save resets the quick state', async () => {
+    const onAfterSave = vi.fn();
     vi.mocked(updateInventoryStock).mockResolvedValue({ success: true, newStock: 8 });
     vi.mocked(recordBulkInventoryTransactions).mockResolvedValue({
       success: true,
       results: [{ itemId: 'milk', success: true, newStock: 5 }],
     });
 
-    render(<QuickActionHarness />);
+    render(<QuickActionHarness onAfterSave={onAfterSave} />);
 
     fireEvent.click(screen.getByText('fill-normal-adjust'));
     fireEvent.click(screen.getByText('save'));
@@ -154,6 +180,7 @@ describe('useInventoryQuickAction save reset behavior', () => {
       ),
     );
     await waitFor(() => expect(screen.getByTestId('bulk-count')).toHaveTextContent('0'));
+    expect(onAfterSave).toHaveBeenCalledTimes(2);
   });
 
   test('keeps unsaved bulk queue when clicking away from the quick search', async () => {

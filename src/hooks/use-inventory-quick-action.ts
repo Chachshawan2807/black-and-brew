@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   recordBulkInventoryTransactions,
   recordTransaction,
@@ -77,7 +77,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   const [quickQty, setQuickQty] = useState(initialDraft.quickQty);
   const [quickType, setQuickType] = useState<QuickType>(initialDraft.quickType);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isQuickPending, startQuickTransition] = useTransition();
+  const [isQuickPending, setIsQuickPending] = useState(false);
   const [bulkMode, setBulkMode] = useState(initialDraft.bulkMode);
   const [bulkQueue, setBulkQueue] = useState<BulkQueueItem[]>(initialDraft.bulkQueue);
 
@@ -204,52 +204,58 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         alert(READ_ONLY_DENY_MSG);
         return;
       }
+      if (isQuickPending) return;
 
       if (bulkMode) {
         if (!bulkSubmitReady) return;
 
-        startQuickTransition(async () => {
-          onBeforeSave?.();
-          const payload = resolveBulkSubmitPayload(bulkQueue, bulkQuickType);
-          const res = await recordBulkInventoryTransactions(payload, 'Quick Entry - Bulk', {
-            clientSessionId: getClientSessionId(),
-            notificationSource,
-          });
+        void (async () => {
+          try {
+            setIsQuickPending(true);
+            onBeforeSave?.();
+            const payload = resolveBulkSubmitPayload(bulkQueue, bulkQuickType);
+            const res = await recordBulkInventoryTransactions(payload, 'Quick Entry - Bulk', {
+              clientSessionId: getClientSessionId(),
+              notificationSource,
+            });
 
-          const succeeded = res.results.filter((row) => row.success);
-          const failed = res.results.filter((row) => !row.success);
+            const succeeded = res.results.filter((row) => row.success);
+            const failed = res.results.filter((row) => !row.success);
 
-          if (succeeded.length > 0) {
-            setItems((prev) =>
-              prev.map((item) => {
-                const hit = succeeded.find((row) => row.itemId === item.id);
-                return hit?.newStock !== undefined ? { ...item, stock: hit.newStock } : item;
-              }),
-            );
+            if (succeeded.length > 0) {
+              setItems((prev) =>
+                prev.map((item) => {
+                  const hit = succeeded.find((row) => row.itemId === item.id);
+                  return hit?.newStock !== undefined ? { ...item, stock: hit.newStock } : item;
+                }),
+              );
+            }
+
+            if (failed.length > 0) {
+              onSaveError?.();
+              const failedIds = new Set(failed.map((row) => row.itemId));
+              setBulkQueue((prev) => prev.filter((line) => failedIds.has(line.itemId)));
+              resetQuickEntryFields();
+              alert(
+                `บันทึกสำเร็จ ${succeeded.length}/${res.results.length} — ${failed
+                  .map((row) => {
+                    const name = items.find((item) => item.id === row.itemId)?.name ?? row.itemId;
+                    return `${name}: ${row.error ?? 'ล้มเหลว'}`;
+                  })
+                  .join('; ')}`,
+              );
+            } else {
+              setBulkQueue([]);
+              resetQuickEntryFields();
+              clearInventoryQuickActionDraft();
+              onAfterSave?.();
+            }
+
+            await refreshHistoryIfOpen();
+          } finally {
+            setIsQuickPending(false);
           }
-
-          if (failed.length > 0) {
-            onSaveError?.();
-            const failedIds = new Set(failed.map((row) => row.itemId));
-            setBulkQueue((prev) => prev.filter((line) => failedIds.has(line.itemId)));
-            resetQuickEntryFields();
-            alert(
-              `บันทึกสำเร็จ ${succeeded.length}/${res.results.length} — ${failed
-                .map((row) => {
-                  const name = items.find((item) => item.id === row.itemId)?.name ?? row.itemId;
-                  return `${name}: ${row.error ?? 'ล้มเหลว'}`;
-                })
-                .join('; ')}`,
-            );
-          } else {
-            setBulkQueue([]);
-            resetQuickEntryFields();
-            clearInventoryQuickActionDraft();
-            onAfterSave?.();
-          }
-
-          await refreshHistoryIfOpen();
-        });
+        })();
         return;
       }
 
@@ -272,34 +278,40 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         return;
       }
 
-      startQuickTransition(async () => {
-        onBeforeSave?.();
-        const res =
-          quickType === 'ADJUST'
-            ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
-                clientSessionId: getClientSessionId(),
-                notificationSource,
-              })
-            : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
-                clientSessionId: getClientSessionId(),
-                notificationSource,
-              });
+      void (async () => {
+        try {
+          setIsQuickPending(true);
+          onBeforeSave?.();
+          const res =
+            quickType === 'ADJUST'
+              ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
+                  clientSessionId: getClientSessionId(),
+                  notificationSource,
+                })
+              : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
+                  clientSessionId: getClientSessionId(),
+                  notificationSource,
+                });
 
-        if (!res.success) {
-          onSaveError?.();
-          alert(res.error);
-          return;
+          if (!res.success) {
+            onSaveError?.();
+            alert(res.error);
+            return;
+          }
+
+          setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)));
+          resetQuickEntryFields();
+          clearInventoryQuickActionDraft();
+          onAfterSave?.();
+          await refreshHistoryIfOpen();
+        } finally {
+          setIsQuickPending(false);
         }
-
-        setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)));
-        resetQuickEntryFields();
-        clearInventoryQuickActionDraft();
-        onAfterSave?.();
-        await refreshHistoryIfOpen();
-      });
+      })();
     },
     [
       isReadOnly,
+      isQuickPending,
       bulkMode,
       bulkSubmitReady,
       bulkQueue,

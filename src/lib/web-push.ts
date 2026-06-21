@@ -175,10 +175,6 @@ export function shouldSendPushToSubscription(
     return false;
   }
 
-  if (originSessionId && subscription.client_session_id === originSessionId) {
-    return false;
-  }
-
   return true;
 }
 

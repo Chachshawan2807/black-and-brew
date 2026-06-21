@@ -209,11 +209,13 @@ export async function recordDataChange(
 
     if (inserted && safe.module === 'inventory' && (safe.status ?? 'success') === 'success') {
       const pushRow = rowToDataChangeLogRow(inserted as Record<string, unknown>);
-      try {
-        await dispatchInventoryWebPush(pushRow);
-      } catch (pushError) {
-        console.error('[recordDataChange] Web push dispatch failed:', pushError);
-      }
+      after(async () => {
+        try {
+          await dispatchInventoryWebPush(pushRow);
+        } catch (pushError) {
+          console.error('[recordDataChange] Web push dispatch failed:', pushError);
+        }
+      });
     }
 
     return { success: true };

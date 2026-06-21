@@ -84,6 +84,24 @@ describe('web-push', () => {
     expect(shouldSendPushToSubscription(row, subscription)).toBe(false);
   });
 
+  test('shouldSendPushToSubscription sends to origin device when own changes are enabled', () => {
+    const row = sampleRow({ metadata: { ...sampleRow().metadata, clientSessionId: 'device-b' } });
+    const subscription = sampleSubscription({
+      client_session_id: 'device-b',
+      prefs_json: {
+        enabled: true,
+        systemNotifications: true,
+        notifyOwnChanges: true,
+        notifyCreate: true,
+        notifyUpdate: true,
+        notifyDelete: true,
+        locale: 'th',
+      },
+    });
+
+    expect(shouldSendPushToSubscription(row, subscription)).toBe(true);
+  });
+
   test('shouldSendPushToSubscription sends to other devices', () => {
     const row = sampleRow();
     const subscription = sampleSubscription({ client_session_id: 'device-b' });
