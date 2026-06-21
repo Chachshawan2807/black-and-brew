@@ -1,10 +1,38 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 8.9 | Last Updated: 2026-06-19 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
+> Version: 9.0 | Last Updated: 2026-06-22 | Purpose: บันทึกการตัดสินใจเชิงสถาปัตยกรรมที่สำคัญ เพื่อป้องกันการทำผิดซ้ำ
 
 ---
 
 ## Recent Decisions
+
+### DEC-079: Phased Performance Refactor Guardrails (v9.0)
+
+- Date: June 22, 2026
+- Context: Performance work must improve loading, smoothness, and route responsiveness without changing ERP behavior, UI, spreadsheet rules, realtime freshness, or mobile layout.
+- Decision:
+  1. Dashboard data loading may consolidate overlapping weekly/monthly `shifts` queries only when helpers split the payload back into the original weekly and roster ranges.
+  2. Inventory grid optimization must keep native inline `<input>` cells, blur/Enter save behavior, numeric zero-display rules, undo capture, and Supabase realtime updates intact.
+  3. Large modal-only UI can be moved behind `next/dynamic` and intent preload, but user-visible modal behavior and export behavior must remain unchanged.
+  4. Performance changes need focused contract tests before implementation (`dashboard-data-loading`, `inventory-grid-performance`, `bundle-route-loading`).
+- Impact: Faster initial data loading and lighter route bundles without broad refactors or changed ERP workflows.
+- Evidence: `src/app/[locale]/dashboard/dashboard-data.ts`, `src/test/dashboard-data-loading.test.ts`, `src/test/inventory-grid-performance.test.ts`, `src/test/bundle-route-loading.test.ts`
+
+---
+
+### DEC-078: Daily Schedule Reports Reuse Web Push Subscriptions (v9.0)
+
+- Date: June 22, 2026
+- Context: Daily schedule report notifications should not create a second push-subscription table when inventory alerts already have endpoint storage, preferences, and cleanup behavior.
+- Decision:
+  1. Extend `push_subscriptions` with `profile_id` and `branch_id`.
+  2. Keep `branch_id` defaulted to `main` for the current single-store ERP, while allowing future filtering.
+  3. Daily schedule Web Push uses `src/lib/daily-report-web-push.ts` and selects `branch_id` / `profile_id` from the existing table.
+  4. Inventory alerts and daily reports share the same endpoint lifecycle and stale endpoint deletion.
+- Impact: One subscription model covers inventory alerts and scheduled staff reports, reducing schema duplication.
+- Evidence: `supabase/migrations/20260621120000_push_subscriptions_daily_report.sql`, `src/lib/daily-report-web-push.ts`, `src/test/daily-report-web-push.test.ts`
+
+---
 
 ### DEC-077: Local Events as Market Insights Context (v8.9)
 

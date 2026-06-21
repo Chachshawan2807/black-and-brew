@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-06-19 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 8.9
+> Generated: 2026-06-22 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 9.0
 
 ---
 
@@ -59,7 +59,7 @@ black-and-brew/
 ├── docs/                    # Project documentation
 ├── messages/                # th.json, en.json (next-intl)
 ├── public/                  # sw.js (PWA), images, ai-agent-logo.svg
-├── supabase/migrations/     # Versioned DB migrations (12 files — see docs/database.md)
+├── supabase/migrations/     # Versioned DB migrations (14 files — see docs/database.md)
 ├── sql/                     # record_inventory_transaction.sql, sync_inventory_stock.sql, fix_inventory_rls.sql, ai_agent_views.sql
 ├── src/
 │   ├── app/
@@ -82,7 +82,7 @@ black-and-brew/
 │   ├── hooks/               # use-inventory-notifications, use-inventory-quick-action
 │   ├── i18n/                # request.ts, routing.ts
 │   ├── lib/                 # supabase, supabase-server, inventory-stock, inventory-quick-*, passkey, …
-│   ├── test/                # 95 Vitest test files
+│   ├── test/                # 103 Vitest test files
 │   └── proxy.ts             # next-intl middleware (Next.js 16 convention)
 ├── *.sql                    # Root-level schema/migration scripts
 ├── AGENTS.md, CLAUDE.md, MASTER_BLUEPRINT.md, README.md
@@ -116,9 +116,9 @@ black-and-brew/
 
 ---
 
-## Tests (`src/test/` — 95 files)
+## Tests (`src/test/` — 103 files)
 
-Key suites: `inventory_count_policy.test.ts`, `market-insights-fetch.test.ts`, `market-insights-context.test.ts`, `web-push.test.ts`, `data-change-log.test.ts`, `inventory-count-accuracy.test.ts`, `inventory-quick-bulk.test.ts`, `inventory-quick-action-draft.test.ts`, `inventory-quick-qty-step.test.ts`, `inventory-quick-search-filter.test.ts`, `inventory_stock_sync.test.ts`, `inventory_quick_action_fab.test.ts`, `supabase-session.test.ts`, `pwa-notification-bridge.test.ts`, `market-insights-v2.test.ts`, `auth.test.ts`, `read-only-guard.test.ts`, `basic.test.ts`, `setup.ts`
+Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `market-insights-fetch.test.ts`, `market-insights-context.test.ts`, `web-push.test.ts`, `data-change-log.test.ts`, `inventory-count-accuracy.test.ts`, `inventory-quick-bulk.test.ts`, `inventory-quick-action-draft.test.ts`, `inventory-quick-qty-step.test.ts`, `inventory-quick-search-filter.test.ts`, `inventory_stock_sync.test.ts`, `inventory_quick_action_fab.test.ts`, `supabase-session.test.ts`, `pwa-notification-bridge.test.ts`, `market-insights-v2.test.ts`, `auth.test.ts`, `read-only-guard.test.ts`, `basic.test.ts`, `setup.ts`
 
 ---
 

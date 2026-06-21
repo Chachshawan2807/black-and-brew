@@ -155,7 +155,7 @@ export function NotificationPanel() {
               'max-md:w-[85vw] max-md:max-w-none',
             )}
             role="dialog"
-            aria-label={isTh ? 'ศูนย์แจ้งเตือนคลังสินค้า' : 'Inventory notifications'}
+            aria-label={isTh ? 'การแจ้งเตือน' : 'Notifications'}
           >
             <header className="flex items-center justify-between gap-3 px-4 py-4 border-b border-border">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -164,7 +164,7 @@ export function NotificationPanel() {
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-[15px] font-normal text-foreground leading-snug">
-                    {isTh ? 'แจ้งเตือนคลังสินค้า' : 'Inventory alerts'}
+                    {isTh ? 'การแจ้งเตือน' : 'Notifications'}
                   </h2>
                   <p className="text-[12px] text-muted-foreground">
                     {unreadCount > 0
@@ -172,12 +172,12 @@ export function NotificationPanel() {
                         ? `${unreadCount} รายการยังไม่ได้อ่าน`
                         : `${unreadCount} unread`
                       : isTh
-                        ? 'การเปลี่ยนแปลงล่าสุด'
-                        : 'Recent changes · live updates'}
+                        ? 'รายการล่าสุด'
+                        : 'Recent notifications · live updates'}
                   </p>
                 </div>
               </div>
-              <HintTooltip tip={isTh ? 'ปิดศูนย์แจ้งเตือน' : 'Close notifications'}>
+              <HintTooltip tip={isTh ? 'ปิดการแจ้งเตือน' : 'Close notifications'}>
                 <button
                   type="button"
                   onClick={closePanel}
@@ -220,8 +220,8 @@ export function NotificationPanel() {
                   </p>
                   <p className="text-[12px] text-muted-foreground mt-1 max-w-[240px]">
                     {isTh
-                      ? 'เมื่อมีการเปลี่ยนแปลงคลังสินค้า จะแสดงที่นี่'
-                      : 'Inventory changes from your team will appear here'}
+                      ? 'เมื่อมีรายการแจ้งเตือนใหม่ จะแสดงที่นี่'
+                      : 'New notifications from your team will appear here'}
                   </p>
                 </div>
               ) : (

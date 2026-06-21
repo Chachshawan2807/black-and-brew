@@ -2,7 +2,11 @@ import {
   MAX_STORED_NOTIFICATIONS,
   type InventoryNotification,
 } from '@/lib/notification-types';
-import { countUnread, saveStoredNotifications } from '@/lib/notification-storage';
+import {
+  countUnread,
+  isAfterNotificationClearWatermark,
+  saveStoredNotifications,
+} from '@/lib/notification-storage';
 import {
   loadMergedStoredNotifications,
   mirrorNotificationsToIdb,
@@ -50,7 +54,9 @@ export async function readNotificationState(): Promise<{
   notifications: InventoryNotification[];
   unreadCount: number;
 }> {
-  const merged = await loadMergedStoredNotifications();
+  const merged = (await loadMergedStoredNotifications()).filter((item) =>
+    isAfterNotificationClearWatermark(item.occurredAt),
+  );
   return { notifications: merged, unreadCount: countUnread(merged) };
 }
 
@@ -59,7 +65,9 @@ export async function hydrateNotificationState(): Promise<{
   notifications: InventoryNotification[];
   unreadCount: number;
 }> {
-  const merged = await loadMergedStoredNotifications();
+  const merged = (await loadMergedStoredNotifications()).filter((item) =>
+    isAfterNotificationClearWatermark(item.occurredAt),
+  );
   saveStoredNotifications(merged);
   await mirrorNotificationsToIdb(merged);
   return { notifications: merged, unreadCount: countUnread(merged) };

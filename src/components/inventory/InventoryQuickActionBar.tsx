@@ -55,6 +55,8 @@ export type InventoryQuickActionBarProps = {
   onOpenPurchaseOrder: () => void;
   onOpenAddItem: () => void;
   onOpenHistory: () => void;
+  onPreloadPurchaseOrder?: () => void;
+  onPreloadHistory?: () => void;
   className?: string;
   bulkMode?: boolean;
   onBulkModeChange?: (bulk: boolean) => void;
@@ -406,17 +408,23 @@ function SecondaryQuickActionButtons({
   onOpenPurchaseOrder,
   onOpenAddItem,
   onOpenHistory,
+  onPreloadPurchaseOrder,
+  onPreloadHistory,
 }: {
   itemsToOrderCount: number;
   onOpenPurchaseOrder: () => void;
   onOpenAddItem: () => void;
   onOpenHistory: () => void;
+  onPreloadPurchaseOrder?: () => void;
+  onPreloadHistory?: () => void;
 }) {
   return (
     <>
       <button
         type="button"
         onClick={onOpenPurchaseOrder}
+        onMouseEnter={onPreloadPurchaseOrder}
+        onFocus={onPreloadPurchaseOrder}
         className={cn(
           'flex w-full items-center justify-center gap-1 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:shadow-sm',
           INVENTORY_QUICK_ACTION_COLORS.order,
@@ -446,6 +454,8 @@ function SecondaryQuickActionButtons({
       <button
         type="button"
         onClick={onOpenHistory}
+        onMouseEnter={onPreloadHistory}
+        onFocus={onPreloadHistory}
         className={cn(
           'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:shadow-sm',
           INVENTORY_QUICK_ACTION_COLORS.history,
@@ -479,6 +489,8 @@ export function InventoryQuickActionBar({
   onOpenPurchaseOrder,
   onOpenAddItem,
   onOpenHistory,
+  onPreloadPurchaseOrder,
+  onPreloadHistory,
   className,
   bulkMode = false,
   onBulkModeChange,
@@ -697,6 +709,8 @@ export function InventoryQuickActionBar({
             onOpenPurchaseOrder={onOpenPurchaseOrder}
             onOpenAddItem={onOpenAddItem}
             onOpenHistory={onOpenHistory}
+            onPreloadPurchaseOrder={onPreloadPurchaseOrder}
+            onPreloadHistory={onPreloadHistory}
           />
         </div>
 
@@ -711,6 +725,8 @@ export function InventoryQuickActionBar({
             onOpenPurchaseOrder={onOpenPurchaseOrder}
             onOpenAddItem={onOpenAddItem}
             onOpenHistory={onOpenHistory}
+            onPreloadPurchaseOrder={onPreloadPurchaseOrder}
+            onPreloadHistory={onPreloadHistory}
           />
         </div>
       </form>

@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> Version: 8.9 | Last Updated: 2026-06-19 | Enforcement: Mandatory
+> Version: 9.0 | Last Updated: 2026-06-22 | Enforcement: Mandatory
 
 ---
 
@@ -24,6 +24,7 @@
 | `inventory_items` | `sort_order` | INTEGER, controls drag-and-drop ordering |
 | `inventory_config` | `settings` | JSONB containing `order`, `labels`, `widths` |
 | `local_events` | `date`, `name`, `expected_impact` | Store-managed Market Insights context |
+| `push_subscriptions` | `profile_id`, `branch_id` | Daily schedule Web Push filtering; `branch_id` defaults to `main` |
 
 ### TypeScript/React
 
@@ -111,6 +112,12 @@
 - Undo/redo upsert MUST NOT overwrite live `stock` from DB (fetch current stock before sync)
 - Corrections via compensating transaction or explicit deletion in History
 - Transaction cancellation reverses stock manually + deletes record
+
+### Performance Guardrails (v9.0)
+
+- Dashboard shift-query consolidation is allowed only when the combined payload is split back into exact weekly and monthly ranges.
+- Inventory row containment must not alter spreadsheet layout, touch targets, realtime subscriptions, undo behavior, or numeric zero-display logic.
+- Modal-only code should be dynamically loaded where safe; use hover/focus preload for user intent instead of mounting hidden modal surfaces on route load.
 
 ### Motion & Animation (v6.9)
 

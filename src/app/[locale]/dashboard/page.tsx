@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { startOfWeek, addDays, format, startOfMonth, endOfMonth } from 'date-fns';
+import { getDashboardShiftQueryPlan, splitDashboardShiftsByRange } from './dashboard-data';
 
 export default async function DashboardPage({
   searchParams
@@ -30,30 +31,58 @@ export default async function DashboardPage({
   // Prefetch MonthlyRoster data (current month) in parallel with weekly data
   const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
   const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+  const shiftQueryPlan = getDashboardShiftQueryPlan({
+    startDate,
+    endDate,
+    monthStart,
+    monthEnd,
+  });
 
   // Fetch Data on Server (รักษาฐานข้อมูลและความปลอดภัยเดิมไว้ครบถ้วน)
-  const [
-    { data: profiles },
-    { data: shifts },
-    { data: holidays },
-    { data: rosterProfiles },
-    { data: rosterShifts },
-  ] = await Promise.all([
+  const baseQueries = [
     supabase.from('profiles').select('id, full_name, dashboard_order').order('dashboard_order', { ascending: true }),
-    supabase.from('shifts')
-      .select('id, employee_id, start_time, end_time, status, metadata')
-      .gte('start_time', startDate + 'T00:00:00')
-      .lte('start_time', endDate + 'T23:59:59'),
     supabase.from('holidays')
       .select('id, date, name')
       .gte('date', startDate)
       .lte('date', endDate),
     supabase.from('profiles').select('id, full_name').order('schedule_order', { ascending: true }),
-    supabase.from('shifts')
-      .select('id, employee_id, start_time, end_time, status, metadata')
-      .gte('start_time', monthStart + 'T00:00:00')
-      .lte('start_time', monthEnd + 'T23:59:59'),
-  ]);
+  ] as const;
+
+  const [{ data: profiles }, { data: holidays }, { data: rosterProfiles }, shiftsResult] =
+    shiftQueryPlan.mode === 'combined'
+      ? await Promise.all([
+          ...baseQueries,
+          supabase.from('shifts')
+            .select('id, employee_id, start_time, end_time, status, metadata')
+            .gte('start_time', shiftQueryPlan.startDate + 'T00:00:00')
+            .lte('start_time', shiftQueryPlan.endDate + 'T23:59:59'),
+        ] as const)
+      : await Promise.all([
+          ...baseQueries,
+          Promise.all([
+            supabase.from('shifts')
+              .select('id, employee_id, start_time, end_time, status, metadata')
+              .gte('start_time', shiftQueryPlan.weeklyStart + 'T00:00:00')
+              .lte('start_time', shiftQueryPlan.weeklyEnd + 'T23:59:59'),
+            supabase.from('shifts')
+              .select('id, employee_id, start_time, end_time, status, metadata')
+              .gte('start_time', shiftQueryPlan.monthlyStart + 'T00:00:00')
+              .lte('start_time', shiftQueryPlan.monthlyEnd + 'T23:59:59'),
+          ] as const),
+        ] as const);
+
+  const { weeklyShifts: shifts, monthlyShifts: rosterShifts } =
+    Array.isArray(shiftsResult)
+      ? {
+          weeklyShifts: shiftsResult[0].data || [],
+          monthlyShifts: shiftsResult[1].data || [],
+        }
+      : splitDashboardShiftsByRange(shiftsResult.data || [], {
+          startDate,
+          endDate,
+          monthStart,
+          monthEnd,
+        });
 
   return (
     <div className="min-h-screen bg-transparent p-4 md:p-12 text-foreground relative font-normal">

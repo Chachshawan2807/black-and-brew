@@ -2,7 +2,7 @@
 
 Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา วิเคราะห์ตลาด และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
 
-> Version: 8.9 | Stack: Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
+> Version: 9.0 | Stack: Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
 
 ---
 
@@ -150,6 +150,8 @@ src/
 - Count policy: `inventory_items.count_policy` — `exact_count` คิดรวม accuracy; `sufficiency_check` ใช้ `order_qty` แบบ manual และไม่คิดรวมคะแนน
 - RLS hardening: `sql/fix_inventory_rls.sql` (authenticated-only หลัง anonymous sign-in)
 - PWA: `src/app/manifest.ts` (icons `/images/notification-icon*.png`, theme `#000000`, background `#ffffff`) + `public/sw.js` (Network-First) + `PwaRegister.tsx`
+- Performance posture: dashboard shift reads consolidate overlapping week/month ranges; inventory grid uses row containment and dynamic modal chunks with hover/focus preload; chart and AI overlays remain route/intent split where safe.
+- Web Push: `push_subscriptions` supports cross-device inventory alerts and daily schedule report broadcasts with `branch_id` / `profile_id` filtering.
 
 ---
 

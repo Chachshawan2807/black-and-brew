@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 8.9 | Last Updated: 2026-06-19 | Engine: Supabase PostgreSQL
+> Version: 9.0 | Last Updated: 2026-06-22 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -24,7 +24,7 @@
 | `login_history` | บันทึกเหตุการณ์เข้าใช้ระบบ (PIN) | ✓ RLS enabled | `supabase/migrations/20260611120000_create_login_history.sql` |
 | `data_change_logs` | บันทึกการเปลี่ยนแปลงข้อมูล (actor, field diff) | ✓ RLS + selective read | `supabase/migrations/20260612120000_create_data_change_logs.sql` |
 | `revoked_sessions` | fingerprint ที่ถูก revoke จากระยะไกล | ✓ RLS enabled | `supabase/migrations/20260612200000_revoked_sessions.sql` |
-| `push_subscriptions` | Web Push endpoints ต่ออุปกรณ์ (cross-device inventory alerts) | ✓ authenticated (own rows) | `supabase/migrations/20260616120000_push_subscriptions.sql` |
+| `push_subscriptions` | Web Push endpoints ต่ออุปกรณ์ (inventory alerts + daily schedule reports) | ✓ authenticated (own rows) | `supabase/migrations/20260616120000_push_subscriptions.sql` + `20260621120000_push_subscriptions_daily_report.sql` |
 | `device_passkeys` | WebAuthn credentials สำหรับ trusted-device biometric login | ✓ RLS enabled; service-role only | `supabase/migrations/20260617120000_device_passkeys.sql` |
 | `local_events` | เหตุการณ์รอบร้านสำหรับ Market Insights context | ✓ authenticated | `supabase/migrations/20260618175951_local_events.sql` |
 | `market_insight_runs` | ประวัติการรัน Market Insights v2 (OPTIONAL) | ✓ | `docs/sql/market_insight_runs.sql` |
@@ -179,13 +179,15 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
   client_session_id text,
   user_agent text,
   prefs_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  profile_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  branch_id text NOT NULL DEFAULT 'main',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT push_subscriptions_endpoint_unique UNIQUE (endpoint)
 );
 ```
 
-Registered by `registerPushSubscription()` in `push-actions.ts` via authenticated Supabase client (RLS: `auth.uid() = user_id`). Server broadcasts inventory alerts through `dispatchInventoryWebPush()` in `src/lib/web-push.ts` after `data_change_logs` INSERT (primary path) or `POST /api/push/webhook` (optional Supabase Database Webhook backup). Stale endpoints (HTTP 404/410) are auto-deleted.
+Registered by `registerPushSubscription()` in `push-actions.ts` via authenticated Supabase client (RLS: `auth.uid() = user_id`). Server broadcasts inventory alerts through `dispatchInventoryWebPush()` in `src/lib/web-push.ts` after `data_change_logs` INSERT (primary path) or `POST /api/push/webhook` (optional Supabase Database Webhook backup). Daily report Web Push uses `profile_id` and `branch_id` through `src/lib/daily-report-web-push.ts` for staff/branch filtering. Stale endpoints (HTTP 404/410) are auto-deleted.
 
 ### `device_passkeys`
 
@@ -277,6 +279,7 @@ CREATE INDEX idx_data_change_logs_module_occurred ON data_change_logs (module, o
 CREATE INDEX idx_revoked_sessions_revoked_at ON revoked_sessions (revoked_at DESC);
 CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions (user_id);
 CREATE INDEX idx_push_subscriptions_client_session ON push_subscriptions (client_session_id) WHERE client_session_id IS NOT NULL;
+CREATE INDEX idx_push_subscriptions_branch_id ON push_subscriptions (branch_id);
 CREATE INDEX idx_count_verifications_item ON inventory_count_verifications(inventory_item_id);
 CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications(counted_at DESC);
 CREATE INDEX idx_device_passkeys_session_fingerprint ON device_passkeys(session_fingerprint);
@@ -335,6 +338,8 @@ CREATE INDEX idx_local_events_date ON local_events(date);
 | `20260617120000_device_passkeys.sql` | Trusted-device WebAuthn credentials for biometric login |
 | `20260618163100_inventory_count_policy.sql` | Adds `inventory_items.count_policy`; resets old accuracy rows for new scoring rules |
 | `20260618175951_local_events.sql` | Store-managed local event context for Market Insights |
+| `20260620221500_reset_accuracy_history.sql` | Reset count accuracy rows after policy recalculation rules changed |
+| `20260621120000_push_subscriptions_daily_report.sql` | Adds `profile_id` and `branch_id` to `push_subscriptions` for daily schedule Web Push broadcasts |
 
 ### Historical (root + `sql/`)
 

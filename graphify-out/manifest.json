@@ -120,8 +120,8 @@
     "semantic_hash": "51161b1cb8f183c6474a05548ac5956f"
   },
   "src/app/[locale]/dashboard/page.tsx": {
-    "mtime": 1781972593.3310082,
-    "ast_hash": "a12dc9e1dd70c736f2834a58097ec93c",
+    "mtime": 1782066448.6987834,
+    "ast_hash": "98440f402b71e49031a93b34c69d1c84",
     "semantic_hash": ""
   },
   "src/app/[locale]/dashboard/types.ts": {
@@ -130,8 +130,8 @@
     "semantic_hash": "a260295c4f6dd2c082714de3266b57f6"
   },
   "src/app/[locale]/inventory/InventoryClient.tsx": {
-    "mtime": 1782049445.4838624,
-    "ast_hash": "95a787658982af818ced9026afeaee4b",
+    "mtime": 1782068484.6488612,
+    "ast_hash": "b618c0379ff796f7c939a781d426a670",
     "semantic_hash": ""
   },
   "src/app/[locale]/inventory/PurchaseOrdersModal.tsx": {
@@ -530,9 +530,9 @@
     "semantic_hash": ""
   },
   "src/components/inventory/InventoryQuickActionBar.tsx": {
-    "mtime": 1781698666.1546106,
-    "ast_hash": "ea56e14055aead9f9955f2395aa0f8ce",
-    "semantic_hash": "ea56e14055aead9f9955f2395aa0f8ce"
+    "mtime": 1782068494.9460375,
+    "ast_hash": "3df4ee899e4d4b6090db8ec4de4feb49",
+    "semantic_hash": ""
   },
   "src/components/inventory/InventoryQuickActionFAB.tsx": {
     "mtime": 1782052711.9471328,
@@ -550,13 +550,13 @@
     "semantic_hash": ""
   },
   "src/components/notifications/NotificationBell.tsx": {
-    "mtime": 1781685126.648238,
-    "ast_hash": "07e59eff7a84241217f38e523b0ae12e",
-    "semantic_hash": "07e59eff7a84241217f38e523b0ae12e"
+    "mtime": 1782065638.1296153,
+    "ast_hash": "cf36a197b9f3aebded1b48574bf016ee",
+    "semantic_hash": ""
   },
   "src/components/notifications/NotificationPanel.tsx": {
-    "mtime": 1782061446.4595318,
-    "ast_hash": "af15342a3edf29641b9dbdb92afc7a6e",
+    "mtime": 1782065644.5531912,
+    "ast_hash": "b3f9dbfec443e8f8ebec9430857a0205",
     "semantic_hash": ""
   },
   "src/components/notifications/NotificationProvider.tsx": {
@@ -750,8 +750,8 @@
     "semantic_hash": "a28fed26e097eb81afc84ca603e648c2"
   },
   "src/hooks/use-inventory-notifications.ts": {
-    "mtime": 1782064751.297216,
-    "ast_hash": "15923fdc1820d1084766da3835740933",
+    "mtime": 1782065632.1606703,
+    "ast_hash": "50228ed82aa56fc810f253ac33dd0c2c",
     "semantic_hash": ""
   },
   "src/hooks/use-inventory-quick-action.ts": {
@@ -1030,14 +1030,14 @@
     "semantic_hash": "c20a2add5344d4398395a7530e079819"
   },
   "src/lib/notification-storage.ts": {
-    "mtime": 1781257741.3706682,
-    "ast_hash": "9e4effc6511e93b4406a1d57182c2741",
-    "semantic_hash": "9e4effc6511e93b4406a1d57182c2741"
+    "mtime": 1782065619.7708745,
+    "ast_hash": "19b50395698405f1c40356e6958392d2",
+    "semantic_hash": ""
   },
   "src/lib/notification-sync.ts": {
-    "mtime": 1781685126.6472373,
-    "ast_hash": "903cb6fc344c5698948ee4ed0fc1f2a6",
-    "semantic_hash": "903cb6fc344c5698948ee4ed0fc1f2a6"
+    "mtime": 1782065626.1579268,
+    "ast_hash": "0ed91e33d12f00c2183b83ad071a961c",
+    "semantic_hash": ""
   },
   "src/lib/notification-time-groups.ts": {
     "mtime": 1781257791.792406,
@@ -1045,8 +1045,8 @@
     "semantic_hash": "22a30ee3fafe3d625210e377339a5321"
   },
   "src/lib/notification-types.ts": {
-    "mtime": 1782046525.3058598,
-    "ast_hash": "a19a43e4937bde080a670bf1b1ee2977",
+    "mtime": 1782065613.668013,
+    "ast_hash": "17f1b57cf0f8b4064f7e525e285d60dc",
     "semantic_hash": ""
   },
   "src/lib/parse-user-agent.ts": {
@@ -1495,8 +1495,8 @@
     "semantic_hash": "11f97ca8f262bb256b3123cf1118589c"
   },
   "src/test/notification-fab-sync.test.ts": {
-    "mtime": 1782064713.9716227,
-    "ast_hash": "7e61946082a8dc0766794200c2d63251",
+    "mtime": 1782065650.7455497,
+    "ast_hash": "629b15d2dd24a85d6dc69f12b5209e0e",
     "semantic_hash": ""
   },
   "src/test/notification-panel-mobile-layout.test.ts": {
@@ -1780,8 +1780,8 @@
     "semantic_hash": "3129e4860426b40591670f0fec2ebda0"
   },
   "docs/SUMMARY_REPORT.md": {
-    "mtime": 1781808970.3291454,
-    "ast_hash": "3bdd455728c9a6d1eaa5d9e2b2bad726",
+    "mtime": 1782070317.6506922,
+    "ast_hash": "f6656122bf3fe884784b31279113164a",
     "semantic_hash": ""
   },
   "docs/agent.md": {
@@ -1790,33 +1790,33 @@
     "semantic_hash": "d47bc84f6f5d1d206f33af410a07df7d"
   },
   "docs/api.md": {
-    "mtime": 1781808706.7579098,
-    "ast_hash": "1ed0f664d7f14e8ae76ccd56772cb415",
+    "mtime": 1782070154.137263,
+    "ast_hash": "6fca3c92bd5eb85bcde8670862d349ab",
     "semantic_hash": ""
   },
   "docs/architecture.md": {
-    "mtime": 1781808894.1170459,
-    "ast_hash": "ae266bd1ff0ece3c7c0385203157f5c7",
+    "mtime": 1782070145.6624625,
+    "ast_hash": "eff1dd96f98ed4e43a2b3ef440b2cf8e",
     "semantic_hash": ""
   },
   "docs/changelog.md": {
-    "mtime": 1781808762.7314134,
-    "ast_hash": "43afc7cfbef5454c24dadf990abf15ed",
+    "mtime": 1782070193.242803,
+    "ast_hash": "b2059775cbe8906d0fb7126b5767f3a4",
     "semantic_hash": ""
   },
   "docs/context.md": {
-    "mtime": 1781808749.4881902,
-    "ast_hash": "b85899561d9d0a0a8eea31dab8dde78e",
+    "mtime": 1782070174.1055796,
+    "ast_hash": "aed83265cc7590a52f69223273e7c270",
     "semantic_hash": ""
   },
   "docs/database.md": {
-    "mtime": 1781808891.5042734,
-    "ast_hash": "8dde349a4b27ce6d5c61a2385fe829b5",
+    "mtime": 1782070122.8152132,
+    "ast_hash": "64944dbfae70121567942a07c9c62d86",
     "semantic_hash": ""
   },
   "docs/design.md": {
-    "mtime": 1781808784.1167357,
-    "ast_hash": "8c756d901edafc25f745e7b68714c7f8",
+    "mtime": 1782070280.7816763,
+    "ast_hash": "0f4c8f3a4a0eab4444caf1ac909632f0",
     "semantic_hash": ""
   },
   "docs/master_lint_prompt.txt": {
@@ -1825,8 +1825,8 @@
     "semantic_hash": "1a12940e237230874660296c442fe06e"
   },
   "docs/memory.md": {
-    "mtime": 1781808773.683227,
-    "ast_hash": "1db91b3cb58b15522170f02fd84be26e",
+    "mtime": 1782070213.9219666,
+    "ast_hash": "f7eeecf29b3ad29b3aec8163b5fba93d",
     "semantic_hash": ""
   },
   "docs/plans/2026-06-03-mobile-inventory-ui-fixes.md": {
@@ -1845,8 +1845,8 @@
     "semantic_hash": "f247806b6a6f2af3a74932cd4c1676d1"
   },
   "docs/prd.md": {
-    "mtime": 1781808742.7851777,
-    "ast_hash": "9f9a225d5db1bfd92345a849b8b5272b",
+    "mtime": 1782070299.2628057,
+    "ast_hash": "78b7499faa15b73d0d211228ca9fa1fb",
     "semantic_hash": ""
   },
   "docs/refactor-regression-checklist.md": {
@@ -1855,8 +1855,8 @@
     "semantic_hash": "9ce1f6033e4e9e8842c32fd405af8ad1"
   },
   "docs/rules.md": {
-    "mtime": 1781808792.3697202,
-    "ast_hash": "9e13f2d25994434c552c93cd6b49ad42",
+    "mtime": 1782070288.9422982,
+    "ast_hash": "7d5e5faef24cf2cbac320e539089d9bf",
     "semantic_hash": ""
   },
   "docs/skills.md": {
@@ -1865,13 +1865,13 @@
     "semantic_hash": "797084b1c9b69d4583a5d053ab8d1983"
   },
   "docs/tasks.md": {
-    "mtime": 1782046219.2677834,
-    "ast_hash": "3fc1c369969f22ccced023e54f8f0b3f",
+    "mtime": 1782070183.1624126,
+    "ast_hash": "8a3b639433941ed1aef96234dace3cb0",
     "semantic_hash": ""
   },
   "sql/README.md": {
-    "mtime": 1781808819.6747336,
-    "ast_hash": "eb73d70a97fbc628d43c71c2a791dabc",
+    "mtime": 1782070260.2016995,
+    "ast_hash": "e1c051f794cdb961779e6fc5bdfb2288",
     "semantic_hash": ""
   },
   "src/app/apple-icon.png": {
@@ -1945,8 +1945,8 @@
     "semantic_hash": ""
   },
   "PROJECT_MAP.md": {
-    "mtime": 1781808802.2805498,
-    "ast_hash": "f6650a468632f882b0dc682f14d0522f",
+    "mtime": 1782070111.1123824,
+    "ast_hash": "130a4f2a532320f75abebd5193269cef",
     "semantic_hash": ""
   },
   "PROTOCOL_ENFORCER.md": {
@@ -1955,13 +1955,13 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1782046234.067336,
-    "ast_hash": "965e6733bf9fda51fe22e21119081bb6",
+    "mtime": 1782070165.8660235,
+    "ast_hash": "8448790cf4d668eb8cb903e82d0a6fd8",
     "semantic_hash": ""
   },
   "SKILLS_INVENTORY.md": {
-    "mtime": 1781808855.1246648,
-    "ast_hash": "4e1fb229898322510bcd3d63de680b8c",
+    "mtime": 1782070308.5224261,
+    "ast_hash": "f7301fe868363d2a1c09b30661b11306",
     "semantic_hash": ""
   },
   "VERIFICATION_REPORT.md": {
@@ -2082,6 +2082,26 @@
   "src/test/inventory-realtime-provider.test.tsx": {
     "mtime": 1782064275.4554572,
     "ast_hash": "3bb2c797851259f9671cb88c96ea8e2f",
+    "semantic_hash": ""
+  },
+  "src/app/[locale]/dashboard/dashboard-data.ts": {
+    "mtime": 1782066437.7617261,
+    "ast_hash": "2ee58ec127ab8e1d01f2640628446d84",
+    "semantic_hash": ""
+  },
+  "src/test/dashboard-data-loading.test.ts": {
+    "mtime": 1782066382.6284597,
+    "ast_hash": "8cc0b46a7ac3e7741f5b4bc2d3d60b11",
+    "semantic_hash": ""
+  },
+  "src/test/inventory-grid-performance.test.ts": {
+    "mtime": 1782067219.3873582,
+    "ast_hash": "f69692d4097c9dfe830111f093e46ced",
+    "semantic_hash": ""
+  },
+  "src/test/bundle-route-loading.test.ts": {
+    "mtime": 1782068538.1745026,
+    "ast_hash": "a6d49c56c752c9f9508543f377bed454",
     "semantic_hash": ""
   }
 }

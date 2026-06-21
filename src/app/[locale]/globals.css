@@ -738,6 +738,24 @@
     touch-action: pan-x pan-y;
   }
 
+  /* Inventory editable rows are isolated so cell edits and DnD do not force full-grid reflow. */
+  .bb-inventory-row-containment {
+    contain: layout style paint;
+  }
+
+  @supports (content-visibility: auto) {
+    .bb-inventory-row-containment {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 96px;
+    }
+  }
+
+  @supports not (content-visibility: auto) {
+    .bb-inventory-row-containment {
+      contain: layout style paint;
+    }
+  }
+
   /*
    * iOS Safari / iPadOS WebKit — Android keeps the rules above unchanged.
    * Fixes: nested overflow scroll, backdrop-filter parents, sticky touch capture.

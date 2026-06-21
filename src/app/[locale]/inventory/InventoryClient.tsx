@@ -26,7 +26,7 @@ import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-fil
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from '@/components/inventory/InventoryQuickActionBar';
-import { InventoryHistoryModal, type TransactionHistoryRow } from '@/components/inventory/InventoryHistoryModal';
+import type { TransactionHistoryRow } from '@/components/inventory/InventoryHistoryModal';
 import {
   DndContext,
   closestCorners,
@@ -88,6 +88,23 @@ function normalizeCountPolicy(value: unknown): InventoryCountPolicy {
 
 function isManualOrderQty(item: InventoryItem): boolean {
   return false;
+}
+
+function getInventoryCellDisplayValue(item: InventoryItem, col: ColumnDef, manualOrderQty: boolean) {
+  let val = readInventoryField(item, col.id);
+
+  if (col.id === 'order_qty' && !manualOrderQty) {
+    const stock = Number(item.stock) || 0;
+    const orderPoint = Number(item.order_point) || 0;
+    const targetStock = Number(item.target_stock) || 0;
+    val = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
+  }
+
+  if (col.type === 'number' || col.id === 'order_qty') {
+    return formatInventoryNumericDisplay(val);
+  }
+
+  return val === null || val === undefined ? '' : String(val);
 }
 
 function CountPolicyToggle({
@@ -307,7 +324,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
       data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "bg-card border border-border rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        "bb-inventory-row-containment bg-card border border-border rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
         isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
@@ -520,7 +537,7 @@ const MobileSortableRow = React.memo(({
       data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "w-full min-w-0 bg-card border border-border rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        "bb-inventory-row-containment w-full min-w-0 bg-card border border-border rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
         isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
@@ -675,6 +692,18 @@ const MobileSortableRow = React.memo(({
 MobileSortableRow.displayName = 'MobileSortableRow';
 
 const PurchaseOrdersModal = dynamic(() => import('./PurchaseOrdersModal'), { ssr: false });
+const InventoryHistoryModal = dynamic(
+  () => import('@/components/inventory/InventoryHistoryModal').then((mod) => mod.InventoryHistoryModal),
+  { ssr: false },
+);
+
+const preloadPurchaseOrdersModal = () => {
+  void import('./PurchaseOrdersModal');
+};
+
+const preloadInventoryHistoryModal = () => {
+  void import('@/components/inventory/InventoryHistoryModal');
+};
 
 const HISTORY_PAGE_SIZE = 50;
 
@@ -690,36 +719,20 @@ function EditableCell({
   showDeleteButton = true,
   className,
 }: InventoryCellBaseProps & { cardMode?: boolean; showDeleteButton?: boolean; className?: string }) {
-  const [localValue, setLocalValue] = useState<string>('');
+  const manualOrderQty = isManualOrderQty(item);
+  const [localValue, setLocalValue] = useState<string>(() => getInventoryCellDisplayValue(item, col, manualOrderQty));
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const manualOrderQty = isManualOrderQty(item);
 
   // Sync with global state when not focused
   useEffect(() => {
     if (!isFocused) {
-      let val = readInventoryField(item, col.id);
-
-      // Phase 1: COMPUTED LOGIC INTEGRATION
-      if (col.id === 'order_qty' && !manualOrderQty) {
-        const stock = Number(item.stock) || 0;
-        const orderPoint = Number(item.order_point) || 0;
-        const targetStock = Number(item.target_stock) || 0;
-        val = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
-      }
-
-      const displayVal =
-        col.type === 'number' || col.id === 'order_qty'
-          ? formatInventoryNumericDisplay(val)
-          : val === null || val === undefined
-            ? ''
-            : String(val);
-      setLocalValue(displayVal);
-      if (inputRef.current) {
+      const displayVal = getInventoryCellDisplayValue(item, col, manualOrderQty);
+      if (inputRef.current && inputRef.current.value !== displayVal) {
         inputRef.current.value = displayVal;
       }
     }
-  }, [item, col.id, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
+  }, [item, col, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
 
   const handleBlur = () => {
     const val = inputRef.current?.value || '';
@@ -852,34 +865,19 @@ function EditableCell({
 }
 
 function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField, handleFocus, className }: Pick<InventoryCellBaseProps, 'item' | 'col' | 'rowIndex' | 'handleUpdateField' | 'handleSaveField' | 'handleFocus'> & { className?: string }) {
-  const [localValue, setLocalValue] = useState<string>('');
+  const manualOrderQty = isManualOrderQty(item);
+  const [localValue, setLocalValue] = useState<string>(() => getInventoryCellDisplayValue(item, col, manualOrderQty));
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const manualOrderQty = isManualOrderQty(item);
 
   useEffect(() => {
     if (!isFocused) {
-      let val = readInventoryField(item, col.id);
-
-      if (col.id === 'order_qty' && !manualOrderQty) {
-        const stock = Number(item.stock) || 0;
-        const orderPoint = Number(item.order_point) || 0;
-        const targetStock = Number(item.target_stock) || 0;
-        val = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
-      }
-
-      const displayVal =
-        col.type === 'number' || col.id === 'order_qty'
-          ? formatInventoryNumericDisplay(val)
-          : val === null || val === undefined
-            ? ''
-            : String(val);
-      setLocalValue(displayVal);
-      if (inputRef.current) {
+      const displayVal = getInventoryCellDisplayValue(item, col, manualOrderQty);
+      if (inputRef.current && inputRef.current.value !== displayVal) {
         inputRef.current.value = displayVal;
       }
     }
-  }, [item, col.id, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
+  }, [item, col, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
 
   const handleBlur = () => {
     const val = inputRef.current?.value || '';
@@ -942,16 +940,17 @@ export default function InventoryClient({
   const isReadOnly = useReadOnly();
   const { subscribe, refresh } = useInventoryRealtime();
 
-  const blockIfReadOnly = () => {
+  const blockIfReadOnly = useCallback(() => {
     if (isReadOnly) {
       alert(READ_ONLY_DENY_MSG);
       return true;
     }
     return false;
-  };
-  const initialCols = buildColumnsFromSettings(initialColumnSettings ?? undefined);
+  }, [isReadOnly]);
   const [items, setItems] = useState<InventoryItem[]>(initialItems);
-  const [columns, setColumns] = useState<ColumnDef[]>(initialCols);
+  const [columns, setColumns] = useState<ColumnDef[]>(() =>
+    buildColumnsFromSettings(initialColumnSettings ?? undefined, parseLocalColumnWidths())
+  );
   const columnById = useMemo(() => new Map(columns.map((column) => [column.id, column])), [columns]);
   const sortableItemIds = useMemo(() => items.map((item) => item.id), [items]);
   const [loading, setLoading] = useState(false);
@@ -975,7 +974,7 @@ export default function InventoryClient({
   // History State
   const [undoStack, setUndoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
   const [redoStack, setRedoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
-  const previousStateRef = useRef<{ items: InventoryItem[], cols: ColumnDef[] }>({ items: initialItems, cols: initialCols });
+  const previousStateRef = useRef<{ items: InventoryItem[], cols: ColumnDef[] }>({ items: initialItems, cols: columns });
 
   const sensors = useSafeDndSensors();
 
@@ -1078,14 +1077,6 @@ export default function InventoryClient({
 
   useEffect(() => {
     loadFrequentItems();
-
-    const localWidths = parseLocalColumnWidths();
-    if (Object.keys(localWidths).length > 0) {
-      setColumns(prev => prev.map(col => ({
-        ...col,
-        width: localWidths[col.id] || col.width,
-      })));
-    }
   }, []);
 
   useEffect(() => {
@@ -1128,13 +1119,6 @@ export default function InventoryClient({
     };
   }, [subscribe]);
 
-  // Refresh from DB when PO modal opens so stock matches other windows
-  useEffect(() => {
-    if (showPurchaseOrderModal) {
-      void fetchConfigAndInventory();
-    }
-  }, [showPurchaseOrderModal]);
-
   useEffect(() => {
     previousStateRef.current = { items, cols: columns };
   }, [items, columns]);
@@ -1153,7 +1137,7 @@ export default function InventoryClient({
     return () => window.clearTimeout(timer);
   }, [loading, items]);
 
-  async function fetchConfigAndInventory() {
+  const fetchConfigAndInventory = useCallback(async () => {
     try {
       await ensureSupabaseSession();
       const [configRes, loadedItems] = await Promise.all([
@@ -1180,7 +1164,14 @@ export default function InventoryClient({
     } finally {
       setLoading(false);
     }
-  }
+  }, [refresh]);
+
+  const handleOpenPurchaseOrders = useCallback(() => {
+    preloadPurchaseOrdersModal();
+    setShowPurchaseOrderModal(true);
+    // Refresh from DB when PO modal opens so stock matches other windows.
+    void fetchConfigAndInventory();
+  }, [fetchConfigAndInventory]);
 
   function sanitizeInventoryItem(item: InventoryItem) {
     const sanitized = { ...item };
@@ -1204,10 +1195,10 @@ export default function InventoryClient({
     return sanitized;
   }
 
-  function pushHistory() {
+  const pushHistory = useCallback(() => {
     setUndoStack(prev => [...prev, previousStateRef.current]);
     setRedoStack([]);
-  }
+  }, []);
 
   async function handleAddItemSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -1365,17 +1356,15 @@ export default function InventoryClient({
     }
   }
 
-  function handleFocus() {
-    if (!isEditing) {
-      setIsEditing(true);
-    }
-  }
+  const handleFocus = useCallback(() => {
+    setIsEditing(prev => prev ? prev : true);
+  }, []);
 
-  function handleUpdateField(id: string, field: string, value: InventoryFieldValue) {
+  const handleUpdateField = useCallback((id: string, field: string, value: InventoryFieldValue) => {
     setItems(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
-  }
+  }, []);
 
-  async function handleSaveField(id: string, field: string, value: InventoryFieldValue) {
+  const handleSaveField = useCallback(async (id: string, field: string, value: InventoryFieldValue) => {
     if (blockIfReadOnly()) return;
     setIsEditing(false);
     const original = previousStateRef.current.items.find(i => i.id === id);
@@ -1478,7 +1467,13 @@ export default function InventoryClient({
       setSavingState('idle');
       fetchConfigAndInventory();
     }
-  }
+  }, [
+    blockIfReadOnly,
+    fetchConfigAndInventory,
+    handleUpdateField,
+    items,
+    pushHistory,
+  ]);
 
   function updateColumnLabel(id: string, label: string) {
     setColumns(prev => prev.map(col => col.id === id ? { ...col, label } : col));
@@ -1813,9 +1808,11 @@ export default function InventoryClient({
                 isQuickPending={quickAction.isQuickPending}
                 isReadOnly={isReadOnly}
                 onSubmit={quickAction.handleQuickSubmit}
-                onOpenPurchaseOrder={() => setShowPurchaseOrderModal(true)}
+                onOpenPurchaseOrder={handleOpenPurchaseOrders}
                 onOpenAddItem={() => setShowAddModal(true)}
                 onOpenHistory={handleOpenHistory}
+                onPreloadPurchaseOrder={preloadPurchaseOrdersModal}
+                onPreloadHistory={preloadInventoryHistoryModal}
                 bulkMode={quickAction.bulkMode}
                 onBulkModeChange={quickAction.setBulkMode}
                 bulkQueue={quickAction.bulkQueue}
@@ -2137,17 +2134,19 @@ export default function InventoryClient({
       />
 
       {/* Hidden Export Purchase Orders Table */}
-      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-        <PurchaseOrdersModal
-          isExportMode={true}
-          selectedChannels={selectedChannels}
-          setSelectedChannels={() => {}}
-          itemsToOrder={itemsToOrder}
-          poSources={poSources}
-          displayedPoItems={displayedPoItems}
-          getStockColorClass={getStockColorClass}
-        />
-      </div>
+      {(showPurchaseOrderModal || isExportingPO) && (
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          <PurchaseOrdersModal
+            isExportMode={true}
+            selectedChannels={selectedChannels}
+            setSelectedChannels={() => {}}
+            itemsToOrder={itemsToOrder}
+            poSources={poSources}
+            displayedPoItems={displayedPoItems}
+            getStockColorClass={getStockColorClass}
+          />
+        </div>
+      )}
     </>
   );
 }

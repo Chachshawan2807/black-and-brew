@@ -1,6 +1,6 @@
 # Design Standards — BLACKANDBREW ERP
 
-> Version: 8.9 | Last Updated: 2026-06-19 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
+> Version: 9.0 | Last Updated: 2026-06-22 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
 
 ---
 
@@ -312,3 +312,11 @@ Design rules:
 
 - Policy controls are compact spreadsheet controls inside the inventory table, not separate edit modals.
 - The `/[locale]/inventory/accuracy` report uses normal theme-token surfaces and pastel metric cards with `bb-pastel-surface`.
+
+---
+
+## 13. Inventory Performance UI (v9.0)
+
+- Editable inventory rows may use `.bb-inventory-row-containment` to isolate layout/paint work and progressively render long grids.
+- The containment class must not change spreadsheet behavior: inline inputs, blur/Enter save, realtime sync, mobile layout, and numeric display rules stay the same.
+- Modal-only inventory surfaces (`PurchaseOrdersModal`, `InventoryHistoryModal`) should stay dynamically loaded and may preload on hover/focus intent from quick-action buttons.

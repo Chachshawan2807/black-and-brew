@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 8.9 | Last Updated: 2026-06-19
+> Version: 9.0 | Last Updated: 2026-06-22
 
 ---
 
@@ -113,6 +113,10 @@
 - [x] Inventory count policy — `exact_count` vs `sufficiency_check`; manual `order_qty` for sufficiency-check items; `/inventory/accuracy` report (v8.9)
 - [x] Market Insights local events — `local_events` table + `fetchUpcomingLocalEvents()` + prompt context builder (v8.9)
 - [x] Documentation sync v8.9 — count policy, local events, migration counts, test counts, theme-token wording (2026-06-19)
+- [x] Dashboard loading optimization — combined overlapping weekly/monthly shift query + split helper tests (Phase 1, 2026-06-22)
+- [x] Inventory grid responsiveness — stable row handlers, lazy cell sync, row containment, focused performance contract tests (Phase 2, 2026-06-22)
+- [x] Bundle and route loading optimization — dynamic inventory modals, hidden export mount gating, hover/focus modal preload, bundle contract tests (Phase 3, 2026-06-22)
+- [x] Documentation, SQL index, and graphify sync v9.0 — migration/test counts, daily report Web Push fields, performance docs, graphify update (2026-06-22)
 
 ---
 

@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> Version: 8.9 | Last Updated: 2026-06-19 | Owner: System Architect
+> Version: 9.0 | Last Updated: 2026-06-22 | Owner: System Architect
 
 ---
 
@@ -42,6 +42,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - Route: `/[locale]/dashboard`
 - Purpose: ลงเวลา รายชื่อกะ ตารางรายเดือน
 - Components: `LiveShiftList`, `ShiftCard`, `MonthlyRoster`, `InventorySummaryCard`, `WeatherWidget`
+- Performance: รวม query กะรายสัปดาห์/รายเดือนเมื่อช่วงวันที่ซ้อนกัน แล้ว split กลับเป็น payload เดิม
 
 ### 3.3 Schedule
 
@@ -64,6 +65,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
   - Transaction History + count accuracy verification/report (system stock baseline via `system_stock_qty`)
   - Purchase Order modal with channel tabs + PNG export
   - Real-time cross-device sync via `InventoryRealtimeContext`
+  - Long-grid responsiveness via row containment and dynamic modal loading
 
 ### 3.5 Maintenance
 
@@ -95,10 +97,10 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - Purpose: การตั้งค่าระบบสำหรับพนักงาน
 - Features: Theme picker (light / dark / system via `next-themes`, key `bb-theme`); login history; trusted-device passkeys; notification preferences; data change history (`DataChangeHistorySection`)
 
-### 3.10 Daily LINE Notification
+### 3.10 Daily LINE + Web Push Notification
 
 - Route: `/api/daily-report` (Vercel Cron)
-- Purpose: แจ้งเตือนกะงาน สต็อกต่ำ อากาศ วันหยุด ทุก 07:00 ICT
+- Purpose: แจ้งเตือนกะงาน สต็อกต่ำ อากาศ วันหยุด ผ่าน LINE และ Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
 
 ---
 
@@ -113,6 +115,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 | Sales Analytics | วิเคราะห์ยอดขายและหมวดหมู่ | Sales |
 | Market Insights | ตอบรับเทรนด์ตลาด | Market Insights |
 | Real-time Sync | ข้อมูลอัปเดตทันทีข้ามเครื่อง | All |
+| Daily Web Push | แจ้งเตือนตารางงานผ่าน endpoint เดียวกับ inventory alerts | Schedule/Notifications |
 | Trusted-device Passkeys | ลด friction หลัง PIN verified โดยยังคุม device fingerprint | Settings/Auth |
 
 ---
@@ -135,6 +138,6 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 - Accessibility: WCAG 2.2 AA; full-width clickable date pickers
 - Security: RLS + PIN auth + WebAuthn passkeys; Service Role Key server-only; XSS sanitization in AI chat
-- Performance: Hybrid PPR; explicit field selection in Supabase queries
+- Performance: Hybrid PPR; explicit field selection in Supabase queries; dynamic route/modal chunks for heavy client-only UI
 - Reliability: Optimistic UI with rollback; atomic RPC transactions
 - Design: Zero-Bold Policy; `rounded-3xl`; theme-token page/modal surfaces; pastel accent cards use `bb-pastel-surface`

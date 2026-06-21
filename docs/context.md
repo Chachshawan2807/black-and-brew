@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 8.9 | Last Updated: 2026-06-19
+> Version: 9.0 | Last Updated: 2026-06-22
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | Project Name | BLACK-AND-BREW ERP System |
 | Type | Enterprise Resource Planning for Coffee Shop |
-| Current Version | 8.9 (Inventory count policy + local events + doc sync) |
+| Current Version | 9.0 (performance phases + daily report Web Push + doc/graphify sync) |
 | Repository | `Chachshawan2807/black-and-brew` |
 | Local Path | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -172,5 +172,8 @@ Authoritative env list: [`.env.example`](../.env.example)
 | Data change history UI | `DataChangeHistorySection` in Settings |
 | Trusted-device passkeys | `device_passkeys`, `PasskeyDeviceSection`, `passkey-actions.ts` |
 | Local event market context | `local_events`, `fetchUpcomingLocalEvents()`, `buildLocalEventsContext()` |
+| Daily report Web Push | `push_subscriptions.branch_id` / `profile_id`, `src/lib/daily-report-web-push.ts` |
+| Dashboard optimized loading | `getDashboardShiftQueryPlan()`, `splitDashboardShiftsByRange()` |
+| Inventory route performance | Row containment, stable grid handlers, dynamic modal loading, hover/focus modal preload |
 | PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |
 | SQL blueprint | `sql/record_inventory_transaction.sql` |

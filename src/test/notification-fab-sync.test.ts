@@ -31,6 +31,14 @@ describe('notification fab cross-platform sync', () => {
     resolve(__dirname, '../../public/sw.js'),
     'utf8',
   );
+  const panelSource = readFileSync(
+    resolve(__dirname, '../components/notifications/NotificationPanel.tsx'),
+    'utf8',
+  );
+  const bellSource = readFileSync(
+    resolve(__dirname, '../components/notifications/NotificationBell.tsx'),
+    'utf8',
+  );
 
   test('NotificationProvider wraps FAB on all pages (desktop + mobile)', () => {
     expect(layoutSource).toContain('NotificationProvider');
@@ -59,6 +67,12 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('syncInventoryNotificationCatchUp');
     expect(hookSource).toContain("fetchDataChangeLogs({ module: 'inventory'");
     expect(hookSource).toContain('skipSystemNotification: true');
+  });
+
+  test('clearing history prevents old server catch-up logs from being restored', () => {
+    expect(hookSource).toContain('saveNotificationClearWatermark');
+    expect(hookSource).toContain('loadNotificationClearWatermark');
+    expect(hookSource).toContain('isAfterNotificationClearWatermark(row.occurred_at, clearWatermark)');
   });
 
   test('service worker push messages preserve SW unread count for launcher badges', () => {
@@ -101,5 +115,12 @@ describe('notification fab cross-platform sync', () => {
 
     expect(fabSource).toContain('isAnyOtherOpen');
     expect(fabSource).toContain("isAnyOtherOpen('notification')");
+  });
+
+  test('notification FAB and panel use generic notification copy', () => {
+    expect(panelSource).toContain("'การแจ้งเตือน'");
+    expect(panelSource).not.toContain('แจ้งเตือนคลังสินค้า');
+    expect(bellSource).toContain("'การแจ้งเตือน'");
+    expect(bellSource).not.toContain('การแจ้งเตือนคลังสินค้า');
   });
 });

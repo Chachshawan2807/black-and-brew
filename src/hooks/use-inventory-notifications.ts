@@ -21,6 +21,9 @@ import {
 } from '@/lib/notification-preferences';
 import {
   countUnread,
+  isAfterNotificationClearWatermark,
+  loadNotificationClearWatermark,
+  saveNotificationClearWatermark,
   saveStoredNotifications,
 } from '@/lib/notification-storage';
 import {
@@ -195,8 +198,10 @@ export function useInventoryNotifications() {
   const filterEligibleRows = useCallback((rows: DataChangeLogRow[]) => {
     const currentPrefs = prefsRef.current;
     const sessionId = sessionIdRef.current;
+    const clearWatermark = loadNotificationClearWatermark();
 
     return rows.filter((row) => {
+      if (!isAfterNotificationClearWatermark(row.occurred_at, clearWatermark)) return false;
       if (!isEligibleInventoryNotification(row)) return false;
       if (!shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) return false;
       if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;
@@ -408,6 +413,7 @@ export function useInventoryNotifications() {
   }, []);
 
   const clearAll = useCallback(() => {
+    saveNotificationClearWatermark();
     persist([]);
   }, [persist]);
 

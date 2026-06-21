@@ -37,12 +37,8 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
     onClick: () => setPanelOpen(!panelOpen),
     'aria-label':
       unreadCount > 0
-        ? isFab
-          ? `การแจ้งเตือนคลังสินค้า ${unreadCount} รายการใหม่`
-          : `การแจ้งเตือน ${unreadCount} รายการใหม่`
-        : isFab
-          ? 'การแจ้งเตือนคลังสินค้า'
-          : 'การแจ้งเตือน',
+        ? `การแจ้งเตือน ${unreadCount} รายการใหม่`
+        : 'การแจ้งเตือน',
   };
 
   const content = (
@@ -71,12 +67,8 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
 
   const bellTip =
     unreadCount > 0
-      ? isFab
-        ? `การแจ้งเตือนคลังสินค้า (${unreadCount} ใหม่)`
-        : `การแจ้งเตือน (${unreadCount} ใหม่)`
-      : isFab
-        ? 'การแจ้งเตือนคลังสินค้า'
-        : 'การแจ้งเตือน';
+      ? `การแจ้งเตือน (${unreadCount} ใหม่)`
+      : 'การแจ้งเตือน';
 
   if (isFab) {
     return (

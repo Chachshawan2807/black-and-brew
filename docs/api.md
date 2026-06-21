@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 8.9 | Last Updated: 2026-06-19
+> Version: 9.0 | Last Updated: 2026-06-22
 
 ---
 
@@ -252,6 +252,8 @@ getMarketInsights()
 | `fetchNextHoliday(date)` | Next public holiday |
 | `compileDailyReportPayload()` | Full LINE report payload |
 
+Daily schedule Web Push delivery is handled by `src/lib/daily-report-web-push.ts`, reusing `push_subscriptions` rows with `branch_id` and optional `profile_id` filters.
+
 ---
 
 ### 1.10 LINE (`line-actions.ts`)
@@ -276,12 +278,12 @@ getMarketInsights()
 
 | Function | Purpose |
 | --- | --- |
-| `registerPushSubscription(input)` | Upsert Web Push endpoint + keys into `push_subscriptions` (authenticated RLS) |
+| `registerPushSubscription(input)` | Upsert Web Push endpoint + keys into `push_subscriptions` (authenticated RLS); stores `branch_id` and initializes `profile_id` when available |
 | `syncPushSubscriptionPrefs(input)` | Update `prefs_json` for an existing endpoint |
 | `unregisterPushSubscription(input)` | Delete subscription row by endpoint |
 | `getPushDiagnostics()` | Admin-style counts: subscription rows, VAPID configured, latest eligible log |
 
-Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply.
+Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `push_subscriptions` is shared by inventory cross-device alerts and daily schedule Web Push reports.
 
 ---
 
@@ -307,6 +309,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply.
 
 - Vercel Cron endpoint — protected by `CRON_SECRET`
 - Compiles + sends LINE daily notification
+- Also supports daily schedule Web Push broadcasts through `push_subscriptions.branch_id` / `profile_id`
 
 ### `GET /api/weather`
 

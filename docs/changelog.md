@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-22 (Performance Phases + Doc/SQL/Graphify Sync v9.0)
+
+- Execution: [PHASED PERFORMANCE REFACTOR + DOCUMENTATION HYGIENE]
+- Changes:
+  - **Dashboard loading:** added `dashboard-data.ts` helpers so overlapping dashboard week/month shift ranges use one Supabase query and split back into weekly/monthly payloads.
+  - **Inventory grid responsiveness:** stabilized row handlers, reduced cell sync re-renders, initialized column widths lazily, and added row-level `content-visibility` / containment.
+  - **Bundle and route loading:** deferred `InventoryHistoryModal` and `PurchaseOrdersModal` paths behind dynamic imports, gated hidden PO export mounting, and added hover/focus preload for modal intent.
+  - **Daily report Web Push docs:** reflected `push_subscriptions.profile_id` and `branch_id` from migration `20260621120000_push_subscriptions_daily_report.sql`.
+  - **Docs synced:** `README.md`, `PROJECT_MAP.md`, `docs/architecture.md`, `docs/api.md`, `docs/database.md`, `docs/context.md`, `docs/tasks.md`, `docs/memory.md`, `docs/SUMMARY_REPORT.md`, `sql/README.md`.
+  - **Counts corrected:** `supabase/migrations/` = 14 migration files; `src/test/` = 103 test files.
+- Verification: `graphify query`, `graphify explain`, `graphify update .`; focused Phase 1-3 tests; production build; markdown lint after docs sync.
+
 ## 2026-06-19 (Inventory Count Policy + Local Events Doc Sync v8.9)
 
 - Execution: [Markdown documentation sync — current repo structure and migrations]

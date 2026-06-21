@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 8.9 | Last Updated: 2026-06-19 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.0 | Last Updated: 2026-06-22 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -140,6 +140,29 @@ onChange → local state → onBlur → updateInventoryStock() [RPC set_inventor
 → optimistic update → Supabase realtime merge → all windows sync
 ```
 
+### Dashboard Initial Data Loading (v9.0)
+
+```text
+Dashboard server route → getDashboardShiftQueryPlan()
+→ overlapping week/month ranges: one combined shifts query
+→ splitDashboardShiftsByRange() restores weekly LiveShiftList + monthly roster payloads
+→ non-overlapping ranges: keep separate shifts queries
+```
+
+This keeps the UI payload shape unchanged while avoiding duplicate Supabase shift reads for the common overlapping week/month case.
+
+### Inventory Route Loading + Grid Responsiveness (v9.0)
+
+```text
+InventoryClient
+→ stable row handlers via useCallback
+→ row-level .bb-inventory-row-containment isolates grid render/layout work
+→ PurchaseOrdersModal + InventoryHistoryModal loaded with next/dynamic
+→ quick-action buttons preload modal chunks on hover/focus intent
+```
+
+Spreadsheet behavior, realtime freshness, numeric rules, and mobile layout stay unchanged.
+
 ### Stock-Taking Count + Accuracy Verification (v8.9)
 
 ```text
@@ -196,7 +219,7 @@ Server mutation → recordDataChange() → data_change_logs INSERT (module=inven
 → Optional backup: Supabase Database Webhook → POST /api/push/webhook (PUSH_WEBHOOK_SECRET)
 ```
 
-Skips origin device when `client_session_id` matches mutation metadata. Requires `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY`; fails gracefully when unset or table missing.
+Skips origin device when `client_session_id` matches mutation metadata. Requires `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY`; fails gracefully when unset or table missing. Daily schedule report pushes reuse `push_subscriptions` with `profile_id` and `branch_id` filters so the same subscription table covers inventory alerts and scheduled staff reports.
 
 ### AI Chat
 
@@ -209,11 +232,12 @@ AIChatOverlay → POST /api/chat → ToolLoopAgent (Gemini 2.5 Flash)
 
 > AI tools (`src/app/api/chat/route.ts`): `getDailyShifts` (daily roster), `readTable` (other internal tables), `internetSearchTool` (external/weather). Weather is served via `internetSearchTool` — there is no separate `weather` AI tool.
 
-### Daily LINE Report
+### Daily LINE + Web Push Report
 
 ```text
 Vercel Cron → /api/daily-report → compileDailyReportPayload()
 → shifts + inventory alerts + weather + holidays → sendLineNotification()
+→ dispatch daily schedule Web Push to eligible push_subscriptions (branch/profile scoped)
 ```
 
 ---
