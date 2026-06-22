@@ -177,21 +177,13 @@ Market Insights was removed from the app. Its route, server actions, shared help
 | `fetchTodayShifts(date)` | Shifts for target date |
 | `fetchWeatherForecast(date?)` | OpenWeatherMap forecast |
 | `fetchNextHoliday(date)` | Next public holiday |
-| `compileDailyReportPayload()` | Full LINE report payload |
+| `compileDailyReportPayload()` | Full daily report payload |
 
 Daily schedule Web Push delivery is handled by `src/lib/daily-report-web-push.ts`, reusing `push_subscriptions` rows with `branch_id` and optional `profile_id` filters.
 
 ---
 
-### 1.10 LINE (`line-actions.ts`)
-
-| Function | Purpose |
-| --- | --- |
-| `sendLineNotification(targetId, message)` | Push text via LINE Messaging API |
-
----
-
-### 1.11 Login History (`login-history-actions.ts`)
+### 1.10 Login History (`login-history-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -235,8 +227,8 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 ### `GET /api/daily-report`
 
 - Vercel Cron endpoint — protected by `CRON_SECRET`
-- Compiles + sends LINE daily notification
-- Also supports daily schedule Web Push broadcasts through `push_subscriptions.branch_id` / `profile_id`
+- Compiles daily schedule report data
+- Sends daily schedule Web Push broadcasts through `push_subscriptions.branch_id` / `profile_id`
 
 ### `GET /api/weather`
 

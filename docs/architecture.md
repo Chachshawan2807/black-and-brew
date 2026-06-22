@@ -96,8 +96,7 @@ src/app/
 │   ├── holiday-actions.ts             # Google Calendar + regular holidays
 │   ├── maintenance-actions.ts         # Service records
 │   ├── sales-actions.ts               # Excel upload, categories
-│   ├── daily-report-actions.ts        # LINE report compiler
-│   ├── line-actions.ts
+│   ├── daily-report-actions.ts        # Daily report compiler
 │   ├── push-actions.ts                # Web Push subscription register/sync/unregister
 │   ├── data-change-log-actions.ts     # Mutation audit + dispatchInventoryWebPush hook
 │   └── tools/                         # AI agent tools
@@ -224,11 +223,11 @@ AIChatOverlay → POST /api/chat → ToolLoopAgent (Gemini 2.5 Flash)
 
 > AI tools (`src/app/api/chat/route.ts`): `getDailyShifts` (daily roster), `readTable` (other internal tables), `internetSearchTool` (external/weather). Weather is served via `internetSearchTool` — there is no separate `weather` AI tool.
 
-### Daily LINE + Web Push Report
+### Daily Web Push Report
 
 ```text
 Vercel Cron → /api/daily-report → compileDailyReportPayload()
-→ shifts + inventory alerts + weather + holidays → sendLineNotification()
+→ shifts + weather + holidays
 → dispatch daily schedule Web Push to eligible push_subscriptions (branch/profile scoped)
 ```
 
@@ -293,7 +292,6 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 | OpenWeatherMap | `OPENWEATHER_API_KEY` | Weather widget + daily report |
 | Tavily | `TAVILY_API_KEY` | AI web search |
 | Web Push (VAPID) | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | Cross-device inventory alerts via `web-push` |
-| LINE Messaging API | `LINE_CHANNEL_ACCESS_TOKEN` | Daily push notifications |
 | Vercel | Git deployment | App hosting + Cron |
 
 ---

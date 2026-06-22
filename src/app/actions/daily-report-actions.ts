@@ -13,9 +13,6 @@ const getSupabaseAdmin = () => {
   });
 };
 
-// Time values recognized as active working shifts (chronological order)
-const ACTIVE_TIME_VALUES = ['6:00', '6:30', '7:00', '8:00'];
-
 /**
  * Parses a shift time string into a numeric value for chronological sorting.
  * e.g. "6:30" -> 6.5, "7:00" -> 7.0, "8:00" -> 8.0
@@ -52,6 +49,29 @@ export interface DailyReportData {
   holiday: { name: string; daysRemaining: number } | null;
 }
 
+type DailyReportProfileRow = {
+  id: string | null;
+  full_name: string | null;
+};
+
+type DailyReportShiftRow = {
+  employee_id: string | null;
+  status: string | null;
+  metadata?: {
+    location?: unknown;
+  } | null;
+};
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function getErrorDetails(error: unknown): unknown {
+  return error && typeof error === 'object' && 'details' in error
+    ? (error as { details?: unknown }).details
+    : null;
+}
+
 /** Thai display format for report header (DD/MM/YYYY). */
 const THAI_REPORT_DATE_FORMAT = 'dd-MM-yyyy';
 
@@ -59,7 +79,7 @@ const DAY_OFF_SHIFT_TEXT = 'วันหยุด';
 
 /**
  * Normalizes legacy/empty shift labels into standard day-off status.
- * Never surfaces "ไม่มีกะ" in the LINE report.
+ * Never surfaces "ไม่มีกะ" in the daily report.
  */
 function normalizeShiftText(shiftText: string): string {
   const trimmed = shiftText.trim();
@@ -98,8 +118,8 @@ export async function fetchTodayShifts(targetDate: Date) {
         .lte('start_time', `${dateStr}T23:59:59`)
     ]);
 
-    const profiles = profilesRes.data || [];
-    const shifts = shiftsRes.data || [];
+    const profiles = (profilesRes.data || []) as DailyReportProfileRow[];
+    const shifts = (shiftsRes.data || []) as DailyReportShiftRow[];
 
     const activeStaff: StaffShiftEntry[] = [];
     const otherDutyStaff: StaffShiftEntry[] = [];
@@ -112,7 +132,7 @@ export async function fetchTodayShifts(targetDate: Date) {
         : 'ไม่ระบุชื่อ';
 
       try {
-        const shift = shifts.find((s: any) => s?.employee_id === profile?.id);
+        const shift = shifts.find((s) => s?.employee_id === profile?.id);
         let shiftText = DAY_OFF_SHIFT_TEXT; // strict default for missing/null/blank schedule
 
         // Missing shift record, null schedule, undefined schedule, blank schedule => วันหยุด
@@ -143,12 +163,12 @@ export async function fetchTodayShifts(targetDate: Date) {
         } else {
           offStaff.push(entry);
         }
-      } catch (profileError: any) {
+      } catch (profileError: unknown) {
         // Never let one broken profile mapping truncate the whole report.
         console.error('[fetchTodayShifts] Profile mapping error:', {
           profileId: profile?.id,
           profileName,
-          message: profileError?.message || profileError,
+          message: getErrorMessage(profileError),
         });
         offStaff.push({ name: profileName, shiftText: DAY_OFF_SHIFT_TEXT });
         continue;
@@ -202,18 +222,21 @@ export async function fetchNextHoliday(targetDate: Date) {
     return { ok: true, name: data.name, daysRemaining: diff };
   } catch (error) {
     console.error('[fetchNextHoliday] Error:', error);
-    return { ok: false, error: { message: (error as any)?.message || 'Unknown error', details: (error as any)?.details ?? null } };
+    return {
+      ok: false,
+      error: { message: getErrorMessage(error), details: getErrorDetails(error) },
+    };
   }
 }
 
-/** Which calendar day the LINE schedule notification should cover. */
+/** Which calendar day the daily schedule notification should cover. */
 export type DailyReportSchedule = 'today' | 'tomorrow';
 
 /** Evening cron boundary in Asia/Bangkok (18:00 ICT → tomorrow's schedule). */
 const EVENING_SCHEDULE_HOUR_ICT = 18;
 
 /**
- * Resolves which day's schedule the LINE notification should cover.
+ * Resolves which day's schedule the notification should cover.
  * Explicit `?schedule=` wins; otherwise infers from Bangkok wall-clock hour.
  */
 export function resolveDailyReportSchedule(
@@ -228,7 +251,7 @@ export function resolveDailyReportSchedule(
 }
 
 /**
- * Compiles shift + holiday data for the LINE daily report Flex Message.
+ * Compiles shift + holiday data for the daily report notification.
  *
  * - `today` (default): 05:00 ICT cron — ตารางงานของวันนั้น
  * - `tomorrow`: 18:00 ICT cron — ตารางงานของวันถัดไป

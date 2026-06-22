@@ -89,13 +89,10 @@ Legend: `[PUBLIC]` = ฝังใน browser · `[SECRET]` = server-only · `[OP
 | `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — sync วันหยุดราชการ (schedule) |
 
-### LINE & Vercel Cron
+### Vercel Cron
 
 | Variable | Scope | Purpose |
 | --- | :--- | --- |
-| `LINE_CHANNEL_ACCESS_TOKEN` | SECRET | LINE Messaging API push token |
-| `LINE_GROUP_ID` | SECRET | ปลายทาง cron (ตรวจก่อน `LINE_TARGET_*`) |
-| `LINE_TARGET_RECIPIENT_ID` | SECRET | ปลายทาง LINE fallback (user/group/room ID) |
 | `CRON_SECRET` | SECRET | ยืนยัน `GET /api/daily-report` — `Authorization: Bearer …` |
 
 ### Web Push (Cross-Device Inventory Alerts)

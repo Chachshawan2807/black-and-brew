@@ -103,8 +103,7 @@ black-and-brew/
 | `maintenance-actions.ts` | Service record CRUD |
 | `sales-actions.ts` | Excel upload, categories, metrics |
 | `market-insights-actions.ts` | Gemini market analysis with local event context |
-| `daily-report-actions.ts` | LINE daily report compiler |
-| `line-actions.ts` | LINE Messaging API push |
+| `daily-report-actions.ts` | Daily schedule report compiler |
 | `push-actions.ts` | Web Push subscription register/sync/unregister |
 | `data-change-log-actions.ts` | Mutation audit log + Web Push dispatch hook |
 | `migrate-inventory-sort-order.ts` | DB-only sort_order re-sequence |

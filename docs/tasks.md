@@ -61,7 +61,7 @@
 
 ### Phase 5: PWA, Real-Time Status, & Touch-Accessible DnD (June 2026)
 
-- [x] Integrate LINE Messaging API push alerts for daily baristas shifts and weather reports
+- [x] Integrate Web Push alerts for daily baristas shifts and weather reports
 - [x] Configure standard PWA support (web manifest, service worker registration, iOS status bar, Network-First caching strategy)
 - [x] Add real-time db state tracking using custom `LiveStatusTracker`
 - [x] Add dynamic layout for collapsible sidebar nav (`Menu.tsx`, `Sidebar.tsx`, etc.)
@@ -156,7 +156,7 @@ Plan: `docs/plans/2026-06-12-dark-theme-remediation.md`
 
 - [ ] Add inventory categories/groups
 - [x] Inventory in-app notifications via `data_change_logs` Realtime + PWA push prefs (v8.5)
-- [ ] Implement low-stock LINE/push alerts (threshold-based)
+- [ ] Implement low-stock Web Push alerts (threshold-based)
 - [x] ~~Add export to CSV/PDF for Purchase Orders~~ — PNG export by channel (v6.8)
 - [ ] Build reporting dashboard (stock trends, shift analytics)
 - [ ] Implement multi-store support

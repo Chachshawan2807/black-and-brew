@@ -5,7 +5,7 @@ import {
   compileDailyReportData,
   resolveDailyReportSchedule,
 } from '@/app/actions/daily-report-actions';
-import { buildDailyReportAltText } from '@/lib/line/daily-report-flex';
+import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 import { dispatchDailyReportWebPush } from '@/lib/daily-report-web-push';
 
 export const maxDuration = 30;

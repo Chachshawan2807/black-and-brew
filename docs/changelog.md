@@ -114,7 +114,7 @@
 
 - **Execution**: [DOCUMENTATION SYNC — `.env.example` + `src/` as source of truth]
 - **Changes**:
-  - `docs/context.md` — ลบ `READ_ONLY_PIN`, `LINE_CHANNEL_ID`; เพิ่ม `LINE_GROUP_ID`; ระบุ `GOOGLE_GENERATIVE_AI_API_KEY` เท่านั้นสำหรับ Gemini
+  - `docs/context.md` — ลบ env เก่าออกจาก canonical list; ระบุ `GOOGLE_GENERATIVE_AI_API_KEY` เท่านั้นสำหรับ Gemini
   - `docs/architecture.md` — ยืนยัน `GOOGLE_GENERATIVE_AI_API_KEY`; ระบุว่า `GEMINI_API_KEY`/`GOOGLE_API_KEY` ไม่ถูกใช้ใน `src/`
   - `docs/MASTER_BLUEPRINT.md` — canonical blueprint; เพิ่ม Environment Variables; deprecate `src/lib/agent-tools/`
   - `MASTER_BLUEPRINT.md` (root) — redirect stub + deprecated section + env var names
@@ -126,7 +126,7 @@
 - **Execution**: [DOCUMENTATION SYNC — surgical header and content patches]
 - **Changes**:
   - Bumped Version/Last Updated header to `v8.2 / 2026-06-09` in all nine target docs (`architecture.md`, `database.md`, `api.md`, `rules.md`, `design.md`, `context.md`, `tasks.md`, `changelog.md`, `memory.md`).
-  - `context.md` — updated Current Version field to 8.2; env vars table was already corrected by prior sync (READ_ONLY_PIN and LINE_CHANNEL_ID removed, LINE_GROUP_ID present).
+  - `context.md` — updated Current Version field to 8.2; env vars table was already corrected by prior sync.
   - `memory.md` — added version/date header (was missing).
   - `tasks.md` — appended documentation sync v8.2 entry to Phase 7 completed list.
   - All other docs had correct content — header bump only.
@@ -204,11 +204,11 @@
 | --- | --- |
 | Centralized Sanitization | `src/lib/security/sanitize.ts` — XSS + prompt injection สำหรับ chat route, overlay, localStorage |
 | Server Auth Gate | `src/lib/security/server-auth.ts` — `ensureServerSession()` + `requireServiceRoleKey()` |
-| LINE Push Isolation | `src/lib/line-notify.ts` — cron ใช้ `pushLineMessage` โดยตรง; `sendLineNotification` ต้อง auth + Zod |
+| Notification Isolation | Daily report delivery stays in server-only Web Push helpers; privileged actions stay behind auth + Zod |
 | Anon Key Fallback Removed | `schedule/page.tsx`, `migrate-inventory-sort-order.ts` — บังคับ SERVICE_ROLE เท่านั้น |
 | AI Tool Lockdown | `readTableTool` tableName → `z.enum`; `internetSearchTool` query 2–200 chars + sanitize |
-| Server Action Auth | `getMarketInsights`, `runInventoryMigration`, `sendLineNotification` — `getUser`/PIN gate |
-| Zod Validation | `maintenance-actions`, `holiday-actions`, `line-actions` |
+| Server Action Auth | `getMarketInsights`, `runInventoryMigration` — `getUser`/PIN gate |
+| Zod Validation | `maintenance-actions`, `holiday-actions` |
 | Schedule Page Guard | Server-side `checkAuth()` + redirect ก่อน admin fetch |
 | AIChatOverlay | Shared sanitize util; history `useEffect` แยก static `[isMounted]` |
 
@@ -245,9 +245,9 @@
   - `src/test/run_migration.test.ts` — [NEW] Integration test to trigger and verify migration
 - **Verification**: `npx tsc --noEmit` ✓ | `npm run build` ✓ (Exit Code 0, 21/21 static pages)
 
-- **Execution**: [DAILY LINE NOTIFICATION PROTOCOL]
+- **Execution**: [DAILY REPORT NOTIFICATION PROTOCOL]
 - **Action**: Created Vercel Cron scheduled endpoint (`/api/daily-report`) to trigger at 00:00 UTC (07:00 ICT) every day. Built a compiler script that aggregates shift data, strictly filtered inventory alerts (`stock <= order_point + 2`), OpenWeatherMap forecast (06:30 - 18:00 ICT window), and upcoming public holidays.
-- **Result**: Implemented automated, token-free, rule-based push notifications sent daily via LINE Messaging API, protected by `CRON_SECRET`.
+- **Result**: Implemented automated, token-free, rule-based daily report notifications protected by `CRON_SECRET`.
 - **Files Modified**:
   - `src/app/actions/daily-report-actions.ts` — [NEW] Core data compiler logic
   - `src/app/api/daily-report/route.ts` — [NEW] Vercel Cron Endpoint
@@ -355,11 +355,11 @@
 - **Action**: เพิ่มระบบ caching สำหรับ Market Insights ใน localStorage (manual refresh only, no expiration)
 - **Verification**: `npm run build` ✓ (No errors, 25/25 pages)
 
-## 2026-06-05 (v6.7 - Full Security Hardening & LINE Refinement)
+## 2026-06-05 (v6.7 - Full Security Hardening & Notification Refinement)
 
-- **Execution**: [DAILY LINE NOTIFICATION CONTENT REFINEMENT]
-- **Action**: ลบส่วน "คำแนะนำ" ออกจากเนื้อหาแจ้งเตือน LINE ใน `compileDailyReportPayload` (`src/app/actions/daily-report-actions.ts`), ลบ `generateInsightsWithAI` และ `generateStrategicAdvice` ที่ไม่ใช้แล้ว, และลบ import ที่ไม่จำเป็น
-- **Result**: ข้อความแจ้งเตือนกลุ่ม LINE ไม่มีส่วนคำแนะนำอีกต่อไป และโค้ดสะอาดขึ้น
+- **Execution**: [DAILY NOTIFICATION CONTENT REFINEMENT]
+- **Action**: ลบส่วน "คำแนะนำ" ออกจากเนื้อหาแจ้งเตือนใน `compileDailyReportPayload` (`src/app/actions/daily-report-actions.ts`), ลบ `generateInsightsWithAI` และ `generateStrategicAdvice` ที่ไม่ใช้แล้ว, และลบ import ที่ไม่จำเป็น
+- **Result**: ข้อความแจ้งเตือนไม่มีส่วนคำแนะนำอีกต่อไป และโค้ดสะอาดขึ้น
 - **Verification**: `npm run build` ✓
 
 - **Execution**: [FULL SECURITY HARDENING]

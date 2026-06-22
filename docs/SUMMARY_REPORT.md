@@ -24,7 +24,7 @@ Last Updated: 2026-06-22 | Version: v9.0
 | `docs/changelog.md` | v9.0 performance/doc/SQL/graphify sync entry |
 | `docs/memory.md` | DEC-078 daily report Web Push subscriptions and DEC-079 performance guardrails |
 | `docs/design.md` / `docs/rules.md` | Inventory row containment, dynamic modal loading, dashboard query guardrails, push subscription fields |
-| `docs/prd.md` | Dashboard/inventory performance and daily LINE + Web Push product scope |
+| `docs/prd.md` | Dashboard/inventory performance and daily Web Push product scope |
 | `SKILLS_INVENTORY.md` | Performance skill entries for dashboard query consolidation, route bundle split, row containment |
 | `sql/README.md` | 14 migrations listed; no-safe-delete SQL audit refreshed |
 

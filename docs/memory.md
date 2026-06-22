@@ -193,12 +193,12 @@
 - **Context:** ต้องการ hardening แบบ one-shot โดยไม่ทำลาย core files (`route.ts`, `AIChatOverlay`, tools) และตัด anon-key fallback ที่เหลือ
 - **Decision:**
   1. **Security Lib**: `src/lib/security/sanitize.ts` + `server-auth.ts` เป็น single source of truth
-  2. **LINE Split**: Cron → `pushLineMessage` (lib); UI → `sendLineNotification` (auth + Zod)
+  2. **Notification Split**: Cron → Web Push delivery; UI actions stay behind auth + Zod
   3. **No Anon Fallback**: `requireServiceRoleKey()` บังคับใน schedule page และ migration action
   4. **AI Tool Schema**: `tableName` enum whitelist; search query length + injection strip
   5. **Hydration**: AIChatOverlay history effect ใช้ `[isMounted]` เท่านั้น
 - **Impact:** ลด attack surface สำหรับ direct server-action invocation และ XSS จาก persisted chat
-- **Evidence:** `src/lib/security/`, `src/lib/line-notify.ts`, `docs/changelog.md` (2026-06-07 v7.1)
+- **Evidence:** `src/lib/security/`, `src/lib/daily-report-web-push.ts`, `docs/changelog.md` (2026-06-07 v7.1)
 
 ---
 
@@ -806,40 +806,12 @@ pm run build).
 - **Impact:** ยกระดับการเลื่อนดูข้อมูลและความสะดวกสบายในการกรอง/สั่งงานที่ร้านได้อย่างชัดเจน เพิ่มความสะดวกในการอ่านและป้อนข้อมูลของพนักงานผ่านอุปกรณ์เคลื่อนที่ในร้าน
 - **Evidence:** `src/app/[locale]/inventory/page.tsx`, `npx tsc --noEmit` ✓, `npm run build` Exit Code 0
 
-### DEC-043: LINE Messaging API Foundation Integration
-
-- **Date:** May 26, 2026
-- **Context:** ระบบ ERP ต้องการช่องทางการแจ้งเตือนอัตโนมัติผ่าน LINE เพื่อสื่อสารข้อมูลสำคัญ (เช่น สินค้าใกล้หมด, สรุปยอดประจำวัน) ไปยังผู้จัดการร้านและพนักงานผ่านแอป LINE ได้โดยตรง โดยตัวแปรสภาพแวดล้อม `LINE_CHANNEL_ACCESS_TOKEN` และ `CHANNEL_ID` ถูกลงทะเบียนไว้ในระบบแล้ว
-- **Decision:**
-  1. **SDK Installation:** ติดตั้ง `@line/bot-sdk` v11.x เป็น dependency หลักของโปรเจกต์
-  2. **Server Action Wrapper:** สร้างฟังก์ชัน `sendLineNotification(targetId, message)` ใน `src/app/actions/line-actions.ts` ทำหน้าที่เป็น baseline wrapper สำหรับส่ง push text message ผ่าน LINE API
-  3. **Client Initialization:** ใช้ `LineBotClient.fromChannelAccessToken()` (v11 API) สร้าง client แบบมีเงื่อนไข — หาก token ว่างเปล่า client จะเป็น `null` พร้อม early-return error message ที่ชัดเจน
-  4. **Isolation Strategy:** ฟังก์ชันนี้ยังไม่ถูกเชื่อมต่อกับ cron jobs, database triggers หรือระบบ scheduling ใดๆ ทั้งสิ้น คงไว้เป็น callable utility สำหรับต่อยอดในอนาคต
-  5. **Security:** Token ถูกเรียกใช้ผ่าน `process.env.LINE_CHANNEL_ACCESS_TOKEN` ฝั่ง server-side เท่านั้น (`'use server'`) ไม่มีความเสี่ยงหลุดไป client bundle
-- **Impact:** วางรากฐานระบบแจ้งเตือน LINE สำหรับต่อยอดเป็นโมดูลแจ้งเตือนอัตโนมัติในอนาคต
-
-### DEC-044: Daily LINE Notification Protocol
-
-- **Date:** May 26, 2026
-- **Context:** ระบบมีความต้องการสรุปข้อมูลสำคัญ (กำลังพล, สินค้าคงคลัง, สภาพอากาศ, และวันหยุด) ส่งตรงถึงผู้ใช้งานผ่าน LINE ทุกเช้าเวลา 07:00 น. เพื่อให้สามารถวางแผนกลยุทธ์หน้าร้านได้อย่างรวดเร็ว
-- **Decision:**
-  1. **Vercel Cron Trigger:** ตั้งค่า `vercel.json` trigger ไปที่ endpoint `/api/daily-report` ทุกวันเวลา 00:00 UTC (07:00 น. ICT)
-  2. **Security & Authorization:** ใช้ `CRON_SECRET` ใน Header `Authorization: Bearer <token>` เพื่อตรวจสอบสิทธิ์ ไม่ให้โดนยิง API จากภายนอก
-  3. **Data Source Consolidation (`daily-report-actions.ts`):**
-     - **Shifts:** สรุปกำลังพลจาก Supabase แบบเรียงลำดับ 9 ลำดับ (Master Order) ตัดข้อมูล "ลา" หรือ "วันหยุด"
-     - **Inventory:** กรองเข้มงวด `stock <= order_point + 2` เท่านั้น ไม่แสดงรายการปกติ
-     - **Weather:** ดึง OpenWeatherMap เฉพาะช่วง 06:30-18:00 (เวลาทำงาน) ป้องกัน noise
-     - **Holiday:** คำนวณวันหยุดถัดไปแจ้งเตือนล่วงหน้า 3 วัน
-  4. **Rule-Based Recommendation:** ใช้ rule-based logic สั้นๆ แจ้งเตือนเรื่องฝนตกหรือเทศกาลเพื่อลดการใช้ Token ของ AI เสริมความเสถียรของ Cron
-- **Impact:** ได้ระบบสรุปข้อมูลอัจฉริยะทำงานอัตโนมัติ 100% ตอบสนองความเร็ว 0ms ในมุมผู้ใช้งาน
-- **Evidence:** `src/app/actions/daily-report-actions.ts`, `src/app/api/daily-report/route.ts`, `vercel.json`
-
 ### DEC-045: Omni Cleanup, Payload Minimization & Security Determinism (v4.4)
 
 - **Date:** May 27, 2026
 - **Context:** ระบบต้องการความเร็วสูงสุด (ลด CPU/log noise, ลด payload, ลด rerender/คำนวณซ้ำ) พร้อมความปลอดภัยที่ deterministic (ไม่ fallback ใช้ anon key เงียบๆ) และทำให้ modal ใหญ่โหลดช้าลงแบบ chunk
 - **Decision:**
-  1. ทำ `console.log` purge ใน production paths ของ `api/chat`, `api/daily-report`, `line-actions`, `database-tools`, และ `search-tools`
+  1. ทำ `console.log` purge ใน production paths ของ `api/chat`, `api/daily-report`, `database-tools`, และ `search-tools`
   2. ปรับ `ScheduleClient` ให้หลีกเลี่ยง `select('*')` ด้วยการระบุเฉพาะคอลัมน์ที่ UI ใช้จริง
   3. เพิ่มประสิทธิภาพการคำนวณ `LiveShiftList` ด้วย Map/Set indexing เพื่อลดการ filter ซ้ำ
   4. ปรับ `AIChatOverlay` ให้ quick actions ครบ 4 ปุ่ม และรวม hydration effects 2 ชุด พร้อม debounce การ persist localStorage

@@ -156,9 +156,6 @@ Authoritative list: [`.env.example`](../.env.example). Keys actually read in `sr
 | `TAVILY_API_KEY` | SECRET | `internetSearchTool` |
 | `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — holiday sync |
-| `LINE_CHANNEL_ACCESS_TOKEN` | SECRET | LINE Messaging API push |
-| `LINE_GROUP_ID` | SECRET | Cron recipient (preferred) |
-| `LINE_TARGET_RECIPIENT_ID` | SECRET | Cron recipient fallback |
 | `CRON_SECRET` | SECRET | Protects `GET /api/daily-report` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | PUBLIC | Web Push VAPID public key |
 | `VAPID_PRIVATE_KEY` | SECRET | Web Push server signing key |

@@ -97,10 +97,10 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - Purpose: การตั้งค่าระบบสำหรับพนักงาน
 - Features: Theme picker (light / dark / system via `next-themes`, key `bb-theme`); login history; trusted-device passkeys; notification preferences; data change history (`DataChangeHistorySection`)
 
-### 3.10 Daily LINE + Web Push Notification
+### 3.10 Daily Web Push Notification
 
 - Route: `/api/daily-report` (Vercel Cron)
-- Purpose: แจ้งเตือนกะงาน สต็อกต่ำ อากาศ วันหยุด ผ่าน LINE และ Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
+- Purpose: แจ้งเตือนกะงาน อากาศ และวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
 
 ---
 

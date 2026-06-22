@@ -1,5 +1,5 @@
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
-import { buildDailyReportAltText } from '@/lib/line/daily-report-flex';
+import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type InventoryNotification,

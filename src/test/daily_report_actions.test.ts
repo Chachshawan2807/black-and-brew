@@ -87,9 +87,9 @@ import {
   compileDailyReportData,
   resolveDailyReportSchedule,
 } from '@/app/actions/daily-report-actions';
-import { buildDailyReportAltText } from '@/lib/line/daily-report-flex';
+import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 
-describe('Daily LINE Notification Protocol Actions', () => {
+describe('Daily report protocol actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();

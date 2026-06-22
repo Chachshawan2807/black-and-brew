@@ -7,7 +7,7 @@ import {
   type ShiftTypeEntry,
 } from '@/lib/shift-type-config';
 
-/** LINE Flex Message palettes — hex pairs aligned with Tailwind classes below */
+/** Compact notification palettes — hex pairs aligned with Tailwind classes below */
 export type ShiftFlexPalette = { backgroundColor: string; borderColor: string };
 
 const LEGACY_FLEX_PALETTES = {
