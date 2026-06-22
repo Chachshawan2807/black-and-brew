@@ -1,3 +1,8 @@
+import type {
+  InventoryRecommendationConfidence,
+  InventoryShortageRisk,
+} from '@/lib/inventory-recommended-target-stock';
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -9,14 +14,19 @@ export interface InventoryItem {
   source: string;
   sort_order: number;
   count_policy?: InventoryCountPolicy;
+  shortage_risk?: InventoryShortageRisk;
+  lead_time_days?: number;
+  recommended_target_stock?: number;
+  recommendation_confidence?: InventoryRecommendationConfidence;
+  recommendation_explanation?: string[];
   updated_at?: string;
-  [key: string]: string | number | undefined;
+  [key: string]: string | number | string[] | undefined;
 }
 
 export type InventoryCountPolicy = 'exact_count' | 'sufficiency_check';
 
-/** Value accepted by inventory cell editors and save handlers */
-export type InventoryFieldValue = string | number;
+/** Value accepted by inventory cell editors and transient recommendation rows */
+export type InventoryFieldValue = string | number | string[];
 
 export type InventoryFieldHandler = (
   id: string,
@@ -24,12 +34,18 @@ export type InventoryFieldHandler = (
   value: InventoryFieldValue
 ) => void;
 
+export type InventoryFieldSaveHandler = (
+  id: string,
+  field: string,
+  value: InventoryFieldValue
+) => boolean | void | Promise<boolean | void>;
+
 export interface InventoryCellBaseProps {
   item: InventoryItem;
   col: ColumnDef;
   rowIndex: number;
   handleUpdateField: InventoryFieldHandler;
-  handleSaveField: (id: string, field: string, value: InventoryFieldValue) => void | Promise<void>;
+  handleSaveField: InventoryFieldSaveHandler;
   handleFocus: () => void;
   requestDelete: (id: string) => void;
 }
@@ -39,9 +55,10 @@ export interface InventoryRowHandlers extends InventoryCellBaseProps {
 }
 
 export function readInventoryField(item: InventoryItem, fieldId: string): string | number {
-  const record = item as Record<string, string | number | undefined>;
+  const record = item as Record<string, string | number | string[] | undefined>;
   const val = record[fieldId];
   if (val === undefined || val === null) return '';
+  if (Array.isArray(val)) return '';
   return val;
 }
 

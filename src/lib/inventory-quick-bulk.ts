@@ -35,6 +35,13 @@ export function parseBulkEntry(line: string): { name: string; qty: string } {
   return { name: cleanedLine, qty: '1' };
 }
 
+export function parseBulkPasteNames(text: string): string[] {
+  return text
+    .split(/[\n,]+/)
+    .map((part) => parseBulkEntry(part).name.trim())
+    .filter(Boolean);
+}
+
 export function findItemByFuzzyName<T extends BulkStockItem>(items: T[], name: string): T | undefined {
   const needle = name.trim().toLowerCase();
   if (!needle) return undefined;

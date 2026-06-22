@@ -153,7 +153,8 @@ describe('useInventoryQuickAction save reset behavior', () => {
     vi.mocked(updateInventoryStock).mockResolvedValue({ success: true, newStock: 8 });
     vi.mocked(recordBulkInventoryTransactions).mockResolvedValue({
       success: true,
-      results: [{ itemId: 'milk', success: true, newStock: 5 }],
+      error: null,
+      results: [{ itemId: 'milk', success: true, newStock: 5, error: undefined }],
     });
 
     render(<QuickActionHarness onAfterSave={onAfterSave} />);

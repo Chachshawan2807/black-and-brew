@@ -344,9 +344,11 @@ export type Database = {
         Row: {
           count_policy: string
           id: string
+          lead_time_days: number | null
           name: string | null
           order_point: number | null
           order_qty: number | null
+          shortage_risk: string | null
           sort_order: number | null
           source: string | null
           stock: number | null
@@ -357,9 +359,11 @@ export type Database = {
         Insert: {
           count_policy?: string
           id?: string
+          lead_time_days?: number | null
           name?: string | null
           order_point?: number | null
           order_qty?: number | null
+          shortage_risk?: string | null
           sort_order?: number | null
           source?: string | null
           stock?: number | null
@@ -370,9 +374,11 @@ export type Database = {
         Update: {
           count_policy?: string
           id?: string
+          lead_time_days?: number | null
           name?: string | null
           order_point?: number | null
           order_qty?: number | null
+          shortage_risk?: string | null
           sort_order?: number | null
           source?: string | null
           stock?: number | null
@@ -419,33 +425,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      market_insight_runs: {
-        Row: {
-          context_json: Json
-          created_at: string
-          generated_at: string
-          id: string
-          insights_json: Json
-          sources_json: Json
-        }
-        Insert: {
-          context_json: Json
-          created_at?: string
-          generated_at?: string
-          id?: string
-          insights_json: Json
-          sources_json?: Json
-        }
-        Update: {
-          context_json?: Json
-          created_at?: string
-          generated_at?: string
-          id?: string
-          insights_json?: Json
-          sources_json?: Json
-        }
-        Relationships: []
       }
       product_categories: {
         Row: {
@@ -707,77 +686,6 @@ export type Database = {
       }
     }
     Views: {
-      ai_inventory_summary: {
-        Row: {
-          name: string | null
-          order_point: number | null
-          order_qty: number | null
-          source: string | null
-          stock: number | null
-          stock_status: string | null
-          target_stock: number | null
-          unit: string | null
-        }
-        Insert: {
-          name?: string | null
-          order_point?: number | null
-          order_qty?: number | null
-          source?: string | null
-          stock?: number | null
-          stock_status?: never
-          target_stock?: number | null
-          unit?: string | null
-        }
-        Update: {
-          name?: string | null
-          order_point?: number | null
-          order_qty?: number | null
-          source?: string | null
-          stock?: number | null
-          stock_status?: never
-          target_stock?: number | null
-          unit?: string | null
-        }
-        Relationships: []
-      }
-      ai_purchase_orders_needed: {
-        Row: {
-          current_stock: number | null
-          name: string | null
-          qty_to_order: number | null
-          source: string | null
-          target_stock: number | null
-          unit: string | null
-        }
-        Insert: {
-          current_stock?: number | null
-          name?: string | null
-          qty_to_order?: never
-          source?: string | null
-          target_stock?: number | null
-          unit?: string | null
-        }
-        Update: {
-          current_stock?: number | null
-          name?: string | null
-          qty_to_order?: never
-          source?: string | null
-          target_stock?: number | null
-          unit?: string | null
-        }
-        Relationships: []
-      }
-      ai_recent_transactions: {
-        Row: {
-          created_at_local: string | null
-          item_name: string | null
-          note: string | null
-          balance_after: number | null
-          quantity: number | null
-          type: string | null
-        }
-        Relationships: []
-      }
       view_inventory_summary: {
         Row: {
           name: string | null

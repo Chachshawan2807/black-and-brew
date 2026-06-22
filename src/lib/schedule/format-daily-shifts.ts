@@ -9,6 +9,7 @@ export interface DailyShiftEntry {
 }
 
 export interface FormattedDailyShifts {
+  date?: string;
   front_store: DailyShiftEntry[];
   other_duty: DailyShiftEntry[];
   off_or_leave: DailyShiftEntry[];

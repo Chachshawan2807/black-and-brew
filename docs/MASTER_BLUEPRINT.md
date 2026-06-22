@@ -44,7 +44,6 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 - Deterministic Schedule Path (DEC-068): คำถามตารางงานรายวัน (วันนี้/พรุ่งนี้) short-circuit ผ่าน `fetchDailyShiftsByDate` + `formatScheduleChatResponse` — ไม่พึ่ง LLM สรุปผล ป้องกันคำตอบสั้นผิดพลาด (เช่น "วันนี้ 0")
 - Shift Data Source: กะจริงมาจาก `shifts.metadata.location` (6:30, 7:00, 8:00, ลา, ไปสาขา 2, ร้านซักผ้า, วันหยุด) — ห้ามใช้ `start_time` เป็นเวลาเข้างาน
 - Security: AI reads via Supabase Service Role isolated tools — read-only data layer.
-- Market Context: Market Insights combines deterministic Supabase context, weather, holidays, optional Google Places, Tavily trends, and store-managed `local_events`.
 - Hydration: `AIChatOverlay` uses `isMounted` guard (`useEffect(() => setIsMounted(true), []`) to prevent Math.random prerender errors. Loaded via `next/dynamic ssr:false` in `AIChatWrapper`.
 - Branding & UI Polish: Implemented a custom branding logo loaded dynamically via `/ai-agent-logo.svg` inside standard Next.js `<Image />` tags, overriding the generic Lucide `<Bot />` icons in the header, bubble avatars, and thinking indicators for maximum brand coherence.
 - UI Enhancements (R0 Standard):
@@ -124,7 +123,6 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing ext
 | Schedule | `/[locale]/schedule` | Active — DnD |
 | Maintenance | `/[locale]/maintenance` | Active |
 | Sales | `/[locale]/sales` | Active |
-| Market Insights | `/[locale]/market-insights` | Active |
 | AI Assistant (บรู) | Global overlay | Active — AI SDK v6 |
 | PIN Auth | PinGateway | Active — full + read-only |
 | Trusted-device Passkeys | Settings | Active — WebAuthn biometric login |
@@ -154,11 +152,10 @@ Authoritative list: [`.env.example`](../.env.example). Keys actually read in `sr
 | `WEBAUTHN_RP_ID` | SECRET | OPTION — production WebAuthn relying-party ID |
 | `WEBAUTHN_ORIGIN` | SECRET | OPTION — production WebAuthn origin |
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | PUBLIC | Store coordinates |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini — `@ai-sdk/google` (AI Chat, Market Insights) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini — `@ai-sdk/google` (AI Chat) |
 | `TAVILY_API_KEY` | SECRET | `internetSearchTool` |
-| `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report, market-insights |
+| `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — holiday sync |
-| `GOOGLE_PLACES_API_KEY` | SECRET | OPTION — Market Insights v2 nearby cafés |
 | `LINE_CHANNEL_ACCESS_TOKEN` | SECRET | LINE Messaging API push |
 | `LINE_GROUP_ID` | SECRET | Cron recipient (preferred) |
 | `LINE_TARGET_RECIPIENT_ID` | SECRET | Cron recipient fallback |

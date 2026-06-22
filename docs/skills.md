@@ -9,7 +9,7 @@
 - AI Data Gateway: `src/lib/ai-data-gateway.ts` is the single AI read doorway. It owns table presets, aliases, limits, service-role access, schedule lookup, and inventory snapshots through `get_ai_store_status`.
 - Universal DB Reader: `readTableTool` routes through the gateway instead of owning a Supabase client.
 - Deterministic Daily Schedule: daily schedule questions short-circuit through `detect-schedule-query`, `fetchDailyShiftsByDate`, `formatScheduleChatResponse`, and deterministic SSE.
-- External Intel: `internetSearchTool`, `tavily-client.ts`, `/api/weather`, OpenWeatherMap, and optional Google Places support Market Insights and AI chat.
+- External Intel: `internetSearchTool`, `tavily-client.ts`, `/api/weather`, and OpenWeatherMap support AI chat and weather-aware reports.
 - Inventory Truth Layer: `inventory-stock.ts`, `mergeInventoryRealtimeUpdate`, `computeItemsToOrder`, `updateInventoryStock`, and RPC `set_inventory_stock` keep warehouse and count pages aligned.
 - Supabase Session Bridge: `ensureSupabaseSession()` signs in anonymously after the PIN gate so client RLS runs as `authenticated`.
 - Web Push: `push-actions.ts`, `web-push.ts`, `push_subscriptions`, and `PushSubscriptionManager` support cross-device inventory alerts.

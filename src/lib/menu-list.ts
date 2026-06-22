@@ -1,13 +1,11 @@
 import {
   LayoutGrid,
   CalendarRange,
-  Calendar,
   Wrench,
   Home,
   Package,
   Gauge,
   HandCoins,
-  Radar,
   ClipboardList,
   type LucideIcon
 } from 'lucide-react';
@@ -97,14 +95,6 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           label: "รายงานความแม่นยำ",
           active: pathname.includes("/inventory/accuracy"),
           icon: Gauge,
-          submenus: []
-        },
-        {
-          id: 'market-insights',
-          href: `${prefix}/market-insights`,
-          label: 'วิเคราะห์ตลาด',
-          active: pathname.includes('/market-insights'),
-          icon: Radar,
           submenus: []
         },
         {

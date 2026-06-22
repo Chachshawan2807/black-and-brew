@@ -96,11 +96,6 @@ src/app/
 │   ├── holiday-actions.ts             # Google Calendar + regular holidays
 │   ├── maintenance-actions.ts         # Service records
 │   ├── sales-actions.ts               # Excel upload, categories
-│   ├── market-insights-types.ts       # v2 Zod schemas + TS types
-│   ├── market-insights-fetch.ts       # Weather forecast, holidays, local events, Tavily multi-cache
-│   ├── market-insights-places.ts      # Google Places nearby competitors (OPTION)
-│   ├── market-insights-context.ts     # Deterministic context builders
-│   ├── market-insights-actions.ts     # getMarketInsights() multi-step generateObject pipeline
 │   ├── daily-report-actions.ts        # LINE report compiler
 │   ├── line-actions.ts
 │   ├── push-actions.ts                # Web Push subscription register/sync/unregister
@@ -122,9 +117,6 @@ src/app/
     ├── maintenance/             # Equipment tracking
     ├── sales/                   # Sales analytics
     ├── settings/                # Theme picker, login history, passkeys, notification prefs
-    └── market-insights/         # AI market analysis (v2)
-        └── components/          # ContextPanel, AlertsCard, InsightCharts,
-                                 # ActionChecklist, SourcesList, DiffBanner
 ```
 
 i18n middleware: `src/proxy.ts` (Next.js 16 convention — not `src/middleware.ts`)
@@ -269,8 +261,6 @@ readTableTool.execute               ← src/app/actions/tools/database-tools.ts 
 | `fetchShiftsByDate(date)` | `fetchDailyShiftsByDate` | `FormattedDailyShifts` | Canonical grouped roster (front_store / other_duty / off_or_leave) |
 | `fetchTablePreset(table, filters?, limit?)` | `admin.from(table).select(PRESET)` | `{ ok, rows, effectiveLimit }` | Only ever selects `TABLE_COLUMN_PRESETS[table]` |
 
-Market Insights also reads store-managed `local_events` through `fetchUpcomingLocalEvents()` and formats them with `buildLocalEventsContext()` before the Gemini prompt. Missing table/query errors fail closed to an empty event list.
-
 ### Invariants
 
 - DEC-069 preset lockdown: `fetchTablePreset` ignores any AI-supplied `columns`; it always selects the table preset. Arbitrary column selection (a data-exfiltration vector through the RLS-bypassing Service Role client) is impossible by construction.
@@ -299,10 +289,9 @@ Market Insights also reads store-managed `local_events` through `fetchUpcomingLo
 | --- | :--- | --- |
 | Supabase | Anon + Service Role | DB, Auth, Real-time |
 | Google Calendar API | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync |
-| Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat + Market Insights (`@ai-sdk/google`) |
+| Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat (`@ai-sdk/google`) |
 | OpenWeatherMap | `OPENWEATHER_API_KEY` | Weather widget + daily report |
-| Tavily | `TAVILY_API_KEY` | AI web search + Market Insights multi-query cache |
-| Google Places | `GOOGLE_PLACES_API_KEY` | Nearby competitor cafes - Market Insights v2 (OPTION) |
+| Tavily | `TAVILY_API_KEY` | AI web search |
 | Web Push (VAPID) | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | Cross-device inventory alerts via `web-push` |
 | LINE Messaging API | `LINE_CHANNEL_ACCESS_TOKEN` | Daily push notifications |
 | Vercel | Git deployment | App hosting + Cron |

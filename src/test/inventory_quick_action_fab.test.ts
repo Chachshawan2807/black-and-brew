@@ -114,7 +114,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(hideCode).toContain('text-white');
     expect(hideCode).toContain('bg-white/10');
     expect(layoutCode).toContain('FAB_BOTTOM_HIDE_TOGGLE_CLASS');
-    expect(layoutCode).toMatch(/Hide toggle.*AI Chat/s);
+    expect(layoutCode).toMatch(/Hide toggle[\s\S]*AI Chat/);
     expect(contextCode).toContain('fabStackHidden');
     expect(contextCode).toContain('bb-fab-stack-hidden');
     expect(layoutCode).toContain('w-8 h-8');

@@ -17,6 +17,6 @@ describe('NotificationPanel mobile layout', () => {
 
   test('backdrop remains full-screen for tap-to-dismiss', () => {
     const code = readFile('components/notifications/NotificationPanel.tsx');
-    expect(code).toMatch(/fixed inset-0.*onClick=\{closePanel\}/s);
+    expect(code).toMatch(/fixed inset-0[\s\S]*onClick=\{closePanel\}/);
   });
 });

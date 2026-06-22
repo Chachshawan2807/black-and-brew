@@ -31,51 +31,7 @@ SELECT
 FROM public.inventory_items
 ORDER BY sort_order ASC;
 
--- 3. Readable AI inventory views used by Market Insights and generated DB types
-CREATE OR REPLACE VIEW public.ai_inventory_summary AS
-SELECT
-    name,
-    stock,
-    unit,
-    order_point,
-    target_stock,
-    source,
-    order_qty,
-    CASE
-        WHEN stock <= order_point AND target_stock > stock THEN 'LOW'
-        WHEN stock <= (order_point * 1.5) THEN 'WARNING'
-        ELSE 'OK'
-    END as stock_status
-FROM public.inventory_items
-ORDER BY sort_order ASC;
-
-CREATE OR REPLACE VIEW public.ai_purchase_orders_needed AS
-SELECT
-    name,
-    stock as current_stock,
-    target_stock,
-    GREATEST(target_stock - stock, 0) as qty_to_order,
-    unit,
-    source
-FROM public.inventory_items
-WHERE stock <= order_point
-  AND target_stock > stock
-ORDER BY sort_order ASC;
-
-CREATE OR REPLACE VIEW public.ai_recent_transactions AS
-SELECT
-    ii.name as item_name,
-    it.type,
-    it.quantity,
-    it.note,
-    it.balance_after,
-    timezone('Asia/Bangkok', it.created_at) as created_at_local
-FROM public.inventory_transactions it
-LEFT JOIN public.inventory_items ii ON ii.id = it.inventory_item_id
-ORDER BY it.created_at DESC
-LIMIT 50;
-
--- 4. RPC to get comprehensive store status for AI
+-- 3. RPC to get comprehensive store status for AI
 CREATE OR REPLACE FUNCTION public.get_ai_store_status()
 RETURNS json AS $$
 DECLARE
@@ -96,7 +52,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. RPC to get details of a specific inventory item by ID
+-- 4. RPC to get details of a specific inventory item by ID
 CREATE OR REPLACE FUNCTION public.get_ai_inventory_item_details(item_id UUID)
 RETURNS json AS $$
 DECLARE

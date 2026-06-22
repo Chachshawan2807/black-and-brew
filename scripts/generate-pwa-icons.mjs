@@ -20,7 +20,7 @@ const PWA_ASSETS = {
   NOTIFICATION_BADGE: '/images/notification-badge.png',
   APPLE_TOUCH_ICON: '/images/apple-touch-icon.png',
   FAVICON: '/images/favicon.png',
-  CACHE_VERSION: 10,
+  CACHE_VERSION: 11,
   VIBRATE: [120, 60, 120],
 };
 

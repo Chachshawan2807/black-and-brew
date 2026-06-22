@@ -14,7 +14,7 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 
 | Location | Purpose |
 | --- | --- |
-| `supabase/migrations/` | Versioned migrations (login_history, data_change_logs, revoked_sessions, push_subscriptions, daily-report push fields, device_passkeys, inventory ADD/DELETE, count verifications, count policy, local events) |
+| `supabase/migrations/` | Versioned migrations (login_history, data_change_logs, revoked_sessions, push_subscriptions, daily-report push fields, device_passkeys, inventory ADD/DELETE, count verifications, count policy, retired feature cleanup) |
 | `sql/` | Operational scripts and RPC reference blueprints |
 | Root `*.sql` | Historical reference schemas (`DB_SCHEMA.sql`, `sales_schema.sql`, etc.) — applied historically |
 
@@ -25,7 +25,7 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `record_inventory_transaction.sql` | Atomic IN/OUT RPC — used by Quick Entry and bulk quick actions |
 | `sync_inventory_stock.sql` | `set_inventory_stock` RPC, order_qty trigger, REPLICA IDENTITY |
 | `fix_inventory_rls.sql` | RLS hardening — authenticated-only |
-| `ai_agent_views.sql` | AI gateway views/RPCs (`get_ai_store_status`) |
+| `ai_agent_views.sql` | AI gateway neutral views/RPCs (`view_today_shifts`, `view_inventory_summary`, `get_ai_store_status`) |
 | `inventory_transactions_readable_view.sql` | Readable ledger view |
 
 ## Canonical migrations (`supabase/migrations/`)
@@ -43,10 +43,13 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (cross-device inventory alerts) |
 | `20260617120000_device_passkeys.sql` | WebAuthn trusted-device credentials for biometric login |
 | `20260618163100_inventory_count_policy.sql` | `inventory_items.count_policy`; exact count vs sufficiency check |
-| `20260618175951_local_events.sql` | Store-managed local events for Market Insights context |
 | `20260620221500_reset_accuracy_history.sql` | Reset count accuracy history after policy recalculation rules changed |
 | `20260621120000_push_subscriptions_daily_report.sql` | Extend `push_subscriptions` with `profile_id` and `branch_id` for daily schedule Web Push broadcasts |
+| `20260622143800_drop_market_insights_tables.sql` | Drop retired Market Insights tables (`market_insight_runs`, `local_events`) |
+| `20260622144706_drop_retired_ai_inventory_views.sql` | Drop retired AI-prefixed inventory helper views |
 
 ## Cleanup audit
 
-2026-06-22 audit result: no SQL file is safe to delete. Current versioned migrations total 14 files; root/`sql/`/`docs/sql/` reference SQL total 12 files. SQL files are migration history, active schema/RLS/RPC/view references, or optional feature schema used by current code.
+2026-06-22 cleanup: Market Insights was retired from the app. `docs/sql/market_insight_runs.sql` was removed, and `20260622143800_drop_market_insights_tables.sql` drops the retired `market_insight_runs` and `local_events` tables when migrations are applied.
+
+2026-06-22 cleanup: `20260622144706_drop_retired_ai_inventory_views.sql` removes retired `ai_*` inventory helper views. Staff-managed data remains available through neutral views such as `view_inventory_summary` and actual tables such as `inventory_transactions`.

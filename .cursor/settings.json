@@ -8,6 +8,9 @@
     },
     "tavily": {
       "enabled": true
+    },
+    "superpowers": {
+      "enabled": true
     }
   }
 }

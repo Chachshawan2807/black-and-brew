@@ -23,7 +23,6 @@
 | `inventory_items` | `count_policy` | `exact_count` or `sufficiency_check`; controls count accuracy and manual PO quantity |
 | `inventory_items` | `sort_order` | INTEGER, controls drag-and-drop ordering |
 | `inventory_config` | `settings` | JSONB containing `order`, `labels`, `widths` |
-| `local_events` | `date`, `name`, `expected_impact` | Store-managed Market Insights context |
 | `push_subscriptions` | `profile_id`, `branch_id` | Daily schedule Web Push filtering; `branch_id` defaults to `main` |
 
 ### TypeScript/React

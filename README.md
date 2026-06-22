@@ -18,7 +18,6 @@ Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AN
 | Inventory Accuracy | `/[locale]/inventory/accuracy` | รายงานความแม่นยำเฉพาะสินค้าที่ตั้งค่าเป็นนับจริง |
 | Maintenance | `/[locale]/maintenance` | บันทึกการซ่อมบำรุงอุปกรณ์ |
 | Sales | `/[locale]/sales` | อัปโหลด Excel วิเคราะห์ยอดขาย |
-| Market Insights | `/[locale]/market-insights` | วิเคราะห์ตลาดด้วย Gemini AI โดยรวม weather, holidays, local events, sales และ stock signals |
 | Settings | `/[locale]/settings` | ธีม, ประวัติการเข้าใช้, trusted-device passkeys, การแจ้งเตือน |
 | AI Chat (บรู) | Global overlay | แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน |
 
@@ -76,7 +75,7 @@ Legend: `[PUBLIC]` = ฝังใน browser · `[SECRET]` = server-only · `[OP
 | --- | :--- | --- |
 | `APP_PIN` | SECRET | PIN 6 หลัก — เข้าใช้งานเต็มสิทธิ์ (`auth.ts`) |
 | `APP_READ_ONLY_PIN` | SECRET | PIN 6 หลัก — โหมดดูอย่างเดียว (`resolveReadOnlyPin()`); บังคับใน production; dev fallback `111222` |
-| `NEXT_PUBLIC_STORE_LAT` | PUBLIC | พิกัดร้าน (default `13.9312`) — chat, insights, cron |
+| `NEXT_PUBLIC_STORE_LAT` | PUBLIC | พิกัดร้าน (default `13.9312`) — chat, weather, cron |
 | `NEXT_PUBLIC_STORE_LON` | PUBLIC | พิกัดร้าน (default `100.6756`) |
 | `WEBAUTHN_RP_ID` | SECRET | OPTION — WebAuthn relying-party ID สำหรับ production passkeys |
 | `WEBAUTHN_ORIGIN` | SECRET | OPTION — WebAuthn origin สำหรับ production passkeys |
@@ -85,11 +84,10 @@ Legend: `[PUBLIC]` = ฝังใน browser · `[SECRET]` = server-only · `[OP
 
 | Variable | Scope | Purpose |
 | --- | :--- | --- |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini — AI Chat + Market Insights (`@ai-sdk/google`) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini — AI Chat (`@ai-sdk/google`) |
 | `TAVILY_API_KEY` | SECRET | Internet search tool สำหรับ AI |
-| `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report, market-insights |
+| `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — sync วันหยุดราชการ (schedule) |
-| `GOOGLE_PLACES_API_KEY` | SECRET | OPTION — Market Insights v2 nearby cafés |
 
 ### LINE & Vercel Cron
 

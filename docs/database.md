@@ -26,8 +26,6 @@
 | `revoked_sessions` | fingerprint ที่ถูก revoke จากระยะไกล | ✓ RLS enabled | `supabase/migrations/20260612200000_revoked_sessions.sql` |
 | `push_subscriptions` | Web Push endpoints ต่ออุปกรณ์ (inventory alerts + daily schedule reports) | ✓ authenticated (own rows) | `supabase/migrations/20260616120000_push_subscriptions.sql` + `20260621120000_push_subscriptions_daily_report.sql` |
 | `device_passkeys` | WebAuthn credentials สำหรับ trusted-device biometric login | ✓ RLS enabled; service-role only | `supabase/migrations/20260617120000_device_passkeys.sql` |
-| `local_events` | เหตุการณ์รอบร้านสำหรับ Market Insights context | ✓ authenticated | `supabase/migrations/20260618175951_local_events.sql` |
-| `market_insight_runs` | ประวัติการรัน Market Insights v2 (OPTIONAL) | ✓ | `docs/sql/market_insight_runs.sql` |
 
 > Types: Generated types in `src/lib/database.types.ts`
 
@@ -208,38 +206,9 @@ CREATE TABLE IF NOT EXISTS public.device_passkeys (
 
 Stored and read only through service-role server actions in `passkey-actions.ts`. Registration requires an already verified PIN session; authentication verifies the WebAuthn challenge, RP ID, origin, credential counter, and session revocation state before restoring auth cookies.
 
-### `market_insight_runs` (OPTIONAL)
+### Retired Market Insights Tables
 
-```sql
-CREATE TABLE IF NOT EXISTS public.market_insight_runs (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  generated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  context_json  JSONB       NOT NULL,
-  insights_json JSONB       NOT NULL,
-  sources_json  JSONB       NOT NULL DEFAULT '[]'::jsonb,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-```
-
-RLS enabled; no public policies — written only by server actions using the service-role key.
-Source: `docs/sql/market_insight_runs.sql`. Feature works without this table (`persistRun()` fails gracefully).
-
-### `local_events`
-
-```sql
-CREATE TABLE IF NOT EXISTS public.local_events (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  date DATE NOT NULL,
-  name TEXT NOT NULL,
-  category TEXT,
-  expected_impact TEXT,
-  source TEXT NOT NULL DEFAULT 'manual',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
-
-Market Insights reads upcoming rows with `fetchUpcomingLocalEvents()` and injects a compact summary into the AI prompt. Query/table failures return an empty event list so the feature degrades gracefully.
+`market_insight_runs` and `local_events` belonged only to the retired Market Insights feature. They are removed by `supabase/migrations/20260622143800_drop_market_insights_tables.sql`.
 
 ---
 
@@ -285,7 +254,6 @@ CREATE INDEX idx_count_verifications_counted_at ON inventory_count_verifications
 CREATE INDEX idx_device_passkeys_session_fingerprint ON device_passkeys(session_fingerprint);
 CREATE INDEX idx_device_passkeys_last_used_at ON device_passkeys(last_used_at DESC);
 CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
-CREATE INDEX idx_local_events_date ON local_events(date);
 ```
 
 ---
@@ -337,9 +305,10 @@ CREATE INDEX idx_local_events_date ON local_events(date);
 | `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (authenticated own rows) |
 | `20260617120000_device_passkeys.sql` | Trusted-device WebAuthn credentials for biometric login |
 | `20260618163100_inventory_count_policy.sql` | Adds `inventory_items.count_policy`; resets old accuracy rows for new scoring rules |
-| `20260618175951_local_events.sql` | Store-managed local event context for Market Insights |
 | `20260620221500_reset_accuracy_history.sql` | Reset count accuracy rows after policy recalculation rules changed |
 | `20260621120000_push_subscriptions_daily_report.sql` | Adds `profile_id` and `branch_id` to `push_subscriptions` for daily schedule Web Push broadcasts |
+| `20260622143800_drop_market_insights_tables.sql` | Drops retired Market Insights tables (`market_insight_runs`, `local_events`) |
+| `20260622144706_drop_retired_ai_inventory_views.sql` | Drops retired AI-prefixed inventory helper views |
 
 ### Historical (root + `sql/`)
 
@@ -354,6 +323,5 @@ CREATE INDEX idx_local_events_date ON local_events(date);
 | `product_categories_schema.sql` | Product categories |
 | `regular_holidays_schema.sql` | Regular holidays per employee |
 | `audit_log_schema.sql` | AI audit logging |
-| `docs/sql/market_insight_runs.sql` | market_insight_runs table (OPTIONAL — Market Insights v2 run history) |
 
 > Deprecated: `inventory-items.csv` — removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).

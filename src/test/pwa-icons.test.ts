@@ -27,6 +27,12 @@ const TRANSPARENT_BRAND_ICON_PATHS = [
   'src/app/apple-icon.png',
 ] as const;
 
+const BLACK_NOTIFICATION_ICON_PATHS = [
+  'public/images/notification-icon.png',
+  'public/images/notification-badge.png',
+  'public/images/notification-icon-512.png',
+] as const;
+
 async function cornerPixels(filePath: string) {
   const { data, info } = await sharp(filePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const { width, height } = info;
@@ -90,6 +96,12 @@ describe('PWA notification icons', () => {
       expect(fs.existsSync(filePath), rel).toBe(true);
       const corners = await cornerPixels(filePath);
       expect(corners.every((px) => px.a < 16), rel).toBe(true);
+    }
+  });
+
+  test('notification icons render black marks on transparent backgrounds', async () => {
+    for (const rel of BLACK_NOTIFICATION_ICON_PATHS) {
+      expect(await opaquePixelsAreBlack(path.join(ROOT, rel)), rel).toBe(true);
     }
   });
 

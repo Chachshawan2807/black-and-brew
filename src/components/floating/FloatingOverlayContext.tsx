@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -20,12 +19,21 @@ type FloatingOverlayContextValue = {
   setOverlayOpen: (id: FloatingOverlayId, open: boolean) => void;
   fabStackHidden: boolean;
   toggleFabStackHidden: () => void;
-  /** Temporarily hide FAB stack (e.g. full-page refresh overlay on Market Insights). */
+  /** Temporarily hide the FAB stack while a full-screen overlay owns the viewport. */
   fabStackSuppressed: boolean;
   setFabStackSuppressed: (suppressed: boolean) => void;
 };
 
 const FloatingOverlayContext = createContext<FloatingOverlayContextValue | null>(null);
+
+function getInitialFabStackHidden() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(FAB_STACK_HIDDEN_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 export function FloatingOverlayProvider({ children }: { children: ReactNode }) {
   const [openMap, setOpenMap] = useState<Record<FloatingOverlayId, boolean>>({
@@ -33,16 +41,8 @@ export function FloatingOverlayProvider({ children }: { children: ReactNode }) {
     'quick-action': false,
     'ai-chat': false,
   });
-  const [fabStackHidden, setFabStackHidden] = useState(false);
+  const [fabStackHidden, setFabStackHidden] = useState(getInitialFabStackHidden);
   const [fabStackSuppressed, setFabStackSuppressed] = useState(false);
-
-  useEffect(() => {
-    try {
-      setFabStackHidden(localStorage.getItem(FAB_STACK_HIDDEN_KEY) === 'true');
-    } catch {
-      // ignore storage errors
-    }
-  }, []);
 
   const setOverlayOpen = useCallback((id: FloatingOverlayId, open: boolean) => {
     setOpenMap((prev) => (prev[id] === open ? prev : { ...prev, [id]: open }));

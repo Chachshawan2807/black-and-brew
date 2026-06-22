@@ -16,12 +16,14 @@ import {
   recordItemAddHistory,
   updateInventoryItemField,
   reorderInventoryItems,
+  fetchInventoryTargetRecommendations,
 } from '@/app/actions/inventory-actions';
 import type { InventoryTransactionFilterType } from '@/app/actions/inventory-actions';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { computePurchaseOrderDerivedState, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import { formatTargetStockRecommendation, type InventoryShortageRisk } from '@/lib/inventory-recommended-target-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
@@ -59,6 +61,7 @@ import {
   type ColumnSettings,
   type InventoryCountPolicy,
   type InventoryFieldValue,
+  type InventoryFieldSaveHandler,
   type InventoryCellBaseProps,
   type InventoryRowHandlers,
   defaultColumns,
@@ -90,6 +93,10 @@ function isManualOrderQty(item: InventoryItem): boolean {
   return false;
 }
 
+function normalizeShortageRisk(value: unknown): InventoryShortageRisk {
+  return value === 'medium' || value === 'high' ? value : 'normal';
+}
+
 function getInventoryCellDisplayValue(item: InventoryItem, col: ColumnDef, manualOrderQty: boolean) {
   let val = readInventoryField(item, col.id);
 
@@ -98,6 +105,13 @@ function getInventoryCellDisplayValue(item: InventoryItem, col: ColumnDef, manua
     const orderPoint = Number(item.order_point) || 0;
     const targetStock = Number(item.target_stock) || 0;
     val = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
+  }
+
+  if (col.id === 'target_stock') {
+    return formatTargetStockRecommendation({
+      currentTargetStock: Number(item.target_stock) || 0,
+      recommendedTargetStock: Number(item.recommended_target_stock) || 0,
+    });
   }
 
   if (col.type === 'number' || col.id === 'order_qty') {
@@ -115,7 +129,7 @@ function CountPolicyToggle({
 }: {
   item: InventoryItem;
   handleUpdateField: (id: string, field: string, value: InventoryFieldValue) => void;
-  handleSaveField: (id: string, field: string, value: InventoryFieldValue) => void | Promise<void>;
+  handleSaveField: (id: string, field: string, value: InventoryFieldValue) => boolean | void | Promise<boolean | void>;
   handleFocus: () => void;
 }) {
   const policy = normalizeCountPolicy(item.count_policy);
@@ -142,6 +156,142 @@ function CountPolicyToggle({
       <span className="mr-1.5 h-2 w-2 rounded-full bg-black/55" aria-hidden="true" />
       <span className="whitespace-nowrap">{policy === 'exact_count' ? 'ต้องเบิก' : 'ไม่ต้องเบิก'}</span>
     </button>
+  );
+}
+
+function TargetStockRecommendationControl({
+  item,
+  handleUpdateField,
+  handleSaveField,
+  handleFocus,
+}: {
+  item: InventoryItem;
+  handleUpdateField: (id: string, field: string, value: InventoryFieldValue) => void;
+  handleSaveField: InventoryFieldSaveHandler;
+  handleFocus: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const recommended = Number(item.recommended_target_stock ?? 0);
+  const currentTarget = Number(item.target_stock ?? 0);
+  const risk = normalizeShortageRisk(item.shortage_risk);
+  const leadTimeDays = Number(item.lead_time_days ?? 3);
+  const explanation = item.recommendation_explanation ?? [];
+
+  const refreshRecommendation = async () => {
+    const res = await fetchInventoryTargetRecommendations([item.id]);
+    if (!res.success) {
+      console.error('[TargetStockRecommendationControl] fetchInventoryTargetRecommendations:', res.error);
+      return;
+    }
+    const recommendationsByItemId = res.recommendationsByItemId as Record<string, Partial<InventoryItem>>;
+    const recommendation = recommendationsByItemId[item.id];
+    if (!recommendation) return;
+    handleUpdateField(item.id, 'recommended_target_stock', recommendation.recommended_target_stock ?? 0);
+    handleUpdateField(item.id, 'recommendation_confidence', recommendation.recommendation_confidence ?? 'ข้อมูลน้อย');
+    handleUpdateField(item.id, 'recommendation_explanation', recommendation.recommendation_explanation ?? []);
+  };
+
+  const saveField = (field: string, value: InventoryFieldValue) => {
+    handleFocus();
+    handleUpdateField(item.id, field, value);
+    if (typeof value === 'string' || typeof value === 'number') {
+      void Promise.resolve(handleSaveField(item.id, field, value)).then((saved) => {
+        if (saved !== false && (field === 'shortage_risk' || field === 'lead_time_days')) {
+          void refreshRecommendation();
+        }
+      });
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="ตั้งค่าจำนวนที่แนะนำ"
+        title="ตั้งค่าจำนวนที่แนะนำ เช่น 20 → 28"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen(true);
+        }}
+        className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-card/85 px-1.5 py-0.5 text-[10px] text-foreground/45 shadow-sm ring-1 ring-border transition-colors hover:text-foreground"
+      >
+        ↗
+      </button>
+      {open && (
+        <dialog
+          open
+          aria-label="รายละเอียดจำนวนที่แนะนำ"
+          className="fixed inset-x-3 bottom-3 z-[80] mx-auto max-w-sm rounded-3xl border border-border bg-card p-4 text-foreground shadow-2xl md:inset-auto md:right-6 md:top-24 md:bottom-auto"
+        >
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">จำนวนที่ต้องมี</p>
+              <p className="text-xs text-muted-foreground">เดิม {currentTarget} · แนะนำ {recommended || '-'}</p>
+            </div>
+            <button
+              type="button"
+              aria-label="ปิดรายละเอียดจำนวนที่แนะนำ"
+              onClick={() => setOpen(false)}
+              className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="space-y-3 text-sm">
+            <label className="block">
+              <span className="mb-1 block text-xs text-muted-foreground">ความเสี่ยง</span>
+              <select
+                value={risk}
+                onChange={(event) => saveField('shortage_risk', event.target.value)}
+                className="w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-foreground/10"
+              >
+                <option value="normal">ปกติ</option>
+                <option value="medium">ปานกลาง</option>
+                <option value="high">สูง</option>
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-xs text-muted-foreground">lead time (วัน)</span>
+              <input
+                type="number"
+                min={0}
+                max={30}
+                value={leadTimeDays}
+                onChange={(event) => saveField('lead_time_days', Number(event.target.value))}
+                className="w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-foreground/10"
+              />
+            </label>
+
+            <div className="rounded-2xl bg-muted p-3 text-xs text-muted-foreground">
+              <p className="mb-1 font-medium text-foreground">ดูเหตุผล</p>
+              {explanation.length > 0 ? (
+                explanation.map((line) => <p key={line}>{line}</p>)
+              ) : (
+                <p>ยังไม่มีข้อมูลเพียงพอสำหรับคำแนะนำ</p>
+              )}
+              {item.recommendation_confidence && (
+                <p className="mt-2 text-foreground/70">ความมั่นใจ: {item.recommendation_confidence}</p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              disabled={!recommended || recommended <= currentTarget}
+              onClick={() => {
+                saveField('target_stock', recommended);
+                setOpen(false);
+              }}
+              className="w-full rounded-2xl bg-foreground px-4 py-2 text-sm text-background disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              ใช้ค่าที่แนะนำ
+            </button>
+          </div>
+        </dialog>
+      )}
+    </>
   );
 }
 
@@ -234,7 +384,7 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
   id: string;
   displayIndex: number;
   totalItems: number;
-  handleSaveField: (id: string, field: string, value: InventoryFieldValue) => void;
+  handleSaveField: InventoryFieldSaveHandler;
 }) {
   const [editing, setEditing] = React.useState(false);
   const [localVal, setLocalVal] = React.useState('');
@@ -291,7 +441,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
   index: number;
   columnById: ColumnLookup;
   handleUpdateField: (id: string, field: string, value: InventoryFieldValue) => void;
-  handleSaveField: (id: string, field: string, value: InventoryFieldValue) => void;
+  handleSaveField: InventoryFieldSaveHandler;
   requestDelete: (id: string) => void;
   handleFocus: () => void;
   totalItems: number;
@@ -732,7 +882,16 @@ function EditableCell({
         inputRef.current.value = displayVal;
       }
     }
-  }, [item, col, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
+  }, [item, col, item.stock, item.order_point, item.target_stock, item.recommended_target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
+
+  const handleInputFocus = () => {
+    setIsFocused(true);
+    handleFocus();
+    if (col.id === 'target_stock' && inputRef.current) {
+      inputRef.current.value = formatInventoryNumericDisplay(item.target_stock);
+      inputRef.current.select();
+    }
+  };
 
   const handleBlur = () => {
     const val = inputRef.current?.value || '';
@@ -773,7 +932,7 @@ function EditableCell({
             type="text"
             inputMode="text"
             defaultValue={localValue}
-            onFocus={() => { setIsFocused(true); handleFocus(); }}
+            onFocus={handleInputFocus}
             onBlur={handleBlur}
             data-col-id={col.id}
             data-row-index={rowIndex}
@@ -794,13 +953,13 @@ function EditableCell({
         </div>
       );
     }
-    return (
+    const input = (
       <input
         ref={inputRef}
         type="text"
         inputMode={col.type === 'number' ? 'decimal' : 'text'}
         defaultValue={localValue}
-        onFocus={() => { setIsFocused(true); handleFocus(); }}
+        onFocus={handleInputFocus}
         onBlur={handleBlur}
         data-col-id={col.id}
         data-row-index={rowIndex}
@@ -809,10 +968,27 @@ function EditableCell({
           "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate",
           col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0),
           col.id === 'order_qty' && !manualOrderQty && 'bg-muted border-border text-muted-foreground cursor-not-allowed',
+          col.id === 'target_stock' && 'pr-6',
           className,
         )}
       />
     );
+
+    if (col.id === 'target_stock') {
+      return (
+        <div className="relative">
+          {input}
+          <TargetStockRecommendationControl
+            item={item}
+            handleUpdateField={handleUpdateField}
+            handleSaveField={handleSaveField}
+            handleFocus={handleFocus}
+          />
+        </div>
+      );
+    }
+
+    return input;
   }
 
   return (
@@ -823,8 +999,7 @@ function EditableCell({
         inputMode={col.type === 'number' ? 'decimal' : 'text'}
         defaultValue={localValue}
         onFocus={() => {
-          setIsFocused(true);
-          handleFocus();
+          handleInputFocus();
         }}
         onBlur={handleBlur}
         onKeyDown={(e) => {
@@ -849,6 +1024,14 @@ function EditableCell({
           col.id === 'order_qty' && manualOrderQty && 'bb-pastel-surface bg-[#f8d7da] text-black',
         )}
       />
+      {col.id === 'target_stock' && (
+        <TargetStockRecommendationControl
+          item={item}
+          handleUpdateField={handleUpdateField}
+          handleSaveField={handleSaveField}
+          handleFocus={handleFocus}
+        />
+      )}
       {col.id === 'name' && (
         <HintTooltip tip="ลบรายการ">
           <button
@@ -877,7 +1060,16 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
         inputRef.current.value = displayVal;
       }
     }
-  }, [item, col, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
+  }, [item, col, item.stock, item.order_point, item.target_stock, item.recommended_target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
+
+  const handleInputFocus = () => {
+    setIsFocused(true);
+    handleFocus();
+    if (col.id === 'target_stock' && inputRef.current) {
+      inputRef.current.value = formatInventoryNumericDisplay(item.target_stock);
+      inputRef.current.select();
+    }
+  };
 
   const handleBlur = () => {
     const val = inputRef.current?.value || '';
@@ -899,16 +1091,13 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
     handleSaveField(item.id, col.id, finalVal);
   };
 
-  return (
+  const input = (
     <input
       ref={inputRef}
       type="text"
       inputMode={col.type === 'number' ? 'decimal' : 'text'}
       defaultValue={localValue}
-      onFocus={() => {
-        setIsFocused(true);
-        handleFocus();
-      }}
+      onFocus={handleInputFocus}
       onBlur={handleBlur}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
@@ -926,9 +1115,25 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
       data-mobile-col-id={col.id}
       data-mobile-row-index={rowIndex}
       readOnly={col.id === 'order_qty' && !manualOrderQty}
-      className={className}
+      className={cn(className, col.id === 'target_stock' && 'pr-6')}
     />
   );
+
+  if (col.id === 'target_stock') {
+    return (
+      <div className="relative">
+        {input}
+        <TargetStockRecommendationControl
+          item={item}
+          handleUpdateField={handleUpdateField}
+          handleSaveField={handleSaveField}
+          handleFocus={handleFocus}
+        />
+      </div>
+    );
+  }
+
+  return input;
 }
 
 export default function InventoryClient({
@@ -975,6 +1180,7 @@ export default function InventoryClient({
   const [undoStack, setUndoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
   const [redoStack, setRedoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
   const previousStateRef = useRef<{ items: InventoryItem[], cols: ColumnDef[] }>({ items: initialItems, cols: columns });
+  const recommendationLoadKeyRef = useRef('');
 
   const sensors = useSafeDndSensors();
 
@@ -1120,6 +1326,28 @@ export default function InventoryClient({
   }, [subscribe]);
 
   useEffect(() => {
+    const itemIds = items.map((item) => item.id).filter(Boolean);
+    const loadKey = itemIds.join('|');
+    if (!loadKey || recommendationLoadKeyRef.current === loadKey) return;
+    recommendationLoadKeyRef.current = loadKey;
+
+    void fetchInventoryTargetRecommendations(itemIds).then((res) => {
+      if (!res.success) {
+        console.error('[InventoryClient] fetchInventoryTargetRecommendations:', res.error);
+        return;
+      }
+
+      const recommendationsByItemId = res.recommendationsByItemId as Record<string, Partial<InventoryItem>>;
+      setItems((prev) =>
+        prev.map((item) => {
+          const recommendation = recommendationsByItemId[item.id];
+          return recommendation ? { ...item, ...recommendation } : item;
+        }),
+      );
+    });
+  }, [items]);
+
+  useEffect(() => {
     previousStateRef.current = { items, cols: columns };
   }, [items, columns]);
 
@@ -1175,7 +1403,7 @@ export default function InventoryClient({
 
   function sanitizeInventoryItem(item: InventoryItem) {
     const sanitized = { ...item };
-    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'sort_order'];
+    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'sort_order', 'lead_time_days'];
 
     numericFields.forEach((field) => {
       const key = field as keyof InventoryItem;
@@ -1189,6 +1417,10 @@ export default function InventoryClient({
 
     // คง updated_at เดิมไว้ ไม่ลบทิ้ง เพื่อไม่ให้ Supabase reset เป็น NOW() (UTC)
     sanitized.count_policy = normalizeCountPolicy(sanitized.count_policy);
+    sanitized.shortage_risk = normalizeShortageRisk(sanitized.shortage_risk);
+    if (sanitized.lead_time_days === undefined) {
+      sanitized.lead_time_days = 3;
+    }
     if (!sanitized.updated_at) {
       sanitized.updated_at = new Date().toISOString();
     }
@@ -1219,6 +1451,8 @@ export default function InventoryClient({
       unit: newItemData.unit || '',
       source: newItemData.source || '',
       count_policy: normalizeCountPolicy(newItemData.count_policy),
+      shortage_risk: normalizeShortageRisk(newItemData.shortage_risk),
+      lead_time_days: Number(newItemData.lead_time_days ?? 3),
       sort_order: insertPos
     };
 
@@ -1365,7 +1599,8 @@ export default function InventoryClient({
   }, []);
 
   const handleSaveField = useCallback(async (id: string, field: string, value: InventoryFieldValue) => {
-    if (blockIfReadOnly()) return;
+    if (blockIfReadOnly()) return false;
+    if (Array.isArray(value)) return false;
     setIsEditing(false);
     const original = previousStateRef.current.items.find(i => i.id === id);
 
@@ -1380,7 +1615,7 @@ export default function InventoryClient({
         alert(`กรุณาป้อนตัวเลขลำดับที่ถูกต้อง (1 ถึง ${totalItems})`);
         // Reset the value to original
         setItems(prev => prev.map(item => item.id === id ? { ...item, sort_order: original?.sort_order || item.sort_order } : item));
-        return;
+        return false;
       }
 
       // Step 2: Get current items sorted by sort_order to find current position
@@ -1413,18 +1648,19 @@ export default function InventoryClient({
         }
         setSavingState('synced');
         setTimeout(() => setSavingState('idle'), 2000);
+        return true;
       } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
         console.error('Failed to update sort_order:', message);
         setSavingState('idle');
         fetchConfigAndInventory(); // rollback on error
+        return false;
       }
-      return;
     }
 
     // Normal handling for other fields
     let sanitizedValue = value;
-    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock'];
+    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'lead_time_days'];
     if (numericFields.includes(field)) {
       sanitizedValue = value === '' || value === null || value === undefined ? 0 : Number(value);
       if (isNaN(sanitizedValue as number)) sanitizedValue = 0;
@@ -1436,9 +1672,9 @@ export default function InventoryClient({
     // Prevent redundant saves: compare with original value to avoid unnecessary updated_at changes
     if (original) {
       if (numericFields.includes(field)) {
-        if (Number(original[field]) === Number(sanitizedValue)) return;
+        if (Number(original[field]) === Number(sanitizedValue)) return true;
       } else {
-        if (String(original[field] || '') === String(sanitizedValue || '')) return;
+        if (String(original[field] || '') === String(sanitizedValue || '')) return true;
       }
     }
 
@@ -1461,11 +1697,13 @@ export default function InventoryClient({
       }
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
+      return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`Failed to update ${field}:`, message);
       setSavingState('idle');
       fetchConfigAndInventory();
+      return false;
     }
   }, [
     blockIfReadOnly,

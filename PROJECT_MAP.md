@@ -16,7 +16,6 @@
 | Inventory Accuracy | `src/app/[locale]/inventory/accuracy/` | Active |
 | Maintenance | `src/app/[locale]/maintenance/` | Active |
 | Sales | `src/app/[locale]/sales/` | Active |
-| Market Insights | `src/app/[locale]/market-insights/` | Active |
 | Settings | `src/app/[locale]/settings/` | Active — theme, sessions, passkeys, notifications |
 
 ---
@@ -36,7 +35,6 @@
 | `/[locale]/inventory/accuracy` | `src/app/[locale]/inventory/accuracy/page.tsx` |
 | `/[locale]/maintenance` | `src/app/[locale]/maintenance/page.tsx` |
 | `/[locale]/sales` | `src/app/[locale]/sales/page.tsx` |
-| `/[locale]/market-insights` | `src/app/[locale]/market-insights/page.tsx` |
 | `/[locale]/settings` | `src/app/[locale]/settings/page.tsx` |
 
 Locales: `th`, `en`

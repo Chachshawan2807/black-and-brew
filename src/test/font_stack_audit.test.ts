@@ -34,7 +34,7 @@ describe('font stack audit', () => {
       '--font-sans: var(--font-prompt), var(--font-ibm-plex-sans-thai), var(--font-inter), system-ui, sans-serif;'
     );
     expect(css).toContain('--font-mono: var(--font-sans);');
-    expect(css).toMatch(/input,\s*\n\s*textarea,\s*\n\s*select,\s*\n\s*button\s*\{[^}]*font-family:\s*inherit;/s);
+    expect(css).toMatch(/input,\s*\n\s*textarea,\s*\n\s*select,\s*\n\s*button\s*\{[\s\S]*?font-family:\s*inherit;/);
   });
 
   test('root layout applies app font variables and font-sans', () => {
@@ -76,17 +76,12 @@ describe('font stack audit', () => {
       path.resolve(__dirname, '../lib/chart-theme.ts'),
       'utf-8'
     );
-    const insightCharts = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/market-insights/components/InsightChartsInner.tsx'),
-      'utf-8'
-    );
     const salesChart = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/sales/components/SalesTopProductsChartInner.tsx'),
       'utf-8'
     );
 
     expect(chartTheme).toContain('APP_FONT_FAMILY_CSS');
-    expect(insightCharts).toContain('getChartAxisTick(chartColors.tick)');
     expect(salesChart).toContain('getChartAxisTick(chartColors.tick)');
   });
 });

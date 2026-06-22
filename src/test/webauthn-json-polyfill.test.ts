@@ -6,7 +6,7 @@ import {
   toJSON,
 } from '@/lib/passkey/webauthn-json-polyfill';
 
-function bytesToText(value: ArrayBuffer): string {
+function bytesToText(value: BufferSource): string {
   return new TextDecoder().decode(value);
 }
 

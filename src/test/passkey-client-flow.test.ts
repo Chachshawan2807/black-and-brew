@@ -22,7 +22,11 @@ vi.mock('@/app/actions/passkey-actions', () => ({
 }));
 
 const device = {
-  deviceLabel: 'Test phone',
+  userAgent: 'Mozilla/5.0 Test',
+  screenWidth: 390,
+  screenHeight: 844,
+  language: 'th-TH',
+  timezone: 'Asia/Bangkok',
   sessionFingerprint: 'test-fingerprint',
 };
 
