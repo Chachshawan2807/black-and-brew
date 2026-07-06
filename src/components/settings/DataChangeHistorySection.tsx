@@ -29,18 +29,27 @@ const MODULE_LABELS: Record<string, { th: string; en: string }> = {
   market_insights: { th: "ข้อมูลตลาด", en: "Market insights" },
 };
 
-function actionIcon(action: string) {
+function ActionIcon({
+  action,
+  size,
+  strokeWidth,
+}: {
+  action: string;
+  size: number;
+  strokeWidth: number;
+}) {
+  const props = { size, strokeWidth };
   switch (action) {
     case "CREATE":
-      return Plus;
+      return <Plus {...props} />;
     case "DELETE":
     case "BULK_DELETE":
-      return Trash2;
+      return <Trash2 {...props} />;
     case "BULK_UPDATE":
-      return Layers;
+      return <Layers {...props} />;
     case "UPDATE":
     default:
-      return Pencil;
+      return <Pencil {...props} />;
   }
 }
 
@@ -83,7 +92,6 @@ const HISTORY_LINE_STYLES = [
 ] as const;
 
 function LogEntry({ row, locale }: { row: DataChangeLogRow; locale: string }) {
-  const Icon = actionIcon(row.action);
   const isFailed = row.status === "failed";
   const lines = buildChangeLines(row, locale);
 
@@ -102,7 +110,7 @@ function LogEntry({ row, locale }: { row: DataChangeLogRow; locale: string }) {
           isFailed ? "bg-red-500/10 text-red-500" : "bg-muted text-foreground/70"
         )}
       >
-        <Icon size={14} strokeWidth={1.75} />
+        <ActionIcon action={row.action} size={14} strokeWidth={1.75} />
       </div>
       <div className="min-w-0 flex-1">
         {lines.map((line, i) => (
@@ -154,10 +162,6 @@ export default function DataChangeHistorySection({
     };
   }, [moduleFilter]);
 
-  useEffect(() => {
-    setShowAll(false);
-  }, [moduleFilter]);
-
   const filterOptions = [
     { value: "all", label: isTh ? "ทั้งหมด" : "All" },
     ...Object.entries(MODULE_LABELS).map(([value, labels]) => ({
@@ -194,7 +198,10 @@ export default function DataChangeHistorySection({
           <button
             key={opt.value}
             type="button"
-            onClick={() => setModuleFilter(opt.value)}
+            onClick={() => {
+              setModuleFilter(opt.value);
+              setShowAll(false);
+            }}
             className={cn(
               "rounded-full px-3 py-1 text-[12px] bb-transition border",
               moduleFilter === opt.value

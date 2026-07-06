@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+/**
+ * Template run script — copy to skills/<id>/scripts/run.mjs
+ */
+import { spawnSync } from 'node:child_process';
+
+const HELP = `Usage: run.mjs [--help]
+
+Replace this script with your runbook commands.
+`;
+
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  console.log(HELP);
+  process.exit(0);
+}
+
+function run(cmd, args) {
+  const result = spawnSync(cmd, args, { stdio: 'inherit', shell: true });
+  if (result.status !== 0) process.exit(result.status ?? 1);
+}
+
+// Example: run('npm', ['run', 'lint']);
+console.log('OK: my-skill-id — replace run.mjs with real commands');
+process.exit(0);

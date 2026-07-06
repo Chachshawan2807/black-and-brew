@@ -43,6 +43,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch passkey status on mount
     void loadStatus();
   }, [loadStatus]);
 

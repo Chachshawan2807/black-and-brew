@@ -101,7 +101,7 @@
 - [x] Documentation sync v8.4 — dark theme + settings route reflected in all project `.md` files (2026-06-12)
 - [x] Security audit tables — `login_history`, `data_change_logs`, `revoked_sessions` migrations + Settings session management (2026-06-12)
 - [x] Inventory in-app notifications — Realtime on `data_change_logs`, notification prefs in Settings, `InventoryQuickActionFAB` (2026-06-12)
-- [x] Documentation sync v8.5 — security + notifications reflected in docs; graphify refresh (2026-06-12)
+- [x] Documentation sync v8.5 — security + notifications reflected in docs (2026-06-12)
 - [x] Inventory count accuracy — `inventory_count_verifications` (`system_stock_qty`), accuracy stats (2026-06-16 refactor)
 - [x] Inventory quick action bulk — `recordBulkInventoryTransactions()`, `inventory-quick-*` libs, `InventoryRealtimeContext` (2026-06-15)
 - [x] Global tooltips — `AppTooltipProvider` + `HintTooltip` (2026-06-15)
@@ -116,7 +116,7 @@
 - [x] Dashboard loading optimization — combined overlapping weekly/monthly shift query + split helper tests (Phase 1, 2026-06-22)
 - [x] Inventory grid responsiveness — stable row handlers, lazy cell sync, row containment, focused performance contract tests (Phase 2, 2026-06-22)
 - [x] Bundle and route loading optimization — dynamic inventory modals, hidden export mount gating, hover/focus modal preload, bundle contract tests (Phase 3, 2026-06-22)
-- [x] Documentation, SQL index, and graphify sync v9.0 — migration/test counts, daily report Web Push fields, performance docs, graphify update (2026-06-22)
+- [x] Documentation, SQL index, and doc sync v9.0 — migration/test counts, daily report Web Push fields, performance docs (2026-06-22)
 
 ---
 

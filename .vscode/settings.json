@@ -8,7 +8,6 @@
     "**/dist/**": true,
     "**/build/**": true,
     "**/.turbo/**": true,
-    "**/graphify-out/**": true,
     "**/coverage/**": true
   }
 }

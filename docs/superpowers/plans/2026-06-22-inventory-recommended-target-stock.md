@@ -69,4 +69,3 @@
 - [ ] Run targeted Vitest files.
 - [ ] Run `npm test -- src/test/inventory-recommended-target-stock.test.ts src/test/inventory_recommended_target_stock_schema.test.ts src/test/inventory_recommended_target_stock_actions.test.ts src/test/inventory_recommended_target_stock_ui.test.ts`.
 - [ ] Run lints for edited files with Cursor lints.
-- [ ] Run `graphify update .` after code changes.

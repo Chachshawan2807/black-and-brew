@@ -128,8 +128,7 @@ Key fixes: Recharts theme; pastel alert cards + `bb-pastel-surface`; category su
 1. `npm run build` — passed (35/35 static pages, 2026-06-12)
 2. Re-grep audit — `fill: 'black'` eliminated; remaining `bg-white` is intentional (pastel surfaces, PO PNG export, PinGateway PIN cells, ThemePicker/button dark variants) or test-only (`CommandCenterGrid.tsx`)
 3. Manual dark-mode pass all routes — **pending** (operator QA)
-4. `graphify update .` — done
-5. `docs/changelog.md` entry if shipped — optional
+4. `docs/changelog.md` entry if shipped — optional
 
 ---
 

@@ -69,12 +69,18 @@ export function ClickableDatePicker({
 
   // ─── Hydration guard: Portal ต้องรอ client ─────────────────────────────────
   // SSR จะไม่มี document.body ดังนั้นต้องรอให้ component mount ก่อนเสมอ
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
+    setIsMounted(true);
+  }, []);
 
   // ─── Sync viewDate เมื่อ value prop เปลี่ยนจากภายนอก ────────────────────
   useEffect(() => {
     if (value) {
-      try { setViewDate(parseISO(value)); } catch { /* ignore */ }
+      try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sync calendar month when value prop changes
+        setViewDate(parseISO(value));
+      } catch { /* ignore */ }
     }
   }, [value]);
 

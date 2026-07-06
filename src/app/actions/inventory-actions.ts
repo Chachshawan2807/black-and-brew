@@ -23,6 +23,10 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAdminKey);
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 type InventoryAuditOptions = {
   clientSessionId?: string;
   /** When true, in-app inventory notifications are skipped (e.g. stock-taking count page). */
@@ -96,9 +100,10 @@ export async function recordItemAddHistory(
 
     revalidatePath('/[locale]/inventory', 'page');
     return { success: true };
-  } catch (error: any) {
-    console.error('[recordItemAddHistory] Unexpected Error:', error.message || error);
-    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการบันทึกประวัติเพิ่มรายการ' };
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[recordItemAddHistory] Unexpected Error:', message);
+    return { success: false, error: message || 'เกิดข้อผิดพลาดในการบันทึกประวัติเพิ่มรายการ' };
   }
 }
 
@@ -219,9 +224,10 @@ export async function recordTransaction(
     revalidatePath('/[locale]/inventory', 'page');
     revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true, newStock: data?.new_stock };
-  } catch (error: any) {
-    console.error('[recordTransaction] Unexpected Error:', error.message || error);
-    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' };
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[recordTransaction] Unexpected Error:', message);
+    return { success: false, error: message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' };
   }
 }
 
@@ -332,9 +338,9 @@ export async function recordBulkInventoryTransactions(
           });
 
           return { itemId: entry.itemId, success: true, newStock: data?.new_stock };
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error(`[recordBulkInventoryTransactions] Error on itemId ${entry.itemId}:`, err);
-          return { itemId: entry.itemId, success: false, error: err.message || 'Error processing item' };
+          return { itemId: entry.itemId, success: false, error: getErrorMessage(err) || 'Error processing item' };
         }
       })
     );
@@ -348,11 +354,12 @@ export async function recordBulkInventoryTransactions(
       results,
       error: allSucceeded ? undefined : 'Some bulk entries failed',
     };
-  } catch (error: any) {
-    console.error('[recordBulkInventoryTransactions] Unexpected Error:', error.message || error);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[recordBulkInventoryTransactions] Unexpected Error:', message);
     return {
       success: false,
-      error: error.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลหลายรายการ',
+      error: message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลหลายรายการ',
       results: [] as BulkInventoryTransactionResult[],
     };
   }
@@ -446,9 +453,10 @@ export async function updateInventoryStock(
     revalidatePath('/[locale]/inventory', 'page');
     revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true, newStock };
-  } catch (error: any) {
-    console.error('[updateInventoryStock] Unexpected Error:', error.message || error);
-    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการบันทึกจำนวนคงเหลือ' };
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[updateInventoryStock] Unexpected Error:', message);
+    return { success: false, error: message || 'เกิดข้อผิดพลาดในการบันทึกจำนวนคงเหลือ' };
   }
 }
 
@@ -536,9 +544,10 @@ export async function updateInventoryItemField(
     revalidatePath('/[locale]/inventory', 'page');
     revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true, value: sanitizedValue };
-  } catch (error: any) {
-    console.error('[updateInventoryItemField] Unexpected Error:', error.message || error);
-    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลสินค้า' };
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[updateInventoryItemField] Unexpected Error:', message);
+    return { success: false, error: message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลสินค้า' };
   }
 }
 
@@ -660,11 +669,12 @@ export async function fetchInventoryTargetRecommendations(itemIds?: string[]) {
     }
 
     return { success: true, recommendationsByItemId };
-  } catch (error: any) {
-    console.error('[fetchInventoryTargetRecommendations] Unexpected Error:', error.message || error);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[fetchInventoryTargetRecommendations] Unexpected Error:', message);
     return {
       success: false,
-      error: error.message || 'เกิดข้อผิดพลาดในการคำนวณจำนวนที่แนะนำ',
+      error: message || 'เกิดข้อผิดพลาดในการคำนวณจำนวนที่แนะนำ',
       recommendationsByItemId: {},
     };
   }
@@ -715,9 +725,10 @@ export async function reorderInventoryItems(
     revalidatePath('/[locale]/inventory', 'page');
     revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true };
-  } catch (error: any) {
-    console.error('[reorderInventoryItems] Unexpected Error:', error.message || error);
-    return { success: false, error: error.message || 'เกิดข้อผิดพลาดในการจัดลำดับสินค้า' };
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[reorderInventoryItems] Unexpected Error:', message);
+    return { success: false, error: message || 'เกิดข้อผิดพลาดในการจัดลำดับสินค้า' };
   }
 }
 
@@ -788,8 +799,9 @@ export async function deleteInventoryItem(itemId: string, auditOptions?: Invento
     // Step 3: UI Refresh Logic
     revalidatePath('/[locale]/inventory');
     return { success: true };
-  } catch (error: any) {
-    console.error('[deleteInventoryItem] Unexpected Error:', error.message || error);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[deleteInventoryItem] Unexpected Error:', message);
     return { success: false, error: 'เกิดข้อผิดพลาดในการลบข้อมูลสินค้า' };
   }
 }
@@ -851,8 +863,9 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
 
     revalidatePath('/[locale]/inventory');
     return { success: true, deleted: itemIds.length };
-  } catch (error: any) {
-    console.error('[deleteInventoryItemsBulk] Unexpected Error:', error.message || error);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[deleteInventoryItemsBulk] Unexpected Error:', message);
     return { success: false, error: 'เกิดข้อผิดพลาดในการลบข้อมูลสินค้า', deleted: 0 };
   }
 }
@@ -1023,8 +1036,9 @@ export async function fetchFrequentItems() {
     if (!data || data.length === 0) return { success: true, data: [] };
 
     // Count frequencies using inventory_item_id — VERIFIED column name in actual DB
+    type FrequentTxRow = { inventory_item_id: string | null };
     const counts: Record<string, number> = {};
-    data.forEach((tx: any) => {
+    (data as FrequentTxRow[]).forEach((tx) => {
       const id = tx.inventory_item_id;
       if (id) counts[id] = (counts[id] || 0) + 1;
     });
@@ -1047,15 +1061,16 @@ export async function fetchFrequentItems() {
 
     const result = topIds
       .map(id => {
-        const item = itemsData.find((i: any) => i.id === id);
+        const item = (itemsData as InventoryItemNameRow[]).find((i) => i.id === id);
         return item ? { id: item.id as string, name: item.name as string } : null;
       })
       .filter((x): x is { id: string; name: string } => x !== null);
 
     return { success: true, data: result };
-  } catch (error: any) {
-    console.error('[fetchFrequentItems] Unexpected Error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[fetchFrequentItems] Unexpected Error:', message);
+    return { success: false, error: message };
   }
 }
 
@@ -1095,8 +1110,34 @@ export async function fetchComprehensiveInventoryData() {
       return { success: false, error: txError.message, data: null };
     }
 
+    type InventorySummaryRow = {
+      id: string;
+      name: string | null;
+      stock: number | null;
+      order_point: number | null;
+      target_stock: number | null;
+      order_qty: number | null;
+      unit: string | null;
+      source: string | null;
+      updated_at: string | null;
+    };
+
+    type ValidatedInventoryItem = {
+      id: string;
+      name: string;
+      stock: number;
+      orderQty: number;
+      orderPoint: number;
+      targetStock: number;
+      unit: string | null;
+      source: string | null;
+      isLowStock: boolean;
+      updatedAt: string | null;
+      createdAt: string | null;
+    };
+
     // Validate and process inventory items
-    const validatedItems: any[] = [];
+    const validatedItems: ValidatedInventoryItem[] = [];
     const validationReport = {
       totalItems: inventoryItems?.length || 0,
       validItems: 0,
@@ -1105,7 +1146,7 @@ export async function fetchComprehensiveInventoryData() {
       validationErrors: [] as string[]
     };
 
-    inventoryItems?.forEach((item: any) => {
+    (inventoryItems as InventorySummaryRow[] | null)?.forEach((item) => {
       let isValid = true;
       const errors = [];
 
@@ -1148,7 +1189,7 @@ export async function fetchComprehensiveInventoryData() {
           source: item.source,
           isLowStock,
           updatedAt: item.updated_at,
-          createdAt: item.created_at
+          createdAt: null,
         });
       }
     });
@@ -1167,9 +1208,10 @@ export async function fetchComprehensiveInventoryData() {
       }
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
     console.error('[fetchComprehensiveInventoryData] Unexpected Error:', error);
-    return { success: false, error: error.message, data: null };
+    return { success: false, error: message, data: null };
   }
 }
 
@@ -1267,11 +1309,12 @@ export async function recordCountVerification(itemId: string, countedQty: number
       systemStockQty: baselineStock,
       countedQty,
     };
-  } catch (error: any) {
-    console.error('[recordCountVerification] Unexpected Error:', error.message || error);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[recordCountVerification] Unexpected Error:', message);
     return {
       success: false,
-      error: error.message || 'เกิดข้อผิดพลาดในการบันทึกผลตรวจนับ',
+      error: message || 'เกิดข้อผิดพลาดในการบันทึกผลตรวจนับ',
     };
   }
 }
@@ -1438,11 +1481,12 @@ export async function recordInventoryCountAndUpdateStock(
       countedQty,
       newStock,
     };
-  } catch (error: any) {
-    console.error('[recordInventoryCountAndUpdateStock] Unexpected Error:', error.message || error);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[recordInventoryCountAndUpdateStock] Unexpected Error:', message);
     return {
       success: false,
-      error: error.message || 'เกิดข้อผิดพลาดในการบันทึกผลตรวจนับ',
+      error: message || 'เกิดข้อผิดพลาดในการบันทึกผลตรวจนับ',
     };
   }
 }
@@ -1553,11 +1597,12 @@ export async function fetchCountAccuracyStats(): Promise<{
         },
       },
     };
-  } catch (error: any) {
-    console.error('[fetchCountAccuracyStats] Unexpected Error:', error.message || error);
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[fetchCountAccuracyStats] Unexpected Error:', message);
     return {
       success: false,
-      error: error.message || 'เกิดข้อผิดพลาดในการดึงสถิติความแม่นยำ',
+      error: message || 'เกิดข้อผิดพลาดในการดึงสถิติความแม่นยำ',
     };
   }
 }

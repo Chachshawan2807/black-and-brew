@@ -56,6 +56,7 @@ export default function ActiveRemoteSessionsPanel({ locale }: ActiveRemoteSessio
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch sessions on mount
     void loadSessions();
   }, [loadSessions]);
 

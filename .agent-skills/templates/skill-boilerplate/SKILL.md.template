@@ -1,0 +1,24 @@
+---
+name: my-skill-id
+description: One-line trigger description for agent retrieval
+user-invocable: true
+---
+
+# Skill Title
+
+## When to use
+
+- Trigger criteria for this runbook...
+
+## Run (terminal)
+
+```bash
+npm run skill:run my-skill-id
+# or directly:
+node .agent-skills/skills/my-skill-id/scripts/run.mjs [--help]
+```
+
+## Notes
+
+- Process Integrity: validate with `npm run skill:validate` after changes.
+- Scripts run with cwd = repository root.

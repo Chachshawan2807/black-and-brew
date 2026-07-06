@@ -14,18 +14,27 @@ import type { InventoryNotification } from '@/lib/notification-types';
 import { ExpandableLines } from '@/components/ui/expandable-lines';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
-function actionIcon(action: string) {
+function ActionIcon({
+  action,
+  size,
+  strokeWidth,
+}: {
+  action: string;
+  size: number;
+  strokeWidth: number;
+}) {
+  const props = { size, strokeWidth };
   switch (action) {
     case 'CREATE':
-      return Plus;
+      return <Plus {...props} />;
     case 'DELETE':
     case 'BULK_DELETE':
-      return Trash2;
+      return <Trash2 {...props} />;
     case 'BULK_UPDATE':
-      return Layers;
+      return <Layers {...props} />;
     case 'UPDATE':
     default:
-      return Pencil;
+      return <Pencil {...props} />;
   }
 }
 
@@ -40,7 +49,6 @@ function NotificationRow({
   isTh: boolean;
   onNavigate: (item: InventoryNotification) => void;
 }) {
-  const Icon = actionIcon(item.action);
   const isHigh = item.priority === 'high';
   const lines = [
     item.title,
@@ -72,7 +80,7 @@ function NotificationRow({
             isHigh ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-muted text-foreground/70'
           )}
         >
-          <Icon size={14} strokeWidth={1.75} />
+          <ActionIcon action={item.action} size={14} strokeWidth={1.75} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">

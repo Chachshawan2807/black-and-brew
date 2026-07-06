@@ -13,7 +13,7 @@ export interface Shift {
   metadata: {
     location?: string;
     notes?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   profiles?: Profile | null;
 }

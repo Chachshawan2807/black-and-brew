@@ -59,6 +59,36 @@ const formatNumber = (num: number) => {
   return thNumberFormatter.format(num);
 };
 
+type SalesAuditLog = {
+  totalRecords: number;
+  duplicatesRemoved: number;
+  missingDataFilled: number;
+  invalidRecords: number;
+  details: string[];
+};
+
+type SalesUploadHistoryItem = {
+  id: string;
+  file_name: string;
+  total_records: number;
+  status: string;
+  upload_date: string;
+  created_at: string;
+  analysis_summary?: unknown;
+};
+
+type SalesHistoryResult = {
+  uploads: SalesUploadHistoryItem[];
+  records: unknown[];
+  total: number;
+  totalPages: number;
+};
+
+type LocalProductCategory = {
+  product_name: string;
+  category: string;
+};
+
 export interface ProductCategoryRow {
   product_name: string;
   category: string;
@@ -91,11 +121,11 @@ export default function SalesClient({
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [history, setHistory] = useState<any>(null);
+  const [history, setHistory] = useState<SalesHistoryResult | null>(null);
   const [baseMetrics, setBaseMetrics] = useState<SalesMetrics | null>(initialMetrics);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState<Array<{ fileName: string; recordCount: number; auditLog: any }> | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<Array<{ fileName: string; recordCount: number; auditLog: SalesAuditLog }> | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
@@ -115,6 +145,7 @@ export default function SalesClient({
 
   // Wait for component to mount before rendering charts
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- defer chart render until after hydration
     setIsMounted(true);
   }, []);
 
@@ -191,9 +222,9 @@ export default function SalesClient({
   }, [metrics?.allProducts, sortBy, sortOrder, selectedCategory]);
 
   // Helper to load categories (combines server AND localStorage!)
-  const loadCategories = useRef(async (categoriesFromServer: any[]) => {
+  const loadCategories = useRef(async (categoriesFromServer: ProductCategoryRow[]) => {
     // Get from localStorage
-    let localCategories: any[] = [];
+    let localCategories: LocalProductCategory[] = [];
     try {
       const localData = localStorage.getItem('blackandbrew-product-categories');
       if (localData) {
@@ -207,14 +238,14 @@ export default function SalesClient({
     const mergedCategories = new Map<string, string>();
     
     // Add server categories first
-    categoriesFromServer.forEach((c: any) => {
+    categoriesFromServer.forEach((c) => {
       if (c.product_name && c.category) {
         mergedCategories.set(c.product_name, c.category);
       }
     });
     
     // Add local categories (won't overwrite server ones)
-    localCategories.forEach((c: any) => {
+    localCategories.forEach((c) => {
       if (c.product_name && c.category && !mergedCategories.has(c.product_name)) {
         mergedCategories.set(c.product_name, c.category);
       }
@@ -249,7 +280,7 @@ export default function SalesClient({
         (cachedMetrics.savedAt !== null && isStale(cachedMetrics.savedAt, CACHE_TTL));
 
       // --- product-categories cache (server fetch TTL tracking) ---
-      const cachedCategories = readCache<any[]>(PRODUCT_CATEGORIES_SERVER_KEY);
+      const cachedCategories = readCache<ProductCategoryRow[]>(PRODUCT_CATEGORIES_SERVER_KEY);
       const categoriesStale =
         forceRefresh ||
         cachedCategories.data === null ||
@@ -257,7 +288,7 @@ export default function SalesClient({
 
       // --- salesHistory cache ---
       const SALES_HISTORY_KEY = 'salesHistory';
-      const cachedHistory = readCache<any>(SALES_HISTORY_KEY);
+      const cachedHistory = readCache<SalesHistoryResult>(SALES_HISTORY_KEY);
       const historyStale =
         forceRefresh ||
         cachedHistory.data === null ||
@@ -724,7 +755,7 @@ export default function SalesClient({
                         <Trash2 className="w-8 h-8 text-foreground" />
                       </div>
                       <h3 className="text-xl mb-2">
-                        ลบหมวดหมู่ "{categoryToDelete}"
+                        ลบหมวดหมู่ &ldquo;{categoryToDelete}&rdquo;
                       </h3>
                       <p className="text-muted-foreground text-sm">
                         การลบหมวดหมู่นี้จะนำออกจากสินค้าทุกรายการที่ใช้หมวดหมู่นี้
@@ -888,7 +919,7 @@ export default function SalesClient({
                     className="overflow-hidden"
                   >
                     <div className="px-5 pb-5 space-y-2.5">
-                      {history.uploads.map((upload: any) => (
+                      {history.uploads.map((upload) => (
                         <div
                           key={upload.id}
                           className="flex items-center justify-between p-3.5 bg-card border border-border rounded-xl hover:bg-muted transition-colors"

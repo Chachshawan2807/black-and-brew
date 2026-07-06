@@ -1,7 +1,7 @@
 'use server';
 
 import * as XLSX from 'xlsx';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
@@ -45,6 +45,16 @@ const SalesRecordSchema = z.object({
   notes: z.string().optional().default(''),
 });
 
+type SalesRecordValidated = z.infer<typeof SalesRecordSchema>;
+type ExcelRow = Record<string, unknown>;
+type SalesAuditLog = {
+  totalRecords: number;
+  duplicatesRemoved: number;
+  missingDataFilled: number;
+  invalidRecords: number;
+  details: string[];
+};
+
 // Helper to normalize Excel column names
 function normalizeColumnName(col: string): string {
   return col
@@ -71,14 +81,8 @@ function extractDateFromFilename(fileName: string): Date | undefined {
 
 // Data processing function
 interface DataProcessingResult {
-  validRecords: any[];
-  auditLog: {
-    totalRecords: number;
-    duplicatesRemoved: number;
-    missingDataFilled: number;
-    invalidRecords: number;
-    details: string[];
-  };
+  validRecords: SalesRecordValidated[];
+  auditLog: SalesAuditLog;
 }
 
 /**
@@ -86,8 +90,8 @@ interface DataProcessingResult {
  * @param rawRecords Rows parsed from XLSX
  * @param filenameDate Fallback date extracted from the filename (used when rows have no date column)
  */
-function processSalesData(rawRecords: any[], filenameDate?: Date): DataProcessingResult {
-  const auditLog = {
+function processSalesData(rawRecords: ExcelRow[], filenameDate?: Date): DataProcessingResult {
+  const auditLog: SalesAuditLog = {
     totalRecords: rawRecords.length,
     duplicatesRemoved: 0,
     missingDataFilled: 0,
@@ -96,11 +100,11 @@ function processSalesData(rawRecords: any[], filenameDate?: Date): DataProcessin
   };
 
   const seenRecords = new Set<string>();
-  const validRecords: any[] = [];
+  const validRecords: SalesRecordValidated[] = [];
 
   rawRecords.forEach((record, index) => {
     // Normalize record
-    const normalized: any = {};
+    const normalized: Record<string, unknown> = {};
     Object.keys(record).forEach(key => {
       normalized[normalizeColumnName(key)] = record[key];
     });
@@ -108,7 +112,7 @@ function processSalesData(rawRecords: any[], filenameDate?: Date): DataProcessin
     // Map fields - prioritize user's column names
     // For monthly-summary Excel files (no per-row date), fall back to the date
     // encoded in the filename (e.g. _20260101–20260131 → Jan 1 2026).
-    const mapped: any = {
+    const mapped: Record<string, unknown> = {
       sale_date:
         normalized.date ||
         normalized.sale_date ||
@@ -164,14 +168,14 @@ function processSalesData(rawRecords: any[], filenameDate?: Date): DataProcessin
 }
 
 // Map raw Excel data to sales record fields
-function mapSalesRecord(raw: any, uploadId: string): any {
-  const normalized: any = {};
+function mapSalesRecord(raw: ExcelRow, uploadId: string): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
   Object.keys(raw).forEach(key => {
     normalized[normalizeColumnName(key)] = raw[key];
   });
 
   // Try to find common field names
-  const record: any = {
+  const record: Record<string, unknown> = {
     upload_id: uploadId,
     sale_date: new Date(), // Default to now
   };
@@ -230,7 +234,7 @@ function mapSalesRecord(raw: any, uploadId: string): any {
 
 export async function uploadSalesFiles(formData: FormData): Promise<{
   success: boolean;
-  uploadedFiles?: Array<{ fileName: string; recordCount: number; auditLog: any }>;
+  uploadedFiles?: Array<{ fileName: string; recordCount: number; auditLog: SalesAuditLog }>;
   error?: string;
 }> {
   const authCheck = await checkAuth();
@@ -268,7 +272,7 @@ export async function uploadSalesFiles(formData: FormData): Promise<{
       };
     }
 
-    const uploadedFiles: Array<{ fileName: string; recordCount: number; auditLog: any }> = [];
+    const uploadedFiles: Array<{ fileName: string; recordCount: number; auditLog: SalesAuditLog }> = [];
 
     for (const file of files) {
       // Validate file type
@@ -291,7 +295,7 @@ export async function uploadSalesFiles(formData: FormData): Promise<{
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'buffer' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rawData = XLSX.utils.sheet_to_json(firstSheet);
+      const rawData = XLSX.utils.sheet_to_json(firstSheet) as ExcelRow[];
 
       // Extract date from filename as fallback for monthly-summary files
       // that don't have a per-row date column (e.g. อันดับเมนูขายดี_20260101–20260131.xlsx)
@@ -587,7 +591,7 @@ ${JSON.stringify(productNames, null, 2)}`,
 /**
  * Get or create product category from database
  */
-async function getProductCategory(productName: string, supabase: any): Promise<string | null> {
+async function getProductCategory(productName: string, supabase: SupabaseClient): Promise<string | null> {
   try {
     const { data } = await supabase
       .from('product_categories')
@@ -604,7 +608,12 @@ async function getProductCategory(productName: string, supabase: any): Promise<s
 /**
  * Save product category to database
  */
-async function saveProductCategory(productName: string, category: string, isAiGenerated: boolean, supabase: any) {
+async function saveProductCategory(
+  productName: string,
+  category: string,
+  isAiGenerated: boolean,
+  supabase: SupabaseClient,
+) {
   try {
     const { data, error } = await supabase
       .from('product_categories')
@@ -662,7 +671,7 @@ export async function getAllProductCategories() {
 }
 
 // Helper function to create product_categories table if it doesn't exist
-async function ensureProductCategoriesTable(supabase: any) {
+async function ensureProductCategoriesTable(supabase: SupabaseClient) {
   try {
     const { error: checkError } = await supabase.from('product_categories').select('id').limit(1);
 
@@ -853,7 +862,13 @@ export async function autoCategorizeAllProducts() {
       return { success: false, error: recordsError.message };
     }
 
-    const uniqueProducts = [...new Set((records || []).map((r: any) => r.product_name).filter(Boolean))];
+    const uniqueProducts = [
+      ...new Set(
+        (records ?? [])
+          .map((r: { product_name: string | null }) => r.product_name)
+          .filter((name): name is string => Boolean(name))
+      ),
+    ];
 
     // Get existing product categories
     const { data: existingProductCats } = await supabase
@@ -862,7 +877,7 @@ export async function autoCategorizeAllProducts() {
 
     const existingProdMap = new Map<string, string>();
     const existingCatSet = new Set<string>();
-    (existingProductCats || []).forEach((c: any) => {
+    (existingProductCats ?? []).forEach((c: { product_name: string; category: string }) => {
       existingProdMap.set(c.product_name, c.category);
       existingCatSet.add(c.category);
     });
@@ -938,7 +953,7 @@ export async function getSalesMetrics(startDateStr?: string, endDateStr?: string
       : (productCategories || []);
 
     const categoryMap = new Map<string, string>();
-    categories.forEach((pc: any) => {
+    categories.forEach((pc: { product_name: string; category: string }) => {
       categoryMap.set(pc.product_name, pc.category);
     });
 

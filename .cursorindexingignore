@@ -4,7 +4,6 @@ dist/
 build/
 .turbo/
 coverage/
-graphify-out/
 .git/
 playwright-report/
 test-results/

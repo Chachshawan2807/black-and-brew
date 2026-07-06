@@ -189,7 +189,7 @@ export function InventoryHistoryModal({
 
 
   useEffect(() => {
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
 
   }, []);

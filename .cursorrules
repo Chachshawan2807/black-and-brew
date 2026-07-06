@@ -1,0 +1,7 @@
+# Codebase memory
+
+This project uses **codebase-memory-mcp** as the primary backend knowledge graph for AI agents — not local graph.html exports.
+
+- Configure MCP from `.cursor/mcp.json.example` → copy to `.cursor/mcp.json` or `~/.cursor/mcp.json`
+- After code changes: re-index via MCP (`ingest` / agent-triggered refresh per tool docs)
+- Prefer `search_graph`, `trace_path`, `query_graph` over reading entire files for architecture questions

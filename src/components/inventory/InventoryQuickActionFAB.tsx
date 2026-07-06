@@ -125,6 +125,7 @@ export default function InventoryQuickActionFAB() {
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
   }, []);
 
@@ -144,6 +145,7 @@ export default function InventoryQuickActionFAB() {
 
   useEffect(() => {
     if (!fabStackHidden && !fabStackSuppressed) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close overlays when fab stack is hidden
     setIsOpen(false);
     setShowAddModal(false);
     setShowHistoryModal(false);
@@ -154,6 +156,7 @@ export default function InventoryQuickActionFAB() {
     if (!isMounted || !isOpen) return;
 
     void refresh();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- load frequent items when panel opens
     void loadFrequentItems();
   }, [isMounted, isOpen, refresh, loadFrequentItems]);
 

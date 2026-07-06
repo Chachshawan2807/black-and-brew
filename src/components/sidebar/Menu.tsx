@@ -245,6 +245,7 @@ export default function Menu({ isOpen }: MenuProps) {
   }, [customOrderIds, pathname, showHolidays]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {

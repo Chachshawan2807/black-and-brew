@@ -123,7 +123,7 @@ export default function CommandCenterGrid({ initialItems }: { initialItems: NavI
 
   const sensors = useSafeDndSensors();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);

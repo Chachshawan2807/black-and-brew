@@ -6,7 +6,11 @@ import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, Refresh
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { fetchCountAccuracyStats, recordInventoryCountAndUpdateStock } from '@/app/actions/inventory-actions';
-import type { CountAccuracyStatsResult, ItemCountAccuracyStats } from '@/app/actions/inventory-actions';
+import type {
+  CountAccuracyStatsResult,
+  InventoryCountSaveOptions,
+  ItemCountAccuracyStats,
+} from '@/app/actions/inventory-actions';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { getClientSessionId } from '@/lib/client-session';
 import { mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
@@ -23,7 +27,7 @@ interface InventoryItem {
   unit: string;
   sort_order: number;
   count_policy?: 'exact_count' | 'sufficiency_check';
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // ─── Undo state per item ──────────────────────────────────────────────────────
@@ -310,7 +314,9 @@ export default function InventoryCountClient({
 
   const [items, setItems] = useState<InventoryItem[]>(initialItems);
   const itemsRef = useRef(items);
-  itemsRef.current = items;
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
   const [loading, setLoading] = useState(false);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -320,14 +326,9 @@ export default function InventoryCountClient({
   const [lastVerification, setLastVerification] = useState<Record<string, { matched: boolean; systemStockQty: number; countedQty: number }>>({});
   // Per-item undo state: maps itemId → UndoEntry. Cleared after one use.
   const [undoMap, setUndoMap] = useState<Record<string, UndoEntry>>({});
-  const hasAnimatedEntranceRef = useRef(false);
-  const animateEntrance = !hasAnimatedEntranceRef.current && items.length <= STAGGER_ANIMATION_CAP;
-
-  useEffect(() => {
-    if (animateEntrance) {
-      hasAnimatedEntranceRef.current = true;
-    }
-  }, [animateEntrance]);
+  const [animateEntrance] = useState(
+    () => initialItems.length <= STAGGER_ANIMATION_CAP,
+  );
 
   const loadAccuracyStats = useCallback(async () => {
     const res = await fetchCountAccuracyStats();
@@ -338,6 +339,7 @@ export default function InventoryCountClient({
 
   useEffect(() => {
     if (initialAccuracyStats) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch accuracy stats on mount when not server-provided
     void loadAccuracyStats();
   }, [initialAccuracyStats, loadAccuracyStats]);
 
@@ -418,7 +420,7 @@ export default function InventoryCountClient({
         notificationContext: 'inventory_count',
         recordHistory: false,
         isUndo,
-      } as any);
+      } satisfies InventoryCountSaveOptions);
 
       if (!verification.success) {
         throw new Error(verification.error);

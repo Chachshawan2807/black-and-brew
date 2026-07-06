@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Third-party skill scripts and generated artifacts — not app source.
+    ".agents/**",
+    ".cursor/**",
+    ".agent-skills/**",
+    "lint-src.json",
+    "lint-agents.json",
   ]),
 ]);
 

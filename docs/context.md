@@ -10,7 +10,7 @@
 | --- | --- |
 | Project Name | BLACK-AND-BREW ERP System |
 | Type | Enterprise Resource Planning for Coffee Shop |
-| Current Version | 9.0 (performance phases + daily report Web Push + doc/graphify sync) |
+| Current Version | 9.0 (performance phases + daily report Web Push + doc sync) |
 | Repository | `Chachshawan2807/black-and-brew` |
 | Local Path | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 

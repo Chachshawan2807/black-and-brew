@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-06-22 (Performance Phases + Doc/SQL/Graphify Sync v9.0)
+## 2026-06-22 (Performance Phases + Doc/SQL Sync v9.0)
 
 - Execution: [PHASED PERFORMANCE REFACTOR + DOCUMENTATION HYGIENE]
 - Changes:
@@ -10,7 +10,7 @@
   - **Daily report Web Push docs:** reflected `push_subscriptions.profile_id` and `branch_id` from migration `20260621120000_push_subscriptions_daily_report.sql`.
   - **Docs synced:** `README.md`, `PROJECT_MAP.md`, `docs/architecture.md`, `docs/api.md`, `docs/database.md`, `docs/context.md`, `docs/tasks.md`, `docs/memory.md`, `docs/SUMMARY_REPORT.md`, `sql/README.md`.
   - **Counts corrected:** `supabase/migrations/` = 14 migration files; `src/test/` = 103 test files.
-- Verification: `graphify query`, `graphify explain`, `graphify update .`; focused Phase 1-3 tests; production build; markdown lint after docs sync.
+- Verification: focused Phase 1-3 tests; production build; markdown lint after docs sync.
 
 ## 2026-06-19 (Inventory Count Policy + Local Events Doc Sync v8.9)
 
@@ -20,11 +20,11 @@
   - **Market Insights context:** documented `local_events`, `fetchUpcomingLocalEvents()`, and `buildLocalEventsContext()`
   - **Docs synced:** `README.md`, `docs/architecture.md`, `docs/api.md`, `docs/database.md`, `docs/context.md`, `docs/prd.md`, `docs/tasks.md`, `docs/design.md`, `docs/rules.md`, `docs/memory.md`, `docs/MASTER_BLUEPRINT.md`, `PROJECT_MAP.md`, `MASTER_BLUEPRINT.md`, `sql/README.md`, `docs/SUMMARY_REPORT.md`
   - **Counts corrected:** `supabase/migrations/` = 12 migration files; `src/test/` = 95 test files
-- Verification: `graphify query` first; `git diff -- *.md`; `npm run lint:md`; graphify update attempted after docs edits
+- Verification: `git diff -- *.md`; `npm run lint:md`
 
-## 2026-06-17 (Web Push Cross-Device + Doc/SQL/Graphify Sync v8.7)
+## 2026-06-17 (Web Push Cross-Device + Doc/SQL Sync v8.7)
 
-- Execution: [FULL DOCUMENTATION SYNC — Web Push feature + graphify refresh]
+- Execution: [FULL DOCUMENTATION SYNC — Web Push feature]
 - Changes:
   - **Web Push:** migration `20260616120000_push_subscriptions.sql`; `push-actions.ts`, `web-push.ts`, `PushSubscriptionManager`, `POST /api/push/webhook`
   - **Env:** VAPID keys + `PUSH_WEBHOOK_SECRET` in `.env.example` (already present); synced README, context, MASTER_BLUEPRINT
@@ -32,9 +32,9 @@
   - **db:verify:** `push_subscriptions` table check in `scripts/verify-supabase-migrations.mjs`
   - **Cleanup:** removed `scripts/debug-push.mjs` (one-off debug script, not in npm scripts)
   - **SQL audit:** 21 `.sql` files kept (9 migrations + 12 reference/optional)
-- Verification: `graphify update . --force` → 2742 nodes, 4743 edges, 172 communities | `npm run lint:md`
+- Verification: `npm run lint:md`
 
-## 2026-06-16 (Count Accuracy Refactor Doc Sync + Graphify Refresh v8.6)
+## 2026-06-16 (Count Accuracy Refactor Doc Sync v8.6)
 
 - Execution: [FULL SYSTEM SYNC & ZERO-IMPACT SANITIZATION PROTOCOL]
 - Changes:
@@ -43,7 +43,7 @@
   - Docs synced: `docs/database.md`, `docs/api.md`, `docs/architecture.md`, `docs/memory.md`, `docs/context.md`, `sql/README.md`, `PROJECT_MAP.md` (8 migrations, 69 tests)
   - SQL audit: all 21 `.sql` files kept (zero deletions)
   - Read-only PIN: `APP_READ_ONLY_PIN` env (`read-only-pin.ts`); dev fallback `111222` — synced README, context, architecture, api, MASTER_BLUEPRINT, prd
-- Verification: graphify update | no code changes — tests not re-run
+- Verification: no code changes — tests not re-run
 
 ## 2026-06-15 (Count Accuracy + Quick Action + Doc/SQL Cleanup v8.6)
 
@@ -57,19 +57,18 @@
   - **Server admin client:** `src/lib/supabase-server.ts` (`getSupabaseAdmin()` singleton)
   - **Settings:** `DataChangeHistorySection` for mutation audit display
   - All target docs — version bump to **8.6**
-- Verification: `graphify update .` | targeted Vitest (inventory count/quick action)
+- Verification: targeted Vitest (inventory count/quick action)
 
 ## 2026-06-12 (Security + Notifications Doc Sync v8.5)
 
-- Execution: [DOCUMENTATION SYNC — security migrations, inventory notifications, graphify refresh]
+- Execution: [DOCUMENTATION SYNC — security migrations, inventory notifications]
 - Changes:
   - **Security migrations:** `login_history`, `data_change_logs`, `revoked_sessions` documented in `docs/database.md`; auth flow updated in `docs/architecture.md`
   - **Session revocation:** `forceRevokeDeviceSession()` / `forceRevokeAllRemoteSessions()` in `docs/api.md`; `src/lib/session-revocation.ts`
   - **Inventory notifications:** Realtime on `data_change_logs` + `NotificationPreferencesSection` in Settings; `InventoryQuickActionFAB` noted in README/architecture
   - **docs/database.md:** Fixed corrupted Thai text and `?` encoding; added `supabase/migrations/` table; transaction types ADD/DELETE
-  - **graphify:** `graphify update . --force` → 2447 nodes, 3925 edges, 147 communities
   - **README.md**, **docs/context.md**, **docs/tasks.md**, **PROJECT_MAP.md** — version bump to **8.5**
-- Verification: `graphify update . --force` ✓ | `npm run lint:md` ✓
+- Verification: `npm run lint:md` ✓
 
 ## 2026-06-12 (Dark Theme + Documentation Sync v8.4)
 

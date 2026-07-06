@@ -349,6 +349,26 @@ const SortableEmployeeRow = React.memo(({
 
 SortableEmployeeRow.displayName = 'SortableEmployeeRow';
 
+type ScheduleHoliday = { id: string; date: string; name: string };
+
+type ShiftWithJoinedProfile = Shift & {
+  profiles?: Profile | Profile[] | null;
+  profile_id?: string;
+};
+
+interface ManagementHistoryItem {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  location?: string;
+  remark?: string;
+  startDate: string;
+  endDate: string;
+  color: string;
+  colorStyle?: React.CSSProperties;
+  metadata: Shift['metadata'];
+}
+
 interface ScheduleClientProps {
   initialProfiles: Profile[];
   initialShifts: Shift[];
@@ -381,7 +401,7 @@ export default function ScheduleClient({
   const [currentDate, setCurrentDate] = useState(new Date(initialDateStr));
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
-  const [holidays, setHolidays] = useState<any[]>(initialHolidays);
+  const [holidays, setHolidays] = useState<ScheduleHoliday[]>(initialHolidays);
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [loading, setLoading] = useState(false);
   const [isExportingImage, setIsExportingImage] = useState(false);
@@ -397,6 +417,7 @@ export default function ScheduleClient({
   }, [shiftTypes]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client mount gate and shift-type storage hydration
     setMounted(true);
     setShiftTypes(loadShiftTypesFromStorage());
 
@@ -405,13 +426,16 @@ export default function ScheduleClient({
     return () => window.removeEventListener(SHIFT_TYPES_UPDATED_EVENT, onUpdated);
   }, []);
 
+  const [showRegularHolidayModal, setShowRegularHolidayModal] = useState(false);
+
   useEffect(() => {
     if (searchParams?.get('showRegularHolidays') === 'true') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- open modal from URL search param on navigation
       setShowRegularHolidayModal(true);
     }
   }, [searchParams]);
 
-  const [selectedCell, setSelectedCell] = useState<{ employeeId: string; date: string; shift?: any; x: number; y: number } | null>(null);
+  const [selectedCell, setSelectedCell] = useState<{ employeeId: string; date: string; shift?: Shift; x: number; y: number } | null>(null);
   const [editingHoliday, setEditingHoliday] = useState<string | null>(null);
   const [holidayInput, setHolidayInput] = useState('');
 
@@ -459,6 +483,7 @@ export default function ScheduleClient({
       if (saved) {
         const widths: Record<string, string> = JSON.parse(saved);
         if (widths && typeof widths === 'object' && !Array.isArray(widths)) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- restore saved column widths from localStorage on mount
           setMgmtColumns(prev => prev.map(col => {
             const w = Number(widths[col.id]);
             if (!isNaN(w) && w > 0 && w < 2000) {
@@ -496,7 +521,7 @@ export default function ScheduleClient({
     remark: ''
   });
 
-  const [mgmtHistory, setMgmtHistory] = useState<any[]>([]);
+  const [mgmtHistory, setMgmtHistory] = useState<ManagementHistoryItem[]>([]);
   const [historyFilter, setHistoryFilter] = useState({ start: '', end: '' });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -540,7 +565,6 @@ export default function ScheduleClient({
     }
   }, [blockIfReadOnly]);
 
-  const [showRegularHolidayModal, setShowRegularHolidayModal] = useState(false);
   const [regularHolidays, setRegularHolidays] = useState<RegularHolidayMap>(initialRegularHolidays);
   const [holidayFormEmployee, setHolidayFormEmployee] = useState<string>('');
   const [holidayFormDays, setHolidayFormDays] = useState<number[]>([]);
@@ -563,6 +587,7 @@ export default function ScheduleClient({
 
       const parsed = JSON.parse(saved) as RegularHolidayMap;
       if (!hasServerRegularHolidayData && parsed && typeof parsed === 'object') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate regular holidays from localStorage when server has none
         setRegularHolidays(parsed);
       }
     } catch (error) {
@@ -574,6 +599,7 @@ export default function ScheduleClient({
 
   useEffect(() => {
     if (hasServerRegularHolidayData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync server-provided regular holidays when props update
       setRegularHolidays(initialRegularHolidays);
     }
   }, [hasServerRegularHolidayData, initialRegularHolidays]);
@@ -698,6 +724,7 @@ export default function ScheduleClient({
   const validShiftValues = useMemo(() => new Set(getFohCountValues(shiftTypes)), [shiftTypes]);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- sync server-fetched schedule data when parent revalidates */
     if (initialProfiles && initialProfiles.length > 0) {
       setProfiles(initialProfiles);
       setOrderedProfileIds(initialProfiles.map(p => p.id));
@@ -714,6 +741,7 @@ export default function ScheduleClient({
     if (hasServerRegularHolidayData) {
       setRegularHolidays(initialRegularHolidays);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [hasServerRegularHolidayData, initialProfiles, initialShifts, initialHolidays, initialRegularHolidays, initialDateStr]);
 
   const { undoStack, redoStack, pushToHistory, undo, redo } = useScheduleUndo({
@@ -752,10 +780,11 @@ export default function ScheduleClient({
       const { data, error } = await query;
       if (error) throw error;
 
-      const grouped: any[] = [];
+      const grouped: ManagementHistoryItem[] = [];
       const sorted = [...(data || [])].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
       sorted.forEach(shift => {
+        const shiftRow = shift as ShiftWithJoinedProfile;
         const prev = grouped.find(g =>
           g.employee_id === shift.employee_id &&
           g.metadata?.location === shift.metadata?.location &&
@@ -770,7 +799,7 @@ export default function ScheduleClient({
             id: shift.id,
             employee_id: shift.employee_id,
             employee_name: (() => {
-              const profiles = (shift as any).profiles;
+              const profiles = shiftRow.profiles;
               if (Array.isArray(profiles)) return profiles[0]?.full_name || 'Unknown';
               return profiles?.full_name || 'Unknown';
             })(),
@@ -791,7 +820,8 @@ export default function ScheduleClient({
 
   useEffect(() => {
     if (showManagementModal) {
-      fetchMgmtHistory();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- load management history when modal opens
+      void fetchMgmtHistory();
     }
   }, [showManagementModal, fetchMgmtHistory]);
 
@@ -812,7 +842,7 @@ export default function ScheduleClient({
     });
   }, []);
 
-  const handleEditHistory = (item: any) => {
+  const handleEditHistory = (item: ManagementHistoryItem) => {
     setEditingHistoryId(item.id);
     setOriginalHistoryRange({
       employeeId: item.employee_id,
@@ -839,7 +869,7 @@ export default function ScheduleClient({
     setManagementForm({ employeeId: '', shiftType: '6:30', startDate: '', endDate: '', remark: '' });
   };
 
-  const handleDeleteHistory = async (historyItem: any) => {
+  const handleDeleteHistory = async (historyItem: ManagementHistoryItem) => {
     if (blockIfReadOnly()) return;
     if (!window.confirm(`คุณต้องการลบประวัติการจัดการของ ${historyItem.employee_name} วันที่ ${format(new Date(historyItem.startDate), 'dd/MM/yyyy')} ใช่หรือไม่?\n(การกระทำนี้จะลบกะการทำงานในช่วงนี้ออกด้วย)`)) {
       return;
@@ -865,10 +895,11 @@ export default function ScheduleClient({
         .lte('start_time', weekDays[6] + 'T23:59:59');
       if (freshShifts) setShifts(freshShifts);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ';
       console.error('Failed to delete history:', err);
       setMgmtHistory(previousHistory);
-      alert('ไม่สามารถลบประวัติได้: ' + (err.message || 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ'));
+      alert('ไม่สามารถลบประวัติได้: ' + message);
     } finally {
       setConfirmDeleteId(null);
     }
@@ -941,7 +972,7 @@ export default function ScheduleClient({
         setShifts((prev) => {
           const filtered = prev.filter((s) => {
             const sDate = s.start_time.split('T')[0];
-            const empIdMatch = s.employee_id === managementForm.employeeId || (s as any).profile_id === managementForm.employeeId;
+            const empIdMatch = s.employee_id === managementForm.employeeId || (s as ShiftWithJoinedProfile).profile_id === managementForm.employeeId;
             return !(empIdMatch && affectedDates.has(sDate));
           });
           return [...filtered, ...(insertedShifts || newShifts)];
@@ -1103,7 +1134,7 @@ export default function ScheduleClient({
     setShifts(prev => {
       const filtered = prev.filter(s => {
         const sDate = s.start_time.split('T')[0];
-        const empIdMatch = s.employee_id === employeeId || (s as any).profile_id === employeeId;
+        const empIdMatch = s.employee_id === employeeId || (s as ShiftWithJoinedProfile).profile_id === employeeId;
         return !(empIdMatch && sDate === date);
       });
       return [...filtered, optimisticShift];

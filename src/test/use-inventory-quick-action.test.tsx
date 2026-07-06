@@ -42,6 +42,7 @@ function QuickActionHarness({
 }) {
   const [items, setItems] = useState(startingItems);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync test harness items when props change
     setItems(startingItems);
   }, [startingItems]);
 

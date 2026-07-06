@@ -120,7 +120,7 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
 interface LiveShiftListProps {
   initialProfiles: Profile[];
   initialShifts: Shift[];
-  initialHolidays: any[];
+  initialHolidays: { id?: string; date: string; name?: string }[];
   startDate: string;
   endDate: string;
 }
@@ -136,7 +136,7 @@ export default function LiveShiftList({
   const isReadOnly = useReadOnly();
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
-  const [holidays, setHolidays] = useState<any[]>(initialHolidays);
+  const [holidays, setHolidays] = useState<{ id?: string; date: string; name?: string }[]>(initialHolidays);
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -187,10 +187,12 @@ export default function LiveShiftList({
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only mount gate for date-dependent UI
     setMounted(true);
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync server-fetched props when parent revalidates
     setShifts(initialShifts);
     setProfiles(initialProfiles);
     setHolidays(initialHolidays);

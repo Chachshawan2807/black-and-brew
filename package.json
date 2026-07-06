@@ -13,7 +13,12 @@
     "test:coverage": "vitest run --coverage",
     "analyze": "cross-env ANALYZE=true next build",
     "db:verify": "node scripts/verify-supabase-migrations.mjs",
-    "icons:generate": "node scripts/generate-pwa-icons.mjs"
+    "icons:generate": "node scripts/generate-pwa-icons.mjs",
+    "skill:list": "node .agent-skills/scripts/skill-runner.mjs list",
+    "skill:run": "node .agent-skills/scripts/skill-runner.mjs run",
+    "skill:validate": "node .agent-skills/scripts/skill-runner.mjs validate",
+    "asos:build": "node .agent-skills/scripts/asos-runner.mjs build",
+    "asos:ui": "node .agent-skills/scripts/asos-runner.mjs ui"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.79",

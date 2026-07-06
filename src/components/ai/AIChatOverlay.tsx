@@ -1,6 +1,7 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
+import { useChat, type UIMessage } from '@ai-sdk/react';
+import { isTextUIPart } from 'ai';
 import { DefaultChatTransport } from 'ai';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Send, User, Loader2, Trash2 } from 'lucide-react';
@@ -42,6 +43,7 @@ export default function AIChatOverlay() {
 
   // Hydration guard — static dependency only
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
   }, []);
 
@@ -53,6 +55,7 @@ export default function AIChatOverlay() {
 
   useEffect(() => {
     if ((fabStackHidden || fabStackSuppressed) && isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- close when fab stack is hidden
       setIsOpen(false);
     }
   }, [fabStackHidden, fabStackSuppressed, isOpen]);
@@ -71,14 +74,15 @@ export default function AIChatOverlay() {
     if (!savedHistory) return;
 
     try {
-      const parsed = JSON.parse(savedHistory);
-      const sanitized = parsed.map((msg: any) => {
+      type StoredChatMessage = UIMessage & { content?: string };
+      const parsed = JSON.parse(savedHistory) as StoredChatMessage[];
+      const sanitized = parsed.map((msg) => {
         const newMsg = { ...msg };
         if (typeof newMsg.content === 'string') {
           newMsg.content = sanitizeXssPayload(newMsg.content);
         }
         if (newMsg.parts && Array.isArray(newMsg.parts)) {
-          newMsg.parts = newMsg.parts.map((part: any) => {
+          newMsg.parts = newMsg.parts.map((part) => {
             if (part.type === 'text' && typeof part.text === 'string') {
               return { ...part, text: sanitizeXssPayload(part.text) };
             }
@@ -257,13 +261,11 @@ export default function AIChatOverlay() {
 
 
                 {messages.map((msg) => {
-                  let textContent = (msg as any).content;
-                  if (!textContent && msg.parts && Array.isArray(msg.parts)) {
-                    textContent = msg.parts
-                      .filter((p: any) => p.type === 'text')
-                      .map((p: any) => p.text)
-                      .join('');
-                  }
+                  const legacyContent = (msg as UIMessage & { content?: string }).content;
+                  const textContent =
+                    typeof legacyContent === 'string' && legacyContent
+                      ? legacyContent
+                      : msg.parts.filter(isTextUIPart).map((p) => p.text).join('');
                   if (!textContent) return null;
                   return <ChatBubble key={msg.id} role={msg.role} content={textContent} />;
                 })}

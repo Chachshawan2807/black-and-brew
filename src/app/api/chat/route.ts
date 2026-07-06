@@ -74,8 +74,6 @@ type IntentScores = {
 };
 
 function classifyIntent(text: string): IntentScores {
-  const lower = text.toLowerCase();
-
   // แต่ละ pattern มีน้ำหนัก (weight) สะท้อนความชัดเจนของสัญญาณ
   // คำที่ชัดเจนมากได้ weight สูง, คำกำกวมได้ weight ต่ำ
   const scheduleSignals = [
@@ -181,17 +179,20 @@ function cleanToolOutput(output: unknown, depth = 0): unknown {
   return output;
 }
 
-// Wrapper ที่ inject cleanToolOutput เข้าไปใน execute ของทุก tool
-function wrapTool(tool: any) {
+type ToolWithExecute = {
+  execute?: (args: unknown, options?: unknown) => Promise<unknown> | unknown;
+};
+
+function wrapTool<T extends ToolWithExecute>(tool: T): T {
   return {
     ...tool,
     execute: tool.execute
-      ? async (args: any, options?: any) => {
-          const raw = await tool.execute(args, options);
+      ? async (args: unknown, options?: unknown) => {
+          const raw = await tool.execute!(args, options);
           return cleanToolOutput(raw);
         }
       : undefined,
-  };
+  } as T;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -211,17 +212,26 @@ function wrapTool(tool: any) {
 const MAX_MEMORY_MESSAGES = 8;
 const MAX_CHARS_PER_MESSAGE = 2000; // ป้องกัน messages ที่ tool คืนค่า data ยาวมาก
 
-function buildSmartMemory(messages: any[]): any[] {
+type TextMessagePart = { type: 'text'; text: string };
+type IncomingMessagePart = TextMessagePart | { type: string; text?: string };
+type IncomingChatMessage = {
+  role: string;
+  content?: string;
+  parts?: IncomingMessagePart[];
+};
+type CoreChatMessage = { role: string; content: string };
+
+function buildSmartMemory(messages: IncomingChatMessage[]): CoreChatMessage[] {
   const recent = messages.slice(-MAX_MEMORY_MESSAGES);
 
-  return recent.map((m: any) => {
+  return recent.map((m) => {
     let content = m.content;
 
     // แปลง parts array เป็น string ถ้าจำเป็น
     if (!content && Array.isArray(m.parts)) {
       content = m.parts
-        .filter((p: any) => p.type === 'text')
-        .map((p: any) => p.text)
+        .filter((p): p is TextMessagePart => p.type === 'text' && typeof p.text === 'string')
+        .map((p) => p.text)
         .join('');
     }
 
@@ -496,12 +506,12 @@ export async function POST(req: Request) {
     }
 
     // --- ดึงข้อความล่าสุดเพื่อวิเคราะห์ intent ---
-    const lastMsg = messages[messages.length - 1];
+    const lastMsg = messages[messages.length - 1] as IncomingChatMessage | undefined;
     const lastMsgText = typeof lastMsg?.content === 'string'
       ? lastMsg.content
       : (lastMsg?.parts ?? [])
-          .filter((p: any) => p.type === 'text')
-          .map((p: any) => p.text)
+          .filter((p): p is TextMessagePart => p.type === 'text' && typeof p.text === 'string')
+          .map((p) => p.text)
           .join('');
 
     // [UPGRADE 2026] Input Sanitization
@@ -514,7 +524,7 @@ export async function POST(req: Request) {
     const { tools: selectedTools, maxSteps } = selectTools(intents);
 
     // [UPGRADE 3] Smart memory window
-    const coreMessages = buildSmartMemory(messages);
+    const coreMessages = buildSmartMemory(messages as IncomingChatMessage[]);
 
     // --- เตรียม context เวลา ---
     const now = new Date();

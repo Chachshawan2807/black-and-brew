@@ -199,10 +199,12 @@ const shiftSchema = z.object({
   start_time: z.string(),
   end_time: z.string().optional(),
   status: z.string(),
-  metadata: z.any().optional()
+  metadata: z.record(z.string(), z.unknown()).optional()
 });
 
-export async function saveShift(payload: any) {
+type ShiftPayload = z.infer<typeof shiftSchema>;
+
+export async function saveShift(payload: ShiftPayload) {
   noStore();
 
   const authError = await ensureShiftMutationAuthorized();
@@ -347,9 +349,10 @@ export async function fetchRosterData(startDate: string, endDate: string) {
       shifts: shiftsRes.data || [],
       holidays: holidaysRes.data || []
     };
-  } catch (error: any) {
-    console.error('[fetchRosterData] Error:', error.message || error);
-    return { success: false, profiles: [], shifts: [], holidays: [], error: error.message || 'Internal Server Error' };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    console.error('[fetchRosterData] Error:', message);
+    return { success: false, profiles: [], shifts: [], holidays: [], error: message };
   }
 }
 
@@ -444,9 +447,10 @@ export async function copyWeeklyShifts(sourceStartDate: string, targetStartDate:
 
     revalidateAppPaths();
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[copyWeeklyShifts] CRITICAL FAILURE:', err);
-    return { success: false, error: err.message || 'เกิดข้อผิดพลาดรุนแรงในการคัดลอกข้อมูล' };
+    const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดรุนแรงในการคัดลอกข้อมูล';
+    return { success: false, error: message };
   }
 }
 

@@ -1,0 +1,16 @@
+--- a/src/constants.py
++++ b/src/constants.py
+@@ -50,6 +50,15 @@
+         "tree_path": str(DATA_DIR / "capability_trees" / "tree_skill_10000.yaml"),
+         "vector_db_path": str(DATA_DIR / "vector_stores" / "skill_10000"),
+     },
++    {
++        "id": "black_and_brew",
++        "name": "BLACKANDBREW ERP Runbooks",
++        "description": "Project-local terminal runbook skills",
++        "skills_dir": str(PROJECT_ROOT.parent.parent / "skills"),
++        "tree_path": str(DATA_DIR / "capability_trees" / "tree_black_and_brew.yaml"),
++        "vector_db_path": str(DATA_DIR / "vector_stores" / "black_and_brew"),
++        "is_default": False,
++    },
+ ]

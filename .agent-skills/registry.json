@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "id": "mock-health-check",
+      "path": "skills/mock-health-check",
+      "script": "scripts/health-check.mjs",
+      "description": "Verify lint + test smoke for AgentSkillOS runner",
+      "tags": ["verification", "ci"]
+    }
+  ]
+}

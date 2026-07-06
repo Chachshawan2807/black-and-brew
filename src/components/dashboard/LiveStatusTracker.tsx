@@ -231,6 +231,7 @@ export default function LiveStatusTracker({
   const [tomorrowShifts, setTomorrowShifts] = useState(initialTomorrowShifts);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local state when server props refresh
     setProfiles(initialProfiles);
     setShifts(initialShifts);
     setTomorrowShifts(initialTomorrowShifts);

@@ -179,19 +179,21 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 | security-review | `.agents/skills/security-review/SKILL.md` | รีวิวช่องโหว่ security ในโค้ด (OWASP) |
 | google-cloud-waf-security | `.agents/skills/google-cloud-waf-security/SKILL.md` | แนวทาง security บน Google Cloud |
 | gemini-api | `.agents/skills/gemini-api/SKILL.md` | ใช้ Gemini API / Vertex AI (SDK `@google/genai`) |
-| graphify | `.claude/skills/graphify/SKILL.md` | Knowledge graph ของโค้ดเบส (`/graphify`, `graphify query`) |
+| **AgentSkillOS runbooks** | `.agent-skills/skills/*/SKILL.md` | ทักษะรันซ้ำของโปรเจกต์ — `npm run skill:list` · `npm run skill:run <id>` |
+
+**AgentSkillOS Runbooks:** ทักษะโปรเจกต์ (clean cache, smoke check, db wrappers) อยู่ใน `.agent-skills/skills/` แยกจาก `.agents/skills/` (third-party). ลงทะเบียนใน `.agent-skills/registry.json` · blueprint ใน `.agent-skills/README.md`
 
 **ลำดับความสำคัญเมื่อขัดกัน:** ERP domain rules → chrome-modern-web-guidance → React & Next.js skills → design review skills (`web-design-guidelines`, `impeccable` critique) → ui-ux-pro-max
 
 **อัปเดต skills:** `npx skills add <owner/repo@skill> -y` (เช่น `vercel-labs/agent-skills@web-design-guidelines`, `pbakaus/impeccable@impeccable`)
 
 <!-- END:skills-registry -->
-<!-- BEGIN:graphify-standard -->
+<!-- BEGIN:codebase-memory-mcp-standard -->
 
-## KNOWLEDGE GRAPH (graphify)
+## CODEBASE MEMORY (codebase-memory-mcp)
 
-- **Location:** `graphify-out/` — `graph.json`, `GRAPH_REPORT.md`, `graph.html`
-- **Query first:** For codebase questions, run `graphify query "<question>"` before broad grep or raw file reads.
-- **After code changes:** Run `graphify update .` from the project root (AST-only, no API cost).
-- **Navigation:** Use `graphify path "<A>" "<B>"` for relationships; `graphify explain "<concept>"` for focused concepts.
-<!-- END:graphify-standard -->
+- **Primary graph:** MCP server codebase-memory-mcp (local SQLite knowledge graph)
+- **Setup:** See `.cursor/mcp.json.example`; install binary from https://github.com/DeusData/codebase-memory-mcp
+- **Query first:** Use MCP tools (`search_graph`, `trace_path`, `query_graph`) before broad grep/file reads
+- **After code changes:** Re-index project via MCP ingest when structural navigation is needed
+<!-- END:codebase-memory-mcp-standard -->

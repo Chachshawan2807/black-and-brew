@@ -125,12 +125,14 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only mount gate before localStorage/date hydration
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
     if (!isMounted) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate form date and column widths from client storage on mount
     setFormData(prev => ({ ...prev, start_date: format(new Date(), 'yyyy-MM-dd') }));
 
     const saved = localStorage.getItem('bb-maintenance-col-widths');
@@ -167,8 +169,9 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
       } else {
         setRecords(data || []);
       }
-    } catch (err: any) {
-      setToast({ message: `เครือข่ายขัดข้อง: ${err?.message || 'ไม่สามารถเชื่อมต่อได้'}`, type: 'error' });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'ไม่สามารถเชื่อมต่อได้';
+      setToast({ message: `เครือข่ายขัดข้อง: ${message}`, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -221,8 +224,9 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
             // Background sync
             void fetchRecords();
           }
-        } catch (err: any) {
-          setToast({ message: `ระบบขัดข้อง: ${err?.message || 'โปรดลองอีกครั้ง'}`, type: 'error' });
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'โปรดลองอีกครั้ง';
+          setToast({ message: `ระบบขัดข้อง: ${message}`, type: 'error' });
         } finally {
           setLoading(false);
         }
@@ -257,8 +261,9 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
             // Background sync
             void fetchRecords();
           }
-        } catch (err: any) {
-          setToast({ message: `ระบบขัดข้อง: ${err?.message || 'โปรดลองอีกครั้ง'}`, type: 'error' });
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'โปรดลองอีกครั้ง';
+          setToast({ message: `ระบบขัดข้อง: ${message}`, type: 'error' });
         } finally {
           setLoading(false);
         }

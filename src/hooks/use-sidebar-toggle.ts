@@ -30,6 +30,7 @@ export function useSidebarHydrated() {
 
   useEffect(() => {
     if (useSidebarToggle.persist.hasHydrated()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
       setHydrated(true);
       return;
     }

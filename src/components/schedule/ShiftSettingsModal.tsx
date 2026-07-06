@@ -74,9 +74,8 @@ function CollapsibleColorPicker({
             {PASTEL_COLOR_PRESETS.map((preset) => {
               const selected = entry.bgColor === preset.bg && entry.borderColor === preset.border;
               return (
-                <HintTooltip tip={preset.name}>
+                <HintTooltip key={`${preset.bg}-${preset.border}`} tip={preset.name}>
                   <button
-                    key={`${preset.bg}-${preset.border}`}
                     type="button"
                     onClick={() => onChange(preset.bg, preset.border)}
                     className={cn(
@@ -127,12 +126,14 @@ export default function ShiftSettingsModal({
 
   useEffect(() => {
     if (!draft.some((t) => t.id === selectedId) && draft[0]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- keep selection valid when draft changes
       setSelectedId(draft[0].id);
       setSelectValue(draft[0].id);
     }
   }, [draft, selectedId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset color picker when shift selection changes
     setColorOpen(false);
   }, [selectedId]);
 

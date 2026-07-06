@@ -43,6 +43,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
   const modalContentStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
   }, []);
 
@@ -69,7 +70,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
     try {
       await ensureSupabaseSession();
 
-      let dbNewItem = { ...newItem };
+      const dbNewItem = { ...newItem };
       if (isAppend) {
         const { data: maxOrderData, error: maxOrderErr } = await supabase
           .from('inventory_items')

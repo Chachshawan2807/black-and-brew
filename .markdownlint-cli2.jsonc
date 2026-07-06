@@ -7,7 +7,6 @@
   "ignores": [
     ".agents/**",
     ".claude/**",
-    "graphify-out/**",
     "scratch/**"
   ],
   "config": {

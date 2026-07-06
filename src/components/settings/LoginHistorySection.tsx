@@ -21,18 +21,27 @@ interface LoginHistorySectionProps {
 
 const PREVIEW_COUNT = 3;
 
-function eventIcon(type: LoginHistoryRow["event_type"]) {
+function EventIcon({
+  type,
+  size,
+  strokeWidth,
+}: {
+  type: LoginHistoryRow["event_type"];
+  size: number;
+  strokeWidth: number;
+}) {
+  const props = { size, strokeWidth };
   switch (type) {
     case "login_success":
-      return LogIn;
+      return <LogIn {...props} />;
     case "logout":
-      return LogOut;
+      return <LogOut {...props} />;
     case "lockout":
-      return ShieldAlert;
+      return <ShieldAlert {...props} />;
     case "login_failure":
-      return ShieldX;
+      return <ShieldX {...props} />;
     default:
-      return HelpCircle;
+      return <HelpCircle {...props} />;
   }
 }
 
@@ -104,7 +113,6 @@ function buildLoginLines(row: LoginHistoryRow, locale: string, isTh: boolean): s
 
 function LoginEntry({ row, locale }: { row: LoginHistoryRow; locale: string }) {
   const isTh = locale === "th";
-  const EventIcon = eventIcon(row.event_type);
   const isFailure = row.status !== "success";
   const lines = buildLoginLines(row, locale, isTh);
 
@@ -123,7 +131,7 @@ function LoginEntry({ row, locale }: { row: LoginHistoryRow; locale: string }) {
           isFailure ? "bg-red-500/10 text-red-500" : "bg-muted text-foreground/70"
         )}
       >
-        <EventIcon size={14} strokeWidth={1.75} />
+        <EventIcon type={row.event_type} size={14} strokeWidth={1.75} />
       </div>
       <ExpandableLines lines={lines} isTh={isTh} className="min-w-0 flex-1" />
     </div>

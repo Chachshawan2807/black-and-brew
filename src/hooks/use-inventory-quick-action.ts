@@ -105,6 +105,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   }, [resetQuickEntryFields]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate bulk queue when inventory items load
     setBulkQueue((prev) => {
       if (prev.length === 0) return prev;
       if (!isItemsLoaded || items.length === 0) return prev;

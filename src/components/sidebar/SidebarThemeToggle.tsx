@@ -37,6 +37,7 @@ export default function SidebarThemeToggle({
   const isTh = locale === "th";
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setMounted(true);
   }, []);
 

@@ -207,14 +207,19 @@ export const readTableTool = tool({
 
       return responseMeta;
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`[AI_TOOL] Universal Read crashed:`, err);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      const details =
+        err && typeof err === 'object' && 'details' in err
+          ? (err as { details?: unknown }).details ?? null
+          : null;
       return {
         ok: false,
         data: null,
         error: {
-          message: err?.message || 'Unknown error',
-          details: err?.details ?? null,
+          message,
+          details,
           hint: null,
         },
       };

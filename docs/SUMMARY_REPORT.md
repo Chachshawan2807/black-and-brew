@@ -6,7 +6,7 @@ Last Updated: 2026-06-22 | Version: v9.0
 
 ## Purpose
 
-รายงานสรุปการอัปเดตเอกสารให้สอดคล้องกับโค้ดปัจจุบัน (v9.0 — performance phases, daily report Web Push fields, SQL index, graphify sync)
+รายงานสรุปการอัปเดตเอกสารให้สอดคล้องกับโค้ดปัจจุบัน (v9.0 — performance phases, daily report Web Push fields, SQL index)
 
 ---
 
@@ -20,8 +20,8 @@ Last Updated: 2026-06-22 | Version: v9.0
 | `docs/api.md` | Daily report Web Push reference and shared push subscription behavior |
 | `docs/architecture.md` | Dashboard query consolidation, inventory grid containment, dynamic modal loading, daily report Web Push data flow |
 | `docs/context.md` | Current version and feature highlights for performance phases + daily report Web Push |
-| `docs/tasks.md` | Completed Phase 1-3 performance tasks and v9.0 doc/graphify sync |
-| `docs/changelog.md` | v9.0 performance/doc/SQL/graphify sync entry |
+| `docs/tasks.md` | Completed Phase 1-3 performance tasks and v9.0 doc sync |
+| `docs/changelog.md` | v9.0 performance/doc/SQL sync entry |
 | `docs/memory.md` | DEC-078 daily report Web Push subscriptions and DEC-079 performance guardrails |
 | `docs/design.md` / `docs/rules.md` | Inventory row containment, dynamic modal loading, dashboard query guardrails, push subscription fields |
 | `docs/prd.md` | Dashboard/inventory performance and daily Web Push product scope |
@@ -32,16 +32,9 @@ Last Updated: 2026-06-22 | Version: v9.0
 
 | File | Reason |
 | --- | --- |
-| None | Documentation/graphify sync only; no files were deleted |
-
-## Graphify
-
-- `graphify query "What is the current project architecture, key routes, data flows, Supabase usage, inventory/dashboard behavior, and documentation drift?"` was run before edits.
-- `graphify explain "graphify"` confirmed the local graphify rule node is linked from `CLAUDE.md`.
-- `graphify update .` was run before and after documentation edits to keep `graphify-out/` aligned with the current code graph.
+| None | Documentation sync only; no files were deleted |
 
 ## Verification
 
-- `git diff -- README.md PROJECT_MAP.md docs sql graphify-out` — inspected after edits
+- `git diff -- README.md PROJECT_MAP.md docs sql` — inspected after edits
 - `npm run lint:md` — run after docs edits
-- `graphify update .` — run after docs edits
