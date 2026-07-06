@@ -851,7 +851,7 @@ export default function ScheduleClient({
     });
     setManagementForm({
       employeeId: item.employee_id,
-      shiftType: item.location,
+      shiftType: item.location ?? item.metadata?.location ?? '6:30',
       startDate: item.startDate.split('T')[0],
       endDate: item.endDate.split('T')[0],
       remark: item.remark || ''

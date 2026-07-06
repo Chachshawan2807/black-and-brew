@@ -418,7 +418,6 @@ export default function InventoryCountClient({
         clientSessionId: getClientSessionId(),
         suppressNotification: true,
         notificationContext: 'inventory_count',
-        recordHistory: false,
         isUndo,
       } satisfies InventoryCountSaveOptions);
 

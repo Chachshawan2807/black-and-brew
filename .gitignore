@@ -70,6 +70,9 @@ taste-skill/
 .vercel
 .env*.local
 
+# --- Cursor MCP (machine-local paths) ---
+.cursor/mcp.json
+
 # --- AgentSkillOS (isolated Python stack) ---
 .agent-skills/.venv/
 .agent-skills/asos/.env

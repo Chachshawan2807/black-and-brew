@@ -8,8 +8,13 @@ describe('inventory history adjust type', () => {
       path.resolve(__dirname, '../app/[locale]/inventory/count/InventoryCountClient.tsx'),
       'utf-8',
     );
+    const actionsCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
+      'utf-8',
+    );
 
-    expect(countPage).toContain('recordHistory: false');
+    expect(countPage).toContain('recordInventoryCountAndUpdateStock');
+    expect(actionsCode).toMatch(/recordInventoryCountAndUpdateStock[\s\S]*p_record_history: false/);
   });
 
   test('quick action bar includes adjust quantity control with sliders icon', () => {

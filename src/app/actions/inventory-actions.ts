@@ -1180,7 +1180,7 @@ export async function fetchComprehensiveInventoryData() {
         validationReport.validItems++;
         validatedItems.push({
           id: item.id,
-          name: item.name,
+          name: item.name!.trim(),
           stock: stock,
           orderQty: Number(item.order_qty || 0),
           orderPoint: orderPoint,

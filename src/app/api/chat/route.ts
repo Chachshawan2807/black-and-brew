@@ -1,5 +1,5 @@
 import { google } from '@ai-sdk/google';
-import { stepCountIs, ToolLoopAgent } from 'ai';
+import { stepCountIs, ToolLoopAgent, type ModelMessage, type ToolSet } from 'ai';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-tools';
@@ -183,12 +183,13 @@ type ToolWithExecute = {
   execute?: (args: unknown, options?: unknown) => Promise<unknown> | unknown;
 };
 
-function wrapTool<T extends ToolWithExecute>(tool: T): T {
+function wrapTool<T extends object>(tool: T): T {
+  const executable = tool as ToolWithExecute;
   return {
     ...tool,
-    execute: tool.execute
-      ? async (args: unknown, options?: unknown) => {
-          const raw = await tool.execute!(args, options);
+    execute: executable.execute
+      ? async (...args: unknown[]) => {
+          const raw = await (executable.execute as (...a: unknown[]) => unknown).apply(null, args);
           return cleanToolOutput(raw);
         }
       : undefined,
@@ -434,10 +435,10 @@ const SLIM_AI_TOOLS = {
   getDailyShifts: wrapTool(getDailyShiftsTool),
   readTable: wrapTool(readTableTool),
   internetSearchTool: wrapTool(internetSearchTool),
-};
+} as ToolSet;
 
 function selectTools(intents: IntentScores): {
-  tools: Record<string, ReturnType<typeof wrapTool>>;
+  tools: ToolSet;
   maxSteps: number;
 } {
   let maxSteps = 3;
@@ -581,7 +582,7 @@ export async function POST(req: Request) {
     });
 
     const result = await agent.stream({
-      messages: coreMessages,
+      messages: coreMessages as ModelMessage[],
     });
 
     return result.toUIMessageStreamResponse();

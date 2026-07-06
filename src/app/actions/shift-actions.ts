@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { ensureServerSession } from '@/lib/security/server-auth';
+import type { Json } from '@/lib/database.types';
 
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
@@ -251,8 +252,8 @@ export async function saveShift(payload: ShiftPayload) {
         module: 'schedule',
         entityType: 'shift',
         entityId: payload.id ?? null,
-        oldValue: shiftBefore,
-        newValue: payload,
+        oldValue: (shiftBefore ?? null) as Json | null,
+        newValue: payload as Json,
         status: 'failed',
         errorMessage: error.message,
       });
@@ -264,8 +265,8 @@ export async function saveShift(payload: ShiftPayload) {
       module: 'schedule',
       entityType: 'shift',
       entityId: data?.id ?? payload.id ?? null,
-      oldValue: shiftBefore,
-      newValue: data ?? payload,
+      oldValue: (shiftBefore ?? null) as Json | null,
+      newValue: (data ?? payload) as Json,
     });
 
     revalidateAppPaths();
