@@ -1,6 +1,6 @@
 # BLACKANDBREW ERP Capability Inventory
 
-> Last Scanned & Updated: 2026-06-17 (Documentation Sync v8.8)
+> Last Scanned & Updated: 2026-07-08 (Documentation Sync v9.1)
 
 ## Current Capabilities
 
@@ -13,16 +13,16 @@
 - Inventory Truth Layer: `inventory-stock.ts`, `mergeInventoryRealtimeUpdate`, `computeItemsToOrder`, `updateInventoryStock`, and RPC `set_inventory_stock` keep warehouse and count pages aligned.
 - Supabase Session Bridge: `ensureSupabaseSession()` signs in anonymously after the PIN gate so client RLS runs as `authenticated`.
 - Web Push: `push-actions.ts`, `web-push.ts`, `push_subscriptions`, and `PushSubscriptionManager` support cross-device inventory alerts.
-- Trusted-device Passkeys: `passkey-actions.ts`, `src/lib/passkey/`, `PasskeyDeviceSection`, and `device_passkeys` support WebAuthn biometric login after a PIN-verified registration.
+- Trusted-device Passkeys: `passkey-actions.ts`, `src/lib/passkey/`, `settings/_components/PasskeyDeviceSection.tsx`, `device_passkeys`.
 
 ### UI and Client Runtime
 
-- Hydration-safe client state: `isMounted` guards protect `AIChatOverlay`, `PinGateway`, `CommandCenterGrid`, and clickable date inputs.
+- Hydration-safe client state: `isMounted` guards protect `AIChatOverlay`, `PinGateway`, and clickable date inputs.
 - Client cache utilities: `client-cache.ts` provides TTL cache helpers for browser-side data.
 - Optimistic UI: inventory and count workflows update local state immediately, then sync through Supabase.
 - DnD: `useSafeDndSensors` configures mouse, touch, and keyboard sensors for schedule and inventory interactions.
 - Motion: `motion-presets.ts`, `PageTransition`, `.bb-modal-*`, `.bb-transition`, `FloatingAlert`, and `FloatingToast` provide consistent animation.
-- Full-width clickable inputs: `ClickableInput` and `ClickableDatePicker` keep touch hitboxes accessible.
+- Full-width clickable inputs: `ClickableDatePicker` keeps touch hitboxes accessible.
 - Theme: `next-themes`, CSS tokens, and `bb-pastel-surface` preserve dual-theme contrast while keeping pastel shift cards black-on-pastel.
 
 ### Security and Integrity

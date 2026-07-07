@@ -173,7 +173,7 @@ describe('PinGateway Persistent Authentication', () => {
     expect(screen.queryByText(/Security Gateway/i)).not.toBeInTheDocument();
   });
 
-  test('should auto-trigger biometric login on mount when available', async () => {
+  test('does not auto-trigger biometric login on mount (auto prompt disabled)', async () => {
     vi.mocked(getBiometricLoginAvailability).mockResolvedValue({
       supported: true,
       canAutoTrigger: true,
@@ -190,11 +190,11 @@ describe('PinGateway Persistent Authentication', () => {
       </PinGateway>
     );
 
-    expect(await screen.findByTestId('protected-content')).toBeInTheDocument();
-    expect(loginWithDevicePasskey).toHaveBeenCalledTimes(1);
+    expect(await screen.findByLabelText('รหัสผ่าน 6 หลัก')).toBeInTheDocument();
+    expect(loginWithDevicePasskey).not.toHaveBeenCalled();
   });
 
-  test('should not loop biometric auto-trigger after a failed automatic attempt', async () => {
+  test('does not auto-trigger biometric after mount when availability resolves', async () => {
     vi.mocked(getBiometricLoginAvailability).mockResolvedValue({
       supported: true,
       canAutoTrigger: true,
@@ -212,14 +212,10 @@ describe('PinGateway Persistent Authentication', () => {
     );
 
     await waitFor(() => {
-      expect(loginWithDevicePasskey).toHaveBeenCalledTimes(1);
+      expect(loginWithDevicePasskey).not.toHaveBeenCalled();
     });
 
-    const pinInput = await screen.findByLabelText('รหัสผ่าน 6 หลัก');
-    await waitFor(() => {
-      expect(pinInput).toHaveFocus();
-    });
-    expect(loginWithDevicePasskey).toHaveBeenCalledTimes(1);
+    expect(await screen.findByLabelText('รหัสผ่าน 6 หลัก')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /เข้าด้วย Windows Hello \/ Passkey/i })
     ).toBeInTheDocument();

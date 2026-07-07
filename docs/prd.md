@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> Version: 9.0 | Last Updated: 2026-06-22 | Owner: System Architect
+> Version: 9.1 | Last Updated: 2026-07-08 | Owner: System Architect
 
 ---
 
@@ -35,27 +35,27 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 - Route: `/[locale]`
 - Purpose: ภาพรวมกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์
-- Components: `LiveStatusTracker`, `CommandCenterGrid`
+- Components: `src/app/[locale]/_components/LiveStatusTracker.tsx`
 
 ### 3.2 Staff Dashboard
 
 - Route: `/[locale]/dashboard`
 - Purpose: ลงเวลา รายชื่อกะ ตารางรายเดือน
-- Components: `LiveShiftList`, `ShiftCard`, `MonthlyRoster`, `InventorySummaryCard`, `WeatherWidget`
+- Components: `dashboard/_components/LiveShiftList.tsx`, `MonthlyRoster.tsx`
 - Performance: รวม query กะรายสัปดาห์/รายเดือนเมื่อช่วงวันที่ซ้อนกัน แล้ว split กลับเป็น payload เดิม
 
 ### 3.3 Schedule
 
 - Route: `/[locale]/schedule`
 - Purpose: จัดตารางงาน Drag-and-Drop, สลับกะ, วันหยุด
-- Components: `ScheduleClient.tsx`
+- Components: `ScheduleClient.tsx`, `schedule/_components/ScheduleToolbar.tsx`, `ShiftSettingsModal.tsx`
 - Features: DnD shift assignment, Thai holidays (Google Calendar), regular holidays, PNG export
 
 ### 3.4 Inventory
 
 - Route: `/[locale]/inventory`, `/[locale]/inventory/count`, `/[locale]/inventory/accuracy`
 - Purpose: คลังสินค้า + ตรวจนับสต็อก
-- Components: `page.tsx`, `PurchaseOrdersModal.tsx`, `count/page.tsx`
+- Components: `InventoryClient.tsx`, `inventory/_components/*` (FAB, modals, quick action bar)
 - Features:
   - Spreadsheet inline editing + Undo/Redo
   - DnD row reordering (`@dnd-kit`)
@@ -79,25 +79,19 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - Purpose: อัปโหลด Excel วิเคราะห์ยอดขาย
 - Features: File upload, category management, AI auto-categorize, charts (`recharts`)
 
-### 3.7 Market Insights
-
-- Route: `/[locale]/market-insights`
-- Purpose: วิเคราะห์ตลาดรอบร้านด้วย Gemini AI (v2 multi-step pipeline)
-- Features: Zod-validated output, ContextPanel/AlertsCard/ActionChecklist, localStorage cache v2, optional Google Places competitors, store-managed local events context
-
-### 3.8 AI Assistant (บรู)
+### 3.7 AI Assistant (บรู)
 
 - Route: Global overlay (ทุกหน้า)
 - Purpose: แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
 - API: `POST /api/chat` — ToolLoopAgent + Gemini 2.5 Flash
 
-### 3.9 Settings
+### 3.8 Settings
 
 - Route: `/[locale]/settings`
 - Purpose: การตั้งค่าระบบสำหรับพนักงาน
-- Features: Theme picker (light / dark / system via `next-themes`, key `bb-theme`); login history; trusted-device passkeys; notification preferences; data change history (`DataChangeHistorySection`)
+- Features: Theme picker; login history; trusted-device passkeys; notification preferences; data change history (`settings/_components/`)
 
-### 3.10 Daily Web Push Notification
+### 3.9 Daily Web Push Notification
 
 - Route: `/api/daily-report` (Vercel Cron)
 - Purpose: แจ้งเตือนกะงาน อากาศ และวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
@@ -113,7 +107,6 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 | Shift Scheduling | จัดพนักงานให้เหมาะสม | Schedule |
 | Holiday Sync | วางแผนล่วงหน้าตามวันหยุดราชการ | Schedule |
 | Sales Analytics | วิเคราะห์ยอดขายและหมวดหมู่ | Sales |
-| Market Insights | ตอบรับเทรนด์ตลาด | Market Insights |
 | Real-time Sync | ข้อมูลอัปเดตทันทีข้ามเครื่อง | All |
 | Daily Web Push | แจ้งเตือนตารางงานผ่าน endpoint เดียวกับ inventory alerts | Schedule/Notifications |
 | Trusted-device Passkeys | ลด friction หลัง PIN verified โดยยังคุม device fingerprint | Settings/Auth |

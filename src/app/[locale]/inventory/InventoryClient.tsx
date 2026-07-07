@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Loader2, Undo2, Redo2, Trash2, X, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { Loader2, Undo2, Redo2, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import {
   fetchTransactionHistory,
   fetchFrequentItems,
@@ -16,31 +15,23 @@ import {
   recordItemAddHistory,
   updateInventoryItemField,
   reorderInventoryItems,
-  fetchInventoryTargetRecommendations,
 } from '@/app/actions/inventory-actions';
 import type { InventoryTransactionFilterType } from '@/app/actions/inventory-actions';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { computePurchaseOrderDerivedState, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
-import { formatTargetStockRecommendation, type InventoryShortageRisk } from '@/lib/inventory-recommended-target-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
-import { InventoryQuickActionBar } from '@/components/inventory/InventoryQuickActionBar';
-import type { TransactionHistoryRow } from '@/components/inventory/InventoryHistoryModal';
+import { InventoryQuickActionBar } from './_components/InventoryQuickActionBar';
+import type { TransactionHistoryRow } from './_components/InventoryHistoryModal';
 import {
   DndContext,
   closestCorners,
   DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
-import {
-  restrictToWindowEdges,
-  snapCenterToCursor,
-} from '@dnd-kit/modifiers';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import {
   arrayMove,
   SortableContext,
@@ -63,8 +54,6 @@ import {
   type InventoryFieldValue,
   type InventoryFieldSaveHandler,
   type InventoryCellBaseProps,
-  type InventoryRowHandlers,
-  defaultColumns,
   formatNumericFormValue,
   parseNumericFormValue,
   buildColumnsFromSettings,
@@ -90,11 +79,8 @@ function normalizeCountPolicy(value: unknown): InventoryCountPolicy {
 }
 
 function isManualOrderQty(item: InventoryItem): boolean {
+  void item;
   return false;
-}
-
-function normalizeShortageRisk(value: unknown): InventoryShortageRisk {
-  return value === 'medium' || value === 'high' ? value : 'normal';
 }
 
 function getInventoryCellDisplayValue(item: InventoryItem, col: ColumnDef, manualOrderQty: boolean) {
@@ -105,13 +91,6 @@ function getInventoryCellDisplayValue(item: InventoryItem, col: ColumnDef, manua
     const orderPoint = Number(item.order_point) || 0;
     const targetStock = Number(item.target_stock) || 0;
     val = stock <= orderPoint ? Math.max(0, targetStock - stock) : 0;
-  }
-
-  if (col.id === 'target_stock') {
-    return formatTargetStockRecommendation({
-      currentTargetStock: Number(item.target_stock) || 0,
-      recommendedTargetStock: Number(item.recommended_target_stock) || 0,
-    });
   }
 
   if (col.type === 'number' || col.id === 'order_qty') {
@@ -156,223 +135,6 @@ function CountPolicyToggle({
       <span className="mr-1.5 h-2 w-2 rounded-full bg-black/55" aria-hidden="true" />
       <span className="whitespace-nowrap">{policy === 'exact_count' ? 'ต้องเบิก' : 'ไม่ต้องเบิก'}</span>
     </button>
-  );
-}
-
-function TargetStockRecommendationControl({
-  item,
-  handleUpdateField,
-  handleSaveField,
-  handleFocus,
-}: {
-  item: InventoryItem;
-  handleUpdateField: (id: string, field: string, value: InventoryFieldValue) => void;
-  handleSaveField: InventoryFieldSaveHandler;
-  handleFocus: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const recommended = Number(item.recommended_target_stock ?? 0);
-  const currentTarget = Number(item.target_stock ?? 0);
-  const risk = normalizeShortageRisk(item.shortage_risk);
-  const leadTimeDays = Number(item.lead_time_days ?? 3);
-  const explanation = item.recommendation_explanation ?? [];
-
-  const refreshRecommendation = async () => {
-    const res = await fetchInventoryTargetRecommendations([item.id]);
-    if (!res.success) {
-      console.error('[TargetStockRecommendationControl] fetchInventoryTargetRecommendations:', res.error);
-      return;
-    }
-    const recommendationsByItemId = res.recommendationsByItemId as Record<string, Partial<InventoryItem>>;
-    const recommendation = recommendationsByItemId[item.id];
-    if (!recommendation) return;
-    handleUpdateField(item.id, 'recommended_target_stock', recommendation.recommended_target_stock ?? 0);
-    handleUpdateField(item.id, 'recommendation_confidence', recommendation.recommendation_confidence ?? 'ข้อมูลน้อย');
-    handleUpdateField(item.id, 'recommendation_explanation', recommendation.recommendation_explanation ?? []);
-  };
-
-  const saveField = (field: string, value: InventoryFieldValue) => {
-    handleFocus();
-    handleUpdateField(item.id, field, value);
-    if (typeof value === 'string' || typeof value === 'number') {
-      void Promise.resolve(handleSaveField(item.id, field, value)).then((saved) => {
-        if (saved !== false && (field === 'shortage_risk' || field === 'lead_time_days')) {
-          void refreshRecommendation();
-        }
-      });
-    }
-  };
-
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="ตั้งค่าจำนวนที่แนะนำ"
-        title="ตั้งค่าจำนวนที่แนะนำ เช่น 20 → 28"
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          setOpen(true);
-        }}
-        className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-card/85 px-1.5 py-0.5 text-[10px] text-foreground/45 shadow-sm ring-1 ring-border transition-colors hover:text-foreground"
-      >
-        ↗
-      </button>
-      {open && (
-        <dialog
-          open
-          aria-label="รายละเอียดจำนวนที่แนะนำ"
-          className="fixed inset-x-3 bottom-3 z-[80] mx-auto max-w-sm rounded-3xl border border-border bg-card p-4 text-foreground shadow-2xl md:inset-auto md:right-6 md:top-24 md:bottom-auto"
-        >
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium">จำนวนที่ต้องมี</p>
-              <p className="text-xs text-muted-foreground">เดิม {currentTarget} · แนะนำ {recommended || '-'}</p>
-            </div>
-            <button
-              type="button"
-              aria-label="ปิดรายละเอียดจำนวนที่แนะนำ"
-              onClick={() => setOpen(false)}
-              className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="space-y-3 text-sm">
-            <label className="block">
-              <span className="mb-1 block text-xs text-muted-foreground">ความเสี่ยง</span>
-              <select
-                value={risk}
-                onChange={(event) => saveField('shortage_risk', event.target.value)}
-                className="w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-foreground/10"
-              >
-                <option value="normal">ปกติ</option>
-                <option value="medium">ปานกลาง</option>
-                <option value="high">สูง</option>
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-xs text-muted-foreground">lead time (วัน)</span>
-              <input
-                type="number"
-                min={0}
-                max={30}
-                value={leadTimeDays}
-                onChange={(event) => saveField('lead_time_days', Number(event.target.value))}
-                className="w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-foreground/10"
-              />
-            </label>
-
-            <div className="rounded-2xl bg-muted p-3 text-xs text-muted-foreground">
-              <p className="mb-1 font-medium text-foreground">ดูเหตุผล</p>
-              {explanation.length > 0 ? (
-                explanation.map((line) => <p key={line}>{line}</p>)
-              ) : (
-                <p>ยังไม่มีข้อมูลเพียงพอสำหรับคำแนะนำ</p>
-              )}
-              {item.recommendation_confidence && (
-                <p className="mt-2 text-foreground/70">ความมั่นใจ: {item.recommendation_confidence}</p>
-              )}
-            </div>
-
-            <button
-              type="button"
-              disabled={!recommended || recommended <= currentTarget}
-              onClick={() => {
-                saveField('target_stock', recommended);
-                setOpen(false);
-              }}
-              className="w-full rounded-2xl bg-foreground px-4 py-2 text-sm text-background disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              ใช้ค่าที่แนะนำ
-            </button>
-          </div>
-        </dialog>
-      )}
-    </>
-  );
-}
-
-function ColumnHeader({ col, updateColumnLabel, saveColumnsConfig, onResize, onResizeEnd }: {
-  col: ColumnDef;
-  updateColumnLabel: (id: string, label: string) => void;
-  saveColumnsConfig: () => void;
-  onResize: (id: string, width: number) => void;
-  onResizeEnd: (id: string, width: number) => void;
-}) {
-  const isResizing = useRef(false);
-  const startX = useRef(0);
-  const startWidth = useRef(0);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) abortControllerRef.current.abort();
-    };
-  }, []);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    isResizing.current = true;
-    startX.current = e.pageX;
-    startWidth.current = parseInt(col.width) || 150;
-
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
-    const { signal } = abortControllerRef.current;
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!isResizing.current) return;
-      const delta = moveEvent.pageX - startX.current;
-      const newWidth = Math.max(80, startWidth.current + delta);
-      onResize(col.id, newWidth);
-    };
-
-    const handleMouseUp = (upEvent: MouseEvent) => {
-      isResizing.current = false;
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = null;
-
-      const delta = upEvent.pageX - startX.current;
-      const finalWidth = Math.max(80, startWidth.current + delta);
-      onResizeEnd(col.id, finalWidth);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove, { signal });
-    document.addEventListener('mouseup', handleMouseUp, { signal });
-    e.preventDefault();
-  };
-
-  const style = {
-    width: col.width,
-    minWidth: col.width === 'auto' ? '80px' : col.width,
-  };
-
-  return (
-    <th
-      style={style}
-      className={`p-0 font-normal ${col.id === 'source' ? '' : 'border-r border-[#000000]/5'} group relative select-none bg-transparent`}
-    >
-      <div className="p-4 flex items-center justify-center">
-        <input
-          type="text"
-          value={col.label}
-          onChange={(e) => updateColumnLabel(col.id, e.target.value)}
-          onBlur={saveColumnsConfig}
-          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="bg-transparent border-none focus:outline-none focus:bg-card/50 text-[13px] font-normal text-foreground/60 uppercase tracking-wider cursor-text px-2 py-1 rounded-xl text-center w-full"
-        />
-      </div>
-      {/* Resizer Handle */}
-      <div
-        onMouseDown={handleMouseDown}
-        className={`absolute right-0 top-0 bottom-0 w-1 px-0.5 cursor-col-resize hover:bg-black/10 transition-all z-20 group/resizer`}
-      >
-        <div className="w-[1px] h-full bg-[#000000]/5 group-hover/resizer:bg-black/20 mx-auto" />
-      </div>
-    </th>
   );
 }
 
@@ -448,9 +210,6 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
 }) => {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition: dndTransition, isDragging } = useSortable({ id: item.id });
 
-  const stock = Number(item.stock) || 0;
-  const orderPoint = Number(item.order_point) || 0;
-  const targetStock = Number(item.target_stock) || 0;
   const manualOrderQty = isManualOrderQty(item);
 
   const nameCol = columnById.get('name')!;
@@ -841,18 +600,18 @@ const MobileSortableRow = React.memo(({
 
 MobileSortableRow.displayName = 'MobileSortableRow';
 
-const PurchaseOrdersModal = dynamic(() => import('./PurchaseOrdersModal'), { ssr: false });
+const PurchaseOrdersModal = dynamic(() => import('./_components/PurchaseOrdersModal'), { ssr: false });
 const InventoryHistoryModal = dynamic(
-  () => import('@/components/inventory/InventoryHistoryModal').then((mod) => mod.InventoryHistoryModal),
+  () => import('./_components/InventoryHistoryModal').then((mod) => mod.InventoryHistoryModal),
   { ssr: false },
 );
 
 const preloadPurchaseOrdersModal = () => {
-  void import('./PurchaseOrdersModal');
+  void import('./_components/PurchaseOrdersModal');
 };
 
 const preloadInventoryHistoryModal = () => {
-  void import('@/components/inventory/InventoryHistoryModal');
+  void import('./_components/InventoryHistoryModal');
 };
 
 const HISTORY_PAGE_SIZE = 50;
@@ -882,15 +641,11 @@ function EditableCell({
         inputRef.current.value = displayVal;
       }
     }
-  }, [item, col, item.stock, item.order_point, item.target_stock, item.recommended_target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
+  }, [item, col, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
 
   const handleInputFocus = () => {
     setIsFocused(true);
     handleFocus();
-    if (col.id === 'target_stock' && inputRef.current) {
-      inputRef.current.value = formatInventoryNumericDisplay(item.target_stock);
-      inputRef.current.select();
-    }
   };
 
   const handleBlur = () => {
@@ -968,25 +723,10 @@ function EditableCell({
           "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate",
           col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0),
           col.id === 'order_qty' && !manualOrderQty && 'bg-muted border-border text-muted-foreground cursor-not-allowed',
-          col.id === 'target_stock' && 'pr-6',
           className,
         )}
       />
     );
-
-    if (col.id === 'target_stock') {
-      return (
-        <div className="relative">
-          {input}
-          <TargetStockRecommendationControl
-            item={item}
-            handleUpdateField={handleUpdateField}
-            handleSaveField={handleSaveField}
-            handleFocus={handleFocus}
-          />
-        </div>
-      );
-    }
 
     return input;
   }
@@ -1024,14 +764,6 @@ function EditableCell({
           col.id === 'order_qty' && manualOrderQty && 'bb-pastel-surface bg-[#f8d7da] text-black',
         )}
       />
-      {col.id === 'target_stock' && (
-        <TargetStockRecommendationControl
-          item={item}
-          handleUpdateField={handleUpdateField}
-          handleSaveField={handleSaveField}
-          handleFocus={handleFocus}
-        />
-      )}
       {col.id === 'name' && (
         <HintTooltip tip="ลบรายการ">
           <button
@@ -1060,15 +792,11 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
         inputRef.current.value = displayVal;
       }
     }
-  }, [item, col, item.stock, item.order_point, item.target_stock, item.recommended_target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
+  }, [item, col, item.stock, item.order_point, item.target_stock, item.count_policy, item.order_qty, isFocused, manualOrderQty]);
 
   const handleInputFocus = () => {
     setIsFocused(true);
     handleFocus();
-    if (col.id === 'target_stock' && inputRef.current) {
-      inputRef.current.value = formatInventoryNumericDisplay(item.target_stock);
-      inputRef.current.select();
-    }
   };
 
   const handleBlur = () => {
@@ -1115,23 +843,9 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
       data-mobile-col-id={col.id}
       data-mobile-row-index={rowIndex}
       readOnly={col.id === 'order_qty' && !manualOrderQty}
-      className={cn(className, col.id === 'target_stock' && 'pr-6')}
+      className={cn(className)}
     />
   );
-
-  if (col.id === 'target_stock') {
-    return (
-      <div className="relative">
-        {input}
-        <TargetStockRecommendationControl
-          item={item}
-          handleUpdateField={handleUpdateField}
-          handleSaveField={handleSaveField}
-          handleFocus={handleFocus}
-        />
-      </div>
-    );
-  }
 
   return input;
 }
@@ -1139,9 +853,7 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
 export default function InventoryClient({
   initialItems,
   initialColumnSettings = null,
-  locale: _locale,
 }: InventoryClientProps) {
-  const router = useRouter();
   const isReadOnly = useReadOnly();
   const { subscribe, refresh } = useInventoryRealtime();
 
@@ -1161,7 +873,6 @@ export default function InventoryClient({
   const [loading, setLoading] = useState(false);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
 
   // Modals
@@ -1170,7 +881,6 @@ export default function InventoryClient({
   const [isExportingPO, setIsExportingPO] = useState(false);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [activeRowId, setActiveRowId] = useState<string | null>(null);
 
   // Add Form State
   const [newItemData, setNewItemData] = useState<NewItemFormData>({});
@@ -1180,7 +890,6 @@ export default function InventoryClient({
   const [undoStack, setUndoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
   const [redoStack, setRedoStack] = useState<{ items: InventoryItem[], cols: ColumnDef[] }[]>([]);
   const previousStateRef = useRef<{ items: InventoryItem[], cols: ColumnDef[] }>({ items: initialItems, cols: columns });
-  const recommendationLoadKeyRef = useRef('');
 
   const sensors = useSafeDndSensors();
 
@@ -1326,28 +1035,6 @@ export default function InventoryClient({
   }, [subscribe]);
 
   useEffect(() => {
-    const itemIds = items.map((item) => item.id).filter(Boolean);
-    const loadKey = itemIds.join('|');
-    if (!loadKey || recommendationLoadKeyRef.current === loadKey) return;
-    recommendationLoadKeyRef.current = loadKey;
-
-    void fetchInventoryTargetRecommendations(itemIds).then((res) => {
-      if (!res.success) {
-        console.error('[InventoryClient] fetchInventoryTargetRecommendations:', res.error);
-        return;
-      }
-
-      const recommendationsByItemId = res.recommendationsByItemId as Record<string, Partial<InventoryItem>>;
-      setItems((prev) =>
-        prev.map((item) => {
-          const recommendation = recommendationsByItemId[item.id];
-          return recommendation ? { ...item, ...recommendation } : item;
-        }),
-      );
-    });
-  }, [items]);
-
-  useEffect(() => {
     previousStateRef.current = { items, cols: columns };
   }, [items, columns]);
 
@@ -1403,7 +1090,7 @@ export default function InventoryClient({
 
   function sanitizeInventoryItem(item: InventoryItem) {
     const sanitized = { ...item };
-    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'sort_order', 'lead_time_days'];
+    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'sort_order'];
 
     numericFields.forEach((field) => {
       const key = field as keyof InventoryItem;
@@ -1417,10 +1104,6 @@ export default function InventoryClient({
 
     // คง updated_at เดิมไว้ ไม่ลบทิ้ง เพื่อไม่ให้ Supabase reset เป็น NOW() (UTC)
     sanitized.count_policy = normalizeCountPolicy(sanitized.count_policy);
-    sanitized.shortage_risk = normalizeShortageRisk(sanitized.shortage_risk);
-    if (sanitized.lead_time_days === undefined) {
-      sanitized.lead_time_days = 3;
-    }
     if (!sanitized.updated_at) {
       sanitized.updated_at = new Date().toISOString();
     }
@@ -1451,8 +1134,6 @@ export default function InventoryClient({
       unit: newItemData.unit || '',
       source: newItemData.source || '',
       count_policy: normalizeCountPolicy(newItemData.count_policy),
-      shortage_risk: normalizeShortageRisk(newItemData.shortage_risk),
-      lead_time_days: Number(newItemData.lead_time_days ?? 3),
       sort_order: insertPos
     };
 
@@ -1590,9 +1271,7 @@ export default function InventoryClient({
     }
   }
 
-  const handleFocus = useCallback(() => {
-    setIsEditing(prev => prev ? prev : true);
-  }, []);
+  const handleFocus = useCallback(() => {}, []);
 
   const handleUpdateField = useCallback((id: string, field: string, value: InventoryFieldValue) => {
     setItems(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
@@ -1601,7 +1280,6 @@ export default function InventoryClient({
   const handleSaveField = useCallback(async (id: string, field: string, value: InventoryFieldValue) => {
     if (blockIfReadOnly()) return false;
     if (Array.isArray(value)) return false;
-    setIsEditing(false);
     const original = previousStateRef.current.items.find(i => i.id === id);
 
     // Special handling for sort_order!
@@ -1660,7 +1338,7 @@ export default function InventoryClient({
 
     // Normal handling for other fields
     let sanitizedValue = value;
-    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'lead_time_days'];
+    const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock'];
     if (numericFields.includes(field)) {
       sanitizedValue = value === '' || value === null || value === undefined ? 0 : Number(value);
       if (isNaN(sanitizedValue as number)) sanitizedValue = 0;
@@ -1713,62 +1391,8 @@ export default function InventoryClient({
     pushHistory,
   ]);
 
-  function updateColumnLabel(id: string, label: string) {
-    setColumns(prev => prev.map(col => col.id === id ? { ...col, label } : col));
-  }
-
-  async function saveColumnsConfig(currentCols: ColumnDef[] = columns) {
-    if (blockIfReadOnly()) return;
-    setSavingState('saving');
-
-    // Local Persistence
-    const widths = currentCols.reduce((acc, c) => ({ ...acc, [c.id]: c.width }), {});
-    localStorage.setItem('inventory-column-widths', JSON.stringify(widths));
-
-    const settings = {
-      order: currentCols.map(c => c.id),
-      labels: currentCols.reduce((acc, c) => ({ ...acc, [c.id]: c.label }), {}),
-      widths
-    };
-    try {
-      const { error } = await supabase.from('inventory_config').upsert({ id: 'column_labels', settings });
-      if (error) throw error;
-      logClientDataChange({
-        action: 'UPDATE',
-        module: 'inventory',
-        entityType: 'inventory_config',
-        entityId: 'column_labels',
-        entityLabel: 'Column settings',
-        after: settings,
-      });
-      setSavingState('synced');
-      setTimeout(() => setSavingState('idle'), 2000);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('Failed to save columns config:', message);
-      setSavingState('idle');
-    }
-  }
-
-  function handleColumnResize(id: string, width: number) {
-    setColumns(prev => prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col));
-  }
-
-  function handleColumnResizeEnd(id: string, width: number) {
-    setColumns(prev => {
-      const nextCols = prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col);
-      saveColumnsConfig(nextCols);
-      return nextCols;
-    });
-  }
-
-  async function handleDragStartRows(event: DragStartEvent) {
-    setActiveRowId(String(event.active.id));
-  }
-
   async function handleDragEndRows(event: DragEndEvent) {
     if (blockIfReadOnly()) return;
-    setActiveRowId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const rollbackItems = [...items];
@@ -1929,35 +1553,6 @@ export default function InventoryClient({
     void loadHistoryPage({ offset: transactionHistory.length, append: true });
   }
 
-  async function handleCancelTransaction(txId: string, itemId: string, type: 'IN' | 'OUT', quantity: number) {
-    if (blockIfReadOnly()) return;
-    void itemId;
-    void type;
-    void quantity;
-    if (!window.confirm('ลบเฉพาะประวัติรายการนี้ใช่หรือไม่? ยอดคงเหลือปัจจุบันจะไม่ถูกเปลี่ยน')) return;
-
-    setSavingState('saving');
-    try {
-      const { error: deleteError } = await supabase
-        .from('inventory_transactions')
-        .delete()
-        .eq('id', txId);
-
-      if (deleteError) throw deleteError;
-
-      // Refresh history
-      await loadHistoryPage({ offset: 0 });
-
-      setSavingState('synced');
-      setTimeout(() => setSavingState('idle'), 2000);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('Failed to cancel transaction:', message);
-      alert('ไม่สามารถยกเลิกรายการได้: ' + message);
-      setSavingState('idle');
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-transparent text-foreground">
@@ -2079,7 +1674,6 @@ export default function InventoryClient({
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
-            onDragStart={handleDragStartRows}
             onDragEnd={handleDragEndRows}
             modifiers={[restrictToWindowEdges]}
           >

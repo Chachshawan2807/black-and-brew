@@ -4,6 +4,8 @@ import {
   buildWebPushPayload,
   parsePushPrefs,
   shouldSendPushToSubscription,
+  WEB_PUSH_DEFAULT_TTL_SECONDS,
+  WEB_PUSH_SCHEDULE_TTL_SECONDS,
   type PushSubscriptionRow,
 } from '@/lib/web-push';
 
@@ -114,5 +116,10 @@ describe('web-push', () => {
       prefs_json: { enabled: false, systemNotifications: false },
     });
     expect(shouldSendPushToSubscription(row, subscription)).toBe(false);
+  });
+
+  test('uses long TTL defaults for mobile offline / Doze tolerance', () => {
+    expect(WEB_PUSH_DEFAULT_TTL_SECONDS).toBeGreaterThanOrEqual(12 * 60 * 60);
+    expect(WEB_PUSH_SCHEDULE_TTL_SECONDS).toBeGreaterThanOrEqual(12 * 60 * 60);
   });
 });

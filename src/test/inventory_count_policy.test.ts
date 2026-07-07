@@ -73,7 +73,7 @@ describe('inventory count policy', () => {
     const inventoryPage = read('src/app/[locale]/inventory/InventoryClient.tsx');
 
     expect(countPage).toContain('recordInventoryCountAndUpdateStock(id, value');
-    expect(inventoryPage).toContain('mergeInventoryRealtimeUpdate(item, payload.new as InventoryItem)');
+    expect(inventoryPage).toMatch(/mergeInventoryRealtimeUpdate\(item, p\.new as InventoryItem\)/);
   });
 
   test('accuracy report excludes sufficiency checks from accuracy', () => {
@@ -96,9 +96,10 @@ describe('inventory count policy', () => {
   });
 
   test('history cleanup does not mutate inventory stock', () => {
+    const accuracyPage = read('src/app/[locale]/inventory/accuracy/page.tsx');
     const inventoryPage = read('src/app/[locale]/inventory/InventoryClient.tsx');
 
-    expect(inventoryPage).toContain('ลบเฉพาะประวัติ');
+    expect(accuracyPage).toContain('การลบหรือเคลียร์ประวัติย้อนหลังจะไม่เปลี่ยนยอดคงเหลือ');
     expect(inventoryPage).not.toContain("select('stock')");
     expect(inventoryPage).not.toContain('const newStock = type ===');
   });

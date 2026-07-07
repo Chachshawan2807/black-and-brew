@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const { mockGet, mockFrom, mockSelect, mockEq, mockMaybeSingle, mockInsert } = vi.hoisted(() => {
+const { mockGet, mockFrom, mockEq, mockMaybeSingle, mockInsert } = vi.hoisted(() => {
   const mockMaybeSingle = vi.fn();
   const mockEq = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
   const mockSelect = vi.fn(() => ({ eq: mockEq }));
@@ -13,7 +13,6 @@ const { mockGet, mockFrom, mockSelect, mockEq, mockMaybeSingle, mockInsert } = v
   return {
     mockGet: vi.fn(),
     mockFrom,
-    mockSelect,
     mockEq,
     mockMaybeSingle,
     mockInsert,

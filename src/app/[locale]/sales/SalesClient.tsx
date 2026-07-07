@@ -37,7 +37,7 @@ import { useTheme } from 'next-themes';
 import { getChartColors } from '@/lib/chart-theme';
 import { SALES_CATEGORY_CARD_COLORS, SALES_SECTION_COLORS } from '@/lib/shift-colors';
 import { readCache, writeCache, isStale } from '@/lib/cache/client-cache';
-import SalesTopProductsChart from './components/SalesTopProductsChart';
+import SalesTopProductsChart from './_components/SalesTopProductsChart';
 
 const SALES_METRICS_KEY = 'salesMetrics';
 // Separate TTL-tracking key for the server fetch; UI-editable categories
@@ -103,7 +103,6 @@ export interface SalesClientProps {
 export default function SalesClient({
   initialMetrics,
   initialCategories,
-  locale,
 }: SalesClientProps) {
   const isReadOnly = useReadOnly();
   const { resolvedTheme } = useTheme();
@@ -496,6 +495,7 @@ export default function SalesClient({
       loadCategories.current(initialCategories);
     }
     loadData.current();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: seed server cache once; refs handle subsequent loads
   }, []);
 
   const handleRefresh = async () => {
@@ -515,10 +515,6 @@ export default function SalesClient({
       setError(null);
       setUploadSuccess(null);
     }
-  };
-
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleFileUpload = async (e: React.FormEvent<HTMLFormElement>) => {

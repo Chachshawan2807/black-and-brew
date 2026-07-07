@@ -1,8 +1,3 @@
-import type {
-  InventoryRecommendationConfidence,
-  InventoryShortageRisk,
-} from '@/lib/inventory-recommended-target-stock';
-
 export interface InventoryItem {
   id: string;
   name: string;
@@ -14,18 +9,13 @@ export interface InventoryItem {
   source: string;
   sort_order: number;
   count_policy?: InventoryCountPolicy;
-  shortage_risk?: InventoryShortageRisk;
-  lead_time_days?: number;
-  recommended_target_stock?: number;
-  recommendation_confidence?: InventoryRecommendationConfidence;
-  recommendation_explanation?: string[];
   updated_at?: string;
   [key: string]: string | number | string[] | undefined;
 }
 
 export type InventoryCountPolicy = 'exact_count' | 'sufficiency_check';
 
-/** Value accepted by inventory cell editors and transient recommendation rows */
+/** Value accepted by inventory cell editors */
 export type InventoryFieldValue = string | number | string[];
 
 export type InventoryFieldHandler = (

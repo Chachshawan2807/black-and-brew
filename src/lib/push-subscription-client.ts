@@ -17,6 +17,48 @@ import { getSupabaseAccessToken } from '@/lib/supabase-session';
 
 let activePushSubscription: PushSubscription | null = null;
 
+/** Debounce window — merges resume / focus / pageshow bursts on mobile. */
+const MAINTENANCE_DEBOUNCE_MS = 2_000;
+/** Retry when Supabase session is not ready yet after PIN unlock. */
+const MAINTENANCE_RETRY_MS = [0, 3_000, 8_000] as const;
+
+let maintenanceTimer: ReturnType<typeof setTimeout> | null = null;
+let maintenanceGeneration = 0;
+
+async function runPushSubscriptionMaintenance(locale: string): Promise<void> {
+  const generation = ++maintenanceGeneration;
+  const prefs = loadNotificationPreferences();
+  if (!wantsPushRegistration(prefs)) {
+    activePushSubscription = null;
+    return;
+  }
+
+  for (let attempt = 0; attempt < MAINTENANCE_RETRY_MS.length; attempt += 1) {
+    if (generation !== maintenanceGeneration) return;
+    const delay = MAINTENANCE_RETRY_MS[attempt];
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+    if (generation !== maintenanceGeneration) return;
+    const ok = await ensurePushSubscription(locale);
+    if (ok) return;
+  }
+}
+
+/**
+ * Re-validates Web Push subscription with the server (debounced).
+ * Call on app resume, PIN auth, and preference changes so mobile PWAs
+ * recover after OS sleep or expired browser push endpoints.
+ */
+export function schedulePushSubscriptionMaintenance(locale: string): void {
+  if (typeof window === 'undefined') return;
+  if (maintenanceTimer) clearTimeout(maintenanceTimer);
+  maintenanceTimer = setTimeout(() => {
+    maintenanceTimer = null;
+    void runPushSubscriptionMaintenance(locale);
+  }, MAINTENANCE_DEBOUNCE_MS);
+}
+
 export function hasActivePushSubscription(): boolean {
   return activePushSubscription !== null;
 }

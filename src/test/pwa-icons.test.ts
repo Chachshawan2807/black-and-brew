@@ -176,6 +176,8 @@ describe('PWA cross-platform asset consistency', () => {
   test('PWA registration refreshes background push for daily reports too', () => {
     const source = fs.readFileSync(path.join(ROOT, 'src/components/PwaRegister.tsx'), 'utf8');
     expect(source).toContain('wantsPushRegistration(prefs)');
+    expect(source).toContain('schedulePushSubscriptionMaintenance');
+    expect(source).toContain('pageshow');
     expect(source).not.toContain('prefs.enabled && prefs.systemNotifications');
   });
 });

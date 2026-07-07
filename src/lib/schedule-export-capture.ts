@@ -1,11 +1,12 @@
 import { captureElementAsPng, downloadDataUrl } from '@/lib/capture-element-png';
 import { APP_FONT_FAMILY_CSS } from '@/lib/fonts';
+import { SCHEDULE_GRID_TEMPLATE } from '@/lib/schedule/grid-layout';
 
 export const SCHEDULE_EXPORT_BG = '#fdfcf0';
 export const SCHEDULE_EXPORT_TEXT = '#000000';
 export const SCHEDULE_EXPORT_MUTED = 'rgba(0, 0, 0, 0.55)';
 export const SCHEDULE_EXPORT_BORDER = 'rgba(0, 0, 0, 0.05)';
-const SCHEDULE_EXPORT_GRID_TEMPLATE = 'minmax(180px, max-content) repeat(7, minmax(104px, 1fr))';
+const SCHEDULE_EXPORT_GRID_TEMPLATE = SCHEDULE_GRID_TEMPLATE;
 
 function resolveScheduleExportFontFamily(): string {
   if (typeof window === 'undefined') return APP_FONT_FAMILY_CSS;

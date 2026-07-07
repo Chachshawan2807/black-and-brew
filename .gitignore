@@ -65,6 +65,7 @@ yarn-error.log*
 # --- Project Specific ---
 scratch/sidebar-temp/
 taste-skill/
+graphify-out/
 .trae/
 .claude/
 .vercel

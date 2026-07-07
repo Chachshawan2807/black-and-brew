@@ -5,7 +5,7 @@ import path from 'node:path';
 describe('inventory modals dark theme readability', () => {
   it('purchase order tabs use dark text on pastel header', () => {
     const code = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/inventory/PurchaseOrdersModal.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
       'utf-8',
     );
 
@@ -15,7 +15,7 @@ describe('inventory modals dark theme readability', () => {
 
   it('purchase order export image keeps header on one line and clips rounded corners', () => {
     const code = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/inventory/PurchaseOrdersModal.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
       'utf-8',
     );
 
@@ -25,7 +25,7 @@ describe('inventory modals dark theme readability', () => {
 
   it('purchase order detail table clips its header background to rounded top corners', () => {
     const code = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/inventory/PurchaseOrdersModal.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
       'utf-8',
     );
 
@@ -38,7 +38,7 @@ describe('inventory modals dark theme readability', () => {
       'utf-8',
     );
     const fabCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryQuickActionFAB.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
     );
 

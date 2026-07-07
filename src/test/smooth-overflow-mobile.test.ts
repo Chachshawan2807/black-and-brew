@@ -21,14 +21,14 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
   });
 
   test('MonthlyRoster consolidated table allows vertical scroll chaining from sticky name column', () => {
-    const code = readFile('app/[locale]/dashboard/components/MonthlyRoster.tsx');
+    const code = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
     expect(code).toMatch(/overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y/);
     expect(code).toMatch(/sticky left-0[\s\S]*bb-sticky-scroll-cell/);
   });
 
   const scrollSurfaces: { file: string; pattern: RegExp }[] = [
     {
-      file: 'components/inventory/InventoryHistoryModal.tsx',
+      file: 'app/[locale]/inventory/_components/InventoryHistoryModal.tsx',
       pattern: /flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto[\s\S]*bb-smooth-scroll bb-scroll-xy/,
     },
     {
@@ -48,11 +48,11 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
       pattern: /overflow-x-auto[\s\S]*bb-smooth-scroll/,
     },
     {
-      file: 'components/inventory/InventoryQuickActionBar.tsx',
+      file: 'app/[locale]/inventory/_components/InventoryQuickActionBar.tsx',
       pattern: /overflow-y-auto[\s\S]*bb-smooth-scroll/,
     },
     {
-      file: 'app/[locale]/inventory/PurchaseOrdersModal.tsx',
+      file: 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx',
       pattern: /overflow-y-auto[\s\S]*bb-smooth-scroll/,
     },
     {

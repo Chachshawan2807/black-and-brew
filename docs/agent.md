@@ -1,6 +1,6 @@
 # Agent Guidelines — BLACKANDBREW ERP
 
-> **Version:** 8.5 | **Last Updated:** 2026-06-12
+> **Version:** 9.1 | **Last Updated:** 2026-07-08
 
 ---
 
@@ -57,7 +57,7 @@ THINK → MAP → BUDGET CHECK → EXECUTE → VALIDATE → LOG
 
 ## 4. Combo Matrix (SOP)
 
-1. **PRECISION STRIKE** — Run RepoMap before any file edit/audit
+1. **PRECISION STRIKE** — Query codebase-memory-mcp (`search_graph`, `trace_path`) before broad file edits
 2. **BUDGET GUARDIAN** — Check token budget before heavy CLI operations
 3. **AESTHETIC ENFORCER** — Auto-validate `.tsx`/`.css` against R0 Visual Standards (theme tokens + `bb-pastel-surface` on pastel cards — see `docs/design.md` §11)
 4. **RECURSIVE WISDOM** — Store lessons after any failure; search before similar tasks

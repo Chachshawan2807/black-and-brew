@@ -18,7 +18,7 @@
         await nav.setAppBadge(0);
       }
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

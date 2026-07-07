@@ -21,7 +21,7 @@ import React from 'react';
 import { FloatingToast } from '@/components/ui/floating-alert';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
-const MaintenanceModals = dynamic(() => import('./MaintenanceModals'), { ssr: false });
+const MaintenanceModals = dynamic(() => import('./_components/MaintenanceModals'), { ssr: false });
 
 // Simple Toast implementation
 const useToast = () => {
@@ -155,7 +155,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
     }
   }, [isMounted]);
 
-  async function fetchRecords() {
+  const fetchRecords = useCallback(async () => {
     setLoading(true);
     try {
       await ensureSupabaseSession();
@@ -175,7 +175,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
     } finally {
       setLoading(false);
     }
-  }
+  }, [setToast]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -232,7 +232,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
         }
       })();
     });
-  }, [isReadOnly, formData, editingRecord?.id, setToast]);
+  }, [isReadOnly, formData, editingRecord?.id, setToast, fetchRecords]);
 
   const handleDelete = useCallback(() => {
     if (isReadOnly) {
@@ -269,7 +269,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
         }
       })();
     });
-  }, [isReadOnly, recordToDelete, setToast]);
+  }, [isReadOnly, recordToDelete, setToast, fetchRecords]);
 
   function resetForm() {
     setFormData({

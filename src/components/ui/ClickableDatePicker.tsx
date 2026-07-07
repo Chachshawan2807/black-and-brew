@@ -318,7 +318,6 @@ export function ClickableDatePicker({
             <button
               key={day.toString()}
               type="button"
-              role="gridcell"
               aria-label={format(day, 'dd MMMM yyyy')}
               aria-pressed={isSelected}
               onClick={e => handleSelectDay(day, e)}

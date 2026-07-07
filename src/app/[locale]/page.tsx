@@ -1,14 +1,11 @@
-import { getTranslations } from 'next-intl/server';
 import { supabase } from '@/lib/supabase';
-import LiveStatusTracker from '@/components/dashboard/LiveStatusTracker';
+import LiveStatusTracker from './_components/LiveStatusTracker';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
 import { connection } from 'next/server';
 
 export default async function IndexPage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-  const t = await getTranslations('Dashboard');
-
+  await params;
   // ADR: BKK-TIME-ENGINE - บังคับใช้ขอบเขตวันแบบ UTC ISO สำหรับ Database
   // connection() signals Next.js 16 PPR that this route reads request-time data
   await connection();

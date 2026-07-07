@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { DailyReportData } from '@/app/actions/daily-report-actions';
 import {
   buildDailyReportAltText,
+  filterNotificationLeaveStaff,
   HOLIDAY_SUMMARY_MAX_DAYS,
+  isDayOffShiftText,
   shouldIncludeHolidaySummary,
 } from '@/lib/daily-report-summary';
 
@@ -15,7 +17,10 @@ const sampleData: DailyReportData = {
     { name: 'มุก', shiftText: '7:00' },
   ],
   otherDutyStaff: [{ name: 'ล่า', shiftText: 'ร้านซักผ้า' }],
-  offStaff: [{ name: 'นิต้า', shiftText: 'วันหยุด' }],
+  offStaff: [
+    { name: 'นิต้า', shiftText: 'วันหยุด' },
+    { name: 'มุก', shiftText: 'ลา' },
+  ],
   holiday: { name: 'วันเฉลิมพระชนมพรรษา', daysRemaining: 46 },
 };
 
@@ -27,7 +32,9 @@ describe('buildDailyReportAltText()', () => {
     expect(summary).toContain('เข้างาน 2 คน');
     expect(summary).toContain('ปิ่น 6:30');
     expect(summary).toContain('งานอื่น: ล่า (ร้านซักผ้า)');
-    expect(summary).toContain('หยุด: นิต้า (วันหยุด)');
+    expect(summary).toContain('ลา: มุก (ลา)');
+    expect(summary).not.toContain('นิต้า');
+    expect(summary).not.toContain('หยุด:');
   });
 
   it('includes only nearby holidays', () => {
@@ -48,6 +55,25 @@ describe('buildDailyReportAltText()', () => {
     });
 
     expect(summary).toContain('(วันนี้)');
+  });
+});
+
+describe('filterNotificationLeaveStaff()', () => {
+  it('keeps only leave shifts and drops day-off entries', () => {
+    const filtered = filterNotificationLeaveStaff([
+      { name: 'มุก', shiftText: 'ลา' },
+      { name: 'โบ๊ท', shiftText: 'วันหยุด' },
+      { name: 'นิต้า', shiftText: 'วันหยุด' },
+    ]);
+
+    expect(filtered).toEqual([{ name: 'มุก', shiftText: 'ลา' }]);
+  });
+});
+
+describe('isDayOffShiftText()', () => {
+  it('identifies normalized day-off labels', () => {
+    expect(isDayOffShiftText('วันหยุด')).toBe(true);
+    expect(isDayOffShiftText('ลา')).toBe(false);
   });
 });
 

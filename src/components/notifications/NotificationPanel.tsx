@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Plus, Pencil, Trash2, Layers, Package } from 'lucide-react';
+import { X, CalendarRange } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, sheetPanel } from '@/lib/motion-presets';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -13,30 +13,9 @@ import {
 import type { InventoryNotification } from '@/lib/notification-types';
 import { ExpandableLines } from '@/components/ui/expandable-lines';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
-
-function ActionIcon({
-  action,
-  size,
-  strokeWidth,
-}: {
-  action: string;
-  size: number;
-  strokeWidth: number;
-}) {
-  const props = { size, strokeWidth };
-  switch (action) {
-    case 'CREATE':
-      return <Plus {...props} />;
-    case 'DELETE':
-    case 'BULK_DELETE':
-      return <Trash2 {...props} />;
-    case 'BULK_UPDATE':
-      return <Layers {...props} />;
-    case 'UPDATE':
-    default:
-      return <Pencil {...props} />;
-  }
-}
+import { NotificationItemIcon } from '@/components/notifications/NotificationItemIcon';
+import { PWA_BRAND_ICON } from '@/lib/pwa-assets';
+import Image from 'next/image';
 
 function NotificationRow({
   item,
@@ -49,7 +28,6 @@ function NotificationRow({
   isTh: boolean;
   onNavigate: (item: InventoryNotification) => void;
 }) {
-  const isHigh = item.priority === 'high';
   const lines = [
     item.title,
     item.summary,
@@ -74,14 +52,7 @@ function NotificationRow({
       )}
     >
       <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
-            isHigh ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-muted text-foreground/70'
-          )}
-        >
-          <ActionIcon action={item.action} size={14} strokeWidth={1.75} />
-        </div>
+        <NotificationItemIcon item={item} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
@@ -167,8 +138,15 @@ export function NotificationPanel() {
           >
             <header className="flex items-center justify-between gap-3 px-4 py-4 border-b border-border">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted">
-                  <Package size={16} strokeWidth={1.75} className="text-foreground/70" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-transparent">
+                  <Image
+                    src={PWA_BRAND_ICON}
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="h-5 w-5 object-contain"
+                    aria-hidden
+                  />
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-[15px] font-normal text-foreground leading-snug">
@@ -220,8 +198,8 @@ export function NotificationPanel() {
             <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll px-4 py-4 space-y-5">
               {groups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted mb-3">
-                    <Package size={20} strokeWidth={1.75} className="text-muted-foreground" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-transparent mb-3">
+                    <CalendarRange size={22} strokeWidth={1.75} className="text-muted-foreground" />
                   </div>
                   <p className="text-[14px] text-foreground">
                     {isTh ? 'ยังไม่มีการแจ้งเตือน' : 'No notifications yet'}

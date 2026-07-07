@@ -9,7 +9,7 @@ import {
 } from "@/app/actions/login-history-actions";
 import { ExpandableLines } from "@/components/ui/expandable-lines";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
-import ActiveRemoteSessionsPanel from "@/components/settings/ActiveRemoteSessionsPanel";
+import ActiveRemoteSessionsPanel from './ActiveRemoteSessionsPanel';
 import {
   formatLoginDeviceLabel,
   formatLoginDeviceMetadata,

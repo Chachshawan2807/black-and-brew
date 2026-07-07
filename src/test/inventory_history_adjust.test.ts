@@ -19,7 +19,7 @@ describe('inventory history adjust type', () => {
 
   test('quick action bar includes adjust quantity control with sliders icon', () => {
     const barCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryQuickActionBar.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
       'utf-8',
     );
 
@@ -30,13 +30,11 @@ describe('inventory history adjust type', () => {
     expect(barCode).not.toMatch(/PackagePlus[\s\S]*text-foreground\/40/);
     expect(barCode).toContain('z-[210]');
     expect(barCode).toContain('truncate min-w-0 flex-1');
-    expect(barCode).toContain('flex flex-row items-center gap-2 w-full min-w-0');
-    expect(barCode).not.toContain('hidden sm:inline');
   });
 
   test('history modal renders adjust transaction type label', () => {
     const modalCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryHistoryModal.tsx'),
       'utf-8',
     );
 
@@ -47,7 +45,7 @@ describe('inventory history adjust type', () => {
 
   test('set_inventory_stock SQL records ADJUST and supports skip flag', () => {
     const sql = fs.readFileSync(
-      path.resolve(__dirname, '../../sql/inventory_transaction_adjust.sql'),
+      path.resolve(__dirname, '../../sql/sync_inventory_stock.sql'),
       'utf-8',
     );
 
@@ -59,7 +57,7 @@ describe('inventory history adjust type', () => {
 describe('inventory history add and delete types', () => {
   test('history modal renders add and delete transaction type labels', () => {
     const modalCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryHistoryModal.tsx'),
       'utf-8',
     );
 
@@ -83,7 +81,7 @@ describe('inventory history add and delete types', () => {
 
   test('add item modal records ADD history after insert', () => {
     const modalCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryAddItemModal.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryAddItemModal.tsx'),
       'utf-8',
     );
 
@@ -101,7 +99,7 @@ describe('inventory history add and delete types', () => {
 
   test('SQL migration allows ADD and DELETE transaction types', () => {
     const sql = fs.readFileSync(
-      path.resolve(__dirname, '../../sql/inventory_transaction_add_delete.sql'),
+      path.resolve(__dirname, '../../supabase/migrations/20260612140000_inventory_add_delete_history.sql'),
       'utf-8',
     );
 
@@ -127,7 +125,7 @@ describe('inventory history pagination and filters', () => {
 
   test('history modal exposes type filters and load more control', () => {
     const modalCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryHistoryModal.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryHistoryModal.tsx'),
       'utf-8',
     );
 

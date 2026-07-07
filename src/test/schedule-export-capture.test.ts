@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+vi.mock('@/lib/fonts', () => ({
+  APP_FONT_FAMILY_CSS: 'Inter, sans-serif',
+  appFontClassName: 'font-inter',
+}));
+
 const toPngMock = vi.fn();
 
 vi.mock('html-to-image', () => ({
@@ -10,7 +15,6 @@ import {
   applyScheduleTableCaptureStyles,
   captureScheduleTableAsPng,
   SCHEDULE_EXPORT_BG,
-  SCHEDULE_EXPORT_TEXT,
   withLightDocumentTheme,
 } from '@/lib/schedule-export-capture';
 
@@ -82,7 +86,7 @@ describe('schedule-export-capture', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(true);
     expect(toPngMock).toHaveBeenCalledWith(
       element,
-      expect.objectContaining({ backgroundColor: SCHEDULE_EXPORT_BG, skipFonts: true }),
+      expect.objectContaining({ backgroundColor: SCHEDULE_EXPORT_BG, skipFonts: false }),
     );
   });
 });

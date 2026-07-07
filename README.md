@@ -134,11 +134,15 @@ src/
 │   ├── actions/              # Server Actions (inventory, shift, auth, sales, …)
 │   ├── api/                  # chat, daily-report, weather, push/webhook
 │   └── [locale]/             # UI routes (th/en)
-├── components/               # auth, sidebar, ui, ai, dashboard
-├── lib/                      # supabase, motion-presets, inventory-stock, …
+│       ├── <feature>/page.tsx, *Client.tsx
+│       └── <feature>/_components/   # feature-only UI (private folder)
+├── components/               # Shared UI: auth, sidebar, ui, ai, notifications
+├── lib/                      # supabase, schedule/, inventory-*, motion-presets, …
 ├── i18n/                     # next-intl routing
 └── proxy.ts                  # next-intl middleware (Next.js 16 convention)
 ```
+
+Agent knowledge graph: **codebase-memory-mcp** (not graphify). See `AGENTS.md` for colocation rules.
 
 - Database: Supabase PostgreSQL (Thailand Edge)
 - Stock sync: RPC `set_inventory_stock` — ดู `sql/sync_inventory_stock.sql`
@@ -154,7 +158,8 @@ src/
 
 | Doc | Purpose |
 | --- | :--- |
-| [docs/changelog.md](docs/changelog.md) | ประวัติการเปลี่ยนแปลง |
+| [docs/changelog.md](docs/changelog.md) | Recent changes (full history in git) |
+| [PROJECT_MAP.md](PROJECT_MAP.md) | Route and folder quick reference |
 | [docs/architecture.md](docs/architecture.md) | สถาปัตยกรรมและ data flow |
 | [docs/database.md](docs/database.md) | Schema, RLS, RPC |
 | [docs/api.md](docs/api.md) | Server Actions reference |

@@ -344,11 +344,9 @@ export type Database = {
         Row: {
           count_policy: string
           id: string
-          lead_time_days: number | null
           name: string | null
           order_point: number | null
           order_qty: number | null
-          shortage_risk: string | null
           sort_order: number | null
           source: string | null
           stock: number | null
@@ -359,11 +357,9 @@ export type Database = {
         Insert: {
           count_policy?: string
           id?: string
-          lead_time_days?: number | null
           name?: string | null
           order_point?: number | null
           order_qty?: number | null
-          shortage_risk?: string | null
           sort_order?: number | null
           source?: string | null
           stock?: number | null
@@ -374,11 +370,9 @@ export type Database = {
         Update: {
           count_policy?: string
           id?: string
-          lead_time_days?: number | null
           name?: string | null
           order_point?: number | null
           order_qty?: number | null
-          shortage_risk?: string | null
           sort_order?: number | null
           source?: string | null
           stock?: number | null

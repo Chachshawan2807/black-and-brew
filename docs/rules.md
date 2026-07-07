@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> Version: 9.0 | Last Updated: 2026-06-22 | Enforcement: Mandatory
+> Version: 9.1 | Last Updated: 2026-07-08 | Enforcement: Mandatory
 
 ---
 
@@ -39,8 +39,9 @@
 | Rule | Example |
 | --- | :--- |
 | Locale-prefixed routes | `/[locale]/inventory/` |
+| Feature-only UI | `src/app/[locale]/<feature>/_components/` |
 | Actions in `/actions/` | `src/app/actions/inventory-actions.ts` |
-| Shared components in `/components/` | `src/components/ui/button.tsx` |
+| Shared components (2+ features) | `src/components/ui/button.tsx` |
 | Utility functions in `/lib/` | `src/lib/supabase.ts` |
 
 ---

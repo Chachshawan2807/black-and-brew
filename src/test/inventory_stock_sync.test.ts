@@ -64,25 +64,25 @@ describe('inventory stock sync utilities', () => {
     expect(afterBothBelowPoint).toHaveLength(2);
   });
 
-  test('computeItemsToOrder uses manual order_qty for sufficiency checks', () => {
+  test('computeItemsToOrder uses reorder formula for sufficiency checks (ignores manual order_qty)', () => {
     const items = [
       {
         id: 'sufficient-manual',
         name: 'Manual PO',
-        stock: 100,
+        stock: 0,
         order_qty: '7',
-        order_point: 0,
-        target_stock: 0,
+        order_point: 10,
+        target_stock: 20,
         count_policy: 'sufficiency_check',
         unit: 'ชิ้น',
       },
       {
         id: 'sufficient-zero',
         name: 'No PO',
-        stock: 0,
+        stock: 100,
         order_qty: '',
-        order_point: 100,
-        target_stock: 200,
+        order_point: 0,
+        target_stock: 0,
         count_policy: 'sufficiency_check',
         unit: 'ชิ้น',
       },
@@ -92,7 +92,7 @@ describe('inventory stock sync utilities', () => {
 
     expect(toOrder).toHaveLength(1);
     expect(toOrder[0].id).toBe('sufficient-manual');
-    expect(toOrder[0].computedOrderQty).toBe(7);
+    expect(toOrder[0].computedOrderQty).toBe(20);
   });
 
   test('parseLocalColumnWidths preserves persisted px column widths', () => {

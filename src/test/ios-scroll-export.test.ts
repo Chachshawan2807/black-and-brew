@@ -40,8 +40,17 @@ describe('iOS scroll & export fixes', () => {
 
   test('ScheduleClient keeps employee and shift text on one line', () => {
     const code = readFile('app/[locale]/schedule/ScheduleClient.tsx');
+    const grid = readFile('lib/schedule/grid-layout.ts');
+    const css = readFile('app/[locale]/globals.css');
     expect(code).toContain('SCHEDULE_GRID_TEMPLATE');
-    expect(code).toMatch(/minmax\(180px,\s*max-content\)\s+repeat\(7,\s*minmax\(104px,\s*1fr\)\)/);
+    expect(code).toContain('gridFocus');
+    expect(code).toContain('onPointerLeave={handleGridPointerLeave}');
+    expect(code).toContain('setGridFocus(null)');
+    expect(code).toContain('scheduleCrosshairCellClass');
+    expect(grid).toContain("SCHEDULE_NAME_COLUMN_MIN = '168px'");
+    expect(grid).toContain('SCHEDULE_DAY_COLUMN_MIN');
+    expect(css).toContain('bb-schedule-crosshair-cell');
+    expect(css).toContain('bb-schedule-crosshair-row-band');
     expect(code).toContain('bb-schedule-grid');
     expect(code).toContain('bb-schedule-nowrap');
     expect(code).toContain('whitespace-nowrap');
@@ -67,16 +76,16 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toContain('skipFonts: false');
   });
 
-  test('MonthlyRoster table gives names and shift labels enough width', () => {
-    const code = readFile('app/[locale]/dashboard/components/MonthlyRoster.tsx');
-    expect(code).toContain('min-w-[9.5rem] w-max');
+  test('MonthlyRoster table keeps name column compact', () => {
+    const code = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
+    expect(code).toContain('whitespace-nowrap w-max');
+    expect(code).not.toContain('min-w-[9.5rem]');
     expect(code).toContain('min-w-[6.5rem]');
     expect(code).toContain('whitespace-nowrap');
-    expect(code).not.toContain('min-w-[75px]');
   });
 
   test('InventoryHistoryModal uses bidirectional iOS scroll class', () => {
-    const code = readFile('components/inventory/InventoryHistoryModal.tsx');
+    const code = readFile('app/[locale]/inventory/_components/InventoryHistoryModal.tsx');
     expect(code).toMatch(/bb-smooth-scroll bb-scroll-xy/);
   });
 });

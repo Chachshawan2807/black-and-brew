@@ -51,6 +51,11 @@ export type WebPushDeliveryResult =
   | { status: 'removed'; statusCode: number };
 
 const STALE_SUBSCRIPTION_STATUS_CODES = new Set([400, 403, 404, 410]);
+const RETRYABLE_PUSH_STATUS_CODES = new Set([0, 429, 500, 502, 503, 504]);
+
+/** Queue lifetime — mobile Doze / iOS offline can delay delivery for hours. */
+export const WEB_PUSH_DEFAULT_TTL_SECONDS = 12 * 60 * 60;
+export const WEB_PUSH_SCHEDULE_TTL_SECONDS = 12 * 60 * 60;
 
 export async function deliverWebPushPayload(
   supabase: ReturnType<typeof getSupabaseAdminForPush>,
@@ -58,36 +63,48 @@ export async function deliverWebPushPayload(
   payloadJson: string,
   options?: { TTL?: number; urgency?: 'very-low' | 'low' | 'normal' | 'high' },
 ): Promise<WebPushDeliveryResult> {
-  try {
-    await webpush.sendNotification(
-      {
-        endpoint: subscription.endpoint,
-        keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-      },
-      payloadJson,
-      {
-        TTL: options?.TTL ?? 60 * 60,
-        urgency: options?.urgency ?? 'high',
-      },
-    );
-    await supabase
-      .from('push_subscriptions')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', subscription.id);
-    return { status: 'sent' };
-  } catch (err: unknown) {
-    const statusCode =
-      err && typeof err === 'object' && 'statusCode' in err
-        ? Number((err as { statusCode: number }).statusCode)
-        : 0;
-    if (STALE_SUBSCRIPTION_STATUS_CODES.has(statusCode)) {
-      await supabase.from('push_subscriptions').delete().eq('id', subscription.id);
-      console.error('[web-push] removed stale subscription:', subscription.id, statusCode);
-      return { status: 'removed', statusCode };
+  const pushOptions = {
+    TTL: options?.TTL ?? WEB_PUSH_DEFAULT_TTL_SECONDS,
+    urgency: options?.urgency ?? 'high' as const,
+  };
+
+  const sendOnce = async (): Promise<WebPushDeliveryResult> => {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: subscription.endpoint,
+          keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+        },
+        payloadJson,
+        pushOptions,
+      );
+      await supabase
+        .from('push_subscriptions')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', subscription.id);
+      return { status: 'sent' };
+    } catch (err: unknown) {
+      const statusCode =
+        err && typeof err === 'object' && 'statusCode' in err
+          ? Number((err as { statusCode: number }).statusCode)
+          : 0;
+      if (STALE_SUBSCRIPTION_STATUS_CODES.has(statusCode)) {
+        await supabase.from('push_subscriptions').delete().eq('id', subscription.id);
+        console.error('[web-push] removed stale subscription:', subscription.id, statusCode);
+        return { status: 'removed', statusCode };
+      }
+      console.error('[web-push] send failed:', statusCode, err);
+      return { status: 'failed', statusCode };
     }
-    console.error('[web-push] send failed:', statusCode, err);
-    return { status: 'failed', statusCode };
+  };
+
+  const first = await sendOnce();
+  if (first.status !== 'failed' || !RETRYABLE_PUSH_STATUS_CODES.has(first.statusCode)) {
+    return first;
   }
+
+  await new Promise((resolve) => setTimeout(resolve, 1_500));
+  return sendOnce();
 }
 
 export function ensureVapidConfigured(): boolean {

@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 9.0 | Last Updated: 2026-06-22
+> Version: 9.1 | Last Updated: 2026-07-08
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | Project Name | BLACK-AND-BREW ERP System |
 | Type | Enterprise Resource Planning for Coffee Shop |
-| Current Version | 9.0 (performance phases + daily report Web Push + doc sync) |
+| Current Version | 9.1 (feature `_components` colocation + doc hygiene) |
 | Repository | `Chachshawan2807/black-and-brew` |
 | Local Path | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -135,20 +135,23 @@ Authoritative env list: [`.env.example`](../.env.example)
 
 ## 7. File Structure Overview
 
+Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI in `src/components/`. See `AGENTS.md`.
+
 | Module | Path |
 | --- | --- |
-| Command Center | `src/app/[locale]/page.tsx` |
-| Dashboard | `src/app/[locale]/dashboard/` |
-| Schedule | `src/app/[locale]/schedule/` |
-| Inventory | `src/app/[locale]/inventory/`, `count/page.tsx`, `accuracy/page.tsx` |
-| Maintenance | `src/app/[locale]/maintenance/` |
-| Sales | `src/app/[locale]/sales/` |
+| Command Center | `src/app/[locale]/page.tsx`, `_components/LiveStatusTracker.tsx` |
+| Dashboard | `src/app/[locale]/dashboard/`, `_components/LiveShiftList.tsx`, `MonthlyRoster.tsx` |
+| Schedule | `src/app/[locale]/schedule/ScheduleClient.tsx`, `_components/` |
+| Inventory | `src/app/[locale]/inventory/InventoryClient.tsx`, `_components/`, `count/`, `accuracy/` |
+| Maintenance | `src/app/[locale]/maintenance/MaintenanceClient.tsx`, `_components/` |
+| Sales | `src/app/[locale]/sales/SalesClient.tsx`, `_components/` |
+| Settings | `src/app/[locale]/settings/page.tsx`, `_components/` |
 | Auth | `src/components/auth/PinGateway.tsx`, `src/app/actions/auth.ts` |
-| Passkeys | `src/components/settings/PasskeyDeviceSection.tsx`, `src/app/actions/passkey-actions.ts`, `src/lib/passkey/` |
 | AI Chat | `src/components/ai/`, `src/app/api/chat/route.ts` |
-| i18n Middleware | `src/proxy.ts` (next-intl, Next.js 16 convention) |
+| i18n Middleware | `src/proxy.ts` |
 | Server Actions | `src/app/actions/` |
-| Agent Tools | `src/app/actions/tools/` |
+| Agent tools | `src/app/actions/tools/` |
+| Knowledge graph | codebase-memory-mcp (`.cursor/mcp.json`) — not graphify |
 
 ---
 
@@ -162,8 +165,8 @@ Authoritative env list: [`.env.example`](../.env.example)
 | Realtime context | `src/contexts/InventoryRealtimeContext.tsx` |
 | Tooltips | `AppTooltipProvider`, `HintTooltip` |
 | Server admin singleton | `src/lib/supabase-server.ts` (`getSupabaseAdmin()`) |
-| Data change history UI | `DataChangeHistorySection` in Settings |
-| Trusted-device passkeys | `device_passkeys`, `PasskeyDeviceSection`, `passkey-actions.ts` |
+| Data change history UI | `settings/_components/DataChangeHistorySection.tsx` |
+| Trusted-device passkeys | `device_passkeys`, `settings/_components/PasskeyDeviceSection.tsx`, `passkey-actions.ts` |
 | Daily report Web Push | `push_subscriptions.branch_id` / `profile_id`, `src/lib/daily-report-web-push.ts` |
 | Dashboard optimized loading | `getDashboardShiftQueryPlan()`, `splitDashboardShiftsByRange()` |
 | Inventory route performance | Row containment, stable grid handlers, dynamic modal loading, hover/focus modal preload |

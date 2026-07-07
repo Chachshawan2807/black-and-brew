@@ -12,6 +12,84 @@ This version has breaking changes — APIs, conventions, and file structure may 
 **Caching vs ERP sync:** Supabase real-time / optimistic UI wins over aggressive route caching. Do not cache inventory, sales, or editable grid data in ways that delay post-mutation freshness unless explicitly invalidated on every write.
 <!-- END:nextjs-agent-rules -->
 
+<!-- BEGIN:project-structure-standard -->
+
+## PROJECT STRUCTURE (Next.js colocation)
+
+This is a **Next.js App Router** ERP — not a Vite/CRA SPA. Do **not** introduce top-level `features/` or `services/` folders or mass-move legacy files to match generic React tutorials. Map domain modules to `app/`, `lib/`, and `app/actions/` instead.
+
+**Skill:** `.agents/skills/next-best-practices/SKILL.md` — file conventions, RSC boundaries, private folders.
+
+### Folder roles
+
+| Concern | Location | Examples |
+| ------- | -------- | -------- |
+| Routes & page shells | `src/app/[locale]/<feature>/` | `inventory/page.tsx`, `schedule/ScheduleClient.tsx` |
+| Feature-only UI (new code) | `src/app/[locale]/<feature>/_components/` | Private folder — not a URL segment |
+| Shared UI (2+ features) | `src/components/` | `components/ui/`, `components/sidebar/`, `components/auth/` |
+| Domain logic (no UI) | `src/lib/` or `src/lib/<domain>/` | `lib/schedule/`, `lib/inventory-stock.ts`, `lib/shift-colors.ts` |
+| Server mutations | `src/app/actions/<domain>-actions.ts` | `inventory-actions.ts`, `shift-actions.ts` |
+| HTTP API | `src/app/api/` | `api/chat/route.ts`, `api/weather/route.ts` |
+| Cross-feature hooks | `src/hooks/` | `useScheduleUndo.ts`, `use-inventory-notifications.ts` |
+| Feature-scoped React context | `src/contexts/` | `InventoryRealtimeContext.tsx` |
+| Shared types | `src/types/` | `types/index.ts` |
+| Tests | `src/test/` | `<name>.test.ts`, `<name>.test.tsx` |
+
+### Separation of concerns
+
+- **UI** (`*Client.tsx`, components) — render, local state, optimistic updates, event handlers. Prefer Server Actions for mutations; avoid direct Supabase writes from client when an action already exists.
+- **Domain logic** (`lib/`) — pure helpers, formatting, validation, query builders, undo/sync helpers. No React hooks unless the module is explicitly client-only.
+- **Data layer** — Server Actions + `lib/supabase-server.ts` on the server; `lib/supabase.ts` + session helpers on the client. Auth checks live **inside** each Server Action (see next-best-practices).
+- **Do not** duplicate the same mutation in both a client component and a Server Action.
+
+### Colocation rules (new code)
+
+1. **Default:** colocate with the route — `page.tsx`, `*Client.tsx`, `loading.tsx`, feature-only components under `_components/`.
+2. **Promote to shared** only when used by **two or more** features (e.g. `ClickableDatePicker` → `components/ui/`).
+3. **No drive-by moves** — never rename/move unrelated files while fixing a bug or adding a feature.
+
+### Server vs client boundary
+
+- Keep **`'use client'`** as low in the tree as possible — spreadsheet grids, FABs, undo, realtime, DnD.
+- Server Components / `page.tsx` — initial fetch, metadata, pass serializable props only (minimize RSC payload).
+- Route-specific types — colocate as `types.ts` next to the feature (e.g. `dashboard/types.ts`, `inventory/types.ts`).
+
+### Feature examples in this repo
+
+```text
+home/       → app/[locale]/page.tsx
+              app/[locale]/_components/LiveStatusTracker.tsx
+
+inventory/  → app/[locale]/inventory/InventoryClient.tsx
+              app/[locale]/inventory/_components/* (FAB, modals, quick action bar)
+              app/actions/inventory-actions.ts
+              lib/inventory-*.ts, contexts/InventoryRealtimeContext.tsx
+
+dashboard/  → app/[locale]/dashboard/page.tsx
+              app/[locale]/dashboard/_components/* (LiveShiftList, MonthlyRoster, …)
+
+schedule/   → app/[locale]/schedule/ScheduleClient.tsx
+              app/[locale]/schedule/_components/* (ShiftSettingsModal, ScheduleToolbar)
+              app/actions/shift-actions.ts
+              lib/schedule/*, hooks/useScheduleUndo.ts
+
+settings/   → app/[locale]/settings/page.tsx
+              app/[locale]/settings/_components/*
+
+sales/      → app/[locale]/sales/SalesClient.tsx
+              app/[locale]/sales/_components/*
+              app/actions/sales-actions.ts
+```
+
+### Agent checklist (structure)
+
+- [ ] New file placed in the closest matching row in the folder table above
+- [ ] Mutations go through `app/actions/`, not ad-hoc client Supabase updates
+- [ ] No new top-level `features/` or `services/` directories
+- [ ] No mass file moves without explicit user request
+
+<!-- END:project-structure-standard -->
+
 <!-- BEGIN:modern-web-baseline-standard -->
 
 ## FRONTEND & MOBILE UI — UNIFIED STANDARD
@@ -193,7 +271,8 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 ## CODEBASE MEMORY (codebase-memory-mcp)
 
 - **Primary graph:** MCP server codebase-memory-mcp (local SQLite knowledge graph)
-- **Setup:** See `.cursor/mcp.json.example`; install binary from https://github.com/DeusData/codebase-memory-mcp
+- **Setup:** See `.cursor/mcp.json.example`; install binary from [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp)
 - **Query first:** Use MCP tools (`search_graph`, `trace_path`, `query_graph`) before broad grep/file reads
 - **After code changes:** Re-index project via MCP ingest when structural navigation is needed
+- **Removed:** graphify is **not** used in this project — do not install, run, or regenerate `graphify-out/`
 <!-- END:codebase-memory-mcp-standard -->

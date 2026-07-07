@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import SidebarLayout from '@/components/sidebar/SidebarLayout';
 import I18nProvider from '@/components/providers/I18nProvider';
 import AIChatOverlay from '@/components/ai/AIChatWrapper';
-import InventoryQuickActionWrapper from '@/components/inventory/InventoryQuickActionWrapper';
+import InventoryQuickActionWrapper from './inventory/_components/InventoryQuickActionWrapper';
 import PinGateway from '@/components/auth/PinGateway';
 import PwaRegister from '@/components/PwaRegister';
 import { NotificationProvider } from '@/components/notifications/NotificationProvider';

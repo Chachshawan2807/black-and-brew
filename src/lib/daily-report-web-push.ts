@@ -10,6 +10,7 @@ import {
   ensureVapidConfigured,
   getSupabaseAdminForPush,
   parsePushPrefs,
+  WEB_PUSH_SCHEDULE_TTL_SECONDS,
   type PushSubscriptionRow,
 } from '@/lib/web-push';
 
@@ -239,7 +240,7 @@ export async function dispatchDailyReportWebPush(
     const prefs = parseDailyReportPushPrefs(subscription.prefs_json);
     const payload = buildDailyReportPushPayload(data, prefs.locale);
     const result = await deliverWebPushPayload(supabase, subscription, JSON.stringify(payload), {
-      TTL: 4 * 60 * 60,
+      TTL: WEB_PUSH_SCHEDULE_TTL_SECONDS,
       urgency: 'high',
     });
 

@@ -41,10 +41,13 @@ async function syncSnapshotToDb(snapshot: ScheduleHistorySnapshot, weekDays: str
 
   if (snapshot.shifts.length > 0) {
     await supabase.from('shifts').insert(
-      snapshot.shifts.map((s) => {
-        const { id, created_at, ...rest } = s as Shift & { created_at?: string };
-        return rest;
-      })
+      snapshot.shifts.map(({ employee_id, start_time, end_time, status, metadata }) => ({
+        employee_id,
+        start_time,
+        end_time,
+        status,
+        metadata,
+      }))
     );
   }
   await revalidateAppPaths();

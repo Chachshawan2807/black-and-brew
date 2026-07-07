@@ -38,7 +38,7 @@ import { InventoryQuickActionBar } from './InventoryQuickActionBar';
 import { InventoryHistoryModal, type TransactionHistoryRow } from './InventoryHistoryModal';
 import { InventoryAddItemModal } from './InventoryAddItemModal';
 
-const PurchaseOrdersModal = dynamic(() => import('@/app/[locale]/inventory/PurchaseOrdersModal'), { ssr: false });
+const PurchaseOrdersModal = dynamic(() => import('./PurchaseOrdersModal'), { ssr: false });
 
 const HISTORY_PAGE_SIZE = 50;
 

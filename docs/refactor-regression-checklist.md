@@ -1,6 +1,6 @@
 # Refactor Regression Checklist
 
-Quick reference for smoke testing after each refactor PR. Full details in [docs/plans/2026-06-12-refactor-phase0-baseline.md](plans/2026-06-12-refactor-phase0-baseline.md).
+Quick reference for smoke testing after each refactor PR.
 
 | Area | Key flows to verify |
 | --- | --- |

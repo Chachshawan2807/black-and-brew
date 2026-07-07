@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import LiveShiftList from './components/LiveShiftList';
-import MonthlyRoster from './components/MonthlyRoster'; // เชื่อมต่อตารางรายเดือนตัวใหม่เรียบร้อย
+import LiveShiftList from './_components/LiveShiftList';
+import MonthlyRoster from './_components/MonthlyRoster'; // เชื่อมต่อตารางรายเดือนตัวใหม่เรียบร้อย
 import { cookies } from 'next/headers';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';

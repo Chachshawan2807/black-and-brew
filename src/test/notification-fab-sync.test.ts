@@ -80,6 +80,23 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toMatch(/pushNotification\(\s*data\.notification,\s*data\.unreadCount/);
   });
 
+  test('PWA resume refreshes push subscription for closed-mobile recovery', () => {
+    const pwaRegisterSource = readFileSync(
+      resolve(__dirname, '../components/PwaRegister.tsx'),
+      'utf8',
+    );
+    const pushClientSource = readFileSync(
+      resolve(__dirname, '../lib/push-subscription-client.ts'),
+      'utf8',
+    );
+
+    expect(pwaRegisterSource).toContain('schedulePushSubscriptionMaintenance');
+    expect(pwaRegisterSource).toContain('pageshow');
+    expect(pwaRegisterSource).toContain('bb-pin-authenticated');
+    expect(pushClientSource).toContain('schedulePushSubscriptionMaintenance');
+    expect(pushClientSource).toContain('MAINTENANCE_RETRY_MS');
+  });
+
   test('daily report web pushes are stored and forwarded to the notification panel', () => {
     expect(serviceWorkerSource).toContain("payload.kind === 'daily_report'");
     expect(serviceWorkerSource).toContain('const unreadCount = await safeResolveUnreadCount(payload);');

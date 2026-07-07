@@ -1,6 +1,6 @@
 # SKILLS INVENTORY
 
-> Version: 9.0 | Last Updated: 2026-06-22 | Format: Zero-Bold Policy Active
+> Version: 9.1 | Last Updated: 2026-07-08 | Format: Zero-Bold Policy Active
 เอกสารฉบับนี้รวบรวมทักษะระบบ (System Skills) และความสามารถเชิงเทคนิคของโปรเจกต์ BLACKANDBREW ERP โดยจัดกลุ่มเป็น 4 โมดูลหลัก เพื่อลด Context Tax ขจัดข้อความซ้ำซ้อน และเพิ่มความแม่นยำในการเรียกใช้เครื่องมือของ Agent
 
 ---
@@ -24,7 +24,7 @@ Description: ทักษะระบบดักจับพิกัด กา
 | --- | --- | --- |
 | Live Screen Extraction (Modal Context) | เมื่อ AI ต้องการบริบทสิ่งที่ผู้ใช้กำลังดูอยู่บนหน้าต่างย่อย | สแกน DOM ดึงข้อความจาก [role="dialog"] ส่งเข้า Request Payload (body: { clientContext }) สู่ AI |
 | Coordinate & Interaction Tracking | เมื่อต้องตรวจสอบพิกัดการลากวาง (Drag-and-Drop) | อ้างอิง Sensor และ Physics Profile (Stiffness: 300, Damping: 30) จัดการ DOM Separation ให้เคลื่อนไหวลื่นไหล |
-| Context Bootstrapping | เมื่อเริ่มต้นเซสชันใหม่กับ Agent | บังคับสแกน RepoMap เพื่อล็อกพิกัดไฟล์ ลดการอ่านไฟล์ขยะ และยึดโยงบริบทระบบอัตโนมัติก่อนลงมือแก้ไขรหัส |
+| Context Bootstrapping | เมื่อเริ่มต้นเซสชันใหม่กับ Agent | ใช้ codebase-memory-mcp (`search_graph`, `trace_path`) ก่อนอ่านไฟล์กว้างๆ — ไม่ใช้ graphify |
 
 ## MODULE 3: SYSTEM_SECURITY_HARDENING
 

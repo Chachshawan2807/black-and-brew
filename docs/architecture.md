@@ -108,14 +108,15 @@ src/app/
 └── [locale]/
     ├── layout.tsx               # PinGateway, sidebar, AI chat, PWA
     ├── page.tsx                 # Command Center
-    ├── dashboard/               # Staff dashboard
-    ├── schedule/                # Shift management (DnD)
-    ├── inventory/               # Warehouse spreadsheet + InventoryQuickActionFAB
-    │   ├── count/               # Stock-taking + count accuracy verification
-    │   └── accuracy/            # Accuracy report for exact-count items
-    ├── maintenance/             # Equipment tracking
-    ├── sales/                   # Sales analytics
-    ├── settings/                # Theme picker, login history, passkeys, notification prefs
+    ├── _components/             # LiveStatusTracker (locale-wide)
+    ├── dashboard/               # page.tsx + _components/ (LiveShiftList, MonthlyRoster)
+    ├── schedule/                # ScheduleClient + _components/
+    ├── inventory/               # InventoryClient + _components/ (FAB, modals)
+    │   ├── count/               # Stock-taking
+    │   └── accuracy/            # Exact-count accuracy report
+    ├── maintenance/             # MaintenanceClient + _components/
+    ├── sales/                   # SalesClient + _components/
+    └── settings/                # page.tsx + _components/ (theme, sessions, passkeys)
 ```
 
 i18n middleware: `src/proxy.ts` (Next.js 16 convention — not `src/middleware.ts`)
@@ -148,7 +149,7 @@ This keeps the UI payload shape unchanged while avoiding duplicate Supabase shif
 InventoryClient
 → stable row handlers via useCallback
 → row-level .bb-inventory-row-containment isolates grid render/layout work
-→ PurchaseOrdersModal + InventoryHistoryModal loaded with next/dynamic
+→ PurchaseOrdersModal + InventoryHistoryModal in `inventory/_components/` via `next/dynamic`
 → quick-action buttons preload modal chunks on hover/focus intent
 ```
 

@@ -1,6 +1,8 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-06-22 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 9.0
+> Generated: 2026-07-08 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 9.1
+
+Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) over reading this file wholesale. Canonical agent rules: `AGENTS.md`.
 
 ---
 
@@ -16,7 +18,9 @@
 | Inventory Accuracy | `src/app/[locale]/inventory/accuracy/` | Active |
 | Maintenance | `src/app/[locale]/maintenance/` | Active |
 | Sales | `src/app/[locale]/sales/` | Active |
-| Settings | `src/app/[locale]/settings/` | Active — theme, sessions, passkeys, notifications |
+| Settings | `src/app/[locale]/settings/` | Active |
+
+Retired: Market Insights (`/market-insights`), inventory recommended target stock, graphify.
 
 ---
 
@@ -24,18 +28,18 @@
 
 ### Pages
 
-| Route | File |
-| --- | :--- |
-| `/` | `src/app/page.tsx` → redirect `/th` |
-| `/[locale]` | `src/app/[locale]/page.tsx` |
-| `/[locale]/dashboard` | `src/app/[locale]/dashboard/page.tsx` |
-| `/[locale]/schedule` | `src/app/[locale]/schedule/page.tsx` |
-| `/[locale]/inventory` | `src/app/[locale]/inventory/page.tsx` |
-| `/[locale]/inventory/count` | `src/app/[locale]/inventory/count/page.tsx` |
-| `/[locale]/inventory/accuracy` | `src/app/[locale]/inventory/accuracy/page.tsx` |
-| `/[locale]/maintenance` | `src/app/[locale]/maintenance/page.tsx` |
-| `/[locale]/sales` | `src/app/[locale]/sales/page.tsx` |
-| `/[locale]/settings` | `src/app/[locale]/settings/page.tsx` |
+| Route | Shell | Client / feature UI |
+| --- | :--- | --- |
+| `/` | `src/app/page.tsx` | redirect → `/th` |
+| `/[locale]` | `src/app/[locale]/page.tsx` | `_components/LiveStatusTracker.tsx` |
+| `/[locale]/dashboard` | `dashboard/page.tsx` | `_components/LiveShiftList.tsx`, `MonthlyRoster.tsx` |
+| `/[locale]/schedule` | `schedule/page.tsx` | `ScheduleClient.tsx`, `_components/ScheduleToolbar.tsx`, `ShiftSettingsModal.tsx` |
+| `/[locale]/inventory` | `inventory/page.tsx` | `InventoryClient.tsx`, `_components/*` |
+| `/[locale]/inventory/count` | `count/page.tsx` | `InventoryCountClient.tsx` |
+| `/[locale]/inventory/accuracy` | `accuracy/page.tsx` | report page |
+| `/[locale]/maintenance` | `maintenance/page.tsx` | `MaintenanceClient.tsx`, `_components/MaintenanceModals.tsx` |
+| `/[locale]/sales` | `sales/page.tsx` | `SalesClient.tsx`, `_components/SalesTopProductsChart.tsx` |
+| `/[locale]/settings` | `settings/page.tsx` | `_components/*` (theme, sessions, passkeys, notifications) |
 
 Locales: `th`, `en`
 
@@ -54,37 +58,31 @@ Locales: `th`, `en`
 
 ```text
 black-and-brew/
-├── docs/                    # Project documentation
+├── docs/                    # Project documentation (see README § Documentation)
 ├── messages/                # th.json, en.json (next-intl)
-├── public/                  # sw.js (PWA), images, ai-agent-logo.svg
-├── supabase/migrations/     # Versioned DB migrations (14 files — see docs/database.md)
-├── sql/                     # record_inventory_transaction.sql, sync_inventory_stock.sql, fix_inventory_rls.sql, ai_agent_views.sql
+├── public/                  # sw.js (PWA), images
+├── supabase/migrations/     # Versioned DB migrations (18 files — see docs/database.md)
+├── sql/                     # RPC/views reference scripts
 ├── src/
 │   ├── app/
-│   │   ├── [locale]/        # UI pages + layout + globals.css
-│   │   ├── actions/         # Server Actions + tools/
-│   │   ├── api/             # chat, daily-report, weather, push/webhook
+│   │   ├── [locale]/
+│   │   │   ├── _components/           # locale-wide (e.g. LiveStatusTracker)
+│   │   │   ├── <feature>/
+│   │   │   │   ├── page.tsx             # RSC shell
+│   │   │   │   ├── *Client.tsx          # client boundary
+│   │   │   │   └── _components/         # feature-only UI (private folder)
+│   │   │   ├── layout.tsx, globals.css
+│   │   ├── actions/                   # Server Actions + tools/
+│   │   ├── api/
 │   │   ├── manifest.ts
 │   │   └── page.tsx
-│   ├── components/
-│   │   ├── ai/              # AIChatOverlay, AIChatWrapper
-│   │   ├── auth/            # PinGateway
-│   │   ├── inventory/       # InventoryQuickActionFAB, InventoryQuickActionBar, InventoryHistoryModal
-│   │   ├── notifications/   # NotificationPanel, PushSubscriptionManager, InventoryNotificationFAB
-│   │   ├── settings/        # NotificationPreferencesSection, DataChangeHistorySection, PasskeyDeviceSection
-│   │   ├── dashboard/       # LiveStatusTracker, WeatherWidget
-│   │   ├── providers/       # AuthProvider, I18nProvider, ThemeProvider, AppTooltipProvider
-│   │   ├── sidebar/         # Sidebar, Menu, SheetMenu, …
-│   │   └── ui/              # button, hint-tooltip, tooltip, ClickableDatePicker, page-transition, …
+│   ├── components/          # Shared UI (2+ features): auth, sidebar, ui, ai, notifications
 │   ├── contexts/            # InventoryRealtimeContext
-│   ├── hooks/               # use-inventory-notifications, use-inventory-quick-action
-│   ├── i18n/                # request.ts, routing.ts
-│   ├── lib/                 # supabase, supabase-server, inventory-stock, inventory-quick-*, passkey, …
-│   ├── test/                # 103 Vitest test files
-│   └── proxy.ts             # next-intl middleware (Next.js 16 convention)
-├── *.sql                    # Root-level schema/migration scripts
-├── AGENTS.md, CLAUDE.md, MASTER_BLUEPRINT.md, README.md
-├── PROTOCOL_ENFORCER.md, SKILLS_INVENTORY.md, VERIFICATION_REPORT.md
+│   ├── hooks/
+│   ├── lib/                 # Domain logic (schedule/, inventory-*, passkey/, …)
+│   ├── test/                # Vitest suites
+│   └── proxy.ts             # next-intl middleware (Next.js 16)
+├── AGENTS.md, CLAUDE.md, README.md, PROJECT_MAP.md
 └── package.json, next.config.ts, vitest.config.ts, vercel.json
 ```
 
@@ -94,28 +92,25 @@ black-and-brew/
 
 | File | Purpose |
 | --- | :--- |
-| `auth.ts` | PIN verify, session revocation, read-only session, cookies |
-| `passkey-actions.ts` | WebAuthn trusted-device passkey registration/login |
-| `login-history-actions.ts` | Login audit trail + active sessions |
+| `auth.ts` | PIN verify, session revocation, read-only guard |
+| `passkey-actions.ts` | WebAuthn trusted-device passkeys |
+| `login-history-actions.ts` | Login audit + active sessions |
 | `inventory-actions.ts` | Stock RPC, count policy, transactions, CRUD |
-| `shift-actions.ts` | Shift CRUD, roster, revalidation |
+| `shift-actions.ts` | Shift CRUD, roster |
 | `holiday-actions.ts` | Google Calendar + regular holidays |
 | `maintenance-actions.ts` | Service record CRUD |
-| `sales-actions.ts` | Excel upload, categories, metrics |
-| `market-insights-actions.ts` | Gemini market analysis with local event context |
+| `sales-actions.ts` | Excel upload, categories |
 | `daily-report-actions.ts` | Daily schedule report compiler |
-| `push-actions.ts` | Web Push subscription register/sync/unregister |
-| `data-change-log-actions.ts` | Mutation audit log + Web Push dispatch hook |
-| `migrate-inventory-sort-order.ts` | DB-only sort_order re-sequence |
-| `tools/database-tools.ts` | AI readTable tool |
+| `push-actions.ts` | Web Push subscription lifecycle |
+| `data-change-log-actions.ts` | Mutation audit + inventory Web Push hook |
+| `tools/database-tools.ts` | AI `readTable` (via `ai-data-gateway.ts`) |
 | `tools/search-tools.ts` | AI Tavily search |
-| `tools/internal-sources-tools.ts` | AI internal context |
 
 ---
 
-## Tests (`src/test/` — 103 files)
+## Tests (`src/test/`)
 
-Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `market-insights-fetch.test.ts`, `market-insights-context.test.ts`, `web-push.test.ts`, `data-change-log.test.ts`, `inventory-count-accuracy.test.ts`, `inventory-quick-bulk.test.ts`, `inventory-quick-action-draft.test.ts`, `inventory-quick-qty-step.test.ts`, `inventory-quick-search-filter.test.ts`, `inventory_stock_sync.test.ts`, `inventory_quick_action_fab.test.ts`, `supabase-session.test.ts`, `pwa-notification-bridge.test.ts`, `market-insights-v2.test.ts`, `auth.test.ts`, `read-only-guard.test.ts`, `basic.test.ts`, `setup.ts`
+Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `live_shift_list.test.ts`
 
 ---
 
@@ -130,9 +125,7 @@ Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.t
 | next-themes | ^0.4 |
 | tailwindcss | ^4 |
 | vitest | ^4.1.6 |
-| web-push | ^3.6.7 |
-| ai / @ai-sdk/google | ^6.0 / ^3.0 |
 
 ---
 
-> _RepoMap is a zero-dependency context tool. Run before every Audit task to reduce token usage._
+> Run `npm test` and `npm run build` before shipping. Re-index codebase-memory-mcp after structural changes.

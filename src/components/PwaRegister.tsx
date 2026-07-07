@@ -11,7 +11,7 @@ import {
   isBenignPushRegistrationError,
 } from '@/lib/pwa-notification-bridge';
 import {
-  refreshPushSubscriptionState,
+  schedulePushSubscriptionMaintenance,
   wantsPushRegistration,
 } from '@/lib/push-subscription-client';
 
@@ -37,20 +37,17 @@ export default function PwaRegister() {
     };
 
     const onResume = () => {
-      if (document.visibilityState === 'visible') {
-        syncBadgeFromStorage();
-      }
+      if (document.visibilityState !== 'visible') return;
+      syncBadgeFromStorage();
+      schedulePushSubscriptionMaintenance(locale);
     };
 
     navigator.serviceWorker.addEventListener('message', onNotificationClick);
     document.addEventListener('visibilitychange', onResume);
     window.addEventListener('focus', onResume);
-
-    const onPrefsChange = () => {
-      void refreshPushSubscriptionState(locale);
-    };
-
-    window.addEventListener('bb-notification-prefs-changed', onPrefsChange);
+    window.addEventListener('pageshow', onResume);
+    window.addEventListener('bb-pin-authenticated', onResume);
+    window.addEventListener('bb-notification-prefs-changed', onResume);
 
     const timeout = setTimeout(() => {
       navigator.serviceWorker
@@ -61,7 +58,7 @@ export default function PwaRegister() {
           const prefs = loadNotificationPreferences();
           if (wantsPushRegistration(prefs)) {
             void requestNotificationPermission();
-            void refreshPushSubscriptionState(locale);
+            schedulePushSubscriptionMaintenance(locale);
           }
         })
         .catch((registrationError) => {
@@ -81,7 +78,9 @@ export default function PwaRegister() {
       navigator.serviceWorker.removeEventListener('message', onNotificationClick);
       document.removeEventListener('visibilitychange', onResume);
       window.removeEventListener('focus', onResume);
-      window.removeEventListener('bb-notification-prefs-changed', onPrefsChange);
+      window.removeEventListener('pageshow', onResume);
+      window.removeEventListener('bb-pin-authenticated', onResume);
+      window.removeEventListener('bb-notification-prefs-changed', onResume);
     };
   }, [locale]);
 

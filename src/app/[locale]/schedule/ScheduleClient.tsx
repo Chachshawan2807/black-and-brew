@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Pencil } from 'lucide-react';
-import { startOfWeek, addDays, format, parseISO, isValid } from 'date-fns';
+import { startOfWeek, addDays, format } from 'date-fns';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
@@ -17,7 +17,7 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations } from '@/app/actions/shift-actions';
-import ShiftSettingsModal from '@/components/schedule/ShiftSettingsModal';
+import ShiftSettingsModal from './_components/ShiftSettingsModal';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import {
   loadShiftTypesFromStorage,
@@ -37,7 +37,7 @@ import {
   type ShiftTypeLookup,
 } from '@/lib/schedule/shift-lookups';
 import { useScheduleUndo } from '@/hooks/useScheduleUndo';
-import ScheduleToolbar from './ScheduleToolbar';
+import ScheduleToolbar from './_components/ScheduleToolbar';
 import type { Profile, Shift } from '@/types';
 import { isSameThaiDay, formatToThai } from '@/lib/date-utils';
 import { THAI_TIMEZONE } from '@/lib/timezone';
@@ -65,10 +65,19 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import {
+  SCHEDULE_GRID_TEMPLATE,
+  SCHEDULE_TABLE_MIN_WIDTH,
+} from '@/lib/schedule/grid-layout';
+import {
+  scheduleCrosshairCellClass,
+  scheduleCrosshairColumnHeaderClass,
+  scheduleCrosshairNameClass,
+  type ScheduleGridFocus,
+} from '@/lib/schedule/grid-crosshair';
 
 // --- Constants Outside Component ---
 const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-const SCHEDULE_GRID_TEMPLATE = 'minmax(180px, max-content) repeat(7, minmax(104px, 1fr))';
 const SCHEDULE_GRID_STYLE: React.CSSProperties = {
   gridTemplateColumns: SCHEDULE_GRID_TEMPLATE,
 };
@@ -220,12 +229,16 @@ interface SortableEmployeeRowProps {
   onSaveName: (id: string) => void;
   onDeleteEmployee: (id: string) => void;
   isReadOnly?: boolean;
+  gridFocus: ScheduleGridFocus;
+  onCellFocus: (employeeId: string, date: string) => void;
 }
 
 const SortableEmployeeRow = React.memo(({
   id, profile, weekDays, shiftDateLookup, shiftTypeLookup, onCellClick,
   editingNameId, nameInput, setNameInput, onNameClick, onSaveName, onDeleteEmployee,
   isReadOnly = false,
+  gridFocus,
+  onCellFocus,
 }: SortableEmployeeRowProps) => {
   const {
     attributes,
@@ -257,17 +270,23 @@ const SortableEmployeeRow = React.memo(({
         layout: { duration: 0.3 }
       }}
       className={cn(
-        "bb-schedule-grid grid border-b border-border hover:bg-muted/30 transition-all duration-300 group relative bg-transparent",
+        "bb-schedule-grid grid border-b border-border transition-all duration-300 relative bg-transparent",
         isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-card ring-1 ring-border rounded-3xl cursor-grabbing"
       )}
     >
-      <div className="p-2 border-r border-border flex items-center gap-2 bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
+      <div
+        onPointerEnter={() => onCellFocus(id, gridFocus?.date ?? weekDays[0] ?? '')}
+        className={cn(
+          'w-full px-1.5 py-1.5 border-r border-border flex items-center gap-1 bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell transition-colors duration-150',
+          scheduleCrosshairNameClass(id, gridFocus),
+        )}
+      >
         <Tooltip delayDuration={150}>
           <TooltipTrigger asChild>
             <div
               {...attributes}
               {...(isReadOnly ? {} : listeners)}
-              className={`p-3 min-h-[44px] min-w-[44px] rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-foreground/20' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
+              className={`relative z-[1] shrink-0 p-2 min-h-[44px] min-w-[44px] rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-foreground/20' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
               aria-label="ลากเพื่อเปลี่ยนลำดับ"
             >
               <GripVertical className="w-5 h-5" />
@@ -280,36 +299,38 @@ const SortableEmployeeRow = React.memo(({
           </TooltipPrimitive.Portal>
         </Tooltip>
 
-        <div className="flex-1 py-1">
-          {editingNameId === id ? (
-            <input
-              autoFocus
+        <div className="group/name relative z-[1] flex flex-1 min-w-0 items-center gap-2 pr-1">
+          <div className="min-w-0 flex-1 py-0.5">
+            {editingNameId === id ? (
+              <input
+                autoFocus
+                disabled={isReadOnly}
+                className="w-full h-11 bg-card border border-blue-400 text-base font-normal text-foreground px-3 rounded-3xl outline-none disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onBlur={() => onSaveName(id)}
+                onKeyDown={(e) => e.key === 'Enter' && onSaveName(id)}
+              />
+            ) : (
+              <span
+                onClick={() => !isReadOnly && onNameClick(id, profile.full_name)}
+                className={`bb-schedule-nowrap text-[16px] font-normal text-foreground whitespace-nowrap leading-[1.6] tracking-tight transition-colors block ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-text hover:text-blue-600'}`}
+              >
+                {profile.full_name}
+              </span>
+            )}
+          </div>
+          <HintTooltip tip="ลบพนักงานถาวร">
+            <button
+              onClick={() => onDeleteEmployee(id)}
               disabled={isReadOnly}
-              className="w-full h-11 bg-card border border-blue-400 text-base font-normal text-foreground px-3 rounded-3xl outline-none disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              onBlur={() => onSaveName(id)}
-              onKeyDown={(e) => e.key === 'Enter' && onSaveName(id)}
-            />
-          ) : (
-            <span
-              onClick={() => !isReadOnly && onNameClick(id, profile.full_name)}
-              className={`bb-schedule-nowrap text-[16px] font-normal text-foreground whitespace-nowrap leading-[1.6] tracking-tight transition-colors block ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-text hover:text-blue-600'}`}
+              className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover/name:opacity-100 focus:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              aria-label="ลบพนักงานถาวร"
             >
-              {profile.full_name}
-            </span>
-          )}
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </HintTooltip>
         </div>
-        <HintTooltip tip="ลบพนักงานถาวร">
-          <button
-            onClick={() => onDeleteEmployee(id)}
-            disabled={isReadOnly}
-            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-            aria-label="ลบพนักงานถาวร"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </HintTooltip>
       </div>
 
       {weekDays.map(date => {
@@ -319,11 +340,17 @@ const SortableEmployeeRow = React.memo(({
           <div
             key={date}
             onClick={(e) => !isReadOnly && onCellClick(profile.id, date, shift, e.clientX, e.clientY)}
-            className={`p-1 border-r last:border-0 border-border min-h-[52px] group/cell relative ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+            onPointerEnter={() => onCellFocus(profile.id, date)}
+            onPointerDown={() => onCellFocus(profile.id, date)}
+            className={cn(
+              'p-1 border-r last:border-0 border-border min-h-[52px] group/cell relative transition-colors duration-150',
+              scheduleCrosshairCellClass(profile.id, date, gridFocus),
+              isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+            )}
             title={shift?.metadata?.remark || (shift?.metadata?.is_management ? 'ลา / เปลี่ยนกะ' : '')}
           >
             {shift && (shift.status && shift.metadata?.location) ? (
-              <div className="relative h-full w-full">
+              <div className="relative z-[1] h-full w-full">
                 <div
                   className={`bb-schedule-nowrap h-full w-full rounded-lg border px-2 py-1.5 flex justify-center items-center text-center whitespace-nowrap transition-all duration-200 group-hover/cell:scale-[0.97] group-hover/cell:shadow-md shadow-sm ${type?.className || 'bb-pastel-surface bg-card border-border text-[#000000]'}`}
                   style={type?.style}
@@ -338,7 +365,7 @@ const SortableEmployeeRow = React.memo(({
                 )}
               </div>
             ) : (
-              <div className="h-full w-full rounded-lg border border-transparent transition-all duration-200 group-hover/cell:bg-gray-100/50" />
+              <div className="relative z-[1] h-full w-full rounded-lg border border-transparent transition-all duration-200 group-hover/cell:bg-gray-100/50" />
             )}
           </div>
         );
@@ -384,7 +411,6 @@ export default function ScheduleClient({
   initialHolidays,
   initialRegularHolidays,
   initialDateStr,
-  locale
 }: ScheduleClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -405,7 +431,7 @@ export default function ScheduleClient({
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [loading, setLoading] = useState(false);
   const [isExportingImage, setIsExportingImage] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [shiftTypes, setShiftTypes] = useState<ShiftTypeDisplay[]>(() => loadShiftTypesFromStorage());
   const [showShiftSettingsModal, setShowShiftSettingsModal] = useState(false);
@@ -436,6 +462,7 @@ export default function ScheduleClient({
   }, [searchParams]);
 
   const [selectedCell, setSelectedCell] = useState<{ employeeId: string; date: string; shift?: Shift; x: number; y: number } | null>(null);
+  const [gridFocus, setGridFocus] = useState<ScheduleGridFocus>(null);
   const [editingHoliday, setEditingHoliday] = useState<string | null>(null);
   const [holidayInput, setHolidayInput] = useState('');
 
@@ -445,6 +472,14 @@ export default function ScheduleClient({
   // States สำหรับ Portal ตำแหน่ง Dropdown
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ left: 0, top: 0 });
+
+  const handleCellFocus = useCallback((employeeId: string, date: string) => {
+    setGridFocus({ employeeId, date });
+  }, []);
+
+  const handleGridPointerLeave = useCallback(() => {
+    setGridFocus(null);
+  }, []);
 
   // อัปเดตตำแหน่งเมื่อ Scroll หรือ Resize
   useEffect(() => {
@@ -1290,13 +1325,20 @@ export default function ScheduleClient({
 
       <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
         <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm bb-ios-scroll-host border border-border rounded-3xl overflow-hidden shadow-sm">
-          <div className="flex-1 min-h-0 min-w-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-6">
-            <div id="blackandbrew-schedule-table" className="bb-schedule-export-surface min-w-[980px] bg-card h-fit flex flex-col">
+          <div
+            className="flex-1 min-h-0 min-w-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-6"
+          >
+            <div
+              id="blackandbrew-schedule-table"
+              className="bb-schedule-export-surface bg-card h-fit flex flex-col"
+              style={{ minWidth: SCHEDULE_TABLE_MIN_WIDTH }}
+              onPointerLeave={handleGridPointerLeave}
+            >
               <div
                 className="bb-schedule-grid grid border-b border-border dark:border-[#f5c6cb] bg-red-50/10 dark:bb-pastel-surface dark:bg-[#fdeaea] sticky top-0 z-[16]"
                 style={SCHEDULE_GRID_STYLE}
               >
-                <div className="p-2.5 border-r border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
+                <div className="px-2 py-2 border-r border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
                   <span className="bb-schedule-nowrap text-[12px] text-[#991b1b] font-normal uppercase tracking-widest whitespace-nowrap">นักขัตฤกษ์</span>
                 </div>
                 {weekDays.map(date => {
@@ -1305,7 +1347,12 @@ export default function ScheduleClient({
                     <div
                       key={`holiday-${date}`}
                       onClick={() => { if (!isReadOnly) { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); } }}
-                      className={`p-1 border-r last:border-0 border-border dark:border-[#f5c6cb] flex items-center justify-center min-h-[38px] transition-colors ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50 dark:hover:bg-[#f5c6cb]/25'}`}
+                      onPointerEnter={() => handleCellFocus('', date)}
+                      className={cn(
+                        'p-1 border-r last:border-0 border-border dark:border-[#f5c6cb] flex items-center justify-center min-h-[38px] transition-colors duration-150',
+                        scheduleCrosshairColumnHeaderClass(date, gridFocus),
+                        isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50 dark:hover:bg-[#f5c6cb]/25',
+                      )}
                     >
                       {editingHoliday === date ? (
                         <input
@@ -1331,16 +1378,25 @@ export default function ScheduleClient({
                 className="bb-schedule-grid grid bg-muted/40 border-b border-border shrink-0 sticky top-[38px] z-[15]"
                 style={SCHEDULE_GRID_STYLE}
               >
-                <div className="p-2.5 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
+                <div className="px-2 py-2 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
                   <span className="bb-schedule-nowrap text-[13px] text-foreground font-normal uppercase tracking-widest whitespace-nowrap">พนักงาน</span>
                 </div>
                 {weekDays.map((date) => {
                   const d = new Date(date);
                   const isToday = date === todayStr;
                   return (
-                    <div key={date} className="p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-border transition-colors min-h-[50px] bg-transparent">
-                      <div className="text-[12px] font-normal uppercase tracking-tighter mb-0 text-foreground">{dayLabels[d.getDay()]}</div>
-                      <div className={`text-xl font-normal w-8 h-8 flex items-center justify-center mt-0.5 rounded-full ${isToday ? 'bg-[#ffda66] text-black' : 'text-foreground'}`}>{d.getDate()}</div>
+                    <div
+                      key={date}
+                      onPointerEnter={() => handleCellFocus('', date)}
+                      className={cn(
+                        'p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-border transition-colors duration-150 min-h-[50px] bg-transparent relative',
+                        scheduleCrosshairColumnHeaderClass(date, gridFocus),
+                      )}
+                    >
+                      <div className="relative z-[1] flex flex-col items-center">
+                        <div className="text-[12px] font-normal uppercase tracking-tighter mb-0 text-foreground">{dayLabels[d.getDay()]}</div>
+                        <div className={`text-xl font-normal w-8 h-8 flex items-center justify-center mt-0.5 rounded-full ${isToday ? 'bg-[#ffda66] text-black' : 'text-foreground'}`}>{d.getDate()}</div>
+                      </div>
                     </div>
                   );
                 })}
@@ -1375,6 +1431,8 @@ export default function ScheduleClient({
                           onSaveName={handleSaveName}
                           onDeleteEmployee={handleDeleteEmployee}
                           isReadOnly={isReadOnly}
+                          gridFocus={gridFocus}
+                          onCellFocus={handleCellFocus}
                         />
                       );
                     })}
@@ -1401,6 +1459,8 @@ export default function ScheduleClient({
                         onSaveName={() => { }}
                         onDeleteEmployee={() => { }}
                         isReadOnly={isReadOnly}
+                        gridFocus={gridFocus}
+                        onCellFocus={handleCellFocus}
                       />
                     );
                   })}
@@ -1411,7 +1471,7 @@ export default function ScheduleClient({
                 className="bb-schedule-grid grid border-t border-border bg-muted/50 sticky bottom-0 z-[15]"
                 style={SCHEDULE_GRID_STYLE}
               >
-                <div className="p-2 border-r border-border flex items-center justify-center bg-card/80 sticky left-0 z-20 bb-sticky-scroll-cell">
+                <div className="px-2 py-1.5 border-r border-border flex items-center justify-center bg-card/80 sticky left-0 z-20 bb-sticky-scroll-cell">
                 </div>
                 {weekDays.map(date => {
                   const fohCount = new Set(
@@ -1428,9 +1488,12 @@ export default function ScheduleClient({
                   return (
                     <div
                       key={`foh-${date}`}
-                      className={`p-1.5 border-r last:border-0 border-border flex items-center justify-center ${
-                        isToday ? 'bg-amber-400/15 ring-1 ring-inset ring-amber-400/30' : ''
-                      }`}
+                      onPointerEnter={() => handleCellFocus('', date)}
+                      className={cn(
+                        'p-1.5 border-r last:border-0 border-border flex items-center justify-center transition-colors duration-150',
+                        scheduleCrosshairColumnHeaderClass(date, gridFocus),
+                        isToday ? 'bg-amber-400/15 ring-1 ring-inset ring-amber-400/30' : '',
+                      )}
                     >
                       <span className={`text-[15px] font-normal tabular-nums ${
                         fohCount > 0 ? 'text-emerald-500' : 'text-muted-foreground'

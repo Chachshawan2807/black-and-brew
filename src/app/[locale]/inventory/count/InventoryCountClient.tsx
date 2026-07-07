@@ -37,9 +37,9 @@ type UndoEntry = {
 
 // ─── CountInput ───────────────────────────────────────────────────────────────
 // Rules:
-//   • Save is triggered ONLY by pressing Enter (or tapping the "ถัดไป" submit button).
-//   • Clicking / tapping elsewhere (blur) discards the draft without saving.
-//   • An animated hint below the input reminds users to press Enter to confirm.
+//   • Save is triggered by Enter, mobile keyboard next/done (form submit), or Tab.
+//   • Moving focus to another count row also commits the current draft (mobile "next").
+//   • Blur elsewhere discards the draft without saving (deferred to avoid mobile blur-before-enter races).
 const CountInput = memo(function CountInput({
   index,
   onSave,
@@ -47,7 +47,6 @@ const CountInput = memo(function CountInput({
   isActive = false,
   onActiveChange,
   itemId,
-  currentStock,
 }: {
   index: number;
   onSave: (id: string, value: number) => Promise<void>;
@@ -55,42 +54,102 @@ const CountInput = memo(function CountInput({
   isActive?: boolean;
   onActiveChange?: (id: string | null) => void;
   itemId: string;
-  currentStock: number;
 }) {
   const [val, setVal] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  // Track whether a save is in-flight to prevent double-submission
+  const valueRef = useRef('');
   const isSavingRef = useRef(false);
+  const committingRef = useRef(false);
 
-  const commitSave = useCallback(async () => {
-    if (disabled || isSavingRef.current) return;
-    if (val.trim() === '') {
-      // Empty input — discard, deactivate
-      setVal('');
-      onActiveChange?.(null);
-      return;
-    }
-    const numberVal = Number(val);
-    const sanitized = isNaN(numberVal) ? 0 : Math.max(0, numberVal);
-    isSavingRef.current = true;
-    setVal('');
-    onActiveChange?.(null);
-    await onSave(itemId, sanitized);
-    isSavingRef.current = false;
-  }, [disabled, val, onSave, itemId, onActiveChange]);
+  const syncValue = useCallback((value: string) => {
+    valueRef.current = value;
+    setVal(value);
+  }, []);
 
-  // Blur = discard (no save)
-  const handleBlur = useCallback(() => {
+  const clearDraft = useCallback(() => {
+    valueRef.current = '';
     setVal('');
     onActiveChange?.(null);
   }, [onActiveChange]);
 
+  const focusNextInput = useCallback(() => {
+    const nextInput = document.querySelector(
+      `input[data-count-row-index="${index + 1}"]`,
+    ) as HTMLInputElement | null;
+    if (!nextInput) return;
+    window.setTimeout(() => {
+      nextInput.focus();
+      nextInput.select();
+    }, 10);
+  }, [index]);
+
+  const commitSave = useCallback(async () => {
+    if (disabled || isSavingRef.current) return false;
+    const rawVal = valueRef.current.trim();
+    if (rawVal === '') {
+      clearDraft();
+      return false;
+    }
+    const numberVal = Number(rawVal);
+    const sanitized = isNaN(numberVal) ? 0 : Math.max(0, numberVal);
+    isSavingRef.current = true;
+    committingRef.current = true;
+    valueRef.current = '';
+    setVal('');
+    onActiveChange?.(null);
+    try {
+      await onSave(itemId, sanitized);
+      return true;
+    } finally {
+      isSavingRef.current = false;
+      committingRef.current = false;
+    }
+  }, [clearDraft, disabled, itemId, onActiveChange, onSave]);
+
+  const handleSubmit = useCallback(
+    (event: React.FormEvent) => {
+      event.preventDefault();
+      void commitSave().then((saved) => {
+        if (saved) focusNextInput();
+      });
+    },
+    [commitSave, focusNextInput],
+  );
+
+  const handleBlur = useCallback(() => {
+    window.setTimeout(() => {
+      if (committingRef.current || isSavingRef.current) return;
+
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLInputElement &&
+        active.dataset.countRowIndex !== undefined &&
+        active !== inputRef.current
+      ) {
+        if (valueRef.current.trim() !== '') {
+          void commitSave();
+        } else {
+          onActiveChange?.(null);
+        }
+        return;
+      }
+
+      if (inputRef.current === document.activeElement) return;
+      clearDraft();
+    }, 0);
+  }, [clearDraft, commitSave, onActiveChange]);
+
   return (
-    <div className="flex flex-col items-end gap-1.5">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col items-end gap-1.5"
+      data-count-row-index={index}
+    >
       <input
         ref={inputRef}
         type="text"
         inputMode="decimal"
+        enterKeyHint="next"
         value={val}
         placeholder="จำนวน"
         onChange={(e) => {
@@ -98,7 +157,7 @@ const CountInput = memo(function CountInput({
           if (value.length > 1 && value.startsWith('0') && !value.startsWith('0.')) {
             value = value.replace(/^0+/, '');
           }
-          setVal(value);
+          syncValue(value);
         }}
         onFocus={() => {
           onActiveChange?.(itemId);
@@ -106,22 +165,14 @@ const CountInput = memo(function CountInput({
         }}
         onBlur={handleBlur}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') {
+          if (e.key === 'Enter' || e.key === 'Tab') {
             e.preventDefault();
-            // Save first, then move focus to next input
-            void commitSave().then(() => {
-              const nextInput = document.querySelector(`input[data-count-row-index="${index + 1}"]`) as HTMLInputElement;
-              if (nextInput) {
-                setTimeout(() => {
-                  nextInput.focus();
-                  nextInput.select();
-                }, 10);
-              }
+            void commitSave().then((saved) => {
+              if (saved) focusNextInput();
             });
           }
           if (e.key === 'Escape') {
-            setVal('');
-            onActiveChange?.(null);
+            clearDraft();
             inputRef.current?.blur();
           }
         }}
@@ -148,7 +199,7 @@ const CountInput = memo(function CountInput({
           </motion.span>
         )}
       </AnimatePresence>
-    </div>
+    </form>
   );
 });
 
@@ -273,7 +324,6 @@ const CountItemRow = memo(function CountItemRow({
           disabled={isReadOnly}
           isActive={isActive}
           onActiveChange={onActiveChange}
-          currentStock={Number(item.stock) || 0}
         />
         {/* 1-time undo button per item — shown after a save, while undoEntry exists */}
         <AnimatePresence>

@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 const inventoryClientPath = resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx');
-const quickActionBarPath = resolve(__dirname, '../components/inventory/InventoryQuickActionBar.tsx');
+const quickActionBarPath = resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx');
 
 describe('bundle and route-level loading', () => {
   test('inventory defers modal-only code behind dynamic imports', () => {
@@ -11,8 +11,8 @@ describe('bundle and route-level loading', () => {
 
     expect(source).not.toContain("import { InventoryHistoryModal");
     expect(source).toContain("import type { TransactionHistoryRow }");
-    expect(source).toMatch(/dynamic\(\s*\(\)\s*=>\s*import\('@\/components\/inventory\/InventoryHistoryModal'\)/);
-    expect(source).toContain("dynamic(() => import('./PurchaseOrdersModal')");
+    expect(source).toMatch(/dynamic\(\s*\(\)\s*=>\s*import\('\.\/_components\/InventoryHistoryModal'\)/);
+    expect(source).toContain("dynamic(() => import('./_components/PurchaseOrdersModal')");
   });
 
   test('purchase order export surface is not mounted until the modal flow needs it', () => {

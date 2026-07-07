@@ -52,7 +52,7 @@ describe('inventory count accuracy', () => {
     expect(countPage).toContain('void loadAccuracyStats');
     expect(countPage).not.toContain('ค่าความแม่นยำรวม');
     expect(countPage).not.toContain('Total Accuracy');
-    expect(countPage).toContain('Item-level Accuracy');
+    expect(countPage).toContain('ค่าความแม่นยำ:');
     expect(countPage).toContain('placeholder="จำนวน"');
     expect(countPage).not.toContain('fetchInOutTheoreticalQtyMap');
     expect(countPage).not.toContain('ความแม่นยำการบันทึกรับเข้า/นำออก');

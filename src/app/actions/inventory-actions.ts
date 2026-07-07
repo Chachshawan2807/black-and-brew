@@ -11,11 +11,6 @@ import {
   computeCountDiscrepancy,
   isCountMatch,
 } from '@/lib/inventory-count-accuracy';
-import {
-  computeInventoryTargetRecommendation,
-  type InventoryRecommendationTransaction,
-  type InventoryShortageRisk,
-} from '@/lib/inventory-recommended-target-stock';
 import { ensureServerSession } from '@/lib/security/server-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -462,23 +457,19 @@ export async function updateInventoryStock(
 
 const inventoryFieldUpdateSchema = z.object({
   itemId: z.string().uuid(),
-  field: z.enum(['name', 'order_qty', 'order_point', 'target_stock', 'unit', 'source', 'count_policy', 'shortage_risk', 'lead_time_days']),
+  field: z.enum(['name', 'order_qty', 'order_point', 'target_stock', 'unit', 'source', 'count_policy']),
   value: z.union([z.string(), z.number()]),
 });
 
 function sanitizeInventoryFieldValue(field: z.infer<typeof inventoryFieldUpdateSchema>['field'], value: string | number) {
-  if (['order_qty', 'order_point', 'target_stock', 'lead_time_days'].includes(field)) {
+  if (['order_qty', 'order_point', 'target_stock'].includes(field)) {
     const num = value === '' || value === null || value === undefined ? 0 : Number(value);
     if (Number.isNaN(num)) return 0;
-    return field === 'lead_time_days' ? Math.max(0, Math.min(30, Math.round(num))) : num;
+    return num;
   }
 
   if (field === 'count_policy') {
     return value === 'sufficiency_check' ? 'sufficiency_check' : 'exact_count';
-  }
-
-  if (field === 'shortage_risk') {
-    return value === 'high' || value === 'medium' ? value : 'normal';
   }
 
   return String(value ?? '');
@@ -502,7 +493,7 @@ export async function updateInventoryItemField(
     const sanitizedValue = sanitizeInventoryFieldValue(parsed.data.field, parsed.data.value);
     const { data: beforeItem, error: beforeError } = await supabase
       .from('inventory_items')
-      .select('name, order_qty, order_point, target_stock, unit, source, count_policy, shortage_risk, lead_time_days')
+      .select('name, order_qty, order_point, target_stock, unit, source, count_policy')
       .eq('id', itemId)
       .maybeSingle();
 
@@ -548,135 +539,6 @@ export async function updateInventoryItemField(
     const message = getErrorMessage(error);
     console.error('[updateInventoryItemField] Unexpected Error:', message);
     return { success: false, error: message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลสินค้า' };
-  }
-}
-
-type InventoryRecommendationItemRow = {
-  id: string;
-  target_stock: number | null;
-  shortage_risk: string | null;
-  lead_time_days: number | null;
-};
-
-type InventoryRecommendationTxRow = InventoryRecommendationTransaction & {
-  inventory_item_id: string | null;
-};
-
-type InventoryHolidayRow = {
-  date: string;
-  name: string | null;
-};
-
-export async function fetchInventoryTargetRecommendations(itemIds?: string[]) {
-  noStore();
-  const authError = await requireAuthenticatedRead();
-  if (authError) {
-    return { success: false, error: authError, recommendationsByItemId: {} };
-  }
-
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const lookbackDate = new Date(today);
-  lookbackDate.setUTCDate(lookbackDate.getUTCDate() - 60);
-  const lookbackIso = lookbackDate.toISOString();
-  const windowEnd = new Date(today);
-  windowEnd.setUTCDate(windowEnd.getUTCDate() + 13);
-  const windowEndStr = windowEnd.toISOString().slice(0, 10);
-  const safeItemIds = (itemIds ?? []).filter(Boolean);
-
-  try {
-    let itemsQuery = supabase
-      .from('inventory_items')
-      .select('id, target_stock, shortage_risk, lead_time_days')
-      .order('sort_order', { ascending: true });
-    let txQuery = supabase
-      .from('inventory_transactions')
-      .select('inventory_item_id, type, quantity, created_at')
-      .eq('type', 'OUT')
-      .gte('created_at', lookbackIso);
-
-    if (safeItemIds.length > 0) {
-      itemsQuery = itemsQuery.in('id', safeItemIds);
-      txQuery = txQuery.in('inventory_item_id', safeItemIds);
-    }
-
-    const [itemsRes, txRes, holidaysRes] = await Promise.all([
-      itemsQuery,
-      txQuery,
-      supabase
-        .from('holidays')
-        .select('date, name')
-        .gte('date', todayStr)
-        .lte('date', windowEndStr),
-    ]);
-
-    if (itemsRes.error) {
-      console.error('[fetchInventoryTargetRecommendations] Supabase Error:', itemsRes.error.message, itemsRes.error.details);
-      return { success: false, error: itemsRes.error.message, recommendationsByItemId: {} };
-    }
-    if (txRes.error) {
-      console.error('[fetchInventoryTargetRecommendations] Supabase Error:', txRes.error.message, txRes.error.details);
-      return { success: false, error: txRes.error.message, recommendationsByItemId: {} };
-    }
-    if (holidaysRes.error) {
-      console.error('[fetchInventoryTargetRecommendations] Supabase Error:', holidaysRes.error.message, holidaysRes.error.details);
-      return { success: false, error: holidaysRes.error.message, recommendationsByItemId: {} };
-    }
-
-    const transactionsByItemId = new Map<string, InventoryRecommendationTxRow[]>();
-    for (const row of (txRes.data ?? []) as InventoryRecommendationTxRow[]) {
-      if (!row.inventory_item_id) continue;
-      const rows = transactionsByItemId.get(row.inventory_item_id) ?? [];
-      rows.push(row);
-      transactionsByItemId.set(row.inventory_item_id, rows);
-    }
-
-    const holidays = ((holidaysRes.data ?? []) as InventoryHolidayRow[]).map((holiday) => ({
-      date: holiday.date,
-      name: holiday.name,
-    }));
-    const recommendationsByItemId: Record<string, {
-      recommended_target_stock: number;
-      recommendation_confidence: string;
-      recommendation_explanation: string[];
-      recommendation_display_value: string;
-      abnormal_out_count: number;
-      average_daily_usage: number;
-    }> = {};
-
-    for (const item of (itemsRes.data ?? []) as InventoryRecommendationItemRow[]) {
-      const shortageRisk: InventoryShortageRisk =
-        item.shortage_risk === 'medium' || item.shortage_risk === 'high'
-          ? item.shortage_risk
-          : 'normal';
-      const recommendation = computeInventoryTargetRecommendation({
-        currentTargetStock: Number(item.target_stock ?? 0),
-        shortageRisk,
-        leadTimeDays: Number(item.lead_time_days ?? 3),
-        today: todayStr,
-        transactions: transactionsByItemId.get(item.id) ?? [],
-        holidays,
-      });
-
-      recommendationsByItemId[item.id] = {
-        recommended_target_stock: recommendation.recommendedTargetStock,
-        recommendation_confidence: recommendation.confidence,
-        recommendation_explanation: recommendation.explanationLines,
-        recommendation_display_value: recommendation.displayValue,
-        abnormal_out_count: recommendation.abnormalOutCount,
-        average_daily_usage: recommendation.averageDailyUsage,
-      };
-    }
-
-    return { success: true, recommendationsByItemId };
-  } catch (error: unknown) {
-    const message = getErrorMessage(error);
-    console.error('[fetchInventoryTargetRecommendations] Unexpected Error:', message);
-    return {
-      success: false,
-      error: message || 'เกิดข้อผิดพลาดในการคำนวณจำนวนที่แนะนำ',
-      recommendationsByItemId: {},
-    };
   }
 }
 

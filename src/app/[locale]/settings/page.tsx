@@ -1,9 +1,9 @@
 import { Settings2, Bell } from 'lucide-react';
-import LoginHistorySection from '@/components/settings/LoginHistorySection';
-import PasskeyDeviceSection from '@/components/settings/PasskeyDeviceSection';
-import DataChangeHistorySection from '@/components/settings/DataChangeHistorySection';
-import NotificationPreferencesSection from '@/components/settings/NotificationPreferencesSection';
-import SettingsCollapsibleSection from '@/components/settings/SettingsCollapsibleSection';
+import LoginHistorySection from './_components/LoginHistorySection';
+import PasskeyDeviceSection from './_components/PasskeyDeviceSection';
+import DataChangeHistorySection from './_components/DataChangeHistorySection';
+import NotificationPreferencesSection from './_components/NotificationPreferencesSection';
+import SettingsCollapsibleSection from './_components/SettingsCollapsibleSection';
 
 export default async function SettingsPage({
   params,

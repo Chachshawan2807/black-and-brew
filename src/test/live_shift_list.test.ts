@@ -14,7 +14,7 @@ describe('LiveShiftList realtime strategy', () => {
     const path = await import('node:path');
     const filePath = path.join(
       process.cwd(),
-      'src/app/[locale]/dashboard/components/LiveShiftList.tsx'
+      'src/app/[locale]/dashboard/_components/LiveShiftList.tsx'
     );
     const source = await fs.readFile(filePath, 'utf8');
 

@@ -7,6 +7,7 @@ import { computeFieldChanges } from '@/lib/data-change-log';
 import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
 
 import { logRowToNotificationInput } from '@/lib/notification-types';
+import { detectStockOperationFromMetadata } from '@/lib/notification-display-icon';
 
 import { isUuidString } from '@/lib/pwa-notification-bridge';
 
@@ -555,27 +556,7 @@ function buildActionSummary(row: DataChangeLogRow, isTh: boolean): string {
 
 
 export function detectStockOperation(row: DataChangeLogRow): StockOperation | null {
-
-  if (row.module !== 'inventory') return null;
-
-  const meta = row.metadata ?? {};
-
-  const operation = meta.operation as string | undefined;
-
-  if (operation === 'record_transaction') {
-
-    const type = meta.type as string | undefined;
-
-    if (type === 'IN') return 'IN';
-
-    if (type === 'OUT') return 'OUT';
-
-  }
-
-  if (operation === 'set_stock') return 'ADJUST';
-
-  return null;
-
+  return detectStockOperationFromMetadata(row.metadata ?? {}, row.module);
 }
 
 
@@ -841,6 +822,11 @@ export function formatInventoryNotification(
     priority,
 
     batchedCount,
+
+    metadata: {
+      ...base.metadata,
+      module: row.module,
+    },
 
   };
 

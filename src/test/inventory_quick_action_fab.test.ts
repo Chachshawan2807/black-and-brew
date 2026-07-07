@@ -21,7 +21,7 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
     const fabCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryQuickActionFAB.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
     );
 
@@ -31,7 +31,7 @@ describe('Inventory Quick Action FAB', () => {
 
   test('FAB is positioned above the AI chat trigger with safe-area support', () => {
     const fabCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryQuickActionFAB.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
     );
     const layoutCode = fs.readFileSync(
@@ -71,12 +71,16 @@ describe('Inventory Quick Action FAB', () => {
     expect(layoutCode).toMatch(/<InventoryQuickActionWrapper\s*\/>\s*\r?\n\s*<InventoryNotificationFAB/);
     expect(notifyCode).toContain('variant="fab"');
     expect(notifyCode).not.toContain('/inventory');
-    expect(notifyCode).not.toContain('isAnyOtherOpen');
-    expect(notifyCode).toMatch(/const hidden = panelOpen \|\| fabStackHidden/);
+    expect(notifyCode).toMatch(/isAnyOtherOpen\('notification'\)/);
+    expect(notifyCode).toMatch(/fabStackHidden \|\| fabStackSuppressed \|\| isAnyOtherOpen/);
     expect(notifyCode).toContain('FAB_BOTTOM_NOTIFICATION_CLASS');
     expect(notifyCode).not.toContain('FAB_BOTTOM_AI_CLASS');
     expect(bellCode).toContain('bg-red-500');
-    expect(bellCode).toContain('bg-[#000000]');
+    expect(bellCode).toContain('FAB_NOTIFICATION_INNER_CLASS');
+    expect(bellCode).toContain('PWA_BRAND_ICON');
+    expect(bellCode).toContain('bg-transparent shadow-none');
+    expect(bellCode).not.toContain('md:bg-[#000000]');
+    expect(bellCode).not.toContain('max-md:text-black');
   });
 
   test('inventory page reuses shared quick action bar component', () => {
@@ -85,7 +89,7 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
     const fabCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryQuickActionFAB.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
     );
 
@@ -120,14 +124,14 @@ describe('Inventory Quick Action FAB', () => {
     expect(layoutCode).toContain('w-8 h-8');
   });
 
-  test('sort_order reorder logs audit for history', () => {
+  test('sort_order reorder syncs via reorderInventoryItems server action', () => {
     const pageCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
       'utf-8',
     );
 
-    expect(pageCode).toContain("operation: 'reorder_sort_order'");
-    expect(pageCode).toMatch(/field === 'sort_order'[\s\S]*logClientDataChange/);
+    expect(pageCode).toContain("field === 'sort_order'");
+    expect(pageCode).toContain('reorderInventoryItems');
   });
 
   test('quick action hook tags audit logs with notification source', () => {
@@ -140,7 +144,7 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
     const fabCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryQuickActionFAB.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
     );
 
@@ -176,11 +180,7 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
     const fabCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryQuickActionFAB.tsx'),
-      'utf-8',
-    );
-    const chatCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/ai/AIChatOverlay.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
     );
 
@@ -190,7 +190,7 @@ describe('Inventory Quick Action FAB', () => {
 
   test('quick action bar uses aligned 3-column mobile action grid', () => {
     const barCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryQuickActionBar.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
       'utf-8',
     );
 
@@ -208,7 +208,7 @@ describe('Inventory Quick Action FAB', () => {
 
   test('quick action wrapper renders FAB on every page (global layout)', () => {
     const wrapperCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/inventory/InventoryQuickActionWrapper.tsx'),
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionWrapper.tsx'),
       'utf-8',
     );
 

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { FAB_RIGHT_CLASS, FAB_SIZE_CLASS, FAB_STACK_INNER_CLASS } from '@/lib/floating-action-layout';
+import { FAB_RIGHT_CLASS, FAB_SIZE_CLASS, FAB_NOTIFICATION_INNER_CLASS } from '@/lib/floating-action-layout';
+import { PWA_BRAND_ICON } from '@/lib/pwa-assets';
 import { INVENTORY_NOTIFICATION_EVENT } from '@/lib/pwa-notification-bridge';
 import { useNotificationState, useNotificationActions } from '@/components/notifications/NotificationProvider';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -43,10 +45,18 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
 
   const content = (
     <>
-      <Bell
-        className={cn('h-[18px] w-[18px]', isFab ? 'text-white' : 'text-foreground/80')}
-        strokeWidth={1.75}
-      />
+      {isFab ? (
+        <Image
+          src={PWA_BRAND_ICON}
+          alt=""
+          width={22}
+          height={22}
+          className="h-[22px] w-[22px] object-contain"
+          aria-hidden
+        />
+      ) : (
+        <Bell className="h-[18px] w-[18px] text-foreground/80" strokeWidth={1.75} />
+      )}
       {unreadCount > 0 && (
         <span
           aria-hidden
@@ -79,13 +89,18 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
           whileTap={{ scale: 0.94 }}
           className={cn(
             stacked
-              ? cn('relative bb-transition', FAB_STACK_INNER_CLASS, panelOpen && 'ring-2 ring-white/30', className)
+              ? cn(
+                  'relative bb-transition',
+                  FAB_NOTIFICATION_INNER_CLASS,
+                  panelOpen && 'ring-2 ring-black/15',
+                  className,
+                )
               : cn(
                   'relative flex items-center justify-center bb-transition',
                   FAB_SIZE_CLASS,
                   FAB_RIGHT_CLASS,
-                  'fixed z-[201] rounded-full bg-[#000000] text-white shadow-lg',
-                  panelOpen && 'ring-2 ring-white/30',
+                  'fixed z-[201] rounded-full bg-transparent shadow-none',
+                  panelOpen && 'ring-2 ring-black/15',
                   className,
                 ),
           )}

@@ -528,29 +528,6 @@
     }
   }
 
-  .bb-command-center {
-    width: 100%;
-  }
-
-  .bb-command-center-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.5rem;
-    width: 100%;
-  }
-
-  @container bb-main (min-width: 36rem) {
-    .bb-command-center-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @container bb-main (min-width: 56rem) {
-    .bb-command-center-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
 }
 
 @layer utilities {
@@ -824,4 +801,70 @@
 .dark .bb-schedule-export-surface :where([class*='border-border']),
 .bb-schedule-export-surface :where([class*='border-border']) {
   border-color: rgb(0 0 0 / 0.05) !important;
+}
+
+/* Schedule grid crosshair — inset rounded guides (match shift pill geometry) */
+.bb-schedule-export-surface {
+  --bb-schedule-guide-inset: 4px;
+  --bb-schedule-guide-radius: 0.5rem;
+  --bb-schedule-guide-row: rgb(59 130 246 / 0.07);
+  --bb-schedule-guide-cell: rgb(59 130 246 / 0.09);
+  --bb-schedule-guide-ring: rgb(59 130 246 / 0.34);
+  --bb-schedule-guide-accent: rgb(59 130 246 / 0.42);
+  --bb-schedule-guide-col-h: rgb(59 130 246 / 0.05);
+}
+
+.bb-schedule-export-surface :is(
+  .bb-schedule-crosshair-row-band,
+  .bb-schedule-crosshair-cell,
+  .bb-schedule-crosshair-name,
+  .bb-schedule-crosshair-col-h
+) {
+  position: relative;
+  isolation: isolate;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.bb-schedule-export-surface :is(
+  .bb-schedule-crosshair-row-band,
+  .bb-schedule-crosshair-cell,
+  .bb-schedule-crosshair-name,
+  .bb-schedule-crosshair-col-h
+)::before {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: var(--bb-schedule-guide-radius);
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+.bb-schedule-export-surface .bb-schedule-crosshair-row-band::before,
+.bb-schedule-export-surface .bb-schedule-crosshair-cell::before {
+  inset: var(--bb-schedule-guide-inset);
+}
+
+.bb-schedule-export-surface .bb-schedule-crosshair-row-band::before {
+  background-color: var(--bb-schedule-guide-row);
+}
+
+.bb-schedule-export-surface .bb-schedule-crosshair-cell::before {
+  background-color: var(--bb-schedule-guide-cell);
+  box-shadow: 0 0 0 1px var(--bb-schedule-guide-ring);
+}
+
+.bb-schedule-export-surface .bb-schedule-crosshair-name::before {
+  inset: 6px 8px 6px 52px;
+  background-color: var(--bb-schedule-guide-row);
+  border-left: 2px solid var(--bb-schedule-guide-accent);
+}
+
+.bb-schedule-export-surface .bb-schedule-crosshair-col-h::before {
+  inset: 4px;
+  background-color: var(--bb-schedule-guide-col-h);
+  border-bottom: 2px solid var(--bb-schedule-guide-accent);
 }

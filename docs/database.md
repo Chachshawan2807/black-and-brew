@@ -309,6 +309,10 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260621120000_push_subscriptions_daily_report.sql` | Adds `profile_id` and `branch_id` to `push_subscriptions` for daily schedule Web Push broadcasts |
 | `20260622143800_drop_market_insights_tables.sql` | Drops retired Market Insights tables (`market_insight_runs`, `local_events`) |
 | `20260622144706_drop_retired_ai_inventory_views.sql` | Drops retired AI-prefixed inventory helper views |
+| `20260622155200_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
+| `20260707100000_remove_inventory_recommended_target_stock.sql` | Removes inventory recommended target stock (retired feature) |
+
+Retired: `local_events` / `market_insight_runs` (see `20260622143800_drop_market_insights_tables.sql`). Do not reintroduce recommended target stock columns or UI.
 
 ### Historical (root + `sql/`)
 

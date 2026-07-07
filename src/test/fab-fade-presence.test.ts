@@ -26,7 +26,7 @@ describe('FAB fade presence', () => {
 
   test('main FAB triggers use FabFadePresence for stack visibility', () => {
     const quickFab = fs.readFileSync(
-      path.join(root, 'components/inventory/InventoryQuickActionFAB.tsx'),
+      path.join(root, 'app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
     );
     const aiChat = fs.readFileSync(path.join(root, 'components/ai/AIChatOverlay.tsx'), 'utf-8');

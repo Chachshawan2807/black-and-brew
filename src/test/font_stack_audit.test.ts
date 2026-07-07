@@ -77,7 +77,7 @@ describe('font stack audit', () => {
       'utf-8'
     );
     const salesChart = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/sales/components/SalesTopProductsChartInner.tsx'),
+      path.resolve(__dirname, '../app/[locale]/sales/_components/SalesTopProductsChartInner.tsx'),
       'utf-8'
     );
 

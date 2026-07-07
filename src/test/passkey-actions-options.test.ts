@@ -95,15 +95,9 @@ describe('passkey server option generation', () => {
     expect(mocks.generateRegistrationOptions).toHaveBeenCalledWith(
       expect.objectContaining({
         authenticatorSelection: expect.objectContaining({
+          authenticatorAttachment: 'platform',
           residentKey: 'required',
           userVerification: 'required',
-        }),
-      })
-    );
-    expect(mocks.generateRegistrationOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        authenticatorSelection: expect.not.objectContaining({
-          authenticatorAttachment: 'platform',
         }),
       })
     );

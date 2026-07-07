@@ -18,7 +18,6 @@ import {
   TooltipContent,
   TooltipProvider
 } from '@/components/ui/tooltip';
-import { useSidebarToggle, useSidebarHydrated } from '@/hooks/use-sidebar-toggle';
 import { useReadOnly } from '@/components/providers/AuthProvider';
 import {
   DndContext,
@@ -201,10 +200,7 @@ export default function Menu({ isOpen }: MenuProps) {
   const searchParams = useSearchParams();
   const locale = (params?.locale as string) || 'th';
 
-  const hydrated = useSidebarHydrated();
-  const sidebarIsOpen = useSidebarToggle((state) => state.isOpen);
   const closeMobileDrawer = useMobileNavDrawer((state) => state.closeDrawer);
-  const sidebarOpen = hydrated ? sidebarIsOpen : true;
   const isReadOnly = useReadOnly();
   const isAdmin = !isReadOnly;
 

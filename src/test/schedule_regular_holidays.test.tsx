@@ -2,6 +2,7 @@ import React from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { AppTooltipProvider } from '@/components/providers/AppTooltipProvider';
 import type { RegularHolidayMap } from '@/lib/regular-holidays';
 import type { Profile, Shift } from '@/types';
 
@@ -147,13 +148,15 @@ function renderSchedule(props: ScheduleProps) {
   } = props;
   return render(
     <AuthProvider isReadOnly={false}>
-      <ScheduleClient
-        initialShifts={initialShifts}
-        initialHolidays={initialHolidays}
-        initialDateStr={initialDateStr}
-        locale={locale}
-        {...rest}
-      />
+      <AppTooltipProvider>
+        <ScheduleClient
+          initialShifts={initialShifts}
+          initialHolidays={initialHolidays}
+          initialDateStr={initialDateStr}
+          locale={locale}
+          {...rest}
+        />
+      </AppTooltipProvider>
     </AuthProvider>
   );
 }
@@ -191,7 +194,7 @@ describe('ScheduleClient regular holiday persistence', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
 
-    const modal = screen.getByRole('heading', { name: 'จัดการวันหยุดประจำ' }).closest('.bb-sheet-panel') as HTMLElement;
+    const modal = screen.getByRole('dialog', { name: 'จัดการวันหยุดประจำ' });
     const summary = within(modal).getByRole('heading', { name: 'สรุปวันหยุดประจำของพนักงาน' }).parentElement as HTMLElement;
 
     expect(within(summary).getByText('นิด')).toBeInTheDocument();

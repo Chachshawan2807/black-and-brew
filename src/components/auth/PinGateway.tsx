@@ -36,9 +36,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [biometricSupported, setBiometricSupported] = useState(false);
-  const [biometricAutoCapable, setBiometricAutoCapable] = useState(false);
   const [biometricAttempts, setBiometricAttempts] = useState(0);
-  const [biometricAutoEnabled, setBiometricAutoEnabled] = useState(true);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
   const [showEnrollment, setShowEnrollment] = useState(false);
@@ -107,10 +105,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     void getBiometricLoginAvailability().then(availability => {
       if (cancelled) return;
       setBiometricSupported(availability.supported);
-      setBiometricAutoCapable(availability.canAutoTrigger);
       if (!availability.canAutoTrigger) {
         biometricAutoEnabledRef.current = false;
-        setBiometricAutoEnabled(false);
       }
     });
 
@@ -141,7 +137,6 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       setBiometricAttempts(next);
       if (next >= BIOMETRIC_AUTO_MAX_ATTEMPTS) {
         biometricAutoEnabledRef.current = false;
-        setBiometricAutoEnabled(false);
         window.setTimeout(focusPinInput, 120);
       }
     },
@@ -181,7 +176,6 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
       if (trigger === 'manual') {
         biometricAutoEnabledRef.current = false;
-        setBiometricAutoEnabled(false);
       }
 
       passkeyPromptInFlightRef.current = true;

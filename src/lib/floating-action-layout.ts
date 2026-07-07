@@ -28,6 +28,12 @@ export const FAB_STACK_INNER_CLASS = cn(
   FAB_SIZE_CLASS,
 );
 
+/** Notification FAB — brand icon on transparent bg (mobile + desktop) */
+export const FAB_NOTIFICATION_INNER_CLASS = cn(
+  FAB_SIZE_CLASS,
+  'rounded-full flex items-center justify-center bg-transparent shadow-none',
+);
+
 export const FAB_BOTTOM_HIDE_TOGGLE_CLASS =
   'max-md:bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] md:bottom-6';
 

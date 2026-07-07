@@ -167,71 +167,6 @@ function processSalesData(rawRecords: ExcelRow[], filenameDate?: Date): DataProc
   return { validRecords, auditLog };
 }
 
-// Map raw Excel data to sales record fields
-function mapSalesRecord(raw: ExcelRow, uploadId: string): Record<string, unknown> {
-  const normalized: Record<string, unknown> = {};
-  Object.keys(raw).forEach(key => {
-    normalized[normalizeColumnName(key)] = raw[key];
-  });
-
-  // Try to find common field names
-  const record: Record<string, unknown> = {
-    upload_id: uploadId,
-    sale_date: new Date(), // Default to now
-  };
-
-  // Map date fields
-  if (normalized.date) record.sale_date = normalized.date;
-  else if (normalized.sale_date) record.sale_date = normalized.sale_date;
-  else if (normalized.saledate) record.sale_date = normalized.saledate;
-  else if (normalized.transaction_date) record.sale_date = normalized.transaction_date;
-
-  // Map product fields
-  if (normalized.product) record.product_name = normalized.product;
-  else if (normalized.product_name) record.product_name = normalized.product_name;
-  else if (normalized.productname) record.product_name = normalized.productname;
-  else if (normalized.item) record.product_name = normalized.item;
-  else if (normalized.item_name) record.product_name = normalized.item_name;
-  else if (normalized.menu_name) record.product_name = normalized.menu_name;
-  else if (normalized.menu) record.product_name = normalized.menu;
-
-  // Map category fields
-  if (normalized.category) record.category = normalized.category;
-  else if (normalized.product_category) record.category = normalized.product_category;
-  else record.category = 'Uncategorized';
-
-  // Map quantity fields
-  if (normalized.quantity !== undefined) record.quantity = Number(normalized.quantity);
-  else if (normalized.qty !== undefined) record.quantity = Number(normalized.qty);
-  else if (normalized.bills !== undefined) record.quantity = Number(normalized.bills);
-  else record.quantity = 0;
-
-  // Map price fields
-  if (normalized.price !== undefined) record.unit_price = Number(normalized.price);
-  else if (normalized.unit_price !== undefined) record.unit_price = Number(normalized.unit_price);
-  else if (normalized.unitprice !== undefined) record.unit_price = Number(normalized.unitprice);
-  else record.unit_price = 0;
-
-  // Map total fields
-  if (normalized.total !== undefined) record.total_amount = Number(normalized.total);
-  else if (normalized.total_amount !== undefined) record.total_amount = Number(normalized.total_amount);
-  else if (normalized.amount !== undefined) record.total_amount = Number(normalized.amount);
-  else if (normalized.sales !== undefined) record.total_amount = Number(normalized.sales);
-  else record.total_amount = 0;
-
-  // Map payment method
-  if (normalized.payment) record.payment_method = normalized.payment;
-  else if (normalized.payment_method !== undefined) record.payment_method = normalized.payment_method;
-  else record.payment_method = 'Other';
-
-  // Map notes
-  if (normalized.notes) record.notes = normalized.notes;
-  else if (normalized.note) record.notes = normalized.note;
-  else record.notes = '';
-
-  return record;
-}
-
 export async function uploadSalesFiles(formData: FormData): Promise<{
   success: boolean;
   uploadedFiles?: Array<{ fileName: string; recordCount: number; auditLog: SalesAuditLog }>;
@@ -589,23 +524,6 @@ ${JSON.stringify(productNames, null, 2)}`,
 }
 
 /**
- * Get or create product category from database
- */
-async function getProductCategory(productName: string, supabase: SupabaseClient): Promise<string | null> {
-  try {
-    const { data } = await supabase
-      .from('product_categories')
-      .select('category')
-      .eq('product_name', productName)
-      .single();
-
-    return data?.category || null;
-  } catch (error) {
-    return null;
-  }
-}
-
-/**
  * Save product category to database
  */
 async function saveProductCategory(
@@ -615,7 +533,7 @@ async function saveProductCategory(
   supabase: SupabaseClient,
 ) {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('product_categories')
       .upsert(
         {
@@ -726,7 +644,7 @@ export async function updateProductCategory(productName: string, newCategory: st
       return { success: true, isTemporary: true };
     }
     
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('product_categories')
       .upsert(
         {

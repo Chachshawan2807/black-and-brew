@@ -63,20 +63,11 @@ describe('Mobile sidebar layout — Modern Web Guidance alignment', () => {
     expect(menu).toMatch(/useMobileNavDrawer/);
   });
 
-  test('main content region is a container query root', () => {
-    const code = readFile('components/sidebar/SidebarLayout.tsx');
-    expect(code).toMatch(/bb-main-container/);
+  test('main content region uses container query root for responsive layout', () => {
+    const layout = readFile('components/sidebar/SidebarLayout.tsx');
+    expect(layout).toMatch(/bb-main-container/);
     const css = readFile('app/[locale]/globals.css');
     expect(css).toMatch(/\.bb-main-container/);
     expect(css).toMatch(/container-type:\s*inline-size/);
-  });
-
-  test('command center grid uses container queries not viewport-only columns', () => {
-    const code = readFile('components/CommandCenterGrid.tsx');
-    expect(code).toMatch(/bb-command-center/);
-    expect(code).toMatch(/bb-command-center-grid/);
-    const css = readFile('app/[locale]/globals.css');
-    expect(css).toMatch(/@container bb-main/);
-    expect(css).toMatch(/bb-command-center-grid/);
   });
 });

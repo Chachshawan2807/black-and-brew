@@ -28,7 +28,7 @@ export function isStale(savedAt: number, ttlMs: number): boolean {
   return (Date.now() - savedAt) >= ttlMs;
 }
 
-export function mergeWithServer<T>(local: T | null, server: T, _serverTimestamp: number): T {
+export function mergeWithServer<T>(local: T | null, server: T): T {
   if (local === null) return server;
   return server;
 }

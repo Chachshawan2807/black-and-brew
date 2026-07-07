@@ -189,7 +189,7 @@ function wrapTool<T extends object>(tool: T): T {
     ...tool,
     execute: executable.execute
       ? async (...args: unknown[]) => {
-          const raw = await (executable.execute as (...a: unknown[]) => unknown).apply(null, args);
+          const raw = await (executable.execute as (...a: unknown[]) => unknown)(...args);
           return cleanToolOutput(raw);
         }
       : undefined,

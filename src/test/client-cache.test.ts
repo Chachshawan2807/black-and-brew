@@ -92,21 +92,21 @@ describe('client-cache', () => {
   describe('mergeWithServer', () => {
     it('returns server data when local is null', () => {
       const serverData = { revenue: 9999 };
-      const result = mergeWithServer<{ revenue: number }>(null, serverData, Date.now());
+      const result = mergeWithServer<{ revenue: number }>(null, serverData);
       expect(result).toEqual(serverData);
     });
 
     it('server wins on conflict — returns server data', () => {
       const localData = { revenue: 100 };
       const serverData = { revenue: 999 };
-      const result = mergeWithServer(localData, serverData, Date.now());
+      const result = mergeWithServer(localData, serverData);
       expect(result).toEqual(serverData);
     });
 
     it('returns server data even when local exists', () => {
       const localData = { items: ['a', 'b'] };
       const serverData = { items: ['x', 'y', 'z'] };
-      const result = mergeWithServer(localData, serverData, Date.now());
+      const result = mergeWithServer(localData, serverData);
       expect(result).toEqual(serverData);
     });
   });
