@@ -71,6 +71,7 @@ type IntentScores = {
   externalSearch: number;
   maintenance: number;
   holiday: number;
+  sales: number;
 };
 
 function classifyIntent(text: string): IntentScores {
@@ -113,14 +114,19 @@ function classifyIntent(text: string): IntentScores {
     { pattern: /ค้นหา|search|google/i, weight: 3 },
     { pattern: /ข่าว|news/i, weight: 3 },
     { pattern: /เทรนด์|trend|กระแส/i, weight: 2 },
-    { pattern: /ราคาตลาด|ราคากาแฟ|ราคาน้ำตาล/i, weight: 3 },
-    { pattern: /คู่แข่ง|competitor/i, weight: 2 },
-    { pattern: /ภาพรวมตลาด|market/i, weight: 2 },
+    { pattern: /ราคากาแฟ|ราคาน้ำตาล/i, weight: 3 },
   ];
 
   const holidaySignals = [
     { pattern: /วันหยุด|นักขัตฤกษ์|เทศกาล|holiday/i, weight: 3 },
     { pattern: /หยุดเมื่อไหร่|อีกกี่วัน|วันหยุดถัดไป/i, weight: 3 },
+  ];
+
+  const salesSignals = [
+    { pattern: /ยอดขาย|sales|revenue/i, weight: 3 },
+    { pattern: /ขายดี|best.?seller|สินค้าขาย/i, weight: 2 },
+    { pattern: /รายได้|กำไร|turnover/i, weight: 2 },
+    { pattern: /product_categories|หมวดหมู่สินค้า/i, weight: 2 },
   ];
 
   // ฟังก์ชันคำนวณคะแนนรวมของแต่ละ intent
@@ -134,6 +140,7 @@ function classifyIntent(text: string): IntentScores {
     maintenance: score(maintenanceSignals),
     externalSearch: score(externalSearchSignals),
     holiday: score(holidaySignals),
+    sales: score(salesSignals),
   };
 }
 
@@ -446,7 +453,8 @@ function selectTools(intents: IntentScores): {
   const needsDb = intents.schedule >= INTENT_THRESHOLD
     || intents.inventory >= INTENT_THRESHOLD
     || intents.maintenance >= INTENT_THRESHOLD
-    || intents.holiday >= INTENT_THRESHOLD;
+    || intents.holiday >= INTENT_THRESHOLD
+    || intents.sales >= INTENT_THRESHOLD;
 
   const needsSearch = intents.externalSearch >= INTENT_THRESHOLD
     || intents.weather >= INTENT_THRESHOLD;

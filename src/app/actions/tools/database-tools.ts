@@ -6,6 +6,7 @@ import {
 import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
 import { formatScheduleChatResponse } from '@/lib/schedule/format-schedule-chat-response';
 import {
+  AI_ALLOWED_TABLES,
   fetchTablePreset,
   fetchShiftsByDate,
   getRealColumnName,
@@ -22,36 +23,33 @@ import { computeItemsToOrder, type InventoryStockFields } from '@/lib/inventory-
 // ─────────────────────────────────────────────────────────────────────────────
 export const readTableTool = tool({
   description: `
-สแกนและอ่านข้อมูลจากตารางในฐานข้อมูล (Universal Read Access)
+สแกนและอ่านข้อมูลจากตารางในฐานข้อมูล Supabase (Universal Read Access)
 
-[คอลัมน์จริงที่ใช้ได้]
-- inventory_items: name, stock, order_point, target_stock, order_qty, unit, source
-  (source = ช่องทางสั่งซื้อ เช่น "Makro", "Line", "สาขา 2", "สั่งพี่ต้า")
+[ตารางที่อ่านได้ทั้งหมด]
+- ตารางงาน: profiles, shifts, holidays, regular_holidays
+- คลังสินค้า: inventory_items, inventory_config, inventory_transactions, inventory_count_verifications
+- ซ่อมบำรุง: service_records
+- ยอดขาย: sales_uploads, sales_records, product_categories
+- ระบบ/ประวัติ: audit_logs, login_history, data_change_logs, revoked_sessions, push_subscriptions, device_passkeys
+
+[คอลัมน์สำคัญ]
+- inventory_items: name, stock, order_point, target_stock, order_qty, unit, source, count_policy
 - service_records: equipment, start_date, person_in_charge, status, detected_problem
-- shifts: start_time, end_time, status, employee_id, shift_type (shift_type = กะจริงจาก metadata.location เช่น 6:30, 7:00, 8:00, ลา, ไปสาขา 2, ร้านซักผ้า, วันหยุด — ห้ามใช้ start_time เป็นเวลาเข้างาน)
-- profiles: full_name, schedule_order
-- holidays: date, name
+- shifts: employee_id, status, start_time, end_time, metadata (shift_type มาจาก metadata.location)
+- sales_records: sale_date, product_name, category, quantity, unit_price, total_amount, payment_method
+- profiles: full_name, schedule_order, dashboard_order
 
 [สำคัญมาก — กฎการ Query]
 1. readTable รองรับเฉพาะ equality filter (eq) เท่านั้น
 2. สำหรับ inventory สต็อกต่ำ: ให้ดึงทั้งตาราง (ไม่ต้องส่ง filters) แล้ว filter ใน memory
-3. เมื่อถามสรุปสินค้าทั้งหมด: ต้องดึง "ทุกแถว" ไม่ควรระบุ limit ต่ำ
-4. ข้อมูลจะถูกจัดกลุ่มตาม source อัตโนมัติ ใช้ source เพื่อแยกช่องทางการสั่งซื้อ
+3. เมื่อถามสรุปภาพรวม: ไม่ควรระบุ limit ต่ำ — ใช้ default ของตาราง
+4. ตารางงานรายวัน (วันนี้/พรุ่งนี้): ใช้ getDailyShifts เป็นหลัก ไม่ใช่ readTable shifts
 `.trim(),
 
   inputSchema: z.object({
     tableName: z
-      .enum([
-        'shifts',
-        'profiles',
-        'holidays',
-        'inventory_items',
-        'service_records',
-        'inventory_transactions',
-      ])
-      .describe(
-        'ชื่อตาราง: shifts, profiles, holidays, inventory_items, service_records, inventory_transactions'
-      ),
+      .enum(AI_ALLOWED_TABLES)
+      .describe(`ชื่อตาราง — อ่านได้ทั้งหมด: ${AI_ALLOWED_TABLES.join(', ')}`),
     columns: z.string().optional().describe(
       'คอลัมน์ที่ต้องการ เช่น "id, name, stock" — ถ้าไม่ระบุจะใช้ preset ของตารางนั้น'
     ),

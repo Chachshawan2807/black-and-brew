@@ -26,7 +26,6 @@ const MODULE_LABELS: Record<string, { th: string; en: string }> = {
   holiday: { th: "วันหยุด", en: "Holidays" },
   dashboard: { th: "แดชบอร์ด", en: "Dashboard" },
   settings: { th: "ตั้งค่า", en: "Settings" },
-  market_insights: { th: "ข้อมูลตลาด", en: "Market insights" },
 };
 
 function ActionIcon({

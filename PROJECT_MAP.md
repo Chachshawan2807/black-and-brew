@@ -20,7 +20,7 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 | Sales | `src/app/[locale]/sales/` | Active |
 | Settings | `src/app/[locale]/settings/` | Active |
 
-Retired: Market Insights (`/market-insights`), inventory recommended target stock, graphify.
+Retired: inventory recommended target stock, graphify.
 
 ---
 

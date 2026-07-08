@@ -65,6 +65,7 @@ vi.mock('@/lib/schedule/fetch-daily-shifts', () => ({
 }));
 
 import {
+  AI_ALLOWED_TABLES,
   fetchTablePreset,
   fetchInventorySummary,
   fetchShiftsByDate,
@@ -93,6 +94,23 @@ describe('fetchTablePreset', () => {
     const result = await fetchTablePreset('secret_audit_table');
     expect(result.ok).toBe(false);
     expect(captured.select).toBe('');
+    expect(result.error?.hint).toContain('profiles');
+  });
+
+  test('covers every public ERP table in AI_ALLOWED_TABLES', () => {
+    expect(AI_ALLOWED_TABLES).toHaveLength(18);
+    for (const table of AI_ALLOWED_TABLES) {
+      expect(TABLE_COLUMN_PRESETS[table]).toBeTruthy();
+      expect(TABLE_COLUMN_PRESETS[table]).not.toContain('public_key');
+      expect(TABLE_COLUMN_PRESETS[table]).not.toContain('p256dh');
+    }
+  });
+
+  test('reads sales_records through its preset columns', async () => {
+    const result = await fetchTablePreset('sales_records');
+    expect(captured.table).toBe('sales_records');
+    expect(captured.select).toBe(TABLE_COLUMN_PRESETS.sales_records);
+    expect(result.ok).toBe(true);
   });
 
   test('applies equality filters via the real column name', async () => {

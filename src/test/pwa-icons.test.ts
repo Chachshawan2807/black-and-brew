@@ -29,7 +29,6 @@ const TRANSPARENT_BRAND_ICON_PATHS = [
 
 const BLACK_NOTIFICATION_ICON_PATHS = [
   'public/images/notification-icon.png',
-  'public/images/notification-badge.png',
   'public/images/notification-icon-512.png',
 ] as const;
 
@@ -58,6 +57,27 @@ async function opaquePixelsAreBlack(filePath: string) {
     if (data[i] > 8 || data[i + 1] > 8 || data[i + 2] > 8) return false;
   }
   return opaqueCount > 100;
+}
+
+async function opaquePixelsAreWhite(filePath: string) {
+  const { data } = await sharp(filePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let opaqueCount = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha < 16) continue;
+    opaqueCount += 1;
+    if (data[i] < 247 || data[i + 1] < 247 || data[i + 2] < 247) return false;
+  }
+  return opaqueCount > 80;
+}
+
+async function badgeFillRatio(filePath: string) {
+  const { data, info } = await sharp(filePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let opaqueCount = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] >= 16) opaqueCount += 1;
+  }
+  return opaqueCount / (info.width * info.height);
 }
 
 async function visiblePixelBounds(filePath: string) {
@@ -123,11 +143,12 @@ describe('PWA notification icons', () => {
     }
   });
 
-  test('notification badge is monochrome mask sized for mobile OS badges', async () => {
+  test('notification badge is white silhouette mask sized for mobile OS badges', async () => {
     const meta = await sharp(BADGE).metadata();
     expect(meta.width).toBe(96);
     expect(meta.height).toBe(96);
-    expect(await opaquePixelsAreBlack(BADGE)).toBe(true);
+    expect(await opaquePixelsAreWhite(BADGE)).toBe(true);
+    expect(await badgeFillRatio(BADGE)).toBeLessThan(0.72);
   });
 });
 
@@ -167,7 +188,10 @@ describe('PWA cross-platform asset consistency', () => {
     const assets = fs.readFileSync(path.join(ROOT, 'public/pwa-assets.js'), 'utf8');
     expect(sw).toContain("importScripts('/pwa-assets.js')");
     expect(sw).toContain("importScripts('/pwa-badge.js')");
-    expect(sw).toContain('badge: notificationBadge');
+    expect(sw).toContain('resolvePushAssets');
+    expect(sw).toContain('buildNotificationOptions');
+    expect(sw).toContain('payload.assets?.icon');
+    expect(sw).toContain('payload.assets?.badge');
     expect(sw).toContain('renotify: true');
     expect(assets).toContain(`"BRAND_ICON": "${PWA_BRAND_ICON}"`);
     expect(assets).toContain(`"NOTIFICATION_BADGE": "${PWA_NOTIFICATION_BADGE}"`);

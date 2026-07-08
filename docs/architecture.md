@@ -238,34 +238,68 @@ Vercel Cron → /api/daily-report → compileDailyReportPayload()
 
 Every read the AI layer performs funnels through `src/lib/ai-data-gateway.ts` — the single doorway between the LLM tools and Supabase. This keeps the Service Role client, the DEC-069 column presets, and the `SECURITY DEFINER` RPCs as the only ways the model can touch data.
 
+**Auth gate:** `/api/chat` requires a full (non–read-only) PIN session. Read-only kiosk accounts are rejected because AI tools run through the Service Role client (RLS bypass).
+
 ```text
-LLM (Gemini)
+LLM (Gemini) — ToolLoopAgent
   │
-  ▼
-readTableTool.execute               ← src/app/actions/tools/database-tools.ts (routing + shaping only)
+  ├─ getDailyShifts(date) ──────────▶ fetchDailyShiftsByDate() (DEC-068)
+  │                                    canonical grouped roster; use for daily schedule Q&A
   │
-  ├─ inventory_items, no filters ──▶ fetchInventorySummary()  ─▶ rpc('get_ai_store_status')
-  │                                                              (view_inventory_summary → LOW/WARNING/OK)
-  │
-  ├─ shifts + date filter ─────────▶ fetchShiftsByDate(date)  ─▶ fetchDailyShiftsByDate() (DEC-068)
-  │
-  └─ everything else ──────────────▶ fetchTablePreset(table, filters?, limit?)
-                                       └─ admin.from(table).select(PRESET).limit(MAX)
+  └─ readTable(tableName, filters?, limit?)
+        │
+        ▼
+     readTableTool.execute          ← src/app/actions/tools/database-tools.ts (routing + shaping only)
+        │
+        ├─ inventory_items, no filters ──▶ fetchTablePreset + computeItemsToOrder()
+        │                                   (PO-modal parity for low-stock counts)
+        │
+        ├─ shifts + YYYY-MM-DD filter ─────▶ fetchShiftsByDate(date)
+        │
+        └─ all other allowed tables ───────▶ fetchTablePreset(table, filters?, limit?)
+                                              └─ admin.from(table).select(PRESET).limit(MAX)
 ```
+
+### AI-readable tables (18 — all `public` ERP tables)
+
+| Domain | Tables | Default row limit |
+| --- | --- | --- |
+| Schedule | `profiles`, `shifts`, `holidays`, `regular_holidays` | 200–500 |
+| Inventory | `inventory_items`, `inventory_config`, `inventory_transactions`, `inventory_count_verifications` | 50–1000 |
+| Maintenance | `service_records` | 1000 |
+| Sales | `sales_uploads`, `sales_records`, `product_categories` | 100–2000 |
+| System / audit | `audit_logs`, `login_history`, `data_change_logs`, `revoked_sessions`, `push_subscriptions`, `device_passkeys` | 50–2000 |
+
+Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIMITS` in `src/lib/ai-data-gateway.ts`.
 
 ### Gateway surface
 
 | Function | Backing source | Returns | Notes |
 | --- | :--- | --- | :--- |
-| `fetchInventorySummary()` | `rpc('get_ai_store_status')` | `{ inventory_summary, low_stock_items, shifts, timestamp }` | DB computes stock status; no raw column select |
+| `fetchInventorySummary()` | `rpc('get_ai_store_status')` | `{ inventory_summary, low_stock_items, shifts, timestamp }` | Optional snapshot RPC; `readTable` inventory path uses `fetchTablePreset` + `computeItemsToOrder` |
 | `fetchShiftsByDate(date)` | `fetchDailyShiftsByDate` | `FormattedDailyShifts` | Canonical grouped roster (front_store / other_duty / off_or_leave) |
-| `fetchTablePreset(table, filters?, limit?)` | `admin.from(table).select(PRESET)` | `{ ok, rows, effectiveLimit }` | Only ever selects `TABLE_COLUMN_PRESETS[table]` |
+| `fetchTablePreset(table, filters?, limit?)` | `admin.from(table).select(PRESET)` | `{ ok, rows, effectiveLimit, is_complete_dataset }` | Only ever selects `TABLE_COLUMN_PRESETS[table]`; rejects unknown tables |
+
+### Query rules
+
+- **Filters:** equality (`eq`) only at the DB layer; date-only `shifts.start_time` expands to a full-day range.
+- **Columns:** AI-supplied `columns` are ignored; presets are enforced (DEC-069).
+- **Limits:** per-table defaults in `TABLE_MAX_LIMITS`; optional `limit` capped at 1000 in the tool schema.
+- **Completeness:** responses include `is_complete_dataset` when row count equals the effective limit (data may be truncated).
+
+### Excluded columns (by preset, not readable by AI)
+
+| Table | Excluded | Reason |
+| --- | --- | --- |
+| `push_subscriptions` | `endpoint`, `p256dh`, `auth` | Web Push encryption secrets |
+| `device_passkeys` | `public_key` | WebAuthn credential secret |
 
 ### Invariants
 
 - DEC-069 preset lockdown: `fetchTablePreset` ignores any AI-supplied `columns`; it always selects the table preset. Arbitrary column selection (a data-exfiltration vector through the RLS-bypassing Service Role client) is impossible by construction.
-- RPC-first for snapshots: broad "store status / low stock" questions resolve through `get_ai_store_status` (`sql/ai_agent_views.sql`) rather than a wide table scan. LOW status uses `stock <= order_point AND target_stock > stock` (migration `20260615130000`). Do not delete `sql/ai_agent_views.sql` — the gateway depends on its views/RPCs.
-- Single doorway: `database-tools.ts` no longer owns a Supabase client, presets, aliases, or limits — it routes and shapes only. Add new AI reads to the gateway, never directly in a tool.
+- RPC snapshot: `get_ai_store_status` (`sql/ai_agent_views.sql`) remains available via `fetchInventorySummary()` for store-status snapshots. LOW status uses `stock <= order_point AND target_stock > stock` (migration `20260615130000`). Do not delete `sql/ai_agent_views.sql`.
+- Single doorway: `database-tools.ts` routes and shapes only. Add new AI-readable tables to `ai-data-gateway.ts` — never open a second Supabase admin client in a tool.
+- New public tables: add to `AI_ALLOWED_TABLES`, define a column preset, set `TABLE_MAX_LIMITS`, and extend tests in `src/test/ai-data-gateway.test.ts`.
 
 ---
 

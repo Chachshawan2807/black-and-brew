@@ -20,13 +20,18 @@ const PWA_ASSETS = {
   NOTIFICATION_BADGE: '/images/notification-badge.png',
   APPLE_TOUCH_ICON: '/images/apple-touch-icon.png',
   FAVICON: '/images/favicon.png',
-  CACHE_VERSION: 11,
+  CACHE_VERSION: 12,
   VIBRATE: [120, 60, 120],
 };
 
 /** Transparent canvas — black logo mark only (all platforms). */
 const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 };
 const SPLASH_ICON_PADDING_RATIO = 0.035;
+/** Android badge: smaller mark + extra padding avoids a solid white blob in the status bar. */
+const BADGE_SIZE = 96;
+const BADGE_PADDING_RATIO = 0.14;
+/** Reject badges that fill too much of the canvas (likely a solid block, not a silhouette). */
+const BADGE_MAX_FILL_RATIO = 0.72;
 
 async function trimmedLogo() {
   return sharp(source).ensureAlpha().trim({ threshold: 1 });
@@ -75,20 +80,81 @@ async function writeSquareIcon(trimmed, size, filename, paddingRatio = 0.08) {
   await image.toFile(path.join(outDir, filename));
 }
 
-async function writeNotificationBadge(trimmed) {
-  const badgeSource = await (await renderSquareIcon(trimmed, 96, 0.06)).toBuffer();
-  const alpha = await sharp(badgeSource).ensureAlpha().extractChannel('alpha').toBuffer();
-  const badge = await sharp({
-    create: {
-      width: 96,
-      height: 96,
-      channels: 3,
-      background: { r: 0, g: 0, b: 0 },
+/**
+ * Android small-icon / Web Push badge: white silhouette on a fully transparent canvas.
+ * Only the alpha channel is used at render time; RGB is conventionally white.
+ */
+async function renderNotificationBadgeSilhouette(trimmed) {
+  const badgeSource = await (await renderSquareIcon(trimmed, BADGE_SIZE, BADGE_PADDING_RATIO)).toBuffer();
+  const { data, info } = await sharp(badgeSource).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha < 16) {
+      data[i] = 0;
+      data[i + 1] = 0;
+      data[i + 2] = 0;
+      data[i + 3] = 0;
+      continue;
+    }
+    data[i] = 255;
+    data[i + 1] = 255;
+    data[i + 2] = 255;
+  }
+
+  return sharp(data, {
+    raw: {
+      width: info.width,
+      height: info.height,
+      channels: 4,
     },
-  })
-    .joinChannel(alpha)
-    .png({ compressionLevel: 9, adaptiveFiltering: true });
-  await badge.toFile(path.join(outDir, 'notification-badge.png'));
+  }).png({ compressionLevel: 9, adaptiveFiltering: true });
+}
+
+async function validateNotificationBadge(filePath) {
+  const { data, info } = await sharp(filePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+  const corners = [
+    [0, 0],
+    [width - 1, 0],
+    [0, height - 1],
+    [width - 1, height - 1],
+  ];
+
+  for (const [x, y] of corners) {
+    const alpha = data[(y * width + x) * 4 + 3];
+    if (alpha >= 16) {
+      throw new Error(`notification-badge corner (${x},${y}) is not transparent`);
+    }
+  }
+
+  let opaqueCount = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha < 16) continue;
+    opaqueCount += 1;
+    if (data[i] < 247 || data[i + 1] < 247 || data[i + 2] < 247) {
+      throw new Error('notification-badge opaque pixels must be white (Android silhouette convention)');
+    }
+  }
+
+  if (opaqueCount < 80) {
+    throw new Error(`notification-badge has too few opaque pixels (${opaqueCount})`);
+  }
+
+  const fillRatio = opaqueCount / (width * height);
+  if (fillRatio > BADGE_MAX_FILL_RATIO) {
+    throw new Error(
+      `notification-badge fill ratio ${fillRatio.toFixed(2)} exceeds ${BADGE_MAX_FILL_RATIO} — likely a solid block`,
+    );
+  }
+}
+
+async function writeNotificationBadge(trimmed) {
+  const badge = await renderNotificationBadgeSilhouette(trimmed);
+  const outputPath = path.join(outDir, 'notification-badge.png');
+  await badge.toFile(outputPath);
+  await validateNotificationBadge(outputPath);
 }
 
 async function writeNextAppIcons(trimmed) {

@@ -47,8 +47,10 @@ vi.mock('@supabase/supabase-js', () => {
 import { readTableTool } from '@/app/actions/tools/database-tools';
 
 const INVENTORY_PRESET =
-  'id, name, unit, source, order_point, target_stock, stock, order_qty, updated_at';
-const PROFILES_PRESET = 'id, full_name, schedule_order';
+  'id, name, unit, source, order_point, target_stock, stock, order_qty, sort_order, ' +
+  'count_policy, sufficiency_order_qty, updated_at';
+const PROFILES_PRESET =
+  'id, full_name, is_active, schedule_order, dashboard_order, display_order, avatar_url, created_at';
 
 async function runReadTable(input: Record<string, unknown>) {
   // `tool()` preserves the provided execute fn; second arg (ToolCallOptions) is unused here.

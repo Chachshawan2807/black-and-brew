@@ -1,4 +1,4 @@
-// v14
+// v15
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/pwa-badge.js');
@@ -8,6 +8,39 @@ const CACHE_NAME = `blackandbrew-cache-v${CACHE_VERSION}`;
 
 function assetUrl(path) {
   return new URL(path, self.location.origin).href;
+}
+
+/**
+ * Resolve push payload assets: icon = full-color brand mark, badge = alpha silhouette.
+ * Server sends relative paths in payload.assets; SW falls back to PWA_ASSETS constants.
+ */
+function resolvePushAssets(payload) {
+  const iconPath = payload.assets?.icon || BRAND_ICON;
+  const badgePath = payload.assets?.badge || NOTIFICATION_BADGE;
+  return {
+    icon: assetUrl(iconPath),
+    badge: assetUrl(badgePath),
+  };
+}
+
+function buildNotificationOptions(payload, unreadCount, overrides = {}) {
+  const { icon, badge } = resolvePushAssets(payload);
+  return {
+    body: payload.body,
+    icon,
+    badge,
+    tag: payload.tag || 'bb-inventory',
+    silent: false,
+    requireInteraction: false,
+    renotify: true,
+    vibrate: [...VIBRATE],
+    data: {
+      url: payload.url || '/th/inventory',
+      unreadCount,
+      kind: payload.kind,
+    },
+    ...overrides,
+  };
 }
 
 // Add list of files to cache here.
@@ -114,8 +147,6 @@ self.addEventListener('push', (event) => {
 
       if (isDailyReport) {
         const unreadCount = await safeResolveUnreadCount(payload);
-        const brandIcon = assetUrl(BRAND_ICON);
-        const notificationBadge = assetUrl(NOTIFICATION_BADGE);
 
         const windowClients = await self.clients.matchAll({
           type: 'window',
@@ -131,44 +162,22 @@ self.addEventListener('push', (event) => {
           });
         }
 
-        await self.registration.showNotification(payload.title, {
-          body: payload.body,
-          icon: brandIcon,
-          badge: notificationBadge,
+        await self.registration.showNotification(payload.title, buildNotificationOptions(payload, unreadCount, {
           tag: `${payload.tag || 'bb-daily-report'}-${Date.now()}`,
-          silent: false,
           requireInteraction: true,
-          renotify: true,
-          vibrate: [...VIBRATE],
           timestamp: Date.now(),
           data: {
             url: payload.url || '/th/schedule',
             kind: 'daily_report',
             unreadCount,
           },
-        });
+        }));
         await applyHomeScreenBadge(unreadCount);
         return;
       }
 
       const unreadCount = await safeResolveUnreadCount(payload);
-
-      const brandIcon = assetUrl(BRAND_ICON);
-      const notificationBadge = assetUrl(NOTIFICATION_BADGE);
-      const options = {
-        body: payload.body,
-        icon: brandIcon,
-        badge: notificationBadge,
-        tag: payload.tag || 'bb-inventory',
-        silent: false,
-        requireInteraction: false,
-        renotify: true,
-        vibrate: [...VIBRATE],
-        data: {
-          url: payload.url || '/th/inventory',
-          unreadCount,
-        },
-      };
+      const options = buildNotificationOptions(payload, unreadCount);
 
       const windowClients = await self.clients.matchAll({
         type: 'window',

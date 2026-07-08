@@ -25,9 +25,8 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 - Date: July 2026
 - Removed from app and docs:
   1. **graphify** — not used; primary knowledge graph is **codebase-memory-mcp** (see `AGENTS.md`).
-  2. **Inventory recommended target stock** — removed by `supabase/migrations/20260707100000_remove_inventory_recommended_target_stock.sql`.
-  3. **Market Insights** — route/actions/UI removed; tables dropped by `20260622143800_drop_market_insights_tables.sql`.
-  4. **WeatherWidget**, **InventorySummaryCard**, **CommandCenterGrid** — removed from dashboard/command center UI.
+  2. **Inventory recommended target stock** — removed by `supabase/migrations/20260708104230_remove_inventory_recommended_target_stock.sql`.
+  3. **WeatherWidget**, **InventorySummaryCard**, **CommandCenterGrid** — removed from dashboard/command center UI.
 - Impact: Do not document or implement these as active features.
 
 ### DEC-079: Phased Performance Refactor Guardrails (v9.0)

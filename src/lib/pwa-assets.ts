@@ -17,6 +17,21 @@ export const PWA_NOTIFICATION_VIBRATE = [120, 60, 120] as const;
 /** @deprecated Use PWA_BRAND_ICON — kept for existing imports. */
 export const PWA_NOTIFICATION_ICON = PWA_BRAND_ICON;
 
+/** Relative asset paths embedded in Web Push payloads; SW resolves to absolute URLs. */
+export interface PwaNotificationAssetPaths {
+  /** Large color icon — notification body (right side on Android). */
+  icon: string;
+  /** Monochrome alpha-mask badge — status bar / notification header. */
+  badge: string;
+}
+
+export function buildPwaNotificationAssetPaths(): PwaNotificationAssetPaths {
+  return {
+    icon: PWA_BRAND_ICON,
+    badge: PWA_NOTIFICATION_BADGE,
+  };
+}
+
 export function resolvePwaSiteOrigin(): string {
   return (
     process.env.NEXT_PUBLIC_SITE_URL ??

@@ -164,12 +164,6 @@ Client: Service Role Key
 
 ---
 
-### 1.8 Retired: Market Insights
-
-Market Insights was removed from the app. Its route, server actions, shared helpers, and feature-owned tests were deleted. Database tables owned by the feature are dropped by `supabase/migrations/20260622143800_drop_market_insights_tables.sql`.
-
----
-
 ### 1.9 Daily Report (`daily-report-actions.ts`)
 
 | Function | Purpose |

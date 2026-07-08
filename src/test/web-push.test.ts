@@ -78,6 +78,8 @@ describe('web-push', () => {
     expect(payload?.notification.logId).toBe('log-1');
     expect(payload?.notification.entityLabel).toBe('กาแฟ');
     expect(payload?.unreadCount).toBe(1);
+    expect(payload?.assets.icon).toBe('/images/notification-icon.png');
+    expect(payload?.assets.badge).toBe('/images/notification-badge.png');
   });
 
   test('shouldSendPushToSubscription skips origin device session', () => {

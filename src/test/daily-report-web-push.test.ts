@@ -54,6 +54,8 @@ describe('daily-report-web-push', () => {
     expect(payload.notification.logId).toBe(payload.tag);
     expect(payload.notification.metadata.url).toBe('/th/schedule');
     expect(payload.unreadCount).toBe(1);
+    expect(payload.assets.icon).toBe('/images/notification-icon.png');
+    expect(payload.assets.badge).toBe('/images/notification-badge.png');
   });
 
   test('shouldSendDailyReportToSubscription requires dailyScheduleReports and systemNotifications', () => {

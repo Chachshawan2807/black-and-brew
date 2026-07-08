@@ -13,6 +13,7 @@ import {
   WEB_PUSH_SCHEDULE_TTL_SECONDS,
   type PushSubscriptionRow,
 } from '@/lib/web-push';
+import { buildPwaNotificationAssetPaths, type PwaNotificationAssetPaths } from '@/lib/pwa-assets';
 
 export const DEFAULT_DAILY_REPORT_BRANCH_ID = 'main';
 
@@ -26,6 +27,7 @@ export interface DailyReportPushPayload {
   locale: string;
   notification: InventoryNotification;
   unreadCount: number;
+  assets: PwaNotificationAssetPaths;
 }
 
 export function resolveDailyReportBranchId(): string {
@@ -80,6 +82,7 @@ export function buildDailyReportPushPayload(
         url: schedulePath,
       },
     },
+    assets: buildPwaNotificationAssetPaths(),
   };
 }
 

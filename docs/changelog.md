@@ -5,7 +5,7 @@
 ## 2026-07-08 (Doc hygiene + structure sync v9.1)
 
 - Removed obsolete docs: superpowers recommended-target-stock plans/specs, completed `docs/plans/*`, `docs/SUMMARY_REPORT.md`, `VERIFICATION_REPORT.md`.
-- Updated project docs for App Router `_components` colocation, codebase-memory-mcp (not graphify), and retired features (Market Insights, recommended target stock, WeatherWidget).
+- Updated project docs for App Router `_components` colocation, codebase-memory-mcp (not graphify), and retired features (recommended target stock, WeatherWidget).
 - Trimmed `docs/memory.md` and this changelog to reduce agent context noise.
 
 ## 2026-06-22 (Performance phases + doc sync v9.0)

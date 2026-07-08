@@ -84,6 +84,16 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toContain('whitespace-nowrap');
   });
 
+  test('MonthlyRoster sticky name cells use adequate padding for mobile readability', () => {
+    const code = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
+    const stickyCells = [...code.matchAll(/sticky left-0[^"]*bb-sticky-scroll-cell/g)];
+    expect(stickyCells.length).toBeGreaterThanOrEqual(2);
+    for (const match of stickyCells) {
+      expect(match[0]).toMatch(/py-3/);
+      expect(match[0]).not.toMatch(/py-2\b/);
+    }
+  });
+
   test('InventoryHistoryModal uses bidirectional iOS scroll class', () => {
     const code = readFile('app/[locale]/inventory/_components/InventoryHistoryModal.tsx');
     expect(code).toMatch(/bb-smooth-scroll bb-scroll-xy/);

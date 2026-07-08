@@ -85,22 +85,17 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
       <HintTooltip tip={bellTip} side="left">
         <motion.button
           {...sharedProps}
+          aria-expanded={panelOpen}
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
           className={cn(
             stacked
-              ? cn(
-                  'relative bb-transition',
-                  FAB_NOTIFICATION_INNER_CLASS,
-                  panelOpen && 'ring-2 ring-black/15',
-                  className,
-                )
+              ? cn('relative bb-transition', FAB_NOTIFICATION_INNER_CLASS, className)
               : cn(
                   'relative flex items-center justify-center bb-transition',
                   FAB_SIZE_CLASS,
                   FAB_RIGHT_CLASS,
                   'fixed z-[201] rounded-full bg-transparent shadow-none',
-                  panelOpen && 'ring-2 ring-black/15',
                   className,
                 ),
           )}

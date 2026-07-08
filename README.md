@@ -1,6 +1,6 @@
 # BLACK-AND-BREW ERP System
 
-Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา วิเคราะห์ตลาด และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
+Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
 
 > Version: 9.0 | Stack: Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
 

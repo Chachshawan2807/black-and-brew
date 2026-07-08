@@ -134,6 +134,27 @@ describe('notification fab cross-platform sync', () => {
     expect(fabSource).toContain("isAnyOtherOpen('notification')");
   });
 
+  test('notification FAB fades out while its own panel is open', () => {
+    const fabSource = readFileSync(
+      resolve(__dirname, '../components/notifications/InventoryNotificationFAB.tsx'),
+      'utf8',
+    );
+
+    expect(fabSource).toMatch(/panelOpen\s*\|\|/);
+    expect(fabSource).toContain('FabFadePresence');
+  });
+
+  test('notification bell FAB does not render a close icon', () => {
+    expect(bellSource).not.toContain('AnimatePresence');
+    expect(bellSource).not.toContain('key="close"');
+    expect(bellSource).not.toContain('FAB_STACK_INNER_CLASS');
+  });
+
+  test('notification panel dismisses via backdrop tap and header close', () => {
+    expect(panelSource).toMatch(/onClick=\{closePanel\}/);
+    expect(panelSource).toMatch(/aria-label=\{isTh \? 'ปิด' : 'Close'\}/);
+  });
+
   test('notification FAB and panel use generic notification copy', () => {
     expect(panelSource).toContain("'การแจ้งเตือน'");
     expect(panelSource).not.toContain('แจ้งเตือนคลังสินค้า');

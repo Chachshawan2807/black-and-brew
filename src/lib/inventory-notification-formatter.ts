@@ -937,8 +937,6 @@ const GENERIC_MODULE_LABELS: Record<string, { th: string; en: string }> = {
 
   settings: { th: 'ตั้งค่า', en: 'Settings' },
 
-  market_insights: { th: 'ข้อมูลตลาด', en: 'Market insights' },
-
 };
 
 

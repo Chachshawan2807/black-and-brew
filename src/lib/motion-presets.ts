@@ -24,6 +24,21 @@ export const modalContent: MotionPreset = {
   transition: { duration: 0.2, ease: MODAL_EASE },
 };
 
+/** Centered notification panel — slightly longer travel for smooth open/close */
+export const notificationPanel: MotionPreset = {
+  initial: { opacity: 0, scale: 0.94, y: 16 },
+  animate: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.96, y: 10 },
+  transition: { duration: 0.28, ease: MODAL_EASE },
+};
+
+export const notificationOverlay: MotionPreset = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.22, ease: MODAL_EASE },
+};
+
 export const sheetPanel: MotionPreset = {
   initial: { opacity: 0, x: '100%' },
   animate: { opacity: 1, x: 0 },

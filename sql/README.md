@@ -45,15 +45,14 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260618163100_inventory_count_policy.sql` | `inventory_items.count_policy`; exact count vs sufficiency check |
 | `20260620221500_reset_accuracy_history.sql` | Reset count accuracy history after policy recalculation rules changed |
 | `20260621120000_push_subscriptions_daily_report.sql` | Extend `push_subscriptions` with `profile_id` and `branch_id` for daily schedule Web Push broadcasts |
-| `20260622143800_drop_market_insights_tables.sql` | Drop retired Market Insights tables (`market_insight_runs`, `local_events`) |
+| `20260622143800_drop_market_insights_tables.sql` | Drop optional retired feature tables |
 | `20260622144706_drop_retired_ai_inventory_views.sql` | Drop retired AI-prefixed inventory helper views |
-| `20260622155200_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
-| `20260707100000_remove_inventory_recommended_target_stock.sql` | Remove inventory recommended target stock (retired) |
+| `20260622162719_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
+| `20260708095637_reset_accuracy_history.sql` | Reset count accuracy ledger after workflow changes |
+| `20260708104230_remove_inventory_recommended_target_stock.sql` | Remove inventory recommended target stock (retired) |
 
 ## Cleanup audit
 
-2026-06-22 cleanup: Market Insights was retired from the app. `docs/sql/market_insight_runs.sql` was removed, and `20260622143800_drop_market_insights_tables.sql` drops the retired `market_insight_runs` and `local_events` tables when migrations are applied.
-
-2026-07-08 cleanup: Inventory recommended target stock was removed. `20260707100000_remove_inventory_recommended_target_stock.sql` drops related schema after `20260622155200_*` was superseded.
+2026-07-08 cleanup: Inventory recommended target stock was removed. `20260708104230_remove_inventory_recommended_target_stock.sql` drops related schema after `20260622162719_*` was superseded. `20260708095637_reset_accuracy_history.sql` clears the count accuracy ledger.
 
 2026-06-22 cleanup: `20260622144706_drop_retired_ai_inventory_views.sql` removes retired `ai_*` inventory helper views. Staff-managed data remains available through neutral views such as `view_inventory_summary` and actual tables such as `inventory_transactions`.

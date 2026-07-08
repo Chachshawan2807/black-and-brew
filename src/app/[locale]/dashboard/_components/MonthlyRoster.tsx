@@ -192,7 +192,7 @@ export default function MonthlyRoster({
               <table className="w-max min-w-full border-collapse">
                 <thead>
                   <tr className="bg-muted/50">
-                    <th className="sticky left-0 z-30 bg-muted/50 px-2 py-2 text-left border-b border-r border-border text-foreground font-normal whitespace-nowrap w-max shadow-sm bb-sticky-scroll-cell">
+                    <th className="sticky left-0 z-30 bg-muted/50 px-3 py-3 text-left border-b border-r border-border text-foreground font-normal whitespace-nowrap w-max shadow-sm bb-sticky-scroll-cell">
                       พนักงาน
                     </th>
                     {daysInInterval.map((day) => (
@@ -206,7 +206,7 @@ export default function MonthlyRoster({
                 <tbody>
                   {data.profiles.map((profile) => (
                     <tr key={profile.id} className="group hover:bg-muted/30 transition-colors">
-                      <td className="sticky left-0 z-10 bg-card px-2 py-2 border-r border-b border-border text-foreground font-normal text-sm group-hover:bg-muted/30 transition-colors whitespace-nowrap w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] bb-sticky-scroll-cell">
+                      <td className="sticky left-0 z-10 bg-card px-3 py-3 align-middle border-r border-b border-border text-foreground font-normal text-sm group-hover:bg-muted/30 transition-colors whitespace-nowrap w-max shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] bb-sticky-scroll-cell">
                         {profile.full_name}
                       </td>
                       {daysInInterval.map((day) => {

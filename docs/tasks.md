@@ -16,7 +16,7 @@ Notable completed work:
 - [x] Dark theme (`next-themes`, CSS tokens, `bb-pastel-surface`)
 - [x] Feature `_components` colocation (dashboard, inventory, schedule, settings, sales, maintenance)
 - [x] Performance phases: dashboard query consolidation, inventory row containment, dynamic modals
-- [x] Retired: Market Insights module, inventory recommended target stock, graphify
+- [x] Retired: inventory recommended target stock, graphify
 
 See `docs/changelog.md` and git history for dated entries.
 

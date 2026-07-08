@@ -10,6 +10,10 @@ import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notification-types';
 import { shouldNotifyForAction } from '@/lib/notification-preferences';
 import type { DataChangeAction } from '@/lib/data-change-log';
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
+import {
+  buildPwaNotificationAssetPaths,
+  type PwaNotificationAssetPaths,
+} from '@/lib/pwa-assets';
 
 export interface PushSubscriptionRow {
   id: string;
@@ -33,6 +37,8 @@ export interface WebPushPayload {
   notification: InventoryNotification;
   /** Hint for SW badge when IDB is unavailable (accurate count computed on device). */
   unreadCount: number;
+  /** Explicit icon vs badge paths — SW maps icon → color, badge → silhouette. */
+  assets: PwaNotificationAssetPaths;
 }
 
 let vapidConfigured = false;
@@ -180,6 +186,7 @@ export function buildWebPushPayload(row: DataChangeLogRow, locale = 'th'): WebPu
     locale,
     notification,
     unreadCount: 1,
+    assets: buildPwaNotificationAssetPaths(),
   };
 }
 

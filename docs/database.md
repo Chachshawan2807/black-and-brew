@@ -206,10 +206,6 @@ CREATE TABLE IF NOT EXISTS public.device_passkeys (
 
 Stored and read only through service-role server actions in `passkey-actions.ts`. Registration requires an already verified PIN session; authentication verifies the WebAuthn challenge, RP ID, origin, credential counter, and session revocation state before restoring auth cookies.
 
-### Retired Market Insights Tables
-
-`market_insight_runs` and `local_events` belonged only to the retired Market Insights feature. They are removed by `supabase/migrations/20260622143800_drop_market_insights_tables.sql`.
-
 ---
 
 ## 3. RLS Policies
@@ -307,12 +303,13 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260618163100_inventory_count_policy.sql` | Adds `inventory_items.count_policy`; resets old accuracy rows for new scoring rules |
 | `20260620221500_reset_accuracy_history.sql` | Reset count accuracy rows after policy recalculation rules changed |
 | `20260621120000_push_subscriptions_daily_report.sql` | Adds `profile_id` and `branch_id` to `push_subscriptions` for daily schedule Web Push broadcasts |
-| `20260622143800_drop_market_insights_tables.sql` | Drops retired Market Insights tables (`market_insight_runs`, `local_events`) |
+| `20260622143800_drop_market_insights_tables.sql` | Drop optional retired feature tables |
 | `20260622144706_drop_retired_ai_inventory_views.sql` | Drops retired AI-prefixed inventory helper views |
-| `20260622155200_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
-| `20260707100000_remove_inventory_recommended_target_stock.sql` | Removes inventory recommended target stock (retired feature) |
+| `20260622162719_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
+| `20260708095637_reset_accuracy_history.sql` | Reset count accuracy ledger (inventory verification workflow) |
+| `20260708104230_remove_inventory_recommended_target_stock.sql` | Removes inventory recommended target stock (retired feature) |
 
-Retired: `local_events` / `market_insight_runs` (see `20260622143800_drop_market_insights_tables.sql`). Do not reintroduce recommended target stock columns or UI.
+Retired: inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 
 ### Historical (root + `sql/`)
 
