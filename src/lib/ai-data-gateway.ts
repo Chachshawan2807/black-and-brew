@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
 import type { FormattedDailyShifts } from '@/lib/schedule/format-daily-shifts';
 import { isItemNeedingReorder } from '@/lib/inventory-stock';
+import { requirePrivilegedSession } from '@/lib/policies/server-gate';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AI DATA GATEWAY (AI-GATEWAY-P3)
@@ -224,6 +225,20 @@ export async function fetchTablePreset(
   filters?: Record<string, unknown>,
   limit?: number,
 ): Promise<TablePresetResult> {
+  const session = await requirePrivilegedSession();
+  if (!session.ok) {
+    return {
+      ok: false,
+      rows: [],
+      effectiveLimit: 0,
+      error: {
+        message: session.error,
+        details: null,
+        hint: null,
+      },
+    };
+  }
+
   if (!isAiReadableTable(tableName)) {
     return {
       ok: false,

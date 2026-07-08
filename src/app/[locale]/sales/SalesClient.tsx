@@ -25,6 +25,7 @@ import {
   uploadSalesFiles,
   fetchSalesHistory,
   getSalesMetrics,
+  getSalesProductBreakdown,
   deleteSalesUpload,
   type SalesMetrics,
   getAllProductCategories,
@@ -268,7 +269,7 @@ export default function SalesClient({
   });
 
   // Load data — reads cache first; fetches from Supabase when stale or missing
-  const loadData = useRef(async (forceRefresh = false) => {
+  const loadData = useRef(async (forceRefresh = false, options?: { skipMetrics?: boolean }) => {
     setIsLoading(true);
     try {
       // --- salesMetrics cache ---
@@ -309,7 +310,8 @@ export default function SalesClient({
       }
 
       const historyPromise = historyStale ? fetchSalesHistory() : Promise.resolve(null);
-      const metricsPromise = metricsStale ? getSalesMetrics() : Promise.resolve(null);
+      const metricsPromise =
+        options?.skipMetrics || !metricsStale ? Promise.resolve(null) : getSalesMetrics();
       const categoriesPromise = categoriesStale ? getAllProductCategories() : Promise.resolve(null);
 
       const [historyData, metricsData, categoriesResult] = await Promise.all([
@@ -489,12 +491,22 @@ export default function SalesClient({
   useEffect(() => {
     if (initialMetrics) {
       writeCache(SALES_METRICS_KEY, initialMetrics, 'server');
+      if (initialMetrics.allProducts.length === 0) {
+        const schedule =
+          window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1));
+        schedule(() => {
+          void getSalesProductBreakdown().then((products) => {
+            if (products.length === 0) return;
+            setBaseMetrics((prev) => (prev ? { ...prev, allProducts: products } : prev));
+          });
+        });
+      }
     }
     if (initialCategories.length > 0) {
       writeCache(PRODUCT_CATEGORIES_SERVER_KEY, initialCategories, 'server');
       loadCategories.current(initialCategories);
     }
-    loadData.current();
+    loadData.current(false, { skipMetrics: Boolean(initialMetrics) });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: seed server cache once; refs handle subsequent loads
   }, []);
 
@@ -590,7 +602,7 @@ export default function SalesClient({
         <div className="mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className={`p-3.5 rounded-2xl shrink-0 shadow-sm ${SALES_SECTION_COLORS.headerIcon}`}>
+                <div className={`p-3.5 rounded-2xl shrink-0 bb-shadow-sm ${SALES_SECTION_COLORS.headerIcon}`}>
                   <TrendingUp className="w-6 h-6" strokeWidth={1.5} />
                 </div>
                 <div>
@@ -602,7 +614,7 @@ export default function SalesClient({
                 <button
                   onClick={() => setShowManageCategories(true)}
                   disabled={isReadOnly}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <Edit3 className="w-4 h-4" />
                   <span className="text-sm">จัดการหมวดหมู่</span>
@@ -610,7 +622,7 @@ export default function SalesClient({
                 <button
                   onClick={handleRefresh}
                   disabled={isRefreshing}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed bb-shadow-sm"
                 >
                   <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                   <span className="text-sm">รีเฟรช</span>
@@ -659,7 +671,7 @@ export default function SalesClient({
                     animate={modalContent.animate}
                     exit={modalContent.exit}
                     transition={modalContent.transition}
-                    className="relative bg-card rounded-3xl border border-border shadow-xl max-w-lg w-full p-6"
+                    className="relative bg-card rounded-3xl border border-border bb-shadow-xl max-w-lg w-full p-6"
                   >
                     <HintTooltip tip="ปิด">
                       <button
@@ -735,7 +747,7 @@ export default function SalesClient({
                     animate={modalContent.animate}
                     exit={modalContent.exit}
                     transition={modalContent.transition}
-                    className="relative bg-card rounded-3xl border border-border shadow-xl max-w-md w-full p-6"
+                    className="relative bg-card rounded-3xl border border-border bb-shadow-xl max-w-md w-full p-6"
                   >
                     <HintTooltip tip="ปิด">
                       <button
@@ -792,7 +804,7 @@ export default function SalesClient({
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`mb-6 rounded-2xl shadow-md overflow-hidden ${SALES_SECTION_COLORS.upload}`}
+          className={`mb-6 rounded-2xl bb-shadow-md overflow-hidden ${SALES_SECTION_COLORS.upload}`}
         >
           {/* Upload area */}
           <div className={`p-5 ${isReadOnly ? 'pointer-events-none opacity-60' : ''}`}>
@@ -845,7 +857,7 @@ export default function SalesClient({
               <button
                 type="submit"
                 disabled={isReadOnly || isUploading || selectedFiles.length === 0}
-                className="shrink-0 bg-[#000000] text-white px-6 py-3 rounded-xl hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2 shadow-sm"
+                className="shrink-0 bg-[#000000] text-white px-6 py-3 rounded-xl hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2 bb-shadow-sm"
               >
                 {isUploading ? (
                   <>
@@ -967,7 +979,7 @@ export default function SalesClient({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0 }}
-                className={`rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 ${SALES_SECTION_COLORS.revenue}`}
+                className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md transition-all duration-300 ${SALES_SECTION_COLORS.revenue}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-11 h-11 rounded-xl bg-white/50 border border-[#c3e6cb] flex items-center justify-center">
@@ -983,7 +995,7 @@ export default function SalesClient({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className={`rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 ${SALES_SECTION_COLORS.quantity}`}
+                className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md transition-all duration-300 ${SALES_SECTION_COLORS.quantity}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-11 h-11 rounded-xl bg-white/50 border border-[#ffeeba] flex items-center justify-center">
@@ -999,7 +1011,7 @@ export default function SalesClient({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className={`rounded-2xl shadow-md p-4 hover:shadow-lg transition-all duration-300 ${SALES_SECTION_COLORS.menuItems}`}
+                className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md transition-all duration-300 ${SALES_SECTION_COLORS.menuItems}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-11 h-11 rounded-xl bg-white/50 border border-[#f5c6cb] flex items-center justify-center">
@@ -1017,7 +1029,7 @@ export default function SalesClient({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className={`rounded-2xl shadow-lg p-5 ${SALES_SECTION_COLORS.categories}`}
+                className={`rounded-2xl bb-shadow-lg p-5 ${SALES_SECTION_COLORS.categories}`}
               >
                 <div className="mb-4">
                   <h3 className="text-lg">ยอดขายแยกตามหมวดหมู่</h3>
@@ -1027,7 +1039,7 @@ export default function SalesClient({
                   {metrics.categoryMetrics.map((category, index) => {
                     const cardColor = SALES_CATEGORY_CARD_COLORS[index % SALES_CATEGORY_CARD_COLORS.length];
                     return (
-                    <div key={index} className={`p-4 rounded-xl border hover:shadow-md transition-all duration-300 ${cardColor}`}>
+                    <div key={index} className={`p-4 rounded-xl border hover:bb-shadow-hover-md transition-all duration-300 ${cardColor}`}>
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm">{category.category}</span>
                         <span className="text-[10px] text-black bg-white/50 border border-black/10 px-1.5 py-0.5 rounded-full">{category.revenuePercentage.toFixed(1)}%</span>
@@ -1052,7 +1064,7 @@ export default function SalesClient({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className={`rounded-2xl shadow-md p-5 ${SALES_SECTION_COLORS.topProducts}`}
+                className={`rounded-2xl bb-shadow-md p-5 ${SALES_SECTION_COLORS.topProducts}`}
               >
                 <div className="flex items-start gap-3 mb-4">
                   <div className="p-2.5 rounded-xl bg-card border border-border shrink-0">
@@ -1081,7 +1093,7 @@ export default function SalesClient({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className={`rounded-2xl shadow-md p-5 ${SALES_SECTION_COLORS.topProducts}`}
+                className={`rounded-2xl bb-shadow-md p-5 ${SALES_SECTION_COLORS.topProducts}`}
               >
                 <div className="flex items-start gap-3 mb-4">
                   <div className="p-2.5 rounded-xl bg-card border border-border shrink-0">
@@ -1158,7 +1170,7 @@ export default function SalesClient({
                                       autoFocus
                                       list={`category-list-top-${product.productName}`}
                                       aria-label={`Edit category for ${product.productName}`}
-                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed bb-shadow-sm"
                                       placeholder="ป้อนชื่อหมวดหมู่"
                                       disabled={isReadOnly || updatingProduct === product.productName}
                                     />
@@ -1256,7 +1268,7 @@ export default function SalesClient({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className={`rounded-2xl shadow-lg p-5 ${SALES_SECTION_COLORS.table}`}
+                className={`rounded-2xl bb-shadow-lg p-5 ${SALES_SECTION_COLORS.table}`}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
                   <div>
@@ -1271,7 +1283,7 @@ export default function SalesClient({
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         aria-label="Filter by product category"
-                        className="appearance-none w-full sm:w-auto px-3 pr-8 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border hover:border-border shadow-sm"
+                        className="appearance-none w-full sm:w-auto px-3 pr-8 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border hover:border-border bb-shadow-sm"
                       >
                         <option value="all">ทุกหมวดหมู่</option>
                         {categories.map((cat, idx) => (
@@ -1378,7 +1390,7 @@ export default function SalesClient({
                                       autoFocus
                                       list={`category-list-${product.productName}`}
                                       aria-label={`Edit category for ${product.productName}`}
-                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed bb-shadow-sm"
                                       placeholder="ป้อนชื่อหมวดหมู่"
                                       disabled={isReadOnly || updatingProduct === product.productName}
                                     />
@@ -1474,7 +1486,7 @@ export default function SalesClient({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className={`rounded-3xl shadow-sm p-16 text-center ${SALES_SECTION_COLORS.empty}`}
+            className={`rounded-3xl bb-shadow-sm p-16 text-center ${SALES_SECTION_COLORS.empty}`}
           >
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/60 border border-[#ffeeba] flex items-center justify-center">
               <BarChart3 className="w-10 h-10 text-muted-foreground/70" />

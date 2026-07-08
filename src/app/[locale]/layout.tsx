@@ -3,15 +3,13 @@ import { setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
 import SidebarLayout from '@/components/sidebar/SidebarLayout';
 import I18nProvider from '@/components/providers/I18nProvider';
-import AIChatOverlay from '@/components/ai/AIChatWrapper';
-import InventoryQuickActionWrapper from './inventory/_components/InventoryQuickActionWrapper';
-import PinGateway from '@/components/auth/PinGateway';
+import { FabStackHideToggle } from '@/components/floating/FabStackHideToggle';
+import { DeferredOverlays } from '@/components/shell/DeferredOverlays';
 import PwaRegister from '@/components/PwaRegister';
+import PinGateway from '@/components/auth/PinGateway';
 import { NotificationProvider } from '@/components/notifications/NotificationProvider';
 import { PushSubscriptionManager } from '@/components/notifications/PushSubscriptionManager';
-import { InventoryNotificationFAB } from '@/components/notifications/InventoryNotificationFAB';
 import { FloatingOverlayProvider } from '@/components/floating/FloatingOverlayContext';
-import { FabStackHideToggle } from '@/components/floating/FabStackHideToggle';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { AppTooltipProvider } from '@/components/providers/AppTooltipProvider';
 import { PWA_APPLE_TOUCH_ICON, PWA_FAVICON } from '@/lib/pwa-assets';
@@ -57,7 +55,6 @@ export default async function RootLayout({
 }) {
   const { locale } = await params;
 
-  // Lock Locale for Static Rendering
   setRequestLocale(locale);
 
   return (
@@ -86,9 +83,7 @@ export default async function RootLayout({
               </I18nProvider>
             </Suspense>
           </SidebarLayout>
-          <InventoryQuickActionWrapper />
-          <InventoryNotificationFAB />
-          <AIChatOverlay />
+          <DeferredOverlays />
           <FabStackHideToggle />
           </FloatingOverlayProvider>
           </NotificationProvider>

@@ -1,22 +1,17 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-import { assertWritableSession } from '@/app/actions/auth';
-import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
+import { requireMutationAccess } from '@/lib/policies/server-gate';
+import { requireServiceRoleKey } from '@/lib/security/server-auth';
 
 /**
  * Re-sequences sort_order for all inventory_items (1-based) using current DB order.
  * CSV dependency removed — stock is never overwritten from external files.
  */
 export async function runInventoryMigration() {
-  const auth = await ensureServerSession();
-  if (!auth.ok) {
-    throw new Error(auth.error);
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) {
-    throw new Error(writable.error);
+  const authError = await requireMutationAccess();
+  if (authError) {
+    throw new Error(authError);
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

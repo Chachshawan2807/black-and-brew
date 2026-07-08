@@ -1,6 +1,6 @@
 import { expect, test, describe, vi, beforeEach } from 'vitest';
 import { recordTransaction } from '@/app/actions/inventory-actions';
-import { READ_ONLY_DENY_MSG } from '@/lib/auth-constants';
+import { READ_ONLY_DENY_MSG } from '@/lib/policies/messages';
 
 const mockGet = vi.fn();
 

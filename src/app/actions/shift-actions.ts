@@ -3,9 +3,8 @@
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
-import { ensureServerSession } from '@/lib/security/server-auth';
+import { requireMutationAccess } from '@/lib/policies/server-gate';
 import type { Json } from '@/lib/database.types';
 
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
@@ -17,11 +16,7 @@ const supabaseAdmin = createClient(supabaseUrl, requireServiceRoleKey());
 const shiftIdSchema = z.string().uuid();
 
 async function ensureShiftMutationAuthorized(): Promise<string | null> {
-  const auth = await ensureServerSession();
-  if (!auth.ok) return auth.error;
-  const writable = await assertWritableSession();
-  if (!writable.ok) return writable.error;
-  return null;
+  return requireMutationAccess();
 }
 
 export async function deleteShift(id: string) {

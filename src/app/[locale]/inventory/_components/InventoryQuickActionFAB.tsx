@@ -199,15 +199,16 @@ export default function InventoryQuickActionFAB() {
     if (!element) return;
     try {
       setIsExportingPO(true);
-      const { captureElementAsPng, downloadDataUrl } = await import('@/lib/capture-element-png');
-      const dataUrl = await captureElementAsPng(element, {
+      const { captureElementAsPng, downloadPngBlob, preloadCaptureLibraries } = await import('@/lib/capture-element-png');
+      preloadCaptureLibraries();
+      const blob = await captureElementAsPng(element, {
         backgroundColor: '#fff3dd',
         preserveOverflow: true,
         filter: (node) => (node as HTMLElement)?.id !== 'po-action-buttons',
       });
       const channelSuffix = selectedChannels.includes('all') ? 'All' : selectedChannels.join('-');
-      downloadDataUrl(
-        dataUrl,
+      downloadPngBlob(
+        blob,
         `PurchaseOrders-${channelSuffix}-${new Date().toISOString().split('T')[0]}.png`,
       );
     } catch (err) {
@@ -291,7 +292,7 @@ export default function InventoryQuickActionFAB() {
               style={quickPanelStyle}
             >
               {isLoadingItems && !hasLoadedItems ? (
-                <div className="bg-card rounded-3xl border border-border shadow-2xl p-8 flex flex-col items-center justify-center gap-3">
+                <div className="bg-card rounded-3xl border border-border bb-shadow-xl p-8 flex flex-col items-center justify-center gap-3">
                   <Loader2 className="w-6 h-6 animate-spin text-foreground" strokeWidth={1.5} />
                   <span className="text-sm font-normal text-muted-foreground">กำลังโหลดข้อมูลคลังสินค้า...</span>
                 </div>
@@ -327,7 +328,7 @@ export default function InventoryQuickActionFAB() {
                   onRemoveBulkItem={quickAction.removeBulkItem}
                   onBulkLineQtyChange={quickAction.setBulkLineQty}
                   onClearBulkQueue={quickAction.clearBulkQueue}
-                  className="shadow-2xl"
+                  className="bb-shadow-xl"
                 />
               )}
             </motion.div>

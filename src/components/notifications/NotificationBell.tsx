@@ -62,7 +62,7 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
           aria-hidden
           className={cn(
             'absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums',
-            'bg-red-500 text-white border border-red-600/80 shadow-sm',
+            'bg-red-500 text-white border border-red-600/80 bb-shadow-sm',
             pulse && 'animate-pulse ring-2 ring-red-400/60',
           )}
         >

@@ -3,6 +3,7 @@
 import { usePathname, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
+import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
 import { GripVertical, LogOut, Settings2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -74,7 +75,7 @@ function StaticMenuItem({
   }
 
   return (
-    <li className={cn("w-full flex items-center", isOverlay && "opacity-80 shadow-lg rounded-lg bg-card")}>
+    <li className={cn("w-full flex items-center", isOverlay && "opacity-80 bb-shadow-md rounded-lg bg-card")}>
       <TooltipProvider disableHoverableContent>
         <Tooltip delayDuration={100}>
           <TooltipTrigger asChild>
@@ -86,14 +87,14 @@ function StaticMenuItem({
               )}
               asChild
             >
-              <Link href={href} onClick={onLinkClick}>
+              <NavPreloadLink href={href} onClick={onLinkClick}>
                 <span className={cn("text-foreground", isOpen === false ? '' : 'mr-4')}>
                   <Icon size={18} strokeWidth={1.75} />
                 </span>
                 <p className={sidebarLabelClass(isOpen, 'text-foreground')}>
                   {label}
                 </p>
-              </Link>
+              </NavPreloadLink>
             </Button>
           </TooltipTrigger>
           {isOpen === false && <TooltipContent side="right">{label}</TooltipContent>}
@@ -167,14 +168,14 @@ function SortableMenuItem({
               className="h-10 font-normal antialiased flex-1 justify-start"
               asChild
             >
-              <Link href={href} onClick={onLinkClick}>
+              <NavPreloadLink href={href} onClick={onLinkClick}>
                 <span className="mr-4 text-foreground">
                   <Icon size={18} strokeWidth={1.75} />
                 </span>
                 <p className={sidebarLabelClass(isOpen, 'max-w-[170px] text-foreground')}>
                   {label}
                 </p>
-              </Link>
+              </NavPreloadLink>
             </Button>
           </TooltipTrigger>
         </Tooltip>
@@ -359,14 +360,14 @@ export default function Menu({ isOpen }: MenuProps) {
                 )}
                 asChild
               >
-                <Link href={`/${locale}/settings`} onClick={handleLinkClick}>
+                <NavPreloadLink href={`/${locale}/settings`} onClick={handleLinkClick}>
                   <span className={cn(isOpen === false ? '' : 'mr-4')}>
                     <Settings2 size={18} strokeWidth={1.75} />
                   </span>
                   <p className={sidebarLabelClass(isOpen, 'text-foreground')}>
                     {locale === 'th' ? 'ตั้งค่า' : 'Settings'}
                   </p>
-                </Link>
+                </NavPreloadLink>
               </Button>
             </TooltipTrigger>
             {isOpen === false && (

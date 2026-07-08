@@ -258,7 +258,7 @@ export function ClickableDatePicker({
           : {}
       }
       className={`
-        bg-card rounded-3xl border border-border shadow-2xl p-5
+        bg-card rounded-3xl border border-border bb-shadow-xl p-5
         animate-in fade-in zoom-in-95 duration-200
         ${!coords
           ? // Mobile: fixed center ผ่าน CSS class ล้วนๆ ไม่พึ่ง JS coordinates
@@ -326,7 +326,7 @@ export function ClickableDatePicker({
                 flex items-center justify-center transition-all cursor-pointer
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20
                 ${isSelected
-                  ? 'bg-foreground text-background shadow-md'
+                  ? 'bg-foreground text-background bb-shadow-md'
                   : isCurrent
                   ? 'bb-pastel-surface bg-[#ffda66] text-[#000000]'
                   : 'hover:bg-muted text-foreground'
@@ -356,7 +356,7 @@ export function ClickableDatePicker({
         className={`flex items-center justify-center gap-1.5 h-11 px-4 text-xs font-normal
           text-foreground bg-card hover:bg-muted/50 rounded-3xl border border-border
           transition-all duration-200 active:scale-95 uppercase
-          tracking-wide shadow-sm w-full
+          tracking-wide bb-shadow-sm w-full
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20
           ${disabled ? 'opacity-60 cursor-not-allowed hover:bg-card' : 'cursor-pointer'}`}
       >

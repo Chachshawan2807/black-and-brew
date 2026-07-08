@@ -2,21 +2,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockInsert = vi.fn();
 const mockUpdate = vi.fn();
-const mockMaybeSingle = vi.fn();
 const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
+const mockIn = vi.fn();
 
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: vi.fn(() => ({
+vi.mock('@/lib/supabase-server', () => ({
+  getSupabaseAdmin: vi.fn(() => ({
     from: vi.fn((table: string) => {
       if (table !== 'holidays') {
         throw new Error(`Unexpected table: ${table}`);
       }
       return {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnValue({
+          in: mockIn,
+        }),
         insert: mockInsert,
         update: mockUpdate.mockReturnValue({ eq: mockUpdateEq }),
-        maybeSingle: mockMaybeSingle,
       };
     }),
   })),
@@ -40,7 +40,7 @@ describe('fetchAndPersistHolidays', () => {
     mockInsert.mockResolvedValue({ error: null });
     mockUpdate.mockReturnValue({ eq: mockUpdateEq });
     mockUpdateEq.mockResolvedValue({ error: null });
-    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockIn.mockResolvedValue({ data: [], error: null });
   });
 
   afterEach(() => {
@@ -72,12 +72,14 @@ describe('fetchAndPersistHolidays', () => {
 
     expect(result).toEqual({ success: true, count: 1 });
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('th.th%23holiday%40group.v.calendar.google.com')
+      expect.stringContaining('th.th%23holiday%40group.v.calendar.google.com'),
     );
-    expect(mockInsert).toHaveBeenCalledWith({
-      date: '2026-07-28',
-      name: 'วันเฉลิมพระชนมพรรษา',
-    });
+    expect(mockInsert).toHaveBeenCalledWith([
+      {
+        date: '2026-07-28',
+        name: 'วันเฉลิมพระชนมพรรษา',
+      },
+    ]);
   });
 
   it('merges multiple holidays on the same date', async () => {
@@ -99,10 +101,12 @@ describe('fetchAndPersistHolidays', () => {
     const result = await fetchAndPersistHolidays('2026-07-27', '2026-08-02');
 
     expect(result).toEqual({ success: true, count: 1 });
-    expect(mockInsert).toHaveBeenCalledWith({
-      date: '2026-07-28',
-      name: 'วันเฉลิมพระชนมพรรษา สมเด็จพระเจ้าอยู่หัวมหาวชิราลงกรณ บดินทรเทพยวรางกูร / วันอาสาฬหบูชา',
-    });
+    expect(mockInsert).toHaveBeenCalledWith([
+      {
+        date: '2026-07-28',
+        name: 'วันเฉลิมพระชนมพรรษา สมเด็จพระเจ้าอยู่หัวมหาวชิราลงกรณ บดินทรเทพยวรางกูร / วันอาสาฬหบูชา',
+      },
+    ]);
   });
 
   it('updates an existing holiday when merged name changes', async () => {
@@ -117,8 +121,8 @@ describe('fetchAndPersistHolidays', () => {
         ],
       }),
     });
-    mockMaybeSingle.mockResolvedValue({
-      data: { id: 'holiday-1', name: 'วันอาสาฬหบูชา' },
+    mockIn.mockResolvedValue({
+      data: [{ id: 'holiday-1', date: '2026-07-28', name: 'วันอาสาฬหบูชา' }],
       error: null,
     });
 
@@ -137,8 +141,8 @@ describe('fetchAndPersistHolidays', () => {
         items: [{ summary: 'วันอาสาฬหบูชา', start: { date: '2026-07-28' } }],
       }),
     });
-    mockMaybeSingle.mockResolvedValue({
-      data: { id: 'holiday-1', name: 'วันอาสาฬหบูชา' },
+    mockIn.mockResolvedValue({
+      data: [{ id: 'holiday-1', date: '2026-07-28', name: 'วันอาสาฬหบูชา' }],
       error: null,
     });
 

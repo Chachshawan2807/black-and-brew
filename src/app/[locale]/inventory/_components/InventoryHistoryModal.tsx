@@ -95,7 +95,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
       <HintTooltip tip="ปรับจำนวน">
         <span
 
-          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
+          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all bb-shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
 
           aria-label="ปรับจำนวน"
 
@@ -114,7 +114,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
     return (
       <HintTooltip tip="เพิ่มรายการ">
         <span
-          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
+          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all bb-shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
           aria-label="เพิ่มรายการ"
         >
           <Plus className="w-4.5 h-4.5" />
@@ -127,7 +127,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
     return (
       <HintTooltip tip="ลบรายการ">
         <span
-          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]"
+          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all bb-shadow-sm border bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]"
           aria-label="ลบรายการ"
         >
           <Trash2 className="w-4.5 h-4.5" />
@@ -147,7 +147,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
         className={cn(
 
-          'w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all shadow-sm border',
+          'w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all bb-shadow-sm border',
 
           isIn ? 'bb-pastel-surface bg-[#d4edda] text-[#000000] border-[#c3e6cb]' : 'bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]',
 
@@ -226,7 +226,7 @@ export function InventoryHistoryModal({
 
         transition={modalContent.transition}
 
-        className="relative bg-card rounded-t-3xl md:rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full md:w-fit md:max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-hidden flex flex-col border border-border min-h-0 pb-[env(safe-area-inset-bottom)] transition-[max-height] duration-200"
+        className="relative bg-card rounded-t-3xl md:rounded-3xl bb-shadow-xl w-full md:w-fit md:max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-hidden flex flex-col border border-border min-h-0 pb-[env(safe-area-inset-bottom)] transition-[max-height] duration-200"
 
         style={modalContentStyle}
 
@@ -311,7 +311,7 @@ export function InventoryHistoryModal({
 
         <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto bb-smooth-scroll bb-scroll-xy px-4 py-4 md:px-6 md:py-4 bg-background scrollbar-thin">
 
-          <div className="inline-block w-max min-w-full bg-background rounded-[2rem] border border-border shadow-sm">
+          <div className="inline-block w-max min-w-full bg-background rounded-[2rem] border border-border bb-shadow-sm">
 
             <table className="w-max text-left border-collapse table-auto">
 

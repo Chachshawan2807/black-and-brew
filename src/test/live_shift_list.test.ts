@@ -19,7 +19,11 @@ describe('LiveShiftList realtime strategy', () => {
     const source = await fs.readFile(filePath, 'utf8');
 
     expect(source).toContain('refreshShiftsForRange');
-    expect(source).toContain('shifts-realtime-live-shift-list');
+    expect(source).toContain('useShiftRealtime');
     expect(source).not.toMatch(/router\.refresh\(\)/);
+
+    const hookPath = path.join(process.cwd(), 'src/hooks/use-shift-realtime.ts');
+    const hookSource = await fs.readFile(hookPath, 'utf8');
+    expect(hookSource).toContain('bb-shifts-shared');
   });
 });

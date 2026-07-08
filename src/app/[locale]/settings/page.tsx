@@ -17,7 +17,7 @@ export default async function SettingsPage({
     <div className="animate-page-enter p-4 md:p-8 max-w-3xl mx-auto w-full text-[14px] leading-relaxed">
       <header className="mb-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
             <Settings2 size={18} strokeWidth={1.75} className="text-foreground/70" />
           </div>
           <div>

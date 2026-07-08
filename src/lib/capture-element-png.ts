@@ -10,6 +10,25 @@ export type CaptureElementPngOptions = {
   preserveOverflow?: boolean;
 };
 
+type HtmlToImageModule = typeof import('html-to-image');
+
+let htmlToImageModule: HtmlToImageModule | null = null;
+let htmlToImageLoad: Promise<HtmlToImageModule> | null = null;
+
+/** Warm html-to-image while the user hovers/focuses export controls. */
+export function preloadCaptureLibraries(): void {
+  void loadHtmlToImage();
+}
+
+function loadHtmlToImage(): Promise<HtmlToImageModule> {
+  if (htmlToImageModule) return Promise.resolve(htmlToImageModule);
+  htmlToImageLoad ??= import('html-to-image').then((module) => {
+    htmlToImageModule = module;
+    return module;
+  });
+  return htmlToImageLoad;
+}
+
 function resolvePixelRatio(width: number, height: number, requested = 2): number {
   let ratio = requested;
   while (width * height * ratio * ratio > MAX_CANVAS_PIXELS && ratio > 1) {
@@ -20,23 +39,36 @@ function resolvePixelRatio(width: number, height: number, requested = 2): number
 
 type ShadowRestore = { boxShadow: string; filter: string };
 
+const SHADOW_CLASS_HINT =
+  /(?:^|\s)(?:shadow(?:-\[|-sm|-md|-lg|-xl|-2xl|-inner|-none)?|drop-shadow|backdrop-blur)/;
+
+function nodeMayHaveShadowOrFilter(node: HTMLElement): boolean {
+  const className = node.className;
+  if (typeof className === 'string' && SHADOW_CLASS_HINT.test(className)) return true;
+  return node.style.boxShadow !== '' || node.style.filter !== '';
+}
+
 /** Inline overrides so html-to-image clones flat surfaces (iOS Safari keeps class shadows otherwise). */
 function flattenShadowsForCapture(root: HTMLElement): () => void {
   const restores = new Map<HTMLElement, ShadowRestore>();
-  const nodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
 
-  for (const node of nodes) {
-    const computed = window.getComputedStyle(node);
-    const hasShadow = computed.boxShadow !== 'none';
-    const hasFilter = computed.filter !== 'none';
-    if (!hasShadow && !hasFilter) continue;
-
-    restores.set(node, {
-      boxShadow: node.style.boxShadow,
-      filter: node.style.filter,
-    });
-    if (hasShadow) node.style.boxShadow = 'none';
-    if (hasFilter) node.style.filter = 'none';
+  let current = walker.currentNode as HTMLElement | null;
+  while (current) {
+    if (nodeMayHaveShadowOrFilter(current)) {
+      const computed = window.getComputedStyle(current);
+      const hasShadow = computed.boxShadow !== 'none';
+      const hasFilter = computed.filter !== 'none';
+      if (hasShadow || hasFilter) {
+        restores.set(current, {
+          boxShadow: current.style.boxShadow,
+          filter: current.style.filter,
+        });
+        if (hasShadow) current.style.boxShadow = 'none';
+        if (hasFilter) current.style.filter = 'none';
+      }
+    }
+    current = walker.nextNode() as HTMLElement | null;
   }
 
   return () => {
@@ -54,12 +86,12 @@ function flattenShadowsForCapture(root: HTMLElement): () => void {
 export async function captureElementAsPng(
   element: HTMLElement,
   options: CaptureElementPngOptions = {},
-): Promise<string> {
+): Promise<Blob> {
   const fullWidth = element.scrollWidth;
   const fullHeight = element.scrollHeight;
   const pixelRatio = resolvePixelRatio(fullWidth, fullHeight, options.pixelRatio ?? 2);
 
-  const stickyNodes = element.querySelectorAll<HTMLElement>('[class*="sticky"]');
+  const stickyNodes = element.querySelectorAll<HTMLElement>('.sticky');
   const previousPosition = new Map<HTMLElement, string>();
   stickyNodes.forEach((node) => {
     previousPosition.set(node, node.style.position);
@@ -67,16 +99,16 @@ export async function captureElementAsPng(
   });
 
   const restoreShadows = flattenShadowsForCapture(element);
+  const { toBlob } = await loadHtmlToImage();
 
   try {
-    const { toPng } = await import('html-to-image');
-    return await toPng(element, {
+    const blob = await toBlob(element, {
       quality: 1.0,
       pixelRatio,
       backgroundColor: options.backgroundColor ?? '#ffffff',
       width: fullWidth,
       height: fullHeight,
-      cacheBust: true,
+      cacheBust: false,
       skipFonts: options.skipFonts ?? true,
       style: {
         margin: '0',
@@ -88,6 +120,12 @@ export async function captureElementAsPng(
       },
       filter: options.filter,
     });
+
+    if (!blob) {
+      throw new Error('PNG capture returned empty blob');
+    }
+
+    return blob;
   } finally {
     restoreShadows();
     stickyNodes.forEach((node) => {
@@ -97,6 +135,19 @@ export async function captureElementAsPng(
   }
 }
 
+export function downloadPngBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = url;
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/** @deprecated Prefer downloadPngBlob — base64 encoding is slower for large captures. */
 export function downloadDataUrl(dataUrl: string, filename: string): void {
   const link = document.createElement('a');
   link.download = filename;

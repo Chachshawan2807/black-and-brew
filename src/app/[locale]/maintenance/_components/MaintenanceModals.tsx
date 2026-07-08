@@ -79,7 +79,7 @@ export default function MaintenanceModals({
               animate={modalContent.animate}
               exit={modalContent.exit}
               transition={modalContent.transition}
-              className="relative bg-card w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden border border-border"
+              className="relative bg-card w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl bb-shadow-xl overflow-hidden border border-border"
             >
               <HintTooltip tip="ปิด">
                 <button
@@ -216,7 +216,7 @@ export default function MaintenanceModals({
                           type="button"
                           onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
                           disabled={isReadOnly}
-                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'กำลังดำเนินการ' ? 'bb-pastel-surface bg-[#f0f9ff] text-[#000000] border border-[#e0f2fe] shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'}`}
+                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'กำลังดำเนินการ' ? 'bb-pastel-surface bg-[#f0f9ff] text-[#000000] border border-[#e0f2fe] bb-shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'}`}
                         >
                           <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
                           กำลังดำเนินการ
@@ -225,7 +225,7 @@ export default function MaintenanceModals({
                           type="button"
                           onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
                           disabled={isReadOnly}
-                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'เสร็จสมบูรณ์' ? 'bb-pastel-surface bg-[#f0fdf4] text-[#000000] border border-[#dcfce7] shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'}`}
+                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'เสร็จสมบูรณ์' ? 'bb-pastel-surface bg-[#f0fdf4] text-[#000000] border border-[#dcfce7] bb-shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'}`}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                           เสร็จสิ้น
@@ -257,7 +257,7 @@ export default function MaintenanceModals({
                 <button
                   onClick={handleSubmit}
                   disabled={loading || isReadOnly}
-                  className="flex-[2] h-11 md:h-auto md:py-3 bg-foreground text-background font-normal rounded-2xl hover:opacity-90 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
+                  className="flex-[2] h-11 md:h-auto md:py-3 bg-foreground text-background font-normal rounded-2xl hover:opacity-90 transition-all bb-shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" strokeWidth={2} />}
                   ยืนยันบันทึก
@@ -273,7 +273,7 @@ export default function MaintenanceModals({
           onClose={() => setIsDeleteConfirmOpen(false)}
           zIndex={110}
           overlayClassName="bg-black/5 backdrop-blur-md"
-          panelClassName="relative bg-card w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-border p-10 text-center"
+          panelClassName="relative bg-card w-full max-w-sm rounded-3xl bb-shadow-xl overflow-hidden border border-border p-10 text-center"
           aria-label="Delete Record?"
         >
             <HintTooltip tip="ปิด">
@@ -294,7 +294,7 @@ export default function MaintenanceModals({
               <button
                 onClick={handleDelete}
                 disabled={loading || isReadOnly}
-                className="w-full h-11 md:h-auto md:py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-sm uppercase tracking-widest"
+                className="w-full h-11 md:h-auto md:py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 transition-all bb-shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-sm uppercase tracking-widest"
               >
                 {loading ? 'Processing...' : 'Confirm Deletion'}
               </button>

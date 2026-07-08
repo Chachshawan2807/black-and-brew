@@ -17,7 +17,7 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations } from '@/app/actions/shift-actions';
-import ShiftSettingsModal from './_components/ShiftSettingsModal';
+import dynamic from 'next/dynamic';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import {
   loadShiftTypesFromStorage,
@@ -38,6 +38,10 @@ import {
 } from '@/lib/schedule/shift-lookups';
 import { useScheduleUndo } from '@/hooks/useScheduleUndo';
 import ScheduleToolbar from './_components/ScheduleToolbar';
+
+const ShiftSettingsModal = dynamic(() => import('./_components/ShiftSettingsModal'), {
+  ssr: false,
+});
 import type { Profile, Shift } from '@/types';
 import { isSameThaiDay, formatToThai } from '@/lib/date-utils';
 import { THAI_TIMEZONE } from '@/lib/timezone';
@@ -1260,14 +1264,11 @@ export default function ScheduleClient({
       if (!element) return;
 
       setIsExportingImage(true);
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      });
 
-      const { captureScheduleTableAsPng, downloadDataUrl } = await import('@/lib/schedule-export-capture');
-      const dataUrl = await captureScheduleTableAsPng(element);
+      const { captureScheduleTableAsPng, downloadPngBlob } = await import('@/lib/schedule-export-capture');
+      const blob = await captureScheduleTableAsPng(element);
 
-      downloadDataUrl(dataUrl, `Schedule-${new Date().toISOString().split('T')[0]}.png`);
+      downloadPngBlob(blob, `Schedule-${new Date().toISOString().split('T')[0]}.png`);
     } catch (err) {
       console.error('Failed to export image:', err);
       alert('เกิดข้อผิดพลาดในการบันทึกตารางงานเป็นรูปภาพค่ะ');
@@ -1334,50 +1335,51 @@ export default function ScheduleClient({
               style={{ minWidth: SCHEDULE_TABLE_MIN_WIDTH }}
               onPointerLeave={handleGridPointerLeave}
             >
-              <div
-                className="bb-schedule-grid grid border-b border-border dark:border-[#f5c6cb] bg-red-50/10 dark:bb-pastel-surface dark:bg-[#fdeaea] sticky top-0 z-[16]"
-                style={SCHEDULE_GRID_STYLE}
-              >
-                <div className="px-2 py-2 border-r border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
-                  <span className="bb-schedule-nowrap text-[12px] text-[#991b1b] font-normal uppercase tracking-widest whitespace-nowrap">นักขัตฤกษ์</span>
+              <div className="sticky top-0 z-[16] shrink-0">
+                <div
+                  className="bb-schedule-grid grid border-b border-border dark:border-[#f5c6cb] bg-red-50/10 dark:bb-pastel-surface dark:bg-[#fdeaea]"
+                  style={SCHEDULE_GRID_STYLE}
+                >
+                  <div className="px-2 py-2 border-r border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
+                    <span className="bb-schedule-nowrap text-[12px] text-[#991b1b] font-normal uppercase tracking-widest whitespace-nowrap">นักขัตฤกษ์</span>
+                  </div>
+                  {weekDays.map(date => {
+                    const holiday = holidayByDate.get(date);
+                    return (
+                      <div
+                        key={`holiday-${date}`}
+                        onClick={() => { if (!isReadOnly) { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); } }}
+                        onPointerEnter={() => handleCellFocus('', date)}
+                        className={cn(
+                          'p-1 border-r last:border-0 border-border dark:border-[#f5c6cb] flex items-center justify-center min-h-[38px] min-w-0 overflow-hidden transition-colors duration-150',
+                          scheduleCrosshairColumnHeaderClass(date, gridFocus),
+                          isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50 dark:hover:bg-[#f5c6cb]/25',
+                        )}
+                      >
+                        {editingHoliday === date ? (
+                          <input
+                            autoFocus
+                            disabled={isReadOnly}
+                            className="w-full h-full bg-card border border-red-200 dark:border-[#f5c6cb] text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400 dark:ring-[#f5c6cb] disabled:opacity-60 disabled:cursor-not-allowed dark:bb-pastel-surface dark:bg-white/90"
+                            value={holidayInput}
+                            onChange={(e) => setHolidayInput(e.target.value)}
+                            onBlur={() => handleSaveHoliday(date)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveHoliday(date)}
+                          />
+                        ) : (
+                          <span className="w-full min-w-0 text-[14px] font-normal text-[#7f1d1d] text-center leading-snug tracking-tight px-1 uppercase break-words">
+                            {holiday?.name || ''}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                {weekDays.map(date => {
-                  const holiday = holidayByDate.get(date);
-                  return (
-                    <div
-                      key={`holiday-${date}`}
-                      onClick={() => { if (!isReadOnly) { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); } }}
-                      onPointerEnter={() => handleCellFocus('', date)}
-                      className={cn(
-                        'p-1 border-r last:border-0 border-border dark:border-[#f5c6cb] flex items-center justify-center min-h-[38px] transition-colors duration-150',
-                        scheduleCrosshairColumnHeaderClass(date, gridFocus),
-                        isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50 dark:hover:bg-[#f5c6cb]/25',
-                      )}
-                    >
-                      {editingHoliday === date ? (
-                        <input
-                          autoFocus
-                          disabled={isReadOnly}
-                          className="w-full h-full bg-card border border-red-200 dark:border-[#f5c6cb] text-[14px] text-[#7f1d1d] font-normal text-center rounded focus:outline-none ring-1 ring-red-400 dark:ring-[#f5c6cb] disabled:opacity-60 disabled:cursor-not-allowed dark:bb-pastel-surface dark:bg-white/90"
-                          value={holidayInput}
-                          onChange={(e) => setHolidayInput(e.target.value)}
-                          onBlur={() => handleSaveHoliday(date)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSaveHoliday(date)}
-                        />
-                      ) : (
-                        <span className="bb-schedule-nowrap text-[14px] font-normal text-[#7f1d1d] text-center leading-tight tracking-tight px-1 uppercase whitespace-nowrap">
-                          {holiday?.name || ''}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
 
-              <div
-                className="bb-schedule-grid grid bg-muted/40 border-b border-border shrink-0 sticky top-[38px] z-[15]"
-                style={SCHEDULE_GRID_STYLE}
-              >
+                <div
+                  className="bb-schedule-grid grid bg-muted/40 border-b border-border shrink-0"
+                  style={SCHEDULE_GRID_STYLE}
+                >
                 <div className="px-2 py-2 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
                   <span className="bb-schedule-nowrap text-[13px] text-foreground font-normal uppercase tracking-widest whitespace-nowrap">พนักงาน</span>
                 </div>
@@ -1400,6 +1402,7 @@ export default function ScheduleClient({
                     </div>
                   );
                 })}
+                </div>
               </div>
 
               {mounted ? (
@@ -1792,7 +1795,7 @@ export default function ScheduleClient({
                       </thead>
                       <tbody>
                         {mgmtHistory.map((item) => (
-                          <tr key={item.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                          <tr key={item.id} className="bb-grid-row-offscreen border-b border-border hover:bg-muted/30 transition-colors">
                             <td className="p-3 text-[13px] font-normal text-foreground border-r border-border truncate bg-transparent">
                               {item.employee_name}
                             </td>

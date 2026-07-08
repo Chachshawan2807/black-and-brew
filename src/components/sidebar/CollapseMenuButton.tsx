@@ -26,7 +26,7 @@ import {
   DropdownMenuContent,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
+import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
 
 type Submenu = {
   href: string;
@@ -102,14 +102,14 @@ export function CollapseMenuButton({
             className="w-full justify-start h-10 mb-1"
             asChild
           >
-            <Link href={href} onClick={onLinkClick}>
+            <NavPreloadLink href={href} onClick={onLinkClick}>
               <span className="mr-4 ml-2 text-foreground">
                 <Dot size={18} strokeWidth={1.75} />
               </span>
               <p className={sidebarLabelClass(isOpen, "max-w-[170px] text-foreground")}>
                 {label}
               </p>
-            </Link>
+            </NavPreloadLink>
           </Button>
         ))}
       </CollapsibleContent>
@@ -152,9 +152,9 @@ export function CollapseMenuButton({
         <DropdownMenuSeparator />
         {submenus.map(({ href, label }, index) => (
           <DropdownMenuItem key={index} asChild>
-            <Link className="cursor-pointer" href={href} onClick={onLinkClick}>
+            <NavPreloadLink className="cursor-pointer" href={href} onClick={onLinkClick}>
               <p className="max-w-[180px] truncate">{label}</p>
-            </Link>
+            </NavPreloadLink>
           </DropdownMenuItem>
         ))}
         <DropdownMenuArrow className="fill-gray-200" />

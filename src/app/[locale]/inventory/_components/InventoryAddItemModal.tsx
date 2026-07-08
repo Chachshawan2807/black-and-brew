@@ -134,7 +134,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
         animate={modalContent.animate}
         exit={modalContent.exit}
         transition={modalContent.transition}
-        className="relative bg-card border border-border rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden transition-[max-height] duration-200"
+        className="relative bg-card border border-border rounded-3xl bb-shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden transition-[max-height] duration-200"
         style={modalContentStyle}
         onClick={(e) => e.stopPropagation()}
       >
@@ -268,7 +268,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 px-4 bg-foreground hover:opacity-90 rounded-3xl text-[14px] font-normal text-background transition-colors shadow-sm disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-foreground hover:opacity-90 rounded-3xl text-[14px] font-normal text-background transition-colors bb-shadow-sm disabled:opacity-50"
             >
               บันทึกข้อมูล
             </button>

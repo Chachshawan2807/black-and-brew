@@ -14,6 +14,14 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 const captured = { select: '', rpc: '' };
 let mockTableRows: unknown[] = [];
 
+vi.mock('@/lib/policies/server-gate', () => ({
+  requirePrivilegedSession: vi.fn(async () => ({
+    ok: true as const,
+    readOnly: false,
+    userId: 'user-1',
+  })),
+}));
+
 vi.mock('@supabase/supabase-js', () => {
   const builder: Record<string, unknown> = {};
   Object.assign(builder, {

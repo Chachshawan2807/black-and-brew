@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import {
   clearAuthCookies,
@@ -7,9 +8,12 @@ import {
 } from '@/lib/auth-cookies';
 import {
   FORCE_LOGOUT_DENY_MSG,
-  READ_ONLY_DENY_MSG,
   SESSION_FP_COOKIE,
 } from '@/lib/auth-constants';
+import {
+  requirePinMutationAccess,
+  requirePinReadAccess,
+} from '@/lib/policies/server-gate';
 import { recordLoginEvent } from '@/app/actions/login-history-actions';
 import type { ClientDevicePayload } from '@/lib/login-history-types';
 import {
@@ -71,6 +75,11 @@ async function resolveAuthSession(
     readOnly: cookieStore.get('bb_auth_read_only')?.value === 'true',
   };
 }
+
+const getAuthSessionCached = cache(async () => {
+  const cookieStore = await cookies();
+  return resolveAuthSession(cookieStore);
+});
 
 export async function verifyPin(
   pin: string,
@@ -139,17 +148,15 @@ export async function verifyPin(
 }
 
 export async function checkAuth(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const session = await resolveAuthSession(cookieStore);
-  return session.verified;
+  const session = await getAuthSessionCached();
+  return requirePinReadAccess(session);
 }
 
 export async function getAuthSessionInfo(): Promise<{
   verified: boolean;
   readOnly: boolean;
 }> {
-  const cookieStore = await cookies();
-  return resolveAuthSession(cookieStore);
+  return getAuthSessionCached();
 }
 
 export async function getCurrentSessionFingerprint(): Promise<string | null> {
@@ -157,17 +164,13 @@ export async function getCurrentSessionFingerprint(): Promise<string | null> {
   return cookieStore.get(SESSION_FP_COOKIE)?.value ?? null;
 }
 
-async function isReadOnlySession(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return cookieStore.get('bb_auth_read_only')?.value === 'true';
-}
-
 export async function assertWritableSession(): Promise<
   { ok: true } | { ok: false; error: string }
 > {
-  if (await isReadOnlySession()) {
-    return { ok: false, error: READ_ONLY_DENY_MSG };
-  }
+  const cookieStore = await cookies();
+  const readOnly = cookieStore.get('bb_auth_read_only')?.value === 'true';
+  const error = requirePinMutationAccess(readOnly);
+  if (error) return { ok: false, error };
   return { ok: true };
 }
 

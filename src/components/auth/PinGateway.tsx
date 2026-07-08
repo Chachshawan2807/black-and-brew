@@ -381,7 +381,13 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     }
   };
 
-  if (!isMounted) return null;
+  if (!isMounted) {
+    return (
+      <div className="min-h-[100svh] bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" strokeWidth={1.5} />
+      </div>
+    );
+  }
 
   if (showEnrollment) {
     return (
@@ -392,7 +398,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           transition={modalContent.transition}
           className="w-full max-w-sm flex flex-col items-center gap-6 text-center"
         >
-          <div className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center shadow-lg">
+          <div className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center bb-shadow-lg">
             <Fingerprint size={32} strokeWidth={1.5} />
           </div>
 
@@ -454,7 +460,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           transition={modalContent.transition}
           className="w-full max-w-sm flex flex-col items-center gap-8 text-center"
         >
-          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-[24px] flex items-center justify-center shadow-sm">
+          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-[24px] flex items-center justify-center bb-shadow-sm">
             <ShieldAlert size={32} strokeWidth={1.5} />
           </div>
 
@@ -501,7 +507,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             repeat: isVerifying ? Infinity : 0,
             ease: 'easeInOut',
           }}
-          className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center shadow-lg"
+          className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center bb-shadow-lg"
         >
           <Lock size={32} strokeWidth={1.5} />
         </motion.div>
@@ -546,7 +552,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: -2 }}
                 transition={{ duration: 0.18, ease: MODAL_EASE }}
-                className="flex h-16 w-16 items-center justify-center rounded-[24px] border border-border bg-card shadow-sm"
+                className="flex h-16 w-16 items-center justify-center rounded-[24px] border border-border bg-card bb-shadow-sm"
                 aria-hidden="true"
               >
                 <Loader2 className="h-7 w-7 animate-spin text-foreground" strokeWidth={1.5} />
@@ -591,7 +597,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
                         aria-hidden="true"
                         layout
                         transition={{ duration: 0.2, ease: MODAL_EASE }}
-                        className={`flex h-14 w-12 items-center justify-center rounded-2xl border bg-card shadow-sm md:h-16 md:w-14 ${
+                        className={`flex h-14 w-12 items-center justify-center rounded-2xl border bg-card bb-shadow-sm md:h-16 md:w-14 ${
                           error
                             ? 'border-red-500 bg-red-500/10'
                             : isActive

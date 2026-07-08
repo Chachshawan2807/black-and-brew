@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const toPngMock = vi.fn();
+const toBlobMock = vi.fn();
 
 vi.mock('html-to-image', () => ({
-  toPng: (...args: unknown[]) => toPngMock(...args),
+  toBlob: (...args: unknown[]) => toBlobMock(...args),
 }));
 
-import { captureElementAsPng } from '@/lib/capture-element-png';
+import { captureElementAsPng, preloadCaptureLibraries } from '@/lib/capture-element-png';
 
 describe('captureElementAsPng', () => {
   beforeEach(() => {
-    toPngMock.mockReset();
-    toPngMock.mockResolvedValue('data:image/png;base64,abc');
+    toBlobMock.mockReset();
+    toBlobMock.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
   });
 
   test('captures full scroll dimensions and flattens sticky nodes during export', async () => {
@@ -24,15 +24,17 @@ describe('captureElementAsPng', () => {
     stickyHeader.style.position = 'sticky';
     element.appendChild(stickyHeader);
 
-    await captureElementAsPng(element, { backgroundColor: '#fdfcf0' });
+    const blob = await captureElementAsPng(element, { backgroundColor: '#fdfcf0' });
 
+    expect(blob.type).toBe('image/png');
     expect(stickyHeader.style.position).toBe('sticky');
-    expect(toPngMock).toHaveBeenCalledWith(
+    expect(toBlobMock).toHaveBeenCalledWith(
       element,
       expect.objectContaining({
         width: 1200,
         height: 2400,
         backgroundColor: '#fdfcf0',
+        cacheBust: false,
         skipFonts: true,
         style: expect.objectContaining({ maxHeight: 'none', overflow: 'visible' }),
       }),
@@ -46,7 +48,7 @@ describe('captureElementAsPng', () => {
 
     await captureElementAsPng(element, { preserveOverflow: true });
 
-    const options = toPngMock.mock.calls[0]?.[1] as { style: Record<string, string> };
+    const options = toBlobMock.mock.calls[0]?.[1] as { style: Record<string, string> };
     expect(options.style).not.toHaveProperty('overflow');
   });
 
@@ -56,13 +58,14 @@ describe('captureElementAsPng', () => {
     Object.defineProperty(element, 'scrollHeight', { value: 200 });
 
     const shiftCell = document.createElement('div');
+    shiftCell.className = 'shadow-sm';
     shiftCell.style.boxShadow = '0 1px 2px 0 rgb(0 0 0 / 0.05)';
     element.appendChild(shiftCell);
 
     let shadowDuringCapture: string | undefined;
-    toPngMock.mockImplementation(async (el) => {
+    toBlobMock.mockImplementation(async (el) => {
       shadowDuringCapture = (el as HTMLElement).querySelector('div')?.style.boxShadow;
-      return 'data:image/png;base64,abc';
+      return new Blob(['png'], { type: 'image/png' });
     });
 
     await captureElementAsPng(element);
@@ -78,7 +81,18 @@ describe('captureElementAsPng', () => {
 
     await captureElementAsPng(element, { pixelRatio: 2 });
 
-    const options = toPngMock.mock.calls[0]?.[1] as { pixelRatio: number };
+    const options = toBlobMock.mock.calls[0]?.[1] as { pixelRatio: number };
     expect(options.pixelRatio).toBeLessThan(2);
+  });
+
+  test('preloadCaptureLibraries starts loading html-to-image without awaiting', async () => {
+    preloadCaptureLibraries();
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'scrollWidth', { value: 100 });
+    Object.defineProperty(element, 'scrollHeight', { value: 100 });
+
+    await captureElementAsPng(element);
+
+    expect(toBlobMock).toHaveBeenCalled();
   });
 });

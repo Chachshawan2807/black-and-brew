@@ -1,14 +1,20 @@
-import ScheduleClient from './ScheduleClient';
 import { startOfWeek, addDays, format } from 'date-fns';
 import { redirect } from 'next/navigation';
+import { after } from 'next/server';
 import { checkAuth } from '@/app/actions/auth';
 import { groupRegularHolidayRows } from '@/lib/regular-holidays';
 import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
+
+const ScheduleClient = createLazyFeatureClient(
+  () => import('./ScheduleClient'),
+  'กำลังโหลดตารางงาน...',
+);
 
 export default async function SchedulePage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ week?: string }>;
@@ -31,11 +37,17 @@ export default async function SchedulePage({
   const mondayStr = format(monday, 'yyyy-MM-dd');
   const sundayStr = format(sunday, 'yyyy-MM-dd');
 
-  // Refactor: Flatten to single Promise.all — all 5 fetches run in parallel
-  const [holidaySync, profilesRes, shiftsRes, regularHolidaysRes, holidaysRes] = await Promise.all([
-    fetchAndPersistHolidays(mondayStr, sundayStr),
+  after(async () => {
+    const holidaySync = await fetchAndPersistHolidays(mondayStr, sundayStr);
+    if (!holidaySync.success && holidaySync.error !== 'Missing API Key') {
+      console.error('Holiday sync failed:', holidaySync.error);
+    }
+  });
+
+  const [profilesRes, shiftsRes, regularHolidaysRes, holidaysRes] = await Promise.all([
     supabaseAdmin.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
-    supabaseAdmin.from('shifts')
+    supabaseAdmin
+      .from('shifts')
       .select('id, employee_id, start_time, end_time, status, metadata')
       .gte('start_time', mondayStr + 'T00:00:00')
       .lte('start_time', sundayStr + 'T23:59:59')
@@ -47,11 +59,7 @@ export default async function SchedulePage({
     supabaseAdmin.from('holidays').select('id, date, name').gte('date', mondayStr).lte('date', sundayStr),
   ]);
 
-  if (!holidaySync.success && holidaySync.error !== 'Missing API Key') {
-    console.error('Holiday sync failed:', holidaySync.error);
-  }
-
-  const normalizedShifts = (shiftsRes.data || []).map(s => {
+  const normalizedShifts = (shiftsRes.data || []).map((s) => {
     const datePart = s.start_time.split('T')[0];
     return { ...s, start_time: datePart + 'T00:00:00', end_time: datePart + 'T23:59:59' };
   });

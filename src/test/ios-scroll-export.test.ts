@@ -28,6 +28,9 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toContain('scrollHeight');
     expect(code).toContain('maxHeight');
     expect(code).toContain('export async function captureElementAsPng');
+    expect(code).toContain('cacheBust: false');
+    expect(code).toContain('toBlob');
+    expect(code).toContain('downloadPngBlob');
   });
 
   test('ScheduleClient uses iOS scroll host and shared export helper', () => {
@@ -71,9 +74,9 @@ describe('iOS scroll & export fixes', () => {
     const code = readFile('lib/schedule-export-capture.ts');
     expect(code).toContain("import { APP_FONT_FAMILY_CSS } from '@/lib/fonts'");
     expect(code).toContain('resolveScheduleExportFontFamily');
-    expect(code).toContain('document.fonts.ready');
-    expect(code).toContain("setInline(restores, node, 'font-family'");
-    expect(code).toContain('skipFonts: false');
+    expect(code).toContain("setInline(restores, root, 'font-family'");
+    expect(code).toContain('skipFonts: true');
+    expect(code).toContain('preloadCaptureLibraries');
   });
 
   test('MonthlyRoster table keeps name column compact', () => {

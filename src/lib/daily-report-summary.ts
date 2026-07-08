@@ -30,27 +30,34 @@ export function shouldIncludeHolidaySummary(
   return holiday != null && holiday.daysRemaining <= HOLIDAY_SUMMARY_MAX_DAYS;
 }
 
+export function buildDailyReportNotificationLines(data: DailyReportData): string[] {
+  const lines: string[] = [
+    `ตารางงาน ${data.dateStr} (${scheduleLabel(data.schedule)}) · เข้างาน ${data.headcount} คน`,
+  ];
+
+  if (data.activeStaff.length > 0) {
+    lines.push(data.activeStaff.map((s) => `${s.name} ${s.shiftText}`).join(', '));
+  }
+
+  if (data.otherDutyStaff.length > 0) {
+    const otherDutySummary = data.otherDutyStaff
+      .map((s) => `${s.name} — ${s.shiftText}`)
+      .join(', ');
+    lines.push(`งานอื่น: ${otherDutySummary}`);
+  }
+
+  const leaveNames = filterNotificationLeaveStaff(data.offStaff).map((s) => s.name);
+  if (leaveNames.length > 0) {
+    lines.push(`ลา: ${leaveNames.join(', ')}`);
+  }
+
+  if (shouldIncludeHolidaySummary(data.holiday)) {
+    lines.push(`วันหยุด: ${data.holiday!.name} (อีก ${data.holiday!.daysRemaining} วัน)`);
+  }
+
+  return lines;
+}
+
 export function buildDailyReportAltText(data: DailyReportData): string {
-  const timedSummary = data.activeStaff
-    .map((s) => `${s.name} ${s.shiftText}`)
-    .join(', ');
-  const otherDutySummary = data.otherDutyStaff
-    .map((s) => `${s.name} (${s.shiftText})`)
-    .join(', ');
-  const leaveSummary = filterNotificationLeaveStaff(data.offStaff)
-    .map((s) => `${s.name} (${s.shiftText})`)
-    .join(', ');
-
-  const parts = [
-    `ตารางงาน ${data.dateStr} (${scheduleLabel(data.schedule)})`,
-    `เข้างาน ${data.headcount} คน`,
-    timedSummary || undefined,
-    otherDutySummary ? `งานอื่น: ${otherDutySummary}` : undefined,
-    leaveSummary ? `ลา: ${leaveSummary}` : undefined,
-    shouldIncludeHolidaySummary(data.holiday)
-      ? `วันหยุด: ${data.holiday!.name} (อีก ${data.holiday!.daysRemaining} วัน)`
-      : undefined,
-  ].filter(Boolean);
-
-  return truncate(parts.join(' · '), 400);
+  return truncate(buildDailyReportNotificationLines(data).join('\n'), 400);
 }

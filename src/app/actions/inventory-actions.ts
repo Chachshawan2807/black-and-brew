@@ -3,7 +3,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { z } from 'zod';
-import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { computeFieldChanges } from '@/lib/data-change-log';
 import {
@@ -11,7 +10,10 @@ import {
   computeCountDiscrepancy,
   isCountMatch,
 } from '@/lib/inventory-count-accuracy';
-import { ensureServerSession } from '@/lib/security/server-auth';
+import {
+  requireMutationAccess,
+  requireReadAccess,
+} from '@/lib/policies/server-gate';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
@@ -32,21 +34,6 @@ type InventoryAuditOptions = {
 };
 
 type InventoryLifecycleType = 'ADD' | 'DELETE';
-
-/** SEC-AUTH-001 — Service Role reads require PIN or verified Supabase session. */
-async function requireAuthenticatedRead(): Promise<string | null> {
-  const auth = await ensureServerSession();
-  return auth.ok ? null : auth.error;
-}
-
-/** SEC-AUTH-001 — Mutations require valid session (incl. revocation) and writable PIN. */
-async function requireAuthenticatedMutation(): Promise<string | null> {
-  const auth = await ensureServerSession();
-  if (!auth.ok) return auth.error;
-  const writable = await assertWritableSession();
-  if (!writable.ok) return writable.error;
-  return null;
-}
 
 async function insertInventoryLifecycleTransaction(
   itemId: string | null,
@@ -81,7 +68,7 @@ export async function recordItemAddHistory(
   itemName?: string
 ) {
   try {
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
     const sanitizedStock = stock < 0 ? 0 : stock;
@@ -139,7 +126,7 @@ export async function recordTransaction(
   auditOptions?: InventoryAuditOptions
 ) {
   try {
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
     const parsed = transactionSchema.safeParse({ productId, type, quantity, note });
@@ -252,7 +239,7 @@ export async function recordBulkInventoryTransactions(
   auditOptions?: InventoryAuditOptions,
 ) {
   try {
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) {
       return { success: false, error: authError, results: [] as BulkInventoryTransactionResult[] };
     }
@@ -379,7 +366,7 @@ export async function updateInventoryStock(
   options?: InventoryStockUpdateOptions
 ) {
   try {
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
     const parsed = stockUpdateSchema.safeParse({ itemId, stock, note });
@@ -482,7 +469,7 @@ export async function updateInventoryItemField(
   auditOptions?: InventoryAuditOptions,
 ) {
   try {
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
     const parsed = inventoryFieldUpdateSchema.safeParse({ itemId, field, value });
@@ -554,7 +541,7 @@ export async function reorderInventoryItems(
   auditOptions?: InventoryAuditOptions,
 ) {
   try {
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
     const parsed = inventoryReorderSchema.safeParse(sortOrders);
@@ -608,7 +595,7 @@ export async function deleteInventoryItem(itemId: string, auditOptions?: Invento
      * Verify current session and user ownership before executing delete.
      * This prevents Broken Object Level Authorization (BOLA).
      */
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
     const { data: itemBeforeDelete } = await supabase
@@ -672,7 +659,7 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
   if (itemIds.length === 0) return { success: true, deleted: 0 };
 
   try {
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError, deleted: 0 };
 
     const { data: itemsBeforeDelete } = await supabase
@@ -778,7 +765,7 @@ export async function fetchTransactionHistory(
 ) {
   noStore(); // Phase 1: Force disable cache — always fetch fresh from DB
 
-  const authError = await requireAuthenticatedRead();
+  const authError = await requireReadAccess();
   if (authError) {
     return { success: false, error: authError, data: [], hasMore: false };
   }
@@ -878,7 +865,7 @@ export async function fetchTransactionHistory(
 // === FETCH FREQUENT ITEMS ===
 // Uses inventory_item_id — VERIFIED column name in actual DB
 export async function fetchFrequentItems() {
-  const authError = await requireAuthenticatedRead();
+  const authError = await requireReadAccess();
   if (authError) {
     return { success: false, error: authError, data: [] };
   }
@@ -940,7 +927,7 @@ export async function fetchFrequentItems() {
 export async function fetchComprehensiveInventoryData() {
   noStore();
 
-  const authError = await requireAuthenticatedRead();
+  const authError = await requireReadAccess();
   if (authError) {
     return { success: false, error: authError, data: null };
   }
@@ -1115,7 +1102,7 @@ const countVerificationSchema = z.object({
 /** Records accuracy only from the stock-taking count page — not manual warehouse overrides. */
 export async function recordCountVerification(itemId: string, countedQty: number) {
   try {
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
     const { data: itemRow, error: itemError } = await supabase
@@ -1202,7 +1189,7 @@ export async function recordInventoryCountAndUpdateStock(
   options?: InventoryCountSaveOptions,
 ): Promise<InventoryCountSaveResult> {
   try {
-    const authError = await requireAuthenticatedMutation();
+    const authError = await requireMutationAccess();
     if (authError) return { success: false, error: authError };
 
     const { data: itemRow, error: itemError } = await supabase
@@ -1361,26 +1348,30 @@ export async function fetchCountAccuracyStats(): Promise<{
 }> {
   noStore();
 
-  const authError = await requireAuthenticatedRead();
+  const authError = await requireReadAccess();
   if (authError) {
     return { success: false, error: authError };
   }
 
   try {
-    const { data: rows, error } = await supabase
-      .from('inventory_count_verifications')
-      .select('inventory_item_id, matched, system_stock_qty, counted_qty, counted_at')
-      .order('counted_at', { ascending: false });
+    const [verificationsResult, exactItemsResult] = await Promise.all([
+      supabase
+        .from('inventory_count_verifications')
+        .select('inventory_item_id, matched, system_stock_qty, counted_qty, counted_at')
+        .order('counted_at', { ascending: false }),
+      supabase
+        .from('inventory_items')
+        .select('id, name, count_policy')
+        .eq('count_policy', 'exact_count'),
+    ]);
+
+    const { data: rows, error } = verificationsResult;
+    const { data: exactItems, error: itemsError } = exactItemsResult;
 
     if (error) {
       console.error('[fetchCountAccuracyStats] Supabase Error:', error.message, error.details);
       return { success: false, error: error.message };
     }
-
-    const { data: exactItems, error: itemsError } = await supabase
-      .from('inventory_items')
-      .select('id, name, count_policy')
-      .eq('count_policy', 'exact_count');
 
     if (itemsError) {
       console.error('[fetchCountAccuracyStats] Supabase Error:', itemsError.message, itemsError.details);

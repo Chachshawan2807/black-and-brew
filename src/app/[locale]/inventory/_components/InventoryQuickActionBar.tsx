@@ -204,7 +204,7 @@ function QuickActionQtyInput({
           onClick={() => step(1)}
           aria-label="เพิ่มจำนวน"
           className={cn(
-            'absolute right-0 top-0 flex items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm',
+            'absolute right-0 top-0 flex items-center justify-center rounded-xl border border-border bg-card text-muted-foreground bb-shadow-sm',
             'hover:bg-[#d4edda]/50 hover:border-[#c3e6cb] hover:text-foreground active:scale-95 transition-all',
             stepBtnSize,
           )}
@@ -219,7 +219,7 @@ function QuickActionQtyInput({
           onClick={() => step(-1)}
           aria-label="ลดจำนวน"
           className={cn(
-            'absolute right-0 bottom-0 flex items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm',
+            'absolute right-0 bottom-0 flex items-center justify-center rounded-xl border border-border bg-card text-muted-foreground bb-shadow-sm',
             'hover:bg-[#f8d7da]/45 hover:border-[#f5c6cb] hover:text-foreground active:scale-95 transition-all',
             stepBtnSize,
           )}
@@ -253,7 +253,7 @@ function QuickActionSaveButton({
       type="submit"
       disabled={disabled}
       className={cn(
-        'h-11 w-full bb-pastel-surface bg-[#d1ecf1] border border-[#bee5eb] hover:brightness-95 text-[#000000] rounded-3xl text-sm font-normal transition-all shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased disabled:opacity-50',
+        'h-11 w-full bb-pastel-surface bg-[#d1ecf1] border border-[#bee5eb] hover:brightness-95 text-[#000000] rounded-3xl text-sm font-normal transition-all bb-shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased disabled:opacity-50',
         className,
       )}
     >
@@ -426,7 +426,7 @@ function SecondaryQuickActionButtons({
         onMouseEnter={onPreloadPurchaseOrder}
         onFocus={onPreloadPurchaseOrder}
         className={cn(
-          'flex w-full items-center justify-center gap-1 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:shadow-sm',
+          'flex w-full items-center justify-center gap-1 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:bb-shadow-hover-md',
           INVENTORY_QUICK_ACTION_COLORS.order,
           'hover:bg-[#bee5eb]/70',
         )}
@@ -443,7 +443,7 @@ function SecondaryQuickActionButtons({
         type="button"
         onClick={onOpenAddItem}
         className={cn(
-          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:shadow-sm',
+          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:bb-shadow-hover-md',
           INVENTORY_QUICK_ACTION_COLORS.addItem,
           'hover:bg-[#bee5eb]/70',
         )}
@@ -457,7 +457,7 @@ function SecondaryQuickActionButtons({
         onMouseEnter={onPreloadHistory}
         onFocus={onPreloadHistory}
         className={cn(
-          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:shadow-sm',
+          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:bb-shadow-hover-md',
           INVENTORY_QUICK_ACTION_COLORS.history,
           'hover:bg-[#bee5eb]/70',
         )}
@@ -524,7 +524,7 @@ export function InventoryQuickActionBar({
   };
 
   return (
-    <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border shadow-sm', className)}>
+    <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border bb-shadow-sm', className)}>
       <form onSubmit={onSubmit} className="flex flex-col gap-2.5 w-full">
         <div
           className={cn(
@@ -572,7 +572,7 @@ export function InventoryQuickActionBar({
 
               {showSuggestions && (
                 <div
-                  className="absolute top-full left-0 z-[210] mt-2 min-w-[min(100%,14rem)] w-max max-w-[min(100vw-2rem,20rem)] bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                  className="absolute top-full left-0 z-[210] mt-2 min-w-[min(100%,14rem)] w-max max-w-[min(100vw-2rem,20rem)] bg-card border border-border rounded-xl bb-shadow-md overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
                   onMouseDown={(e) => e.preventDefault()}
                 >
                   <div className="max-h-[min(50vh,16rem)] overflow-y-auto bb-smooth-scroll py-2">

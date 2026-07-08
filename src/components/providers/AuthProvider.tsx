@@ -2,9 +2,9 @@
 
 import { createContext, useContext } from 'react';
 import { AuthSessionGuard } from '@/components/auth/AuthSessionGuard';
-import { READ_ONLY_DENY_MSG } from '@/lib/auth-constants';
+import { canClientMutate, getMutationDenyMessage } from '@/lib/policies/client';
 
-export { READ_ONLY_DENY_MSG };
+export const READ_ONLY_DENY_MSG = getMutationDenyMessage();
 
 const AuthContext = createContext<boolean>(false);
 
@@ -25,4 +25,8 @@ export function AuthProvider({
 
 export function useReadOnly(): boolean {
   return useContext(AuthContext);
+}
+
+export function useCanMutate(): boolean {
+  return canClientMutate(useReadOnly());
 }

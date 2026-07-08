@@ -246,7 +246,7 @@ describe('Daily report protocol actions', () => {
       expect(data.offStaff).toContainEqual({ name: 'มุก', shiftText: 'ลา' });
       expect(altText).toContain(expectedDate);
       expect(altText).toContain('ปิ่น 6:30');
-      expect(altText).toContain('ลา: มุก (ลา)');
+      expect(altText).toContain('ลา: มุก');
       expect(altText).not.toContain('หนูดี');
       expect(altText).not.toContain('ฟิว');
       expect(altText).not.toContain('ไม่มีกะ');

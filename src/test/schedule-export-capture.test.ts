@@ -5,10 +5,10 @@ vi.mock('@/lib/fonts', () => ({
   appFontClassName: 'font-inter',
 }));
 
-const toPngMock = vi.fn();
+const toBlobMock = vi.fn();
 
 vi.mock('html-to-image', () => ({
-  toPng: (...args: unknown[]) => toPngMock(...args),
+  toBlob: (...args: unknown[]) => toBlobMock(...args),
 }));
 
 import {
@@ -20,8 +20,8 @@ import {
 
 describe('schedule-export-capture', () => {
   beforeEach(() => {
-    toPngMock.mockReset();
-    toPngMock.mockResolvedValue('data:image/png;base64,abc');
+    toBlobMock.mockReset();
+    toBlobMock.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
     document.documentElement.classList.remove('dark');
   });
 
@@ -45,33 +45,27 @@ describe('schedule-export-capture', () => {
     expect(() => applyScheduleTableCaptureStyles(root)).not.toThrow();
   });
 
-  test('applyScheduleTableCaptureStyles inlines light tokens for theme classes then restores', () => {
+  test('applyScheduleTableCaptureStyles inlines layout-critical export styles then restores', () => {
     const root = document.createElement('div');
     root.id = 'blackandbrew-schedule-table';
 
-    const nameCell = document.createElement('div');
-    nameCell.className = 'text-foreground bg-card border-b border-border';
-    root.appendChild(nameCell);
+    const grid = document.createElement('div');
+    grid.className = 'bb-schedule-grid';
+    root.appendChild(grid);
 
-    const dayLabel = document.createElement('span');
-    dayLabel.className = 'text-foreground';
-    root.appendChild(dayLabel);
-
-    const shiftCell = document.createElement('div');
-    shiftCell.className = 'bb-pastel-surface rounded-lg';
-    root.appendChild(shiftCell);
+    const nowrap = document.createElement('span');
+    nowrap.className = 'bb-schedule-nowrap';
+    root.appendChild(nowrap);
 
     const restore = applyScheduleTableCaptureStyles(root);
-    expect(nameCell.style.color).toBe('rgb(0, 0, 0)');
-    expect(nameCell.style.backgroundColor).toBe('rgb(253, 252, 240)');
-    expect(nameCell.style.borderBottomColor).toBe('rgba(0, 0, 0, 0.05)');
-    expect(dayLabel.style.color).toBe('rgb(0, 0, 0)');
-    expect(shiftCell.style.backgroundColor).toBe('');
-    expect(root.style.backgroundColor).toBe('rgb(253, 252, 240)');
+    expect(root.style.fontFamily).toContain('Inter');
+    expect(grid.style.gridTemplateColumns).toContain('minmax(');
+    expect(nowrap.style.whiteSpace).toBe('nowrap');
 
     restore();
-    expect(nameCell.style.color).toBe('');
-    expect(nameCell.style.backgroundColor).toBe('');
+    expect(root.style.fontFamily).toBe('');
+    expect(grid.style.gridTemplateColumns).toBe('');
+    expect(nowrap.style.whiteSpace).toBe('');
   });
 
   test('captureScheduleTableAsPng strips dark class and uses cream background', async () => {
@@ -81,12 +75,13 @@ describe('schedule-export-capture', () => {
     Object.defineProperty(element, 'scrollWidth', { value: 900 });
     Object.defineProperty(element, 'scrollHeight', { value: 600 });
 
-    await captureScheduleTableAsPng(element);
+    const blob = await captureScheduleTableAsPng(element);
 
+    expect(blob.type).toBe('image/png');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
-    expect(toPngMock).toHaveBeenCalledWith(
+    expect(toBlobMock).toHaveBeenCalledWith(
       element,
-      expect.objectContaining({ backgroundColor: SCHEDULE_EXPORT_BG, skipFonts: false }),
+      expect.objectContaining({ backgroundColor: SCHEDULE_EXPORT_BG, skipFonts: true }),
     );
   });
 });

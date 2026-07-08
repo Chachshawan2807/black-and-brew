@@ -1,6 +1,6 @@
 'use client';
 
-import type React from 'react';
+import { preloadCaptureLibraries } from '@/lib/capture-element-png';
 import { motion } from 'framer-motion';
 import { ArrowDownToLine, ShoppingCart, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,7 +42,7 @@ export default function PurchaseOrdersModal({
       {/* STICKY STYLED WRAPPER FOR THE HEADER */}
         <div className={cn(
           PASTEL_SURFACE,
-          "bg-[#fff3dd] pt-4 pb-4 w-full box-border border-b border-black/5 shadow-sm",
+          "bg-[#fff3dd] pt-4 pb-4 w-full box-border border-b border-black/5 bb-shadow-sm",
           !isExportMode && "sticky top-0 z-30",
         )}>
           {!isExportMode && (
@@ -70,7 +70,9 @@ export default function PurchaseOrdersModal({
               <div id="po-action-buttons" className="flex items-center gap-3">
                 <button
                   onClick={exportPOImage}
-                  className="px-4 py-2 bg-white/80 hover:bg-white text-black/85 text-[14px] rounded-full flex items-center gap-2 transition-colors border border-black/10 shadow-sm antialiased font-normal"
+                  onMouseEnter={preloadCaptureLibraries}
+                  onFocus={preloadCaptureLibraries}
+                  className="px-4 py-2 bg-white/80 hover:bg-white text-black/85 text-[14px] rounded-full flex items-center gap-2 transition-colors border border-black/10 bb-shadow-sm antialiased font-normal"
                 >
                   <ArrowDownToLine className="w-4 h-4" /> บันทึกเป็นรูปภาพ
                 </button>
@@ -87,7 +89,7 @@ export default function PurchaseOrdersModal({
                 className={cn(
                   'px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
                   selectedChannels.includes('all')
-                    ? 'bg-[#000000] border-[#000000] text-white shadow-sm'
+                    ? 'bg-[#000000] border-[#000000] text-white bb-shadow-sm'
                     : 'border-black/15 bg-transparent text-black/85 hover:bg-black/5',
                 )}
               >
@@ -116,7 +118,7 @@ export default function PurchaseOrdersModal({
                     className={cn(
                       'px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
                       isActive
-                        ? 'bg-[#000000] border-[#000000] text-white shadow-sm'
+                        ? 'bg-[#000000] border-[#000000] text-white bb-shadow-sm'
                         : 'border-black/15 bg-transparent text-black/85 hover:bg-black/5',
                     )}
                   >
@@ -136,7 +138,7 @@ export default function PurchaseOrdersModal({
       <div className="p-6">
         {itemsToShow.length === 0 ? (
           <div className={cn(
-            "py-16 flex flex-col items-center justify-center rounded-3xl border shadow-sm",
+            "py-16 flex flex-col items-center justify-center rounded-3xl border bb-shadow-sm",
             isExportMode
               ? "text-black/40 bg-white border-black/5"
               : "text-muted-foreground bg-card border-border",
@@ -146,7 +148,7 @@ export default function PurchaseOrdersModal({
           </div>
         ) : (
           <div className={cn(
-            "rounded-3xl shadow-sm border overflow-hidden",
+            "rounded-3xl bb-shadow-sm border overflow-hidden",
             isExportMode
               ? "bg-white border-black/5"
               : "bg-card border-border overflow-auto max-h-[calc(85vh-220px)] scrollbar-thin",
@@ -266,7 +268,7 @@ export default function PurchaseOrdersModal({
         animate={modalContent.animate}
         exit={modalContent.exit}
         transition={modalContent.transition}
-        className="bg-card rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.1)] w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-card rounded-3xl bb-shadow-xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {tableContent}

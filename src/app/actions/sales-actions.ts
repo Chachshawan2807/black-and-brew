@@ -5,10 +5,12 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
-import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { computeFieldChanges } from '@/lib/data-change-log';
-import { ensureServerSession } from '@/lib/security/server-auth';
+import {
+  requireMutationAccess,
+  requireReadAccess,
+} from '@/lib/policies/server-gate';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_FILES = 24;
@@ -26,12 +28,6 @@ const getSupabaseAdmin = () => {
   if (!supabaseAdminKey) return null;
   return createClient(supabaseUrl, supabaseAdminKey);
 };
-
-async function checkAuth(): Promise<{ success: false; error: string } | { success: true }> {
-  const auth = await ensureServerSession();
-  if (!auth.ok) return { success: false, error: auth.error };
-  return { success: true };
-}
 
 // Zod schema for sales record validation
 const SalesRecordSchema = z.object({
@@ -172,14 +168,9 @@ export async function uploadSalesFiles(formData: FormData): Promise<{
   uploadedFiles?: Array<{ fileName: string; recordCount: number; auditLog: SalesAuditLog }>;
   error?: string;
 }> {
-  const authCheck = await checkAuth();
-  if (!authCheck.success) {
-    return authCheck;
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) {
-    return { success: false, error: writable.error };
+  const authError = await requireMutationAccess();
+  if (authError) {
+    return { success: false, error: authError };
   }
   
   const supabase = getSupabaseAdmin();
@@ -376,8 +367,8 @@ export interface SalesMetrics {
 
 // Function to fetch sales data for history with pagination
 export async function fetchSalesHistory(page = 1, pageSize = 10) {
-  const auth = await ensureServerSession();
-  if (!auth.ok) return null;
+  const authError = await requireReadAccess();
+  if (authError) return null;
 
   const supabase = getSupabaseAdmin();
   
@@ -430,14 +421,9 @@ export async function fetchSalesHistory(page = 1, pageSize = 10) {
 
 // Function to delete a sales upload and its associated records
 export async function deleteSalesUpload(uploadId: string) {
-  const authCheck = await checkAuth();
-  if (!authCheck.success) {
-    return authCheck;
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) {
-    return { success: false, error: writable.error };
+  const authError = await requireMutationAccess();
+  if (authError) {
+    return { success: false, error: authError };
   }
   
   const supabase = getSupabaseAdmin();
@@ -558,9 +544,9 @@ async function saveProductCategory(
  * Get all product categories
  */
 export async function getAllProductCategories() {
-  const auth = await ensureServerSession();
-  if (!auth.ok) {
-    return { success: false, error: auth.error, categories: [] };
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false, error: authError, categories: [] };
   }
 
   const supabase = getSupabaseAdmin();
@@ -614,14 +600,9 @@ async function ensureProductCategoriesTable(supabase: SupabaseClient) {
  * Update product category (user edit)
  */
 export async function updateProductCategory(productName: string, newCategory: string) {
-  const authCheck = await checkAuth();
-  if (!authCheck.success) {
-    return authCheck;
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) {
-    return { success: false, error: writable.error };
+  const authError = await requireMutationAccess();
+  if (authError) {
+    return { success: false, error: authError };
   }
   
   const supabase = getSupabaseAdmin();
@@ -698,14 +679,9 @@ export async function updateProductCategory(productName: string, newCategory: st
  * Delete a category (removes it from all products that use it)
  */
 export async function deleteCategory(categoryName: string) {
-  const authCheck = await checkAuth();
-  if (!authCheck.success) {
-    return authCheck;
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) {
-    return { success: false, error: writable.error };
+  const authError = await requireMutationAccess();
+  if (authError) {
+    return { success: false, error: authError };
   }
   
   const supabase = getSupabaseAdmin();
@@ -755,14 +731,9 @@ export async function deleteCategory(categoryName: string) {
  * Auto-categorize all uncategorized products using AI
  */
 export async function autoCategorizeAllProducts() {
-  const authCheck = await checkAuth();
-  if (!authCheck.success) {
-    return authCheck;
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) {
-    return { success: false, error: writable.error };
+  const authError = await requireMutationAccess();
+  if (authError) {
+    return { success: false, error: authError };
   }
   
   const supabase = getSupabaseAdmin();
@@ -830,12 +801,20 @@ export async function autoCategorizeAllProducts() {
   }
 }
 
+export type GetSalesMetricsOptions = {
+  includeAllProducts?: boolean;
+};
+
 /**
  * Enhanced getSalesMetrics that uses product categories
  */
-export async function getSalesMetrics(startDateStr?: string, endDateStr?: string): Promise<SalesMetrics | null> {
-  const auth = await ensureServerSession();
-  if (!auth.ok) return null;
+export async function getSalesMetrics(
+  startDateStr?: string,
+  endDateStr?: string,
+  options?: GetSalesMetricsOptions,
+): Promise<SalesMetrics | null> {
+  const authError = await requireReadAccess();
+  if (authError) return null;
 
   const supabase = getSupabaseAdmin();
   
@@ -1009,6 +988,7 @@ export async function getSalesMetrics(startDateStr?: string, endDateStr?: string
       .sort((a, b) => b.totalRevenue - a.totalRevenue);
 
     const topProducts = allProducts.slice(0, 10);
+    const includeAllProducts = options?.includeAllProducts !== false;
 
     // MoM comparison
     let momComparison = null;
@@ -1069,7 +1049,7 @@ export async function getSalesMetrics(startDateStr?: string, endDateStr?: string
       monthlyMetrics,
       categoryMetrics,
       topProducts,
-      allProducts,
+      allProducts: includeAllProducts ? allProducts : [],
       comparisons: {
         mom: momComparison,
         yoy: yoyComparison
@@ -1080,4 +1060,10 @@ export async function getSalesMetrics(startDateStr?: string, endDateStr?: string
     console.error('[METRICS_ERROR]', error);
     return null;
   }
+}
+
+/** Full product breakdown — defer on client after slim RSC payload. */
+export async function getSalesProductBreakdown(): Promise<SalesMetrics['allProducts']> {
+  const metrics = await getSalesMetrics(undefined, undefined, { includeAllProducts: true });
+  return metrics?.allProducts ?? [];
 }

@@ -1,7 +1,12 @@
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
 import { getAllProductCategories, getSalesMetrics } from '@/app/actions/sales-actions';
-import SalesClient from './SalesClient';
+import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
+
+const SalesClient = createLazyFeatureClient(
+  () => import('./SalesClient'),
+  'กำลังโหลดข้อมูลยอดขาย...',
+);
 
 export default async function SalesPage({
   params,
@@ -14,7 +19,7 @@ export default async function SalesPage({
   }
 
   const [initialMetrics, categoriesResult] = await Promise.all([
-    getSalesMetrics(),
+    getSalesMetrics(undefined, undefined, { includeAllProducts: false }),
     getAllProductCategories(),
   ]);
 

@@ -1,9 +1,14 @@
-import InventoryCountClient from './InventoryCountClient';
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
 import { fetchCountAccuracyStats } from '@/app/actions/inventory-actions';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
+import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
+
+const InventoryCountClient = createLazyFeatureClient(
+  () => import('./InventoryCountClient'),
+  'กำลังโหลดหน้านับสต็อก...',
+);
 
 export default async function InventoryCountPage({
   params,

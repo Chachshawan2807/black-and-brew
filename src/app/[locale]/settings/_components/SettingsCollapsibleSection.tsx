@@ -37,7 +37,7 @@ export default function SettingsCollapsibleSection({
           open && 'border-b border-border'
         )}
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
           <Icon size={18} strokeWidth={1.75} className="text-foreground/70" />
         </div>
         <span className="flex-1 text-[14px] text-foreground leading-snug">{title}</span>

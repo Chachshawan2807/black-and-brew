@@ -64,6 +64,16 @@ vi.mock('@/lib/schedule/fetch-daily-shifts', () => ({
   })),
 }));
 
+const mockRequirePrivilegedSession = vi.fn(async () => ({
+  ok: true as const,
+  readOnly: false,
+  userId: 'user-1',
+}));
+
+vi.mock('@/lib/policies/server-gate', () => ({
+  requirePrivilegedSession: (...args: unknown[]) => mockRequirePrivilegedSession(...args),
+}));
+
 import {
   AI_ALLOWED_TABLES,
   fetchTablePreset,
@@ -79,9 +89,28 @@ beforeEach(() => {
   captured.rpc = '';
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
+  mockRequirePrivilegedSession.mockReset();
+  mockRequirePrivilegedSession.mockResolvedValue({
+    ok: true,
+    readOnly: false,
+    userId: 'user-1',
+  });
 });
 
 describe('fetchTablePreset', () => {
+  test('rejects unauthenticated callers before querying the admin client', async () => {
+    mockRequirePrivilegedSession.mockResolvedValueOnce({
+      ok: false,
+      error: 'Unauthorized: Session missing or invalid',
+    });
+
+    const result = await fetchTablePreset('inventory_items');
+
+    expect(result.ok).toBe(false);
+    expect(captured.select).toBe('');
+    expect(result.error?.message).toBe('Unauthorized: Session missing or invalid');
+  });
+
   test('selects exactly the preset columns and returns preset-shaped rows', async () => {
     const result = await fetchTablePreset('inventory_items');
 

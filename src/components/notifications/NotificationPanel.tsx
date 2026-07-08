@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, CalendarRange } from 'lucide-react';
+import { X, CalendarRange, CheckCheck, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, notificationOverlay, notificationPanel, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
@@ -20,8 +20,16 @@ import type { InventoryNotification } from '@/lib/notification-types';
 import { ExpandableLines } from '@/components/ui/expandable-lines';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { NotificationItemIcon } from '@/components/notifications/NotificationItemIcon';
+import { isScheduleNotification } from '@/lib/notification-display-icon';
 import { PWA_BRAND_ICON } from '@/lib/pwa-assets';
 import Image from 'next/image';
+
+function getNotificationDetailLines(item: InventoryNotification): string[] {
+  if (isScheduleNotification(item) && item.fieldSummary.trim()) {
+    return item.fieldSummary.split('\n').filter(Boolean);
+  }
+  return item.summary ? [item.summary] : [];
+}
 
 function NotificationRow({
   item,
@@ -36,7 +44,7 @@ function NotificationRow({
 }) {
   const lines = [
     item.title,
-    item.summary,
+    ...getNotificationDetailLines(item),
     `${item.actorLabel} · ${formatNotificationTime(item.occurredAt, locale)}`,
   ].filter(Boolean);
 
@@ -182,37 +190,43 @@ export function NotificationPanel() {
                     </p>
                   </div>
                 </div>
-                <HintTooltip tip={isTh ? 'ปิดการแจ้งเตือน' : 'Close notifications'}>
-                  <button
-                    type="button"
-                    onClick={closePanel}
-                    className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-muted bb-transition"
-                    aria-label={isTh ? 'ปิด' : 'Close'}
-                  >
-                    <X size={18} strokeWidth={1.75} />
-                  </button>
-                </HintTooltip>
-              </header>
-
-              {notifications.length > 0 && (
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-border shrink-0">
-                  <button
-                    type="button"
-                    onClick={markAllRead}
-                    className="text-[12px] text-muted-foreground hover:text-foreground bb-transition"
-                  >
-                    {isTh ? 'อ่านทั้งหมด' : 'Mark all read'}
-                  </button>
-                  <span className="text-muted-foreground/50">·</span>
-                  <button
-                    type="button"
-                    onClick={clearAll}
-                    className="text-[12px] text-muted-foreground hover:text-foreground bb-transition"
-                  >
-                    {isTh ? 'ล้างประวัติ' : 'Clear history'}
-                  </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {notifications.length > 0 && (
+                    <>
+                      <HintTooltip tip={isTh ? 'อ่านทั้งหมด' : 'Mark all read'}>
+                        <button
+                          type="button"
+                          onClick={markAllRead}
+                          className="h-9 w-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted bb-transition"
+                          aria-label={isTh ? 'อ่านทั้งหมด' : 'Mark all read'}
+                        >
+                          <CheckCheck size={17} strokeWidth={1.75} />
+                        </button>
+                      </HintTooltip>
+                      <HintTooltip tip={isTh ? 'ล้างประวัติ' : 'Clear history'}>
+                        <button
+                          type="button"
+                          onClick={clearAll}
+                          className="h-9 w-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted bb-transition"
+                          aria-label={isTh ? 'ล้างประวัติ' : 'Clear history'}
+                        >
+                          <Trash2 size={17} strokeWidth={1.75} />
+                        </button>
+                      </HintTooltip>
+                    </>
+                  )}
+                  <HintTooltip tip={isTh ? 'ปิดการแจ้งเตือน' : 'Close notifications'}>
+                    <button
+                      type="button"
+                      onClick={closePanel}
+                      className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-muted bb-transition"
+                      aria-label={isTh ? 'ปิด' : 'Close'}
+                    >
+                      <X size={18} strokeWidth={1.75} />
+                    </button>
+                  </HintTooltip>
                 </div>
-              )}
+              </header>
 
               <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll px-4 py-4 space-y-5">
                 {groups.length === 0 ? (

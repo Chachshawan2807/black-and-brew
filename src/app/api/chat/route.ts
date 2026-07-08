@@ -6,6 +6,9 @@ import { readTableTool, getDailyShiftsTool } from '@/app/actions/tools/database-
 import { internetSearchTool } from '@/app/actions/tools/search-tools';
 import { EXECUTIVE_RULES } from '@/lib/agents/executive-rules';
 import { createDeterministicChatStreamResponse } from '@/lib/schedule/create-deterministic-chat-stream';
+import { isUpcomingMaintenanceQuery } from '@/lib/maintenance/detect-maintenance-query';
+import { fetchUpcomingMaintenanceTasks } from '@/lib/maintenance/fetch-upcoming-maintenance';
+import { formatMaintenanceChatResponse } from '@/lib/maintenance/format-maintenance-chat-response';
 import {
   isDailyScheduleQuery,
   resolveScheduleTargetDate,
@@ -14,8 +17,7 @@ import { fetchDailyShiftsByDate } from '@/lib/schedule/fetch-daily-shifts';
 import { formatScheduleChatResponse } from '@/lib/schedule/format-schedule-chat-response';
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
 import { sanitizePromptInput } from '@/lib/security/sanitize';
-import { ensureServerSession } from '@/lib/security/server-auth';
-import { READ_ONLY_DENY_MSG } from '@/lib/auth-constants';
+import { requirePrivilegedSession } from '@/lib/policies/server-gate';
 import { SlidingWindowRateLimiter } from '@/lib/rate-limit/sliding-window';
 
 /** Separate rate-limiter instance dedicated to the chat endpoint (not shared with Tavily). */
@@ -477,18 +479,12 @@ export async function POST(req: Request) {
     // DEC-069: read-only PIN sessions are denied here because AI tools run via
     // the Service Role adminClient (RLS bypass) and could otherwise be coaxed
     // into reading the entire database from a view-only kiosk account.
-    const auth = await ensureServerSession();
+    const auth = await requirePrivilegedSession();
 
     if (!auth.ok) {
-      return new Response(JSON.stringify({ error: 'Unauthorized: Session missing' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (auth.readOnly) {
-      return new Response(JSON.stringify({ error: READ_ONLY_DENY_MSG }), {
-        status: 403,
+      const status = auth.error.startsWith('Unauthorized') ? 401 : 403;
+      return new Response(JSON.stringify({ error: auth.error }), {
+        status,
         headers: { 'Content-Type': 'application/json' },
       });
     }
@@ -558,6 +554,25 @@ export async function POST(req: Request) {
         return createDeterministicChatStreamResponse(responseText);
       } catch (scheduleError) {
         console.error('[BRU_AI] Deterministic schedule fetch failed:', scheduleError);
+      }
+    }
+
+    if (intents.maintenance >= INTENT_THRESHOLD && isUpcomingMaintenanceQuery(cleanInput)) {
+      try {
+        const tasks = await fetchUpcomingMaintenanceTasks(currentIsoDate);
+        const responseText = formatMaintenanceChatResponse(tasks);
+
+        await logAuditTrail({
+          userId: auth.userId || 'PIN_AUTH_USER',
+          model: 'deterministic-maintenance',
+          intent: 'maintenance',
+          tokenEstimate: 0,
+          status: 'SUCCESS',
+        });
+
+        return createDeterministicChatStreamResponse(responseText);
+      } catch (maintenanceError) {
+        console.error('[BRU_AI] Deterministic maintenance fetch failed:', maintenanceError);
       }
     }
 

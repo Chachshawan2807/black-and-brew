@@ -44,7 +44,7 @@ export function FabStackHideToggle() {
           'backdrop-blur-sm',
           'border border-white/25 dark:border-white/20',
           'ring-1 ring-black/10 dark:ring-white/15',
-          'shadow-[0_2px_8px_rgba(0,0,0,0.18)]',
+          'bb-shadow-sm',
         )}
       >
         {fabStackHidden ? (

@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 const CALENDAR_ID = 'th.th#holiday@group.v.calendar.google.com';
 
@@ -15,12 +15,6 @@ type GoogleCalendarEvent = {
     dateTime?: string;
   };
 };
-
-function getSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(supabaseUrl, supabaseAdminKey);
-}
 
 function groupHolidayNamesByDate(items: GoogleCalendarEvent[]): Map<string, string> {
   const grouped = new Map<string, string[]>();
@@ -39,13 +33,13 @@ function groupHolidayNamesByDate(items: GoogleCalendarEvent[]): Map<string, stri
     [...grouped.entries()].map(([date, names]) => [
       date,
       [...new Set(names)].join(' / '),
-    ])
+    ]),
   );
 }
 
 export async function fetchAndPersistHolidays(
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<{ success: true; count: number } | { success: false; error: string }> {
   const apiKey = process.env.GOOGLE_CALENDAR_API_KEY;
   if (!apiKey) {
@@ -70,33 +64,61 @@ export async function fetchAndPersistHolidays(
     }
 
     const holidaysByDate = groupHolidayNamesByDate(data.items as GoogleCalendarEvent[]);
+    if (holidaysByDate.size === 0) {
+      return { success: true, count: 0 };
+    }
+
     const supabaseAdmin = getSupabaseAdmin();
-    let syncedCount = 0;
+    const dates = [...holidaysByDate.keys()];
+
+    const { data: existingRows, error: existingError } = await supabaseAdmin
+      .from('holidays')
+      .select('id, date, name')
+      .in('date', dates);
+
+    if (existingError) {
+      return { success: false, error: existingError.message };
+    }
+
+    const existingByDate = new Map(
+      (existingRows ?? []).map((row: { id: string; date: string; name: string }) => [row.date, row]),
+    );
+
+    const toInsert: { date: string; name: string }[] = [];
+    const toUpdate: { id: string; name: string }[] = [];
 
     for (const [date, name] of holidaysByDate) {
-      const { data: existing } = await supabaseAdmin
-        .from('holidays')
-        .select('id, name')
-        .eq('date', date)
-        .maybeSingle();
-
+      const existing = existingByDate.get(date);
       if (!existing) {
-        const { error: insertError } = await supabaseAdmin
-          .from('holidays')
-          .insert({ date, name });
-
-        if (!insertError) syncedCount++;
+        toInsert.push({ date, name });
         continue;
       }
-
       if (existing.name !== name) {
-        const { error: updateError } = await supabaseAdmin
-          .from('holidays')
-          .update({ name })
-          .eq('id', existing.id);
-
-        if (!updateError) syncedCount++;
+        toUpdate.push({ id: existing.id, name });
       }
+    }
+
+    let syncedCount = 0;
+
+    if (toInsert.length > 0) {
+      const { error: insertError } = await supabaseAdmin.from('holidays').insert(toInsert);
+      if (insertError) {
+        return { success: false, error: insertError.message };
+      }
+      syncedCount += toInsert.length;
+    }
+
+    if (toUpdate.length > 0) {
+      const results = await Promise.all(
+        toUpdate.map((row) =>
+          supabaseAdmin.from('holidays').update({ name: row.name }).eq('id', row.id),
+        ),
+      );
+      const updateError = results.find((r) => r.error)?.error;
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
+      syncedCount += toUpdate.length;
     }
 
     return { success: true, count: syncedCount };

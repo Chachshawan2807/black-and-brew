@@ -1,9 +1,14 @@
-import InventoryClient from './InventoryClient';
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
+import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 import type { ColumnSettings } from './types';
+
+const InventoryClient = createLazyFeatureClient(
+  () => import('./InventoryClient'),
+  'กำลังโหลดข้อมูลสต็อกล่าสุด...',
+);
 
 export default async function InventoryPage({
   params,

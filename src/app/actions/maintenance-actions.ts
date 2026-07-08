@@ -3,27 +3,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { computeFieldChanges } from '@/lib/data-change-log';
-import { ensureServerSession } from '@/lib/security/server-auth';
+import { gateMutation } from '@/lib/policies/server-gate';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey);
 
 async function ensureAuthorized() {
-  const auth = await ensureServerSession();
-  if (!auth.ok) {
-    return { success: false as const, error: auth.error };
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) {
-    return { success: false as const, error: writable.error };
-  }
-
-  return { success: true as const };
+  return gateMutation();
 }
 
 const serviceRecordSchema = z.object({

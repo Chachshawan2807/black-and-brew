@@ -5,26 +5,15 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { normalizeRegularHolidayDays } from '@/lib/regular-holidays';
 import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
-import { assertWritableSession } from '@/app/actions/auth';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
-import { ensureServerSession } from '@/lib/security/server-auth';
+import { gateMutation } from '@/lib/policies/server-gate';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabaseAdmin = createClient(supabaseUrl, supabaseAdminKey);
 
 async function ensureAuthorized() {
-  const auth = await ensureServerSession();
-  if (!auth.ok) {
-    return { success: false, error: auth.error } as const;
-  }
-
-  const writable = await assertWritableSession();
-  if (!writable.ok) {
-    return { success: false, error: writable.error } as const;
-  }
-
-  return { success: true } as const;
+  return gateMutation();
 }
 
 const dateRangeSchema = z.object({

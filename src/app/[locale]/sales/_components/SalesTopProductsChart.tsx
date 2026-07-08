@@ -28,7 +28,7 @@ function CustomTooltip({
 }) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-card p-4 rounded-2xl shadow-xl border border-border">
+      <div className="bg-card p-4 rounded-2xl bb-shadow-md border border-border">
         <p className="text-sm font-medium text-foreground/80 mb-2">{label}</p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>

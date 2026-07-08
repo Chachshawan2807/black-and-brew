@@ -41,15 +41,18 @@ describe('notification fab cross-platform sync', () => {
   );
 
   test('NotificationProvider wraps FAB on all pages (desktop + mobile)', () => {
-    expect(layoutSource).toContain('NotificationProvider');
-    expect(layoutSource).toContain('InventoryNotificationFAB');
-    expect(layoutSource).toMatch(
-      /<NotificationProvider>[\s\S]*<InventoryNotificationFAB/,
+    const deferredSource = readFileSync(
+      resolve(__dirname, '../components/shell/DeferredOverlays.tsx'),
+      'utf8',
     );
+    expect(layoutSource).toContain('NotificationProvider');
+    expect(layoutSource).toContain('DeferredOverlays');
+    expect(deferredSource).toContain('InventoryNotificationFAB');
   });
 
   test('hook syncs via realtime, cross-tab storage, and resume events', () => {
     expect(hookSource).toContain("postgres_changes");
+    expect(hookSource).toContain('realtimeReady');
     expect(hookSource).toContain('subscribeNotificationSync');
     expect(hookSource).toContain('visibilitychange');
     expect(hookSource).toContain('pageshow');

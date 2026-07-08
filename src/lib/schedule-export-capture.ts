@@ -1,4 +1,8 @@
-import { captureElementAsPng, downloadDataUrl } from '@/lib/capture-element-png';
+import {
+  captureElementAsPng,
+  downloadPngBlob,
+  preloadCaptureLibraries,
+} from '@/lib/capture-element-png';
 import { APP_FONT_FAMILY_CSS } from '@/lib/fonts';
 import { SCHEDULE_GRID_TEMPLATE } from '@/lib/schedule/grid-layout';
 
@@ -25,12 +29,6 @@ function resolveScheduleExportFontFamily(): string {
   return [...loadedFontFamilies, 'system-ui', 'sans-serif'].join(', ');
 }
 
-async function waitForScheduleExportFonts(): Promise<void> {
-  if ('fonts' in document) {
-    await document.fonts.ready;
-  }
-}
-
 function setInline(
   restores: Map<HTMLElement, Map<string, string>>,
   node: HTMLElement,
@@ -43,74 +41,23 @@ function setInline(
   node.style.setProperty(prop, value);
 }
 
-function hasClassToken(node: Element, token: string): boolean {
-  return (
-    node.classList.contains(token) ||
-    Array.from(node.classList).some((cls) => cls.startsWith(`${token}/`))
-  );
-}
-
-function hasBorderUtilityClass(node: Element): boolean {
-  return Array.from(node.classList).some(
-    (cls) =>
-      cls === 'border-border' ||
-      cls.startsWith('border-border/') ||
-      cls === 'border-b' ||
-      cls.startsWith('border-b/') ||
-      cls === 'border-r' ||
-      cls.startsWith('border-r/') ||
-      cls === 'border-t' ||
-      cls.startsWith('border-t/'),
-  );
-}
-
-/** Inline light-theme colors so html-to-image clones readable pixels under .dark. */
+/**
+ * Inline only layout-critical export styles. Theme colors come from
+ * `.bb-schedule-export-surface` CSS (including under `.dark`).
+ */
 export function applyScheduleTableCaptureStyles(root: HTMLElement): () => void {
   const restores = new Map<HTMLElement, Map<string, string>>();
-  const nodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))];
   const fontFamily = resolveScheduleExportFontFamily();
 
-  for (const node of nodes) {
-    if (!(node instanceof HTMLElement)) continue;
-    setInline(restores, node, 'font-family', fontFamily);
-    if (isPastelShiftSurface(node)) continue;
+  setInline(restores, root, 'font-family', fontFamily);
 
-    if (hasClassToken(node, 'text-foreground')) {
-      setInline(restores, node, 'color', SCHEDULE_EXPORT_TEXT);
-    } else if (hasClassToken(node, 'text-muted-foreground')) {
-      setInline(restores, node, 'color', SCHEDULE_EXPORT_MUTED);
-    }
+  root.querySelectorAll<HTMLElement>('.bb-schedule-grid').forEach((node) => {
+    setInline(restores, node, 'grid-template-columns', SCHEDULE_EXPORT_GRID_TEMPLATE);
+  });
 
-    if (hasClassToken(node, 'bg-card') || hasClassToken(node, 'bg-transparent')) {
-      if (hasClassToken(node, 'bg-transparent')) {
-        setInline(restores, node, 'background-color', 'transparent');
-      } else {
-        setInline(restores, node, 'background-color', SCHEDULE_EXPORT_BG);
-      }
-    }
-
-    if (hasBorderUtilityClass(node)) {
-      for (const prop of [
-        'border-top-color',
-        'border-right-color',
-        'border-bottom-color',
-        'border-left-color',
-      ] as const) {
-        setInline(restores, node, prop, SCHEDULE_EXPORT_BORDER);
-      }
-    }
-
-    if (node.classList.contains('bb-schedule-grid')) {
-      setInline(restores, node, 'grid-template-columns', SCHEDULE_EXPORT_GRID_TEMPLATE);
-    }
-
-    if (node.classList.contains('bb-schedule-nowrap')) {
-      setInline(restores, node, 'white-space', 'nowrap');
-    }
-  }
-
-  setInline(restores, root, 'background-color', SCHEDULE_EXPORT_BG);
-  setInline(restores, root, 'color', SCHEDULE_EXPORT_TEXT);
+  root.querySelectorAll<HTMLElement>('.bb-schedule-nowrap').forEach((node) => {
+    setInline(restores, node, 'white-space', 'nowrap');
+  });
 
   return () => {
     restores.forEach((props, node) => {
@@ -122,16 +69,12 @@ export function applyScheduleTableCaptureStyles(root: HTMLElement): () => void {
   };
 }
 
-function isPastelShiftSurface(node: HTMLElement): boolean {
-  return node.classList.contains('bb-pastel-surface');
-}
-
 export async function withLightDocumentTheme<T>(fn: () => Promise<T>): Promise<T> {
   const html = document.documentElement;
   const hadDark = html.classList.contains('dark');
   if (hadDark) html.classList.remove('dark');
   await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    requestAnimationFrame(() => resolve());
   });
   try {
     return await fn();
@@ -140,14 +83,14 @@ export async function withLightDocumentTheme<T>(fn: () => Promise<T>): Promise<T
   }
 }
 
-export async function captureScheduleTableAsPng(element: HTMLElement): Promise<string> {
+export async function captureScheduleTableAsPng(element: HTMLElement): Promise<Blob> {
+  preloadCaptureLibraries();
   return withLightDocumentTheme(async () => {
-    await waitForScheduleExportFonts();
     const restoreStyles = applyScheduleTableCaptureStyles(element);
     try {
       return await captureElementAsPng(element, {
         backgroundColor: SCHEDULE_EXPORT_BG,
-        skipFonts: false,
+        skipFonts: true,
       });
     } finally {
       restoreStyles();
@@ -155,4 +98,4 @@ export async function captureScheduleTableAsPng(element: HTMLElement): Promise<s
   });
 }
 
-export { downloadDataUrl };
+export { downloadPngBlob, preloadCaptureLibraries };

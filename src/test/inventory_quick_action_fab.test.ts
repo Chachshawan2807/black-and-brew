@@ -8,9 +8,18 @@ describe('Inventory Quick Action FAB', () => {
       path.resolve(__dirname, '../app/[locale]/layout.tsx'),
       'utf-8',
     );
+    const deferredCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/shell/DeferredOverlays.tsx'),
+      'utf-8',
+    );
 
-    expect(layoutCode).toMatch(
-      /<InventoryQuickActionWrapper\s*\/>\s*\r?\n\s*<InventoryNotificationFAB\s*\/>\s*\r?\n\s*<AIChatOverlay/,
+    expect(layoutCode).toContain('<DeferredOverlays />');
+    expect(deferredCode).toContain('<InventoryQuickActionWrapper />');
+    expect(deferredCode).toMatch(
+      /<InventoryQuickActionWrapper\s*\/>\s*\r?\n\s*<InventoryNotificationFAB/,
+    );
+    expect(deferredCode).toMatch(
+      /<InventoryNotificationFAB\s*\/>\s*\r?\n\s*<AIChatOverlay/,
     );
     expect(layoutCode).toContain('<FabStackHideToggle />');
   });
@@ -54,8 +63,8 @@ describe('Inventory Quick Action FAB', () => {
   });
 
   test('layout mounts inventory notification FAB above quick action', () => {
-    const layoutCode = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/layout.tsx'),
+    const deferredCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/shell/DeferredOverlays.tsx'),
       'utf-8',
     );
     const notifyCode = fs.readFileSync(
@@ -67,8 +76,10 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
 
-    expect(layoutCode).toContain('InventoryNotificationFAB');
-    expect(layoutCode).toMatch(/<InventoryQuickActionWrapper\s*\/>\s*\r?\n\s*<InventoryNotificationFAB/);
+    expect(deferredCode).toContain('InventoryNotificationFAB');
+    expect(deferredCode).toMatch(
+      /<InventoryQuickActionWrapper\s*\/>\s*\r?\n\s*<InventoryNotificationFAB/,
+    );
     expect(notifyCode).toContain('variant="fab"');
     expect(notifyCode).not.toContain('/inventory');
     expect(notifyCode).toMatch(/isAnyOtherOpen\('notification'\)/);
@@ -206,14 +217,19 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).not.toContain('bb-quick-search-fit');
   });
 
-  test('quick action wrapper renders FAB on every page (global layout)', () => {
+  test('quick action wrapper mounts globally from deferred overlays on all routes', () => {
     const wrapperCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionWrapper.tsx'),
       'utf-8',
     );
+    const deferredCode = fs.readFileSync(
+      path.resolve(__dirname, '../components/shell/DeferredOverlays.tsx'),
+      'utf-8',
+    );
 
     expect(wrapperCode).toContain('InventoryQuickActionFAB');
-    expect(wrapperCode).not.toContain('usePathname');
     expect(wrapperCode).not.toContain('return null');
+    expect(deferredCode).not.toContain('isInventoryRoute');
+    expect(deferredCode).toContain('InventoryQuickActionWrapper');
   });
 });

@@ -492,7 +492,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                           ฿{(record.cost || 0).toLocaleString()}
                         </td>
                         <td className="py-4 px-5 text-sm font-normal antialiased text-center">
-                          <span className={`inline-flex px-3 py-1.5 text-xs rounded-2xl items-center justify-center gap-1.5 transition-all shadow-sm border ${record.status === 'เสร็จสมบูรณ์'
+                          <span className={`inline-flex px-3 py-1.5 text-xs rounded-2xl items-center justify-center gap-1.5 transition-all bb-shadow-sm border ${record.status === 'เสร็จสมบูรณ์'
                             ? 'bb-pastel-surface bg-[#f0fdf4] text-[#000000] border-[#dcfce7]'
                             : 'bb-pastel-surface bg-[#f0f9ff] text-[#000000] border-[#e0f2fe]'
                             }`}>

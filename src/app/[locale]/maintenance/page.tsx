@@ -1,7 +1,12 @@
-import MaintenanceClient from './MaintenanceClient';
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
+
+const MaintenanceClient = createLazyFeatureClient(
+  () => import('./MaintenanceClient'),
+  'กำลังโหลดข้อมูลซ่อมบำรุง...',
+);
 
 export default async function MaintenancePage({
   params,

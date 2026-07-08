@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { parseISO, startOfDay, endOfDay, addDays } from 'date-fns';
 import { CalendarDays, CalendarOff, CalendarX, CalendarClock, CalendarRange, Sun, type LucideIcon } from 'lucide-react';
@@ -150,8 +150,8 @@ function StatusGrid({ profiles, shifts, dateLabel, highlightToday = false }: Sta
           <article
             key={profile.id}
             aria-label={`พนักงาน: ${profile.full_name}, วันที่: ${dateLabel}, กะงาน: ${displayText}`}
-            className={`${colorClass} group relative w-[7.25rem] shrink-0 overflow-hidden rounded-2xl p-3 min-h-[4.75rem] flex flex-col justify-between gap-2 bb-transition hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${
-              highlightToday && isWorkShift ? 'ring-2 ring-border bb-shadow-sm' : 'shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
+            className={`${colorClass} group relative w-[7.25rem] shrink-0 overflow-hidden rounded-2xl p-3 min-h-[4.75rem] flex flex-col justify-between gap-2 bb-transition bb-shadow-hover-md hover:-translate-y-0.5 ${
+              highlightToday && isWorkShift ? 'ring-2 ring-border bb-shadow-sm' : 'bb-shadow-sm'
             }`}
             style={colorStyle}
           >
@@ -237,63 +237,47 @@ export default function LiveStatusTracker({
     setTomorrowShifts(initialTomorrowShifts);
   }, [initialProfiles, initialShifts, initialTomorrowShifts]);
 
+  const shiftDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profileDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const debouncedRefreshShifts = useCallback(() => {
+    if (shiftDebounceRef.current) clearTimeout(shiftDebounceRef.current);
+    shiftDebounceRef.current = setTimeout(() => {
+      void (async () => {
+        const bkkNow = toZonedTime(new Date(), 'Asia/Bangkok');
+        const bkkTomorrow = addDays(bkkNow, 1);
+        const [today, tomorrow] = await Promise.all([
+          fetchShiftsForBkkDay(bkkNow),
+          fetchShiftsForBkkDay(bkkTomorrow),
+        ]);
+        setShifts(today);
+        setTomorrowShifts(tomorrow);
+      })();
+    }, 300);
+  }, []);
+
+  const debouncedRefreshProfiles = useCallback(() => {
+    if (profileDebounceRef.current) clearTimeout(profileDebounceRef.current);
+    profileDebounceRef.current = setTimeout(() => {
+      void (async () => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, schedule_order')
+          .order('schedule_order', { ascending: true });
+        if (data) setProfiles(data);
+      })();
+    }, 300);
+  }, []);
+
+  useShiftRealtime({
+    onShiftsChange: debouncedRefreshShifts,
+    onProfilesChange: debouncedRefreshProfiles,
+  });
+
   useEffect(() => {
-    const refreshShifts = async () => {
-      const bkkNow = toZonedTime(new Date(), 'Asia/Bangkok');
-      const bkkTomorrow = addDays(bkkNow, 1);
-      const [today, tomorrow] = await Promise.all([
-        fetchShiftsForBkkDay(bkkNow),
-        fetchShiftsForBkkDay(bkkTomorrow),
-      ]);
-      setShifts(today);
-      setTomorrowShifts(tomorrow);
-    };
-
-    const refreshProfiles = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, schedule_order')
-        .order('schedule_order', { ascending: true });
-      if (data) setProfiles(data);
-    };
-
-    // Debounce timers to coalesce rapid-fire realtime events
-    let shiftDebounce: ReturnType<typeof setTimeout> | null = null;
-    let profileDebounce: ReturnType<typeof setTimeout> | null = null;
-
-    const debouncedRefreshShifts = () => {
-      if (shiftDebounce) clearTimeout(shiftDebounce);
-      shiftDebounce = setTimeout(() => void refreshShifts(), 300);
-    };
-
-    const debouncedRefreshProfiles = () => {
-      if (profileDebounce) clearTimeout(profileDebounce);
-      profileDebounce = setTimeout(() => void refreshProfiles(), 300);
-    };
-
-    let cancelled = false;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-
-    void (async () => {
-      await ensureSupabaseSession();
-      if (cancelled) return;
-
-      channel = supabase
-        .channel('live-shifts-presence')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
-          debouncedRefreshShifts();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          debouncedRefreshProfiles();
-        })
-        .subscribe();
-    })();
-
     return () => {
-      cancelled = true;
-      if (shiftDebounce) clearTimeout(shiftDebounce);
-      if (profileDebounce) clearTimeout(profileDebounce);
-      if (channel) supabase.removeChannel(channel);
+      if (shiftDebounceRef.current) clearTimeout(shiftDebounceRef.current);
+      if (profileDebounceRef.current) clearTimeout(profileDebounceRef.current);
     };
   }, []);
 

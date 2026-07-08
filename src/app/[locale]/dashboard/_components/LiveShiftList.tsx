@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shift, Profile } from '../types';
 import { CalendarDays, Users, GripVertical } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { toZonedTime } from 'date-fns-tz';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter } from 'next/navigation';
@@ -77,7 +77,7 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
         animate={{ opacity: 1, scale: 1 }}
         whileHover={isReadOnly ? undefined : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: "easeOut" } }}
         transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
-        className={`p-6 flex flex-col gap-5 bg-card select-none border border-border bb-shadow-sm bb-transition rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:bg-muted/30 hover:bb-shadow-md'}`}
+        className={`p-6 flex flex-col gap-5 bg-card select-none border border-border bb-shadow-sm bb-transition rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:bg-muted/30 bb-shadow-hover-md'}`}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1 py-1">
@@ -142,43 +142,29 @@ export default function LiveShiftList({
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState(new Date());
 
+  const refreshShiftsForRange = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('shifts')
+      .select('id, employee_id, start_time, end_time, status, metadata')
+      .gte('start_time', `${startDate}T00:00:00`)
+      .lte('start_time', `${endDate}T23:59:59`);
+    if (error) {
+      console.error('Supabase Error (LiveShiftList refresh):', error.message, error.details);
+      return;
+    }
+    if (data) setShifts(data as Shift[]);
+  }, [startDate, endDate]);
+
+  useShiftRealtime({
+    onShiftsChange: () => {
+      void refreshShiftsForRange();
+    },
+  });
+
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
-
-    const refreshShiftsForRange = async () => {
-      const { data, error } = await supabase
-        .from('shifts')
-        .select('id, employee_id, start_time, end_time, status, metadata')
-        .gte('start_time', `${startDate}T00:00:00`)
-        .lte('start_time', `${endDate}T23:59:59`);
-      if (error) {
-        console.error('Supabase Error (LiveShiftList refresh):', error.message, error.details);
-        return;
-      }
-      if (data) setShifts(data as Shift[]);
-    };
-
-    let cancelled = false;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-
-    void (async () => {
-      await ensureSupabaseSession();
-      if (cancelled) return;
-
-      channel = supabase
-        .channel('shifts-realtime-live-shift-list')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
-          void refreshShiftsForRange();
-        })
-        .subscribe();
-    })();
-
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [startDate, endDate]);
+    return () => clearInterval(timer);
+  }, []);
 
   const checkIsWorking = (profileId: string) => {
     const s = shifts.find(s => s.employee_id === profileId && s.status === 'scheduled');

@@ -1,6 +1,4 @@
-'use client';
-
-import React from 'react';
+import { preloadCaptureLibraries } from '@/lib/capture-element-png';
 import { Plus, Trash2, Undo2, Redo2, UserCog, Calendar, Download, Settings } from 'lucide-react';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -108,6 +106,8 @@ export default function ScheduleToolbar({
 
         <button
           onClick={onExportScheduleImage}
+          onMouseEnter={preloadCaptureLibraries}
+          onFocus={preloadCaptureLibraries}
           className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
         >
           <Download className="w-4 h-4" />

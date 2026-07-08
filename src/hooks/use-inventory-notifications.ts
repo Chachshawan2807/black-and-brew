@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import {
   fetchDataChangeLogs,
   type DataChangeLogRow,
@@ -88,12 +88,14 @@ function resolveUnreadCountWithServiceWorkerHint(
 
 export function useInventoryNotifications() {
   const params = useParams();
+  const pathname = usePathname();
   const locale = (params?.locale as string) || 'th';
 
   const [notifications, setNotifications] = useState<InventoryNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
+  const [realtimeReady, setRealtimeReady] = useState(false);
 
   const prefsRef = useRef(prefs);
   const localeRef = useRef(locale);
@@ -125,6 +127,15 @@ export function useInventoryNotifications() {
   useEffect(() => {
     localeRef.current = locale;
   }, [locale]);
+
+  useEffect(() => {
+    if (panelOpen || pathname?.includes('/inventory')) {
+      setRealtimeReady(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setRealtimeReady(true), 5000);
+    return () => window.clearTimeout(timer);
+  }, [panelOpen, pathname]);
 
   useEffect(() => {
     sessionIdRef.current = getClientSessionId();
@@ -258,6 +269,8 @@ export function useInventoryNotifications() {
   );
 
   useEffect(() => {
+    if (!realtimeReady) return;
+
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -340,7 +353,7 @@ export function useInventoryNotifications() {
       if (channel) void supabase.removeChannel(channel);
       window.removeEventListener('bb-notification-prefs-changed', onPrefsChange);
     };
-  }, [processRows, syncFromServerOnly]);
+  }, [realtimeReady, processRows, syncFromServerOnly]);
 
   useEffect(() => {
     const onResume = () => {

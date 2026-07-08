@@ -35,7 +35,7 @@ export function ExportProgressOverlay({
             animate={modalContent.animate}
             exit={modalContent.exit}
             transition={modalContent.transition}
-            className="relative w-full max-w-[300px] rounded-[28px] border border-border bg-card px-7 py-8 shadow-[0_20px_60px_rgb(0,0,0,0.24)] backdrop-blur-xl"
+            className="relative w-full max-w-[300px] rounded-[28px] border border-border bg-card px-7 py-8 bb-shadow-xl backdrop-blur-xl"
           >
             <div className="mx-auto mb-5 flex h-[72px] w-[72px] items-center justify-center">
               <motion.div
@@ -44,12 +44,12 @@ export function ExportProgressOverlay({
                 transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
               />
               <motion.div
-                className="absolute h-[56px] w-[56px] rounded-[18px] border border-border bg-card shadow-sm"
+                className="absolute h-[56px] w-[56px] rounded-[18px] border border-border bg-card bb-shadow-sm"
                 animate={{ y: [0, -2, 0] }}
                 transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
               />
               <motion.div
-                className="relative flex h-[44px] w-[44px] items-center justify-center rounded-2xl bg-foreground text-background shadow-md"
+                className="relative flex h-[44px] w-[44px] items-center justify-center rounded-2xl bg-foreground text-background bb-shadow-md"
                 animate={{ y: [0, -1, 0] }}
                 transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: 0.08 }}
               >

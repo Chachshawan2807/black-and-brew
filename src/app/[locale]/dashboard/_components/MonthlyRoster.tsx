@@ -129,11 +129,11 @@ export default function MonthlyRoster({
   };
 
   return (
-    <div className="w-full bg-card rounded-[32px] p-4 md:p-8 border border-border shadow-sm min-h-[700px] antialiased">
+    <div className="w-full bg-card rounded-[32px] p-4 md:p-8 border border-border bb-shadow-sm min-h-[700px] antialiased">
       {/* Header Controls */}
       <div className="relative z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-black flex items-center justify-center rounded-2xl shadow-lg">
+          <div className="w-12 h-12 bg-black flex items-center justify-center rounded-2xl bb-shadow-md">
             <CalendarIcon className="w-6 h-6 text-[#fdfcf0]" />
           </div>
           <h2 className="text-2xl text-foreground font-normal tracking-tight">ตารางเวรและภาพรวมช่วงวันที่</h2>
@@ -164,14 +164,14 @@ export default function MonthlyRoster({
           <div className="flex bg-muted rounded-[24px] p-1.5 gap-1.5">
             <button 
               onClick={() => setActiveTab('consolidated')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'consolidated' ? 'bg-card shadow-md text-foreground' : 'text-muted-foreground hover:text-foreground hover:opacity-100 opacity-60'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'consolidated' ? 'bg-card bb-shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:opacity-100 opacity-60'}`}
             >
               <Users className="w-4 h-4" />
               <span className="text-sm font-normal">รวมพนักงาน</span>
             </button>
             <button 
               onClick={() => setActiveTab('individual')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'individual' ? 'bg-card shadow-md text-foreground' : 'text-muted-foreground hover:text-foreground hover:opacity-100 opacity-60'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'individual' ? 'bg-card bb-shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:opacity-100 opacity-60'}`}
             >
               <User className="w-4 h-4" />
               <span className="text-sm font-normal">รายบุคคล</span>

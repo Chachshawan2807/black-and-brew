@@ -208,7 +208,7 @@ export default function AIChatOverlay() {
               exit={modalContent.exit}
               transition={modalContent.transition}
               className={cn(
-                'fixed z-[203] box-border bg-background rounded-3xl shadow-2xl border-2 border-border flex flex-col overflow-hidden',
+                'fixed z-[203] box-border bg-background rounded-3xl bb-shadow-xl border-2 border-border flex flex-col overflow-hidden',
                 'max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none',
                 'max-md:transition-[top,max-height,bottom] max-md:duration-200',
                 'md:w-full md:max-w-2xl md:left-auto md:right-6',
@@ -219,7 +219,7 @@ export default function AIChatOverlay() {
               {/* Header */}
               <div className="px-4 py-3 md:px-5 md:py-4 border-b-2 border-border flex items-center justify-between gap-3 bg-background">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-2xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 rounded-2xl bg-muted bb-shadow-sm flex items-center justify-center shrink-0 overflow-hidden">
                     <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={24} height={24} className="w-6 h-6 object-contain dark:invert" />
                   </div>
                   <div className="min-w-0">

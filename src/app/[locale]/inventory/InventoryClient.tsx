@@ -25,6 +25,8 @@ import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-fil
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from './_components/InventoryQuickActionBar';
+import { InventoryGridSearchBar } from './_components/InventoryGridSearchBar';
+import { filterInventoryGridItems } from '@/lib/inventory-grid-search';
 import type { TransactionHistoryRow } from './_components/InventoryHistoryModal';
 import {
   DndContext,
@@ -126,7 +128,7 @@ function CountPolicyToggle({
       aria-label="สลับวิธีตรวจนับ"
       onClick={savePolicy}
       className={cn(
-        'bb-pastel-surface inline-flex h-8 shrink-0 items-center rounded-full border px-2.5 text-[12px] text-black shadow-sm transition-all hover:scale-[1.02] active:scale-95',
+        'bb-pastel-surface inline-flex h-8 shrink-0 items-center rounded-full border px-2.5 text-[12px] text-black bb-shadow-sm transition-all hover:scale-[1.02] active:scale-95',
         policy === 'exact_count'
           ? 'border-[#bfdbfe] bg-[#dbeafe]'
           : 'border-[#f5c6cb] bg-[#f8d7da]',
@@ -198,7 +200,7 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
   );
 }
 
-const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdateField, handleSaveField, requestDelete, handleFocus, totalItems }: {
+const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdateField, handleSaveField, requestDelete, handleFocus, totalItems, dragDisabled = false }: {
   item: InventoryItem;
   index: number;
   columnById: ColumnLookup;
@@ -207,8 +209,9 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
   requestDelete: (id: string) => void;
   handleFocus: () => void;
   totalItems: number;
+  dragDisabled?: boolean;
 }) => {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition: dndTransition, isDragging } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition: dndTransition, isDragging } = useSortable({ id: item.id, disabled: dragDisabled });
 
   const manualOrderQty = isManualOrderQty(item);
 
@@ -233,8 +236,8 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
       data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "bb-inventory-row-containment bg-card border border-border rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
-        isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-foreground/10 cursor-grabbing"
+        "bb-inventory-row-containment bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        isDragging && "opacity-80 scale-[1.02] bb-shadow-xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
       {/* Card Header */}
@@ -275,11 +278,13 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
               <Trash2 className="w-4 h-4" />
             </button>
           </HintTooltip>
-          <SortableDragHandle
-            attributes={attributes}
-            listeners={listeners}
-            setActivatorNodeRef={setActivatorNodeRef}
-          />
+          {!dragDisabled && (
+            <SortableDragHandle
+              attributes={attributes}
+              listeners={listeners}
+              setActivatorNodeRef={setActivatorNodeRef}
+            />
+          )}
         </div>
       </div>
 
@@ -416,14 +421,16 @@ const MobileSortableRow = React.memo(({
   requestDelete,
   handleFocus,
   getStockColorClass,
+  dragDisabled = false,
 }: Pick<InventoryCellBaseProps, 'handleUpdateField' | 'handleSaveField' | 'handleFocus' | 'requestDelete'> & {
   item: InventoryItem;
   index: number;
   totalItems: number;
   columnById: ColumnLookup;
   getStockColorClass: (stock: number, orderPoint: number) => string;
+  dragDisabled?: boolean;
 }) => {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: item.id, disabled: dragDisabled });
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -446,19 +453,21 @@ const MobileSortableRow = React.memo(({
       data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "bb-inventory-row-containment w-full min-w-0 bg-card border border-border rounded-2xl p-3.5 shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
-        isDragging && "opacity-80 scale-[1.02] shadow-2xl ring-2 ring-foreground/10 cursor-grabbing"
+        "bb-inventory-row-containment w-full min-w-0 bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        isDragging && "opacity-80 scale-[1.02] bb-shadow-xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
       {/* Card Header: Item Index, Item Name (Editable), Grip Handle, Delete Button */}
       <div className="flex items-center justify-between gap-2 border-b border-border pb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <SortableDragHandle
-            attributes={attributes}
-            listeners={listeners}
-            setActivatorNodeRef={setActivatorNodeRef}
-            className="text-foreground/20 hover:text-foreground/50"
-          />
+          {!dragDisabled && (
+            <SortableDragHandle
+              attributes={attributes}
+              listeners={listeners}
+              setActivatorNodeRef={setActivatorNodeRef}
+              className="text-foreground/20 hover:text-foreground/50"
+            />
+          )}
           <EditableSortIndex
             id={item.id}
             displayIndex={index + 1}
@@ -869,7 +878,17 @@ export default function InventoryClient({
     buildColumnsFromSettings(initialColumnSettings ?? undefined, parseLocalColumnWidths())
   );
   const columnById = useMemo(() => new Map(columns.map((column) => [column.id, column])), [columns]);
-  const sortableItemIds = useMemo(() => items.map((item) => item.id), [items]);
+  const [gridSearchQuery, setGridSearchQuery] = useState('');
+  const [scrollTargetId, setScrollTargetId] = useState<string | null>(null);
+  const isGridSearchActive = gridSearchQuery.trim().length > 0;
+  const visibleItems = useMemo(
+    () => filterInventoryGridItems(items, gridSearchQuery),
+    [items, gridSearchQuery],
+  );
+  const sortableItemIds = useMemo(
+    () => (isGridSearchActive ? visibleItems : items).map((item) => item.id),
+    [items, visibleItems, isGridSearchActive],
+  );
   const [loading, setLoading] = useState(false);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -952,6 +971,11 @@ export default function InventoryClient({
     onSaveError: () => setSavingState('idle'),
   });
 
+  const handleGridSearchEnter = useCallback(() => {
+    if (visibleItems.length !== 1) return;
+    setScrollTargetId(visibleItems[0]!.id);
+  }, [visibleItems]);
+
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
     const updateLayout = () => setIsDesktopLayout(media.matches);
@@ -970,8 +994,9 @@ export default function InventoryClient({
     if (!element) return;
     try {
       setIsExportingPO(true);
-      const { captureElementAsPng, downloadDataUrl } = await import('@/lib/capture-element-png');
-      const dataUrl = await captureElementAsPng(element, {
+      const { captureElementAsPng, downloadPngBlob, preloadCaptureLibraries } = await import('@/lib/capture-element-png');
+      preloadCaptureLibraries();
+      const blob = await captureElementAsPng(element, {
         backgroundColor: '#fff3dd',
         preserveOverflow: true,
         filter: (node: HTMLElement) => node?.id !== 'po-action-buttons',
@@ -979,8 +1004,8 @@ export default function InventoryClient({
       const channelSuffix = selectedChannels.includes('all')
         ? 'All'
         : selectedChannels.join('-');
-      downloadDataUrl(
-        dataUrl,
+      downloadPngBlob(
+        blob,
         `PurchaseOrders-${channelSuffix}-${new Date().toISOString().split('T')[0]}.png`,
       );
     } catch (err) {
@@ -1051,6 +1076,19 @@ export default function InventoryClient({
     }, 3000);
     return () => window.clearTimeout(timer);
   }, [loading, items]);
+
+  useEffect(() => {
+    if (!scrollTargetId || typeof window === 'undefined') return;
+    const el = document.querySelector(`[data-inventory-item-id="${scrollTargetId}"]`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('ring-2', 'ring-amber-500/50');
+    const timer = window.setTimeout(() => {
+      el.classList.remove('ring-2', 'ring-amber-500/50');
+      setScrollTargetId(null);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [scrollTargetId, visibleItems]);
 
   const fetchConfigAndInventory = useCallback(async () => {
     try {
@@ -1393,6 +1431,7 @@ export default function InventoryClient({
 
   async function handleDragEndRows(event: DragEndEvent) {
     if (blockIfReadOnly()) return;
+    if (isGridSearchActive) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const rollbackItems = [...items];
@@ -1622,7 +1661,7 @@ export default function InventoryClient({
             </div>
           </div>
 
-          <div className="mb-8 sticky top-4 md:top-8 z-[50]">
+          <div className="mb-8 sticky top-4 md:top-8 z-[50] space-y-3">
             {isQuickActionBarOpen ? (
               <InventoryQuickActionBar
                 quickSearch={quickAction.quickSearch}
@@ -1663,11 +1702,18 @@ export default function InventoryClient({
                 type="button"
                 onClick={() => setIsQuickActionBarOpen(true)}
                 aria-expanded={false}
-                className="w-full rounded-3xl border border-border bg-card px-4 py-3 text-sm text-foreground shadow-sm transition-colors hover:bg-muted/50"
+                className="w-full rounded-3xl border border-border bg-card px-4 py-3 text-sm text-foreground bb-shadow-sm transition-colors hover:bg-muted/50"
               >
                 เปิด Quick Action
               </button>
             )}
+            <InventoryGridSearchBar
+              gridSearchQuery={gridSearchQuery}
+              setGridSearchQuery={setGridSearchQuery}
+              filteredCount={visibleItems.length}
+              totalCount={items.length}
+              onEnter={handleGridSearchEnter}
+            />
           </div>
 
           <div className={cn(isReadOnly && 'pointer-events-none opacity-60')}>
@@ -1683,10 +1729,14 @@ export default function InventoryClient({
                 <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
                   ไม่มีข้อมูลสินค้าในระบบ กรุณากด &quot;เพิ่มสินค้า&quot; นะคะ
                 </div>
+              ) : visibleItems.length === 0 ? (
+                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
+                  ไม่พบรายการที่ตรงกับ &quot;{gridSearchQuery.trim()}&quot;
+                </div>
               ) : (
                 <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
-                    {items.map((item, index) => (
+                    {visibleItems.map((item, index) => (
                       <SortableRow
                         key={item.id}
                         item={item}
@@ -1697,6 +1747,7 @@ export default function InventoryClient({
                         requestDelete={setDeleteId}
                         handleFocus={handleFocus}
                         totalItems={items.length}
+                        dragDisabled={isGridSearchActive}
                       />
                     ))}
                   </div>
@@ -1709,10 +1760,14 @@ export default function InventoryClient({
                 <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
                   ไม่มีข้อมูลสินค้าในระบบ กรุณากด &quot;เพิ่มสินค้า&quot; นะคะ
                 </div>
+              ) : visibleItems.length === 0 ? (
+                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
+                  ไม่พบรายการที่ตรงกับ &quot;{gridSearchQuery.trim()}&quot;
+                </div>
               ) : (
                 <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
-                    {items.map((item, index) => (
+                    {visibleItems.map((item, index) => (
                       <MobileSortableRow
                         key={item.id}
                         item={item}
@@ -1724,6 +1779,7 @@ export default function InventoryClient({
                         requestDelete={setDeleteId}
                         handleFocus={handleFocus}
                         getStockColorClass={getStockColorClass}
+                        dragDisabled={isGridSearchActive}
                       />
                     ))}
                   </div>
@@ -1746,7 +1802,7 @@ export default function InventoryClient({
           >
           <motion.div
             initial={modalContent.initial} animate={modalContent.animate} exit={modalContent.exit} transition={modalContent.transition}
-            className="relative bg-card border border-border rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="relative bg-card border border-border rounded-3xl bb-shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <HintTooltip tip="ปิด">
@@ -1890,7 +1946,7 @@ export default function InventoryClient({
                   <button type="button" onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="flex-1 py-3 px-4 bg-muted hover:bg-muted/80 border border-border rounded-3xl text-[14px] font-normal text-foreground transition-colors">
                     ยกเลิก
                   </button>
-                  <button type="submit" className="flex-1 py-3 px-4 bg-foreground hover:opacity-90 rounded-3xl text-[14px] font-normal text-background transition-colors shadow-sm">
+                  <button type="submit" className="flex-1 py-3 px-4 bg-foreground hover:opacity-90 rounded-3xl text-[14px] font-normal text-background transition-colors bb-shadow-sm">
                     บันทึกข้อมูล
                   </button>
                 </div>
@@ -1904,7 +1960,7 @@ export default function InventoryClient({
       <AnimatePresence>
         {deleteId && (
           <motion.div initial={fadeOverlay.initial} animate={fadeOverlay.animate} exit={fadeOverlay.exit} transition={fadeOverlay.transition} className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
-            <motion.div initial={modalContent.initial} animate={modalContent.animate} exit={modalContent.exit} transition={modalContent.transition} className="relative bg-card rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 text-center">
+            <motion.div initial={modalContent.initial} animate={modalContent.animate} exit={modalContent.exit} transition={modalContent.transition} className="relative bg-card rounded-3xl bb-shadow-xl w-full max-w-sm p-6 text-center">
               <HintTooltip tip="ปิด">
                 <button onClick={() => setDeleteId(null)} className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-colors z-10" aria-label="ปิด">
                   <X className="w-5 h-5" />
@@ -1919,7 +1975,7 @@ export default function InventoryClient({
                 <button onClick={() => setDeleteId(null)} className="flex-1 py-3 px-4 bg-muted hover:bg-muted/80 border border-border rounded-3xl text-[14px] font-normal text-foreground transition-colors">
                   ยกเลิก
                 </button>
-                <button onClick={executeDelete} className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-3xl text-[14px] font-normal text-white transition-colors shadow-sm">
+                <button onClick={executeDelete} className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-3xl text-[14px] font-normal text-white transition-colors bb-shadow-sm">
                   ลบรายการ
                 </button>
               </div>

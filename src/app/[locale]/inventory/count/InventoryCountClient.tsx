@@ -181,7 +181,7 @@ const CountInput = memo(function CountInput({
         className={cn(
           'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums transition-all duration-200 placeholder:text-muted-foreground/40',
           isActive
-            ? 'w-28 h-11 border-black/20 bg-white text-black ring-2 ring-black/10 shadow-sm bb-pastel-surface'
+            ? 'w-28 h-11 border-black/20 bg-white text-black ring-2 ring-black/10 bb-shadow-sm bb-pastel-surface'
             : 'w-24 h-10 border-border bg-muted text-foreground focus:bg-card focus:ring-1 focus:ring-foreground/10',
           disabled && 'opacity-60 cursor-not-allowed'
         )}
@@ -256,8 +256,8 @@ const CountItemRow = memo(function CountItemRow({
         'relative rounded-2xl p-4 flex items-start justify-between gap-3 transition-all duration-300',
         rowToneClass,
         isActive
-          ? 'shadow-md ring-2 ring-black/8 z-10'
-          : 'shadow-sm hover:ring-1 hover:ring-black/5',
+          ? 'bb-shadow-md ring-2 ring-black/8 z-10'
+          : 'bb-shadow-sm hover:ring-1 hover:ring-black/5',
       )}
     >
       {isActive && (
@@ -335,7 +335,7 @@ const CountItemRow = memo(function CountItemRow({
               exit={{ opacity: 0, y: -4, scale: 0.95 }}
               transition={{ duration: 0.15 }}
               onClick={() => onUndo(item.id)}
-              className="flex items-center gap-1 rounded-xl border border-black/15 bg-white/80 bb-pastel-surface px-2.5 py-1 text-[11px] text-black/60 shadow-sm hover:bg-white hover:text-black transition-all"
+              className="flex items-center gap-1 rounded-xl border border-black/15 bg-white/80 bb-pastel-surface px-2.5 py-1 text-[11px] text-black/60 bb-shadow-sm hover:bg-white hover:text-black transition-all"
               aria-label={`ย้อนกลับค่าเดิม (${undoEntry.prevStock})`}
             >
               <Undo2 className="w-3 h-3" />
@@ -565,7 +565,7 @@ export default function InventoryCountClient({
             </Link>
           </header>
 
-          <div className="bg-card border border-red-100 dark:border-red-500/20 rounded-3xl p-6 shadow-sm">
+          <div className="bg-card border border-red-100 dark:border-red-500/20 rounded-3xl p-6 bb-shadow-sm">
             <div className="flex items-start gap-3">
               <div className="shrink-0 rounded-2xl bg-red-50 dark:bg-red-500/10 p-2.5 text-red-500">
                 <AlertCircle className="w-5 h-5" />
@@ -630,7 +630,7 @@ export default function InventoryCountClient({
         </header>
 
         <div className="flex flex-col items-center mb-6 text-center">
-          <div className="p-2.5 bg-black text-white rounded-2xl mb-4 shrink-0 shadow-md">
+          <div className="p-2.5 bg-black text-white rounded-2xl mb-4 shrink-0 bb-shadow-md">
             <ClipboardList className="w-7 h-7" strokeWidth={1.5} />
           </div>
           <h1 className="text-2xl font-normal tracking-widest uppercase text-foreground">

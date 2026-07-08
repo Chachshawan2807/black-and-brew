@@ -29,7 +29,7 @@ describe('inventory modals dark theme readability', () => {
       'utf-8',
     );
 
-    expect(code).toContain('"rounded-3xl shadow-sm border overflow-hidden"');
+    expect(code).toContain('"rounded-3xl bb-shadow-sm border overflow-hidden"');
   });
 
   it('purchase order exports preserve overflow so rounded wrappers clip in PNG capture', () => {
@@ -43,7 +43,9 @@ describe('inventory modals dark theme readability', () => {
     );
 
     expect(pageCode).toContain('preserveOverflow: true');
+    expect(pageCode).toContain('downloadPngBlob');
     expect(fabCode).toContain('preserveOverflow: true');
+    expect(fabCode).toContain('downloadPngBlob');
   });
 
   it('inventory add modal avoids light-only slate tokens', () => {

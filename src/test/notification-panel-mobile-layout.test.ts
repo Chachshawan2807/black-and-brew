@@ -26,8 +26,19 @@ describe('NotificationPanel mobile layout', () => {
     expect(code).not.toMatch(/panelOpen && \(\s*<>/);
   });
 
-  test('backdrop remains full-screen for tap-to-dismiss', () => {
+  test('notification panel renders schedule summaries as multi-line fieldSummary', () => {
     const code = readFile('components/notifications/NotificationPanel.tsx');
-    expect(code).toMatch(/fixed inset-0[\s\S]*onClick=\{closePanel\}/);
+    expect(code).toContain('isScheduleNotification');
+    expect(code).toContain("item.fieldSummary.split('\\n')");
+  });
+
+  test('uses icon-only header actions with accessible labels', () => {
+    const code = readFile('components/notifications/NotificationPanel.tsx');
+    expect(code).toContain('CheckCheck');
+    expect(code).toContain('Trash2');
+    expect(code).toContain('<CheckCheck size={17}');
+    expect(code).toContain('<Trash2 size={17}');
+    expect(code).toContain("aria-label={isTh ? 'อ่านทั้งหมด' : 'Mark all read'}");
+    expect(code).toContain("aria-label={isTh ? 'ล้างประวัติ' : 'Clear history'}");
   });
 });

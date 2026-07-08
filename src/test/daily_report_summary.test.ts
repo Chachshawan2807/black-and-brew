@@ -25,14 +25,15 @@ const sampleData: DailyReportData = {
 };
 
 describe('buildDailyReportAltText()', () => {
-  it('builds a compact daily report summary for Web Push previews', () => {
+  it('builds a multi-line daily report summary for notifications', () => {
     const summary = buildDailyReportAltText(sampleData);
+    const lines = summary.split('\n');
 
-    expect(summary).toContain('ตารางงาน 13-06-2026 (พรุ่งนี้)');
-    expect(summary).toContain('เข้างาน 2 คน');
-    expect(summary).toContain('ปิ่น 6:30');
-    expect(summary).toContain('งานอื่น: ล่า (ร้านซักผ้า)');
-    expect(summary).toContain('ลา: มุก (ลา)');
+    expect(lines[0]).toBe('ตารางงาน 13-06-2026 (พรุ่งนี้) · เข้างาน 2 คน');
+    expect(lines[1]).toBe('ปิ่น 6:30, มุก 7:00');
+    expect(lines[2]).toBe('งานอื่น: ล่า — ร้านซักผ้า');
+    expect(lines[3]).toBe('ลา: มุก');
+    expect(summary).not.toContain('มุก (ลา)');
     expect(summary).not.toContain('นิต้า');
     expect(summary).not.toContain('หยุด:');
   });

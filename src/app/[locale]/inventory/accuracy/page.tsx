@@ -9,7 +9,7 @@ function formatQty(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-const METRIC_CARD_BASE = 'rounded-3xl p-5 shadow-sm';
+const METRIC_CARD_BASE = 'rounded-3xl p-5 bb-shadow-sm';
 const METRIC_LABEL_CLASS = 'text-[11px] uppercase tracking-[0.18em] text-black/60';
 const METRIC_VALUE_CLASS = 'mt-3 text-4xl font-normal tabular-nums text-black';
 const METRIC_NOTE_CLASS = 'mt-2 text-xs text-black/60';
@@ -39,7 +39,7 @@ export default async function InventoryAccuracyPage({
             กลับไปคลังสินค้า
           </Link>
           <div className="flex items-start gap-3">
-            <div className="rounded-2xl bg-[#dbeafe] p-3 text-black shadow-sm bb-pastel-surface">
+            <div className="rounded-2xl bg-[#dbeafe] p-3 text-black bb-shadow-sm bb-pastel-surface">
               <BarChart3 className="h-6 w-6" strokeWidth={1.6} />
             </div>
             <div>
@@ -97,7 +97,7 @@ export default async function InventoryAccuracyPage({
               </div>
             </section>
 
-            <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <section className="rounded-3xl border border-border bg-card p-5 bb-shadow-sm">
               <div className="mb-4 flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
                 <h2 className="text-lg font-normal text-foreground">รายการที่คลาดเคลื่อนสูง</h2>
@@ -131,7 +131,7 @@ export default async function InventoryAccuracyPage({
               )}
             </section>
 
-            <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <section className="rounded-3xl border border-border bg-card p-5 bb-shadow-sm">
               <div className="flex items-start gap-3">
                 <ClipboardCheck className="mt-0.5 h-5 w-5 text-foreground/40" />
                 <p className="text-sm leading-6 text-muted-foreground">
