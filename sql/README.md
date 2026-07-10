@@ -16,7 +16,7 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | --- | --- |
 | `supabase/migrations/` | Versioned migrations (login_history, data_change_logs, revoked_sessions, push_subscriptions, daily-report push fields, device_passkeys, inventory ADD/DELETE, count verifications, count policy, retired feature cleanup) |
 | `sql/` | Operational scripts and RPC reference blueprints |
-| Root `*.sql` | Historical reference schemas (`DB_SCHEMA.sql`, `sales_schema.sql`, etc.) — applied historically |
+| `sql/historical/` | Historical one-shot schemas (`DB_SCHEMA.sql`, `sales_schema.sql`, etc.) — applied historically |
 
 ## Reference blueprints (`sql/`)
 
@@ -43,16 +43,16 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (cross-device inventory alerts) |
 | `20260617120000_device_passkeys.sql` | WebAuthn trusted-device credentials for biometric login |
 | `20260618163100_inventory_count_policy.sql` | `inventory_items.count_policy`; exact count vs sufficiency check |
+| `20260618175951_local_events.sql` | Created `local_events` (Market Insights) — later dropped |
 | `20260620221500_reset_accuracy_history.sql` | Reset count accuracy history after policy recalculation rules changed |
 | `20260621120000_push_subscriptions_daily_report.sql` | Extend `push_subscriptions` with `profile_id` and `branch_id` for daily schedule Web Push broadcasts |
-| `20260622143800_drop_market_insights_tables.sql` | Drop optional retired feature tables |
+| `20260622143800_drop_market_insights_tables.sql` | Drop retired Market Insights tables (`local_events`, `market_insight_runs`) |
 | `20260622144706_drop_retired_ai_inventory_views.sql` | Drop retired AI-prefixed inventory helper views |
 | `20260622162719_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
 | `20260708095637_reset_accuracy_history.sql` | Reset count accuracy ledger after workflow changes |
 | `20260708104230_remove_inventory_recommended_target_stock.sql` | Remove inventory recommended target stock (retired) |
+| `20260710162206_harden_security_definer_views_and_search_path.sql` | `security_invoker` on AI views + lock `search_path` on inventory/AI RPCs |
 
-## Cleanup audit
+## Cleanup notes
 
-2026-07-08 cleanup: Inventory recommended target stock was removed. `20260708104230_remove_inventory_recommended_target_stock.sql` drops related schema after `20260622162719_*` was superseded. `20260708095637_reset_accuracy_history.sql` clears the count accuracy ledger.
-
-2026-06-22 cleanup: `20260622144706_drop_retired_ai_inventory_views.sql` removes retired `ai_*` inventory helper views. Staff-managed data remains available through neutral views such as `view_inventory_summary` and actual tables such as `inventory_transactions`.
+Do **not** delete or squash applied migrations — history must stay linear for `supabase db push` / remote checksums. Later migrations may drop objects created earlier (e.g. Market Insights `local_events`, recommended target stock) or reset accuracy history; that is intentional.

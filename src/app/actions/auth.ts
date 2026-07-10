@@ -8,6 +8,7 @@ import {
 } from '@/lib/auth-cookies';
 import {
   FORCE_LOGOUT_DENY_MSG,
+  READ_ONLY_DENY_MSG,
   SESSION_FP_COOKIE,
 } from '@/lib/auth-constants';
 import {
@@ -16,6 +17,7 @@ import {
 } from '@/lib/policies/server-gate';
 import { recordLoginEvent } from '@/app/actions/login-history-actions';
 import type { ClientDevicePayload } from '@/lib/login-history-types';
+import { insertRemoteLogoutAudits } from '@/lib/login-history-write';
 import {
   clearSessionRevocation,
   isSessionFingerprintRevoked,
@@ -29,6 +31,7 @@ import {
 } from '@/lib/security/pin-rate-limit';
 import { resolveClientIp } from '@/lib/security/request-ip';
 import { resolveReadOnlyPin } from '@/lib/security/read-only-pin';
+import { ensureServerSession } from '@/lib/security/server-auth';
 
 async function assertMasterPin(
   pin: string
@@ -191,12 +194,16 @@ export async function clearAuth(device?: ClientDevicePayload | null): Promise<vo
   clearAuthCookies(cookieStore);
 }
 
-/** Revoke one remote device session (master PIN required). */
+/** Revoke one remote device session (authenticated + master PIN required). */
 export async function forceRevokeDeviceSession(
   pin: string,
   sessionFingerprint: string,
-  actorDevice?: ClientDevicePayload | null
+  _actorDevice?: ClientDevicePayload | null
 ): Promise<{ success: boolean; error?: string }> {
+  const auth = await ensureServerSession();
+  if (!auth.ok) return { success: false, error: auth.error };
+  if (auth.readOnly) return { success: false, error: READ_ONLY_DENY_MSG };
+
   const gate = await assertMasterPin(pin);
   if (!gate.ok) return { success: false, error: gate.error };
 
@@ -204,7 +211,8 @@ export async function forceRevokeDeviceSession(
     return { success: false, error: 'ไม่พบข้อมูลอุปกรณ์' };
   }
 
-  const currentFp = actorDevice?.sessionFingerprint ?? (await getCurrentSessionFingerprint());
+  // Cookie is authoritative — never trust client-supplied actorDevice fingerprint
+  const currentFp = await getCurrentSessionFingerprint();
   if (sessionFingerprint === currentFp) {
     return {
       success: false,
@@ -214,19 +222,7 @@ export async function forceRevokeDeviceSession(
 
   try {
     await revokeSessionFingerprints([sessionFingerprint], 'forced_by_master');
-    await recordLoginEvent({
-      eventType: 'logout',
-      status: 'success',
-      device: {
-        userAgent: 'remote-revoke',
-        screenWidth: 0,
-        screenHeight: 0,
-        language: 'th',
-        timezone: 'Asia/Bangkok',
-        sessionFingerprint,
-      },
-      accessLevel: 'full',
-    });
+    await insertRemoteLogoutAudits([sessionFingerprint]);
     return { success: true };
   } catch {
     return { success: false, error: 'บังคับออกจากระบบไม่สำเร็จ' };
@@ -237,12 +233,17 @@ export async function forceRevokeDeviceSession(
 export async function forceRevokeAllRemoteSessions(
   pin: string,
   sessionFingerprints: string[],
-  actorDevice?: ClientDevicePayload | null
+  _actorDevice?: ClientDevicePayload | null
 ): Promise<{ success: boolean; error?: string; revokedCount?: number }> {
+  const auth = await ensureServerSession();
+  if (!auth.ok) return { success: false, error: auth.error };
+  if (auth.readOnly) return { success: false, error: READ_ONLY_DENY_MSG };
+
   const gate = await assertMasterPin(pin);
   if (!gate.ok) return { success: false, error: gate.error };
 
-  const currentFp = actorDevice?.sessionFingerprint ?? (await getCurrentSessionFingerprint());
+  // Cookie is authoritative — never trust client-supplied actorDevice fingerprint
+  const currentFp = await getCurrentSessionFingerprint();
   const targets = sessionFingerprints.filter((fp) => fp && fp !== currentFp);
 
   if (targets.length === 0) {
@@ -251,21 +252,7 @@ export async function forceRevokeAllRemoteSessions(
 
   try {
     await revokeSessionFingerprints(targets, 'forced_by_master_all');
-    for (const fp of targets) {
-      await recordLoginEvent({
-        eventType: 'logout',
-        status: 'success',
-        device: {
-          userAgent: 'remote-revoke',
-          screenWidth: 0,
-          screenHeight: 0,
-          language: 'th',
-          timezone: 'Asia/Bangkok',
-          sessionFingerprint: fp,
-        },
-        accessLevel: 'full',
-      });
-    }
+    await insertRemoteLogoutAudits(targets);
     return { success: true, revokedCount: targets.length };
   } catch {
     return { success: false, error: 'บังคับออกจากระบบไม่สำเร็จ' };

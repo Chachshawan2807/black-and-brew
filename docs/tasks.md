@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-08
+> Version: 9.1 | Last Updated: 2026-07-10
 
 ---
 
@@ -16,7 +16,7 @@ Notable completed work:
 - [x] Dark theme (`next-themes`, CSS tokens, `bb-pastel-surface`)
 - [x] Feature `_components` colocation (dashboard, inventory, schedule, settings, sales, maintenance)
 - [x] Performance phases: dashboard query consolidation, inventory row containment, dynamic modals
-- [x] Retired: inventory recommended target stock, graphify
+- [x] Retired: inventory recommended target stock; weather API; obsolete root protocol/skill stubs
 
 See `docs/changelog.md` and git history for dated entries.
 

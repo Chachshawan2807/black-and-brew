@@ -75,7 +75,7 @@ Legend: `[PUBLIC]` = ฝังใน browser · `[SECRET]` = server-only · `[OP
 | --- | :--- | --- |
 | `APP_PIN` | SECRET | PIN 6 หลัก — เข้าใช้งานเต็มสิทธิ์ (`auth.ts`) |
 | `APP_READ_ONLY_PIN` | SECRET | PIN 6 หลัก — โหมดดูอย่างเดียว (`resolveReadOnlyPin()`); บังคับใน production; dev fallback `111222` |
-| `NEXT_PUBLIC_STORE_LAT` | PUBLIC | พิกัดร้าน (default `13.9312`) — chat, weather, cron |
+| `NEXT_PUBLIC_STORE_LAT` | PUBLIC | พิกัดร้าน (default `13.9312`) — chat context |
 | `NEXT_PUBLIC_STORE_LON` | PUBLIC | พิกัดร้าน (default `100.6756`) |
 | `WEBAUTHN_RP_ID` | SECRET | OPTION — WebAuthn relying-party ID สำหรับ production passkeys |
 | `WEBAUTHN_ORIGIN` | SECRET | OPTION — WebAuthn origin สำหรับ production passkeys |
@@ -86,7 +86,6 @@ Legend: `[PUBLIC]` = ฝังใน browser · `[SECRET]` = server-only · `[OP
 | --- | :--- | --- |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini — AI Chat (`@ai-sdk/google`) |
 | `TAVILY_API_KEY` | SECRET | Internet search tool สำหรับ AI |
-| `OPENWEATHER_API_KEY` | SECRET | `/api/weather`, daily-report |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — sync วันหยุดราชการ (schedule) |
 
 ### Vercel Cron
@@ -132,7 +131,7 @@ src/
 │   ├── page.tsx              # Redirect → /th
 │   ├── manifest.ts           # PWA manifest
 │   ├── actions/              # Server Actions (inventory, shift, auth, sales, …)
-│   ├── api/                  # chat, daily-report, weather, push/webhook
+│   ├── api/                  # chat, daily-report, push/webhook
 │   └── [locale]/             # UI routes (th/en)
 │       ├── <feature>/page.tsx, *Client.tsx
 │       └── <feature>/_components/   # feature-only UI (private folder)
@@ -142,7 +141,7 @@ src/
 └── proxy.ts                  # next-intl middleware (Next.js 16 convention)
 ```
 
-Agent knowledge graph: **codebase-memory-mcp** (not graphify). See `AGENTS.md` for colocation rules.
+Agent knowledge graph: **codebase-memory-mcp**. See `AGENTS.md` for colocation rules.
 
 - Database: Supabase PostgreSQL (Thailand Edge)
 - Stock sync: RPC `set_inventory_stock` — ดู `sql/sync_inventory_stock.sql`
@@ -164,6 +163,8 @@ Agent knowledge graph: **codebase-memory-mcp** (not graphify). See `AGENTS.md` f
 | [docs/database.md](docs/database.md) | Schema, RLS, RPC |
 | [docs/api.md](docs/api.md) | Server Actions reference |
 | [docs/design.md](docs/design.md) | UI/UX standards (Zero-Bold, Pastel, Dual Theme) |
+| [docs/rules.md](docs/rules.md) | Hard coding / transaction / layout protocols |
+| [docs/skills.md](docs/skills.md) | AI tools + domain skill modules |
 | [docs/SOP.md](docs/SOP.md) | Development SOP (TDD) |
 | [docs/MASTER_BLUEPRINT.md](docs/MASTER_BLUEPRINT.md) | Blueprint ฉบับสมบูรณ์ (canonical) |
 | [AGENTS.md](AGENTS.md) | กฎสำหรับ AI agents |

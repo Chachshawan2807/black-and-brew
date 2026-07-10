@@ -20,6 +20,7 @@ vi.mock('next/headers', () => ({
 
 vi.mock('@/lib/session-revocation', () => ({
   isSessionFingerprintRevoked: vi.fn().mockResolvedValue(false),
+  getRevokedFingerprints: vi.fn().mockResolvedValue(new Set()),
 }));
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -96,6 +97,31 @@ describe('recordLoginEvent', () => {
         os_name: 'iOS',
         browser_name: 'Safari',
         session_fingerprint: 'iphone-test-fp',
+      })
+    );
+  });
+
+  test('binds logout fingerprint to httpOnly cookie, ignoring client-supplied value', async () => {
+    mockGet.mockImplementation((name: string) => {
+      if (name === 'bb_auth_pin_verified') return { value: 'true' };
+      if (name === 'bb_session_fp') return { value: 'cookie-bound-fp' };
+      return undefined;
+    });
+
+    await recordLoginEvent({
+      eventType: 'logout',
+      status: 'success',
+      device: {
+        ...sampleDevice,
+        sessionFingerprint: 'attacker-chosen-other-device-fp',
+      },
+      accessLevel: 'full',
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'logout',
+        session_fingerprint: 'cookie-bound-fp',
       })
     );
   });

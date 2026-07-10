@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 9.0 | Last Updated: 2026-06-22
+> Version: 9.1 | Last Updated: 2026-07-10
 
 ---
 
@@ -164,12 +164,11 @@ Client: Service Role Key
 
 ---
 
-### 1.9 Daily Report (`daily-report-actions.ts`)
+### 1.8 Daily Report (`daily-report-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
 | `fetchTodayShifts(date)` | Shifts for target date |
-| `fetchWeatherForecast(date?)` | OpenWeatherMap forecast |
 | `fetchNextHoliday(date)` | Next public holiday |
 | `compileDailyReportPayload()` | Full daily report payload |
 
@@ -177,7 +176,7 @@ Daily schedule Web Push delivery is handled by `src/lib/daily-report-web-push.ts
 
 ---
 
-### 1.10 Login History (`login-history-actions.ts`)
+### 1.9 Login History (`login-history-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -187,7 +186,16 @@ Daily schedule Web Push delivery is handled by `src/lib/daily-report-web-push.ts
 
 ---
 
-### 1.12 Push (`push-actions.ts`)
+### 1.10 Data Change Log (`data-change-log-actions.ts`)
+
+| Function | Purpose |
+| --- | --- |
+| `recordDataChange(input)` | บันทึก mutation audit → `data_change_logs`; hooks inventory Web Push |
+| `fetchDataChangeLogs(limit?)` | ดึงประวัติการเปลี่ยนแปลงสำหรับ Settings |
+
+---
+
+### 1.11 Push (`push-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -200,7 +208,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 
 ---
 
-### 1.13 Migration (`migrate-inventory-sort-order.ts`)
+### 1.12 Migration (`migrate-inventory-sort-order.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -213,21 +221,17 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 ### `POST /api/chat`
 
 - Streaming AI chat via `ToolLoopAgent` (`google('gemini-2.5-flash')`)
-- Tools: `getDailyShifts`, `readTable`, `internetSearchTool` (weather is served through `internetSearchTool` — no separate weather tool)
-- Daily-schedule queries short-circuit to a deterministic SSE stream (no LLM) via `create-deterministic-chat-stream`
-- Server-side auth gate: PIN cookie or Supabase user required (401 otherwise)
-- Weighted intent scoring selects tools + `maxSteps`; sliding-window memory + Thai token optimizer
+- Tools: `getDailyShifts`, `getStoreStatus`, `getSalesSummary`, `getInventoryLedger`, `getInventoryItemDetails`, `readTable`, `internetSearchTool`
+- Body: `{ messages, clientContext? }` — structured screen context + preferred tools by route
+- Deterministic SSE short-circuits: daily schedule, maintenance, low-stock, sales, holidays, store status (multi-turn aware)
+- Server-side auth gate: privileged PIN session required (401/403 otherwise; read-only kiosk denied)
+- Multi-turn weighted intent scoring + conditional executive rules; `maxSteps` up to 7; `maxOutputTokens: 1600`
 
 ### `GET /api/daily-report`
 
 - Vercel Cron endpoint — protected by `CRON_SECRET`
 - Compiles daily schedule report data
 - Sends daily schedule Web Push broadcasts through `push_subscriptions.branch_id` / `profile_id`
-
-### `GET /api/weather`
-
-- OpenWeatherMap proxy with 30-min cache (`s-maxage=1800`)
-- Coordinates: store lat/lon from env
 
 ### `POST /api/push/webhook`
 

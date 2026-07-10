@@ -31,19 +31,7 @@ export function saveNotificationPreferences(prefs: NotificationPreferences): voi
 
 export function shouldNotifyForAction(
   prefs: NotificationPreferences,
-  action: DataChangeAction
+  _action: DataChangeAction
 ): boolean {
-  if (!prefs.enabled) return false;
-  switch (action) {
-    case 'CREATE':
-      return prefs.notifyCreate;
-    case 'UPDATE':
-    case 'BULK_UPDATE':
-      return prefs.notifyUpdate;
-    case 'DELETE':
-    case 'BULK_DELETE':
-      return prefs.notifyDelete;
-    default:
-      return true;
-  }
+  return prefs.enabled;
 }

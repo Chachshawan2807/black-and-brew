@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 9.0 | Last Updated: 2026-06-22 | Engine: Supabase PostgreSQL
+> Version: 9.1 | Last Updated: 2026-07-10 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -8,19 +8,19 @@
 
 | Table | Purpose | RLS | Source SQL |
 | --- | --- | --- | --- |
-| `profiles` | ข้อมูลพนักงาน 9 คน | ✓ authenticated | `DB_SCHEMA.sql` |
-| `shifts` | ตารางกะงาน | ✓ authenticated | `DB_SCHEMA.sql` |
-| `inventory_items` | รายการคลังสินค้า, สต็อก, และนโยบายการตรวจนับ | ✓ authenticated | `DB_SCHEMA.sql` + `fix_inventory_rls.sql` + `20260618163100_inventory_count_policy.sql` |
+| `profiles` | ข้อมูลพนักงาน 9 คน | ✓ authenticated | `sql/historical/DB_SCHEMA.sql` |
+| `shifts` | ตารางกะงาน | ✓ authenticated | `sql/historical/DB_SCHEMA.sql` |
+| `inventory_items` | รายการคลังสินค้า, สต็อก, และนโยบายการตรวจนับ | ✓ authenticated | `sql/historical/DB_SCHEMA.sql` + `fix_inventory_rls.sql` + `20260618163100_inventory_count_policy.sql` |
 | `inventory_transactions` | บันทึกการเคลื่อนไหวสต็อก (IN/OUT/ADJUST/ADD/DELETE) | ✓ authenticated | `sql/record_inventory_transaction.sql` + migrations |
 | `inventory_count_verifications` | บันทึกผลตรวจนับ vs สต็อกระบบ (`inventory_items.stock`) | ✓ authenticated | `supabase/migrations/20260614120000_inventory_count_verifications.sql` + `20260615120000_inventory_count_accuracy_refactor.sql` |
-| `inventory_config` | การตั้งค่าคอลัมน์ Inventory UI | ✓ authenticated | `inventory_config_schema.sql` |
+| `inventory_config` | การตั้งค่าคอลัมน์ Inventory UI | ✓ authenticated | `sql/historical/inventory_config_schema.sql` |
 | `holidays` | วันหยุดราชการ | ✓ | Created via `holiday-actions.ts` |
-| `regular_holidays` | วันหยุดประจำของพนักงาน | ✓ | `regular_holidays_schema.sql` |
+| `regular_holidays` | วันหยุดประจำของพนักงาน | ✓ | `sql/historical/regular_holidays_schema.sql` |
 | `service_records` | บันทึกการซ่อมบำรุงอุปกรณ์ | ✓ | Used by maintenance module |
-| `sales_uploads` | ไฟล์ Excel ที่อัปโหลด | ✓ | `sales_schema.sql` |
-| `sales_records` | รายการยอดขาย | ✓ | `sales_schema.sql` |
-| `product_categories` | หมวดหมู่สินค้า | ✓ | `product_categories_schema.sql` |
-| `audit_logs` | บันทึก audit สำหรับ AI | ✓ | `audit_log_schema.sql` |
+| `sales_uploads` | ไฟล์ Excel ที่อัปโหลด | ✓ | `sql/historical/sales_schema.sql` |
+| `sales_records` | รายการยอดขาย | ✓ | `sql/historical/sales_schema.sql` |
+| `product_categories` | หมวดหมู่สินค้า | ✓ | `sql/historical/product_categories_schema.sql` |
+| `audit_logs` | บันทึก audit สำหรับ AI | ✓ | `sql/historical/audit_log_schema.sql` |
 | `login_history` | บันทึกเหตุการณ์เข้าใช้ระบบ (PIN) | ✓ RLS enabled | `supabase/migrations/20260611120000_create_login_history.sql` |
 | `data_change_logs` | บันทึกการเปลี่ยนแปลงข้อมูล (actor, field diff) | ✓ RLS + selective read | `supabase/migrations/20260612120000_create_data_change_logs.sql` |
 | `revoked_sessions` | fingerprint ที่ถูก revoke จากระยะไกล | ✓ RLS enabled | `supabase/migrations/20260612200000_revoked_sessions.sql` |
@@ -284,7 +284,7 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 
 ## 6. Migration Files
 
-> Schema location: Official migrations live in `supabase/migrations/`. Historical one-shot schemas remain at the repository root (e.g. `DB_SCHEMA.sql`) plus the `sql/` subfolder. `DB_SCHEMA.sql` is the primary reference schema. Apply via `supabase db push` or run migration files in the Supabase Dashboard SQL Editor. Verify remote state: `npm run db:verify`.
+> Schema location: Official migrations live in `supabase/migrations/`. Historical one-shot schemas live in `sql/historical/` (e.g. `DB_SCHEMA.sql`) plus operational blueprints in `sql/`. `sql/historical/DB_SCHEMA.sql` is the primary reference schema. Apply via `supabase db push` or run migration files in the Supabase Dashboard SQL Editor. Verify remote state: `npm run db:verify`.
 
 ### Versioned (`supabase/migrations/`)
 
@@ -301,28 +301,32 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (authenticated own rows) |
 | `20260617120000_device_passkeys.sql` | Trusted-device WebAuthn credentials for biometric login |
 | `20260618163100_inventory_count_policy.sql` | Adds `inventory_items.count_policy`; resets old accuracy rows for new scoring rules |
+| `20260618175951_local_events.sql` | Created `local_events` for Market Insights — superseded by drop migration |
 | `20260620221500_reset_accuracy_history.sql` | Reset count accuracy rows after policy recalculation rules changed |
 | `20260621120000_push_subscriptions_daily_report.sql` | Adds `profile_id` and `branch_id` to `push_subscriptions` for daily schedule Web Push broadcasts |
-| `20260622143800_drop_market_insights_tables.sql` | Drop optional retired feature tables |
+| `20260622143800_drop_market_insights_tables.sql` | Drops retired Market Insights tables (`local_events`, `market_insight_runs`) |
 | `20260622144706_drop_retired_ai_inventory_views.sql` | Drops retired AI-prefixed inventory helper views |
 | `20260622162719_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
 | `20260708095637_reset_accuracy_history.sql` | Reset count accuracy ledger (inventory verification workflow) |
 | `20260708104230_remove_inventory_recommended_target_stock.sql` | Removes inventory recommended target stock (retired feature) |
+| `20260710162206_harden_security_definer_views_and_search_path.sql` | `security_invoker` on AI views + lock `search_path` on inventory/AI RPCs |
 
 Retired: inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 
-### Historical (root + `sql/`)
+### Historical (`sql/historical/`) + operational blueprints (`sql/`)
 
 | File | Purpose |
 | --- | --- |
-| `DB_SCHEMA.sql` | Core: profiles, shifts, inventory_items |
+| `sql/historical/DB_SCHEMA.sql` | Core: profiles, shifts, inventory_items |
+| `sql/historical/inventory_config_schema.sql` | Config table + seed |
+| `sql/historical/sales_schema.sql` | Sales uploads + records |
+| `sql/historical/product_categories_schema.sql` | Product categories |
+| `sql/historical/regular_holidays_schema.sql` | Regular holidays per employee |
+| `sql/historical/audit_log_schema.sql` | AI audit logging |
 | `sql/record_inventory_transaction.sql` | Atomic IN/OUT RPC reference blueprint |
-| `sql/sync_inventory_stock.sql` | v6.8 — `set_inventory_stock`, trigger, REPLICA IDENTITY |
+| `sql/sync_inventory_stock.sql` | `set_inventory_stock`, trigger, REPLICA IDENTITY |
 | `sql/fix_inventory_rls.sql` | RLS hardening — authenticated-only |
-| `inventory_config_schema.sql` | Config table + seed |
-| `sales_schema.sql` | Sales uploads + records |
-| `product_categories_schema.sql` | Product categories |
-| `regular_holidays_schema.sql` | Regular holidays per employee |
-| `audit_log_schema.sql` | AI audit logging |
+| `sql/ai_agent_views.sql` | AI views/RPCs (`view_today_shifts`, `view_inventory_summary`, `get_ai_store_status`) |
+| `sql/inventory_transactions_readable_view.sql` | Readable ledger view |
 
 > Deprecated: `inventory-items.csv` — removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).

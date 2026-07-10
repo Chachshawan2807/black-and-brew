@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
+import { after } from 'next/server';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { computeFieldChanges } from '@/lib/data-change-log';
@@ -1292,35 +1293,46 @@ export async function recordInventoryCountAndUpdateStock(
       }
     }
 
-    await recordDataChange({
-      action: 'UPDATE',
-      module: 'inventory',
-      entityType: 'inventory_item',
-      entityId: itemId,
-      entityLabel: itemRow?.name ?? null,
-      fieldChanges: computeFieldChanges(
-        { stock: baselineStock },
-        { stock: newStock },
-      ),
-      metadata: withAuditMetadata(
-        {
-          operation: 'count_stock_save',
-          note: 'Stock-taking count',
-          recordHistory: false,
-          itemName: itemRow?.name ?? null,
-          order_point: itemRow?.order_point ?? null,
-          countPolicy,
-        },
-        {
-          ...options,
-          notificationContext: 'inventory_count',
-          suppressNotification: true,
-        },
-      ),
-    });
+    // Audit + cache revalidation are not required for the count UI response —
+    // defer so Enter/next-row stays snappy while stock + verification stay durable above.
+    after(async () => {
+      try {
+        await recordDataChange({
+          action: 'UPDATE',
+          module: 'inventory',
+          entityType: 'inventory_item',
+          entityId: itemId,
+          entityLabel: itemRow?.name ?? null,
+          fieldChanges: computeFieldChanges(
+            { stock: baselineStock },
+            { stock: newStock },
+          ),
+          metadata: withAuditMetadata(
+            {
+              operation: 'count_stock_save',
+              note: 'Stock-taking count',
+              recordHistory: false,
+              itemName: itemRow?.name ?? null,
+              order_point: itemRow?.order_point ?? null,
+              countPolicy,
+            },
+            {
+              ...options,
+              notificationContext: 'inventory_count',
+              suppressNotification: true,
+            },
+          ),
+        });
+      } catch (auditError: unknown) {
+        console.error(
+          '[recordInventoryCountAndUpdateStock] Deferred audit Error:',
+          getErrorMessage(auditError),
+        );
+      }
 
-    revalidatePath('/[locale]/inventory', 'page');
-    revalidatePath('/[locale]/inventory/count', 'page');
+      revalidatePath('/[locale]/inventory', 'page');
+      revalidatePath('/[locale]/inventory/count', 'page');
+    });
 
     return {
       success: true,

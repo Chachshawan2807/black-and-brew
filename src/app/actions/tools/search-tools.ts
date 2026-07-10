@@ -11,7 +11,7 @@ const searchQuerySchema = z
   .transform((q) => sanitizePromptInput(q.trim()));
 
 export const internetSearchTool = tool({
-  description: 'ค้นหาข้อมูลปัจจุบัน ข่าวสาร หรือสภาพอากาศจากอินเทอร์เน็ต',
+  description: 'ค้นหาข้อมูลปัจจุบัน ข่าวสาร หรือข้อมูลภายนอกจากอินเทอร์เน็ต',
   inputSchema: z.object({
     query: searchQuerySchema.describe('คำค้นหาข้อมูลที่ต้องการจากอินเทอร์เน็ต (2–200 ตัวอักษร)'),
   }),

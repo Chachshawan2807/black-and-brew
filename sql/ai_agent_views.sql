@@ -1,8 +1,11 @@
 -- AI Agent Support Views & RPCs
 -- Created for "Brew" AI Assistant
+-- Views use security_invoker so base-table RLS applies to the caller.
+-- RPCs that need elevated access remain SECURITY DEFINER with locked search_path.
 
 -- 1. View for Today's Shifts Summary
-CREATE OR REPLACE VIEW public.view_today_shifts AS
+CREATE OR REPLACE VIEW public.view_today_shifts
+WITH (security_invoker = true) AS
 SELECT 
     s.id,
     p.full_name as employee_name,
@@ -16,7 +19,8 @@ WHERE s.start_time::date = CURRENT_DATE
    OR (s.start_time <= NOW() AND s.end_time >= NOW());
 
 -- 2. View for Inventory Status Summary
-CREATE OR REPLACE VIEW public.view_inventory_summary AS
+CREATE OR REPLACE VIEW public.view_inventory_summary
+WITH (security_invoker = true) AS
 SELECT 
     name,
     stock,
@@ -33,7 +37,11 @@ ORDER BY sort_order ASC;
 
 -- 3. RPC to get comprehensive store status for AI
 CREATE OR REPLACE FUNCTION public.get_ai_store_status()
-RETURNS json AS $$
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO public
+AS $$
 DECLARE
     v_shifts json;
     v_inventory json;
@@ -50,11 +58,15 @@ BEGIN
         'low_stock_items', COALESCE(v_low_stock, '[]'::json)
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- 4. RPC to get details of a specific inventory item by ID
 CREATE OR REPLACE FUNCTION public.get_ai_inventory_item_details(item_id UUID)
-RETURNS json AS $$
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO public
+AS $$
 DECLARE
     v_item_details json;
 BEGIN
@@ -64,4 +76,4 @@ BEGIN
 
     RETURN v_item_details;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;

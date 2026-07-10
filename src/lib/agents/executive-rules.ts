@@ -14,16 +14,16 @@ export const EXECUTIVE_RULES = {
     holidays: "ตารางบันทึกวันหยุดนักขัตฤกษ์ล่วงหน้า (ใช้ประกอบการประเมินความหนาแน่นของลูกค้า)"
   },
   inventory: {
-    low_stock_threshold: 10, // Default threshold if not specified per item
-    critical_stock_threshold: 5,
+    // Source of truth is per-item order_point + target_stock (PO modal parity).
+    // Do NOT use global numeric thresholds for reorder decisions.
+    reorder_rule:
+      'low stock เมื่อ stock <= order_point และ target_stock > stock เท่านั้น — ห้ามใช้เกณฑ์รวมทั้งร้าน',
     unit_recommendations: {
-      'beans': 'ควรสั่งเพิ่มเมื่อเหลือต่ำกว่า 5kg',
-      'milk': 'ควรสั่งเพิ่มเมื่อเหลือต่ำกว่า 10 ลิตร',
+      'beans': 'ควรสั่งเพิ่มเมื่อเหลือต่ำกว่าจุดสั่งซื้อของรายการนั้น',
+      'milk': 'ควรสั่งเพิ่มเมื่อเหลือต่ำกว่าจุดสั่งซื้อของรายการนั้น',
     }
   },
   ai_processing_rules: {
-    weather_operational_window:
-      'จำกัดการวิเคราะห์สภาพอากาศและฝนเฉพาะช่วงเวลา 06:00 - 18:00 (Asia/Bangkok) เท่านั้น และตัดข้อมูลนอกช่วงเวลาดังกล่าวทิ้งทั้งหมด',
     in_memory_comparison_policy:
       'เมื่อคำถามต้องใช้การเปรียบเทียบ/อสมการ/คำนวณ (เช่น stock < order_point หรือการประเมินงานซ่อมใกล้ครบกำหนด) ให้ดึงข้อมูลด้วย readTable ตาม preset ก่อน แล้วประมวลผล filter/sort/calculate ในหน่วยความจำของ AI เอง ห้ามคาดหวังให้ readTable filter แบบ <, >, <=, >= ที่ฝั่งฐานข้อมูล',
     inventory_low_stock_evaluation:

@@ -24,6 +24,7 @@ export function ExpandMoreButton({
     <button
       type="button"
       onClick={onClick}
+      aria-expanded={expanded}
       className={cn(
         'inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground bb-transition',
         className

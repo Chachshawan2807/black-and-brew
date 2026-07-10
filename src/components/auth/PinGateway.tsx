@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState, useEffect, useRef } from 'react';
+import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { modalContent, MODAL_EASE } from '@/lib/motion-presets';
 import { Lock, ShieldAlert, Loader2, Fingerprint } from 'lucide-react';
@@ -25,7 +26,47 @@ import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
 const PIN_LENGTH = 6;
 const BIOMETRIC_AUTO_MAX_ATTEMPTS = 3;
 
+const COPY = {
+  th: {
+    title: 'เข้าสู่ระบบ',
+    hint: 'กรุณากรอกรหัส PIN 6 หลัก',
+    verifying: 'กำลังตรวจสอบรหัส PIN',
+    pinLabel: 'รหัส PIN 6 หลัก',
+    wrongPin: (n: string) => `รหัส PIN ไม่ถูกต้อง (ครั้งที่ ${n}/5)`,
+    biometricFailed: 'ยืนยันตัวตนไม่สำเร็จครบ 3 ครั้ง กรุณาใส่รหัส PIN แทน',
+    or: 'หรือ',
+    biometricLogin: 'ใช้ลายนิ้วมือหรือใบหน้า',
+    lockTitle: 'ถูกล็อกชั่วคราว',
+    lockBody: 'ใส่รหัส PIN ผิดครบ 5 ครั้ง กรุณารอสักครู่แล้วลองใหม่',
+    lockWait: 'กรุณารอสักครู่แล้วลองใหม่อีกครั้ง',
+    enrollTitle: 'บันทึกเครื่องนี้',
+    enrollBody: 'ครั้งถัดไปเข้าสู่ระบบด้วยลายนิ้วมือหรือใบหน้าได้ โดยไม่ต้องพิมพ์รหัส PIN',
+    enrollAction: 'เปิดใช้ลายนิ้วมือหรือใบหน้า',
+    enrollSkip: 'ข้ามไปก่อน',
+  },
+  en: {
+    title: 'Sign in',
+    hint: 'Enter your 6-digit PIN',
+    verifying: 'Checking PIN…',
+    pinLabel: '6-digit PIN',
+    wrongPin: (n: string) => `Incorrect PIN (attempt ${n}/5)`,
+    biometricFailed: 'Biometric sign-in failed 3 times. Please enter your PIN instead.',
+    or: 'or',
+    biometricLogin: 'Use fingerprint or face',
+    lockTitle: 'Temporarily locked',
+    lockBody: 'Too many incorrect PIN attempts. Please wait, then try again.',
+    lockWait: 'Please wait and try again',
+    enrollTitle: 'Save this device',
+    enrollBody: 'Next time, sign in with fingerprint or face — no PIN typing needed.',
+    enrollAction: 'Enable fingerprint or face',
+    enrollSkip: 'Skip for now',
+  },
+} as const;
+
 export default function PinGateway({ children }: { children: React.ReactNode }) {
+  const params = useParams();
+  const locale = params?.locale === 'en' ? 'en' : 'th';
+  const t = COPY[locale];
   const [isMounted, setIsMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
@@ -403,11 +444,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-xl font-normal text-foreground tracking-[0.12em] uppercase">
-              บันทึกเครื่องนี้
+            <h1 className="text-xl font-normal text-foreground tracking-wide">
+              {t.enrollTitle}
             </h1>
             <p className="text-sm font-normal text-muted-foreground leading-relaxed px-2">
-              ครั้งถัดไปเข้าระบบด้วย Windows Hello, Face ID, Touch ID หรือ Passkey แทนการพิมพ์ PIN ได้
+              {t.enrollBody}
             </p>
           </div>
 
@@ -427,7 +468,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               ) : (
                 <Fingerprint size={18} strokeWidth={1.5} />
               )}
-              บันทึก Windows Hello / Passkey
+              {t.enrollAction}
             </button>
             <button
               type="button"
@@ -435,7 +476,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               disabled={passkeyBusy}
               className="inline-flex w-full items-center justify-center rounded-2xl border border-border px-4 py-3 text-sm font-normal text-muted-foreground disabled:opacity-60"
             >
-              ข้ามไปก่อน
+              {t.enrollSkip}
             </button>
           </div>
         </motion.div>
@@ -465,9 +506,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-2xl font-normal text-foreground tracking-[0.2em] uppercase">Gateway Locked</h1>
-            <p className="text-sm font-normal text-muted-foreground tracking-[0.1em] uppercase px-4 leading-relaxed">
-              ป้อนรหัสผิดครบ 5 ครั้ง บัญชีถูกล็อกชั่วคราวเพื่อความปลอดภัย
+            <h1 className="text-2xl font-normal text-foreground tracking-wide">{t.lockTitle}</h1>
+            <p className="text-sm font-normal text-muted-foreground px-4 leading-relaxed">
+              {t.lockBody}
             </p>
           </div>
 
@@ -475,8 +516,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             {formatTimeLeft(lockoutTimeLeft)}
           </div>
 
-          <p className="text-xs font-normal text-muted-foreground tracking-[0.05em] uppercase">
-            กรุณารอสักครู่แล้วลองใหม่อีกครั้ง
+          <p className="text-xs font-normal text-muted-foreground">
+            {t.lockWait}
           </p>
         </motion.div>
       </div>
@@ -513,7 +554,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         </motion.div>
 
         <div className="text-center space-y-2 min-h-[2.75rem] flex flex-col items-center justify-center">
-          <h1 className="text-2xl font-normal text-foreground tracking-[0.2em] uppercase">Security Gateway</h1>
+          <h1 className="text-2xl font-normal text-foreground tracking-wide">{t.title}</h1>
           <AnimatePresence mode="wait" initial={false}>
             {isVerifying ? (
               <motion.p
@@ -524,9 +565,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
                 transition={{ duration: 0.16, ease: MODAL_EASE }}
-                className="text-sm font-normal text-muted-foreground tracking-[0.08em] uppercase"
+                className="text-sm font-normal text-muted-foreground"
               >
-                กำลังตรวจสอบรหัสผ่าน
+                {t.verifying}
               </motion.p>
             ) : (
               <motion.p
@@ -535,9 +576,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
                 transition={{ duration: 0.16, ease: MODAL_EASE }}
-                className="text-sm font-normal text-muted-foreground tracking-[0.1em] uppercase"
+                className="text-sm font-normal text-muted-foreground"
               >
-                กรุณากรอกรหัสผ่าน 6 หลักเพื่อเข้าสู่ระบบ
+                {t.hint}
               </motion.p>
             )}
           </AnimatePresence>
@@ -580,7 +621,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
                     if (e.key === 'Enter') e.preventDefault();
                   }}
                   disabled={lockoutTimeLeft !== null}
-                  aria-label="รหัสผ่าน 6 หลัก"
+                  aria-label={t.pinLabel}
                   className="absolute inset-0 z-10 h-full w-full cursor-text opacity-0"
                 />
                 <div
@@ -627,7 +668,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             animate={{ opacity: 1 }}
             className="text-sm font-normal text-red-500 tracking-wide"
           >
-            รหัสผ่านไม่ถูกต้อง (ครั้งที่ {failedCountDisplay}/5)
+            {t.wrongPin(failedCountDisplay)}
           </motion.p>
         )}
 
@@ -647,7 +688,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             animate={{ opacity: 1 }}
             className="text-sm font-normal text-muted-foreground tracking-wide text-center px-2"
           >
-            ยืนยันตัวตนไม่สำเร็จครบ 3 ครั้ง ลองใส่รหัสผ่าน 6 หลักแทน
+            {t.biometricFailed}
           </motion.p>
         ) : null}
 
@@ -655,7 +696,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           <div className="w-full max-w-[320px] flex flex-col items-center gap-2">
             <div className="w-full flex items-center gap-3 text-muted-foreground">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-[11px] uppercase tracking-[0.12em]">หรือ</span>
+              <span className="text-[11px] tracking-wide">{t.or}</span>
               <div className="h-px flex-1 bg-border" />
             </div>
             <button
@@ -669,7 +710,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               ) : (
                 <Fingerprint size={18} strokeWidth={1.5} />
               )}
-              เข้าด้วย Windows Hello / Passkey
+              {t.biometricLogin}
             </button>
           </div>
         ) : null}

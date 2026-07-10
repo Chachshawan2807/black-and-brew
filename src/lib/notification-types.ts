@@ -33,9 +33,6 @@ export interface NotificationPreferences {
   /** Cron daily schedule reports at 05:00 / 18:00 ICT via Web Push */
   dailyScheduleReports: boolean;
   notifyOwnChanges: boolean;
-  notifyCreate: boolean;
-  notifyUpdate: boolean;
-  notifyDelete: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -43,9 +40,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   systemNotifications: true,
   dailyScheduleReports: true,
   notifyOwnChanges: true,
-  notifyCreate: true,
-  notifyUpdate: true,
-  notifyDelete: true,
 };
 
 export function logRowToNotificationInput(row: DataChangeLogRow): Omit<InventoryNotification, 'title' | 'summary' | 'fieldSummary' | 'priority'> {

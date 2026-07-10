@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { HelpCircle, LogIn, LogOut, ShieldAlert, ShieldX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  fetchLoginHistory,
+  fetchLoginHistoryBundle,
   type LoginHistoryRow,
 } from "@/app/actions/login-history-actions";
+import type { ActiveLoginSession } from "@/lib/login-session-status";
 import { ExpandableLines } from "@/components/ui/expandable-lines";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
 import ActiveRemoteSessionsPanel from './ActiveRemoteSessionsPanel';
@@ -63,6 +64,22 @@ function formatDateTime(iso: string, locale: string) {
   }).format(new Date(iso));
 }
 
+function localizeFailureReason(reason: string, isTh: boolean): string {
+  const map: Record<string, { th: string; en: string }> = {
+    "Unknown passkey credential": {
+      th: "ไม่พบลายนิ้วมือที่ลงทะเบียนไว้",
+      en: "Unknown passkey credential",
+    },
+    "Invalid PIN": {
+      th: "รหัส PIN ไม่ถูกต้อง",
+      en: "Invalid PIN",
+    },
+  };
+  const hit = map[reason];
+  if (hit) return isTh ? hit.th : hit.en;
+  return reason;
+}
+
 function buildLoginLines(row: LoginHistoryRow, locale: string, isTh: boolean): string[] {
   const lines: string[] = [];
   lines.push(eventLabel(row.event_type, isTh));
@@ -105,7 +122,7 @@ function buildLoginLines(row: LoginHistoryRow, locale: string, isTh: boolean): s
   }
 
   if (row.failure_reason) {
-    lines.push(row.failure_reason);
+    lines.push(localizeFailureReason(row.failure_reason, isTh));
   }
 
   return lines;
@@ -133,32 +150,55 @@ function LoginEntry({ row, locale }: { row: LoginHistoryRow; locale: string }) {
       >
         <EventIcon type={row.event_type} size={14} strokeWidth={1.75} />
       </div>
-      <ExpandableLines lines={lines} isTh={isTh} className="min-w-0 flex-1" />
+      <ExpandableLines
+        lines={lines}
+        isTh={isTh}
+        className="min-w-0 flex-1"
+        firstLineClassName="text-[13px] text-foreground font-normal leading-snug"
+      />
     </div>
   );
 }
 
 export default function LoginHistorySection({ locale }: LoginHistorySectionProps) {
   const [rows, setRows] = useState<LoginHistoryRow[]>([]);
+  const [sessions, setSessions] = useState<ActiveLoginSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const isTh = locale === "th";
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const result = await fetchLoginHistoryBundle(200);
+    if (!result.success) {
+      setError(result.error);
+      setRows([]);
+      setSessions([]);
+    } else {
+      setError(null);
+      setRows(result.rows);
+      setSessions(result.sessions);
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     void (async () => {
       setLoading(true);
-      const result = await fetchLoginHistory(50);
+      const result = await fetchLoginHistoryBundle(200);
       if (cancelled) return;
 
       if (!result.success) {
         setError(result.error);
         setRows([]);
+        setSessions([]);
       } else {
         setError(null);
         setRows(result.rows);
+        setSessions(result.sessions);
       }
       setLoading(false);
     })();
@@ -168,38 +208,39 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="space-y-3">
-        <ActiveRemoteSessionsPanel locale={locale} />
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-14 rounded-2xl bg-muted/40 animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-3">
-        <ActiveRemoteSessionsPanel locale={locale} />
-        <p className="text-[13px] leading-relaxed text-red-500 font-normal py-4 text-center">
-          {isTh ? "โหลดประวัติไม่ได้ ลองใหม่อีกครั้ง" : "Could not load history. Try again."}
-        </p>
-      </div>
-    );
-  }
-
   const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);
   const hasMoreRows = rows.length > PREVIEW_COUNT;
 
   return (
     <div className="space-y-3">
-      <ActiveRemoteSessionsPanel locale={locale} />
+      <ActiveRemoteSessionsPanel
+        locale={locale}
+        sessions={sessions}
+        loading={loading}
+        loadError={error}
+        onReload={load}
+      />
 
-      {rows.length === 0 ? (
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-14 rounded-2xl bg-muted/40 animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="py-4 text-center space-y-2">
+          <p className="text-[13px] leading-relaxed text-red-500 font-normal">
+            {isTh ? "โหลดประวัติไม่ได้" : "Could not load history"}
+          </p>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="text-[12px] text-foreground underline-offset-2 hover:underline"
+          >
+            {isTh ? "ลองใหม่" : "Try again"}
+          </button>
+        </div>
+      ) : rows.length === 0 ? (
         <p className="text-[13px] leading-relaxed text-muted-foreground font-normal py-4 text-center">
           {isTh ? "ยังไม่มีประวัติการเข้าสู่ระบบ" : "No sign-in history yet"}
         </p>

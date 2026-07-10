@@ -19,6 +19,7 @@ vi.mock('@/lib/session-revocation', () => ({
   isSessionFingerprintRevoked: vi.fn(async () => false),
   revokeSessionFingerprints: vi.fn(async () => undefined),
   clearSessionRevocation: vi.fn(async () => undefined),
+  getRevokedFingerprints: vi.fn(async () => new Set()),
 }));
 
 vi.mock('next/headers', () => ({
@@ -107,9 +108,33 @@ describe('forceRevokeDeviceSession', () => {
     vi.clearAllMocks();
     mockGet.mockImplementation((name: string) => {
       if (name === 'bb_session_fp') return { value: 'current-fp' };
+      if (name === 'bb_auth_pin_verified') return { value: 'true' };
       return undefined;
     });
     process.env = { ...process.env, APP_PIN: '123456', APP_READ_ONLY_PIN: '111222' };
+  });
+
+  test('requires authenticated session before master PIN', async () => {
+    mockGet.mockImplementation((name: string) => {
+      if (name === 'bb_session_fp') return { value: 'current-fp' };
+      return undefined;
+    });
+
+    const result = await forceRevokeDeviceSession('123456', 'other-fp');
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  test('rejects read-only sessions', async () => {
+    mockGet.mockImplementation((name: string) => {
+      if (name === 'bb_session_fp') return { value: 'current-fp' };
+      if (name === 'bb_auth_pin_verified') return { value: 'true' };
+      if (name === 'bb_auth_read_only') return { value: 'true' };
+      return undefined;
+    });
+
+    const result = await forceRevokeDeviceSession('123456', 'other-fp');
+    expect(result).toEqual({ success: false, error: READ_ONLY_DENY_MSG });
   });
 
   test('requires master PIN', async () => {
@@ -120,6 +145,20 @@ describe('forceRevokeDeviceSession', () => {
   test('rejects revoking current device', async () => {
     const result = await forceRevokeDeviceSession('123456', 'current-fp');
     expect(result.success).toBe(false);
+  });
+
+  test('ignores client-forged actorDevice fingerprint when guarding current device', async () => {
+    // Attacker claims a different "current" fingerprint so the real cookie session can be revoked
+    const result = await forceRevokeDeviceSession('123456', 'current-fp', {
+      userAgent: 'spoof',
+      screenWidth: 1,
+      screenHeight: 1,
+      language: 'th',
+      timezone: 'Asia/Bangkok',
+      sessionFingerprint: 'spoofed-not-cookie-fp',
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('เครื่องนี้');
   });
 
   test('revokes remote fingerprint with master PIN', async () => {

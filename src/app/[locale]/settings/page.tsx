@@ -25,7 +25,7 @@ export default async function SettingsPage({
               {isTh ? 'ตั้งค่า' : 'Settings'}
             </h1>
             <p className="text-[13px] text-muted-foreground/90 font-normal mt-0.5 leading-normal">
-              {isTh ? 'ประวัติการแก้ไข การแจ้งเตือน และความปลอดภัย' : 'Edit history, notifications & security'}
+              {isTh ? 'การแจ้งเตือน ประวัติ และความปลอดภัย' : 'Notifications, history & security'}
             </p>
           </div>
         </div>
@@ -33,32 +33,40 @@ export default async function SettingsPage({
 
       <div className="space-y-3">
         <section className="bb-card p-4 md:p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <Bell size={14} strokeWidth={1.75} className="text-muted-foreground" />
-            <h2 className="text-[13px] font-normal text-muted-foreground">
-              {isTh ? 'การแจ้งเตือน' : 'Notifications'}
-            </h2>
+          <div className="mb-1">
+            <div className="flex items-center gap-2">
+              <Bell size={14} strokeWidth={1.75} className="text-muted-foreground" />
+              <h2 className="text-[13px] font-normal text-muted-foreground">
+                {isTh ? 'การแจ้งเตือน' : 'Notifications'}
+              </h2>
+            </div>
+            <p className="text-[12px] text-muted-foreground mt-1 leading-normal">
+              {isTh ? 'เลือกว่าจะรับการแจ้งเตือนเรื่องใด' : 'Choose what you want to be notified about'}
+            </p>
           </div>
           <NotificationPreferencesSection locale={locale} />
         </section>
 
         <SettingsCollapsibleSection
           icon="history"
-          title={isTh ? 'ประวัติการแก้ไขข้อมูล' : 'Data change history'}
+          title={isTh ? 'ประวัติการแก้ไข' : 'Edit history'}
+          description={isTh ? 'ดูว่าใครแก้ข้อมูลอะไร และเมื่อไหร่' : 'See who changed what, and when'}
         >
           <DataChangeHistorySection locale={locale} />
         </SettingsCollapsibleSection>
 
         <SettingsCollapsibleSection
           icon="shield"
-          title={isTh ? 'ประวัติการเข้าสู่ระบบ' : 'Login history'}
+          title={isTh ? 'ประวัติการเข้าสู่ระบบ' : 'Sign-in history'}
+          description={isTh ? 'ดูการเข้า–ออก และอุปกรณ์ที่ยังล็อกอินอยู่' : 'Review sign-ins and devices still logged in'}
         >
           <LoginHistorySection locale={locale} />
         </SettingsCollapsibleSection>
 
         <SettingsCollapsibleSection
-          icon="shield"
+          icon="fingerprint"
           title={isTh ? 'เข้าด้วยลายนิ้วมือ / ใบหน้า' : 'Biometric login'}
+          description={isTh ? 'เข้าสู่ระบบเร็วขึ้นโดยไม่ต้องพิมพ์ PIN' : 'Sign in faster without typing a PIN'}
         >
           <PasskeyDeviceSection locale={locale} />
         </SettingsCollapsibleSection>

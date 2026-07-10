@@ -1,8 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { LogOut, Monitor, Smartphone, Tablet } from 'lucide-react';
-import { fetchActiveLoginSessions } from '@/app/actions/login-history-actions';
 import type { ActiveLoginSession } from '@/lib/login-session-status';
 import {
   forceRevokeAllRemoteSessions,
@@ -16,6 +15,10 @@ const PIN_LENGTH = 6;
 
 interface ActiveRemoteSessionsPanelProps {
   locale: string;
+  sessions: ActiveLoginSession[];
+  loading: boolean;
+  loadError: string | null;
+  onReload: () => Promise<void> | void;
 }
 
 function deviceIcon(type: string) {
@@ -37,28 +40,18 @@ function formatDateTime(iso: string, locale: string) {
   }).format(new Date(iso));
 }
 
-export default function ActiveRemoteSessionsPanel({ locale }: ActiveRemoteSessionsPanelProps) {
+export default function ActiveRemoteSessionsPanel({
+  locale,
+  sessions,
+  loading,
+  loadError,
+  onReload,
+}: ActiveRemoteSessionsPanelProps) {
   const isTh = locale === 'th';
-  const [sessions, setSessions] = useState<ActiveLoginSession[]>([]);
-  const [loading, setLoading] = useState(true);
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busyFp, setBusyFp] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
-
-  const loadSessions = useCallback(async () => {
-    setLoading(true);
-    const result = await fetchActiveLoginSessions();
-    if (result.success) {
-      setSessions(result.sessions);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch sessions on mount
-    void loadSessions();
-  }, [loadSessions]);
 
   const remoteSessions = sessions.filter((s) => !s.isCurrentDevice);
 
@@ -79,7 +72,8 @@ export default function ActiveRemoteSessionsPanel({ locale }: ActiveRemoteSessio
         setError(result.error ?? (isTh ? 'บังคับออกไม่สำเร็จ' : 'Revoke failed'));
         return;
       }
-      await loadSessions();
+      setPin('');
+      await onReload();
     } finally {
       setBusyFp(null);
     }
@@ -90,6 +84,13 @@ export default function ActiveRemoteSessionsPanel({ locale }: ActiveRemoteSessio
       setError(isTh ? 'กรอกรหัสหลัก 6 หลักก่อนบังคับออก' : 'Enter master PIN first');
       return;
     }
+    const confirmed = window.confirm(
+      isTh
+        ? 'บังคับออกจากระบบทุกเครื่องอื่นใช่ไหม?'
+        : 'Sign out all other devices?'
+    );
+    if (!confirmed) return;
+
     setBulkLoading(true);
     setError(null);
     try {
@@ -102,7 +103,8 @@ export default function ActiveRemoteSessionsPanel({ locale }: ActiveRemoteSessio
         setError(result.error ?? (isTh ? 'บังคับออกไม่สำเร็จ' : 'Revoke failed'));
         return;
       }
-      await loadSessions();
+      setPin('');
+      await onReload();
     } finally {
       setBulkLoading(false);
     }
@@ -116,12 +118,12 @@ export default function ActiveRemoteSessionsPanel({ locale }: ActiveRemoteSessio
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[13px] text-foreground leading-snug">
-            {isTh ? 'บังคับออกจากระบบ (อุปกรณ์อื่น)' : 'Force sign out (other devices)'}
+            {isTh ? 'บังคับออกจากระบบ' : 'Force sign out'}
           </p>
           <p className="text-[12px] text-muted-foreground mt-0.5 leading-normal">
             {isTh
-              ? 'อุปกรณ์ที่ยังล็อกอินอยู่จากประวัติ — ต้องใช้รหัสหลัก (สิทธิ์แก้ไข)'
-              : 'Devices still signed in per history — master PIN required'}
+              ? 'ออกจากระบบบนอุปกรณ์อื่น — ต้องใช้รหัสหลัก'
+              : 'Sign out other devices — master PIN required'}
           </p>
         </div>
       </div>
@@ -129,6 +131,8 @@ export default function ActiveRemoteSessionsPanel({ locale }: ActiveRemoteSessio
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <input
           type="password"
+          name="master-pin"
+          id="settings-master-pin"
           inputMode="numeric"
           pattern="[0-9]*"
           autoComplete="off"
@@ -171,6 +175,19 @@ export default function ActiveRemoteSessionsPanel({ locale }: ActiveRemoteSessio
 
       {loading ? (
         <div className="h-12 rounded-xl bg-muted/40 animate-pulse" />
+      ) : loadError ? (
+        <div className="space-y-2">
+          <p className="text-[12px] text-red-500">
+            {isTh ? 'โหลดรายการอุปกรณ์ไม่ได้' : 'Could not load active devices'}
+          </p>
+          <button
+            type="button"
+            onClick={() => void onReload()}
+            className="text-[12px] text-foreground underline-offset-2 hover:underline"
+          >
+            {isTh ? 'ลองใหม่' : 'Try again'}
+          </button>
+        </div>
       ) : remoteSessions.length === 0 ? (
         <p className="text-[12px] text-muted-foreground">
           {isTh ? 'ไม่มีอุปกรณ์อื่นที่ยังล็อกอินอยู่' : 'No other devices are still signed in'}
@@ -242,7 +259,11 @@ export default function ActiveRemoteSessionsPanel({ locale }: ActiveRemoteSessio
         </p>
       )}
 
-      {error && <p className="text-[11px] text-red-500 leading-normal">{error}</p>}
+      {error && (
+        <p className="text-[11px] text-red-500 leading-normal" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -51,4 +51,26 @@ describe('computeActiveLoginSessions', () => {
     expect(sessions[0].sessionFingerprint).toBe('fp-b');
     expect(sessions[0].isCurrentDevice).toBe(true);
   });
+
+  test('excludes revoked fingerprints even when latest event is login_success', () => {
+    const sessions = computeActiveLoginSessions(
+      [
+        row({
+          session_fingerprint: 'fp-revoked',
+          event_type: 'login_success',
+          occurred_at: '2026-06-12T11:00:00.000Z',
+        }),
+        row({
+          session_fingerprint: 'fp-ok',
+          event_type: 'login_success',
+          occurred_at: '2026-06-12T10:30:00.000Z',
+        }),
+      ],
+      'fp-ok',
+      new Set(['fp-revoked'])
+    );
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].sessionFingerprint).toBe('fp-ok');
+  });
 });

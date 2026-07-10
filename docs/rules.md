@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-08 | Enforcement: Mandatory
+> Version: 9.1 | Last Updated: 2026-07-10 | Enforcement: Mandatory
 
 ---
 
@@ -112,6 +112,34 @@
 - Undo/redo upsert MUST NOT overwrite live `stock` from DB (fetch current stock before sync)
 - Corrections via compensating transaction or explicit deletion in History
 - Transaction cancellation reverses stock manually + deletes record
+- Transaction history uses a **two-step fetch** (raw transactions + separate item-name lookup) to avoid FK join / RLS gaps; use `unstable_noStore()` for transaction reads
+- Explicit joins on `inventory_item_id` only — never `product_id` / singular table names
+
+### Table & Modal Layout (DEC-056–058)
+
+- Tables: wrap with `w-full overflow-x-auto scrollbar-thin border border-border rounded-3xl pb-8`; set sensible `min-width`; compact cell padding (`px-2 py-2`)
+- Modals: content `max-h-[90vh] overflow-y-auto scrollbar-thin`; overlay `flex items-center justify-center p-4`
+
+### Employee Roster Integrity (DEC-059)
+
+- Dashboard/overview staff tables always render from `profiles` (all 9 staff), never by mapping only from `shifts`
+
+### Purchase Orders & Ordering
+
+- Item names left-aligned; other PO columns centered; group by source via tabs
+- `exact_count`: order qty = `target_stock - stock` when `stock <= order_point`, else `0`
+- `sufficiency_check`: manual `order_qty`; skip accuracy scoring
+
+### Drag & Drop
+
+- `PointerSensor` `activationConstraint: { distance: 5 }`; optimistic local update + background sync with rollback
+- In-place drag (`opacity` / `scale` / `shadow`); no `<DragOverlay>` ghost duplicate; use `CSS.Translate` on the sortable item
+
+### Persistent Layout State
+
+- Column widths / labels: `localStorage` first (no layout shift), then sync `inventory_config`
+- Dashboard date range: URL params > cookies (`SameSite=Lax`) > defaults
+- Rapid resize/save: functional `setState` only — never stale outer closures
 
 ### Performance Guardrails (v9.0)
 

@@ -24,9 +24,10 @@ const subscriptionSchema = z.object({
       systemNotifications: z.boolean(),
       dailyScheduleReports: z.boolean().optional(),
       notifyOwnChanges: z.boolean(),
-      notifyCreate: z.boolean(),
-      notifyUpdate: z.boolean(),
-      notifyDelete: z.boolean(),
+      // Legacy per-action flags — accepted then ignored (inventory master switch covers all)
+      notifyCreate: z.boolean().optional(),
+      notifyUpdate: z.boolean().optional(),
+      notifyDelete: z.boolean().optional(),
     })
     .optional(),
   branchId: z.string().max(64).optional(),
@@ -66,27 +67,15 @@ async function resolveUserId(accessToken: string): Promise<string | null> {
     data: { user },
     error,
   } = await supabase.auth.getUser(accessToken);
-  
-  if (user) return user.id;
+
+  if (user?.id) return user.id;
 
   if (error) {
+    // Never decode JWT payload without signature verification — forged tokens
+    // could bind push subscriptions to an arbitrary user_id.
     console.error('[resolveUserId] Supabase Auth Error:', error.message, error.status);
-    // Fallback: manually decode JWT to get 'sub' if the token is an ES256 token 
-    // that GoTrue rejects via /user endpoint.
-    try {
-      const payloadPart = accessToken.split('.')[1];
-      if (payloadPart) {
-        const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf8'));
-        if (payload && payload.sub) {
-          console.log('[resolveUserId] Fallback: Extracted user id from JWT:', payload.sub);
-          return payload.sub;
-        }
-      }
-    } catch (decodeError) {
-      console.error('[resolveUserId] JWT decode error:', decodeError);
-    }
   }
-  
+
   return null;
 }
 

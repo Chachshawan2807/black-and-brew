@@ -129,32 +129,32 @@ export default function NotificationPreferencesSection({
   return (
     <div>
       <ToggleRow
-        label={isTh ? 'แจ้งตารางงานรายวัน (05:00 / 18:00)' : 'Daily schedule reports (05:00 / 18:00)'}
+        label={isTh ? 'สรุปตารางงานรายวัน' : 'Daily schedule summary'}
         description={
           isTh
-            ? 'รับสรุปตารางงานอัตโนมัติเช้าและเย็นผ่าน Web Push — ฟรี ไม่จำกัดจำนวนผู้รับ'
-            : 'Automatic morning and evening schedule summaries via Web Push — free, unlimited recipients'
+            ? 'รับสรุปตารางงานอัตโนมัติเวลา 05:00 และ 18:00'
+            : 'Automatic schedule summary at 05:00 and 18:00'
         }
         checked={prefs.dailyScheduleReports}
         onChange={(v) => void handleDailyScheduleReports(v)}
         disabled={!prefs.enabled || permission === 'unsupported'}
       />
       <ToggleRow
-        label={isTh ? 'แจ้งเตือนคลังสินค้า' : 'Inventory notifications'}
+        label={isTh ? 'แจ้งเตือนคลังสินค้า' : 'Inventory alerts'}
         description={
           isTh
-            ? 'รับการแจ้งเตือนเมื่อมีการเปลี่ยนแปลงข้อมูลคลังสินค้า'
-            : 'Get alerts when inventory data changes'
+            ? 'แจ้งเมื่อเพิ่ม แก้ไข หรือลบสินค้าในคลัง'
+            : 'Notify when inventory items are added, edited, or removed'
         }
         checked={prefs.enabled}
         onChange={(v) => update({ enabled: v })}
       />
       <ToggleRow
-        label={isTh ? 'แจ้งเตือนบนหน้าจอ / ไอคอนแอป' : 'Home-screen & OS alerts'}
+        label={isTh ? 'แจ้งเตือนระบบ' : 'System notifications'}
         description={
           isTh
-            ? 'ตัวเลขบนไอคอนแอป + แจ้งเตือนข้ามอุปกรณ์ (แม้ปิดเว็บ) — อนุญาตการแจ้งเตือนใน iOS/Android/iPad และ Add to Home Screen บน iOS'
-            : 'App icon badge + cross-device push (even when the app is closed) — allow notifications on iOS/Android/iPad; Add to Home Screen on iOS'
+            ? 'แจ้งเตือนแม้ปิดแอป พร้อมตัวเลขบนไอคอน'
+            : 'Alerts even when the app is closed, with an icon badge'
         }
         checked={prefs.systemNotifications}
         onChange={(v) => void handleSystemNotifications(v)}
@@ -163,66 +163,33 @@ export default function NotificationPreferencesSection({
       {permission === 'denied' && (
         <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2">
           {isTh
-            ? 'การแจ้งเตือนถูกปิดในระบบ — เปิดได้จากการตั้งค่าของเบราว์เซอร์หรืออุปกรณ์'
-            : 'Notifications are blocked — enable them in browser or device settings'}
+            ? 'การแจ้งเตือนถูกปิดอยู่ — เปิดได้ในการตั้งค่าอุปกรณ์'
+            : 'Notifications are blocked — enable them in device settings'}
         </p>
       )}
       {diag && prefs.systemNotifications && (
         <p className="text-[11px] text-muted-foreground mb-2">
           {isTh
-            ? `สถานะเซิร์ฟเวอร์: VAPID ${diag.vapidConfigured ? 'พร้อม' : 'ยังไม่ตั้งค่า'} · อุปกรณ์ลงทะเบียน ${diag.subscriptionCount} เครื่อง`
-            : `Server: VAPID ${diag.vapidConfigured ? 'ready' : 'missing'} · ${diag.subscriptionCount} device(s) registered`}
+            ? `สถานะ: ${diag.vapidConfigured ? 'พร้อมใช้งาน' : 'ยังไม่พร้อม'} · อุปกรณ์ ${diag.subscriptionCount} เครื่อง`
+            : `Status: ${diag.vapidConfigured ? 'ready' : 'not ready'} · ${diag.subscriptionCount} device(s)`}
         </p>
       )}
       <ToggleRow
-        label={isTh ? 'แจ้งการเปลี่ยนแปลงของตัวเอง' : 'Notify my own changes'}
+        label={isTh ? 'แจ้งการแก้ไขของตัวเอง' : 'Notify my own edits'}
         description={
           isTh
-            ? 'แจ้งเตือนแม้คุณเป็นคนแก้ไขเองบนเครื่องนี้ — ปิดเพื่อไม่ให้รบกวนเมื่อทำงานคนเดียว'
-            : 'Alert even when you edit on this device — turn off to avoid noise when working alone'
+            ? 'แจ้งแม้คุณเป็นคนแก้ไขเอง — ปิดได้ถ้าทำงานคนเดียว'
+            : 'Notify even when you make the change — turn off if you work alone'
         }
         checked={prefs.notifyOwnChanges}
         onChange={(v) => update({ notifyOwnChanges: v })}
         disabled={!prefs.enabled}
       />
-      <ToggleRow
-        label={isTh ? 'แจ้งเมื่อเพิ่มรายการ' : 'Notify on create'}
-        description={
-          isTh
-            ? 'แจ้งเมื่อมีการเพิ่มสินค้าใหม่ในคลัง'
-            : 'Alert when a new inventory item is added'
-        }
-        checked={prefs.notifyCreate}
-        onChange={(v) => update({ notifyCreate: v })}
-        disabled={!prefs.enabled}
-      />
-      <ToggleRow
-        label={isTh ? 'แจ้งเมื่อแก้ไข' : 'Notify on update'}
-        description={
-          isTh
-            ? 'แจ้งเมื่อเปลี่ยนจำนวนสต็อก (ตารางคลัง / แถบลัด) หรือรับเข้า-นำออก'
-            : 'Alert on stock changes from the inventory grid, quick actions, or In/Out entries'
-        }
-        checked={prefs.notifyUpdate}
-        onChange={(v) => update({ notifyUpdate: v })}
-        disabled={!prefs.enabled}
-      />
-      <ToggleRow
-        label={isTh ? 'แจ้งเมื่อลบ' : 'Notify on delete'}
-        description={
-          isTh
-            ? 'แจ้งเมื่อมีการลบสินค้าออกจากคลัง'
-            : 'Alert when an item is removed from inventory'
-        }
-        checked={prefs.notifyDelete}
-        onChange={(v) => update({ notifyDelete: v })}
-        disabled={!prefs.enabled}
-      />
       <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-3">
         <Bell size={12} strokeWidth={1.75} />
         {isTh
-          ? 'การตั้งค่าบันทึกในอุปกรณ์นี้'
-          : 'Preferences are saved on this device'}
+          ? 'บันทึกการตั้งค่าไว้ในอุปกรณ์นี้'
+          : 'Saved on this device'}
       </p>
     </div>
   );

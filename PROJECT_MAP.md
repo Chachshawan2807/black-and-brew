@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-07-08 (GMT+7) | Root: `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` | Version: 9.1
+> Generated: 2026-07-10 (GMT+7) | Version: 9.1
 
 Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) over reading this file wholesale. Canonical agent rules: `AGENTS.md`.
 
@@ -19,8 +19,6 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 | Maintenance | `src/app/[locale]/maintenance/` | Active |
 | Sales | `src/app/[locale]/sales/` | Active |
 | Settings | `src/app/[locale]/settings/` | Active |
-
-Retired: inventory recommended target stock, graphify.
 
 ---
 
@@ -49,7 +47,6 @@ Locales: `th`, `en`
 | --- | :--- |
 | `/api/chat` | `src/app/api/chat/route.ts` |
 | `/api/daily-report` | `src/app/api/daily-report/route.ts` |
-| `/api/weather` | `src/app/api/weather/route.ts` |
 | `/api/push/webhook` | `src/app/api/push/webhook/route.ts` |
 
 ---
@@ -61,8 +58,8 @@ black-and-brew/
 ├── docs/                    # Project documentation (see README § Documentation)
 ├── messages/                # th.json, en.json (next-intl)
 ├── public/                  # sw.js (PWA), images
-├── supabase/migrations/     # Versioned DB migrations (18 files — see docs/database.md)
-├── sql/                     # RPC/views reference scripts
+├── supabase/migrations/     # Versioned DB migrations (see docs/database.md)
+├── sql/                     # RPC/views blueprints + historical/ schemas
 ├── src/
 │   ├── app/
 │   │   ├── [locale]/

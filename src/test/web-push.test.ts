@@ -53,9 +53,6 @@ function sampleSubscription(overrides: Partial<PushSubscriptionRow> = {}): PushS
       enabled: true,
       systemNotifications: true,
       notifyOwnChanges: false,
-      notifyCreate: true,
-      notifyUpdate: true,
-      notifyDelete: true,
       locale: 'th',
     },
     ...overrides,
@@ -67,7 +64,7 @@ describe('web-push', () => {
     const prefs = parsePushPrefs({ enabled: false, locale: 'en' });
     expect(prefs.enabled).toBe(false);
     expect(prefs.locale).toBe('en');
-    expect(prefs.notifyUpdate).toBe(true);
+    expect(prefs.notifyOwnChanges).toBe(true);
   });
 
   test('buildWebPushPayload formats eligible inventory row', () => {
@@ -96,9 +93,6 @@ describe('web-push', () => {
         enabled: true,
         systemNotifications: true,
         notifyOwnChanges: true,
-        notifyCreate: true,
-        notifyUpdate: true,
-        notifyDelete: true,
         locale: 'th',
       },
     });

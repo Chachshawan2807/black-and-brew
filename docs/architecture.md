@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.0 | Last Updated: 2026-06-22 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.1 | Last Updated: 2026-07-10 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -103,8 +103,7 @@ src/app/
 ├── api/
 │   ├── chat/route.ts            # Streaming AI (ToolLoopAgent)
 │   ├── daily-report/route.ts    # Vercel Cron endpoint
-│   ├── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
-│   └── weather/route.ts         # OpenWeatherMap proxy
+│   └── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
 └── [locale]/
     ├── layout.tsx               # PinGateway, sidebar, AI chat, PWA
     ├── page.tsx                 # Command Center
@@ -119,7 +118,7 @@ src/app/
     └── settings/                # page.tsx + _components/ (theme, sessions, passkeys)
 ```
 
-i18n middleware: `src/proxy.ts` (Next.js 16 convention — not `src/middleware.ts`)
+i18n middleware entry: `src/proxy.ts` (Next.js 16 App Router convention)
 
 ---
 
@@ -217,18 +216,18 @@ Skips origin device when `client_session_id` matches mutation metadata. Requires
 
 ```text
 AIChatOverlay → POST /api/chat → ToolLoopAgent (Gemini 2.5 Flash)
-→ tools: getDailyShifts, readTable, internetSearchTool
-→ daily schedule queries short-circuit to deterministic stream (no LLM)
+→ tools: getDailyShifts, getStoreStatus, getSalesSummary, getInventoryLedger, getInventoryItemDetails, readTable, internetSearchTool
+→ short-circuits: schedule, maintenance, low-stock, sales, holidays, store status (multi-turn aware)
 → streaming response → XSS sanitization on display
 ```
 
-> AI tools (`src/app/api/chat/route.ts`): `getDailyShifts` (daily roster), `readTable` (other internal tables), `internetSearchTool` (external/weather). Weather is served via `internetSearchTool` — there is no separate `weather` AI tool.
+> AI tools live in `src/app/actions/tools/`; chat orchestration in `src/app/api/chat/route.ts`.
 
 ### Daily Web Push Report
 
 ```text
 Vercel Cron → /api/daily-report → compileDailyReportPayload()
-→ shifts + weather + holidays
+→ shifts + holidays
 → dispatch daily schedule Web Push to eligible push_subscriptions (branch/profile scoped)
 ```
 
@@ -324,7 +323,6 @@ Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIM
 | Supabase | Anon + Service Role | DB, Auth, Real-time |
 | Google Calendar API | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync |
 | Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat (`@ai-sdk/google`) |
-| OpenWeatherMap | `OPENWEATHER_API_KEY` | Weather widget + daily report |
 | Tavily | `TAVILY_API_KEY` | AI web search |
 | Web Push (VAPID) | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | Cross-device inventory alerts via `web-push` |
 | Vercel | Git deployment | App hosting + Cron |

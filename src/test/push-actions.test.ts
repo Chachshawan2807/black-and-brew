@@ -65,9 +65,6 @@ describe('registerPushSubscription', () => {
         enabled: true,
         systemNotifications: true,
         notifyOwnChanges: false,
-        notifyCreate: true,
-        notifyUpdate: true,
-        notifyDelete: true,
       },
       locale: 'th',
     });
@@ -101,6 +98,27 @@ describe('registerPushSubscription', () => {
     });
 
     expect(result).toEqual({ success: false, error: 'pin_session_required' });
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  test('rejects when Auth getUser fails — does not trust unsigned JWT payload', async () => {
+    const forgedPayload = Buffer.from(
+      JSON.stringify({ sub: 'attacker-user-id', role: 'authenticated' })
+    ).toString('base64url');
+    const forgedToken = `hdr.${forgedPayload}.sig`;
+
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Invalid JWT', status: 401 },
+    });
+
+    const result = await registerPushSubscription({
+      accessToken: forgedToken,
+      endpoint: 'https://push.example/sub/forged',
+      keys: { p256dh: 'p256', auth: 'auth' },
+    });
+
+    expect(result).toEqual({ success: false, error: 'supabase_session_missing' });
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 });

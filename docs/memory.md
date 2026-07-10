@@ -1,6 +1,6 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-08 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.1 | Last Updated: 2026-07-10 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
@@ -23,11 +23,12 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 ### DEC-081: Retired Features — Do Not Reintroduce (v9.1)
 
 - Date: July 2026
-- Removed from app and docs:
-  1. **graphify** — not used; primary knowledge graph is **codebase-memory-mcp** (see `AGENTS.md`).
-  2. **Inventory recommended target stock** — removed by `supabase/migrations/20260708104230_remove_inventory_recommended_target_stock.sql`.
-  3. **WeatherWidget**, **InventorySummaryCard**, **CommandCenterGrid** — removed from dashboard/command center UI.
-- Impact: Do not document or implement these as active features.
+- Do not reintroduce:
+  1. Graphify (or any second knowledge-graph toolchain) — use **codebase-memory-mcp** only.
+  2. Inventory recommended target stock — dropped by `20260708104230_remove_inventory_recommended_target_stock.sql`.
+  3. Dashboard widgets: WeatherWidget, InventorySummaryCard, CommandCenterGrid.
+  4. Weather forecasting (`/api/weather` / OpenWeatherMap) — AI external search is Tavily-only.
+- Impact: Keep docs and code free of these as active features.
 
 ### DEC-079: Phased Performance Refactor Guardrails (v9.0)
 

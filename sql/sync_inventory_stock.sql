@@ -61,12 +61,17 @@ BEGIN
 
   RETURN v_result;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO public;
 
 -- 3. Keep order_qty in sync with computed formula (DEC-005)
 --    IF stock <= order_point THEN order_qty = target_stock - stock ELSE 0
 CREATE OR REPLACE FUNCTION public.sync_inventory_order_qty()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path TO public
+AS $$
 BEGIN
   IF NEW.stock <= COALESCE(NEW.order_point, 0) AND COALESCE(NEW.target_stock, 0) > NEW.stock THEN
     NEW.order_qty := GREATEST(0, COALESCE(NEW.target_stock, 0) - NEW.stock);
@@ -75,7 +80,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 DROP TRIGGER IF EXISTS trg_sync_inventory_order_qty ON public.inventory_items;
 

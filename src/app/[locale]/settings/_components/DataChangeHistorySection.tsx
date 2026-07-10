@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, Pencil, Trash2, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -134,32 +134,30 @@ export default function DataChangeHistorySection({
   const [moduleFilter, setModuleFilter] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
   const isTh = locale === "th";
+  const loadGenRef = useRef(0);
+
+  const load = useCallback(async () => {
+    const gen = ++loadGenRef.current;
+    setLoading(true);
+    const result = await fetchDataChangeLogs({
+      limit: 50,
+      module: moduleFilter === "all" ? undefined : moduleFilter,
+    });
+    if (gen !== loadGenRef.current) return;
+
+    if (!result.success) {
+      setError(result.error);
+      setRows([]);
+    } else {
+      setError(null);
+      setRows(result.rows);
+    }
+    setLoading(false);
+  }, [moduleFilter]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    void (async () => {
-      setLoading(true);
-      const result = await fetchDataChangeLogs({
-        limit: 50,
-        module: moduleFilter === "all" ? undefined : moduleFilter,
-      });
-      if (cancelled) return;
-
-      if (!result.success) {
-        setError(result.error);
-        setRows([]);
-      } else {
-        setError(null);
-        setRows(result.rows);
-      }
-      setLoading(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [moduleFilter]);
+    void load();
+  }, [moduleFilter, load]);
 
   const filterOptions = [
     { value: "all", label: isTh ? "ทั้งหมด" : "All" },
@@ -169,34 +167,17 @@ export default function DataChangeHistorySection({
     })),
   ];
 
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-14 rounded-2xl bg-muted/40 animate-pulse" />
-        ))}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <p className="text-[13px] leading-relaxed text-red-500 font-normal py-4 text-center">
-        {isTh ? "โหลดประวัติไม่ได้ ลองใหม่อีกครั้ง" : "Could not load history. Try again."}
-      </p>
-    );
-  }
-
   const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);
   const hasMoreRows = rows.length > PREVIEW_COUNT;
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={isTh ? "กรองตามโมดูล" : "Filter by module"}>
         {filterOptions.map((opt) => (
           <button
             key={opt.value}
             type="button"
+            aria-pressed={moduleFilter === opt.value}
             onClick={() => {
               setModuleFilter(opt.value);
               setShowAll(false);
@@ -213,7 +194,26 @@ export default function DataChangeHistorySection({
         ))}
       </div>
 
-      {rows.length === 0 ? (
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-14 rounded-2xl bg-muted/40 animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="py-4 text-center space-y-2">
+          <p className="text-[13px] leading-relaxed text-red-500 font-normal">
+            {isTh ? "โหลดประวัติไม่ได้" : "Could not load history"}
+          </p>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="text-[12px] text-foreground underline-offset-2 hover:underline"
+          >
+            {isTh ? "ลองใหม่" : "Try again"}
+          </button>
+        </div>
+      ) : rows.length === 0 ? (
         <p className="text-[13px] leading-relaxed text-muted-foreground font-normal py-6 text-center">
           {isTh ? "ยังไม่มีประวัติการแก้ไข" : "No edit history yet"}
         </p>

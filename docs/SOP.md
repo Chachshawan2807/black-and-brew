@@ -42,7 +42,7 @@ This document outlines the core technical standards for developing and maintaini
 
 1. **Integrity Build**: Run `npm run build` to verify system readiness and type safety.
 2. **Logic Validation**: Verify core persistence rules (e.g., Zero-Value retention) via automated tests.
-3. **Blueprint Sync**: Update `MASTER_BLUEPRINT.md` and `PROTOCOL_ENFORCER.md` with the latest feature states.
+3. **Blueprint Sync**: Update `docs/MASTER_BLUEPRINT.md` and `docs/rules.md` with the latest feature states.
 4. **Doc Audit**: Review all `.md` files for broken links and outdated instructions.
 5. **Cloud Sync**: Securely push code to GitHub with clear commit messages.
 

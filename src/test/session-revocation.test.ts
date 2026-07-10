@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const { mockMaybeSingle } = vi.hoisted(() => ({
+const { mockMaybeSingle, mockIn } = vi.hoisted(() => ({
   mockMaybeSingle: vi.fn(),
+  mockIn: vi.fn(),
 }));
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -11,12 +12,13 @@ vi.mock('@supabase/supabase-js', () => ({
         eq: vi.fn(() => ({
           maybeSingle: mockMaybeSingle,
         })),
+        in: mockIn,
       })),
     })),
   })),
 }));
 
-import { isSessionFingerprintRevoked } from '@/lib/session-revocation';
+import { getRevokedFingerprints, isSessionFingerprintRevoked } from '@/lib/session-revocation';
 
 describe('isSessionFingerprintRevoked', () => {
   beforeEach(() => {
@@ -58,5 +60,30 @@ describe('isSessionFingerprintRevoked', () => {
     mockMaybeSingle.mockRejectedValue(new Error('network down'));
 
     expect(await isSessionFingerprintRevoked('fp-1')).toBe(true);
+  });
+});
+
+describe('getRevokedFingerprints', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
+  });
+
+  test('returns empty set on query error so UI does not hide live sessions', async () => {
+    mockIn.mockResolvedValue({
+      data: null,
+      error: { message: 'connection failed', details: null },
+    });
+
+    const result = await getRevokedFingerprints(['fp-a', 'fp-b']);
+    expect(result).toEqual(new Set());
+  });
+
+  test('returns empty set on unexpected exceptions', async () => {
+    mockIn.mockRejectedValue(new Error('network down'));
+
+    const result = await getRevokedFingerprints(['fp-a']);
+    expect(result).toEqual(new Set());
   });
 });

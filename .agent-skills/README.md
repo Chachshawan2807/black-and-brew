@@ -69,6 +69,6 @@ git apply .agent-skills/patches/constants-black-and-brew.patch
 | `.agents/skills/` | Third-party curated skills (`npx skills add`) |
 | `.cursor/skills/` | Project Cursor skills (e.g. chrome-modern-web-guidance) |
 | `.agent-skills/skills/` | **This system** — project runbooks you or agents author |
-| `SKILLS_INVENTORY.md` | Domain/business skill documentation |
+| `docs/skills.md` | Domain/business + AI capability documentation |
 
-Terminal runner (`skill:run`) works without Claude Code or LLM keys. Web UI and tree build require `.agent-skills/asos/.env`.
+Terminal runner (`skill:run`) works without Claude Code or LLM keys. Web UI and tree build require copying `.agent-skills/asos/.env.example` to a local `.env` in that folder.

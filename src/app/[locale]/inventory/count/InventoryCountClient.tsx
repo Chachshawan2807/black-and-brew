@@ -13,6 +13,12 @@ import type {
 } from '@/app/actions/inventory-actions';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { getClientSessionId } from '@/lib/client-session';
+import {
+  applyCountVerificationToAccuracyStats,
+  isCountMatch,
+  mergeAccuracyStatsPreferringHigherChecks,
+  removeCountVerificationFromAccuracyStats,
+} from '@/lib/inventory-count-accuracy';
 import { mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
@@ -97,13 +103,13 @@ const CountInput = memo(function CountInput({
     valueRef.current = '';
     setVal('');
     onActiveChange?.(null);
-    try {
-      await onSave(itemId, sanitized);
-      return true;
-    } finally {
+    // Do not await the server round-trip — next-row focus must stay instant.
+    // Errors still surface via handleSaveStock (optimistic rollback + toast).
+    void onSave(itemId, sanitized).finally(() => {
       isSavingRef.current = false;
       committingRef.current = false;
-    }
+    });
+    return true;
   }, [clearDraft, disabled, itemId, onActiveChange, onSave]);
 
   const handleSubmit = useCallback(
@@ -373,7 +379,10 @@ export default function InventoryCountClient({
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [accuracyStats, setAccuracyStats] = useState<CountAccuracyStatsResult | null>(initialAccuracyStats);
+  const accuracyTouchedRef = useRef(false);
   const [lastVerification, setLastVerification] = useState<Record<string, { matched: boolean; systemStockQty: number; countedQty: number }>>({});
+  const lastVerificationRef = useRef(lastVerification);
+  lastVerificationRef.current = lastVerification;
   // Per-item undo state: maps itemId → UndoEntry. Cleared after one use.
   const [undoMap, setUndoMap] = useState<Record<string, UndoEntry>>({});
   const [animateEntrance] = useState(
@@ -383,7 +392,12 @@ export default function InventoryCountClient({
   const loadAccuracyStats = useCallback(async () => {
     const res = await fetchCountAccuracyStats();
     if (res.success && res.data) {
-      setAccuracyStats(res.data);
+      const fetchedStats = res.data;
+      setAccuracyStats((prev) =>
+        accuracyTouchedRef.current
+          ? mergeAccuracyStatsPreferringHigherChecks(fetchedStats, prev)
+          : fetchedStats,
+      );
     }
   }, []);
 
@@ -450,6 +464,7 @@ export default function InventoryCountClient({
 
     const currentItem = itemsRef.current.find((i) => i.id === id);
     const previousStock = Number(currentItem?.stock ?? 0);
+    const tracksAccuracy = currentItem?.count_policy !== 'sufficiency_check';
     setSaveErrorMessage(null);
 
     // Optimistic update — show the new value immediately
@@ -461,6 +476,52 @@ export default function InventoryCountClient({
     // Register undo entry for this item (overrides any prior undo)
     if (!isUndo) {
       setUndoMap((prev) => ({ ...prev, [id]: { prevStock: previousStock } }));
+    }
+
+    const optimisticDelta =
+      !isUndo && tracksAccuracy
+        ? {
+            itemId: id,
+            itemName: currentItem?.name,
+            countedQty: value,
+            systemStockQty: previousStock,
+            matched: isCountMatch(value, previousStock),
+          }
+        : null;
+
+    const undoPrior =
+      isUndo && lastVerificationRef.current[id]
+        ? lastVerificationRef.current[id]
+        : null;
+
+    if (optimisticDelta) {
+      accuracyTouchedRef.current = true;
+      setLastVerification((prev) => ({
+        ...prev,
+        [id]: {
+          matched: optimisticDelta.matched,
+          systemStockQty: optimisticDelta.systemStockQty,
+          countedQty: optimisticDelta.countedQty,
+        },
+      }));
+      setAccuracyStats((prev) =>
+        applyCountVerificationToAccuracyStats(prev, optimisticDelta),
+      );
+    } else if (undoPrior) {
+      accuracyTouchedRef.current = true;
+      setLastVerification((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setAccuracyStats((prev) =>
+        removeCountVerificationFromAccuracyStats(prev, {
+          itemId: id,
+          countedQty: undoPrior.countedQty,
+          systemStockQty: undoPrior.systemStockQty,
+          matched: undoPrior.matched,
+        }),
+      );
     }
 
     try {
@@ -475,23 +536,58 @@ export default function InventoryCountClient({
         throw new Error(verification.error);
       }
 
+      const countedQty = verification.countedQty ?? value;
+      const systemStockQty = verification.systemStockQty ?? previousStock;
+      const matched = verification.matched ?? false;
+      const skipped = verification.skipped === true;
+
       if (isUndo) {
+        // Accuracy + lastVerification already rolled back optimistically.
+      } else if (skipped) {
+        // Sufficiency items must not affect accuracy — roll back any optimistic apply.
+        if (optimisticDelta) {
+          setAccuracyStats((prev) =>
+            removeCountVerificationFromAccuracyStats(prev, optimisticDelta),
+          );
+        }
         setLastVerification((prev) => {
           const next = { ...prev };
           delete next[id];
           return next;
         });
       } else {
+        const serverDelta = {
+          itemId: id,
+          itemName: currentItem?.name,
+          countedQty,
+          systemStockQty,
+          matched,
+        };
         setLastVerification((prev) => ({
           ...prev,
           [id]: {
-            matched: verification.matched ?? false,
-            systemStockQty: verification.systemStockQty ?? previousStock,
-            countedQty: verification.countedQty ?? value,
+            matched,
+            systemStockQty,
+            countedQty,
           },
         }));
+
+        const needsReconcile =
+          !optimisticDelta ||
+          optimisticDelta.systemStockQty !== systemStockQty ||
+          optimisticDelta.matched !== matched ||
+          optimisticDelta.countedQty !== countedQty;
+
+        if (needsReconcile) {
+          accuracyTouchedRef.current = true;
+          setAccuracyStats((prev) => {
+            const withoutOptimistic = optimisticDelta
+              ? removeCountVerificationFromAccuracyStats(prev, optimisticDelta)
+              : prev;
+            return applyCountVerificationToAccuracyStats(withoutOptimistic, serverDelta);
+          });
+        }
       }
-      void loadAccuracyStats();
 
       const savedStock = verification.newStock ?? value;
       if (savedStock !== value) {
@@ -504,10 +600,34 @@ export default function InventoryCountClient({
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err) {
       console.error('Failed to update stock:', err);
-      // Revert optimistic update on failure
+      // Revert optimistic stock + accuracy on failure
       setItems((prev) =>
         prev.map((item) => (item.id === id ? { ...item, stock: previousStock } : item)),
       );
+      if (optimisticDelta) {
+        setAccuracyStats((prev) =>
+          removeCountVerificationFromAccuracyStats(prev, optimisticDelta),
+        );
+        setLastVerification((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      } else if (undoPrior) {
+        setLastVerification((prev) => ({
+          ...prev,
+          [id]: undoPrior,
+        }));
+        setAccuracyStats((prev) =>
+          applyCountVerificationToAccuracyStats(prev, {
+            itemId: id,
+            itemName: currentItem?.name,
+            countedQty: undoPrior.countedQty,
+            systemStockQty: undoPrior.systemStockQty,
+            matched: undoPrior.matched,
+          }),
+        );
+      }
       // Remove undo entry since we reverted automatically
       setUndoMap((prev) => {
         const next = { ...prev };
@@ -518,7 +638,7 @@ export default function InventoryCountClient({
       setSaveErrorMessage('บันทึกจำนวนสต็อกไม่สำเร็จ ระบบได้โหลดข้อมูลล่าสุดกลับมาแล้ว');
       fetchInventory();
     }
-  }, [fetchInventory, isReadOnly, loadAccuracyStats]);
+  }, [fetchInventory, isReadOnly]);
 
   // Undo the last save for a given item — restores previous stock and persists it
   const handleUndo = useCallback(async (id: string) => {

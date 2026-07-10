@@ -12,6 +12,7 @@ interface ExpandableLinesProps {
   maxLines?: number;
   className?: string;
   lineClassName?: string;
+  firstLineClassName?: string;
 }
 
 export function ExpandableLines({
@@ -20,6 +21,7 @@ export function ExpandableLines({
   maxLines = MAX_LINES,
   className,
   lineClassName = 'text-[12px] text-muted-foreground/90 leading-normal',
+  firstLineClassName,
 }: ExpandableLinesProps) {
   const [expanded, setExpanded] = useState(false);
   const filtered = lines.filter(Boolean);
@@ -31,7 +33,13 @@ export function ExpandableLines({
   return (
     <div className={className}>
       {visible.map((line, i) => (
-        <p key={i} className={cn(lineClassName, i > 0 && 'mt-0.5')}>
+        <p
+          key={i}
+          className={cn(
+            i === 0 && firstLineClassName ? firstLineClassName : lineClassName,
+            i > 0 && 'mt-0.5'
+          )}
+        >
           {line}
         </p>
       ))}

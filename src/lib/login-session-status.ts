@@ -17,7 +17,8 @@ export interface ActiveLoginSession {
 /** Latest event per fingerprint — active when last event is login_success. */
 export function computeActiveLoginSessions(
   rows: LoginHistoryRow[],
-  currentFingerprint?: string | null
+  currentFingerprint?: string | null,
+  revokedFingerprints?: ReadonlySet<string>
 ): ActiveLoginSession[] {
   const latestByFingerprint = new Map<string, LoginHistoryRow>();
 
@@ -31,6 +32,7 @@ export function computeActiveLoginSessions(
 
   for (const [fp, row] of latestByFingerprint) {
     if (row.event_type !== 'login_success') continue;
+    if (revokedFingerprints?.has(fp)) continue;
 
     active.push({
       sessionFingerprint: fp,

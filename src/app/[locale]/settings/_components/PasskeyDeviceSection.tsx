@@ -7,13 +7,78 @@ import {
   removePasskeyForCurrentDevice,
 } from '@/app/actions/passkey-actions';
 import {
-  isBiometricLoginAvailable,
+  getBiometricLoginAvailability,
   registerDevicePasskey,
 } from '@/lib/passkey/client-flow';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 
 interface PasskeyDeviceSectionProps {
   locale: string;
+}
+
+const PASSKEY_ERROR_MAP: Record<string, { th: string; en: string }> = {
+  'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อนบันทึกเครื่องนี้': {
+    th: 'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อนบันทึกเครื่องนี้',
+    en: 'Sign in with your PIN before saving this device',
+  },
+  'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อน': {
+    th: 'กรุณาเข้าสู่ระบบด้วยรหัส PIN ก่อน',
+    en: 'Sign in with your PIN first',
+  },
+  'กรุณาเข้าสู่ระบบก่อน': {
+    th: 'กรุณาเข้าสู่ระบบก่อน',
+    en: 'Please sign in first',
+  },
+  'ไม่พบข้อมูลอุปกรณ์': {
+    th: 'ไม่พบข้อมูลอุปกรณ์',
+    en: 'Device information is missing',
+  },
+  'ไม่พบข้อมูลเครื่องนี้': {
+    th: 'ไม่พบข้อมูลเครื่องนี้',
+    en: 'This device could not be identified',
+  },
+  'ไม่สามารถเตรียมการลงทะเบียนลายนิ้วมือได้': {
+    th: 'ไม่สามารถเตรียมการลงทะเบียนลายนิ้วมือได้',
+    en: 'Could not start biometric registration',
+  },
+  'ข้อมูลลงทะเบียนไม่ถูกต้อง': {
+    th: 'ข้อมูลลงทะเบียนไม่ถูกต้อง',
+    en: 'Invalid registration data',
+  },
+  'หมดเวลาลงทะเบียน กรุณาลองใหม่': {
+    th: 'หมดเวลาลงทะเบียน กรุณาลองใหม่',
+    en: 'Registration timed out. Try again',
+  },
+  'ยืนยันลายนิ้วมือไม่สำเร็จ': {
+    th: 'ยืนยันลายนิ้วมือไม่สำเร็จ',
+    en: 'Biometric verification failed',
+  },
+  'บันทึกลายนิ้วมือไม่สำเร็จ': {
+    th: 'บันทึกลายนิ้วมือไม่สำเร็จ',
+    en: 'Could not save biometric login',
+  },
+  'ลงทะเบียนลายนิ้วมือไม่สำเร็จ': {
+    th: 'ลงทะเบียนลายนิ้วมือไม่สำเร็จ',
+    en: 'Biometric registration failed',
+  },
+  'ลบลายนิ้วมือไม่สำเร็จ': {
+    th: 'ลบลายนิ้วมือไม่สำเร็จ',
+    en: 'Could not remove biometric login',
+  },
+  'ยกเลิกการสแกนลายนิ้วมือ/ใบหน้า': {
+    th: 'ยกเลิกการสแกนลายนิ้วมือ/ใบหน้า',
+    en: 'Biometric scan cancelled',
+  },
+  'การสแกนลายนิ้วมือ/ใบหน้าถูกยกเลิก': {
+    th: 'การสแกนลายนิ้วมือ/ใบหน้าถูกยกเลิก',
+    en: 'Biometric scan was cancelled',
+  },
+};
+
+function localizePasskeyError(error: string, isTh: boolean): string {
+  const mapped = PASSKEY_ERROR_MAP[error];
+  if (mapped) return isTh ? mapped.th : mapped.en;
+  return error;
 }
 
 export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionProps) {
@@ -28,9 +93,10 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
 
   const loadStatus = useCallback(async () => {
     setLoading(true);
-    const biometric = await isBiometricLoginAvailable();
-    setSupported(biometric);
-    if (!biometric) {
+    const biometric = await getBiometricLoginAvailability();
+    const platformOk = biometric.hasPlatformAuthenticator;
+    setSupported(platformOk);
+    if (!platformOk) {
       setEnrolled(false);
       setDeviceLabel(null);
       setLoading(false);
@@ -55,7 +121,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
       const device = collectClientDeviceInfo();
       const result = await registerDevicePasskey(device);
       if (!result.success) {
-        setError(result.error);
+        setError(localizePasskeyError(result.error, isTh));
         return;
       }
       setMessage(
@@ -76,7 +142,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
     try {
       const result = await removePasskeyForCurrentDevice();
       if (!result.success) {
-        setError(result.error);
+        setError(localizePasskeyError(result.error, isTh));
         return;
       }
       setMessage(
@@ -90,9 +156,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
 
   if (loading) {
     return (
-      <p className="text-[13px] text-muted-foreground font-normal">
-        {isTh ? 'กำลังตรวจสอบ…' : 'Checking…'}
-      </p>
+      <div className="h-14 rounded-2xl bg-muted/40 animate-pulse" aria-busy="true" />
     );
   }
 
@@ -100,8 +164,8 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
     return (
       <p className="text-[13px] text-muted-foreground font-normal leading-relaxed">
         {isTh
-          ? 'เครื่องหรือเบราว์เซอร์นี้ยังไม่รองรับการเข้าด้วยลายนิ้วมือ/ใบหน้า ใช้รหัส PIN ตามปกติได้'
-          : 'This device or browser does not support biometric login. You can still use PIN.'}
+          ? 'อุปกรณ์นี้ยังไม่รองรับลายนิ้วมือหรือใบหน้า — ใช้ PIN ได้ตามปกติ'
+          : 'This device does not support biometrics — you can still use a PIN.'}
       </p>
     );
   }
@@ -110,8 +174,8 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
     <div className="space-y-3">
       <p className="text-[13px] text-muted-foreground font-normal leading-relaxed">
         {isTh
-          ? 'บันทึกเครื่องนี้เพื่อเข้าระบบด้วยลายนิ้วมือหรือสแกนใบหน้าแทนการพิมพ์ PIN (เครื่องที่ไว้ใจแล้วเท่านั้น)'
-          : 'Save this device to sign in with fingerprint or face instead of typing the PIN.'}
+          ? 'ใช้ลายนิ้วมือหรือใบหน้าแทนการพิมพ์ PIN บนเครื่องที่ไว้ใจ'
+          : 'Use fingerprint or face instead of a PIN on trusted devices'}
       </p>
 
       {enrolled ? (
@@ -128,8 +192,10 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
         </div>
       ) : null}
 
-      {message ? <p className="text-[13px] text-foreground">{message}</p> : null}
-      {error ? <p className="text-[13px] text-red-500">{error}</p> : null}
+      <div aria-live="polite">
+        {message ? <p className="text-[13px] text-foreground">{message}</p> : null}
+        {error ? <p className="text-[13px] text-red-500" role="alert">{error}</p> : null}
+      </div>
 
       <div className="flex flex-wrap gap-2">
         {!enrolled ? (

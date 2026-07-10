@@ -49,7 +49,7 @@ describe('inventory count accuracy', () => {
     expect(countPage).toContain('recordInventoryCountAndUpdateStock');
     expect(countPage).not.toContain('recordCountVerification');
     expect(countPage).not.toContain('Promise.all');
-    expect(countPage).toContain('void loadAccuracyStats');
+    expect(countPage).toContain('applyCountVerificationToAccuracyStats');
     expect(countPage).not.toContain('ค่าความแม่นยำรวม');
     expect(countPage).not.toContain('Total Accuracy');
     expect(countPage).toContain('ค่าความแม่นยำ:');

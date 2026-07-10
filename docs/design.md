@@ -1,6 +1,6 @@
 # Design Standards — BLACKANDBREW ERP
 
-> Version: 9.0 | Last Updated: 2026-06-22 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
+> Version: 9.1 | Last Updated: 2026-07-10 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
 
 ---
 

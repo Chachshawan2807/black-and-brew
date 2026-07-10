@@ -46,8 +46,6 @@ export const AI_ALLOWED_TABLES = [
   'login_history',
   'data_change_logs',
   'revoked_sessions',
-  'push_subscriptions',
-  'device_passkeys',
 ] as const;
 
 export type AiReadableTable = (typeof AI_ALLOWED_TABLES)[number];
@@ -129,12 +127,6 @@ export const TABLE_COLUMN_PRESETS: Record<AiReadableTable, string> = {
     'entity_type, entity_id, entity_label, field_changes, old_value, new_value, source, ' +
     'ip_address, user_agent, status, error_message, metadata, created_at',
   revoked_sessions: 'session_fingerprint, revoked_at, revoked_reason',
-  push_subscriptions:
-    'id, user_id, profile_id, branch_id, client_session_id, user_agent, prefs_json, ' +
-    'created_at, updated_at',
-  device_passkeys:
-    'id, credential_id, device_label, session_fingerprint, access_level, counter, ' +
-    'transports, registered_at, last_used_at',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -157,8 +149,6 @@ export const TABLE_MAX_LIMITS: Record<AiReadableTable, number> = {
   sales_uploads: 100,
   inventory_config: 50,
   revoked_sessions: 200,
-  push_subscriptions: 100,
-  device_passkeys: 50,
 };
 
 export const DEFAULT_TABLE_MAX_LIMIT = 200;
@@ -215,6 +205,357 @@ export async function fetchInventorySummary(): Promise<StoreStatus> {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchShiftsByDate(date: string): Promise<FormattedDailyShifts> {
   return fetchDailyShiftsByDate(date);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fetchSalesSummary — aggregate sales_records for AI (date range + top products)
+// ─────────────────────────────────────────────────────────────────────────────
+export interface SalesSummaryProduct {
+  product_name: string;
+  category: string;
+  quantity: number;
+  total_amount: number;
+}
+
+export interface SalesSummaryCategory {
+  category: string;
+  quantity: number;
+  total_amount: number;
+}
+
+export interface SalesSummaryResult {
+  ok: boolean;
+  from_date: string;
+  to_date: string;
+  total_amount: number;
+  total_quantity: number;
+  top_products: SalesSummaryProduct[];
+  category_breakdown: SalesSummaryCategory[];
+  row_count: number;
+  is_complete_dataset: boolean;
+  error?: GatewayError;
+}
+
+function toNumber(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+export async function fetchSalesSummary(opts: {
+  fromDate: string;
+  toDate: string;
+  topN?: number;
+}): Promise<SalesSummaryResult> {
+  const topN = opts.topN ?? 10;
+  const session = await requirePrivilegedSession();
+  if (!session.ok) {
+    return {
+      ok: false,
+      from_date: opts.fromDate,
+      to_date: opts.toDate,
+      total_amount: 0,
+      total_quantity: 0,
+      top_products: [],
+      category_breakdown: [],
+      row_count: 0,
+      is_complete_dataset: false,
+      error: { message: session.error, details: null, hint: null },
+    };
+  }
+
+  try {
+    const admin = getAdminClient();
+    const effectiveLimit = TABLE_MAX_LIMITS.sales_records;
+    const { data, error } = await admin
+      .from('sales_records')
+      .select(TABLE_COLUMN_PRESETS.sales_records)
+      .gte('sale_date', opts.fromDate)
+      .lte('sale_date', opts.toDate)
+      .limit(effectiveLimit);
+
+    if (error) {
+      console.error('[ai-data-gateway] fetchSalesSummary:', error.message, error.details);
+      return {
+        ok: false,
+        from_date: opts.fromDate,
+        to_date: opts.toDate,
+        total_amount: 0,
+        total_quantity: 0,
+        top_products: [],
+        category_breakdown: [],
+        row_count: 0,
+        is_complete_dataset: false,
+        error: {
+          message: error.message,
+          details: error.details,
+          hint: (error as { hint?: unknown }).hint ?? null,
+        },
+      };
+    }
+
+    const rows = (data ?? []) as unknown as Record<string, unknown>[];
+    const byProduct = new Map<string, SalesSummaryProduct>();
+    const byCategory = new Map<string, SalesSummaryCategory>();
+    let totalAmount = 0;
+    let totalQuantity = 0;
+
+    for (const row of rows) {
+      const productName = String(row.product_name ?? 'ไม่ระบุ');
+      const category = String(row.category ?? 'ไม่ระบุ');
+      const qty = toNumber(row.quantity);
+      const amount = toNumber(row.total_amount);
+      totalAmount += amount;
+      totalQuantity += qty;
+
+      const product = byProduct.get(productName) ?? {
+        product_name: productName,
+        category,
+        quantity: 0,
+        total_amount: 0,
+      };
+      product.quantity += qty;
+      product.total_amount += amount;
+      byProduct.set(productName, product);
+
+      const cat = byCategory.get(category) ?? {
+        category,
+        quantity: 0,
+        total_amount: 0,
+      };
+      cat.quantity += qty;
+      cat.total_amount += amount;
+      byCategory.set(category, cat);
+    }
+
+    const topProducts = [...byProduct.values()]
+      .toSorted((a, b) => b.total_amount - a.total_amount)
+      .slice(0, topN);
+
+    const categoryBreakdown = [...byCategory.values()].toSorted(
+      (a, b) => b.total_amount - a.total_amount
+    );
+
+    return {
+      ok: true,
+      from_date: opts.fromDate,
+      to_date: opts.toDate,
+      total_amount: totalAmount,
+      total_quantity: totalQuantity,
+      top_products: topProducts,
+      category_breakdown: categoryBreakdown,
+      row_count: rows.length,
+      is_complete_dataset: rows.length < effectiveLimit,
+    };
+  } catch (err) {
+    const e = err as { message?: string; details?: unknown };
+    console.error('[ai-data-gateway] fetchSalesSummary crashed:', e?.message);
+    return {
+      ok: false,
+      from_date: opts.fromDate,
+      to_date: opts.toDate,
+      total_amount: 0,
+      total_quantity: 0,
+      top_products: [],
+      category_breakdown: [],
+      row_count: 0,
+      is_complete_dataset: false,
+      error: { message: e?.message ?? 'Unknown error', details: e?.details ?? null, hint: null },
+    };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fetchInventoryLedger — join inventory_transactions + item names for AI
+// ─────────────────────────────────────────────────────────────────────────────
+export interface InventoryLedgerEntry {
+  id: string;
+  item_name: string;
+  unit?: string;
+  source?: string;
+  type: string;
+  quantity: number;
+  note: string | null;
+  balance_after: number | null;
+  created_at: string;
+}
+
+export interface InventoryLedgerResult {
+  ok: boolean;
+  entries: InventoryLedgerEntry[];
+  row_count: number;
+  error?: GatewayError;
+}
+
+export async function fetchInventoryLedger(opts: {
+  itemName?: string;
+  days?: number;
+  limit?: number;
+} = {}): Promise<InventoryLedgerResult> {
+  const days = opts.days ?? 14;
+  const limit = opts.limit ?? 50;
+  const session = await requirePrivilegedSession();
+  if (!session.ok) {
+    return {
+      ok: false,
+      entries: [],
+      row_count: 0,
+      error: { message: session.error, details: null, hint: null },
+    };
+  }
+
+  try {
+    const admin = getAdminClient();
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceIso = since.toISOString();
+
+    const { data: txData, error: txError } = await admin
+      .from('inventory_transactions')
+      .select(TABLE_COLUMN_PRESETS.inventory_transactions)
+      .gte('created_at', sinceIso)
+      .order('created_at', { ascending: false })
+      .limit(Math.min(limit, TABLE_MAX_LIMITS.inventory_transactions));
+
+    if (txError) {
+      console.error('[ai-data-gateway] fetchInventoryLedger tx:', txError.message, txError.details);
+      return {
+        ok: false,
+        entries: [],
+        row_count: 0,
+        error: {
+          message: txError.message,
+          details: txError.details,
+          hint: (txError as { hint?: unknown }).hint ?? null,
+        },
+      };
+    }
+
+    const transactions = (txData ?? []) as unknown as Record<string, unknown>[];
+    const itemIds = [
+      ...new Set(
+        transactions
+          .map((t) => t.inventory_item_id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0)
+      ),
+    ];
+
+    const itemNameById = new Map<string, { name: string; unit?: string; source?: string }>();
+    if (itemIds.length > 0) {
+      const { data: itemsData, error: itemsError } = await admin
+        .from('inventory_items')
+        .select('id, name, unit, source')
+        .in('id', itemIds);
+
+      if (itemsError) {
+        console.error(
+          '[ai-data-gateway] fetchInventoryLedger items:',
+          itemsError.message,
+          itemsError.details
+        );
+        return {
+          ok: false,
+          entries: [],
+          row_count: 0,
+          error: {
+            message: itemsError.message,
+            details: itemsError.details,
+            hint: (itemsError as { hint?: unknown }).hint ?? null,
+          },
+        };
+      }
+
+      for (const item of (itemsData ?? []) as unknown as Record<string, unknown>[]) {
+        if (typeof item.id === 'string') {
+          itemNameById.set(item.id, {
+            name: String(item.name ?? 'ไม่ระบุ'),
+            unit: typeof item.unit === 'string' ? item.unit : undefined,
+            source: typeof item.source === 'string' ? item.source : undefined,
+          });
+        }
+      }
+    }
+
+    const needle = opts.itemName?.trim().toLowerCase() ?? '';
+    const entries: InventoryLedgerEntry[] = [];
+
+    for (const tx of transactions) {
+      const itemId = typeof tx.inventory_item_id === 'string' ? tx.inventory_item_id : '';
+      const item = itemNameById.get(itemId);
+      const itemName = item?.name ?? 'ไม่ระบุ';
+      if (needle && !itemName.toLowerCase().includes(needle)) continue;
+
+      entries.push({
+        id: String(tx.id ?? ''),
+        item_name: itemName,
+        unit: item?.unit,
+        source: item?.source,
+        type: String(tx.type ?? ''),
+        quantity: toNumber(tx.quantity),
+        note: typeof tx.note === 'string' ? tx.note : null,
+        balance_after: tx.balance_after == null ? null : toNumber(tx.balance_after),
+        created_at: String(tx.created_at ?? ''),
+      });
+    }
+
+    return { ok: true, entries, row_count: entries.length };
+  } catch (err) {
+    const e = err as { message?: string; details?: unknown };
+    console.error('[ai-data-gateway] fetchInventoryLedger crashed:', e?.message);
+    return {
+      ok: false,
+      entries: [],
+      row_count: 0,
+      error: { message: e?.message ?? 'Unknown error', details: e?.details ?? null, hint: null },
+    };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fetchInventoryItemDetails — single item via SECURITY DEFINER RPC
+// ─────────────────────────────────────────────────────────────────────────────
+export async function fetchInventoryItemDetails(itemId: string): Promise<{
+  ok: boolean;
+  item: Record<string, unknown> | null;
+  error?: GatewayError;
+}> {
+  const session = await requirePrivilegedSession();
+  if (!session.ok) {
+    return {
+      ok: false,
+      item: null,
+      error: { message: session.error, details: null, hint: null },
+    };
+  }
+
+  try {
+    const admin = getAdminClient();
+    const { data, error } = await admin.rpc('get_ai_inventory_item_details', {
+      item_id: itemId,
+    });
+
+    if (error) {
+      console.error('[ai-data-gateway] get_ai_inventory_item_details:', error.message, error.details);
+      return {
+        ok: false,
+        item: null,
+        error: {
+          message: error.message,
+          details: error.details,
+          hint: (error as { hint?: unknown }).hint ?? null,
+        },
+      };
+    }
+
+    return { ok: true, item: (data as Record<string, unknown> | null) ?? null };
+  } catch (err) {
+    const e = err as { message?: string; details?: unknown };
+    console.error('[ai-data-gateway] fetchInventoryItemDetails crashed:', e?.message);
+    return {
+      ok: false,
+      item: null,
+      error: { message: e?.message ?? 'Unknown error', details: e?.details ?? null, hint: null },
+    };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

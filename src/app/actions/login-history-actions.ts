@@ -1,7 +1,5 @@
 'use server';
 
-
-
 import { createClient } from '@supabase/supabase-js';
 
 import { cookies, headers } from 'next/headers';
@@ -17,8 +15,7 @@ import { SESSION_FP_COOKIE } from '@/lib/auth-constants';
 import { computeActiveLoginSessions, type ActiveLoginSession } from '@/lib/login-session-status';
 
 import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
-
-
+import { getRevokedFingerprints } from '@/lib/session-revocation';
 
 const clientDeviceSchema = z
 
@@ -42,8 +39,6 @@ const clientDeviceSchema = z
 
   .optional();
 
-
-
 const loginEventSchema = z.object({
 
   eventType: z.enum(['login_success', 'login_failure', 'logout', 'lockout']),
@@ -57,8 +52,6 @@ const loginEventSchema = z.object({
   failureReason: z.string().max(500).nullable().optional(),
 
 });
-
-
 
 function getSupabaseAdmin() {
 
@@ -74,15 +67,11 @@ function getSupabaseAdmin() {
 
 }
 
-
-
 export type LoginEventType = 'login_success' | 'login_failure' | 'logout' | 'lockout';
 
 export type LoginAccessLevel = 'full' | 'read_only';
 
 export type LoginEventStatus = 'success' | 'failure' | 'blocked';
-
-
 
 export interface LoginHistoryRow {
 
@@ -120,8 +109,6 @@ export interface LoginHistoryRow {
 
 }
 
-
-
 interface RecordLoginEventInput {
 
   eventType: LoginEventType;
@@ -136,8 +123,6 @@ interface RecordLoginEventInput {
 
 }
 
-
-
 async function ensureAuthenticated(): Promise<boolean> {
 
   const auth = await ensureServerSession();
@@ -145,8 +130,6 @@ async function ensureAuthenticated(): Promise<boolean> {
   return auth.ok;
 
 }
-
-
 
 async function resolveClientIp(): Promise<string | null> {
 
@@ -163,8 +146,6 @@ async function resolveClientIp(): Promise<string | null> {
   return headerStore.get('x-real-ip') ?? headerStore.get('cf-connecting-ip') ?? null;
 
 }
-
-
 
 function buildDeviceFields(device?: ClientDevicePayload | null) {
 
@@ -196,11 +177,7 @@ function buildDeviceFields(device?: ClientDevicePayload | null) {
 
   }
 
-
-
   const parsed = parseUserAgent(device.userAgent);
-
-
 
   return {
 
@@ -238,8 +215,6 @@ function buildDeviceFields(device?: ClientDevicePayload | null) {
 
 }
 
-
-
 export async function recordLoginEvent(input: RecordLoginEventInput): Promise<void> {
 
   const parsed = loginEventSchema.safeParse(input);
@@ -252,11 +227,7 @@ export async function recordLoginEvent(input: RecordLoginEventInput): Promise<vo
 
   }
 
-
-
   const { eventType } = parsed.data;
-
-
 
   // Zero-trust: success/logout events require a verified server session.
 
@@ -276,17 +247,21 @@ export async function recordLoginEvent(input: RecordLoginEventInput): Promise<vo
 
   }
 
-
-
   try {
 
     const supabase = getSupabaseAdmin();
 
     const deviceFields = buildDeviceFields(parsed.data.device ?? null);
 
+    // Logout audit must bind to the httpOnly session cookie — never trust a
+    // client-supplied fingerprint (would hide other devices from the active list).
+    if (eventType === 'logout') {
+      const cookieStore = await cookies();
+      deviceFields.session_fingerprint =
+        cookieStore.get(SESSION_FP_COOKIE)?.value ?? null;
+    }
+
     const ip = await resolveClientIp();
-
-
 
     const { error } = await supabase.from('login_history').insert({
 
@@ -306,8 +281,6 @@ export async function recordLoginEvent(input: RecordLoginEventInput): Promise<vo
 
     });
 
-
-
     if (error) {
 
       console.error('Supabase Error:', error.message, error.details);
@@ -322,34 +295,47 @@ export async function recordLoginEvent(input: RecordLoginEventInput): Promise<vo
 
 }
 
-
-
 export async function fetchActiveLoginSessions(): Promise<
-
   { success: true; sessions: ActiveLoginSession[] } | { success: false; error: string }
-
 > {
-
   const history = await fetchLoginHistory(200);
-
   if (!history.success) {
-
     return history;
-
   }
 
-
-
   const cookieStore = await cookies();
-
   const currentFp = cookieStore.get(SESSION_FP_COOKIE)?.value ?? null;
-
-  const sessions = computeActiveLoginSessions(history.rows, currentFp);
+  const fingerprints = history.rows
+    .map((row) => row.session_fingerprint)
+    .filter((fp): fp is string => Boolean(fp));
+  const revoked = await getRevokedFingerprints(fingerprints);
+  const sessions = computeActiveLoginSessions(history.rows, currentFp, revoked);
 
   return { success: true, sessions };
-
 }
 
+/** Single round-trip for sign-in history UI: rows + active sessions. */
+export async function fetchLoginHistoryBundle(
+  limit = 200
+): Promise<
+  | { success: true; rows: LoginHistoryRow[]; sessions: ActiveLoginSession[] }
+  | { success: false; error: string }
+> {
+  const history = await fetchLoginHistory(limit);
+  if (!history.success) {
+    return history;
+  }
+
+  const cookieStore = await cookies();
+  const currentFp = cookieStore.get(SESSION_FP_COOKIE)?.value ?? null;
+  const fingerprints = history.rows
+    .map((row) => row.session_fingerprint)
+    .filter((fp): fp is string => Boolean(fp));
+  const revoked = await getRevokedFingerprints(fingerprints);
+  const sessions = computeActiveLoginSessions(history.rows, currentFp, revoked);
+
+  return { success: true, rows: history.rows, sessions };
+}
 
 
 export async function fetchLoginHistory(
@@ -365,8 +351,6 @@ export async function fetchLoginHistory(
     return { success: false, error: 'Unauthorized' };
 
   }
-
-
 
   try {
 
@@ -386,8 +370,6 @@ export async function fetchLoginHistory(
 
       .limit(limit);
 
-
-
     if (error) {
 
       console.error('Supabase Error:', error.message, error.details);
@@ -395,8 +377,6 @@ export async function fetchLoginHistory(
       throw error;
 
     }
-
-
 
     return { success: true, rows: (data ?? []) as LoginHistoryRow[] };
 

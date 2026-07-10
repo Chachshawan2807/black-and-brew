@@ -28,6 +28,36 @@ export async function isSessionFingerprintRevoked(fingerprint: string): Promise<
   }
 }
 
+/**
+ * Returns fingerprints present in revoked_sessions.
+ * Fail-open (empty set) on query error — used for settings UI listing only.
+ * Auth gates must keep using isSessionFingerprintRevoked (fail-closed).
+ */
+export async function getRevokedFingerprints(
+  fingerprints: string[]
+): Promise<Set<string>> {
+  const unique = [...new Set(fingerprints.filter(Boolean))];
+  if (unique.length === 0) return new Set();
+
+  try {
+    const supabase = adminClient();
+    const { data, error } = await supabase
+      .from('revoked_sessions')
+      .select('session_fingerprint')
+      .in('session_fingerprint', unique);
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return new Set();
+    }
+
+    return new Set((data ?? []).map((row) => String(row.session_fingerprint)));
+  } catch (error) {
+    console.error('[getRevokedFingerprints] Exception:', error);
+    return new Set();
+  }
+}
+
 export async function revokeSessionFingerprints(
   fingerprints: string[],
   reason = 'forced_by_master'

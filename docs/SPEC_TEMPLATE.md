@@ -10,7 +10,7 @@ Status: Draft | Target Version: v2026.x
 
 - Methodology: Outcome-First, Chained Thinking
 - Performance Target: INP < 200ms
-- Visual Standard: Zero-Bold Policy, Pastel Latte Cream Theme
+- Visual Standard: Zero-Bold Policy, dual theme tokens + time-based pastel (`bb-pastel-surface`)
 - Accessibility: WCAG 2.2 AA Compliance
 
 ## 3. Data Integrity & Security

@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> Version: 9.1 | Last Updated: 2026-07-08 | Owner: System Architect
+> Version: 9.1 | Last Updated: 2026-07-10 | Owner: System Architect
 
 ---
 
@@ -94,7 +94,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 ### 3.9 Daily Web Push Notification
 
 - Route: `/api/daily-report` (Vercel Cron)
-- Purpose: แจ้งเตือนกะงาน อากาศ และวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
+- Purpose: แจ้งเตือนกะงานและวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
 
 ---
 
