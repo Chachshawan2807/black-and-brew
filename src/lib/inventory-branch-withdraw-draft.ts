@@ -10,6 +10,8 @@ export type BranchWithdrawDraft = {
   rows: Record<string, BranchWithdrawDraftRow>;
 };
 
+type DraftStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -40,17 +42,17 @@ export function parseBranchWithdrawDraft(raw: string): BranchWithdrawDraft | nul
   }
 }
 
-export function readBranchWithdrawDraft(storage: Storage): BranchWithdrawDraft | null {
+export function readBranchWithdrawDraft(storage: DraftStorage): BranchWithdrawDraft | null {
   const raw = storage.getItem(BRANCH_WITHDRAW_DRAFT_KEY);
   if (!raw) return null;
   return parseBranchWithdrawDraft(raw);
 }
 
-export function writeBranchWithdrawDraft(storage: Storage, draft: BranchWithdrawDraft): void {
+export function writeBranchWithdrawDraft(storage: DraftStorage, draft: BranchWithdrawDraft): void {
   storage.setItem(BRANCH_WITHDRAW_DRAFT_KEY, serializeBranchWithdrawDraft(draft));
 }
 
-export function clearBranchWithdrawDraft(storage: Storage): void {
+export function clearBranchWithdrawDraft(storage: DraftStorage): void {
   storage.removeItem(BRANCH_WITHDRAW_DRAFT_KEY);
 }
 

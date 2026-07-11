@@ -1,6 +1,5 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import {
@@ -8,15 +7,13 @@ import {
   filterBranchWithdrawSaveLines,
   formatBranchWithdrawLineMessage,
   BRANCH_WITHDRAW_NOTE_PREFIX,
+  type BranchWithdrawFormatLine,
 } from '@/lib/inventory-branch-withdraw-format';
 import {
   requireMutationAccess,
   requireReadAccess,
 } from '@/lib/policies/server-gate';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAdminKey);
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 const saveLineSchema = z.object({
   itemId: z.string().uuid(),
@@ -47,6 +44,41 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+async function resolveBranchWithdrawLineNames(
+  filtered: ReturnType<typeof filterBranchWithdrawSaveLines>,
+): Promise<BranchWithdrawFormatLine[] | { error: string }> {
+  const supabase = getSupabaseAdmin();
+  const itemIds = filtered.map((line) => line.itemId);
+
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .select('id, name')
+    .in('id', itemIds);
+
+  if (error) {
+    console.error('[resolveBranchWithdrawLineNames] Supabase Error:', error.message, error.details);
+    return { error: error.message };
+  }
+
+  const nameById = new Map((data ?? []).map((item) => [item.id, item.name as string]));
+
+  const lines: BranchWithdrawFormatLine[] = [];
+  for (const line of filtered) {
+    const name = nameById.get(line.itemId);
+    if (!name) {
+      return { error: `ไม่พบรายการสินค้า (ID: ${line.itemId})` };
+    }
+    lines.push({
+      name,
+      qtyBranch1: line.qtyBranch1,
+      qtyBranch2: line.qtyBranch2,
+      branch2Unit: line.branch2Unit,
+    });
+  }
+
+  return lines;
+}
+
 export async function saveBranchWithdrawal(raw: z.infer<typeof saveSchema>) {
   try {
     const authError = await requireMutationAccess();
@@ -62,12 +94,18 @@ export async function saveBranchWithdrawal(raw: z.infer<typeof saveSchema>) {
       return { success: false as const, error: 'ไม่มีรายการที่บันทึก' };
     }
 
-    const lineMessage = formatBranchWithdrawLineMessage(filtered);
+    const resolved = await resolveBranchWithdrawLineNames(filtered);
+    if ('error' in resolved) {
+      return { success: false as const, error: resolved.error };
+    }
+
+    const lineMessage = formatBranchWithdrawLineMessage(resolved);
     const rpcLines = filtered.map((line) => ({
       item_id: line.itemId,
       quantity: line.qtyBranch1,
     }));
 
+    const supabase = getSupabaseAdmin();
     const { data, error } = await supabase.rpc('record_branch_withdrawal_batch', {
       p_line_message: lineMessage,
       p_lines: rpcLines,
@@ -112,6 +150,7 @@ export async function fetchBranchWithdrawalHistory(limit = 30) {
       };
     }
 
+    const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from('inventory_branch_withdrawals')
       .select('id, line_message, line_count, created_at')
@@ -147,6 +186,7 @@ export async function fetchBranchWithdrawalDetail(withdrawalId: string) {
     if (authError) return { success: false as const, error: authError };
 
     const note = buildBranchWithdrawNote(withdrawalId);
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('inventory_transactions')
