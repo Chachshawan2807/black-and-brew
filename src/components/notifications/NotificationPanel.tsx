@@ -16,6 +16,7 @@ import {
   formatNotificationTime,
   groupNotificationsByTime,
 } from '@/lib/notification-time-groups';
+import { countUnread } from '@/lib/notification-storage';
 import type { InventoryNotification } from '@/lib/notification-types';
 import { ExpandableLines } from '@/components/ui/expandable-lines';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -60,7 +61,7 @@ function NotificationRow({
         }
       }}
       className={cn(
-        'w-full text-left rounded-2xl border px-3.5 py-3 bb-transition cursor-pointer',
+        'w-full text-left rounded-2xl border px-3.5 py-3 bb-transition cursor-pointer [content-visibility:auto] [contain-intrinsic-size:0_72px]',
         'border-border bg-card hover:bg-muted/40',
         !item.read && 'border-amber-500/20 bg-amber-500/[0.03]'
       )}
@@ -112,6 +113,21 @@ export function NotificationPanel() {
   const panelStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
 
   const groups = groupNotificationsByTime(notifications, locale);
+  const visibleUnread = countUnread(notifications);
+  const hasOlderUnread = unreadCount > visibleUnread;
+
+  const unreadSummary =
+    unreadCount > 0
+      ? isTh
+        ? hasOlderUnread
+          ? `${unreadCount} รายการยังไม่ได้อ่าน · แสดง ${notifications.length} รายการล่าสุด`
+          : `${unreadCount} รายการยังไม่ได้อ่าน`
+        : hasOlderUnread
+          ? `${unreadCount} unread · showing latest ${notifications.length}`
+          : `${unreadCount} unread`
+      : isTh
+        ? 'รายการล่าสุด'
+        : 'Recent notifications · live updates';
 
   const handleNavigate = (item: InventoryNotification) => {
     markRead(item.id);
@@ -180,13 +196,7 @@ export function NotificationPanel() {
                       {isTh ? 'การแจ้งเตือน' : 'Notifications'}
                     </h2>
                     <p className="text-[12px] text-muted-foreground">
-                      {unreadCount > 0
-                        ? isTh
-                          ? `${unreadCount} รายการยังไม่ได้อ่าน`
-                          : `${unreadCount} unread`
-                        : isTh
-                          ? 'รายการล่าสุด'
-                          : 'Recent notifications · live updates'}
+                      {unreadSummary}
                     </p>
                   </div>
                 </div>

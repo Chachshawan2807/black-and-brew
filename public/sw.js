@@ -102,11 +102,11 @@ async function resolveUnreadCount(payload) {
     return result.unreadCount;
   }
   if (typeof payload.unreadCount === 'number' && payload.unreadCount > 0) {
-    return Math.min(99, Math.floor(payload.unreadCount));
+    return Math.floor(payload.unreadCount);
   }
   if (self.BBNotificationStore?.getUnreadCount) {
     const current = await self.BBNotificationStore.getUnreadCount();
-    return Math.min(99, current + 1);
+    return current + 1;
   }
   return 1;
 }
@@ -117,7 +117,7 @@ async function safeResolveUnreadCount(payload) {
   } catch (error) {
     console.warn('[sw] notification store unavailable:', error);
     return typeof payload.unreadCount === 'number' && payload.unreadCount > 0
-      ? Math.min(99, Math.floor(payload.unreadCount))
+      ? Math.floor(payload.unreadCount)
       : 1;
   }
 }

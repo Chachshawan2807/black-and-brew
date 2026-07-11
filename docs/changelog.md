@@ -2,6 +2,13 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-07-12 (Doc scan — branch withdraw + notifications)
+
+- Scanned 337 `.md` files repo-wide; edited 12 project-owned keepers for factual drift.
+- Added Branch Withdraw (`/[locale]/inventory/branch-withdraw`), `branch-withdraw-actions.ts`, `inventory_branch_withdrawals`, and related migrations/RPC to README, PROJECT_MAP, architecture, api, database, PRD, blueprint, context.
+- Documented notification unread-badge counter libs and accuracy gauge paths.
+- No Graphify references found outside `AGENTS.md` retirement notice. Third-party `.agents/skills/` left unchanged.
+
 ## 2026-07-10 (Markdown docs hygiene)
 
 - Scanned project-owned `.md` files; no Graphify docs remained to delete (already retired).

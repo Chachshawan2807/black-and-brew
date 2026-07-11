@@ -41,7 +41,9 @@ export default async function SettingsPage({
               </h2>
             </div>
             <p className="text-[12px] text-muted-foreground mt-1 leading-normal">
-              {isTh ? 'เลือกว่าจะรับการแจ้งเตือนเรื่องใด' : 'Choose what you want to be notified about'}
+              {isTh
+                ? 'เปิดหรือปิดการแจ้งเตือนทั้งหมด แล้วปรับรายละเอียดได้เมื่อเปิดใช้งาน'
+                : 'Turn all alerts on or off, then fine-tune when enabled'}
             </p>
           </div>
           <NotificationPreferencesSection locale={locale} />

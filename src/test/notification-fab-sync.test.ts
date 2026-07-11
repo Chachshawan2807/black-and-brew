@@ -153,6 +153,15 @@ describe('notification fab cross-platform sync', () => {
     expect(bellSource).not.toContain('FAB_STACK_INNER_CLASS');
   });
 
+  test('notification FAB brand icon inverts in dark mode', () => {
+    expect(bellSource).toMatch(/PWA_BRAND_ICON[\s\S]*dark:invert/);
+  });
+
+  test('notification FAB badge shows uncapped counts via shared formatter', () => {
+    expect(bellSource).toContain('formatInAppBadgeLabel');
+    expect(bellSource).not.toContain('99+');
+  });
+
   test('notification panel dismisses via backdrop tap and header close', () => {
     expect(panelSource).toMatch(/onClick=\{closePanel\}/);
     expect(panelSource).toMatch(/aria-label=\{isTh \? 'ปิด' : 'Close'\}/);

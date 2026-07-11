@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { shouldNotifyForAction } from '@/lib/notification-preferences';
+import {
+  isNotificationMasterEnabled,
+  notificationMasterPatch,
+  shouldNotifyForAction,
+} from '@/lib/notification-preferences';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type NotificationPreferences,
@@ -32,5 +36,27 @@ describe('shouldNotifyForAction', () => {
     expect(shouldNotifyForAction(disabled, 'CREATE')).toBe(false);
     expect(shouldNotifyForAction(disabled, 'UPDATE')).toBe(false);
     expect(shouldNotifyForAction(disabled, 'DELETE')).toBe(false);
+  });
+});
+
+describe('notification master switch', () => {
+  it('is on only when inventory, system, and schedule alerts are all enabled', () => {
+    expect(isNotificationMasterEnabled(prefs())).toBe(true);
+    expect(isNotificationMasterEnabled(prefs({ systemNotifications: false }))).toBe(false);
+    expect(isNotificationMasterEnabled(prefs({ dailyScheduleReports: false }))).toBe(false);
+    expect(isNotificationMasterEnabled(prefs({ enabled: false }))).toBe(false);
+  });
+
+  it('notificationMasterPatch toggles all main channels together', () => {
+    expect(notificationMasterPatch(false)).toEqual({
+      enabled: false,
+      systemNotifications: false,
+      dailyScheduleReports: false,
+    });
+    expect(notificationMasterPatch(true)).toEqual({
+      enabled: true,
+      systemNotifications: true,
+      dailyScheduleReports: true,
+    });
   });
 });

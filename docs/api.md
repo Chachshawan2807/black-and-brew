@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-10
+> Version: 9.2 | Last Updated: 2026-07-12
 
 ---
 
@@ -116,7 +116,21 @@ Client: Service Role Key
 
 ---
 
-### 1.4 Shift (`shift-actions.ts`)
+### 1.4 Branch Withdraw (`branch-withdraw-actions.ts`)
+
+| Function | Purpose |
+| --- | --- |
+| `saveBranchWithdrawal({ lines, clientSessionId? })` | Filter non-empty lines → `rpc('record_branch_withdrawal_batch')` → stock IN per item; `recordDataChange()` for notifications |
+| `fetchBranchWithdrawalHistory(limit?)` | Recent `inventory_branch_withdrawals` headers (default 30) |
+| `fetchBranchWithdrawalDetail(withdrawalId)` | Single withdrawal header + parsed line payload |
+
+- Formatting helpers: `src/lib/inventory-branch-withdraw-format.ts`, draft: `inventory-branch-withdraw-draft.ts`
+- RPC blueprint: `sql/record_branch_withdrawal_batch.sql`
+- Revalidates `/inventory/branch-withdraw`
+
+---
+
+### 1.5 Shift (`shift-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -131,7 +145,7 @@ Client: Service Role Key
 
 ---
 
-### 1.5 Holiday (`holiday-actions.ts`)
+### 1.6 Holiday (`holiday-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -140,7 +154,7 @@ Client: Service Role Key
 
 ---
 
-### 1.6 Maintenance (`maintenance-actions.ts`)
+### 1.7 Maintenance (`maintenance-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -149,7 +163,7 @@ Client: Service Role Key
 
 ---
 
-### 1.7 Sales (`sales-actions.ts`)
+### 1.8 Sales (`sales-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -164,7 +178,7 @@ Client: Service Role Key
 
 ---
 
-### 1.8 Daily Report (`daily-report-actions.ts`)
+### 1.9 Daily Report (`daily-report-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -176,7 +190,7 @@ Daily schedule Web Push delivery is handled by `src/lib/daily-report-web-push.ts
 
 ---
 
-### 1.9 Login History (`login-history-actions.ts`)
+### 1.10 Login History (`login-history-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -186,7 +200,7 @@ Daily schedule Web Push delivery is handled by `src/lib/daily-report-web-push.ts
 
 ---
 
-### 1.10 Data Change Log (`data-change-log-actions.ts`)
+### 1.11 Data Change Log (`data-change-log-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -195,7 +209,7 @@ Daily schedule Web Push delivery is handled by `src/lib/daily-report-web-push.ts
 
 ---
 
-### 1.11 Push (`push-actions.ts`)
+### 1.12 Push (`push-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -208,7 +222,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 
 ---
 
-### 1.12 Migration (`migrate-inventory-sort-order.ts`)
+### 1.13 Migration (`migrate-inventory-sort-order.ts`)
 
 | Function | Purpose |
 | --- | --- |

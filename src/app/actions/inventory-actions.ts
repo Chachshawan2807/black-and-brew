@@ -11,6 +11,7 @@ import {
   computeCountDiscrepancy,
   isCountMatch,
 } from '@/lib/inventory-count-accuracy';
+import type { InventoryNotificationSource } from '@/lib/inventory-notification-filter';
 import {
   requireMutationAccess,
   requireReadAccess,
@@ -30,8 +31,8 @@ type InventoryAuditOptions = {
   /** When true, in-app inventory notifications are skipped (e.g. stock-taking count page). */
   suppressNotification?: boolean;
   notificationContext?: 'inventory_count' | 'inventory';
-  /** Required for desktop/mobile stock notifications — only quick-action UI origins. */
-  notificationSource?: 'inventory_quick_action_bar' | 'inventory_quick_action_fab' | 'inventory_warehouse_grid';
+  /** Tags audit logs with the UI origin that triggered the stock change. */
+  notificationSource?: InventoryNotificationSource;
 };
 
 type InventoryLifecycleType = 'ADD' | 'DELETE';
@@ -1485,13 +1486,14 @@ export async function fetchInventoryAccuracyReport(): Promise<{
   const highDiscrepancyItems = Object.entries(statsResult.data.perItem)
     .map(([itemId, stats]) => ({ itemId, ...stats }))
     .filter((item) => item.totalDiscrepancyQty > 0)
+    .sort((a, b) => b.totalDiscrepancyQty - a.totalDiscrepancyQty)
+    .slice(0, 10)
     .sort((a, b) => {
-      if (b.totalDiscrepancyQty !== a.totalDiscrepancyQty) {
-        return b.totalDiscrepancyQty - a.totalDiscrepancyQty;
+      if (a.totalDiscrepancyQty !== b.totalDiscrepancyQty) {
+        return a.totalDiscrepancyQty - b.totalDiscrepancyQty;
       }
       return (a.accuracyPct ?? 100) - (b.accuracyPct ?? 100);
-    })
-    .slice(0, 10);
+    });
 
   return {
     success: true,

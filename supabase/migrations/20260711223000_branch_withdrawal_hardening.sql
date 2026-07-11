@@ -1,34 +1,6 @@
--- =============================================================================
--- record_branch_withdrawal_batch — Atomic branch-2 withdrawal save RPC
--- =============================================================================
---
--- Purpose:
---   Atomically records a branch-2 withdrawal batch:
---     1. Insert inventory_branch_withdrawals header (line_message, line_count)
---     2. For each line: row-lock inventory_items, IN stock, ledger row
---
--- Parameters:
---   p_line_message  TEXT   — full LINE copy text stored on the batch header
---   p_lines         JSONB  — array of { "item_id": uuid, "quantity": numeric }
---                            quantity is สาขา 1 IN amount per line
---
--- Returns (JSON):
---   { "success": true, "withdrawal_id": <uuid>, "line_message": <text> }
---
--- Security: SECURITY DEFINER — runs with function owner privileges.
---
--- Used by:
---   src/app/actions/branch-withdraw-actions.ts (planned)
---     - saveBranchWithdrawal()
---
--- Schema dependencies:
---   inventory_branch_withdrawals
---   inventory_items.stock
---   inventory_transactions (type IN, note prefix [branch2-withdraw:{id}])
---
--- Canonical migration:
---   supabase/migrations/20260711120000_inventory_branch_withdrawals.sql
--- =============================================================================
+-- Harden branch withdrawal RPC: actor attribution, empty-batch guard, least-privilege execute
+
+DROP FUNCTION IF EXISTS public.record_branch_withdrawal_batch(text, jsonb);
 
 CREATE OR REPLACE FUNCTION public.record_branch_withdrawal_batch(
   p_line_message text,
@@ -131,3 +103,8 @@ BEGIN
   );
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.record_branch_withdrawal_batch(text, jsonb, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.record_branch_withdrawal_batch(text, jsonb, uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.record_branch_withdrawal_batch(text, jsonb, uuid) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.record_branch_withdrawal_batch(text, jsonb, uuid) TO service_role;

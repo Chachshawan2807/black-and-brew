@@ -65,6 +65,11 @@ describe('isAllowedInventoryNotificationSource', () => {
         notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
       })
     ).toBe(true);
+    expect(
+      isAllowedInventoryNotificationSource({
+        notificationSource: INVENTORY_NOTIFICATION_SOURCES.BRANCH_WITHDRAW,
+      })
+    ).toBe(true);
   });
 
   test('rejects unknown sources', () => {

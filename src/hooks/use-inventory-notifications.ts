@@ -28,8 +28,17 @@ import {
 } from '@/lib/notification-storage';
 import {
   mirrorNotificationsToIdb,
+  saveUnreadCounterToIdb,
 } from '@/lib/notification-idb';
 import { prependToNotificationList, hydrateNotificationState, readNotificationState } from '@/lib/notification-sync';
+import {
+  decrementUnreadCounter,
+  incrementUnreadCounter,
+  loadUnreadCounter,
+  reconcileUnreadCounter,
+  resetUnreadCounter,
+  saveUnreadCounter,
+} from '@/lib/notification-unread-counter';
 import { subscribeNotificationSync } from '@/lib/notification-cross-tab';
 import type {
   InventoryNotification,
@@ -70,20 +79,21 @@ function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLo
   };
 }
 
-function prependNotification(
-  list: InventoryNotification[],
-  notification: InventoryNotification
-): InventoryNotification[] {
-  return prependToNotificationList(list, notification).list;
-}
-
-function resolveUnreadCountWithServiceWorkerHint(
+function resolveDisplayUnreadCount(
   notifications: InventoryNotification[],
   serviceWorkerUnreadCount?: number,
+  counterHint?: number,
 ): number {
-  const localUnreadCount = countUnread(notifications);
-  if (typeof serviceWorkerUnreadCount !== 'number') return localUnreadCount;
-  return Math.max(localUnreadCount, Math.floor(serviceWorkerUnreadCount));
+  const listUnread = countUnread(notifications);
+  const counter = counterHint ?? reconcileUnreadCounter(listUnread);
+  const sw =
+    typeof serviceWorkerUnreadCount === 'number'
+      ? Math.max(0, Math.floor(serviceWorkerUnreadCount))
+      : 0;
+  const display = Math.max(counter, listUnread, sw);
+  saveUnreadCounter(display);
+  void saveUnreadCounterToIdb(display);
+  return display;
 }
 
 export function useInventoryNotifications() {
@@ -154,7 +164,16 @@ export function useInventoryNotifications() {
 
   const persist = useCallback((next: InventoryNotification[]) => {
     setNotifications(next);
-    setUnreadCount(countUnread(next));
+    const listUnread = countUnread(next);
+    if (next.length === 0) {
+      resetUnreadCounter();
+      void saveUnreadCounterToIdb(0);
+      setUnreadCount(0);
+    } else {
+      const display = reconcileUnreadCounter(listUnread);
+      setUnreadCount(display);
+      void saveUnreadCounterToIdb(display);
+    }
     saveStoredNotifications(next);
     void mirrorNotificationsToIdb(next);
   }, []);
@@ -172,8 +191,14 @@ export function useInventoryNotifications() {
           alreadyExists = true;
           return prev;
         }
-        const next = prependNotification(prev, notification);
-        nextUnread = resolveUnreadCountWithServiceWorkerHint(next, serviceWorkerUnreadCount);
+        const { list: next, isNewNotification } = prependToNotificationList(prev, notification);
+        let counter = loadUnreadCounter();
+        if (isNewNotification && !notification.read) {
+          counter = incrementUnreadCounter(1);
+        } else {
+          counter = reconcileUnreadCounter(countUnread(next));
+        }
+        nextUnread = resolveDisplayUnreadCount(next, serviceWorkerUnreadCount, counter);
         setUnreadCount(nextUnread);
         saveStoredNotifications(next);
         void mirrorNotificationsToIdb(next);
@@ -405,6 +430,8 @@ export function useInventoryNotifications() {
   const markAllRead = useCallback(() => {
     setNotifications((prev) => {
       const next = prev.map((n) => ({ ...n, read: true }));
+      resetUnreadCounter();
+      void saveUnreadCounterToIdb(0);
       setUnreadCount(0);
       saveStoredNotifications(next);
       void mirrorNotificationsToIdb(next);
@@ -415,12 +442,17 @@ export function useInventoryNotifications() {
 
   const markRead = useCallback((id: string) => {
     setNotifications((prev) => {
+      const target = prev.find((n) => n.id === id);
       const next = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
-      const unread = countUnread(next);
-      setUnreadCount(unread);
+      let counter = loadUnreadCounter();
+      if (target && !target.read) {
+        counter = decrementUnreadCounter(1);
+      }
+      const display = resolveDisplayUnreadCount(next, undefined, counter);
+      setUnreadCount(display);
       saveStoredNotifications(next);
       void mirrorNotificationsToIdb(next);
-      void syncAppBadge(unread);
+      void syncAppBadge(display);
       return next;
     });
   }, []);

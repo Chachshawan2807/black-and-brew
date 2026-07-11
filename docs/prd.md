@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> Version: 9.1 | Last Updated: 2026-07-10 | Owner: System Architect
+> Version: 9.2 | Last Updated: 2026-07-12 | Owner: System Architect
 
 ---
 
@@ -53,7 +53,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 ### 3.4 Inventory
 
-- Route: `/[locale]/inventory`, `/[locale]/inventory/count`, `/[locale]/inventory/accuracy`
+- Route: `/[locale]/inventory`, `/[locale]/inventory/count`, `/[locale]/inventory/accuracy`, `/[locale]/inventory/branch-withdraw`
 - Purpose: คลังสินค้า + ตรวจนับสต็อก
 - Components: `InventoryClient.tsx`, `inventory/_components/*` (FAB, modals, quick action bar)
 - Features:
@@ -65,6 +65,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
   - Transaction History + count accuracy verification/report (system stock baseline via `system_stock_qty`)
   - Purchase Order modal with channel tabs + PNG export
   - Real-time cross-device sync via `InventoryRealtimeContext`
+  - Branch 2 withdrawal batch (`record_branch_withdrawal_batch` RPC) with LINE-formatted history
   - Long-grid responsiveness via row containment and dynamic modal loading
 
 ### 3.5 Maintenance

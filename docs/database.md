@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-10 | Engine: Supabase PostgreSQL
+> Version: 9.2 | Last Updated: 2026-07-12 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -26,6 +26,7 @@
 | `revoked_sessions` | fingerprint ที่ถูก revoke จากระยะไกล | ✓ RLS enabled | `supabase/migrations/20260612200000_revoked_sessions.sql` |
 | `push_subscriptions` | Web Push endpoints ต่ออุปกรณ์ (inventory alerts + daily schedule reports) | ✓ authenticated (own rows) | `supabase/migrations/20260616120000_push_subscriptions.sql` + `20260621120000_push_subscriptions_daily_report.sql` |
 | `device_passkeys` | WebAuthn credentials สำหรับ trusted-device biometric login | ✓ RLS enabled; service-role only | `supabase/migrations/20260617120000_device_passkeys.sql` |
+| `inventory_branch_withdrawals` | ประวัติเบิกสินค้าไปสาขา 2 (batch header + LINE message) | ✓ authenticated read | `supabase/migrations/20260711120000_inventory_branch_withdrawals.sql` + `sql/record_branch_withdrawal_batch.sql` |
 
 > Types: Generated types in `src/lib/database.types.ts`
 
@@ -310,6 +311,9 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260708095637_reset_accuracy_history.sql` | Reset count accuracy ledger (inventory verification workflow) |
 | `20260708104230_remove_inventory_recommended_target_stock.sql` | Removes inventory recommended target stock (retired feature) |
 | `20260710162206_harden_security_definer_views_and_search_path.sql` | `security_invoker` on AI views + lock `search_path` on inventory/AI RPCs |
+| `20260711120000_inventory_branch_withdrawals.sql` | Branch 2 withdrawal header table + `record_branch_withdrawal_batch` RPC |
+| `20260711164656_reset_accuracy_history_major_overhaul.sql` | Reset accuracy ledger after gauge/report overhaul |
+| `20260711223000_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening + authz |
 
 Retired: inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 
@@ -324,6 +328,7 @@ Retired: inventory recommended target stock columns/UI (see `20260708104230_remo
 | `sql/historical/regular_holidays_schema.sql` | Regular holidays per employee |
 | `sql/historical/audit_log_schema.sql` | AI audit logging |
 | `sql/record_inventory_transaction.sql` | Atomic IN/OUT RPC reference blueprint |
+| `sql/record_branch_withdrawal_batch.sql` | Atomic branch-withdrawal batch RPC reference blueprint |
 | `sql/sync_inventory_stock.sql` | `set_inventory_stock`, trigger, REPLICA IDENTITY |
 | `sql/fix_inventory_rls.sql` | RLS hardening — authenticated-only |
 | `sql/ai_agent_views.sql` | AI views/RPCs (`view_today_shifts`, `view_inventory_summary`, `get_ai_store_status`) |

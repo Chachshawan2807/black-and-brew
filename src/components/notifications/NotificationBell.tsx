@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { formatInAppBadgeLabel, getInAppBadgeClassName } from '@/lib/notification-badge';
 import { FAB_RIGHT_CLASS, FAB_SIZE_CLASS, FAB_NOTIFICATION_INNER_CLASS } from '@/lib/floating-action-layout';
 import { PWA_BRAND_ICON } from '@/lib/pwa-assets';
 import { INVENTORY_NOTIFICATION_EVENT } from '@/lib/pwa-notification-bridge';
@@ -51,7 +52,7 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
           alt=""
           width={22}
           height={22}
-          className="h-[22px] w-[22px] object-contain"
+          className="h-[22px] w-[22px] object-contain dark:invert dark:brightness-0 dark:opacity-90"
           aria-hidden
         />
       ) : (
@@ -61,12 +62,13 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
         <span
           aria-hidden
           className={cn(
-            'absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums',
+            'absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full font-semibold tabular-nums',
             'bg-red-500 text-white border border-red-600/80 bb-shadow-sm',
+            getInAppBadgeClassName(unreadCount),
             pulse && 'animate-pulse ring-2 ring-red-400/60',
           )}
         >
-          {unreadCount > 99 ? '99+' : unreadCount}
+          {formatInAppBadgeLabel(unreadCount)}
         </span>
       )}
       <span className="sr-only" aria-live="polite" aria-atomic="true">

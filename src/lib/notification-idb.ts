@@ -7,6 +7,7 @@ import { mergeNotificationLists } from '@/lib/notification-sync';
 export const NOTIFICATION_IDB_NAME = 'bb-notifications-v1';
 export const NOTIFICATION_IDB_STORE = 'notifications';
 export const NOTIFICATION_IDB_KEY = 'list';
+export const UNREAD_COUNTER_IDB_KEY = 'unread-total';
 
 function openNotificationDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -18,6 +19,26 @@ function openNotificationDb(): Promise<IDBDatabase> {
       }
     };
     request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function idbGetValue<T>(db: IDBDatabase, key: string): Promise<T | undefined> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(NOTIFICATION_IDB_STORE, 'readonly');
+    const store = tx.objectStore(NOTIFICATION_IDB_STORE);
+    const request = store.get(key);
+    request.onsuccess = () => resolve(request.result as T | undefined);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function idbSetValue(db: IDBDatabase, key: string, value: unknown): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(NOTIFICATION_IDB_STORE, 'readwrite');
+    const store = tx.objectStore(NOTIFICATION_IDB_STORE);
+    const request = store.put(value, key);
+    request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }
@@ -36,13 +57,38 @@ function idbGetList(db: IDBDatabase): Promise<InventoryNotification[]> {
 }
 
 function idbSetList(db: IDBDatabase, list: InventoryNotification[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(NOTIFICATION_IDB_STORE, 'readwrite');
-    const store = tx.objectStore(NOTIFICATION_IDB_STORE);
-    const request = store.put(list, NOTIFICATION_IDB_KEY);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  return idbSetValue(db, NOTIFICATION_IDB_KEY, list);
+}
+
+export async function loadUnreadCounterFromIdb(): Promise<number> {
+  if (typeof indexedDB === 'undefined') return 0;
+  try {
+    const db = await openNotificationDb();
+    try {
+      const value = await idbGetValue<number>(db, UNREAD_COUNTER_IDB_KEY);
+      return typeof value === 'number' && Number.isFinite(value)
+        ? Math.max(0, Math.floor(value))
+        : 0;
+    } finally {
+      db.close();
+    }
+  } catch {
+    return 0;
+  }
+}
+
+export async function saveUnreadCounterToIdb(count: number): Promise<void> {
+  if (typeof indexedDB === 'undefined') return;
+  try {
+    const db = await openNotificationDb();
+    try {
+      await idbSetValue(db, UNREAD_COUNTER_IDB_KEY, Math.max(0, Math.floor(Number(count) || 0)));
+    } finally {
+      db.close();
+    }
+  } catch {
+    // ignore
+  }
 }
 
 export async function loadNotificationsFromIdb(): Promise<InventoryNotification[]> {

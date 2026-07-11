@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 9.1 | Last Updated: 2026-07-10 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 9.2 | Last Updated: 2026-07-12 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## Architectural Core
 
@@ -84,7 +84,8 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 | Command Center | `/[locale]` | Active |
 | Inventory | `/[locale]/inventory` | Active — DnD + Stock RPC + count policy |
 | Stock Count | `/[locale]/inventory/count` | Active |
-| Inventory Accuracy | `/[locale]/inventory/accuracy` | Active — exact-count only |
+| Inventory Accuracy | `/[locale]/inventory/accuracy` | Active — exact-count only + gauge |
+| Branch Withdraw | `/[locale]/inventory/branch-withdraw` | Active — batch IN to branch 2 |
 | Staff Dashboard | `/[locale]/dashboard` | Active |
 | Schedule | `/[locale]/schedule` | Active — DnD |
 | Maintenance | `/[locale]/maintenance` | Active |

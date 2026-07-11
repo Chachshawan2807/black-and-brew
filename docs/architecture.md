@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-10 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.2 | Last Updated: 2026-07-12 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -92,6 +92,7 @@ src/app/
 │   ├── passkey-actions.ts             # WebAuthn trusted-device registration/login
 │   ├── login-history-actions.ts       # login_history CRUD + active sessions
 │   ├── inventory-actions.ts           # Stock RPC, count policy, transactions
+│   ├── branch-withdraw-actions.ts     # Branch 2 withdrawal batch
 │   ├── shift-actions.ts               # Shift CRUD
 │   ├── holiday-actions.ts             # Google Calendar + regular holidays
 │   ├── maintenance-actions.ts         # Service records
@@ -112,7 +113,8 @@ src/app/
     ├── schedule/                # ScheduleClient + _components/
     ├── inventory/               # InventoryClient + _components/ (FAB, modals)
     │   ├── count/               # Stock-taking
-    │   └── accuracy/            # Exact-count accuracy report
+    │   ├── accuracy/            # Exact-count accuracy report + gauge
+    │   └── branch-withdraw/     # Branch 2 withdrawal batch
     ├── maintenance/             # MaintenanceClient + _components/
     ├── sales/                   # SalesClient + _components/
     └── settings/                # page.tsx + _components/ (theme, sessions, passkeys)
@@ -162,6 +164,16 @@ CountInput blur → read inventory_items.stock + count_policy (baseline)
 → exact_count: recordCountVerification() → INSERT inventory_count_verifications (system_stock_qty, matched)
 → sufficiency_check: skip accuracy scoring; manual order_qty drives purchase order quantity
 → fetchCountAccuracyStats() / fetchInventoryAccuracyReport() for badges and report page
+→ AccuracyGauge uses src/lib/inventory-accuracy-gauge.ts on /inventory/accuracy
+```
+
+### Branch 2 Withdrawal Batch (v9.2)
+
+```text
+BranchWithdrawClient → saveBranchWithdrawal() → rpc('record_branch_withdrawal_batch')
+→ INSERT inventory_branch_withdrawals header + per-line IN via set_inventory_stock logic
+→ recordDataChange() for inventory notifications; draft in sessionStorage (inventory-branch-withdraw-draft:v1)
+→ fetchBranchWithdrawalHistory() / fetchBranchWithdrawalDetail() for history panel
 ```
 
 ### Inventory Realtime Context (v8.6)
@@ -207,6 +219,7 @@ Server mutation → recordDataChange() → data_change_logs INSERT (module=inven
 → dispatchInventoryWebPush() (fire-and-forget) → web-push → push_subscriptions rows
 → PushSubscriptionManager (layout) registers endpoint via registerPushSubscription()
 → NotificationPreferencesSection syncs prefs to push_subscriptions.prefs_json
+→ Unread badge: notification-unread-counter.ts + notification-badge.ts + notification-sync.ts (cross-tab + IDB)
 → Optional backup: Supabase Database Webhook → POST /api/push/webhook (PUSH_WEBHOOK_SECRET)
 ```
 

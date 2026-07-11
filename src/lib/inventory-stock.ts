@@ -117,3 +117,12 @@ export function computePurchaseOrderDerivedState<T extends InventoryStockFields>
     displayedPoItems,
   };
 }
+
+/** Purchase-order rows for สาขา 2 — same list as PO modal filtered to that channel. */
+export const BRANCH_WITHDRAW_ORDER_SOURCE = 'สาขา 2';
+
+export function computeBranchWithdrawItems<T extends InventoryStockFields>(
+  items: T[],
+): Array<T & { computedOrderQty: number }> {
+  return computePurchaseOrderDerivedState(items, [BRANCH_WITHDRAW_ORDER_SOURCE]).displayedPoItems;
+}

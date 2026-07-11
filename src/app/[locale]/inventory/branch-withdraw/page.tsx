@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
 import { fetchBranchWithdrawalHistory } from '@/app/actions/branch-withdraw-actions';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
+import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const BranchWithdrawClient = createLazyFeatureClient(
@@ -21,7 +21,7 @@ export default async function BranchWithdrawPage({
   const [itemsResult, historyResult] = await Promise.all([
     getSupabaseAdmin()
       .from('inventory_items')
-      .select(INVENTORY_COUNT_SELECT)
+      .select(INVENTORY_ITEM_SELECT)
       .order('sort_order', { ascending: true }),
     fetchBranchWithdrawalHistory(30),
   ]);

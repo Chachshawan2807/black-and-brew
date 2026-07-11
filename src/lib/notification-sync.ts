@@ -9,16 +9,23 @@ import {
 } from '@/lib/notification-storage';
 import {
   loadMergedStoredNotifications,
+  loadUnreadCounterFromIdb,
   mirrorNotificationsToIdb,
+  saveUnreadCounterToIdb,
 } from '@/lib/notification-idb';
+import {
+  loadUnreadCounter,
+  saveUnreadCounter,
+} from '@/lib/notification-unread-counter';
 
 export function prependToNotificationList(
   list: InventoryNotification[],
   notification: InventoryNotification,
-): { list: InventoryNotification[]; unreadCount: number } {
+): { list: InventoryNotification[]; unreadCount: number; isNewNotification: boolean } {
+  const isNewNotification = !list.some((n) => n.logId === notification.logId);
   const deduped = list.filter((n) => n.logId !== notification.logId);
   const next = [notification, ...deduped].slice(0, MAX_STORED_NOTIFICATIONS);
-  return { list: next, unreadCount: countUnread(next) };
+  return { list: next, unreadCount: countUnread(next), isNewNotification };
 }
 
 export function mergeNotificationLists(
@@ -49,6 +56,16 @@ export function mergeNotificationLists(
     .slice(0, MAX_STORED_NOTIFICATIONS);
 }
 
+async function resolveHydratedUnreadCount(notifications: InventoryNotification[]): Promise<number> {
+  const listUnread = countUnread(notifications);
+  const idbCounter = await loadUnreadCounterFromIdb();
+  const localCounter = loadUnreadCounter();
+  const reconciled = Math.max(localCounter, idbCounter, listUnread);
+  saveUnreadCounter(reconciled);
+  await saveUnreadCounterToIdb(reconciled);
+  return reconciled;
+}
+
 /** Read merged local + IDB notifications without writing (safe for cross-tab storage events). */
 export async function readNotificationState(): Promise<{
   notifications: InventoryNotification[];
@@ -57,7 +74,7 @@ export async function readNotificationState(): Promise<{
   const merged = (await loadMergedStoredNotifications()).filter((item) =>
     isAfterNotificationClearWatermark(item.occurredAt),
   );
-  return { notifications: merged, unreadCount: countUnread(merged) };
+  return { notifications: merged, unreadCount: await resolveHydratedUnreadCount(merged) };
 }
 
 /** Load merged local + IDB notifications and mirror to both stores. */
@@ -70,5 +87,5 @@ export async function hydrateNotificationState(): Promise<{
   );
   saveStoredNotifications(merged);
   await mirrorNotificationsToIdb(merged);
-  return { notifications: merged, unreadCount: countUnread(merged) };
+  return { notifications: merged, unreadCount: await resolveHydratedUnreadCount(merged) };
 }

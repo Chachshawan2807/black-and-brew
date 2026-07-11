@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { AlertTriangle, BarChart3, ChevronLeft, ClipboardCheck } from 'lucide-react';
 import { checkAuth } from '@/app/actions/auth';
 import { fetchInventoryAccuracyReport } from '@/app/actions/inventory-actions';
+import { AccuracyGauge } from '@/app/[locale]/inventory/accuracy/_components/AccuracyGauge';
+import { getAccuracyGaugeZone } from '@/lib/inventory-accuracy-gauge';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
 
 function formatQty(value: number): string {
@@ -11,8 +13,6 @@ function formatQty(value: number): string {
 
 const METRIC_CARD_BASE = 'rounded-3xl p-5 bb-shadow-sm';
 const METRIC_LABEL_CLASS = 'text-[11px] uppercase tracking-[0.18em] text-black/60';
-const METRIC_VALUE_CLASS = 'mt-3 text-4xl font-normal tabular-nums text-black';
-const METRIC_NOTE_CLASS = 'mt-2 text-xs text-black/60';
 
 export default async function InventoryAccuracyPage({
   params,
@@ -59,41 +59,56 @@ export default async function InventoryAccuracyPage({
           </section>
         ) : (
           <>
-            <section className="grid gap-3 md:grid-cols-3">
-              <div className={`${METRIC_CARD_BASE} ${INVENTORY_QUICK_ACTION_COLORS.order}`}>
-                <p className={METRIC_LABEL_CLASS}>
-                  ความแม่นยำ เฉพาะส่วนที่ต้องเบิก
-                </p>
-                <p className={METRIC_VALUE_CLASS}>
-                  {report.overall.accuracyPct ?? 0}%
-                </p>
-                <p className={METRIC_NOTE_CLASS}>
-                  จาก {report.overall.totalChecks} ครั้งที่ตรวจนับ
-                </p>
-              </div>
-
-              <div className={`${METRIC_CARD_BASE} ${INVENTORY_QUICK_ACTION_COLORS.out}`}>
-                <p className={METRIC_LABEL_CLASS}>
-                  ความคลาดเคลื่อนรวม
-                </p>
-                <p className={METRIC_VALUE_CLASS}>
-                  {formatQty(report.overall.totalDiscrepancyQty)}
-                </p>
-                <p className={METRIC_NOTE_CLASS}>
-                  หน่วย จากฐาน {formatQty(report.overall.totalComparedQty)} หน่วย
-                </p>
-              </div>
-
-              <div className={`${METRIC_CARD_BASE} ${INVENTORY_QUICK_ACTION_COLORS.in}`}>
-                <p className={METRIC_LABEL_CLASS}>
-                  ตรง 100%
-                </p>
-                <p className={METRIC_VALUE_CLASS}>
-                  {report.overall.matchChecks}/{report.overall.totalChecks}
-                </p>
-                <p className={METRIC_NOTE_CLASS}>
-                  ใช้เป็นตัวช่วยดูรายการที่ตรง 100%
-                </p>
+            <section>
+              <div className={`${METRIC_CARD_BASE} ${INVENTORY_QUICK_ACTION_COLORS.order} p-4`}>
+                <p className={METRIC_LABEL_CLASS}>ความแม่นยำ เฉพาะส่วนที่ต้องเบิก</p>
+                <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <AccuracyGauge
+                    accuracyPct={report.overall.accuracyPct ?? 0}
+                    className="mx-auto shrink-0 sm:mx-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-black/10 bg-black/[0.03] px-3 py-2.5 text-center sm:text-left">
+                        <p className="text-2xl font-normal tabular-nums text-black">
+                          {report.overall.accuracyPct ?? 0}%
+                        </p>
+                        <p className="mt-0.5 text-sm text-black/70">
+                          ระดับ{getAccuracyGaugeZone(report.overall.accuracyPct ?? 0).label}
+                        </p>
+                        <p className="mt-1 text-[11px] text-black/60">
+                          จาก {report.overall.totalChecks} ครั้งที่ตรวจนับ
+                        </p>
+                      </div>
+                      <div
+                        className={`rounded-2xl px-3 py-2.5 ${INVENTORY_QUICK_ACTION_COLORS.out}`}
+                      >
+                        <p className="text-[10px] uppercase tracking-[0.14em] text-black/60">
+                          ความคลาดเคลื่อนรวม
+                        </p>
+                        <p className="mt-1 text-2xl font-normal tabular-nums text-black">
+                          {formatQty(report.overall.totalDiscrepancyQty)}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-black/60">
+                          หน่วย จากฐาน {formatQty(report.overall.totalComparedQty)} หน่วย
+                        </p>
+                      </div>
+                      <div
+                        className={`rounded-2xl px-3 py-2.5 ${INVENTORY_QUICK_ACTION_COLORS.in}`}
+                      >
+                        <p className="text-[10px] uppercase tracking-[0.14em] text-black/60">
+                          ตรง 100%
+                        </p>
+                        <p className="mt-1 text-2xl font-normal tabular-nums text-black">
+                          {report.overall.matchChecks}/{report.overall.totalChecks}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-black/60">
+                          รายการที่ตรงทุกครั้ง
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -107,26 +122,45 @@ export default async function InventoryAccuracyPage({
                   ยังไม่มีรายการต้องเบิกที่คลาดเคลื่อน
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {report.highDiscrepancyItems.map((item) => (
-                    <div
-                      key={item.itemId}
-                      className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 md:flex-row md:items-center md:justify-between"
-                    >
-                      <div>
-                        <p className="font-normal text-foreground">{item.itemName || 'ไม่ทราบชื่อสินค้า'}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          ล่าสุด: ระบบ {formatQty(item.lastSystemStockQty ?? 0)} / นับได้ {formatQty(item.lastCountedQty ?? 0)}
-                        </p>
+                <div className="space-y-2">
+                  <div
+                    className="hidden px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground md:grid md:grid-cols-[minmax(0,1fr)_6.5rem_5.5rem] md:gap-4"
+                    aria-hidden="true"
+                  >
+                    <span>รายการสินค้า</span>
+                    <span className="text-center">คลาดเคลื่อน</span>
+                    <span className="text-right">ความแม่นยำ</span>
+                  </div>
+                  <div className="space-y-2">
+                    {report.highDiscrepancyItems.map((item) => (
+                      <div
+                        key={item.itemId}
+                        className="rounded-2xl border border-border bg-background p-4"
+                      >
+                        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_6.5rem_5.5rem] md:items-center md:gap-4">
+                          <div className="min-w-0">
+                            <p className="font-normal text-foreground">{item.itemName || 'ไม่ทราบชื่อสินค้า'}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              ล่าสุด: ระบบ {formatQty(item.lastSystemStockQty ?? 0)} / นับได้{' '}
+                              {formatQty(item.lastCountedQty ?? 0)}
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 border-t border-border pt-3 md:justify-center md:border-0 md:pt-0">
+                            <span className="shrink-0 text-xs text-muted-foreground md:hidden">คลาดเคลื่อน</span>
+                            <span className="inline-flex min-w-[5.5rem] justify-center rounded-2xl bg-[#fff3cd] px-3 py-1.5 text-sm tabular-nums text-black bb-pastel-surface">
+                              {formatQty(item.totalDiscrepancyQty)} หน่วย
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 border-t border-border pt-3 md:justify-end md:border-0 md:pt-0">
+                            <span className="shrink-0 text-xs text-muted-foreground md:hidden">ความแม่นยำ</span>
+                            <span className="min-w-[3.5rem] text-right text-sm tabular-nums text-foreground">
+                              {item.accuracyPct ?? 0}%
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 text-sm tabular-nums">
-                        <span className="rounded-2xl bg-[#fff3cd] px-3 py-1.5 text-black bb-pastel-surface">
-                          คลาด {formatQty(item.totalDiscrepancyQty)} หน่วย
-                        </span>
-                        <span className="text-muted-foreground">{item.accuracyPct ?? 0}%</span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </section>

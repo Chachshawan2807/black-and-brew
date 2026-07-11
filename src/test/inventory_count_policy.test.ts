@@ -54,6 +54,14 @@ describe('inventory count policy', () => {
     expect(countPage).toContain('ประเภท:');
   });
 
+  test('count quantity inputs stay visible on pastel rows in dark theme', () => {
+    const countPage = read('src/app/[locale]/inventory/count/InventoryCountClient.tsx');
+
+    expect(countPage).toContain('bb-pastel-surface bg-white text-black');
+    expect(countPage).toContain('border-black/25');
+    expect(countPage).not.toContain('border-border bg-muted');
+  });
+
   test('count page does not show total accuracy summary', () => {
     const countPage = read('src/app/[locale]/inventory/count/InventoryCountClient.tsx');
 
@@ -66,6 +74,15 @@ describe('inventory count policy', () => {
     const sql = read('supabase/migrations/20260618163100_inventory_count_policy.sql');
 
     expect(sql).toContain('DELETE FROM public.inventory_count_verifications');
+  });
+
+  test('major overhaul migration resets accuracy history', () => {
+    const sql = read(
+      'supabase/migrations/20260711164656_reset_accuracy_history_major_overhaul.sql',
+    );
+
+    expect(sql).toContain('DELETE FROM public.inventory_count_verifications');
+    expect(sql).toContain('major inventory system overhaul');
   });
 
   test('count updates remain the latest stock source for inventory page realtime sync', () => {
@@ -86,6 +103,13 @@ describe('inventory count policy', () => {
     expect(menu).toContain('รายงานความแม่นยำ');
   });
 
+  test('high discrepancy items are ranked by top volume then sorted ascending', () => {
+    const actions = read('src/app/actions/inventory-actions.ts');
+
+    expect(actions).toContain('return a.totalDiscrepancyQty - b.totalDiscrepancyQty');
+    expect(actions).toContain('.sort((a, b) => b.totalDiscrepancyQty - a.totalDiscrepancyQty)');
+  });
+
   test('accuracy report summary cards use inventory quick action pastel tones', () => {
     const accuracyPage = read('src/app/[locale]/inventory/accuracy/page.tsx');
 
@@ -93,6 +117,27 @@ describe('inventory count policy', () => {
     expect(accuracyPage).toContain('INVENTORY_QUICK_ACTION_COLORS.out');
     expect(accuracyPage).toContain('INVENTORY_QUICK_ACTION_COLORS.in');
     expect(accuracyPage).toContain('text-black/60');
+  });
+
+  test('high discrepancy list labels accuracy percentage and aligns metric columns', () => {
+    const accuracyPage = read('src/app/[locale]/inventory/accuracy/page.tsx');
+
+    expect(accuracyPage).toContain('รายการสินค้า');
+    expect(accuracyPage).toContain('คลาดเคลื่อน');
+    expect(accuracyPage).toContain('ความแม่นยำ');
+    expect(accuracyPage).toContain('md:grid-cols-[minmax(0,1fr)_6.5rem_5.5rem]');
+    expect(accuracyPage).not.toContain('md:justify-between');
+  });
+
+  test('accuracy report shows dynamic gauge for withdraw-required accuracy', () => {
+    const accuracyPage = read('src/app/[locale]/inventory/accuracy/page.tsx');
+
+    expect(accuracyPage).toContain('AccuracyGauge');
+    expect(accuracyPage).toContain('getAccuracyGaugeZone');
+    expect(accuracyPage).toContain('ระดับ');
+    expect(accuracyPage).toContain('ความคลาดเคลื่อนรวม');
+    expect(accuracyPage).toContain('ตรง 100%');
+    expect(accuracyPage).toContain('grid-cols-1 gap-2 sm:grid-cols-3');
   });
 
   test('history cleanup does not mutate inventory stock', () => {

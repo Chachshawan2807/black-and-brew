@@ -23,6 +23,7 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | File | Purpose |
 | --- | --- |
 | `record_inventory_transaction.sql` | Atomic IN/OUT RPC — used by Quick Entry and bulk quick actions |
+| `record_branch_withdrawal_batch.sql` | Atomic branch-withdrawal batch RPC — branch 2 stock IN |
 | `sync_inventory_stock.sql` | `set_inventory_stock` RPC, order_qty trigger, REPLICA IDENTITY |
 | `fix_inventory_rls.sql` | RLS hardening — authenticated-only |
 | `ai_agent_views.sql` | AI gateway neutral views/RPCs (`view_today_shifts`, `view_inventory_summary`, `get_ai_store_status`) |
@@ -52,6 +53,9 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260708095637_reset_accuracy_history.sql` | Reset count accuracy ledger after workflow changes |
 | `20260708104230_remove_inventory_recommended_target_stock.sql` | Remove inventory recommended target stock (retired) |
 | `20260710162206_harden_security_definer_views_and_search_path.sql` | `security_invoker` on AI views + lock `search_path` on inventory/AI RPCs |
+| `20260711120000_inventory_branch_withdrawals.sql` | Branch 2 withdrawal header table + `record_branch_withdrawal_batch` RPC |
+| `20260711164656_reset_accuracy_history_major_overhaul.sql` | Reset accuracy ledger after gauge/report overhaul |
+| `20260711223000_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening |
 
 ## Cleanup notes
 

@@ -16,6 +16,47 @@ import {
 import { getSupabaseAccessToken } from '@/lib/supabase-session';
 
 let activePushSubscription: PushSubscription | null = null;
+let lastPushRegistrationError: string | null = null;
+
+/** iOS / iPadOS Web Push requires a user gesture to create a new subscription. */
+export function requiresUserGestureForPushSubscribe(
+  userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
+): boolean {
+  return /iPhone|iPad|iPod/i.test(userAgent);
+}
+
+export function getLastPushRegistrationError(): string | null {
+  return lastPushRegistrationError;
+}
+
+export function formatPushRegistrationError(code: string, isTh: boolean): string {
+  const messages: Record<string, { th: string; en: string }> = {
+    pin_session_required: {
+      th: 'เซสชันหมดอายุ — ออกจากระบบแล้วเข้าใหม่ด้วย PIN',
+      en: 'Session expired — sign out and sign in again with PIN',
+    },
+    supabase_session_missing: {
+      th: 'ไม่สามารถเชื่อมต่อเซสชันได้ — ลองออกเข้าใหม่',
+      en: 'Could not connect session — try signing out and back in',
+    },
+    permission_denied: {
+      th: 'การแจ้งเตือนถูกปิด — เปิดได้ในการตั้งค่าอุปกรณ์',
+      en: 'Notifications blocked — enable them in device settings',
+    },
+    push_unavailable: {
+      th: 'บริการ Push ไม่พร้อม — เปิดแอปจากไอคอนหน้าจอโฮม (ไม่ใช่ Safari)',
+      en: 'Push unavailable — open the app from the home screen icon (not Safari)',
+    },
+    gesture_required: {
+      th: 'กดปุ่มลงทะเบียนการแจ้งเตือนด้านล่างเพื่อเปิดใช้บน iPhone/iPad',
+      en: 'Tap Register notifications below to enable on iPhone/iPad',
+    },
+  };
+
+  const entry = messages[code];
+  if (entry) return isTh ? entry.th : entry.en;
+  return isTh ? `ลงทะเบียนไม่สำเร็จ (${code})` : `Registration failed (${code})`;
+}
 
 /** Debounce window — merges resume / focus / pageshow bursts on mobile. */
 const MAINTENANCE_DEBOUNCE_MS = 2_000;
@@ -78,8 +119,9 @@ export function hasMatchingApplicationServerKey(
   subscription: PushSubscription,
   vapidPublicKey: string,
 ): boolean {
-  const existingKey = subscription.options.applicationServerKey;
-  if (!existingKey) return false;
+  const existingKey = subscription.options?.applicationServerKey;
+  // Safari / iOS PWAs often omit applicationServerKey — do not treat as stale.
+  if (!existingKey) return true;
 
   const expected = urlBase64ToUint8Array(vapidPublicKey);
   const current = new Uint8Array(existingKey);
@@ -126,22 +168,41 @@ export function wantsPushRegistration(prefs: NotificationPreferences): boolean {
   return prefs.systemNotifications || prefs.dailyScheduleReports;
 }
 
+function setPushRegistrationError(code: string | null): void {
+  lastPushRegistrationError = code;
+}
+
 export async function ensurePushSubscription(locale: string): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  if (!isPushManagerSupported()) return false;
-  if (!getVapidPublicKey()) return false;
+  if (!isPushManagerSupported()) {
+    setPushRegistrationError('push_unavailable');
+    return false;
+  }
+  if (!getVapidPublicKey()) {
+    setPushRegistrationError('vapid_not_configured');
+    return false;
+  }
 
   const permission = await requestNotificationPermission();
-  if (permission !== 'granted') return false;
+  if (permission !== 'granted') {
+    setPushRegistrationError(permission === 'denied' ? 'permission_denied' : 'permission_denied');
+    return false;
+  }
 
   const prefs = loadNotificationPreferences();
-  if (!wantsPushRegistration(prefs)) return false;
+  if (!wantsPushRegistration(prefs)) {
+    setPushRegistrationError(null);
+    return false;
+  }
 
   try {
     const registration = await navigator.serviceWorker.ready;
     const vapidKey = getVapidPublicKey()!;
     const accessToken = await getAccessToken();
-    if (!accessToken) return false;
+    if (!accessToken) {
+      setPushRegistrationError('supabase_session_missing');
+      return false;
+    }
 
     let existing = await registration.pushManager.getSubscription();
     if (existing && !hasMatchingApplicationServerKey(existing, vapidKey)) {
@@ -158,7 +219,10 @@ export async function ensurePushSubscription(locale: string): Promise<boolean> {
       }));
 
     const payload = subscriptionToPayload(subscription);
-    if (!payload) return false;
+    if (!payload) {
+      setPushRegistrationError('invalid_subscription');
+      return false;
+    }
 
     const result = await registerPushSubscription({
       accessToken,
@@ -171,14 +235,26 @@ export async function ensurePushSubscription(locale: string): Promise<boolean> {
 
     if (result.success) {
       activePushSubscription = subscription;
+      setPushRegistrationError(null);
       return true;
     }
+    setPushRegistrationError(result.error);
     console.warn('[push-subscription] server register failed:', result.error);
     return false;
   } catch (error) {
+    if (isBenignPushRegistrationError(error)) {
+      setPushRegistrationError('push_unavailable');
+    } else {
+      setPushRegistrationError('ensure_failed');
+    }
     logPushClientIssue('ensure failed', error);
     return false;
   }
+}
+
+/** Call directly from a button/toggle click — required for first-time iOS Web Push. */
+export async function ensurePushSubscriptionFromUserGesture(locale: string): Promise<boolean> {
+  return ensurePushSubscription(locale);
 }
 
 export async function removePushSubscription(): Promise<void> {
@@ -214,6 +290,10 @@ export async function syncPushPrefsToServer(
   }
 
   if (getNotificationPermissionState() !== 'granted') {
+    if (requiresUserGestureForPushSubscribe()) {
+      setPushRegistrationError('gesture_required');
+      return;
+    }
     await ensurePushSubscription(locale);
     return;
   }
@@ -223,6 +303,10 @@ export async function syncPushPrefsToServer(
     const subscription = await registration.pushManager.getSubscription();
     const vapidKey = getVapidPublicKey();
     if (!subscription || !vapidKey || !hasMatchingApplicationServerKey(subscription, vapidKey)) {
+      if (requiresUserGestureForPushSubscribe()) {
+        setPushRegistrationError('gesture_required');
+        return;
+      }
       await ensurePushSubscription(locale);
       return;
     }
@@ -262,10 +346,29 @@ export async function refreshPushSubscriptionState(locale: string): Promise<void
     activePushSubscription = subscription;
     if (subscription) {
       await syncPushPrefsToServer(prefs, locale);
-    } else {
+    } else if (!requiresUserGestureForPushSubscribe()) {
       await ensurePushSubscription(locale);
+    } else {
+      setPushRegistrationError('gesture_required');
     }
   } catch {
     activePushSubscription = null;
+  }
+}
+
+export async function refreshLocalPushSubscriptionState(): Promise<boolean> {
+  if (typeof window === 'undefined' || !isPushManagerSupported()) {
+    activePushSubscription = null;
+    return false;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    activePushSubscription = subscription;
+    return subscription !== null;
+  } catch {
+    activePushSubscription = null;
+    return false;
   }
 }

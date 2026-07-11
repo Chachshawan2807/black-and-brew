@@ -35,3 +35,17 @@ export function shouldNotifyForAction(
 ): boolean {
   return prefs.enabled;
 }
+
+/** Master switch — inventory, system push, and daily schedule reports together. */
+export function isNotificationMasterEnabled(prefs: NotificationPreferences): boolean {
+  return prefs.enabled && prefs.systemNotifications && prefs.dailyScheduleReports;
+}
+
+export function notificationMasterPatch(
+  enabled: boolean,
+): Pick<NotificationPreferences, 'enabled' | 'systemNotifications' | 'dailyScheduleReports'> {
+  if (!enabled) {
+    return { enabled: false, systemNotifications: false, dailyScheduleReports: false };
+  }
+  return { enabled: true, systemNotifications: true, dailyScheduleReports: true };
+}

@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-10
+> Version: 9.2 | Last Updated: 2026-07-12
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | Project Name | BLACK-AND-BREW ERP System |
 | Type | Enterprise Resource Planning for Coffee Shop |
-| Current Version | 9.1 (feature `_components` colocation + doc hygiene) |
+| Current Version | 9.2 (branch withdraw + notification badge counter + accuracy gauge) |
 | Repository | `Chachshawan2807/black-and-brew` |
 | Local Path | `C:\Users\chach\.gemini\antigravity\scratch\black-and-brew` |
 
@@ -141,7 +141,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Command Center | `src/app/[locale]/page.tsx`, `_components/LiveStatusTracker.tsx` |
 | Dashboard | `src/app/[locale]/dashboard/`, `_components/LiveShiftList.tsx`, `MonthlyRoster.tsx` |
 | Schedule | `src/app/[locale]/schedule/ScheduleClient.tsx`, `_components/` |
-| Inventory | `src/app/[locale]/inventory/InventoryClient.tsx`, `_components/`, `count/`, `accuracy/` |
+| Inventory | `src/app/[locale]/inventory/InventoryClient.tsx`, `_components/`, `count/`, `accuracy/`, `branch-withdraw/` |
 | Maintenance | `src/app/[locale]/maintenance/MaintenanceClient.tsx`, `_components/` |
 | Sales | `src/app/[locale]/sales/SalesClient.tsx`, `_components/` |
 | Settings | `src/app/[locale]/settings/page.tsx`, `_components/` |
@@ -158,7 +158,8 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 
 | Feature | Key paths |
 | --- | --- |
-| Count accuracy | `inventory_count_verifications` (`system_stock_qty`), `recordCountVerification()`, `src/lib/inventory-count-accuracy.ts` |
+| Count accuracy | `inventory_count_verifications` (`system_stock_qty`), `recordCountVerification()`, `src/lib/inventory-count-accuracy.ts`, `src/lib/inventory-accuracy-gauge.ts` |
+| Branch withdraw | `branch-withdraw-actions.ts`, `inventory-branch-withdraw-format.ts`, `record_branch_withdrawal_batch` RPC |
 | Count policy | `inventory_items.count_policy`; `exact_count` scores accuracy, `sufficiency_check` skips scoring and uses manual `order_qty` |
 | Quick action bulk | `recordBulkInventoryTransactions()`, `inventory-quick-*` libs, `InventoryQuickActionFAB` |
 | Realtime context | `src/contexts/InventoryRealtimeContext.tsx` |
@@ -167,6 +168,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Data change history UI | `settings/_components/DataChangeHistorySection.tsx` |
 | Trusted-device passkeys | `device_passkeys`, `settings/_components/PasskeyDeviceSection.tsx`, `passkey-actions.ts` |
 | Daily report Web Push | `push_subscriptions.branch_id` / `profile_id`, `src/lib/daily-report-web-push.ts` |
+| Notification unread badge | `notification-unread-counter.ts`, `notification-badge.ts`, `notification-sync.ts`, `notification-idb.ts` |
 | Dashboard optimized loading | `getDashboardShiftQueryPlan()`, `splitDashboardShiftsByRange()` |
 | Inventory route performance | Row containment, stable grid handlers, dynamic modal loading, hover/focus modal preload |
 | PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |

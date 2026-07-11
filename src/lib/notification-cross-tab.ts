@@ -1,7 +1,8 @@
 import { NOTIFICATION_STORAGE_KEY } from '@/lib/notification-types';
+import { UNREAD_COUNTER_KEY } from '@/lib/notification-unread-counter';
 
 export function isNotificationStorageKey(key: string | null): boolean {
-  return key === NOTIFICATION_STORAGE_KEY;
+  return key === NOTIFICATION_STORAGE_KEY || key === UNREAD_COUNTER_KEY;
 }
 
 /**

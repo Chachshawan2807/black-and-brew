@@ -185,10 +185,10 @@ const CountInput = memo(function CountInput({
         data-count-row-index={index}
         disabled={disabled}
         className={cn(
-          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums transition-all duration-200 placeholder:text-muted-foreground/40',
+          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums transition-all duration-200 bb-pastel-surface bg-white text-black placeholder:text-black/45',
           isActive
-            ? 'w-28 h-11 border-black/20 bg-white text-black ring-2 ring-black/10 bb-shadow-sm bb-pastel-surface'
-            : 'w-24 h-10 border-border bg-muted text-foreground focus:bg-card focus:ring-1 focus:ring-foreground/10',
+            ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm'
+            : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus:ring-1 focus:ring-black/15',
           disabled && 'opacity-60 cursor-not-allowed'
         )}
       />

@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-10
+> Version: 9.2 | Last Updated: 2026-07-12
 
 ---
 
@@ -16,6 +16,9 @@ Notable completed work:
 - [x] Dark theme (`next-themes`, CSS tokens, `bb-pastel-surface`)
 - [x] Feature `_components` colocation (dashboard, inventory, schedule, settings, sales, maintenance)
 - [x] Performance phases: dashboard query consolidation, inventory row containment, dynamic modals
+- [x] Branch 2 withdrawal batch (`branch-withdraw`, `record_branch_withdrawal_batch` RPC)
+- [x] Notification unread badge counter (IDB + cross-tab sync)
+- [x] Inventory accuracy gauge on `/inventory/accuracy`
 - [x] Retired: inventory recommended target stock; weather API; obsolete root protocol/skill stubs
 
 See `docs/changelog.md` and git history for dated entries.

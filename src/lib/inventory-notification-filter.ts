@@ -5,6 +5,7 @@ export const INVENTORY_NOTIFICATION_SOURCES = {
   QUICK_ACTION_BAR: 'inventory_quick_action_bar',
   QUICK_ACTION_FAB: 'inventory_quick_action_fab',
   WAREHOUSE_GRID: 'inventory_warehouse_grid',
+  BRANCH_WITHDRAW: 'inventory_branch_withdraw',
 } as const;
 
 export type InventoryNotificationSource =

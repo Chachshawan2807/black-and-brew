@@ -1,12 +1,23 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-10 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.2 | Last Updated: 2026-07-12 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
 ---
 
 ## Active Decisions
+
+### DEC-082: Branch 2 Withdrawal Batch (v9.2)
+
+- Date: July 2026
+- Context: Staff withdraw stock to branch 2 via spreadsheet-style grid; must atomically IN stock and keep LINE-formatted audit history.
+- Decision:
+  1. Route: `src/app/[locale]/inventory/branch-withdraw/` with `BranchWithdrawClient.tsx`.
+  2. Mutations: `branch-withdraw-actions.ts` → `record_branch_withdrawal_batch` RPC (blueprint in `sql/record_branch_withdrawal_batch.sql`).
+  3. Header table: `inventory_branch_withdrawals`; draft in `sessionStorage` key `inventory-branch-withdraw-draft:v1`.
+- Impact: Sidebar link in `menu-list.ts`; inventory notifications via `recordDataChange()`.
+- Evidence: `supabase/migrations/20260711120000_inventory_branch_withdrawals.sql`, `inventory-branch-withdraw-format.test.ts`
 
 ### DEC-080: Feature `_components` Colocation (v9.1)
 

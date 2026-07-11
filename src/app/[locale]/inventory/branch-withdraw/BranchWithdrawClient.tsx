@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Clipboard, Loader2, Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ChevronLeft, Clipboard, Eye, Loader2, Save } from 'lucide-react';
 import {
   fetchBranchWithdrawalDetail,
+  fetchBranchWithdrawalHistory,
   saveBranchWithdrawal,
   type BranchWithdrawHistoryRow,
   type BranchWithdrawDetailLine,
@@ -16,11 +18,17 @@ import {
   writeBranchWithdrawDraft,
   type BranchWithdrawDraftRow,
 } from '@/lib/inventory-branch-withdraw-draft';
-import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
+import { useInventoryRealtime, type InventoryRealtimeItem } from '@/contexts/InventoryRealtimeContext';
+import { computeBranchWithdrawItems, type InventoryStockFields } from '@/lib/inventory-stock';
+import {
+  filterBranchWithdrawSaveLines,
+  formatBranchWithdrawLineMessage,
+} from '@/lib/inventory-branch-withdraw-format';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
+import { getClientSessionId } from '@/lib/client-session';
 
-type Item = { id: string; name: string; unit: string; sort_order: number };
-type Props = { initialItems: Item[]; initialHistory: BranchWithdrawHistoryRow[]; locale: string };
+type Item = InventoryStockFields & { id: string; name: string; unit: string; sort_order: number };
+type Props = { initialItems: InventoryRealtimeItem[]; initialHistory: BranchWithdrawHistoryRow[]; locale: string };
 
 function sanitizeQtyInput(raw: string): string {
   const digitsOnly = raw.replace(/[^0-9]/g, '');
@@ -48,14 +56,72 @@ function formatHistoryDate(value: string): string {
   });
 }
 
-export default function BranchWithdrawClient({ initialItems, initialHistory, locale }: Props) {
-  const isReadOnly = useReadOnly();
-  const { refresh } = useInventoryRealtime();
+const BRANCH2_UNIT_LABEL = 'หน่วยสาขา 2';
+const DESKTOP_GRID_COLS =
+  'md:grid-cols-[minmax(0,1fr)_4.25rem_4.25rem_minmax(6.75rem,8.5rem)]';
+const INPUT_LABEL_CLASS = 'text-center text-xs leading-tight text-foreground/70';
+const INPUT_FIELD_CLASS =
+  'h-9 w-full min-w-0 rounded-xl border border-border bg-background px-2 text-center text-sm outline-none';
+const UNIT_INPUT_FIELD_CLASS = `${INPUT_FIELD_CLASS} placeholder:text-[11px] placeholder:leading-tight md:placeholder:text-xs`;
 
-  const sortedItems = useMemo(
-    () => [...initialItems].sort((a, b) => a.sort_order - b.sort_order),
-    [initialItems],
+function WithdrawRowInputs({
+  row,
+  onQtyBranch1,
+  onQtyBranch2,
+  onBranch2Unit,
+}: {
+  row: BranchWithdrawDraftRow;
+  onQtyBranch1: (value: string) => void;
+  onQtyBranch2: (value: string) => void;
+  onBranch2Unit: (value: string) => void;
+}) {
+  return (
+    <>
+      <label className="flex min-w-0 flex-col gap-1">
+        <span className={INPUT_LABEL_CLASS}>สาขา 1</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={row.qtyBranch1}
+          onChange={(event) => onQtyBranch1(sanitizeQtyInput(event.target.value))}
+          className={`${INPUT_FIELD_CLASS} tabular-nums`}
+        />
+      </label>
+      <label className="flex min-w-0 flex-col gap-1">
+        <span className={INPUT_LABEL_CLASS}>สาขา 2</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={row.qtyBranch2}
+          onChange={(event) => onQtyBranch2(sanitizeQtyInput(event.target.value))}
+          className={`${INPUT_FIELD_CLASS} tabular-nums`}
+        />
+      </label>
+      <label className="col-span-2 flex min-w-0 flex-col gap-1 md:col-span-1">
+        <span className={INPUT_LABEL_CLASS}>{BRANCH2_UNIT_LABEL}</span>
+        <input
+          type="text"
+          value={row.branch2Unit}
+          onChange={(event) => onBranch2Unit(event.target.value)}
+          className={UNIT_INPUT_FIELD_CLASS}
+          placeholder={BRANCH2_UNIT_LABEL}
+        />
+      </label>
+    </>
   );
+}
+
+export default function BranchWithdrawClient({ initialItems, initialHistory, locale }: Props) {
+  const router = useRouter();
+  const isReadOnly = useReadOnly();
+  const { items: realtimeItems, hasLoaded, refresh } = useInventoryRealtime();
+
+  const inventorySource = hasLoaded ? realtimeItems : initialItems;
+
+  const sortedItems = useMemo(() => {
+    const branchItems = computeBranchWithdrawItems(inventorySource);
+    return [...branchItems].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  }, [inventorySource]);
 
   const [rows, setRows] = useState<Record<string, BranchWithdrawDraftRow>>(() => {
     if (typeof window === 'undefined') {
@@ -66,12 +132,14 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [history, setHistory] = useState(initialHistory);
 
   const [saveLineMessage, setSaveLineMessage] = useState('');
   const [lineMessageDialog, setLineMessageDialog] = useState<{ title: string; message: string } | null>(
     null,
   );
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [previewCopyStatus, setPreviewCopyStatus] = useState<string | null>(null);
 
   const [detailDialogTitle, setDetailDialogTitle] = useState('');
   const [detailDialogLoading, setDetailDialogLoading] = useState(false);
@@ -79,13 +147,52 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
   const [detailDialogLines, setDetailDialogLines] = useState<BranchWithdrawDetailLine[]>([]);
 
   const saveResultDialogRef = useRef<HTMLDialogElement | null>(null);
+  const previewDialogRef = useRef<HTMLDialogElement | null>(null);
   const historyLineDialogRef = useRef<HTMLDialogElement | null>(null);
   const detailDialogRef = useRef<HTMLDialogElement | null>(null);
+
+  useEffect(() => {
+    setHistory(initialHistory);
+  }, [initialHistory]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     writeBranchWithdrawDraft(window.sessionStorage, { rows });
   }, [rows]);
+
+  useEffect(() => {
+    setRows((prev) => normalizeRowsByItems(sortedItems, prev));
+  }, [sortedItems]);
+
+  const previewLineMessage = useMemo(() => {
+    const payload = sortedItems.map((item) => {
+      const draft = rows[item.id] ?? emptyDraftRow();
+      return {
+        itemId: item.id,
+        name: item.name,
+        qtyBranch1: draft.qtyBranch1,
+        qtyBranch2: draft.qtyBranch2,
+        branch2Unit: draft.branch2Unit,
+      };
+    });
+    const filtered = filterBranchWithdrawSaveLines(payload);
+    return formatBranchWithdrawLineMessage(filtered);
+  }, [rows, sortedItems]);
+
+  const previewLineCount = useMemo(() => {
+    return filterBranchWithdrawSaveLines(
+      sortedItems.map((item) => {
+        const draft = rows[item.id] ?? emptyDraftRow();
+        return {
+          itemId: item.id,
+          name: item.name,
+          qtyBranch1: draft.qtyBranch1,
+          qtyBranch2: draft.qtyBranch2,
+          branch2Unit: draft.branch2Unit,
+        };
+      }),
+    ).length;
+  }, [rows, sortedItems]);
 
   const updateRow = useCallback(
     (itemId: string, patch: Partial<BranchWithdrawDraftRow>) => {
@@ -136,7 +243,10 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         };
       });
 
-      const result = await saveBranchWithdrawal({ lines });
+      const result = await saveBranchWithdrawal({
+        lines,
+        clientSessionId: getClientSessionId(),
+      });
       if (!result.success) {
         setSaveError(result.error || 'บันทึกไม่สำเร็จ');
         return;
@@ -148,6 +258,12 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
       setRows(normalizeRowsByItems(sortedItems));
       await refresh();
 
+      const historyResult = await fetchBranchWithdrawalHistory(30);
+      if (historyResult.success) {
+        setHistory(historyResult.data);
+      }
+      router.refresh();
+
       setSaveLineMessage(result.lineMessage);
       openDialog(saveResultDialogRef.current);
     } catch (error) {
@@ -156,7 +272,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
     } finally {
       setIsSaving(false);
     }
-  }, [isReadOnly, refresh, rows, sortedItems]);
+  }, [isReadOnly, refresh, router, rows, sortedItems]);
 
   const handleCopyLineMessage = useCallback(async () => {
     try {
@@ -166,6 +282,20 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
       setCopyStatus('คัดลอกไม่สำเร็จ');
     }
   }, [saveLineMessage]);
+
+  const handleCopyPreview = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(previewLineMessage);
+      setPreviewCopyStatus('คัดลอกแล้ว');
+    } catch {
+      setPreviewCopyStatus('คัดลอกไม่สำเร็จ');
+    }
+  }, [previewLineMessage]);
+
+  const openPreviewDialog = useCallback(() => {
+    setPreviewCopyStatus(null);
+    openDialog(previewDialogRef.current);
+  }, []);
 
   const openHistoryLineDialog = useCallback((entry: BranchWithdrawHistoryRow) => {
     setLineMessageDialog({ title: `ข้อความ LINE (${formatHistoryDate(entry.created_at)})`, message: entry.line_message });
@@ -192,7 +322,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
 
   return (
     <div className="min-h-screen bg-background p-4 text-foreground md:p-8">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <header className="flex items-center justify-between border-b border-border pb-4">
           <Link
             href={`/${locale}/inventory`}
@@ -206,7 +336,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
           <h1 className="text-xl font-normal md:text-2xl">เบิกของจากสาขา 2</h1>
           <p className="mt-1 text-sm text-foreground/70">
-            ระบุจำนวนเบิกของสาขา 1 และจำนวนเทียบจากสาขา 2 เพื่อสร้างข้อความส่ง LINE ได้ทันที
+            แสดงเฉพาะรายการสั่งซื้อช่องทางสาขา 2 ที่ต้องเติมสต็อก — ระบุจำนวนเบิกแล้วกดบันทึกเพื่อส่ง LINE
           </p>
         </section>
 
@@ -216,71 +346,57 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
           </div>
         )}
 
-        <section className="space-y-3 pb-24">
-          {sortedItems.map((item) => {
-            const row = rows[item.id] ?? emptyDraftRow();
-            return (
-              <article key={item.id} className="rounded-2xl border border-border bg-card p-4">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-                  <div className="md:col-span-4">
-                    <div className="mb-1 inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-xs">
-                      {item.sort_order.toString().padStart(2, '0')}
+        <section className="space-y-2 pb-28">
+          {sortedItems.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-foreground/70">
+              ไม่มีรายการสั่งซื้อจากสาขา 2 ที่ต้องเบิกในขณะนี้
+            </div>
+          ) : (
+            <>
+              <div
+                className={`hidden gap-x-2 px-4 text-xs text-foreground/60 md:grid ${DESKTOP_GRID_COLS}`}
+              >
+                <span>รายการ</span>
+                <span className="text-center">สาขา 1</span>
+                <span className="text-center">สาขา 2</span>
+                <span className="text-center leading-tight">{BRANCH2_UNIT_LABEL}</span>
+              </div>
+              {sortedItems.map((item) => {
+                const row = rows[item.id] ?? emptyDraftRow();
+                return (
+                  <article key={item.id} className="rounded-2xl border border-border bg-card p-4">
+                    <div className={`flex flex-col gap-3 md:grid md:items-end md:gap-x-2 ${DESKTOP_GRID_COLS}`}>
+                      <div className="min-w-0">
+                        <div className="mb-1 inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-xs">
+                          {String(item.sort_order ?? 0).padStart(2, '0')}
+                        </div>
+                        <p className="text-base leading-snug">{item.name}</p>
+                        <p className="text-xs text-foreground/70">หน่วย (สาขา 1): {item.unit || '-'}</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 md:contents">
+                        <WithdrawRowInputs
+                          row={row}
+                          onQtyBranch1={(value) => updateRow(item.id, { qtyBranch1: value })}
+                          onQtyBranch2={(value) => updateRow(item.id, { qtyBranch2: value })}
+                          onBranch2Unit={(value) => updateRow(item.id, { branch2Unit: value })}
+                        />
+                      </div>
                     </div>
-                    <p className="text-base">{item.name}</p>
-                    <p className="text-xs text-foreground/70">หน่วย (สาขา 1): {item.unit || '-'}</p>
-                  </div>
-
-                  <label className="flex flex-col gap-1 text-xs md:col-span-2">
-                    <span>จำนวนสาขา 1</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={row.qtyBranch1}
-                      onChange={(event) =>
-                        updateRow(item.id, { qtyBranch1: sanitizeQtyInput(event.target.value) })
-                      }
-                      className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none"
-                      placeholder=""
-                    />
-                  </label>
-
-                  <label className="flex flex-col gap-1 text-xs md:col-span-2">
-                    <span>จำนวนสาขา 2</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={row.qtyBranch2}
-                      onChange={(event) =>
-                        updateRow(item.id, { qtyBranch2: sanitizeQtyInput(event.target.value) })
-                      }
-                      className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none"
-                      placeholder=""
-                    />
-                  </label>
-
-                  <label className="flex flex-col gap-1 text-xs md:col-span-4">
-                    <span>หน่วยสาขา 2</span>
-                    <input
-                      type="text"
-                      value={row.branch2Unit}
-                      onChange={(event) => updateRow(item.id, { branch2Unit: event.target.value })}
-                      className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none"
-                      placeholder="เช่น ลัง, แพ็ก"
-                    />
-                  </label>
-                </div>
-              </article>
-            );
-          })}
+                  </article>
+                );
+              })}
+            </>
+          )}
         </section>
 
         <section className="space-y-3 rounded-2xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-normal">ประวัติการเบิก</h2>
-          {initialHistory.length === 0 ? (
+          {history.length === 0 ? (
             <p className="text-sm text-foreground/70">ยังไม่มีประวัติการเบิกจากสาขา 2</p>
           ) : (
             <div className="space-y-2">
-              {initialHistory.map((entry) => (
+              {history.map((entry) => (
                 <article
                   key={entry.id}
                   className="flex flex-col gap-3 rounded-xl border border-border bg-background p-3 md:flex-row md:items-center md:justify-between"
@@ -311,27 +427,84 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
           )}
         </section>
 
-        <div className="sticky bottom-0 z-20 mt-2 border-t border-border bg-background/95 py-3 backdrop-blur">
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={isReadOnly || isSaving}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>กำลังบันทึก...</span>
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4" />
-                <span>บันทึก</span>
-              </>
-            )}
-          </button>
+        <div className="sticky bottom-0 z-20 mt-2 border-t border-border bg-background/95 py-3 backdrop-blur [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={openPreviewDialog}
+              disabled={sortedItems.length === 0}
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Eye className="h-4 w-4" />
+              <span>ดูตัวอย่างข้อความ LINE</span>
+              {previewLineCount > 0 ? (
+                <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs tabular-nums">
+                  {previewLineCount}
+                </span>
+              ) : null}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={isReadOnly || isSaving || previewLineCount === 0}
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>กำลังบันทึก...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  <span>บันทึก</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
+
+      <dialog
+        ref={previewDialogRef}
+        className="m-auto max-h-[min(85dvh,100%)] w-fit max-w-[92vw] rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40"
+      >
+        <div className="flex w-fit max-w-[92vw] flex-col p-4 md:p-5">
+          <h3 className="text-base">ตัวอย่างข้อความ LINE (อัปเดตตามที่กรอก)</h3>
+          <p className="mt-1 text-xs text-foreground/70">
+            แสดงเฉพาะรายการที่มีจำนวนสาขา 1 — ข้อความนี้จะเหมือนตอนกดบันทึก
+          </p>
+          <div className="mt-3 max-h-[min(60dvh,32rem)] overflow-y-auto rounded-xl border border-border bg-background p-3">
+            <pre className="w-max max-w-[calc(92vw-2.5rem)] whitespace-pre-wrap font-mono text-sm leading-relaxed">
+              {previewLineMessage}
+            </pre>
+          </div>
+          {previewLineCount === 0 ? (
+            <p className="mt-2 text-xs text-foreground/70">กรอกจำนวนสาขา 1 อย่างน้อย 1 รายการเพื่อดูตัวอย่าง</p>
+          ) : null}
+          {previewCopyStatus ? (
+            <p className="mt-2 text-xs text-foreground/70">{previewCopyStatus}</p>
+          ) : null}
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => void handleCopyPreview()}
+              disabled={previewLineCount === 0}
+              className="inline-flex items-center gap-1 rounded-xl border border-border bg-background px-3 py-2 text-sm disabled:opacity-50"
+            >
+              <Clipboard className="h-4 w-4" />
+              <span>คัดลอก</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => closeDialog(previewDialogRef.current)}
+              className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+      </dialog>
 
       <dialog ref={saveResultDialogRef} className="w-[min(780px,92vw)] rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40">
         <div className="p-4 md:p-5">

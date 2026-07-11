@@ -2,7 +2,7 @@
 
 Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AND BREW — จัดการตารางงาน คลังสินค้า ยอดขาย บำรุงรักษา และ AI Assistant (บรู) บนแพลตฟอร์มเดียว
 
-> Version: 9.0 | Stack: Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
+> Version: 9.2 | Stack: Next.js 16.2.4 · React 19.2.4 · Supabase · Tailwind CSS 4 · next-themes
 
 ---
 
@@ -16,6 +16,7 @@ Enterprise Resource Planning สำหรับร้านกาแฟ BLACK AN
 | Inventory | `/[locale]/inventory` | ตารางคลังสินค้าแบบ Spreadsheet + FAB Quick Action + Undo/Redo + นโยบายการนับสินค้า |
 | Stock Count | `/[locale]/inventory/count` | ตรวจนับสต็อกจริง; แยก `exact_count` กับ `sufficiency_check` |
 | Inventory Accuracy | `/[locale]/inventory/accuracy` | รายงานความแม่นยำเฉพาะสินค้าที่ตั้งค่าเป็นนับจริง |
+| Branch Withdraw | `/[locale]/inventory/branch-withdraw` | เบิกสินค้าไปสาขา 2 — batch IN ผ่าน RPC + ประวัติ |
 | Maintenance | `/[locale]/maintenance` | บันทึกการซ่อมบำรุงอุปกรณ์ |
 | Sales | `/[locale]/sales` | อัปโหลด Excel วิเคราะห์ยอดขาย |
 | Settings | `/[locale]/settings` | ธีม, ประวัติการเข้าใช้, trusted-device passkeys, การแจ้งเตือน |

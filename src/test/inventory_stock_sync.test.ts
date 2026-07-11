@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import {
   computeItemsToOrder,
+  computeBranchWithdrawItems,
   computeOrderQty,
   formatInventoryNumericDisplay,
   mergeInventoryRealtimeUpdate,
   sanitizeStockValue,
+  BRANCH_WITHDRAW_ORDER_SOURCE,
 } from '@/lib/inventory-stock';
 import { parseLocalColumnWidths } from '@/app/[locale]/inventory/types';
 
@@ -119,5 +121,39 @@ describe('inventory stock sync utilities', () => {
     expect(formatInventoryNumericDisplay('')).toBe('0');
     expect(formatInventoryNumericDisplay(null)).toBe('0');
     expect(formatInventoryNumericDisplay(12)).toBe('12');
+  });
+
+  test('computeBranchWithdrawItems matches purchase-order list for สาขา 2 only', () => {
+    const items = [
+      {
+        id: 'branch-low',
+        name: 'นม',
+        stock: 2,
+        order_point: 5,
+        target_stock: 10,
+        source: BRANCH_WITHDRAW_ORDER_SOURCE,
+      },
+      {
+        id: 'branch-ok',
+        name: 'ชา',
+        stock: 20,
+        order_point: 5,
+        target_stock: 10,
+        source: BRANCH_WITHDRAW_ORDER_SOURCE,
+      },
+      {
+        id: 'makro-low',
+        name: 'กาแฟ',
+        stock: 1,
+        order_point: 5,
+        target_stock: 10,
+        source: 'Makro',
+      },
+    ];
+
+    const branchItems = computeBranchWithdrawItems(items);
+    expect(branchItems).toHaveLength(1);
+    expect(branchItems[0]?.id).toBe('branch-low');
+    expect(branchItems[0]?.computedOrderQty).toBe(8);
   });
 });

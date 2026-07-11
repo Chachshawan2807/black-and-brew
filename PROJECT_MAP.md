@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-07-10 (GMT+7) | Version: 9.1
+> Generated: 2026-07-12 (GMT+7) | Version: 9.2
 
 Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) over reading this file wholesale. Canonical agent rules: `AGENTS.md`.
 
@@ -16,6 +16,7 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 | Inventory | `src/app/[locale]/inventory/` | Active |
 | Stock Count | `src/app/[locale]/inventory/count/` | Active |
 | Inventory Accuracy | `src/app/[locale]/inventory/accuracy/` | Active |
+| Branch Withdraw | `src/app/[locale]/inventory/branch-withdraw/` | Active |
 | Maintenance | `src/app/[locale]/maintenance/` | Active |
 | Sales | `src/app/[locale]/sales/` | Active |
 | Settings | `src/app/[locale]/settings/` | Active |
@@ -34,7 +35,8 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 | `/[locale]/schedule` | `schedule/page.tsx` | `ScheduleClient.tsx`, `_components/ScheduleToolbar.tsx`, `ShiftSettingsModal.tsx` |
 | `/[locale]/inventory` | `inventory/page.tsx` | `InventoryClient.tsx`, `_components/*` |
 | `/[locale]/inventory/count` | `count/page.tsx` | `InventoryCountClient.tsx` |
-| `/[locale]/inventory/accuracy` | `accuracy/page.tsx` | report page |
+| `/[locale]/inventory/accuracy` | `accuracy/page.tsx` | `_components/AccuracyGauge.tsx` |
+| `/[locale]/inventory/branch-withdraw` | `branch-withdraw/page.tsx` | `BranchWithdrawClient.tsx` |
 | `/[locale]/maintenance` | `maintenance/page.tsx` | `MaintenanceClient.tsx`, `_components/MaintenanceModals.tsx` |
 | `/[locale]/sales` | `sales/page.tsx` | `SalesClient.tsx`, `_components/SalesTopProductsChart.tsx` |
 | `/[locale]/settings` | `settings/page.tsx` | `_components/*` (theme, sessions, passkeys, notifications) |
@@ -93,6 +95,7 @@ black-and-brew/
 | `passkey-actions.ts` | WebAuthn trusted-device passkeys |
 | `login-history-actions.ts` | Login audit + active sessions |
 | `inventory-actions.ts` | Stock RPC, count policy, transactions, CRUD |
+| `branch-withdraw-actions.ts` | Branch 2 withdrawal batch save + history |
 | `shift-actions.ts` | Shift CRUD, roster |
 | `holiday-actions.ts` | Google Calendar + regular holidays |
 | `maintenance-actions.ts` | Service record CRUD |
@@ -107,7 +110,7 @@ black-and-brew/
 
 ## Tests (`src/test/`)
 
-Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `live_shift_list.test.ts`
+Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `notification-unread-counter.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `live_shift_list.test.ts`
 
 ---
 
