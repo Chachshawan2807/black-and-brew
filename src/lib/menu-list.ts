@@ -77,7 +77,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           id: 'inventory',
           href: `${prefix}/inventory`,
           label: "คลังสินค้า",
-          active: pathname.includes("/inventory") && !pathname.includes("/inventory/count") && !pathname.includes("/inventory/accuracy"),
+          active: pathname.includes("/inventory") && !pathname.includes("/inventory/count") && !pathname.includes("/inventory/accuracy") && !pathname.includes("/inventory/branch-withdraw"),
           icon: Package,
           submenus: []
         },
@@ -95,6 +95,14 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           label: "รายงานความแม่นยำ",
           active: pathname.includes("/inventory/accuracy"),
           icon: Gauge,
+          submenus: []
+        },
+        {
+          id: 'inventory-branch-withdraw',
+          href: `${prefix}/inventory/branch-withdraw`,
+          label: 'เบิกของจากสาขา 2',
+          active: pathname.includes('/inventory/branch-withdraw'),
+          icon: Package,
           submenus: []
         },
         {
