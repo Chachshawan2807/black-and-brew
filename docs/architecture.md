@@ -104,7 +104,8 @@ src/app/
 ├── api/
 │   ├── chat/route.ts            # Streaming AI (ToolLoopAgent)
 │   ├── daily-report/route.ts    # Vercel Cron endpoint
-│   └── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
+│   ├── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
+│   └── inventory/offline-mutation/route.ts  # Service worker background sync replay
 └── [locale]/
     ├── layout.tsx               # PinGateway, sidebar, AI chat, PWA
     ├── page.tsx                 # Command Center
@@ -224,6 +225,21 @@ Server mutation → recordDataChange() → data_change_logs INSERT (module=inven
 ```
 
 Skips origin device when `client_session_id` matches mutation metadata. Requires `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY`; fails gracefully when unset or table missing. Daily schedule report pushes reuse `push_subscriptions` with `profile_id` and `branch_id` filters so the same subscription table covers inventory alerts and scheduled staff reports.
+
+### Offline Mutation Replay
+
+```text
+Inventory edit (offline) → offline-mutation-queue.ts → IndexedDB queue
+→ Service Worker (public/sw.js) background sync → POST /api/inventory/offline-mutation
+→ requireMutationAccess() (src/lib/policies/server-gate.ts)
+→ replayOfflineMutation() (src/lib/offline-mutation-sync.ts)
+→ inventory_field → updateInventoryItemField()
+→ inventory_stock → updateInventoryStock() [set_inventory_stock RPC]
+→ transaction → recordTransaction() [record_inventory_transaction RPC]
+→ offline-replay-retry.ts for back-off on transient failures
+```
+
+Client-side state: `src/lib/offline-mutation-client.ts`; auth session bridge: `src/lib/offline-auth-session.ts`; mutation store: `public/offline-mutation-store.js`.
 
 ### AI Chat
 

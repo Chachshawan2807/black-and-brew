@@ -232,6 +232,15 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 
 ## 2. API Routes
 
+### `POST /api/inventory/offline-mutation`
+
+- Auth-gated endpoint for replaying offline mutations queued in `public/offline-mutation-store.js` (service worker background sync).
+- Validates each mutation via Zod schemas (`inventory_field`, `inventory_stock`, `transaction`) and calls the appropriate server-side action.
+- Auth: `requireMutationAccess()` from `src/lib/policies/server-gate.ts`; read-only sessions are rejected.
+- Mutation types: `inventory_field` → `updateInventoryItemField()`, `inventory_stock` → `updateInventoryStock()`, `transaction` → `recordTransaction()`.
+- Replay logic: `src/lib/offline-mutation-sync.ts`; client queue: `src/lib/offline-mutation-queue.ts`; retry: `src/lib/offline-replay-retry.ts`.
+- `maxDuration: 30` (Vercel serverless).
+
 ### `POST /api/chat`
 
 - Streaming AI chat via `ToolLoopAgent` (`google('gemini-2.5-flash')`)

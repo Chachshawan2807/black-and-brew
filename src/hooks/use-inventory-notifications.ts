@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, usePathname } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   fetchDataChangeLogs,
   type DataChangeLogRow,
@@ -53,6 +53,7 @@ import {
   requestNotificationPermission,
   SW_INVENTORY_PUSH_RECEIVED,
 } from '@/lib/pwa-notification-bridge';
+import { shouldDeferOsNotificationToPush } from '@/lib/push-subscription-client';
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
   const row = payload.new;
@@ -98,7 +99,6 @@ function resolveDisplayUnreadCount(
 
 export function useInventoryNotifications() {
   const params = useParams();
-  const pathname = usePathname();
   const locale = (params?.locale as string) || 'th';
 
   const [notifications, setNotifications] = useState<InventoryNotification[]>([]);
@@ -106,6 +106,7 @@ export function useInventoryNotifications() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
   const [realtimeReady, setRealtimeReady] = useState(false);
+  const [realtimeReconnectKey, setRealtimeReconnectKey] = useState(0);
 
   const prefsRef = useRef(prefs);
   const localeRef = useRef(locale);
@@ -139,13 +140,13 @@ export function useInventoryNotifications() {
   }, [locale]);
 
   useEffect(() => {
-    if (panelOpen || pathname?.includes('/inventory')) {
-      setRealtimeReady(true);
+    if (!prefs.enabled) {
+      setRealtimeReady(false);
       return;
     }
-    const timer = window.setTimeout(() => setRealtimeReady(true), 5000);
-    return () => window.clearTimeout(timer);
-  }, [panelOpen, pathname]);
+    // Notifications on — subscribe immediately on all pages (mobile FAB must stay live).
+    setRealtimeReady(true);
+  }, [prefs.enabled]);
 
   useEffect(() => {
     sessionIdRef.current = getClientSessionId();
@@ -213,6 +214,7 @@ export function useInventoryNotifications() {
       const currentPrefs = prefsRef.current;
       if (!currentPrefs.enabled || !currentPrefs.systemNotifications) return;
       if (options?.skipSystemNotification) return;
+      if (shouldDeferOsNotificationToPush(currentPrefs)) return;
       if (getNotificationPermissionState() !== 'granted') return;
 
       const loc = localeRef.current;
@@ -378,11 +380,12 @@ export function useInventoryNotifications() {
       if (channel) void supabase.removeChannel(channel);
       window.removeEventListener('bb-notification-prefs-changed', onPrefsChange);
     };
-  }, [realtimeReady, processRows, syncFromServerOnly]);
+  }, [realtimeReady, processRows, syncFromServerOnly, realtimeReconnectKey]);
 
   useEffect(() => {
     const onResume = () => {
       if (document.visibilityState === 'visible') {
+        setRealtimeReconnectKey((key) => key + 1);
         syncFromStorageAndServerSoon();
       }
     };

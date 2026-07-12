@@ -266,7 +266,7 @@ export async function verifyPasskeyLogin(
   responseJSON: string,
   device: ClientDevicePayload
 ): Promise<
-  { success: true; isReadOnly: boolean } | { success: false; error: string }
+  { success: true; isReadOnly: boolean; offlineAuthSessionId: string } | { success: false; error: string }
 > {
   const safeDevice = parseClientDevicePayload(device);
   if (!safeDevice) {
@@ -348,7 +348,7 @@ export async function verifyPasskeyLogin(
     };
 
     await clearSessionRevocation(stored.session_fingerprint);
-    setAuthCookies(cookieStore, readOnly, deviceWithFp);
+    const offlineAuthSessionId = setAuthCookies(cookieStore, readOnly, deviceWithFp);
 
     await recordLoginEvent({
       eventType: 'login_success',
@@ -357,7 +357,7 @@ export async function verifyPasskeyLogin(
       accessLevel: readOnly ? 'read_only' : 'full',
     });
 
-    return { success: true, isReadOnly: readOnly };
+    return { success: true, isReadOnly: readOnly, offlineAuthSessionId };
   } catch (error) {
     console.error('[verifyPasskeyLogin]', error);
     await recordLoginEvent({

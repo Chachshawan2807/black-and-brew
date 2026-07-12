@@ -3,8 +3,10 @@ import {
   formatPushRegistrationError,
   hasMatchingApplicationServerKey,
   requiresUserGestureForPushSubscribe,
+  shouldDeferOsNotificationToPush,
   urlBase64ToUint8Array,
 } from '@/lib/push-subscription-client';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notification-types';
 
 function makeSubscription(applicationServerKey: Uint8Array | null): PushSubscription {
   return {
@@ -52,5 +54,54 @@ describe('push-subscription-client', () => {
   test('formatPushRegistrationError returns localized messages', () => {
     expect(formatPushRegistrationError('gesture_required', true)).toContain('กดปุ่ม');
     expect(formatPushRegistrationError('gesture_required', false)).toContain('Register');
+  });
+
+  test('shouldDeferOsNotificationToPush defers when Android push is active', () => {
+    const prefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, enabled: true, systemNotifications: true };
+    expect(
+      shouldDeferOsNotificationToPush(prefs, {
+        pushSupported: true,
+        permission: 'granted',
+        hasSubscription: true,
+        userAgent:
+          'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/150.0.0.0 Mobile Safari/537.36',
+      }),
+    ).toBe(true);
+  });
+
+  test('shouldDeferOsNotificationToPush keeps realtime OS banners on iOS until gesture subscription exists', () => {
+    const prefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, enabled: true, systemNotifications: true };
+    const iosUa =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15';
+
+    expect(
+      shouldDeferOsNotificationToPush(prefs, {
+        pushSupported: true,
+        permission: 'granted',
+        hasSubscription: false,
+        userAgent: iosUa,
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldDeferOsNotificationToPush(prefs, {
+        pushSupported: true,
+        permission: 'granted',
+        hasSubscription: true,
+        userAgent: iosUa,
+      }),
+    ).toBe(true);
+  });
+
+  test('shouldDeferOsNotificationToPush does not defer when notifications are disabled', () => {
+    const prefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, enabled: false };
+    expect(
+      shouldDeferOsNotificationToPush(prefs, {
+        pushSupported: true,
+        permission: 'granted',
+        hasSubscription: true,
+        userAgent: 'Mozilla/5.0 (Linux; Android 14) Mobile',
+      }),
+    ).toBe(false);
   });
 });

@@ -1,12 +1,28 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-12 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.2 | Last Updated: 2026-07-13 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
 ---
 
 ## Active Decisions
+
+### DEC-083: Offline Inventory Mutation Queue + Policy Gates (v9.2)
+
+- Date: July 2026
+- Context: Staff on unstable Wi‑Fi must keep editing the inventory spreadsheet; mutations must not bypass PIN/read-only auth or replay under a different session after reconnect.
+- Decision:
+  1. **Client queue:** IndexedDB store (`offline-mutation-queue.ts`) + SW mirror (`public/offline-mutation-store.js`); coalesce field edits per item/field; flush on `online` and Background Sync tag `bb-offline-mutations`.
+  2. **Replay API:** `POST /api/inventory/offline-mutation` validates Zod payloads (`inventory_field`, `inventory_stock`, `inventory_reorder`) and calls `replayOfflineMutation()` — same server paths as live edits.
+  3. **Session binding:** `offline-auth-session.ts` stamps `authSessionId` on enqueue; route rejects replay when cookie `OFFLINE_AUTH_SESSION_COOKIE` mismatches (logout clears queue via `logout-client.ts`).
+  4. **Policy gates:** `src/lib/policies/` — `evaluateAuthz()` in `authz.ts`; server entry points use `server-gate.ts` (`requireMutationAccess`, `gateMutation`, `requirePinMutationAccess`). Do not add ad-hoc read-only checks in actions/routes.
+- Impact:
+  - Inventory blur/Enter saves may queue when offline; UI stays optimistic; SW replays when online.
+  - Server Actions and the offline route share one authz model — read-only PIN cannot mutate via either path.
+  - New inventory mutation surfaces must call `gateMutation()` / `requireMutationAccess()`, not duplicate `assertWritableSession` logic.
+  - Documented in `docs/api.md`, `docs/architecture.md`, MCP ADR; graph indexed under offline-mutation + policies clusters.
+- Evidence: `offline-mutation-*.ts`, `public/sw.js`, `src/app/api/inventory/offline-mutation/route.ts`, `src/lib/policies/`, `offline-mutation-route.test.ts`, `policies-authz.test.ts`, `offline-mutation-sync.test.ts`
 
 ### DEC-082: Branch 2 Withdrawal Batch (v9.2)
 

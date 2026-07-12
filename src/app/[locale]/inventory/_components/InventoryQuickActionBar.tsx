@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import type { QuickBadgeStyles } from '@/lib/inventory-stock';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
 import { shouldShowQuickSearchSuggestions } from '@/lib/inventory-quick-search-filter';
-import { stepQuickQtyValue } from '@/lib/inventory-quick-qty-step';
+import { blurQtyInputOnWheel, stepQuickQtyValue } from '@/lib/inventory-quick-qty-step';
 import type { BulkPreview, BulkQueueItem } from '@/lib/inventory-quick-bulk';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
@@ -171,6 +171,7 @@ function QuickActionQtyInput({
         placeholder={quickType === 'ADJUST' ? 'ใหม่' : 'จำนวน'}
         value={quickQty}
         onChange={(e) => setQuickQty(e.target.value)}
+        onWheel={blurQtyInputOnWheel}
         onKeyDown={(e) => {
           if (e.key === 'ArrowUp') {
             e.preventDefault();
@@ -380,6 +381,7 @@ function BulkQueuePanel({
               step="any"
               value={line.qty}
               onChange={(e) => onBulkLineQtyChange?.(line.itemId, e.target.value)}
+              onWheel={blurQtyInputOnWheel}
               placeholder="จำนวน"
               aria-label={`จำนวน ${line.name}`}
               className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground text-center text-sm tabular-nums outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"

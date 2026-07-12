@@ -168,6 +168,40 @@ export function wantsPushRegistration(prefs: NotificationPreferences): boolean {
   return prefs.systemNotifications || prefs.dailyScheduleReports;
 }
 
+export type OsNotificationDeferContext = {
+  pushSupported?: boolean;
+  permission?: 'default' | 'granted' | 'denied' | 'unsupported';
+  hasSubscription?: boolean;
+  userAgent?: string;
+};
+
+/**
+ * When Web Push is active, the service worker owns OS banners so foreground
+ * Supabase realtime does not duplicate alerts on Android/iOS PWAs.
+ * iOS still needs realtime OS banners until the user completes gesture subscribe.
+ */
+export function shouldDeferOsNotificationToPush(
+  prefs: NotificationPreferences,
+  context: OsNotificationDeferContext = {},
+): boolean {
+  if (!wantsPushRegistration(prefs)) return false;
+
+  const pushSupported = context.pushSupported ?? isPushManagerSupported();
+  if (!pushSupported) return false;
+
+  const permission = context.permission ?? getNotificationPermissionState();
+  if (permission !== 'granted') return false;
+
+  const userAgent = context.userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  const hasSubscription = context.hasSubscription ?? hasActivePushSubscription();
+
+  if (requiresUserGestureForPushSubscribe(userAgent)) {
+    return hasSubscription === true;
+  }
+
+  return hasSubscription === true;
+}
+
 function setPushRegistrationError(code: string | null): void {
   lastPushRegistrationError = code;
 }

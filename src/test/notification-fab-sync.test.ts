@@ -59,6 +59,21 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('SW_INVENTORY_PUSH_RECEIVED');
   });
 
+  test('hook enables realtime immediately when notifications are enabled (no mobile delay)', () => {
+    expect(hookSource).toContain('prefs.enabled');
+    expect(hookSource).toContain('setRealtimeReady(true)');
+    expect(hookSource).not.toMatch(/setTimeout\(\(\) => setRealtimeReady\(true\),\s*5000\)/);
+  });
+
+  test('hook reconnects Supabase realtime after mobile resume', () => {
+    expect(hookSource).toContain('realtimeReconnectKey');
+    expect(hookSource).toMatch(/setRealtimeReconnectKey[\s\S]*visibilitychange/);
+  });
+
+  test('hook defers foreground OS banners to Web Push when subscription is active', () => {
+    expect(hookSource).toContain('shouldDeferOsNotificationToPush');
+  });
+
   test('hook does not warn that realtime is unavailable for normal CLOSED channel cleanup', () => {
     expect(hookSource).not.toMatch(
       /status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT' && status !== 'CLOSED'/,

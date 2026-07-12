@@ -14,6 +14,8 @@ import {
   schedulePushSubscriptionMaintenance,
   wantsPushRegistration,
 } from '@/lib/push-subscription-client';
+import { installOfflineMutationListeners } from '@/lib/offline-mutation-client';
+import { resolveSameOriginNavigationUrl } from '@/lib/safe-navigation-url';
 
 export default function PwaRegister() {
   const params = useParams();
@@ -30,10 +32,16 @@ export default function PwaRegister() {
 
     const onNotificationClick = (event: MessageEvent) => {
       const data = event.data as { type?: string; url?: string } | undefined;
-      if (data?.type === 'NOTIFICATION_CLICK' && data.url) {
-        syncBadgeFromStorage();
-        window.location.href = data.url;
+      if (data?.type !== 'NOTIFICATION_CLICK' || !data.url) return;
+
+      const safeUrl = resolveSameOriginNavigationUrl(data.url, window.location.origin);
+      if (!safeUrl) {
+        console.warn('[PwaRegister] blocked cross-origin notification navigation:', data.url);
+        return;
       }
+
+      syncBadgeFromStorage();
+      window.location.href = safeUrl;
     };
 
     const onResume = () => {
@@ -48,6 +56,8 @@ export default function PwaRegister() {
     window.addEventListener('pageshow', onResume);
     window.addEventListener('bb-pin-authenticated', onResume);
     window.addEventListener('bb-notification-prefs-changed', onResume);
+
+    const removeOfflineListeners = installOfflineMutationListeners();
 
     const timeout = setTimeout(() => {
       navigator.serviceWorker
@@ -81,6 +91,7 @@ export default function PwaRegister() {
       window.removeEventListener('pageshow', onResume);
       window.removeEventListener('bb-pin-authenticated', onResume);
       window.removeEventListener('bb-notification-prefs-changed', onResume);
+      removeOfflineListeners();
     };
   }, [locale]);
 

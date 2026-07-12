@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CalendarRange, CheckCheck, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,34 +35,21 @@ function getNotificationDetailLines(item: InventoryNotification): string[] {
 function NotificationRow({
   item,
   locale,
-  onNavigate,
   isTh,
 }: {
   item: InventoryNotification;
   locale: string;
   isTh: boolean;
-  onNavigate: (item: InventoryNotification) => void;
 }) {
-  const lines = [
-    item.title,
-    ...getNotificationDetailLines(item),
-    `${item.actorLabel} · ${formatNotificationTime(item.occurredAt, locale)}`,
-  ].filter(Boolean);
+  const isSchedule = isScheduleNotification(item);
+  const detailLines = getNotificationDetailLines(item);
+  const metaLine = `${item.actorLabel} · ${formatNotificationTime(item.occurredAt, locale)}`;
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onNavigate(item)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onNavigate(item);
-        }
-      }}
       className={cn(
-        'w-full text-left rounded-2xl border px-3.5 py-3 bb-transition cursor-pointer [content-visibility:auto] [contain-intrinsic-size:0_72px]',
-        'border-border bg-card hover:bg-muted/40',
+        'w-full text-left rounded-2xl border px-3.5 py-3',
+        'border-border bg-card',
         !item.read && 'border-amber-500/20 bg-amber-500/[0.03]'
       )}
     >
@@ -72,12 +59,18 @@ function NotificationRow({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               <p className="text-[13px] text-foreground leading-snug">{item.title}</p>
-              <ExpandableLines
-                lines={lines.slice(1)}
-                isTh={isTh}
-                lineClassName="text-[12px] text-muted-foreground leading-normal"
-                className="mt-0.5"
-              />
+              {detailLines.length > 0 && (
+                <ExpandableLines
+                  lines={detailLines}
+                  isTh={isTh}
+                  maxLines={isSchedule ? detailLines.length : undefined}
+                  lineClassName="text-[12px] text-muted-foreground leading-normal"
+                  className="mt-0.5"
+                />
+              )}
+              <p className="text-[12px] text-muted-foreground leading-normal mt-0.5">
+                {metaLine}
+              </p>
             </div>
             {!item.read && (
               <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
@@ -93,7 +86,6 @@ export function NotificationPanel() {
   const params = useParams();
   const locale = (params?.locale as string) || 'th';
   const isTh = locale === 'th';
-  const router = useRouter();
   const reduced = usePrefersReducedMotion();
   const overlayMotion = withReducedMotion(notificationOverlay, reduced);
   const panelMotion = withReducedMotion(notificationPanel, reduced);
@@ -104,7 +96,6 @@ export function NotificationPanel() {
     unreadCount,
     closePanel,
     markAllRead,
-    markRead,
     clearAll,
   } = useNotifications();
 
@@ -128,21 +119,6 @@ export function NotificationPanel() {
       : isTh
         ? 'รายการล่าสุด'
         : 'Recent notifications · live updates';
-
-  const handleNavigate = (item: InventoryNotification) => {
-    markRead(item.id);
-    closePanel();
-    const url = typeof item.metadata?.url === 'string' ? item.metadata.url : null;
-    if (url) {
-      router.push(url);
-      return;
-    }
-    if (item.entityId) {
-      router.push(`/${locale}/inventory?highlight=${item.entityId}`);
-    } else {
-      router.push(`/${locale}/inventory`);
-    }
-  };
 
   return (
     <AnimatePresence>
@@ -173,7 +149,7 @@ export function NotificationPanel() {
               className={cn(
                 'pointer-events-auto box-border flex flex-col overflow-hidden w-full max-w-md',
                 'bg-background border border-border rounded-3xl bb-shadow-lg',
-                'max-h-[min(75vh,calc(100dvh-8rem))]',
+                'max-h-[min(75vh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-8rem))]',
               )}
               role="dialog"
               aria-modal="true"
@@ -187,7 +163,7 @@ export function NotificationPanel() {
                       alt=""
                       width={20}
                       height={20}
-                      className="h-5 w-5 object-contain"
+                      className="h-5 w-5 object-contain dark:invert dark:brightness-0 dark:opacity-90"
                       aria-hidden
                     />
                   </div>
@@ -238,7 +214,7 @@ export function NotificationPanel() {
                 </div>
               </header>
 
-              <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll px-4 py-4 space-y-5">
+              <div className="flex-1 min-h-0 min-w-0 overflow-y-auto bb-smooth-scroll px-4 py-4 space-y-5">
                 {groups.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-transparent mb-3">
@@ -266,7 +242,6 @@ export function NotificationPanel() {
                             item={item}
                             locale={locale}
                             isTh={isTh}
-                            onNavigate={handleNavigate}
                           />
                         ))}
                       </div>

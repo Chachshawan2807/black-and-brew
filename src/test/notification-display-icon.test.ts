@@ -2,8 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 import {
+  formatStockOperationTitle,
   isScheduleNotification,
   resolveNotificationDisplayIcon,
+  STOCK_OPERATION_SYMBOL,
 } from '@/lib/notification-display-icon';
 import type { InventoryNotification } from '@/lib/notification-types';
 
@@ -31,6 +33,20 @@ function sampleNotification(
 
 describe('notification display icons', () => {
   test('uses inventory quick action icons for stock operations', () => {
+    expect(STOCK_OPERATION_SYMBOL.IN).toBe('+');
+    expect(STOCK_OPERATION_SYMBOL.OUT).toBe('−');
+    expect(STOCK_OPERATION_SYMBOL.ADJUST).toBe('⇄');
+    expect(formatStockOperationTitle('IN', 'กาแฟ')).toBe('+ กาแฟ');
+
+    expect(
+      resolveNotificationDisplayIcon(
+        sampleNotification({
+          title: '+ กาแฟ',
+          metadata: { operation: 'record_transaction', type: 'IN' },
+        }),
+      ).kind,
+    ).toBe('stock-in');
+
     expect(
       resolveNotificationDisplayIcon(
         sampleNotification({

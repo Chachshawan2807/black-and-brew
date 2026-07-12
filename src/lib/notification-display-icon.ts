@@ -3,6 +3,26 @@ import { INVENTORY_QUICK_ACTION_COLORS, PASTEL_SURFACE } from '@/lib/shift-color
 
 export type StockOperation = 'IN' | 'OUT' | 'ADJUST';
 
+/** Unicode prefixes for stock ops — mirrors quick-action / notification panel icons. */
+export const STOCK_OPERATION_SYMBOL: Record<StockOperation, string> = {
+  IN: '+',
+  OUT: '−',
+  ADJUST: '⇄',
+};
+
+export function formatStockOperationTitle(operation: StockOperation, entityName: string): string {
+  return `${STOCK_OPERATION_SYMBOL[operation]} ${entityName}`;
+}
+
+export function formatStockOperationBatchedTitle(
+  operation: StockOperation,
+  count: number,
+  isTh: boolean,
+): string {
+  const symbol = STOCK_OPERATION_SYMBOL[operation];
+  return isTh ? `${symbol} ${count} รายการ` : `${symbol} ${count} items`;
+}
+
 export type NotificationDisplayIconKind =
   | 'schedule'
   | 'stock-in'
@@ -52,6 +72,9 @@ export function isScheduleNotification(item: InventoryNotification): boolean {
 }
 
 function detectStockOperationFromTitle(title: string): StockOperation | null {
+  if (/^\+[\s:]/u.test(title)) return 'IN';
+  if (/^−[\s:]/u.test(title)) return 'OUT';
+  if (/^⇄[\s:]/u.test(title)) return 'ADJUST';
   if (/^รับเข้/u.test(title) || /^Stock in/u.test(title)) return 'IN';
   if (/^นำออก/u.test(title) || /^Stock out/u.test(title)) return 'OUT';
   if (/^ปรับจำนวน/u.test(title) || /^Stock adjusted/u.test(title)) return 'ADJUST';

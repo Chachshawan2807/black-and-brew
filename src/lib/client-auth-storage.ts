@@ -1,6 +1,11 @@
 /** Client-side PIN session flags — aligned with server cookie max-age. */
 
 import { AUTH_SESSION_MAX_AGE_SEC } from '@/lib/auth-constants';
+import {
+  clearClientOfflineAuthSessionId,
+  setClientOfflineAuthSessionId,
+} from '@/lib/offline-auth-session';
+import { clearClientSessionId } from '@/lib/client-session';
 
 export const AUTH_PIN_VERIFIED_KEY = 'bb_auth_pin_verified';
 export const AUTH_READ_ONLY_KEY = 'bb_auth_read_only';
@@ -26,7 +31,7 @@ export function isClientReadOnly(): boolean {
   return localStorage.getItem(AUTH_READ_ONLY_KEY) === 'true';
 }
 
-export function setClientAuthSession(readOnly: boolean): void {
+export function setClientAuthSession(readOnly: boolean, offlineAuthSessionId?: string | null): void {
   if (typeof window === 'undefined') return;
   const expiresAt = Date.now() + AUTH_SESSION_MAX_AGE_SEC * 1000;
   localStorage.setItem(AUTH_PIN_VERIFIED_KEY, 'true');
@@ -38,6 +43,9 @@ export function setClientAuthSession(readOnly: boolean): void {
   }
   sessionStorage.removeItem(AUTH_PIN_VERIFIED_KEY);
   sessionStorage.removeItem(AUTH_READ_ONLY_KEY);
+  if (offlineAuthSessionId) {
+    setClientOfflineAuthSessionId(offlineAuthSessionId);
+  }
 }
 
 export function clearClientAuthSession(): void {
@@ -47,4 +55,6 @@ export function clearClientAuthSession(): void {
   localStorage.removeItem(AUTH_EXPIRES_AT_KEY);
   sessionStorage.removeItem(AUTH_PIN_VERIFIED_KEY);
   sessionStorage.removeItem(AUTH_READ_ONLY_KEY);
+  clearClientOfflineAuthSessionId();
+  clearClientSessionId();
 }

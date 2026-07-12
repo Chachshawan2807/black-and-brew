@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 
-import { History, Loader2, PackageMinus, PackagePlus, Plus, ShoppingCart, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { History, Loader2, PackageMinus, PackagePlus, Plus, Search, ShoppingCart, SlidersHorizontal, Trash2, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -57,6 +57,12 @@ type InventoryHistoryModalProps = {
   hasMoreHistory: boolean;
 
   isHistoryLoading: boolean;
+
+  isHistoryRefreshing: boolean;
+
+  historySearchQuery: string;
+
+  onSearchQueryChange: (query: string) => void;
 
 };
 
@@ -176,9 +182,14 @@ export function InventoryHistoryModal({
   onLoadMore,
   hasMoreHistory,
   isHistoryLoading,
+  isHistoryRefreshing,
+  historySearchQuery,
+  onSearchQueryChange,
 }: InventoryHistoryModalProps) {
 
   const [isMounted, setIsMounted] = useState(false);
+  const isSearchActive = historySearchQuery.trim().length > 0;
+  const isInitialLoading = isHistoryLoading && transactionHistory.length === 0;
 
   const viewportInsets = useVisualViewportInsets(isMounted);
 
@@ -303,15 +314,60 @@ export function InventoryHistoryModal({
               </div>
             </fieldset>
 
+            <div className="min-w-0">
+              <label htmlFor="history-item-search" className="sr-only">
+                ค้นหาชื่อรายการสินค้าในประวัติ
+              </label>
+              <div className="relative min-w-0">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+                <input
+                  id="history-item-search"
+                  type="text"
+                  enterKeyHint="search"
+                  placeholder="ค้นหาชื่อรายการสินค้า..."
+                  value={historySearchQuery}
+                  onChange={(e) => onSearchQueryChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      onSearchQueryChange('');
+                    }
+                  }}
+                  title={historySearchQuery || undefined}
+                  className="h-11 w-full min-w-0 pl-9 pr-9 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all antialiased"
+                />
+                {isSearchActive ? (
+                  <button
+                    type="button"
+                    onClick={() => onSearchQueryChange('')}
+                    aria-label="ล้างการค้นหา"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
           </div>
 
         </div>
 
 
 
-        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto bb-smooth-scroll bb-scroll-xy px-4 py-4 md:px-6 md:py-4 bg-background scrollbar-thin">
+        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto bb-smooth-scroll bb-scroll-xy px-4 py-4 md:px-6 md:py-4 bg-background scrollbar-thin relative">
 
-          <div className="inline-block w-max min-w-full bg-background rounded-[2rem] border border-border bb-shadow-sm">
+          {isInitialLoading ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-foreground/40">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <span className="text-[14px] font-normal">กำลังโหลดประวัติ...</span>
+            </div>
+          ) : (
+          <div
+            className={cn(
+              'inline-block w-max min-w-full bg-background rounded-[2rem] border border-border bb-shadow-sm transition-opacity duration-150',
+              isHistoryRefreshing && 'opacity-60',
+            )}
+          >
 
             <table className="w-max text-left border-collapse table-auto">
 
@@ -365,7 +421,9 @@ export function InventoryHistoryModal({
 
                         <ShoppingCart className="w-10 h-10 opacity-10" />
 
-                        ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้
+                        {isSearchActive
+                          ? `ไม่พบประวัติที่ตรงกับ "${historySearchQuery.trim()}"`
+                          : 'ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้'}
 
                       </div>
 
@@ -375,7 +433,7 @@ export function InventoryHistoryModal({
 
                 ) : (
 
-                  transactionHistory.map((tx, index) => {
+                  transactionHistory.map((tx) => {
 
                     const txType: TransactionHistoryRow['type'] =
                       tx.type === 'IN' ||
@@ -390,15 +448,9 @@ export function InventoryHistoryModal({
 
                     return (
 
-                      <motion.tr
+                      <tr
 
                         key={tx.id}
-
-                        initial={{ opacity: 0, y: 10 }}
-
-                        animate={{ opacity: 1, y: 0 }}
-
-                        transition={{ delay: index * 0.03 }}
 
                         className="group hover:bg-muted/40 transition-colors"
 
@@ -456,7 +508,7 @@ export function InventoryHistoryModal({
 
                         </td>
 
-                      </motion.tr>
+                      </tr>
 
                     );
 
@@ -469,6 +521,7 @@ export function InventoryHistoryModal({
             </table>
 
           </div>
+          )}
 
         </div>
 
@@ -476,7 +529,10 @@ export function InventoryHistoryModal({
 
         <div className="px-4 md:px-6 py-3 md:py-4 bg-card/80 border-t border-border flex flex-col md:flex-row gap-3 md:items-center md:justify-between shrink-0 text-[12px] text-muted-foreground">
 
-          <span>แสดง {transactionHistory.length} รายการ</span>
+          <span className="inline-flex items-center gap-2">
+            แสดง {transactionHistory.length} รายการ
+            {isHistoryRefreshing ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : null}
+          </span>
 
           {hasMoreHistory ? (
             <button

@@ -12,6 +12,7 @@ export type SortableDragHandleProps = {
   setActivatorNodeRef: (element: HTMLElement | null) => void;
   disabled?: boolean;
   tip?: string;
+  tipSide?: 'top' | 'right' | 'bottom' | 'left';
   className?: string;
   iconClassName?: string;
   'aria-label'?: string;
@@ -28,6 +29,7 @@ export function SortableDragHandle({
   setActivatorNodeRef,
   disabled = false,
   tip = 'ลากเพื่อเปลี่ยนลำดับ',
+  tipSide = 'left',
   className,
   iconClassName = 'w-4 h-4',
   'aria-label': ariaLabel = 'ลากเพื่อเปลี่ยนลำดับ',
@@ -57,5 +59,9 @@ export function SortableDragHandle({
     return handle;
   }
 
-  return <HintTooltip tip={tip}>{handle}</HintTooltip>;
+  return (
+    <HintTooltip tip={tip} side={tipSide}>
+      {handle}
+    </HintTooltip>
+  );
 }

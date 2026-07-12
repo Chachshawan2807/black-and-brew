@@ -9,6 +9,7 @@ import {
 import { getClientSessionId } from '@/lib/client-session';
 import type { InventoryNotificationSource } from '@/lib/inventory-notification-filter';
 import { filterInventoryQuickSearchItems } from '@/lib/inventory-quick-search-filter';
+import { filterInventoryQuickSearchAsync, shouldUseInventoryTableWorker } from '@/lib/inventory-table-worker-client';
 import { getQuickBadgeStyles } from '@/lib/inventory-stock';
 import { READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import {
@@ -126,8 +127,35 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
 
   const filteredItems = useMemo(() => {
     const excludeIds = bulkMode ? bulkQueue.map((line) => line.itemId) : [];
+    if (shouldUseInventoryTableWorker(items.length)) {
+      return [];
+    }
     return filterInventoryQuickSearchItems(items, quickSearch, 10, excludeIds);
   }, [items, quickSearch, bulkMode, bulkQueue]);
+
+  const [workerFilteredItems, setWorkerFilteredItems] = useState<typeof filteredItems>([]);
+
+  useEffect(() => {
+    if (!shouldUseInventoryTableWorker(items.length)) {
+      setWorkerFilteredItems([]);
+      return;
+    }
+
+    const excludeIds = bulkMode ? bulkQueue.map((line) => line.itemId) : [];
+    let cancelled = false;
+
+    void filterInventoryQuickSearchAsync(items, quickSearch, 10, excludeIds).then((next) => {
+      if (!cancelled) setWorkerFilteredItems(next);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [items, quickSearch, bulkMode, bulkQueue]);
+
+  const resolvedFilteredItems = shouldUseInventoryTableWorker(items.length)
+    ? workerFilteredItems
+    : filteredItems;
 
   const selectedQuickItem = useMemo(
     () => items.find((item) => item.name === quickSearch || item.id === quickSearch),
@@ -341,7 +369,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     isSearchFocused,
     setIsSearchFocused,
     isQuickPending,
-    filteredItems,
+    filteredItems: resolvedFilteredItems,
     selectedQuickItem,
     quickBadgeStyles,
     bulkMode,

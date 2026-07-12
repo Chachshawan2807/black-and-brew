@@ -2,8 +2,7 @@
 
 import { useEffect } from 'react';
 import { getAuthSessionInfo } from '@/app/actions/auth';
-import { clearClientAuthSession } from '@/lib/client-auth-storage';
-import { clearSupabaseSession } from '@/lib/supabase-session';
+import { teardownLocalAuthState } from '@/lib/logout-client';
 
 /** Signs out locally when server session is revoked or expired. */
 export function AuthSessionGuard() {
@@ -11,8 +10,7 @@ export function AuthSessionGuard() {
     const tick = async () => {
       const info = await getAuthSessionInfo();
       if (!info.verified) {
-        clearClientAuthSession();
-        await clearSupabaseSession();
+        await teardownLocalAuthState();
         window.location.reload();
       }
     };

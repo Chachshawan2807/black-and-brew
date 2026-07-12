@@ -3,6 +3,8 @@ export const AUTH_SESSION_MAX_AGE_SEC = 30 * 24 * 60 * 60;
 
 export const SESSION_FP_COOKIE = 'bb_session_fp';
 
+export const OFFLINE_AUTH_SESSION_COOKIE = 'bb_offline_auth_sid';
+
 export const READ_ONLY_DENY_MSG =
   'บัญชีนี้ดูข้อมูลได้อย่างเดียวค่ะ ไม่สามารถแก้ไขข้อมูลได้นะคะ';
 

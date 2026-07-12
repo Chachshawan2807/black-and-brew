@@ -33,7 +33,7 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
     },
     {
       file: 'components/notifications/NotificationPanel.tsx',
-      pattern: /flex-1 min-h-0 overflow-y-auto[\s\S]*bb-smooth-scroll/,
+      pattern: /flex-1 min-h-0 min-w-0 overflow-y-auto[\s\S]*bb-smooth-scroll/,
     },
     {
       file: 'app/[locale]/schedule/ScheduleClient.tsx',

@@ -7,7 +7,7 @@ import { computeFieldChanges } from '@/lib/data-change-log';
 import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
 
 import { logRowToNotificationInput } from '@/lib/notification-types';
-import { detectStockOperationFromMetadata } from '@/lib/notification-display-icon';
+import { detectStockOperationFromMetadata, formatStockOperationBatchedTitle, formatStockOperationTitle } from '@/lib/notification-display-icon';
 
 import { isUuidString } from '@/lib/pwa-notification-bridge';
 
@@ -131,18 +131,6 @@ const ACTION_LABELS: Record<string, { th: string; en: string }> = {
 
 
 
-const STOCK_OPERATION_LABELS: Record<'IN' | 'OUT' | 'ADJUST', { th: string; en: string }> = {
-
-  IN: { th: 'รับเข้า', en: 'Stock in' },
-
-  OUT: { th: 'นำออก', en: 'Stock out' },
-
-  ADJUST: { th: 'ปรับจำนวน', en: 'Stock adjusted' },
-
-};
-
-
-
 type StockOperation = 'IN' | 'OUT' | 'ADJUST';
 
 
@@ -167,6 +155,15 @@ const HIDDEN_NOTIFICATION_FIELDS = new Set([
 
   'client_session_id',
 
+  // Internal row ordering — never surface in user-facing notifications
+  'sort_order',
+
+  'schedule_order',
+
+  'display_order',
+
+  'dashboard_order',
+
 ]);
 
 
@@ -186,8 +183,6 @@ const DISPLAY_PRIORITY = [
   'unit',
 
   'source',
-
-  'sort_order',
 
 ];
 
@@ -623,7 +618,7 @@ function buildStockOperationSummary(
 
   if (operation === 'IN' && !Number.isNaN(qty)) {
 
-    const lead = isTh ? `รับ ${qty}` : `Received ${qty}`;
+    const lead = `+${qty}`;
 
     return stockLine ? `${lead} · ${stockLine}` : lead;
 
@@ -631,7 +626,7 @@ function buildStockOperationSummary(
 
   if (operation === 'OUT' && !Number.isNaN(qty)) {
 
-    const lead = isTh ? `นำออก ${qty}` : `Removed ${qty}`;
+    const lead = `−${qty}`;
 
     return stockLine ? `${lead} · ${stockLine}` : lead;
 
@@ -645,17 +640,13 @@ function buildStockOperationSummary(
 
       newVal != null
 
-        ? isTh
-
-          ? `ปรับเป็น ${newVal}`
-
-          : `Set to ${newVal}`
+        ? `→ ${newVal}`
 
         : isTh
 
-          ? 'ปรับจำนวนคงเหลือ'
+          ? '⇄ ปรับจำนวนคงเหลือ'
 
-          : 'Stock level adjusted';
+          : '⇄ Stock level adjusted';
 
     return stockLine ? `${lead} · ${stockLine}` : lead;
 
@@ -793,9 +784,7 @@ export function formatInventoryNotification(
 
   } else if (stockOp) {
 
-    const opLabel = STOCK_OPERATION_LABELS[stockOp][isTh ? 'th' : 'en'];
-
-    title = `${opLabel}: ${entityName}`;
+    title = formatStockOperationTitle(stockOp, entityName);
 
     summary = fieldSummary;
 
@@ -883,7 +872,6 @@ export function formatBatchedNotificationFromRows(
         ? 'ADJUST'
         : 'IN';
 
-  const opLabel = STOCK_OPERATION_LABELS[op][isTh ? 'th' : 'en'];
   const lines = rows
     .map((row) => {
       const name = resolveEntityName(row, isTh);
@@ -910,9 +898,7 @@ export function formatBatchedNotificationFromRows(
 
   return {
     ...base,
-    title: isTh
-      ? `${opLabel}: ${rows.length} รายการ`
-      : `${opLabel}: ${rows.length} items`,
+    title: formatStockOperationBatchedTitle(op, rows.length, isTh),
     summary: shown.join(' · '),
     fieldSummary: shown.join(' · '),
     batchedCount: rows.length,

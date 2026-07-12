@@ -23,6 +23,15 @@ export function getClientSessionId(): string {
   }
 }
 
+export function clearClientSessionId(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export function isOwnChange(metadata: Record<string, unknown> | undefined, sessionId: string): boolean {
   if (!metadata || !sessionId) return false;
   return metadata.clientSessionId === sessionId;

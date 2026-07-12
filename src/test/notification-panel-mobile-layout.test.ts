@@ -41,4 +41,32 @@ describe('NotificationPanel mobile layout', () => {
     expect(code).toContain("aria-label={isTh ? 'อ่านทั้งหมด' : 'Mark all read'}");
     expect(code).toContain("aria-label={isTh ? 'ล้างประวัติ' : 'Clear history'}");
   });
+
+  test('notification rows avoid content-visibility clipping on mobile webkit', () => {
+    const code = readFile('components/notifications/NotificationPanel.tsx');
+    expect(code).not.toContain('content-visibility');
+    expect(code).not.toContain('contain-intrinsic-size');
+  });
+
+  test('schedule notifications show all fieldSummary lines and always-visible metadata', () => {
+    const code = readFile('components/notifications/NotificationPanel.tsx');
+    expect(code).toMatch(/maxLines=\{isSchedule\s*\?\s*detailLines\.length/);
+    expect(code).toContain('const metaLine =');
+    expect(code).toMatch(/\{metaLine\}/);
+    expect(code).toMatch(/\/>[\s\S]*\{metaLine\}/);
+  });
+
+  test('notification list scroll container allows flex shrink on narrow viewports', () => {
+    const code = readFile('components/notifications/NotificationPanel.tsx');
+    expect(code).toMatch(/flex-1 min-h-0 min-w-0 overflow-y-auto/);
+  });
+
+  test('notification rows are view-only and do not navigate on click', () => {
+    const code = readFile('components/notifications/NotificationPanel.tsx');
+    expect(code).not.toContain('useRouter');
+    expect(code).not.toContain('router.push');
+    expect(code).not.toContain('onNavigate');
+    expect(code).not.toMatch(/role="button"/);
+    expect(code).not.toContain('cursor-pointer');
+  });
 });

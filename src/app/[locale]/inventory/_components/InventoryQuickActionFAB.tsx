@@ -16,17 +16,17 @@ import {
   type InventoryRealtimeItem,
 } from '@/contexts/InventoryRealtimeContext';
 import {
-  fetchTransactionHistory,
   fetchFrequentItems,
 } from '@/app/actions/inventory-actions';
-import type { InventoryTransactionFilterType } from '@/app/actions/inventory-actions';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
+import { useInventoryHistory } from '@/hooks/use-inventory-history';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import {
   FAB_STACK_INNER_CLASS,
   FAB_BOTTOM_QUICK_ACTION_CLASS,
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
 } from '@/lib/floating-action-layout';
+import { blurActiveElement } from '@/lib/blur-active-element';
 import { getFabPanelKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { FabFadePresence } from '@/components/floating/FabFadePresence';
@@ -35,12 +35,10 @@ import { useReadOnly } from '@/components/providers/AuthProvider';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { InventoryQuickActionBar } from './InventoryQuickActionBar';
-import { InventoryHistoryModal, type TransactionHistoryRow } from './InventoryHistoryModal';
+import { InventoryHistoryModal } from './InventoryHistoryModal';
 import { InventoryAddItemModal } from './InventoryAddItemModal';
 
 const PurchaseOrdersModal = dynamic(() => import('./PurchaseOrdersModal'), { ssr: false });
-
-const HISTORY_PAGE_SIZE = 50;
 
 type InventoryItem = InventoryRealtimeItem & InventoryStockFields;
 
@@ -57,19 +55,16 @@ export default function InventoryQuickActionFAB() {
 
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isPanelRendered, setIsPanelRendered] = useState(false);
   const [frequentItems, setFrequentItems] = useState<{ id: string; name: string }[]>([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [transactionHistory, setTransactionHistory] = useState<TransactionHistoryRow[]>([]);
-  const [historyTypeFilter, setHistoryTypeFilter] = useState<InventoryTransactionFilterType>('ALL');
-  const [hasMoreHistory, setHasMoreHistory] = useState(false);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const history = useInventoryHistory();
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [isExportingPO, setIsExportingPO] = useState(false);
 
-  const viewportInsets = useVisualViewportInsets(isMounted && isOpen);
+  const viewportInsets = useVisualViewportInsets(isMounted && isPanelRendered);
   const quickPanelStyle = getFabPanelKeyboardAwareStyle({ insets: viewportInsets });
 
   const loadFrequentItems = useCallback(async () => {
@@ -79,46 +74,16 @@ export default function InventoryQuickActionFAB() {
     }
   }, []);
 
-  const loadHistoryPage = useCallback(
-    async ({
-      type = historyTypeFilter,
-      offset = 0,
-      append = false,
-    }: {
-      type?: InventoryTransactionFilterType;
-      offset?: number;
-      append?: boolean;
-    } = {}) => {
-      setIsHistoryLoading(true);
-      try {
-        const res = await fetchTransactionHistory({
-          type,
-          offset,
-          limit: HISTORY_PAGE_SIZE,
-        });
-        if (res.success && res.data) {
-          setTransactionHistory((prev) => (append ? [...prev, ...res.data] : res.data));
-          setHasMoreHistory(Boolean(res.hasMore));
-        } else if (res.error) {
-          console.error('[UI] History fetch failed:', res.error);
-          setHasMoreHistory(false);
-        }
-      } finally {
-        setIsHistoryLoading(false);
-      }
-    },
-    [historyTypeFilter],
-  );
-
   const quickAction = useInventoryQuickAction({
     items,
     setItems,
     isReadOnly,
-    showHistoryModal,
-    onHistoryRefresh: () => loadHistoryPage({ offset: 0 }),
+    showHistoryModal: history.showHistoryModal,
+    onHistoryRefresh: history.refreshHistory,
     isItemsLoaded: hasLoadedItems,
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_FAB,
     onAfterSave: () => {
+      blurActiveElement();
       void loadFrequentItems();
       setIsOpen(false);
     },
@@ -129,14 +94,43 @@ export default function InventoryQuickActionFAB() {
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- keep panel mounted through exit animation
+      setIsPanelRendered(true);
+    }
+  }, [isOpen]);
+
+  const handlePanelExitComplete = useCallback(() => {
+    if (!isOpen) {
+      setIsPanelRendered(false);
+    }
+  }, [isOpen]);
+
+  const closeQuickPanel = useCallback(() => {
+    blurActiveElement();
+    setIsOpen(false);
+  }, []);
+
+  const toggleQuickPanel = useCallback(() => {
+    setIsOpen((prev) => {
+      if (prev) {
+        blurActiveElement();
+        return false;
+      }
+      setIsPanelRendered(true);
+      return true;
+    });
+  }, []);
+
   const quickOverlayActive =
-    isOpen || showAddModal || showHistoryModal || showPurchaseOrderModal;
+    isPanelRendered || showAddModal || history.showHistoryModal || showPurchaseOrderModal;
   const hideQuickActionButton =
     fabStackHidden ||
     fabStackSuppressed ||
     isAnyOtherOpen('quick-action') ||
     showAddModal ||
-    showHistoryModal ||
+    history.showHistoryModal ||
     showPurchaseOrderModal;
 
   useEffect(() => {
@@ -148,7 +142,7 @@ export default function InventoryQuickActionFAB() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- close overlays when fab stack is hidden
     setIsOpen(false);
     setShowAddModal(false);
-    setShowHistoryModal(false);
+    history.setShowHistoryModal(false);
     setShowPurchaseOrderModal(false);
   }, [fabStackHidden, fabStackSuppressed]);
 
@@ -170,29 +164,6 @@ export default function InventoryQuickActionFAB() {
     () => computePurchaseOrderDerivedState(items, selectedChannels),
     [items, selectedChannels],
   );
-
-  const handleOpenHistory = useCallback(async () => {
-    setTransactionHistory([]);
-    setHistoryTypeFilter('ALL');
-    setHasMoreHistory(false);
-    setShowHistoryModal(true);
-    await loadHistoryPage({ type: 'ALL', offset: 0 });
-  }, [loadHistoryPage]);
-
-  const handleHistoryTypeFilterChange = useCallback(
-    (nextType: InventoryTransactionFilterType) => {
-      setHistoryTypeFilter(nextType);
-      setTransactionHistory([]);
-      setHasMoreHistory(false);
-      void loadHistoryPage({ type: nextType, offset: 0 });
-    },
-    [loadHistoryPage],
-  );
-
-  const handleLoadMoreHistory = useCallback(() => {
-    if (isHistoryLoading || !hasMoreHistory) return;
-    void loadHistoryPage({ offset: transactionHistory.length, append: true });
-  }, [hasMoreHistory, isHistoryLoading, loadHistoryPage, transactionHistory.length]);
 
   const exportPOImage = async () => {
     const element = document.getElementById('blackandbrew-po-table-export-fab');
@@ -227,18 +198,18 @@ export default function InventoryQuickActionFAB() {
         presenceKey="quick-action-fab"
         className={cn(FAB_BOTTOM_QUICK_ACTION_CLASS, 'z-[201]')}
       >
-        <HintTooltip tip={isOpen ? 'ปิดปรับสต็อกด่วน' : 'ปรับสต็อกด่วน'} side="left">
+        <HintTooltip tip={isPanelRendered ? 'ปิดปรับสต็อกด่วน' : 'ปรับสต็อกด่วน'} side="left">
           <motion.button
             type="button"
-            onClick={() => setIsOpen((prev) => !prev)}
+            onClick={toggleQuickPanel}
             className={FAB_STACK_INNER_CLASS}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
-            aria-label={isOpen ? 'ปิด Quick Action' : 'เปิด Quick Action คลังสินค้า'}
-            aria-expanded={isOpen}
+            aria-label={isPanelRendered ? 'ปิด Quick Action' : 'เปิด Quick Action คลังสินค้า'}
+            aria-expanded={isPanelRendered}
           >
           <AnimatePresence mode="wait" initial={false}>
-            {isOpen ? (
+            {isPanelRendered ? (
               <motion.span
                 key="close"
                 initial={{ rotate: -90, opacity: 0 }}
@@ -264,20 +235,22 @@ export default function InventoryQuickActionFAB() {
         </HintTooltip>
       </FabFadePresence>
 
-      <AnimatePresence>
+      <AnimatePresence onExitComplete={handlePanelExitComplete}>
         {isOpen && (
-          <>
-            <motion.div
-              key="quick-action-backdrop"
-              initial={fadeOverlay.initial}
-              animate={fadeOverlay.animate}
-              exit={fadeOverlay.exit}
-              transition={fadeOverlay.transition}
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 z-[198] bg-black/10 md:bg-black/0"
+          <motion.div
+            key="quick-action-overlay"
+            initial={fadeOverlay.initial}
+            animate={fadeOverlay.animate}
+            exit={fadeOverlay.exit}
+            transition={fadeOverlay.transition}
+            className="fixed inset-0 z-[198]"
+          >
+            <div
+              className="absolute inset-0 bg-black/10 md:bg-black/0"
+              onClick={closeQuickPanel}
+              aria-hidden
             />
             <motion.div
-              key="quick-action-panel"
               initial={modalContent.initial}
               animate={modalContent.animate}
               exit={modalContent.exit}
@@ -316,7 +289,7 @@ export default function InventoryQuickActionFAB() {
                   onSubmit={quickAction.handleQuickSubmit}
                   onOpenPurchaseOrder={() => setShowPurchaseOrderModal(true)}
                   onOpenAddItem={() => setShowAddModal(true)}
-                  onOpenHistory={() => void handleOpenHistory()}
+                  onOpenHistory={history.handleOpenHistory}
                   bulkMode={quickAction.bulkMode}
                   onBulkModeChange={quickAction.setBulkMode}
                   bulkQueue={quickAction.bulkQueue}
@@ -332,7 +305,7 @@ export default function InventoryQuickActionFAB() {
                 />
               )}
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -347,8 +320,8 @@ export default function InventoryQuickActionFAB() {
                 return [...prev, item as InventoryItem];
               });
               void loadFrequentItems();
-              if (showHistoryModal) {
-                void loadHistoryPage({ offset: 0 });
+              if (history.showHistoryModal) {
+                void history.refreshHistory();
               }
             }}
           />
@@ -356,15 +329,18 @@ export default function InventoryQuickActionFAB() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showHistoryModal && (
+        {history.showHistoryModal && (
           <InventoryHistoryModal
-            transactionHistory={transactionHistory}
-            onClose={() => setShowHistoryModal(false)}
-            historyTypeFilter={historyTypeFilter}
-            onTypeFilterChange={handleHistoryTypeFilterChange}
-            onLoadMore={handleLoadMoreHistory}
-            hasMoreHistory={hasMoreHistory}
-            isHistoryLoading={isHistoryLoading}
+            transactionHistory={history.transactionHistory}
+            onClose={() => history.setShowHistoryModal(false)}
+            historyTypeFilter={history.historyTypeFilter}
+            onTypeFilterChange={history.handleHistoryTypeFilterChange}
+            onLoadMore={history.handleLoadMoreHistory}
+            hasMoreHistory={history.hasMoreHistory}
+            isHistoryLoading={history.isHistoryLoading}
+            isHistoryRefreshing={history.isHistoryRefreshing}
+            historySearchQuery={history.historySearchQuery}
+            onSearchQueryChange={history.handleHistorySearchQueryChange}
           />
         )}
       </AnimatePresence>

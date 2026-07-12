@@ -14,10 +14,12 @@ import {
 } from '@/contexts/InventoryRealtimeContext';
 import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import type { HomeSectionLayout } from './home-layout';
 
 type HomePurchaseOrdersSectionProps = {
   initialItems: InventoryRealtimeItem[];
   locale: string;
+  layout?: HomeSectionLayout;
 };
 
 function formatQty(value: number): string {
@@ -102,7 +104,9 @@ function PurchaseOrderRow({
 export default function HomePurchaseOrdersSection({
   initialItems,
   locale,
+  layout = 'default',
 }: HomePurchaseOrdersSectionProps) {
+  const isDashboard = layout === 'dashboard';
   const { items, refresh, hasLoaded, subscribe } = useInventoryRealtime();
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
 
@@ -124,9 +128,19 @@ export default function HomePurchaseOrdersSection({
   return (
     <section
       aria-label="รายการที่ต้องสั่งซื้อจากคลังสินค้า"
-      className="rounded-3xl border border-border bg-card p-5 md:p-7 bb-shadow-sm"
+      className={cn(
+        'rounded-3xl border border-border bg-card bb-shadow-sm',
+        isDashboard
+          ? 'md:flex-[9] md:min-h-0 md:flex md:flex-col p-5 md:p-5'
+          : 'p-5 md:p-7',
+      )}
     >
-      <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <header
+        className={cn(
+          'flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between shrink-0',
+          isDashboard ? 'mb-3 md:mb-2.5' : 'mb-5',
+        )}
+      >
         <div className="flex items-start gap-3 min-w-0">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
             <ShoppingCart className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} aria-hidden />
@@ -164,7 +178,12 @@ export default function HomePurchaseOrdersSection({
       </header>
 
       {itemsToOrder.length > 0 && poSources.length > 0 && (
-        <div className="mb-4 -mx-1 px-1 overflow-x-auto bb-smooth-scroll scrollbar-hide">
+        <div
+          className={cn(
+            'mb-4 -mx-1 px-1 overflow-x-auto bb-smooth-scroll scrollbar-hide shrink-0',
+            isDashboard && 'md:mb-2.5',
+          )}
+        >
           <div className="flex flex-nowrap gap-2 min-w-min pb-1">
             <button
               type="button"
@@ -217,13 +236,23 @@ export default function HomePurchaseOrdersSection({
       )}
 
       {itemsToOrder.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 py-12 px-4 text-center">
+        <div
+          className={cn(
+            'flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 px-4 text-center',
+            isDashboard ? 'md:flex-1 py-8' : 'py-12',
+          )}
+        >
           <ShoppingCart className="h-10 w-10 text-muted-foreground/25 mb-3" aria-hidden />
           <p className="text-[15px] text-muted-foreground font-normal">ไม่มีรายการที่ต้องสั่งซื้อ</p>
           <p className="mt-1 text-[13px] text-muted-foreground/70">สต็อกทุกรายการอยู่ในระดับที่กำหนด</p>
         </div>
       ) : displayedPoItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 py-10 px-4 text-center">
+        <div
+          className={cn(
+            'flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 px-4 text-center',
+            isDashboard ? 'md:flex-1 py-8' : 'py-10',
+          )}
+        >
           <p className="text-[14px] text-muted-foreground">ไม่มีรายการในแหล่งที่เลือก</p>
         </div>
       ) : (
@@ -238,10 +267,20 @@ export default function HomePurchaseOrdersSection({
           </div>
 
           {/* Desktop: compact table */}
-          <div className="hidden md:block rounded-2xl border border-border overflow-hidden bb-shadow-sm">
-            <div className="max-h-[min(55vh,24rem)] overflow-y-auto bb-smooth-scroll">
+          <div
+            className={cn(
+              'hidden md:block rounded-2xl border border-border overflow-hidden bb-shadow-sm',
+              isDashboard && 'md:flex-1 md:min-h-0 md:flex md:flex-col',
+            )}
+          >
+            <div
+              className={cn(
+                'overflow-y-auto bb-smooth-scroll',
+                isDashboard ? 'md:flex-1 md:min-h-0' : 'max-h-[min(55vh,24rem)]',
+              )}
+            >
               <table className="w-full text-left border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-10">
                   <tr className="border-b border-border bg-muted/60">
                     <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-10">
                       #

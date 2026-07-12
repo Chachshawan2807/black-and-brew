@@ -4,10 +4,12 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import {
   clearAuthCookies,
+  getCookieOpts,
   setAuthCookies,
 } from '@/lib/auth-cookies';
 import {
   FORCE_LOGOUT_DENY_MSG,
+  OFFLINE_AUTH_SESSION_COOKIE,
   READ_ONLY_DENY_MSG,
   SESSION_FP_COOKIE,
 } from '@/lib/auth-constants';
@@ -32,6 +34,7 @@ import {
 import { resolveClientIp } from '@/lib/security/request-ip';
 import { resolveReadOnlyPin } from '@/lib/security/read-only-pin';
 import { ensureServerSession } from '@/lib/security/server-auth';
+import { createOfflineAuthSessionId } from '@/lib/offline-auth-session';
 
 async function assertMasterPin(
   pin: string
@@ -87,7 +90,12 @@ const getAuthSessionCached = cache(async () => {
 export async function verifyPin(
   pin: string,
   device?: ClientDevicePayload | null
-): Promise<{ success: boolean; error?: string; isReadOnly?: boolean }> {
+): Promise<{
+  success: boolean;
+  error?: string;
+  isReadOnly?: boolean;
+  offlineAuthSessionId?: string;
+}> {
   const clientIp = await resolveClientIp();
   const lockout = getPinLockoutStatus(clientIp);
   if (!lockout.allowed) {
@@ -110,14 +118,14 @@ export async function verifyPin(
     if (device?.sessionFingerprint) {
       await clearSessionRevocation(device.sessionFingerprint);
     }
-    setAuthCookies(cookieStore, true, device);
+    const offlineAuthSessionId = setAuthCookies(cookieStore, true, device);
     await recordLoginEvent({
       eventType: 'login_success',
       status: 'success',
       device,
       accessLevel: 'read_only',
     });
-    return { success: true, isReadOnly: true };
+    return { success: true, isReadOnly: true, offlineAuthSessionId };
   }
 
   if (pin === systemPin) {
@@ -125,14 +133,14 @@ export async function verifyPin(
     if (device?.sessionFingerprint) {
       await clearSessionRevocation(device.sessionFingerprint);
     }
-    setAuthCookies(cookieStore, false, device);
+    const offlineAuthSessionId = setAuthCookies(cookieStore, false, device);
     await recordLoginEvent({
       eventType: 'login_success',
       status: 'success',
       device,
       accessLevel: 'full',
     });
-    return { success: true, isReadOnly: false };
+    return { success: true, isReadOnly: false, offlineAuthSessionId };
   }
 
   const failure = recordPinFailure(clientIp);
@@ -158,8 +166,23 @@ export async function checkAuth(): Promise<boolean> {
 export async function getAuthSessionInfo(): Promise<{
   verified: boolean;
   readOnly: boolean;
+  offlineAuthSessionId?: string;
 }> {
-  return getAuthSessionCached();
+  const session = await getAuthSessionCached();
+  if (!session.verified) {
+    return { verified: false, readOnly: false };
+  }
+  const cookieStore = await cookies();
+  let offlineAuthSessionId = cookieStore.get(OFFLINE_AUTH_SESSION_COOKIE)?.value;
+  if (!offlineAuthSessionId) {
+    offlineAuthSessionId = createOfflineAuthSessionId();
+    cookieStore.set(OFFLINE_AUTH_SESSION_COOKIE, offlineAuthSessionId, getCookieOpts());
+  }
+  return {
+    verified: session.verified,
+    readOnly: session.readOnly,
+    offlineAuthSessionId,
+  };
 }
 
 export async function getCurrentSessionFingerprint(): Promise<string | null> {

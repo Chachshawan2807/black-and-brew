@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';
 import {
-  fetchTransactionHistory,
   fetchFrequentItems,
   deleteInventoryItem,
   deleteInventoryItemsBulk,
@@ -16,18 +15,23 @@ import {
   updateInventoryItemField,
   reorderInventoryItems,
 } from '@/app/actions/inventory-actions';
-import type { InventoryTransactionFilterType } from '@/app/actions/inventory-actions';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { computePurchaseOrderDerivedState, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
+import { useInventoryGridFilter } from '@/hooks/use-inventory-grid-filter';
+import { useInventoryHistory } from '@/hooks/use-inventory-history';
+import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from './_components/InventoryQuickActionBar';
 import { InventoryGridSearchBar } from './_components/InventoryGridSearchBar';
-import { filterInventoryGridItems } from '@/lib/inventory-grid-search';
-import type { TransactionHistoryRow } from './_components/InventoryHistoryModal';
+import {
+  queueOfflineMutation,
+  shouldQueueMutationError,
+  shouldQueueMutationResult,
+} from '@/lib/offline-mutation-client';
 import {
   DndContext,
   closestCorners,
@@ -43,6 +47,8 @@ import {
 import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
+import { blurActiveElement } from '@/lib/blur-active-element';
+import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -465,6 +471,7 @@ const MobileSortableRow = React.memo(({
               attributes={attributes}
               listeners={listeners}
               setActivatorNodeRef={setActivatorNodeRef}
+              tipSide="right"
               className="text-foreground/20 hover:text-foreground/50"
             />
           )}
@@ -621,9 +628,8 @@ const preloadPurchaseOrdersModal = () => {
 
 const preloadInventoryHistoryModal = () => {
   void import('./_components/InventoryHistoryModal');
+  void prefetchInventoryHistoryFirstPage();
 };
-
-const HISTORY_PAGE_SIZE = 50;
 
 function EditableCell({
   item,
@@ -864,6 +870,8 @@ export default function InventoryClient({
   initialColumnSettings = null,
 }: InventoryClientProps) {
   const isReadOnly = useReadOnly();
+  const { isOpen: isFloatingOverlayOpen } = useFloatingOverlay();
+  const quickActionFabOpen = isFloatingOverlayOpen('quick-action');
   const { subscribe, refresh } = useInventoryRealtime();
 
   const blockIfReadOnly = useCallback(() => {
@@ -881,16 +889,13 @@ export default function InventoryClient({
   const [gridSearchQuery, setGridSearchQuery] = useState('');
   const [scrollTargetId, setScrollTargetId] = useState<string | null>(null);
   const isGridSearchActive = gridSearchQuery.trim().length > 0;
-  const visibleItems = useMemo(
-    () => filterInventoryGridItems(items, gridSearchQuery),
-    [items, gridSearchQuery],
-  );
+  const { visibleItems } = useInventoryGridFilter(items, gridSearchQuery);
   const sortableItemIds = useMemo(
     () => (isGridSearchActive ? visibleItems : items).map((item) => item.id),
     [items, visibleItems, isGridSearchActive],
   );
   const [loading, setLoading] = useState(false);
-  const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced'>('idle');
+  const [savingState, setSavingState] = useState<'idle' | 'saving' | 'synced' | 'queued'>('idle');
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
 
@@ -912,55 +917,22 @@ export default function InventoryClient({
 
   const sensors = useSafeDndSensors();
 
+  const history = useInventoryHistory();
+
   // Quick Entry State
   const [isQuickActionBarOpen, setIsQuickActionBarOpen] = useState(true);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [frequentItems, setFrequentItems] = useState<{ id: string, name: string }[]>([]);
-  const [transactionHistory, setTransactionHistory] = useState<TransactionHistoryRow[]>([]);
-  const [historyTypeFilter, setHistoryTypeFilter] = useState<InventoryTransactionFilterType>('ALL');
-  const [hasMoreHistory, setHasMoreHistory] = useState(false);
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-
-  const loadHistoryPage = useCallback(
-    async ({
-      type = historyTypeFilter,
-      offset = 0,
-      append = false,
-    }: {
-      type?: InventoryTransactionFilterType;
-      offset?: number;
-      append?: boolean;
-    } = {}) => {
-      setIsHistoryLoading(true);
-      try {
-        const res = await fetchTransactionHistory({
-          type,
-          offset,
-          limit: HISTORY_PAGE_SIZE,
-        });
-        if (res.success && res.data) {
-          setTransactionHistory((prev) => (append ? [...prev, ...res.data] : res.data));
-          setHasMoreHistory(Boolean(res.hasMore));
-        } else if (res.error) {
-          console.error('[UI] History fetch failed:', res.error);
-          setHasMoreHistory(false);
-        }
-      } finally {
-        setIsHistoryLoading(false);
-      }
-    },
-    [historyTypeFilter],
-  );
 
   const quickAction = useInventoryQuickAction({
     items,
     setItems,
     isReadOnly,
-    showHistoryModal,
-    onHistoryRefresh: () => loadHistoryPage({ offset: 0 }),
+    showHistoryModal: history.showHistoryModal,
+    onHistoryRefresh: history.refreshHistory,
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_BAR,
     onBeforeSave: () => setSavingState('saving'),
     onAfterSave: () => {
+      blurActiveElement();
       setIsQuickActionBarOpen(false);
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
@@ -1226,8 +1198,8 @@ export default function InventoryClient({
         const historyRes = await recordItemAddHistory(data.id, Number(data.stock ?? 0), data.name);
         if (!historyRes.success) {
           console.error('[handleAddItemSubmit] recordItemAddHistory:', historyRes.error);
-        } else if (showHistoryModal) {
-          await loadHistoryPage({ offset: 0 });
+        } else if (history.showHistoryModal) {
+          await history.refreshHistory();
         }
       } else {
         // Insert-at-position path: insert new item, then sync all displaced sort_orders
@@ -1265,8 +1237,8 @@ export default function InventoryClient({
         const historyRes = await recordItemAddHistory(data.id, Number(data.stock ?? 0), data.name);
         if (!historyRes.success) {
           console.error('[handleAddItemSubmit] recordItemAddHistory:', historyRes.error);
-        } else if (showHistoryModal) {
-          await loadHistoryPage({ offset: 0 });
+        } else if (history.showHistoryModal) {
+          await history.refreshHistory();
         }
       }
 
@@ -1296,8 +1268,8 @@ export default function InventoryClient({
       const res = await deleteInventoryItem(deleteId, { clientSessionId: getClientSessionId() });
       if (!res.success) throw new Error(res.error);
 
-      if (showHistoryModal) {
-        await loadHistoryPage({ offset: 0 });
+      if (history.showHistoryModal) {
+        await history.refreshHistory();
       }
 
       setSavingState('synced');
@@ -1310,6 +1282,11 @@ export default function InventoryClient({
   }
 
   const handleFocus = useCallback(() => {}, []);
+
+  const markQueuedSave = useCallback(() => {
+    setSavingState('queued');
+    window.setTimeout(() => setSavingState('idle'), 2500);
+  }, []);
 
   const handleUpdateField = useCallback((id: string, field: string, value: InventoryFieldValue) => {
     setItems(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
@@ -1360,16 +1337,40 @@ export default function InventoryClient({
           },
         );
         if (!result.success) {
+          if (shouldQueueMutationResult(result)) {
+            await queueOfflineMutation({
+              kind: 'inventory_reorder',
+              sortOrders: renumberedItems.map((item) => ({
+                id: item.id,
+                sort_order: item.sort_order,
+              })),
+              clientSessionId: getClientSessionId(),
+            });
+            markQueuedSave();
+            return true;
+          }
           throw new Error(result.error);
         }
         setSavingState('synced');
         setTimeout(() => setSavingState('idle'), 2000);
         return true;
       } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
+        const message = err instanceof Error ? err.message : String(err);
+        if (shouldQueueMutationError(err)) {
+          await queueOfflineMutation({
+            kind: 'inventory_reorder',
+            sortOrders: renumberedItems.map((item) => ({
+              id: item.id,
+              sort_order: item.sort_order,
+            })),
+            clientSessionId: getClientSessionId(),
+          });
+          markQueuedSave();
+          return true;
+        }
         console.error('Failed to update sort_order:', message);
         setSavingState('idle');
-        fetchConfigAndInventory(); // rollback on error
+        fetchConfigAndInventory();
         return false;
       }
     }
@@ -1403,19 +1404,68 @@ export default function InventoryClient({
           clientSessionId: getClientSessionId(),
           notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
         });
-        if (!result.success) throw new Error(result.error);
+        if (!result.success) {
+          if (shouldQueueMutationResult(result)) {
+            await queueOfflineMutation({
+              kind: 'inventory_stock',
+              itemId: id,
+              stock: sanitizedValue as number,
+              note: 'Warehouse edit',
+              clientSessionId: getClientSessionId(),
+              notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+            });
+            markQueuedSave();
+            return true;
+          }
+          throw new Error(result.error);
+        }
         handleUpdateField(id, 'stock', result.newStock ?? sanitizedValue);
       } else {
         const result = await updateInventoryItemField(id, field, sanitizedValue, {
           clientSessionId: getClientSessionId(),
         });
-        if (!result.success) throw new Error(result.error);
+        if (!result.success) {
+          if (shouldQueueMutationResult(result)) {
+            await queueOfflineMutation({
+              kind: 'inventory_field',
+              itemId: id,
+              field,
+              value: sanitizedValue,
+              clientSessionId: getClientSessionId(),
+            });
+            markQueuedSave();
+            return true;
+          }
+          throw new Error(result.error);
+        }
       }
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
       return true;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
+      if (shouldQueueMutationError(err)) {
+        if (field === 'stock') {
+          await queueOfflineMutation({
+            kind: 'inventory_stock',
+            itemId: id,
+            stock: sanitizedValue as number,
+            note: 'Warehouse edit',
+            clientSessionId: getClientSessionId(),
+            notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+          });
+        } else {
+          await queueOfflineMutation({
+            kind: 'inventory_field',
+            itemId: id,
+            field,
+            value: sanitizedValue,
+            clientSessionId: getClientSessionId(),
+          });
+        }
+        markQueuedSave();
+        return true;
+      }
       console.error(`Failed to update ${field}:`, message);
       setSavingState('idle');
       fetchConfigAndInventory();
@@ -1426,6 +1476,7 @@ export default function InventoryClient({
     fetchConfigAndInventory,
     handleUpdateField,
     items,
+    markQueuedSave,
     pushHistory,
   ]);
 
@@ -1453,11 +1504,35 @@ export default function InventoryClient({
         },
       );
       if (!result.success) {
+        if (shouldQueueMutationResult(result)) {
+          await queueOfflineMutation({
+            kind: 'inventory_reorder',
+            sortOrders: updatedItems.map((item) => ({
+              id: item.id,
+              sort_order: item.sort_order,
+            })),
+            clientSessionId: getClientSessionId(),
+          });
+          markQueuedSave();
+          return;
+        }
         throw new Error(result.error);
       }
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
     } catch (err) {
+      if (shouldQueueMutationError(err)) {
+        await queueOfflineMutation({
+          kind: 'inventory_reorder',
+          sortOrders: updatedItems.map((item) => ({
+            id: item.id,
+            sort_order: item.sort_order,
+          })),
+          clientSessionId: getClientSessionId(),
+        });
+        markQueuedSave();
+        return;
+      }
       console.error('World-Class DND Rollback (Inventory):', err);
       setItems(rollbackItems);
       setSavingState('idle');
@@ -1572,26 +1647,6 @@ export default function InventoryClient({
     }
   }
 
-  async function handleOpenHistory() {
-    setTransactionHistory([]);
-    setHistoryTypeFilter('ALL');
-    setHasMoreHistory(false);
-    setShowHistoryModal(true);
-    await loadHistoryPage({ type: 'ALL', offset: 0 });
-  }
-
-  function handleHistoryTypeFilterChange(nextType: InventoryTransactionFilterType) {
-    setHistoryTypeFilter(nextType);
-    setTransactionHistory([]);
-    setHasMoreHistory(false);
-    void loadHistoryPage({ type: nextType, offset: 0 });
-  }
-
-  function handleLoadMoreHistory() {
-    if (isHistoryLoading || !hasMoreHistory) return;
-    void loadHistoryPage({ offset: transactionHistory.length, append: true });
-  }
-
   if (loading) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-transparent text-foreground">
@@ -1624,6 +1679,9 @@ export default function InventoryClient({
               )}
               {savingState === 'synced' && (
                 <span className="text-emerald-500">✓ ซิงค์ข้อมูลแล้วค่ะ</span>
+              )}
+              {savingState === 'queued' && (
+                <span className="text-amber-600 dark:text-amber-400">รอส่งข้อมูลเมื่อออนไลน์</span>
               )}
             </div>
 
@@ -1662,7 +1720,7 @@ export default function InventoryClient({
           </div>
 
           <div className="mb-8 sticky top-4 md:top-8 z-[50] space-y-3">
-            {isQuickActionBarOpen ? (
+            {isQuickActionBarOpen && !quickActionFabOpen ? (
               <InventoryQuickActionBar
                 quickSearch={quickAction.quickSearch}
                 setQuickSearch={quickAction.setQuickSearch}
@@ -1682,7 +1740,7 @@ export default function InventoryClient({
                 onSubmit={quickAction.handleQuickSubmit}
                 onOpenPurchaseOrder={handleOpenPurchaseOrders}
                 onOpenAddItem={() => setShowAddModal(true)}
-                onOpenHistory={handleOpenHistory}
+                onOpenHistory={history.handleOpenHistory}
                 onPreloadPurchaseOrder={preloadPurchaseOrdersModal}
                 onPreloadHistory={preloadInventoryHistoryModal}
                 bulkMode={quickAction.bulkMode}
@@ -1697,7 +1755,7 @@ export default function InventoryClient({
                 onBulkLineQtyChange={quickAction.setBulkLineQty}
                 onClearBulkQueue={quickAction.clearBulkQueue}
               />
-            ) : (
+            ) : !quickActionFabOpen ? (
               <button
                 type="button"
                 onClick={() => setIsQuickActionBarOpen(true)}
@@ -1706,7 +1764,7 @@ export default function InventoryClient({
               >
                 เปิด Quick Action
               </button>
-            )}
+            ) : null}
             <InventoryGridSearchBar
               gridSearchQuery={gridSearchQuery}
               setGridSearchQuery={setGridSearchQuery}
@@ -1985,15 +2043,18 @@ export default function InventoryClient({
       </AnimatePresence>
 
       <AnimatePresence>
-        {showHistoryModal && (
+        {history.showHistoryModal && (
           <InventoryHistoryModal
-            transactionHistory={transactionHistory}
-            onClose={() => setShowHistoryModal(false)}
-            historyTypeFilter={historyTypeFilter}
-            onTypeFilterChange={handleHistoryTypeFilterChange}
-            onLoadMore={handleLoadMoreHistory}
-            hasMoreHistory={hasMoreHistory}
-            isHistoryLoading={isHistoryLoading}
+            transactionHistory={history.transactionHistory}
+            onClose={() => history.setShowHistoryModal(false)}
+            historyTypeFilter={history.historyTypeFilter}
+            onTypeFilterChange={history.handleHistoryTypeFilterChange}
+            onLoadMore={history.handleLoadMoreHistory}
+            hasMoreHistory={history.hasMoreHistory}
+            isHistoryLoading={history.isHistoryLoading}
+            isHistoryRefreshing={history.isHistoryRefreshing}
+            historySearchQuery={history.historySearchQuery}
+            onSearchQueryChange={history.handleHistorySearchQueryChange}
           />
         )}
       </AnimatePresence>

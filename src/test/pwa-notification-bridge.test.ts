@@ -17,9 +17,9 @@ describe('pwa-notification-bridge', () => {
   });
 
   test('buildInventoryOsNotification prefixes body with unread count', () => {
-    const single = buildInventoryOsNotification('รับเข้า: กาแฟ', 'รับ 2 · คงเหลือ: 0 → 2', 1, true);
-    expect(single.title).toBe('รับเข้า: กาแฟ');
-    expect(single.body).toBe('รับ 2 · คงเหลือ: 0 → 2');
+    const single = buildInventoryOsNotification('+ กาแฟ', '+2 · คงเหลือ: 0 → 2', 1, true);
+    expect(single.title).toBe('+ กาแฟ');
+    expect(single.body).toBe('+2 · คงเหลือ: 0 → 2');
 
     const multi = buildInventoryOsNotification(
       'คลังสินค้า: 3 การเปลี่ยนแปลง',

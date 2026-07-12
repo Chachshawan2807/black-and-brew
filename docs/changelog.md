@@ -2,6 +2,19 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-07-13 (DEC-083 — offline mutation + policy gates)
+
+- Recorded **DEC-083** in `docs/memory.md`: inventory offline mutation queue (IndexedDB + SW Background Sync), replay via `POST /api/inventory/offline-mutation`, session binding (`offline-auth-session.ts`), and centralized authz in `src/lib/policies/`.
+- Synced DEC-083 into codebase-memory-mcp ADR (`manage_adr`) so agents inherit the same rules across sessions.
+- Agents: new mutations must use `gateMutation()` / `requireMutationAccess()` — no ad-hoc read-only checks; inventory-only offline scope (schedule/sales unchanged).
+
+## 2026-07-13 (Doc scan — offline mutation + version sync)
+
+- Scanned all project-owned `.md` files; bumped `docs/rules.md` and `docs/design.md` version headers from 9.1 → 9.2 (date 2026-07-10 → 2026-07-12) to match current release.
+- Documented new offline mutation feature: `POST /api/inventory/offline-mutation`, `src/lib/offline-mutation-*`, `src/lib/offline-auth-session.ts`, `src/lib/offline-replay-retry.ts`, `public/offline-mutation-store.js` added to `docs/api.md`, `docs/architecture.md`, `PROJECT_MAP.md`, `README.md`.
+- Added `src/workers/` and `src/lib/policies/` to PROJECT_MAP structure.
+- No broken path references found; no graphify or weather API remnants.
+
 ## 2026-07-12 (Doc scan — branch withdraw + notifications)
 
 - Scanned 337 `.md` files repo-wide; edited 12 project-owned keepers for factual drift.

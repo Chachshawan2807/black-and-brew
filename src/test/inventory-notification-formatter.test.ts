@@ -81,6 +81,20 @@ describe('summarizeFieldChanges', () => {
     expect(summary).not.toContain('id:');
     expect(summary).toContain('คงเหลือ');
   });
+
+  test('hides inventory sort_order from field summaries', () => {
+    const summary = summarizeFieldChanges(
+      [
+        { field: 'stock', old_value: 3, new_value: 6 },
+        { field: 'sort_order', old_value: 4, new_value: 5 },
+      ],
+      true,
+      3
+    );
+    expect(summary).toContain('คงเหลือ');
+    expect(summary).not.toContain('ลำดับ');
+    expect(summary).not.toMatch(/sort order/i);
+  });
 });
 
 describe('formatInventoryNotification CREATE', () => {
@@ -152,8 +166,8 @@ describe('formatInventoryNotification stock operations', () => {
       }),
       'th'
     );
-    expect(n.title).toBe('รับเข้า: ฝาใส (แบบแพ็ค)');
-    expect(n.summary).toContain('รับ 2');
+    expect(n.title).toBe('+ ฝาใส (แบบแพ็ค)');
+    expect(n.summary).toContain('+2');
     expect(n.summary).toContain('คงเหลือ: 0 → 2');
   });
 
@@ -166,8 +180,8 @@ describe('formatInventoryNotification stock operations', () => {
       }),
       'th'
     );
-    expect(n.title).toBe('นำออก: เมล็ดกาแฟ');
-    expect(n.summary).toContain('นำออก 2');
+    expect(n.title).toBe('− เมล็ดกาแฟ');
+    expect(n.summary).toContain('−2');
     expect(n.summary).toContain('คงเหลือ: 10 → 8');
   });
 
@@ -180,9 +194,32 @@ describe('formatInventoryNotification stock operations', () => {
       }),
       'th'
     );
-    expect(n.title).toBe('ปรับจำนวน: ถ้วยกระดาษ');
-    expect(n.summary).toContain('ปรับเป็น 12');
+    expect(n.title).toBe('⇄ ถ้วยกระดาษ');
+    expect(n.summary).toContain('→ 12');
     expect(n.summary).toContain('คงเหลือ: 5 → 12');
+  });
+
+  test('hides inventory sort_order from stock-in notification summary', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: 'นมอัลมอนด์',
+        field_changes: [
+          { field: 'stock', old_value: 3, new_value: 6 },
+          { field: 'sort_order', old_value: 4, new_value: 5 },
+        ],
+        metadata: {
+          operation: 'record_transaction',
+          type: 'IN',
+          quantity: 3,
+          notificationSource: 'inventory_quick_action_bar',
+        },
+      }),
+      'th'
+    );
+    expect(n.title).toBe('+ นมอัลมอนด์');
+    expect(n.summary).toContain('+3');
+    expect(n.summary).not.toContain('ลำดับ');
+    expect(n.summary).not.toMatch(/sort order/i);
   });
 
   test('shows English stock-in title and summary', () => {
@@ -194,8 +231,8 @@ describe('formatInventoryNotification stock operations', () => {
       }),
       'en'
     );
-    expect(n.title).toBe('Stock in: Coffee beans');
-    expect(n.summary).toContain('Received 2');
+    expect(n.title).toBe('+ Coffee beans');
+    expect(n.summary).toContain('+2');
     expect(n.summary).toContain('Stock: 0 → 2');
   });
 });
@@ -208,8 +245,8 @@ describe('formatDataChangeLogDisplay', () => {
       metadata: { operation: 'record_transaction', type: 'IN', quantity: 10, itemName: 'ฝาใส' },
     });
     const display = formatDataChangeLogDisplay(row, 'th');
-    expect(display.headline).toBe('รับเข้า: ฝาใส');
-    expect(display.detail).toContain('รับ 10');
+    expect(display.headline).toBe('+ ฝาใส');
+    expect(display.detail).toContain('+10');
     expect(display.detail).toContain('คงเหลือ: 0 → 10');
   });
 
@@ -373,7 +410,7 @@ describe('formatInventoryNotification', () => {
       }),
     ];
     const n = formatBatchedNotificationFromRows(rows, 'th');
-    expect(n.title).toBe('รับเข้า: 2 รายการ');
+    expect(n.title).toBe('+ 2 รายการ');
     expect(n.summary).toContain('ถ้วย A +2');
     expect(n.summary).toContain('ถ้วย B +5');
     expect(n.batchedCount).toBe(2);

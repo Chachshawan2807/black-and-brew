@@ -135,4 +135,52 @@ describe('inventory history pagination and filters', () => {
     expect(modalCode).toContain('hasMoreHistory');
     expect(modalCode).toContain('ดูเพิ่มเติม');
   });
+
+  test('history modal exposes item name search input', () => {
+    const modalCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryHistoryModal.tsx'),
+      'utf-8',
+    );
+
+    expect(modalCode).toContain('historySearchQuery');
+    expect(modalCode).toContain('onSearchQueryChange');
+    expect(modalCode).toContain('ค้นหาชื่อรายการสินค้า');
+    expect(modalCode).toContain('history-item-search');
+  });
+
+  test('inventory action fetches transaction history by item name query', () => {
+    const actionsCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
+      'utf-8',
+    );
+
+    expect(actionsCode).toContain('itemNameQuery?: string');
+    expect(actionsCode).toContain('.ilike(\'name\'');
+    expect(actionsCode).toContain('sanitizeHistorySearchQuery');
+    expect(actionsCode).toContain('inventory_items(name)');
+    expect(actionsCode).toContain('fetchTransactionHistoryByItemName');
+    expect(actionsCode).not.toMatch(/\.or\(\s*`\s*inventory_item_id\.in\./);
+  });
+
+  test('history hook prefetches first page and keeps stale rows while refreshing', () => {
+    const hookCode = fs.readFileSync(
+      path.resolve(__dirname, '../hooks/use-inventory-history.ts'),
+      'utf-8',
+    );
+    const prefetchCode = fs.readFileSync(
+      path.resolve(__dirname, '../lib/inventory-history-prefetch.ts'),
+      'utf-8',
+    );
+    const modalCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryHistoryModal.tsx'),
+      'utf-8',
+    );
+
+    expect(prefetchCode).toContain('prefetchInventoryHistoryFirstPage');
+    expect(hookCode).toContain('consumeInventoryHistoryPrefetch');
+    expect(hookCode).toContain('isHistoryRefreshing');
+    expect(hookCode).toContain('requestIdRef');
+    expect(modalCode).toContain('isHistoryRefreshing');
+    expect(modalCode).not.toContain('transition={{ delay: index * 0.03 }}');
+  });
 });

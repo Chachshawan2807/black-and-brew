@@ -1,7 +1,10 @@
-// v15
+// v16
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
+importScripts('/offline-mutation-store.js');
 importScripts('/pwa-badge.js');
+
+const OFFLINE_MUTATION_SYNC_TAG = 'bb-offline-mutations';
 
 const { BRAND_ICON, BRAND_ICON_512, NOTIFICATION_BADGE, CACHE_VERSION, VIBRATE } = self.PWA_ASSETS;
 const CACHE_NAME = `blackandbrew-cache-v${CACHE_VERSION}`;
@@ -48,6 +51,7 @@ const urlsToCache = [
   '/',
   '/pwa-assets.js',
   '/notification-store.js',
+  '/offline-mutation-store.js',
   '/pwa-badge.js',
   '/ai-agent-logo.svg',
   BRAND_ICON,
@@ -199,11 +203,64 @@ self.addEventListener('push', (event) => {
   );
 });
 
+async function notifyClientsToFlushOfflineMutations() {
+  const windowClients = await self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  });
+  for (const client of windowClients) {
+    client.postMessage({ type: 'FLUSH_OFFLINE_MUTATIONS' });
+  }
+  return windowClients.length > 0;
+}
+
+async function replayOfflineMutationFromSw(mutation) {
+  const response = await fetch('/api/inventory/offline-mutation', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(mutation),
+  });
+  if (!response.ok) {
+    throw new Error(`offline replay failed: ${response.status}`);
+  }
+}
+
+async function flushOfflineMutationsFromSw() {
+  if (!self.BBOfflineMutationStore) return;
+
+  const hasClients = await notifyClientsToFlushOfflineMutations();
+  if (hasClients) return;
+
+  while (true) {
+    const mutation = await self.BBOfflineMutationStore.peekMutation();
+    if (!mutation) break;
+    try {
+      await replayOfflineMutationFromSw(mutation);
+      await self.BBOfflineMutationStore.removeMutation(mutation.id);
+    } catch (error) {
+      console.warn('[sw] offline mutation flush stopped:', error);
+      break;
+    }
+  }
+}
+
+self.addEventListener('sync', (event) => {
+  if (event.tag !== OFFLINE_MUTATION_SYNC_TAG) return;
+  event.waitUntil(flushOfflineMutationsFromSw());
+});
+
 self.addEventListener('message', (event) => {
   const data = event.data;
-  if (!data || data.type !== 'SET_BADGE') return;
-  const count = Number(data.count) || 0;
-  event.waitUntil(applyHomeScreenBadge(count));
+  if (!data) return;
+  if (data.type === 'SET_BADGE') {
+    const count = Number(data.count) || 0;
+    event.waitUntil(applyHomeScreenBadge(count));
+    return;
+  }
+  if (data.type === 'FLUSH_OFFLINE_MUTATIONS') {
+    event.waitUntil(flushOfflineMutationsFromSw());
+  }
 });
 
 self.addEventListener('notificationclick', (event) => {

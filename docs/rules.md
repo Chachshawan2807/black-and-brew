@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> Version: 9.1 | Last Updated: 2026-07-10 | Enforcement: Mandatory
+> Version: 9.2 | Last Updated: 2026-07-12 | Enforcement: Mandatory
 
 ---
 

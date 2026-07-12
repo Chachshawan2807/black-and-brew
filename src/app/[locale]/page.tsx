@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import LiveStatusTracker from './_components/LiveStatusTracker';
-import HomePurchaseOrdersSection from './_components/HomePurchaseOrdersSection';
+import HomePageClient from './_components/HomePageClient';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
@@ -57,20 +56,14 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
   const tomorrowShifts = tomorrowShiftsData || [];
 
   return (
-    <div className="min-h-[calc(100vh-2rem)] bg-inherit flex flex-col justify-start md:justify-center px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)]">
-      <div className="max-w-3xl mx-auto w-full space-y-6 md:space-y-8">
-        <LiveStatusTracker
-          initialProfiles={profiles}
-          initialShifts={shifts}
-          currentThaiDate={thaiFullDate}
-          initialTomorrowShifts={tomorrowShifts}
-          tomorrowThaiDate={tomorrowThaiDate}
-        />
-        <HomePurchaseOrdersSection
-          initialItems={inventoryData || []}
-          locale={locale}
-        />
-      </div>
-    </div>
+    <HomePageClient
+      locale={locale}
+      profiles={profiles}
+      shifts={shifts}
+      tomorrowShifts={tomorrowShifts}
+      currentThaiDate={thaiFullDate}
+      tomorrowThaiDate={tomorrowThaiDate}
+      inventoryItems={inventoryData || []}
+    />
   );
 }

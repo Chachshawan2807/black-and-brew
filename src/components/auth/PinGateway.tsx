@@ -118,7 +118,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       if (cancelled) return;
 
       if (serverSession.verified) {
-        setClientAuthSession(serverSession.readOnly);
+        setClientAuthSession(serverSession.readOnly, serverSession.offlineAuthSessionId);
         await ensureSupabaseSession();
         if (cancelled) return;
 
@@ -156,8 +156,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     };
   }, []);
 
-  const completeAuthentication = useCallback(async (readOnly: boolean) => {
-    setClientAuthSession(readOnly);
+  const completeAuthentication = useCallback(async (
+    readOnly: boolean,
+    offlineAuthSessionId?: string,
+  ) => {
+    setClientAuthSession(readOnly, offlineAuthSessionId);
     setIsReadOnly(readOnly);
     await ensureSupabaseSession();
     setIsAuthenticated(true);
@@ -238,7 +241,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         setFailedCountDisplay('0');
         biometricAttemptsRef.current = 0;
         setBiometricAttempts(0);
-        await completeAuthentication(Boolean(res.isReadOnly));
+        await completeAuthentication(Boolean(res.isReadOnly), res.offlineAuthSessionId);
       } finally {
         passkeyPromptInFlightRef.current = false;
         setPasskeyBusy(false);
@@ -366,7 +369,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       const device = collectClientDeviceInfo();
       const res = await verifyPin(nextPin, device);
       if (res.success) {
-        setClientAuthSession(Boolean(res.isReadOnly));
+        setClientAuthSession(Boolean(res.isReadOnly), res.offlineAuthSessionId);
         localStorage.removeItem('bb_failed_attempts');
         localStorage.removeItem('bb_lockout_until');
         setFailedCountDisplay('0');
@@ -386,7 +389,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           return;
         }
 
-        await completeAuthentication(Boolean(res.isReadOnly));
+        await completeAuthentication(Boolean(res.isReadOnly), res.offlineAuthSessionId);
         return;
       }
 

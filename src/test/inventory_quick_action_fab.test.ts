@@ -199,6 +199,19 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toContain('fabStackHidden');
   });
 
+  test('quick action qty inputs ignore mouse wheel to avoid accidental changes', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+
+    expect(barCode).toContain('blurQtyInputOnWheel');
+    const numberInputCount = (barCode.match(/type="number"/g) ?? []).length;
+    const wheelHandlerCount = (barCode.match(/onWheel=\{blurQtyInputOnWheel\}/g) ?? []).length;
+    expect(wheelHandlerCount).toBe(numberInputCount);
+    expect(numberInputCount).toBeGreaterThanOrEqual(2);
+  });
+
   test('quick action bar uses aligned 3-column mobile action grid', () => {
     const barCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
@@ -215,6 +228,52 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain("bulkMode ? 'min-w-[8.75rem] w-max' : 'w-[6rem]'");
     expect(barCode).toContain('whitespace-nowrap tabular-nums shrink-0');
     expect(barCode).not.toContain('bb-quick-search-fit');
+  });
+
+  test('quick action FAB uses a single keyed overlay for exit animation', () => {
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+
+    expect(fabCode).toContain('key="quick-action-overlay"');
+    expect(fabCode).toContain('onExitComplete');
+    expect(fabCode).toContain('isPanelRendered');
+    expect(fabCode).not.toMatch(/panelOpen && \(\s*<>/);
+    expect(fabCode).not.toContain('key="quick-action-backdrop"');
+    expect(fabCode).not.toContain('key="quick-action-panel"');
+  });
+
+  test('quick action FAB keeps overlay registered until panel exit completes', () => {
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+
+    expect(fabCode).toMatch(/quickOverlayActive[\s\S]*isPanelRendered/);
+    expect(fabCode).toMatch(/useVisualViewportInsets\(isMounted && isPanelRendered\)/);
+    expect(fabCode).toMatch(/aria-expanded=\{isPanelRendered\}/);
+  });
+
+  test('quick action FAB blurs focused input before closing after save', () => {
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+
+    expect(fabCode).toContain('blurActiveElement');
+    expect(fabCode).toMatch(/onAfterSave:[\s\S]*blurActiveElement/);
+  });
+
+  test('inventory page hides inline quick action while global FAB overlay is open', () => {
+    const pageCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
+      'utf-8',
+    );
+
+    expect(pageCode).toContain('useFloatingOverlay');
+    expect(pageCode).toMatch(/isFloatingOverlayOpen\('quick-action'\)/);
+    expect(pageCode).toMatch(/isQuickActionBarOpen && !quickActionFabOpen/);
   });
 
   test('quick action wrapper mounts globally from deferred overlays on all routes', () => {

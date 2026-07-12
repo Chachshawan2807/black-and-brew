@@ -50,6 +50,7 @@ Locales: `th`, `en`
 | `/api/chat` | `src/app/api/chat/route.ts` |
 | `/api/daily-report` | `src/app/api/daily-report/route.ts` |
 | `/api/push/webhook` | `src/app/api/push/webhook/route.ts` |
+| `/api/inventory/offline-mutation` | `src/app/api/inventory/offline-mutation/route.ts` |
 
 ---
 
@@ -78,8 +79,9 @@ black-and-brew/
 │   ├── components/          # Shared UI (2+ features): auth, sidebar, ui, ai, notifications
 │   ├── contexts/            # InventoryRealtimeContext
 │   ├── hooks/
-│   ├── lib/                 # Domain logic (schedule/, inventory-*, passkey/, …)
+│   ├── lib/                 # Domain logic (schedule/, inventory-*, passkey/, policies/, offline-*, …)
 │   ├── test/                # Vitest suites
+│   ├── workers/             # Web Workers (inventory-table.worker.ts)
 │   └── proxy.ts             # next-intl middleware (Next.js 16)
 ├── AGENTS.md, CLAUDE.md, README.md, PROJECT_MAP.md
 └── package.json, next.config.ts, vitest.config.ts, vercel.json

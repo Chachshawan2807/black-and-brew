@@ -106,7 +106,7 @@ export async function registerDevicePasskey(
 export async function loginWithDevicePasskey(
   device: ClientDevicePayload
 ): Promise<
-  { success: true; isReadOnly: boolean } | { success: false; error: string }
+  { success: true; isReadOnly: boolean; offlineAuthSessionId: string } | { success: false; error: string }
 > {
   const optionsResult = await getPasskeyLoginOptions();
   if (!optionsResult.success) {

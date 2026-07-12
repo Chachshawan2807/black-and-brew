@@ -726,6 +726,7 @@ export type InventoryTransactionFilterType = 'ALL' | Extract<InventoryTransactio
 
 type FetchTransactionHistoryOptions = {
   itemId?: string;
+  itemNameQuery?: string;
   limit?: number;
   offset: number;
   type?: InventoryTransactionFilterType;
@@ -739,11 +740,7 @@ type RawInventoryTransaction = {
   note: string | null;
   created_at: string;
   balance_after: number;
-};
-
-type InventoryItemNameRow = {
-  id: string;
-  name: string;
+  inventory_items?: { name?: string } | null;
 };
 
 function sanitizeHistoryLimit(limit: number | undefined) {
@@ -756,6 +753,111 @@ function sanitizeHistoryOffset(offset: number | undefined) {
   const parsed = Math.floor(Number(offset ?? 0));
   if (!Number.isFinite(parsed)) return 0;
   return Math.max(parsed, 0);
+}
+
+function sanitizeHistorySearchQuery(query: string | undefined) {
+  const trimmed = query?.trim() ?? '';
+  if (!trimmed) return undefined;
+  return trimmed.slice(0, 100);
+}
+
+const TRANSACTION_HISTORY_SELECT =
+  'id, inventory_item_id, type, quantity, note, created_at, balance_after, inventory_items(name)';
+
+async function fetchTransactionHistoryByItemName(options: {
+  itemNameQuery: string;
+  type?: Exclude<InventoryTransactionFilterType, 'ALL'>;
+  offset: number;
+  safeLimit: number;
+}): Promise<
+  | { success: true; data: RawInventoryTransaction[]; hasMore: boolean }
+  | { success: false; error: string }
+> {
+  const { itemNameQuery, type, offset, safeLimit } = options;
+
+  const { data: matchingItems, error: searchError } = await supabase
+    .from('inventory_items')
+    .select('id')
+    .ilike('name', `%${itemNameQuery}%`);
+
+  if (searchError) {
+    console.error(
+      '[fetchTransactionHistory] Item name search error:',
+      searchError.message,
+      searchError.details,
+    );
+    return { success: false, error: `DB Error: ${searchError.message}` };
+  }
+
+  const matchingIds = (matchingItems ?? []).map((item) => item.id);
+
+  const buildQuery = () => {
+    let historyQuery = supabase
+      .from('inventory_transactions')
+      .select(TRANSACTION_HISTORY_SELECT)
+      .order('created_at', { ascending: false });
+    if (type) historyQuery = historyQuery.eq('type', type);
+    return historyQuery;
+  };
+
+  const queries = [];
+  if (matchingIds.length > 0) {
+    queries.push(buildQuery().in('inventory_item_id', matchingIds));
+  }
+  queries.push(
+    buildQuery().in('type', ['ADD', 'DELETE']).ilike('note', `%${itemNameQuery}%`),
+  );
+
+  const results = await Promise.all(queries);
+  for (const result of results) {
+    if (result.error) {
+      console.error('[fetchTransactionHistory] Supabase Deep Error:', result.error);
+      console.error(
+        '[fetchTransactionHistory] Details:',
+        result.error.message,
+        result.error.details,
+        result.error.hint,
+      );
+      return { success: false, error: `DB Error: ${result.error.message}` };
+    }
+  }
+
+  const byId = new Map<string, RawInventoryTransaction>();
+  for (const result of results) {
+    for (const row of (result.data ?? []) as RawInventoryTransaction[]) {
+      byId.set(row.id, row);
+    }
+  }
+
+  const merged = [...byId.values()].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+  const page = merged.slice(offset, offset + safeLimit + 1);
+  const hasMore = page.length > safeLimit;
+
+  return {
+    success: true,
+    data: page.slice(0, safeLimit),
+    hasMore,
+  };
+}
+
+function enrichTransactionRows(transactions: RawInventoryTransaction[]) {
+  return transactions.map((tx) => {
+    const joinedName = tx.inventory_items?.name;
+    const resolvedName =
+      joinedName ||
+      (tx.type === 'DELETE' && tx.note ? tx.note : null) ||
+      (tx.type === 'ADD' && tx.note ? tx.note : null) ||
+      'ไม่ทราบชื่อสินค้า';
+
+    return {
+      ...tx,
+      inventory_items: {
+        name: resolvedName,
+      },
+    };
+  });
 }
 
 // === FETCH TRANSACTION HISTORY (SPEC 3.1 — Two-Step Fetch) ===
@@ -778,19 +880,34 @@ export async function fetchTransactionHistory(
         ? optionsOrItemId
         : { itemId: optionsOrItemId, limit: legacyLimit, offset: 0 };
     const itemId = options?.itemId;
+    const itemNameQuery = sanitizeHistorySearchQuery(options?.itemNameQuery);
     const safeLimit = sanitizeHistoryLimit(options?.limit);
     const offset = sanitizeHistoryOffset(options?.offset);
     const type = options?.type && options.type !== 'ALL' ? options.type : undefined;
 
-    // Step 1: Fetch raw transaction data (no join — bulletproof approach)
-    // Uses inventory_item_id — VERIFIED column name in actual DB
+    // Step 1: Fetch transactions with item names in one query (join)
     let query = supabase
       .from('inventory_transactions')
-      .select('id, inventory_item_id, type, quantity, note, created_at, balance_after')
+      .select(TRANSACTION_HISTORY_SELECT)
       .order('created_at', { ascending: false });
 
     if (itemId) {
       query = query.eq('inventory_item_id', itemId);
+    } else if (itemNameQuery) {
+      const nameSearch = await fetchTransactionHistoryByItemName({
+        itemNameQuery,
+        type,
+        offset,
+        safeLimit,
+      });
+      if (!nameSearch.success) {
+        return { success: false, error: nameSearch.error, data: [], hasMore: false };
+      }
+      return {
+        success: true,
+        data: enrichTransactionRows(nameSearch.data),
+        hasMore: nameSearch.hasMore,
+      };
     }
 
     if (type) {
@@ -816,45 +933,7 @@ export async function fetchTransactionHistory(
     const hasMore = transactions.length > safeLimit;
     const visibleTransactions = transactions.slice(0, safeLimit);
 
-    // Step 2: Get unique item IDs and fetch their names separately
-    // Uses inventory_item_id — VERIFIED column name in actual DB
-    const itemIds = [...new Set(
-      visibleTransactions.map((tx) => tx.inventory_item_id).filter(Boolean)
-    )] as string[];
-
-    const itemNameMap: Record<string, string> = {};
-
-    if (itemIds.length > 0) {
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('inventory_items')
-        .select('id, name')
-        .in('id', itemIds);
-
-      if (itemsError) {
-        console.error('[fetchTransactionHistory] Items Lookup Error:', itemsError);
-      } else if (itemsData) {
-        (itemsData as InventoryItemNameRow[]).forEach((item) => {
-          itemNameMap[item.id] = item.name;
-        });
-      }
-    }
-
-    // Step 3: Merge names into transaction data
-    // Uses inventory_item_id — VERIFIED column name in actual DB
-    const enrichedData = visibleTransactions.map((tx) => {
-      const resolvedName =
-        (tx.inventory_item_id && itemNameMap[tx.inventory_item_id]) ||
-        (tx.type === 'DELETE' && tx.note ? tx.note : null) ||
-        (tx.type === 'ADD' && tx.note ? tx.note : null) ||
-        'ไม่ทราบชื่อสินค้า';
-
-      return {
-        ...tx,
-        inventory_items: {
-          name: resolvedName,
-        },
-      };
-    });
+    const enrichedData = enrichTransactionRows(visibleTransactions);
 
     return { success: true, data: enrichedData, hasMore };
   } catch (error: unknown) {
@@ -910,6 +989,7 @@ export async function fetchFrequentItems() {
 
     if (itemsError || !itemsData) return { success: true, data: [] };
 
+    type InventoryItemNameRow = { id: string; name: string };
     const result = topIds
       .map(id => {
         const item = (itemsData as InventoryItemNameRow[]).find((i) => i.id === id);

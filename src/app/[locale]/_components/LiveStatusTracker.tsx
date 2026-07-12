@@ -13,6 +13,10 @@ import {
   DAY_OFF_COLOR,
   type ShiftColorStyle,
 } from '@/lib/shift-colors';
+import { countFohCoffeeStaff } from '@/lib/foh-coffee-staff-count';
+import { getClientShiftTypes } from '@/lib/shift-type-config';
+import { cn } from '@/lib/utils';
+import type { HomeSectionLayout } from './home-layout';
 
 interface Profile {
   id: string;
@@ -36,6 +40,7 @@ interface LiveStatusTrackerProps {
   currentThaiDate?: string;
   initialTomorrowShifts?: Shift[];
   tomorrowThaiDate?: string;
+  layout?: HomeSectionLayout;
 }
 
 interface EmployeeStatus {
@@ -135,13 +140,26 @@ interface StatusGridProps {
   shifts: Shift[];
   dateLabel?: string;
   highlightToday?: boolean;
+  dashboard?: boolean;
 }
 
-function StatusGrid({ profiles, shifts, dateLabel, highlightToday = false }: StatusGridProps) {
+function StatusGrid({
+  profiles,
+  shifts,
+  dateLabel,
+  highlightToday = false,
+  dashboard = false,
+}: StatusGridProps) {
   const sortedProfiles = sortProfiles(profiles, shifts);
 
   return (
-    <div className="flex flex-wrap gap-2.5">
+    <div
+      className={cn(
+        dashboard
+          ? 'md:grid md:h-full md:min-h-0 md:grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] md:auto-rows-[minmax(5.75rem,1fr)] md:gap-3 md:content-stretch md:items-stretch'
+          : 'flex flex-wrap gap-2.5',
+      )}
+    >
       {sortedProfiles.map((profile) => {
         const { displayText, colorClass, colorStyle, isWorkShift } = getEmployeeStatus(profile, shifts);
         const ShiftIcon = getShiftIcon(displayText);
@@ -150,16 +168,35 @@ function StatusGrid({ profiles, shifts, dateLabel, highlightToday = false }: Sta
           <article
             key={profile.id}
             aria-label={`พนักงาน: ${profile.full_name}, วันที่: ${dateLabel}, กะงาน: ${displayText}`}
-            className={`${colorClass} group relative w-[7.25rem] shrink-0 overflow-hidden rounded-2xl p-3 min-h-[4.75rem] flex flex-col justify-between gap-2 bb-transition bb-shadow-hover-md hover:-translate-y-0.5 ${
-              highlightToday && isWorkShift ? 'ring-2 ring-border bb-shadow-sm' : 'bb-shadow-sm'
-            }`}
+            className={cn(
+              colorClass,
+              'group relative overflow-hidden rounded-2xl flex flex-col justify-between bb-transition bb-shadow-hover-md hover:-translate-y-0.5',
+              dashboard
+                ? 'w-full h-full min-h-[5.75rem] p-4 gap-2.5'
+                : 'w-[7.25rem] shrink-0 p-3 min-h-[4.75rem] gap-2',
+              highlightToday && isWorkShift ? 'ring-2 ring-border bb-shadow-sm' : 'bb-shadow-sm',
+            )}
             style={colorStyle}
           >
-            <span className="text-[0.8125rem] font-normal truncate leading-snug tracking-tight">
+            <span
+              className={cn(
+                'font-normal truncate leading-snug tracking-tight',
+                dashboard ? 'text-[0.9375rem]' : 'text-[0.8125rem]',
+              )}
+            >
               {profile.full_name}
             </span>
-            <span className="inline-flex items-center justify-center gap-1 self-center max-w-full px-2 py-0.5 rounded-full bg-black/[0.06] text-[0.6875rem] font-normal text-black/80 tracking-wide">
-              <ShiftIcon className="h-3 w-3 shrink-0 opacity-70" strokeWidth={1.5} aria-hidden />
+            <span
+              className={cn(
+                'inline-flex items-center justify-center gap-1.5 self-center max-w-full rounded-full bg-black/[0.06] font-normal text-black/80 tracking-wide',
+                dashboard ? 'px-2.5 py-1 text-[0.75rem]' : 'px-2 py-0.5 text-[0.6875rem]',
+              )}
+            >
+              <ShiftIcon
+                className={cn('shrink-0 opacity-70', dashboard ? 'h-3.5 w-3.5' : 'h-3 w-3')}
+                strokeWidth={1.5}
+                aria-hidden
+              />
               <span className="truncate">{displayText}</span>
             </span>
           </article>
@@ -177,6 +214,7 @@ interface StatusSectionProps {
   shifts: Shift[];
   dateLabel?: string;
   highlightToday?: boolean;
+  dashboard?: boolean;
 }
 
 function StatusSection({
@@ -187,34 +225,67 @@ function StatusSection({
   shifts,
   dateLabel,
   highlightToday,
+  dashboard = false,
 }: StatusSectionProps) {
+  const coffeeShopStaffCount = countFohCoffeeStaff(profiles, shifts, getClientShiftTypes());
+
   return (
     <section
       aria-label={title}
-      className="rounded-3xl border border-border bg-card p-5 md:p-7 bb-shadow-sm"
+      className={cn(
+        'rounded-3xl border border-border bg-card bb-shadow-sm',
+        dashboard ? 'md:h-full md:min-h-0 md:flex md:flex-col p-5 md:p-5' : 'p-5 md:p-7',
+      )}
     >
-      <header className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div className="flex items-start gap-3">
+      <header
+        className={cn(
+          'flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 shrink-0',
+          dashboard ? 'mb-4' : 'mb-6',
+        )}
+      >
+        <div className="flex items-start gap-3 min-w-0">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
             {icon}
           </div>
-          <div>
-            <h2 className="text-[clamp(1rem,2.5vw,1.25rem)] font-normal text-foreground tracking-tight leading-snug">
+          <div className="min-w-0">
+            <h2
+              className={cn(
+                'font-normal text-foreground tracking-tight leading-snug',
+                dashboard
+                  ? 'text-[1.05rem]'
+                  : 'text-[clamp(1rem,2.5vw,1.25rem)]',
+              )}
+            >
               {title}
             </h2>
-            <p className="mt-1 text-[0.8rem] font-normal text-muted-foreground/90 tracking-wide">{subtitle}</p>
+            <p
+              className={cn(
+                'font-normal text-muted-foreground/90 tracking-wide line-clamp-2',
+                dashboard ? 'mt-1 text-[0.8rem]' : 'mt-1 text-[0.8rem]',
+              )}
+            >
+              {subtitle}
+            </p>
           </div>
         </div>
         <span className="text-[0.7rem] font-normal text-muted-foreground/70 uppercase tracking-[0.2em] shrink-0">
-          {profiles.length} พนักงาน
+          {coffeeShopStaffCount} พนักงาน
         </span>
       </header>
-      <StatusGrid
-        profiles={profiles}
-        shifts={shifts}
-        dateLabel={dateLabel}
-        highlightToday={highlightToday}
-      />
+      <div
+        className={cn(
+          dashboard &&
+            'md:flex-1 md:min-h-0 md:overflow-y-auto bb-smooth-scroll md:pr-0.5 md:flex md:flex-col',
+        )}
+      >
+        <StatusGrid
+          profiles={profiles}
+          shifts={shifts}
+          dateLabel={dateLabel}
+          highlightToday={highlightToday}
+          dashboard={dashboard}
+        />
+      </div>
     </section>
   );
 }
@@ -225,7 +296,9 @@ export default function LiveStatusTracker({
   currentThaiDate,
   initialTomorrowShifts = [],
   tomorrowThaiDate,
+  layout = 'default',
 }: LiveStatusTrackerProps) {
+  const isDashboard = layout === 'dashboard';
   const [profiles, setProfiles] = useState(initialProfiles);
   const [shifts, setShifts] = useState(initialShifts);
   const [tomorrowShifts, setTomorrowShifts] = useState(initialTomorrowShifts);
@@ -282,25 +355,43 @@ export default function LiveStatusTracker({
   }, []);
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div
+      className={cn(
+        'space-y-6 md:space-y-8',
+        isDashboard &&
+          'md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:min-h-0 md:flex-[11] md:shrink md:items-stretch',
+      )}
+    >
       <StatusSection
-        icon={<CalendarDays className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />}
+        icon={
+          <CalendarDays
+            className="h-5 w-5 text-muted-foreground"
+            strokeWidth={1.5}
+          />
+        }
         title="สถานะพนักงานวันนี้"
         subtitle={currentThaiDate ?? ''}
         profiles={profiles}
         shifts={shifts}
         dateLabel={currentThaiDate}
         highlightToday
+        dashboard={isDashboard}
       />
 
       {tomorrowThaiDate && (
         <StatusSection
-          icon={<Sun className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />}
+          icon={
+            <Sun
+              className="h-5 w-5 text-muted-foreground"
+              strokeWidth={1.5}
+            />
+          }
           title="กะวันถัดไป"
           subtitle={tomorrowThaiDate}
           profiles={profiles}
           shifts={tomorrowShifts}
           dateLabel={tomorrowThaiDate}
+          dashboard={isDashboard}
         />
       )}
     </div>
