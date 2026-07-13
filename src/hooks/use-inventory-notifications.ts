@@ -6,6 +6,7 @@ import {
   fetchDataChangeLogs,
   type DataChangeLogRow,
 } from '@/app/actions/data-change-log-actions';
+import { ensureDailyReportNotificationHistory } from '@/app/actions/daily-report-notification-actions';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { isOwnChange, getClientSessionId } from '@/lib/client-session';
@@ -15,6 +16,10 @@ import {
   formatInventoryNotification,
 } from '@/lib/inventory-notification-formatter';
 import { isEligibleInventoryNotification } from '@/lib/inventory-notification-filter';
+import {
+  formatDailyReportNotification,
+  isEligibleDailyReportNotification,
+} from '@/lib/daily-report-notification';
 import {
   loadNotificationPreferences,
   shouldNotifyForAction,
@@ -54,6 +59,7 @@ import {
   SW_INVENTORY_PUSH_RECEIVED,
 } from '@/lib/pwa-notification-bridge';
 import { shouldDeferOsNotificationToPush } from '@/lib/push-subscription-client';
+import { isScheduleNotification } from '@/lib/notification-display-icon';
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
   const row = payload.new;
@@ -220,12 +226,22 @@ export function useInventoryNotifications() {
       const loc = localeRef.current;
       const isTh = loc === 'th';
       const inventoryPath = `/${loc}/inventory`;
+      const schedulePath = `/${loc}/schedule`;
+      const metadataUrl = notification.metadata?.url;
+      const resolvedUrl =
+        typeof metadataUrl === 'string'
+          ? metadataUrl.startsWith('/')
+            ? metadataUrl
+            : `/${metadataUrl}`
+          : isScheduleNotification(notification)
+            ? schedulePath
+            : notification.entityId
+              ? `${inventoryPath}?highlight=${notification.entityId}`
+              : inventoryPath;
 
       void showSystemNotification(notification.title, notification.summary, {
         tag: notification.logId,
-        url: notification.entityId
-          ? `${inventoryPath}?highlight=${notification.entityId}`
-          : inventoryPath,
+        url: resolvedUrl,
         unreadCount: nextUnread,
         isTh,
       });
@@ -240,12 +256,26 @@ export function useInventoryNotifications() {
 
     return rows.filter((row) => {
       if (!isAfterNotificationClearWatermark(row.occurred_at, clearWatermark)) return false;
-      if (!isEligibleInventoryNotification(row)) return false;
+
+      const isDailyReport = isEligibleDailyReportNotification(row);
+      const isInventory = isEligibleInventoryNotification(row);
+      if (!isDailyReport && !isInventory) return false;
+      if (isDailyReport && !currentPrefs.dailyScheduleReports) return false;
       if (!shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) return false;
       if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;
       return true;
     });
   }, []);
+
+  const formatNotificationRow = useCallback(
+    (row: DataChangeLogRow, locale: string, batchedCount = 1) => {
+      if (isEligibleDailyReportNotification(row)) {
+        return formatDailyReportNotification(row, locale);
+      }
+      return formatInventoryNotification(row, locale, batchedCount);
+    },
+    [],
+  );
 
   const processRows = useCallback(
     (rows: DataChangeLogRow[]) => {
@@ -254,14 +284,24 @@ export function useInventoryNotifications() {
 
       if (eligible.length === 0) return;
 
+      const allDailyReports = eligible.every(isEligibleDailyReportNotification);
+      if (allDailyReports) {
+        for (const row of eligible) {
+          pushNotification(formatDailyReportNotification(row, loc), undefined, {
+            skipSystemNotification: true,
+          });
+        }
+        return;
+      }
+
       const notification =
         eligible.length > 1
           ? formatBatchedNotificationFromRows(eligible, loc)
-          : formatInventoryNotification(eligible[eligible.length - 1], loc);
+          : formatNotificationRow(eligible[eligible.length - 1], loc);
 
       pushNotification(notification);
     },
-    [filterEligibleRows, pushNotification]
+    [filterEligibleRows, formatNotificationRow, pushNotification]
   );
 
   const syncInventoryNotificationCatchUp = useCallback(async () => {
@@ -273,20 +313,47 @@ export function useInventoryNotifications() {
 
     const loc = localeRef.current;
     for (const row of [...eligible].reverse()) {
-      pushNotification(formatInventoryNotification(row, loc), undefined, {
+      pushNotification(formatNotificationRow(row, loc), undefined, {
+        skipSystemNotification: true,
+      });
+    }
+  }, [filterEligibleRows, formatNotificationRow, pushNotification]);
+
+  const syncScheduleNotificationCatchUp = useCallback(async () => {
+    const currentPrefs = prefsRef.current;
+    if (!currentPrefs.enabled || !currentPrefs.dailyScheduleReports) return;
+
+    await ensureDailyReportNotificationHistory();
+
+    const result = await fetchDataChangeLogs({ module: 'schedule', limit: 50 });
+    if (!result.success) return;
+
+    const eligible = filterEligibleRows(
+      result.rows.filter(isEligibleDailyReportNotification),
+    );
+    if (eligible.length === 0) return;
+
+    const loc = localeRef.current;
+    for (const row of [...eligible].reverse()) {
+      pushNotification(formatDailyReportNotification(row, loc), undefined, {
         skipSystemNotification: true,
       });
     }
   }, [filterEligibleRows, pushNotification]);
 
+  const syncNotificationCatchUp = useCallback(async () => {
+    await syncInventoryNotificationCatchUp();
+    await syncScheduleNotificationCatchUp();
+  }, [syncInventoryNotificationCatchUp, syncScheduleNotificationCatchUp]);
+
   const syncFromStorageAndServer = useCallback(async (writeBack = true) => {
     await syncFromStorage(writeBack);
-    await syncInventoryNotificationCatchUp();
-  }, [syncFromStorage, syncInventoryNotificationCatchUp]);
+    await syncNotificationCatchUp();
+  }, [syncFromStorage, syncNotificationCatchUp]);
 
   const syncFromServerOnly = useCallback(() => {
-    void syncInventoryNotificationCatchUp();
-  }, [syncInventoryNotificationCatchUp]);
+    void syncNotificationCatchUp();
+  }, [syncNotificationCatchUp]);
 
   const syncFromStorageAndServerSoon = useCallback(
     (writeBack = true) => {
@@ -305,6 +372,27 @@ export function useInventoryNotifications() {
     let warnedUnavailable = false;
     const batcher = createBatchAccumulator((rows) => processRows(rows));
 
+    const attachChangeLogListener = (
+      targetChannel: ReturnType<typeof supabase.channel>,
+      module: 'inventory' | 'schedule',
+    ) => {
+      return targetChannel.on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'data_change_logs',
+          filter: `module=eq.${module}`,
+        },
+        (payload) => {
+          if (!payload.new) return;
+          const row = rowFromPayload(payload as { new: Record<string, unknown> });
+          if (module === 'schedule' && !isEligibleDailyReportNotification(row)) return;
+          batcher.add(row);
+        },
+      );
+    };
+
     const subscribe = async () => {
       await ensureSupabaseSession();
       if (cancelled) return;
@@ -314,22 +402,10 @@ export function useInventoryNotifications() {
         channel = null;
       }
 
-      channel = supabase
-        .channel(`inventory_change_notifications_${retryCount}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'data_change_logs',
-            filter: 'module=eq.inventory',
-          },
-          (payload) => {
-            if (!payload.new) return;
-            const row = rowFromPayload(payload as { new: Record<string, unknown> });
-            batcher.add(row);
-          }
-        )
+      channel = supabase.channel(`inventory_change_notifications_${retryCount}`);
+      attachChangeLogListener(channel, 'inventory');
+      attachChangeLogListener(channel, 'schedule');
+      channel
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
             retryCount = 0;
@@ -465,7 +541,10 @@ export function useInventoryNotifications() {
     persist([]);
   }, [persist]);
 
-  const openPanel = useCallback(() => setPanelOpen(true), []);
+  const openPanel = useCallback(() => {
+    setPanelOpen(true);
+    void syncNotificationCatchUp();
+  }, [syncNotificationCatchUp]);
   const closePanel = useCallback(() => setPanelOpen(false), []);
 
   return {

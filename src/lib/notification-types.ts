@@ -1,10 +1,11 @@
 import type { DataChangeAction } from '@/lib/data-change-log';
+import { formatNotificationActorLabel } from '@/lib/data-change-log';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 
 export const NOTIFICATION_STORAGE_KEY = 'bb-inventory-notifications';
 export const NOTIFICATION_CLEAR_WATERMARK_KEY = 'bb-inventory-notifications-cleared-at';
 export const NOTIFICATION_PREFS_KEY = 'bb-notification-prefs-v2';
-export const MAX_STORED_NOTIFICATIONS = 50;
+export const MAX_STORED_NOTIFICATIONS = 100;
 export const BATCH_WINDOW_MS = 350;
 
 export type NotificationPriority = 'normal' | 'high';
@@ -49,7 +50,11 @@ export function logRowToNotificationInput(row: DataChangeLogRow): Omit<Inventory
     action: row.action as DataChangeAction,
     entityId: row.entity_id,
     entityLabel: row.entity_label,
-    actorLabel: row.actor_label,
+    actorLabel: formatNotificationActorLabel(
+      row.actor_label,
+      row.actor_access_level,
+      row.user_agent,
+    ),
     occurredAt: row.occurred_at,
     read: false,
     batchedCount: 1,

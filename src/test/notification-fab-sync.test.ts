@@ -83,8 +83,19 @@ describe('notification fab cross-platform sync', () => {
   test('hook catches up missed cross-device inventory logs from the server for mobile FAB sync', () => {
     expect(hookSource).toContain('fetchDataChangeLogs');
     expect(hookSource).toContain('syncInventoryNotificationCatchUp');
+    expect(hookSource).toContain('syncScheduleNotificationCatchUp');
+    expect(hookSource).toContain('syncNotificationCatchUp');
     expect(hookSource).toContain("fetchDataChangeLogs({ module: 'inventory'");
+    expect(hookSource).toContain("fetchDataChangeLogs({ module: 'schedule'");
     expect(hookSource).toContain('skipSystemNotification: true');
+  });
+
+  test('hook syncs daily schedule report logs via realtime and server catch-up', () => {
+    expect(hookSource).toContain('attachChangeLogListener(channel, \'schedule\')');
+    expect(hookSource).toContain('isEligibleDailyReportNotification');
+    expect(hookSource).toContain('formatDailyReportNotification');
+    expect(hookSource).toContain('dailyScheduleReports');
+    expect(hookSource).toMatch(/openPanel[\s\S]*syncNotificationCatchUp/);
   });
 
   test('clearing history prevents old server catch-up logs from being restored', () => {
@@ -165,11 +176,13 @@ describe('notification fab cross-platform sync', () => {
   test('notification bell FAB does not render a close icon', () => {
     expect(bellSource).not.toContain('AnimatePresence');
     expect(bellSource).not.toContain('key="close"');
-    expect(bellSource).not.toContain('FAB_STACK_INNER_CLASS');
   });
 
-  test('notification FAB brand icon inverts in dark mode', () => {
-    expect(bellSource).toMatch(/PWA_BRAND_ICON[\s\S]*dark:invert/);
+  test('notification FAB matches other stack buttons (black circle, white bell)', () => {
+    expect(bellSource).toContain('FAB_STACK_INNER_CLASS');
+    expect(bellSource).toContain('<Bell');
+    expect(bellSource).not.toContain('PWA_BRAND_ICON');
+    expect(bellSource).not.toContain('bg-transparent');
   });
 
   test('notification FAB badge shows uncapped counts via shared formatter', () => {

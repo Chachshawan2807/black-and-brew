@@ -6,9 +6,11 @@ vi.mock('@/lib/fonts', () => ({
 }));
 
 const toBlobMock = vi.fn();
+const getFontEmbedCSSMock = vi.fn();
 
 vi.mock('html-to-image', () => ({
   toBlob: (...args: unknown[]) => toBlobMock(...args),
+  getFontEmbedCSS: (...args: unknown[]) => getFontEmbedCSSMock(...args),
 }));
 
 import {
@@ -21,7 +23,9 @@ import {
 describe('schedule-export-capture', () => {
   beforeEach(() => {
     toBlobMock.mockReset();
+    getFontEmbedCSSMock.mockReset();
     toBlobMock.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
+    getFontEmbedCSSMock.mockResolvedValue('@font-face { font-family: Prompt; }');
     document.documentElement.classList.remove('dark');
   });
 
@@ -57,8 +61,13 @@ describe('schedule-export-capture', () => {
     nowrap.className = 'bb-schedule-nowrap';
     root.appendChild(nowrap);
 
+    const nameCell = document.createElement('span');
+    nameCell.textContent = 'นิต้า';
+    root.appendChild(nameCell);
+
     const restore = applyScheduleTableCaptureStyles(root);
     expect(root.style.fontFamily).toContain('Inter');
+    expect(nameCell.style.fontFamily).toContain('Inter');
     expect(grid.style.gridTemplateColumns).toContain('minmax(');
     expect(nowrap.style.whiteSpace).toBe('nowrap');
 
@@ -79,9 +88,18 @@ describe('schedule-export-capture', () => {
 
     expect(blob.type).toBe('image/png');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(getFontEmbedCSSMock).toHaveBeenCalledWith(
+      element,
+      expect.objectContaining({ preferredFontFormat: 'woff2' }),
+    );
     expect(toBlobMock).toHaveBeenCalledWith(
       element,
-      expect.objectContaining({ backgroundColor: SCHEDULE_EXPORT_BG, skipFonts: true }),
+      expect.objectContaining({
+        backgroundColor: SCHEDULE_EXPORT_BG,
+        skipFonts: false,
+        preferredFontFormat: 'woff2',
+        fontEmbedCSS: '@font-face { font-family: Prompt; }',
+      }),
     );
   });
 });

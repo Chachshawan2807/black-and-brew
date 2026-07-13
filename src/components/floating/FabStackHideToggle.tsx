@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { FAB_SUBTLE_HOVER, FAB_TAP } from '@/lib/motion-presets';
 import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -31,8 +32,8 @@ export function FabStackHideToggle() {
       <motion.button
         type="button"
         onClick={toggleFabStackHidden}
-        whileHover={{ scale: 1.06 }}
-        whileTap={{ scale: 0.94 }}
+        whileHover={FAB_SUBTLE_HOVER}
+        whileTap={FAB_TAP}
         aria-label={fabStackHidden ? 'แสดงปุ่มลัด' : 'ซ่อนปุ่มลัด'}
         aria-pressed={fabStackHidden}
         className={cn(

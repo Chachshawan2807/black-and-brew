@@ -15,7 +15,7 @@ function makeRow(overrides: Partial<DataChangeLogRow> = {}): DataChangeLogRow {
     id: 'log-1',
     occurred_at: '2026-06-12T10:00:00.000Z',
     actor_id: null,
-    actor_label: 'ผู้ใช้เต็มสิทธิ์',
+    actor_label: 'ผู้แก้ไข (Android)',
     actor_access_level: 'full',
     action: 'UPDATE',
     module: 'inventory',
@@ -27,7 +27,8 @@ function makeRow(overrides: Partial<DataChangeLogRow> = {}): DataChangeLogRow {
     new_value: null,
     source: 'web',
     ip_address: null,
-    user_agent: null,
+    user_agent:
+      'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36',
     status: 'success',
     error_message: null,
     metadata: {},
@@ -369,7 +370,7 @@ describe('formatInventoryNotification', () => {
     const n = formatInventoryNotification(makeRow(), 'th');
     expect(n.title).toContain('เมล็ดกาแฟ');
     expect(n.summary).toContain('คงเหลือ');
-    expect(n.actorLabel).toBe('ผู้ใช้เต็มสิทธิ์');
+    expect(n.actorLabel).toBe('ผู้แก้ไข (Android)');
   });
 
   test('builds English title', () => {

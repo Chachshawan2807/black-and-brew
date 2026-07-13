@@ -6,6 +6,7 @@ import {
   resolveDailyReportSchedule,
 } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
+import { recordDailyReportNotificationLog } from '@/lib/daily-report-notification';
 import { dispatchDailyReportWebPush } from '@/lib/daily-report-web-push';
 
 export const maxDuration = 30;
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
     const schedule = resolveDailyReportSchedule(scheduleParam);
 
     const reportData = await compileDailyReportData(schedule);
+    await recordDailyReportNotificationLog(reportData, 'th');
     const pushResult = await dispatchDailyReportWebPush(reportData);
 
     if (pushResult.error === 'vapid_not_configured') {

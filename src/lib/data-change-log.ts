@@ -1,4 +1,5 @@
 import type { Json } from '@/lib/database.types';
+import { parseUserAgent } from '@/lib/parse-user-agent';
 
 export type DataChangeAction =
   | 'CREATE'
@@ -100,9 +101,54 @@ export function computeFieldChanges(
   return changes;
 }
 
-export function resolveActorLabel(accessLevel: ActorAccessLevel, email?: string | null): string {
+export function formatActorOsName(userAgent: string | null | undefined): string | null {
+  if (!userAgent) return null;
+  return parseUserAgent(userAgent).osName;
+}
+
+const LEGACY_FULL_ACCESS_LABEL = 'ผู้ใช้งาน (สิทธิ์แก้ไข)';
+
+function isFullAccessActor(
+  actorLabel: string,
+  actorAccessLevel: ActorAccessLevel | null | undefined,
+): boolean {
+  return (
+    actorAccessLevel === 'full' ||
+    actorLabel === LEGACY_FULL_ACCESS_LABEL ||
+    actorLabel === 'ผู้ใช้งาน' ||
+    actorLabel.startsWith('ผู้แก้ไข')
+  );
+}
+
+function formatEditorActorLabel(userAgent: string | null | undefined): string {
+  const osName = formatActorOsName(userAgent);
+  return osName ? `ผู้แก้ไข (${osName})` : 'ผู้แก้ไข';
+}
+
+export function resolveActorLabel(
+  accessLevel: ActorAccessLevel,
+  email?: string | null,
+  userAgent?: string | null,
+): string {
   if (email) return email;
-  if (accessLevel === 'full') return 'ผู้ใช้งาน (สิทธิ์แก้ไข)';
+  if (accessLevel === 'full') return formatEditorActorLabel(userAgent);
   if (accessLevel === 'read_only') return 'ผู้ใช้งาน (อ่านอย่างเดียว)';
   return 'ระบบ';
+}
+
+/** Display label for notifications and history — supports legacy stored actor_label values. */
+export function formatNotificationActorLabel(
+  actorLabel: string,
+  actorAccessLevel: ActorAccessLevel | null | undefined,
+  userAgent?: string | null,
+): string {
+  if (actorLabel.includes('@')) return actorLabel;
+  if (actorAccessLevel === 'read_only' || actorLabel.includes('อ่านอย่างเดียว')) {
+    return actorLabel;
+  }
+  if (actorAccessLevel === 'system' || actorLabel === 'ระบบ') return actorLabel;
+  if (isFullAccessActor(actorLabel, actorAccessLevel)) {
+    return formatEditorActorLabel(userAgent);
+  }
+  return actorLabel;
 }

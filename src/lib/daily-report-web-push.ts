@@ -1,5 +1,6 @@
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
+import { dailyReportNotificationLogId } from '@/lib/daily-report-notification';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type InventoryNotification,
@@ -48,7 +49,7 @@ export function buildDailyReportPushPayload(
 ): DailyReportPushPayload {
   const alt = buildDailyReportAltText(data);
   const schedulePath = `/${locale}/schedule`;
-  const tag = `bb-daily-report-${data.schedule}-${data.dateStr}`;
+  const tag = dailyReportNotificationLogId(data.schedule, data.dateStr);
   const title = scheduleTitle(data.schedule, locale);
   const body = alt.length > 220 ? `${alt.slice(0, 217)}…` : alt;
   const now = new Date().toISOString();

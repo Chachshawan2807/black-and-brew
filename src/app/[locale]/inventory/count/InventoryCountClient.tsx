@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw, Undo2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { microFadeDown, microPopIn, staggerListItem } from '@/lib/motion-presets';
 import Link from 'next/link';
 import { fetchCountAccuracyStats, recordInventoryCountAndUpdateStock } from '@/app/actions/inventory-actions';
 import type {
@@ -195,10 +196,8 @@ const CountInput = memo(function CountInput({
       <AnimatePresence>
         {isActive && val.length > 0 && (
           <motion.span
-            initial={{ opacity: 0, y: -2 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -2 }}
-            transition={{ duration: 0.12 }}
+            {...microFadeDown}
+            transition={microFadeDown.transition}
             className="text-[9px] text-black/40 bb-pastel-surface tracking-wide"
           >
             กด Enter เพื่อยืนยัน
@@ -248,7 +247,7 @@ const CountItemRow = memo(function CountItemRow({
 
   return (
     <motion.div
-      initial={animateEntrance ? { opacity: 0, y: 10 } : false}
+      initial={animateEntrance ? staggerListItem.initial : false}
       animate={{
         opacity: isDimmed ? 0.42 : 1,
         y: 0,
@@ -336,10 +335,8 @@ const CountItemRow = memo(function CountItemRow({
           {undoEntry && !isReadOnly && (
             <motion.button
               type="button"
-              initial={{ opacity: 0, y: -4, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
+              {...microPopIn}
+              transition={microPopIn.transition}
               onClick={() => onUndo(item.id)}
               className="flex items-center gap-1 rounded-xl border border-black/15 bg-white/80 bb-pastel-surface px-2.5 py-1 text-[11px] text-black/60 bb-shadow-sm hover:bg-white hover:text-black transition-all"
               aria-label={`ย้อนกลับค่าเดิม (${undoEntry.prevStock})`}

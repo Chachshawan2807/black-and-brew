@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
+import { slideInLeft, staggerListItem, staggerDelay, BUTTON_HOVER, BUTTON_TAP } from '@/lib/motion-presets';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { saveServiceRecord, deleteServiceRecord } from '@/app/actions/maintenance-actions';
@@ -314,8 +315,9 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border">
           <div className="space-y-1.5">
             <motion.h1
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={slideInLeft.initial}
+              animate={slideInLeft.animate}
+              transition={slideInLeft.transition}
               className="text-4xl md:text-5xl font-normal tracking-[0.1em] text-foreground flex items-center gap-3"
             >
               <div className="p-2.5 bg-black text-white rounded-2xl">
@@ -328,8 +330,8 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
 
           <div className="flex items-center gap-4">
             <motion.button
-              whileHover={{ scale: isReadOnly ? 1 : 1.02 }}
-              whileTap={{ scale: isReadOnly ? 1 : 0.98 }}
+              whileHover={isReadOnly ? undefined : BUTTON_HOVER}
+              whileTap={isReadOnly ? undefined : BUTTON_TAP}
               onClick={() => { resetForm(); setIsModalOpen(true); }}
               disabled={isReadOnly}
               className="group flex items-center gap-2.5 bg-foreground hover:opacity-90 text-background px-7 py-3.5 rounded-3xl bb-transition bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
@@ -463,9 +465,9 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     {records.map((record, index) => (
                       <motion.tr
                         key={record.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03 }}
+                        initial={staggerListItem.initial}
+                        animate={staggerListItem.animate}
+                        transition={{ ...staggerListItem.transition, delay: staggerDelay(index) }}
                         className="group hover:bg-muted/30 bb-transition"
                       >
                         <td className="py-4 px-5 text-sm font-normal text-muted-foreground antialiased tabular-nums">

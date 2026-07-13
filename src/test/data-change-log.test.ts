@@ -1,5 +1,9 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { computeFieldChanges, resolveActorLabel } from '@/lib/data-change-log';
+import {
+  computeFieldChanges,
+  formatNotificationActorLabel,
+  resolveActorLabel,
+} from '@/lib/data-change-log';
 
 const mockGet = vi.fn();
 const mockInsert = vi.fn();
@@ -70,9 +74,49 @@ describe('computeFieldChanges', () => {
   });
 });
 
+const ANDROID_UA =
+  'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
+const IOS_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1';
+
 describe('resolveActorLabel', () => {
   test('prefers email when available', () => {
     expect(resolveActorLabel('full', 'admin@example.com')).toBe('admin@example.com');
+  });
+
+  test('shows editor role with OS for full access PIN users', () => {
+    expect(resolveActorLabel('full', null, ANDROID_UA)).toBe('ผู้แก้ไข (Android)');
+    expect(resolveActorLabel('full', null, IOS_UA)).toBe('ผู้แก้ไข (iOS)');
+  });
+
+  test('falls back to editor without OS when user agent is missing', () => {
+    expect(resolveActorLabel('full')).toBe('ผู้แก้ไข');
+  });
+
+  test('keeps read-only and system labels unchanged', () => {
+    expect(resolveActorLabel('read_only', null, ANDROID_UA)).toBe('ผู้ใช้งาน (อ่านอย่างเดียว)');
+    expect(resolveActorLabel('system')).toBe('ระบบ');
+  });
+});
+
+describe('formatNotificationActorLabel', () => {
+  test('reformats legacy full-access labels using user agent', () => {
+    expect(
+      formatNotificationActorLabel('ผู้ใช้งาน (สิทธิ์แก้ไข)', 'full', ANDROID_UA),
+    ).toBe('ผู้แก้ไข (Android)');
+  });
+
+  test('maps legacy label without user agent to editor role', () => {
+    expect(formatNotificationActorLabel('ผู้ใช้งาน (สิทธิ์แก้ไข)', 'full')).toBe('ผู้แก้ไข');
+  });
+
+  test('keeps email and read-only labels unchanged', () => {
+    expect(formatNotificationActorLabel('admin@example.com', 'full', ANDROID_UA)).toBe(
+      'admin@example.com',
+    );
+    expect(formatNotificationActorLabel('ผู้ใช้งาน (อ่านอย่างเดียว)', 'read_only', IOS_UA)).toBe(
+      'ผู้ใช้งาน (อ่านอย่างเดียว)',
+    );
   });
 });
 
@@ -138,7 +182,7 @@ describe('recordDataChange', () => {
         entity_type: 'inventory_item',
         entity_id: 'item-1',
         entity_label: 'กาแฟ',
-        actor_label: 'ผู้ใช้งาน (สิทธิ์แก้ไข)',
+        actor_label: 'ผู้แก้ไข',
         actor_access_level: 'full',
         ip_address: '198.51.100.42',
         user_agent: 'Vitest/1.0',
@@ -209,7 +253,7 @@ describe('fetchDataChangeLogs', () => {
         {
           id: 'log-1',
           occurred_at: '2026-06-12T10:00:00.000Z',
-          actor_label: 'ผู้ใช้งาน (สิทธิ์แก้ไข)',
+          actor_label: 'ผู้แก้ไข',
           action: 'UPDATE',
           module: 'inventory',
           entity_type: 'inventory_item',

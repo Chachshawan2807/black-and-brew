@@ -474,7 +474,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
           <p className="mt-1 text-xs text-foreground/70">
             แสดงเฉพาะรายการที่มีจำนวนสาขา 1 — ข้อความนี้จะเหมือนตอนกดบันทึก
           </p>
-          <div className="mt-3 max-h-[min(60dvh,32rem)] overflow-y-auto rounded-xl border border-border bg-background p-3">
+          <div className="mt-3 max-h-[min(60dvh,32rem)] overflow-y-auto bb-smooth-scroll rounded-xl border border-border bg-background p-3">
             <pre className="w-max max-w-[calc(92vw-2.5rem)] whitespace-pre-wrap font-mono text-sm leading-relaxed">
               {previewLineMessage}
             </pre>
@@ -558,7 +558,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
       <dialog ref={detailDialogRef} className="w-[min(640px,92vw)] rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40">
         <div className="p-4 md:p-5">
           <h3 className="text-base">{detailDialogTitle || 'รายละเอียด'}</h3>
-          <div className="mt-3 max-h-80 space-y-2 overflow-auto rounded-xl border border-border bg-background p-3">
+          <div className="mt-3 max-h-80 space-y-2 overflow-auto bb-smooth-scroll rounded-xl border border-border bg-background p-3">
             {detailDialogLoading && (
               <p className="flex items-center gap-2 text-sm text-foreground/70">
                 <Loader2 className="h-4 w-4 animate-spin" />

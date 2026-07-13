@@ -87,11 +87,10 @@ describe('Inventory Quick Action FAB', () => {
     expect(notifyCode).toContain('FAB_BOTTOM_NOTIFICATION_CLASS');
     expect(notifyCode).not.toContain('FAB_BOTTOM_AI_CLASS');
     expect(bellCode).toContain('bg-red-500');
-    expect(bellCode).toContain('FAB_NOTIFICATION_INNER_CLASS');
-    expect(bellCode).toContain('PWA_BRAND_ICON');
-    expect(bellCode).toContain('bg-transparent shadow-none');
-    expect(bellCode).not.toContain('md:bg-[#000000]');
-    expect(bellCode).not.toContain('max-md:text-black');
+    expect(bellCode).toContain('FAB_STACK_INNER_CLASS');
+    expect(bellCode).toContain('<Bell');
+    expect(bellCode).not.toContain('PWA_BRAND_ICON');
+    expect(bellCode).not.toContain('bg-transparent');
   });
 
   test('inventory page reuses shared quick action bar component', () => {
@@ -228,6 +227,22 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain("bulkMode ? 'min-w-[8.75rem] w-max' : 'w-[6rem]'");
     expect(barCode).toContain('whitespace-nowrap tabular-nums shrink-0');
     expect(barCode).not.toContain('bb-quick-search-fit');
+  });
+
+  test('quick search suggestions support arrow-key navigation on desktop', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+
+    expect(barCode).toContain('stepQuickSearchHighlight');
+    expect(barCode).toContain('resolveQuickSearchHighlightForEnter');
+    expect(barCode).toContain("e.key === 'ArrowDown'");
+    expect(barCode).toContain("e.key === 'ArrowUp'");
+    expect(barCode).toContain('aria-activedescendant');
+    expect(barCode).toContain('role="listbox"');
+    expect(barCode).toContain('aria-label="ล้างการค้นหา"');
+    expect(barCode).toContain('handleClearQuickSearch');
   });
 
   test('quick action FAB uses a single keyed overlay for exit animation', () => {

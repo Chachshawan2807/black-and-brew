@@ -59,6 +59,14 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
       file: 'components/ai/AIChatOverlay.tsx',
       pattern: /flex-1 min-h-0 overflow-y-auto[\s\S]*bb-smooth-scroll/,
     },
+    {
+      file: 'app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx',
+      pattern: /overflow-y-auto bb-smooth-scroll/,
+    },
+    {
+      file: 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx',
+      pattern: /overflow-auto[\s\S]*bb-smooth-scroll/,
+    },
   ];
 
   for (const { file, pattern } of scrollSurfaces) {

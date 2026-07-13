@@ -4,8 +4,9 @@ import type { FieldChange } from '@/lib/data-change-log';
 
 import { computeFieldChanges } from '@/lib/data-change-log';
 
-import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
+import { formatNotificationActorLabel } from '@/lib/data-change-log';
 
+import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
 import { logRowToNotificationInput } from '@/lib/notification-types';
 import { detectStockOperationFromMetadata, formatStockOperationBatchedTitle, formatStockOperationTitle } from '@/lib/notification-display-icon';
 
@@ -778,9 +779,9 @@ export function formatInventoryNotification(
 
     summary = isTh
 
-      ? `${row.actor_label} แก้ไข ${batchedCount} รายการ`
+      ? `${base.actorLabel} แก้ไข ${batchedCount} รายการ`
 
-      : `${row.actor_label} changed ${batchedCount} items`;
+      : `${base.actorLabel} changed ${batchedCount} items`;
 
   } else if (stockOp) {
 

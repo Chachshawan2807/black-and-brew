@@ -5,7 +5,7 @@
   const STORE_NAME = 'notifications';
   const LIST_KEY = 'list';
   const UNREAD_TOTAL_KEY = 'unread-total';
-  const MAX = 50;
+  const MAX = 100;
 
   function openDb() {
     return new Promise(function (resolve, reject) {

@@ -20,7 +20,18 @@ import {
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fadeOverlay, modalContent } from '@/lib/motion-presets';
+import {
+  fadeOverlay,
+  modalContent,
+  statusBanner,
+  sectionReveal,
+  uploadSuccessBanner,
+  staggeredSection,
+  listRowReveal,
+  expandPanel,
+  pageContent,
+  staggerDelay,
+} from '@/lib/motion-presets';
 import {
   uploadSalesFiles,
   fetchSalesHistory,
@@ -634,9 +645,8 @@ export default function SalesClient({
             <AnimatePresence>
               {successMessage && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  {...statusBanner}
+                  transition={statusBanner.transition}
                   className="mt-4 p-4 bg-card border border-border rounded-xl"
                 >
                   {successMessage}
@@ -644,9 +654,8 @@ export default function SalesClient({
               )}
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  {...statusBanner}
+                  transition={statusBanner.transition}
                   className="mt-4 p-4 bg-card border border-border rounded-xl"
                 >
                   {error}
@@ -802,8 +811,9 @@ export default function SalesClient({
 
         {/* Upload & History — unified section */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={sectionReveal.initial}
+          animate={sectionReveal.animate}
+          transition={sectionReveal.transition}
           className={`mb-6 rounded-2xl bb-shadow-md overflow-hidden ${SALES_SECTION_COLORS.upload}`}
         >
           {/* Upload area */}
@@ -876,9 +886,8 @@ export default function SalesClient({
             <AnimatePresence>
               {uploadSuccess && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
+                  {...uploadSuccessBanner}
+                  transition={uploadSuccessBanner.transition}
                   className="mt-4 p-3.5 bb-pastel-surface text-black bg-[#d4edda] border border-[#c3e6cb] rounded-xl"
                 >
                   <div className="flex items-center gap-2 mb-1.5">
@@ -920,10 +929,8 @@ export default function SalesClient({
               <AnimatePresence initial={false}>
                 {!isHistoryCollapsed && (
                   <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    {...expandPanel}
+                    transition={expandPanel.transition}
                     className="overflow-hidden"
                   >
                     <div className="px-5 pb-5 space-y-2.5">
@@ -976,9 +983,9 @@ export default function SalesClient({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Total Revenue */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0 }}
+                initial={staggeredSection.initial}
+                animate={staggeredSection.animate}
+                transition={{ ...staggeredSection.transition, delay: staggerDelay(0, 0.1) }}
                 className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md transition-all duration-300 ${SALES_SECTION_COLORS.revenue}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
@@ -992,9 +999,9 @@ export default function SalesClient({
 
               {/* Total Quantity (Bills) */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
+                initial={staggeredSection.initial}
+                animate={staggeredSection.animate}
+                transition={{ ...staggeredSection.transition, delay: staggerDelay(1, 0.1) }}
                 className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md transition-all duration-300 ${SALES_SECTION_COLORS.quantity}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
@@ -1008,9 +1015,9 @@ export default function SalesClient({
 
               {/* Total Transactions */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
+                initial={staggeredSection.initial}
+                animate={staggeredSection.animate}
+                transition={{ ...staggeredSection.transition, delay: staggerDelay(2, 0.1) }}
                 className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md transition-all duration-300 ${SALES_SECTION_COLORS.menuItems}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
@@ -1026,9 +1033,9 @@ export default function SalesClient({
             {/* Category Metrics */}
             {metrics?.categoryMetrics && metrics.categoryMetrics.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                initial={staggeredSection.initial}
+                animate={staggeredSection.animate}
+                transition={{ ...staggeredSection.transition, delay: staggerDelay(3, 0.1) }}
                 className={`rounded-2xl bb-shadow-lg p-5 ${SALES_SECTION_COLORS.categories}`}
               >
                 <div className="mb-4">
@@ -1061,9 +1068,9 @@ export default function SalesClient({
 
             {/* Top 10 Products Bar Chart */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
+                initial={staggeredSection.initial}
+                animate={staggeredSection.animate}
+                transition={{ ...staggeredSection.transition, delay: staggerDelay(4, 0.1) }}
                 className={`rounded-2xl bb-shadow-md p-5 ${SALES_SECTION_COLORS.topProducts}`}
               >
                 <div className="flex items-start gap-3 mb-4">
@@ -1090,9 +1097,9 @@ export default function SalesClient({
             {/* Top 10 Products Table */}
             {metrics.topProducts.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
+                initial={staggeredSection.initial}
+                animate={staggeredSection.animate}
+                transition={{ ...staggeredSection.transition, delay: staggerDelay(5, 0.1) }}
                 className={`rounded-2xl bb-shadow-md p-5 ${SALES_SECTION_COLORS.topProducts}`}
               >
                 <div className="flex items-start gap-3 mb-4">
@@ -1133,9 +1140,8 @@ export default function SalesClient({
                             <div className="flex items-center">
                               {editingProduct === product.productName ? (
                                 <motion.div 
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  {...listRowReveal}
+                                  transition={listRowReveal.transition}
                                   className="flex items-center gap-1.5 w-full sm:w-auto"
                                 >
                                   <div className="relative flex-1">
@@ -1265,9 +1271,9 @@ export default function SalesClient({
             {/* All Products Table */}
             {metrics.allProducts.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
+                initial={staggeredSection.initial}
+                animate={staggeredSection.animate}
+                transition={{ ...staggeredSection.transition, delay: staggerDelay(6, 0.1) }}
                 className={`rounded-2xl bb-shadow-lg p-5 ${SALES_SECTION_COLORS.table}`}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
@@ -1353,9 +1359,8 @@ export default function SalesClient({
                             <div className="flex items-center">
                               {editingProduct === product.productName ? (
                                 <motion.div 
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  {...listRowReveal}
+                                  transition={listRowReveal.transition}
                                   className="flex items-center gap-1.5 w-full sm:w-auto"
                                 >
                                   <div className="relative flex-1">
@@ -1484,8 +1489,9 @@ export default function SalesClient({
           </div>
         ) : (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={pageContent.initial}
+            animate={pageContent.animate}
+            transition={pageContent.transition}
             className={`rounded-3xl bb-shadow-sm p-16 text-center ${SALES_SECTION_COLORS.empty}`}
           >
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/60 border border-[#ffeeba] flex items-center justify-center">

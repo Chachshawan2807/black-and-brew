@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toastSlide } from '@/lib/motion-presets';
+import { toastSlide, alertSlideIn } from '@/lib/motion-presets';
 import { getAnchoredFloatingPosition } from '@/lib/floating-position';
 
 type FloatingAlertProps = {
@@ -133,10 +133,8 @@ export function FloatingToast({
     <AnimatePresence onExitComplete={onDismiss}>
       {visible && (
         <motion.div
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 24 }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          {...alertSlideIn}
+          transition={alertSlideIn.transition}
           className={cn(
             'fixed bottom-8 right-8 z-[200] px-6 py-4 rounded-3xl bb-shadow-lg border flex items-center gap-3 font-normal',
             type === 'success'

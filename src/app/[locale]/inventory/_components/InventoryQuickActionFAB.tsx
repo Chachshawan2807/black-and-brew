@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Package, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { fadeOverlay, modalContent } from '@/lib/motion-presets';
+import { fadeOverlay, modalContent, fabIconOpen, fabIconClose, FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
 import {
   computePurchaseOrderDerivedState,
   getStockColorClass,
@@ -203,8 +203,8 @@ export default function InventoryQuickActionFAB() {
             type="button"
             onClick={toggleQuickPanel}
             className={FAB_STACK_INNER_CLASS}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.94 }}
+            whileHover={FAB_HOVER}
+            whileTap={FAB_TAP}
             aria-label={isPanelRendered ? 'ปิด Quick Action' : 'เปิด Quick Action คลังสินค้า'}
             aria-expanded={isPanelRendered}
           >
@@ -212,20 +212,16 @@ export default function InventoryQuickActionFAB() {
             {isPanelRendered ? (
               <motion.span
                 key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                {...fabIconClose}
+                transition={fabIconClose.transition}
               >
                 <X size={18} strokeWidth={1.5} />
               </motion.span>
             ) : (
               <motion.span
                 key="open"
-                initial={{ rotate: 90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: -90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                {...fabIconOpen}
+                transition={fabIconOpen.transition}
               >
                 <Package size={18} className="text-white" strokeWidth={1.5} />
               </motion.span>

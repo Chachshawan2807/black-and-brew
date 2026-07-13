@@ -3,7 +3,16 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { modalContent, MODAL_EASE } from '@/lib/motion-presets';
+import {
+  modalContent,
+  pinStatusText,
+  pinVerifyingSpinner,
+  pinInputPanel,
+  pinMessageFade,
+  PIN_DIGIT_LAYOUT_TRANSITION,
+  PIN_VERIFYING_LOCK_ANIMATE,
+  pinVerifyingLockTransition,
+} from '@/lib/motion-presets';
 import { Lock, ShieldAlert, Loader2, Fingerprint } from 'lucide-react';
 import { getAuthSessionInfo, verifyPin } from '@/app/actions/auth';
 import {
@@ -541,16 +550,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         className="w-full max-w-sm flex flex-col items-center gap-8"
       >
         <motion.div
-          animate={
-            isVerifying
-              ? { scale: [1, 1.04, 1], opacity: [1, 0.88, 1] }
-              : { scale: 1, opacity: 1 }
-          }
-          transition={{
-            duration: 1.8,
-            repeat: isVerifying ? Infinity : 0,
-            ease: 'easeInOut',
-          }}
+          animate={isVerifying ? PIN_VERIFYING_LOCK_ANIMATE.active : PIN_VERIFYING_LOCK_ANIMATE.idle}
+          transition={pinVerifyingLockTransition(isVerifying)}
           className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center bb-shadow-lg"
         >
           <Lock size={32} strokeWidth={1.5} />
@@ -564,10 +565,10 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
                 key="pin-verifying"
                 role="status"
                 aria-live="polite"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.16, ease: MODAL_EASE }}
+                initial={pinStatusText.initial}
+                animate={pinStatusText.animate}
+                exit={pinStatusText.exit}
+                transition={pinStatusText.transition}
                 className="text-sm font-normal text-muted-foreground"
               >
                 {t.verifying}
@@ -575,10 +576,10 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             ) : (
               <motion.p
                 key="pin-idle"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.16, ease: MODAL_EASE }}
+                initial={pinStatusText.initial}
+                animate={pinStatusText.animate}
+                exit={pinStatusText.exit}
+                transition={pinStatusText.transition}
                 className="text-sm font-normal text-muted-foreground"
               >
                 {t.hint}
@@ -592,10 +593,10 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             {isVerifying ? (
               <motion.div
                 key="pin-verifying-spinner"
-                initial={{ opacity: 0, scale: 0.92, y: 4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -2 }}
-                transition={{ duration: 0.18, ease: MODAL_EASE }}
+                initial={pinVerifyingSpinner.initial}
+                animate={pinVerifyingSpinner.animate}
+                exit={pinVerifyingSpinner.exit}
+                transition={pinVerifyingSpinner.transition}
                 className="flex h-16 w-16 items-center justify-center rounded-[24px] border border-border bg-card bb-shadow-sm"
                 aria-hidden="true"
               >
@@ -604,10 +605,10 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
             ) : (
               <motion.div
                 key="pin-input-fields"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.16, ease: MODAL_EASE }}
+                initial={pinInputPanel.initial}
+                animate={pinInputPanel.animate}
+                exit={pinInputPanel.exit}
+                transition={pinInputPanel.transition}
                 className="relative w-full"
               >
                 <input
@@ -640,7 +641,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
                         key={index}
                         aria-hidden="true"
                         layout
-                        transition={{ duration: 0.2, ease: MODAL_EASE }}
+                        transition={PIN_DIGIT_LAYOUT_TRANSITION}
                         className={`flex h-14 w-12 items-center justify-center rounded-2xl border bg-card bb-shadow-sm md:h-16 md:w-14 ${
                           error
                             ? 'border-red-500 bg-red-500/10'
@@ -667,8 +668,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
         {error && (
           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={pinMessageFade.initial}
+            animate={pinMessageFade.animate}
+            transition={pinMessageFade.transition}
             className="text-sm font-normal text-red-500 tracking-wide"
           >
             {t.wrongPin(failedCountDisplay)}
@@ -677,8 +679,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
         {passkeyError && !error ? (
           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={pinMessageFade.initial}
+            animate={pinMessageFade.animate}
+            transition={pinMessageFade.transition}
             className="text-sm font-normal text-red-500 tracking-wide text-center px-2"
           >
             {passkeyError}
@@ -687,8 +690,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
         {!error && biometricAttempts >= BIOMETRIC_AUTO_MAX_ATTEMPTS ? (
           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={pinMessageFade.initial}
+            animate={pinMessageFade.animate}
+            transition={pinMessageFade.transition}
             className="text-sm font-normal text-muted-foreground tracking-wide text-center px-2"
           >
             {t.biometricFailed}

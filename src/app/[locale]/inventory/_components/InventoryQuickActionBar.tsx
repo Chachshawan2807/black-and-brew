@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Search,
   ShoppingCart,
@@ -21,6 +21,11 @@ import { cn } from '@/lib/utils';
 import type { QuickBadgeStyles } from '@/lib/inventory-stock';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
 import { shouldShowQuickSearchSuggestions } from '@/lib/inventory-quick-search-filter';
+import {
+  QUICK_SEARCH_NO_HIGHLIGHT,
+  resolveQuickSearchHighlightForEnter,
+  stepQuickSearchHighlight,
+} from '@/lib/inventory-quick-search-keyboard';
 import { blurQtyInputOnWheel, stepQuickQtyValue } from '@/lib/inventory-quick-qty-step';
 import type { BulkPreview, BulkQueueItem } from '@/lib/inventory-quick-bulk';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -507,11 +512,95 @@ export function InventoryQuickActionBar({
   onClearBulkQueue,
 }: InventoryQuickActionBarProps) {
   const searchRootRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(QUICK_SEARCH_NO_HIGHLIGHT);
   const showSuggestions = shouldShowQuickSearchSuggestions(
     isSearchFocused,
     quickSearch,
     filteredItems.length,
   );
+  const suggestionsListId = 'inventory-quick-search-suggestions';
+  const showClearSearch = quickSearch.trim().length > 0;
+
+  const handleClearQuickSearch = useCallback(() => {
+    setQuickSearch('');
+    setHighlightedIndex(QUICK_SEARCH_NO_HIGHLIGHT);
+    setIsSearchFocused(true);
+    searchInputRef.current?.focus();
+  }, [setIsSearchFocused, setQuickSearch]);
+
+  useEffect(() => {
+    setHighlightedIndex(QUICK_SEARCH_NO_HIGHLIGHT);
+  }, [quickSearch, filteredItems.length, showSuggestions]);
+
+  useEffect(() => {
+    if (!showSuggestions || highlightedIndex < 0) return;
+    suggestionRefs.current[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
+  }, [highlightedIndex, showSuggestions]);
+
+  const selectQuickSearchItem = useCallback(
+    (item: QuickActionItem) => {
+      if (bulkMode && onSelectBulkItem) {
+        onSelectBulkItem(item);
+        setQuickSearch('');
+        setIsSearchFocused(true);
+      } else {
+        setQuickSearch(item.name);
+        setIsSearchFocused(false);
+      }
+      setHighlightedIndex(QUICK_SEARCH_NO_HIGHLIGHT);
+    },
+    [bulkMode, onSelectBulkItem, setIsSearchFocused, setQuickSearch],
+  );
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showSuggestions) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setHighlightedIndex((current) =>
+          stepQuickSearchHighlight(current, filteredItems.length, 'down'),
+        );
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHighlightedIndex((current) =>
+          stepQuickSearchHighlight(current, filteredItems.length, 'up'),
+        );
+        return;
+      }
+      if (e.key === 'Enter') {
+        const index = resolveQuickSearchHighlightForEnter(highlightedIndex, filteredItems.length);
+        if (index !== null) {
+          e.preventDefault();
+          selectQuickSearchItem(filteredItems[index]);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (showClearSearch) {
+          handleClearQuickSearch();
+          return;
+        }
+        setIsSearchFocused(false);
+        setHighlightedIndex(QUICK_SEARCH_NO_HIGHLIGHT);
+        return;
+      }
+    }
+
+    if (bulkMode && e.key === 'Enter') {
+      e.preventDefault();
+      onAddBulkFromSearch?.();
+      return;
+    }
+
+    if (e.key === 'Escape' && showClearSearch) {
+      e.preventDefault();
+      handleClearQuickSearch();
+    }
+  };
   const handlePasteClick = () => {
     if (!onBulkPaste) return;
     void navigator.clipboard.readText().then((text) => {
@@ -554,6 +643,7 @@ export function InventoryQuickActionBar({
             >
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder={bulkMode ? 'ค้นหาแล้วเพิ่มลงคิว...' : 'ค้นหาสินค้า...'}
                 value={quickSearch}
@@ -562,38 +652,65 @@ export function InventoryQuickActionBar({
                   if (bulkMode) setIsSearchFocused(true);
                 }}
                 onFocus={() => setIsSearchFocused(true)}
-                onKeyDown={(e) => {
-                  if (bulkMode && e.key === 'Enter') {
-                    e.preventDefault();
-                    onAddBulkFromSearch?.();
-                  }
-                }}
+                onKeyDown={handleSearchKeyDown}
+                role="combobox"
+                aria-expanded={showSuggestions}
+                aria-controls={showSuggestions ? suggestionsListId : undefined}
+                aria-autocomplete="list"
+                aria-activedescendant={
+                  showSuggestions && highlightedIndex >= 0
+                    ? `${suggestionsListId}-option-${highlightedIndex}`
+                    : undefined
+                }
                 title={quickSearch || undefined}
-                className="h-10 w-full min-w-0 pl-9 pr-3 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all antialiased"
+                className={cn(
+                  'h-10 w-full min-w-0 pl-9 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all antialiased',
+                  showClearSearch ? 'pr-9' : 'pr-3',
+                )}
               />
+              {showClearSearch && (
+                <HintTooltip tip="ล้างการค้นหา">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleClearQuickSearch}
+                    aria-label="ล้างการค้นหา"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    <X className="w-4 h-4" strokeWidth={1.75} />
+                  </button>
+                </HintTooltip>
+              )}
 
               {showSuggestions && (
                 <div
+                  id={suggestionsListId}
+                  role="listbox"
                   className="absolute top-full left-0 z-[210] mt-2 min-w-[min(100%,14rem)] w-max max-w-[min(100vw-2rem,20rem)] bg-card border border-border rounded-xl bb-shadow-md overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
                   onMouseDown={(e) => e.preventDefault()}
                 >
                   <div className="max-h-[min(50vh,16rem)] overflow-y-auto bb-smooth-scroll py-2">
-                    {filteredItems.map((item) => (
+                    {filteredItems.map((item, index) => (
                       <button
                         key={item.id}
+                        id={`${suggestionsListId}-option-${index}`}
+                        ref={(node) => {
+                          suggestionRefs.current[index] = node;
+                        }}
                         type="button"
+                        role="option"
+                        aria-selected={highlightedIndex === index}
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          if (bulkMode && onSelectBulkItem) {
-                            onSelectBulkItem(item);
-                            setQuickSearch('');
-                            setIsSearchFocused(true);
-                          } else {
-                            setQuickSearch(item.name);
-                            setIsSearchFocused(false);
-                          }
+                          selectQuickSearchItem(item);
                         }}
-                        className="w-full text-left px-5 py-3 hover:bg-muted transition-colors flex items-center justify-between gap-3 group min-w-0"
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                        className={cn(
+                          'w-full text-left px-5 py-3 transition-colors flex items-center justify-between gap-3 group min-w-0',
+                          highlightedIndex === index
+                            ? 'bg-muted'
+                            : 'hover:bg-muted',
+                        )}
                       >
                         <span className="text-[14px] text-foreground font-normal truncate min-w-0 flex-1">
                           {item.name}

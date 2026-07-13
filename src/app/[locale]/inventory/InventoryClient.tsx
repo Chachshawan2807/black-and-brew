@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase';
 import { Loader2, Undo2, Redo2, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fadeOverlay, modalContent } from '@/lib/motion-presets';
+import { fadeOverlay, modalContent, pageHeadingSpring } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';
 import {
   fetchFrequentItems,
@@ -1662,7 +1662,9 @@ export default function InventoryClient({
         <div className="w-full max-w-7xl mx-auto flex flex-col items-stretch md:items-stretch">
           <div className="w-full flex flex-col items-center mb-8 text-center">
             <motion.h1
-              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              initial={pageHeadingSpring.initial}
+              animate={pageHeadingSpring.animate}
+              transition={pageHeadingSpring.transition}
               className="text-3xl font-normal tracking-[0.2em] text-foreground uppercase"
             >
               คลังสินค้า

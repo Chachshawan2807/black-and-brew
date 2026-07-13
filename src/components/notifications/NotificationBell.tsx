@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
 import { cn } from '@/lib/utils';
 import { formatInAppBadgeLabel, getInAppBadgeClassName } from '@/lib/notification-badge';
-import { FAB_RIGHT_CLASS, FAB_SIZE_CLASS, FAB_NOTIFICATION_INNER_CLASS } from '@/lib/floating-action-layout';
-import { PWA_BRAND_ICON } from '@/lib/pwa-assets';
+import { FAB_BASE_CLASS, FAB_STACK_INNER_CLASS } from '@/lib/floating-action-layout';
 import { INVENTORY_NOTIFICATION_EVENT } from '@/lib/pwa-notification-bridge';
 import { useNotificationState, useNotificationActions } from '@/components/notifications/NotificationProvider';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -46,18 +45,11 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
 
   const content = (
     <>
-      {isFab ? (
-        <Image
-          src={PWA_BRAND_ICON}
-          alt=""
-          width={22}
-          height={22}
-          className="h-[22px] w-[22px] object-contain dark:invert dark:brightness-0 dark:opacity-90"
-          aria-hidden
-        />
-      ) : (
-        <Bell className="h-[18px] w-[18px] text-foreground/80" strokeWidth={1.75} />
-      )}
+      <Bell
+        className={cn(isFab ? 'h-[22px] w-[22px]' : 'h-[18px] w-[18px] text-foreground/80')}
+        strokeWidth={1.75}
+        aria-hidden={isFab}
+      />
       {unreadCount > 0 && (
         <span
           aria-hidden
@@ -88,18 +80,12 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
         <motion.button
           {...sharedProps}
           aria-expanded={panelOpen}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.94 }}
+          whileHover={FAB_HOVER}
+          whileTap={FAB_TAP}
           className={cn(
-            stacked
-              ? cn('relative bb-transition', FAB_NOTIFICATION_INNER_CLASS, className)
-              : cn(
-                  'relative flex items-center justify-center bb-transition',
-                  FAB_SIZE_CLASS,
-                  FAB_RIGHT_CLASS,
-                  'fixed z-[201] rounded-full bg-transparent shadow-none',
-                  className,
-                ),
+            'relative bb-transition',
+            stacked ? FAB_STACK_INNER_CLASS : cn(FAB_BASE_CLASS, 'z-[201]'),
+            className,
           )}
         >
           {content}

@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { sanitizePromptInput, sanitizeScreenContext, sanitizeXssPayload } from '@/lib/security/sanitize';
 import { cn } from '@/lib/utils';
-import { fadeOverlay, modalContent } from '@/lib/motion-presets';
+import { fadeOverlay, modalContent, fabIconOpen, fabIconClose, FAB_HOVER, FAB_TAP, ICON_COMPACT_TAP } from '@/lib/motion-presets';
 import {
   FAB_STACK_INNER_CLASS,
   FAB_BOTTOM_AI_CLASS,
@@ -155,28 +155,24 @@ export default function AIChatOverlay() {
           <motion.button
             onClick={() => setIsOpen((prev) => !prev)}
             className={FAB_STACK_INNER_CLASS}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.94 }}
+            whileHover={FAB_HOVER}
+            whileTap={FAB_TAP}
             aria-label={isOpen ? 'ปิดแชทบรู' : 'เปิดผู้ช่วย AI บรู'}
           >
           <AnimatePresence mode="wait" initial={false}>
             {isOpen ? (
               <motion.span
                 key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                {...fabIconClose}
+                transition={fabIconClose.transition}
               >
                 <X size={22} />
               </motion.span>
             ) : (
               <motion.span
                 key="open"
-                initial={{ rotate: 90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: -90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                {...fabIconOpen}
+                transition={fabIconOpen.transition}
                 className="flex items-center justify-center"
               >
                 <Image src="/ai-agent-logo.svg" alt="บรู โลโก้" width={26} height={26} className="w-[26px] h-[26px] object-contain invert" />
@@ -332,7 +328,7 @@ export default function AIChatOverlay() {
                     type="submit"
                     disabled={isLoading || !inputValue.trim()}
                     className="w-9 h-9 rounded-3xl bg-[#000000] text-white flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity"
-                    whileTap={{ scale: 0.9 }}
+                    whileTap={ICON_COMPACT_TAP}
                     aria-label="ส่งข้อความ"
                   >
                     <Send size={15} />

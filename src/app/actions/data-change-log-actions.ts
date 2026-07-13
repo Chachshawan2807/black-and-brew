@@ -104,7 +104,7 @@ async function resolveClientIp(): Promise<string | null> {
   return headerStore.get('x-real-ip') ?? headerStore.get('cf-connecting-ip') ?? null;
 }
 
-async function resolveActorContext(): Promise<{
+async function resolveActorContext(userAgent?: string | null): Promise<{
   actorId: string | null;
   actorLabel: string;
   actorAccessLevel: ActorAccessLevel;
@@ -123,7 +123,7 @@ async function resolveActorContext(): Promise<{
       if (user) {
         return {
           actorId: user.id,
-          actorLabel: resolveActorLabel(accessLevel, user.email),
+          actorLabel: resolveActorLabel(accessLevel, user.email, userAgent),
           actorAccessLevel: accessLevel,
         };
       }
@@ -134,7 +134,7 @@ async function resolveActorContext(): Promise<{
 
   return {
     actorId: null,
-    actorLabel: resolveActorLabel(accessLevel),
+    actorLabel: resolveActorLabel(accessLevel, undefined, userAgent),
     actorAccessLevel: accessLevel,
   };
 }
@@ -155,10 +155,10 @@ export async function recordDataChange(
 
   try {
     const supabase = getSupabaseAdmin();
-    const actor = await resolveActorContext();
-    const ip = await resolveClientIp();
     const headerStore = await headers();
     const userAgent = headerStore.get('user-agent');
+    const actor = await resolveActorContext(userAgent);
+    const ip = await resolveClientIp();
     const safe = parsed.data;
 
     const resolvedFieldChanges =

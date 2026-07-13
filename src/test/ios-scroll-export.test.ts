@@ -75,8 +75,9 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toContain("import { APP_FONT_FAMILY_CSS } from '@/lib/fonts'");
     expect(code).toContain('resolveScheduleExportFontFamily');
     expect(code).toContain("setInline(restores, root, 'font-family'");
-    expect(code).toContain('skipFonts: true');
-    expect(code).toContain('preloadCaptureLibraries');
+    expect(code).toContain('skipFonts: false');
+    expect(code).toContain('fontEmbedCSS');
+    expect(code).toContain('preferredFontFormat');
   });
 
   test('MonthlyRoster table keeps name column compact', () => {

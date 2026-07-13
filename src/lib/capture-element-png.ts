@@ -4,8 +4,12 @@ export type CaptureElementPngOptions = {
   backgroundColor?: string;
   pixelRatio?: number;
   filter?: (node: HTMLElement) => boolean;
-  /** Skip remote @font-face / @import fetches (fonts already loaded in-page). */
+  /** Skip remote @font-face / @import fetches (default true for generic captures). */
   skipFonts?: boolean;
+  /** Precomputed @font-face CSS from getFontEmbedCSS — embeds fonts in the PNG. */
+  fontEmbedCSS?: string;
+  /** Prefer woff2 when embedding web fonts. */
+  preferredFontFormat?: 'woff' | 'woff2' | 'truetype' | 'opentype' | 'embedded-opentype' | 'svg' | string;
   /** Keep the root node's authored overflow, useful when border-radius must clip children. */
   preserveOverflow?: boolean;
 };
@@ -18,6 +22,16 @@ let htmlToImageLoad: Promise<HtmlToImageModule> | null = null;
 /** Warm html-to-image while the user hovers/focuses export controls. */
 export function preloadCaptureLibraries(): void {
   void loadHtmlToImage();
+}
+
+export async function getCaptureFontEmbedCSS(
+  element: HTMLElement,
+  options: Pick<CaptureElementPngOptions, 'preferredFontFormat'> = {},
+): Promise<string> {
+  const { getFontEmbedCSS } = await loadHtmlToImage();
+  return getFontEmbedCSS(element, {
+    preferredFontFormat: options.preferredFontFormat ?? 'woff2',
+  });
 }
 
 function loadHtmlToImage(): Promise<HtmlToImageModule> {
@@ -110,6 +124,8 @@ export async function captureElementAsPng(
       height: fullHeight,
       cacheBust: false,
       skipFonts: options.skipFonts ?? true,
+      fontEmbedCSS: options.fontEmbedCSS,
+      preferredFontFormat: options.preferredFontFormat,
       style: {
         margin: '0',
         padding: '0',

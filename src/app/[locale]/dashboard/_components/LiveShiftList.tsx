@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { listRowSpring, SNAPPY_SPRING, CARD_LIFT_HOVER, CARD_PRESS_TAP } from '@/lib/motion-presets';
 import { Shift, Profile } from '../types';
 import { CalendarDays, Users, GripVertical } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -73,10 +74,10 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
       aria-label={`สถิติสะสม: ${data.profile.full_name} — ทำงาน ${data.workDays} วัน, ลา ${data.leaveDays} วัน, นักขัตฯ ${data.publicHolidays} วัน`}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        whileHover={isReadOnly ? undefined : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: "easeOut" } }}
-        transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
+        initial={listRowSpring.initial}
+        animate={listRowSpring.animate}
+        whileHover={isReadOnly ? undefined : CARD_LIFT_HOVER}
+        transition={listRowSpring.transition}
         className={`p-6 flex flex-col gap-5 bg-card select-none border border-border bb-shadow-sm bb-transition rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:bg-muted/30 bb-shadow-hover-md'}`}
       >
         <div className="flex items-center justify-between">
@@ -95,8 +96,8 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
         </div>
 
         <motion.div
-          whileTap={isReadOnly ? undefined : { scale: 0.98 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
+          whileTap={isReadOnly ? undefined : CARD_PRESS_TAP}
+          transition={SNAPPY_SPRING}
           className="grid grid-cols-3 gap-3"
         >
           <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
