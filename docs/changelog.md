@@ -2,6 +2,15 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-07-19 (Doc scan — migration + offline mutation accuracy)
+
+- Scanned 335 `.md` files repo-wide; edited 7 project-owned keepers for factual drift.
+- Fixed stale machine-local path in `docs/context.md` (`C:\Projects\black-and-brew`).
+- Added missing migration `20260713100000_schedule_daily_report_notifications.sql` to `docs/database.md` and `sql/README.md`; documented schedule daily-report RLS on `data_change_logs`.
+- Corrected offline mutation docs: actual kinds are `inventory_field`, `inventory_stock`, `inventory_reorder` (not `transaction`) in `docs/api.md` and `docs/architecture.md`.
+- Extended `PROJECT_MAP.md` test index with branch-withdraw and FAB/offline suites.
+- No graphify references outside `AGENTS.md` retirement notice; no broken links in project-owned docs; third-party `.agents/skills/` left unchanged.
+
 ## 2026-07-13 (DEC-083 — offline mutation + policy gates)
 
 - Recorded **DEC-083** in `docs/memory.md`: inventory offline mutation queue (IndexedDB + SW Background Sync), replay via `POST /api/inventory/offline-mutation`, session binding (`offline-auth-session.ts`), and centralized authz in `src/lib/policies/`.

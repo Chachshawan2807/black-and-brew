@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-12 | Engine: Supabase PostgreSQL
+> Version: 9.2 | Last Updated: 2026-07-19 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -152,7 +152,10 @@ Immutable authentication event log with device fingerprinting. Written by `login
 
 ### `data_change_logs`
 
-Immutable append-only mutation log (actor, module, field-level diffs). Inventory module rows are readable by `anon`/`authenticated` for in-app notifications (`supabase/migrations/20260612130000_inventory_notifications.sql`).
+Immutable append-only mutation log (actor, module, field-level diffs). Selective RLS read policies for in-app notifications:
+
+- `module = 'inventory'` — `20260612130000_inventory_notifications.sql`
+- `module = 'schedule'` + `entity_type = 'daily_report'` + `metadata.kind = 'daily_report'` — `20260713100000_schedule_daily_report_notifications.sql`
 
 ### `revoked_sessions`
 
@@ -216,7 +219,7 @@ Stored and read only through service-role server actions in `passkey-actions.ts`
 - `inventory_items`, `inventory_config`: `authenticated` role → SELECT/INSERT/UPDATE
 - `inventory_transactions`: `authenticated` → SELECT/INSERT/DELETE (no UPDATE — ledger immutability)
 - `profiles`, `shifts`: `authenticated` → full CRUD
-- `data_change_logs`: `anon_read_inventory_change_logs` — SELECT where `module = 'inventory'` (in-app notifications)
+- `data_change_logs`: `anon_read_inventory_change_logs` — SELECT where `module = 'inventory'`; `anon_read_schedule_daily_report_logs` — SELECT where `module = 'schedule'` and daily-report metadata (in-app notification panel)
 - Client must call `supabase.auth.signInAnonymously()` after PIN gate
 
 ### Legacy (pre-hardening)
@@ -314,6 +317,7 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260711120000_inventory_branch_withdrawals.sql` | Branch 2 withdrawal header table + `record_branch_withdrawal_batch` RPC |
 | `20260711164656_reset_accuracy_history_major_overhaul.sql` | Reset accuracy ledger after gauge/report overhaul |
 | `20260711223000_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening + authz |
+| `20260713100000_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel catch-up) |
 
 Retired: inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 

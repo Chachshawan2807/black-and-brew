@@ -308,6 +308,47 @@ describe('Inventory Quick Action FAB', () => {
     expect(pageCode).toMatch(/isQuickActionBarOpen && !quickActionFabOpen/);
   });
 
+  test('inventory modals portal above FAB overlays with shared z-index', () => {
+    const layoutCode = fs.readFileSync(
+      path.resolve(__dirname, '../lib/floating-action-layout.ts'),
+      'utf-8',
+    );
+    const portalCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryModalPortal.tsx'),
+      'utf-8',
+    );
+    const purchaseCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
+      'utf-8',
+    );
+    const historyCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryHistoryModal.tsx'),
+      'utf-8',
+    );
+    const addCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryAddItemModal.tsx'),
+      'utf-8',
+    );
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+
+    expect(layoutCode).toContain('INVENTORY_MODAL_Z_CLASS');
+    expect(layoutCode).toContain('z-[220]');
+    expect(portalCode).toContain('createPortal');
+    expect(purchaseCode).toContain('InventoryModalPortal');
+    expect(purchaseCode).toContain('INVENTORY_MODAL_Z_CLASS');
+    expect(purchaseCode).not.toContain('z-[150]');
+    expect(historyCode).toContain('InventoryModalPortal');
+    expect(historyCode).toContain('INVENTORY_MODAL_Z_CLASS');
+    expect(addCode).toContain('InventoryModalPortal');
+    expect(addCode).toContain('INVENTORY_MODAL_Z_CLASS');
+    expect(fabCode).toContain('openPurchaseOrderModal');
+    expect(fabCode).toContain('openAddItemModal');
+    expect(fabCode).toContain('openHistoryModal');
+  });
+
   test('quick action wrapper mounts globally from deferred overlays on all routes', () => {
     const wrapperCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionWrapper.tsx'),

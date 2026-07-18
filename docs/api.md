@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-12
+> Version: 9.2 | Last Updated: 2026-07-19
 
 ---
 
@@ -235,9 +235,9 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 ### `POST /api/inventory/offline-mutation`
 
 - Auth-gated endpoint for replaying offline mutations queued in `public/offline-mutation-store.js` (service worker background sync).
-- Validates each mutation via Zod schemas (`inventory_field`, `inventory_stock`, `transaction`) and calls the appropriate server-side action.
+- Validates each mutation via Zod schemas (`inventory_field`, `inventory_stock`, `inventory_reorder`) and calls the appropriate server-side action.
 - Auth: `requireMutationAccess()` from `src/lib/policies/server-gate.ts`; read-only sessions are rejected.
-- Mutation types: `inventory_field` → `updateInventoryItemField()`, `inventory_stock` → `updateInventoryStock()`, `transaction` → `recordTransaction()`.
+- Mutation types: `inventory_field` → `updateInventoryItemField()`, `inventory_stock` → `updateInventoryStock()`, `inventory_reorder` → `reorderInventoryItems()`.
 - Replay logic: `src/lib/offline-mutation-sync.ts`; client queue: `src/lib/offline-mutation-queue.ts`; retry: `src/lib/offline-replay-retry.ts`.
 - `maxDuration: 30` (Vercel serverless).
 

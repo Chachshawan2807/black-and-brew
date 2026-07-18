@@ -100,7 +100,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
         {
           id: 'inventory-branch-withdraw',
           href: `${prefix}/inventory/branch-withdraw`,
-          label: 'เบิกของจากสาขา 2',
+          label: 'เบิกของสาขา 2',
           active: pathname.includes('/inventory/branch-withdraw'),
           icon: Package,
           submenus: []

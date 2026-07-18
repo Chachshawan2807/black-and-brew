@@ -14,6 +14,8 @@ import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { recordItemAddHistory } from '@/app/actions/inventory-actions';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import { InventoryModalPortal } from './InventoryModalPortal';
 
 export type NewInventoryItemInput = {
   name: string;
@@ -120,12 +122,16 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
   };
 
   return (
+    <InventoryModalPortal>
     <motion.div
       initial={fadeOverlay.initial}
       animate={fadeOverlay.animate}
       exit={fadeOverlay.exit}
       transition={fadeOverlay.transition}
-      className="fixed inset-0 z-[210] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 transition-[padding,height] duration-200"
+      className={cn(
+        'fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 transition-[padding,height] duration-200',
+        INVENTORY_MODAL_Z_CLASS,
+      )}
       style={modalBackdropStyle}
       onClick={onClose}
     >
@@ -276,5 +282,6 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
         </form>
       </motion.div>
     </motion.div>
+    </InventoryModalPortal>
   );
 }

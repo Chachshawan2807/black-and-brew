@@ -18,9 +18,10 @@ import {
 } from '@/lib/keyboard-aware-panel-style';
 
 import { HintTooltip } from '@/components/ui/hint-tooltip';
-
+import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import type { InventoryTransactionFilterType, InventoryTransactionType } from '@/app/actions/inventory-actions';
+import { InventoryModalPortal } from './InventoryModalPortal';
 
 
 
@@ -208,7 +209,7 @@ export function InventoryHistoryModal({
 
 
   return (
-
+    <InventoryModalPortal>
     <motion.div
 
       initial={fadeOverlay.initial}
@@ -219,7 +220,10 @@ export function InventoryHistoryModal({
 
       transition={fadeOverlay.transition}
 
-      className="fixed inset-0 z-[210] flex items-end md:items-center justify-center bg-black/20 backdrop-blur-md p-0 md:p-4 transition-[padding,height] duration-200"
+      className={cn(
+        'fixed inset-0 flex items-end md:items-center justify-center bg-black/20 backdrop-blur-md p-0 md:p-4 transition-[padding,height] duration-200',
+        INVENTORY_MODAL_Z_CLASS,
+      )}
 
       style={modalBackdropStyle}
 
@@ -557,6 +561,7 @@ export function InventoryHistoryModal({
       </motion.div>
 
     </motion.div>
+    </InventoryModalPortal>
 
   );
 

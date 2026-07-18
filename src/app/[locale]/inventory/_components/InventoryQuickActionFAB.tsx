@@ -112,6 +112,21 @@ export default function InventoryQuickActionFAB() {
     setIsOpen(false);
   }, []);
 
+  const openPurchaseOrderModal = useCallback(() => {
+    setShowPurchaseOrderModal(true);
+    setIsOpen(false);
+  }, []);
+
+  const openAddItemModal = useCallback(() => {
+    setShowAddModal(true);
+    setIsOpen(false);
+  }, []);
+
+  const openHistoryModal = useCallback(() => {
+    history.handleOpenHistory();
+    setIsOpen(false);
+  }, [history]);
+
   const toggleQuickPanel = useCallback(() => {
     setIsOpen((prev) => {
       if (prev) {
@@ -283,9 +298,9 @@ export default function InventoryQuickActionFAB() {
                   isQuickPending={quickAction.isQuickPending}
                   isReadOnly={isReadOnly}
                   onSubmit={quickAction.handleQuickSubmit}
-                  onOpenPurchaseOrder={() => setShowPurchaseOrderModal(true)}
-                  onOpenAddItem={() => setShowAddModal(true)}
-                  onOpenHistory={history.handleOpenHistory}
+                  onOpenPurchaseOrder={openPurchaseOrderModal}
+                  onOpenAddItem={openAddItemModal}
+                  onOpenHistory={openHistoryModal}
                   bulkMode={quickAction.bulkMode}
                   onBulkModeChange={quickAction.setBulkMode}
                   bulkQueue={quickAction.bulkQueue}

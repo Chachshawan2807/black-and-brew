@@ -74,6 +74,13 @@ const INPUT_FIELD_CLASS =
   'h-8 w-full min-w-0 rounded-xl border border-border bg-background px-1 text-center text-xs outline-none tabular-nums md:h-9 md:px-2 md:text-sm';
 const UNIT_INPUT_FIELD_CLASS = `${INPUT_FIELD_CLASS} placeholder:text-[10px] placeholder:leading-tight md:placeholder:text-xs`;
 const MOBILE_INPUT_GRID_CLASS = 'grid grid-cols-3 gap-1 md:contents';
+const BRANCH_WITHDRAW_DIALOG_BASE_CLASS =
+  'm-auto max-h-[min(85dvh,100%)] rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40';
+const BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-fit max-w-[92vw]`;
+const BRANCH_WITHDRAW_DIALOG_WIDE_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(780px,92vw)]`;
+const BRANCH_WITHDRAW_DIALOG_NARROW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(640px,92vw)]`;
+const STICKY_ACTION_BUTTON_CLASS =
+  'flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 
 function WithdrawRowInputs({
   row,
@@ -364,7 +371,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         </header>
 
         <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-          <h1 className="text-xl font-normal md:text-2xl">เบิกของจากสาขา 2</h1>
+          <h1 className="text-xl font-normal md:text-2xl">เบิกของสาขา 2</h1>
           <p className="mt-1 text-sm text-foreground/70">
             แสดงเฉพาะรายการสั่งซื้อช่องทางสาขา 2 ที่ต้องเติมสต็อก — ระบุจำนวนเบิกแล้วกดบันทึกเพื่อส่ง LINE
           </p>
@@ -434,7 +441,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         <section className="space-y-3 rounded-2xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-normal">ประวัติการเบิก</h2>
           {history.length === 0 ? (
-            <p className="text-sm text-foreground/70">ยังไม่มีประวัติการเบิกจากสาขา 2</p>
+            <p className="text-sm text-foreground/70">ยังไม่มีประวัติการเบิกสาขา 2</p>
           ) : (
             <div className="space-y-2">
               {history.map((entry) => (
@@ -468,13 +475,13 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
           )}
         </section>
 
-        <div className="sticky bottom-0 z-20 mt-2 border-t border-border bg-background/95 py-3 backdrop-blur [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="sticky bottom-0 z-20 mt-2 border-t border-border bg-background/95 py-4 backdrop-blur [padding-bottom:max(1rem,env(safe-area-inset-bottom))]">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
               onClick={openPreviewDialog}
               disabled={sortedItems.length === 0}
-              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              className={STICKY_ACTION_BUTTON_CLASS}
             >
               <Eye className="h-4 w-4" />
               <span>ดูตัวอย่างข้อความ LINE</span>
@@ -488,7 +495,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
               type="button"
               onClick={() => void handleSave()}
               disabled={isReadOnly || isSaving || previewLineCount === 0}
-              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              className={STICKY_ACTION_BUTTON_CLASS}
             >
               {isSaving ? (
                 <>
@@ -506,10 +513,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         </div>
       </div>
 
-      <dialog
-        ref={previewDialogRef}
-        className="m-auto max-h-[min(85dvh,100%)] w-fit max-w-[92vw] rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40"
-      >
+      <dialog ref={previewDialogRef} className={BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS}>
         <div className="flex w-fit max-w-[92vw] flex-col p-4 md:p-5">
           <h3 className="text-base">ตัวอย่างข้อความ LINE (อัปเดตตามที่กรอก)</h3>
           <p className="mt-1 text-xs text-foreground/70">
@@ -547,7 +551,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         </div>
       </dialog>
 
-      <dialog ref={saveResultDialogRef} className="w-[min(780px,92vw)] rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40">
+      <dialog ref={saveResultDialogRef} className={BRANCH_WITHDRAW_DIALOG_WIDE_CLASS}>
         <div className="p-4 md:p-5">
           <h3 className="text-base">ข้อความ LINE สำหรับส่ง</h3>
           <textarea
@@ -576,7 +580,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         </div>
       </dialog>
 
-      <dialog ref={historyLineDialogRef} className="w-[min(780px,92vw)] rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40">
+      <dialog ref={historyLineDialogRef} className={BRANCH_WITHDRAW_DIALOG_WIDE_CLASS}>
         <div className="p-4 md:p-5">
           <h3 className="text-base">{lineMessageDialog?.title ?? 'ข้อความ LINE'}</h3>
           <textarea
@@ -596,7 +600,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         </div>
       </dialog>
 
-      <dialog ref={detailDialogRef} className="w-[min(640px,92vw)] rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40">
+      <dialog ref={detailDialogRef} className={BRANCH_WITHDRAW_DIALOG_NARROW_CLASS}>
         <div className="p-4 md:p-5">
           <h3 className="text-base">{detailDialogTitle || 'รายละเอียด'}</h3>
           <div className="mt-3 max-h-80 space-y-2 overflow-auto bb-smooth-scroll rounded-xl border border-border bg-background p-3">

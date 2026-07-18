@@ -57,3 +57,6 @@ export const FAB_PAGE_BOTTOM_PADDING_CLASS =
 /** Page/content bottom inset when only the hide toggle is visible */
 export const FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS =
   'max-md:pb-[calc(4rem+env(safe-area-inset-bottom,0px))]';
+
+/** Inventory modals from quick action (inline bar or FAB) — above FAB panel (z-199) and FAB buttons (z-201). */
+export const INVENTORY_MODAL_Z_CLASS = 'z-[220]';

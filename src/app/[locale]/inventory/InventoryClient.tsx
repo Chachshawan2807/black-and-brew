@@ -26,6 +26,7 @@ import { useInventoryHistory } from '@/hooks/use-inventory-history';
 import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from './_components/InventoryQuickActionBar';
+import { InventoryModalPortal } from './_components/InventoryModalPortal';
 import { InventoryGridSearchBar } from './_components/InventoryGridSearchBar';
 import {
   queueOfflineMutation,
@@ -49,6 +50,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { blurActiveElement } from '@/lib/blur-active-element';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
+import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -1098,6 +1100,10 @@ export default function InventoryClient({
     void fetchConfigAndInventory();
   }, [fetchConfigAndInventory]);
 
+  const handleOpenAddItem = useCallback(() => {
+    setShowAddModal(true);
+  }, []);
+
   function sanitizeInventoryItem(item: InventoryItem) {
     const sanitized = { ...item };
     const numericFields = ['stock', 'order_qty', 'order_point', 'target_stock', 'sort_order'];
@@ -1741,7 +1747,7 @@ export default function InventoryClient({
                 isReadOnly={isReadOnly}
                 onSubmit={quickAction.handleQuickSubmit}
                 onOpenPurchaseOrder={handleOpenPurchaseOrders}
-                onOpenAddItem={() => setShowAddModal(true)}
+                onOpenAddItem={handleOpenAddItem}
                 onOpenHistory={history.handleOpenHistory}
                 onPreloadPurchaseOrder={preloadPurchaseOrdersModal}
                 onPreloadHistory={preloadInventoryHistoryModal}
@@ -1859,9 +1865,13 @@ export default function InventoryClient({
       {/* Add Modal */}
       <AnimatePresence>
         {showAddModal && (
+          <InventoryModalPortal>
           <motion.div
             initial={fadeOverlay.initial} animate={fadeOverlay.animate} exit={fadeOverlay.exit} transition={fadeOverlay.transition}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4"
+            className={cn(
+              'fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4',
+              INVENTORY_MODAL_Z_CLASS,
+            )}
             onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }}
           >
           <motion.div
@@ -2017,6 +2027,7 @@ export default function InventoryClient({
               </form>
             </motion.div>
           </motion.div>
+          </InventoryModalPortal>
         )}
       </AnimatePresence>
 

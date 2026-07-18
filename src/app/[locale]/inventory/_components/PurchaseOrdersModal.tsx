@@ -7,7 +7,9 @@ import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import type { PurchaseOrderCandidate } from '@/lib/inventory-stock';
+import { InventoryModalPortal } from './InventoryModalPortal';
 
 type PurchaseOrdersModalProps = {
   onClose?: () => void;
@@ -255,24 +257,29 @@ export default function PurchaseOrdersModal({
   }
 
   return (
-    <motion.div
-      initial={fadeOverlay.initial}
-      animate={fadeOverlay.animate}
-      exit={fadeOverlay.exit}
-      transition={fadeOverlay.transition}
-      className="fixed inset-0 z-[150] flex items-center justify-center bg-black/20 backdrop-blur-md p-4"
-      onClick={onClose}
-    >
+    <InventoryModalPortal>
       <motion.div
-        initial={modalContent.initial}
-        animate={modalContent.animate}
-        exit={modalContent.exit}
-        transition={modalContent.transition}
-        className="bg-card rounded-3xl bb-shadow-xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        initial={fadeOverlay.initial}
+        animate={fadeOverlay.animate}
+        exit={fadeOverlay.exit}
+        transition={fadeOverlay.transition}
+        className={cn(
+          'fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-md p-4',
+          INVENTORY_MODAL_Z_CLASS,
+        )}
+        onClick={onClose}
       >
-        {tableContent}
+        <motion.div
+          initial={modalContent.initial}
+          animate={modalContent.animate}
+          exit={modalContent.exit}
+          transition={modalContent.transition}
+          className="bg-card rounded-3xl bb-shadow-xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {tableContent}
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </InventoryModalPortal>
   );
 }

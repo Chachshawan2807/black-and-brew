@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-07-12 (GMT+7) | Version: 9.2
+> Generated: 2026-07-19 (GMT+7) | Version: 9.2
 
 Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) over reading this file wholesale. Canonical agent rules: `AGENTS.md`.
 
@@ -112,7 +112,7 @@ black-and-brew/
 
 ## Tests (`src/test/`)
 
-Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `notification-unread-counter.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `live_shift_list.test.ts`
+Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `inventory-branch-withdraw-menu.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `offline-mutation-route.test.ts`, `notification-unread-counter.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `live_shift_list.test.ts`
 
 ---
 

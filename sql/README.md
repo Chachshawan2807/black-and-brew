@@ -57,6 +57,8 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260711164656_reset_accuracy_history_major_overhaul.sql` | Reset accuracy ledger after gauge/report overhaul |
 | `20260711223000_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening |
 
+| `20260713100000_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel) |
+
 ## Cleanup notes
 
 Do **not** delete or squash applied migrations — history must stay linear for `supabase db push` / remote checksums. Later migrations may drop objects created earlier (e.g. Market Insights `local_events`, recommended target stock) or reset accuracy history; that is intentional.

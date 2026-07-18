@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-12 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.2 | Last Updated: 2026-07-19 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -215,8 +215,8 @@ Quick Entry / FAB → recordTransaction() → supabase.rpc('record_inventory_tra
 ### Inventory In-App + Cross-Device Web Push Notifications
 
 ```text
-Server mutation → recordDataChange() → data_change_logs INSERT (module=inventory)
-→ Supabase Realtime on data_change_logs → useInventoryNotifications() (same device)
+Server mutation → recordDataChange() → data_change_logs INSERT (module=inventory or schedule/daily_report)
+→ Supabase Realtime on data_change_logs → useInventoryNotifications() (same device; schedule rows via RLS policy from `20260713100000`)
 → dispatchInventoryWebPush() (fire-and-forget) → web-push → push_subscriptions rows
 → PushSubscriptionManager (layout) registers endpoint via registerPushSubscription()
 → NotificationPreferencesSection syncs prefs to push_subscriptions.prefs_json
@@ -235,7 +235,7 @@ Inventory edit (offline) → offline-mutation-queue.ts → IndexedDB queue
 → replayOfflineMutation() (src/lib/offline-mutation-sync.ts)
 → inventory_field → updateInventoryItemField()
 → inventory_stock → updateInventoryStock() [set_inventory_stock RPC]
-→ transaction → recordTransaction() [record_inventory_transaction RPC]
+→ inventory_reorder → reorderInventoryItems()
 → offline-replay-retry.ts for back-off on transient failures
 ```
 
