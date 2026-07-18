@@ -252,7 +252,7 @@ export default function InventoryQuickActionFAB() {
               exit={modalContent.exit}
               transition={modalContent.transition}
               className={cn(
-                'fixed z-[199] box-border flex flex-col overflow-visible',
+                'fixed z-[199] box-border flex flex-col overflow-y-auto bb-smooth-scroll min-h-0 bg-card rounded-3xl isolate',
                 'max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none',
                 'max-md:transition-[top,max-height,bottom] max-md:duration-200',
                 'md:w-full md:max-w-2xl md:left-auto md:right-6',
@@ -297,6 +297,10 @@ export default function InventoryQuickActionFAB() {
                   onRemoveBulkItem={quickAction.removeBulkItem}
                   onBulkLineQtyChange={quickAction.setBulkLineQty}
                   onClearBulkQueue={quickAction.clearBulkQueue}
+                  bulkConfirmOpen={quickAction.bulkConfirmOpen}
+                  bulkQuickType={quickAction.bulkQuickType}
+                  onConfirmBulkSubmit={quickAction.confirmBulkSubmit}
+                  onCancelBulkSubmit={quickAction.cancelBulkSubmit}
                   className="bb-shadow-xl"
                 />
               )}

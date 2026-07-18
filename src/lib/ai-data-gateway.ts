@@ -46,6 +46,8 @@ export const AI_ALLOWED_TABLES = [
   'login_history',
   'data_change_logs',
   'revoked_sessions',
+  'push_subscriptions',
+  'device_passkeys',
 ] as const;
 
 export type AiReadableTable = (typeof AI_ALLOWED_TABLES)[number];
@@ -127,6 +129,10 @@ export const TABLE_COLUMN_PRESETS: Record<AiReadableTable, string> = {
     'entity_type, entity_id, entity_label, field_changes, old_value, new_value, source, ' +
     'ip_address, user_agent, status, error_message, metadata, created_at',
   revoked_sessions: 'session_fingerprint, revoked_at, revoked_reason',
+  push_subscriptions:
+    'id, user_id, client_session_id, user_agent, prefs_json, profile_id, branch_id, created_at, updated_at',
+  device_passkeys:
+    'id, credential_id, counter, transports, device_label, session_fingerprint, access_level, registered_at, last_used_at',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,6 +155,8 @@ export const TABLE_MAX_LIMITS: Record<AiReadableTable, number> = {
   sales_uploads: 100,
   inventory_config: 50,
   revoked_sessions: 200,
+  push_subscriptions: 200,
+  device_passkeys: 200,
 };
 
 export const DEFAULT_TABLE_MAX_LIMIT = 200;

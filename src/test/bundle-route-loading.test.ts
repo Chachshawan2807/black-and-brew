@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 const inventoryClientPath = resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx');
+const inventoryHistoryHookPath = resolve(__dirname, '../hooks/use-inventory-history.ts');
 const quickActionBarPath = resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx');
 
 describe('bundle and route-level loading', () => {
@@ -10,7 +11,9 @@ describe('bundle and route-level loading', () => {
     const source = readFileSync(inventoryClientPath, 'utf-8');
 
     expect(source).not.toContain("import { InventoryHistoryModal");
-    expect(source).toContain("import type { TransactionHistoryRow }");
+
+    const historyHook = readFileSync(inventoryHistoryHookPath, 'utf-8');
+    expect(historyHook).toContain("import type { TransactionHistoryRow }");
     expect(source).toMatch(/dynamic\(\s*\(\)\s*=>\s*import\('\.\/_components\/InventoryHistoryModal'\)/);
     expect(source).toContain("dynamic(() => import('./_components/PurchaseOrdersModal')");
   });

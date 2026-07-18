@@ -24,6 +24,10 @@ export type BulkPreview = {
 
 export type BulkQuickType = 'IN' | 'OUT';
 
+export function getBulkSubmitTypeLabel(type: BulkQuickType): string {
+  return type === 'IN' ? 'รับเข้า' : 'นำออก';
+}
+
 export function parseBulkEntry(line: string): { name: string; qty: string } {
   const cleanedLine = line.replace(/^\s*\d+\.\s*/, '').trim();
   const eqIndex = cleanedLine.indexOf('=');
@@ -114,7 +118,7 @@ export function addBulkQueueItem(
   if (queue.some((line) => line.itemId === item.id)) {
     return { queue, duplicate: true };
   }
-  return { queue: [...queue, toBulkQueueItem(item)], duplicate: false };
+  return { queue: [toBulkQueueItem(item), ...queue], duplicate: false };
 }
 
 export function removeBulkQueueItem(queue: BulkQueueItem[], itemId: string): BulkQueueItem[] {
@@ -151,7 +155,7 @@ export function buildBulkQueueFromPaste(
     queue = setBulkLineQty(queue, item.id, qty);
     
     if (queue.length > beforeLen) {
-      added.push(queue[queue.length - 1]!);
+      added.push(queue[0]!);
     }
   }
 

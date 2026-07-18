@@ -1756,6 +1756,10 @@ export default function InventoryClient({
                 onRemoveBulkItem={quickAction.removeBulkItem}
                 onBulkLineQtyChange={quickAction.setBulkLineQty}
                 onClearBulkQueue={quickAction.clearBulkQueue}
+                bulkConfirmOpen={quickAction.bulkConfirmOpen}
+                bulkQuickType={quickAction.bulkQuickType}
+                onConfirmBulkSubmit={quickAction.confirmBulkSubmit}
+                onCancelBulkSubmit={quickAction.cancelBulkSubmit}
               />
             ) : !quickActionFabOpen ? (
               <button

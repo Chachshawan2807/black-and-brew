@@ -71,7 +71,12 @@ describe('verifyPin Security Checks', () => {
       sessionFingerprint: 'fp-test',
     });
 
-    expect(result).toEqual({ success: true, isReadOnly: false });
+    expect(result).toEqual(
+      expect.objectContaining({ success: true, isReadOnly: false })
+    );
+    expect(result.offlineAuthSessionId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
     expect(mockSet).toHaveBeenCalledWith('bb_auth_pin_verified', 'true', expect.objectContaining({
       httpOnly: true,
       secure: true,
@@ -97,7 +102,12 @@ describe('verifyPin Security Checks', () => {
   test('should set read-only cookies when read-only PIN matches env', async () => {
     const result = await verifyPin('111222');
 
-    expect(result).toEqual({ success: true, isReadOnly: true });
+    expect(result).toEqual(
+      expect.objectContaining({ success: true, isReadOnly: true })
+    );
+    expect(result.offlineAuthSessionId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
     expect(mockSet).toHaveBeenCalledWith('bb_auth_pin_verified', 'true', expect.any(Object));
     expect(mockSet).toHaveBeenCalledWith('bb_auth_read_only', 'true', expect.any(Object));
   });

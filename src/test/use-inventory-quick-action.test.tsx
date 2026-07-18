@@ -64,6 +64,7 @@ function QuickActionHarness({
       <output data-testid="bulk-ready">{String(quickAction.bulkSubmitReady)}</output>
       <output data-testid="bulk-count">{String(quickAction.bulkQueue.length)}</output>
       <output data-testid="bulk-mode">{String(quickAction.bulkMode)}</output>
+      <output data-testid="bulk-confirm-open">{String(quickAction.bulkConfirmOpen)}</output>
       <button
         type="button"
         onClick={() => {
@@ -99,6 +100,12 @@ function QuickActionHarness({
         click-away
       </button>
       <button type="submit">save</button>
+      <button type="button" onClick={() => quickAction.confirmBulkSubmit()}>
+        confirm-bulk
+      </button>
+      <button type="button" onClick={() => quickAction.cancelBulkSubmit()}>
+        cancel-bulk
+      </button>
     </form>
   );
 }
@@ -174,6 +181,11 @@ describe('useInventoryQuickAction save reset behavior', () => {
 
     fireEvent.click(screen.getByText('save'));
 
+    expect(recordBulkInventoryTransactions).not.toHaveBeenCalled();
+    expect(screen.getByTestId('bulk-confirm-open')).toHaveTextContent('true');
+
+    fireEvent.click(screen.getByText('confirm-bulk'));
+
     await waitFor(() =>
       expect(recordBulkInventoryTransactions).toHaveBeenCalledWith(
         [{ itemId: 'milk', type: 'IN', quantity: 2 }],
@@ -183,6 +195,25 @@ describe('useInventoryQuickAction save reset behavior', () => {
     );
     await waitFor(() => expect(screen.getByTestId('bulk-count')).toHaveTextContent('0'));
     expect(onAfterSave).toHaveBeenCalledTimes(2);
+  });
+
+  test('bulk save confirmation can be cancelled without saving', async () => {
+    render(<QuickActionHarness />);
+
+    fireEvent.click(screen.getByText('bulk-on'));
+    fireEvent.click(screen.getByText('add-milk'));
+    fireEvent.click(screen.getByText('qty-milk'));
+
+    await waitFor(() => expect(screen.getByTestId('bulk-ready')).toHaveTextContent('true'));
+
+    fireEvent.click(screen.getByText('save'));
+    expect(screen.getByTestId('bulk-confirm-open')).toHaveTextContent('true');
+
+    fireEvent.click(screen.getByText('cancel-bulk'));
+
+    expect(screen.getByTestId('bulk-confirm-open')).toHaveTextContent('false');
+    expect(recordBulkInventoryTransactions).not.toHaveBeenCalled();
+    expect(screen.getByTestId('bulk-count')).toHaveTextContent('1');
   });
 
   test('keeps unsaved bulk queue when clicking away from the quick search', async () => {

@@ -54,7 +54,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(layoutCode).toContain('md:bottom-[7.75rem]');
     expect(layoutCode).toContain('max-md:bottom-[calc(11rem+env(safe-area-inset-bottom,0px))]');
     expect(fabCode).toContain('InventoryQuickActionBar');
-    expect(fabCode).toContain('overflow-visible');
+    expect(fabCode).toContain('overflow-y-auto bb-smooth-scroll');
     expect(fabCode).not.toContain('overflow-y-auto max-h-full');
     expect(fabCode).toContain('FAB_STACK_INNER_CLASS');
     expect(fabCode).toContain('FabFadePresence');
@@ -209,6 +209,23 @@ describe('Inventory Quick Action FAB', () => {
     const wheelHandlerCount = (barCode.match(/onWheel=\{blurQtyInputOnWheel\}/g) ?? []).length;
     expect(wheelHandlerCount).toBe(numberInputCount);
     expect(numberInputCount).toBeGreaterThanOrEqual(2);
+  });
+
+  test('bulk submit confirm renders via portal above FAB overlays', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+
+    expect(barCode).toContain('createPortal');
+    expect(barCode).toContain('BulkSubmitConfirmDialog');
+    expect(barCode).toContain('z-[220]');
+    expect(barCode).not.toMatch(/BulkSubmitConfirmDialog[\s\S]*<dialog/);
+    expect(fabCode).toContain('bg-card rounded-3xl isolate');
   });
 
   test('quick action bar uses aligned 3-column mobile action grid', () => {

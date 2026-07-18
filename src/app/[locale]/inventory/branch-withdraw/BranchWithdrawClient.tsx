@@ -475,7 +475,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
             แสดงเฉพาะรายการที่มีจำนวนสาขา 1 — ข้อความนี้จะเหมือนตอนกดบันทึก
           </p>
           <div className="mt-3 max-h-[min(60dvh,32rem)] overflow-y-auto bb-smooth-scroll rounded-xl border border-border bg-background p-3">
-            <pre className="w-max max-w-[calc(92vw-2.5rem)] whitespace-pre-wrap font-mono text-sm leading-relaxed">
+            <pre className="w-max max-w-[calc(92vw-2.5rem)] whitespace-pre-wrap font-sans text-sm leading-relaxed">
               {previewLineMessage}
             </pre>
           </div>

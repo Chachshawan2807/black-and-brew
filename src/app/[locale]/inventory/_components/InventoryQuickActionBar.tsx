@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search,
   ShoppingCart,
@@ -28,6 +29,7 @@ import {
 } from '@/lib/inventory-quick-search-keyboard';
 import { blurQtyInputOnWheel, stepQuickQtyValue } from '@/lib/inventory-quick-qty-step';
 import type { BulkPreview, BulkQueueItem } from '@/lib/inventory-quick-bulk';
+import { getBulkSubmitTypeLabel, type BulkQuickType } from '@/lib/inventory-quick-bulk';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 export type QuickActionItem = {
@@ -74,6 +76,10 @@ export type InventoryQuickActionBarProps = {
   onRemoveBulkItem?: (itemId: string) => void;
   onBulkLineQtyChange?: (itemId: string, qty: string) => void;
   onClearBulkQueue?: () => void;
+  bulkConfirmOpen?: boolean;
+  bulkQuickType?: BulkQuickType;
+  onConfirmBulkSubmit?: () => void;
+  onCancelBulkSubmit?: () => void;
 };
 
 const ACTION_CELL_CLASS = 'min-w-0 w-full';
@@ -363,7 +369,7 @@ function BulkQueuePanel({
           </button>
         )}
       </div>
-      <div className="max-h-[min(40vh,14rem)] overflow-y-auto bb-smooth-scroll divide-y divide-border/60">
+      <div className="divide-y divide-border/60">
         {bulkPreviews.map(({ line, preview }) => (
           <div
             key={line.itemId}
@@ -407,6 +413,104 @@ function BulkQueuePanel({
         ))}
       </div>
     </div>
+  );
+}
+
+function BulkSubmitConfirmDialog({
+  open,
+  bulkPreviews,
+  bulkQuickType,
+  isQuickPending,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  bulkPreviews: { line: BulkQueueItem; preview: BulkPreview }[];
+  bulkQuickType: BulkQuickType;
+  isQuickPending: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const [isMounted, setIsMounted] = useState(false);
+  const typeLabel = getBulkSubmitTypeLabel(bulkQuickType);
+  const rowTone =
+    bulkQuickType === 'OUT'
+      ? INVENTORY_QUICK_ACTION_COLORS.out
+      : INVENTORY_QUICK_ACTION_COLORS.in;
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  if (!open || !isMounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[220] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
+      role="presentation"
+      onClick={onCancel}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bulk-submit-confirm-title"
+        className="w-[min(640px,92vw)] max-h-[min(85dvh,100%)] rounded-2xl border border-border bg-card text-foreground bb-shadow-xl flex flex-col"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex max-h-[min(85dvh,100%)] flex-col p-4 md:p-5">
+          <h3 id="bulk-submit-confirm-title" className="text-base font-normal">
+            สรุปรายการ{typeLabel}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {bulkPreviews.length} รายการ — ตรวจสอบก่อนยืนยันบันทึก
+          </p>
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto bb-smooth-scroll rounded-xl border border-border bg-muted/15 divide-y divide-border/60">
+            {bulkPreviews.map(({ line, preview }) => (
+              <div key={line.itemId} className={cn('flex items-center gap-3 px-3 py-2.5 min-w-0', rowTone)}>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm text-foreground truncate">{line.name}</div>
+                  <div className="text-[11px] text-muted-foreground tabular-nums">
+                    {preview.before} → {preview.after} {line.unit}
+                  </div>
+                </div>
+                <div className="shrink-0 text-sm font-normal tabular-nums text-foreground">
+                  {typeLabel} {line.qty} {line.unit}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={isQuickPending}
+              className="h-10 rounded-xl border border-border bg-background px-4 text-sm transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              ยกเลิก
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={isQuickPending}
+              className="h-10 rounded-xl bb-pastel-surface border border-[#bee5eb] bg-[#d1ecf1] px-4 text-sm text-[#000000] transition-all hover:brightness-95 disabled:opacity-50"
+            >
+              {isQuickPending ? 'กำลังบันทึก...' : `ยืนยัน${typeLabel}`}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -510,6 +614,10 @@ export function InventoryQuickActionBar({
   onRemoveBulkItem,
   onBulkLineQtyChange,
   onClearBulkQueue,
+  bulkConfirmOpen = false,
+  bulkQuickType = 'IN',
+  onConfirmBulkSubmit,
+  onCancelBulkSubmit,
 }: InventoryQuickActionBarProps) {
   const searchRootRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -615,6 +723,7 @@ export function InventoryQuickActionBar({
   };
 
   return (
+    <>
     <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border bb-shadow-sm', className)}>
       <form onSubmit={onSubmit} className="flex flex-col gap-2.5 w-full">
         <div
@@ -877,5 +986,16 @@ export function InventoryQuickActionBar({
         </div>
       )}
     </div>
+    {bulkMode && onConfirmBulkSubmit && onCancelBulkSubmit && (
+      <BulkSubmitConfirmDialog
+        open={bulkConfirmOpen}
+        bulkPreviews={bulkPreviews}
+        bulkQuickType={bulkQuickType}
+        isQuickPending={isQuickPending}
+        onConfirm={onConfirmBulkSubmit}
+        onCancel={onCancelBulkSubmit}
+      />
+    )}
+    </>
   );
 }

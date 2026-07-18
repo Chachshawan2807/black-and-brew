@@ -4,6 +4,7 @@ import {
   buildBulkQueueFromPaste,
   canSubmitBulkQueue,
   computeBulkPreview,
+  getBulkSubmitTypeLabel,
   parseBulkPasteNames,
   setBulkLineQty,
   type BulkQueueItem,
@@ -17,6 +18,11 @@ const items: BulkStockItem[] = [
 ];
 
 describe('inventory-quick-bulk', () => {
+  test('getBulkSubmitTypeLabel returns Thai labels for IN and OUT', () => {
+    expect(getBulkSubmitTypeLabel('IN')).toBe('รับเข้า');
+    expect(getBulkSubmitTypeLabel('OUT')).toBe('นำออก');
+  });
+
   test('parseBulkPasteNames splits newline and comma separated names', () => {
     expect(parseBulkPasteNames('นมสด\nกาแฟอาราบิกา, น้ำตาล')).toEqual([
       'นมสด',
@@ -40,6 +46,17 @@ describe('inventory-quick-bulk', () => {
     const second = addBulkQueueItem(first.queue, items[0]!);
     expect(second.queue).toHaveLength(1);
     expect(second.duplicate).toBe(true);
+  });
+
+  test('addBulkQueueItem puts newest items first', () => {
+    const first = addBulkQueueItem([], items[0]!);
+    const second = addBulkQueueItem(first.queue, items[1]!);
+    expect(second.queue.map((line) => line.itemId)).toEqual(['b2', 'a1']);
+  });
+
+  test('buildBulkQueueFromPaste keeps last pasted line at top', () => {
+    const { queue } = buildBulkQueueFromPaste('นมสด\nกาแฟอาราบิกา', items, []);
+    expect(queue.map((line) => line.itemId)).toEqual(['b2', 'a1']);
   });
 
   test('computeBulkPreview IN adds qty to current stock', () => {
