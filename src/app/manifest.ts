@@ -16,8 +16,15 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: '/',
     start_url: '/',
     display: 'standalone',
+    display_override: ['standalone', 'minimal-ui'],
     background_color: PWA_MANIFEST_BACKGROUND,
     theme_color: PWA_MANIFEST_THEME,
+    orientation: 'any',
+    prefer_related_applications: false,
+    handle_links: 'preferred',
+    launch_handler: {
+      client_mode: 'navigate-existing',
+    },
     categories: ['business', 'productivity'],
     icons: [
       {
@@ -37,6 +44,12 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any',
+      },
+      {
+        src: PWA_BRAND_ICON_512,
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable',
       },
     ],
   };

@@ -10,7 +10,7 @@ export function MobileNavHeader() {
   const openDrawer = useMobileNavDrawer((s) => s.openDrawer);
 
   return (
-    <header className="md:hidden sticky top-0 z-50 bg-[var(--sidebar-surface)] border-b border-black/5 dark:border-white/10 pl-1 pr-3 flex justify-between items-center h-[72px] bb-shadow-sm">
+    <header className="bb-mobile-nav-header md:hidden sticky top-0 z-50 bg-[var(--sidebar-surface)] border-b border-black/5 dark:border-white/10 pl-1 pr-3 flex justify-between items-center h-[72px] bb-shadow-sm">
       <div className="flex items-center">
         <Image
           src="/images/logo.png"

@@ -19,7 +19,11 @@ import {
   type BranchWithdrawDraftRow,
 } from '@/lib/inventory-branch-withdraw-draft';
 import { useInventoryRealtime, type InventoryRealtimeItem } from '@/contexts/InventoryRealtimeContext';
-import { computeBranchWithdrawItems, type InventoryStockFields } from '@/lib/inventory-stock';
+import {
+  computeBranchWithdrawItems,
+  formatInventoryNumericDisplay,
+  type InventoryStockFields,
+} from '@/lib/inventory-stock';
 import {
   filterBranchWithdrawSaveLines,
   formatBranchWithdrawLineMessage,
@@ -27,7 +31,13 @@ import {
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { getClientSessionId } from '@/lib/client-session';
 
-type Item = InventoryStockFields & { id: string; name: string; unit: string; sort_order: number };
+type Item = InventoryStockFields & {
+  id: string;
+  name: string;
+  unit: string;
+  sort_order: number;
+  computedOrderQty: number;
+};
 type Props = { initialItems: InventoryRealtimeItem[]; initialHistory: BranchWithdrawHistoryRow[]; locale: string };
 
 function sanitizeQtyInput(raw: string): string {
@@ -59,10 +69,11 @@ function formatHistoryDate(value: string): string {
 const BRANCH2_UNIT_LABEL = 'หน่วยสาขา 2';
 const DESKTOP_GRID_COLS =
   'md:grid-cols-[minmax(0,1fr)_4.25rem_4.25rem_minmax(6.75rem,8.5rem)]';
-const INPUT_LABEL_CLASS = 'text-center text-xs leading-tight text-foreground/70';
+const INPUT_LABEL_CLASS = 'text-center text-[10px] leading-tight text-foreground/70 md:text-xs';
 const INPUT_FIELD_CLASS =
-  'h-9 w-full min-w-0 rounded-xl border border-border bg-background px-2 text-center text-sm outline-none';
-const UNIT_INPUT_FIELD_CLASS = `${INPUT_FIELD_CLASS} placeholder:text-[11px] placeholder:leading-tight md:placeholder:text-xs`;
+  'h-8 w-full min-w-0 rounded-xl border border-border bg-background px-1 text-center text-xs outline-none tabular-nums md:h-9 md:px-2 md:text-sm';
+const UNIT_INPUT_FIELD_CLASS = `${INPUT_FIELD_CLASS} placeholder:text-[10px] placeholder:leading-tight md:placeholder:text-xs`;
+const MOBILE_INPUT_GRID_CLASS = 'grid grid-cols-3 gap-1 md:contents';
 
 function WithdrawRowInputs({
   row,
@@ -84,7 +95,7 @@ function WithdrawRowInputs({
           inputMode="numeric"
           value={row.qtyBranch1}
           onChange={(event) => onQtyBranch1(sanitizeQtyInput(event.target.value))}
-          className={`${INPUT_FIELD_CLASS} tabular-nums`}
+          className={INPUT_FIELD_CLASS}
         />
       </label>
       <label className="flex min-w-0 flex-col gap-1">
@@ -94,17 +105,20 @@ function WithdrawRowInputs({
           inputMode="numeric"
           value={row.qtyBranch2}
           onChange={(event) => onQtyBranch2(sanitizeQtyInput(event.target.value))}
-          className={`${INPUT_FIELD_CLASS} tabular-nums`}
+          className={INPUT_FIELD_CLASS}
         />
       </label>
-      <label className="col-span-2 flex min-w-0 flex-col gap-1 md:col-span-1">
-        <span className={INPUT_LABEL_CLASS}>{BRANCH2_UNIT_LABEL}</span>
+      <label className="flex min-w-0 flex-col gap-1">
+        <span className={INPUT_LABEL_CLASS}>
+          <span className="md:hidden">หน่วย</span>
+          <span className="hidden md:inline">{BRANCH2_UNIT_LABEL}</span>
+        </span>
         <input
           type="text"
           value={row.branch2Unit}
           onChange={(event) => onBranch2Unit(event.target.value)}
           className={UNIT_INPUT_FIELD_CLASS}
-          placeholder={BRANCH2_UNIT_LABEL}
+          placeholder="หน่วย"
         />
       </label>
     </>
@@ -243,6 +257,8 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         };
       });
 
+      const savedLines = filterBranchWithdrawSaveLines(lines);
+
       const result = await saveBranchWithdrawal({
         lines,
         clientSessionId: getClientSessionId(),
@@ -256,16 +272,30 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
         clearBranchWithdrawDraft(window.sessionStorage);
       }
       setRows(normalizeRowsByItems(sortedItems));
-      await refresh();
 
-      const historyResult = await fetchBranchWithdrawalHistory(30);
-      if (historyResult.success) {
-        setHistory(historyResult.data);
+      if (result.withdrawalId) {
+        setHistory((prev) => [
+          {
+            id: result.withdrawalId,
+            line_message: result.lineMessage,
+            line_count: savedLines.length,
+            created_at: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
       }
-      router.refresh();
 
       setSaveLineMessage(result.lineMessage);
       openDialog(saveResultDialogRef.current);
+
+      void (async () => {
+        await refresh();
+        const historyResult = await fetchBranchWithdrawalHistory(30);
+        if (historyResult.success) {
+          setHistory(historyResult.data);
+        }
+        router.refresh();
+      })();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
       setSaveError(message);
@@ -372,9 +402,20 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
                         </div>
                         <p className="text-base leading-snug">{item.name}</p>
                         <p className="text-xs text-foreground/70">หน่วย (สาขา 1): {item.unit || '-'}</p>
+                        <p className="mt-1 text-xs text-foreground/70">
+                          จำนวนสั่งซื้อ:{' '}
+                          <span className="tabular-nums text-foreground">
+                            {formatInventoryNumericDisplay(item.computedOrderQty)}
+                          </span>
+                          <span className="mx-1.5 text-foreground/40">·</span>
+                          คงเหลือในสต็อก:{' '}
+                          <span className="tabular-nums text-foreground">
+                            {formatInventoryNumericDisplay(item.stock)}
+                          </span>
+                        </p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 md:contents">
+                      <div className={MOBILE_INPUT_GRID_CLASS}>
                         <WithdrawRowInputs
                           row={row}
                           onQtyBranch1={(value) => updateRow(item.id, { qtyBranch1: value })}

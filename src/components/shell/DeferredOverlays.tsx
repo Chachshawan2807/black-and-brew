@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
 const AIChatOverlay = dynamic(() => import('@/components/ai/AIChatOverlay'), { ssr: false });
 const InventoryQuickActionWrapper = dynamic(
@@ -16,12 +17,6 @@ const InventoryNotificationFAB = dynamic(
   { ssr: false },
 );
 
-function scheduleIdleWork(callback: () => void) {
-  if (typeof window === 'undefined') return;
-  const schedule = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1));
-  schedule(callback);
-}
-
 /**
  * Defers heavy global overlays until after first paint / idle so route content can hydrate first.
  */
@@ -30,11 +25,15 @@ export function DeferredOverlays() {
 
   useEffect(() => {
     let cancelled = false;
-    scheduleIdleWork(() => {
-      if (!cancelled) setOverlaysReady(true);
-    });
+    const cancelIdle = scheduleIdleWork(
+      () => {
+        if (!cancelled) setOverlaysReady(true);
+      },
+      { timeout: 1500 },
+    );
     return () => {
       cancelled = true;
+      cancelIdle();
     };
   }, []);
 

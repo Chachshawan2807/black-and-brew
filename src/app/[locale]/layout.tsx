@@ -5,19 +5,27 @@ import SidebarLayout from '@/components/sidebar/SidebarLayout';
 import I18nProvider from '@/components/providers/I18nProvider';
 import { FabStackHideToggle } from '@/components/floating/FabStackHideToggle';
 import { DeferredOverlays } from '@/components/shell/DeferredOverlays';
+import { RoutePrefetchOnIdle } from '@/components/shell/RoutePrefetchOnIdle';
+import { ViewTransitionNavigation } from '@/components/shell/ViewTransitionNavigation';
 import PwaRegister from '@/components/PwaRegister';
+import { PwaShellSync } from '@/components/PwaShellSync';
 import PinGateway from '@/components/auth/PinGateway';
+import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
 import { NotificationProvider } from '@/components/notifications/NotificationProvider';
 import { PushSubscriptionManager } from '@/components/notifications/PushSubscriptionManager';
 import { FloatingOverlayProvider } from '@/components/floating/FloatingOverlayContext';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { AppTooltipProvider } from '@/components/providers/AppTooltipProvider';
 import { PWA_APPLE_TOUCH_ICON, PWA_FAVICON } from '@/lib/pwa-assets';
+import { PWA_SHELL_BOOTSTRAP_SCRIPT, PWA_THEME_COLORS } from '@/lib/pwa-standalone';
 import { appFontClassName } from '@/lib/fonts';
 import "./globals.css";
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: PWA_THEME_COLORS.light },
+    { media: '(prefers-color-scheme: dark)', color: PWA_THEME_COLORS.dark },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -35,7 +43,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "BLACKANDBREW",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
   },
   formatDetection: {
     telephone: false,
@@ -60,24 +68,21 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${appFontClassName} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground bb-transition">
+        <script
+          dangerouslySetInnerHTML={{ __html: PWA_SHELL_BOOTSTRAP_SCRIPT }}
+        />
         <ThemeProvider>
+        <PwaShellSync />
         <AppTooltipProvider>
         <PwaRegister />
+        <RoutePrefetchOnIdle />
+        <ViewTransitionNavigation />
         <PinGateway>
           <PushSubscriptionManager />
           <NotificationProvider>
           <FloatingOverlayProvider>
           <SidebarLayout>
-            <Suspense fallback={
-              <div className="flex-1 min-h-screen bg-background flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-                  <span className="text-[12px] font-normal uppercase tracking-[0.3em] text-foreground opacity-40">
-                    Streaming BLACKANDBREW...
-                  </span>
-                </div>
-              </div>
-            }>
+            <Suspense fallback={<RouteLoadingSkeleton label="กำลังโหลด..." />}>
               <I18nProvider locale={locale}>
                 {children}
               </I18nProvider>

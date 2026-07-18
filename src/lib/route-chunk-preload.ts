@@ -1,6 +1,6 @@
 /**
  * Intent-based preload for heavy route client chunks.
- * Call from nav hover/focus before navigation.
+ * Call from nav hover/focus/touch before navigation.
  */
 const preloaded = new Set<string>();
 
@@ -10,10 +10,15 @@ const ROUTE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   sales: () => import('@/app/[locale]/sales/SalesClient'),
   maintenance: () => import('@/app/[locale]/maintenance/MaintenanceClient'),
   dashboard: () => import('@/app/[locale]/dashboard/_components/LiveShiftList'),
+  settings: () => import('@/app/[locale]/settings/_components/NotificationPreferencesSection'),
 };
 
+/** Routes staff open most often — warmed on idle after first paint. */
+const COMMON_ROUTE_KEYS = ['inventory', 'schedule', 'dashboard'] as const;
+
 function routeKeyFromHref(href: string): string | null {
-  const segment = href.split('/').filter(Boolean).pop();
+  const segments = href.split('/').filter(Boolean);
+  const segment = segments[segments.length - 1];
   if (!segment) return null;
   return segment in ROUTE_PRELOADERS ? segment : null;
 }
@@ -24,4 +29,16 @@ export function preloadRouteChunk(href: string): void {
   if (!key || preloaded.has(key)) return;
   preloaded.add(key);
   void ROUTE_PRELOADERS[key]();
+}
+
+export function preloadCommonRouteChunks(): void {
+  for (const key of COMMON_ROUTE_KEYS) {
+    if (preloaded.has(key)) continue;
+    preloaded.add(key);
+    void ROUTE_PRELOADERS[key]();
+  }
+}
+
+export function resetRouteChunkPreloadForTests(): void {
+  preloaded.clear();
 }

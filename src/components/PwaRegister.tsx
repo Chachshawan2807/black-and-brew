@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { navigateWithViewTransition } from '@/lib/view-transition';
 import { readNotificationState } from '@/lib/notification-sync';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import {
@@ -16,9 +17,11 @@ import {
 } from '@/lib/push-subscription-client';
 import { installOfflineMutationListeners } from '@/lib/offline-mutation-client';
 import { resolveSameOriginNavigationUrl } from '@/lib/safe-navigation-url';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
 export default function PwaRegister() {
   const params = useParams();
+  const router = useRouter();
   const locale = (params?.locale as string) || 'th';
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export default function PwaRegister() {
       }
 
       syncBadgeFromStorage();
-      window.location.href = safeUrl;
+      navigateWithViewTransition(router.push, safeUrl);
     };
 
     const onResume = () => {
@@ -59,32 +62,35 @@ export default function PwaRegister() {
 
     const removeOfflineListeners = installOfflineMutationListeners();
 
-    const timeout = setTimeout(() => {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then(() => navigator.serviceWorker.ready)
-        .then(() => {
-          syncBadgeFromStorage();
-          const prefs = loadNotificationPreferences();
-          if (wantsPushRegistration(prefs)) {
-            void requestNotificationPermission();
-            schedulePushSubscriptionMaintenance(locale);
-          }
-        })
-        .catch((registrationError) => {
-          if (isBenignPushRegistrationError(registrationError)) {
-            console.warn(
-              'SW registration skipped:',
-              registrationError instanceof Error ? registrationError.message : registrationError,
-            );
-            return;
-          }
-          console.error('SW registration failed:', registrationError);
-        });
-    }, 1000);
+    const cancelIdle = scheduleIdleWork(
+      () => {
+        navigator.serviceWorker
+          .register('/sw.js')
+          .then(() => navigator.serviceWorker.ready)
+          .then(() => {
+            syncBadgeFromStorage();
+            const prefs = loadNotificationPreferences();
+            if (wantsPushRegistration(prefs)) {
+              void requestNotificationPermission();
+              schedulePushSubscriptionMaintenance(locale);
+            }
+          })
+          .catch((registrationError) => {
+            if (isBenignPushRegistrationError(registrationError)) {
+              console.warn(
+                'SW registration skipped:',
+                registrationError instanceof Error ? registrationError.message : registrationError,
+              );
+              return;
+            }
+            console.error('SW registration failed:', registrationError);
+          });
+      },
+      { timeout: 2000 },
+    );
 
     return () => {
-      clearTimeout(timeout);
+      cancelIdle();
       navigator.serviceWorker.removeEventListener('message', onNotificationClick);
       document.removeEventListener('visibilitychange', onResume);
       window.removeEventListener('focus', onResume);
@@ -93,7 +99,7 @@ export default function PwaRegister() {
       window.removeEventListener('bb-notification-prefs-changed', onResume);
       removeOfflineListeners();
     };
-  }, [locale]);
+  }, [locale, router]);
 
   return null;
 }

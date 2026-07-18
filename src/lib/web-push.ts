@@ -113,12 +113,22 @@ export async function deliverWebPushPayload(
   return sendOnce();
 }
 
+export function resolveVapidSubject(): string {
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '');
+  if (siteUrl.startsWith('https://')) {
+    return siteUrl.replace(/\/$/, '');
+  }
+  return process.env.VAPID_SUBJECT ?? 'mailto:admin@blackandbrew.local';
+}
+
 export function ensureVapidConfigured(): boolean {
   if (vapidConfigured) return true;
 
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT ?? 'mailto:admin@blackandbrew.local';
+  const subject = resolveVapidSubject();
 
   if (!publicKey || !privateKey) {
     return false;

@@ -28,6 +28,7 @@ describe('loading performance patterns', () => {
     expect(source).toContain('DeferredOverlays');
     expect(source).not.toContain('InventoryQuickActionWrapper');
     expect(source).not.toContain('AIChatOverlay');
+    expect(source).toContain('RoutePrefetchOnIdle');
   });
 
   test('holiday sync batches database writes', () => {

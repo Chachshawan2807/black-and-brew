@@ -125,4 +125,31 @@ describe('passkey client login flow', () => {
       hasPlatformAuthenticator: false,
     });
   });
+
+  test('requests required mediation on auto-trigger to skip passkey picker', async () => {
+    const credential = Object.create(PublicKeyCredential.prototype);
+    credential.toJSON = () => ({ id: 'cred-id', response: {} });
+    vi.mocked(navigator.credentials.get).mockResolvedValueOnce(
+      credential as unknown as PublicKeyCredential
+    );
+
+    await loginWithDevicePasskey(device, { autoTrigger: true });
+
+    expect(navigator.credentials.get).toHaveBeenCalledWith(
+      expect.objectContaining({ mediation: 'required' })
+    );
+    expect(getPasskeyLoginOptions).toHaveBeenCalledWith(device.sessionFingerprint);
+  });
+
+  test('passes device fingerprint to login options for scoped credentials', async () => {
+    const credential = Object.create(PublicKeyCredential.prototype);
+    credential.toJSON = () => ({ id: 'cred-id', response: {} });
+    vi.mocked(navigator.credentials.get).mockResolvedValueOnce(
+      credential as unknown as PublicKeyCredential
+    );
+
+    await loginWithDevicePasskey(device);
+
+    expect(getPasskeyLoginOptions).toHaveBeenCalledWith(device.sessionFingerprint);
+  });
 });

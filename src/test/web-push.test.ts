@@ -3,6 +3,7 @@ import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import {
   buildWebPushPayload,
   parsePushPrefs,
+  resolveVapidSubject,
   shouldSendPushToSubscription,
   WEB_PUSH_DEFAULT_TTL_SECONDS,
   WEB_PUSH_SCHEDULE_TTL_SECONDS,
@@ -117,5 +118,12 @@ describe('web-push', () => {
   test('uses long TTL defaults for mobile offline / Doze tolerance', () => {
     expect(WEB_PUSH_DEFAULT_TTL_SECONDS).toBeGreaterThanOrEqual(12 * 60 * 60);
     expect(WEB_PUSH_SCHEDULE_TTL_SECONDS).toBeGreaterThanOrEqual(12 * 60 * 60);
+  });
+
+  test('resolveVapidSubject prefers HTTPS site origin for Apple Web Push', () => {
+    const previousSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://blackandbrew.example/';
+    expect(resolveVapidSubject()).toBe('https://blackandbrew.example');
+    process.env.NEXT_PUBLIC_SITE_URL = previousSiteUrl;
   });
 });

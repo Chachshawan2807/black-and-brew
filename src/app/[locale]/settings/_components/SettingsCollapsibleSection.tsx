@@ -16,6 +16,7 @@ interface SettingsCollapsibleSectionProps {
   description?: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  onFirstOpen?: () => void;
 }
 
 export default function SettingsCollapsibleSection({
@@ -24,6 +25,7 @@ export default function SettingsCollapsibleSection({
   description,
   children,
   defaultOpen = false,
+  onFirstOpen,
 }: SettingsCollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [hasOpened, setHasOpened] = useState(defaultOpen);
@@ -37,7 +39,10 @@ export default function SettingsCollapsibleSection({
         onClick={() => {
           setOpen((v) => {
             const next = !v;
-            if (next) setHasOpened(true);
+            if (next) {
+              setHasOpened(true);
+              onFirstOpen?.();
+            }
             return next;
           });
         }}

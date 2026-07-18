@@ -60,6 +60,7 @@ import {
 } from '@/lib/pwa-notification-bridge';
 import { shouldDeferOsNotificationToPush } from '@/lib/push-subscription-client';
 import { isScheduleNotification } from '@/lib/notification-display-icon';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
   const row = payload.new;
@@ -150,8 +151,20 @@ export function useInventoryNotifications() {
       setRealtimeReady(false);
       return;
     }
-    // Notifications on — subscribe immediately on all pages (mobile FAB must stay live).
-    setRealtimeReady(true);
+
+    let cancelled = false;
+    const cancelIdle = scheduleIdleWork(
+      () => {
+        if (!cancelled) setRealtimeReady(true);
+      },
+      { timeout: 1200 },
+    );
+
+    return () => {
+      cancelled = true;
+      cancelIdle();
+      setRealtimeReady(false);
+    };
   }, [prefs.enabled]);
 
   useEffect(() => {

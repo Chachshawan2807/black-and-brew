@@ -51,7 +51,7 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: [], error: null }),
       maybeSingle: mocks.maybeSingle,
     })),
   })),
@@ -111,6 +111,31 @@ describe('passkey server option generation', () => {
     expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
       expect.objectContaining({
         allowCredentials: [],
+        userVerification: 'required',
+      })
+    );
+  });
+
+  test('scopes login credentials to the provided device fingerprint', async () => {
+    const { createClient } = await import('@supabase/supabase-js');
+    vi.mocked(createClient).mockReturnValueOnce({
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({
+          data: [{ credential_id: 'cred-1', transports: ['internal'] }],
+          error: null,
+        }),
+        maybeSingle: mocks.maybeSingle,
+      })),
+    } as never);
+
+    await expect(getPasskeyLoginOptions('desktop-fingerprint')).resolves.toMatchObject({
+      success: true,
+    });
+
+    expect(mocks.generateAuthenticationOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowCredentials: [{ id: 'cred-1', transports: ['internal'] }],
         userVerification: 'required',
       })
     );

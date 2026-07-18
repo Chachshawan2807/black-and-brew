@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect, test, describe, vi, beforeEach } from 'vitest';
 import PinGateway from '@/components/auth/PinGateway';
 import {
-  getBiometricLoginAvailability,
+  getBiometricAutoLoginReadiness,
   loginWithDevicePasskey,
   registerDevicePasskey,
   shouldOfferPasskeyEnrollment,
@@ -30,10 +30,11 @@ vi.mock('@/app/actions/auth', () => ({
 }));
 
 vi.mock('@/lib/passkey/client-flow', () => ({
-  getBiometricLoginAvailability: vi.fn(async () => ({
+  getBiometricAutoLoginReadiness: vi.fn(async () => ({
     supported: false,
     canAutoTrigger: false,
     hasPlatformAuthenticator: false,
+    hasPasskey: false,
   })),
   loginWithDevicePasskey: vi.fn(async () => ({
     success: false,
@@ -63,10 +64,11 @@ describe('PinGateway Persistent Authentication', () => {
     vi.clearAllMocks();
     const { useParams } = await import('next/navigation');
     vi.mocked(useParams).mockReturnValue({ locale: 'th' });
-    vi.mocked(getBiometricLoginAvailability).mockResolvedValue({
+    vi.mocked(getBiometricAutoLoginReadiness).mockResolvedValue({
       supported: false,
       canAutoTrigger: false,
       hasPlatformAuthenticator: false,
+      hasPasskey: false,
     });
     vi.mocked(loginWithDevicePasskey).mockResolvedValue({
       success: false,
@@ -180,15 +182,17 @@ describe('PinGateway Persistent Authentication', () => {
     expect(screen.queryByText('เข้าสู่ระบบ')).not.toBeInTheDocument();
   });
 
-  test('does not auto-trigger biometric login on mount (auto prompt disabled)', async () => {
-    vi.mocked(getBiometricLoginAvailability).mockResolvedValue({
+  test('auto-triggers biometric login on mount when device has enrolled passkey', async () => {
+    vi.mocked(getBiometricAutoLoginReadiness).mockResolvedValue({
       supported: true,
       canAutoTrigger: true,
       hasPlatformAuthenticator: true,
+      hasPasskey: true,
     });
     vi.mocked(loginWithDevicePasskey).mockResolvedValue({
       success: true,
       isReadOnly: false,
+      offlineAuthSessionId: 'offline-session',
     });
 
     render(
@@ -197,15 +201,21 @@ describe('PinGateway Persistent Authentication', () => {
       </PinGateway>
     );
 
-    expect(await screen.findByLabelText('รหัส PIN 6 หลัก')).toBeInTheDocument();
-    expect(loginWithDevicePasskey).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(loginWithDevicePasskey).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionFingerprint: 'test-fingerprint' }),
+        { autoTrigger: true }
+      );
+    });
+    expect(await screen.findByTestId('protected-content')).toBeInTheDocument();
   });
 
-  test('does not auto-trigger biometric after mount when availability resolves', async () => {
-    vi.mocked(getBiometricLoginAvailability).mockResolvedValue({
+  test('does not auto-trigger biometric when device has no enrolled passkey', async () => {
+    vi.mocked(getBiometricAutoLoginReadiness).mockResolvedValue({
       supported: true,
       canAutoTrigger: true,
       hasPlatformAuthenticator: true,
+      hasPasskey: false,
     });
     vi.mocked(loginWithDevicePasskey).mockResolvedValue({
       success: false,
@@ -229,10 +239,11 @@ describe('PinGateway Persistent Authentication', () => {
   });
 
   test('should stop after 3 manual biometric failures and let manual button reset attempts', async () => {
-    vi.mocked(getBiometricLoginAvailability).mockResolvedValue({
+    vi.mocked(getBiometricAutoLoginReadiness).mockResolvedValue({
       supported: true,
       canAutoTrigger: false,
       hasPlatformAuthenticator: false,
+      hasPasskey: false,
     });
     vi.mocked(loginWithDevicePasskey).mockResolvedValue({
       success: false,
@@ -297,10 +308,11 @@ describe('PinGateway Persistent Authentication', () => {
   });
 
   test('should show desktop passkey button without auto-trigger when platform probe is unavailable', async () => {
-    vi.mocked(getBiometricLoginAvailability).mockResolvedValue({
+    vi.mocked(getBiometricAutoLoginReadiness).mockResolvedValue({
       supported: true,
       canAutoTrigger: false,
       hasPlatformAuthenticator: false,
+      hasPasskey: false,
     });
 
     render(

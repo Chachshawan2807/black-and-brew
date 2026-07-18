@@ -12,7 +12,7 @@ describe('mobile home-screen badge (sw.js)', () => {
     expect(sw).toContain("importScripts('/pwa-badge.js')");
     expect(sw).toContain('event.waitUntil');
     expect(sw).toContain('await applyHomeScreenBadge(unreadCount)');
-    expect(sw).toContain('await self.registration.showNotification');
+    expect(sw).toContain('showPushNotification');
   });
 
   test('SET_BADGE message uses waitUntil for iOS service worker lifecycle', () => {
@@ -20,7 +20,7 @@ describe('mobile home-screen badge (sw.js)', () => {
   });
 
   test('each notification uses unique tag for Android launcher badge stacking', () => {
-    expect(sw).toContain('renotify: true');
+    expect(sw).toContain('buildIosSafeNotificationOptions');
     expect(sw).not.toMatch(/tag:\s*'bb-inventory'[^,]*,\s*\/\/ always same/);
   });
 
@@ -31,7 +31,7 @@ describe('mobile home-screen badge (sw.js)', () => {
 
   test('inventory push always shows the PWA notification banner from the service worker', () => {
     expect(sw).toContain('systemNotificationShown: true');
-    expect(sw).toContain('await self.registration.showNotification(payload.title, options)');
+    expect(sw).toContain('showPushNotification');
     expect(sw).not.toContain('if (!isVisible)');
   });
 });

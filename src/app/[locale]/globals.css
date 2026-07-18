@@ -25,6 +25,9 @@
 
   /* Premium UI motion tokens */
   --bb-modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --bb-vt-page-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --bb-vt-page-duration-out: 180ms;
+  --bb-vt-page-duration-in: 200ms;
   --animate-page-enter: bb-page-enter 220ms var(--bb-modal-ease) both;
   --animate-fade-in: bb-fade-in 150ms var(--bb-modal-ease) both;
   --animate-fade-out: bb-fade-out 120ms ease-in both;
@@ -53,6 +56,28 @@
 @keyframes bb-page-enter {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes bb-vt-page-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 5px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes bb-vt-page-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -2px, 0);
+  }
 }
 
 @keyframes bb-fade-in {
@@ -526,8 +551,48 @@
       0 28px 56px -12px rgb(0 0 0 / 0.44);
   }
 
-  .bb-mobile-nav-drawer__sheet::-webkit-scrollbar {
+    .bb-mobile-nav-drawer__sheet::-webkit-scrollbar {
     display: none;
+  }
+
+  /*
+   * Installed PWA shell — native feel without affecting browser-tab users.
+   * Class is set synchronously via inline bootstrap + PwaShellSync.
+   */
+  html.bb-pwa-standalone,
+  html.bb-pwa-standalone body {
+    overscroll-behavior-y: none;
+  }
+
+  html.bb-pwa-standalone .bb-mobile-nav-header {
+    padding-top: env(safe-area-inset-top, 0px);
+    min-height: calc(72px + env(safe-area-inset-top, 0px));
+  }
+
+  html.bb-pwa-standalone :where(button, a, [role='button'], label[for]) {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  html.bb-pwa-standalone :where(button, nav, header, [role='button'], [role='tab']) {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  html.bb-pwa-standalone :where(input, textarea, select, [contenteditable='true']) {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    html.bb-pwa-standalone :where(button:not(:disabled), a[href]) {
+      transition: transform 100ms ease, opacity 100ms ease;
+    }
+
+    html.bb-pwa-standalone :where(button:not(:disabled):active, a[href]:active) {
+      transform: scale(0.97);
+      opacity: 0.88;
+    }
   }
 
   /* Sidebar menu labels — smooth fade when collapsing */
@@ -587,6 +652,14 @@
     .bb-mobile-nav-drawer__scroller {
       scroll-behavior: auto;
     }
+
+    @supports (view-transition-name: none) {
+      ::view-transition-group(*),
+      ::view-transition-old(*),
+      ::view-transition-new(*) {
+        animation: none !important;
+      }
+    }
   }
 
 }
@@ -594,6 +667,20 @@
 @layer utilities {
   .animate-page-enter {
     animation: var(--animate-page-enter);
+  }
+
+  .bb-view-transition-page {
+    min-height: 0;
+  }
+
+  @supports (view-transition-name: none) {
+    ::view-transition-old(root) {
+      animation: bb-vt-page-out var(--bb-vt-page-duration-out) var(--bb-vt-page-ease) both;
+    }
+
+    ::view-transition-new(root) {
+      animation: bb-vt-page-in var(--bb-vt-page-duration-in) var(--bb-vt-page-ease) both;
+    }
   }
 
   .animate-in {
@@ -843,7 +930,7 @@
   --foreground: #000000 !important;
   --card: #fdfcf0 !important;
   --card-foreground: #000000 !important;
-  --border: rgb(0 0 0 / 0.05) !important;
+  --border: rgb(0 0 0 / 0.1) !important;
   --muted: rgb(0 0 0 / 0.04) !important;
   --muted-foreground: rgb(0 0 0 / 0.55) !important;
   background-color: #fdfcf0 !important;
@@ -867,7 +954,22 @@
 
 .dark .bb-schedule-export-surface :where([class*='border-border']),
 .bb-schedule-export-surface :where([class*='border-border']) {
-  border-color: rgb(0 0 0 / 0.05) !important;
+  border-color: rgb(0 0 0 / 0.1) !important;
+}
+
+/* Schedule name column — full row dividers on sticky cells, no elevation */
+.bb-schedule-export-surface .bb-schedule-name-cell {
+  --schedule-grid-line: rgb(0 0 0 / 0.1);
+  align-self: stretch;
+  min-height: 48px;
+  border-bottom: 1px solid var(--schedule-grid-line) !important;
+  border-right: 1px solid var(--schedule-grid-line) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.bb-schedule-export-surface .bb-schedule-grid {
+  border-bottom-color: rgb(0 0 0 / 0.1) !important;
 }
 
 /* Schedule grid crosshair — inset rounded guides (match shift pill geometry) */
@@ -925,7 +1027,7 @@
 }
 
 .bb-schedule-export-surface .bb-schedule-crosshair-name::before {
-  inset: 6px 8px 6px 52px;
+  inset: 6px 8px;
   background-color: var(--bb-schedule-guide-row);
   border-left: 2px solid var(--bb-schedule-guide-accent);
 }
@@ -934,4 +1036,81 @@
   inset: 4px;
   background-color: var(--bb-schedule-guide-col-h);
   border-bottom: 2px solid var(--bb-schedule-guide-accent);
+}
+
+/* Schedule PNG export — hide edit chrome and crosshair guides (desktop / iOS / Android) */
+.bb-schedule-export-capturing .bb-schedule-drag-handle {
+  display: none !important;
+}
+
+.bb-schedule-export-capturing.bb-schedule-export-surface,
+.bb-schedule-export-capturing#blackandbrew-schedule-table {
+  width: 732px !important;
+  max-width: 732px !important;
+  min-width: 0 !important;
+}
+
+.bb-schedule-export-capturing .bb-schedule-grid {
+  align-items: stretch !important;
+  transform: none !important;
+  border-bottom-width: 0 !important;
+  grid-template-columns: 88px repeat(7, 92px) !important;
+  width: 732px !important;
+  max-width: 732px !important;
+}
+
+.bb-schedule-export-capturing .bb-schedule-name-cell {
+  padding-left: 10px;
+  padding-right: 10px;
+  gap: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.bb-schedule-export-capturing .bb-schedule-grid > * {
+  border-bottom: 1px solid rgb(0 0 0 / 0.1) !important;
+  box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.1) !important;
+}
+
+.bb-schedule-export-capturing .bb-schedule-holiday-cell {
+  min-height: 88px;
+  height: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  align-items: center !important;
+}
+
+.bb-schedule-export-capturing .bb-schedule-holiday-label {
+  white-space: normal !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 4 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  line-height: 1.375 !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  text-transform: none !important;
+}
+
+.bb-schedule-export-capturing .bb-schedule-grid > :not(.bb-schedule-name-cell) {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.bb-schedule-export-capturing :is(
+  .bb-schedule-crosshair-row-band,
+  .bb-schedule-crosshair-cell,
+  .bb-schedule-crosshair-name,
+  .bb-schedule-crosshair-col-h
+)::before {
+  content: none !important;
+  box-shadow: none !important;
+}
+
+.bb-schedule-export-capturing :is(.shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+  box-shadow: none !important;
 }

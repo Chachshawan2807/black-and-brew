@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Pencil } from 'lucide-react';
@@ -281,7 +281,7 @@ const SortableEmployeeRow = React.memo(({
       <div
         onPointerEnter={() => onCellFocus(id, gridFocus?.date ?? weekDays[0] ?? '')}
         className={cn(
-          'w-full px-1.5 py-1.5 border-r border-border flex items-center gap-1 bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell transition-colors duration-150',
+          'bb-schedule-name-cell w-full px-1 py-1 border-r border-b border-border flex items-center gap-0.5 bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell transition-colors duration-150 min-h-[48px] self-stretch',
           scheduleCrosshairNameClass(id, gridFocus),
         )}
       >
@@ -290,7 +290,7 @@ const SortableEmployeeRow = React.memo(({
             <div
               {...attributes}
               {...(isReadOnly ? {} : listeners)}
-              className={`relative z-[1] shrink-0 p-2 min-h-[44px] min-w-[44px] rounded-3xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-foreground/20' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
+              className={`bb-schedule-drag-handle relative z-[1] shrink-0 p-1.5 min-h-[44px] min-w-[40px] rounded-2xl transition-all touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-foreground/20' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
               aria-label="ลากเพื่อเปลี่ยนลำดับ"
             >
               <GripVertical className="w-5 h-5" />
@@ -303,8 +303,8 @@ const SortableEmployeeRow = React.memo(({
           </TooltipPrimitive.Portal>
         </Tooltip>
 
-        <div className="group/name relative z-[1] flex flex-1 min-w-0 items-center gap-2 pr-1">
-          <div className="min-w-0 flex-1 py-0.5">
+        <div className="group/name relative z-[1] flex flex-1 min-w-0 items-center">
+          <div className="min-w-0 flex-1 py-0 pr-5">
             {editingNameId === id ? (
               <input
                 autoFocus
@@ -318,7 +318,7 @@ const SortableEmployeeRow = React.memo(({
             ) : (
               <span
                 onClick={() => !isReadOnly && onNameClick(id, profile.full_name)}
-                className={`bb-schedule-nowrap text-[16px] font-normal text-foreground whitespace-nowrap leading-[1.6] tracking-tight transition-colors block ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-text hover:text-blue-600'}`}
+                className={`bb-schedule-nowrap text-[15px] font-normal text-foreground whitespace-nowrap leading-tight tracking-tight transition-colors block ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-text hover:text-blue-600'}`}
               >
                 {profile.full_name}
               </span>
@@ -328,7 +328,7 @@ const SortableEmployeeRow = React.memo(({
             <button
               onClick={() => onDeleteEmployee(id)}
               disabled={isReadOnly}
-              className="shrink-0 w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover/name:opacity-100 focus:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0 w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover/name:opacity-100 focus:opacity-100 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               aria-label="ลบพนักงานถาวร"
             >
               <Trash2 className="w-4 h-4" />
@@ -347,7 +347,7 @@ const SortableEmployeeRow = React.memo(({
             onPointerEnter={() => onCellFocus(profile.id, date)}
             onPointerDown={() => onCellFocus(profile.id, date)}
             className={cn(
-              'p-1 border-r last:border-0 border-border min-h-[52px] group/cell relative transition-colors duration-150',
+              'p-1 border-r last:border-0 border-border min-h-[48px] group/cell relative transition-colors duration-150',
               scheduleCrosshairCellClass(profile.id, date, gridFocus),
               isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
             )}
@@ -1263,7 +1263,13 @@ export default function ScheduleClient({
       const element = document.getElementById('blackandbrew-schedule-table');
       if (!element) return;
 
-      setIsExportingImage(true);
+      flushSync(() => {
+        setGridFocus(null);
+        setIsExportingImage(true);
+      });
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
 
       const { captureScheduleTableAsPng, downloadPngBlob } = await import('@/lib/schedule-export-capture');
       const blob = await captureScheduleTableAsPng(element);
@@ -1340,7 +1346,7 @@ export default function ScheduleClient({
                   className="bb-schedule-grid grid border-b border-border dark:border-[#f5c6cb] bg-red-50/10 dark:bb-pastel-surface dark:bg-[#fdeaea]"
                   style={SCHEDULE_GRID_STYLE}
                 >
-                  <div className="px-2 py-2 border-r border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
+                  <div className="bb-schedule-name-cell px-2 py-2 border-r border-b border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
                     <span className="bb-schedule-nowrap text-[12px] text-[#991b1b] font-normal uppercase tracking-widest whitespace-nowrap">นักขัตฤกษ์</span>
                   </div>
                   {weekDays.map(date => {
@@ -1351,7 +1357,7 @@ export default function ScheduleClient({
                         onClick={() => { if (!isReadOnly) { setEditingHoliday(date); setHolidayInput(holiday?.name || ''); } }}
                         onPointerEnter={() => handleCellFocus('', date)}
                         className={cn(
-                          'p-1 border-r last:border-0 border-border dark:border-[#f5c6cb] flex items-center justify-center min-h-[38px] min-w-0 overflow-hidden transition-colors duration-150',
+                          'bb-schedule-holiday-cell p-1 border-r last:border-0 border-border dark:border-[#f5c6cb] flex items-center justify-center min-h-[38px] min-w-0 overflow-hidden transition-colors duration-150',
                           scheduleCrosshairColumnHeaderClass(date, gridFocus),
                           isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50 dark:hover:bg-[#f5c6cb]/25',
                         )}
@@ -1367,7 +1373,7 @@ export default function ScheduleClient({
                             onKeyDown={(e) => e.key === 'Enter' && handleSaveHoliday(date)}
                           />
                         ) : (
-                          <span className="w-full min-w-0 text-[14px] font-normal text-[#7f1d1d] text-center leading-snug tracking-tight px-1 uppercase break-words">
+                          <span className="bb-schedule-holiday-label w-full min-w-0 text-[14px] font-normal text-[#7f1d1d] text-center leading-snug tracking-tight px-1 uppercase break-words">
                             {holiday?.name || ''}
                           </span>
                         )}
@@ -1380,7 +1386,7 @@ export default function ScheduleClient({
                   className="bb-schedule-grid grid bg-muted/40 border-b border-border shrink-0"
                   style={SCHEDULE_GRID_STYLE}
                 >
-                <div className="px-2 py-2 border-r border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
+                <div className="bb-schedule-name-cell px-2 py-2 border-r border-b border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
                   <span className="bb-schedule-nowrap text-[13px] text-foreground font-normal uppercase tracking-widest whitespace-nowrap">พนักงาน</span>
                 </div>
                 {weekDays.map((date) => {
@@ -1474,7 +1480,7 @@ export default function ScheduleClient({
                 className="bb-schedule-grid grid border-t border-border bg-muted/50 sticky bottom-0 z-[15]"
                 style={SCHEDULE_GRID_STYLE}
               >
-                <div className="px-2 py-1.5 border-r border-border flex items-center justify-center bg-card/80 sticky left-0 z-20 bb-sticky-scroll-cell">
+                <div className="bb-schedule-name-cell px-2 py-1.5 border-r border-b border-border flex items-center justify-center bg-card/80 sticky left-0 z-20 bb-sticky-scroll-cell">
                 </div>
                 {weekDays.map(date => {
                   const fohCount = new Set(

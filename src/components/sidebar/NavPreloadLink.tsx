@@ -6,19 +6,34 @@ import { preloadRouteChunk } from '@/lib/route-chunk-preload';
 
 type NavPreloadLinkProps = ComponentProps<typeof Link>;
 
-export function NavPreloadLink({ href, onMouseEnter, onFocus, ...props }: NavPreloadLinkProps) {
+function warmRoute(href: string) {
+  preloadRouteChunk(href);
+}
+
+export function NavPreloadLink({
+  href,
+  onMouseEnter,
+  onFocus,
+  onTouchStart,
+  ...props
+}: NavPreloadLinkProps) {
   const hrefStr = typeof href === 'string' ? href : href.pathname ?? '';
 
   return (
     <Link
       href={href}
+      prefetch
       onMouseEnter={(e) => {
-        preloadRouteChunk(hrefStr);
+        warmRoute(hrefStr);
         onMouseEnter?.(e);
       }}
       onFocus={(e) => {
-        preloadRouteChunk(hrefStr);
+        warmRoute(hrefStr);
         onFocus?.(e);
+      }}
+      onTouchStart={(e) => {
+        warmRoute(hrefStr);
+        onTouchStart?.(e);
       }}
       {...props}
     />

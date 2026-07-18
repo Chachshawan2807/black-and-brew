@@ -69,10 +69,32 @@ async function createCredentialFromOptions(optionsJSON: string): Promise<Registr
   return credential.toJSON() as RegistrationResponseJSON;
 }
 
-async function getCredentialFromOptions(optionsJSON: string): Promise<AuthenticationResponseJSON> {
+export interface BiometricAutoLoginReadiness extends BiometricLoginAvailability {
+  hasPasskey: boolean;
+}
+
+export async function getBiometricAutoLoginReadiness(
+  sessionFingerprint: string | undefined
+): Promise<BiometricAutoLoginReadiness> {
+  const availability = await getBiometricLoginAvailability();
+  if (!sessionFingerprint?.trim() || !availability.canAutoTrigger) {
+    return { ...availability, hasPasskey: false };
+  }
+
+  const { hasPasskey } = await checkDeviceHasPasskey(sessionFingerprint);
+  return { ...availability, hasPasskey };
+}
+
+async function getCredentialFromOptions(
+  optionsJSON: string,
+  requestOptions?: { mediation?: CredentialMediationRequirement }
+): Promise<AuthenticationResponseJSON> {
   const options = JSON.parse(optionsJSON) as PublicKeyCredentialRequestOptionsJSON;
   const publicKey = PublicKeyCredential.parseRequestOptionsFromJSON(options);
-  const credential = await navigator.credentials.get({ publicKey });
+  const credential = await navigator.credentials.get({
+    publicKey,
+    mediation: requestOptions?.mediation,
+  });
   if (!credential || !(credential instanceof PublicKeyCredential)) {
     throw new Error('No credential returned');
   }
@@ -104,17 +126,24 @@ export async function registerDevicePasskey(
 }
 
 export async function loginWithDevicePasskey(
-  device: ClientDevicePayload
+  device: ClientDevicePayload,
+  options?: { autoTrigger?: boolean }
 ): Promise<
   { success: true; isReadOnly: boolean; offlineAuthSessionId: string } | { success: false; error: string }
 > {
-  const optionsResult = await getPasskeyLoginOptions();
+  const optionsResult = await getPasskeyLoginOptions(device.sessionFingerprint);
   if (!optionsResult.success) {
     return optionsResult;
   }
 
   try {
-    const response = await getCredentialFromOptions(optionsResult.optionsJSON);
+    const parsedOptions = JSON.parse(
+      optionsResult.optionsJSON
+    ) as PublicKeyCredentialRequestOptionsJSON;
+    const hasScopedCredentials = (parsedOptions.allowCredentials?.length ?? 0) > 0;
+    const response = await getCredentialFromOptions(optionsResult.optionsJSON, {
+      mediation: options?.autoTrigger || hasScopedCredentials ? 'required' : undefined,
+    });
     return verifyPasskeyLogin(JSON.stringify(response), device);
   } catch (error) {
     const name = getWebAuthnErrorName(error);

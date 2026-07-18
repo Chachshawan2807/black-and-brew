@@ -43,10 +43,17 @@ const nextConfig: NextConfig = {
     optimizePackageImports: [
       'lucide-react',
       'date-fns',
+      'date-fns-tz',
       'framer-motion',
+      'recharts',
       '@dnd-kit/core',
       '@dnd-kit/sortable',
       '@dnd-kit/utilities',
+      '@dnd-kit/modifiers',
+      '@radix-ui/react-collapsible',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-slot',
     ],
   },
   async headers() {

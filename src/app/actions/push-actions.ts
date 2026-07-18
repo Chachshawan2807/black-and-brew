@@ -155,12 +155,21 @@ export async function registerPushSubscription(
 export async function getPushDiagnostics(): Promise<{
   ok: boolean;
   subscriptionCount: number;
+  appleSubscriptionCount: number;
+  fcmSubscriptionCount: number;
   vapidConfigured: boolean;
   latestEligibleLogAt: string | null;
 }> {
   const auth = await ensureServerSession();
   if (!auth.ok) {
-    return { ok: false, subscriptionCount: 0, vapidConfigured: false, latestEligibleLogAt: null };
+    return {
+      ok: false,
+      subscriptionCount: 0,
+      appleSubscriptionCount: 0,
+      fcmSubscriptionCount: 0,
+      vapidConfigured: false,
+      latestEligibleLogAt: null,
+    };
   }
 
   const vapidConfigured = Boolean(
@@ -172,9 +181,15 @@ export async function getPushDiagnostics(): Promise<{
     if (!supabaseUrl) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
     const admin = createClient(supabaseUrl, requireServiceRoleKey());
 
-    const { count } = await admin
-      .from('push_subscriptions')
-      .select('id', { count: 'exact', head: true });
+    const { data: rows } = await admin.from('push_subscriptions').select('endpoint');
+
+    const endpoints = (rows ?? []) as { endpoint: string }[];
+    const appleSubscriptionCount = endpoints.filter((row) =>
+      row.endpoint.includes('web.push.apple.com'),
+    ).length;
+    const fcmSubscriptionCount = endpoints.filter((row) =>
+      row.endpoint.includes('fcm.googleapis.com'),
+    ).length;
 
     const { data: latest } = await admin
       .from('data_change_logs')
@@ -187,12 +202,64 @@ export async function getPushDiagnostics(): Promise<{
 
     return {
       ok: true,
-      subscriptionCount: count ?? 0,
+      subscriptionCount: endpoints.length,
+      appleSubscriptionCount,
+      fcmSubscriptionCount,
       vapidConfigured,
       latestEligibleLogAt: latest?.occurred_at ?? null,
     };
   } catch {
-    return { ok: false, subscriptionCount: 0, vapidConfigured, latestEligibleLogAt: null };
+    return {
+      ok: false,
+      subscriptionCount: 0,
+      appleSubscriptionCount: 0,
+      fcmSubscriptionCount: 0,
+      vapidConfigured,
+      latestEligibleLogAt: null,
+    };
+  }
+}
+
+export async function verifyDevicePushRegistration(endpoint: string): Promise<{
+  registered: boolean;
+  platform: 'apple' | 'fcm' | 'other' | 'unknown';
+}> {
+  const auth = await ensureServerSession();
+  if (!auth.ok) {
+    return { registered: false, platform: 'unknown' };
+  }
+
+  const trimmed = endpoint.trim();
+  if (!trimmed) {
+    return { registered: false, platform: 'unknown' };
+  }
+
+  const platform = trimmed.includes('web.push.apple.com')
+    ? 'apple'
+    : trimmed.includes('fcm.googleapis.com')
+      ? 'fcm'
+      : 'other';
+
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
+    const admin = createClient(supabaseUrl, requireServiceRoleKey());
+
+    const { data, error } = await admin
+      .from('push_subscriptions')
+      .select('id')
+      .eq('endpoint', trimmed)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return { registered: false, platform };
+    }
+
+    return { registered: Boolean(data), platform };
+  } catch (error) {
+    console.error('[verifyDevicePushRegistration] Exception:', error);
+    return { registered: false, platform };
   }
 }
 

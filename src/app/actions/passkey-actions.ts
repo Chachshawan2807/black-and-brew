@@ -230,17 +230,20 @@ export async function verifyPasskeyRegistration(
   }
 }
 
-export async function getPasskeyLoginOptions(): Promise<
-  { success: true; optionsJSON: string } | { success: false; error: string }
-> {
+export async function getPasskeyLoginOptions(
+  sessionFingerprint?: string
+): Promise<{ success: true; optionsJSON: string } | { success: false; error: string }> {
   try {
     const { rpId } = await resolveWebAuthnContext();
     const cookieStore = await cookies();
-    const sessionFingerprint = cookieStore.get(SESSION_FP_COOKIE)?.value;
+    const fingerprint =
+      cookieStore.get(SESSION_FP_COOKIE)?.value?.trim() ||
+      sessionFingerprint?.trim() ||
+      '';
 
     let allowCredentials: { id: string; transports?: AuthenticatorTransport[] }[] = [];
-    if (sessionFingerprint) {
-      const existing = await fetchPasskeysForFingerprint(sessionFingerprint);
+    if (fingerprint) {
+      const existing = await fetchPasskeysForFingerprint(fingerprint);
       allowCredentials = existing.map((row) => ({
         id: row.credential_id,
         transports: row.transports as AuthenticatorTransport[],

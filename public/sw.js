@@ -1,4 +1,4 @@
-// v16
+// v18
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -44,6 +44,30 @@ function buildNotificationOptions(payload, unreadCount, overrides = {}) {
     },
     ...overrides,
   };
+}
+
+/** iOS Web Push rejects some Chromium-only notification fields. */
+function buildIosSafeNotificationOptions(options) {
+  const safe = { ...options };
+  delete safe.vibrate;
+  delete safe.renotify;
+  return safe;
+}
+
+async function showPushNotification(title, options) {
+  try {
+    await self.registration.showNotification(title, options);
+    return;
+  } catch (error) {
+    console.warn('[sw] showNotification failed, retrying without mobile-only fields:', error);
+  }
+
+  try {
+    await self.registration.showNotification(title, buildIosSafeNotificationOptions(options));
+  } catch (error) {
+    console.error('[sw] showNotification fallback failed:', error);
+    throw error;
+  }
 }
 
 // Add list of files to cache here.
@@ -166,7 +190,7 @@ self.addEventListener('push', (event) => {
           });
         }
 
-        await self.registration.showNotification(payload.title, buildNotificationOptions(payload, unreadCount, {
+        await showPushNotification(payload.title, buildNotificationOptions(payload, unreadCount, {
           tag: `${payload.tag || 'bb-daily-report'}-${Date.now()}`,
           requireInteraction: true,
           timestamp: Date.now(),
@@ -197,7 +221,7 @@ self.addEventListener('push', (event) => {
         });
       }
 
-      await self.registration.showNotification(payload.title, options);
+      await showPushNotification(payload.title, options);
       await applyHomeScreenBadge(unreadCount);
     })(),
   );
@@ -295,32 +319,62 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Guard: only handle http: and https: requests — skip chrome-extension://, data:, etc.
   const requestUrl = event.request.url;
   if (!requestUrl.startsWith('http:') && !requestUrl.startsWith('https:')) return;
+  if (event.request.method !== 'GET' || requestUrl.includes('/api/')) return;
 
-  // Use Network-First strategy to ensure fresh data, fallback to cache if offline
-  if (event.request.method === 'GET' && !event.request.url.includes('/api/')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          // If response is valid, clone it and cache it
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          const responseToCache = response.clone();
-          // Inner guard: never cache non-HTTP/HTTPS requests (e.g. chrome-extension://)
-          if (event.request.url.startsWith('http:') || event.request.url.startsWith('https:')) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Fallback to cache if network fails (offline mode)
-          return caches.match(event.request);
-        })
-    );
+  const isNavigation = event.request.mode === 'navigate';
+  const isImmutableAsset =
+    requestUrl.includes('/_next/static/') ||
+    requestUrl.includes('/images/') ||
+    requestUrl.endsWith('.woff2') ||
+    requestUrl.includes('/pwa-') ||
+    requestUrl.includes('/notification-') ||
+    requestUrl.includes('/ai-agent-logo.svg');
+
+  if (!isNavigation && isImmutableAsset) {
+    event.respondWith(staleWhileRevalidate(event.request));
+    return;
   }
+
+  event.respondWith(networkFirstWithOfflineFallback(event.request));
 });
+
+function staleWhileRevalidate(request) {
+  return caches.open(CACHE_NAME).then(async (cache) => {
+    const cached = await cache.match(request);
+    const networkPromise = fetch(request)
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          cache.put(request, response.clone());
+        }
+        return response;
+      })
+      .catch(() => null);
+
+    if (cached) {
+      void networkPromise;
+      return cached;
+    }
+
+    const network = await networkPromise;
+    return network || caches.match(request);
+  });
+}
+
+function networkFirstWithOfflineFallback(request) {
+  return fetch(request)
+    .then((response) => {
+      if (!response || response.status !== 200 || response.type !== 'basic') {
+        return response;
+      }
+      const responseToCache = response.clone();
+      if (request.url.startsWith('http:') || request.url.startsWith('https:')) {
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(request, responseToCache);
+        });
+      }
+      return response;
+    })
+    .catch(() => caches.match(request));
+}

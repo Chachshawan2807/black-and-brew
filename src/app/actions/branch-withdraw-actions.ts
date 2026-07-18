@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import {
@@ -106,6 +107,8 @@ async function recordBranchWithdrawInventoryNotifications(
     metadataBase.clientSessionId = clientSessionId;
   }
 
+  const auditTasks: Array<() => Promise<unknown>> = [];
+
   for (const line of filtered) {
     const item = itemsById.get(line.itemId);
     if (!item) continue;
@@ -113,27 +116,31 @@ async function recordBranchWithdrawInventoryNotifications(
     const oldStock = item.stock;
     const newStock = oldStock + line.qtyBranch1;
 
-    await recordDataChange({
-      action: 'UPDATE',
-      module: 'inventory',
-      entityType: 'inventory_item',
-      entityId: line.itemId,
-      entityLabel: item.name,
-      fieldChanges: [
-        {
-          field: 'stock',
-          old_value: oldStock,
-          new_value: newStock,
+    auditTasks.push(() =>
+      recordDataChange({
+        action: 'UPDATE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        entityId: line.itemId,
+        entityLabel: item.name,
+        fieldChanges: [
+          {
+            field: 'stock',
+            old_value: oldStock,
+            new_value: newStock,
+          },
+        ],
+        metadata: {
+          ...metadataBase,
+          quantity: line.qtyBranch1,
+          itemName: item.name,
+          order_point: item.order_point,
         },
-      ],
-      metadata: {
-        ...metadataBase,
-        quantity: line.qtyBranch1,
-        itemName: item.name,
-        order_point: item.order_point,
-      },
-    });
+      }),
+    );
   }
+
+  await Promise.all(auditTasks.map((task) => task()));
 }
 
 export type BranchWithdrawHistoryRow = {
@@ -207,16 +214,27 @@ export async function saveBranchWithdrawal(raw: z.infer<typeof saveSchema>) {
 
     const withdrawalId = String(data?.withdrawal_id ?? '');
     if (withdrawalId) {
-      await recordBranchWithdrawInventoryNotifications(
-        filtered,
-        itemSnapshots,
-        withdrawalId,
-        parsed.data.clientSessionId,
-      );
+      const deferredFiltered = filtered;
+      const deferredSnapshots = itemSnapshots;
+      const deferredClientSessionId = parsed.data.clientSessionId;
+      after(async () => {
+        try {
+          await recordBranchWithdrawInventoryNotifications(
+            deferredFiltered,
+            deferredSnapshots,
+            withdrawalId,
+            deferredClientSessionId,
+          );
+          revalidatePath('/[locale]/inventory', 'page');
+          revalidatePath('/[locale]/inventory/branch-withdraw', 'page');
+        } catch (deferredError) {
+          console.error(
+            '[saveBranchWithdrawal] Deferred notification error:',
+            getErrorMessage(deferredError),
+          );
+        }
+      });
     }
-
-    revalidatePath('/[locale]/inventory', 'page');
-    revalidatePath('/[locale]/inventory/branch-withdraw', 'page');
 
     return {
       success: true as const,

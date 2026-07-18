@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   formatPushRegistrationError,
   hasMatchingApplicationServerKey,
+  hasServerPushRegistration,
   requiresUserGestureForPushSubscribe,
   shouldDeferOsNotificationToPush,
   urlBase64ToUint8Array,
@@ -63,6 +64,7 @@ describe('push-subscription-client', () => {
         pushSupported: true,
         permission: 'granted',
         hasSubscription: true,
+        hasServerRegistration: true,
         userAgent:
           'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/150.0.0.0 Mobile Safari/537.36',
       }),
@@ -88,6 +90,7 @@ describe('push-subscription-client', () => {
         pushSupported: true,
         permission: 'granted',
         hasSubscription: true,
+        hasServerRegistration: true,
         userAgent: iosUa,
       }),
     ).toBe(true);
@@ -103,5 +106,25 @@ describe('push-subscription-client', () => {
         userAgent: 'Mozilla/5.0 (Linux; Android 14) Mobile',
       }),
     ).toBe(false);
+  });
+
+  test('shouldDeferOsNotificationToPush does not defer on iOS with only a local browser subscription', () => {
+    const prefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, enabled: true, systemNotifications: true };
+    const iosUa =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15';
+
+    expect(
+      shouldDeferOsNotificationToPush(prefs, {
+        pushSupported: true,
+        permission: 'granted',
+        hasSubscription: false,
+        hasServerRegistration: false,
+        userAgent: iosUa,
+      }),
+    ).toBe(false);
+  });
+
+  test('hasServerPushRegistration defaults to false before any successful server sync', () => {
+    expect(hasServerPushRegistration()).toBe(false);
   });
 });

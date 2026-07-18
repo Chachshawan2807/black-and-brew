@@ -24,7 +24,7 @@ import { recordLoginEvent } from '@/app/actions/login-history-actions';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import {
-  getBiometricLoginAvailability,
+  getBiometricAutoLoginReadiness,
   loginWithDevicePasskey,
   registerDevicePasskey,
   shouldOfferPasskeyEnrollment,
@@ -86,6 +86,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricCanAutoTrigger, setBiometricCanAutoTrigger] = useState(false);
+  const [deviceHasPasskey, setDeviceHasPasskey] = useState(false);
   const [biometricAttempts, setBiometricAttempts] = useState(0);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
@@ -151,11 +153,14 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     let cancelled = false;
+    const device = collectClientDeviceInfo();
 
-    void getBiometricLoginAvailability().then(availability => {
+    void getBiometricAutoLoginReadiness(device.sessionFingerprint).then(readiness => {
       if (cancelled) return;
-      setBiometricSupported(availability.supported);
-      if (!availability.canAutoTrigger) {
+      setBiometricSupported(readiness.supported);
+      setBiometricCanAutoTrigger(readiness.canAutoTrigger);
+      setDeviceHasPasskey(readiness.hasPasskey);
+      if (!readiness.canAutoTrigger) {
         biometricAutoEnabledRef.current = false;
       }
     });
@@ -238,7 +243,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
       try {
         const device = collectClientDeviceInfo();
-        const res = await loginWithDevicePasskey(device);
+        const res = await loginWithDevicePasskey(device, {
+          autoTrigger: trigger === 'auto',
+        });
         if (!res.success) {
           setPasskeyError(res.error);
           recordBiometricFailure();
@@ -259,8 +266,70 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     [completeAuthentication, lockoutTimeLeft, recordBiometricFailure]
   );
 
-  // Automatic biometric prompt has been disabled per user request
-  // to prevent sudden interruptions while the app is in use.
+  useEffect(() => {
+    if (
+      !isMounted ||
+      isAuthenticated ||
+      lockoutTimeLeft !== null ||
+      showEnrollment ||
+      isVerifying ||
+      !biometricSupported ||
+      !biometricCanAutoTrigger ||
+      !deviceHasPasskey
+    ) {
+      return;
+    }
+
+    void handlePasskeyLogin('auto');
+  }, [
+    isMounted,
+    isAuthenticated,
+    lockoutTimeLeft,
+    showEnrollment,
+    isVerifying,
+    biometricSupported,
+    biometricCanAutoTrigger,
+    deviceHasPasskey,
+    handlePasskeyLogin,
+  ]);
+
+  useEffect(() => {
+    if (
+      !isMounted ||
+      isAuthenticated ||
+      lockoutTimeLeft !== null ||
+      showEnrollment ||
+      isVerifying
+    ) {
+      return;
+    }
+
+    const onResume = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!biometricCanAutoTrigger || !deviceHasPasskey) return;
+      if (biometricAttemptsRef.current >= BIOMETRIC_AUTO_MAX_ATTEMPTS) return;
+
+      biometricAutoPromptedRef.current = false;
+      void handlePasskeyLogin('auto');
+    };
+
+    document.addEventListener('visibilitychange', onResume);
+    window.addEventListener('pageshow', onResume);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onResume);
+      window.removeEventListener('pageshow', onResume);
+    };
+  }, [
+    isMounted,
+    isAuthenticated,
+    lockoutTimeLeft,
+    showEnrollment,
+    isVerifying,
+    biometricCanAutoTrigger,
+    deviceHasPasskey,
+    handlePasskeyLogin,
+  ]);
 
   const handleEnrollment = async () => {
     setPasskeyBusy(true);

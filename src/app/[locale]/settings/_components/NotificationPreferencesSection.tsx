@@ -18,7 +18,8 @@ import {
   ensurePushSubscriptionFromUserGesture,
   formatPushRegistrationError,
   getLastPushRegistrationError,
-  hasActivePushSubscription,
+  hasLocalPushSubscription,
+  hasServerPushRegistration,
   refreshLocalPushSubscriptionState,
   requiresUserGestureForPushSubscribe,
   syncPushPrefsToServer,
@@ -87,17 +88,21 @@ export default function NotificationPreferencesSection({
   const isIos = requiresUserGestureForPushSubscribe();
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
   const [permission, setPermission] = useState(() => getNotificationPermissionState());
-  const [deviceRegistered, setDeviceRegistered] = useState(false);
+  const [devicePushState, setDevicePushState] = useState<'none' | 'local_only' | 'server'>('none');
   const [registering, setRegistering] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [diag, setDiag] = useState<{
     subscriptionCount: number;
+    appleSubscriptionCount: number;
+    fcmSubscriptionCount: number;
     vapidConfigured: boolean;
   } | null>(null);
 
   const refreshDeviceState = useCallback(async () => {
-    const hasLocal = await refreshLocalPushSubscriptionState();
-    setDeviceRegistered(hasLocal || hasActivePushSubscription());
+    await refreshLocalPushSubscriptionState();
+    const hasLocal = hasLocalPushSubscription();
+    const hasServer = hasServerPushRegistration();
+    setDevicePushState(hasServer ? 'server' : hasLocal ? 'local_only' : 'none');
     const err = getLastPushRegistrationError();
     setRegisterError(err ? formatPushRegistrationError(err, isTh) : null);
   }, [isTh]);
@@ -116,11 +121,13 @@ export default function NotificationPreferencesSection({
       if (result.ok) {
         setDiag({
           subscriptionCount: result.subscriptionCount,
+          appleSubscriptionCount: result.appleSubscriptionCount,
+          fcmSubscriptionCount: result.fcmSubscriptionCount,
           vapidConfigured: result.vapidConfigured,
         });
       }
     });
-  }, [prefs.systemNotifications, deviceRegistered]);
+  }, [prefs.systemNotifications, devicePushState]);
 
   const update = (patch: Partial<NotificationPreferences>) => {
     setPrefs((prev) => ({ ...prev, ...patch }));
@@ -214,7 +221,7 @@ export default function NotificationPreferencesSection({
   const wantsPush = wantsPushRegistration(prefs);
   const masterOn = isNotificationMasterEnabled(prefs);
   const showIosRegister =
-    isIos && wantsPush && permission !== 'denied' && !deviceRegistered;
+    isIos && wantsPush && permission !== 'denied' && devicePushState !== 'server';
 
   return (
     <div>
@@ -240,16 +247,22 @@ export default function NotificationPreferencesSection({
         <p
           className={cn(
             'text-[11px] mb-2',
-            deviceRegistered ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400',
+            devicePushState === 'server'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-amber-600 dark:text-amber-400',
           )}
         >
-          {deviceRegistered
+          {devicePushState === 'server'
             ? isTh
-              ? 'เครื่องนี้ลงทะเบียนรับการแจ้งเตือนแล้ว'
-              : 'This device is registered for push alerts'
-            : isTh
-              ? 'เครื่องนี้ยังไม่ได้ลงทะเบียนรับการแจ้งเตือน'
-              : 'This device is not registered for push alerts'}
+              ? 'เครื่องนี้ลงทะเบียนกับเซิร์ฟเวอร์แล้ว — รับการแจ้งเตือนได้แม้ปิดแอป'
+              : 'This device is registered with the server — alerts work when the app is closed'
+            : devicePushState === 'local_only'
+              ? isTh
+                ? 'เครื่องนี้อนุญาตการแจ้งเตือนแล้ว แต่ยังไม่ได้ลงทะเบียนกับเซิร์ฟเวอร์ — กดปุ่มด้านล่าง'
+                : 'Notifications are allowed on this device but not registered with the server — tap below'
+              : isTh
+                ? 'เครื่องนี้ยังไม่ได้ลงทะเบียนรับการแจ้งเตือน'
+                : 'This device is not registered for push alerts'}
         </p>
       )}
       {showIosRegister && (
@@ -269,8 +282,8 @@ export default function NotificationPreferencesSection({
       {diag && wantsPush && (
         <p className="text-[11px] text-muted-foreground mb-2">
           {isTh
-            ? `เซิร์ฟเวอร์: ${diag.vapidConfigured ? 'พร้อม' : 'ยังไม่พร้อม'} · ลงทะเบียนทั้งหมด ${diag.subscriptionCount} เครื่อง`
-            : `Server: ${diag.vapidConfigured ? 'ready' : 'not ready'} · ${diag.subscriptionCount} device(s) registered`}
+            ? `เซิร์ฟเวอร์: ${diag.vapidConfigured ? 'พร้อม' : 'ยังไม่พร้อม'} · ลงทะเบียนทั้งหมด ${diag.subscriptionCount} เครื่อง (iPhone ${diag.appleSubscriptionCount} · Android ${diag.fcmSubscriptionCount})`
+            : `Server: ${diag.vapidConfigured ? 'ready' : 'not ready'} · ${diag.subscriptionCount} device(s) (iPhone ${diag.appleSubscriptionCount} · Android ${diag.fcmSubscriptionCount})`}
         </p>
       )}
 

@@ -37,7 +37,7 @@ export default function SidebarLayout({
         id="app-main"
         inert={mobileDrawerInert ? true : undefined}
         className={cn(
-          "bb-main-container min-h-[100svh] bg-transparent transition-[margin-left] ease-in-out duration-300 motion-reduce:transition-none",
+          "bb-main-container min-h-[100svh] bg-transparent transition-[margin-left] ease-in-out duration-300 motion-reduce:transition-none [contain:layout_style]",
           fabStackHidden ? FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS : FAB_PAGE_BOTTOM_PADDING_CLASS,
           sidebarOpen === false ? "md:ml-20" : "md:ml-[280px]"
         )}

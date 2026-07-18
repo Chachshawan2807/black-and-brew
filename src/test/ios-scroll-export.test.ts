@@ -50,7 +50,9 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toContain('onPointerLeave={handleGridPointerLeave}');
     expect(code).toContain('setGridFocus(null)');
     expect(code).toContain('scheduleCrosshairCellClass');
-    expect(grid).toContain("SCHEDULE_NAME_COLUMN_MIN = '168px'");
+    expect(grid).toContain("SCHEDULE_NAME_COLUMN_MIN = '112px'");
+    expect(grid).toContain('SCHEDULE_EXPORT_GRID_TEMPLATE');
+    expect(code).toContain('bb-schedule-name-cell');
     expect(grid).toContain('SCHEDULE_DAY_COLUMN_MIN');
     expect(css).toContain('bb-schedule-crosshair-cell');
     expect(css).toContain('bb-schedule-crosshair-row-band');
@@ -61,9 +63,34 @@ describe('iOS scroll & export fixes', () => {
     expect(code).not.toContain('text-foreground truncate leading');
   });
 
+  test('ScheduleClient clears grid focus before schedule PNG export', () => {
+    const code = readFile('app/[locale]/schedule/ScheduleClient.tsx');
+    expect(code).toContain('bb-schedule-drag-handle');
+    expect(code).toMatch(/setGridFocus\(null\)[\s\S]*captureScheduleTableAsPng|flushSync[\s\S]*setGridFocus\(null\)[\s\S]*captureScheduleTableAsPng/);
+  });
+
+  test('schedule export hides drag handles during capture', () => {
+    const code = readFile('lib/schedule-export-capture.ts');
+    expect(code).toContain('bb-schedule-drag-handle');
+    expect(code).toContain('bb-schedule-export-capturing');
+    expect(code).toContain("setInline(restores, node, 'display', 'none')");
+  });
+
+  test('export supports multi-line public holiday labels', () => {
+    const grid = readFile('lib/schedule/grid-layout.ts');
+    const code = readFile('lib/schedule-export-capture.ts');
+    expect(grid).toContain('SCHEDULE_EXPORT_HOLIDAY_LINE_CLAMP = 4');
+    expect(grid).toContain('SCHEDULE_EXPORT_HOLIDAY_MIN_HEIGHT');
+    expect(code).toContain('bb-schedule-holiday-label');
+    expect(code).toContain('applyScheduleExportRowDividers');
+  });
+
   test('schedule export preserves nowrap schedule layout', () => {
     const code = readFile('lib/schedule-export-capture.ts');
     expect(code).toContain('bb-schedule-grid');
+    expect(code).toContain('bb-schedule-holiday-cell');
+    expect(code).toContain('SCHEDULE_EXPORT_HOLIDAY_LINE_CLAMP');
+    expect(code).toContain('SCHEDULE_EXPORT_GRID_TEMPLATE');
     expect(code).toContain('bb-schedule-nowrap');
     expect(code).toContain('grid-template-columns');
     expect(code).toContain('white-space');

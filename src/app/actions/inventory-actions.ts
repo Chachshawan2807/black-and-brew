@@ -112,6 +112,21 @@ function withAuditMetadata(
   return result;
 }
 
+function revalidateInventoryPaths() {
+  revalidatePath('/[locale]/inventory', 'page');
+  revalidatePath('/[locale]/inventory/count', 'page');
+}
+
+function deferInventorySideEffects(label: string, work: () => Promise<void>) {
+  after(async () => {
+    try {
+      await work();
+    } catch (error) {
+      console.error(`[${label}] Deferred side-effect error:`, getErrorMessage(error));
+    }
+  });
+}
+
 // === RECORD TRANSACTION (Atomic via RPC) ===
 const transactionSchema = z.object({
   productId: z.string().uuid().or(z.string()),
@@ -155,23 +170,25 @@ export async function recordTransaction(
 
     if (error) {
       console.error('[recordTransaction] Supabase RPC Error:', error.message, error.details, error.hint);
-      await recordDataChange({
-        action: 'UPDATE',
-        module: 'inventory',
-        entityType: 'inventory_item',
-        entityId: productId,
-        entityLabel: beforeItem?.name ?? null,
-        status: 'failed',
-        errorMessage: error.message,
-        metadata: withAuditMetadata(
-          {
-            operation: 'record_transaction',
-            type,
-            quantity,
-            itemName: beforeItem?.name ?? null,
-          },
-          auditOptions
-        ),
+      deferInventorySideEffects('recordTransaction', async () => {
+        await recordDataChange({
+          action: 'UPDATE',
+          module: 'inventory',
+          entityType: 'inventory_item',
+          entityId: productId,
+          entityLabel: beforeItem?.name ?? null,
+          status: 'failed',
+          errorMessage: error.message,
+          metadata: withAuditMetadata(
+            {
+              operation: 'record_transaction',
+              type,
+              quantity,
+              itemName: beforeItem?.name ?? null,
+            },
+            auditOptions
+          ),
+        });
       });
       if (error.message.includes('Insufficient stock')) {
         return { success: false, error: 'ยอดคงเหลือไม่เพียงพอสำหรับการนำออก' };
@@ -179,34 +196,35 @@ export async function recordTransaction(
       return { success: false, error: error.message };
     }
 
-    await recordDataChange({
-      action: 'UPDATE',
-      module: 'inventory',
-      entityType: 'inventory_item',
-      entityId: productId,
-      entityLabel: beforeItem?.name ?? null,
-      fieldChanges: [
-        {
-          field: 'stock',
-          old_value: data?.old_stock ?? beforeItem?.stock ?? null,
-          new_value: data?.new_stock ?? null,
-        },
-      ],
-      metadata: withAuditMetadata(
-        {
-          operation: 'record_transaction',
-          type,
-          quantity,
-          note,
-          itemName: beforeItem?.name ?? null,
-          order_point: data?.order_point ?? beforeItem?.order_point ?? null,
-        },
-        auditOptions
-      ),
+    deferInventorySideEffects('recordTransaction', async () => {
+      await recordDataChange({
+        action: 'UPDATE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        entityId: productId,
+        entityLabel: beforeItem?.name ?? null,
+        fieldChanges: [
+          {
+            field: 'stock',
+            old_value: data?.old_stock ?? beforeItem?.stock ?? null,
+            new_value: data?.new_stock ?? null,
+          },
+        ],
+        metadata: withAuditMetadata(
+          {
+            operation: 'record_transaction',
+            type,
+            quantity,
+            note,
+            itemName: beforeItem?.name ?? null,
+            order_point: data?.order_point ?? beforeItem?.order_point ?? null,
+          },
+          auditOptions
+        ),
+      });
+      revalidateInventoryPaths();
     });
 
-    revalidatePath('/[locale]/inventory', 'page');
-    revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true, newStock: data?.new_stock };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -251,6 +269,8 @@ export async function recordBulkInventoryTransactions(
       return { success: false, error: 'Invalid bulk transaction payload', results: [] as BulkInventoryTransactionResult[] };
     }
 
+    const pendingAudits: Array<() => Promise<void>> = [];
+
     const results: BulkInventoryTransactionResult[] = await Promise.all(
       parsed.data.entries.map(async (entry) => {
         try {
@@ -269,24 +289,26 @@ export async function recordBulkInventoryTransactions(
 
           if (error) {
             console.error('[recordBulkInventoryTransactions] Supabase RPC Error:', error.message, error.details, error.hint);
-            await recordDataChange({
-              action: 'UPDATE',
-              module: 'inventory',
-              entityType: 'inventory_item',
-              entityId: entry.itemId,
-              entityLabel: beforeItem?.name ?? null,
-              status: 'failed',
-              errorMessage: error.message,
-              metadata: withAuditMetadata(
-                {
-                  operation: 'record_transaction',
-                  type: entry.type,
-                  quantity: entry.quantity,
-                  bulk: true,
-                  itemName: beforeItem?.name ?? null,
-                },
-                auditOptions,
-              ),
+            pendingAudits.push(async () => {
+              await recordDataChange({
+                action: 'UPDATE',
+                module: 'inventory',
+                entityType: 'inventory_item',
+                entityId: entry.itemId,
+                entityLabel: beforeItem?.name ?? null,
+                status: 'failed',
+                errorMessage: error.message,
+                metadata: withAuditMetadata(
+                  {
+                    operation: 'record_transaction',
+                    type: entry.type,
+                    quantity: entry.quantity,
+                    bulk: true,
+                    itemName: beforeItem?.name ?? null,
+                  },
+                  auditOptions,
+                ),
+              });
             });
             const message = error.message.includes('Insufficient stock')
               ? 'ยอดคงเหลือไม่เพียงพอสำหรับการนำออก'
@@ -294,31 +316,33 @@ export async function recordBulkInventoryTransactions(
             return { itemId: entry.itemId, success: false, error: message };
           }
 
-          await recordDataChange({
-            action: 'UPDATE',
-            module: 'inventory',
-            entityType: 'inventory_item',
-            entityId: entry.itemId,
-            entityLabel: beforeItem?.name ?? null,
-            fieldChanges: [
-              {
-                field: 'stock',
-                old_value: data?.old_stock ?? beforeItem?.stock ?? null,
-                new_value: data?.new_stock ?? null,
-              },
-            ],
-            metadata: withAuditMetadata(
-              {
-                operation: 'record_transaction',
-                type: entry.type,
-                quantity: entry.quantity,
-                note,
-                bulk: true,
-                itemName: beforeItem?.name ?? null,
-                order_point: data?.order_point ?? beforeItem?.order_point ?? null,
-              },
-              auditOptions,
-            ),
+          pendingAudits.push(async () => {
+            await recordDataChange({
+              action: 'UPDATE',
+              module: 'inventory',
+              entityType: 'inventory_item',
+              entityId: entry.itemId,
+              entityLabel: beforeItem?.name ?? null,
+              fieldChanges: [
+                {
+                  field: 'stock',
+                  old_value: data?.old_stock ?? beforeItem?.stock ?? null,
+                  new_value: data?.new_stock ?? null,
+                },
+              ],
+              metadata: withAuditMetadata(
+                {
+                  operation: 'record_transaction',
+                  type: entry.type,
+                  quantity: entry.quantity,
+                  note,
+                  bulk: true,
+                  itemName: beforeItem?.name ?? null,
+                  order_point: data?.order_point ?? beforeItem?.order_point ?? null,
+                },
+                auditOptions,
+              ),
+            });
           });
 
           return { itemId: entry.itemId, success: true, newStock: data?.new_stock };
@@ -329,8 +353,12 @@ export async function recordBulkInventoryTransactions(
       })
     );
 
-    revalidatePath('/[locale]/inventory', 'page');
-    revalidatePath('/[locale]/inventory/count', 'page');
+    if (pendingAudits.length > 0) {
+      deferInventorySideEffects('recordBulkInventoryTransactions', async () => {
+        await Promise.all(pendingAudits.map((audit) => audit()));
+        revalidateInventoryPaths();
+      });
+    }
 
     const allSucceeded = results.every((row) => row.success);
     return {
@@ -412,30 +440,31 @@ export async function updateInventoryStock(
       newStock = data?.new_stock ?? stock;
     }
 
-    await recordDataChange({
-      action: 'UPDATE',
-      module: 'inventory',
-      entityType: 'inventory_item',
-      entityId: itemId,
-      entityLabel: beforeItem?.name ?? null,
-      fieldChanges: computeFieldChanges(
-        { stock: beforeItem?.stock ?? null },
-        { stock: newStock }
-      ),
-      metadata: withAuditMetadata(
-        {
-          operation: 'set_stock',
-          note,
-          recordHistory,
-          itemName: beforeItem?.name ?? null,
-          order_point: beforeItem?.order_point ?? null,
-        },
-        options
-      ),
+    deferInventorySideEffects('updateInventoryStock', async () => {
+      await recordDataChange({
+        action: 'UPDATE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        entityId: itemId,
+        entityLabel: beforeItem?.name ?? null,
+        fieldChanges: computeFieldChanges(
+          { stock: beforeItem?.stock ?? null },
+          { stock: newStock }
+        ),
+        metadata: withAuditMetadata(
+          {
+            operation: 'set_stock',
+            note,
+            recordHistory,
+            itemName: beforeItem?.name ?? null,
+            order_point: beforeItem?.order_point ?? null,
+          },
+          options
+        ),
+      });
+      revalidateInventoryPaths();
     });
 
-    revalidatePath('/[locale]/inventory', 'page');
-    revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true, newStock };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -501,28 +530,29 @@ export async function updateInventoryItemField(
       return { success: false, error: error.message };
     }
 
-    await recordDataChange({
-      action: 'UPDATE',
-      module: 'inventory',
-      entityType: 'inventory_item',
-      entityId: itemId,
-      entityLabel: beforeItem?.name ?? null,
-      fieldChanges: computeFieldChanges(
-        { [parsed.data.field]: beforeItem?.[parsed.data.field] ?? null },
-        { [parsed.data.field]: sanitizedValue },
-      ),
-      metadata: withAuditMetadata(
-        {
-          operation: 'update_inventory_field',
-          field: parsed.data.field,
-          itemName: beforeItem?.name ?? null,
-        },
-        auditOptions,
-      ),
+    deferInventorySideEffects('updateInventoryItemField', async () => {
+      await recordDataChange({
+        action: 'UPDATE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        entityId: itemId,
+        entityLabel: beforeItem?.name ?? null,
+        fieldChanges: computeFieldChanges(
+          { [parsed.data.field]: beforeItem?.[parsed.data.field] ?? null },
+          { [parsed.data.field]: sanitizedValue },
+        ),
+        metadata: withAuditMetadata(
+          {
+            operation: 'update_inventory_field',
+            field: parsed.data.field,
+            itemName: beforeItem?.name ?? null,
+          },
+          auditOptions,
+        ),
+      });
+      revalidateInventoryPaths();
     });
 
-    revalidatePath('/[locale]/inventory', 'page');
-    revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true, value: sanitizedValue };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -560,21 +590,22 @@ export async function reorderInventoryItems(
       return { success: false, error: error.message };
     }
 
-    await recordDataChange({
-      action: 'BULK_UPDATE',
-      module: 'inventory',
-      entityType: 'inventory_item',
-      metadata: withAuditMetadata(
-        {
-          operation: 'reorder_inventory_items',
-          itemIds: parsed.data.map((item) => item.id),
-        },
-        auditOptions,
-      ),
+    deferInventorySideEffects('reorderInventoryItems', async () => {
+      await recordDataChange({
+        action: 'BULK_UPDATE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        metadata: withAuditMetadata(
+          {
+            operation: 'reorder_inventory_items',
+            itemIds: parsed.data.map((item) => item.id),
+          },
+          auditOptions,
+        ),
+      });
+      revalidateInventoryPaths();
     });
 
-    revalidatePath('/[locale]/inventory', 'page');
-    revalidatePath('/[locale]/inventory/count', 'page');
     return { success: true };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
