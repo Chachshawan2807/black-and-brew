@@ -15,6 +15,7 @@ import { logClientDataChange } from '@/lib/client-data-change-log';
 import { recordItemAddHistory } from '@/app/actions/inventory-actions';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import { cn } from '@/lib/utils';
 import { InventoryModalPortal } from './InventoryModalPortal';
 
 export type NewInventoryItemInput = {
