@@ -7,7 +7,11 @@ import {
   PWA_MANIFEST_THEME,
 } from '@/lib/pwa-assets';
 
-export default function manifest(): MetadataRoute.Manifest {
+type AppManifest = MetadataRoute.Manifest & {
+  handle_links?: 'preferred' | 'not-preferred' | 'auto';
+};
+
+export default function manifest(): AppManifest {
   return {
     name: 'BLACKANDBREW',
     short_name: 'BLACKANDBREW',
