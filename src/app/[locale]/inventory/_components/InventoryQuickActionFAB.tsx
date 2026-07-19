@@ -79,12 +79,12 @@ export default function InventoryQuickActionFAB() {
   const mobileKeyboardSheet = isMobile && viewportInsets.isKeyboardOpen;
   const mobileBackdropStyle = isMobile
     ? mobileKeyboardSheet
-      ? getMobileQuickActionKeyboardSheetBackdropStyle({ insets: viewportInsets })
+      ? getMobileQuickActionKeyboardSheetBackdropStyle(viewportInsets)
       : getModalBackdropKeyboardAwareStyle({ insets: viewportInsets })
     : undefined;
   const mobilePanelStyle = isMobile
     ? mobileKeyboardSheet
-      ? getMobileQuickActionKeyboardSheetPanelStyle({ insets: viewportInsets })
+      ? getMobileQuickActionKeyboardSheetPanelStyle(viewportInsets)
       : getModalContentKeyboardAwareStyle({ insets: viewportInsets })
     : undefined;
   const desktopPanelStyle = isDesktop
