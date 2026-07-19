@@ -356,8 +356,8 @@ function BulkQueuePanel({
   if (bulkPreviews.length === 0) return null;
 
   return (
-    <div className="w-full rounded-2xl border border-border bg-muted/15 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/70">
+    <div className="w-full min-h-0 rounded-2xl border border-border bg-muted/15 overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-200">
+      <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2 border-b border-border/70">
         <span className="text-[12px] text-muted-foreground">รายการในคิว — กรอกจำนวนแต่ละแถว</span>
         {onClearBulkQueue && bulkPreviews.length > 0 && (
           <button
@@ -369,10 +369,15 @@ function BulkQueuePanel({
           </button>
         )}
       </div>
-      <div className="divide-y divide-border/60">
+      <div
+        className="min-h-0 max-h-[min(42dvh,15rem)] overflow-y-auto bb-smooth-scroll divide-y divide-border/60"
+        role="list"
+        aria-label="รายการในคิว"
+      >
         {bulkPreviews.map(({ line, preview }) => (
           <div
             key={line.itemId}
+            role="listitem"
             className={cn(
               'flex items-center gap-2 px-3 py-2 min-w-0',
               rowTone,

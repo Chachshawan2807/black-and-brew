@@ -43,6 +43,17 @@ describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => 
       /<ShoppingCart[\s\S]*?<span className="truncate">สั่งซื้อ<\/span>\s*\{itemsToOrderCount > 0 &&[\s\S]*shrink-0/,
     );
   });
+
+  test('bulk queue panel keeps items inside a scrollable frame in multi-item mode', () => {
+    const barCode = readFileSync(
+      resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+
+    expect(barCode).toMatch(
+      /function BulkQueuePanel[\s\S]*รายการในคิว[\s\S]*max-h-\[min\(42dvh,15rem\)\][\s\S]*overflow-y-auto bb-smooth-scroll/,
+    );
+  });
 });
 
 describe('Safe DnD Sensors — mobile long-press guard', () => {
