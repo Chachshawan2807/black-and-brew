@@ -284,6 +284,7 @@ export default function InventoryQuickActionFAB() {
               className={cn(
                 'fixed inset-0 z-[199] md:contents',
                 FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
+                viewportInsets.isKeyboardOpen && 'max-md:items-start max-md:justify-center',
               )}
               style={mobileBackdropStyle}
             >
@@ -293,10 +294,13 @@ export default function InventoryQuickActionFAB() {
                 exit={modalContent.exit}
                 transition={modalContent.transition}
                 className={cn(
-                  'pointer-events-auto box-border flex flex-col overflow-y-auto bb-smooth-scroll min-h-0 bg-card rounded-3xl isolate',
+                  'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate',
                   'max-md:relative max-md:w-full max-md:max-h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))]',
                   'max-md:transition-[max-height] max-md:duration-200',
-                  'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6',
+                  viewportInsets.isKeyboardOpen
+                    ? 'max-md:overflow-hidden'
+                    : 'overflow-y-auto bb-smooth-scroll',
+                  'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6 md:overflow-y-auto md:bb-smooth-scroll',
                   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
                 )}
                 style={{ ...desktopPanelStyle, ...mobilePanelStyle }}
@@ -307,7 +311,13 @@ export default function InventoryQuickActionFAB() {
                   <span className="text-sm font-normal text-muted-foreground">กำลังโหลดข้อมูลคลังสินค้า...</span>
                 </div>
               ) : (
-                <InventoryQuickActionBar
+                <div
+                  className={cn(
+                    viewportInsets.isKeyboardOpen &&
+                      'max-md:min-h-0 max-md:max-h-full max-md:overflow-y-auto max-md:bb-smooth-scroll',
+                  )}
+                >
+                  <InventoryQuickActionBar
                   quickSearch={quickAction.quickSearch}
                   setQuickSearch={quickAction.setQuickSearch}
                   quickQty={quickAction.quickQty}
@@ -344,6 +354,7 @@ export default function InventoryQuickActionFAB() {
                   onCancelBulkSubmit={quickAction.cancelBulkSubmit}
                   className="bb-shadow-xl"
                 />
+                </div>
               )}
               </motion.div>
             </div>

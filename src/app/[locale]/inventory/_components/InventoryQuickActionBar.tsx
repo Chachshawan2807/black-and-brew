@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import type { CSSProperties } from 'react';
 import {
   Search,
   ShoppingCart,
@@ -31,6 +32,13 @@ import { blurQtyInputOnWheel, stepQuickQtyValue } from '@/lib/inventory-quick-qt
 import type { BulkPreview, BulkQueueItem } from '@/lib/inventory-quick-bulk';
 import { getBulkSubmitTypeLabel, type BulkQuickType } from '@/lib/inventory-quick-bulk';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { useMaxMd } from '@/hooks/use-max-md';
+import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import {
+  getAnchoredSuggestionsOverlayStyle,
+  getQuickSearchSuggestionsPlacement,
+  shouldPortalQuickSearchSuggestions,
+} from '@/lib/quick-search-suggestions-layout';
 
 export type QuickActionItem = {
   id: string;
@@ -628,6 +636,19 @@ export function InventoryQuickActionBar({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(QUICK_SEARCH_NO_HIGHLIGHT);
+  const [isMounted, setIsMounted] = useState(false);
+  const [portaledSuggestionsStyle, setPortaledSuggestionsStyle] = useState<CSSProperties>({});
+  const maxMd = useMaxMd();
+  const isMobile = maxMd === true;
+  const viewportInsets = useVisualViewportInsets(isMounted && isSearchFocused);
+  const portalSuggestions = shouldPortalQuickSearchSuggestions(
+    isMobile,
+    viewportInsets.isKeyboardOpen,
+  );
+  const suggestionsPlacement = getQuickSearchSuggestionsPlacement(
+    isMobile,
+    viewportInsets.isKeyboardOpen,
+  );
   const showSuggestions = shouldShowQuickSearchSuggestions(
     isSearchFocused,
     quickSearch,
@@ -635,6 +656,37 @@ export function InventoryQuickActionBar({
   );
   const suggestionsListId = 'inventory-quick-search-suggestions';
   const showClearSearch = quickSearch.trim().length > 0;
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
+    setIsMounted(true);
+  }, []);
+
+  const updatePortaledSuggestionsStyle = useCallback(() => {
+    const anchor = searchRootRef.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const viewportHeight = viewportInsets.visibleHeight || window.innerHeight;
+    setPortaledSuggestionsStyle(
+      getAnchoredSuggestionsOverlayStyle(rect, suggestionsPlacement, viewportHeight),
+    );
+  }, [suggestionsPlacement, viewportInsets.visibleHeight]);
+
+  useEffect(() => {
+    if (!showSuggestions || !portalSuggestions) return;
+
+    updatePortaledSuggestionsStyle();
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', updatePortaledSuggestionsStyle);
+    vv?.addEventListener('scroll', updatePortaledSuggestionsStyle);
+    window.addEventListener('resize', updatePortaledSuggestionsStyle);
+
+    return () => {
+      vv?.removeEventListener('resize', updatePortaledSuggestionsStyle);
+      vv?.removeEventListener('scroll', updatePortaledSuggestionsStyle);
+      window.removeEventListener('resize', updatePortaledSuggestionsStyle);
+    };
+  }, [portalSuggestions, showSuggestions, updatePortaledSuggestionsStyle]);
 
   const handleClearQuickSearch = useCallback(() => {
     setQuickSearch('');
@@ -727,6 +779,64 @@ export function InventoryQuickActionBar({
     });
   };
 
+  const suggestionsListClassName =
+    'bg-card border border-border rounded-xl bb-shadow-md overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200';
+
+  const suggestionsScrollClassName = 'overflow-y-auto bb-smooth-scroll py-2';
+
+  const suggestionButtons = filteredItems.map((item, index) => (
+    <button
+      key={item.id}
+      id={`${suggestionsListId}-option-${index}`}
+      ref={(node) => {
+        suggestionRefs.current[index] = node;
+      }}
+      type="button"
+      role="option"
+      aria-selected={highlightedIndex === index}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        selectQuickSearchItem(item);
+      }}
+      onMouseEnter={() => setHighlightedIndex(index)}
+      className={cn(
+        'w-full text-left px-5 py-3 transition-colors flex items-center justify-between gap-3 group min-w-0',
+        highlightedIndex === index ? 'bg-muted' : 'hover:bg-muted',
+      )}
+    >
+      <span className="text-[14px] text-foreground font-normal truncate min-w-0 flex-1">
+        {item.name}
+      </span>
+      <span className="text-[12px] text-muted-foreground group-hover:text-foreground/70 transition-colors uppercase tracking-widest tabular-nums shrink-0 whitespace-nowrap">
+        {item.stock} {item.unit}
+      </span>
+    </button>
+  ));
+
+  const suggestionsListbox = showSuggestions ? (
+    <div
+      id={suggestionsListId}
+      role="listbox"
+      className={cn(
+        suggestionsListClassName,
+        portalSuggestions
+          ? 'z-[210]'
+          : 'absolute top-full left-0 z-[210] mt-2 min-w-[min(100%,14rem)] w-max max-w-[min(100vw-2rem,20rem)]',
+      )}
+      style={portalSuggestions ? portaledSuggestionsStyle : undefined}
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      <div
+        className={cn(
+          suggestionsScrollClassName,
+          portalSuggestions ? 'max-h-full' : 'max-h-[min(50dvh,16rem)]',
+        )}
+      >
+        {suggestionButtons}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <>
     <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border bb-shadow-sm', className)}>
@@ -796,47 +906,7 @@ export function InventoryQuickActionBar({
                 </HintTooltip>
               )}
 
-              {showSuggestions && (
-                <div
-                  id={suggestionsListId}
-                  role="listbox"
-                  className="absolute top-full left-0 z-[210] mt-2 min-w-[min(100%,14rem)] w-max max-w-[min(100vw-2rem,20rem)] bg-card border border-border rounded-xl bb-shadow-md overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  <div className="max-h-[min(50vh,16rem)] overflow-y-auto bb-smooth-scroll py-2">
-                    {filteredItems.map((item, index) => (
-                      <button
-                        key={item.id}
-                        id={`${suggestionsListId}-option-${index}`}
-                        ref={(node) => {
-                          suggestionRefs.current[index] = node;
-                        }}
-                        type="button"
-                        role="option"
-                        aria-selected={highlightedIndex === index}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          selectQuickSearchItem(item);
-                        }}
-                        onMouseEnter={() => setHighlightedIndex(index)}
-                        className={cn(
-                          'w-full text-left px-5 py-3 transition-colors flex items-center justify-between gap-3 group min-w-0',
-                          highlightedIndex === index
-                            ? 'bg-muted'
-                            : 'hover:bg-muted',
-                        )}
-                      >
-                        <span className="text-[14px] text-foreground font-normal truncate min-w-0 flex-1">
-                          {item.name}
-                        </span>
-                        <span className="text-[12px] text-muted-foreground group-hover:text-foreground/70 transition-colors uppercase tracking-widest tabular-nums shrink-0 whitespace-nowrap">
-                          {item.stock} {item.unit}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {!portalSuggestions && suggestionsListbox}
             </div>
 
             {!bulkMode && selectedQuickItem && (
@@ -991,6 +1061,9 @@ export function InventoryQuickActionBar({
         </div>
       )}
     </div>
+    {portalSuggestions && isMounted && suggestionsListbox
+      ? createPortal(suggestionsListbox, document.body)
+      : null}
     {bulkMode && onConfirmBulkSubmit && onCancelBulkSubmit && (
       <BulkSubmitConfirmDialog
         open={bulkConfirmOpen}

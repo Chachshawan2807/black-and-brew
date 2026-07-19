@@ -52,6 +52,11 @@ describe('keyboard-aware panel styles', () => {
     });
 
     expect(backdrop.alignItems).toBe('flex-start');
+    expect(backdrop.top).toBe(0);
+    expect(backdrop.bottom).toBe('auto');
+    expect(backdrop.left).toBe(0);
+    expect(backdrop.right).toBe(0);
+    expect(backdrop.width).toBe('100%');
     expect(backdrop.height).toBe(420);
     expect(content.maxHeight).toBe(396);
   });

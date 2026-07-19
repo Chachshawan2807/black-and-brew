@@ -75,8 +75,8 @@ describe('Inventory Quick Action FAB', () => {
     expect(layoutCode).toContain('md:bottom-[7.75rem]');
     expect(layoutCode).toContain('max-md:bottom-[calc(11rem+env(safe-area-inset-bottom,0px))]');
     expect(fabCode).toContain('InventoryQuickActionBar');
-    expect(fabCode).toContain('overflow-y-auto bb-smooth-scroll');
-    expect(fabCode).not.toContain('overflow-y-auto max-h-full');
+    expect(fabCode).toContain('overflow-y-auto');
+    expect(fabCode).toContain('bb-smooth-scroll');
     expect(fabCode).toContain('FAB_STACK_INNER_CLASS');
     expect(fabCode).toContain('FabFadePresence');
     expect(fabCode).toContain('<Package');
@@ -306,6 +306,23 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toMatch(/quickOverlayActive[\s\S]*isPanelRendered/);
     expect(fabCode).toMatch(/useVisualViewportInsets\(isMounted && isPanelRendered\)/);
     expect(fabCode).toMatch(/aria-expanded=\{isPanelRendered\}/);
+  });
+
+  test('quick action FAB top-aligns mobile panel when keyboard is open', () => {
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+
+    expect(fabCode).toContain('viewportInsets.isKeyboardOpen');
+    expect(fabCode).toContain('max-md:items-start');
+    expect(barCode).toContain('shouldPortalQuickSearchSuggestions');
+    expect(barCode).toContain('getAnchoredSuggestionsOverlayStyle');
+    expect(barCode).toContain('createPortal');
   });
 
   test('quick action FAB blurs focused input before closing after save', () => {

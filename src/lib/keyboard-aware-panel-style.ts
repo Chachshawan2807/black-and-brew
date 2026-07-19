@@ -42,7 +42,12 @@ export function getModalBackdropKeyboardAwareStyle({
   return {
     alignItems: 'flex-start',
     justifyContent: 'center',
-    paddingTop: insets.offsetTop + marginTop,
+    top: insets.offsetTop,
+    bottom: 'auto',
+    left: 0,
+    right: 0,
+    width: '100%',
+    paddingTop: marginTop,
     paddingBottom: marginBottom,
     height: insets.visibleHeight,
     maxHeight: insets.visibleHeight,
