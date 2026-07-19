@@ -3,6 +3,27 @@ import fs from 'fs';
 import path from 'path';
 
 describe('Inventory Quick Action FAB', () => {
+  test('quick action FAB panel stays vertically centered on mobile when bulk queue grows', () => {
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+    const layoutCode = fs.readFileSync(
+      path.resolve(__dirname, '../lib/floating-action-layout.ts'),
+      'utf-8',
+    );
+
+    expect(layoutCode).toContain('FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS');
+    expect(layoutCode).toMatch(/FAB_PANEL_ABOVE_NOTIFICATION_CLASS = 'md:bottom/);
+    expect(layoutCode).not.toMatch(
+      /FAB_PANEL_ABOVE_NOTIFICATION_CLASS[\s\S]*max-md:bottom/,
+    );
+    expect(fabCode).toContain('FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS');
+    expect(layoutCode).toMatch(/max-md:flex max-md:items-center max-md:justify-center/);
+    expect(fabCode).toContain('max-md:relative max-md:w-full');
+    expect(fabCode).not.toMatch(/max-md:bottom-\[calc\(14\.5rem/);
+  });
+
   test('layout mounts global quick action wrapper above AI chat', () => {
     const layoutCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/layout.tsx'),

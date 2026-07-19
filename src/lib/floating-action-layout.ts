@@ -5,8 +5,9 @@ import { cn } from '@/lib/utils';
  * Main buttons: 2.75rem (w-11). Hide toggle: 2rem (w-8). Gap between layers: 0.75rem.
  * Edge inset: 1.25rem mobile / 1.5rem desktop.
  *
- * Mobile bottoms: Hide 1.25rem | AI 4rem | Quick 7.5rem | Notify 11rem | Panel 14.5rem
+ * Mobile bottoms: Hide 1.25rem | AI 4rem | Quick 7.5rem | Notify 11rem
  * Desktop bottoms: Hide 1.5rem | AI 4.25rem | Quick 7.75rem | Notify 11.25rem | Panel 14.75rem
+ * Mobile quick-action panel: vertically centered (see FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS)
  */
 
 export const FAB_SIZE_CLASS = 'w-11 h-11';
@@ -47,8 +48,12 @@ export const FAB_PANEL_ABOVE_AI_CLASS =
 export const FAB_PANEL_CLEAR_OF_AI_CLASS =
   'max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[7.75rem]';
 
-export const FAB_PANEL_ABOVE_NOTIFICATION_CLASS =
-  'max-md:bottom-[calc(14.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[14.75rem]';
+/** Desktop-only bottom anchor for the inventory quick-action FAB panel */
+export const FAB_PANEL_ABOVE_NOTIFICATION_CLASS = 'md:bottom-[14.75rem]';
+
+/** Mobile quick-action panel — flex center so height changes stay vertically balanced */
+export const FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS =
+  'max-md:flex max-md:items-center max-md:justify-center max-md:pointer-events-none max-md:p-4';
 
 /** Page/content bottom inset to clear the full three-button stack + hide toggle */
 export const FAB_PAGE_BOTTOM_PADDING_CLASS =

@@ -67,7 +67,13 @@ describe('notification fab cross-platform sync', () => {
 
   test('hook reconnects Supabase realtime after mobile resume', () => {
     expect(hookSource).toContain('realtimeReconnectKey');
+    expect(hookSource).toContain('shouldReconnectRealtimeOnResume');
     expect(hookSource).toMatch(/setRealtimeReconnectKey[\s\S]*visibilitychange/);
+  });
+
+  test('hook avoids forced realtime reconnect on every brief tab focus', () => {
+    expect(hookSource).toContain('isConnecting');
+    expect(hookSource).toContain('hiddenAt');
   });
 
   test('hook defers foreground OS banners to Web Push when subscription is active', () => {
@@ -91,7 +97,7 @@ describe('notification fab cross-platform sync', () => {
   });
 
   test('hook syncs daily schedule report logs via realtime and server catch-up', () => {
-    expect(hookSource).toContain('attachChangeLogListener(channel, \'schedule\')');
+    expect(hookSource).toContain("attachChangeLogListener(nextChannel, 'schedule')");
     expect(hookSource).toContain('isEligibleDailyReportNotification');
     expect(hookSource).toContain('formatDailyReportNotification');
     expect(hookSource).toContain('dailyScheduleReports');

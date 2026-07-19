@@ -11,8 +11,19 @@ let profileListeners = new Set<Listener>();
 let channel: ReturnType<typeof supabase.channel> | null = null;
 let subscriberCount = 0;
 let channelStarting: Promise<void> | null = null;
+let teardownTimer: ReturnType<typeof setTimeout> | null = null;
+
+const SHIFT_CHANNEL_TEARDOWN_DELAY_MS = 50;
+
+function cancelSharedShiftChannelTeardown() {
+  if (!teardownTimer) return;
+  clearTimeout(teardownTimer);
+  teardownTimer = null;
+}
 
 async function ensureSharedShiftChannel() {
+  cancelSharedShiftChannelTeardown();
+
   if (channel) return;
   if (channelStarting) {
     await channelStarting;
@@ -43,8 +54,14 @@ async function ensureSharedShiftChannel() {
 
 function teardownSharedShiftChannel() {
   if (subscriberCount > 0 || !channel) return;
-  void supabase.removeChannel(channel);
-  channel = null;
+
+  cancelSharedShiftChannelTeardown();
+  teardownTimer = setTimeout(() => {
+    teardownTimer = null;
+    if (subscriberCount > 0 || !channel) return;
+    void supabase.removeChannel(channel);
+    channel = null;
+  }, SHIFT_CHANNEL_TEARDOWN_DELAY_MS);
 }
 
 function createStableListener(getCurrent: () => Listener | undefined): Listener {

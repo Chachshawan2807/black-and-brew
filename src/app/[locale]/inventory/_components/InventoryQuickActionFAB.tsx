@@ -25,10 +25,16 @@ import {
   FAB_STACK_INNER_CLASS,
   FAB_BOTTOM_QUICK_ACTION_CLASS,
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
+  FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
 } from '@/lib/floating-action-layout';
 import { blurActiveElement } from '@/lib/blur-active-element';
-import { getFabPanelKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
+import {
+  getFabPanelKeyboardAwareStyle,
+  getModalBackdropKeyboardAwareStyle,
+  getModalContentKeyboardAwareStyle,
+} from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import { useMaxMd } from '@/hooks/use-max-md';
 import { FabFadePresence } from '@/components/floating/FabFadePresence';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { useReadOnly } from '@/components/providers/AuthProvider';
@@ -64,8 +70,21 @@ export default function InventoryQuickActionFAB() {
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [isExportingPO, setIsExportingPO] = useState(false);
 
+  const maxMd = useMaxMd();
+  const isMobile = maxMd === true;
+  const isDesktop = maxMd === false;
   const viewportInsets = useVisualViewportInsets(isMounted && isPanelRendered);
-  const quickPanelStyle = getFabPanelKeyboardAwareStyle({ insets: viewportInsets });
+  const mobileBackdropStyle = isMobile
+    ? getModalBackdropKeyboardAwareStyle({ insets: viewportInsets })
+    : undefined;
+  const mobilePanelStyle = isMobile
+    ? getModalContentKeyboardAwareStyle({ insets: viewportInsets })
+    : undefined;
+  const desktopPanelStyle = isDesktop
+    ? getFabPanelKeyboardAwareStyle({ insets: viewportInsets })
+    : isMobile && !viewportInsets.isKeyboardOpen
+      ? getFabPanelKeyboardAwareStyle({ insets: viewportInsets })
+      : undefined;
 
   const loadFrequentItems = useCallback(async () => {
     const res = await fetchFrequentItems();
@@ -261,20 +280,27 @@ export default function InventoryQuickActionFAB() {
               onClick={closeQuickPanel}
               aria-hidden
             />
-            <motion.div
-              initial={modalContent.initial}
-              animate={modalContent.animate}
-              exit={modalContent.exit}
-              transition={modalContent.transition}
+            <div
               className={cn(
-                'fixed z-[199] box-border flex flex-col overflow-y-auto bb-smooth-scroll min-h-0 bg-card rounded-3xl isolate',
-                'max-md:left-[calc(1rem+env(safe-area-inset-left,0px))] max-md:right-[calc(1rem+env(safe-area-inset-right,0px))] max-md:w-auto max-md:max-w-none',
-                'max-md:transition-[top,max-height,bottom] max-md:duration-200',
-                'md:w-full md:max-w-2xl md:left-auto md:right-6',
-                FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
+                'fixed inset-0 z-[199] md:contents',
+                FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
               )}
-              style={quickPanelStyle}
+              style={mobileBackdropStyle}
             >
+              <motion.div
+                initial={modalContent.initial}
+                animate={modalContent.animate}
+                exit={modalContent.exit}
+                transition={modalContent.transition}
+                className={cn(
+                  'pointer-events-auto box-border flex flex-col overflow-y-auto bb-smooth-scroll min-h-0 bg-card rounded-3xl isolate',
+                  'max-md:relative max-md:w-full max-md:max-h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))]',
+                  'max-md:transition-[max-height] max-md:duration-200',
+                  'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6',
+                  FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
+                )}
+                style={{ ...desktopPanelStyle, ...mobilePanelStyle }}
+              >
               {isLoadingItems && !hasLoadedItems ? (
                 <div className="bg-card rounded-3xl border border-border bb-shadow-xl p-8 flex flex-col items-center justify-center gap-3">
                   <Loader2 className="w-6 h-6 animate-spin text-foreground" strokeWidth={1.5} />
@@ -319,7 +345,8 @@ export default function InventoryQuickActionFAB() {
                   className="bb-shadow-xl"
                 />
               )}
-            </motion.div>
+              </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

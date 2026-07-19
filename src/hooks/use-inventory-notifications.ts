@@ -61,6 +61,7 @@ import {
 import { shouldDeferOsNotificationToPush } from '@/lib/push-subscription-client';
 import { isScheduleNotification } from '@/lib/notification-display-icon';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
+import { shouldReconnectRealtimeOnResume } from '@/lib/supabase-realtime-resume';
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
   const row = payload.new;
@@ -413,11 +414,18 @@ export function useInventoryNotifications() {
       if (channel) {
         await supabase.removeChannel(channel);
         channel = null;
+        if (cancelled) return;
       }
 
-      channel = supabase.channel(`inventory_change_notifications_${retryCount}`);
-      attachChangeLogListener(channel, 'inventory');
-      attachChangeLogListener(channel, 'schedule');
+      const nextChannel = supabase.channel(`inventory_change_notifications_${retryCount}`);
+      attachChangeLogListener(nextChannel, 'inventory');
+      attachChangeLogListener(nextChannel, 'schedule');
+      if (cancelled) {
+        void supabase.removeChannel(nextChannel);
+        return;
+      }
+
+      channel = nextChannel;
       channel
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
@@ -472,24 +480,53 @@ export function useInventoryNotifications() {
   }, [realtimeReady, processRows, syncFromServerOnly, realtimeReconnectKey]);
 
   useEffect(() => {
-    const onResume = () => {
-      if (document.visibilityState === 'visible') {
+    let hiddenAt: number | null = null;
+
+    const maybeReconnectRealtime = () => {
+      const hiddenMs = hiddenAt ? Date.now() - hiddenAt : 0;
+      hiddenAt = null;
+
+      if (
+        shouldReconnectRealtimeOnResume(
+          hiddenMs,
+          supabase.realtime.isConnected(),
+          supabase.realtime.isConnecting(),
+        )
+      ) {
         setRealtimeReconnectKey((key) => key + 1);
-        syncFromStorageAndServerSoon();
       }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+        return;
+      }
+
+      if (document.visibilityState !== 'visible') return;
+
+      syncFromStorageAndServerSoon();
+      maybeReconnectRealtime();
+    };
+
+    const onResume = () => {
+      if (document.visibilityState !== 'visible') return;
+
+      syncFromStorageAndServerSoon();
+      maybeReconnectRealtime();
     };
 
     const cleanupCrossTab = subscribeNotificationSync(() => {
       syncFromStorageAndServerSoon(false);
     });
 
-    document.addEventListener('visibilitychange', onResume);
+    document.addEventListener('visibilitychange', onVisibilityChange);
     window.addEventListener('focus', onResume);
     window.addEventListener('pageshow', onResume);
 
     return () => {
       cleanupCrossTab();
-      document.removeEventListener('visibilitychange', onResume);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('focus', onResume);
       window.removeEventListener('pageshow', onResume);
     };
