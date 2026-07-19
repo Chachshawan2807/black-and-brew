@@ -32,6 +32,8 @@ import {
   getFabPanelKeyboardAwareStyle,
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
+  getMobileQuickActionKeyboardSheetBackdropStyle,
+  getMobileQuickActionKeyboardSheetPanelStyle,
 } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useMaxMd } from '@/hooks/use-max-md';
@@ -74,11 +76,16 @@ export default function InventoryQuickActionFAB() {
   const isMobile = maxMd === true;
   const isDesktop = maxMd === false;
   const viewportInsets = useVisualViewportInsets(isMounted && isPanelRendered);
+  const mobileKeyboardSheet = isMobile && viewportInsets.isKeyboardOpen;
   const mobileBackdropStyle = isMobile
-    ? getModalBackdropKeyboardAwareStyle({ insets: viewportInsets })
+    ? mobileKeyboardSheet
+      ? getMobileQuickActionKeyboardSheetBackdropStyle({ insets: viewportInsets })
+      : getModalBackdropKeyboardAwareStyle({ insets: viewportInsets })
     : undefined;
   const mobilePanelStyle = isMobile
-    ? getModalContentKeyboardAwareStyle({ insets: viewportInsets })
+    ? mobileKeyboardSheet
+      ? getMobileQuickActionKeyboardSheetPanelStyle({ insets: viewportInsets })
+      : getModalContentKeyboardAwareStyle({ insets: viewportInsets })
     : undefined;
   const desktopPanelStyle = isDesktop
     ? getFabPanelKeyboardAwareStyle({ insets: viewportInsets })
@@ -179,6 +186,17 @@ export default function InventoryQuickActionFAB() {
     history.setShowHistoryModal(false);
     setShowPurchaseOrderModal(false);
   }, [fabStackHidden, fabStackSuppressed]);
+
+  useEffect(() => {
+    if (!isMounted || !isPanelRendered || !isMobile) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMounted, isMobile, isPanelRendered]);
 
   useEffect(() => {
     if (!isMounted || !isOpen) return;
@@ -282,25 +300,26 @@ export default function InventoryQuickActionFAB() {
             />
             <div
               className={cn(
-                'fixed inset-0 z-[199] md:contents',
-                FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
-                viewportInsets.isKeyboardOpen && 'max-md:items-start max-md:justify-center',
+                'z-[199] md:contents',
+                !mobileKeyboardSheet && 'fixed inset-0',
+                !mobileKeyboardSheet && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
               )}
               style={mobileBackdropStyle}
             >
               <motion.div
-                initial={modalContent.initial}
-                animate={modalContent.animate}
-                exit={modalContent.exit}
+                initial={mobileKeyboardSheet ? { opacity: 0 } : modalContent.initial}
+                animate={mobileKeyboardSheet ? { opacity: 1 } : modalContent.animate}
+                exit={mobileKeyboardSheet ? { opacity: 0 } : modalContent.exit}
                 transition={modalContent.transition}
                 className={cn(
-                  'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate',
+                  'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl',
+                  !mobileKeyboardSheet && 'isolate',
                   'max-md:relative max-md:w-full max-md:max-h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))]',
                   'max-md:transition-[max-height] max-md:duration-200',
-                  viewportInsets.isKeyboardOpen
-                    ? 'max-md:overflow-hidden'
+                  mobileKeyboardSheet
+                    ? 'max-md:overflow-y-auto max-md:bb-smooth-scroll'
                     : 'overflow-y-auto bb-smooth-scroll',
-                  'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6 md:overflow-y-auto md:bb-smooth-scroll',
+                  'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6 md:overflow-y-auto md:bb-smooth-scroll md:isolate',
                   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
                 )}
                 style={{ ...desktopPanelStyle, ...mobilePanelStyle }}
@@ -311,13 +330,7 @@ export default function InventoryQuickActionFAB() {
                   <span className="text-sm font-normal text-muted-foreground">กำลังโหลดข้อมูลคลังสินค้า...</span>
                 </div>
               ) : (
-                <div
-                  className={cn(
-                    viewportInsets.isKeyboardOpen &&
-                      'max-md:min-h-0 max-md:max-h-full max-md:overflow-y-auto max-md:bb-smooth-scroll',
-                  )}
-                >
-                  <InventoryQuickActionBar
+                <InventoryQuickActionBar
                   quickSearch={quickAction.quickSearch}
                   setQuickSearch={quickAction.setQuickSearch}
                   quickQty={quickAction.quickQty}
@@ -354,7 +367,6 @@ export default function InventoryQuickActionFAB() {
                   onCancelBulkSubmit={quickAction.cancelBulkSubmit}
                   className="bb-shadow-xl"
                 />
-                </div>
               )}
               </motion.div>
             </div>

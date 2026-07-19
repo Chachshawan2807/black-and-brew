@@ -63,6 +63,46 @@ export function getModalContentKeyboardAwareStyle({
   if (!insets.isKeyboardOpen) return {};
 
   return {
-    maxHeight: Math.max(120, insets.visibleHeight - insets.offsetTop - marginTop - marginBottom),
+    maxHeight: Math.max(120, insets.visibleHeight - marginTop - marginBottom),
+  };
+}
+
+/** Mobile quick-action sheet: anchor to the visual viewport, not layout inset-0. */
+export function getMobileQuickActionKeyboardSheetBackdropStyle(
+  insets: VisualViewportInsets,
+  margin = 8,
+): CSSProperties {
+  if (!insets.isKeyboardOpen) return {};
+
+  return {
+    position: 'fixed',
+    top: insets.offsetTop,
+    left: 0,
+    right: 0,
+    bottom: 'auto',
+    width: '100%',
+    height: insets.visibleHeight,
+    maxHeight: insets.visibleHeight,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
+    padding: margin,
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+  };
+}
+
+export function getMobileQuickActionKeyboardSheetPanelStyle(
+  insets: VisualViewportInsets,
+  margin = 8,
+): CSSProperties {
+  if (!insets.isKeyboardOpen) return {};
+
+  return {
+    width: '100%',
+    maxHeight: Math.max(120, insets.visibleHeight - margin * 2),
+    minHeight: 0,
+    flex: '1 1 auto',
   };
 }

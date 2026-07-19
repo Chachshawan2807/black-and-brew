@@ -3,6 +3,8 @@ import {
   getFabPanelKeyboardAwareStyle,
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
+  getMobileQuickActionKeyboardSheetBackdropStyle,
+  getMobileQuickActionKeyboardSheetPanelStyle,
 } from '@/lib/keyboard-aware-panel-style';
 
 const keyboardInsets = {
@@ -59,5 +61,16 @@ describe('keyboard-aware panel styles', () => {
     expect(backdrop.width).toBe('100%');
     expect(backdrop.height).toBe(420);
     expect(content.maxHeight).toBe(396);
+  });
+
+  test('mobile quick action sheet anchors to the visual viewport', () => {
+    const backdrop = getMobileQuickActionKeyboardSheetBackdropStyle(keyboardInsets);
+    const panel = getMobileQuickActionKeyboardSheetPanelStyle(keyboardInsets);
+
+    expect(backdrop.position).toBe('fixed');
+    expect(backdrop.top).toBe(0);
+    expect(backdrop.bottom).toBe('auto');
+    expect(backdrop.height).toBe(420);
+    expect(panel.maxHeight).toBe(404);
   });
 });

@@ -246,7 +246,8 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain('BulkSubmitConfirmDialog');
     expect(barCode).toContain('z-[220]');
     expect(barCode).not.toMatch(/BulkSubmitConfirmDialog[\s\S]*<dialog/);
-    expect(fabCode).toContain('bg-card rounded-3xl isolate');
+    expect(fabCode).toContain('bg-card rounded-3xl');
+    expect(fabCode).toContain('isolate');
   });
 
   test('quick action bar uses aligned 3-column mobile action grid', () => {
@@ -318,9 +319,11 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
 
-    expect(fabCode).toContain('viewportInsets.isKeyboardOpen');
-    expect(fabCode).toContain('max-md:items-start');
+    expect(fabCode).toContain('mobileKeyboardSheet');
+    expect(fabCode).toContain('getMobileQuickActionKeyboardSheetBackdropStyle');
+    expect(fabCode).toContain('document.body.style.overflow = \'hidden\'');
     expect(barCode).toContain('shouldPortalQuickSearchSuggestions');
+    expect(barCode).toContain('shouldCollapseBulkQueueForMobileSearch');
     expect(barCode).toContain('getAnchoredSuggestionsOverlayStyle');
     expect(barCode).toContain('createPortal');
   });

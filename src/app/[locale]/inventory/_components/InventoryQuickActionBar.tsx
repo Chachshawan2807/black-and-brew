@@ -36,7 +36,7 @@ import { useMaxMd } from '@/hooks/use-max-md';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import {
   getAnchoredSuggestionsOverlayStyle,
-  getQuickSearchSuggestionsPlacement,
+  shouldCollapseBulkQueueForMobileSearch,
   shouldPortalQuickSearchSuggestions,
 } from '@/lib/quick-search-suggestions-layout';
 
@@ -641,18 +641,16 @@ export function InventoryQuickActionBar({
   const maxMd = useMaxMd();
   const isMobile = maxMd === true;
   const viewportInsets = useVisualViewportInsets(isMounted && isSearchFocused);
-  const portalSuggestions = shouldPortalQuickSearchSuggestions(
-    isMobile,
-    viewportInsets.isKeyboardOpen,
-  );
-  const suggestionsPlacement = getQuickSearchSuggestionsPlacement(
-    isMobile,
-    viewportInsets.isKeyboardOpen,
-  );
+  const portalSuggestions = shouldPortalQuickSearchSuggestions(isMobile, isSearchFocused);
   const showSuggestions = shouldShowQuickSearchSuggestions(
     isSearchFocused,
     quickSearch,
     filteredItems.length,
+  );
+  const collapseBulkQueueForSearch = shouldCollapseBulkQueueForMobileSearch(
+    isMobile,
+    isSearchFocused,
+    showSuggestions,
   );
   const suggestionsListId = 'inventory-quick-search-suggestions';
   const showClearSearch = quickSearch.trim().length > 0;
@@ -668,9 +666,12 @@ export function InventoryQuickActionBar({
     const rect = anchor.getBoundingClientRect();
     const viewportHeight = viewportInsets.visibleHeight || window.innerHeight;
     setPortaledSuggestionsStyle(
-      getAnchoredSuggestionsOverlayStyle(rect, suggestionsPlacement, viewportHeight),
+      getAnchoredSuggestionsOverlayStyle(rect, {
+        offsetTop: viewportInsets.offsetTop,
+        visibleHeight: viewportHeight,
+      }),
     );
-  }, [suggestionsPlacement, viewportInsets.visibleHeight]);
+  }, [viewportInsets.offsetTop, viewportInsets.visibleHeight]);
 
   useEffect(() => {
     if (!showSuggestions || !portalSuggestions) return;
@@ -965,7 +966,7 @@ export function InventoryQuickActionBar({
           </div>
         </div>
 
-        {bulkMode && bulkPreviews.length > 0 && (
+        {bulkMode && bulkPreviews.length > 0 && !collapseBulkQueueForSearch && (
           <BulkQueuePanel
             bulkPreviews={bulkPreviews}
             quickType={quickType}
@@ -975,6 +976,7 @@ export function InventoryQuickActionBar({
           />
         )}
 
+        {!collapseBulkQueueForSearch && (
         <div
           className={cn(
             'grid grid-cols-3 gap-2 w-full box-border sm:hidden',
@@ -1016,6 +1018,7 @@ export function InventoryQuickActionBar({
             onPreloadHistory={onPreloadHistory}
           />
         </div>
+        )}
 
         <div
           className={cn(
@@ -1034,7 +1037,7 @@ export function InventoryQuickActionBar({
         </div>
       </form>
 
-      {frequentItems.length > 0 && (
+      {frequentItems.length > 0 && !collapseBulkQueueForSearch && (
         <div
           className={cn(
             'flex items-center gap-2 mt-6 pt-3 border-t border-border overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-1 scrollbar-hide',
