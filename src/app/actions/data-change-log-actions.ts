@@ -25,6 +25,7 @@ const dataChangeLogInputSchema = z.object({
     'holiday',
     'dashboard',
     'settings',
+    'bean_orders',
   ]),
   entityType: z.string().min(1).max(120),
   entityId: z.string().max(120).nullable().optional(),

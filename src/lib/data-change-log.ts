@@ -15,7 +15,8 @@ export type DataChangeModule =
   | 'maintenance'
   | 'holiday'
   | 'dashboard'
-  | 'settings';
+  | 'settings'
+  | 'bean_orders';
 
 export type DataChangeSource = 'web' | 'server_action' | 'api' | 'system';
 

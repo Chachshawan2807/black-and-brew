@@ -27,6 +27,12 @@
 | `push_subscriptions` | Web Push endpoints ต่ออุปกรณ์ (inventory alerts + daily schedule reports) | ✓ authenticated (own rows) | `supabase/migrations/20260616120000_push_subscriptions.sql` + `20260621120000_push_subscriptions_daily_report.sql` |
 | `device_passkeys` | WebAuthn credentials สำหรับ trusted-device biometric login | ✓ RLS enabled; service-role only | `supabase/migrations/20260617120000_device_passkeys.sql` |
 | `inventory_branch_withdrawals` | ประวัติเบิกสินค้าไปสาขา 2 (batch header + LINE message) | ✓ authenticated read | `supabase/migrations/20260711120000_inventory_branch_withdrawals.sql` + `sql/record_branch_withdrawal_batch.sql` |
+| `bean_customers` | ลูกค้าออเดอร์เมล็ดกาแฟ | ✓ authenticated read | `supabase/migrations/20260722140000_bean_orders.sql` |
+| `bean_customer_addresses` | ที่อยู่ลูกค้า (หลายที่) | ✓ authenticated read | `supabase/migrations/20260722140000_bean_orders.sql` |
+| `bean_orders` | ออเดอร์เมล็ดกาแฟ (payment × fulfillment status) | ✓ authenticated read | `supabase/migrations/20260722140000_bean_orders.sql` |
+| `bean_order_lines` | รายการสินค้าต่อออเดอร์ | ✓ authenticated read | `supabase/migrations/20260722140000_bean_orders.sql` |
+| `bean_order_payments` | สลิปชำระเงิน | ✓ authenticated read | `supabase/migrations/20260722140000_bean_orders.sql` |
+| `bean_order_shipments` | การจัดส่ง + tracking | ✓ authenticated read | `supabase/migrations/20260722140000_bean_orders.sql` |
 
 > Types: Generated types in `src/lib/database.types.ts`
 
