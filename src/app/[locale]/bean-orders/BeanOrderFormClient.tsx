@@ -37,6 +37,7 @@ import {
 } from '@/lib/bean-orders/thai-postal-lookup';
 import type { WeightUnit } from '@/lib/bean-orders/types';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
+import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
 
 type InventoryItem = { id: string; name: string };
@@ -56,7 +57,6 @@ type Props = {
 };
 
 const EMPTY_SUGGESTIONS: BeanOrderFormSuggestions = {
-  senderProfiles: [],
   recipientProfiles: [],
   linePresets: [],
   shippingBahtValues: [],
@@ -114,9 +114,6 @@ export default function BeanOrderFormClient({
   const [selectedCustomer, setSelectedCustomer] = useState<BeanCustomerRow | null>(null);
   const [customerAddressPicker, setCustomerAddressPicker] = useState<ThaiPostalAddressValue[] | null>(null);
 
-  const [sender, setSender] = useState<ThaiPostalAddressValue>(() =>
-    emptyThaiPostalAddress(DEFAULT_SHOP_SENDER.name),
-  );
   const [recipient, setRecipient] = useState<ThaiPostalAddressValue>(() => emptyThaiPostalAddress());
 
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
@@ -150,6 +147,7 @@ export default function BeanOrderFormClient({
 
   async function handleCustomerSearch(q: string) {
     setCustomerQuery(q);
+    setRecipient((prev) => ({ ...prev, name: q }));
     setSelectedCustomer(null);
     setCustomerAddressPicker(null);
     if (!q.trim()) {
@@ -168,11 +166,19 @@ export default function BeanOrderFormClient({
     if (!addr.success || !addr.data?.length) return;
 
     if (addr.data.length === 1) {
-      setRecipient(recipientFromSavedAddress(addr.data[0]!));
+      setRecipient({
+        ...recipientFromSavedAddress(addr.data[0]!),
+        name: customer.name,
+      });
       return;
     }
 
-    setCustomerAddressPicker(addr.data.map(recipientFromSavedAddress));
+    setCustomerAddressPicker(
+      addr.data.map((row) => ({
+        ...recipientFromSavedAddress(row),
+        name: customer.name,
+      })),
+    );
   }
 
   function handleCustomerNameSelect(name: string) {
@@ -221,6 +227,14 @@ export default function BeanOrderFormClient({
     );
   }
 
+  function handleRecipientChange(value: ThaiPostalAddressValue) {
+    setRecipient(value);
+    if (value.name !== customerQuery) {
+      setCustomerQuery(value.name);
+      setSelectedCustomer(null);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isReadOnly) {
@@ -230,11 +244,10 @@ export default function BeanOrderFormClient({
     setSaving(true);
     setError(null);
 
-    const senderError = validatePostalAddress('ผู้ส่ง', sender);
-    const recipientError = validatePostalAddress('ผู้รับ', recipient);
-    if (senderError || recipientError) {
+    const recipientError = validatePostalAddress('ลูกค้า', recipient);
+    if (recipientError) {
       setSaving(false);
-      setError(senderError ?? recipientError);
+      setError(recipientError);
       return;
     }
 
@@ -250,16 +263,10 @@ export default function BeanOrderFormClient({
     const result = await createBeanOrder(
       {
         customerId: selectedCustomer?.id ?? null,
-        senderName: sender.name,
-        senderPhone: sender.phone,
-        senderAddress: formatThaiPostalAddressLine({
-          addressLine: sender.addressLine,
-          subdistrict: sender.subdistrict,
-          district: sender.district,
-          province: sender.province,
-          postalCode: sender.postalCode,
-        }),
-        recipientName: recipient.name,
+        senderName: DEFAULT_SHOP_SENDER.name,
+        senderPhone: '',
+        senderAddress: '',
+        recipientName: recipient.name.trim() || customerQuery.trim(),
         recipientPhone: recipient.phone,
         recipientAddress: formatThaiPostalAddressLine({
           addressLine: recipient.addressLine,
@@ -286,11 +293,10 @@ export default function BeanOrderFormClient({
     router.push(`/${locale}/bean-orders/${result.orderId}`);
   }
 
-  const inputClass =
-    'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20';
+  const inputClass = BEAN_ORDER_INPUT;
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-3xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+    <form onSubmit={handleSubmit} className={BEAN_ORDER_DETAIL_PAGE}>
       <Link href={`/${locale}/bean-orders`} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground">
         <ChevronLeft className="h-4 w-4" /> กลับรายการ
       </Link>
@@ -298,7 +304,7 @@ export default function BeanOrderFormClient({
 
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-      <section className="mb-6 space-y-3 rounded-2xl border border-border bg-card p-4">
+      <section className={`${BEAN_ORDER_CARD} mb-5 space-y-3 p-4`}>
         <h2 className="text-sm font-normal text-muted-foreground">ลูกค้า</h2>
         <AutocompleteTextField
           value={customerQuery}
@@ -329,38 +335,33 @@ export default function BeanOrderFormClient({
             title="เลือกที่อยู่ของลูกค้า"
             profiles={customerAddressPicker}
             onSelect={(profile) => {
-              setRecipient(profile);
+              handleRecipientChange(profile);
+              setCustomerQuery(profile.name);
               setCustomerAddressPicker(null);
             }}
           />
         )}
+
+        <ThaiPostalAddressSection
+          title=""
+          embedded
+          value={recipient}
+          onChange={handleRecipientChange}
+          profiles={formSuggestions.recipientProfiles}
+          inputClass={inputClass}
+          nameRequired
+          addressRequired
+        />
       </section>
 
-      <ThaiPostalAddressSection
-        title="ผู้ส่ง"
-        value={sender}
-        onChange={setSender}
-        profiles={formSuggestions.senderProfiles}
-        inputClass={inputClass}
-      />
-
-      <ThaiPostalAddressSection
-        title="ผู้รับ"
-        value={recipient}
-        onChange={setRecipient}
-        profiles={formSuggestions.recipientProfiles}
-        inputClass={inputClass}
-        nameRequired
-        addressRequired
-      />
-
-      <section className="mb-6 space-y-3 rounded-2xl border border-border bg-card p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-normal text-muted-foreground">รายการสินค้า</h2>
-          <button type="button" onClick={() => setLines((prev) => [...prev, emptyLine()])} className="inline-flex items-center gap-1 text-sm">
-            <Plus className="h-4 w-4" /> เพิ่มรายการ
+      <section className={`${BEAN_ORDER_CARD} mb-5 p-4`}>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-xs text-muted-foreground">รายการสินค้า</h2>
+          <button type="button" onClick={() => setLines((prev) => [...prev, emptyLine()])} className="inline-flex h-10 items-center gap-1 rounded-full px-3 text-sm hover:bg-muted/30">
+            <Plus className="h-4 w-4" aria-hidden /> เพิ่มรายการ
           </button>
         </div>
+        <div className="space-y-3">
         {lines.map((line, index) => {
           const weightSuggestions = linePresetsForItem(
             formSuggestions.linePresets,
@@ -379,7 +380,10 @@ export default function BeanOrderFormClient({
           );
 
           return (
-            <div key={line.key} className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-2">
+            <div
+              key={line.key}
+              className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start"
+            >
               <select
                 className={inputClass}
                 value={line.inventoryItemId}
@@ -428,8 +432,8 @@ export default function BeanOrderFormClient({
                 required
               />
               {linePresetOptions.length > 0 && (
-                <div className="sm:col-span-2">
-                  <p className="mb-2 text-sm text-muted-foreground">รายการเดิมที่เคยสั่ง</p>
+                <div className="sm:col-span-4">
+                  <p className="mb-1.5 text-xs text-muted-foreground">รายการเดิมที่เคยสั่ง</p>
                   <ul className="divide-y rounded-xl border border-border">
                     {linePresetOptions.slice(0, 6).map((preset) => (
                       <li key={`${preset.inventoryItemId}-${preset.weightValue}-${preset.unitPricePerKg}`}>
@@ -449,17 +453,19 @@ export default function BeanOrderFormClient({
                 <button
                   type="button"
                   onClick={() => setLines((prev) => prev.filter((_, i) => i !== index))}
-                  className="inline-flex h-11 items-center justify-center gap-1 text-sm text-red-600"
+                  className="inline-flex h-11 items-center justify-center gap-1 self-center text-sm text-red-600 sm:col-start-4"
                 >
-                  <Trash2 className="h-4 w-4" /> ลบ
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                  <span className="sm:sr-only">ลบ</span>
                 </button>
               )}
             </div>
           );
         })}
+        </div>
       </section>
 
-      <section className="mb-6 space-y-3 rounded-2xl border border-border bg-card p-4">
+      <section className={`${BEAN_ORDER_CARD} mb-5 space-y-3 p-4`}>
         <h2 className="text-sm font-normal text-muted-foreground">สรุปยอด</h2>
         <div className="grid grid-cols-2 gap-2">
           <AutocompleteTextField
@@ -487,9 +493,13 @@ export default function BeanOrderFormClient({
           placeholder="หมายเหตุ"
           multiline
         />
-        <div className="rounded-xl bg-muted/30 p-3 text-sm space-y-1">
-          <p>รวมสินค้า: {totals.subtotalBaht.toLocaleString('th-TH')} ฿</p>
-          <p className="text-lg">ยอดรวม: {totals.totalBaht.toLocaleString('th-TH')} ฿</p>
+        <div className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2.5 text-sm">
+          <p className="text-muted-foreground">
+            รวมสินค้า <span className="tabular-nums text-foreground">{totals.subtotalBaht.toLocaleString('th-TH')} ฿</span>
+          </p>
+          <p className="text-base text-foreground">
+            ยอดรวม <span className="tabular-nums">{totals.totalBaht.toLocaleString('th-TH')} ฿</span>
+          </p>
         </div>
       </section>
 

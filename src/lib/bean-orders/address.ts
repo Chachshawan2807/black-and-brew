@@ -101,3 +101,20 @@ export function formatAddressProfileLabel(value: ThaiPostalAddressValue): string
   ].filter(Boolean);
   return parts.join(' · ') || value.name.trim() || 'ที่อยู่';
 }
+
+/** สรุปปลายทางจัดส่งสำหรับรายการออเดอร์ (จังหวัด) */
+export function formatOrderDeliveryDestination(options: {
+  recipientAddress: string;
+  recipientProvince?: string | null;
+  recipientPostalCode?: string | null;
+}): string {
+  const parsed = parseThaiPostalAddressLine(options.recipientAddress, {
+    province: options.recipientProvince,
+    postalCode: options.recipientPostalCode,
+  });
+
+  const province = parsed.province || options.recipientProvince?.trim() || '';
+  if (province) return `จ.${province}`;
+
+  return '—';
+}

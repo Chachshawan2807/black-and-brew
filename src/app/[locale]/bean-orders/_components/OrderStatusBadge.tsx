@@ -16,7 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
   'ชำระแล้ว · รอจัดส่ง': 'bg-[#e8f5e9]',
   'จัดส่งแล้ว · รอชำระ': 'bg-[#e3f2fd]',
   'เสร็จสมบูรณ์': 'bg-[#dcedc8]',
-  'ยกเลิก': 'bg-[#f5f5f5]',
+  'ยกเลิก': 'bg-[#ffebee]',
 };
 
 export function OrderStatusBadge({ paymentStatus, fulfillmentStatus, cancelledAt, className }: Props) {
@@ -25,7 +25,7 @@ export function OrderStatusBadge({ paymentStatus, fulfillmentStatus, cancelledAt
     <span
       className={cn(
         PASTEL_SURFACE,
-        'inline-flex items-center rounded-full px-3 py-1 text-xs font-normal border border-black/10',
+        'inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-normal border border-black/10',
         STATUS_COLORS[label] ?? 'bg-card',
         className,
       )}

@@ -4,23 +4,13 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { Plus } from 'lucide-react';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
-import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
-import { OrderStatusBadge } from './_components/OrderStatusBadge';
+import { BeanOrderListItem } from './_components/BeanOrderListItem';
+import { BEAN_ORDER_CARD, BEAN_ORDER_INPUT, BEAN_ORDER_LIST_GRID, BEAN_ORDER_PAGE } from './_components/bean-order-layout';
 
 type Props = {
   initialOrders: BeanOrderListRow[];
   locale: string;
 };
-
-function formatBaht(value: number): string {
-  return value.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-}
-
-function formatDate(value: string): string {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
-}
 
 export default function BeanOrdersClient({ initialOrders, locale }: Props) {
   const [orders] = useState(initialOrders);
@@ -44,32 +34,32 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
   }, [orders, search, paymentFilter, fulfillmentFilter]);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className={BEAN_ORDER_PAGE}>
+      <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-normal text-foreground">คำสั่งซื้อเมล็ดกาแฟ</h1>
-          <p className="text-sm text-muted-foreground mt-1">รับออเดอร์ · ตรวจสลิป · จัดส่ง</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">รับออเดอร์ · ตรวจสลิป · จัดส่ง</p>
         </div>
         <Link
           href={`/${locale}/bean-orders/new`}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-sm text-background"
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-sm text-background"
         >
-          <Plus className="h-4 w-4" /> สร้างออเดอร์
+          <Plus className="h-4 w-4" aria-hidden /> สร้างออเดอร์
         </Link>
       </div>
 
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input
           type="search"
           value={search}
           onChange={(e) => startTransition(() => setSearch(e.target.value))}
-          placeholder="ค้นหาเลขออเดอร์ / ชื่อผู้รับ"
-          className="h-11 flex-1 min-w-[200px] rounded-xl border border-border bg-background px-3 text-sm"
+          placeholder="ค้นหาเลขออเดอร์ / ชื่อลูกค้า"
+          className={BEAN_ORDER_INPUT}
         />
         <select
           value={paymentFilter}
           onChange={(e) => setPaymentFilter(e.target.value as typeof paymentFilter)}
-          className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
+          className={BEAN_ORDER_INPUT}
         >
           <option value="all">ชำระเงิน: ทั้งหมด</option>
           <option value="unpaid">ยังไม่ชำระ</option>
@@ -78,7 +68,7 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
         <select
           value={fulfillmentFilter}
           onChange={(e) => setFulfillmentFilter(e.target.value as typeof fulfillmentFilter)}
-          className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
+          className={BEAN_ORDER_INPUT}
         >
           <option value="all">จัดส่ง: ทั้งหมด</option>
           <option value="pending">ยังไม่ส่ง</option>
@@ -86,47 +76,29 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
         </select>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className={`${BEAN_ORDER_CARD} overflow-hidden`}>
         {filtered.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบออเดอร์</p>
         ) : (
-          <ul className="divide-y divide-border">
-            {filtered.map((order) => (
-              <li key={order.id}>
-                <Link
-                  href={`/${locale}/bean-orders/${order.id}`}
-                  className="flex flex-col gap-2 p-4 hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0">
-                    <p className="font-normal text-foreground">{order.orderNo}</p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {order.customerName ? `${order.customerName} → ` : ''}
-                      {order.recipientName}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">{formatDate(order.createdAt)}</p>
-                    {order.fulfillmentStatus === 'shipped' && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        พัสดุ
-                        {order.trackingNumber ? ` ${order.trackingNumber} · ` : ': '}
-                        {formatShipmentTrackingLabel(order.trackingStatus, {
-                          fulfillmentStatus: order.fulfillmentStatus,
-                          trackingNumber: order.trackingNumber,
-                        }) ?? '—'}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="tabular-nums text-sm">{formatBaht(order.totalBaht)} ฿</span>
-                    <OrderStatusBadge
-                      paymentStatus={order.paymentStatus}
-                      fulfillmentStatus={order.fulfillmentStatus}
-                      cancelledAt={order.cancelledAt}
-                    />
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <>
+            <div
+              className={`hidden border-b border-border px-4 py-2 text-xs text-muted-foreground lg:grid ${BEAN_ORDER_LIST_GRID} lg:gap-x-4`}
+              aria-hidden
+            >
+              <span />
+              <span>ลูกค้า</span>
+              <span>หมายเลขคำสั่งซื้อ</span>
+              <span>ปลายทาง · สถานะจัดส่ง</span>
+              <span>ช่องทางจัดส่ง</span>
+              <span className="text-right">ยอด</span>
+              <span className="text-right">สถานะ</span>
+            </div>
+            <ul className="divide-y divide-border">
+              {filtered.map((order) => (
+                <BeanOrderListItem key={order.id} order={order} locale={locale} />
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </div>

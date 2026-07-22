@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { AutocompleteTextField } from './AutocompleteTextField';
 import { AddressProfilePicker } from './AddressProfilePicker';
+import { BEAN_ORDER_CARD } from './bean-order-layout';
 
 export type { ThaiPostalAddressValue };
 
@@ -28,6 +29,7 @@ type Props = {
   inputClass: string;
   nameRequired?: boolean;
   addressRequired?: boolean;
+  embedded?: boolean;
 };
 
 export function ThaiPostalAddressSection({
@@ -38,6 +40,7 @@ export function ThaiPostalAddressSection({
   inputClass,
   nameRequired = false,
   addressRequired = false,
+  embedded = false,
 }: Props) {
   const [postalHint, setPostalHint] = useState<string | null>(null);
   const [profilePicker, setProfilePicker] = useState<ThaiPostalAddressValue[] | null>(null);
@@ -134,9 +137,9 @@ export function ThaiPostalAddressSection({
 
   const showAreaPicker = normalizeThaiPostalCode(value.postalCode).length === 5 && areaOptions.length > 0;
 
-  return (
-    <section className="mb-6 space-y-3 rounded-2xl border border-border bg-card p-4">
-      <h2 className="text-sm font-normal text-muted-foreground">{title}</h2>
+  const fields = (
+    <>
+      {title ? <h2 className="text-sm font-normal text-muted-foreground">{title}</h2> : null}
 
       <AutocompleteTextField
         value={value.name}
@@ -196,12 +199,6 @@ export function ThaiPostalAddressSection({
         </div>
       )}
 
-      {value.province && (
-        <p className="rounded-xl bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-          {value.subdistrict} · {value.district} · {value.province}
-        </p>
-      )}
-
       <AutocompleteTextField
         value={value.addressLine}
         onChange={(addressLine) => patch({ addressLine })}
@@ -221,6 +218,16 @@ export function ThaiPostalAddressSection({
           onSelect={applyProfile}
         />
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-3">{fields}</div>;
+  }
+
+  return (
+    <section className={`${BEAN_ORDER_CARD} mb-5 space-y-3 p-4`}>
+      {fields}
     </section>
   );
 }

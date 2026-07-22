@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronDown, ChevronLeft } from 'lucide-react';
 import {
   cancelBeanOrder,
   confirmBeanOrderPayment,
@@ -11,11 +11,14 @@ import {
   uploadBeanOrderSlip,
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
-import { BEAN_ORDER_CARRIERS, getCarrierLabel } from '@/lib/bean-orders/carriers';
+import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
+import { getDeliveryTypeLabel } from '@/lib/bean-orders/delivery';
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
+import { TrackingTimeline } from './_components/TrackingTimeline';
 import { canCancelOrder, canConfirmPayment, canShip, canUploadSlip } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { OrderStatusBadge } from './_components/OrderStatusBadge';
+import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -27,6 +30,24 @@ function formatBaht(value: number): string {
   return value.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
+function initialCarrierFields(carrierCode: string | null | undefined) {
+  if (!carrierCode) {
+    return { carrierCode: 'kerryexpress-th', customCarrier: '' };
+  }
+  const isKnown = BEAN_ORDER_CARRIERS.some((carrier) => carrier.code === carrierCode);
+  if (isKnown) {
+    return { carrierCode, customCarrier: '' };
+  }
+  return { carrierCode: 'other', customCarrier: carrierCode };
+}
+
+const actionButtonBase =
+  'inline-flex h-11 shrink-0 items-center justify-center rounded-full px-5 text-sm disabled:opacity-50';
+const actionButtonClass = `${actionButtonBase} bg-foreground text-background`;
+const outlineActionButtonClass = `${actionButtonBase} border border-border bg-background text-foreground`;
+const dangerOutlineButtonClass =
+  `${actionButtonBase} border border-red-500 bg-background text-red-600`;
+
 export default function BeanOrderDetailClient({ order: initialOrder, locale }: Props) {
   const router = useRouter();
   const isReadOnly = useReadOnly();
@@ -36,10 +57,12 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const initialCarrier = initialCarrierFields(order.shipment?.carrierCode);
   const [deliveryType, setDeliveryType] = useState<'parcel' | 'same_day'>(
     order.shipment?.deliveryType ?? 'parcel',
   );
-  const [carrierCode, setCarrierCode] = useState(order.shipment?.carrierCode ?? 'kerryexpress-th');
+  const [carrierCode, setCarrierCode] = useState(initialCarrier.carrierCode);
+  const [customCarrier, setCustomCarrier] = useState(initialCarrier.customCarrier);
   const [trackingNumber, setTrackingNumber] = useState(order.shipment?.trackingNumber ?? '');
 
   const cancelled = Boolean(order.cancelledAt);
@@ -47,6 +70,13 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const canConfirm = canConfirmPayment(order.paymentStatus, order.cancelledAt);
   const canShipOrder = canShip(order.fulfillmentStatus, order.cancelledAt);
   const canCancel = canCancelOrder(order.fulfillmentStatus, order.cancelledAt);
+
+  const shipmentTrackingLabel = order.shipment
+    ? formatShipmentTrackingLabel(order.shipment.trackingStatus, {
+        fulfillmentStatus: order.fulfillmentStatus,
+        trackingNumber: order.shipment.trackingNumber,
+      })
+    : null;
 
   async function reload() {
     router.refresh();
@@ -78,8 +108,18 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
   async function handleShip() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
+    const effectiveCarrier =
+      carrierCode === 'other' ? customCarrier.trim() : carrierCode;
+    if (carrierCode === 'other' && !effectiveCarrier) {
+      setError('กรุณาระบุช่องทางจัดส่ง');
+      return;
+    }
     setBusy(true);
-    const result = await shipBeanOrder(order.id, { deliveryType, carrierCode, trackingNumber }, locale);
+    const result = await shipBeanOrder(
+      order.id,
+      { deliveryType, carrierCode: effectiveCarrier || undefined, trackingNumber },
+      locale,
+    );
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'บันทึกจัดส่งไม่สำเร็จ'); return; }
     setOrder((prev) => ({ ...prev, fulfillmentStatus: 'shipped' }));
@@ -95,142 +135,260 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     const result = await cancelBeanOrder(order.id, locale);
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'ยกเลิกไม่สำเร็จ'); return; }
-    await reload();
+    router.push(`/${locale}/bean-orders`);
   }
 
-  const inputClass =
-    'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm';
+  const inputClass = BEAN_ORDER_INPUT;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+    <div className={BEAN_ORDER_DETAIL_PAGE}>
       <Link href={`/${locale}/bean-orders`} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground">
-        <ChevronLeft className="h-4 w-4" /> กลับรายการ
+        <ChevronLeft className="h-4 w-4" aria-hidden /> กลับรายการ
       </Link>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-normal">{order.orderNo}</h1>
-        <OrderStatusBadge
-          paymentStatus={order.paymentStatus}
-          fulfillmentStatus={order.fulfillmentStatus}
-          cancelledAt={order.cancelledAt}
-        />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <h1 className="text-2xl font-normal">{order.orderNo}</h1>
+          <OrderStatusBadge
+            paymentStatus={order.paymentStatus}
+            fulfillmentStatus={order.fulfillmentStatus}
+            cancelledAt={order.cancelledAt}
+          />
+        </div>
       </div>
 
-      {message && <p className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</p>}
-      {error && <p className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {message && (
+        <p className="mb-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground">{message}</p>
+      )}
+      {error && (
+        <p className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>
+      )}
 
-      <section className="mb-4 rounded-2xl border border-border bg-card p-4 space-y-2 text-sm">
-        <p><span className="text-muted-foreground">ลูกค้า:</span> {order.customerName ?? '—'}</p>
-        <p><span className="text-muted-foreground">ผู้ส่ง:</span> {order.senderName} {order.senderPhone ? `· ${order.senderPhone}` : ''}</p>
-        <p className="text-muted-foreground">{order.senderAddress}</p>
-        <p className="pt-2"><span className="text-muted-foreground">ผู้รับ:</span> {order.recipientName} {order.recipientPhone ? `· ${order.recipientPhone}` : ''}</p>
-        <p className="text-muted-foreground">{order.recipientAddress} {order.recipientProvince} {order.recipientPostalCode}</p>
+      <section className={`${BEAN_ORDER_CARD} mb-4 p-4`}>
+        <div className="min-w-0 space-y-1 text-sm">
+          <p className="text-xs text-muted-foreground">ลูกค้า</p>
+          <p className="text-foreground">
+            {getBeanOrderCustomerDisplayName(order)}
+            {order.recipientPhone ? <span className="text-muted-foreground"> · {order.recipientPhone}</span> : null}
+          </p>
+          <p className="text-muted-foreground leading-snug">
+            {order.recipientAddress}
+            {order.recipientProvince || order.recipientPostalCode
+              ? ` ${[order.recipientProvince, order.recipientPostalCode].filter(Boolean).join(' ')}`
+              : ''}
+          </p>
+        </div>
       </section>
 
-      <section className="mb-4 rounded-2xl border border-border bg-card p-4">
-        <h2 className="text-sm text-muted-foreground mb-2">รายการ</h2>
-        <ul className="space-y-2 text-sm">
+      <section className={`${BEAN_ORDER_CARD} mb-4 p-4`}>
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <h2 className="text-xs text-muted-foreground">รายการ</h2>
+          <p className="tabular-nums text-base text-foreground">{formatBaht(order.totalBaht)} ฿</p>
+        </div>
+        <ul className="divide-y divide-border text-sm">
           {order.lines.map((line) => (
-            <li key={line.id} className="flex justify-between gap-2">
-              <span>{line.itemName} · {line.weightValue}{line.weightUnit === 'g' ? ' ก.' : ' กก.'}</span>
-              <span className="tabular-nums">{formatBaht(line.lineTotalBaht)} ฿</span>
+            <li key={line.id} className="flex justify-between gap-3 py-2 first:pt-0 last:pb-0">
+              <span className="min-w-0 truncate">
+                {line.itemName} · {line.weightValue}
+                {line.weightUnit === 'g' ? ' ก.' : ' กก.'}
+              </span>
+              <span className="shrink-0 tabular-nums">{formatBaht(line.lineTotalBaht)} ฿</span>
             </li>
           ))}
         </ul>
-        <div className="mt-3 border-t border-border pt-3 text-sm space-y-1">
-          <p className="flex justify-between"><span>รวมสินค้า</span><span>{formatBaht(order.subtotalBaht)} ฿</span></p>
-          <p className="flex justify-between"><span>ส่วนลด</span><span>-{formatBaht(order.discountBaht)} ฿</span></p>
-          <p className="flex justify-between"><span>ค่าส่ง</span><span>{formatBaht(order.shippingBaht)} ฿</span></p>
-          <p className="flex justify-between text-base"><span>ยอดรวม</span><span>{formatBaht(order.totalBaht)} ฿</span></p>
+        <div className="mt-2 grid grid-cols-3 gap-x-3 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground sm:text-sm">
+          <p className="flex justify-between gap-2 sm:block">
+            <span>รวมสินค้า</span>
+            <span className="tabular-nums text-foreground sm:float-right">{formatBaht(order.subtotalBaht)} ฿</span>
+          </p>
+          <p className="flex justify-between gap-2 sm:block">
+            <span>ส่วนลด</span>
+            <span className="tabular-nums text-foreground sm:float-right">-{formatBaht(order.discountBaht)} ฿</span>
+          </p>
+          <p className="flex justify-between gap-2 sm:block">
+            <span>ค่าส่ง</span>
+            <span className="tabular-nums text-foreground sm:float-right">{formatBaht(order.shippingBaht)} ฿</span>
+          </p>
         </div>
       </section>
 
       {!cancelled && (
         <>
-          <section className="mb-4 rounded-2xl border border-border bg-card p-4 space-y-3">
+          <section className={`${BEAN_ORDER_CARD} mb-4 space-y-3 p-4`}>
             <h2 className="text-sm text-muted-foreground">ชำระเงิน</h2>
-            {order.payment?.slipUrl && (
+            {!isReadOnly && (canPay || canConfirm) ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {canPay ? (
+                  <>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void handleUploadSlip(file);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => fileRef.current?.click()}
+                      className={outlineActionButtonClass}
+                    >
+                      อัปโหลดสลิป
+                    </button>
+                  </>
+                ) : null}
+                {canConfirm ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void handleConfirmPayment()}
+                    className={actionButtonClass}
+                  >
+                    ยืนยันชำระแล้ว
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            {order.payment?.slipUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={order.payment.slipUrl} alt="สลิปชำระเงิน" className="max-h-64 rounded-xl border border-border" />
-            )}
-            {canPay && !isReadOnly && (
-              <>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void handleUploadSlip(file);
-                }} />
-                <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className={cn(inputClass, 'text-center')}>
-                  อัปโหลดสลิป
-                </button>
-              </>
-            )}
-            {canConfirm && !isReadOnly && (
-              <button type="button" disabled={busy} onClick={() => void handleConfirmPayment()} className="h-11 w-full rounded-full bg-foreground text-background text-sm">
-                ยืนยันชำระแล้ว
-              </button>
-            )}
+              <img
+                src={order.payment.slipUrl}
+                alt="สลิปชำระเงิน"
+                className="w-auto max-w-full h-auto rounded-xl border border-border"
+              />
+            ) : null}
           </section>
 
           {canShipOrder && !isReadOnly && (
-            <section className="mb-4 rounded-2xl border border-border bg-card p-4 space-y-3">
+            <section className={`${BEAN_ORDER_CARD} mb-4 space-y-3 p-4`}>
               <h2 className="text-sm text-muted-foreground">จัดส่ง</h2>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-stretch gap-2">
                 {(['parcel', 'same_day'] as const).map((type) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setDeliveryType(type)}
-                    className={cn('flex-1 h-10 rounded-full border text-sm', deliveryType === type ? 'bg-foreground text-background border-foreground' : 'border-border')}
+                    className={cn(
+                      'h-11 shrink-0 rounded-full border px-4 text-sm',
+                      deliveryType === type
+                        ? 'border-foreground bg-foreground text-background'
+                        : 'border-border bg-background text-foreground',
+                    )}
                   >
-                    {type === 'parcel' ? 'พัสดี' : 'ส่งในวัน'}
+                    {getDeliveryTypeLabel(type)}
                   </button>
                 ))}
+                <select
+                  className={cn(inputClass, 'min-w-[9rem] flex-1')}
+                  value={carrierCode}
+                  onChange={(e) => setCarrierCode(e.target.value)}
+                >
+                  {BEAN_ORDER_CARRIERS.map((c) => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
+                  ))}
+                </select>
+                {carrierCode === 'other' ? (
+                  <input
+                    className={cn(inputClass, 'min-w-[8rem] flex-1')}
+                    value={customCarrier}
+                    onChange={(e) => setCustomCarrier(e.target.value)}
+                    placeholder="ระบุช่องทางจัดส่ง"
+                  />
+                ) : null}
+                <input
+                  className={cn(inputClass, 'min-w-[10rem] flex-[1.5]')}
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="เลขพัสดุ (ไม่บังคับ)"
+                />
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleShip()}
+                  className={actionButtonClass}
+                >
+                  บันทึกจัดส่ง
+                </button>
               </div>
-              <select className={inputClass} value={carrierCode} onChange={(e) => setCarrierCode(e.target.value)}>
-                {BEAN_ORDER_CARRIERS.map((c) => (
-                  <option key={c.code} value={c.code}>{c.label}</option>
-                ))}
-              </select>
-              <input className={inputClass} value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="เลขพัสดุ (ไม่บังคับสำหรับส่งในวัน)" />
-              <button type="button" disabled={busy} onClick={() => void handleShip()} className="h-11 w-full rounded-full bg-foreground text-background text-sm">
-                บันทึกจัดส่งแล้ว
-              </button>
             </section>
           )}
 
-          {canCancel && !isReadOnly && (
-            <button type="button" disabled={busy} onClick={() => void handleCancel()} className="text-sm text-red-600 underline">
-              ยกเลิกออเดอร์
-            </button>
-          )}
+          {canCancel && !isReadOnly ? (
+            <div className="mb-4 flex justify-end">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleCancel()}
+                className={dangerOutlineButtonClass}
+              >
+                ยกเลิกออเดอร์
+              </button>
+            </div>
+          ) : null}
         </>
       )}
 
       {order.shipment && (
-        <section className="mb-4 rounded-2xl border border-border bg-card p-4 text-sm space-y-1">
-          <h2 className="text-sm text-muted-foreground mb-2">การจัดส่ง</h2>
-          <p>ประเภท: {order.shipment.deliveryType === 'parcel' ? 'พัสดี' : 'ส่งในวัน'}</p>
-          <p>ขนส่ง: {getCarrierLabel(order.shipment.carrierCode)}</p>
-          <p>เลขพัสดุ: {order.shipment.trackingNumber ?? '—'}</p>
-          <p>
-            สถานะ:{' '}
-            {formatShipmentTrackingLabel(order.shipment.trackingStatus, {
-              fulfillmentStatus: order.fulfillmentStatus,
-              trackingNumber: order.shipment.trackingNumber,
-            }) ?? '—'}
-          </p>
+        <section className={`${BEAN_ORDER_CARD} mb-4`}>
+          <details className="group">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 p-4 marker:content-none [&::-webkit-details-marker]:hidden">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                  <h2 className="text-xs text-muted-foreground">การจัดส่ง</h2>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-foreground">
+                    {getDeliveryTypeLabel(order.shipment.deliveryType)}
+                    {' · '}
+                    {getCarrierLabel(order.shipment.carrierCode)}
+                  </span>
+                </div>
+                {order.shipment.trackingNumber ? (
+                  <p className="text-xs text-muted-foreground">
+                    พัสดุ <span className="text-foreground">{order.shipment.trackingNumber}</span>
+                    {shipmentTrackingLabel ? <span> · {shipmentTrackingLabel}</span> : null}
+                  </p>
+                ) : null}
+              </div>
+              <ChevronDown
+                className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                aria-hidden
+              />
+            </summary>
+            <div className="border-t border-border px-4 pb-4 pt-3 text-sm">
+              <TrackingTimeline
+                trackingNumber={order.shipment.trackingNumber}
+                trackingStatus={order.shipment.trackingStatus}
+                fulfillmentStatus={order.fulfillmentStatus}
+                events={order.shipment.trackingEvents}
+              />
+            </div>
+          </details>
         </section>
       )}
 
-      <section className="rounded-2xl border border-border bg-card p-4">
-        <h2 className="text-sm text-muted-foreground mb-2">ประวัติ</h2>
-        <ul className="space-y-2 text-sm">
+      <section className={`${BEAN_ORDER_CARD} p-4`}>
+        <h2 className="mb-2 text-xs text-muted-foreground">ประวัติ</h2>
+        <ul className="divide-y divide-border text-sm">
           {order.statusHistory.length === 0 ? (
-            <li className="text-muted-foreground">—</li>
+            <li className="py-1 text-muted-foreground">—</li>
           ) : (
             order.statusHistory.map((entry, i) => (
-              <li key={`${entry.at}-${i}`}>
-                {new Date(entry.at).toLocaleString('th-TH')} · {entry.action} · {entry.by}
+              <li key={`${entry.at}-${i}`} className="py-2 first:pt-0 last:pb-0 text-muted-foreground">
+                <span className="tabular-nums text-foreground/80">
+                  {new Date(entry.at).toLocaleString('th-TH', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+                {' · '}
+                {entry.action}
+                {' · '}
+                {entry.by}
               </li>
             ))
           )}

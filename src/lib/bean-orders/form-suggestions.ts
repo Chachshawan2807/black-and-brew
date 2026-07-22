@@ -13,7 +13,6 @@ export type BeanOrderLinePreset = {
 };
 
 export type BeanOrderFormSuggestions = {
-  senderProfiles: ThaiPostalAddressValue[];
   recipientProfiles: ThaiPostalAddressValue[];
   linePresets: BeanOrderLinePreset[];
   shippingBahtValues: number[];
@@ -75,7 +74,6 @@ export function profilesMatchingName(
 }
 
 export function mergeFormSuggestions(input: {
-  senderProfiles: ThaiPostalAddressValue[];
   recipientProfiles: ThaiPostalAddressValue[];
   linePresets: BeanOrderLinePreset[];
   shippingBahtValues: number[];
@@ -83,7 +81,6 @@ export function mergeFormSuggestions(input: {
   notes: string[];
 }): BeanOrderFormSuggestions {
   return {
-    senderProfiles: dedupeAddressProfiles(input.senderProfiles),
     recipientProfiles: dedupeAddressProfiles(input.recipientProfiles),
     linePresets: dedupeLinePresets(input.linePresets),
     shippingBahtValues: dedupeNumbers(input.shippingBahtValues),

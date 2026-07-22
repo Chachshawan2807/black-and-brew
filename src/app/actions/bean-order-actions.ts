@@ -16,7 +16,8 @@ import {
 } from '@/lib/bean-orders/order-status';
 import { computeLineTotal, computeOrderTotals } from '@/lib/bean-orders/pricing';
 import { filterBeanOrderInventoryItems, BEAN_ORDER_INVENTORY_ITEM_NAMES } from '@/lib/bean-orders/inventory-items';
-import { createTrackingMoreShipment, fetchTrackingMoreStatusWithRepair, resolveTrackingMoreCarrierCode } from '@/lib/bean-orders/trackingmore';
+import { isTrackableCarrierCode } from '@/lib/bean-orders/carriers';
+import { parseTrackingEvents, formatLatestTrackingLabel, type BeanOrderTrackingEvent } from '@/lib/bean-orders/tracking-events';
 import {
   parseThaiPostalAddressLine,
   type ThaiPostalAddressValue,
@@ -31,6 +32,11 @@ import { resolveActorLabel } from '@/lib/data-change-log';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { ensureServerSession } from '@/lib/security/server-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import {
+  createTrackingMoreShipment,
+  fetchTrackingMoreStatusWithRepair,
+  resolveTrackingMoreCarrierCode,
+} from '@/lib/bean-orders/trackingmore';
 
 const weightUnitSchema = z.enum(['g', 'kg']);
 const deliveryTypeSchema = z.enum(['parcel', 'same_day']);
@@ -64,16 +70,37 @@ const shipOrderSchema = z.object({
   trackingNumber: z.string().optional(),
 });
 
+export type { BeanOrderTrackingEvent } from '@/lib/bean-orders/tracking-events';
+
+export type BeanOrderListLineRow = {
+  itemName: string;
+  weightValue: number;
+  weightUnit: WeightUnit;
+  unitPricePerKg: number;
+  lineTotalBaht: number;
+};
+
 export type BeanOrderListRow = {
   id: string;
   orderNo: string;
   customerName: string | null;
   recipientName: string;
+  recipientPhone: string | null;
+  recipientAddress: string;
+  recipientProvince: string | null;
+  recipientPostalCode: string | null;
+  subtotalBaht: number;
+  discountBaht: number;
+  shippingBaht: number;
   totalBaht: number;
+  notes: string | null;
+  lines: BeanOrderListLineRow[];
   paymentStatus: 'unpaid' | 'paid';
   fulfillmentStatus: 'pending' | 'shipped';
+  deliveryType: DeliveryType | null;
+  carrierCode: string | null;
   trackingNumber: string | null;
-  trackingStatus: string | null;
+  latestTrackingLabel: string | null;
   cancelledAt: string | null;
   createdAt: string;
 };
@@ -94,9 +121,6 @@ export type BeanOrderDetail = BeanOrderListRow & {
   senderPhone: string | null;
   senderAddress: string | null;
   recipientPhone: string | null;
-  recipientAddress: string;
-  recipientProvince: string | null;
-  recipientPostalCode: string | null;
   subtotalBaht: number;
   discountBaht: number;
   shippingBaht: number;
@@ -114,6 +138,7 @@ export type BeanOrderDetail = BeanOrderListRow & {
     carrierCode: string | null;
     trackingNumber: string | null;
     trackingStatus: string | null;
+    trackingEvents: BeanOrderTrackingEvent[];
     shippedAt: string;
   } | null;
 };
@@ -323,7 +348,7 @@ export async function fetchBeanOrders(filters?: {
     let query = supabase
       .from('bean_orders')
       .select(
-        'id, order_no, recipient_name, total_baht, payment_status, fulfillment_status, cancelled_at, created_at, customer_id, bean_customers(name), bean_order_shipments(tracking_number, tracking_status)',
+        'id, order_no, recipient_name, recipient_phone, recipient_address, recipient_province, recipient_postal_code, subtotal_baht, discount_baht, shipping_baht, total_baht, notes, payment_status, fulfillment_status, cancelled_at, created_at, customer_id, bean_customers(name)',
       )
       .order('created_at', { ascending: false })
       .limit(200);
@@ -341,25 +366,97 @@ export async function fetchBeanOrders(filters?: {
       return { success: false, error: error.message };
     }
 
+    const orderRows = data ?? [];
+    const orderIds = orderRows.map((row) => row.id as string);
+    const shipmentByOrderId = new Map<string, {
+      delivery_type: DeliveryType;
+      carrier_code: string | null;
+      tracking_number: string | null;
+      tracking_status: string | null;
+      tracking_raw: unknown;
+    }>();
+    const linesByOrderId = new Map<string, BeanOrderListLineRow[]>();
+
+    if (orderIds.length > 0) {
+      const [shipmentsRes, linesRes] = await Promise.all([
+        supabase
+          .from('bean_order_shipments')
+          .select('order_id, delivery_type, carrier_code, tracking_number, tracking_status, tracking_raw')
+          .in('order_id', orderIds),
+        supabase
+          .from('bean_order_lines')
+          .select('order_id, item_name, weight_value, weight_unit, unit_price_per_kg, line_total_baht, sort_order')
+          .in('order_id', orderIds)
+          .order('sort_order'),
+      ]);
+
+      if (shipmentsRes.error) {
+        console.error('Supabase Error (fetchBeanOrders shipments):', shipmentsRes.error.message, shipmentsRes.error.details);
+        return { success: false, error: shipmentsRes.error.message };
+      }
+      if (linesRes.error) {
+        console.error('Supabase Error (fetchBeanOrders lines):', linesRes.error.message, linesRes.error.details);
+        return { success: false, error: linesRes.error.message };
+      }
+
+      for (const shipment of shipmentsRes.data ?? []) {
+        shipmentByOrderId.set(shipment.order_id as string, {
+          delivery_type: shipment.delivery_type as DeliveryType,
+          carrier_code: (shipment.carrier_code as string | null) ?? null,
+          tracking_number: (shipment.tracking_number as string | null) ?? null,
+          tracking_status: (shipment.tracking_status as string | null) ?? null,
+          tracking_raw: shipment.tracking_raw,
+        });
+      }
+
+      for (const line of linesRes.data ?? []) {
+        const orderId = line.order_id as string;
+        const existing = linesByOrderId.get(orderId) ?? [];
+        existing.push({
+          itemName: line.item_name as string,
+          weightValue: Number(line.weight_value) || 0,
+          weightUnit: line.weight_unit as WeightUnit,
+          unitPricePerKg: Number(line.unit_price_per_kg) || 0,
+          lineTotalBaht: Number(line.line_total_baht) || 0,
+        });
+        linesByOrderId.set(orderId, existing);
+      }
+    }
+
     return {
       success: true,
-      data: (data ?? []).map((row) => {
+      data: orderRows.map((row) => {
         const customer = row.bean_customers as { name?: string } | null;
-        const shipmentRaw = row.bean_order_shipments as
-          | { tracking_number?: string | null; tracking_status?: string | null }
-          | { tracking_number?: string | null; tracking_status?: string | null }[]
-          | null;
-        const shipment = Array.isArray(shipmentRaw) ? shipmentRaw[0] : shipmentRaw;
+        const fulfillmentStatus = row.fulfillment_status as 'pending' | 'shipped';
+        const shipment = shipmentByOrderId.get(row.id as string);
         return {
           id: row.id as string,
           orderNo: row.order_no as string,
           customerName: customer?.name ?? null,
           recipientName: row.recipient_name as string,
+          recipientPhone: (row.recipient_phone as string | null) ?? null,
+          recipientAddress: row.recipient_address as string,
+          recipientProvince: (row.recipient_province as string | null) ?? null,
+          recipientPostalCode: (row.recipient_postal_code as string | null) ?? null,
+          subtotalBaht: Number(row.subtotal_baht) || 0,
+          discountBaht: Number(row.discount_baht) || 0,
+          shippingBaht: Number(row.shipping_baht) || 0,
           totalBaht: Number(row.total_baht) || 0,
+          notes: (row.notes as string | null) ?? null,
+          lines: linesByOrderId.get(row.id as string) ?? [],
           paymentStatus: row.payment_status as 'unpaid' | 'paid',
-          fulfillmentStatus: row.fulfillment_status as 'pending' | 'shipped',
-          trackingNumber: (shipment?.tracking_number as string | null) ?? null,
-          trackingStatus: (shipment?.tracking_status as string | null) ?? null,
+          fulfillmentStatus,
+          deliveryType: shipment?.delivery_type ?? null,
+          carrierCode: shipment?.carrier_code ?? null,
+          trackingNumber: shipment?.tracking_number ?? null,
+          latestTrackingLabel: formatLatestTrackingLabel(
+            shipment?.tracking_raw,
+            shipment?.tracking_status,
+            {
+              fulfillmentStatus,
+              trackingNumber: shipment?.tracking_number ?? null,
+            },
+          ),
           cancelledAt: (row.cancelled_at as string | null) ?? null,
           createdAt: row.created_at as string,
         };
@@ -399,7 +496,7 @@ export async function fetchBeanOrderDetail(
         .maybeSingle(),
       supabase
         .from('bean_order_shipments')
-        .select('delivery_type, carrier_code, tracking_number, tracking_status, shipped_at')
+        .select('delivery_type, carrier_code, tracking_number, tracking_status, tracking_raw, shipped_at')
         .eq('order_id', orderId)
         .maybeSingle(),
     ]);
@@ -442,8 +539,17 @@ export async function fetchBeanOrderDetail(
         totalBaht: Number(order.total_baht) || 0,
         paymentStatus: order.payment_status as 'unpaid' | 'paid',
         fulfillmentStatus: order.fulfillment_status as 'pending' | 'shipped',
+        deliveryType: (shipmentResult.data?.delivery_type as DeliveryType | undefined) ?? null,
+        carrierCode: (shipmentResult.data?.carrier_code as string | null) ?? null,
         trackingNumber: (shipmentResult.data?.tracking_number as string | null) ?? null,
-        trackingStatus: (shipmentResult.data?.tracking_status as string | null) ?? null,
+        latestTrackingLabel: formatLatestTrackingLabel(
+          shipmentResult.data?.tracking_raw,
+          shipmentResult.data?.tracking_status as string | null,
+          {
+            fulfillmentStatus: order.fulfillment_status as 'pending' | 'shipped',
+            trackingNumber: (shipmentResult.data?.tracking_number as string | null) ?? null,
+          },
+        ),
         cancelledAt: (order.cancelled_at as string | null) ?? null,
         notes: (order.notes as string | null) ?? null,
         statusHistory: (order.status_history as StatusHistoryEntry[]) ?? [],
@@ -471,6 +577,7 @@ export async function fetchBeanOrderDetail(
               carrierCode: (shipmentResult.data.carrier_code as string | null) ?? null,
               trackingNumber: (shipmentResult.data.tracking_number as string | null) ?? null,
               trackingStatus: (shipmentResult.data.tracking_status as string | null) ?? null,
+              trackingEvents: parseTrackingEvents(shipmentResult.data.tracking_raw),
               shippedAt: shipmentResult.data.shipped_at as string,
             }
           : null,
@@ -825,7 +932,7 @@ export async function shipBeanOrder(
     let trackingRaw: Record<string, unknown> | null = null;
     let trackingWarning: string | undefined;
 
-    if (trackingNumber && parsed.data.carrierCode && parsed.data.carrierCode !== 'other') {
+    if (trackingNumber && isTrackableCarrierCode(parsed.data.carrierCode)) {
       const carrierCode = resolveTrackingMoreCarrierCode(parsed.data.carrierCode) ?? parsed.data.carrierCode;
       const tm = await createTrackingMoreShipment({
         trackingNumber,
@@ -944,7 +1051,7 @@ export async function fetchBeanOrderFormSuggestions(): Promise<{
       supabase
         .from('bean_orders')
         .select(
-          'sender_name, sender_phone, sender_address, recipient_name, recipient_phone, recipient_address, recipient_province, recipient_postal_code, shipping_baht, discount_baht, notes',
+          'recipient_name, recipient_phone, recipient_address, recipient_province, recipient_postal_code, shipping_baht, discount_baht, notes',
         )
         .order('created_at', { ascending: false })
         .limit(200),
@@ -975,7 +1082,6 @@ export async function fetchBeanOrderFormSuggestions(): Promise<{
       return { success: false, error: linesRes.error.message };
     }
 
-    const senderProfiles: ThaiPostalAddressValue[] = [];
     const recipientProfiles: ThaiPostalAddressValue[] = [];
     const shippingBahtValues: number[] = [];
     const discountBahtValues: number[] = [];
@@ -983,14 +1089,6 @@ export async function fetchBeanOrderFormSuggestions(): Promise<{
     const linePresets: BeanOrderLinePreset[] = [];
 
     for (const order of ordersRes.data ?? []) {
-      if (order.sender_name || order.sender_phone || order.sender_address) {
-        senderProfiles.push(
-          parseThaiPostalAddressLine((order.sender_address as string | null) ?? '', {
-            name: (order.sender_name as string | null) ?? '',
-            phone: (order.sender_phone as string | null) ?? '',
-          }),
-        );
-      }
       if (order.recipient_name || order.recipient_phone || order.recipient_address) {
         recipientProfiles.push(
           parseThaiPostalAddressLine((order.recipient_address as string | null) ?? '', {
@@ -1031,7 +1129,6 @@ export async function fetchBeanOrderFormSuggestions(): Promise<{
     return {
       success: true,
       data: mergeFormSuggestions({
-        senderProfiles,
         recipientProfiles,
         linePresets,
         shippingBahtValues,

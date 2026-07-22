@@ -12,10 +12,20 @@ export const BEAN_ORDER_CARRIERS: BeanOrderCarrier[] = [
   { code: 'best-th', label: 'Best Express' },
   { code: 'ninjavan-th', label: 'Ninja Van' },
   { code: 'dhl', label: 'DHL' },
-  { code: 'other', label: 'อื่นๆ' },
+  { code: 'other', label: 'กรอกเอง…' },
 ];
 
 export function getCarrierLabel(code: string | null | undefined): string {
   if (!code) return '—';
   return BEAN_ORDER_CARRIERS.find((c) => c.code === code)?.label ?? code;
+}
+
+const TRACKABLE_CARRIER_CODES = new Set(
+  BEAN_ORDER_CARRIERS.map((carrier) => carrier.code).filter((code) => code !== 'other'),
+);
+
+/** Carriers that support TrackingMore auto-sync (excludes manual / other). */
+export function isTrackableCarrierCode(code: string | null | undefined): boolean {
+  if (!code) return false;
+  return TRACKABLE_CARRIER_CODES.has(code);
 }

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   dedupeAddressProfiles,
   formatAddressProfileLabel,
+  formatOrderDeliveryDestination,
   parseThaiPostalAddressLine,
 } from '@/lib/bean-orders/address';
 
@@ -60,5 +61,15 @@ describe('bean order address helpers', () => {
         addressLine: '123',
       }),
     ).toContain('081');
+  });
+
+  test('formats delivery destination for order list', () => {
+    expect(
+      formatOrderDeliveryDestination({
+        recipientAddress: '123 หมู่ 4',
+        recipientProvince: 'ระยอง',
+        recipientPostalCode: '21110',
+      }),
+    ).toBe('จ.ระยอง');
   });
 });
