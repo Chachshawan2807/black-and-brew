@@ -42,7 +42,7 @@ export function TrackingTimeline({
         {trackingNumber ? (
           <p>
             พัสดุ <span className="text-foreground">{trackingNumber}</span>
-            {statusLabel ? <span> · {statusLabel}</span> : null}
+            {statusLabel ? <span> / {statusLabel}</span> : null}
           </p>
         ) : null}
         <p className="text-muted-foreground">ยังไม่มีรายละเอียดสถานะจากขนส่ง</p>
@@ -55,7 +55,7 @@ export function TrackingTimeline({
       {trackingNumber ? (
         <p className={compact ? 'text-xs text-muted-foreground' : 'text-sm'}>
           พัสดุ <span className="text-foreground">{trackingNumber}</span>
-          {statusLabel ? <span> · {statusLabel}</span> : null}
+          {statusLabel ? <span> / {statusLabel}</span> : null}
         </p>
       ) : null}
       <ul className={compact ? 'space-y-2' : 'space-y-3'}>
@@ -72,7 +72,7 @@ export function TrackingTimeline({
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {date}
-                  {time ? ` · ${time}` : ''}
+                  {time ? ` / ${time}` : ''}
                 </span>
               </div>
               <p className={compact ? 'text-xs text-muted-foreground mt-0.5' : 'text-sm text-muted-foreground mt-1'}>

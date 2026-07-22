@@ -1,10 +1,12 @@
-// v18
+// v19
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
 importScripts('/pwa-badge.js');
 
 const OFFLINE_MUTATION_SYNC_TAG = 'bb-offline-mutations';
+const OFFLINE_FALLBACK_URL = '/offline.html';
+const APP_SHELL_URL = '/th';
 
 const { BRAND_ICON, BRAND_ICON_512, NOTIFICATION_BADGE, CACHE_VERSION, VIBRATE } = self.PWA_ASSETS;
 const CACHE_NAME = `blackandbrew-cache-v${CACHE_VERSION}`;
@@ -73,6 +75,8 @@ async function showPushNotification(title, options) {
 // Add list of files to cache here.
 const urlsToCache = [
   '/',
+  APP_SHELL_URL,
+  OFFLINE_FALLBACK_URL,
   '/pwa-assets.js',
   '/notification-store.js',
   '/offline-mutation-store.js',
@@ -172,8 +176,9 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     (async () => {
       const isDailyReport = payload.kind === 'daily_report';
+      const isBeanDelivered = payload.kind === 'bean_order_delivered';
 
-      if (isDailyReport) {
+      if (isDailyReport || isBeanDelivered) {
         const unreadCount = await safeResolveUnreadCount(payload);
 
         const windowClients = await self.clients.matchAll({
@@ -191,12 +196,12 @@ self.addEventListener('push', (event) => {
         }
 
         await showPushNotification(payload.title, buildNotificationOptions(payload, unreadCount, {
-          tag: `${payload.tag || 'bb-daily-report'}-${Date.now()}`,
+          tag: `${payload.tag || (isBeanDelivered ? 'bb-bean-delivered' : 'bb-daily-report')}-${Date.now()}`,
           requireInteraction: true,
           timestamp: Date.now(),
           data: {
-            url: payload.url || '/th/schedule',
-            kind: 'daily_report',
+            url: payload.url || (isBeanDelivered ? '/th/bean-orders' : '/th/schedule'),
+            kind: payload.kind,
             unreadCount,
           },
         }));
@@ -362,6 +367,15 @@ function staleWhileRevalidate(request) {
   });
 }
 
+async function resolveOfflineNavigationFallback() {
+  const cache = await caches.open(CACHE_NAME);
+  const offlinePage = await cache.match(OFFLINE_FALLBACK_URL);
+  if (offlinePage) return offlinePage;
+  const appShell = await cache.match(APP_SHELL_URL);
+  if (appShell) return appShell;
+  return cache.match('/');
+}
+
 function networkFirstWithOfflineFallback(request) {
   return fetch(request)
     .then((response) => {
@@ -376,5 +390,13 @@ function networkFirstWithOfflineFallback(request) {
       }
       return response;
     })
-    .catch(() => caches.match(request));
+    .catch(async () => {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      if (request.mode === 'navigate') {
+        const fallback = await resolveOfflineNavigationFallback();
+        if (fallback) return fallback;
+      }
+      return caches.match(request);
+    });
 }

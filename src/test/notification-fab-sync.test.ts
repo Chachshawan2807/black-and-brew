@@ -104,6 +104,13 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toMatch(/openPanel[\s\S]*syncNotificationCatchUp/);
   });
 
+  test('hook syncs bean order delivered logs via realtime and server catch-up', () => {
+    expect(hookSource).toContain("attachChangeLogListener(nextChannel, 'bean_orders')");
+    expect(hookSource).toContain('isEligibleBeanOrderDeliveredNotification');
+    expect(hookSource).toContain('formatBeanOrderDeliveredNotification');
+    expect(hookSource).toContain("fetchDataChangeLogs({ module: 'bean_orders'");
+  });
+
   test('clearing history prevents old server catch-up logs from being restored', () => {
     expect(hookSource).toContain('saveNotificationClearWatermark');
     expect(hookSource).toContain('loadNotificationClearWatermark');
@@ -134,6 +141,7 @@ describe('notification fab cross-platform sync', () => {
 
   test('daily report web pushes are stored and forwarded to the notification panel', () => {
     expect(serviceWorkerSource).toContain("payload.kind === 'daily_report'");
+    expect(serviceWorkerSource).toContain("payload.kind === 'bean_order_delivered'");
     expect(serviceWorkerSource).toContain('const unreadCount = await safeResolveUnreadCount(payload);');
     expect(serviceWorkerSource).toContain("type: 'INVENTORY_PUSH_RECEIVED'");
     expect(serviceWorkerSource).toContain('await applyHomeScreenBadge(unreadCount);');

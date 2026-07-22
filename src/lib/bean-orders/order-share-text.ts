@@ -1,3 +1,4 @@
+import { BEAN_ORDER_FIELD_SEPARATOR } from '@/lib/bean-orders/defaults';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { getCarrierLabel } from '@/lib/bean-orders/carriers';
 import { getDeliveryTypeLabel } from '@/lib/bean-orders/delivery';
@@ -65,7 +66,7 @@ function formatRecipientAddress(order: BeanOrderShareInput): string {
 }
 
 function formatLineItem(line: BeanOrderShareLine, index: number): string {
-  return `${index + 1}) ${line.itemName} · ${formatWeight(line.weightValue, line.weightUnit)} · ${formatBaht(line.unitPricePerKg)} บาท/กก. · รวม ${formatBaht(line.lineTotalBaht)} บาท`;
+  return `${index + 1}) ${line.itemName}${BEAN_ORDER_FIELD_SEPARATOR}${formatWeight(line.weightValue, line.weightUnit)}${BEAN_ORDER_FIELD_SEPARATOR}${formatBaht(line.unitPricePerKg)} บาท/กก.${BEAN_ORDER_FIELD_SEPARATOR}รวม ${formatBaht(line.lineTotalBaht)} บาท`;
 }
 
 function formatShippingSection(order: BeanOrderShareInput): string[] {
@@ -99,8 +100,7 @@ export function formatBeanOrderShareText(order: BeanOrderShareInput): string {
 
   return [
     'ออเดอร์เมล็ดกาแฟ',
-    `เลขที่: ${order.orderNo}`,
-    `วันที่สร้าง: ${formatShareDate(order.createdAt)}`,
+    `วันที่: ${formatShareDate(order.createdAt)}`,
     `สถานะ: ${status}`,
     '',
     `ลูกค้า: ${getBeanOrderCustomerDisplayName(order)}`,
@@ -117,6 +117,6 @@ export function formatBeanOrderShareText(order: BeanOrderShareInput): string {
     '',
     ...formatShippingSection(order),
     '',
-    `หมายเหตุ: ${order.notes?.trim() || '—'}`,
+    `หมายเหตุ: ${order.notes?.trim() || '-'}`,
   ].join('\n');
 }

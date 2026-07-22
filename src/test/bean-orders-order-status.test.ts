@@ -12,8 +12,8 @@ import {
 describe('getOrderStatusLabel', () => {
   test('maps dual-axis statuses', () => {
     expect(getOrderStatusLabel('unpaid', 'pending')).toBe('รอชำระ');
-    expect(getOrderStatusLabel('paid', 'pending')).toBe('ชำระแล้ว · รอจัดส่ง');
-    expect(getOrderStatusLabel('unpaid', 'shipped')).toBe('จัดส่งแล้ว · รอชำระ');
+    expect(getOrderStatusLabel('paid', 'pending')).toBe('ชำระแล้ว / รอจัดส่ง');
+    expect(getOrderStatusLabel('unpaid', 'shipped')).toBe('จัดส่งแล้ว / รอชำระ');
     expect(getOrderStatusLabel('paid', 'shipped')).toBe('เสร็จสมบูรณ์');
   });
 

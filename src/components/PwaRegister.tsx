@@ -16,6 +16,11 @@ import {
   wantsPushRegistration,
 } from '@/lib/push-subscription-client';
 import { installOfflineMutationListeners } from '@/lib/offline-mutation-client';
+import { PWA_SERVICE_WORKER_PATH } from '@/lib/pwa-config';
+import {
+  checkForServiceWorkerUpdate,
+  installServiceWorkerUpdateListener,
+} from '@/lib/pwa-update';
 import { resolveSameOriginNavigationUrl } from '@/lib/safe-navigation-url';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
@@ -50,6 +55,7 @@ export default function PwaRegister() {
     const onResume = () => {
       if (document.visibilityState !== 'visible') return;
       syncBadgeFromStorage();
+      void checkForServiceWorkerUpdate();
       schedulePushSubscriptionMaintenance(locale);
     };
 
@@ -61,11 +67,12 @@ export default function PwaRegister() {
     window.addEventListener('bb-notification-prefs-changed', onResume);
 
     const removeOfflineListeners = installOfflineMutationListeners();
+    const removeSwUpdateListener = installServiceWorkerUpdateListener();
 
     const cancelIdle = scheduleIdleWork(
       () => {
         navigator.serviceWorker
-          .register('/sw.js')
+          .register(PWA_SERVICE_WORKER_PATH, { updateViaCache: 'none' })
           .then(() => navigator.serviceWorker.ready)
           .then(() => {
             syncBadgeFromStorage();
@@ -98,6 +105,7 @@ export default function PwaRegister() {
       window.removeEventListener('bb-pin-authenticated', onResume);
       window.removeEventListener('bb-notification-prefs-changed', onResume);
       removeOfflineListeners();
+      removeSwUpdateListener();
     };
   }, [locale, router]);
 

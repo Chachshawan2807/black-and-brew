@@ -25,6 +25,7 @@ export function formatStockOperationBatchedTitle(
 
 export type NotificationDisplayIconKind =
   | 'schedule'
+  | 'bean-delivered'
   | 'stock-in'
   | 'stock-out'
   | 'stock-adjust'
@@ -34,6 +35,7 @@ export type NotificationDisplayIconKind =
   | 'update';
 
 const SCHEDULE_SURFACE = `${PASTEL_SURFACE} bg-[#e6f0ff] text-black border border-[#c2d6ff]`;
+const BEAN_DELIVERED_SURFACE = `${PASTEL_SURFACE} bg-[#e8f5e9] text-black border border-[#c8e6c9]`;
 
 const STOCK_SURFACES: Record<StockOperation, string> = {
   IN: `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`,
@@ -71,6 +73,15 @@ export function isScheduleNotification(item: InventoryNotification): boolean {
   return false;
 }
 
+export function isBeanOrderDeliveredNotification(item: InventoryNotification): boolean {
+  const meta = item.metadata ?? {};
+  if (meta.kind === 'bean_order_delivered') return true;
+  if (meta.module === 'bean_orders' && typeof meta.url === 'string' && meta.url.includes('/bean-orders/')) {
+    return true;
+  }
+  return /^จัดส่งสำเร็จ/u.test(item.title) || /^Delivered/u.test(item.title);
+}
+
 function detectStockOperationFromTitle(title: string): StockOperation | null {
   if (/^\+[\s:]/u.test(title)) return 'IN';
   if (/^−[\s:]/u.test(title)) return 'OUT';
@@ -87,6 +98,10 @@ export function resolveNotificationDisplayIcon(item: InventoryNotification): {
 } {
   if (isScheduleNotification(item)) {
     return { kind: 'schedule', containerClass: SCHEDULE_SURFACE };
+  }
+
+  if (isBeanOrderDeliveredNotification(item)) {
+    return { kind: 'bean-delivered', containerClass: BEAN_DELIVERED_SURFACE };
   }
 
   const stockFromMeta = detectStockOperationFromMetadata(item.metadata ?? {});

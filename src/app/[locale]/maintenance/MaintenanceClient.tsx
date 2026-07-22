@@ -318,10 +318,10 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
               initial={slideInLeft.initial}
               animate={slideInLeft.animate}
               transition={slideInLeft.transition}
-              className="text-4xl md:text-5xl font-normal tracking-[0.1em] text-foreground flex items-center gap-3"
+              className="text-2xl md:text-3xl font-normal tracking-tight text-foreground flex items-center gap-3"
             >
-              <div className="p-2.5 bg-black text-white rounded-2xl">
-                <Wrench className="w-8 h-8" strokeWidth={1.5} />
+              <div className="p-2 bg-black text-white rounded-xl">
+                <Wrench className="w-5 h-5" strokeWidth={1.5} />
               </div>
               ประวัติการซ่อมบำรุง
             </motion.h1>
@@ -364,13 +364,13 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
               </button>
             </div>
           ) : (
-            <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin pb-6 box-border bg-card rounded-3xl border border-border bb-shadow-sm">
+            <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin pb-6 box-border bb-table-wrapper">
               <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '1100px' }}>
                 <thead>
-                  <tr className="border-b border-border bg-muted/40">
+                  <tr className="border-b border-border bg-muted/50 bb-shadow-sm">
                     <th 
                       style={{ width: `${colWidths.date}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
                     >
                       วันที่
                       <div
@@ -380,7 +380,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     </th>
                     <th 
                       style={{ width: `${colWidths.equipment}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
                     >
                       อุปกรณ์
                       <div
@@ -390,7 +390,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     </th>
                     <th 
                       style={{ width: `${colWidths.issue}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
                     >
                       อาการ/ปัญหา
                       <div
@@ -400,7 +400,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     </th>
                     <th 
                       style={{ width: `${colWidths.frequency}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
                     >
                       ความถี่ที่แนะนำ
                       <div
@@ -410,7 +410,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     </th>
                     <th 
                       style={{ width: `${colWidths.technician}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
                     >
                       ผู้รับผิดชอบ
                       <div
@@ -420,7 +420,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     </th>
                     <th 
                       style={{ width: `${colWidths.taskType}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
                     >
                       ประเภท
                       <div
@@ -430,7 +430,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     </th>
                     <th 
                       style={{ width: `${colWidths.cost}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
                     >
                       ค่าใช้จ่าย
                       <div
@@ -440,7 +440,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     </th>
                     <th 
                       style={{ width: `${colWidths.status}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
                     >
                       สถานะ
                       <div
@@ -450,7 +450,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     </th>
                     <th 
                       style={{ width: `${colWidths.manage}px` }} 
-                      className="py-4 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       จัดการ
                       <div
@@ -460,7 +460,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody>
                   <AnimatePresence>
                     {records.map((record, index) => (
                       <motion.tr
@@ -468,32 +468,32 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                         initial={staggerListItem.initial}
                         animate={staggerListItem.animate}
                         transition={{ ...staggerListItem.transition, delay: staggerDelay(index) }}
-                        className="group hover:bg-muted/30 bb-transition"
+                        className="group border-b border-border/60 odd:bg-muted/10 even:bg-card hover:bg-muted/25 bb-transition"
                       >
-                        <td className="py-4 px-5 text-sm font-normal text-muted-foreground antialiased tabular-nums">
+                        <td className="py-3.5 px-5 text-sm font-normal text-muted-foreground antialiased tabular-nums border-r border-border/40">
                           {format(new Date(record.start_date), 'dd/MM/yyyy')}
                         </td>
-                        <td className="py-4 px-5 text-[15px] font-normal text-foreground antialiased whitespace-normal break-words">
+                        <td className="py-3.5 px-5 text-[15px] font-normal text-foreground antialiased whitespace-normal break-words border-r border-border/40">
                           {record.equipment}
                         </td>
-                        <td className="py-4 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words" title={record.detected_problem || '-'}>
+                        <td className="py-3.5 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words border-r border-border/40" title={record.detected_problem || '-'}>
                           {record.detected_problem || '-'}
                         </td>
-                        <td className="py-4 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words">
+                        <td className="py-3.5 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words border-r border-border/40">
                           {record.recommended_frequency || '-'}
                         </td>
-                        <td className="py-4 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words">
+                        <td className="py-3.5 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words border-r border-border/40">
                           {record.person_in_charge || '-'}
                         </td>
-                        <td className="py-4 px-5 text-center">
+                        <td className="py-3.5 px-5 text-center border-r border-border/40">
                           <span className="inline-block px-3 py-1 bg-muted rounded-full uppercase tracking-widest font-normal text-[11px] text-muted-foreground">
                             {record.task_type}
                           </span>
                         </td>
-                        <td className="py-4 px-5 text-[15px] font-normal text-foreground antialiased text-right tabular-nums">
+                        <td className="py-3.5 px-5 text-[15px] font-normal text-foreground antialiased text-right tabular-nums border-r border-border/40">
                           ฿{(record.cost || 0).toLocaleString()}
                         </td>
-                        <td className="py-4 px-5 text-sm font-normal antialiased text-center">
+                        <td className="py-3.5 px-5 text-sm font-normal antialiased text-center border-r border-border/40">
                           <span className={`inline-flex px-3 py-1.5 text-xs rounded-2xl items-center justify-center gap-1.5 transition-all bb-shadow-sm border ${record.status === 'เสร็จสมบูรณ์'
                             ? 'bb-pastel-surface bg-[#f0fdf4] text-[#000000] border-[#dcfce7]'
                             : 'bb-pastel-surface bg-[#f0f9ff] text-[#000000] border-[#e0f2fe]'
@@ -502,7 +502,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                             {record.status}
                           </span>
                         </td>
-                        <td className="py-4 px-5 text-center">
+                        <td className="py-3.5 px-5 text-center">
                           <div className="flex items-center justify-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             <HintTooltip tip="แก้ไขบันทึก">
                               <button

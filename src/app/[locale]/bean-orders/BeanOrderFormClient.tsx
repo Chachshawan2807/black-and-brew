@@ -3,17 +3,19 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, Clipboard, Plus, Trash2 } from 'lucide-react';
 import {
   createBeanCustomer,
   createBeanOrder,
   fetchBeanCustomerAddresses,
+  parseBeanOrderCustomerFromText,
   searchBeanCustomers,
   type BeanCustomerAddressRow,
   type BeanCustomerRow,
 } from '@/app/actions/bean-order-actions';
 import { AddressProfilePicker } from '@/app/[locale]/bean-orders/_components/AddressProfilePicker';
 import { AutocompleteTextField } from '@/app/[locale]/bean-orders/_components/AutocompleteTextField';
+import { PasteCustomerDialog } from '@/app/[locale]/bean-orders/_components/PasteCustomerDialog';
 import {
   ThaiPostalAddressSection,
 } from '@/app/[locale]/bean-orders/_components/ThaiPostalAddressSection';
@@ -30,6 +32,7 @@ import {
   profilesMatchingName,
   type BeanOrderFormSuggestions,
 } from '@/lib/bean-orders/form-suggestions';
+import type { ParsedBeanOrderCustomer } from '@/lib/bean-orders/parse-share-text';
 import { computeOrderTotals } from '@/lib/bean-orders/pricing';
 import {
   formatThaiPostalAddressLine,
@@ -120,6 +123,10 @@ export default function BeanOrderFormClient({
   const [discountBaht, setDiscountBaht] = useState('');
   const [shippingBaht, setShippingBaht] = useState('');
   const [notes, setNotes] = useState('');
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteLoading, setPasteLoading] = useState(false);
+  const [pasteError, setPasteError] = useState<string | null>(null);
+  const [pasteData, setPasteData] = useState<ParsedBeanOrderCustomer | null>(null);
 
   const customerNameSuggestions = useMemo(() => {
     const fromCustomers = customerResults.map((customer) => customer.name);
@@ -235,6 +242,59 @@ export default function BeanOrderFormClient({
     }
   }
 
+  function closePasteDialog() {
+    setPasteOpen(false);
+    setPasteLoading(false);
+    setPasteError(null);
+    setPasteData(null);
+  }
+
+  async function handlePasteCustomer() {
+    if (isReadOnly) {
+      setError(READ_ONLY_DENY_MSG);
+      return;
+    }
+
+    setPasteOpen(true);
+    setPasteLoading(true);
+    setPasteError(null);
+    setPasteData(null);
+
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        setPasteLoading(false);
+        setPasteError('ไม่พบข้อความในคลิปบอร์ด');
+        return;
+      }
+
+      const result = await parseBeanOrderCustomerFromText(text);
+      setPasteLoading(false);
+      if (!result.success || !result.data) {
+        setPasteError(result.error ?? 'แยกข้อมูลลูกค้าไม่สำเร็จ');
+        return;
+      }
+      setPasteData(result.data);
+    } catch {
+      setPasteLoading(false);
+      setPasteError('ไม่สามารถอ่านคลิปบอร์ดได้');
+    }
+  }
+
+  function applyPastedCustomer() {
+    if (!pasteData) return;
+    setCustomerQuery(pasteData.name);
+    setSelectedCustomer(null);
+    setCustomerResults([]);
+    setCustomerAddressPicker(null);
+    setRecipient({
+      ...pasteData.address,
+      name: pasteData.name,
+      phone: pasteData.phone,
+    });
+    closePasteDialog();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isReadOnly) {
@@ -305,7 +365,18 @@ export default function BeanOrderFormClient({
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       <section className={`${BEAN_ORDER_CARD} mb-5 space-y-3 p-4`}>
-        <h2 className="text-sm font-normal text-muted-foreground">ลูกค้า</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-normal text-muted-foreground">ลูกค้า</h2>
+          <button
+            type="button"
+            onClick={() => void handlePasteCustomer()}
+            disabled={isReadOnly || pasteLoading}
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-xs text-foreground disabled:opacity-50"
+          >
+            <Clipboard className="h-3.5 w-3.5" aria-hidden />
+            วางข้อมูลลูกค้า
+          </button>
+        </div>
         <AutocompleteTextField
           value={customerQuery}
           onChange={(q) => void handleCustomerSearch(q)}
@@ -319,7 +390,7 @@ export default function BeanOrderFormClient({
             {customerResults.map((c) => (
               <li key={c.id}>
                 <button type="button" onClick={() => void handleSelectCustomer(c)} className="w-full px-3 py-2 text-left text-sm hover:bg-muted/30">
-                  {c.name} {c.phone ? `· ${c.phone}` : ''}
+                  {c.name} {c.phone ? `/ ${c.phone}` : ''}
                 </button>
               </li>
             ))}
@@ -442,7 +513,7 @@ export default function BeanOrderFormClient({
                           className="w-full px-3 py-2 text-left text-sm hover:bg-muted/30"
                           onClick={() => applyLinePreset(index, preset)}
                         >
-                          {preset.weightValue} {preset.weightUnit === 'kg' ? 'กก.' : 'ก.'} · {preset.unitPricePerKg.toLocaleString('th-TH')} ฿/กก.
+                          {preset.weightValue} {preset.weightUnit === 'kg' ? 'กก.' : 'ก.'} / {preset.unitPricePerKg.toLocaleString('th-TH')} ฿/กก.
                         </button>
                       </li>
                     ))}
@@ -510,6 +581,15 @@ export default function BeanOrderFormClient({
       >
         {saving ? 'กำลังบันทึก...' : 'บันทึกออเดอร์'}
       </button>
+
+      <PasteCustomerDialog
+        open={pasteOpen}
+        loading={pasteLoading}
+        error={pasteError}
+        data={pasteData}
+        onConfirm={applyPastedCustomer}
+        onCancel={closePasteDialog}
+      />
     </form>
   );
 }

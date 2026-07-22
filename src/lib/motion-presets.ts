@@ -18,10 +18,10 @@ export const fadeOverlay: MotionPreset = {
 };
 
 export const modalContent: MotionPreset = {
-  initial: { opacity: 0, scale: 0.98, y: 6 },
+  initial: { opacity: 0, scale: 0.96, y: 10 },
   animate: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.98, y: 6 },
-  transition: { duration: 0.2, ease: MODAL_EASE },
+  exit: { opacity: 0, scale: 0.96, y: 10 },
+  transition: { duration: 0.22, ease: MODAL_EASE },
 };
 
 /** Centered notification panel — slightly longer travel for smooth open/close */
@@ -47,10 +47,10 @@ export const sheetPanel: MotionPreset = {
 };
 
 export const pageContent: MotionPreset = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0.24, ease: MODAL_EASE },
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -4 },
+  transition: { duration: 0.26, ease: MODAL_EASE },
 };
 
 export const sidebarSurface: MotionPreset = {

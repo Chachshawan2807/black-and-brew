@@ -1,4 +1,5 @@
 import { searchAddress } from 'thai-postal-code';
+import { BEAN_ORDER_FIELD_SEPARATOR } from './defaults';
 
 export type ThaiPostalAreaOption = {
   id: string;
@@ -26,7 +27,7 @@ export function lookupThaiPostalAreas(postalCode: string): ThaiPostalAreaOption[
     seen.add(id);
     return [{
       id,
-      label: `${row.subdistrictNameTh} · ${row.districtNameTh} · ${row.provinceNameTh}`,
+      label: `${row.subdistrictNameTh}${BEAN_ORDER_FIELD_SEPARATOR}${row.districtNameTh}${BEAN_ORDER_FIELD_SEPARATOR}${row.provinceNameTh}`,
       subdistrict: row.subdistrictNameTh,
       district: row.districtNameTh,
       province: row.provinceNameTh,

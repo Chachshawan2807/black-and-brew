@@ -24,8 +24,8 @@ const LEGACY_FLEX_PALETTES = {
 } as const satisfies Record<string, ShiftFlexPalette>;
 
 export const FLEX_HEADER_PALETTE: ShiftFlexPalette = {
-  backgroundColor: '#fdfcf0',
-  borderColor: '#e8e4d4',
+  backgroundColor: '#f7f5e8',
+  borderColor: '#e3dfd0',
 };
 
 export const FLEX_HOLIDAY_PALETTE: ShiftFlexPalette = {

@@ -27,6 +27,12 @@ import {
   type BeanOrderFormSuggestions,
   type BeanOrderLinePreset,
 } from '@/lib/bean-orders/form-suggestions';
+import {
+  buildParsedBeanOrderCustomer,
+  isBeanOrderCustomerParseUsable,
+  parseBeanOrderCustomerText,
+  type ParsedBeanOrderCustomer,
+} from '@/lib/bean-orders/parse-share-text';
 import type { DeliveryType, StatusHistoryEntry, WeightUnit } from '@/lib/bean-orders/types';
 import { resolveActorLabel } from '@/lib/data-change-log';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
@@ -37,6 +43,8 @@ import {
   fetchTrackingMoreStatusWithRepair,
   resolveTrackingMoreCarrierCode,
 } from '@/lib/bean-orders/trackingmore';
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
 const weightUnitSchema = z.enum(['g', 'kg']);
 const deliveryTypeSchema = z.enum(['parcel', 'same_day']);
@@ -987,6 +995,18 @@ export async function shipBeanOrder(
       return { success: false, error: shipError.message };
     }
 
+    if (trackingStatus) {
+      const { maybeNotifyBeanOrderDelivered } = await import('@/lib/bean-orders/notify-delivered');
+      void maybeNotifyBeanOrderDelivered({
+        trackingNumber: trackingNumber || undefined,
+        previousStatus: null,
+        nextStatus: trackingStatus,
+        carrierCode: resolvedCarrierCode,
+      }).catch((error) => {
+        console.error('maybeNotifyBeanOrderDelivered (ship):', error);
+      });
+    }
+
     void recordDataChange({
       action: 'UPDATE',
       module: 'bean_orders',
@@ -1140,5 +1160,76 @@ export async function fetchBeanOrderFormSuggestions(): Promise<{
   } catch (error) {
     const message = error instanceof Error ? error.message : 'โหลดข้อมูลแนะนำไม่สำเร็จ';
     return { success: false, error: message };
+  }
+}
+
+const aiCustomerSchema = z.object({
+  name: z.string().default(''),
+  phone: z.string().default(''),
+  addressLine: z.string().default(''),
+  province: z.string().optional(),
+  postalCode: z.string().optional(),
+});
+
+/**
+ * แยกชื่อ / เบอร์ / ที่อยู่จากข้อความวาง (rule-based ก่อน แล้ว fallback Gemini)
+ */
+export async function parseBeanOrderCustomerFromText(text: string): Promise<{
+  success: boolean;
+  data?: ParsedBeanOrderCustomer;
+  error?: string;
+}> {
+  const readError = await requireReadAccess();
+  if (readError) return { success: false, error: readError };
+
+  const trimmed = text.trim();
+  if (!trimmed) return { success: false, error: 'ไม่พบข้อความในคลิปบอร์ด' };
+
+  const rulesResult = parseBeanOrderCustomerText(trimmed);
+  if (isBeanOrderCustomerParseUsable(rulesResult)) {
+    return { success: true, data: rulesResult };
+  }
+
+  try {
+    const { text: aiText } = await generateText({
+      model: google('gemini-2.5-flash'),
+      system: `คุณคือผู้ช่วยแยกข้อมูลลูกค้าสำหรับฟอร์มสั่งซื้อเมล็ดกาแฟ
+ให้อ่านข้อความอิสระ (เช่น จาก LINE) แล้วดึงเฉพาะ:
+- name: ชื่อลูกค้าหรือผู้รับ
+- phone: เบอร์โทรศัพท์ (ตัวเลขเท่านั้น ถ้าไม่มีให้เป็น "")
+- addressLine: ที่อยู่จัดส่งเต็ม รวมตำบล อำเภอ จังหวัด รหัสไปรษณีย์ถ้ามี
+- province: จังหวัด (ถ้าแยกได้)
+- postalCode: รหัสไปรษณีย์ 5 หลัก (ถ้าแยกได้)
+
+ตอบเป็น JSON object เท่านั้น ไม่มี markdown หรือข้อความอื่น`,
+      prompt: `แยกข้อมูลลูกค้าจากข้อความนี้:\n${trimmed}`,
+    });
+
+    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return { success: false, error: 'AI แยกข้อมูลลูกค้าไม่สำเร็จ' };
+    }
+
+    const parsedJson = aiCustomerSchema.safeParse(JSON.parse(jsonMatch[0]));
+    if (!parsedJson.success) {
+      return { success: false, error: 'รูปแบบข้อมูลจาก AI ไม่ถูกต้อง' };
+    }
+
+    const data = buildParsedBeanOrderCustomer({
+      ...parsedJson.data,
+      parseSource: 'ai',
+    });
+
+    if (!isBeanOrderCustomerParseUsable(data)) {
+      return { success: false, error: 'แยกชื่อและที่อยู่/เบอร์จากข้อความไม่ครบ' };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('parseBeanOrderCustomerFromText:', error instanceof Error ? error.message : error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'แยกข้อมูลด้วย AI ไม่สำเร็จ',
+    };
   }
 }

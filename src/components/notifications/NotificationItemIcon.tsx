@@ -3,6 +3,7 @@
 import {
   CalendarRange,
   Layers,
+  PackageCheck,
   PackageMinus,
   PackagePlus,
   Pencil,
@@ -30,14 +31,18 @@ export function NotificationItemIcon({
   highPriorityFallbackClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
 }: NotificationItemIconProps) {
   const { kind, containerClass } = resolveNotificationDisplayIcon(item);
-  const isStockOrSchedule =
-    kind === 'schedule' || kind === 'stock-in' || kind === 'stock-out' || kind === 'stock-adjust';
-  const useHighPriority = item.priority === 'high' && !isStockOrSchedule;
+  const isPastelKind =
+    kind === 'schedule' ||
+    kind === 'bean-delivered' ||
+    kind === 'stock-in' ||
+    kind === 'stock-out' ||
+    kind === 'stock-adjust';
+  const useHighPriority = item.priority === 'high' && !isPastelKind;
 
   const iconProps = {
     size,
     strokeWidth,
-    className: isStockOrSchedule ? 'text-black' : undefined,
+    className: isPastelKind ? 'text-black' : undefined,
   };
 
   return (
@@ -49,6 +54,7 @@ export function NotificationItemIcon({
       )}
     >
       {kind === 'schedule' && <CalendarRange {...iconProps} />}
+      {kind === 'bean-delivered' && <PackageCheck {...iconProps} />}
       {kind === 'stock-in' && <PackagePlus {...iconProps} />}
       {kind === 'stock-out' && <PackageMinus {...iconProps} />}
       {kind === 'stock-adjust' && <SlidersHorizontal {...iconProps} />}

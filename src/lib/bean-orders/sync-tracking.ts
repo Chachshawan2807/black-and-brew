@@ -3,6 +3,7 @@ import {
   fetchTrackingMoreStatusWithRepair,
   resolveTrackingMoreCarrierCode,
 } from '@/lib/bean-orders/trackingmore';
+import { maybeNotifyBeanOrderDelivered } from '@/lib/bean-orders/notify-delivered';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export type SyncBeanOrderTrackingResult = {
@@ -33,6 +34,7 @@ async function syncShipmentRows(
 
     const nextCarrierCode = result.carrierCode ?? resolveTrackingMoreCarrierCode(storedCarrierCode) ?? storedCarrierCode;
     const carrierChanged = nextCarrierCode !== storedCarrierCode;
+    const previousStatus = row.tracking_status;
 
     const { error: updateError } = await supabase
       .from('bean_order_shipments')
@@ -46,6 +48,15 @@ async function syncShipmentRows(
     if (!updateError) {
       updated += 1;
       if (carrierChanged) repaired += 1;
+      await maybeNotifyBeanOrderDelivered({
+        shipmentId: row.id as string,
+        trackingNumber,
+        previousStatus,
+        nextStatus: result.status,
+        carrierCode: nextCarrierCode,
+      }).catch((error) => {
+        console.error('maybeNotifyBeanOrderDelivered:', error);
+      });
     }
   }
 

@@ -97,7 +97,7 @@ export default function SidebarThemeToggle({
             compact ? "h-8 w-8" : "h-8 w-8",
             previewDark
               ? "bg-[#2a2a28] text-[#f5f4e8]"
-              : "bg-[#fdfcf0] text-[#1a1a1a] border border-black/8",
+              : "bg-[#f7f5e8] text-[#1a1a1a] border border-black/8",
           )}
         >
           <Icon size={15} strokeWidth={1.75} />

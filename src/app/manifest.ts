@@ -6,6 +6,13 @@ import {
   PWA_MANIFEST_BACKGROUND,
   PWA_MANIFEST_THEME,
 } from '@/lib/pwa-assets';
+import {
+  PWA_APP_ID,
+  PWA_DEFAULT_LOCALE,
+  PWA_SCOPE,
+  PWA_START_URL,
+  buildManifestShortcuts,
+} from '@/lib/pwa-config';
 
 type AppManifest = MetadataRoute.Manifest & {
   handle_links?: 'preferred' | 'not-preferred' | 'auto';
@@ -16,9 +23,11 @@ export default function manifest(): AppManifest {
     name: 'BLACKANDBREW',
     short_name: 'BLACKANDBREW',
     description: 'ระบบบริหารจัดการร้านกาแฟ BLACKANDBREW',
-    id: '/',
-    scope: '/',
-    start_url: '/',
+    id: PWA_APP_ID,
+    scope: PWA_SCOPE,
+    start_url: PWA_START_URL,
+    lang: PWA_DEFAULT_LOCALE,
+    dir: 'ltr',
     display: 'standalone',
     display_override: ['standalone', 'minimal-ui'],
     background_color: PWA_MANIFEST_BACKGROUND,
@@ -29,6 +38,7 @@ export default function manifest(): AppManifest {
       client_mode: 'navigate-existing',
     },
     categories: ['business', 'productivity'],
+    shortcuts: buildManifestShortcuts(),
     icons: [
       {
         src: PWA_BRAND_ICON,

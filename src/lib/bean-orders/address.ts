@@ -1,3 +1,4 @@
+import { BEAN_ORDER_FIELD_SEPARATOR } from './defaults';
 import { lookupThaiPostalAreas, normalizeThaiPostalCode } from './thai-postal-lookup';
 
 export type ThaiPostalAddressValue = {
@@ -99,7 +100,7 @@ export function formatAddressProfileLabel(value: ThaiPostalAddressValue): string
     value.province.trim(),
     value.postalCode.trim(),
   ].filter(Boolean);
-  return parts.join(' · ') || value.name.trim() || 'ที่อยู่';
+  return parts.join(BEAN_ORDER_FIELD_SEPARATOR) || value.name.trim() || 'ที่อยู่';
 }
 
 /** สรุปปลายทางจัดส่งสำหรับรายการออเดอร์ (จังหวัด) */

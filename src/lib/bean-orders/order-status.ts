@@ -6,8 +6,8 @@ import type {
 
 export type OrderStatusLabel =
   | 'รอชำระ'
-  | 'ชำระแล้ว · รอจัดส่ง'
-  | 'จัดส่งแล้ว · รอชำระ'
+  | 'ชำระแล้ว / รอจัดส่ง'
+  | 'จัดส่งแล้ว / รอชำระ'
   | 'เสร็จสมบูรณ์'
   | 'ยกเลิก';
 
@@ -18,8 +18,8 @@ export function getOrderStatusLabel(
 ): OrderStatusLabel {
   if (cancelledAt) return 'ยกเลิก';
   if (paymentStatus === 'unpaid' && fulfillmentStatus === 'pending') return 'รอชำระ';
-  if (paymentStatus === 'paid' && fulfillmentStatus === 'pending') return 'ชำระแล้ว · รอจัดส่ง';
-  if (paymentStatus === 'unpaid' && fulfillmentStatus === 'shipped') return 'จัดส่งแล้ว · รอชำระ';
+  if (paymentStatus === 'paid' && fulfillmentStatus === 'pending') return 'ชำระแล้ว / รอจัดส่ง';
+  if (paymentStatus === 'unpaid' && fulfillmentStatus === 'shipped') return 'จัดส่งแล้ว / รอชำระ';
   return 'เสร็จสมบูรณ์';
 }
 

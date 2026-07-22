@@ -13,7 +13,7 @@ import {
   SCHEDULE_EXPORT_TABLE_WIDTH,
 } from '@/lib/schedule/grid-layout';
 
-export const SCHEDULE_EXPORT_BG = '#fdfcf0';
+export const SCHEDULE_EXPORT_BG = '#f7f5e8';
 export const SCHEDULE_EXPORT_TEXT = '#000000';
 export const SCHEDULE_EXPORT_MUTED = 'rgba(0, 0, 0, 0.55)';
 export const SCHEDULE_EXPORT_BORDER = 'rgba(0, 0, 0, 0.1)';

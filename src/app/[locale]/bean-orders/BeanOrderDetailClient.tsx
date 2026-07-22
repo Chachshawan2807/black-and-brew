@@ -170,7 +170,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
           <p className="text-xs text-muted-foreground">ลูกค้า</p>
           <p className="text-foreground">
             {getBeanOrderCustomerDisplayName(order)}
-            {order.recipientPhone ? <span className="text-muted-foreground"> · {order.recipientPhone}</span> : null}
+            {order.recipientPhone ? <span className="text-muted-foreground"> / {order.recipientPhone}</span> : null}
           </p>
           <p className="text-muted-foreground leading-snug">
             {order.recipientAddress}
@@ -190,7 +190,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
           {order.lines.map((line) => (
             <li key={line.id} className="flex justify-between gap-3 py-2 first:pt-0 last:pb-0">
               <span className="min-w-0 truncate">
-                {line.itemName} · {line.weightValue}
+                {line.itemName} / {line.weightValue}
                 {line.weightUnit === 'g' ? ' ก.' : ' กก.'}
               </span>
               <span className="shrink-0 tabular-nums">{formatBaht(line.lineTotalBaht)} ฿</span>
@@ -339,17 +339,17 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
                   <h2 className="text-xs text-muted-foreground">การจัดส่ง</h2>
-                  <span className="text-muted-foreground">·</span>
+                  <span className="text-muted-foreground">/</span>
                   <span className="text-foreground">
                     {getDeliveryTypeLabel(order.shipment.deliveryType)}
-                    {' · '}
+                    {' / '}
                     {getCarrierLabel(order.shipment.carrierCode)}
                   </span>
                 </div>
                 {order.shipment.trackingNumber ? (
                   <p className="text-xs text-muted-foreground">
                     พัสดุ <span className="text-foreground">{order.shipment.trackingNumber}</span>
-                    {shipmentTrackingLabel ? <span> · {shipmentTrackingLabel}</span> : null}
+                    {shipmentTrackingLabel ? <span> / {shipmentTrackingLabel}</span> : null}
                   </p>
                 ) : null}
               </div>
@@ -386,9 +386,9 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                     minute: '2-digit',
                   })}
                 </span>
-                {' · '}
+                {' / '}
                 {entry.action}
-                {' · '}
+                {' / '}
                 {entry.by}
               </li>
             ))

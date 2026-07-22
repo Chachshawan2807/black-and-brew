@@ -5,7 +5,14 @@ import { useMemo, useState, useTransition } from 'react';
 import { Plus } from 'lucide-react';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { BeanOrderListItem } from './_components/BeanOrderListItem';
-import { BEAN_ORDER_CARD, BEAN_ORDER_INPUT, BEAN_ORDER_LIST_GRID, BEAN_ORDER_PAGE } from './_components/bean-order-layout';
+import {
+  BEAN_ORDER_CARD,
+  BEAN_ORDER_INPUT,
+  BEAN_ORDER_LIST_GRID,
+  BEAN_ORDER_LIST_HEADER,
+  BEAN_ORDER_LIST_CELL,
+  BEAN_ORDER_PAGE,
+} from './_components/bean-order-layout';
 
 type Props = {
   initialOrders: BeanOrderListRow[];
@@ -38,7 +45,7 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
       <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-normal text-foreground">คำสั่งซื้อเมล็ดกาแฟ</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">รับออเดอร์ · ตรวจสลิป · จัดส่ง</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">รับออเดอร์ / ตรวจสลิป / จัดส่ง</p>
         </div>
         <Link
           href={`/${locale}/bean-orders/new`}
@@ -76,29 +83,27 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
         </select>
       </div>
 
-      <div className={`${BEAN_ORDER_CARD} overflow-hidden`}>
+      <div className={BEAN_ORDER_CARD}>
         {filtered.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบออเดอร์</p>
         ) : (
-          <>
-            <div
-              className={`hidden border-b border-border px-4 py-2 text-xs text-muted-foreground lg:grid ${BEAN_ORDER_LIST_GRID} lg:gap-x-4`}
+          <ul className={`w-full p-2 lg:p-0 lg:divide-y lg:divide-border/60 lg:grid ${BEAN_ORDER_LIST_GRID} lg:gap-x-0`}>
+            <li
+              className={`hidden ${BEAN_ORDER_LIST_HEADER} lg:grid lg:grid-cols-subgrid lg:col-span-full lg:items-center lg:gap-x-0`}
               aria-hidden
             >
-              <span />
-              <span>ลูกค้า</span>
-              <span>หมายเลขคำสั่งซื้อ</span>
-              <span>ปลายทาง · สถานะจัดส่ง</span>
-              <span>ช่องทางจัดส่ง</span>
-              <span className="text-right">ยอด</span>
-              <span className="text-right">สถานะ</span>
-            </div>
-            <ul className="divide-y divide-border">
-              {filtered.map((order) => (
-                <BeanOrderListItem key={order.id} order={order} locale={locale} />
-              ))}
-            </ul>
-          </>
+              <span className={BEAN_ORDER_LIST_CELL} />
+              <span className={`whitespace-nowrap ${BEAN_ORDER_LIST_CELL}`}>ลูกค้า</span>
+              <span className={`whitespace-nowrap ${BEAN_ORDER_LIST_CELL}`}>หมายเลขคำสั่งซื้อ</span>
+              <span className={BEAN_ORDER_LIST_CELL}>ปลายทาง</span>
+              <span className={`whitespace-nowrap ${BEAN_ORDER_LIST_CELL}`}>ช่องทางจัดส่ง</span>
+              <span className={`whitespace-nowrap text-right ${BEAN_ORDER_LIST_CELL}`}>ยอด</span>
+              <span className={`whitespace-nowrap text-right ${BEAN_ORDER_LIST_CELL}`}>สถานะ</span>
+            </li>
+            {filtered.map((order) => (
+              <BeanOrderListItem key={order.id} order={order} locale={locale} />
+            ))}
+          </ul>
         )}
       </div>
     </div>

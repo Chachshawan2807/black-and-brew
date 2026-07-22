@@ -21,6 +21,10 @@ import {
   isEligibleDailyReportNotification,
 } from '@/lib/daily-report-notification';
 import {
+  formatBeanOrderDeliveredNotification,
+  isEligibleBeanOrderDeliveredNotification,
+} from '@/lib/bean-orders/delivery-notification';
+import {
   loadNotificationPreferences,
   shouldNotifyForAction,
 } from '@/lib/notification-preferences';
@@ -273,8 +277,10 @@ export function useInventoryNotifications() {
 
       const isDailyReport = isEligibleDailyReportNotification(row);
       const isInventory = isEligibleInventoryNotification(row);
-      if (!isDailyReport && !isInventory) return false;
+      const isBeanDelivered = isEligibleBeanOrderDeliveredNotification(row);
+      if (!isDailyReport && !isInventory && !isBeanDelivered) return false;
       if (isDailyReport && !currentPrefs.dailyScheduleReports) return false;
+      if (!currentPrefs.enabled) return false;
       if (!shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) return false;
       if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;
       return true;
@@ -285,6 +291,9 @@ export function useInventoryNotifications() {
     (row: DataChangeLogRow, locale: string, batchedCount = 1) => {
       if (isEligibleDailyReportNotification(row)) {
         return formatDailyReportNotification(row, locale);
+      }
+      if (isEligibleBeanOrderDeliveredNotification(row)) {
+        return formatBeanOrderDeliveredNotification(row, locale);
       }
       return formatInventoryNotification(row, locale, batchedCount);
     },
@@ -299,9 +308,10 @@ export function useInventoryNotifications() {
       if (eligible.length === 0) return;
 
       const allDailyReports = eligible.every(isEligibleDailyReportNotification);
-      if (allDailyReports) {
+      const allBeanDelivered = eligible.every(isEligibleBeanOrderDeliveredNotification);
+      if (allDailyReports || allBeanDelivered) {
         for (const row of eligible) {
-          pushNotification(formatDailyReportNotification(row, loc), undefined, {
+          pushNotification(formatNotificationRow(row, loc), undefined, {
             skipSystemNotification: true,
           });
         }
@@ -355,10 +365,31 @@ export function useInventoryNotifications() {
     }
   }, [filterEligibleRows, pushNotification]);
 
+  const syncBeanOrderNotificationCatchUp = useCallback(async () => {
+    const currentPrefs = prefsRef.current;
+    if (!currentPrefs.enabled) return;
+
+    const result = await fetchDataChangeLogs({ module: 'bean_orders', limit: 50 });
+    if (!result.success) return;
+
+    const eligible = filterEligibleRows(
+      result.rows.filter(isEligibleBeanOrderDeliveredNotification),
+    );
+    if (eligible.length === 0) return;
+
+    const loc = localeRef.current;
+    for (const row of [...eligible].reverse()) {
+      pushNotification(formatBeanOrderDeliveredNotification(row, loc), undefined, {
+        skipSystemNotification: true,
+      });
+    }
+  }, [filterEligibleRows, pushNotification]);
+
   const syncNotificationCatchUp = useCallback(async () => {
     await syncInventoryNotificationCatchUp();
     await syncScheduleNotificationCatchUp();
-  }, [syncInventoryNotificationCatchUp, syncScheduleNotificationCatchUp]);
+    await syncBeanOrderNotificationCatchUp();
+  }, [syncInventoryNotificationCatchUp, syncScheduleNotificationCatchUp, syncBeanOrderNotificationCatchUp]);
 
   const syncFromStorageAndServer = useCallback(async (writeBack = true) => {
     await syncFromStorage(writeBack);
@@ -388,7 +419,7 @@ export function useInventoryNotifications() {
 
     const attachChangeLogListener = (
       targetChannel: ReturnType<typeof supabase.channel>,
-      module: 'inventory' | 'schedule',
+      module: 'inventory' | 'schedule' | 'bean_orders',
     ) => {
       return targetChannel.on(
         'postgres_changes',
@@ -402,6 +433,7 @@ export function useInventoryNotifications() {
           if (!payload.new) return;
           const row = rowFromPayload(payload as { new: Record<string, unknown> });
           if (module === 'schedule' && !isEligibleDailyReportNotification(row)) return;
+          if (module === 'bean_orders' && !isEligibleBeanOrderDeliveredNotification(row)) return;
           batcher.add(row);
         },
       );
@@ -420,6 +452,7 @@ export function useInventoryNotifications() {
       const nextChannel = supabase.channel(`inventory_change_notifications_${retryCount}`);
       attachChangeLogListener(nextChannel, 'inventory');
       attachChangeLogListener(nextChannel, 'schedule');
+      attachChangeLogListener(nextChannel, 'bean_orders');
       if (cancelled) {
         void supabase.removeChannel(nextChannel);
         return;

@@ -9,7 +9,7 @@ export const PWA_NOTIFICATION_BADGE = '/images/notification-badge.png';
 export const PWA_APPLE_TOUCH_ICON = '/images/apple-touch-icon.png';
 export const PWA_FAVICON = '/images/favicon.png';
 
-export const PWA_MANIFEST_BACKGROUND = '#fdfcf0';
+export const PWA_MANIFEST_BACKGROUND = '#f7f5e8';
 export const PWA_MANIFEST_THEME = '#000000';
 
 export const PWA_NOTIFICATION_VIBRATE = [120, 60, 120] as const;

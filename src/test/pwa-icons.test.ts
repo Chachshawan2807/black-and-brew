@@ -170,6 +170,7 @@ describe('PWA cross-platform asset consistency', () => {
   test('manifest includes stable id for iOS home-screen PWA badging', () => {
     const m = manifest();
     expect(m.id).toBe('/');
+    expect(m.start_url).toBe('/th?utm_source=pwa');
     expect(m.display).toBe('standalone');
     expect(m.scope).toBe('/');
   });

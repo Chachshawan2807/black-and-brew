@@ -44,7 +44,9 @@ describe('formatBeanOrderShareText', () => {
   test('includes core order, recipient, lines, totals, and shipping details', () => {
     const text = formatBeanOrderShareText(sampleOrder);
 
-    expect(text).toContain('เลขที่: BO-20260722-001');
+    expect(text).not.toContain('เลขที่:');
+    expect(text).toContain('วันที่:');
+    expect(text).not.toContain('วันที่สร้าง:');
     expect(text).toContain('ลูกค้า: คุณเอ');
     expect(text).not.toContain('ผู้รับ:');
     expect(text).toContain('เบอร์: 0812345678');
@@ -67,7 +69,13 @@ describe('formatBeanOrderShareText', () => {
       latestTrackingLabel: null,
     });
 
-    expect(text).toContain('สถานะ: ชำระแล้ว · รอจัดส่ง');
+    expect(text).toContain('สถานะ: ชำระแล้ว / รอจัดส่ง');
     expect(text).toContain('การจัดส่ง: ยังไม่บันทึกจัดส่ง');
+  });
+
+  test('uses hyphen placeholder when notes are empty', () => {
+    const text = formatBeanOrderShareText({ ...sampleOrder, notes: null });
+    expect(text).toContain('หมายเหตุ: -');
+    expect(text).not.toContain('หมายเหตุ: —');
   });
 });

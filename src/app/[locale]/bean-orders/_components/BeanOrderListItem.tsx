@@ -9,8 +9,9 @@ import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-disp
 import { getCarrierLabel } from '@/lib/bean-orders/carriers';
 import { getDeliveryTypeLabel } from '@/lib/bean-orders/delivery';
 import { formatBeanOrderShareText } from '@/lib/bean-orders/order-share-text';
-import { BEAN_ORDER_LIST_GRID } from './bean-order-layout';
-import { OrderStatusBadge } from './OrderStatusBadge';
+import { OrderListStatusGroup } from './OrderStatusBadge';
+import { BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
+import { cn } from '@/lib/utils';
 
 type Props = {
   order: BeanOrderListRow;
@@ -38,11 +39,7 @@ function formatCustomerLabel(order: BeanOrderListRow): string {
 }
 
 function formatDestinationLine(order: BeanOrderListRow): string {
-  const destination = formatOrderDeliveryDestination(order);
-  if (order.latestTrackingLabel) {
-    return `${destination} · ${order.latestTrackingLabel}`;
-  }
-  return destination;
+  return formatOrderDeliveryDestination(order);
 }
 
 function formatShippingChannel(order: BeanOrderListRow): string {
@@ -62,6 +59,7 @@ export function BeanOrderListItem({ order, locale }: Props) {
   const customerLabel = formatCustomerLabel(order);
   const destinationLine = formatDestinationLine(order);
   const shippingChannel = formatShippingChannel(order);
+  const detailHref = `/${locale}/bean-orders/${order.id}`;
 
   async function handleCopy(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -78,60 +76,106 @@ export function BeanOrderListItem({ order, locale }: Props) {
   }
 
   return (
-    <li>
-      <Link
-        href={`/${locale}/bean-orders/${order.id}`}
-        className={`block px-3 py-3 transition-colors hover:bg-muted/20 sm:px-4 lg:grid ${BEAN_ORDER_LIST_GRID} lg:items-center lg:gap-x-4 lg:py-3`}
-      >
-        <div className="flex items-start gap-2 lg:contents">
-          <button
-            type="button"
-            onClick={(event) => void handleCopy(event)}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground lg:col-start-1"
-            aria-label="คัดลอกรายละเอียดออเดอร์"
-            title="คัดลอกรายละเอียด"
-          >
-            <Copy className="h-4 w-4" aria-hidden />
-          </button>
-          <p
-            className="min-w-0 flex-1 truncate text-sm text-foreground/90 lg:col-start-2 lg:flex-none"
-            title={customerLabel}
-          >
-            {customerLabel}
-          </p>
-        </div>
+    <li
+      className={cn(
+        'bb-row-interactive relative lg:grid lg:grid-cols-subgrid lg:col-span-full lg:items-center lg:gap-x-0',
+        BEAN_ORDER_LIST_ROW,
+      )}
+    >
+      <div className={cn('lg:col-start-1 lg:flex lg:items-center lg:justify-center', BEAN_ORDER_LIST_CELL)}>
+        <button
+          type="button"
+          onClick={(event) => void handleCopy(event)}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          className="absolute left-3 top-3 z-10 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground bb-transition hover:bg-muted/50 hover:text-foreground hover:bb-shadow-sm sm:left-4 lg:static"
+          aria-label="คัดลอกรายละเอียดออเดอร์"
+          title="คัดลอกรายละเอียด"
+        >
+          <Copy className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
 
-        <div className="mt-1 min-w-0 lg:col-start-3 lg:mt-0">
+      <Link
+        href={detailHref}
+        className="block rounded-xl py-3 pl-14 pr-3 bb-transition hover:bg-muted/25 sm:pl-14 sm:pr-4 lg:hidden"
+      >
+        <p className="min-w-0 truncate text-sm text-foreground/90" title={customerLabel}>
+          {customerLabel}
+        </p>
+
+        <div className="mt-1 min-w-0">
           <p className="truncate text-sm text-foreground">{order.orderNo}</p>
           <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
         </div>
 
-        <p className="mt-0.5 text-xs leading-snug text-muted-foreground lg:col-start-4 lg:mt-0">
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{destinationLine}</p>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{shippingChannel}</p>
+
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="tabular-nums text-sm text-foreground">{formatBaht(order.totalBaht)} ฿</p>
+          <OrderListStatusGroup
+            paymentStatus={order.paymentStatus}
+            fulfillmentStatus={order.fulfillmentStatus}
+            cancelledAt={order.cancelledAt}
+            latestTrackingLabel={order.latestTrackingLabel}
+          />
+        </div>
+      </Link>
+
+      <Link href={detailHref} className="hidden lg:contents">
+        <p
+          className={cn('min-w-0 truncate text-sm text-foreground/90 lg:col-start-2', BEAN_ORDER_LIST_CELL)}
+          title={customerLabel}
+        >
+          {customerLabel}
+        </p>
+
+        <div className={cn('min-w-0 lg:col-start-3', BEAN_ORDER_LIST_CELL)}>
+          <p className="truncate text-sm text-foreground">{order.orderNo}</p>
+          <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
+        </div>
+
+        <p
+          className={cn('min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-4', BEAN_ORDER_LIST_CELL)}
+          title={destinationLine}
+        >
           {destinationLine}
         </p>
 
-        <p className="mt-0.5 text-xs leading-snug text-muted-foreground lg:col-start-5 lg:mt-0">
+        <p
+          className={cn('min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-5', BEAN_ORDER_LIST_CELL)}
+          title={shippingChannel}
+        >
           {shippingChannel}
         </p>
 
-        <div className="mt-2 flex items-center justify-between gap-3 lg:contents">
-          <p className="tabular-nums text-sm text-foreground lg:col-start-6 lg:mt-0 lg:text-right">
-            {formatBaht(order.totalBaht)} ฿
-          </p>
-          <div className="shrink-0 lg:col-start-7 lg:flex lg:justify-end">
-            <OrderStatusBadge
-              paymentStatus={order.paymentStatus}
-              fulfillmentStatus={order.fulfillmentStatus}
-              cancelledAt={order.cancelledAt}
-              className="whitespace-nowrap"
-            />
-          </div>
-        </div>
+        <p
+          className={cn(
+            'whitespace-nowrap text-right tabular-nums text-sm text-foreground lg:col-start-6',
+            BEAN_ORDER_LIST_CELL,
+          )}
+        >
+          {formatBaht(order.totalBaht)} ฿
+        </p>
 
-        {copyStatus ? (
-          <p className="mt-1 text-xs text-muted-foreground lg:col-span-full">{copyStatus}</p>
-        ) : null}
+        <div className={cn('min-w-0 flex justify-end lg:col-start-7', BEAN_ORDER_LIST_CELL)}>
+          <OrderListStatusGroup
+            paymentStatus={order.paymentStatus}
+            fulfillmentStatus={order.fulfillmentStatus}
+            cancelledAt={order.cancelledAt}
+            latestTrackingLabel={order.latestTrackingLabel}
+          />
+        </div>
       </Link>
+
+      {copyStatus ? (
+        <p className="pointer-events-none absolute left-14 top-10 z-10 text-xs text-muted-foreground sm:left-16 lg:left-1 lg:top-auto lg:bottom-1 lg:whitespace-nowrap">
+          {copyStatus}
+        </p>
+      ) : null}
     </li>
   );
 }

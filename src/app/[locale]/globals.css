@@ -54,14 +54,20 @@
 }
 
 @keyframes bb-page-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+    transform: translateY(6px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
 }
 
 @keyframes bb-vt-page-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 5px, 0);
+    transform: translate3d(0, 8px, 0);
   }
   to {
     opacity: 1;
@@ -76,7 +82,7 @@
   }
   to {
     opacity: 0;
-    transform: translate3d(0, -2px, 0);
+    transform: translate3d(0, -4px, 0);
   }
 }
 
@@ -96,8 +102,33 @@
 }
 
 @keyframes bb-modal-panel-in {
-  from { opacity: 0; transform: scale(0.98) translateY(6px) translateZ(0); }
+  from { opacity: 0; transform: scale(0.96) translateY(10px) translateZ(0); }
   to { opacity: 1; transform: scale(1) translateY(0) translateZ(0); }
+}
+
+@keyframes bb-zoom-out-95 {
+  from { opacity: 1; transform: scale(1) translateZ(0); }
+  to { opacity: 0; transform: scale(0.95) translateZ(0); }
+}
+
+@keyframes bb-slide-in-from-right-2 {
+  from { opacity: 0; transform: translateX(0.5rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes bb-slide-in-from-left-2 {
+  from { opacity: 0; transform: translateX(-0.5rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes bb-fade-up-in {
+  from { opacity: 0; transform: translateY(8px) translateZ(0); }
+  to { opacity: 1; transform: translateY(0) translateZ(0); }
+}
+
+@keyframes bb-shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
 }
 
 @keyframes bb-slide-in-from-bottom {
@@ -156,14 +187,17 @@
 }
 
 :root {
-  --background: #fdfcf0;
+  --background: #f7f5e8;
   --foreground: #000000;
-  --card: #ffffff;
+  --card: #faf9f2;
   --card-foreground: #000000;
-  --border: rgb(0 0 0 / 0.05);
-  --muted: rgb(0 0 0 / 0.04);
+  --border: rgb(0 0 0 / 0.06);
+  --muted: rgb(0 0 0 / 0.045);
   --muted-foreground: rgb(0 0 0 / 0.55);
-  --sidebar-surface: #ffffff;
+  --sidebar-surface: #f9f7ef;
+  --bb-surface-highlight: rgb(255 255 255 / 0.55);
+  --bb-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --bb-ease-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
   font-size: 15.5px;
 }
 
@@ -176,6 +210,7 @@
   --muted: rgb(255 255 255 / 0.06);
   --muted-foreground: rgb(242 241 230 / 0.55);
   --sidebar-surface: #1c1c1a;
+  --bb-surface-highlight: rgb(255 255 255 / 0.04);
   color-scheme: dark;
 }
 
@@ -236,7 +271,7 @@
   }
 
   .glass-panel {
-    background-color: rgb(255 255 255 / 0.95);
+    background-color: rgb(250 249 242 / 0.95);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--border);
@@ -245,9 +280,10 @@
       background-color: rgb(34 34 32 / 0.95);
     }
     box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
       0 1px 2px rgb(0 0 0 / 0.04),
-      0 4px 8px -1px rgb(0 0 0 / 0.06),
-      0 12px 24px -4px rgb(0 0 0 / 0.08);
+      0 6px 14px -2px rgb(0 0 0 / 0.07),
+      0 16px 36px -6px rgb(0 0 0 / 0.1);
   }
   
   .glass-card {
@@ -256,13 +292,19 @@
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: 1.5rem;
-    transition: box-shadow 200ms ease-in-out;
+    box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 1px 2px rgb(0 0 0 / 0.04),
+      0 4px 10px -2px rgb(0 0 0 / 0.06),
+      0 12px 28px -6px rgb(0 0 0 / 0.08);
+    transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
 
     &:hover {
       box-shadow:
-        0 1px 2px rgb(0 0 0 / 0.04),
-        0 6px 12px -2px rgb(0 0 0 / 0.06),
-        0 16px 32px -6px rgb(0 0 0 / 0.08);
+        inset 0 1px 0 var(--bb-surface-highlight),
+        0 2px 4px rgb(0 0 0 / 0.05),
+        0 8px 18px -3px rgb(0 0 0 / 0.08),
+        0 20px 40px -8px rgb(0 0 0 / 0.1);
     }
   }
 
@@ -271,25 +313,132 @@
     border: 1px solid var(--border);
     border-radius: 1.5rem;
     box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.03),
-      0 2px 6px -1px rgb(0 0 0 / 0.04);
-    transition: box-shadow 200ms ease-in-out;
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 1px 2px rgb(0 0 0 / 0.04),
+      0 3px 8px -2px rgb(0 0 0 / 0.05),
+      0 10px 24px -6px rgb(0 0 0 / 0.07);
+    transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
 
     &:hover {
       box-shadow:
-        0 1px 2px rgb(0 0 0 / 0.04),
-        0 4px 12px -2px rgb(0 0 0 / 0.06),
-        0 12px 24px -6px rgb(0 0 0 / 0.07);
+        inset 0 1px 0 var(--bb-surface-highlight),
+        0 2px 4px rgb(0 0 0 / 0.05),
+        0 6px 16px -3px rgb(0 0 0 / 0.07),
+        0 16px 32px -8px rgb(0 0 0 / 0.09);
+    }
+  }
+
+  /* Universal elevated surface — panels, sections, modals */
+  .bb-surface {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 1px 2px rgb(0 0 0 / 0.04),
+      0 4px 12px -2px rgb(0 0 0 / 0.06),
+      0 14px 32px -8px rgb(0 0 0 / 0.08);
+    transition:
+      box-shadow 220ms var(--bb-ease-out),
+      transform 220ms var(--bb-ease-out),
+      border-color 220ms var(--bb-ease-out);
+  }
+
+  .bb-surface-interactive {
+    cursor: pointer;
+    transition:
+      box-shadow 220ms var(--bb-ease-out),
+      transform 220ms var(--bb-ease-out),
+      background-color 220ms var(--bb-ease-out);
+  }
+
+  /* List / table row — subtle depth on hover */
+  .bb-row-interactive {
+    position: relative;
+    transition:
+      background-color 180ms var(--bb-ease-out),
+      box-shadow 180ms var(--bb-ease-out),
+      transform 180ms var(--bb-ease-out);
+  }
+
+  /* Staggered entrance for section children */
+  .bb-stagger-children > * {
+    animation: bb-fade-up-in 420ms var(--bb-ease-out) both;
+  }
+
+  .bb-stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .bb-stagger-children > *:nth-child(2) { animation-delay: 40ms; }
+  .bb-stagger-children > *:nth-child(3) { animation-delay: 80ms; }
+  .bb-stagger-children > *:nth-child(4) { animation-delay: 120ms; }
+  .bb-stagger-children > *:nth-child(5) { animation-delay: 160ms; }
+  .bb-stagger-children > *:nth-child(6) { animation-delay: 200ms; }
+  .bb-stagger-children > *:nth-child(7) { animation-delay: 240ms; }
+  .bb-stagger-children > *:nth-child(8) { animation-delay: 280ms; }
+
+  /* Skeleton shimmer */
+  .bb-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      var(--muted) 0%,
+      color-mix(in srgb, var(--muted) 60%, var(--card)) 50%,
+      var(--muted) 100%
+    );
+    background-size: 200% 100%;
+    animation: bb-shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* Auto depth for standard ERP panel shells */
+  :where(section, article, aside, dialog).rounded-3xl.border.border-border.bg-card,
+  :where(section, article, aside, dialog).rounded-2xl.border.border-border.bg-card {
+    box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 1px 2px rgb(0 0 0 / 0.04),
+      0 3px 10px -2px rgb(0 0 0 / 0.05),
+      0 12px 28px -8px rgb(0 0 0 / 0.07);
+    transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .glass-card:hover,
+    .bb-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .bb-surface-interactive:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        inset 0 1px 0 var(--bb-surface-highlight),
+        0 2px 4px rgb(0 0 0 / 0.05),
+        0 8px 20px -4px rgb(0 0 0 / 0.08),
+        0 20px 40px -10px rgb(0 0 0 / 0.1);
+    }
+
+    .bb-surface-interactive:active {
+      transform: translateY(0) scale(0.995);
+      transition-duration: 100ms;
+    }
+
+    .bb-row-interactive:hover {
+      background-color: color-mix(in srgb, var(--muted) 65%, transparent);
+      box-shadow: inset 0 1px 0 var(--bb-surface-highlight);
+    }
+
+    :where(section, article, aside).rounded-3xl.border.border-border.bg-card:hover,
+    :where(section, article, aside).rounded-2xl.border.border-border.bg-card:hover {
+      box-shadow:
+        inset 0 1px 0 var(--bb-surface-highlight),
+        0 2px 4px rgb(0 0 0 / 0.05),
+        0 6px 16px -3px rgb(0 0 0 / 0.07),
+        0 16px 36px -10px rgb(0 0 0 / 0.09);
     }
   }
 
   @media (hover: hover) and (pointer: fine) {
     .glass-card {
-      transition: box-shadow 200ms ease-in-out, transform 200ms ease-in-out;
+      transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
     }
 
     .bb-card {
-      transition: box-shadow 200ms ease-in-out, transform 200ms ease-in-out;
+      transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
     }
   }
 
@@ -300,15 +449,18 @@
     border: 1px solid var(--border);
     border-radius: 1.5rem;
     box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.03),
-      0 2px 8px -2px rgb(0 0 0 / 0.05);
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 1px 2px rgb(0 0 0 / 0.04),
+      0 4px 12px -2px rgb(0 0 0 / 0.06),
+      0 14px 32px -8px rgb(0 0 0 / 0.08);
+    transition: box-shadow 220ms var(--bb-ease-out);
   }
 
   /* Premium motion utilities */
   .bb-transition {
-    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
-    transition-duration: 200ms;
-    transition-timing-function: ease-in-out;
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform, filter;
+    transition-duration: 220ms;
+    transition-timing-function: var(--bb-ease-out);
   }
 
   .bb-modal-backdrop {
@@ -318,9 +470,13 @@
   }
 
   .bb-modal-panel {
-    animation: bb-modal-panel-in 160ms var(--bb-modal-ease) both;
+    animation: bb-modal-panel-in 200ms var(--bb-modal-ease) both;
     transform: translateZ(0);
     backface-visibility: hidden;
+    box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 4px 16px -4px rgb(0 0 0 / 0.08),
+      0 24px 48px -12px rgb(0 0 0 / 0.14);
   }
 
   .bb-sheet-panel {
@@ -341,52 +497,79 @@
     background-color: transparent;
     border: 1px solid rgb(0 0 0 / 0.05);
     border-radius: 1.5rem;
-    transition: border-color 200ms ease-in-out, box-shadow 200ms ease-in-out;
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.03);
+    transition:
+      border-color 220ms var(--bb-ease-out),
+      box-shadow 220ms var(--bb-ease-out),
+      transform 180ms var(--bb-ease-out);
 
     &:focus,
     &:focus-within {
       border-color: rgb(0 0 0 / 0.12);
-      box-shadow: 0 0 0 3px rgb(0 0 0 / 0.04);
+      box-shadow:
+        inset 0 1px 2px rgb(0 0 0 / 0.02),
+        0 0 0 3px rgb(0 0 0 / 0.04),
+        0 2px 8px -2px rgb(0 0 0 / 0.06);
       outline: none;
+    }
+  }
+
+  .dark .bb-input {
+    border-color: rgb(255 255 255 / 0.08);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2);
+
+    &:focus,
+    &:focus-within {
+      border-color: rgb(255 255 255 / 0.16);
+      box-shadow:
+        inset 0 1px 2px rgb(0 0 0 / 0.15),
+        0 0 0 3px rgb(255 255 255 / 0.06),
+        0 2px 8px -2px rgb(0 0 0 / 0.3);
     }
   }
 
   /* Layered elevation — ambient + key light (Material / HIG-style depth) */
   .bb-shadow-sm {
     box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.03),
-      0 2px 6px -1px rgb(0 0 0 / 0.04);
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 1px 2px rgb(0 0 0 / 0.04),
+      0 3px 8px -2px rgb(0 0 0 / 0.05);
   }
 
   .bb-shadow-md {
     box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.04),
-      0 4px 12px -2px rgb(0 0 0 / 0.06),
-      0 12px 24px -6px rgb(0 0 0 / 0.07);
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 1px 3px rgb(0 0 0 / 0.05),
+      0 6px 16px -3px rgb(0 0 0 / 0.07),
+      0 14px 32px -8px rgb(0 0 0 / 0.08);
   }
 
   .bb-shadow-lg {
     box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.04),
-      0 6px 16px -2px rgb(0 0 0 / 0.07),
-      0 20px 40px -8px rgb(0 0 0 / 0.1);
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 2px 4px rgb(0 0 0 / 0.05),
+      0 8px 22px -4px rgb(0 0 0 / 0.08),
+      0 22px 44px -10px rgb(0 0 0 / 0.11);
   }
 
   .bb-shadow-xl {
     box-shadow:
-      0 2px 4px rgb(0 0 0 / 0.04),
-      0 8px 24px -4px rgb(0 0 0 / 0.08),
-      0 24px 48px -12px rgb(0 0 0 / 0.12);
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 2px 6px rgb(0 0 0 / 0.06),
+      0 10px 28px -4px rgb(0 0 0 / 0.1),
+      0 28px 56px -12px rgb(0 0 0 / 0.14);
   }
 
   .dark .bb-shadow-sm {
     box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
       0 1px 2px rgb(0 0 0 / 0.18),
       0 2px 8px -1px rgb(0 0 0 / 0.28);
   }
 
   .dark .bb-shadow-md {
     box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
       0 1px 3px rgb(0 0 0 / 0.22),
       0 6px 16px -3px rgb(0 0 0 / 0.32),
       0 16px 32px -8px rgb(0 0 0 / 0.36);
@@ -394,6 +577,7 @@
 
   .dark .bb-shadow-lg {
     box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
       0 2px 4px rgb(0 0 0 / 0.24),
       0 8px 22px -4px rgb(0 0 0 / 0.34),
       0 24px 48px -10px rgb(0 0 0 / 0.4);
@@ -401,24 +585,40 @@
 
   .dark .bb-shadow-xl {
     box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
       0 2px 4px rgb(0 0 0 / 0.24),
       0 10px 28px -4px rgb(0 0 0 / 0.38),
       0 28px 56px -12px rgb(0 0 0 / 0.44);
   }
 
+  /* Native dialog / popover top-layer entrance */
+  @supports (animation-timeline: auto) {
+    dialog.bb-native-overlay[open],
+    dialog[open].bb-modal-panel {
+      animation: bb-modal-panel-in 220ms var(--bb-modal-ease) both;
+    }
+  }
+
   @media (hover: hover) and (pointer: fine) {
+    .bb-shadow-hover-md {
+      transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
+    }
+
     .bb-shadow-hover-md:hover {
+      transform: translateY(-2px);
       box-shadow:
-        0 1px 2px rgb(0 0 0 / 0.04),
-        0 4px 12px -2px rgb(0 0 0 / 0.06),
-        0 12px 24px -6px rgb(0 0 0 / 0.07);
+        inset 0 1px 0 var(--bb-surface-highlight),
+        0 2px 4px rgb(0 0 0 / 0.05),
+        0 8px 20px -4px rgb(0 0 0 / 0.08),
+        0 18px 36px -10px rgb(0 0 0 / 0.1);
     }
 
     .dark .bb-shadow-hover-md:hover {
       box-shadow:
-        0 1px 3px rgb(0 0 0 / 0.22),
-        0 6px 16px -3px rgb(0 0 0 / 0.32),
-        0 16px 32px -8px rgb(0 0 0 / 0.36);
+        inset 0 1px 0 var(--bb-surface-highlight),
+        0 2px 6px rgb(0 0 0 / 0.26),
+        0 8px 22px -4px rgb(0 0 0 / 0.36),
+        0 20px 40px -10px rgb(0 0 0 / 0.42);
     }
   }
 
@@ -629,14 +829,19 @@
     .bb-toast-exit,
     .bb-sidebar-label,
     .bb-sidebar-logo,
+    .bb-stagger-children > *,
+    .bb-shimmer,
     .animate-page-enter,
     .fade-in,
     .fade-in-0,
     .fade-out-0,
     .zoom-in-95,
+    .zoom-out-95,
     .slide-in-from-bottom,
     .slide-in-from-bottom-2,
-    .slide-in-from-top-2 {
+    .slide-in-from-top-2,
+    .slide-in-from-right-2,
+    .slide-in-from-left-2 {
       animation-duration: 0.01ms !important;
       animation-delay: 0ms !important;
     }
@@ -717,6 +922,31 @@
     animation-duration: var(--tw-animation-duration, 200ms);
     animation-timing-function: ease-out;
     animation-fill-mode: both;
+  }
+
+  .zoom-out-95 {
+    animation-name: bb-zoom-out-95;
+    animation-duration: var(--tw-animation-duration, 200ms);
+    animation-timing-function: ease-in;
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-right-2 {
+    animation-name: bb-slide-in-from-right-2;
+    animation-duration: var(--tw-animation-duration, 200ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .slide-in-from-left-2 {
+    animation-name: bb-slide-in-from-left-2;
+    animation-duration: var(--tw-animation-duration, 200ms);
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+
+  .bb-enter-fade-up {
+    animation: bb-fade-up-in 420ms var(--bb-ease-out) both;
   }
 
   .slide-in-from-bottom {
@@ -926,14 +1156,14 @@
  */
 .bb-schedule-export-surface,
 .dark .bb-schedule-export-surface {
-  --background: #fdfcf0 !important;
+  --background: #f7f5e8 !important;
   --foreground: #000000 !important;
-  --card: #fdfcf0 !important;
+  --card: #f7f5e8 !important;
   --card-foreground: #000000 !important;
   --border: rgb(0 0 0 / 0.1) !important;
-  --muted: rgb(0 0 0 / 0.04) !important;
+  --muted: rgb(0 0 0 / 0.045) !important;
   --muted-foreground: rgb(0 0 0 / 0.55) !important;
-  background-color: #fdfcf0 !important;
+  background-color: #f7f5e8 !important;
   color: #000000 !important;
 }
 
@@ -949,7 +1179,7 @@
 
 .dark .bb-schedule-export-surface :where([class*='bg-card']),
 .bb-schedule-export-surface :where([class*='bg-card']) {
-  background-color: #fdfcf0 !important;
+  background-color: #f7f5e8 !important;
 }
 
 .dark .bb-schedule-export-surface :where([class*='border-border']),
