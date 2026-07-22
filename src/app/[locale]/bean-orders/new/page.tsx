@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { checkAuth } from '@/app/actions/auth';
-import { fetchInventoryItemsForBeanOrders } from '@/app/actions/bean-order-actions';
+import { fetchInventoryItemsForBeanOrders, fetchBeanOrderFormSuggestions } from '@/app/actions/bean-order-actions';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const BeanOrderFormClient = createLazyFeatureClient(
@@ -18,11 +18,15 @@ export default async function NewBeanOrderPage({
   const [{ locale }, authed] = await Promise.all([params, checkAuth()]);
   if (!authed) redirect(`/${locale}`);
 
-  const itemsResult = await fetchInventoryItemsForBeanOrders();
+  const [itemsResult, suggestionsResult] = await Promise.all([
+    fetchInventoryItemsForBeanOrders(),
+    fetchBeanOrderFormSuggestions(),
+  ]);
 
   return (
     <BeanOrderFormClient
       inventoryItems={itemsResult.success ? itemsResult.data ?? [] : []}
+      formSuggestions={suggestionsResult.success ? suggestionsResult.data : undefined}
       locale={locale}
     />
   );

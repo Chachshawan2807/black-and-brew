@@ -1,42 +1,53 @@
 import { NextResponse } from 'next/server';
-import { fetchTrackingMoreStatus } from '@/lib/bean-orders/trackingmore';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { unstable_noStore as noStore } from 'next/cache';
+import { headers } from 'next/headers';
+import { syncBeanOrderTrackingStatuses } from '@/lib/bean-orders/sync-tracking';
 
-export async function POST() {
+export const maxDuration = 60;
+
+function authorizeCron(request: Request): NextResponse | null {
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  if (!cronSecret) {
+    console.error('[CRON] Missing CRON_SECRET in environment');
+    return NextResponse.json({ ok: false, error: 'Server configuration error' }, { status: 500 });
+  }
+
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    console.error('[CRON] Unauthorized sync-tracking access attempt');
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  return null;
+}
+
+export async function GET(request: Request) {
+  await headers();
+  noStore();
+
+  const denied = authorizeCron(request);
+  if (denied) return denied;
+
   try {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('bean_order_shipments')
-      .select('id, carrier_code, tracking_number, tracking_status')
-      .not('tracking_number', 'is', null)
-      .neq('tracking_status', 'delivered');
+    const result = await syncBeanOrderTrackingStatuses();
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    console.error('sync-tracking error:', error);
+    return NextResponse.json({ ok: false }, { status: 500 });
+  }
+}
 
-    if (error) {
-      console.error('Supabase Error (sync-tracking):', error.message, error.details);
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
+/** Manual trigger (same auth as GET) — useful for cron-job.org POST jobs. */
+export async function POST(request: Request) {
+  await headers();
+  noStore();
 
-    let updated = 0;
-    for (const row of data ?? []) {
-      const trackingNumber = row.tracking_number as string;
-      const carrierCode = row.carrier_code as string;
-      if (!trackingNumber || !carrierCode || carrierCode === 'other') continue;
+  const denied = authorizeCron(request);
+  if (denied) return denied;
 
-      const result = await fetchTrackingMoreStatus(trackingNumber, carrierCode);
-      if (!result.ok) continue;
-
-      const { error: updateError } = await supabase
-        .from('bean_order_shipments')
-        .update({
-          tracking_status: result.status,
-          tracking_raw: result.raw,
-        })
-        .eq('id', row.id as string);
-
-      if (!updateError) updated += 1;
-    }
-
-    return NextResponse.json({ ok: true, updated });
+  try {
+    const result = await syncBeanOrderTrackingStatuses();
+    return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error('sync-tracking error:', error);
     return NextResponse.json({ ok: false }, { status: 500 });

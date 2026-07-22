@@ -103,8 +103,29 @@ export async function fetchTrackingMoreStatus(
 export function mapTrackingStatusLabel(status: string): string {
   const normalized = status.toLowerCase();
   if (normalized.includes('delivered')) return 'จัดส่งสำเร็จ';
-  if (normalized.includes('transit') || normalized.includes('pickup')) return 'กำลังจัดส่ง';
+  if (normalized.includes('registered')) return 'ลงทะเบียนติดตามแล้ว';
+  if (
+    normalized.includes('transit') ||
+    normalized.includes('pickup') ||
+    normalized.includes('outfordelivery') ||
+    normalized.includes('out_for_delivery')
+  ) {
+    return 'กำลังจัดส่ง';
+  }
   if (normalized.includes('pending') || normalized.includes('info')) return 'รอข้อมูล';
   if (normalized.includes('exception') || normalized.includes('failed')) return 'มีปัญหา';
   return status;
+}
+
+export function formatShipmentTrackingLabel(
+  trackingStatus: string | null | undefined,
+  options?: {
+    fulfillmentStatus?: 'pending' | 'shipped';
+    trackingNumber?: string | null;
+  },
+): string | null {
+  if (trackingStatus) return mapTrackingStatusLabel(trackingStatus);
+  if (options?.fulfillmentStatus !== 'shipped') return null;
+  if (options.trackingNumber) return 'รออัปเดตสถานะ';
+  return 'ส่งแล้ว (ไม่มีเลขพัสดุ)';
 }

@@ -15,7 +15,17 @@ import {
   canUploadSlip,
 } from '@/lib/bean-orders/order-status';
 import { computeLineTotal, computeOrderTotals } from '@/lib/bean-orders/pricing';
-import { createTrackingMoreShipment } from '@/lib/bean-orders/trackingmore';
+import { filterBeanOrderInventoryItems, BEAN_ORDER_INVENTORY_ITEM_NAMES } from '@/lib/bean-orders/inventory-items';
+import { createTrackingMoreShipment, fetchTrackingMoreStatus } from '@/lib/bean-orders/trackingmore';
+import {
+  parseThaiPostalAddressLine,
+  type ThaiPostalAddressValue,
+} from '@/lib/bean-orders/address';
+import {
+  mergeFormSuggestions,
+  type BeanOrderFormSuggestions,
+  type BeanOrderLinePreset,
+} from '@/lib/bean-orders/form-suggestions';
 import type { DeliveryType, StatusHistoryEntry, WeightUnit } from '@/lib/bean-orders/types';
 import { resolveActorLabel } from '@/lib/data-change-log';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
@@ -62,6 +72,8 @@ export type BeanOrderListRow = {
   totalBaht: number;
   paymentStatus: 'unpaid' | 'paid';
   fulfillmentStatus: 'pending' | 'shipped';
+  trackingNumber: string | null;
+  trackingStatus: string | null;
   cancelledAt: string | null;
   createdAt: string;
 };
@@ -311,7 +323,7 @@ export async function fetchBeanOrders(filters?: {
     let query = supabase
       .from('bean_orders')
       .select(
-        'id, order_no, recipient_name, total_baht, payment_status, fulfillment_status, cancelled_at, created_at, customer_id, bean_customers(name)',
+        'id, order_no, recipient_name, total_baht, payment_status, fulfillment_status, cancelled_at, created_at, customer_id, bean_customers(name), bean_order_shipments(tracking_number, tracking_status)',
       )
       .order('created_at', { ascending: false })
       .limit(200);
@@ -333,6 +345,11 @@ export async function fetchBeanOrders(filters?: {
       success: true,
       data: (data ?? []).map((row) => {
         const customer = row.bean_customers as { name?: string } | null;
+        const shipmentRaw = row.bean_order_shipments as
+          | { tracking_number?: string | null; tracking_status?: string | null }
+          | { tracking_number?: string | null; tracking_status?: string | null }[]
+          | null;
+        const shipment = Array.isArray(shipmentRaw) ? shipmentRaw[0] : shipmentRaw;
         return {
           id: row.id as string,
           orderNo: row.order_no as string,
@@ -341,6 +358,8 @@ export async function fetchBeanOrders(filters?: {
           totalBaht: Number(row.total_baht) || 0,
           paymentStatus: row.payment_status as 'unpaid' | 'paid',
           fulfillmentStatus: row.fulfillment_status as 'pending' | 'shipped',
+          trackingNumber: (shipment?.tracking_number as string | null) ?? null,
+          trackingStatus: (shipment?.tracking_status as string | null) ?? null,
           cancelledAt: (row.cancelled_at as string | null) ?? null,
           createdAt: row.created_at as string,
         };
@@ -811,7 +830,13 @@ export async function shipBeanOrder(
       });
       if (tm.ok) {
         trackingRaw = tm.data;
-        trackingStatus = 'registered';
+        const fetched = await fetchTrackingMoreStatus(trackingNumber, parsed.data.carrierCode);
+        if (fetched.ok) {
+          trackingStatus = fetched.status;
+          trackingRaw = fetched.raw;
+        } else {
+          trackingStatus = 'registered';
+        }
       } else {
         trackingWarning = tm.error;
       }
@@ -878,6 +903,7 @@ export async function fetchInventoryItemsForBeanOrders(): Promise<{
     const { data, error } = await supabase
       .from('inventory_items')
       .select('id, name')
+      .in('name', [...BEAN_ORDER_INVENTORY_ITEM_NAMES])
       .order('sort_order', { ascending: true });
 
     if (error) {
@@ -887,10 +913,127 @@ export async function fetchInventoryItemsForBeanOrders(): Promise<{
 
     return {
       success: true,
-      data: (data ?? []).map((row) => ({ id: row.id as string, name: row.name as string })),
+      data: filterBeanOrderInventoryItems(
+        (data ?? []).map((row) => ({ id: row.id as string, name: row.name as string })),
+      ),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'โหลดสินค้าไม่สำเร็จ';
+    return { success: false, error: message };
+  }
+}
+
+export async function fetchBeanOrderFormSuggestions(): Promise<{
+  success: boolean;
+  data?: BeanOrderFormSuggestions;
+  error?: string;
+}> {
+  const readError = await requireReadAccess();
+  if (readError) return { success: false, error: readError };
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const [ordersRes, addressesRes, linesRes] = await Promise.all([
+      supabase
+        .from('bean_orders')
+        .select(
+          'sender_name, sender_phone, sender_address, recipient_name, recipient_phone, recipient_address, recipient_province, recipient_postal_code, shipping_baht, discount_baht, notes',
+        )
+        .order('created_at', { ascending: false })
+        .limit(200),
+      supabase
+        .from('bean_customer_addresses')
+        .select(
+          'recipient_name, recipient_phone, address_line, province, postal_code, bean_customers(name, phone)',
+        )
+        .order('created_at', { ascending: false })
+        .limit(200),
+      supabase
+        .from('bean_order_lines')
+        .select('inventory_item_id, weight_value, weight_unit, unit_price_per_kg')
+        .order('created_at', { ascending: false })
+        .limit(400),
+    ]);
+
+    if (ordersRes.error) {
+      console.error('Supabase Error (fetchBeanOrderFormSuggestions orders):', ordersRes.error.message, ordersRes.error.details);
+      return { success: false, error: ordersRes.error.message };
+    }
+    if (addressesRes.error) {
+      console.error('Supabase Error (fetchBeanOrderFormSuggestions addresses):', addressesRes.error.message, addressesRes.error.details);
+      return { success: false, error: addressesRes.error.message };
+    }
+    if (linesRes.error) {
+      console.error('Supabase Error (fetchBeanOrderFormSuggestions lines):', linesRes.error.message, linesRes.error.details);
+      return { success: false, error: linesRes.error.message };
+    }
+
+    const senderProfiles: ThaiPostalAddressValue[] = [];
+    const recipientProfiles: ThaiPostalAddressValue[] = [];
+    const shippingBahtValues: number[] = [];
+    const discountBahtValues: number[] = [];
+    const notes: string[] = [];
+    const linePresets: BeanOrderLinePreset[] = [];
+
+    for (const order of ordersRes.data ?? []) {
+      if (order.sender_name || order.sender_phone || order.sender_address) {
+        senderProfiles.push(
+          parseThaiPostalAddressLine((order.sender_address as string | null) ?? '', {
+            name: (order.sender_name as string | null) ?? '',
+            phone: (order.sender_phone as string | null) ?? '',
+          }),
+        );
+      }
+      if (order.recipient_name || order.recipient_phone || order.recipient_address) {
+        recipientProfiles.push(
+          parseThaiPostalAddressLine((order.recipient_address as string | null) ?? '', {
+            name: (order.recipient_name as string | null) ?? '',
+            phone: (order.recipient_phone as string | null) ?? '',
+            province: (order.recipient_province as string | null) ?? undefined,
+            postalCode: (order.recipient_postal_code as string | null) ?? undefined,
+          }),
+        );
+      }
+      shippingBahtValues.push(Number(order.shipping_baht) || 0);
+      discountBahtValues.push(Number(order.discount_baht) || 0);
+      if (typeof order.notes === 'string' && order.notes.trim()) notes.push(order.notes);
+    }
+
+    for (const row of addressesRes.data ?? []) {
+      const customer = row.bean_customers as { name?: string; phone?: string | null } | null;
+      recipientProfiles.push(
+        parseThaiPostalAddressLine(row.address_line as string, {
+          name: (row.recipient_name as string) || customer?.name || '',
+          phone: (row.recipient_phone as string | null) ?? customer?.phone ?? '',
+          province: (row.province as string | null) ?? undefined,
+          postalCode: (row.postal_code as string | null) ?? undefined,
+        }),
+      );
+    }
+
+    for (const line of linesRes.data ?? []) {
+      if (!line.inventory_item_id) continue;
+      linePresets.push({
+        inventoryItemId: line.inventory_item_id as string,
+        weightValue: Number(line.weight_value) || 0,
+        weightUnit: line.weight_unit as BeanOrderLinePreset['weightUnit'],
+        unitPricePerKg: Number(line.unit_price_per_kg) || 0,
+      });
+    }
+
+    return {
+      success: true,
+      data: mergeFormSuggestions({
+        senderProfiles,
+        recipientProfiles,
+        linePresets,
+        shippingBahtValues,
+        discountBahtValues,
+        notes,
+      }),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'โหลดข้อมูลแนะนำไม่สำเร็จ';
     return { success: false, error: message };
   }
 }

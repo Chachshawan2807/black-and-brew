@@ -355,7 +355,7 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
     const portalCode = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryModalPortal.tsx'),
+      path.resolve(__dirname, '../components/ui/modal-portal.tsx'),
       'utf-8',
     );
     const purchaseCode = fs.readFileSync(

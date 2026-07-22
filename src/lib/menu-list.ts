@@ -7,7 +7,6 @@ import {
   Gauge,
   HandCoins,
   ClipboardList,
-  Coffee,
   type LucideIcon
 } from 'lucide-react';
 
@@ -119,7 +118,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           href: `${prefix}/bean-orders`,
           label: 'คำสั่งซื้อเมล็ดกาแฟ',
           active: pathname.includes('/bean-orders'),
-          icon: Coffee,
+          icon: ClipboardList,
           submenus: []
         },
       ]

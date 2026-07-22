@@ -14,6 +14,9 @@ import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { ModalPortal } from '@/components/ui/modal-portal';
+import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import { cn } from '@/lib/utils';
 
 export interface MaintenanceFormData {
   start_date: string;
@@ -65,22 +68,29 @@ export default function MaintenanceModals({
     <>
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={fadeOverlay.initial}
-              animate={fadeOverlay.animate}
-              exit={fadeOverlay.exit}
-              transition={fadeOverlay.transition}
-              className="absolute inset-0 bg-black/10 backdrop-blur-sm"
-              onClick={() => setIsModalOpen(false)}
-            />
-            <motion.div
-              initial={modalContent.initial}
-              animate={modalContent.animate}
-              exit={modalContent.exit}
-              transition={modalContent.transition}
-              className="relative bg-card w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl bb-shadow-xl overflow-hidden border border-border"
+          <ModalPortal>
+            <div
+              key="maintenance-form-modal"
+              className={cn(
+                'fixed inset-0 flex items-center justify-center p-4',
+                INVENTORY_MODAL_Z_CLASS,
+              )}
             >
+              <motion.div
+                initial={fadeOverlay.initial}
+                animate={fadeOverlay.animate}
+                exit={fadeOverlay.exit}
+                transition={fadeOverlay.transition}
+                className="absolute inset-0 bg-black/10 backdrop-blur-sm"
+                onClick={() => setIsModalOpen(false)}
+              />
+              <motion.div
+                initial={modalContent.initial}
+                animate={modalContent.animate}
+                exit={modalContent.exit}
+                transition={modalContent.transition}
+                className="relative bg-card w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl bb-shadow-xl overflow-hidden border border-border"
+              >
               <HintTooltip tip="ปิด">
                 <button
                   onClick={() => setIsModalOpen(false)}
@@ -264,14 +274,16 @@ export default function MaintenanceModals({
                 </button>
               </div>
             </motion.div>
-          </div>
+            </div>
+          </ModalPortal>
         )}
       </AnimatePresence>
 
+      <ModalPortal>
       <FadeModalScaffold
         open={isDeleteConfirmOpen}
           onClose={() => setIsDeleteConfirmOpen(false)}
-          zIndex={110}
+          zIndex={220}
           overlayClassName="bg-black/5 backdrop-blur-md"
           panelClassName="relative bg-card w-full max-w-sm rounded-3xl bb-shadow-xl overflow-hidden border border-border p-10 text-center"
           aria-label="Delete Record?"
@@ -306,6 +318,7 @@ export default function MaintenanceModals({
               </button>
             </div>
         </FadeModalScaffold>
+      </ModalPortal>
     </>
   );
 }

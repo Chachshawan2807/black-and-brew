@@ -12,7 +12,7 @@ import {
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
 import { BEAN_ORDER_CARRIERS, getCarrierLabel } from '@/lib/bean-orders/carriers';
-import { mapTrackingStatusLabel } from '@/lib/bean-orders/trackingmore';
+import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
 import { canCancelOrder, canConfirmPayment, canShip, canUploadSlip } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { OrderStatusBadge } from './_components/OrderStatusBadge';
@@ -212,9 +212,13 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
           <p>ประเภท: {order.shipment.deliveryType === 'parcel' ? 'พัสดี' : 'ส่งในวัน'}</p>
           <p>ขนส่ง: {getCarrierLabel(order.shipment.carrierCode)}</p>
           <p>เลขพัสดุ: {order.shipment.trackingNumber ?? '—'}</p>
-          {order.shipment.trackingStatus && (
-            <p>สถานะ: {mapTrackingStatusLabel(order.shipment.trackingStatus)}</p>
-          )}
+          <p>
+            สถานะ:{' '}
+            {formatShipmentTrackingLabel(order.shipment.trackingStatus, {
+              fulfillmentStatus: order.fulfillmentStatus,
+              trackingNumber: order.shipment.trackingNumber,
+            }) ?? '—'}
+          </p>
         </section>
       )}
 

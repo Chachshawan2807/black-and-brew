@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { Plus } from 'lucide-react';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
+import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
 import { OrderStatusBadge } from './_components/OrderStatusBadge';
 
 type Props = {
@@ -103,6 +104,15 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
                       {order.recipientName}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">{formatDate(order.createdAt)}</p>
+                    {order.fulfillmentStatus === 'shipped' && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        พัสดุ:{' '}
+                        {formatShipmentTrackingLabel(order.trackingStatus, {
+                          fulfillmentStatus: order.fulfillmentStatus,
+                          trackingNumber: order.trackingNumber,
+                        }) ?? '—'}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span className="tabular-nums text-sm">{formatBaht(order.totalBaht)} ฿</span>
