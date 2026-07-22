@@ -7,6 +7,8 @@ import {
 describe('mapTrackingStatusLabel', () => {
   test('maps common TrackingMore statuses', () => {
     expect(mapTrackingStatusLabel('registered')).toBe('ลงทะเบียนติดตามแล้ว');
+    expect(mapTrackingStatusLabel('pending')).toBe('รอขนส่งอัปเดตสถานะ');
+    expect(mapTrackingStatusLabel('inforeceived')).toBe('รับข้อมูลจากขนส่งแล้ว');
     expect(mapTrackingStatusLabel('transit')).toBe('กำลังจัดส่ง');
     expect(mapTrackingStatusLabel('delivered')).toBe('จัดส่งสำเร็จ');
     expect(mapTrackingStatusLabel('pickup')).toBe('กำลังจัดส่ง');

@@ -39,7 +39,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const [deliveryType, setDeliveryType] = useState<'parcel' | 'same_day'>(
     order.shipment?.deliveryType ?? 'parcel',
   );
-  const [carrierCode, setCarrierCode] = useState(order.shipment?.carrierCode ?? 'kerry-logistics');
+  const [carrierCode, setCarrierCode] = useState(order.shipment?.carrierCode ?? 'kerryexpress-th');
   const [trackingNumber, setTrackingNumber] = useState(order.shipment?.trackingNumber ?? '');
 
   const cancelled = Boolean(order.cancelledAt);

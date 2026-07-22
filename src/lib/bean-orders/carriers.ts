@@ -3,14 +3,14 @@ export type BeanOrderCarrier = {
   label: string;
 };
 
-/** Common Thai carriers supported by TrackingMore (courier_code values). */
+/** Common Thai carriers — codes must match TrackingMore V4 courier_code. */
 export const BEAN_ORDER_CARRIERS: BeanOrderCarrier[] = [
-  { code: 'kerry-logistics', label: 'Kerry Express' },
-  { code: 'flash-express', label: 'Flash Express' },
+  { code: 'kerryexpress-th', label: 'Kerry Express' },
+  { code: 'flashexpress', label: 'Flash Express' },
   { code: 'thailand-post', label: 'ไปรษณีย์ไทย' },
-  { code: 'jt-express', label: 'J&T Express' },
-  { code: 'best-express', label: 'Best Express' },
-  { code: 'ninjavan', label: 'Ninja Van' },
+  { code: 'jt-express-th', label: 'J&T Express' },
+  { code: 'best-th', label: 'Best Express' },
+  { code: 'ninjavan-th', label: 'Ninja Van' },
   { code: 'dhl', label: 'DHL' },
   { code: 'other', label: 'อื่นๆ' },
 ];

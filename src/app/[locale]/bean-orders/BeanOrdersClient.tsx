@@ -106,7 +106,8 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
                     <p className="text-xs text-muted-foreground mt-1">{formatDate(order.createdAt)}</p>
                     {order.fulfillmentStatus === 'shipped' && (
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        พัสดุ:{' '}
+                        พัสดุ
+                        {order.trackingNumber ? ` ${order.trackingNumber} · ` : ': '}
                         {formatShipmentTrackingLabel(order.trackingStatus, {
                           fulfillmentStatus: order.fulfillmentStatus,
                           trackingNumber: order.trackingNumber,

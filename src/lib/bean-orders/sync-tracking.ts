@@ -1,10 +1,56 @@
-import { fetchTrackingMoreStatus } from '@/lib/bean-orders/trackingmore';
+import { isStaleTrackingStatus } from '@/lib/bean-orders/carrier-codes';
+import {
+  fetchTrackingMoreStatusWithRepair,
+  resolveTrackingMoreCarrierCode,
+} from '@/lib/bean-orders/trackingmore';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export type SyncBeanOrderTrackingResult = {
   scanned: number;
   updated: number;
+  repaired: number;
 };
+
+async function syncShipmentRows(
+  rows: Array<{
+    id: string;
+    carrier_code: string | null;
+    tracking_number: string | null;
+    tracking_status: string | null;
+  }>,
+): Promise<SyncBeanOrderTrackingResult> {
+  const supabase = getSupabaseAdmin();
+  let updated = 0;
+  let repaired = 0;
+
+  for (const row of rows) {
+    const trackingNumber = row.tracking_number as string;
+    const storedCarrierCode = row.carrier_code as string;
+    if (!trackingNumber || !storedCarrierCode || storedCarrierCode === 'other') continue;
+
+    const result = await fetchTrackingMoreStatusWithRepair(trackingNumber, storedCarrierCode);
+    if (!result.ok) continue;
+
+    const nextCarrierCode = result.carrierCode ?? resolveTrackingMoreCarrierCode(storedCarrierCode) ?? storedCarrierCode;
+    const carrierChanged = nextCarrierCode !== storedCarrierCode;
+
+    const { error: updateError } = await supabase
+      .from('bean_order_shipments')
+      .update({
+        carrier_code: nextCarrierCode,
+        tracking_status: result.status,
+        tracking_raw: result.raw,
+      })
+      .eq('id', row.id as string);
+
+    if (!updateError) {
+      updated += 1;
+      if (carrierChanged) repaired += 1;
+    }
+  }
+
+  return { scanned: rows.length, updated, repaired };
+}
 
 export async function syncBeanOrderTrackingStatuses(): Promise<SyncBeanOrderTrackingResult> {
   const supabase = getSupabaseAdmin();
@@ -19,27 +65,25 @@ export async function syncBeanOrderTrackingStatuses(): Promise<SyncBeanOrderTrac
     throw new Error(error.message);
   }
 
-  let updated = 0;
-  const rows = data ?? [];
+  return syncShipmentRows(data ?? []);
+}
 
-  for (const row of rows) {
-    const trackingNumber = row.tracking_number as string;
-    const carrierCode = row.carrier_code as string;
-    if (!trackingNumber || !carrierCode || carrierCode === 'other') continue;
+/** Refresh only shipments with missing or stale tracking status (for list page). */
+export async function syncStaleBeanOrderTrackingStatuses(): Promise<SyncBeanOrderTrackingResult> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('bean_order_shipments')
+    .select('id, carrier_code, tracking_number, tracking_status')
+    .not('tracking_number', 'is', null);
 
-    const result = await fetchTrackingMoreStatus(trackingNumber, carrierCode);
-    if (!result.ok) continue;
-
-    const { error: updateError } = await supabase
-      .from('bean_order_shipments')
-      .update({
-        tracking_status: result.status,
-        tracking_raw: result.raw,
-      })
-      .eq('id', row.id as string);
-
-    if (!updateError) updated += 1;
+  if (error) {
+    console.error('Supabase Error (syncStaleBeanOrderTrackingStatuses):', error.message, error.details);
+    throw new Error(error.message);
   }
 
-  return { scanned: rows.length, updated };
+  const staleRows = (data ?? []).filter((row) =>
+    isStaleTrackingStatus(row.tracking_status as string | null),
+  );
+
+  return syncShipmentRows(staleRows);
 }

@@ -16,7 +16,7 @@ import {
 } from '@/lib/bean-orders/order-status';
 import { computeLineTotal, computeOrderTotals } from '@/lib/bean-orders/pricing';
 import { filterBeanOrderInventoryItems, BEAN_ORDER_INVENTORY_ITEM_NAMES } from '@/lib/bean-orders/inventory-items';
-import { createTrackingMoreShipment, fetchTrackingMoreStatus } from '@/lib/bean-orders/trackingmore';
+import { createTrackingMoreShipment, fetchTrackingMoreStatusWithRepair, resolveTrackingMoreCarrierCode } from '@/lib/bean-orders/trackingmore';
 import {
   parseThaiPostalAddressLine,
   type ThaiPostalAddressValue,
@@ -826,13 +826,14 @@ export async function shipBeanOrder(
     let trackingWarning: string | undefined;
 
     if (trackingNumber && parsed.data.carrierCode && parsed.data.carrierCode !== 'other') {
+      const carrierCode = resolveTrackingMoreCarrierCode(parsed.data.carrierCode) ?? parsed.data.carrierCode;
       const tm = await createTrackingMoreShipment({
         trackingNumber,
-        carrierCode: parsed.data.carrierCode,
+        carrierCode,
       });
       if (tm.ok) {
         trackingRaw = tm.data;
-        const fetched = await fetchTrackingMoreStatus(trackingNumber, parsed.data.carrierCode);
+        const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, parsed.data.carrierCode);
         if (fetched.ok) {
           trackingStatus = fetched.status;
           trackingRaw = fetched.raw;
@@ -843,6 +844,10 @@ export async function shipBeanOrder(
         trackingWarning = tm.error;
       }
     }
+
+    const resolvedCarrierCode = parsed.data.carrierCode
+      ? resolveTrackingMoreCarrierCode(parsed.data.carrierCode) ?? parsed.data.carrierCode
+      : null;
 
     const [{ error: orderError }, { error: shipError }] = await Promise.all([
       supabase
@@ -856,7 +861,7 @@ export async function shipBeanOrder(
       supabase.from('bean_order_shipments').upsert({
         order_id: orderId,
         delivery_type: parsed.data.deliveryType,
-        carrier_code: parsed.data.carrierCode ?? null,
+        carrier_code: resolvedCarrierCode,
         tracking_number: trackingNumber || null,
         tracking_status: trackingStatus,
         tracking_raw: trackingRaw,
