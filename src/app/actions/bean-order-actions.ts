@@ -442,6 +442,8 @@ export async function fetchBeanOrderDetail(
         totalBaht: Number(order.total_baht) || 0,
         paymentStatus: order.payment_status as 'unpaid' | 'paid',
         fulfillmentStatus: order.fulfillment_status as 'pending' | 'shipped',
+        trackingNumber: (shipmentResult.data?.tracking_number as string | null) ?? null,
+        trackingStatus: (shipmentResult.data?.tracking_status as string | null) ?? null,
         cancelledAt: (order.cancelled_at as string | null) ?? null,
         notes: (order.notes as string | null) ?? null,
         statusHistory: (order.status_history as StatusHistoryEntry[]) ?? [],
