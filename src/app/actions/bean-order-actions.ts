@@ -115,7 +115,7 @@ export type BeanOrderLineRow = {
   lineTotalBaht: number;
 };
 
-export type BeanOrderDetail = BeanOrderListRow & {
+export type BeanOrderDetail = Omit<BeanOrderListRow, 'lines'> & {
   customerId: string | null;
   senderName: string | null;
   senderPhone: string | null;
@@ -932,8 +932,9 @@ export async function shipBeanOrder(
     let trackingRaw: Record<string, unknown> | null = null;
     let trackingWarning: string | undefined;
 
-    if (trackingNumber && isTrackableCarrierCode(parsed.data.carrierCode)) {
-      const carrierCode = resolveTrackingMoreCarrierCode(parsed.data.carrierCode) ?? parsed.data.carrierCode;
+    if (trackingNumber && parsed.data.carrierCode && isTrackableCarrierCode(parsed.data.carrierCode)) {
+      const carrierCode =
+        resolveTrackingMoreCarrierCode(parsed.data.carrierCode) ?? parsed.data.carrierCode;
       const tm = await createTrackingMoreShipment({
         trackingNumber,
         carrierCode,

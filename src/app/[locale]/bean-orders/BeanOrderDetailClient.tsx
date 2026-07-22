@@ -11,6 +11,7 @@ import {
   uploadBeanOrderSlip,
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
+import { BEAN_ORDER_CARRIERS, getCarrierLabel } from '@/lib/bean-orders/carriers';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { getDeliveryTypeLabel } from '@/lib/bean-orders/delivery';
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
