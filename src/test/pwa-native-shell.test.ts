@@ -56,6 +56,11 @@ describe('PWA native shell', () => {
     expect(m.prefer_related_applications).toBe(false);
   });
 
+  test('manifest omits orientation so Android respects system rotation lock', () => {
+    const m = manifest();
+    expect(m.orientation).toBeUndefined();
+  });
+
   test('PwaRegister uses SPA navigation for notification deep links', () => {
     const pwa = readFileSync(resolve(ROOT, 'src/components/PwaRegister.tsx'), 'utf-8');
     expect(pwa).toContain('navigateWithViewTransition');

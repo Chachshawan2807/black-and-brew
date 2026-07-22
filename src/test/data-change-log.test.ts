@@ -118,6 +118,11 @@ describe('formatNotificationActorLabel', () => {
       'ผู้ใช้งาน (อ่านอย่างเดียว)',
     );
   });
+
+  test('preserves already-formatted editor label with platform when re-displayed', () => {
+    expect(formatNotificationActorLabel('ผู้แก้ไข (Android)', null)).toBe('ผู้แก้ไข (Android)');
+    expect(formatNotificationActorLabel('ผู้แก้ไข (iOS)', null, undefined)).toBe('ผู้แก้ไข (iOS)');
+  });
 });
 
 describe('recordDataChange', () => {

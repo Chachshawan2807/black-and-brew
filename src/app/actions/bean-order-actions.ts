@@ -894,5 +894,3 @@ export async function fetchInventoryItemsForBeanOrders(): Promise<{
     return { success: false, error: message };
   }
 }
-
-export { canEditOrderLines, DEFAULT_SHOP_SENDER };

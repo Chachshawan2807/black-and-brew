@@ -148,6 +148,7 @@ export function formatNotificationActorLabel(
     return actorLabel;
   }
   if (actorAccessLevel === 'system' || actorLabel === 'ระบบ') return actorLabel;
+  if (/^ผู้แก้ไข\s*\([^)]+\)/.test(actorLabel)) return actorLabel;
   if (isFullAccessActor(actorLabel, actorAccessLevel)) {
     return formatEditorActorLabel(userAgent);
   }

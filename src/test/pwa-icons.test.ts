@@ -139,7 +139,7 @@ describe('PWA notification icons', () => {
       expect(bounds.centerY, rel).toBeGreaterThan(0.47);
       expect(bounds.centerY, rel).toBeLessThan(0.53);
       expect(bounds.widthRatio, rel).toBeGreaterThan(0.86);
-      expect(bounds.heightRatio, rel).toBeGreaterThan(0.5);
+      expect(bounds.heightRatio, rel).toBeGreaterThan(0.86);
     }
   });
 

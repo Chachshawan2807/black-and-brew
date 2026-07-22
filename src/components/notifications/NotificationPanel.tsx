@@ -3,7 +3,6 @@
 import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CalendarRange, CheckCheck, Trash2 } from 'lucide-react';
-import { formatNotificationActorLabel } from '@/lib/data-change-log';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, notificationOverlay, notificationPanel, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
@@ -44,7 +43,7 @@ function NotificationRow({
 }) {
   const isSchedule = isScheduleNotification(item);
   const detailLines = getNotificationDetailLines(item);
-  const metaLine = `${formatNotificationActorLabel(item.actorLabel, null)} · ${formatNotificationTime(item.occurredAt, locale)}`;
+  const metaLine = `${item.actorLabel} · ${formatNotificationTime(item.occurredAt, locale)}`;
 
   return (
     <div

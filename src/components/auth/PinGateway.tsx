@@ -505,8 +505,16 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
   if (!isMounted) {
     return (
-      <div className="min-h-[100svh] bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" strokeWidth={1.5} />
+      <div className="min-h-[100svh] bg-background flex flex-col items-center justify-center px-6 antialiased">
+        <img
+          src="/images/logo.png"
+          alt="BLACKANDBREW"
+          className="w-[min(72vw,18rem)] max-w-xs h-auto object-contain dark:invert dark:brightness-0 dark:opacity-90"
+          width={288}
+          height={186}
+          decoding="sync"
+          fetchPriority="high"
+        />
       </div>
     );
   }

@@ -26,6 +26,7 @@ const PWA_ASSETS = {
 
 /** Transparent canvas — black logo mark only (all platforms). */
 const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 };
+/** Minimal padding — logo uses cover fit so wide marks still fill splash height. */
 const SPLASH_ICON_PADDING_RATIO = 0.035;
 /** Android badge: smaller mark + extra padding avoids a solid white blob in the status bar. */
 const BADGE_SIZE = 96;
@@ -75,8 +76,34 @@ async function renderSquareIcon(trimmed, size, paddingRatio = 0.08) {
     .png({ compressionLevel: 9, adaptiveFiltering: true });
 }
 
+/** PWA / OS splash icons — cover fill so wide logos stay large on square canvases. */
+async function renderSplashIcon(trimmed, size, paddingRatio = SPLASH_ICON_PADDING_RATIO) {
+  const inner = Math.max(1, Math.round(size * (1 - paddingRatio * 2)));
+  const resized = await trimmed
+    .clone()
+    .resize(inner, inner, { fit: 'cover', position: 'center' })
+    .png()
+    .toBuffer();
+
+  return sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: TRANSPARENT,
+    },
+  })
+    .composite([{ input: resized, gravity: 'center' }])
+    .png({ compressionLevel: 9, adaptiveFiltering: true });
+}
+
 async function writeSquareIcon(trimmed, size, filename, paddingRatio = 0.08) {
   const image = await renderSquareIcon(trimmed, size, paddingRatio);
+  await image.toFile(path.join(outDir, filename));
+}
+
+async function writeSplashIcon(trimmed, size, filename, paddingRatio = SPLASH_ICON_PADDING_RATIO) {
+  const image = await renderSplashIcon(trimmed, size, paddingRatio);
   await image.toFile(path.join(outDir, filename));
 }
 
@@ -159,8 +186,8 @@ async function writeNotificationBadge(trimmed) {
 
 async function writeNextAppIcons(trimmed) {
   const appDir = path.join(root, 'src/app');
-  await (await renderSquareIcon(trimmed, 512, 0.08)).toFile(path.join(appDir, 'icon.png'));
-  await (await renderSquareIcon(trimmed, 180, 0.08)).toFile(path.join(appDir, 'apple-icon.png'));
+  await (await renderSplashIcon(trimmed, 512)).toFile(path.join(appDir, 'icon.png'));
+  await (await renderSplashIcon(trimmed, 180)).toFile(path.join(appDir, 'apple-icon.png'));
   await (await renderSquareIcon(trimmed, 32, 0.06)).toFile(path.join(appDir, 'favicon.ico'));
 }
 
@@ -175,11 +202,11 @@ async function main() {
   const trimmed = await trimmedLogo();
   const blackTrimmed = await blackSilhouette(trimmed);
 
-  await writeSquareIcon(blackTrimmed, 192, 'notification-icon.png', SPLASH_ICON_PADDING_RATIO);
+  await writeSplashIcon(blackTrimmed, 192, 'notification-icon.png');
   await writeNotificationBadge(blackTrimmed);
-  await writeSquareIcon(blackTrimmed, 512, 'notification-icon-512.png', SPLASH_ICON_PADDING_RATIO);
+  await writeSplashIcon(blackTrimmed, 512, 'notification-icon-512.png');
   await writeSquareIcon(trimmed, 512, 'favicon.png');
-  await writeSquareIcon(trimmed, 180, 'apple-touch-icon.png');
+  await writeSplashIcon(trimmed, 180, 'apple-touch-icon.png');
   await writeNextAppIcons(trimmed);
   writePwaAssetsJs();
 

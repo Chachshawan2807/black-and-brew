@@ -6,7 +6,12 @@ import {
   type InventoryTransactionFilterType,
 } from '@/app/actions/inventory-actions';
 import type { TransactionHistoryRow } from '@/app/[locale]/inventory/_components/InventoryHistoryModal';
-import { consumeInventoryHistoryPrefetch } from '@/lib/inventory-history-prefetch';
+import {
+  consumeInventoryHistoryPrefetch,
+  invalidateInventoryHistoryPrefetch,
+  isInventoryHistoryPrefetchFresh,
+  prefetchInventoryHistoryFirstPage,
+} from '@/lib/inventory-history-prefetch';
 
 const HISTORY_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 200;
@@ -83,9 +88,8 @@ export function useInventoryHistory() {
     setHistoryTypeFilter('ALL');
     setHistorySearchQuery('');
     setHistorySearchDebounced('');
-    setTransactionHistory([]);
-    setHasMoreHistory(false);
     setShowHistoryModal(true);
+    void prefetchInventoryHistoryFirstPage();
   }, []);
 
   const handleHistoryTypeFilterChange = useCallback((nextType: InventoryTransactionFilterType) => {
@@ -102,7 +106,12 @@ export function useInventoryHistory() {
   }, [hasMoreHistory, isHistoryLoading, loadHistoryPage]);
 
   useEffect(() => {
-    if (!showHistoryModal) return;
+    if (!showHistoryModal) {
+      requestIdRef.current += 1;
+      setIsHistoryLoading(false);
+      setIsHistoryRefreshing(false);
+      return;
+    }
 
     let cancelled = false;
 
@@ -116,6 +125,10 @@ export function useInventoryHistory() {
         if (prefetched?.success && prefetched.data) {
           setTransactionHistory(prefetched.data);
           setHasMoreHistory(Boolean(prefetched.hasMore));
+
+          if (isInventoryHistoryPrefetchFresh()) {
+            return;
+          }
         }
       }
 
@@ -143,6 +156,9 @@ export function useInventoryHistory() {
     handleHistoryTypeFilterChange,
     handleHistorySearchQueryChange,
     handleLoadMoreHistory,
-    refreshHistory: () => loadHistoryPage({ offset: 0 }),
+    refreshHistory: () => {
+      invalidateInventoryHistoryPrefetch();
+      return loadHistoryPage({ offset: 0 });
+    },
   };
 }

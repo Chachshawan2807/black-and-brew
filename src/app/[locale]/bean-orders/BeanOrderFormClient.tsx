@@ -7,11 +7,11 @@ import { ChevronLeft, Plus, Trash2 } from 'lucide-react';
 import {
   createBeanCustomer,
   createBeanOrder,
-  DEFAULT_SHOP_SENDER,
   fetchBeanCustomerAddresses,
   searchBeanCustomers,
   type BeanCustomerRow,
 } from '@/app/actions/bean-order-actions';
+import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
 import { computeOrderTotals } from '@/lib/bean-orders/pricing';
 import type { WeightUnit } from '@/lib/bean-orders/types';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
