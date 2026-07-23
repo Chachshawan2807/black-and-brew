@@ -3,6 +3,7 @@ import {
   resolveTrackingMoreCarrierCode,
 } from '@/lib/bean-orders/carrier-codes';
 import {
+  buildTrackingMoreGetUrl,
   extractDeliveryStatus,
   inferCarrierFromTrackingNumber,
   normalizeTrackingMoreData,
@@ -14,6 +15,7 @@ export {
   extractDeliveryStatus,
   inferCarrierFromTrackingNumber,
   normalizeTrackingMoreData,
+  buildTrackingMoreGetUrl,
 } from '@/lib/bean-orders/tracking-payload';
 
 export type TrackingMoreCreateInput = {
@@ -104,9 +106,11 @@ export async function fetchTrackingMoreStatus(
 
   try {
     const courierCode = resolveTrackingMoreCarrierCode(carrierCode) ?? carrierCode;
-    const url = new URL(`${TRACKINGMORE_BASE}/trackings/${encodeURIComponent(courierCode)}/${encodeURIComponent(trackingNumber)}`);
-    const response = await fetch(url.toString(), {
-      headers: { 'Tracking-Api-Key': apiKey },
+    const response = await fetch(buildTrackingMoreGetUrl(trackingNumber, courierCode), {
+      headers: {
+        'Tracking-Api-Key': apiKey,
+        'Content-Type': 'application/json',
+      },
       cache: 'no-store',
     });
 
@@ -115,6 +119,9 @@ export async function fetchTrackingMoreStatus(
       const message =
         (payload?.meta as { message?: string } | undefined)?.message ??
         `TrackingMore fetch failed (${response.status})`;
+      if (response.status === 404 || message.toLowerCase().includes('no exists')) {
+        return { ok: false, error: message };
+      }
       console.error('TrackingMore fetch error:', message, payload);
       return { ok: false, error: message };
     }
@@ -244,8 +251,15 @@ export async function fetchTrackingMoreStatusWithRepair(
     const created = await createTrackingMoreShipment({ trackingNumber, carrierCode: code });
     if (!created.ok) continue;
 
-    const data = normalizeTrackingMoreData(created.data);
-    const status = extractDeliveryStatus(data);
+    let data = normalizeTrackingMoreData(created.data);
+    let status = extractDeliveryStatus(data);
+    if (!status) {
+      const refetch = await fetchTrackingMoreStatus(trackingNumber, code);
+      if (refetch.ok) {
+        status = refetch.status;
+        data = refetch.raw;
+      }
+    }
     if (!status) continue;
 
     const carrierCode =

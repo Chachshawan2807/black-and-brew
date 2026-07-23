@@ -1,6 +1,16 @@
 import { BEAN_ORDER_CARRIERS } from '@/lib/bean-orders/carriers';
 
+const TRACKINGMORE_GET_BASE = 'https://api.trackingmore.com/v4/trackings/get';
+
 const SUPPORTED_COURIER_CODES = new Set(BEAN_ORDER_CARRIERS.map((c) => c.code));
+
+export function buildTrackingMoreGetUrl(trackingNumber: string, carrierCode: string): string {
+  const url = new URL(TRACKINGMORE_GET_BASE);
+  url.searchParams.set('tracking_numbers', trackingNumber);
+  url.searchParams.set('courier_code', carrierCode);
+  url.searchParams.set('pages_amount', '1');
+  return url.toString();
+}
 
 export function normalizeTrackingMoreData(
   payload: Record<string, unknown>,

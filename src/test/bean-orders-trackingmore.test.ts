@@ -1,6 +1,18 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { buildTrackingMoreGetUrl } from '@/lib/bean-orders/tracking-payload';
 
 const fetchMock = vi.fn();
+
+describe('buildTrackingMoreGetUrl', () => {
+  test('uses TrackingMore V4 trackings/get query endpoint', () => {
+    const url = new URL(
+      buildTrackingMoreGetUrl('KEX180018145006', 'kerryexpress-th'),
+    );
+    expect(url.pathname).toBe('/v4/trackings/get');
+    expect(url.searchParams.get('tracking_numbers')).toBe('KEX180018145006');
+    expect(url.searchParams.get('courier_code')).toBe('kerryexpress-th');
+  });
+});
 
 describe('createTrackingMoreShipment', () => {
   beforeEach(() => {
@@ -28,10 +40,12 @@ describe('createTrackingMoreShipment', () => {
         ok: true,
         status: 200,
         json: async () => ({
-          data: {
-            delivery_status: 'in_transit',
-            courier_code: 'kerryexpress-th',
-          },
+          data: [
+            {
+              delivery_status: 'in_transit',
+              courier_code: 'kerryexpress-th',
+            },
+          ],
         }),
       });
 
@@ -51,6 +65,9 @@ describe('createTrackingMoreShipment', () => {
       });
     }
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    const getUrl = fetchMock.mock.calls[1]?.[0] as string;
+    expect(getUrl).toContain('/v4/trackings/get');
+    expect(getUrl).toContain('tracking_numbers=KEX1234567890');
     expect(consoleError).not.toHaveBeenCalled();
 
     consoleError.mockRestore();
