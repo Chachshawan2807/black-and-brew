@@ -5,6 +5,8 @@
 
 export const PWA_BRAND_ICON = '/images/notification-icon.png';
 export const PWA_BRAND_ICON_512 = '/images/notification-icon-512.png';
+/** Full-color brand mark on transparent canvas — Android/iOS Web Push body icon. */
+export const PWA_PUSH_NOTIFICATION_ICON = '/images/push-notification-icon.png';
 export const PWA_MASKABLE_ICON = '/images/maskable-icon-512.png';
 export const PWA_NOTIFICATION_BADGE = '/images/notification-badge.png';
 export const PWA_APPLE_TOUCH_ICON = '/images/apple-touch-icon.png';
@@ -15,8 +17,8 @@ export const PWA_MANIFEST_THEME = '#000000';
 
 export const PWA_NOTIFICATION_VIBRATE = [120, 60, 120] as const;
 
-/** @deprecated Use PWA_BRAND_ICON — kept for existing imports. */
-export const PWA_NOTIFICATION_ICON = PWA_BRAND_ICON;
+/** @deprecated Use PWA_PUSH_NOTIFICATION_ICON — kept for existing imports. */
+export const PWA_NOTIFICATION_ICON = PWA_PUSH_NOTIFICATION_ICON;
 
 /** Relative asset paths embedded in Web Push payloads; SW resolves to absolute URLs. */
 export interface PwaNotificationAssetPaths {
@@ -28,7 +30,7 @@ export interface PwaNotificationAssetPaths {
 
 export function buildPwaNotificationAssetPaths(): PwaNotificationAssetPaths {
   return {
-    icon: PWA_BRAND_ICON,
+    icon: PWA_PUSH_NOTIFICATION_ICON,
     badge: PWA_NOTIFICATION_BADGE,
   };
 }
@@ -94,13 +96,13 @@ export function buildOsNotificationOptions(input: {
   /** Explicit UA for tests / server-side Apple targeting. */
   userAgent?: string;
 }): OsNotificationOptions {
-  const brandIcon = resolvePwaAssetUrl(PWA_BRAND_ICON, input.origin);
+  const pushIcon = resolvePwaAssetUrl(PWA_PUSH_NOTIFICATION_ICON, input.origin);
   const notificationBadge = resolvePwaAssetUrl(PWA_NOTIFICATION_BADGE, input.origin);
   const isIos = isIosWebPushClient(input.userAgent);
 
   const opts: OsNotificationOptions = {
     body: input.body,
-    icon: brandIcon,
+    icon: pushIcon,
     badge: notificationBadge,
     tag: input.tag ?? 'bb-inventory',
     silent: false,

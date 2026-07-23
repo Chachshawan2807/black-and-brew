@@ -58,7 +58,7 @@ describe('iOS notification parity', () => {
       userAgent: IOS_UA,
     });
 
-    expect(opts.icon).toBe('https://blackandbrew.vercel.app/images/notification-icon.png');
+    expect(opts.icon).toBe('https://blackandbrew.vercel.app/images/push-notification-icon.png');
     expect(opts).not.toHaveProperty('vibrate');
     expect(opts).not.toHaveProperty('renotify');
     expect(opts).not.toHaveProperty('badge');

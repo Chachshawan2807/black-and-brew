@@ -8,7 +8,7 @@ const OFFLINE_MUTATION_SYNC_TAG = 'bb-offline-mutations';
 const OFFLINE_FALLBACK_URL = '/offline.html';
 const APP_SHELL_URL = '/th';
 
-const { BRAND_ICON, BRAND_ICON_512, NOTIFICATION_BADGE, CACHE_VERSION, VIBRATE } = self.PWA_ASSETS;
+const { BRAND_ICON, BRAND_ICON_512, PUSH_NOTIFICATION_ICON, NOTIFICATION_BADGE, CACHE_VERSION, VIBRATE } = self.PWA_ASSETS;
 const CACHE_NAME = `blackandbrew-cache-v${CACHE_VERSION}`;
 
 function assetUrl(path) {
@@ -20,7 +20,7 @@ function assetUrl(path) {
  * Server sends relative paths in payload.assets; SW falls back to PWA_ASSETS constants.
  */
 function resolvePushAssets(payload) {
-  const iconPath = payload.assets?.icon || BRAND_ICON;
+  const iconPath = payload.assets?.icon || PUSH_NOTIFICATION_ICON || BRAND_ICON;
   const badgePath = payload.assets?.badge || NOTIFICATION_BADGE;
   return {
     icon: assetUrl(iconPath),
@@ -96,6 +96,7 @@ const urlsToCache = [
   '/ai-agent-logo.svg',
   BRAND_ICON,
   BRAND_ICON_512,
+  PUSH_NOTIFICATION_ICON,
   NOTIFICATION_BADGE,
 ];
 

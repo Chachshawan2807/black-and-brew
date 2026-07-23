@@ -11,15 +11,18 @@ import {
   PWA_MASKABLE_ICON,
   PWA_NOTIFICATION_BADGE,
   PWA_NOTIFICATION_ICON,
+  PWA_PUSH_NOTIFICATION_ICON,
   buildOsNotificationOptions,
 } from '@/lib/pwa-assets';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const ICON = path.join(ROOT, 'public/images/notification-icon.png');
+const PUSH_ICON = path.join(ROOT, 'public/images/push-notification-icon.png');
 const BADGE = path.join(ROOT, 'public/images/notification-badge.png');
 
 const TRANSPARENT_BRAND_ICON_PATHS = [
   'public/images/notification-badge.png',
+  'public/images/push-notification-icon.png',
 ] as const;
 
 const PWA_SPLASH_BACKGROUND_RGB = { r: 247, g: 245, b: 232 };
@@ -154,7 +157,16 @@ describe('PWA notification icons', () => {
     }
   });
 
-  test('notification icon is square 192x192', async () => {
+  test('push notification icon is square 192x192 with transparent corners', async () => {
+    const meta = await sharp(PUSH_ICON).metadata();
+    expect(meta.width).toBe(192);
+    expect(meta.height).toBe(192);
+    const corners = await cornerPixels(PUSH_ICON);
+    expect(corners.every((px) => px.a < 16)).toBe(true);
+    expect(await opaquePixelsAreBlack(PUSH_ICON)).toBe(true);
+  });
+
+  test('PWA launch notification-icon is square 192x192', async () => {
     const meta = await sharp(ICON).metadata();
     expect(meta.width).toBe(192);
     expect(meta.height).toBe(192);
@@ -194,8 +206,10 @@ describe('PWA notification icons', () => {
 
 describe('PWA cross-platform asset consistency', () => {
   test('notification icon and badge use separate mobile OS assets', () => {
-    expect(PWA_NOTIFICATION_ICON).toBe(PWA_BRAND_ICON);
+    expect(PWA_NOTIFICATION_ICON).toBe(PWA_PUSH_NOTIFICATION_ICON);
+    expect(PWA_PUSH_NOTIFICATION_ICON).toBe('/images/push-notification-icon.png');
     expect(PWA_NOTIFICATION_BADGE).toBe('/images/notification-badge.png');
+    expect(PWA_NOTIFICATION_ICON).not.toBe(PWA_BRAND_ICON);
   });
 
   test('manifest, favicon, and apple-touch icons use shared brand paths', () => {
@@ -227,7 +241,7 @@ describe('PWA cross-platform asset consistency', () => {
       body: 'รับ 2 · คงเหลือ: 0 → 2',
       origin: 'https://blackandbrew.vercel.app',
     });
-    expect(opts.icon).toBe('https://blackandbrew.vercel.app/images/notification-icon.png');
+    expect(opts.icon).toBe('https://blackandbrew.vercel.app/images/push-notification-icon.png');
     expect(opts.badge).toBe('https://blackandbrew.vercel.app/images/notification-badge.png');
   });
 
@@ -240,8 +254,9 @@ describe('PWA cross-platform asset consistency', () => {
     expect(sw).toContain('buildNotificationOptions');
     expect(sw).toContain('payload.assets?.icon');
     expect(sw).toContain('payload.assets?.badge');
+    expect(sw).toContain('PUSH_NOTIFICATION_ICON');
     expect(sw).toContain('renotify: true');
-    expect(assets).toContain(`"BRAND_ICON": "${PWA_BRAND_ICON}"`);
+    expect(assets).toContain(`"PUSH_NOTIFICATION_ICON": "${PWA_PUSH_NOTIFICATION_ICON}"`);
     expect(assets).toContain(`"NOTIFICATION_BADGE": "${PWA_NOTIFICATION_BADGE}"`);
   });
 
