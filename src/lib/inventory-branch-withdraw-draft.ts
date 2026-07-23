@@ -70,3 +70,57 @@ export function clearBranchWithdrawDraft(storage: DraftStorage): void {
 export function emptyDraftRow(): BranchWithdrawDraftRow {
   return { qtyBranch1: '', qtyBranch2: '', branch2Unit: '' };
 }
+
+export type BranchWithdrawDraftLine = {
+  itemId: string;
+  name: string;
+  qtyBranch1: string;
+  qtyBranch2: string;
+  branch2Unit: string;
+};
+
+/** Map visible items + draft rows into save/preview line payloads. */
+export function buildBranchWithdrawDraftLines(
+  displayItems: ReadonlyArray<{ id: string; name: string }>,
+  rows: Record<string, BranchWithdrawDraftRow>,
+): BranchWithdrawDraftLine[] {
+  const lines: BranchWithdrawDraftLine[] = [];
+  for (const item of displayItems) {
+    const draft = rows[item.id] ?? emptyDraftRow();
+    lines.push({
+      itemId: item.id,
+      name: item.name,
+      qtyBranch1: draft.qtyBranch1,
+      qtyBranch2: draft.qtyBranch2,
+      branch2Unit: draft.branch2Unit,
+    });
+  }
+  return lines;
+}
+
+/**
+ * Sync draft rows when the displayed item id set changes.
+ * Returns the same reference when ids are unchanged (avoids needless re-renders).
+ */
+export function mergeRowsWithDisplayItemIds(
+  itemIds: readonly string[],
+  prev: Record<string, BranchWithdrawDraftRow>,
+): Record<string, BranchWithdrawDraftRow> {
+  const prevKeys = Object.keys(prev);
+  if (itemIds.length === prevKeys.length) {
+    let allMatch = true;
+    for (const id of itemIds) {
+      if (!(id in prev)) {
+        allMatch = false;
+        break;
+      }
+    }
+    if (allMatch) return prev;
+  }
+
+  const rows: Record<string, BranchWithdrawDraftRow> = {};
+  for (const id of itemIds) {
+    rows[id] = prev[id] ?? emptyDraftRow();
+  }
+  return rows;
+}

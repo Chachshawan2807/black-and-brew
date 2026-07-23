@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-19 | Engine: Supabase PostgreSQL
+> Version: 9.2 | Last Updated: 2026-07-23 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -324,6 +324,7 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260711164656_reset_accuracy_history_major_overhaul.sql` | Reset accuracy ledger after gauge/report overhaul |
 | `20260711223000_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening + authz |
 | `20260713100000_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel catch-up) |
+| `20260722140000_bean_orders.sql` | Bean order tables (`bean_*`), RLS, Storage bucket `bean-order-slips` |
 
 Retired: inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 

@@ -25,6 +25,11 @@ import {
   type ThaiPostalAddressValue,
 } from '@/lib/bean-orders/address';
 import {
+  customerAddressAlreadyExists,
+  shouldPersistCustomerAddress,
+  type BeanCustomerAddressInput,
+} from '@/lib/bean-orders/customer-address-persist';
+import {
   mergeFormSuggestions,
   type BeanOrderFormSuggestions,
   type BeanOrderLinePreset,
@@ -32,6 +37,7 @@ import {
 import {
   buildParsedBeanOrderCustomer,
   isBeanOrderCustomerParseUsable,
+  addressNeedsAiRefine,
   parseBeanOrderCustomerText,
   type ParsedBeanOrderCustomer,
 } from '@/lib/bean-orders/parse-share-text';
@@ -78,6 +84,14 @@ const shipOrderSchema = z.object({
   deliveryType: deliveryTypeSchema,
   carrierCode: z.string().optional(),
   trackingNumber: z.string().optional(),
+});
+
+const customerAddressInputSchema = z.object({
+  recipientName: z.string().min(1),
+  recipientPhone: z.string().optional(),
+  recipientAddress: z.string().min(1),
+  recipientProvince: z.string().optional(),
+  recipientPostalCode: z.string().optional(),
 });
 
 export type { BeanOrderTrackingEvent } from '@/lib/bean-orders/tracking-events';
@@ -275,12 +289,18 @@ export async function createBeanCustomer(input: {
   name: string;
   phone?: string;
   notes?: string;
+  address?: z.infer<typeof customerAddressInputSchema>;
 }): Promise<{ success: boolean; data?: BeanCustomerRow; error?: string }> {
   const gate = await gateMutation();
   if (!gate.success) return gate;
 
   const parsed = z
-    .object({ name: z.string().min(1), phone: z.string().optional(), notes: z.string().optional() })
+    .object({
+      name: z.string().min(1),
+      phone: z.string().optional(),
+      notes: z.string().optional(),
+      address: customerAddressInputSchema.optional(),
+    })
     .safeParse(input);
   if (!parsed.success) return { success: false, error: 'ข้อมูลลูกค้าไม่ถูกต้อง' };
 
@@ -316,6 +336,13 @@ export async function createBeanCustomer(input: {
       entityLabel: row.name,
       newValue: row,
     });
+
+    if (parsed.data.address) {
+      const addressResult = await saveBeanCustomerAddressIfNew(row.id, parsed.data.address);
+      if (!addressResult.success) {
+        return { success: false, error: addressResult.error };
+      }
+    }
 
     return { success: true, data: row };
   } catch (error) {
@@ -357,6 +384,74 @@ export async function fetchBeanCustomerAddresses(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'โหลดที่อยู่ไม่สำเร็จ';
+    return { success: false, error: message };
+  }
+}
+
+async function saveBeanCustomerAddressIfNew(
+  customerId: string,
+  input: BeanCustomerAddressInput,
+): Promise<{ success: boolean; saved?: boolean; error?: string }> {
+  if (!shouldPersistCustomerAddress(input)) {
+    return { success: true, saved: false };
+  }
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data: existingRows, error: fetchError } = await supabase
+      .from('bean_customer_addresses')
+      .select('address_line, province, postal_code')
+      .eq('customer_id', customerId);
+
+    if (fetchError) {
+      console.error(
+        'Supabase Error (saveBeanCustomerAddressIfNew fetch):',
+        fetchError.message,
+        fetchError.details,
+      );
+      return { success: false, error: fetchError.message };
+    }
+
+    const candidate = {
+      addressLine: input.recipientAddress,
+      province: input.recipientProvince ?? null,
+      postalCode: input.recipientPostalCode ?? null,
+    };
+
+    if (
+      customerAddressAlreadyExists(
+        (existingRows ?? []).map((row) => ({
+          addressLine: row.address_line as string,
+          province: (row.province as string | null) ?? null,
+          postalCode: (row.postal_code as string | null) ?? null,
+        })),
+        candidate,
+      )
+    ) {
+      return { success: true, saved: false };
+    }
+
+    const { error: insertError } = await supabase.from('bean_customer_addresses').insert({
+      customer_id: customerId,
+      recipient_name: input.recipientName,
+      recipient_phone: input.recipientPhone ?? null,
+      address_line: input.recipientAddress,
+      province: input.recipientProvince ?? null,
+      postal_code: input.recipientPostalCode ?? null,
+    });
+
+    if (insertError) {
+      console.error(
+        'Supabase Error (saveBeanCustomerAddressIfNew insert):',
+        insertError.message,
+        insertError.details,
+      );
+      return { success: false, error: insertError.message };
+    }
+
+    return { success: true, saved: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'บันทึกที่อยู่ลูกค้าไม่สำเร็จ';
     return { success: false, error: message };
   }
 }
@@ -709,6 +804,19 @@ export async function createBeanOrder(
       newValue: { orderNo, totalBaht: totals.totalBaht },
     });
 
+    if (parsed.data.customerId) {
+      const addressResult = await saveBeanCustomerAddressIfNew(parsed.data.customerId, {
+        recipientName: parsed.data.recipientName,
+        recipientPhone: parsed.data.recipientPhone,
+        recipientAddress: parsed.data.recipientAddress,
+        recipientProvince: parsed.data.recipientProvince,
+        recipientPostalCode: parsed.data.recipientPostalCode,
+      });
+      if (!addressResult.success) {
+        return { success: false, error: addressResult.error };
+      }
+    }
+
     revalidateBeanOrders(locale, order.id as string);
     return { success: true, orderId: order.id as string };
   } catch (error) {
@@ -829,6 +937,19 @@ export async function updateBeanOrder(
       entityLabel: existing.order_no as string,
       newValue: { totalBaht: totals.totalBaht },
     });
+
+    if (parsed.data.customerId) {
+      const addressResult = await saveBeanCustomerAddressIfNew(parsed.data.customerId, {
+        recipientName: parsed.data.recipientName,
+        recipientPhone: parsed.data.recipientPhone,
+        recipientAddress: parsed.data.recipientAddress,
+        recipientProvince: parsed.data.recipientProvince,
+        recipientPostalCode: parsed.data.recipientPostalCode,
+      });
+      if (!addressResult.success) {
+        return { success: false, error: addressResult.error };
+      }
+    }
 
     revalidateBeanOrders(locale, orderId);
     return { success: true };
@@ -1187,15 +1308,16 @@ export async function shipBeanOrder(
       });
       if (tm.ok) {
         trackingRaw = tm.data;
-        const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, parsed.data.carrierCode);
-        if (fetched.ok) {
-          trackingStatus = fetched.status;
-          trackingRaw = fetched.raw;
-        } else {
-          trackingStatus = 'registered';
-        }
       } else {
         trackingWarning = tm.error;
+      }
+
+      const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, parsed.data.carrierCode);
+      if (fetched.ok) {
+        trackingStatus = fetched.status;
+        trackingRaw = fetched.raw;
+      } else if (tm.ok) {
+        trackingStatus = 'registered';
       }
     }
 
@@ -1413,7 +1535,75 @@ const aiCustomerSchema = z.object({
   addressLine: z.string().default(''),
   province: z.string().optional(),
   postalCode: z.string().optional(),
+  subdistrict: z.string().optional(),
+  district: z.string().optional(),
 });
+
+const AI_CUSTOMER_PARSE_SYSTEM = `คุณคือผู้ช่วยแยกข้อมูลลูกค้าสำหรับฟอร์มสั่งซื้อเมล็ดกาแฟ
+ให้อ่านข้อความอิสระ (เช่น จาก LINE หรือข้อความคัดลอกออเดอร์) แล้วแยกเป็น:
+- name: ชื่อลูกค้าหรือผู้รับ
+- phone: เบอร์โทรศัพท์ (ตัวเลขเท่านั้น ถ้าไม่มีให้เป็น "")
+- addressLine: เฉพาะบ้านเลขที่ หมู่ ซอย ถนน ชื่อร้าน สถานที่พิเศษ — ห้ามใส่ตำบล อำเภอ จังหวัด รหัสไปรษณีย์ซ้ำ
+- subdistrict: ตำบล/แขวง (ถ้าแยกได้)
+- district: อำเภอ/เขต (ถ้าแยกได้)
+- province: จังหวัด (ถ้าแยกได้)
+- postalCode: รหัสไปรษณีย์ 5 หลัก (ถ้าแยกได้)
+
+ตอบเป็น JSON object เท่านั้น ไม่มี markdown หรือข้อความอื่น`;
+
+async function parseCustomerWithAi(
+  trimmed: string,
+  rulesHint?: ParsedBeanOrderCustomer | null,
+): Promise<ParsedBeanOrderCustomer> {
+  const hintBlock = rulesHint
+    ? `\n\nผลแยกเบื้องต้นจากระบบ (อาจผิด — ใช้เป็น hint เท่านั้น):\n${JSON.stringify({
+        name: rulesHint.name,
+        phone: rulesHint.phone,
+        addressLine: rulesHint.address.addressLine,
+        subdistrict: rulesHint.address.subdistrict,
+        district: rulesHint.address.district,
+        province: rulesHint.address.province,
+        postalCode: rulesHint.address.postalCode,
+      })}`
+    : '';
+
+  const { text: aiText } = await generateText({
+    model: google('gemini-2.5-flash'),
+    system: AI_CUSTOMER_PARSE_SYSTEM,
+    prompt: `แยกข้อมูลลูกค้าจากข้อความนี้:\n${trimmed}${hintBlock}`,
+  });
+
+  const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('AI แยกข้อมูลลูกค้าไม่สำเร็จ');
+  }
+
+  const parsedJson = aiCustomerSchema.safeParse(JSON.parse(jsonMatch[0]));
+  if (!parsedJson.success) {
+    throw new Error('รูปแบบข้อมูลจาก AI ไม่ถูกต้อง');
+  }
+
+  const parsed = parsedJson.data;
+  const addressLineForParsing = [
+    parsed.addressLine,
+    parsed.subdistrict,
+    parsed.district,
+    parsed.province,
+    parsed.postalCode,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return buildParsedBeanOrderCustomer({
+    name: parsed.name,
+    phone: parsed.phone,
+    addressLine: addressLineForParsing || parsed.addressLine,
+    province: parsed.province,
+    postalCode: parsed.postalCode,
+    parseSource: 'ai',
+    sourceText: trimmed,
+  });
+}
 
 /**
  * แยกชื่อ / เบอร์ / ที่อยู่จากข้อความวาง (rule-based ก่อน แล้ว fallback Gemini)
@@ -1430,41 +1620,20 @@ export async function parseBeanOrderCustomerFromText(text: string): Promise<{
   if (!trimmed) return { success: false, error: 'ไม่พบข้อความในคลิปบอร์ด' };
 
   const rulesResult = parseBeanOrderCustomerText(trimmed);
-  if (isBeanOrderCustomerParseUsable(rulesResult)) {
+  if (isBeanOrderCustomerParseUsable(rulesResult) && !addressNeedsAiRefine(rulesResult)) {
     return { success: true, data: rulesResult };
   }
 
   try {
-    const { text: aiText } = await generateText({
-      model: google('gemini-2.5-flash'),
-      system: `คุณคือผู้ช่วยแยกข้อมูลลูกค้าสำหรับฟอร์มสั่งซื้อเมล็ดกาแฟ
-ให้อ่านข้อความอิสระ (เช่น จาก LINE) แล้วดึงเฉพาะ:
-- name: ชื่อลูกค้าหรือผู้รับ
-- phone: เบอร์โทรศัพท์ (ตัวเลขเท่านั้น ถ้าไม่มีให้เป็น "")
-- addressLine: ที่อยู่จัดส่งเต็ม รวมตำบล อำเภอ จังหวัด รหัสไปรษณีย์ถ้ามี
-- province: จังหวัด (ถ้าแยกได้)
-- postalCode: รหัสไปรษณีย์ 5 หลัก (ถ้าแยกได้)
-
-ตอบเป็น JSON object เท่านั้น ไม่มี markdown หรือข้อความอื่น`,
-      prompt: `แยกข้อมูลลูกค้าจากข้อความนี้:\n${trimmed}`,
-    });
-
-    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return { success: false, error: 'AI แยกข้อมูลลูกค้าไม่สำเร็จ' };
-    }
-
-    const parsedJson = aiCustomerSchema.safeParse(JSON.parse(jsonMatch[0]));
-    if (!parsedJson.success) {
-      return { success: false, error: 'รูปแบบข้อมูลจาก AI ไม่ถูกต้อง' };
-    }
-
-    const data = buildParsedBeanOrderCustomer({
-      ...parsedJson.data,
-      parseSource: 'ai',
-    });
+    const data = await parseCustomerWithAi(
+      trimmed,
+      isBeanOrderCustomerParseUsable(rulesResult) ? rulesResult : null,
+    );
 
     if (!isBeanOrderCustomerParseUsable(data)) {
+      if (isBeanOrderCustomerParseUsable(rulesResult)) {
+        return { success: true, data: rulesResult };
+      }
       return { success: false, error: 'แยกชื่อและที่อยู่/เบอร์จากข้อความไม่ครบ' };
     }
 

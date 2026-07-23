@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> Version: 9.2 | Last Updated: 2026-07-12 | Owner: System Architect
+> Version: 9.2 | Last Updated: 2026-07-23 | Owner: System Architect
 
 ---
 
@@ -80,19 +80,31 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - Purpose: อัปโหลด Excel วิเคราะห์ยอดขาย
 - Features: File upload, category management, AI auto-categorize, charts (`recharts`)
 
-### 3.7 AI Assistant (บรู)
+### 3.7 Bean Orders
+
+- Route: `/[locale]/bean-orders`, `/new`, `/[id]`, `/[id]/edit`
+- Purpose: จัดการออเดอร์เมล็ดกาแฟ — ลูกค้า, สลิปชำระเงิน, จัดส่ง, ติดตามพัสดุ
+- Components: `BeanOrdersClient.tsx`, `BeanOrderFormClient.tsx`, `BeanOrderDetailClient.tsx`, `bean-orders/_components/*`
+- Features:
+  - Dual-axis status (`payment_status` × `fulfillment_status`)
+  - Slip upload to Storage (`bean-order-slips`)
+  - TrackingMore integration (webhook + cron sync)
+  - No automatic inventory stock deduction
+  - AI summary via `fetchBeanOrdersSummary()` and deterministic Bru report
+
+### 3.8 AI Assistant (บรู)
 
 - Route: Global overlay (ทุกหน้า)
 - Purpose: แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
 - API: `POST /api/chat` — ToolLoopAgent + Gemini 2.5 Flash
 
-### 3.8 Settings
+### 3.9 Settings
 
 - Route: `/[locale]/settings`
 - Purpose: การตั้งค่าระบบสำหรับพนักงาน
 - Features: Theme picker; login history; trusted-device passkeys; notification preferences; data change history (`settings/_components/`)
 
-### 3.9 Daily Web Push Notification
+### 3.10 Daily Web Push Notification
 
 - Route: `/api/daily-report` (Vercel Cron)
 - Purpose: แจ้งเตือนกะงานและวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
@@ -108,6 +120,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 | Shift Scheduling | จัดพนักงานให้เหมาะสม | Schedule |
 | Holiday Sync | วางแผนล่วงหน้าตามวันหยุดราชการ | Schedule |
 | Sales Analytics | วิเคราะห์ยอดขายและหมวดหมู่ | Sales |
+| Bean Order Fulfillment | จัดการออเดอร์เมล็ดกาแฟและติดตามพัสดุ | Bean Orders |
 | Real-time Sync | ข้อมูลอัปเดตทันทีข้ามเครื่อง | All |
 | Daily Web Push | แจ้งเตือนตารางงานผ่าน endpoint เดียวกับ inventory alerts | Schedule/Notifications |
 | Trusted-device Passkeys | ลด friction หลัง PIN verified โดยยังคุม device fingerprint | Settings/Auth |

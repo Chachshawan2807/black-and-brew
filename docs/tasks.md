@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-12
+> Version: 9.2 | Last Updated: 2026-07-23
 
 ---
 
@@ -19,7 +19,10 @@ Notable completed work:
 - [x] Branch 2 withdrawal batch (`branch-withdraw`, `record_branch_withdrawal_batch` RPC)
 - [x] Notification unread badge counter (IDB + cross-tab sync)
 - [x] Inventory accuracy gauge on `/inventory/accuracy`
-- [x] Retired: inventory recommended target stock; weather API; obsolete root protocol/skill stubs
+- [x] Bean orders module (`/bean-orders`, `bean_*` tables, TrackingMore, slip upload)
+- [x] AI full coverage: 24 AI-readable tables; deterministic bean orders + inventory accuracy routes
+- [x] Sidebar menu drag-reorder (`sidebar-menu-order.ts`)
+- [x] Retired: inventory recommended target stock; weather API; Market Insights module; obsolete root protocol/skill stubs
 
 See `docs/changelog.md` and git history for dated entries.
 

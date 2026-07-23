@@ -150,12 +150,6 @@ export type BranchWithdrawHistoryRow = {
   created_at: string;
 };
 
-export type BranchWithdrawDetailLine = {
-  itemName: string;
-  quantity: number;
-  created_at: string;
-};
-
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -289,41 +283,5 @@ export async function fetchBranchWithdrawalHistory(limit = 30) {
       error: getErrorMessage(error),
       data: [] as BranchWithdrawHistoryRow[],
     };
-  }
-}
-
-export async function fetchBranchWithdrawalDetail(withdrawalId: string) {
-  try {
-    const authError = await requireReadAccess();
-    if (authError) return { success: false as const, error: authError };
-
-    const note = buildBranchWithdrawNote(withdrawalId);
-    const supabase = getSupabaseAdmin();
-
-    const { data, error } = await supabase
-      .from('inventory_transactions')
-      .select('quantity, created_at, inventory_items(name)')
-      .eq('type', 'IN')
-      .eq('note', note)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error(
-        '[fetchBranchWithdrawalDetail] Supabase Error:',
-        error.message,
-        error.details,
-      );
-      return { success: false as const, error: error.message };
-    }
-
-    const lines: BranchWithdrawDetailLine[] = (data ?? []).map((row) => ({
-      itemName: (row.inventory_items as { name?: string } | null)?.name ?? '—',
-      quantity: Number(row.quantity) || 0,
-      created_at: row.created_at as string,
-    }));
-
-    return { success: true as const, data: lines };
-  } catch (error: unknown) {
-    return { success: false as const, error: getErrorMessage(error) };
   }
 }

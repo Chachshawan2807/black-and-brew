@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import {
   BRANCH_WITHDRAW_DRAFT_KEY,
+  buildBranchWithdrawDraftLines,
   clearBranchWithdrawDraft,
   emptyDraftRow,
+  mergeRowsWithDisplayItemIds,
   parseBranchWithdrawDraft,
   readBranchWithdrawDraft,
   serializeBranchWithdrawDraft,
@@ -69,5 +71,37 @@ describe('branch withdraw draft', () => {
 
     clearBranchWithdrawDraft(storage);
     expect(readBranchWithdrawDraft(storage)).toBeNull();
+  });
+
+  test('buildBranchWithdrawDraftLines maps display items to draft payloads', () => {
+    const lines = buildBranchWithdrawDraftLines(
+      [{ id: 'a', name: 'นม' }, { id: 'b', name: 'ชา' }],
+      { a: { qtyBranch1: '2', qtyBranch2: '', branch2Unit: '' } },
+    );
+    expect(lines).toEqual([
+      { itemId: 'a', name: 'นม', qtyBranch1: '2', qtyBranch2: '', branch2Unit: '' },
+      { itemId: 'b', name: 'ชา', qtyBranch1: '', qtyBranch2: '', branch2Unit: '' },
+    ]);
+  });
+
+  test('mergeRowsWithDisplayItemIds preserves reference when ids unchanged', () => {
+    const prev = {
+      a: { qtyBranch1: '1', qtyBranch2: '', branch2Unit: '' },
+      b: { qtyBranch1: '', qtyBranch2: '2', branch2Unit: 'ลัง' },
+    };
+    const merged = mergeRowsWithDisplayItemIds(['a', 'b'], prev);
+    expect(merged).toBe(prev);
+  });
+
+  test('mergeRowsWithDisplayItemIds adds new ids and drops removed ones', () => {
+    const prev = {
+      a: { qtyBranch1: '1', qtyBranch2: '', branch2Unit: '' },
+    };
+    const merged = mergeRowsWithDisplayItemIds(['a', 'c'], prev);
+    expect(merged).toEqual({
+      a: { qtyBranch1: '1', qtyBranch2: '', branch2Unit: '' },
+      c: emptyDraftRow(),
+    });
+    expect(merged).not.toBe(prev);
   });
 });

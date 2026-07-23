@@ -62,7 +62,7 @@ import {
   requestNotificationPermission,
   SW_INVENTORY_PUSH_RECEIVED,
 } from '@/lib/pwa-notification-bridge';
-import { shouldDeferOsNotificationToPush } from '@/lib/push-subscription-client';
+import { shouldDeferOsNotificationToPush, refreshLocalPushSubscriptionState, wantsPushRegistration } from '@/lib/push-subscription-client';
 import { isScheduleNotification } from '@/lib/notification-display-icon';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { shouldReconnectRealtimeOnResume } from '@/lib/supabase-realtime-resume';
@@ -175,6 +175,10 @@ export function useInventoryNotifications() {
   useEffect(() => {
     sessionIdRef.current = getClientSessionId();
     void syncFromStorage();
+    const prefs = loadNotificationPreferences();
+    if (wantsPushRegistration(prefs)) {
+      void refreshLocalPushSubscriptionState();
+    }
   }, [syncFromStorage]);
 
   useEffect(() => {

@@ -11,7 +11,7 @@ import { getCarrierLabel } from '@/lib/bean-orders/carriers';
 import { getDeliveryTypeLabel } from '@/lib/bean-orders/delivery';
 import { formatBeanOrderShareText } from '@/lib/bean-orders/order-share-text';
 import { OrderListStatusGroup } from './OrderStatusBadge';
-import { BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
+import { BEAN_ORDER_BTN_ICON, BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -98,7 +98,7 @@ export function BeanOrderListItem({ order, locale }: Props) {
             event.preventDefault();
             event.stopPropagation();
           }}
-          className="absolute left-3 top-3 z-10 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground bb-transition hover:bg-muted/50 hover:text-foreground hover:bb-shadow-sm sm:left-4 lg:static"
+          className={`absolute left-3 top-3 z-10 h-9 w-9 shrink-0 text-muted-foreground sm:left-4 lg:static ${BEAN_ORDER_BTN_ICON}`}
           aria-label="คัดลอกรายละเอียดออเดอร์"
           title="คัดลอกรายละเอียด"
         >

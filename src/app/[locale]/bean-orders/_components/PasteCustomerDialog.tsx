@@ -5,6 +5,8 @@ import { Loader2 } from 'lucide-react';
 import type { ParsedBeanOrderCustomer } from '@/lib/bean-orders/parse-share-text';
 import { formatThaiPostalAddressLine } from '@/lib/bean-orders/thai-postal-lookup';
 
+import { BEAN_ORDER_BTN_DIALOG, BEAN_ORDER_BTN_DIALOG_PRIMARY } from './bean-order-layout';
+
 type Props = {
   open: boolean;
   loading?: boolean;
@@ -94,7 +96,7 @@ export function PasteCustomerDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+            className={BEAN_ORDER_BTN_DIALOG}
           >
             ยกเลิก
           </button>
@@ -102,7 +104,7 @@ export function PasteCustomerDialog({
             type="button"
             onClick={onConfirm}
             disabled={loading || !data}
-            className="rounded-xl bg-foreground px-3 py-2 text-sm text-background disabled:opacity-50"
+            className={BEAN_ORDER_BTN_DIALOG_PRIMARY}
           >
             นำไปใส่
           </button>

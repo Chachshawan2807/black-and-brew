@@ -42,7 +42,12 @@ const sidebarMenuOrderStorage: StateStorage = {
 };
 
 export const useSidebarMenuOrder = create(
-  persist<SidebarMenuOrderStore>(
+  persist<
+    SidebarMenuOrderStore,
+    [],
+    [],
+    Pick<SidebarMenuOrderStore, 'orderIds'>
+  >(
     (set) => ({
       orderIds: null,
       setOrderIds: (orderIds) => set({ orderIds }),

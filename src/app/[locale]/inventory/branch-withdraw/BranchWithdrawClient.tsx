@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Copy, Eye, Loader2, Plus, Save, Search, X } from 'lucide-react';
@@ -10,9 +10,12 @@ import {
   type BranchWithdrawHistoryRow,
 } from '@/app/actions/branch-withdraw-actions';
 import {
+  buildBranchWithdrawDraftLines,
   clearBranchWithdrawDraft,
   emptyDraftRow,
+  mergeRowsWithDisplayItemIds,
   readBranchWithdrawDraft,
+  serializeBranchWithdrawDraft,
   writeBranchWithdrawDraft,
   type BranchWithdrawDraftRow,
 } from '@/lib/inventory-branch-withdraw-draft';
@@ -38,17 +41,6 @@ function sanitizeQtyInput(raw: string): string {
   const digitsOnly = raw.replace(/[^0-9]/g, '');
   if (digitsOnly === '') return '';
   return digitsOnly.replace(/^0+(?=\d)/, '');
-}
-
-function normalizeRowsByItems(
-  items: Item[],
-  source?: Record<string, BranchWithdrawDraftRow>,
-): Record<string, BranchWithdrawDraftRow> {
-  const rows: Record<string, BranchWithdrawDraftRow> = {};
-  for (const item of items) {
-    rows[item.id] = source?.[item.id] ?? emptyDraftRow();
-  }
-  return rows;
 }
 
 function formatHistoryDate(value: string): string {
@@ -129,6 +121,116 @@ function WithdrawRowInputs({
   );
 }
 
+type BranchWithdrawItemRowProps = {
+  item: Item;
+  row: BranchWithdrawDraftRow;
+  onUpdateRow: (itemId: string, patch: Partial<BranchWithdrawDraftRow>) => void;
+  onRemoveManualItem: (itemId: string) => void;
+};
+
+function branchWithdrawItemRowPropsEqual(
+  prev: BranchWithdrawItemRowProps,
+  next: BranchWithdrawItemRowProps,
+): boolean {
+  return (
+    prev.row === next.row &&
+    prev.onUpdateRow === next.onUpdateRow &&
+    prev.onRemoveManualItem === next.onRemoveManualItem &&
+    prev.item.id === next.item.id &&
+    prev.item.name === next.item.name &&
+    prev.item.unit === next.item.unit &&
+    prev.item.stock === next.item.stock &&
+    prev.item.computedOrderQty === next.item.computedOrderQty &&
+    prev.item.isManual === next.item.isManual &&
+    prev.item.sort_order === next.item.sort_order
+  );
+}
+
+const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
+  item,
+  row,
+  onUpdateRow,
+  onRemoveManualItem,
+}: BranchWithdrawItemRowProps) {
+  const handleQtyBranch1 = useCallback(
+    (value: string) => onUpdateRow(item.id, { qtyBranch1: value }),
+    [item.id, onUpdateRow],
+  );
+  const handleQtyBranch2 = useCallback(
+    (value: string) => onUpdateRow(item.id, { qtyBranch2: value }),
+    [item.id, onUpdateRow],
+  );
+  const handleBranch2Unit = useCallback(
+    (value: string) => onUpdateRow(item.id, { branch2Unit: value }),
+    [item.id, onUpdateRow],
+  );
+  const handleRemove = useCallback(
+    () => onRemoveManualItem(item.id),
+    [item.id, onRemoveManualItem],
+  );
+
+  return (
+    <article className="rounded-2xl border border-border bg-card p-4">
+      <div className={`flex flex-col gap-3 md:grid md:items-end md:gap-x-2 ${DESKTOP_GRID_COLS}`}>
+        <div className="min-w-0">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-xs">
+              {String(item.sort_order ?? 0).padStart(2, '0')}
+            </div>
+            {item.isManual ? (
+              <span className="inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-foreground/70">
+                เพิ่มจากคลัง
+              </span>
+            ) : null}
+            {item.isManual ? (
+              <button
+                type="button"
+                onClick={handleRemove}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-foreground/70 transition-colors hover:bg-card"
+                aria-label={`ลบ ${item.name} ออกจากรายการ`}
+              >
+                <X className="h-3 w-3" />
+                <span>ลบ</span>
+              </button>
+            ) : null}
+          </div>
+          <p className="text-base leading-snug">{item.name}</p>
+          <p className="text-xs text-foreground/70">หน่วย (สาขา 1): {item.unit || '-'}</p>
+          <p className="mt-1 text-xs text-foreground/70">
+            {item.isManual ? (
+              <>
+                ไม่อยู่ในรายการสั่งซื้อสาขา 2
+                <span className="mx-1.5 text-foreground/40">·</span>
+              </>
+            ) : (
+              <>
+                จำนวนสั่งซื้อ:{' '}
+                <span className="tabular-nums text-foreground">
+                  {formatInventoryNumericDisplay(item.computedOrderQty)}
+                </span>
+                <span className="mx-1.5 text-foreground/40">·</span>
+              </>
+            )}
+            คงเหลือในสต็อก:{' '}
+            <span className="tabular-nums text-foreground">
+              {formatInventoryNumericDisplay(item.stock)}
+            </span>
+          </p>
+        </div>
+
+        <div className={MOBILE_INPUT_GRID_CLASS}>
+          <WithdrawRowInputs
+            row={row}
+            onQtyBranch1={handleQtyBranch1}
+            onQtyBranch2={handleQtyBranch2}
+            onBranch2Unit={handleBranch2Unit}
+          />
+        </div>
+      </div>
+    </article>
+  );
+}, branchWithdrawItemRowPropsEqual);
+
 export default function BranchWithdrawClient({ initialItems, initialHistory, locale }: Props) {
   const router = useRouter();
   const isReadOnly = useReadOnly();
@@ -148,11 +250,12 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
   );
 
   const [rows, setRows] = useState<Record<string, BranchWithdrawDraftRow>>(() => {
+    const itemIds = displayItems.map((item) => item.id);
     if (typeof window === 'undefined') {
-      return normalizeRowsByItems(displayItems);
+      return mergeRowsWithDisplayItemIds(itemIds, {});
     }
     const draft = readBranchWithdrawDraft(window.sessionStorage);
-    return normalizeRowsByItems(displayItems, draft?.rows);
+    return mergeRowsWithDisplayItemIds(itemIds, draft?.rows ?? {});
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -172,6 +275,12 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
   const previewDialogRef = useRef<HTMLDialogElement | null>(null);
   const historyLineDialogRef = useRef<HTMLDialogElement | null>(null);
   const addItemDialogRef = useRef<HTMLDialogElement | null>(null);
+  const draftPersistSignatureRef = useRef<string | null>(null);
+
+  const displayItemIdKey = useMemo(
+    () => displayItems.map((item) => item.id).join('\0'),
+    [displayItems],
+  );
 
   useEffect(() => {
     setHistory(initialHistory);
@@ -179,14 +288,18 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const serialized = serializeBranchWithdrawDraft({ rows, extraItemIds });
+    if (draftPersistSignatureRef.current === serialized) return;
+    draftPersistSignatureRef.current = serialized;
     writeBranchWithdrawDraft(window.sessionStorage, { rows, extraItemIds });
   }, [extraItemIds, rows]);
 
   useEffect(() => {
-    setRows((prev) => normalizeRowsByItems(displayItems, prev));
-  }, [displayItems]);
+    const itemIds = displayItemIdKey ? displayItemIdKey.split('\0') : [];
+    setRows((prev) => mergeRowsWithDisplayItemIds(itemIds, prev));
+  }, [displayItemIdKey]);
 
-  const displayedItemIds = useMemo(() => new Set(displayItems.map((item) => item.id)), [displayItems]);
+  const displayedItemIds = useMemo(() => new Set(displayItemIdKey.split('\0').filter(Boolean)), [displayItemIdKey]);
 
   const availablePickItems = useMemo(
     () => getAvailableBranchWithdrawPickItems(inventorySource, displayedItemIds),
@@ -198,35 +311,16 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
     [addItemQuery, availablePickItems],
   );
 
-  const previewLineMessage = useMemo(() => {
-    const payload = displayItems.map((item) => {
-      const draft = rows[item.id] ?? emptyDraftRow();
-      return {
-        itemId: item.id,
-        name: item.name,
-        qtyBranch1: draft.qtyBranch1,
-        qtyBranch2: draft.qtyBranch2,
-        branch2Unit: draft.branch2Unit,
-      };
-    });
-    const filtered = filterBranchWithdrawSaveLines(payload);
-    return formatBranchWithdrawLineMessage(filtered);
+  const previewSummary = useMemo(() => {
+    const filtered = filterBranchWithdrawSaveLines(buildBranchWithdrawDraftLines(displayItems, rows));
+    return {
+      message: formatBranchWithdrawLineMessage(filtered),
+      count: filtered.length,
+    };
   }, [displayItems, rows]);
 
-  const previewLineCount = useMemo(() => {
-    return filterBranchWithdrawSaveLines(
-      displayItems.map((item) => {
-        const draft = rows[item.id] ?? emptyDraftRow();
-        return {
-          itemId: item.id,
-          name: item.name,
-          qtyBranch1: draft.qtyBranch1,
-          qtyBranch2: draft.qtyBranch2,
-          branch2Unit: draft.branch2Unit,
-        };
-      }),
-    ).length;
-  }, [displayItems, rows]);
+  const previewLineMessage = previewSummary.message;
+  const previewLineCount = previewSummary.count;
 
   const updateRow = useCallback(
     (itemId: string, patch: Partial<BranchWithdrawDraftRow>) => {
@@ -266,17 +360,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
     setCopyStatus(null);
 
     try {
-      const lines = displayItems.map((item) => {
-        const draft = rows[item.id] ?? emptyDraftRow();
-        return {
-          itemId: item.id,
-          name: item.name,
-          qtyBranch1: draft.qtyBranch1,
-          qtyBranch2: draft.qtyBranch2,
-          branch2Unit: draft.branch2Unit,
-        };
-      });
-
+      const lines = buildBranchWithdrawDraftLines(displayItems, rows);
       const savedLines = filterBranchWithdrawSaveLines(lines);
 
       const result = await saveBranchWithdrawal({
@@ -290,9 +374,11 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
 
       if (typeof window !== 'undefined') {
         clearBranchWithdrawDraft(window.sessionStorage);
+        draftPersistSignatureRef.current = null;
       }
       setExtraItemIds([]);
-      setRows(normalizeRowsByItems(buildBranchWithdrawDisplayItems(inventorySource, [])));
+      const resetItemIds = buildBranchWithdrawDisplayItems(inventorySource, []).map((item) => item.id);
+      setRows(mergeRowsWithDisplayItemIds(resetItemIds, {}));
 
       if (result.withdrawalId) {
         setHistory((prev) => [
@@ -434,69 +520,15 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
                 <span className="text-center">สาขา 2</span>
                 <span className="text-center leading-tight">{BRANCH2_UNIT_LABEL}</span>
               </div>
-              {displayItems.map((item) => {
-                const row = rows[item.id] ?? emptyDraftRow();
-                return (
-                  <article key={item.id} className="rounded-2xl border border-border bg-card p-4">
-                    <div className={`flex flex-col gap-3 md:grid md:items-end md:gap-x-2 ${DESKTOP_GRID_COLS}`}>
-                      <div className="min-w-0">
-                        <div className="mb-1 flex flex-wrap items-center gap-2">
-                          <div className="inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-xs">
-                            {String(item.sort_order ?? 0).padStart(2, '0')}
-                          </div>
-                          {item.isManual ? (
-                            <span className="inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-foreground/70">
-                              เพิ่มจากคลัง
-                            </span>
-                          ) : null}
-                          {item.isManual ? (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveManualItem(item.id)}
-                              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-foreground/70 transition-colors hover:bg-card"
-                              aria-label={`ลบ ${item.name} ออกจากรายการ`}
-                            >
-                              <X className="h-3 w-3" />
-                              <span>ลบ</span>
-                            </button>
-                          ) : null}
-                        </div>
-                        <p className="text-base leading-snug">{item.name}</p>
-                        <p className="text-xs text-foreground/70">หน่วย (สาขา 1): {item.unit || '-'}</p>
-                        <p className="mt-1 text-xs text-foreground/70">
-                          {item.isManual ? (
-                            <>
-                              ไม่อยู่ในรายการสั่งซื้อสาขา 2
-                              <span className="mx-1.5 text-foreground/40">·</span>
-                            </>
-                          ) : (
-                            <>
-                              จำนวนสั่งซื้อ:{' '}
-                              <span className="tabular-nums text-foreground">
-                                {formatInventoryNumericDisplay(item.computedOrderQty)}
-                              </span>
-                              <span className="mx-1.5 text-foreground/40">·</span>
-                            </>
-                          )}
-                          คงเหลือในสต็อก:{' '}
-                          <span className="tabular-nums text-foreground">
-                            {formatInventoryNumericDisplay(item.stock)}
-                          </span>
-                        </p>
-                      </div>
-
-                      <div className={MOBILE_INPUT_GRID_CLASS}>
-                        <WithdrawRowInputs
-                          row={row}
-                          onQtyBranch1={(value) => updateRow(item.id, { qtyBranch1: value })}
-                          onQtyBranch2={(value) => updateRow(item.id, { qtyBranch2: value })}
-                          onBranch2Unit={(value) => updateRow(item.id, { branch2Unit: value })}
-                        />
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+              {displayItems.map((item) => (
+                <BranchWithdrawItemRow
+                  key={item.id}
+                  item={item}
+                  row={rows[item.id] ?? emptyDraftRow()}
+                  onUpdateRow={updateRow}
+                  onRemoveManualItem={handleRemoveManualItem}
+                />
+              ))}
             </>
           )}
         </section>

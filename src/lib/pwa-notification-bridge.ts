@@ -1,7 +1,9 @@
 /** PWA home-screen badge + system notifications (iOS / Android / desktop). */
 
 import {
+  buildIosSafeNotificationOptions,
   buildOsNotificationOptions,
+  isIosWebPushClient,
   type OsNotificationOptions,
 } from '@/lib/pwa-assets';
 import {
@@ -141,19 +143,35 @@ export async function showSystemNotification(
     url: options?.url,
     enableVibrate: true,
   });
+  const iosSafePayload = isIosWebPushClient()
+    ? buildIosSafeNotificationOptions(payload)
+    : payload;
 
   try {
     const reg = await navigator.serviceWorker?.ready;
     if (reg?.showNotification) {
-      await reg.showNotification(formatted.title, payload);
+      await reg.showNotification(formatted.title, iosSafePayload);
       return;
     }
   } catch {
-    // fall through to Notification constructor
+    if (!isIosWebPushClient()) {
+      try {
+        const reg = await navigator.serviceWorker?.ready;
+        if (reg?.showNotification) {
+          await reg.showNotification(
+            formatted.title,
+            buildIosSafeNotificationOptions(payload),
+          );
+          return;
+        }
+      } catch {
+        // fall through to Notification constructor
+      }
+    }
   }
 
   try {
-    const n = new Notification(formatted.title, payload);
+    const n = new Notification(formatted.title, iosSafePayload);
     n.onclick = () => {
       window.focus();
       if (options?.url) window.location.href = options.url;

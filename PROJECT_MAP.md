@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-07-19 (GMT+7) | Version: 9.2
+> Generated: 2026-07-23 (GMT+7) | Version: 9.2
 
 Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) over reading this file wholesale. Canonical agent rules: `AGENTS.md`.
 
@@ -19,6 +19,7 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 | Branch Withdraw | `src/app/[locale]/inventory/branch-withdraw/` | Active |
 | Maintenance | `src/app/[locale]/maintenance/` | Active |
 | Sales | `src/app/[locale]/sales/` | Active |
+| Bean Orders | `src/app/[locale]/bean-orders/` | Active |
 | Settings | `src/app/[locale]/settings/` | Active |
 
 ---
@@ -39,6 +40,10 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 | `/[locale]/inventory/branch-withdraw` | `branch-withdraw/page.tsx` | `BranchWithdrawClient.tsx` |
 | `/[locale]/maintenance` | `maintenance/page.tsx` | `MaintenanceClient.tsx`, `_components/MaintenanceModals.tsx` |
 | `/[locale]/sales` | `sales/page.tsx` | `SalesClient.tsx`, `_components/SalesTopProductsChart.tsx` |
+| `/[locale]/bean-orders` | `bean-orders/page.tsx` | `BeanOrdersClient.tsx`, `_components/BeanOrderListItem.tsx` |
+| `/[locale]/bean-orders/new` | `bean-orders/new/page.tsx` | `BeanOrderFormClient.tsx` |
+| `/[locale]/bean-orders/[id]` | `bean-orders/[id]/page.tsx` | `BeanOrderDetailClient.tsx` |
+| `/[locale]/bean-orders/[id]/edit` | `bean-orders/[id]/edit/page.tsx` | `BeanOrderFormClient.tsx` |
 | `/[locale]/settings` | `settings/page.tsx` | `_components/*` (theme, sessions, passkeys, notifications) |
 
 Locales: `th`, `en`
@@ -51,6 +56,8 @@ Locales: `th`, `en`
 | `/api/daily-report` | `src/app/api/daily-report/route.ts` |
 | `/api/push/webhook` | `src/app/api/push/webhook/route.ts` |
 | `/api/inventory/offline-mutation` | `src/app/api/inventory/offline-mutation/route.ts` |
+| `/api/bean-orders/sync-tracking` | `src/app/api/bean-orders/sync-tracking/route.ts` |
+| `/api/bean-orders/tracking-webhook` | `src/app/api/bean-orders/tracking-webhook/route.ts` |
 
 ---
 
@@ -98,6 +105,7 @@ black-and-brew/
 | `login-history-actions.ts` | Login audit + active sessions |
 | `inventory-actions.ts` | Stock RPC, count policy, transactions, CRUD |
 | `branch-withdraw-actions.ts` | Branch 2 withdrawal batch save + history |
+| `bean-order-actions.ts` | Bean order CRUD, payment slips, shipping, TrackingMore |
 | `shift-actions.ts` | Shift CRUD, roster |
 | `holiday-actions.ts` | Google Calendar + regular holidays |
 | `maintenance-actions.ts` | Service record CRUD |
@@ -112,7 +120,7 @@ black-and-brew/
 
 ## Tests (`src/test/`)
 
-Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `inventory-branch-withdraw-menu.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `offline-mutation-route.test.ts`, `notification-unread-counter.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `live_shift_list.test.ts`
+Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `offline-mutation-route.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `live_shift_list.test.ts`, `bean-orders-*.test.ts`, `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-intent-classifier.test.ts`, `sidebar-menu-order.test.ts`, `pwa-sidebar-navigation.test.ts`
 
 ---
 

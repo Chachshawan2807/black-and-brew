@@ -10,7 +10,7 @@ import { canEditOrderLines } from '@/lib/bean-orders/order-status';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const BeanOrderFormClient = createLazyFeatureClient(
-  () => import('../BeanOrderFormClient'),
+  () => import('../../BeanOrderFormClient'),
   'กำลังโหลดฟอร์มออเดอร์...',
 );
 

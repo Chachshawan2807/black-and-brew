@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-19 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.2 | Last Updated: 2026-07-23 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -93,6 +93,7 @@ src/app/
 │   ├── login-history-actions.ts       # login_history CRUD + active sessions
 │   ├── inventory-actions.ts           # Stock RPC, count policy, transactions
 │   ├── branch-withdraw-actions.ts     # Branch 2 withdrawal batch
+│   ├── bean-order-actions.ts          # Bean order CRUD, payment, shipping
 │   ├── shift-actions.ts               # Shift CRUD
 │   ├── holiday-actions.ts             # Google Calendar + regular holidays
 │   ├── maintenance-actions.ts         # Service records
@@ -105,7 +106,10 @@ src/app/
 │   ├── chat/route.ts            # Streaming AI (ToolLoopAgent)
 │   ├── daily-report/route.ts    # Vercel Cron endpoint
 │   ├── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
-│   └── inventory/offline-mutation/route.ts  # Service worker background sync replay
+│   ├── inventory/offline-mutation/route.ts  # Service worker background sync replay
+│   └── bean-orders/
+│       ├── sync-tracking/route.ts       # Cron → TrackingMore poll
+│       └── tracking-webhook/route.ts    # TrackingMore webhook receiver
 └── [locale]/
     ├── layout.tsx               # PinGateway, sidebar, AI chat, PWA
     ├── page.tsx                 # Command Center
@@ -118,6 +122,7 @@ src/app/
     │   └── branch-withdraw/     # Branch 2 withdrawal batch
     ├── maintenance/             # MaintenanceClient + _components/
     ├── sales/                   # SalesClient + _components/
+    ├── bean-orders/             # BeanOrdersClient + form/detail pages + _components/
     └── settings/                # page.tsx + _components/ (theme, sessions, passkeys)
 ```
 
@@ -175,6 +180,17 @@ BranchWithdrawClient → saveBranchWithdrawal() → rpc('record_branch_withdrawa
 → INSERT inventory_branch_withdrawals header + per-line IN via set_inventory_stock logic
 → recordDataChange() for inventory notifications; draft in sessionStorage (inventory-branch-withdraw-draft:v1)
 → fetchBranchWithdrawalHistory() / fetchBranchWithdrawalDetail() for history panel
+```
+
+### Bean Orders (v9.2)
+
+```text
+BeanOrdersClient / BeanOrderFormClient / BeanOrderDetailClient
+→ bean-order-actions.ts (CRUD, slip upload, payment confirm, ship)
+→ bean_* tables + Storage bucket bean-order-slips
+→ TrackingMore: tracking-webhook + sync-tracking cron
+→ recordDataChange(module=bean_orders) for audit
+→ AI: fetchBeanOrdersSummary() + deterministic Bru report short-circuit
 ```
 
 ### Inventory Realtime Context (v8.6)

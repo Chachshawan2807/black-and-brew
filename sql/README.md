@@ -56,8 +56,8 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260711120000_inventory_branch_withdrawals.sql` | Branch 2 withdrawal header table + `record_branch_withdrawal_batch` RPC |
 | `20260711164656_reset_accuracy_history_major_overhaul.sql` | Reset accuracy ledger after gauge/report overhaul |
 | `20260711223000_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening |
-
 | `20260713100000_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel) |
+| `20260722140000_bean_orders.sql` | Bean order tables (`bean_*`), RLS, Storage bucket `bean-order-slips` |
 
 ## Cleanup notes
 

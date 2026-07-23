@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { BEAN_ORDER_BTN_LIST } from './bean-order-layout';
 
 type Props = {
   value: string;
@@ -75,7 +76,7 @@ export function AutocompleteTextField({
             <li key={suggestion}>
               <button
                 type="button"
-                className="w-full px-3 py-2 text-left text-sm hover:bg-muted/30"
+                className={BEAN_ORDER_BTN_LIST}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(suggestion)}
               >

@@ -1,12 +1,37 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-19 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.2 | Last Updated: 2026-07-23 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
 ---
 
 ## Active Decisions
+
+### DEC-085: AI Bru Full Coverage + Bean Order Gateway (v9.2)
+
+- Date: July 2026
+- Context: บรูต้องตอบคำถามออเดอร์เมล็ดกาแฟและความแม่นยำคลังได้แบบ deterministic โดยไม่พึ่ง LLM เดา; ขยาย AI-readable tables เป็น 24 ตาราง
+- Decision:
+  1. **Gateway:** `fetchBeanOrdersSummary()`, `fetchInventoryAccuracySummary()` in `ai-data-gateway.ts`; bean `bean_*` tables in `AI_ALLOWED_TABLES` with PII-safe presets.
+  2. **Deterministic routes:** `detect-bean-orders-query.ts`, `detect-inventory-accuracy-query.ts` → Bru report SSE (no LLM).
+  3. **Tool surface:** `getBeanOrdersSummary` in `database-tools.ts`; removed stale `getInventoryItemDetails` from chat tools.
+  4. **Intent classifier:** weighted scores route to tool subset + deterministic short-circuits.
+- Impact: `/api/chat` hot-path covers schedule, maintenance, sales, holidays, low-stock, store status, bean orders, inventory accuracy.
+- Evidence: `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-bean-orders-gateway.test.ts`, `format-bean-orders-chat-response.ts`, `format-inventory-accuracy-chat-response.ts`
+
+### DEC-084: Bean Orders Module (v9.2)
+
+- Date: July 2026
+- Context: Staff need a dedicated workflow for coffee bean orders with payment slips, shipping, and TrackingMore — separate from inventory stock deduction.
+- Decision:
+  1. Route: `src/app/[locale]/bean-orders/` with list, create, detail, edit pages.
+  2. Tables: `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments` (`20260722140000_bean_orders.sql`).
+  3. Mutations: `bean-order-actions.ts`; domain logic in `src/lib/bean-orders/`.
+  4. Tracking: `POST /api/bean-orders/tracking-webhook`, `GET /api/bean-orders/sync-tracking` (CRON_SECRET); `TRACKINGMORE_API_KEY`.
+  5. Storage: `bean-order-slips` bucket; dual-axis status (`payment_status` × `fulfillment_status`).
+- Impact: Sidebar link in `menu-list.ts`; audit via `recordDataChange(module=bean_orders)`; no inventory stock auto-deduction.
+- Evidence: `bean-orders-*.test.ts`, `docs/superpowers/specs/2026-07-22-bean-orders-design.md`
 
 ### DEC-083: Offline Inventory Mutation Queue + Policy Gates (v9.2)
 
@@ -55,6 +80,7 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
   2. Inventory recommended target stock — dropped by `20260708104230_remove_inventory_recommended_target_stock.sql`.
   3. Dashboard widgets: WeatherWidget, InventorySummaryCard, CommandCenterGrid.
   4. Weather forecasting (`/api/weather` / OpenWeatherMap) — AI external search is Tavily-only.
+  5. Market Insights module (`local_events`, `market_insight_runs`) — dropped by `20260622143800_drop_market_insights_tables.sql`.
 - Impact: Keep docs and code free of these as active features.
 
 ### DEC-079: Phased Performance Refactor Guardrails (v9.0)

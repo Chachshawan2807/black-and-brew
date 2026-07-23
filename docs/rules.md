@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-12 | Enforcement: Mandatory
+> Version: 9.2 | Last Updated: 2026-07-23 | Enforcement: Mandatory
 
 ---
 
@@ -24,6 +24,7 @@
 | `inventory_items` | `sort_order` | INTEGER, controls drag-and-drop ordering |
 | `inventory_config` | `settings` | JSONB containing `order`, `labels`, `widths` |
 | `push_subscriptions` | `profile_id`, `branch_id` | Daily schedule Web Push filtering; `branch_id` defaults to `main` |
+| `bean_orders` | `payment_status`, `fulfillment_status` | Dual-axis order status; history in `status_history` JSONB |
 
 ### TypeScript/React
 

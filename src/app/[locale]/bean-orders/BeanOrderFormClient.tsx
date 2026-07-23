@@ -15,9 +15,10 @@ import {
   type BeanCustomerRow,
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
-import { AddressProfilePicker } from '@/app/[locale]/bean-orders/_components/AddressProfilePicker';
+import { AddressProfilePickerDialog } from '@/app/[locale]/bean-orders/_components/AddressProfilePickerDialog';
 import { AutocompleteTextField } from '@/app/[locale]/bean-orders/_components/AutocompleteTextField';
 import { PasteCustomerDialog } from '@/app/[locale]/bean-orders/_components/PasteCustomerDialog';
+import { ClearCustomerConfirmDialog } from '@/app/[locale]/bean-orders/_components/ClearCustomerConfirmDialog';
 import {
   ThaiPostalAddressSection,
 } from '@/app/[locale]/bean-orders/_components/ThaiPostalAddressSection';
@@ -26,6 +27,7 @@ import {
   parseThaiPostalAddressLine,
   type ThaiPostalAddressValue,
 } from '@/lib/bean-orders/address';
+import { mergeCustomerAddressProfiles } from '@/lib/bean-orders/customer-address-persist';
 import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
 import {
   filterNumberSuggestions,
@@ -42,7 +44,18 @@ import {
 } from '@/lib/bean-orders/thai-postal-lookup';
 import type { WeightUnit } from '@/lib/bean-orders/types';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
-import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT } from './_components/bean-order-layout';
+import {
+  BEAN_ORDER_CARD,
+  BEAN_ORDER_BTN_DANGER_GHOST,
+  BEAN_ORDER_BTN_GHOST,
+  BEAN_ORDER_BTN_LIST,
+  BEAN_ORDER_BTN_PASTEL_FULL,
+  BEAN_ORDER_BTN_PRIMARY_FULL,
+  BEAN_ORDER_BTN_SM_DANGER,
+  BEAN_ORDER_BTN_SM_OUTLINE,
+  BEAN_ORDER_DETAIL_PAGE,
+  BEAN_ORDER_INPUT,
+} from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
 
 type InventoryItem = { id: string; name: string };
@@ -107,7 +120,7 @@ function emptyLine(): LineDraft {
     key: crypto.randomUUID(),
     inventoryItemId: '',
     weightValue: '',
-    weightUnit: 'g',
+    weightUnit: 'kg',
     unitPricePerKg: '',
   };
 }
@@ -178,6 +191,7 @@ export default function BeanOrderFormClient({
   const [pasteLoading, setPasteLoading] = useState(false);
   const [pasteError, setPasteError] = useState<string | null>(null);
   const [pasteData, setPasteData] = useState<ParsedBeanOrderCustomer | null>(null);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   const customerNameSuggestions = useMemo(() => {
     const fromCustomers = customerResults.map((customer) => customer.name);
@@ -216,34 +230,77 @@ export default function BeanOrderFormClient({
     if (result.success) setCustomerResults(result.data ?? []);
   }
 
-  async function handleSelectCustomer(customer: BeanCustomerRow) {
-    setSelectedCustomer(customer);
-    setCustomerQuery(customer.name);
-    setCustomerResults([]);
-    const addr = await fetchBeanCustomerAddresses(customer.id);
-    if (!addr.success || !addr.data?.length) return;
+  async function resolveCustomerByName(name: string): Promise<BeanCustomerRow | null> {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
 
-    if (addr.data.length === 1) {
+    const local = customerResults.find((row) => row.name.trim() === trimmed);
+    if (local) return local;
+
+    const result = await searchBeanCustomers(trimmed);
+    if (!result.success || !result.data?.length) return null;
+
+    return (
+      result.data.find((row) => row.name.trim() === trimmed) ??
+      result.data.find((row) => row.name.trim().toLowerCase() === trimmed.toLowerCase()) ??
+      null
+    );
+  }
+
+  function applyRecipientFromProfiles(customer: BeanCustomerRow, profiles: ThaiPostalAddressValue[]) {
+    const merged = mergeCustomerAddressProfiles(
+      profiles,
+      profilesMatchingName(formSuggestions.recipientProfiles, customer.name),
+    );
+
+    if (merged.length === 0) {
+      setRecipient((prev) => ({
+        ...prev,
+        name: customer.name,
+        phone: customer.phone ?? prev.phone,
+      }));
+      return;
+    }
+
+    if (merged.length === 1) {
       setRecipient({
-        ...recipientFromSavedAddress(addr.data[0]!),
+        ...merged[0]!,
         name: customer.name,
       });
       return;
     }
 
     setCustomerAddressPicker(
-      addr.data.map((row) => ({
-        ...recipientFromSavedAddress(row),
+      merged.map((profile) => ({
+        ...profile,
         name: customer.name,
       })),
     );
   }
 
-  function handleCustomerNameSelect(name: string) {
+  async function handleSelectCustomer(customer: BeanCustomerRow) {
+    setSelectedCustomer(customer);
+    setCustomerQuery(customer.name);
+    setCustomerResults([]);
+    setCustomerAddressPicker(null);
+
+    const addr = await fetchBeanCustomerAddresses(customer.id);
+    const savedProfiles =
+      addr.success && addr.data?.length
+        ? addr.data.map((row) => ({
+            ...recipientFromSavedAddress(row),
+            name: customer.name,
+          }))
+        : [];
+
+    applyRecipientFromProfiles(customer, savedProfiles);
+  }
+
+  async function handleCustomerNameSelect(name: string) {
     setCustomerQuery(name);
-    const customer = customerResults.find((row) => row.name === name);
+    const customer = await resolveCustomerByName(name);
     if (customer) {
-      void handleSelectCustomer(customer);
+      await handleSelectCustomer(customer);
       return;
     }
 
@@ -259,10 +316,37 @@ export default function BeanOrderFormClient({
 
   async function handleCreateCustomer() {
     if (!customerQuery.trim()) return;
-    const result = await createBeanCustomer({ name: customerQuery.trim() });
+
+    const formattedAddress = formatThaiPostalAddressLine({
+      addressLine: recipient.addressLine,
+      subdistrict: recipient.subdistrict,
+      district: recipient.district,
+      province: recipient.province,
+      postalCode: recipient.postalCode,
+    });
+
+    const result = await createBeanCustomer({
+      name: customerQuery.trim(),
+      phone: recipient.phone || undefined,
+      address: formattedAddress.trim()
+        ? {
+            recipientName: recipient.name.trim() || customerQuery.trim(),
+            recipientPhone: recipient.phone || undefined,
+            recipientAddress: formattedAddress,
+            recipientProvince: recipient.province || undefined,
+            recipientPostalCode: recipient.postalCode || undefined,
+          }
+        : undefined,
+    });
+
     if (result.success && result.data) {
       setSelectedCustomer(result.data);
       setCustomerResults([]);
+      setRecipient((prev) => ({
+        ...prev,
+        name: result.data!.name,
+        phone: result.data!.phone ?? prev.phone,
+      }));
     }
   }
 
@@ -344,6 +428,32 @@ export default function BeanOrderFormClient({
       phone: pasteData.phone,
     });
     closePasteDialog();
+  }
+
+  function handleClearCustomer() {
+    if (isReadOnly) {
+      setError(READ_ONLY_DENY_MSG);
+      return;
+    }
+    setCustomerQuery('');
+    setCustomerResults([]);
+    setSelectedCustomer(null);
+    setCustomerAddressPicker(null);
+    setRecipient(emptyThaiPostalAddress());
+    closePasteDialog();
+    setClearConfirmOpen(false);
+  }
+
+  function openClearCustomerConfirm() {
+    if (isReadOnly) {
+      setError(READ_ONLY_DENY_MSG);
+      return;
+    }
+    setClearConfirmOpen(true);
+  }
+
+  function closeClearCustomerConfirm() {
+    setClearConfirmOpen(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -430,15 +540,26 @@ export default function BeanOrderFormClient({
       <section className={`${BEAN_ORDER_CARD} mb-5 space-y-3 p-4`}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-normal text-muted-foreground">ลูกค้า</h2>
-          <button
-            type="button"
-            onClick={() => void handlePasteCustomer()}
-            disabled={isReadOnly || pasteLoading}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-xs text-foreground disabled:opacity-50"
-          >
-            <Clipboard className="h-3.5 w-3.5" aria-hidden />
-            วางข้อมูลลูกค้า
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void handlePasteCustomer()}
+              disabled={isReadOnly || pasteLoading}
+              className={BEAN_ORDER_BTN_SM_OUTLINE}
+            >
+              <Clipboard className="h-3.5 w-3.5" aria-hidden />
+              วางข้อมูลลูกค้า
+            </button>
+            <button
+              type="button"
+              onClick={openClearCustomerConfirm}
+              disabled={isReadOnly}
+              className={BEAN_ORDER_BTN_SM_DANGER}
+            >
+              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+              ล้างข้อมูล
+            </button>
+          </div>
         </div>
         <AutocompleteTextField
           value={customerQuery}
@@ -452,7 +573,7 @@ export default function BeanOrderFormClient({
           <ul className="rounded-xl border border-border divide-y">
             {customerResults.map((c) => (
               <li key={c.id}>
-                <button type="button" onClick={() => void handleSelectCustomer(c)} className="w-full px-3 py-2 text-left text-sm hover:bg-muted/30">
+                <button type="button" onClick={() => void handleSelectCustomer(c)} className={BEAN_ORDER_BTN_LIST}>
                   {c.name} {c.phone ? `/ ${c.phone}` : ''}
                 </button>
               </li>
@@ -460,12 +581,19 @@ export default function BeanOrderFormClient({
           </ul>
         )}
         {!selectedCustomer && customerQuery.trim() && (
-          <button type="button" onClick={() => void handleCreateCustomer()} className="text-sm text-foreground underline">
-            สร้างลูกค้าใหม่ "{customerQuery.trim()}"
+          <button
+            type="button"
+            onClick={() => void handleCreateCustomer()}
+            disabled={isReadOnly}
+            className={BEAN_ORDER_BTN_PASTEL_FULL}
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            สร้างลูกค้าใหม่ &quot;{customerQuery.trim()}&quot;
           </button>
         )}
         {customerAddressPicker && (
-          <AddressProfilePicker
+          <AddressProfilePickerDialog
+            open
             title="เลือกที่อยู่ของลูกค้า"
             profiles={customerAddressPicker}
             onSelect={(profile) => {
@@ -473,6 +601,7 @@ export default function BeanOrderFormClient({
               setCustomerQuery(profile.name);
               setCustomerAddressPicker(null);
             }}
+            onCancel={() => setCustomerAddressPicker(null)}
           />
         )}
 
@@ -491,7 +620,7 @@ export default function BeanOrderFormClient({
       <section className={`${BEAN_ORDER_CARD} mb-5 p-4`}>
         <div className="mb-3 flex items-center justify-between gap-2">
           <h2 className="text-xs text-muted-foreground">รายการสินค้า</h2>
-          <button type="button" onClick={() => setLines((prev) => [...prev, emptyLine()])} className="inline-flex h-10 items-center gap-1 rounded-full px-3 text-sm hover:bg-muted/30">
+          <button type="button" onClick={() => setLines((prev) => [...prev, emptyLine()])} className={`h-10 ${BEAN_ORDER_BTN_GHOST}`}>
             <Plus className="h-4 w-4" aria-hidden /> เพิ่มรายการ
           </button>
         </div>
@@ -561,7 +690,7 @@ export default function BeanOrderFormClient({
                 }
                 suggestions={filterStringSuggestions(priceSuggestions, line.unitPricePerKg)}
                 inputClass={inputClass}
-                placeholder="ราคา/กก. (บาท)"
+                placeholder="ราคา/หน่วย (บาท)"
                 inputMode="decimal"
                 required
               />
@@ -573,7 +702,7 @@ export default function BeanOrderFormClient({
                       <li key={`${preset.inventoryItemId}-${preset.weightValue}-${preset.unitPricePerKg}`}>
                         <button
                           type="button"
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-muted/30"
+                          className={BEAN_ORDER_BTN_LIST}
                           onClick={() => applyLinePreset(index, preset)}
                         >
                           {preset.weightValue} {preset.weightUnit === 'kg' ? 'กก.' : 'ก.'} / {preset.unitPricePerKg.toLocaleString('th-TH')} ฿/กก.
@@ -587,7 +716,7 @@ export default function BeanOrderFormClient({
                 <button
                   type="button"
                   onClick={() => setLines((prev) => prev.filter((_, i) => i !== index))}
-                  className="inline-flex h-11 items-center justify-center gap-1 self-center text-sm text-red-600 sm:col-start-4"
+                  className={BEAN_ORDER_BTN_DANGER_GHOST}
                 >
                   <Trash2 className="h-4 w-4" aria-hidden />
                   <span className="sm:sr-only">ลบ</span>
@@ -640,7 +769,7 @@ export default function BeanOrderFormClient({
       <button
         type="submit"
         disabled={saving || isReadOnly}
-        className="h-12 w-full rounded-full bg-foreground text-background text-sm disabled:opacity-50"
+        className={BEAN_ORDER_BTN_PRIMARY_FULL}
       >
         {saving ? 'กำลังบันทึก...' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึกออเดอร์'}
       </button>
@@ -652,6 +781,11 @@ export default function BeanOrderFormClient({
         data={pasteData}
         onConfirm={applyPastedCustomer}
         onCancel={closePasteDialog}
+      />
+      <ClearCustomerConfirmDialog
+        open={clearConfirmOpen}
+        onConfirm={handleClearCustomer}
+        onCancel={closeClearCustomerConfirm}
       />
     </form>
   );

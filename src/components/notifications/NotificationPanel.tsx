@@ -22,8 +22,6 @@ import { ExpandableLines } from '@/components/ui/expandable-lines';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { NotificationItemIcon } from '@/components/notifications/NotificationItemIcon';
 import { isScheduleNotification } from '@/lib/notification-display-icon';
-import { PWA_BRAND_ICON } from '@/lib/pwa-assets';
-import Image from 'next/image';
 
 function getNotificationDetailLines(item: InventoryNotification): string[] {
   if (isScheduleNotification(item) && item.fieldSummary.trim()) {
@@ -157,16 +155,6 @@ export function NotificationPanel() {
             >
               <header className="flex items-center justify-between gap-3 px-4 py-4 border-b border-border shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-transparent">
-                    <Image
-                      src={PWA_BRAND_ICON}
-                      alt=""
-                      width={20}
-                      height={20}
-                      className="h-5 w-5 object-contain dark:invert dark:brightness-0 dark:opacity-90"
-                      aria-hidden
-                    />
-                  </div>
                   <div className="min-w-0">
                     <h2 className="text-[15px] font-normal text-foreground leading-snug">
                       {isTh ? 'การแจ้งเตือน' : 'Notifications'}

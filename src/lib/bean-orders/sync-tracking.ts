@@ -12,6 +12,13 @@ export type SyncBeanOrderTrackingResult = {
   repaired: number;
 };
 
+/** Rows with null status must sync — PostgREST `.neq('delivered')` omits NULL in SQL. */
+export function shouldIncludeInTrackingSync(status: string | null | undefined): boolean {
+  if (!status) return true;
+  const normalized = status.toLowerCase().replace(/[_\s-]+/g, '');
+  return !normalized.includes('delivered');
+}
+
 async function syncShipmentRows(
   rows: Array<{
     id: string;
@@ -68,15 +75,18 @@ export async function syncBeanOrderTrackingStatuses(): Promise<SyncBeanOrderTrac
   const { data, error } = await supabase
     .from('bean_order_shipments')
     .select('id, carrier_code, tracking_number, tracking_status')
-    .not('tracking_number', 'is', null)
-    .neq('tracking_status', 'delivered');
+    .not('tracking_number', 'is', null);
 
   if (error) {
     console.error('Supabase Error (syncBeanOrderTrackingStatuses):', error.message, error.details);
     throw new Error(error.message);
   }
 
-  return syncShipmentRows(data ?? []);
+  const rows = (data ?? []).filter((row) =>
+    shouldIncludeInTrackingSync(row.tracking_status as string | null),
+  );
+
+  return syncShipmentRows(rows);
 }
 
 /** Refresh only shipments with missing or stale tracking status (for list page). */

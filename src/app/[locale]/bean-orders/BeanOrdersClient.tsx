@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { BeanOrderListItem } from './_components/BeanOrderListItem';
 import {
+  BEAN_ORDER_BTN_PRIMARY_LINK,
   BEAN_ORDER_INPUT,
   BEAN_ORDER_LIST_CARD,
   BEAN_ORDER_LIST_GRID,
@@ -49,7 +50,7 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
         </div>
         <Link
           href={`/${locale}/bean-orders/new`}
-          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-sm text-background"
+          className={BEAN_ORDER_BTN_PRIMARY_LINK}
         >
           <Plus className="h-4 w-4" aria-hidden /> สร้างออเดอร์
         </Link>

@@ -2,6 +2,7 @@
 
 import { formatAddressProfileLabel } from '@/lib/bean-orders/address';
 import type { ThaiPostalAddressValue } from '@/lib/bean-orders/address';
+import { BEAN_ORDER_BTN_LIST } from './bean-order-layout';
 
 type Props = {
   title: string;
@@ -20,7 +21,7 @@ export function AddressProfilePicker({ title, profiles, onSelect }: Props) {
           <li key={`${profile.name}-${formatAddressProfileLabel(profile)}`}>
             <button
               type="button"
-              className="w-full px-3 py-2 text-left text-sm hover:bg-muted/30"
+              className={BEAN_ORDER_BTN_LIST}
               onClick={() => onSelect(profile)}
             >
               <span className="block font-normal">{profile.name}</span>

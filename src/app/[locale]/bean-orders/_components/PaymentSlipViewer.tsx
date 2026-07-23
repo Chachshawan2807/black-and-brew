@@ -1,23 +1,39 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X, ZoomIn } from 'lucide-react';
 import { getBeanOrderSlipSignedUrl } from '@/app/actions/bean-order-actions';
+import {
+  BEAN_ORDER_ACTION_BTN_OUTLINE,
+  BEAN_ORDER_BTN_ICON,
+  BEAN_ORDER_BTN_SLIP,
+  BEAN_ORDER_BTN_SLIP_PANEL,
+} from './bean-order-layout';
 
 type Props = {
   orderId: string;
   slipUrl: string | null;
   uploadedAt?: string | null;
+  variant?: 'compact' | 'panel';
 };
 
 const DIALOG_CLASS =
-  'fixed left-1/2 top-1/2 z-50 flex max-h-[min(92dvh,900px)] w-[min(560px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-black/50';
+  'fixed left-1/2 top-1/2 z-50 m-0 flex w-fit max-w-[min(92vw,360px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-black/50 sm:max-w-[380px]';
 
-export function PaymentSlipViewer({ orderId, slipUrl: initialSlipUrl, uploadedAt }: Props) {
+const SLIP_IMAGE_CLASS =
+  'max-h-[min(58dvh,420px)] w-auto max-w-[min(86vw,320px)] object-contain sm:max-h-[min(62dvh,460px)] sm:max-w-[340px] md:max-h-[440px] md:max-w-[320px]';
+
+export function PaymentSlipViewer({
+  orderId,
+  slipUrl: initialSlipUrl,
+  uploadedAt,
+  variant = 'compact',
+}: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [slipUrl, setSlipUrl] = useState(initialSlipUrl);
-  const [loading, setLoading] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,125 +41,198 @@ export function PaymentSlipViewer({ orderId, slipUrl: initialSlipUrl, uploadedAt
   }, [initialSlipUrl]);
 
   useEffect(() => {
+    if (!uploadedAt || slipUrl) return;
+    void loadSlipUrl('preview');
+  }, [orderId, uploadedAt, slipUrl]);
+
+  useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+    if (expanded && !dialog.open) dialog.showModal();
+    if (!expanded && dialog.open) dialog.close();
+  }, [expanded]);
 
-  async function refreshSlipUrl() {
+  async function loadSlipUrl(mode: 'preview' | 'modal') {
+    const setLoading = mode === 'preview' ? setPreviewLoading : setModalLoading;
     setLoading(true);
-    setError(null);
+    if (mode === 'modal') setError(null);
+
     const result = await getBeanOrderSlipSignedUrl(orderId);
     setLoading(false);
+
     if (!result.success) {
-      setError(result.error ?? 'โหลดสลิปไม่สำเร็จ');
+      if (mode === 'modal') setError(result.error ?? 'โหลดสลิปไม่สำเร็จ');
       return;
     }
     if (!result.slipUrl) {
-      setError('ไม่พบไฟล์สลิป');
+      if (mode === 'modal') setError('ไม่พบไฟล์สลิป');
       return;
     }
     setSlipUrl(result.slipUrl);
   }
 
-  async function handleOpen() {
-    setOpen(true);
+  async function handleExpand() {
+    setExpanded(true);
     if (!slipUrl) {
-      await refreshSlipUrl();
+      await loadSlipUrl('modal');
     }
   }
+
+  function handleClose() {
+    setExpanded(false);
+    setError(null);
+  }
+
+  function formatUploadedAt(value: string): string {
+    return new Date(value).toLocaleString('th-TH', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  const isPanel = variant === 'panel';
+  const slipButtonClass = isPanel ? BEAN_ORDER_BTN_SLIP_PANEL : BEAN_ORDER_BTN_SLIP;
+  const previewImageClass = isPanel
+    ? 'max-h-full max-w-full object-contain transition group-hover:opacity-90'
+    : 'block max-h-40 w-auto max-w-[10rem] object-contain object-left transition group-hover:opacity-90 sm:max-h-48 sm:max-w-[11rem]';
 
   return (
     <>
       <button
         type="button"
-        onClick={() => void handleOpen()}
-        className="group block w-full max-w-sm overflow-hidden rounded-xl border border-border bg-muted/20 text-left"
+        onClick={() => void handleExpand()}
+        className={slipButtonClass}
+        aria-label="ขยายดูสลิปชำระเงิน"
       >
-        {slipUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={slipUrl}
-            alt="สลิปชำระเงิน"
-            className="max-h-48 w-full object-contain transition group-hover:opacity-90"
-            onError={() => {
-              void refreshSlipUrl();
-            }}
-          />
-        ) : (
-          <div className="flex min-h-24 items-center justify-center px-4 py-6 text-sm text-muted-foreground">
-            กดเพื่อดูสลิป
+        <div
+          className={
+            isPanel
+              ? 'flex min-h-0 flex-1 flex-col'
+              : 'inline-flex w-fit max-w-full flex-col'
+          }
+        >
+          {previewLoading ? (
+            <div
+              className={
+                isPanel
+                  ? 'flex flex-1 items-center justify-center px-3 py-4 text-sm text-muted-foreground'
+                  : 'flex min-h-24 min-w-[7rem] items-center justify-center px-3 py-4 text-sm text-muted-foreground'
+              }
+            >
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              กำลังโหลด...
+            </div>
+          ) : slipUrl ? (
+            <div
+              className={
+                isPanel
+                  ? 'flex min-h-0 flex-1 items-center justify-center p-2 sm:p-3'
+                  : undefined
+              }
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={slipUrl}
+                alt="สลิปชำระเงิน"
+                className={previewImageClass}
+                onError={() => {
+                  void loadSlipUrl('preview');
+                }}
+              />
+            </div>
+          ) : (
+            <div
+              className={
+                isPanel
+                  ? 'flex flex-1 items-center justify-center px-3 py-4 text-sm text-muted-foreground'
+                  : 'flex min-h-24 min-w-[7rem] items-center justify-center px-3 py-4 text-sm text-muted-foreground'
+              }
+            >
+              กดเพื่อดูสลิป
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-2 border-t border-border px-2 py-1.5 text-xs text-muted-foreground">
+            <ZoomIn className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {uploadedAt ? (
+              <span className="tabular-nums whitespace-nowrap">{formatUploadedAt(uploadedAt)}</span>
+            ) : null}
           </div>
-        )}
-        <div className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
-          กดเพื่อขยายดูสลิป
-          {uploadedAt ? (
-            <span className="tabular-nums">
-              {' '}
-              / อัปโหลด{' '}
-              {new Date(uploadedAt).toLocaleString('th-TH', {
-                day: 'numeric',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-          ) : null}
         </div>
       </button>
 
-      <dialog
-        ref={dialogRef}
-        className={DIALOG_CLASS}
-        onClose={() => setOpen(false)}
-        onCancel={(event) => {
-          event.preventDefault();
-          setOpen(false);
-        }}
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-          <h3 className="text-sm text-foreground">สลิปชำระเงิน</h3>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="inline-flex h-9 items-center rounded-full px-3 text-sm text-muted-foreground hover:bg-muted/40"
+      {expanded ? (
+        <dialog
+          ref={dialogRef}
+          className={DIALOG_CLASS}
+          closedby="any"
+          onClose={handleClose}
+          onCancel={handleClose}
+        >
+          <div
+            className="flex items-center justify-between gap-3 border-b border-border px-4 py-3"
+            onClick={(event) => event.stopPropagation()}
           >
-            ปิด
-          </button>
-        </div>
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto p-4">
-          {loading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              กำลังโหลดสลิป...
-            </div>
-          ) : error ? (
-            <div className="space-y-3 text-center">
-              <p className="text-sm text-red-600">{error}</p>
-              <button
-                type="button"
-                onClick={() => void refreshSlipUrl()}
-                className="inline-flex h-10 items-center rounded-full border border-border px-4 text-sm"
+            <h3 className="text-sm text-foreground">สลิปชำระเงิน</h3>
+            <button
+              type="button"
+              onClick={handleClose}
+              className={`h-9 w-9 text-muted-foreground ${BEAN_ORDER_BTN_ICON}`}
+              aria-label="ปิด"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+          <div
+            className="flex min-h-0 flex-col items-center justify-center overflow-auto p-4"
+            onClick={handleClose}
+            role="presentation"
+          >
+            {modalLoading ? (
+              <div
+                className="flex items-center gap-2 text-sm text-muted-foreground"
+                onClick={(event) => event.stopPropagation()}
               >
-                ลองใหม่
-              </button>
-            </div>
-          ) : slipUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={slipUrl}
-              alt="สลิปชำระเงิน"
-              className="max-h-[min(72dvh,760px)] w-auto max-w-full object-contain"
-              onError={() => {
-                void refreshSlipUrl();
-              }}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">ไม่พบไฟล์สลิป</p>
-          )}
-        </div>
-      </dialog>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                กำลังโหลดสลิป...
+              </div>
+            ) : error ? (
+              <div
+                className="space-y-3 text-center"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <p className="text-sm text-red-600">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => void loadSlipUrl('modal')}
+                  className={BEAN_ORDER_ACTION_BTN_OUTLINE}
+                >
+                  ลองใหม่
+                </button>
+              </div>
+            ) : slipUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={slipUrl}
+                alt="สลิปชำระเงิน"
+                className={SLIP_IMAGE_CLASS}
+                onClick={(event) => event.stopPropagation()}
+                onError={() => {
+                  void loadSlipUrl('modal');
+                }}
+              />
+            ) : (
+              <p
+                className="text-sm text-muted-foreground"
+                onClick={(event) => event.stopPropagation()}
+              >
+                ไม่พบไฟล์สลิป
+              </p>
+            )}
+          </div>
+        </dialog>
+      ) : null}
     </>
   );
 }

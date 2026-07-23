@@ -48,17 +48,29 @@ function buildNotificationOptions(payload, unreadCount, overrides = {}) {
   };
 }
 
-/** iOS Web Push rejects some Chromium-only notification fields. */
+/** iOS Web Push rejects or ignores several Chromium-only notification fields. */
+function isIosPushClient() {
+  const ua = self.navigator?.userAgent ?? '';
+  return /iPhone|iPad|iPod/i.test(ua);
+}
+
 function buildIosSafeNotificationOptions(options) {
   const safe = { ...options };
   delete safe.vibrate;
   delete safe.renotify;
+  delete safe.badge;
+  delete safe.requireInteraction;
+  delete safe.timestamp;
+  delete safe.silent;
+  delete safe.actions;
+  delete safe.image;
   return safe;
 }
 
 async function showPushNotification(title, options) {
+  const primary = isIosPushClient() ? buildIosSafeNotificationOptions(options) : options;
   try {
-    await self.registration.showNotification(title, options);
+    await self.registration.showNotification(title, primary);
     return;
   } catch (error) {
     console.warn('[sw] showNotification failed, retrying without mobile-only fields:', error);

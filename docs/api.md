@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-19
+> Version: 9.2 | Last Updated: 2026-07-23
 
 ---
 
@@ -230,6 +230,34 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 
 ---
 
+### 1.14 Bean Orders (`bean-order-actions.ts`)
+
+| Function | Purpose |
+| --- | --- |
+| `searchBeanCustomers(query)` | ค้นหาลูกค้าตามชื่อ/เบอร์ |
+| `createBeanCustomer(input)` | สร้างลูกค้าใหม่ |
+| `fetchBeanCustomerAddresses(customerId)` | ดึงที่อยู่ทั้งหมดของลูกค้า |
+| `fetchBeanOrders(filters?)` | รายการออเดอร์ (กรองสถานะได้) |
+| `fetchBeanOrderDetail(orderId)` | รายละเอียดออเดอร์ + lines + payment + shipment |
+| `createBeanOrder(input)` | สร้างออเดอร์ใหม่ |
+| `updateBeanOrder(orderId, input)` | แก้ไขออเดอร์ |
+| `cancelBeanOrder(orderId)` | ยกเลิกออเดอร์ |
+| `uploadBeanOrderSlip(orderId, formData)` | อัปโหลดสลิป → Storage `bean-order-slips` |
+| `getBeanOrderSlipSignedUrl(orderId)` | Signed URL สำหรับดูสลิป |
+| `confirmBeanOrderPayment(orderId)` | ยืนยันชำระเงิน |
+| `revertBeanOrderPayment(orderId)` | ย้อนสถานะชำระเงิน |
+| `shipBeanOrder(orderId, input)` | บันทึกการจัดส่ง + TrackingMore register |
+| `fetchInventoryItemsForBeanOrders()` | รายการสินค้าคลังสำหรับเลือกในออเดอร์ |
+| `fetchBeanOrderFormSuggestions()` | ค่าแนะนำในฟอร์ม (ลูกค้าล่าสุด, สินค้ายอดนิยม) |
+| `parseBeanOrderCustomerFromText(text)` | แยกข้อมูลลูกค้าจากข้อความที่ paste |
+
+- Domain logic: `src/lib/bean-orders/` (`pricing.ts`, `order-status.ts`, `trackingmore.ts`, …)
+- Tables: `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments`
+- Migration: `supabase/migrations/20260722140000_bean_orders.sql`
+- Audit: `recordDataChange()` with `module = 'bean_orders'`
+
+---
+
 ## 2. API Routes
 
 ### `POST /api/inventory/offline-mutation`
@@ -244,9 +272,9 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 ### `POST /api/chat`
 
 - Streaming AI chat via `ToolLoopAgent` (`google('gemini-2.5-flash')`)
-- Tools: `getDailyShifts`, `getStoreStatus`, `getSalesSummary`, `getInventoryLedger`, `getInventoryItemDetails`, `readTable`, `internetSearchTool`
+- Tools: `getDailyShifts`, `getStoreStatus`, `getSalesSummary`, `getInventoryLedger`, `getBeanOrdersSummary`, `readTable`, `internetSearchTool`
 - Body: `{ messages, clientContext? }` — structured screen context + preferred tools by route
-- Deterministic SSE short-circuits: daily schedule, maintenance, low-stock, sales, holidays, store status (multi-turn aware)
+- Deterministic SSE short-circuits: daily schedule, maintenance, low-stock, sales, holidays, store status, bean orders, inventory accuracy (multi-turn aware)
 - Server-side auth gate: privileged PIN session required (401/403 otherwise; read-only kiosk denied)
 - Multi-turn weighted intent scoring + conditional executive rules; `maxSteps` up to 7; `maxOutputTokens: 1600`
 
@@ -262,6 +290,18 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 - Protected by `PUSH_WEBHOOK_SECRET` (`Authorization: Bearer …`)
 - Dispatches `dispatchInventoryWebPush()` — backup when server-action hook is unavailable
 - Skips non-INSERT events and rows where `module !== 'inventory'` or `status !== 'success'`
+
+### `GET /api/bean-orders/sync-tracking`
+
+- Cron endpoint — protected by `CRON_SECRET` (`Authorization: Bearer …`)
+- Polls TrackingMore for pending shipments via `syncBeanOrderTrackingStatuses()`
+- `maxDuration: 60`
+
+### `POST /api/bean-orders/tracking-webhook`
+
+- TrackingMore webhook receiver — updates `bean_order_shipments.tracking_status`
+- Optional delivery notification via `maybeNotifyBeanOrderDelivered()`
+- Handles TrackingMore verification handshake
 
 ---
 

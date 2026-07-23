@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 9.2 | Last Updated: 2026-07-12 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 9.2 | Last Updated: 2026-07-23 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## Architectural Core
 
@@ -35,8 +35,8 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 - Transport: `DefaultChatTransport` → `POST /api/chat`.
 - Architecture: ToolLoopAgent (`stopWhen: stepCountIs(maxSteps)`).
 - Token budget: `MAX_MEMORY_MESSAGES = 8`, char cap 2000, `maxOutputTokens: 1600`, `maxSteps` up to 7.
-- Tools: `getDailyShifts`, `getStoreStatus`, `getSalesSummary`, `getInventoryLedger`, `getInventoryItemDetails`, `readTable`, `internetSearchTool` (Tavily) in `/api/chat`.
-- Deterministic short-circuits: daily schedule (DEC-068), upcoming maintenance, low-stock PO summary, sales, holidays, store status (multi-turn query text).
+- Tools: `getDailyShifts`, `getStoreStatus`, `getSalesSummary`, `getInventoryLedger`, `getBeanOrdersSummary`, `readTable`, `internetSearchTool` (Tavily) in `/api/chat`.
+- Deterministic short-circuits: daily schedule (DEC-068), upcoming maintenance, low-stock PO summary, sales, holidays, store status, bean orders, inventory accuracy (multi-turn query text).
 - Live screen context: client sends `clientContext` with route-preferred tools; route sanitizes and injects into the system prompt.
 - Shift labels come from `shifts.metadata.location` — never treat `start_time` as the shift name.
 - Security: Service Role read-only tools; full PIN session required (read-only kiosk rejected).
@@ -90,6 +90,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 | Schedule | `/[locale]/schedule` | Active — DnD |
 | Maintenance | `/[locale]/maintenance` | Active |
 | Sales | `/[locale]/sales` | Active |
+| Bean Orders | `/[locale]/bean-orders` | Active — customers, slips, shipping, TrackingMore |
 | Settings | `/[locale]/settings` | Active |
 | AI Assistant (บรู) | Global overlay | Active — Gemini + Tavily |
 | PIN Auth | PinGateway | Active — full + read-only |
@@ -122,6 +123,7 @@ Authoritative list: [`.env.example`](../.env.example). Keys read in `src/`:
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | PUBLIC | Store coordinates |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini (`@ai-sdk/google`) |
 | `TAVILY_API_KEY` | SECRET | `internetSearchTool` |
+| `TRACKINGMORE_API_KEY` | SECRET | OPTION — bean order shipment tracking |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — holiday sync |
 | `CRON_SECRET` | SECRET | Protects `GET /api/daily-report` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | PUBLIC | Web Push VAPID public key |

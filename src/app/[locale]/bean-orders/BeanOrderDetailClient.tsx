@@ -1,12 +1,13 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronLeft, Pencil } from 'lucide-react';
 import {
   cancelBeanOrder,
   confirmBeanOrderPayment,
+  getBeanOrderSlipSignedUrl,
   revertBeanOrderPayment,
   shipBeanOrder,
   uploadBeanOrderSlip,
@@ -28,7 +29,7 @@ import {
 } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { OrderStatusBadge } from './_components/OrderStatusBadge';
-import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT } from './_components/bean-order-layout';
+import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS, BEAN_ORDER_PAYMENT_BODY, BEAN_ORDER_PAYMENT_COLUMN, BEAN_ORDER_PAYMENT_SHIPPING_GRID, BEAN_ORDER_PAYMENT_SLIP_SLOT, BEAN_ORDER_SHIPPING_COLUMN } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -40,23 +41,11 @@ function formatBaht(value: number): string {
   return value.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-function initialCarrierFields(carrierCode: string | null | undefined) {
-  if (!carrierCode) {
-    return { carrierCode: 'kerryexpress-th', customCarrier: '' };
-  }
+function initialCarrierCode(carrierCode: string | null | undefined): string {
+  if (!carrierCode) return 'kerryexpress-th';
   const isKnown = BEAN_ORDER_CARRIERS.some((carrier) => carrier.code === carrierCode);
-  if (isKnown) {
-    return { carrierCode, customCarrier: '' };
-  }
-  return { carrierCode: 'other', customCarrier: carrierCode };
+  return isKnown ? carrierCode : 'other';
 }
-
-const actionButtonBase =
-  'inline-flex h-11 shrink-0 items-center justify-center rounded-full px-5 text-sm disabled:opacity-50';
-const actionButtonClass = `${actionButtonBase} bg-foreground text-background`;
-const outlineActionButtonClass = `${actionButtonBase} border border-border bg-background text-foreground`;
-const dangerOutlineButtonClass =
-  `${actionButtonBase} border border-red-500 bg-background text-red-600`;
 
 export default function BeanOrderDetailClient({ order: initialOrder, locale }: Props) {
   const router = useRouter();
@@ -67,13 +56,15 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const initialCarrier = initialCarrierFields(order.shipment?.carrierCode);
-  const [deliveryType, setDeliveryType] = useState<'parcel' | 'same_day'>(
+  const [deliveryType] = useState<'parcel' | 'same_day'>(
     order.shipment?.deliveryType ?? 'parcel',
   );
-  const [carrierCode, setCarrierCode] = useState(initialCarrier.carrierCode);
-  const [customCarrier, setCustomCarrier] = useState(initialCarrier.customCarrier);
+  const [carrierCode, setCarrierCode] = useState(initialCarrierCode(order.shipment?.carrierCode));
   const [trackingNumber, setTrackingNumber] = useState(order.shipment?.trackingNumber ?? '');
+
+  useEffect(() => {
+    setOrder(initialOrder);
+  }, [initialOrder]);
 
   const cancelled = Boolean(order.cancelledAt);
   const editable = canEditOrder(order.cancelledAt);
@@ -104,7 +95,23 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     const result = await uploadBeanOrderSlip(order.id, fd, locale);
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'อัปโหลดไม่สำเร็จ'); return; }
-    setMessage('อัปโหลดสลิปแล้ว');
+
+    const slipResult = await getBeanOrderSlipSignedUrl(order.id);
+    if (!slipResult.success) {
+      setError(slipResult.error ?? 'โหลดสลิปไม่สำเร็จ');
+      await reload();
+      return;
+    }
+
+    setOrder((prev) => ({
+      ...prev,
+      payment: {
+        slipUrl: slipResult.slipUrl ?? null,
+        uploadedAt: new Date().toISOString(),
+        confirmedAt: prev.payment?.confirmedAt ?? null,
+        confirmedBy: prev.payment?.confirmedBy ?? null,
+      },
+    }));
     await reload();
   }
 
@@ -133,16 +140,10 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
   async function handleShip() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
-    const effectiveCarrier =
-      carrierCode === 'other' ? customCarrier.trim() : carrierCode;
-    if (carrierCode === 'other' && !effectiveCarrier) {
-      setError('กรุณาระบุช่องทางจัดส่ง');
-      return;
-    }
     setBusy(true);
     const result = await shipBeanOrder(
       order.id,
-      { deliveryType, carrierCode: effectiveCarrier || undefined, trackingNumber },
+      { deliveryType, carrierCode: carrierCode || undefined, trackingNumber },
       locale,
     );
     setBusy(false);
@@ -183,7 +184,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
         {editable && !isReadOnly ? (
           <Link
             href={`/${locale}/bean-orders/${order.id}/edit`}
-            className={outlineActionButtonClass}
+            className={BEAN_ORDER_ACTION_BTN_OUTLINE}
           >
             <Pencil className="mr-1.5 h-4 w-4" aria-hidden />
             แก้ไขออเดอร์
@@ -253,124 +254,130 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
       {!cancelled && (
         <>
-          <section className={`${BEAN_ORDER_CARD} mb-4 space-y-3 p-4`}>
-            <h2 className="text-sm text-muted-foreground">ชำระเงิน</h2>
-            {!isReadOnly && editable ? (
-              <div className="flex flex-wrap items-center gap-2">
-                {canPay ? (
-                  <>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) void handleUploadSlip(file);
-                      }}
-                    />
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => fileRef.current?.click()}
-                      className={outlineActionButtonClass}
-                    >
-                      {hasSlip ? 'เปลี่ยนสลิป' : 'อัปโหลดสลิป'}
-                    </button>
-                  </>
-                ) : null}
-                {canConfirm ? (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void handleConfirmPayment()}
-                    className={actionButtonClass}
-                  >
+          <section className={`${BEAN_ORDER_CARD} mb-4 p-4`}>
+            <div
+              className={cn(
+                BEAN_ORDER_PAYMENT_SHIPPING_GRID,
+                !(canEditShipping && !isReadOnly) && 'lg:grid-cols-1',
+              )}
+            >
+              <div className={BEAN_ORDER_PAYMENT_COLUMN}>
+                <h2 className="text-sm text-muted-foreground">ชำระเงิน</h2>
+                {order.payment?.confirmedAt ? (
+                  <p className="text-xs text-muted-foreground">
                     ยืนยันชำระแล้ว
-                  </button>
+                    {order.payment.confirmedBy ? ` / ${order.payment.confirmedBy}` : ''}
+                  </p>
                 ) : null}
-                {canRevert ? (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void handleRevertPayment()}
-                    className={outlineActionButtonClass}
-                  >
-                    เปลี่ยนเป็นรอชำระ
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-            {order.payment?.confirmedAt ? (
-              <p className="text-xs text-muted-foreground">
-                ยืนยันชำระแล้ว
-                {order.payment.confirmedBy ? ` / ${order.payment.confirmedBy}` : ''}
-              </p>
-            ) : null}
-            {hasSlip ? (
-              <PaymentSlipViewer
-                orderId={order.id}
-                slipUrl={order.payment?.slipUrl ?? null}
-                uploadedAt={order.payment?.uploadedAt}
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground">ยังไม่มีสลิป</p>
-            )}
-          </section>
-
-          {canEditShipping && !isReadOnly ? (
-            <section className={`${BEAN_ORDER_CARD} mb-4 space-y-3 p-4`}>
-              <h2 className="text-sm text-muted-foreground">จัดส่ง</h2>
-              <div className="flex flex-wrap items-stretch gap-2">
-                {(['parcel', 'same_day'] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setDeliveryType(type)}
-                    className={cn(
-                      'h-11 shrink-0 rounded-full border px-4 text-sm',
-                      deliveryType === type
-                        ? 'border-foreground bg-foreground text-background'
-                        : 'border-border bg-background text-foreground',
+                <div className={BEAN_ORDER_PAYMENT_BODY}>
+                  {!isReadOnly && editable ? (
+                    <div className={BEAN_ORDER_PAYMENT_ACTIONS}>
+                      {canPay ? (
+                        <>
+                          <input
+                            ref={fileRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) void handleUploadSlip(file);
+                            }}
+                          />
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => fileRef.current?.click()}
+                            className={cn(
+                              BEAN_ORDER_ACTION_BTN_OUTLINE,
+                              'h-auto min-h-11 w-full px-3 py-2 text-center text-xs leading-snug sm:text-sm',
+                            )}
+                          >
+                            {hasSlip ? 'เปลี่ยนสลิป' : 'อัปโหลดสลิป'}
+                          </button>
+                        </>
+                      ) : null}
+                      {canConfirm ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleConfirmPayment()}
+                          className={cn(
+                            BEAN_ORDER_ACTION_BTN_CONFIRM,
+                            'h-auto min-h-11 w-full px-3 py-2 text-center text-xs leading-snug sm:text-sm',
+                          )}
+                        >
+                          ยืนยันชำระแล้ว
+                        </button>
+                      ) : null}
+                      {canRevert ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleRevertPayment()}
+                          className={cn(
+                            BEAN_ORDER_ACTION_BTN_OUTLINE,
+                            'h-auto min-h-11 w-full px-3 py-2 text-center text-xs leading-snug sm:text-sm',
+                          )}
+                        >
+                          เปลี่ยนเป็นรอชำระ
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <div className={BEAN_ORDER_PAYMENT_SLIP_SLOT}>
+                    {hasSlip ? (
+                      <PaymentSlipViewer
+                        orderId={order.id}
+                        slipUrl={order.payment?.slipUrl ?? null}
+                        uploadedAt={order.payment?.uploadedAt}
+                        variant="panel"
+                      />
+                    ) : (
+                      <div className="flex h-full min-h-[9rem] items-center justify-center rounded-xl border border-dashed border-border bg-muted/10 px-4 text-sm text-muted-foreground">
+                        ยังไม่มีสลิป
+                      </div>
                     )}
-                  >
-                    {getDeliveryTypeLabel(type)}
-                  </button>
-                ))}
-                <select
-                  className={cn(inputClass, 'min-w-[9rem] flex-1')}
-                  value={carrierCode}
-                  onChange={(e) => setCarrierCode(e.target.value)}
-                >
-                  {BEAN_ORDER_CARRIERS.map((c) => (
-                    <option key={c.code} value={c.code}>{c.label}</option>
-                  ))}
-                </select>
-                {carrierCode === 'other' ? (
-                  <input
-                    className={cn(inputClass, 'min-w-[8rem] flex-1')}
-                    value={customCarrier}
-                    onChange={(e) => setCustomCarrier(e.target.value)}
-                    placeholder="ระบุช่องทางจัดส่ง"
-                  />
-                ) : null}
-                <input
-                  className={cn(inputClass, 'min-w-[10rem] flex-[1.5]')}
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="เลขพัสดุ (ไม่บังคับ)"
-                />
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void handleShip()}
-                  className={actionButtonClass}
-                >
-                  {order.fulfillmentStatus === 'shipped' ? 'อัปเดตการจัดส่ง' : 'บันทึกจัดส่ง'}
-                </button>
+                  </div>
+                </div>
               </div>
-            </section>
-          ) : null}
+
+              {canEditShipping && !isReadOnly ? (
+                <div className={BEAN_ORDER_SHIPPING_COLUMN}>
+                  <h2 className="text-sm text-muted-foreground">จัดส่ง</h2>
+                  <div className="space-y-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                      <select
+                        className={cn(inputClass, 'sm:min-w-[9rem] sm:flex-1')}
+                        value={carrierCode}
+                        onChange={(e) => setCarrierCode(e.target.value)}
+                      >
+                        {BEAN_ORDER_CARRIERS.map((c) => (
+                          <option key={c.code} value={c.code}>{c.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        className={cn(inputClass, 'sm:min-w-[10rem] sm:flex-[1.5]')}
+                        value={trackingNumber}
+                        onChange={(e) => setTrackingNumber(e.target.value)}
+                        placeholder={carrierCode === 'other' ? 'รายละเอียด' : 'เลขพัสดุ (ไม่บังคับ)'}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void handleShip()}
+                        className={BEAN_ORDER_ACTION_BTN}
+                      >
+                        {order.fulfillmentStatus === 'shipped' ? 'อัปเดตการจัดส่ง' : 'บันทึกการจัดส่ง'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </section>
 
           {canCancel && !isReadOnly ? (
             <div className="mb-4 flex justify-end">
@@ -378,7 +385,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                 type="button"
                 disabled={busy}
                 onClick={() => void handleCancel()}
-                className={dangerOutlineButtonClass}
+                className={BEAN_ORDER_ACTION_BTN_DANGER}
               >
                 ยกเลิกออเดอร์
               </button>

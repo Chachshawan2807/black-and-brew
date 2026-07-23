@@ -36,6 +36,10 @@ function getApiKey(): string | null {
   return key || null;
 }
 
+function isTrackingAlreadyExistsMessage(message: string): boolean {
+  return /already\s+exists/i.test(message);
+}
+
 export function isTrackingMoreConfigured(): boolean {
   return Boolean(getApiKey());
 }
@@ -68,6 +72,15 @@ export async function createTrackingMoreShipment(
       const message =
         (payload?.meta as { message?: string } | undefined)?.message ??
         `TrackingMore create failed (${response.status})`;
+
+      if (isTrackingAlreadyExistsMessage(message)) {
+        const existing = await fetchTrackingMoreStatus(input.trackingNumber, courierCode);
+        if (existing.ok) {
+          return { ok: true, data: { data: existing.raw } };
+        }
+        return { ok: false, error: existing.error };
+      }
+
       console.error('TrackingMore create error:', message, payload);
       return { ok: false, error: message };
     }

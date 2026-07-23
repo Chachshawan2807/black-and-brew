@@ -57,6 +57,33 @@ export type OsNotificationOptions = NotificationOptions & {
   renotify?: boolean;
 };
 
+/** iOS / iPadOS Web Push (WebKit) ignores or rejects several Chromium-only fields. */
+export function isIosWebPushClient(
+  userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
+): boolean {
+  return /iPhone|iPad|iPod/i.test(userAgent);
+}
+
+const IOS_UNSUPPORTED_NOTIFICATION_KEYS = [
+  'vibrate',
+  'renotify',
+  'badge',
+  'requireInteraction',
+  'timestamp',
+  'silent',
+  'actions',
+  'image',
+] as const;
+
+/** Strip fields that break or are ignored on iOS so banners match Android delivery. */
+export function buildIosSafeNotificationOptions<T extends OsNotificationOptions>(options: T): T {
+  const safe = { ...options } as T & Record<string, unknown>;
+  for (const key of IOS_UNSUPPORTED_NOTIFICATION_KEYS) {
+    delete safe[key];
+  }
+  return safe as T;
+}
+
 /** Shared notification options — Android badge uses a dedicated transparent mask. */
 export function buildOsNotificationOptions(input: {
   body: string;
@@ -64,9 +91,12 @@ export function buildOsNotificationOptions(input: {
   url?: string;
   enableVibrate?: boolean;
   origin?: string;
+  /** Explicit UA for tests / server-side Apple targeting. */
+  userAgent?: string;
 }): OsNotificationOptions {
   const brandIcon = resolvePwaAssetUrl(PWA_BRAND_ICON, input.origin);
   const notificationBadge = resolvePwaAssetUrl(PWA_NOTIFICATION_BADGE, input.origin);
+  const isIos = isIosWebPushClient(input.userAgent);
 
   const opts: OsNotificationOptions = {
     body: input.body,
@@ -80,6 +110,7 @@ export function buildOsNotificationOptions(input: {
   };
 
   if (
+    !isIos &&
     input.enableVibrate &&
     typeof navigator !== 'undefined' &&
     'vibrate' in navigator
@@ -87,5 +118,5 @@ export function buildOsNotificationOptions(input: {
     opts.vibrate = [...PWA_NOTIFICATION_VIBRATE];
   }
 
-  return opts;
+  return isIos ? buildIosSafeNotificationOptions(opts) : opts;
 }
