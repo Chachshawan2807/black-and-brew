@@ -13,6 +13,7 @@ import {
 } from "@/lib/floating-action-layout";
 import { useFloatingOverlay } from "@/components/floating/FloatingOverlayContext";
 import { PageTransition } from "@/components/ui/page-transition";
+import { SidebarMenuOrderSync } from "@/components/sidebar/SidebarMenuOrderSync";
 
 export default function SidebarLayout({
   children
@@ -30,6 +31,7 @@ export default function SidebarLayout({
 
   return (
     <>
+      <SidebarMenuOrderSync />
       {showMobileNav && <MobileNavHeader />}
       {showMobileNav && <MobileNavDrawer />}
       {showDesktopSidebar && <Sidebar />}

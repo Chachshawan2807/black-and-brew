@@ -3,13 +3,13 @@
 import {
   CalendarRange,
   Layers,
-  PackageCheck,
   PackageMinus,
   PackagePlus,
   Pencil,
   Plus,
   SlidersHorizontal,
   Trash2,
+  Truck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { InventoryNotification } from '@/lib/notification-types';
@@ -54,7 +54,7 @@ export function NotificationItemIcon({
       )}
     >
       {kind === 'schedule' && <CalendarRange {...iconProps} />}
-      {kind === 'bean-delivered' && <PackageCheck {...iconProps} />}
+      {kind === 'bean-delivered' && <Truck {...iconProps} />}
       {kind === 'stock-in' && <PackagePlus {...iconProps} />}
       {kind === 'stock-out' && <PackageMinus {...iconProps} />}
       {kind === 'stock-adjust' && <SlidersHorizontal {...iconProps} />}

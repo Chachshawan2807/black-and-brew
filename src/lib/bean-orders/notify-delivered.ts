@@ -1,4 +1,7 @@
-import { shouldNotifyBeanOrderDelivered } from '@/lib/bean-orders/delivery-notification';
+import {
+  destinationFromBeanOrderRecipient,
+  shouldNotifyBeanOrderDelivered,
+} from '@/lib/bean-orders/delivery-notification';
 import { notifyBeanOrderDelivered } from '@/lib/bean-orders/delivery-web-push';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
@@ -60,7 +63,9 @@ export async function maybeNotifyBeanOrderDelivered(options: {
 
   const { data: order, error: orderError } = await supabase
     .from('bean_orders')
-    .select('id, order_no, recipient_name, bean_customers(name)')
+    .select(
+      'id, order_no, recipient_name, recipient_address, recipient_province, recipient_postal_code, bean_customers(name)',
+    )
     .eq('id', shipment.order_id)
     .maybeSingle();
 
@@ -77,6 +82,12 @@ export async function maybeNotifyBeanOrderDelivered(options: {
     orderNo: (order.order_no as string) || shipment.order_id,
     customerName: getBeanOrderCustomerDisplayName({
       customerName: customer?.name ?? null,
+      recipientName: (order.recipient_name as string) || '',
+    }),
+    destination: destinationFromBeanOrderRecipient({
+      recipientAddress: (order.recipient_address as string) || '',
+      recipientProvince: (order.recipient_province as string | null) ?? null,
+      recipientPostalCode: (order.recipient_postal_code as string | null) ?? null,
       recipientName: (order.recipient_name as string) || '',
     }),
     trackingNumber: shipment.tracking_number,

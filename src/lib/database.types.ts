@@ -447,6 +447,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_preferences: {
+        Row: {
+          branch_id: string
+          sidebar_menu_order: string[]
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          sidebar_menu_order?: string[]
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          sidebar_menu_order?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -9,7 +9,12 @@ import type { PushSubscriptionRow } from '@/lib/web-push';
 const sampleInput: BeanOrderDeliveredNotifyInput = {
   orderId: 'order-1',
   orderNo: 'BO-20260722-003',
-  customerName: 'ทัพพ์เทพ นิจนิรันดร์กุล (พ้ง)',
+  customerName: 'ทัพพ์เทพ นิจนิรันดร์กุล',
+  destination: {
+    subdistrict: 'คึกคัก',
+    district: 'เมืองพังงา',
+    province: 'พังงา',
+  },
   trackingNumber: 'KEX123456789',
   carrierCode: 'kerryexpress-th',
 };
@@ -40,8 +45,9 @@ describe('bean order delivery web push', () => {
 
     expect(payload.kind).toBe('bean_order_delivered');
     expect(payload.title).toBe('จัดส่งสำเร็จ');
-    expect(payload.body).toContain('BO-20260722-003');
-    expect(payload.body).toContain('ทัพพ์เทพ');
+    expect(payload.body).toContain('ทัพพ์เทพ นิจนิรันดร์กุล');
+    expect(payload.body).toContain('ต.คึกคัก');
+    expect(payload.body).not.toContain('BO-20260722-003');
     expect(payload.url).toBe('/th/bean-orders/order-1');
     expect(payload.tag).toBe('bb-bean-delivered-order-1');
     expect(payload.notification.metadata.kind).toBe('bean_order_delivered');

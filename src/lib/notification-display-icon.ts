@@ -35,7 +35,7 @@ export type NotificationDisplayIconKind =
   | 'update';
 
 const SCHEDULE_SURFACE = `${PASTEL_SURFACE} bg-[#e6f0ff] text-black border border-[#c2d6ff]`;
-const BEAN_DELIVERED_SURFACE = `${PASTEL_SURFACE} bg-[#e8f5e9] text-black border border-[#c8e6c9]`;
+const BEAN_DELIVERED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`;
 
 const STOCK_SURFACES: Record<StockOperation, string> = {
   IN: `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`,

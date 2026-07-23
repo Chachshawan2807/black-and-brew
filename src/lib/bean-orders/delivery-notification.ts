@@ -2,12 +2,20 @@ import { createClient } from '@supabase/supabase-js';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import { sanitizeJsonValue } from '@/lib/data-change-log';
 import type { InventoryNotification } from '@/lib/notification-types';
-import { mapTrackingStatusLabel } from '@/lib/bean-orders/trackingmore';
+import { parseThaiPostalAddressLine } from '@/lib/bean-orders/address';
+import { formatThaiAdminAreaLabel } from '@/lib/bean-orders/thai-postal-lookup';
+
+export type BeanOrderDeliveredDestination = {
+  subdistrict: string | null;
+  district: string | null;
+  province: string | null;
+};
 
 export type BeanOrderDeliveredNotifyInput = {
   orderId: string;
   orderNo: string;
   customerName: string | null;
+  destination?: BeanOrderDeliveredDestination | null;
   trackingNumber: string | null;
   carrierCode?: string | null;
   locale?: string;
@@ -40,24 +48,59 @@ export function beanOrderDeliveredNotificationLogId(orderId: string): string {
   return `bb-bean-delivered-${orderId}`;
 }
 
+export function destinationFromBeanOrderRecipient(input: {
+  recipientAddress: string;
+  recipientProvince?: string | null;
+  recipientPostalCode?: string | null;
+  recipientName?: string;
+}): BeanOrderDeliveredDestination {
+  const parsed = parseThaiPostalAddressLine(input.recipientAddress, {
+    province: input.recipientProvince,
+    postalCode: input.recipientPostalCode,
+    name: input.recipientName ?? '',
+  });
+
+  return {
+    subdistrict: parsed.subdistrict.trim() || null,
+    district: parsed.district.trim() || null,
+    province: parsed.province.trim() || input.recipientProvince?.trim() || null,
+  };
+}
+
+export function formatBeanOrderDeliveredSummary(
+  customerName: string | null | undefined,
+  destination?: BeanOrderDeliveredDestination | null,
+  locale = 'th',
+): string {
+  const customer = customerName?.trim() || (locale === 'th' ? 'ลูกค้า' : 'Customer');
+  const locality = formatThaiAdminAreaLabel({
+    subdistrict: destination?.subdistrict,
+    district: destination?.district,
+    province: destination?.province,
+  });
+  return locality ? `${customer} ${locality}` : customer;
+}
+
+function destinationFromNotificationMetadata(
+  meta: Record<string, unknown>,
+): BeanOrderDeliveredDestination | null {
+  const subdistrict =
+    typeof meta.destinationSubdistrict === 'string' ? meta.destinationSubdistrict : null;
+  const district = typeof meta.destinationDistrict === 'string' ? meta.destinationDistrict : null;
+  const province = typeof meta.destinationProvince === 'string' ? meta.destinationProvince : null;
+  if (!subdistrict && !district && !province) return null;
+  return { subdistrict, district, province };
+}
+
 export function buildBeanOrderDeliveredCopy(
   input: BeanOrderDeliveredNotifyInput,
   locale = 'th',
 ): { title: string; summary: string; fieldSummary: string } {
   const isTh = locale === 'th';
   const title = isTh ? 'จัดส่งสำเร็จ' : 'Delivered';
-  const customer = input.customerName?.trim() || (isTh ? 'ลูกค้า' : 'Customer');
-  const tracking = input.trackingNumber?.trim();
-  const summary = `${input.orderNo} / ${customer}`;
-  const fieldSummary = tracking
-    ? isTh
-      ? `พัสดุ ${tracking} ${mapTrackingStatusLabel('delivered')}`
-      : `Parcel ${tracking} delivered`
-    : isTh
-      ? `${input.orderNo} จัดส่งสำเร็จ`
-      : `${input.orderNo} delivered`;
+  const summary = formatBeanOrderDeliveredSummary(input.customerName, input.destination, locale);
 
-  return { title, summary, fieldSummary };
+  return { title, summary, fieldSummary: summary };
 }
 
 /** Persist delivered event so FAB / mobile panel catch it via data_change_logs realtime. */
@@ -128,6 +171,9 @@ export async function recordBeanOrderDeliveredNotification(
         trackingNumber: input.trackingNumber,
         orderNo: input.orderNo,
         customerName: input.customerName,
+        destinationSubdistrict: input.destination?.subdistrict ?? null,
+        destinationDistrict: input.destination?.district ?? null,
+        destinationProvince: input.destination?.province ?? null,
         carrierCode: input.carrierCode ?? null,
       },
     });
@@ -169,16 +215,18 @@ export function formatBeanOrderDeliveredNotification(
 
   const title =
     typeof meta.title === 'string' ? meta.title : isTh ? 'จัดส่งสำเร็จ' : 'Delivered';
-  const fieldSummary =
-    typeof meta.fieldSummary === 'string'
-      ? meta.fieldSummary
+  const customerName = typeof meta.customerName === 'string' ? meta.customerName : null;
+  const destination = destinationFromNotificationMetadata(meta);
+  const summary =
+    customerName || destination
+      ? formatBeanOrderDeliveredSummary(customerName, destination, locale)
       : typeof meta.summary === 'string'
         ? meta.summary
         : '';
-  const summary =
-    typeof meta.summary === 'string'
-      ? meta.summary
-      : fieldSummary.split('\n').filter(Boolean)[0] ?? '';
+  const fieldSummary =
+    typeof meta.fieldSummary === 'string' && !customerName && !destination
+      ? meta.fieldSummary
+      : summary;
 
   return {
     id: logId,

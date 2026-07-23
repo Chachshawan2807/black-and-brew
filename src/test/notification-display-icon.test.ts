@@ -82,14 +82,14 @@ describe('notification display icons', () => {
     expect(resolveNotificationDisplayIcon(item).kind).toBe('schedule');
   });
 
-  test('uses package styling for bean order delivered notifications', () => {
+  test('uses truck icon and stock-in green surface for bean order delivered notifications', () => {
     const item = sampleNotification({
       title: 'จัดส่งสำเร็จ',
       metadata: { kind: 'bean_order_delivered', url: '/th/bean-orders/order-1' },
     });
 
     expect(resolveNotificationDisplayIcon(item).kind).toBe('bean-delivered');
-    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#e8f5e9]');
+    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d4edda]');
   });
 
   test('notification panel uses shared item icon component', () => {
@@ -107,7 +107,7 @@ describe('notification display icons', () => {
     expect(panel).not.toContain('function ActionIcon');
     expect(itemIcon).toContain('PackagePlus');
     expect(itemIcon).toContain('PackageMinus');
-    expect(itemIcon).toContain('PackageCheck');
+    expect(itemIcon).toContain('Truck');
     expect(itemIcon).toContain('SlidersHorizontal');
     expect(itemIcon).toContain('CalendarRange');
     const displayIcon = fs.readFileSync(

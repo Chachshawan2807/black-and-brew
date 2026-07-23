@@ -36,6 +36,11 @@ describe('sidebar menu order', () => {
     expect(hook).toMatch(/name:\s*SIDEBAR_MENU_ORDER_KEY/);
     expect(hook).toMatch(/addEventListener\('storage'/);
   });
+
+  test('sidebar layout mounts cross-device menu order sync', () => {
+    const layout = readFile('components/sidebar/SidebarLayout.tsx');
+    expect(layout).toMatch(/SidebarMenuOrderSync/);
+  });
 });
 
 function readFile(relativePath: string): string {
