@@ -1,3 +1,4 @@
+import { isTrackingDeliveredStatus } from '@/lib/bean-orders/delivery-notification';
 import type {
   FulfillmentStatus,
   PaymentStatus,
@@ -70,6 +71,20 @@ export function canShip(
   cancelledAt?: string | null,
 ): boolean {
   return canEditShipment(cancelledAt) && fulfillmentStatus === 'pending';
+}
+
+/** Shipped orders without a tracking number — staff confirms delivery manually. */
+export function canConfirmManualDelivery(
+  fulfillmentStatus: FulfillmentStatus,
+  trackingNumber: string | null | undefined,
+  trackingStatus: string | null | undefined,
+  cancelledAt?: string | null,
+): boolean {
+  if (!canEditOrder(cancelledAt)) return false;
+  if (fulfillmentStatus !== 'shipped') return false;
+  if (trackingNumber?.trim()) return false;
+  if (isTrackingDeliveredStatus(trackingStatus)) return false;
+  return true;
 }
 
 export function appendStatusHistory(

@@ -30,6 +30,10 @@ import {
 import { mergeCustomerAddressProfiles } from '@/lib/bean-orders/customer-address-persist';
 import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
 import {
+  normalizeBeanOrderLinesForSave,
+  resolveBeanOrderRecipientName,
+} from '@/lib/bean-orders/order-input-normalize';
+import {
   filterNumberSuggestions,
   filterStringSuggestions,
   linePresetsForItem,
@@ -203,7 +207,7 @@ export default function BeanOrderFormClient({
 
   const totals = useMemo(() => {
     const parsedLines = lines
-      .filter((l) => l.inventoryItemId && l.weightValue && l.unitPricePerKg)
+      .filter((l) => l.inventoryItemId)
       .map((l) => ({
         inventoryItemId: l.inventoryItemId,
         weightValue: Number(l.weightValue) || 0,
@@ -472,21 +476,27 @@ export default function BeanOrderFormClient({
       return;
     }
 
-    const parsedLines = lines
-      .filter((l) => l.inventoryItemId && l.weightValue && l.unitPricePerKg)
-      .map((l) => ({
+    const parsedLines = normalizeBeanOrderLinesForSave(
+      lines.map((l) => ({
         inventoryItemId: l.inventoryItemId,
-        weightValue: Number(l.weightValue),
+        weightValue: l.weightValue ? Number(l.weightValue) : 0,
         weightUnit: l.weightUnit,
-        unitPricePerKg: Number(l.unitPricePerKg),
-      }));
+        unitPricePerKg: l.unitPricePerKg ? Number(l.unitPricePerKg) : 0,
+      })),
+    );
+
+    if (parsedLines.length === 0) {
+      setSaving(false);
+      setError('เลือกสินค้าอย่างน้อย 1 รายการ');
+      return;
+    }
 
     const payload = {
       customerId: selectedCustomer?.id ?? initialOrder?.customerId ?? null,
       senderName: initialOrder?.senderName || DEFAULT_SHOP_SENDER.name,
       senderPhone: initialOrder?.senderPhone ?? '',
       senderAddress: initialOrder?.senderAddress ?? '',
-      recipientName: recipient.name.trim() || customerQuery.trim(),
+      recipientName: resolveBeanOrderRecipientName(recipient.name, customerQuery),
       recipientPhone: recipient.phone,
       recipientAddress: formatThaiPostalAddressLine({
         addressLine: recipient.addressLine,
@@ -567,7 +577,7 @@ export default function BeanOrderFormClient({
           onSelect={handleCustomerNameSelect}
           suggestions={customerNameSuggestions}
           inputClass={inputClass}
-          placeholder="ค้นหาหรือพิมพ์ชื่อลูกค้าใหม่"
+          placeholder="ชื่อลูกค้า (ไม่บังคับที่อยู่)"
         />
         {customerResults.length > 0 && (
           <ul className="rounded-xl border border-border divide-y">
@@ -612,8 +622,6 @@ export default function BeanOrderFormClient({
           onChange={handleRecipientChange}
           profiles={formSuggestions.recipientProfiles}
           inputClass={inputClass}
-          nameRequired
-          addressRequired
         />
       </section>
 
@@ -653,7 +661,6 @@ export default function BeanOrderFormClient({
                 onChange={(e) =>
                   setLines((prev) => prev.map((l, i) => (i === index ? { ...l, inventoryItemId: e.target.value } : l)))
                 }
-                required
               >
                 <option value="">เลือกสินค้า</option>
                 {inventoryItems.map((item) => (
@@ -668,9 +675,8 @@ export default function BeanOrderFormClient({
                   }
                   suggestions={filterStringSuggestions(weightSuggestions, line.weightValue)}
                   inputClass={cn(inputClass, 'flex-1')}
-                  placeholder="น้ำหนัก"
+                  placeholder="น้ำหนัก (ไม่บังคับ)"
                   inputMode="decimal"
-                  required
                 />
                 <select
                   className={cn(inputClass, 'w-24')}
@@ -690,9 +696,8 @@ export default function BeanOrderFormClient({
                 }
                 suggestions={filterStringSuggestions(priceSuggestions, line.unitPricePerKg)}
                 inputClass={inputClass}
-                placeholder="ราคา/หน่วย (บาท)"
+                placeholder="ราคา/หน่วย (ไม่บังคับ)"
                 inputMode="decimal"
-                required
               />
               {linePresetOptions.length > 0 && (
                 <div className="sm:col-span-4">

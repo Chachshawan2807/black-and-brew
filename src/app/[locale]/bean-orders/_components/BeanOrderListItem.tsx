@@ -10,6 +10,7 @@ import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-disp
 import { getCarrierLabel } from '@/lib/bean-orders/carriers';
 import { getDeliveryTypeLabel } from '@/lib/bean-orders/delivery';
 import { formatBeanOrderShareText } from '@/lib/bean-orders/order-share-text';
+import { preloadRouteChunk } from '@/lib/route-chunk-preload';
 import { OrderListStatusGroup } from './OrderStatusBadge';
 import { BEAN_ORDER_BTN_ICON, BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
 import { cn } from '@/lib/utils';
@@ -69,6 +70,10 @@ export function BeanOrderListItem({ order, locale }: Props) {
   const shippingChannel = formatShippingChannel(order);
   const detailHref = `/${locale}/bean-orders/${order.id}`;
 
+  function warmDetailRoute() {
+    preloadRouteChunk(detailHref);
+  }
+
   async function handleCopy(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
@@ -108,6 +113,10 @@ export function BeanOrderListItem({ order, locale }: Props) {
 
       <Link
         href={detailHref}
+        prefetch
+        onTouchStart={warmDetailRoute}
+        onMouseEnter={warmDetailRoute}
+        onFocus={warmDetailRoute}
         className="block rounded-xl py-3 pl-14 pr-3 bb-transition hover:bg-muted/25 sm:pl-14 sm:pr-4 lg:hidden"
       >
         <p className="min-w-0 truncate text-sm text-foreground/90" title={customerLabel}>
@@ -133,7 +142,14 @@ export function BeanOrderListItem({ order, locale }: Props) {
         </div>
       </Link>
 
-      <Link href={detailHref} className="hidden lg:contents">
+      <Link
+        href={detailHref}
+        prefetch
+        onTouchStart={warmDetailRoute}
+        onMouseEnter={warmDetailRoute}
+        onFocus={warmDetailRoute}
+        className="hidden lg:contents"
+      >
         <p
           className={cn('min-w-0 truncate text-sm text-foreground/90 lg:col-start-2', BEAN_ORDER_LIST_CELL)}
           title={customerLabel}

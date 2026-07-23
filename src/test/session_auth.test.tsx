@@ -120,7 +120,7 @@ describe('PinGateway Persistent Authentication', () => {
     expect(await screen.findByText('เข้าสู่ระบบ')).toBeInTheDocument();
   });
 
-  test('should show restore splash instead of login while server session is being verified', async () => {
+  test('should render app shell instead of login while server session is being verified', async () => {
     localStorage.setItem('bb_auth_pin_verified', 'true');
     const { getAuthSessionInfo } = await import('@/app/actions/auth');
     let resolveSession!: (value: { verified: boolean; readOnly: boolean }) => void;
@@ -137,13 +137,12 @@ describe('PinGateway Persistent Authentication', () => {
       </PinGateway>
     );
 
-    await waitFor(() => {
-      expect(screen.queryByText('เข้าสู่ระบบ')).not.toBeInTheDocument();
-      expect(screen.queryByText('กรุณากรอกรหัส PIN 6 หลัก')).not.toBeInTheDocument();
-    });
+    expect(await screen.findByTestId('protected-content')).toBeInTheDocument();
+    expect(screen.queryByText('เข้าสู่ระบบ')).not.toBeInTheDocument();
+    expect(screen.queryByText('กรุณากรอกรหัส PIN 6 หลัก')).not.toBeInTheDocument();
 
     resolveSession({ verified: true, readOnly: false });
-    expect(await screen.findByTestId('protected-content')).toBeInTheDocument();
+    expect(screen.getByTestId('protected-content')).toBeInTheDocument();
   });
 
   test('should mask PIN digits with dots immediately while typing', async () => {

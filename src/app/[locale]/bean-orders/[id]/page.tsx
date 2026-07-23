@@ -2,12 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { checkAuth } from '@/app/actions/auth';
 import { fetchBeanOrderDetail } from '@/app/actions/bean-order-actions';
-import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
-
-const BeanOrderDetailClient = createLazyFeatureClient(
-  () => import('../BeanOrderDetailClient'),
-  'กำลังโหลดรายละเอียดออเดอร์...',
-);
+import BeanOrderDetailClient from '../BeanOrderDetailClient';
 
 /** Build-time validation path for Cache Components (requires ≥1 static param). */
 export async function generateStaticParams() {

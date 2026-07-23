@@ -9,6 +9,7 @@ import { formatBeanOrderNo } from '@/lib/bean-orders/order-number';
 import {
   appendStatusHistory,
   canCancelOrder,
+  canConfirmManualDelivery,
   canConfirmPayment,
   canEditOrder,
   canEditOrderLines,
@@ -42,6 +43,7 @@ import {
   type ParsedBeanOrderCustomer,
 } from '@/lib/bean-orders/parse-share-text';
 import type { DeliveryType, StatusHistoryEntry, WeightUnit } from '@/lib/bean-orders/types';
+import { prepareBeanOrderInput } from '@/lib/bean-orders/order-input-normalize';
 import { resolveActorLabel } from '@/lib/data-change-log';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { ensureServerSession } from '@/lib/security/server-auth';
@@ -59,25 +61,25 @@ const deliveryTypeSchema = z.enum(['parcel', 'same_day']);
 
 const lineInputSchema = z.object({
   inventoryItemId: z.string().uuid(),
-  weightValue: z.number().positive(),
-  weightUnit: weightUnitSchema,
-  unitPricePerKg: z.number().min(0),
+  weightValue: z.number().min(0).optional().default(0),
+  weightUnit: weightUnitSchema.optional().default('g'),
+  unitPricePerKg: z.number().min(0).optional().default(0),
 });
 
 const createOrderSchema = z.object({
   customerId: z.string().uuid().nullable().optional(),
-  senderName: z.string().min(1),
+  senderName: z.string().optional(),
   senderPhone: z.string().optional(),
   senderAddress: z.string().optional(),
-  recipientName: z.string().min(1),
+  recipientName: z.string().optional().default(''),
   recipientPhone: z.string().optional(),
-  recipientAddress: z.string().min(1),
+  recipientAddress: z.string().optional().default(''),
   recipientProvince: z.string().optional(),
   recipientPostalCode: z.string().optional(),
   discountBaht: z.number().min(0).default(0),
   shippingBaht: z.number().min(0).default(0),
   notes: z.string().optional(),
-  lines: z.array(lineInputSchema).min(1),
+  lines: z.array(lineInputSchema).min(1, 'เลือกสินค้าอย่างน้อย 1 รายการ'),
 });
 
 const shipOrderSchema = z.object({
@@ -715,25 +717,32 @@ export async function createBeanOrder(
   if (!gate.success) return gate;
 
   const parsed = createOrderSchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: 'ข้อมูลออเดอร์ไม่ถูกต้อง' };
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return { success: false, error: issue?.message ?? 'ข้อมูลออเดอร์ไม่ถูกต้อง' };
+  }
+
+  const prepared = prepareBeanOrderInput(parsed.data);
+  if (!prepared.success) return { success: false, error: prepared.error };
+  const orderInput = prepared.data;
 
   try {
-    const namesById = await loadInventoryNames(parsed.data.lines.map((l) => l.inventoryItemId));
-    for (const line of parsed.data.lines) {
+    const namesById = await loadInventoryNames(orderInput.lines.map((l) => l.inventoryItemId));
+    for (const line of orderInput.lines) {
       if (!namesById.has(line.inventoryItemId)) {
         return { success: false, error: `ไม่พบสินค้าในคลัง (ID: ${line.inventoryItemId})` };
       }
     }
 
     const totals = computeOrderTotals(
-      parsed.data.lines.map((l) => ({
+      orderInput.lines.map((l) => ({
         inventoryItemId: l.inventoryItemId,
         weightValue: l.weightValue,
         weightUnit: l.weightUnit,
         unitPricePerKg: l.unitPricePerKg,
       })),
-      parsed.data.discountBaht,
-      parsed.data.shippingBaht,
+      orderInput.discountBaht ?? 0,
+      orderInput.shippingBaht ?? 0,
     );
 
     const actor = await resolveActorLabelFromSession();
@@ -751,15 +760,15 @@ export async function createBeanOrder(
       .from('bean_orders')
       .insert({
         order_no: orderNo,
-        customer_id: parsed.data.customerId ?? null,
-        sender_name: parsed.data.senderName || DEFAULT_SHOP_SENDER.name,
-        sender_phone: parsed.data.senderPhone ?? null,
-        sender_address: parsed.data.senderAddress ?? null,
-        recipient_name: parsed.data.recipientName,
-        recipient_phone: parsed.data.recipientPhone ?? null,
-        recipient_address: parsed.data.recipientAddress,
-        recipient_province: parsed.data.recipientProvince ?? null,
-        recipient_postal_code: parsed.data.recipientPostalCode ?? null,
+        customer_id: orderInput.customerId ?? null,
+        sender_name: orderInput.senderName || DEFAULT_SHOP_SENDER.name,
+        sender_phone: orderInput.senderPhone ?? null,
+        sender_address: orderInput.senderAddress ?? null,
+        recipient_name: orderInput.recipientName,
+        recipient_phone: orderInput.recipientPhone ?? null,
+        recipient_address: orderInput.recipientAddress,
+        recipient_province: orderInput.recipientProvince ?? null,
+        recipient_postal_code: orderInput.recipientPostalCode ?? null,
         subtotal_baht: totals.subtotalBaht,
         discount_baht: totals.discountBaht,
         shipping_baht: totals.shippingBaht,
@@ -767,7 +776,7 @@ export async function createBeanOrder(
         payment_status: 'unpaid',
         fulfillment_status: 'pending',
         status_history: history,
-        notes: parsed.data.notes ?? null,
+        notes: orderInput.notes ?? null,
         created_by: actor,
       })
       .select('id, order_no')
@@ -778,7 +787,7 @@ export async function createBeanOrder(
       return { success: false, error: orderError.message };
     }
 
-    const lineRows = parsed.data.lines.map((line, index) => ({
+    const lineRows = orderInput.lines.map((line, index) => ({
       order_id: order.id,
       inventory_item_id: line.inventoryItemId,
       item_name: namesById.get(line.inventoryItemId) ?? '—',
@@ -804,13 +813,13 @@ export async function createBeanOrder(
       newValue: { orderNo, totalBaht: totals.totalBaht },
     });
 
-    if (parsed.data.customerId) {
-      const addressResult = await saveBeanCustomerAddressIfNew(parsed.data.customerId, {
-        recipientName: parsed.data.recipientName,
-        recipientPhone: parsed.data.recipientPhone,
-        recipientAddress: parsed.data.recipientAddress,
-        recipientProvince: parsed.data.recipientProvince,
-        recipientPostalCode: parsed.data.recipientPostalCode,
+    if (orderInput.customerId) {
+      const addressResult = await saveBeanCustomerAddressIfNew(orderInput.customerId, {
+        recipientName: orderInput.recipientName,
+        recipientPhone: orderInput.recipientPhone,
+        recipientAddress: orderInput.recipientAddress,
+        recipientProvince: orderInput.recipientProvince,
+        recipientPostalCode: orderInput.recipientPostalCode,
       });
       if (!addressResult.success) {
         return { success: false, error: addressResult.error };
@@ -834,7 +843,14 @@ export async function updateBeanOrder(
   if (!gate.success) return gate;
 
   const parsed = createOrderSchema.safeParse(input);
-  if (!parsed.success) return { success: false, error: 'ข้อมูลออเดอร์ไม่ถูกต้อง' };
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return { success: false, error: issue?.message ?? 'ข้อมูลออเดอร์ไม่ถูกต้อง' };
+  }
+
+  const prepared = prepareBeanOrderInput(parsed.data);
+  if (!prepared.success) return { success: false, error: prepared.error };
+  const orderInput = prepared.data;
 
   try {
     const supabase = getSupabaseAdmin();
@@ -849,22 +865,22 @@ export async function updateBeanOrder(
       return { success: false, error: 'แก้ไขออเดอร์นี้ไม่ได้' };
     }
 
-    const namesById = await loadInventoryNames(parsed.data.lines.map((l) => l.inventoryItemId));
-    for (const line of parsed.data.lines) {
+    const namesById = await loadInventoryNames(orderInput.lines.map((l) => l.inventoryItemId));
+    for (const line of orderInput.lines) {
       if (!namesById.has(line.inventoryItemId)) {
         return { success: false, error: `ไม่พบสินค้าในคลัง (ID: ${line.inventoryItemId})` };
       }
     }
 
     const totals = computeOrderTotals(
-      parsed.data.lines.map((l) => ({
+      orderInput.lines.map((l) => ({
         inventoryItemId: l.inventoryItemId,
         weightValue: l.weightValue,
         weightUnit: l.weightUnit,
         unitPricePerKg: l.unitPricePerKg,
       })),
-      parsed.data.discountBaht,
-      parsed.data.shippingBaht,
+      orderInput.discountBaht ?? 0,
+      orderInput.shippingBaht ?? 0,
     );
 
     const actor = await resolveActorLabelFromSession();
@@ -878,20 +894,20 @@ export async function updateBeanOrder(
     const { error: orderError } = await supabase
       .from('bean_orders')
       .update({
-        customer_id: parsed.data.customerId ?? null,
-        sender_name: parsed.data.senderName || DEFAULT_SHOP_SENDER.name,
-        sender_phone: parsed.data.senderPhone ?? null,
-        sender_address: parsed.data.senderAddress ?? null,
-        recipient_name: parsed.data.recipientName,
-        recipient_phone: parsed.data.recipientPhone ?? null,
-        recipient_address: parsed.data.recipientAddress,
-        recipient_province: parsed.data.recipientProvince ?? null,
-        recipient_postal_code: parsed.data.recipientPostalCode ?? null,
+        customer_id: orderInput.customerId ?? null,
+        sender_name: orderInput.senderName || DEFAULT_SHOP_SENDER.name,
+        sender_phone: orderInput.senderPhone ?? null,
+        sender_address: orderInput.senderAddress ?? null,
+        recipient_name: orderInput.recipientName,
+        recipient_phone: orderInput.recipientPhone ?? null,
+        recipient_address: orderInput.recipientAddress,
+        recipient_province: orderInput.recipientProvince ?? null,
+        recipient_postal_code: orderInput.recipientPostalCode ?? null,
         subtotal_baht: totals.subtotalBaht,
         discount_baht: totals.discountBaht,
         shipping_baht: totals.shippingBaht,
         total_baht: totals.totalBaht,
-        notes: parsed.data.notes ?? null,
+        notes: orderInput.notes ?? null,
         status_history: history,
         updated_at: new Date().toISOString(),
       })
@@ -912,7 +928,7 @@ export async function updateBeanOrder(
       return { success: false, error: deleteLinesError.message };
     }
 
-    const lineRows = parsed.data.lines.map((line, index) => ({
+    const lineRows = orderInput.lines.map((line, index) => ({
       order_id: orderId,
       inventory_item_id: line.inventoryItemId,
       item_name: namesById.get(line.inventoryItemId) ?? '—',
@@ -938,13 +954,13 @@ export async function updateBeanOrder(
       newValue: { totalBaht: totals.totalBaht },
     });
 
-    if (parsed.data.customerId) {
-      const addressResult = await saveBeanCustomerAddressIfNew(parsed.data.customerId, {
-        recipientName: parsed.data.recipientName,
-        recipientPhone: parsed.data.recipientPhone,
-        recipientAddress: parsed.data.recipientAddress,
-        recipientProvince: parsed.data.recipientProvince,
-        recipientPostalCode: parsed.data.recipientPostalCode,
+    if (orderInput.customerId) {
+      const addressResult = await saveBeanCustomerAddressIfNew(orderInput.customerId, {
+        recipientName: orderInput.recipientName,
+        recipientPhone: orderInput.recipientPhone,
+        recipientAddress: orderInput.recipientAddress,
+        recipientProvince: orderInput.recipientProvince,
+        recipientPostalCode: orderInput.recipientPostalCode,
       });
       if (!addressResult.success) {
         return { success: false, error: addressResult.error };
@@ -1387,6 +1403,117 @@ export async function shipBeanOrder(
     return { success: true, trackingWarning };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'บันทึกจัดส่งไม่สำเร็จ';
+    return { success: false, error: message };
+  }
+}
+
+export async function confirmBeanOrderDelivered(
+  orderId: string,
+  locale = 'th',
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data: order, error: fetchError } = await supabase
+      .from('bean_orders')
+      .select('id, order_no, payment_status, fulfillment_status, cancelled_at, status_history')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (fetchError || !order) return { success: false, error: 'ไม่พบออเดอร์' };
+
+    const { data: shipment, error: shipmentError } = await supabase
+      .from('bean_order_shipments')
+      .select('tracking_number, tracking_status')
+      .eq('order_id', orderId)
+      .maybeSingle();
+
+    if (shipmentError) {
+      console.error('Supabase Error (confirmBeanOrderDelivered shipment):', shipmentError.message, shipmentError.details);
+      return { success: false, error: shipmentError.message };
+    }
+    if (!shipment) return { success: false, error: 'ยังไม่มีข้อมูลการจัดส่ง' };
+
+    const fulfillmentStatus = order.fulfillment_status as 'pending' | 'shipped';
+    const trackingNumber = (shipment.tracking_number as string | null) ?? null;
+    const previousStatus = (shipment.tracking_status as string | null) ?? null;
+
+    if (
+      !canConfirmManualDelivery(
+        fulfillmentStatus,
+        trackingNumber,
+        previousStatus,
+        order.cancelled_at as string | null,
+      )
+    ) {
+      return { success: false, error: 'ยืนยันจัดส่งไม่ได้ในสถานะนี้' };
+    }
+
+    const actor = await resolveActorLabelFromSession();
+    const history = appendStatusHistory((order.status_history as StatusHistoryEntry[]) ?? [], {
+      by: actor,
+      action: 'delivery_confirmed',
+      payment_status: order.payment_status as 'unpaid' | 'paid',
+      fulfillment_status: 'shipped',
+    });
+    const now = new Date().toISOString();
+    const nextStatus = 'delivered';
+
+    const [{ error: orderError }, { error: shipError }] = await Promise.all([
+      supabase
+        .from('bean_orders')
+        .update({
+          status_history: history,
+          updated_at: now,
+        })
+        .eq('id', orderId),
+      supabase
+        .from('bean_order_shipments')
+        .update({
+          tracking_status: nextStatus,
+          tracking_raw: {
+            source: 'manual',
+            confirmed_at: now,
+            confirmed_by: actor,
+          },
+        })
+        .eq('order_id', orderId),
+    ]);
+
+    if (orderError) {
+      console.error('Supabase Error (confirmBeanOrderDelivered):', orderError.message, orderError.details);
+      return { success: false, error: orderError.message };
+    }
+    if (shipError) {
+      console.error('Supabase Error (confirmBeanOrderDelivered shipment):', shipError.message, shipError.details);
+      return { success: false, error: shipError.message };
+    }
+
+    const { maybeNotifyBeanOrderDelivered } = await import('@/lib/bean-orders/notify-delivered');
+    await maybeNotifyBeanOrderDelivered({
+      orderId,
+      previousStatus,
+      nextStatus,
+    }).catch((error) => {
+      console.error('maybeNotifyBeanOrderDelivered (manual):', error);
+    });
+
+    void recordDataChange({
+      action: 'UPDATE',
+      module: 'bean_orders',
+      entityType: 'bean_order',
+      entityId: orderId,
+      entityLabel: order.order_no as string,
+      fieldChanges: [{ field: 'tracking_status', old_value: previousStatus, new_value: nextStatus }],
+      metadata: { manualDelivery: true },
+    });
+
+    revalidateBeanOrders(locale, orderId);
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'ยืนยันจัดส่งไม่สำเร็จ';
     return { success: false, error: message };
   }
 }

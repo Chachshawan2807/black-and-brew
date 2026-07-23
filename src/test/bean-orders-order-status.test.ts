@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   appendStatusHistory,
   canCancelOrder,
+  canConfirmManualDelivery,
   canConfirmPayment,
   canEditOrder,
   canEditOrderLines,
@@ -56,6 +57,16 @@ describe('action guards', () => {
     expect(canShip('pending')).toBe(true);
     expect(canShip('shipped')).toBe(false);
     expect(canShip('pending', cancelledAt)).toBe(false);
+  });
+
+  test('can confirm manual delivery only for shipped orders without tracking', () => {
+    expect(canConfirmManualDelivery('shipped', null, null)).toBe(true);
+    expect(canConfirmManualDelivery('shipped', '', null)).toBe(true);
+    expect(canConfirmManualDelivery('shipped', '  ', 'in_transit')).toBe(true);
+    expect(canConfirmManualDelivery('shipped', 'KEX123', null)).toBe(false);
+    expect(canConfirmManualDelivery('pending', null, null)).toBe(false);
+    expect(canConfirmManualDelivery('shipped', null, 'delivered')).toBe(false);
+    expect(canConfirmManualDelivery('shipped', null, null, cancelledAt)).toBe(false);
   });
 });
 

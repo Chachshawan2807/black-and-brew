@@ -508,21 +508,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     }
   };
 
-  if (!isMounted || (hadClientSession && !authCheckComplete)) {
-    return (
-      <div className="min-h-[100svh] bg-background flex flex-col items-center justify-center px-6 antialiased">
-        <img
-          src="/images/logo.png"
-          alt="BLACKANDBREW"
-          className="w-[min(72vw,18rem)] max-w-xs h-auto object-contain dark:invert dark:brightness-0 dark:opacity-90"
-          width={288}
-          height={186}
-          decoding="sync"
-          fetchPriority="high"
-        />
-      </div>
-    );
+  if (!isMounted) {
+    return null;
   }
+
+  const isRestoringSession = hadClientSession && !authCheckComplete;
 
   if (showEnrollment) {
     return (
@@ -578,7 +568,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     );
   }
 
-  if (isAuthenticated) {
+  if (isAuthenticated || isRestoringSession) {
     return (
       <AuthProvider isReadOnly={isReadOnly}>
         <InventoryRealtimeProvider>{children}</InventoryRealtimeProvider>

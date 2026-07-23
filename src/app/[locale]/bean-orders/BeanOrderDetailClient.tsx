@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronLeft, Pencil } from 'lucide-react';
 import {
   cancelBeanOrder,
+  confirmBeanOrderDelivered,
   confirmBeanOrderPayment,
   getBeanOrderSlipSignedUrl,
   revertBeanOrderPayment,
@@ -21,6 +22,7 @@ import { TrackingTimeline } from './_components/TrackingTimeline';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
 import {
   canCancelOrder,
+  canConfirmManualDelivery,
   canConfirmPayment,
   canEditOrder,
   canEditShipment,
@@ -73,6 +75,12 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const canRevert = canRevertPayment(order.paymentStatus, order.cancelledAt);
   const canEditShipping = canEditShipment(order.cancelledAt);
   const canCancel = canCancelOrder(order.fulfillmentStatus, order.cancelledAt);
+  const canManualDeliver = canConfirmManualDelivery(
+    order.fulfillmentStatus,
+    order.shipment?.trackingNumber,
+    order.shipment?.trackingStatus,
+    order.cancelledAt,
+  );
   const hasSlip = Boolean(order.payment?.uploadedAt);
 
   const shipmentTrackingLabel = order.shipment
@@ -151,6 +159,24 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     setOrder((prev) => ({ ...prev, fulfillmentStatus: 'shipped' }));
     if (result.trackingWarning) setMessage(`บันทึกจัดส่งแล้ว (ติดตามพัสดุ: ${result.trackingWarning})`);
     else setMessage(order.fulfillmentStatus === 'shipped' ? 'อัปเดตการจัดส่งแล้ว' : 'บันทึกจัดส่งแล้ว');
+    await reload();
+  }
+
+  async function handleConfirmDelivered() {
+    if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
+    if (!confirm('ยืนยันว่าจัดส่งถึงลูกค้าแล้ว?')) return;
+    setBusy(true);
+    setError(null);
+    const result = await confirmBeanOrderDelivered(order.id, locale);
+    setBusy(false);
+    if (!result.success) { setError(result.error ?? 'ยืนยันจัดส่งไม่สำเร็จ'); return; }
+    setOrder((prev) => ({
+      ...prev,
+      shipment: prev.shipment
+        ? { ...prev.shipment, trackingStatus: 'delivered' }
+        : prev.shipment,
+    }));
+    setMessage('ยืนยันจัดส่งแล้ว');
     await reload();
   }
 
@@ -363,6 +389,19 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                         placeholder={carrierCode === 'other' ? 'รายละเอียด' : 'เลขพัสดุ (ไม่บังคับ)'}
                       />
                     </div>
+                    {canManualDeliver ? (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void handleConfirmDelivered()}
+                        className={cn(
+                          BEAN_ORDER_ACTION_BTN_CONFIRM,
+                          'h-auto min-h-11 w-full px-3 py-2 text-center text-xs leading-snug sm:text-sm',
+                        )}
+                      >
+                        ยืนยันจัดส่งแล้ว
+                      </button>
+                    ) : null}
                     <div className="flex justify-end">
                       <button
                         type="button"

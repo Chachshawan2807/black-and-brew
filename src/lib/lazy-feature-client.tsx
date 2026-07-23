@@ -1,12 +1,12 @@
 import type { ComponentType } from 'react';
 import dynamic from 'next/dynamic';
-import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
 
 export function createLazyFeatureClient<P>(
   importFn: () => Promise<{ default: ComponentType<P> }>,
-  label: string,
+  _label?: string,
 ): ComponentType<P> {
   return dynamic(importFn, {
-    loading: () => <RouteLoadingSkeleton label={label} />,
+    // Route-level loading.tsx already covers RSC fetch; avoid a second full-screen skeleton.
+    loading: () => null,
   }) as ComponentType<P>;
 }

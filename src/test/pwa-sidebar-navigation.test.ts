@@ -55,10 +55,11 @@ describe('PWA sidebar navigation reliability', () => {
     expect(guard).toMatch(/catch[\s\S]*\/\/.*network|catch[\s\S]*return/);
   });
 
-  test('PinGateway shows restore splash while verifying existing client session', () => {
+  test('PinGateway renders app shell while verifying existing client session', () => {
     const pin = readFile('components/auth/PinGateway.tsx');
     expect(pin).toContain('authCheckComplete');
     expect(pin).toContain('hadClientSession');
-    expect(pin).toMatch(/hadClientSession && !authCheckComplete/);
+    expect(pin).toContain('isRestoringSession');
+    expect(pin).not.toContain('/images/logo.png');
   });
 });

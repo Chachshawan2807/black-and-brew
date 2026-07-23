@@ -9,6 +9,7 @@ const ROUTE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   schedule: () => import('@/app/[locale]/schedule/ScheduleClient'),
   sales: () => import('@/app/[locale]/sales/SalesClient'),
   'bean-orders': () => import('@/app/[locale]/bean-orders/BeanOrdersClient'),
+  'bean-order-detail': () => import('@/app/[locale]/bean-orders/BeanOrderDetailClient'),
   maintenance: () => import('@/app/[locale]/maintenance/MaintenanceClient'),
   dashboard: () => import('@/app/[locale]/dashboard/_components/LiveShiftList'),
   settings: () => import('@/app/[locale]/settings/_components/NotificationPreferencesSection'),
@@ -18,6 +19,7 @@ const ROUTE_PRELOADERS: Record<string, () => Promise<unknown>> = {
 const COMMON_ROUTE_KEYS = ['inventory', 'schedule', 'dashboard'] as const;
 
 function routeKeyFromHref(href: string): string | null {
+  if (/\/bean-orders\/[^/]+$/.test(href.split(/[?#]/)[0])) return 'bean-order-detail';
   if (href.includes('/bean-orders')) return 'bean-orders';
   const segments = href.split('/').filter(Boolean);
   const segment = segments[segments.length - 1];

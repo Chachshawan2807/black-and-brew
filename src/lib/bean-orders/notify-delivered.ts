@@ -19,6 +19,7 @@ type ShipmentLookup = {
  */
 export async function maybeNotifyBeanOrderDelivered(options: {
   shipmentId?: string;
+  orderId?: string;
   trackingNumber?: string;
   previousStatus: string | null | undefined;
   nextStatus: string;
@@ -39,6 +40,17 @@ export async function maybeNotifyBeanOrderDelivered(options: {
       .maybeSingle();
     if (error) {
       console.error('Supabase Error (maybeNotify shipment):', error.message, error.details);
+      return;
+    }
+    shipment = data as ShipmentLookup | null;
+  } else if (options.orderId) {
+    const { data, error } = await supabase
+      .from('bean_order_shipments')
+      .select('id, order_id, tracking_number, tracking_status, carrier_code')
+      .eq('order_id', options.orderId)
+      .maybeSingle();
+    if (error) {
+      console.error('Supabase Error (maybeNotify by order):', error.message, error.details);
       return;
     }
     shipment = data as ShipmentLookup | null;
