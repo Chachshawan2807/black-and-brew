@@ -6,8 +6,8 @@ import { Plus } from 'lucide-react';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { BeanOrderListItem } from './_components/BeanOrderListItem';
 import {
-  BEAN_ORDER_CARD,
   BEAN_ORDER_INPUT,
+  BEAN_ORDER_LIST_CARD,
   BEAN_ORDER_LIST_GRID,
   BEAN_ORDER_LIST_HEADER,
   BEAN_ORDER_LIST_CELL,
@@ -83,11 +83,13 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
         </select>
       </div>
 
-      <div className={BEAN_ORDER_CARD}>
+      <div className={BEAN_ORDER_LIST_CARD}>
         {filtered.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบออเดอร์</p>
         ) : (
-          <ul className={`w-full p-2 lg:p-0 lg:divide-y lg:divide-border/60 lg:grid ${BEAN_ORDER_LIST_GRID} lg:gap-x-0`}>
+          <ul
+            className={`w-full p-2 lg:p-0 lg:grid lg:[&>li:not(:last-child)]:border-b lg:[&>li:not(:last-child)]:border-border/60 ${BEAN_ORDER_LIST_GRID} lg:gap-x-0`}
+          >
             <li
               className={`hidden ${BEAN_ORDER_LIST_HEADER} lg:grid lg:grid-cols-subgrid lg:col-span-full lg:items-center lg:gap-x-0`}
               aria-hidden

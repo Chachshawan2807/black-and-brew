@@ -3,7 +3,10 @@ import {
   appendStatusHistory,
   canCancelOrder,
   canConfirmPayment,
+  canEditOrder,
   canEditOrderLines,
+  canEditShipment,
+  canRevertPayment,
   canShip,
   canUploadSlip,
   getOrderStatusLabel,
@@ -23,27 +26,36 @@ describe('getOrderStatusLabel', () => {
 });
 
 describe('action guards', () => {
-  test('can edit lines only before shipped', () => {
-    expect(canEditOrderLines('pending')).toBe(true);
-    expect(canEditOrderLines('shipped')).toBe(false);
-    expect(canEditOrderLines('pending', '2026-07-22T00:00:00Z')).toBe(false);
+  const cancelledAt = '2026-07-22T00:00:00Z';
+
+  test('can edit order unless cancelled', () => {
+    expect(canEditOrder()).toBe(true);
+    expect(canEditOrder(cancelledAt)).toBe(false);
+    expect(canEditOrderLines()).toBe(true);
+    expect(canEditOrderLines(cancelledAt)).toBe(false);
+    expect(canEditShipment()).toBe(true);
+    expect(canEditShipment(cancelledAt)).toBe(false);
   });
 
   test('can cancel only before shipped', () => {
     expect(canCancelOrder('pending')).toBe(true);
     expect(canCancelOrder('shipped')).toBe(false);
+    expect(canCancelOrder('pending', cancelledAt)).toBe(false);
   });
 
-  test('payment actions require unpaid and not cancelled', () => {
-    expect(canUploadSlip('unpaid')).toBe(true);
-    expect(canUploadSlip('paid')).toBe(false);
+  test('payment actions stay available until cancelled', () => {
+    expect(canUploadSlip()).toBe(true);
+    expect(canUploadSlip(cancelledAt)).toBe(false);
     expect(canConfirmPayment('unpaid')).toBe(true);
     expect(canConfirmPayment('paid')).toBe(false);
+    expect(canRevertPayment('paid')).toBe(true);
+    expect(canRevertPayment('unpaid')).toBe(false);
   });
 
   test('can ship only when pending fulfillment', () => {
     expect(canShip('pending')).toBe(true);
     expect(canShip('shipped')).toBe(false);
+    expect(canShip('pending', cancelledAt)).toBe(false);
   });
 });
 

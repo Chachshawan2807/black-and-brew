@@ -20,31 +20,43 @@ const PWA_ASSETS = {
   NOTIFICATION_BADGE: '/images/notification-badge.png',
   APPLE_TOUCH_ICON: '/images/apple-touch-icon.png',
   FAVICON: '/images/favicon.png',
-  CACHE_VERSION: 13,
+  MASKABLE_ICON: '/images/maskable-icon-512.png',
+  CACHE_VERSION: 17,
   VIBRATE: [120, 60, 120],
 };
 
-/** Transparent canvas — black logo mark only (all platforms). */
-const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 };
-/** Minimal padding — logo uses cover fit so wide marks still fill splash height. */
-const SPLASH_ICON_PADDING_RATIO = 0.035;
+/** PWA manifest background — baked into launch icons so Android splash never shows black tiles. */
+const PWA_SPLASH_BACKGROUND = { r: 247, g: 245, b: 232, alpha: 255 };
+/** logo.png ships on a black backdrop — pixels below this luminance become transparent. */
+const LOGO_BACKDROP_LUMINANCE_MAX = 32;
+/** PWA splash / home-screen — balanced mark size (not a full-bleed block). */
+const PWA_ICON_PADDING_RATIO = 0.14;
+/** Android maskable safe zone (~80% center circle). */
+const PWA_MASKABLE_PADDING_RATIO = 0.2;
 /** Android badge: smaller mark + extra padding avoids a solid white blob in the status bar. */
 const BADGE_SIZE = 96;
 const BADGE_PADDING_RATIO = 0.14;
 /** Reject badges that fill too much of the canvas (likely a solid block, not a silhouette). */
 const BADGE_MAX_FILL_RATIO = 0.72;
 
-async function trimmedLogo() {
-  return sharp(source).ensureAlpha().trim({ threshold: 1 });
-}
-
-async function blackSilhouette(image) {
+/**
+ * logo.png is a dark-gray mark on an opaque black canvas.
+ * Drop the backdrop, then silhouette the mark so PWA splash shows the logo on
+ * manifest background_color instead of a solid black square.
+ */
+async function extractLogoMark(image) {
   const { data, info } = await image.clone().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 
   for (let i = 0; i < data.length; i += 4) {
+    const luminance = Math.max(data[i], data[i + 1], data[i + 2]);
+    if (luminance < LOGO_BACKDROP_LUMINANCE_MAX) {
+      data[i + 3] = 0;
+      continue;
+    }
     data[i] = 0;
     data[i + 1] = 0;
     data[i + 2] = 0;
+    data[i + 3] = 255;
   }
 
   return sharp(data, {
@@ -56,11 +68,16 @@ async function blackSilhouette(image) {
   }).png();
 }
 
-async function renderSquareIcon(trimmed, size, paddingRatio = 0.08) {
+async function trimmedLogoMark() {
+  const mark = await extractLogoMark(sharp(source));
+  return mark.trim({ threshold: 1 });
+}
+
+async function renderSquareIcon(trimmed, size, paddingRatio = 0.08, background = PWA_SPLASH_BACKGROUND) {
   const inner = Math.max(1, Math.round(size * (1 - paddingRatio * 2)));
   const resized = await trimmed
     .clone()
-    .resize(inner, inner, { fit: 'inside', background: TRANSPARENT })
+    .resize(inner, inner, { fit: 'inside', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer();
 
@@ -69,41 +86,19 @@ async function renderSquareIcon(trimmed, size, paddingRatio = 0.08) {
       width: size,
       height: size,
       channels: 4,
-      background: TRANSPARENT,
+      background,
     },
   })
     .composite([{ input: resized, gravity: 'center' }])
     .png({ compressionLevel: 9, adaptiveFiltering: true });
 }
 
-/** PWA / OS splash icons — cover fill so wide logos stay large on square canvases. */
-async function renderSplashIcon(trimmed, size, paddingRatio = SPLASH_ICON_PADDING_RATIO) {
-  const inner = Math.max(1, Math.round(size * (1 - paddingRatio * 2)));
-  const resized = await trimmed
-    .clone()
-    .resize(inner, inner, { fit: 'cover', position: 'center' })
-    .png()
-    .toBuffer();
-
-  return sharp({
-    create: {
-      width: size,
-      height: size,
-      channels: 4,
-      background: TRANSPARENT,
-    },
-  })
-    .composite([{ input: resized, gravity: 'center' }])
-    .png({ compressionLevel: 9, adaptiveFiltering: true });
+async function renderTransparentSquareIcon(trimmed, size, paddingRatio = 0.08) {
+  return renderSquareIcon(trimmed, size, paddingRatio, { r: 0, g: 0, b: 0, alpha: 0 });
 }
 
 async function writeSquareIcon(trimmed, size, filename, paddingRatio = 0.08) {
   const image = await renderSquareIcon(trimmed, size, paddingRatio);
-  await image.toFile(path.join(outDir, filename));
-}
-
-async function writeSplashIcon(trimmed, size, filename, paddingRatio = SPLASH_ICON_PADDING_RATIO) {
-  const image = await renderSplashIcon(trimmed, size, paddingRatio);
   await image.toFile(path.join(outDir, filename));
 }
 
@@ -112,7 +107,7 @@ async function writeSplashIcon(trimmed, size, filename, paddingRatio = SPLASH_IC
  * Only the alpha channel is used at render time; RGB is conventionally white.
  */
 async function renderNotificationBadgeSilhouette(trimmed) {
-  const badgeSource = await (await renderSquareIcon(trimmed, BADGE_SIZE, BADGE_PADDING_RATIO)).toBuffer();
+  const badgeSource = await (await renderTransparentSquareIcon(trimmed, BADGE_SIZE, BADGE_PADDING_RATIO)).toBuffer();
   const { data, info } = await sharp(badgeSource).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 
   for (let i = 0; i < data.length; i += 4) {
@@ -186,8 +181,8 @@ async function writeNotificationBadge(trimmed) {
 
 async function writeNextAppIcons(trimmed) {
   const appDir = path.join(root, 'src/app');
-  await (await renderSplashIcon(trimmed, 512)).toFile(path.join(appDir, 'icon.png'));
-  await (await renderSplashIcon(trimmed, 180)).toFile(path.join(appDir, 'apple-icon.png'));
+  await (await renderSquareIcon(trimmed, 512, PWA_ICON_PADDING_RATIO)).toFile(path.join(appDir, 'icon.png'));
+  await (await renderSquareIcon(trimmed, 180, PWA_ICON_PADDING_RATIO)).toFile(path.join(appDir, 'apple-icon.png'));
   await (await renderSquareIcon(trimmed, 32, 0.06)).toFile(path.join(appDir, 'favicon.ico'));
 }
 
@@ -199,14 +194,14 @@ self.PWA_ASSETS = ${JSON.stringify(PWA_ASSETS, null, 2)};
 }
 
 async function main() {
-  const trimmed = await trimmedLogo();
-  const blackTrimmed = await blackSilhouette(trimmed);
+  const trimmed = await trimmedLogoMark();
 
-  await writeSplashIcon(blackTrimmed, 192, 'notification-icon.png');
-  await writeNotificationBadge(blackTrimmed);
-  await writeSplashIcon(blackTrimmed, 512, 'notification-icon-512.png');
-  await writeSquareIcon(trimmed, 512, 'favicon.png');
-  await writeSplashIcon(trimmed, 180, 'apple-touch-icon.png');
+  await writeSquareIcon(trimmed, 192, 'notification-icon.png', PWA_ICON_PADDING_RATIO);
+  await writeNotificationBadge(trimmed);
+  await writeSquareIcon(trimmed, 512, 'notification-icon-512.png', PWA_ICON_PADDING_RATIO);
+  await writeSquareIcon(trimmed, 512, 'maskable-icon-512.png', PWA_MASKABLE_PADDING_RATIO);
+  await writeSquareIcon(trimmed, 512, 'favicon.png', PWA_ICON_PADDING_RATIO);
+  await writeSquareIcon(trimmed, 180, 'apple-touch-icon.png', PWA_ICON_PADDING_RATIO);
   await writeNextAppIcons(trimmed);
   writePwaAssetsJs();
 

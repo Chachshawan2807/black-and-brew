@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Copy } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy } from 'lucide-react';
+import { FloatingAlert } from '@/components/ui/floating-alert';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { formatOrderDeliveryDestination } from '@/lib/bean-orders/address';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
@@ -54,8 +55,15 @@ function formatShippingChannel(order: BeanOrderListRow): string {
   return getCarrierLabel(order.carrierCode);
 }
 
+type CopyToast = {
+  message: string;
+  x: number;
+  y: number;
+  type: 'success' | 'error';
+};
+
 export function BeanOrderListItem({ order, locale }: Props) {
-  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
   const customerLabel = formatCustomerLabel(order);
   const destinationLine = formatDestinationLine(order);
   const shippingChannel = formatShippingChannel(order);
@@ -65,14 +73,14 @@ export function BeanOrderListItem({ order, locale }: Props) {
     event.preventDefault();
     event.stopPropagation();
 
+    const anchor = { x: event.clientX, y: event.clientY };
+
     try {
       await navigator.clipboard.writeText(formatBeanOrderShareText(order));
-      setCopyStatus('คัดลอกแล้ว');
+      setCopyToast({ message: 'คัดลอกแล้ว', ...anchor, type: 'success' });
     } catch {
-      setCopyStatus('คัดลอกไม่สำเร็จ');
+      setCopyToast({ message: 'คัดลอกไม่สำเร็จ', ...anchor, type: 'error' });
     }
-
-    window.setTimeout(() => setCopyStatus(null), 2000);
   }
 
   return (
@@ -171,10 +179,19 @@ export function BeanOrderListItem({ order, locale }: Props) {
         </div>
       </Link>
 
-      {copyStatus ? (
-        <p className="pointer-events-none absolute left-14 top-10 z-10 text-xs text-muted-foreground sm:left-16 lg:left-1 lg:top-auto lg:bottom-1 lg:whitespace-nowrap">
-          {copyStatus}
-        </p>
+      {copyToast ? (
+        <FloatingAlert
+          message={copyToast.message}
+          anchor={{ x: copyToast.x, y: copyToast.y }}
+          icon={
+            copyToast.type === 'success' ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+            ) : (
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" aria-hidden />
+            )
+          }
+          onDismiss={() => setCopyToast(null)}
+        />
       ) : null}
     </li>
   );

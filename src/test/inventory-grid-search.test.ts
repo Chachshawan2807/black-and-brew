@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
-import { filterInventoryGridItems } from '@/lib/inventory-grid-search';
+import { filterInventoryGridItems, getInventoryItemDisplayOrder } from '@/lib/inventory-grid-search';
 
 const inventoryClientPath = resolve(
   __dirname,
@@ -36,10 +36,16 @@ describe('inventory-grid-search', () => {
     ]);
   });
 
-  test('filtered rows use visible list index for display numbering', () => {
+  test('getInventoryItemDisplayOrder uses sort_order, not filtered index', () => {
+    expect(getInventoryItemDisplayOrder({ sort_order: 12 }, 0)).toBe(12);
+    expect(getInventoryItemDisplayOrder({ sort_order: 0 }, 4)).toBe(5);
+    expect(getInventoryItemDisplayOrder({}, 2)).toBe(3);
+  });
+
+  test('filtered rows keep real sort_order for display numbering', () => {
     const source = readFileSync(inventoryClientPath, 'utf-8');
-    expect(source).toContain('visibleItems.map((item, index) =>');
-    expect(source).not.toContain('itemIndexById');
+    expect(source).toContain('getInventoryItemDisplayOrder');
+    expect(source).not.toMatch(/displayIndex=\{index \+ 1\}/);
   });
 
   test('dark theme keeps distinct lg and xl shadow tiers', () => {

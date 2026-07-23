@@ -4,6 +4,7 @@ import { AlertTriangle, BarChart3, ChevronLeft, ClipboardCheck } from 'lucide-re
 import { checkAuth } from '@/app/actions/auth';
 import { fetchInventoryAccuracyReport } from '@/app/actions/inventory-actions';
 import { AccuracyGauge } from '@/app/[locale]/inventory/accuracy/_components/AccuracyGauge';
+import { HighDiscrepancyList } from '@/app/[locale]/inventory/accuracy/_components/HighDiscrepancyList';
 import { getAccuracyGaugeZone } from '@/lib/inventory-accuracy-gauge';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
 
@@ -117,52 +118,7 @@ export default async function InventoryAccuracyPage({
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
                 <h2 className="text-lg font-normal text-foreground">รายการที่คลาดเคลื่อนสูง</h2>
               </div>
-              {report.highDiscrepancyItems.length === 0 ? (
-                <div className="rounded-2xl bg-muted p-5 text-center text-sm text-muted-foreground">
-                  ยังไม่มีรายการต้องเบิกที่คลาดเคลื่อน
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div
-                    className="hidden px-4 text-[11px] uppercase tracking-[0.14em] text-muted-foreground md:grid md:grid-cols-[minmax(0,1fr)_6.5rem_5.5rem] md:gap-4"
-                    aria-hidden="true"
-                  >
-                    <span>รายการสินค้า</span>
-                    <span className="text-center">คลาดเคลื่อน</span>
-                    <span className="text-right">ความแม่นยำ</span>
-                  </div>
-                  <div className="space-y-2">
-                    {report.highDiscrepancyItems.map((item) => (
-                      <div
-                        key={item.itemId}
-                        className="rounded-2xl border border-border bg-background p-4"
-                      >
-                        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_6.5rem_5.5rem] md:items-center md:gap-4">
-                          <div className="min-w-0">
-                            <p className="font-normal text-foreground">{item.itemName || 'ไม่ทราบชื่อสินค้า'}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              ล่าสุด: ระบบ {formatQty(item.lastSystemStockQty ?? 0)} / นับได้{' '}
-                              {formatQty(item.lastCountedQty ?? 0)}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 border-t border-border pt-3 md:justify-center md:border-0 md:pt-0">
-                            <span className="shrink-0 text-xs text-muted-foreground md:hidden">คลาดเคลื่อน</span>
-                            <span className="inline-flex min-w-[5.5rem] justify-center rounded-2xl bg-[#fff3cd] px-3 py-1.5 text-sm tabular-nums text-black bb-pastel-surface">
-                              {formatQty(item.totalDiscrepancyQty)} หน่วย
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 border-t border-border pt-3 md:justify-end md:border-0 md:pt-0">
-                            <span className="shrink-0 text-xs text-muted-foreground md:hidden">ความแม่นยำ</span>
-                            <span className="min-w-[3.5rem] text-right text-sm tabular-nums text-foreground">
-                              {item.accuracyPct ?? 0}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <HighDiscrepancyList items={report.highDiscrepancyItems} />
             </section>
 
             <section className="rounded-3xl border border-border bg-card p-5 bb-shadow-sm">

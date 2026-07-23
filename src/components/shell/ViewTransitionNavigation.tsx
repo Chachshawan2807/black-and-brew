@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { completeViewTransitionNavigation } from '@/lib/view-transition-navigation-state';
 import { navigateWithViewTransition, shouldUseViewTransition } from '@/lib/view-transition';
+import { normalizeAppPath } from '@/lib/normalize-app-path';
+import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
 
 function isModifiedClick(event: MouseEvent): boolean {
   return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
@@ -33,6 +35,7 @@ function normalizeInternalHref(href: string, origin: string): string {
 export function ViewTransitionNavigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const closeDrawerForNavigation = useMobileNavDrawer((state) => state.closeDrawerForNavigation);
 
   useEffect(() => {
     completeViewTransitionNavigation();
@@ -56,17 +59,20 @@ export function ViewTransitionNavigation() {
       if (!rawHref || !isInternalAppHref(rawHref, window.location.origin)) return;
 
       const href = normalizeInternalHref(rawHref, window.location.origin);
-      const nextPath = href.split(/[?#]/)[0];
-      const currentPath = window.location.pathname;
+      const nextPath = normalizeAppPath(href.split(/[?#]/)[0]);
+      const currentPath = normalizeAppPath(window.location.pathname);
       if (nextPath === currentPath) return;
 
       event.preventDefault();
+      if (window.innerWidth < 768) {
+        closeDrawerForNavigation();
+      }
       navigateWithViewTransition(router.push, href);
     };
 
     document.addEventListener('click', onDocumentClick, true);
     return () => document.removeEventListener('click', onDocumentClick, true);
-  }, [router]);
+  }, [closeDrawerForNavigation, router]);
 
   return null;
 }

@@ -39,14 +39,15 @@ describe('quick search suggestions layout', () => {
     expect(style.top).toBe(228);
   });
 
-  test('uses the visible viewport top when placing suggestions above the input', () => {
+  test('anchors portaled suggestions directly above the input when space below is limited', () => {
     const style = getAnchoredSuggestionsOverlayStyle(
       { top: 180, bottom: 220, left: 16, width: 320 },
       { offsetTop: 0, visibleHeight: 220 },
     );
 
     expect(style.placement).toBe('above');
-    expect(style.top).toBe(8);
+    expect(style.bottom).toBe(48);
+    expect(style.top).toBeUndefined();
     expect(style.maxHeight).toBe(172);
   });
 

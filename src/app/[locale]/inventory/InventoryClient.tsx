@@ -20,6 +20,7 @@ import { getClientSessionId } from '@/lib/client-session';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { computePurchaseOrderDerivedState, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
+import { getInventoryItemDisplayOrder } from '@/lib/inventory-grid-search';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryGridFilter } from '@/hooks/use-inventory-grid-filter';
 import { useInventoryHistory } from '@/hooks/use-inventory-history';
@@ -253,7 +254,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <EditableSortIndex
             id={item.id}
-            displayIndex={rowIndex + 1}
+            displayIndex={getInventoryItemDisplayOrder(item, rowIndex)}
             totalItems={totalItems}
             handleSaveField={handleSaveField}
           />
@@ -479,7 +480,7 @@ const MobileSortableRow = React.memo(({
           )}
           <EditableSortIndex
             id={item.id}
-            displayIndex={index + 1}
+            displayIndex={getInventoryItemDisplayOrder(item, index)}
             totalItems={totalItems}
             handleSaveField={handleSaveField}
           />

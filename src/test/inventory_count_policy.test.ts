@@ -49,9 +49,8 @@ describe('inventory count policy', () => {
 
     expect(countPage).toContain('bg-[#dbeafe]');
     expect(countPage).toContain('bg-[#f8d7da]');
-    expect(countPage).toContain('ต้องเบิก');
-    expect(countPage).toContain('ไม่ต้องเบิก');
-    expect(countPage).toContain('ประเภท:');
+    expect(countPage).not.toContain('ไม่ต้องเบิก');
+    expect(countPage).not.toContain('ต้องเบิก');
   });
 
   test('count quantity inputs stay visible on pastel rows in dark theme', () => {

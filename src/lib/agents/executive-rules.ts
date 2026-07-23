@@ -8,10 +8,16 @@ export const EXECUTIVE_RULES = {
   database_map: {
     inventory_items: "ตารางหลักเก็บรายการสินค้าคงคลัง (คอลัมน์: id, name, unit, source, order_point, target_stock, stock, order_qty — ห้ามใช้ item_name, quantity, min_stock)",
     inventory_transactions: "ตารางประวัติการเคลื่อนไหวสต็อก (ใช้ดูการรับเข้า IN และการเบิกจ่าย OUT ย้อนหลัง)",
+    inventory_count_verifications: "ตารางผลตรวจนับสต็อก (counted_qty vs system_stock_qty, matched) สำหรับรายงานความแม่นยำ",
     profiles: "ตารางรายชื่อพนักงานทั้งหมดในร้าน (ใช้เชื่อมโยงกับ employee_id เพื่อหาชื่อพนักงาน)",
     shifts: "ตารางกะการทำงานและวันลาของพนักงาน (ใช้ดูตารางงานล่วงหน้า โดยเช็กจาก start_time และ end_time)",
     service_records: "ตารางประวัติการซ่อมบำรุง (คอลัมน์: id, start_date, equipment, detected_problem, task_type, work_details, cost, recommended_frequency, person_in_charge, status, completion_date, notes — ห้ามใช้ machine_name, maintenance_date, operator, description, recorded_at)",
-    holidays: "ตารางบันทึกวันหยุดนักขัตฤกษ์ล่วงหน้า (ใช้ประกอบการประเมินความหนาแน่นของลูกค้า)"
+    holidays: "ตารางบันทึกวันหยุดนักขัตฤกษ์ล่วงหน้า (ใช้ประกอบการประเมินความหนาแน่นของลูกค้า)",
+    sales_records: "ตารางรายการขายจากไฟล์อัปโหลด (sale_date, product_name, category, quantity, total_amount)",
+    bean_orders: "ตารางคำสั่งซื้อเมล็ดกาแฟ (order_no, payment_status unpaid/paid, fulfillment_status pending/shipped, total_baht)",
+    bean_order_lines: "รายการสินค้าในออเดอร์เมล็ด (item_name, weight_value, weight_unit, line_total_baht)",
+    bean_customers: "ลูกค้าเมล็ดกาแฟ (name, phone)",
+    bean_order_shipments: "การจัดส่งเมล็ด (carrier_code, tracking_number, tracking_status)",
   },
   inventory: {
     // Source of truth is per-item order_point + target_stock (PO modal parity).

@@ -8,6 +8,7 @@ export type BranchWithdrawDraftRow = {
 
 export type BranchWithdrawDraft = {
   rows: Record<string, BranchWithdrawDraftRow>;
+  extraItemIds?: string[];
 };
 
 type DraftStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -29,6 +30,10 @@ export function serializeBranchWithdrawDraft(draft: BranchWithdrawDraft): string
   return JSON.stringify(draft);
 }
 
+function isExtraItemIds(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((id) => typeof id === 'string');
+}
+
 export function parseBranchWithdrawDraft(raw: string): BranchWithdrawDraft | null {
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -36,7 +41,13 @@ export function parseBranchWithdrawDraft(raw: string): BranchWithdrawDraft | nul
     for (const row of Object.values(parsed.rows)) {
       if (!isDraftRow(row)) return null;
     }
-    return { rows: parsed.rows as Record<string, BranchWithdrawDraftRow> };
+    if (parsed.extraItemIds !== undefined && !isExtraItemIds(parsed.extraItemIds)) {
+      return null;
+    }
+    return {
+      rows: parsed.rows as Record<string, BranchWithdrawDraftRow>,
+      extraItemIds: parsed.extraItemIds as string[] | undefined,
+    };
   } catch {
     return null;
   }

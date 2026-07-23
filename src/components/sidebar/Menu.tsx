@@ -37,8 +37,8 @@ import {
 import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
-
-const STORAGE_KEY = 'sidebar-menu-order';
+import { useSidebarMenuOrder } from '@/hooks/use-sidebar-menu-order';
+import { applySidebarMenuOrder } from '@/lib/sidebar-menu-order';
 
 interface MenuProps {
   isOpen: boolean | undefined;
@@ -201,12 +201,14 @@ export default function Menu({ isOpen }: MenuProps) {
   const searchParams = useSearchParams();
   const locale = (params?.locale as string) || 'th';
 
-  const closeMobileDrawer = useMobileNavDrawer((state) => state.closeDrawer);
+  const closeDrawerForNavigation = useMobileNavDrawer((state) => state.closeDrawerForNavigation);
   const isReadOnly = useReadOnly();
   const isAdmin = !isReadOnly;
 
+  const orderIds = useSidebarMenuOrder((state) => state.orderIds);
+  const setOrderIds = useSidebarMenuOrder((state) => state.setOrderIds);
+
   const [isMounted, setIsMounted] = useState(false);
-  const [customOrderIds, setCustomOrderIds] = useState<string[] | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSafeDndSensors();
@@ -231,35 +233,20 @@ export default function Menu({ isOpen }: MenuProps) {
   const flatMenus = adjustedMenuList.flatMap(({ menus }) => menus);
 
   // Apply saved order to fresh menu items (so active state is always current)
-  const displayMenus = useMemo(() => {
-    if (!customOrderIds) return flatMenus;
-    const reordered = customOrderIds
-      .map(id => flatMenus.find(m => m.id === id))
-      .filter(Boolean) as MenuItem[];
-    const missing = flatMenus.filter(m => !customOrderIds.includes(m.id));
-    return [...reordered, ...missing];
+  const displayMenus = useMemo(
+    () => applySidebarMenuOrder(flatMenus, orderIds),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customOrderIds, pathname, showHolidays]);
+    [orderIds, pathname, showHolidays],
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const ids = JSON.parse(saved) as string[];
-        if (Array.isArray(ids) && ids.length > 0) {
-          setCustomOrderIds(ids);
-        }
-      } catch {
-        // ignore malformed data
-      }
-    }
   }, []);
 
   const handleLinkClick = () => {
     if (window.innerWidth < 768) {
-      closeMobileDrawer();
+      closeDrawerForNavigation();
     }
   };
 
@@ -272,15 +259,12 @@ export default function Menu({ isOpen }: MenuProps) {
     setActiveId(null);
     if (!over || active.id === over.id) return;
 
-    setCustomOrderIds(prev => {
-      const currentIds = prev ?? displayMenus.map(m => m.id);
-      const oldIdx = currentIds.indexOf(active.id as string);
-      const newIdx = currentIds.indexOf(over.id as string);
-      if (oldIdx === -1 || newIdx === -1) return prev;
-      const newOrder = arrayMove(currentIds, oldIdx, newIdx);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newOrder));
-      return newOrder;
-    });
+    const currentIds = orderIds ?? displayMenus.map((menu) => menu.id);
+    const oldIdx = currentIds.indexOf(active.id as string);
+    const newIdx = currentIds.indexOf(over.id as string);
+    if (oldIdx === -1 || newIdx === -1) return;
+
+    setOrderIds(arrayMove(currentIds, oldIdx, newIdx));
   };
 
   const isDragEnabled = isMounted && isAdmin && isOpen !== false;

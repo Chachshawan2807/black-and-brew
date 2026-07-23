@@ -10,8 +10,10 @@ import {
   appendStatusHistory,
   canCancelOrder,
   canConfirmPayment,
+  canEditOrder,
   canEditOrderLines,
-  canShip,
+  canEditShipment,
+  canRevertPayment,
   canUploadSlip,
 } from '@/lib/bean-orders/order-status';
 import { computeLineTotal, computeOrderTotals } from '@/lib/bean-orders/pricing';
@@ -209,8 +211,24 @@ async function loadInventoryNames(ids: string[]): Promise<Map<string, string>> {
   return new Map((data ?? []).map((row) => [row.id as string, row.name as string]));
 }
 
-function revalidateBeanOrders(locale = 'th') {
+function revalidateBeanOrders(locale = 'th', orderId?: string) {
   revalidatePath(`/${locale}/bean-orders`);
+  if (orderId) {
+    revalidatePath(`/${locale}/bean-orders/${orderId}`);
+    revalidatePath(`/${locale}/bean-orders/${orderId}/edit`);
+  }
+}
+
+async function signBeanOrderSlipPath(path: string): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+  const { data: signed, error } = await supabase.storage
+    .from('bean-order-slips')
+    .createSignedUrl(path, 3600);
+  if (error) {
+    console.error('Supabase Error (signBeanOrderSlipPath):', error.message);
+    return null;
+  }
+  return signed?.signedUrl ?? null;
 }
 
 export async function searchBeanCustomers(query: string): Promise<{
@@ -520,10 +538,7 @@ export async function fetchBeanOrderDetail(
 
     let slipUrl: string | null = null;
     if (paymentResult.data?.slip_url) {
-      const { data: signed } = await supabase.storage
-        .from('bean-order-slips')
-        .createSignedUrl(paymentResult.data.slip_url as string, 3600);
-      slipUrl = signed?.signedUrl ?? null;
+      slipUrl = await signBeanOrderSlipPath(paymentResult.data.slip_url as string);
     }
 
     return {
@@ -694,10 +709,161 @@ export async function createBeanOrder(
       newValue: { orderNo, totalBaht: totals.totalBaht },
     });
 
-    revalidateBeanOrders(locale);
+    revalidateBeanOrders(locale, order.id as string);
     return { success: true, orderId: order.id as string };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'สร้างออเดอร์ไม่สำเร็จ';
+    return { success: false, error: message };
+  }
+}
+
+export async function updateBeanOrder(
+  orderId: string,
+  input: z.infer<typeof createOrderSchema>,
+  locale = 'th',
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  const parsed = createOrderSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: 'ข้อมูลออเดอร์ไม่ถูกต้อง' };
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data: existing, error: fetchError } = await supabase
+      .from('bean_orders')
+      .select('id, order_no, payment_status, fulfillment_status, cancelled_at, status_history')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (fetchError || !existing) return { success: false, error: 'ไม่พบออเดอร์' };
+    if (!canEditOrderLines(existing.cancelled_at as string | null)) {
+      return { success: false, error: 'แก้ไขออเดอร์นี้ไม่ได้' };
+    }
+
+    const namesById = await loadInventoryNames(parsed.data.lines.map((l) => l.inventoryItemId));
+    for (const line of parsed.data.lines) {
+      if (!namesById.has(line.inventoryItemId)) {
+        return { success: false, error: `ไม่พบสินค้าในคลัง (ID: ${line.inventoryItemId})` };
+      }
+    }
+
+    const totals = computeOrderTotals(
+      parsed.data.lines.map((l) => ({
+        inventoryItemId: l.inventoryItemId,
+        weightValue: l.weightValue,
+        weightUnit: l.weightUnit,
+        unitPricePerKg: l.unitPricePerKg,
+      })),
+      parsed.data.discountBaht,
+      parsed.data.shippingBaht,
+    );
+
+    const actor = await resolveActorLabelFromSession();
+    const history = appendStatusHistory((existing.status_history as StatusHistoryEntry[]) ?? [], {
+      by: actor,
+      action: 'updated',
+      payment_status: existing.payment_status as 'unpaid' | 'paid',
+      fulfillment_status: existing.fulfillment_status as 'pending' | 'shipped',
+    });
+
+    const { error: orderError } = await supabase
+      .from('bean_orders')
+      .update({
+        customer_id: parsed.data.customerId ?? null,
+        sender_name: parsed.data.senderName || DEFAULT_SHOP_SENDER.name,
+        sender_phone: parsed.data.senderPhone ?? null,
+        sender_address: parsed.data.senderAddress ?? null,
+        recipient_name: parsed.data.recipientName,
+        recipient_phone: parsed.data.recipientPhone ?? null,
+        recipient_address: parsed.data.recipientAddress,
+        recipient_province: parsed.data.recipientProvince ?? null,
+        recipient_postal_code: parsed.data.recipientPostalCode ?? null,
+        subtotal_baht: totals.subtotalBaht,
+        discount_baht: totals.discountBaht,
+        shipping_baht: totals.shippingBaht,
+        total_baht: totals.totalBaht,
+        notes: parsed.data.notes ?? null,
+        status_history: history,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderId);
+
+    if (orderError) {
+      console.error('Supabase Error (updateBeanOrder):', orderError.message, orderError.details);
+      return { success: false, error: orderError.message };
+    }
+
+    const { error: deleteLinesError } = await supabase
+      .from('bean_order_lines')
+      .delete()
+      .eq('order_id', orderId);
+
+    if (deleteLinesError) {
+      console.error('Supabase Error (updateBeanOrder delete lines):', deleteLinesError.message, deleteLinesError.details);
+      return { success: false, error: deleteLinesError.message };
+    }
+
+    const lineRows = parsed.data.lines.map((line, index) => ({
+      order_id: orderId,
+      inventory_item_id: line.inventoryItemId,
+      item_name: namesById.get(line.inventoryItemId) ?? '—',
+      weight_value: line.weightValue,
+      weight_unit: line.weightUnit,
+      unit_price_per_kg: line.unitPricePerKg,
+      line_total_baht: computeLineTotal(line.weightValue, line.weightUnit, line.unitPricePerKg),
+      sort_order: index,
+    }));
+
+    const { error: linesError } = await supabase.from('bean_order_lines').insert(lineRows);
+    if (linesError) {
+      console.error('Supabase Error (updateBeanOrder lines):', linesError.message, linesError.details);
+      return { success: false, error: linesError.message };
+    }
+
+    void recordDataChange({
+      action: 'UPDATE',
+      module: 'bean_orders',
+      entityType: 'bean_order',
+      entityId: orderId,
+      entityLabel: existing.order_no as string,
+      newValue: { totalBaht: totals.totalBaht },
+    });
+
+    revalidateBeanOrders(locale, orderId);
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'แก้ไขออเดอร์ไม่สำเร็จ';
+    return { success: false, error: message };
+  }
+}
+
+export async function getBeanOrderSlipSignedUrl(
+  orderId: string,
+): Promise<{ success: boolean; slipUrl?: string | null; error?: string }> {
+  const readError = await requireReadAccess();
+  if (readError) return { success: false, error: readError };
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from('bean_order_payments')
+      .select('slip_url')
+      .eq('order_id', orderId)
+      .order('uploaded_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Supabase Error (getBeanOrderSlipSignedUrl):', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+    if (!data?.slip_url) return { success: true, slipUrl: null };
+
+    const slipUrl = await signBeanOrderSlipPath(data.slip_url as string);
+    return { success: true, slipUrl };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'โหลดสลิปไม่สำเร็จ';
     return { success: false, error: message };
   }
 }
@@ -786,7 +952,7 @@ export async function uploadBeanOrderSlip(
       .maybeSingle();
 
     if (fetchError || !order) return { success: false, error: 'ไม่พบออเดอร์' };
-    if (!canUploadSlip(order.payment_status as 'unpaid' | 'paid', order.cancelled_at as string | null)) {
+    if (!canUploadSlip(order.cancelled_at as string | null)) {
       return { success: false, error: 'อัปโหลดสลิปไม่ได้ในสถานะนี้' };
     }
 
@@ -825,7 +991,7 @@ export async function uploadBeanOrderSlip(
       metadata: { action: 'slip_uploaded' },
     });
 
-    revalidateBeanOrders(locale);
+    revalidateBeanOrders(locale, orderId);
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'อัปโหลดสลิปไม่สำเร็จ';
@@ -894,10 +1060,79 @@ export async function confirmBeanOrderPayment(
       fieldChanges: [{ field: 'payment_status', old_value: 'unpaid', new_value: 'paid' }],
     });
 
-    revalidateBeanOrders(locale);
+    revalidateBeanOrders(locale, orderId);
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'ยืนยันชำระไม่สำเร็จ';
+    return { success: false, error: message };
+  }
+}
+
+export async function revertBeanOrderPayment(
+  orderId: string,
+  locale = 'th',
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data: order, error: fetchError } = await supabase
+      .from('bean_orders')
+      .select('id, order_no, payment_status, fulfillment_status, cancelled_at, status_history')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (fetchError || !order) return { success: false, error: 'ไม่พบออเดอร์' };
+    if (!canRevertPayment(order.payment_status as 'unpaid' | 'paid', order.cancelled_at as string | null)) {
+      return { success: false, error: 'เปลี่ยนสถานะชำระไม่ได้ในสถานะนี้' };
+    }
+
+    const actor = await resolveActorLabelFromSession();
+    const history = appendStatusHistory((order.status_history as StatusHistoryEntry[]) ?? [], {
+      by: actor,
+      action: 'payment_reverted',
+      payment_status: 'unpaid',
+      fulfillment_status: order.fulfillment_status as 'pending' | 'shipped',
+    });
+
+    const now = new Date().toISOString();
+    const [{ error: orderError }, { error: payError }] = await Promise.all([
+      supabase
+        .from('bean_orders')
+        .update({
+          payment_status: 'unpaid',
+          status_history: history,
+          updated_at: now,
+        })
+        .eq('id', orderId),
+      supabase
+        .from('bean_order_payments')
+        .update({ confirmed_by: null, confirmed_at: null })
+        .eq('order_id', orderId),
+    ]);
+
+    if (orderError) {
+      console.error('Supabase Error (revertBeanOrderPayment):', orderError.message, orderError.details);
+      return { success: false, error: orderError.message };
+    }
+    if (payError) {
+      console.error('Supabase Error (revertBeanOrderPayment slip):', payError.message, payError.details);
+    }
+
+    void recordDataChange({
+      action: 'UPDATE',
+      module: 'bean_orders',
+      entityType: 'bean_order',
+      entityId: orderId,
+      entityLabel: order.order_no as string,
+      fieldChanges: [{ field: 'payment_status', old_value: 'paid', new_value: 'unpaid' }],
+    });
+
+    revalidateBeanOrders(locale, orderId);
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'เปลี่ยนสถานะชำระไม่สำเร็จ';
     return { success: false, error: message };
   }
 }
@@ -924,14 +1159,17 @@ export async function shipBeanOrder(
       .maybeSingle();
 
     if (fetchError || !order) return { success: false, error: 'ไม่พบออเดอร์' };
-    if (!canShip(order.fulfillment_status as 'pending' | 'shipped', order.cancelled_at as string | null)) {
-      return { success: false, error: 'จัดส่งออเดอร์นี้ไม่ได้' };
+
+    const fulfillmentStatus = order.fulfillment_status as 'pending' | 'shipped';
+    const isNewShipment = fulfillmentStatus === 'pending';
+    if (!canEditShipment(order.cancelled_at as string | null)) {
+      return { success: false, error: 'แก้ไขการจัดส่งไม่ได้ในสถานะนี้' };
     }
 
     const actor = await resolveActorLabelFromSession();
     const history = appendStatusHistory((order.status_history as StatusHistoryEntry[]) ?? [], {
       by: actor,
-      action: 'shipped',
+      action: isNewShipment ? 'shipped' : 'shipment_updated',
       payment_status: order.payment_status as 'unpaid' | 'paid',
       fulfillment_status: 'shipped',
     });
@@ -965,14 +1203,18 @@ export async function shipBeanOrder(
       ? resolveTrackingMoreCarrierCode(parsed.data.carrierCode) ?? parsed.data.carrierCode
       : null;
 
+    const orderUpdates: Record<string, unknown> = {
+      status_history: history,
+      updated_at: new Date().toISOString(),
+    };
+    if (isNewShipment) {
+      orderUpdates.fulfillment_status = 'shipped';
+    }
+
     const [{ error: orderError }, { error: shipError }] = await Promise.all([
       supabase
         .from('bean_orders')
-        .update({
-          fulfillment_status: 'shipped',
-          status_history: history,
-          updated_at: new Date().toISOString(),
-        })
+        .update(orderUpdates)
         .eq('id', orderId),
       supabase.from('bean_order_shipments').upsert({
         order_id: orderId,
@@ -1013,11 +1255,13 @@ export async function shipBeanOrder(
       entityType: 'bean_order',
       entityId: orderId,
       entityLabel: order.order_no as string,
-      fieldChanges: [{ field: 'fulfillment_status', old_value: 'pending', new_value: 'shipped' }],
+      fieldChanges: isNewShipment
+        ? [{ field: 'fulfillment_status', old_value: 'pending', new_value: 'shipped' }]
+        : [{ field: 'shipment', old_value: null, new_value: 'updated' }],
       metadata: { trackingNumber: trackingNumber || null },
     });
 
-    revalidateBeanOrders(locale);
+    revalidateBeanOrders(locale, orderId);
     return { success: true, trackingWarning };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'บันทึกจัดส่งไม่สำเร็จ';

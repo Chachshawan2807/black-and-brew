@@ -10,3 +10,13 @@ export function filterInventoryGridItems<T extends { name: string }>(
     item.name.toLocaleLowerCase('th-TH').includes(needle),
   );
 }
+
+/** Real list position for display — never the filtered-result index. */
+export function getInventoryItemDisplayOrder(
+  item: { sort_order?: number },
+  fallbackIndex: number,
+): number {
+  const order = item.sort_order;
+  if (typeof order === 'number' && order > 0) return order;
+  return fallbackIndex + 1;
+}

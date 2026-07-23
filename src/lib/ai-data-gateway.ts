@@ -42,6 +42,12 @@ export const AI_ALLOWED_TABLES = [
   'sales_uploads',
   'sales_records',
   'product_categories',
+  'bean_customers',
+  'bean_customer_addresses',
+  'bean_orders',
+  'bean_order_lines',
+  'bean_order_payments',
+  'bean_order_shipments',
   'audit_logs',
   'login_history',
   'data_change_logs',
@@ -88,6 +94,12 @@ const COLUMN_ALIASES: Record<string, Record<string, string>> = {
   product_categories: { product: 'product_name' },
   regular_holidays: { employee_id: 'profile_id', weekday: 'day_of_week' },
   data_change_logs: { module_name: 'module', entity: 'entity_type' },
+  bean_orders: {
+    order_number: 'order_no',
+    payment: 'payment_status',
+    fulfillment: 'fulfillment_status',
+  },
+  bean_customers: { customer_name: 'name' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,6 +129,19 @@ export const TABLE_COLUMN_PRESETS: Record<AiReadableTable, string> = {
     'id, upload_id, sale_date, product_name, category, quantity, unit_price, ' +
     'total_amount, payment_method, notes, created_at',
   product_categories: 'id, product_name, category, is_ai_generated, created_at, updated_at',
+  bean_customers: 'id, name, phone, notes, created_at, updated_at',
+  bean_customer_addresses:
+    'id, customer_id, label, recipient_name, recipient_phone, province, postal_code, created_at',
+  bean_orders:
+    'id, order_no, customer_id, recipient_name, recipient_province, subtotal_baht, discount_baht, ' +
+    'shipping_baht, total_baht, payment_status, fulfillment_status, notes, cancelled_at, ' +
+    'created_by, created_at, updated_at',
+  bean_order_lines:
+    'id, order_id, item_name, weight_value, weight_unit, unit_price_per_kg, line_total_baht, ' +
+    'sort_order, created_at',
+  bean_order_payments: 'id, order_id, uploaded_by, uploaded_at, confirmed_by, confirmed_at',
+  bean_order_shipments:
+    'id, order_id, delivery_type, carrier_code, tracking_number, tracking_status, shipped_at, shipped_by',
   audit_logs:
     'id, action_type, entity_type, entity_id, old_value, new_value, user_id, ' +
     'user_email, timestamp, ip_address, status',
@@ -154,6 +179,12 @@ export const TABLE_MAX_LIMITS: Record<AiReadableTable, number> = {
   regular_holidays: 200,
   sales_uploads: 100,
   inventory_config: 50,
+  bean_customers: 500,
+  bean_customer_addresses: 500,
+  bean_orders: 500,
+  bean_order_lines: 1000,
+  bean_order_payments: 500,
+  bean_order_shipments: 500,
   revoked_sessions: 200,
   push_subscriptions: 200,
   device_passkeys: 200,
@@ -561,6 +592,248 @@ export async function fetchInventoryItemDetails(itemId: string): Promise<{
     return {
       ok: false,
       item: null,
+      error: { message: e?.message ?? 'Unknown error', details: e?.details ?? null, hint: null },
+    };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fetchInventoryAccuracySummary — aggregate count verifications for AI
+// ─────────────────────────────────────────────────────────────────────────────
+export type InventoryAccuracySummary = {
+  ok: boolean;
+  overall_accuracy_pct: number | null;
+  matched_count: number;
+  mismatched_count: number;
+  total_counts: number;
+  high_discrepancy_items: Array<{
+    item_name: string;
+    total_discrepancy_qty: number;
+    accuracy_pct: number | null;
+  }>;
+};
+
+export async function fetchInventoryAccuracySummary(opts: {
+  limit?: number;
+} = {}): Promise<InventoryAccuracySummary> {
+  const limit = opts.limit ?? TABLE_MAX_LIMITS.inventory_count_verifications;
+  const empty: InventoryAccuracySummary = {
+    ok: false,
+    overall_accuracy_pct: null,
+    matched_count: 0,
+    mismatched_count: 0,
+    total_counts: 0,
+    high_discrepancy_items: [],
+  };
+
+  const session = await requirePrivilegedSession();
+  if (!session.ok) {
+    return empty;
+  }
+
+  try {
+    const admin = getAdminClient();
+    const { data, error } = await admin
+      .from('inventory_count_verifications')
+      .select(TABLE_COLUMN_PRESETS.inventory_count_verifications)
+      .order('counted_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('[ai-data-gateway] fetchInventoryAccuracySummary:', error.message, error.details);
+      return empty;
+    }
+
+    const rows = (data ?? []) as unknown as Record<string, unknown>[];
+    let matched = 0;
+    let mismatched = 0;
+    const byItem = new Map<
+      string,
+      { checks: number; matches: number; discrepancy: number }
+    >();
+
+    const itemIds = [
+      ...new Set(
+        rows
+          .map((r) => r.inventory_item_id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      ),
+    ];
+
+    const nameById = new Map<string, string>();
+    if (itemIds.length > 0) {
+      const { data: items } = await admin
+        .from('inventory_items')
+        .select('id, name')
+        .in('id', itemIds);
+      for (const item of (items ?? []) as unknown as Record<string, unknown>[]) {
+        if (typeof item.id === 'string') {
+          nameById.set(item.id, String(item.name ?? 'ไม่ระบุ'));
+        }
+      }
+    }
+
+    for (const row of rows) {
+      const isMatch = Boolean(row.matched);
+      if (isMatch) matched += 1;
+      else mismatched += 1;
+
+      const itemId = typeof row.inventory_item_id === 'string' ? row.inventory_item_id : '';
+      if (!itemId) continue;
+
+      const counted = toNumber(row.counted_qty);
+      const system = toNumber(row.system_stock_qty);
+      const disc = Math.abs(counted - system);
+      const prev = byItem.get(itemId) ?? { checks: 0, matches: 0, discrepancy: 0 };
+      prev.checks += 1;
+      if (isMatch) prev.matches += 1;
+      prev.discrepancy += disc;
+      byItem.set(itemId, prev);
+    }
+
+    const total = matched + mismatched;
+    const high_discrepancy_items = [...byItem.entries()]
+      .map(([id, stats]) => ({
+        item_name: nameById.get(id) ?? 'ไม่ระบุ',
+        total_discrepancy_qty: stats.discrepancy,
+        accuracy_pct: stats.checks === 0 ? null : (stats.matches / stats.checks) * 100,
+      }))
+      .filter((item) => item.total_discrepancy_qty > 0)
+      .sort((a, b) => b.total_discrepancy_qty - a.total_discrepancy_qty)
+      .slice(0, 5);
+
+    return {
+      ok: true,
+      overall_accuracy_pct: total === 0 ? null : (matched / total) * 100,
+      matched_count: matched,
+      mismatched_count: mismatched,
+      total_counts: total,
+      high_discrepancy_items,
+    };
+  } catch (err) {
+    const e = err as { message?: string };
+    console.error('[ai-data-gateway] fetchInventoryAccuracySummary crashed:', e?.message);
+    return empty;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// fetchBeanOrdersSummary — open bean orders (unpaid / pending ship)
+// ─────────────────────────────────────────────────────────────────────────────
+export interface BeanOrderSummaryRow {
+  order_no: string;
+  recipient_name: string;
+  total_baht: number;
+  payment_status: string;
+  fulfillment_status: string;
+  created_at: string;
+}
+
+export interface BeanOrdersSummaryResult {
+  ok: boolean;
+  days: number;
+  total_orders: number;
+  unpaid_count: number;
+  pending_ship_count: number;
+  unpaid_total_baht: number;
+  open_orders: BeanOrderSummaryRow[];
+  error?: GatewayError;
+}
+
+export async function fetchBeanOrdersSummary(opts: {
+  days?: number;
+  limit?: number;
+} = {}): Promise<BeanOrdersSummaryResult> {
+  const days = opts.days ?? 30;
+  const limit = opts.limit ?? TABLE_MAX_LIMITS.bean_orders;
+  const empty: BeanOrdersSummaryResult = {
+    ok: false,
+    days,
+    total_orders: 0,
+    unpaid_count: 0,
+    pending_ship_count: 0,
+    unpaid_total_baht: 0,
+    open_orders: [],
+  };
+
+  const session = await requirePrivilegedSession();
+  if (!session.ok) {
+    return {
+      ...empty,
+      error: { message: session.error, details: null, hint: null },
+    };
+  }
+
+  try {
+    const admin = getAdminClient();
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceIso = since.toISOString();
+
+    const { data, error } = await admin
+      .from('bean_orders')
+      .select(TABLE_COLUMN_PRESETS.bean_orders)
+      .gte('created_at', sinceIso)
+      .is('cancelled_at', null)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('[ai-data-gateway] fetchBeanOrdersSummary:', error.message, error.details);
+      return {
+        ...empty,
+        error: {
+          message: error.message,
+          details: error.details,
+          hint: (error as { hint?: unknown }).hint ?? null,
+        },
+      };
+    }
+
+    const rows = (data ?? []) as unknown as Record<string, unknown>[];
+    let unpaidCount = 0;
+    let pendingShipCount = 0;
+    let unpaidTotal = 0;
+    const openOrders: BeanOrderSummaryRow[] = [];
+
+    for (const row of rows) {
+      const payment = String(row.payment_status ?? '');
+      const fulfillment = String(row.fulfillment_status ?? '');
+      const total = toNumber(row.total_baht);
+      if (payment === 'unpaid') {
+        unpaidCount += 1;
+        unpaidTotal += total;
+      }
+      if (fulfillment === 'pending') {
+        pendingShipCount += 1;
+      }
+
+      if (payment === 'unpaid' || fulfillment === 'pending') {
+        openOrders.push({
+          order_no: String(row.order_no ?? ''),
+          recipient_name: String(row.recipient_name ?? 'ไม่ระบุ'),
+          total_baht: total,
+          payment_status: payment,
+          fulfillment_status: fulfillment,
+          created_at: String(row.created_at ?? ''),
+        });
+      }
+    }
+
+    return {
+      ok: true,
+      days,
+      total_orders: rows.length,
+      unpaid_count: unpaidCount,
+      pending_ship_count: pendingShipCount,
+      unpaid_total_baht: unpaidTotal,
+      open_orders: openOrders,
+    };
+  } catch (err) {
+    const e = err as { message?: string; details?: unknown };
+    console.error('[ai-data-gateway] fetchBeanOrdersSummary crashed:', e?.message);
+    return {
+      ...empty,
       error: { message: e?.message ?? 'Unknown error', details: e?.details ?? null, hint: null },
     };
   }

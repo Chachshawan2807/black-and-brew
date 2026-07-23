@@ -10,8 +10,10 @@ import {
   fetchBeanCustomerAddresses,
   parseBeanOrderCustomerFromText,
   searchBeanCustomers,
+  updateBeanOrder,
   type BeanCustomerAddressRow,
   type BeanCustomerRow,
+  type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
 import { AddressProfilePicker } from '@/app/[locale]/bean-orders/_components/AddressProfilePicker';
 import { AutocompleteTextField } from '@/app/[locale]/bean-orders/_components/AutocompleteTextField';
@@ -57,7 +59,40 @@ type Props = {
   inventoryItems: InventoryItem[];
   formSuggestions?: BeanOrderFormSuggestions;
   locale: string;
+  mode?: 'create' | 'edit';
+  orderId?: string;
+  initialOrder?: BeanOrderDetail;
 };
+
+function orderToRecipient(order: BeanOrderDetail): ThaiPostalAddressValue {
+  return parseThaiPostalAddressLine(order.recipientAddress, {
+    name: order.recipientName,
+    phone: order.recipientPhone ?? '',
+    province: order.recipientProvince,
+    postalCode: order.recipientPostalCode,
+  });
+}
+
+function orderToLines(order: BeanOrderDetail): LineDraft[] {
+  if (order.lines.length === 0) return [emptyLine()];
+  return order.lines.map((line) => ({
+    key: line.id,
+    inventoryItemId: line.inventoryItemId ?? '',
+    weightValue: String(line.weightValue),
+    weightUnit: line.weightUnit,
+    unitPricePerKg: String(line.unitPricePerKg),
+  }));
+}
+
+function initialCustomer(order?: BeanOrderDetail): BeanCustomerRow | null {
+  if (!order?.customerId || !order.customerName) return null;
+  return {
+    id: order.customerId,
+    name: order.customerName,
+    phone: order.recipientPhone,
+    notes: null,
+  };
+}
 
 const EMPTY_SUGGESTIONS: BeanOrderFormSuggestions = {
   recipientProfiles: [],
@@ -106,23 +141,39 @@ export default function BeanOrderFormClient({
   inventoryItems,
   formSuggestions = EMPTY_SUGGESTIONS,
   locale,
+  mode = 'create',
+  orderId,
+  initialOrder,
 }: Props) {
   const router = useRouter();
   const isReadOnly = useReadOnly();
+  const isEdit = mode === 'edit' && Boolean(orderId && initialOrder);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [customerQuery, setCustomerQuery] = useState('');
+  const [customerQuery, setCustomerQuery] = useState(
+    () => initialOrder?.customerName ?? initialOrder?.recipientName ?? '',
+  );
   const [customerResults, setCustomerResults] = useState<BeanCustomerRow[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<BeanCustomerRow | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<BeanCustomerRow | null>(
+    () => initialCustomer(initialOrder),
+  );
   const [customerAddressPicker, setCustomerAddressPicker] = useState<ThaiPostalAddressValue[] | null>(null);
 
-  const [recipient, setRecipient] = useState<ThaiPostalAddressValue>(() => emptyThaiPostalAddress());
+  const [recipient, setRecipient] = useState<ThaiPostalAddressValue>(() =>
+    initialOrder ? orderToRecipient(initialOrder) : emptyThaiPostalAddress(),
+  );
 
-  const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
-  const [discountBaht, setDiscountBaht] = useState('');
-  const [shippingBaht, setShippingBaht] = useState('');
-  const [notes, setNotes] = useState('');
+  const [lines, setLines] = useState<LineDraft[]>(() =>
+    initialOrder ? orderToLines(initialOrder) : [emptyLine()],
+  );
+  const [discountBaht, setDiscountBaht] = useState(
+    () => (initialOrder ? String(initialOrder.discountBaht || '') : ''),
+  );
+  const [shippingBaht, setShippingBaht] = useState(
+    () => (initialOrder ? String(initialOrder.shippingBaht || '') : ''),
+  );
+  const [notes, setNotes] = useState(() => initialOrder?.notes ?? '');
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteLoading, setPasteLoading] = useState(false);
   const [pasteError, setPasteError] = useState<string | null>(null);
@@ -320,47 +371,59 @@ export default function BeanOrderFormClient({
         unitPricePerKg: Number(l.unitPricePerKg),
       }));
 
-    const result = await createBeanOrder(
-      {
-        customerId: selectedCustomer?.id ?? null,
-        senderName: DEFAULT_SHOP_SENDER.name,
-        senderPhone: '',
-        senderAddress: '',
-        recipientName: recipient.name.trim() || customerQuery.trim(),
-        recipientPhone: recipient.phone,
-        recipientAddress: formatThaiPostalAddressLine({
-          addressLine: recipient.addressLine,
-          subdistrict: recipient.subdistrict,
-          district: recipient.district,
-          province: recipient.province,
-          postalCode: recipient.postalCode,
-        }),
-        recipientProvince: recipient.province || undefined,
-        recipientPostalCode: recipient.postalCode || undefined,
-        discountBaht: Number(discountBaht) || 0,
-        shippingBaht: Number(shippingBaht) || 0,
-        notes,
-        lines: parsedLines,
-      },
-      locale,
-    );
+    const payload = {
+      customerId: selectedCustomer?.id ?? initialOrder?.customerId ?? null,
+      senderName: initialOrder?.senderName || DEFAULT_SHOP_SENDER.name,
+      senderPhone: initialOrder?.senderPhone ?? '',
+      senderAddress: initialOrder?.senderAddress ?? '',
+      recipientName: recipient.name.trim() || customerQuery.trim(),
+      recipientPhone: recipient.phone,
+      recipientAddress: formatThaiPostalAddressLine({
+        addressLine: recipient.addressLine,
+        subdistrict: recipient.subdistrict,
+        district: recipient.district,
+        province: recipient.province,
+        postalCode: recipient.postalCode,
+      }),
+      recipientProvince: recipient.province || undefined,
+      recipientPostalCode: recipient.postalCode || undefined,
+      discountBaht: Number(discountBaht) || 0,
+      shippingBaht: Number(shippingBaht) || 0,
+      notes,
+      lines: parsedLines,
+    };
+
+    const result = isEdit && orderId
+      ? await updateBeanOrder(orderId, payload, locale)
+      : await createBeanOrder(payload, locale);
 
     setSaving(false);
-    if (!result.success || !result.orderId) {
-      setError(result.error ?? 'สร้างออเดอร์ไม่สำเร็จ');
+    if (!result.success) {
+      setError(result.error ?? (isEdit ? 'แก้ไขออเดอร์ไม่สำเร็จ' : 'สร้างออเดอร์ไม่สำเร็จ'));
       return;
     }
-    router.push(`/${locale}/bean-orders/${result.orderId}`);
+    if (isEdit && orderId) {
+      router.push(`/${locale}/bean-orders/${orderId}`);
+      return;
+    }
+    if ('orderId' in result && result.orderId) {
+      router.push(`/${locale}/bean-orders/${result.orderId}`);
+    }
   }
 
   const inputClass = BEAN_ORDER_INPUT;
 
   return (
     <form onSubmit={handleSubmit} className={BEAN_ORDER_DETAIL_PAGE}>
-      <Link href={`/${locale}/bean-orders`} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground">
-        <ChevronLeft className="h-4 w-4" /> กลับรายการ
+      <Link
+        href={isEdit && orderId ? `/${locale}/bean-orders/${orderId}` : `/${locale}/bean-orders`}
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground"
+      >
+        <ChevronLeft className="h-4 w-4" /> {isEdit ? 'กลับรายละเอียด' : 'กลับรายการ'}
       </Link>
-      <h1 className="text-2xl font-normal mb-6">สร้างออเดอร์เมล็ดกาแฟ</h1>
+      <h1 className="text-2xl font-normal mb-6">
+        {isEdit ? `แก้ไขออเดอร์ ${initialOrder?.orderNo ?? ''}` : 'สร้างออเดอร์เมล็ดกาแฟ'}
+      </h1>
 
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
@@ -579,7 +642,7 @@ export default function BeanOrderFormClient({
         disabled={saving || isReadOnly}
         className="h-12 w-full rounded-full bg-foreground text-background text-sm disabled:opacity-50"
       >
-        {saving ? 'กำลังบันทึก...' : 'บันทึกออเดอร์'}
+        {saving ? 'กำลังบันทึก...' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึกออเดอร์'}
       </button>
 
       <PasteCustomerDialog

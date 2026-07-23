@@ -5,6 +5,7 @@ import {
   PWA_BRAND_ICON_512,
   PWA_MANIFEST_BACKGROUND,
   PWA_MANIFEST_THEME,
+  PWA_MASKABLE_ICON,
 } from '@/lib/pwa-assets';
 import {
   PWA_APP_ID,
@@ -20,9 +21,9 @@ type AppManifest = MetadataRoute.Manifest & {
 
 export default function manifest(): AppManifest {
   return {
-    name: 'BLACKANDBREW',
-    short_name: 'BLACKANDBREW',
-    description: 'ระบบบริหารจัดการร้านกาแฟ BLACKANDBREW',
+    name: 'blackandbrew',
+    short_name: 'blackandbrew',
+    description: 'ระบบบริหารจัดการร้านกาแฟ blackandbrew',
     id: PWA_APP_ID,
     scope: PWA_SCOPE,
     start_url: PWA_START_URL,
@@ -59,7 +60,7 @@ export default function manifest(): AppManifest {
         purpose: 'any',
       },
       {
-        src: PWA_BRAND_ICON_512,
+        src: PWA_MASKABLE_ICON,
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',

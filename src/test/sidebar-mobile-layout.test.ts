@@ -59,7 +59,7 @@ describe('Mobile sidebar layout — Modern Web Guidance alignment', () => {
 
   test('Menu closes mobile drawer on navigation', () => {
     const menu = readFile('components/sidebar/Menu.tsx');
-    expect(menu).toMatch(/closeDrawer/);
+    expect(menu).toMatch(/closeDrawerForNavigation/);
     expect(menu).toMatch(/useMobileNavDrawer/);
   });
 

@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "BLACK-AND-BREW — Scheduling System",
+  title: "BLACK-AND-BREW",
   description: "High-Availability & Real-time Scheduling System for BLACK-AND-BREW",
   icons: {
     icon: [
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "BLACKANDBREW",
+    title: "blackandbrew",
     statusBarStyle: "black-translucent",
   },
   formatDetection: {

@@ -5,6 +5,7 @@
 
 export const PWA_BRAND_ICON = '/images/notification-icon.png';
 export const PWA_BRAND_ICON_512 = '/images/notification-icon-512.png';
+export const PWA_MASKABLE_ICON = '/images/maskable-icon-512.png';
 export const PWA_NOTIFICATION_BADGE = '/images/notification-badge.png';
 export const PWA_APPLE_TOUCH_ICON = '/images/apple-touch-icon.png';
 export const PWA_FAVICON = '/images/favicon.png';

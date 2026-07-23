@@ -27,39 +27,49 @@ export function isOrderCancelled(cancelledAt?: string | null): boolean {
   return Boolean(cancelledAt);
 }
 
-export function canEditOrderLines(
-  fulfillmentStatus: FulfillmentStatus,
-  cancelledAt?: string | null,
-): boolean {
-  return !isOrderCancelled(cancelledAt) && fulfillmentStatus === 'pending';
+/** Non-cancelled orders can be edited at any workflow step. */
+export function canEditOrder(cancelledAt?: string | null): boolean {
+  return !isOrderCancelled(cancelledAt);
+}
+
+export function canEditOrderLines(cancelledAt?: string | null): boolean {
+  return canEditOrder(cancelledAt);
 }
 
 export function canCancelOrder(
   fulfillmentStatus: FulfillmentStatus,
   cancelledAt?: string | null,
 ): boolean {
-  return !isOrderCancelled(cancelledAt) && fulfillmentStatus === 'pending';
+  return canEditOrder(cancelledAt) && fulfillmentStatus === 'pending';
 }
 
-export function canUploadSlip(
-  paymentStatus: PaymentStatus,
-  cancelledAt?: string | null,
-): boolean {
-  return !isOrderCancelled(cancelledAt) && paymentStatus === 'unpaid';
+export function canUploadSlip(cancelledAt?: string | null): boolean {
+  return canEditOrder(cancelledAt);
 }
 
 export function canConfirmPayment(
   paymentStatus: PaymentStatus,
   cancelledAt?: string | null,
 ): boolean {
-  return !isOrderCancelled(cancelledAt) && paymentStatus === 'unpaid';
+  return canEditOrder(cancelledAt) && paymentStatus === 'unpaid';
+}
+
+export function canRevertPayment(
+  paymentStatus: PaymentStatus,
+  cancelledAt?: string | null,
+): boolean {
+  return canEditOrder(cancelledAt) && paymentStatus === 'paid';
+}
+
+export function canEditShipment(cancelledAt?: string | null): boolean {
+  return canEditOrder(cancelledAt);
 }
 
 export function canShip(
   fulfillmentStatus: FulfillmentStatus,
   cancelledAt?: string | null,
 ): boolean {
-  return !isOrderCancelled(cancelledAt) && fulfillmentStatus === 'pending';
+  return canEditShipment(cancelledAt) && fulfillmentStatus === 'pending';
 }
 
 export function appendStatusHistory(

@@ -65,3 +65,6 @@ export const FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS =
 
 /** Inventory modals from quick action (inline bar or FAB) — above FAB panel (z-199) and FAB buttons (z-201). */
 export const INVENTORY_MODAL_Z_CLASS = 'z-[220]';
+
+/** Image export / save progress — above every app overlay (modals, FAB, AI chat, tooltips). */
+export const EXPORT_PROGRESS_OVERLAY_Z_CLASS = 'z-[260]';

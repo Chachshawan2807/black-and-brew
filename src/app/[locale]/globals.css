@@ -764,6 +764,24 @@
     overscroll-behavior-y: none;
   }
 
+  /* Image export progress — true viewport center on installed PWA (notch / home indicator). */
+  html.bb-pwa-standalone .bb-export-progress-overlay {
+    min-height: 100dvh;
+    min-height: 100svh;
+    padding:
+      max(1.5rem, env(safe-area-inset-top, 0px))
+      max(1.5rem, env(safe-area-inset-right, 0px))
+      max(1.5rem, env(safe-area-inset-bottom, 0px))
+      max(1.5rem, env(safe-area-inset-left, 0px));
+  }
+
+  html.bb-pwa-standalone .bb-export-progress-card {
+    max-width: min(320px, calc(100vw - 2.5rem));
+    box-shadow:
+      0 24px 48px -12px rgb(0 0 0 / 0.22),
+      0 0 0 1px color-mix(in oklab, var(--border) 80%, transparent);
+  }
+
   html.bb-pwa-standalone .bb-mobile-nav-header {
     padding-top: env(safe-area-inset-top, 0px);
     min-height: calc(72px + env(safe-area-inset-top, 0px));

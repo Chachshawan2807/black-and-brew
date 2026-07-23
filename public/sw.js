@@ -345,6 +345,19 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(networkFirstWithOfflineFallback(event.request));
 });
 
+function shouldCacheResponse(request, response) {
+  if (!response || response.status !== 200 || response.type !== 'basic') return false;
+  if (request.mode === 'navigate' || request.destination === 'document') return false;
+  if (request.url.includes('/api/')) return false;
+  return request.url.startsWith('http:') || request.url.startsWith('https:');
+}
+
+async function resolveNavigationCacheFallback(request) {
+  const exactMatch = await caches.match(request);
+  if (exactMatch) return exactMatch;
+  return resolveOfflineNavigationFallback();
+}
+
 function staleWhileRevalidate(request) {
   return caches.open(CACHE_NAME).then(async (cache) => {
     const cached = await cache.match(request);
@@ -382,8 +395,8 @@ function networkFirstWithOfflineFallback(request) {
       if (!response || response.status !== 200 || response.type !== 'basic') {
         return response;
       }
-      const responseToCache = response.clone();
-      if (request.url.startsWith('http:') || request.url.startsWith('https:')) {
+      if (shouldCacheResponse(request, response)) {
+        const responseToCache = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(request, responseToCache);
         });
@@ -391,12 +404,13 @@ function networkFirstWithOfflineFallback(request) {
       return response;
     })
     .catch(async () => {
-      const cached = await caches.match(request);
-      if (cached) return cached;
       if (request.mode === 'navigate') {
-        const fallback = await resolveOfflineNavigationFallback();
+        const fallback = await resolveNavigationCacheFallback(request);
         if (fallback) return fallback;
       }
+
+      const cached = await caches.match(request);
+      if (cached) return cached;
       return caches.match(request);
     });
 }

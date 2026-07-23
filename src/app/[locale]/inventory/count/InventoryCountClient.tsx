@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw, Undo2 } from 'lucide-react';
+import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw, Undo2, Clock3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { microFadeDown, microPopIn, staggerListItem } from '@/lib/motion-presets';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ import { fetchCountAccuracyStats, recordInventoryCountAndUpdateStock } from '@/a
 import type {
   CountAccuracyStatsResult,
   InventoryCountSaveOptions,
-  ItemCountAccuracyStats,
+  TodayCountSessionStatus,
 } from '@/app/actions/inventory-actions';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { getClientSessionId } from '@/lib/client-session';
@@ -21,6 +21,13 @@ import {
   removeCountVerificationFromAccuracyStats,
 } from '@/lib/inventory-count-accuracy';
 import { mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
+import {
+  applyItemTodayCount,
+  formatInventoryCountTime,
+  removeItemTodayCount,
+  type ItemTodayCountRecord,
+} from '@/lib/inventory-count-today';
+import { isSameThaiDay } from '@/lib/date-utils';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
@@ -210,14 +217,148 @@ const CountInput = memo(function CountInput({
 
 const STAGGER_ANIMATION_CAP = 15;
 
+function createEmptyTodayStatus(totalItems: number): TodayCountSessionStatus {
+  return {
+    perItem: {},
+    session: {
+      totalItems,
+      countedTodayCount: 0,
+      firstCountedAt: null,
+      lastCountedAt: null,
+      hasCountedToday: false,
+      isFullyCountedToday: false,
+    },
+  };
+}
+
+function buildInitialLastVerification(
+  todayStatus: TodayCountSessionStatus | null | undefined,
+  accuracyStats: CountAccuracyStatsResult | null | undefined,
+  items: InventoryItem[],
+): Record<string, { matched: boolean; systemStockQty: number; countedQty: number }> {
+  if (!todayStatus) return {};
+
+  const result: Record<string, { matched: boolean; systemStockQty: number; countedQty: number }> = {};
+
+  for (const item of items) {
+    const todayRow = todayStatus.perItem[item.id];
+    if (!todayRow) continue;
+
+    const stats = accuracyStats?.perItem[item.id];
+    const systemStockQty = todayRow.systemStockQty ?? stats?.lastSystemStockQty ?? 0;
+    const matched =
+      item.count_policy === 'exact_count' &&
+      stats?.lastMatched != null &&
+      stats.lastCountedAt &&
+      isSameThaiDay(stats.lastCountedAt, todayRow.countedAt)
+        ? stats.lastMatched
+        : todayRow.countedQty === systemStockQty;
+
+    result[item.id] = {
+      matched,
+      systemStockQty,
+      countedQty: todayRow.countedQty,
+    };
+  }
+
+  return result;
+}
+
+function TodayCountSessionBanner({ status }: { status: TodayCountSessionStatus }) {
+  const { session } = status;
+  const progressPct =
+    session.totalItems > 0
+      ? Math.min(100, Math.round((session.countedTodayCount / session.totalItems) * 100))
+      : 0;
+
+  return (
+    <section
+      aria-label="สถานะการนับสต็อกวันนี้"
+      className="mb-5 rounded-3xl border border-border bg-card p-4 bb-shadow-sm"
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            'shrink-0 rounded-2xl p-2.5',
+            session.isFullyCountedToday
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+              : session.hasCountedToday
+                ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+                : 'bg-muted text-muted-foreground',
+          )}
+        >
+          {session.isFullyCountedToday ? (
+            <CheckCircle2 className="h-5 w-5" aria-hidden />
+          ) : (
+            <Clock3 className="h-5 w-5" aria-hidden />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground">
+            {session.isFullyCountedToday
+              ? 'นับครบทุกรายการแล้ววันนี้'
+              : session.hasCountedToday
+                ? 'กำลังนับสต็อกวันนี้'
+                : 'ยังไม่มีการนับสต็อกวันนี้'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {session.hasCountedToday && session.lastCountedAt
+              ? `อัปเดตล่าสุด ${formatInventoryCountTime(session.lastCountedAt)}`
+              : 'เมื่อบันทึกจำนวนแล้ว ทีมทุกคนจะเห็นสถานะนี้ทันที'}
+          </p>
+
+          <div className="mt-3">
+            <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>ความคืบหน้าวันนี้</span>
+              <span className="tabular-nums">
+                {session.countedTodayCount}/{session.totalItems} รายการ ({progressPct}%)
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all duration-500',
+                  session.isFullyCountedToday ? 'bg-emerald-500' : 'bg-foreground/70',
+                )}
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const COUNT_STATUS_BADGE_CLASS =
+  'inline-flex items-center gap-1 rounded-full border border-black/10 bg-white/80 px-2 py-0.5 text-[10px] text-black/70 bb-pastel-surface';
+
+function formatCountMatchLabel(
+  matched: boolean,
+  countedQty: number,
+  systemStockQty: number,
+): string {
+  return `${matched ? 'ตรง' : 'ไม่ตรง'} (นับ ${countedQty}, ระบบ: ${systemStockQty})`;
+}
+
+function getCountMatchBadgeClass(matched: boolean): string {
+  return cn(
+    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] text-black bb-pastel-surface',
+    matched
+      ? 'bg-[#d4edda] border border-[#c3e6cb]'
+      : 'bg-[#fff3cd] border border-[#ffeeba]',
+  );
+}
+
 type CountItemRowProps = {
   item: InventoryItem;
   index: number;
   isActive: boolean;
   isDimmed: boolean;
   animateEntrance: boolean;
-  itemStats?: ItemCountAccuracyStats;
   recentVerification?: { matched: boolean; systemStockQty: number; countedQty: number };
+  todayCount?: ItemTodayCountRecord;
   undoEntry?: UndoEntry;
   onSave: (id: string, value: number) => Promise<void>;
   onUndo: (id: string) => void;
@@ -232,8 +373,8 @@ const CountItemRow = memo(function CountItemRow({
   isActive,
   isDimmed,
   animateEntrance,
-  itemStats,
   recentVerification,
+  todayCount,
   undoEntry,
   onSave,
   onUndo,
@@ -281,43 +422,39 @@ const CountItemRow = memo(function CountItemRow({
           {(index + 1).toString().padStart(2, '0')}
         </span>
         <div className="min-w-0 flex-1">
-          <span
-            className={cn(
-              'font-normal text-[15px] leading-tight transition-colors duration-200 block',
-              'text-black'
-            )}
-          >
-            {item.name} {item.unit ? `(${item.unit})` : ''}
-          </span>
-          <p className="mt-1 text-xs font-normal text-black/70 bb-pastel-surface">
-            {isSufficiencyCheck ? 'ประเภท: ไม่ต้องเบิก' : 'ประเภท: ต้องเบิก'}
-          </p>
-          {!isSufficiencyCheck && (
-            itemStats && itemStats.totalChecks > 0 ? (
-              <p className="mt-1 text-xs tabular-nums text-black/70 bb-pastel-surface">
-                ค่าความแม่นยำ: {itemStats.accuracyPct}%
-                <span className="opacity-70"> (คลาดเคลื่อนรวม {itemStats.totalDiscrepancyQty} หน่วย)</span>
-              </p>
-            ) : (
-              <p className="mt-1 text-xs text-black/50 bb-pastel-surface">
-                ค่าความแม่นยำ: ยังไม่มีข้อมูล
-              </p>
-            )
-          )}
-          {recentVerification && !isSufficiencyCheck && (
-            <p
+          <div className="flex flex-wrap items-center gap-2">
+            <span
               className={cn(
-                'mt-1 text-xs rounded-lg px-2 py-0.5 inline-block bb-pastel-surface',
-                recentVerification.matched
-                  ? 'bg-[#d4edda] text-black border border-[#c3e6cb]'
-                  : 'bg-[#fff3cd] text-black border border-[#ffeeba]',
+                'font-normal text-[15px] leading-tight transition-colors duration-200',
+                'text-black',
               )}
             >
-              {recentVerification.matched
-                ? '✓ ตรงครั้งนี้'
-                : `✗ ไม่ตรง (นับได้ ${recentVerification.countedQty}, ในระบบ: ${recentVerification.systemStockQty})`}
-            </p>
-          )}
+              {item.name}
+            </span>
+            {item.unit ? (
+              <span className="rounded-full border border-black/10 bg-white/70 px-2 py-0.5 text-[10px] text-black/60 bb-pastel-surface">
+                {item.unit}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {recentVerification ? (
+              <span className={getCountMatchBadgeClass(recentVerification.matched)}>
+                {formatCountMatchLabel(
+                  recentVerification.matched,
+                  recentVerification.countedQty,
+                  recentVerification.systemStockQty,
+                )}
+              </span>
+            ) : null}
+            {todayCount ? (
+              <span className={COUNT_STATUS_BADGE_CLASS}>
+                <Clock3 className="h-3 w-3" aria-hidden />
+                นับเมื่อ {formatInventoryCountTime(todayCount.countedAt)}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -354,12 +491,14 @@ const CountItemRow = memo(function CountItemRow({
 interface InventoryCountClientProps {
   initialItems: InventoryItem[];
   initialAccuracyStats?: CountAccuracyStatsResult | null;
+  initialTodayStatus?: TodayCountSessionStatus | null;
   locale: string;
 }
 
 export default function InventoryCountClient({
   initialItems,
   initialAccuracyStats = null,
+  initialTodayStatus = null,
   locale,
 }: InventoryCountClientProps) {
   const isReadOnly = useReadOnly();
@@ -377,7 +516,14 @@ export default function InventoryCountClient({
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [accuracyStats, setAccuracyStats] = useState<CountAccuracyStatsResult | null>(initialAccuracyStats);
   const accuracyTouchedRef = useRef(false);
-  const [lastVerification, setLastVerification] = useState<Record<string, { matched: boolean; systemStockQty: number; countedQty: number }>>({});
+  const [todayStatus, setTodayStatus] = useState<TodayCountSessionStatus>(
+    () => initialTodayStatus ?? createEmptyTodayStatus(initialItems.length),
+  );
+  const todayStatusRef = useRef(todayStatus);
+  todayStatusRef.current = todayStatus;
+  const [lastVerification, setLastVerification] = useState<
+    Record<string, { matched: boolean; systemStockQty: number; countedQty: number }>
+  >(() => buildInitialLastVerification(initialTodayStatus, initialAccuracyStats, initialItems));
   const lastVerificationRef = useRef(lastVerification);
   lastVerificationRef.current = lastVerification;
   // Per-item undo state: maps itemId → UndoEntry. Cleared after one use.
@@ -385,6 +531,18 @@ export default function InventoryCountClient({
   const [animateEntrance] = useState(
     () => initialItems.length <= STAGGER_ANIMATION_CAP,
   );
+
+  useEffect(() => {
+    setTodayStatus((prev) => ({
+      ...prev,
+      session: {
+        ...prev.session,
+        totalItems: items.length,
+        isFullyCountedToday:
+          items.length > 0 && prev.session.countedTodayCount >= items.length,
+      },
+    }));
+  }, [items.length]);
 
   const loadAccuracyStats = useCallback(async () => {
     const res = await fetchCountAccuracyStats();
@@ -461,6 +619,7 @@ export default function InventoryCountClient({
 
     const currentItem = itemsRef.current.find((i) => i.id === id);
     const previousStock = Number(currentItem?.stock ?? 0);
+    const priorTodayRow = todayStatusRef.current.perItem[id] ?? null;
     const tracksAccuracy = currentItem?.count_policy !== 'sufficiency_check';
     setSaveErrorMessage(null);
 
@@ -475,14 +634,20 @@ export default function InventoryCountClient({
       setUndoMap((prev) => ({ ...prev, [id]: { prevStock: previousStock } }));
     }
 
+    const optimisticMatch = !isUndo
+      ? {
+          matched: isCountMatch(value, previousStock),
+          systemStockQty: previousStock,
+          countedQty: value,
+        }
+      : null;
+
     const optimisticDelta =
-      !isUndo && tracksAccuracy
+      optimisticMatch && tracksAccuracy
         ? {
             itemId: id,
             itemName: currentItem?.name,
-            countedQty: value,
-            systemStockQty: previousStock,
-            matched: isCountMatch(value, previousStock),
+            ...optimisticMatch,
           }
         : null;
 
@@ -491,16 +656,23 @@ export default function InventoryCountClient({
         ? lastVerificationRef.current[id]
         : null;
 
-    if (optimisticDelta) {
-      accuracyTouchedRef.current = true;
+    if (!isUndo) {
+      setTodayStatus((prev) =>
+        applyItemTodayCount(prev, id, value, previousStock),
+      );
+    } else {
+      setTodayStatus((prev) => removeItemTodayCount(prev, id));
+    }
+
+    if (optimisticMatch) {
       setLastVerification((prev) => ({
         ...prev,
-        [id]: {
-          matched: optimisticDelta.matched,
-          systemStockQty: optimisticDelta.systemStockQty,
-          countedQty: optimisticDelta.countedQty,
-        },
+        [id]: optimisticMatch,
       }));
+    }
+
+    if (optimisticDelta) {
+      accuracyTouchedRef.current = true;
       setAccuracyStats((prev) =>
         applyCountVerificationToAccuracyStats(prev, optimisticDelta),
       );
@@ -547,11 +719,14 @@ export default function InventoryCountClient({
             removeCountVerificationFromAccuracyStats(prev, optimisticDelta),
           );
         }
-        setLastVerification((prev) => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
+        setLastVerification((prev) => ({
+          ...prev,
+          [id]: {
+            matched: isCountMatch(countedQty, systemStockQty),
+            systemStockQty,
+            countedQty,
+          },
+        }));
       } else {
         const serverDelta = {
           itemId: id,
@@ -605,6 +780,8 @@ export default function InventoryCountClient({
         setAccuracyStats((prev) =>
           removeCountVerificationFromAccuracyStats(prev, optimisticDelta),
         );
+      }
+      if (optimisticMatch) {
         setLastVerification((prev) => {
           const next = { ...prev };
           delete next[id];
@@ -623,6 +800,32 @@ export default function InventoryCountClient({
             systemStockQty: undoPrior.systemStockQty,
             matched: undoPrior.matched,
           }),
+        );
+      }
+
+      if (!isUndo) {
+        if (priorTodayRow) {
+          setTodayStatus((prev) =>
+            applyItemTodayCount(
+              prev,
+              id,
+              priorTodayRow.countedQty,
+              priorTodayRow.systemStockQty,
+              priorTodayRow.countedAt,
+            ),
+          );
+        } else {
+          setTodayStatus((prev) => removeItemTodayCount(prev, id));
+        }
+      } else if (priorTodayRow) {
+        setTodayStatus((prev) =>
+          applyItemTodayCount(
+            prev,
+            id,
+            priorTodayRow.countedQty,
+            priorTodayRow.systemStockQty,
+            priorTodayRow.countedAt,
+          ),
         );
       }
       // Remove undo entry since we reverted automatically
@@ -746,20 +949,21 @@ export default function InventoryCountClient({
           </div>
         </header>
 
-        <div className="flex flex-col items-center mb-6 text-center">
-          <div className="p-2.5 bg-black text-white rounded-2xl mb-4 shrink-0 bb-shadow-md">
-            <ClipboardList className="w-7 h-7" strokeWidth={1.5} />
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-foreground text-background rounded-2xl shrink-0 bb-shadow-md">
+              <ClipboardList className="w-6 h-6" strokeWidth={1.5} />
+            </div>
+            <div className="min-w-0 text-left">
+              <h1 className="text-xl font-medium text-foreground">ตรวจนับคลังสินค้า</h1>
+              <p className="text-sm text-muted-foreground">
+                กรอกจำนวนที่นับได้ แล้วกด Enter เพื่อบันทึก
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl font-normal tracking-widest uppercase text-foreground">
-            ตรวจนับคลังสินค้า
-          </h1>
-          <p className="text-muted-foreground text-[11px] font-normal uppercase tracking-[0.2em] mt-1.5">
-            บันทึกการตรวจนับ
-          </p>
-          <p className="text-muted-foreground/60 text-[10px] font-normal mt-1">
-            กรอกจำนวนที่นับได้ แล้วกด Enter เพื่อยืนยัน
-          </p>
         </div>
+
+        <TodayCountSessionBanner status={todayStatus} />
 
         {saveErrorMessage && (
           <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -781,8 +985,8 @@ export default function InventoryCountClient({
                 isActive={activeItemId === item.id}
                 isDimmed={isDimmedByActive && activeItemId !== item.id}
                 animateEntrance={animateEntrance}
-                itemStats={accuracyStats?.perItem[item.id]}
                 recentVerification={lastVerification[item.id]}
+                todayCount={todayStatus.perItem[item.id]}
                 undoEntry={undoMap[item.id]}
                 onSave={handleSaveStock}
                 onUndo={handleUndo}

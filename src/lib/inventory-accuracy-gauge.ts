@@ -87,3 +87,9 @@ export function describeGaugeWedge(
     'Z',
   ].join(' ');
 }
+
+export const ACCURACY_GAUGE_TICKS = [0, 25, 50, 75, 100] as const;
+
+export function accuracyGaugeZoneGradientId(label: string): string {
+  return `accuracy-gauge-zone-${label.replace(/\s+/g, '-')}`;
+}

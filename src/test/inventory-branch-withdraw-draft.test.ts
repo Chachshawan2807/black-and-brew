@@ -29,12 +29,13 @@ describe('branch withdraw draft', () => {
     expect(BRANCH_WITHDRAW_DRAFT_KEY).toBe('inventory-branch-withdraw-draft:v1');
   });
 
-  test('round-trips draft rows', () => {
+  test('round-trips draft rows with extra item ids', () => {
     const draft: BranchWithdrawDraft = {
       rows: {
         'item-1': { qtyBranch1: '3', qtyBranch2: '', branch2Unit: '' },
         'item-2': { qtyBranch1: '24', qtyBranch2: '1', branch2Unit: 'ลัง' },
       },
+      extraItemIds: ['item-3', 'item-4'],
     };
     const parsed = parseBranchWithdrawDraft(serializeBranchWithdrawDraft(draft));
     expect(parsed).toEqual(draft);

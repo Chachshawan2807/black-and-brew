@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { checkAuth } from '@/app/actions/auth';
-import { fetchCountAccuracyStats } from '@/app/actions/inventory-actions';
+import { fetchCountAccuracyStats, fetchTodayInventoryCountStatus } from '@/app/actions/inventory-actions';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
@@ -20,12 +20,13 @@ export default async function InventoryCountPage({
     redirect(`/${locale}`);
   }
 
-  const [itemsResult, accuracyResult] = await Promise.all([
+  const [itemsResult, accuracyResult, todayStatusResult] = await Promise.all([
     getSupabaseAdmin()
       .from('inventory_items')
       .select(INVENTORY_COUNT_SELECT)
       .order('sort_order', { ascending: true }),
     fetchCountAccuracyStats(),
+    fetchTodayInventoryCountStatus(),
   ]);
 
   const { data, error } = itemsResult;
@@ -36,11 +37,14 @@ export default async function InventoryCountPage({
 
   const initialAccuracyStats =
     accuracyResult.success && accuracyResult.data ? accuracyResult.data : null;
+  const initialTodayStatus =
+    todayStatusResult.success && todayStatusResult.data ? todayStatusResult.data : null;
 
   return (
     <InventoryCountClient
       initialItems={data || []}
       initialAccuracyStats={initialAccuracyStats}
+      initialTodayStatus={initialTodayStatus}
       locale={locale}
     />
   );

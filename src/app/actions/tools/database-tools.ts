@@ -9,6 +9,10 @@ import {
   AI_ALLOWED_TABLES,
   fetchTablePreset,
   fetchShiftsByDate,
+  fetchSalesSummary,
+  fetchInventoryLedger,
+  fetchInventorySummary,
+  fetchBeanOrdersSummary,
   getRealColumnName,
   TABLE_COLUMN_PRESETS,
 } from '@/lib/ai-data-gateway';
@@ -30,6 +34,7 @@ export const readTableTool = tool({
 - คลังสินค้า: inventory_items, inventory_config, inventory_transactions, inventory_count_verifications
 - ซ่อมบำรุง: service_records
 - ยอดขาย: sales_uploads, sales_records, product_categories
+- เมล็ดกาแฟ: bean_customers, bean_customer_addresses, bean_orders, bean_order_lines, bean_order_payments, bean_order_shipments
 - ระบบ/ประวัติ: audit_logs, login_history, data_change_logs, revoked_sessions, push_subscriptions, device_passkeys
 
 [คอลัมน์สำคัญ]
@@ -37,6 +42,7 @@ export const readTableTool = tool({
 - service_records: equipment, start_date, person_in_charge, status, detected_problem
 - shifts: employee_id, status, start_time, end_time, metadata (shift_type มาจาก metadata.location)
 - sales_records: sale_date, product_name, category, quantity, unit_price, total_amount, payment_method
+- bean_orders: order_no, payment_status, fulfillment_status, total_baht, recipient_name
 - profiles: full_name, schedule_order, dashboard_order
 
 [สำคัญมาก — กฎการ Query]
@@ -44,6 +50,8 @@ export const readTableTool = tool({
 2. สำหรับ inventory สต็อกต่ำ: ให้ดึงทั้งตาราง (ไม่ต้องส่ง filters) แล้ว filter ใน memory
 3. เมื่อถามสรุปภาพรวม: ไม่ควรระบุ limit ต่ำ — ใช้ default ของตาราง
 4. ตารางงานรายวัน (วันนี้/พรุ่งนี้): ใช้ getDailyShifts เป็นหลัก ไม่ใช่ readTable shifts
+5. ยอดขายช่วงวันที่: ใช้ getSalesSummary แทน dump sales_records
+6. คำสั่งซื้อเมล็ด: ใช้ getBeanOrdersSummary เป็นหลัก
 `.trim(),
 
   inputSchema: z.object({
@@ -221,6 +229,76 @@ export const readTableTool = tool({
           hint: null,
         },
       };
+    }
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Specialized aggregated tools (faster than dumping full tables via readTable)
+// ─────────────────────────────────────────────────────────────────────────────
+export const getSalesSummaryTool = tool({
+  description:
+    'สรุปยอดขายตามช่วงวันที่ (รวมยอด, สินค้าขายดี, แยกหมวดหมู่) — ใช้แทนการอ่าน sales_records ทั้งตาราง',
+  inputSchema: z.object({
+    fromDate: z.string().describe('วันเริ่มต้น YYYY-MM-DD'),
+    toDate: z.string().describe('วันสิ้นสุด YYYY-MM-DD'),
+    topN: z.number().min(1).max(20).optional().describe('จำนวนสินค้าขายดี (default 10)'),
+  }),
+  execute: async ({ fromDate, toDate, topN }) => {
+    try {
+      return await fetchSalesSummary({ fromDate, toDate, topN });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { ok: false, error: { message, details: null, hint: null } };
+    }
+  },
+});
+
+export const getInventoryLedgerTool = tool({
+  description:
+    'ดึงประวัติเคลื่อนไหวสต็อก (IN/OUT) พร้อมชื่อสินค้า — ใช้แทนการ join inventory_transactions เอง',
+  inputSchema: z.object({
+    itemName: z.string().optional().describe('กรองชื่อสินค้า (substring)'),
+    days: z.number().min(1).max(90).optional().describe('ย้อนหลังกี่วัน (default 14)'),
+    limit: z.number().min(1).max(200).optional(),
+  }),
+  execute: async ({ itemName, days, limit }) => {
+    try {
+      return await fetchInventoryLedger({ itemName, days, limit });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { ok: false, error: { message, details: null, hint: null } };
+    }
+  },
+});
+
+export const getStoreStatusTool = tool({
+  description:
+    'ภาพรวมร้านวันนี้: กะงาน + สรุปสต็อก + รายการสต็อกต่ำ (RPC get_ai_store_status)',
+  inputSchema: z.object({}),
+  execute: async () => {
+    try {
+      const status = await fetchInventorySummary();
+      return { ok: true, ...status };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { ok: false, error: { message, details: null, hint: null } };
+    }
+  },
+});
+
+export const getBeanOrdersSummaryTool = tool({
+  description:
+    'สรุปคำสั่งซื้อเมล็ดกาแฟที่เปิดอยู่ (ค้างชำระ / รอจัดส่ง) ในช่วงวันล่าสุด',
+  inputSchema: z.object({
+    days: z.number().min(1).max(90).optional().describe('ย้อนหลังกี่วัน (default 30)'),
+  }),
+  execute: async ({ days }) => {
+    try {
+      return await fetchBeanOrdersSummary({ days });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { ok: false, error: { message, details: null, hint: null } };
     }
   },
 });

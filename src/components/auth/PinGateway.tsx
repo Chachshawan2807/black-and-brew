@@ -77,6 +77,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   const locale = params?.locale === 'en' ? 'en' : 'th';
   const t = COPY[locale];
   const [isMounted, setIsMounted] = useState(false);
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
+  const [hadClientSession, setHadClientSession] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [pin, setPin] = useState('');
@@ -108,6 +110,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       if (cancelled) return;
 
       setIsMounted(true);
+      setHadClientSession(isClientAuthVerified());
 
       const storedLockout = localStorage.getItem('bb_lockout_until');
       const storedAttempts = localStorage.getItem('bb_failed_attempts') || '0';
@@ -135,6 +138,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
         setIsReadOnly(serverSession.readOnly);
         setIsAuthenticated(true);
+        setAuthCheckComplete(true);
         window.dispatchEvent(new CustomEvent('bb-pin-authenticated'));
         return;
       }
@@ -144,6 +148,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       }
       setIsReadOnly(false);
       setIsAuthenticated(false);
+      setAuthCheckComplete(true);
     })();
 
     return () => {
@@ -503,7 +508,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     }
   };
 
-  if (!isMounted) {
+  if (!isMounted || (hadClientSession && !authCheckComplete)) {
     return (
       <div className="min-h-[100svh] bg-background flex flex-col items-center justify-center px-6 antialiased">
         <img

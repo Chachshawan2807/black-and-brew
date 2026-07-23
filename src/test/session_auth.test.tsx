@@ -120,6 +120,32 @@ describe('PinGateway Persistent Authentication', () => {
     expect(await screen.findByText('เข้าสู่ระบบ')).toBeInTheDocument();
   });
 
+  test('should show restore splash instead of login while server session is being verified', async () => {
+    localStorage.setItem('bb_auth_pin_verified', 'true');
+    const { getAuthSessionInfo } = await import('@/app/actions/auth');
+    let resolveSession!: (value: { verified: boolean; readOnly: boolean }) => void;
+    vi.mocked(getAuthSessionInfo).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSession = resolve;
+        }),
+    );
+
+    render(
+      <PinGateway>
+        <div data-testid="protected-content">Secret Dashboard</div>
+      </PinGateway>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('เข้าสู่ระบบ')).not.toBeInTheDocument();
+      expect(screen.queryByText('กรุณากรอกรหัส PIN 6 หลัก')).not.toBeInTheDocument();
+    });
+
+    resolveSession({ verified: true, readOnly: false });
+    expect(await screen.findByTestId('protected-content')).toBeInTheDocument();
+  });
+
   test('should mask PIN digits with dots immediately while typing', async () => {
     render(
       <PinGateway>

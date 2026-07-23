@@ -36,7 +36,8 @@ export function getAnchoredSuggestionsOverlayStyle(
   left: number;
   width: number;
   maxWidth: string;
-  top: number;
+  top?: number;
+  bottom?: number;
   maxHeight: number;
   placement: QuickSearchSuggestionsPlacement;
 } {
@@ -63,7 +64,7 @@ export function getAnchoredSuggestionsOverlayStyle(
     left: anchorRect.left,
     width: anchorRect.width,
     maxWidth: 'min(100vw - 2rem, 20rem)',
-    top: viewport.offsetTop + gap,
+    bottom: viewportBottom - anchorRect.top + gap,
     maxHeight,
     placement,
   };

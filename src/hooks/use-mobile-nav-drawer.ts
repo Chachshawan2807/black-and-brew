@@ -5,6 +5,7 @@ import { create } from 'zustand';
 export type MobileNavDrawerActions = {
   open: () => void;
   close: () => void;
+  closeForNavigation: () => void;
 };
 
 interface MobileNavDrawerStore {
@@ -14,6 +15,7 @@ interface MobileNavDrawerStore {
   registerActions: (actions: MobileNavDrawerActions | null) => void;
   openDrawer: () => void;
   closeDrawer: () => void;
+  closeDrawerForNavigation: () => void;
 }
 
 export const useMobileNavDrawer = create<MobileNavDrawerStore>((set, get) => ({
@@ -23,4 +25,5 @@ export const useMobileNavDrawer = create<MobileNavDrawerStore>((set, get) => ({
   registerActions: (actions) => set({ actions }),
   openDrawer: () => get().actions?.open(),
   closeDrawer: () => get().actions?.close(),
+  closeDrawerForNavigation: () => get().actions?.closeForNavigation(),
 }));

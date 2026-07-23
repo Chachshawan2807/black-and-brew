@@ -1,6 +1,6 @@
 # BLACKANDBREW ERP Capability Inventory
 
-> Last Updated: 2026-07-12
+> Last Updated: 2026-07-23
 >
 > Companion: agent rules → [`AGENTS.md`](../AGENTS.md) · hard protocols → [`docs/rules.md`](rules.md)
 
@@ -8,9 +8,11 @@
 
 ### Data and Integration
 
-- AI Data Gateway: `src/lib/ai-data-gateway.ts` is the single AI read doorway (presets, limits, service-role, schedule lookup, `get_ai_store_status`, `fetchSalesSummary`, `fetchInventoryLedger`).
-- Universal DB Reader: `readTableTool` routes through the gateway.
-- Deterministic paths: daily schedule, upcoming maintenance, low-stock PO summary, sales summary, upcoming holidays, store status short-circuit to SSE (no LLM).
+- AI Data Gateway: `src/lib/ai-data-gateway.ts` is the single AI read doorway (presets, limits, service-role, schedule lookup, `get_ai_store_status`, `fetchSalesSummary`, `fetchInventoryLedger`, `fetchBeanOrdersSummary`, `fetchInventoryAccuracySummary`).
+- Universal DB Reader: `readTableTool` routes through the gateway (24 AI-readable tables including bean orders).
+- Hybrid Router: deterministic short-circuits for schedule, maintenance, sales, holidays, low-stock, store status, bean orders, inventory accuracy → Bru report SSE (no LLM).
+- Intent classifier: `src/lib/agents/intent/classify-intent.ts` (weighted scores + tool subset selection).
+- Bru Report Style: `src/lib/agents/report-response.ts` (female politeness, hyper-concise bullets).
 - External Intel: `internetSearchTool` + `tavily-client.ts` (Tavily; structured `{ ok:false, reason }` on error).
 - Inventory Truth Layer: `inventory-stock.ts`, `mergeInventoryRealtimeUpdate`, `computeItemsToOrder`, `updateInventoryStock`, RPC `set_inventory_stock`.
 - Supabase Session Bridge: `ensureSupabaseSession()` after PIN → anonymous `authenticated` RLS.
@@ -39,7 +41,7 @@
 | `getStoreStatus` | `src/app/actions/tools/database-tools.ts` | One-shot today shifts + inventory via `get_ai_store_status` |
 | `getSalesSummary` | `src/app/actions/tools/database-tools.ts` | Aggregated sales by date range |
 | `getInventoryLedger` | `src/app/actions/tools/database-tools.ts` | Transactions joined with item names |
-| `getInventoryItemDetails` | `src/app/actions/tools/database-tools.ts` | Single SKU via `get_ai_inventory_item_details` |
+| `getBeanOrdersSummary` | `src/app/actions/tools/database-tools.ts` | Open bean orders (unpaid / pending ship) |
 | `readTable` | `src/app/actions/tools/database-tools.ts` | Preset-locked table reads via gateway |
 | `internetSearchTool` | `src/app/actions/tools/search-tools.ts` | Tavily web search (`{ ok, results }` envelope) |
 
@@ -48,6 +50,7 @@
 - `inventory_items` preset: `id, name, unit, source, order_point, target_stock, stock, order_qty, updated_at`.
 - `shifts`: use `metadata.location` / `shift_type` — not `start_time` as the shift label.
 - `profiles`: `schedule_order`, `dashboard_order`, `display_order`.
+- `bean_orders`: `order_no`, statuses, totals — no slip URLs / tracking_raw in presets.
 - `device_passkeys`: service-role credential storage by `credential_id` + `session_fingerprint`.
 
 ## Domain skill modules (when to apply)

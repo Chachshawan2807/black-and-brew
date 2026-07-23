@@ -6,14 +6,18 @@ export const BEAN_ORDER_DETAIL_PAGE =
   'mx-auto w-full max-w-4xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]';
 
 export const BEAN_ORDER_CARD =
-  'rounded-2xl border border-border bg-card bb-shadow-md overflow-hidden';
+  'rounded-2xl border border-border bg-card bb-shadow-md overflow-visible';
+
+/** List/table shell — flat border only (shadow stacks with border at the bottom edge). */
+export const BEAN_ORDER_LIST_CARD =
+  'rounded-2xl border border-border bg-card overflow-hidden';
 
 export const BEAN_ORDER_LIST_HEADER =
-  'bg-muted/50 text-xs font-normal text-muted-foreground border-b border-border bb-shadow-sm';
+  'bg-muted/50 text-xs font-normal text-muted-foreground';
 
-/** Mobile card shell + desktop zebra row */
+/** Mobile card shell + desktop zebra row (desktop separators: parent [&>li:not(:last-child)]:border-b). */
 export const BEAN_ORDER_LIST_ROW =
-  'mx-1.5 mb-2 rounded-xl border border-border/80 bg-card bb-shadow-sm last:mb-1.5 lg:mx-0 lg:mb-0 lg:rounded-none lg:border-0 lg:border-b lg:border-border/60 lg:last:border-b-0 lg:bb-shadow-none lg:odd:bg-muted/12 lg:even:bg-card lg:hover:bg-muted/30';
+  'mx-1.5 mb-2 rounded-xl border border-border/80 bg-card last:mb-1.5 lg:mx-0 lg:mb-0 lg:rounded-none lg:border-0 lg:odd:bg-muted/12 lg:even:bg-card lg:hover:bg-muted/30';
 
 export const BEAN_ORDER_LIST_CELL =
   'lg:border-r lg:border-border/45 lg:px-4 lg:py-3 lg:last:border-r-0';

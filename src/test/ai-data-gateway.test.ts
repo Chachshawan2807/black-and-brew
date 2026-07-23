@@ -127,7 +127,7 @@ describe('fetchTablePreset', () => {
   });
 
   test('covers every public ERP table in AI_ALLOWED_TABLES', () => {
-    expect(AI_ALLOWED_TABLES).toHaveLength(18);
+    expect(AI_ALLOWED_TABLES).toHaveLength(24);
     for (const table of AI_ALLOWED_TABLES) {
       expect(TABLE_COLUMN_PRESETS[table]).toBeTruthy();
       expect(TABLE_COLUMN_PRESETS[table]).not.toContain('public_key');

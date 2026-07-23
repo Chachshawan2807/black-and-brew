@@ -11,6 +11,11 @@ import {
   computeCountDiscrepancy,
   isCountMatch,
 } from '@/lib/inventory-count-accuracy';
+import {
+  buildTodayCountStatusFromLogs,
+  getBangkokTodayUtcBounds,
+  type TodayCountSessionStatus,
+} from '@/lib/inventory-count-today';
 import type { InventoryNotificationSource } from '@/lib/inventory-notification-filter';
 import {
   requireMutationAccess,
@@ -1584,6 +1589,64 @@ export async function fetchCountAccuracyStats(): Promise<{
   }
 }
 
+export type { TodayCountSessionStatus } from '@/lib/inventory-count-today';
+
+// === FETCH TODAY INVENTORY COUNT STATUS ===
+export async function fetchTodayInventoryCountStatus(): Promise<{
+  success: boolean;
+  data?: TodayCountSessionStatus;
+  error?: string;
+}> {
+  noStore();
+
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false, error: authError };
+  }
+
+  try {
+    const { startUtc, endUtc } = getBangkokTodayUtcBounds();
+    const [logsResult, itemsResult] = await Promise.all([
+      supabase
+        .from('data_change_logs')
+        .select('entity_id, occurred_at, field_changes')
+        .eq('module', 'inventory')
+        .eq('entity_type', 'inventory_item')
+        .eq('status', 'success')
+        .filter('metadata->>operation', 'eq', 'count_stock_save')
+        .gte('occurred_at', startUtc)
+        .lte('occurred_at', endUtc)
+        .order('occurred_at', { ascending: false }),
+      supabase.from('inventory_items').select('id', { count: 'exact', head: true }),
+    ]);
+
+    const { data: rows, error } = logsResult;
+    const { count: totalItems, error: itemsError } = itemsResult;
+
+    if (error) {
+      console.error('[fetchTodayInventoryCountStatus] Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    if (itemsError) {
+      console.error('[fetchTodayInventoryCountStatus] Supabase Error:', itemsError.message, itemsError.details);
+      return { success: false, error: itemsError.message };
+    }
+
+    return {
+      success: true,
+      data: buildTodayCountStatusFromLogs(rows ?? [], totalItems ?? 0),
+    };
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[fetchTodayInventoryCountStatus] Unexpected Error:', message);
+    return {
+      success: false,
+      error: message || 'เกิดข้อผิดพลาดในการดึงสถานะการนับวันนี้',
+    };
+  }
+}
+
 export async function fetchInventoryAccuracyReport(): Promise<{
   success: boolean;
   data?: InventoryAccuracyReportResult;
@@ -1596,15 +1659,7 @@ export async function fetchInventoryAccuracyReport(): Promise<{
 
   const highDiscrepancyItems = Object.entries(statsResult.data.perItem)
     .map(([itemId, stats]) => ({ itemId, ...stats }))
-    .filter((item) => item.totalDiscrepancyQty > 0)
-    .sort((a, b) => b.totalDiscrepancyQty - a.totalDiscrepancyQty)
-    .slice(0, 10)
-    .sort((a, b) => {
-      if (a.totalDiscrepancyQty !== b.totalDiscrepancyQty) {
-        return a.totalDiscrepancyQty - b.totalDiscrepancyQty;
-      }
-      return (a.accuracyPct ?? 100) - (b.accuracyPct ?? 100);
-    });
+    .filter((item) => item.totalDiscrepancyQty > 0);
 
   return {
     success: true,

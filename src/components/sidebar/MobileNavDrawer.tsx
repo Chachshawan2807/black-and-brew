@@ -84,6 +84,18 @@ export function MobileNavDrawer() {
     });
   }, [reduced]);
 
+  const closeDrawerForNavigation = useCallback(() => {
+    const scroller = scrollerRef.current;
+    hidePopoverIfNeeded();
+    setIsOpen(false);
+    if (scroller) {
+      scroller.scrollTo({ left: scroller.offsetWidth, behavior: 'instant' as ScrollBehavior });
+    }
+    if (drawerRef.current) {
+      drawerRef.current.style.setProperty('--drawer-backdrop', '0');
+    }
+  }, [hidePopoverIfNeeded, setIsOpen]);
+
   const openDrawer = useCallback(async () => {
     const drawer = drawerRef.current;
     const scroller = scrollerRef.current;
@@ -107,10 +119,14 @@ export function MobileNavDrawer() {
   }, [syncBackdropFromScroll, reduced]);
 
   useEffect(() => {
-    const actions: MobileNavDrawerActions = { open: openDrawer, close: closeDrawer };
+    const actions: MobileNavDrawerActions = {
+      open: openDrawer,
+      close: closeDrawer,
+      closeForNavigation: closeDrawerForNavigation,
+    };
     registerActions(actions);
     return () => registerActions(null);
-  }, [closeDrawer, openDrawer, registerActions]);
+  }, [closeDrawer, closeDrawerForNavigation, openDrawer, registerActions]);
 
   useEffect(() => {
     const drawer = drawerRef.current;
