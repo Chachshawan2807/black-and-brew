@@ -735,12 +735,7 @@ export async function createBeanOrder(
     }
 
     const totals = computeOrderTotals(
-      orderInput.lines.map((l) => ({
-        inventoryItemId: l.inventoryItemId,
-        weightValue: l.weightValue,
-        weightUnit: l.weightUnit,
-        unitPricePerKg: l.unitPricePerKg,
-      })),
+      orderInput.lines,
       orderInput.discountBaht ?? 0,
       orderInput.shippingBaht ?? 0,
     );
@@ -873,12 +868,7 @@ export async function updateBeanOrder(
     }
 
     const totals = computeOrderTotals(
-      orderInput.lines.map((l) => ({
-        inventoryItemId: l.inventoryItemId,
-        weightValue: l.weightValue,
-        weightUnit: l.weightUnit,
-        unitPricePerKg: l.unitPricePerKg,
-      })),
+      orderInput.lines,
       orderInput.discountBaht ?? 0,
       orderInput.shippingBaht ?? 0,
     );

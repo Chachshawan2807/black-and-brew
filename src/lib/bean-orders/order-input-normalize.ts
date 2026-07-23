@@ -71,9 +71,18 @@ export type BeanOrderDraftInput = {
   }>;
 };
 
+export type PreparedBeanOrderInput = Omit<
+  BeanOrderDraftInput,
+  'lines' | 'recipientName' | 'recipientAddress'
+> & {
+  recipientName: string;
+  recipientAddress: string;
+  lines: BeanOrderLineInput[];
+};
+
 export function prepareBeanOrderInput(
   input: BeanOrderDraftInput,
-): { success: true; data: BeanOrderDraftInput & { recipientName: string; recipientAddress: string; lines: BeanOrderLineInput[] } } | { success: false; error: string } {
+): { success: true; data: PreparedBeanOrderInput } | { success: false; error: string } {
   const lines = normalizeBeanOrderLinesForSave(input.lines);
   if (lines.length === 0) {
     return { success: false, error: 'เลือกสินค้าอย่างน้อย 1 รายการ' };
