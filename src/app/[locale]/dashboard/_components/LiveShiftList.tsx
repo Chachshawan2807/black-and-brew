@@ -11,7 +11,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter } from 'next/navigation';
 import { format, parseISO, isValid, isWithinInterval } from 'date-fns';
-import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
+import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { SortableDragHandle } from '@/components/ui/sortable-drag-handle';
 import {
   DndContext,
@@ -283,26 +283,12 @@ export default function LiveShiftList({
               <CalendarDays className="w-5 h-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             
-            <div className="flex items-center gap-2 w-full">
-              <div className="flex-1">
-                <ClickableDatePicker
-                  value={startDate}
-                  onChange={(e) => handleDateChange(e.target.value, endDate)}
-                  placeholder="เริ่ม"
-                  containerClassName="w-full"
-                />
-              </div>
-              <span className="text-foreground font-normal select-none shrink-0">—</span>
-              <div className="flex-1">
-                <ClickableDatePicker
-                  value={endDate}
-                  onChange={(e) => handleDateChange(startDate, e.target.value)}
-                  min={startDate}
-                  placeholder="สิ้นสุด"
-                  containerClassName="w-full"
-                />
-              </div>
-            </div>
+            <ClickableDateRangePicker
+              startValue={startDate}
+              endValue={endDate}
+              onChange={({ start, end }) => handleDateChange(start, end)}
+              containerClassName="w-full"
+            />
           </div>
         </div>
 

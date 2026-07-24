@@ -56,6 +56,29 @@ vi.mock('@/components/ui/ClickableDatePicker', () => ({
   ),
 }));
 
+type DateRangePickerMockProps = {
+  startValue?: string;
+  endValue?: string;
+  onChange?: (range: { start: string; end: string }) => void;
+};
+
+vi.mock('@/components/ui/ClickableDateRangePicker', () => ({
+  ClickableDateRangePicker: ({ startValue, endValue, onChange }: DateRangePickerMockProps) => (
+    <div>
+      <input
+        aria-label="date-range-start"
+        value={startValue || ''}
+        onChange={(e) => onChange?.({ start: e.target.value, end: endValue || '' })}
+      />
+      <input
+        aria-label="date-range-end"
+        value={endValue || ''}
+        onChange={(e) => onChange?.({ start: startValue || '', end: e.target.value })}
+      />
+    </div>
+  ),
+}));
+
 vi.mock('@dnd-kit/core', () => ({
   DndContext: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   closestCorners: vi.fn(),

@@ -24,10 +24,11 @@ const sampleOrder: BeanOrderListRow = {
   recipientPostalCode: '21110',
   paymentStatus: 'paid',
   fulfillmentStatus: 'pending',
+  slipUploadedAt: '2026-07-22T10:30:00.000Z',
   deliveryType: null,
   carrierCode: null,
   trackingNumber: null,
-  latestTrackingLabel: null,
+  trackingStatus: null,
   cancelledAt: null,
   subtotalBaht: 800,
   discountBaht: 0,
@@ -73,13 +74,13 @@ describe('BeanOrderListItem', () => {
     expect(await screen.findByText('คัดลอกแล้ว')).toBeInTheDocument();
   });
 
-  test('shows destination only in destination area and tracking label in status column', () => {
+  test('shows destination only in destination area and delivery badge in status column', () => {
     const orderWithTracking: BeanOrderListRow = {
       ...sampleOrder,
       fulfillmentStatus: 'shipped',
       deliveryType: 'parcel',
       carrierCode: 'kerryexpress-th',
-      latestTrackingLabel: 'จัดส่งสำเร็จ',
+      trackingStatus: 'delivered',
     };
 
     render(<BeanOrderListItem order={orderWithTracking} locale="th" />);
@@ -87,5 +88,6 @@ describe('BeanOrderListItem', () => {
     expect(screen.getAllByText('จ.ระยอง').length).toBeGreaterThan(0);
     expect(screen.queryByText(/จ\.ระยอง \/ จัดส่งสำเร็จ/)).toBeNull();
     expect(screen.getAllByText('จัดส่งสำเร็จ').length).toBeGreaterThan(0);
+    expect(screen.queryByText('ส่งแล้ว (ไม่มีเลขพัสดุ)')).toBeNull();
   });
 });

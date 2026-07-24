@@ -8,7 +8,6 @@ import {
   parseISO,
   startOfMonth,
   endOfMonth,
-  isBefore,
   isValid
 } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -18,7 +17,7 @@ import {
   Calendar as CalendarIcon 
 } from 'lucide-react';
 import { fetchRosterData } from '@/app/actions/shift-actions';
-import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
+import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import {
   getShiftColorClass,
   getShiftColorStyle,
@@ -105,18 +104,9 @@ export default function MonthlyRoster({
     loadData();
   }, [startDate, endDate]);
 
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setStartDate(val);
-    if (endDate && val && isBefore(parseISO(endDate), parseISO(val))) {
-      setEndDate('');
-    }
-  };
-
-  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    if (startDate && val && isBefore(parseISO(val), parseISO(startDate))) return;
-    setEndDate(val);
+  const handleRangeChange = ({ start, end }: { start: string; end: string }) => {
+    setStartDate(start);
+    setEndDate(end);
   };
 
   const getShiftDisplay = (shift: Shift) => {
@@ -140,26 +130,12 @@ export default function MonthlyRoster({
         </div>
 
         <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-4 md:gap-6 w-full lg:w-auto">
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <div className="flex-1">
-              <ClickableDatePicker
-                value={startDate}
-                onChange={handleStartDateChange}
-                placeholder="เริ่ม"
-                containerClassName="w-full"
-              />
-            </div>
-            <span className="text-foreground font-normal select-none shrink-0">—</span>
-            <div className="flex-1">
-              <ClickableDatePicker
-                value={endDate}
-                onChange={handleEndDateChange}
-                min={startDate}
-                placeholder="สิ้นสุด"
-                containerClassName="w-full"
-              />
-            </div>
-          </div>
+          <ClickableDateRangePicker
+            startValue={startDate}
+            endValue={endDate}
+            onChange={handleRangeChange}
+            containerClassName="w-full md:min-w-[280px]"
+          />
 
           <div className="flex bg-muted rounded-[24px] p-1.5 gap-1.5">
             <button 

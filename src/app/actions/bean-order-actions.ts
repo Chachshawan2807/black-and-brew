@@ -20,7 +20,7 @@ import {
 import { computeLineTotal, computeOrderTotals } from '@/lib/bean-orders/pricing';
 import { filterBeanOrderInventoryItems, BEAN_ORDER_INVENTORY_ITEM_NAMES } from '@/lib/bean-orders/inventory-items';
 import { isTrackableCarrierCode } from '@/lib/bean-orders/carriers';
-import { parseTrackingEvents, formatLatestTrackingLabel, type BeanOrderTrackingEvent } from '@/lib/bean-orders/tracking-events';
+import { parseTrackingEvents, type BeanOrderTrackingEvent } from '@/lib/bean-orders/tracking-events';
 import {
   parseThaiPostalAddressLine,
   type ThaiPostalAddressValue,
@@ -57,8 +57,6 @@ import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
 const weightUnitSchema = z.enum(['g', 'kg']);
-const deliveryTypeSchema = z.enum(['parcel', 'same_day']);
-
 const lineInputSchema = z.object({
   inventoryItemId: z.string().uuid(),
   weightValue: z.number().min(0).optional().default(0),
@@ -83,7 +81,6 @@ const createOrderSchema = z.object({
 });
 
 const shipOrderSchema = z.object({
-  deliveryType: deliveryTypeSchema,
   carrierCode: z.string().optional(),
   trackingNumber: z.string().optional(),
 });
@@ -123,10 +120,11 @@ export type BeanOrderListRow = {
   lines: BeanOrderListLineRow[];
   paymentStatus: 'unpaid' | 'paid';
   fulfillmentStatus: 'pending' | 'shipped';
+  slipUploadedAt: string | null;
   deliveryType: DeliveryType | null;
   carrierCode: string | null;
   trackingNumber: string | null;
-  latestTrackingLabel: string | null;
+  trackingStatus: string | null;
   cancelledAt: string | null;
   createdAt: string;
 };
@@ -499,9 +497,10 @@ export async function fetchBeanOrders(filters?: {
       tracking_raw: unknown;
     }>();
     const linesByOrderId = new Map<string, BeanOrderListLineRow[]>();
+    const slipUploadedAtByOrderId = new Map<string, string | null>();
 
     if (orderIds.length > 0) {
-      const [shipmentsRes, linesRes] = await Promise.all([
+      const [shipmentsRes, linesRes, paymentsRes] = await Promise.all([
         supabase
           .from('bean_order_shipments')
           .select('order_id, delivery_type, carrier_code, tracking_number, tracking_status, tracking_raw')
@@ -511,6 +510,10 @@ export async function fetchBeanOrders(filters?: {
           .select('order_id, item_name, weight_value, weight_unit, unit_price_per_kg, line_total_baht, sort_order')
           .in('order_id', orderIds)
           .order('sort_order'),
+        supabase
+          .from('bean_order_payments')
+          .select('order_id, uploaded_at')
+          .in('order_id', orderIds),
       ]);
 
       if (shipmentsRes.error) {
@@ -520,6 +523,17 @@ export async function fetchBeanOrders(filters?: {
       if (linesRes.error) {
         console.error('Supabase Error (fetchBeanOrders lines):', linesRes.error.message, linesRes.error.details);
         return { success: false, error: linesRes.error.message };
+      }
+      if (paymentsRes.error) {
+        console.error('Supabase Error (fetchBeanOrders payments):', paymentsRes.error.message, paymentsRes.error.details);
+        return { success: false, error: paymentsRes.error.message };
+      }
+
+      for (const payment of paymentsRes.data ?? []) {
+        slipUploadedAtByOrderId.set(
+          payment.order_id as string,
+          (payment.uploaded_at as string | null) ?? null,
+        );
       }
 
       for (const shipment of shipmentsRes.data ?? []) {
@@ -569,17 +583,11 @@ export async function fetchBeanOrders(filters?: {
           lines: linesByOrderId.get(row.id as string) ?? [],
           paymentStatus: row.payment_status as 'unpaid' | 'paid',
           fulfillmentStatus,
+          slipUploadedAt: slipUploadedAtByOrderId.get(row.id as string) ?? null,
           deliveryType: shipment?.delivery_type ?? null,
           carrierCode: shipment?.carrier_code ?? null,
           trackingNumber: shipment?.tracking_number ?? null,
-          latestTrackingLabel: formatLatestTrackingLabel(
-            shipment?.tracking_raw,
-            shipment?.tracking_status,
-            {
-              fulfillmentStatus,
-              trackingNumber: shipment?.tracking_number ?? null,
-            },
-          ),
+          trackingStatus: shipment?.tracking_status ?? null,
           cancelledAt: (row.cancelled_at as string | null) ?? null,
           createdAt: row.created_at as string,
         };
@@ -659,17 +667,11 @@ export async function fetchBeanOrderDetail(
         totalBaht: Number(order.total_baht) || 0,
         paymentStatus: order.payment_status as 'unpaid' | 'paid',
         fulfillmentStatus: order.fulfillment_status as 'pending' | 'shipped',
+        slipUploadedAt: (paymentResult.data?.uploaded_at as string | null) ?? null,
         deliveryType: (shipmentResult.data?.delivery_type as DeliveryType | undefined) ?? null,
         carrierCode: (shipmentResult.data?.carrier_code as string | null) ?? null,
         trackingNumber: (shipmentResult.data?.tracking_number as string | null) ?? null,
-        latestTrackingLabel: formatLatestTrackingLabel(
-          shipmentResult.data?.tracking_raw,
-          shipmentResult.data?.tracking_status as string | null,
-          {
-            fulfillmentStatus: order.fulfillment_status as 'pending' | 'shipped',
-            trackingNumber: (shipmentResult.data?.tracking_number as string | null) ?? null,
-          },
-        ),
+        trackingStatus: (shipmentResult.data?.tracking_status as string | null) ?? null,
         cancelledAt: (order.cancelled_at as string | null) ?? null,
         notes: (order.notes as string | null) ?? null,
         statusHistory: (order.status_history as StatusHistoryEntry[]) ?? [],
@@ -1276,6 +1278,10 @@ export async function shipBeanOrder(
   if (!parsed.success) return { success: false, error: 'ข้อมูลจัดส่งไม่ถูกต้อง' };
 
   const trackingNumber = parsed.data.trackingNumber?.trim() || '';
+  const carrierCode = parsed.data.carrierCode?.trim() || '';
+  if (carrierCode === 'other') {
+    return { success: false, error: 'กรุณาระบุช่องทางจัดส่ง' };
+  }
 
   try {
     const supabase = getSupabaseAdmin();
@@ -1305,12 +1311,12 @@ export async function shipBeanOrder(
     let trackingRaw: Record<string, unknown> | null = null;
     let trackingWarning: string | undefined;
 
-    if (trackingNumber && parsed.data.carrierCode && isTrackableCarrierCode(parsed.data.carrierCode)) {
-      const carrierCode =
-        resolveTrackingMoreCarrierCode(parsed.data.carrierCode) ?? parsed.data.carrierCode;
+    if (trackingNumber && carrierCode && isTrackableCarrierCode(carrierCode)) {
+      const resolvedCarrier =
+        resolveTrackingMoreCarrierCode(carrierCode) ?? carrierCode;
       const tm = await createTrackingMoreShipment({
         trackingNumber,
-        carrierCode,
+        carrierCode: resolvedCarrier,
       });
       if (tm.ok) {
         trackingRaw = tm.data;
@@ -1318,7 +1324,7 @@ export async function shipBeanOrder(
         trackingWarning = tm.error;
       }
 
-      const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, parsed.data.carrierCode);
+      const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, carrierCode);
       if (fetched.ok) {
         trackingStatus = fetched.status;
         trackingRaw = fetched.raw;
@@ -1327,8 +1333,8 @@ export async function shipBeanOrder(
       }
     }
 
-    const resolvedCarrierCode = parsed.data.carrierCode
-      ? resolveTrackingMoreCarrierCode(parsed.data.carrierCode) ?? parsed.data.carrierCode
+    const resolvedCarrierCode = carrierCode
+      ? resolveTrackingMoreCarrierCode(carrierCode) ?? carrierCode
       : null;
 
     const orderUpdates: Record<string, unknown> = {
@@ -1344,16 +1350,19 @@ export async function shipBeanOrder(
         .from('bean_orders')
         .update(orderUpdates)
         .eq('id', orderId),
-      supabase.from('bean_order_shipments').upsert({
-        order_id: orderId,
-        delivery_type: parsed.data.deliveryType,
-        carrier_code: resolvedCarrierCode,
-        tracking_number: trackingNumber || null,
-        tracking_status: trackingStatus,
-        tracking_raw: trackingRaw,
-        shipped_by: actor,
-        shipped_at: new Date().toISOString(),
-      }),
+      supabase.from('bean_order_shipments').upsert(
+        {
+          order_id: orderId,
+          delivery_type: 'parcel',
+          carrier_code: resolvedCarrierCode,
+          tracking_number: trackingNumber || null,
+          tracking_status: trackingStatus,
+          tracking_raw: trackingRaw,
+          shipped_by: actor,
+          shipped_at: new Date().toISOString(),
+        },
+        { onConflict: 'order_id' },
+      ),
     ]);
 
     if (orderError) {

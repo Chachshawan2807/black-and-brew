@@ -14,9 +14,14 @@ import {
   uploadBeanOrderSlip,
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
-import { BEAN_ORDER_CARRIERS, getCarrierLabel } from '@/lib/bean-orders/carriers';
+import {
+  BEAN_ORDER_CARRIERS,
+  getCarrierLabel,
+  initialCarrierSelection,
+  OTHER_CARRIER_CODE,
+  resolveCarrierCodeForSave,
+} from '@/lib/bean-orders/carriers';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
-import { getDeliveryTypeLabel } from '@/lib/bean-orders/delivery';
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
 import { TrackingTimeline } from './_components/TrackingTimeline';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
@@ -30,7 +35,7 @@ import {
   canUploadSlip,
 } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
-import { OrderStatusBadge } from './_components/OrderStatusBadge';
+import { OrderListStatusGroup } from './_components/OrderStatusBadge';
 import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS, BEAN_ORDER_PAYMENT_BODY, BEAN_ORDER_PAYMENT_COLUMN, BEAN_ORDER_PAYMENT_SHIPPING_GRID, BEAN_ORDER_PAYMENT_SLIP_SLOT, BEAN_ORDER_SHIPPING_COLUMN } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
 
@@ -43,12 +48,6 @@ function formatBaht(value: number): string {
   return value.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-function initialCarrierCode(carrierCode: string | null | undefined): string {
-  if (!carrierCode) return 'kerryexpress-th';
-  const isKnown = BEAN_ORDER_CARRIERS.some((carrier) => carrier.code === carrierCode);
-  return isKnown ? carrierCode : 'other';
-}
-
 export default function BeanOrderDetailClient({ order: initialOrder, locale }: Props) {
   const router = useRouter();
   const isReadOnly = useReadOnly();
@@ -58,10 +57,9 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [deliveryType] = useState<'parcel' | 'same_day'>(
-    order.shipment?.deliveryType ?? 'parcel',
-  );
-  const [carrierCode, setCarrierCode] = useState(initialCarrierCode(order.shipment?.carrierCode));
+  const initialCarrier = initialCarrierSelection(order.shipment?.carrierCode);
+  const [carrierCode, setCarrierCode] = useState(initialCarrier.carrierCode);
+  const [customCarrierLabel, setCustomCarrierLabel] = useState(initialCarrier.customCarrierLabel);
   const [trackingNumber, setTrackingNumber] = useState(order.shipment?.trackingNumber ?? '');
 
   useEffect(() => {
@@ -148,10 +146,15 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
   async function handleShip() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
+    const resolvedCarrierCode = resolveCarrierCodeForSave(carrierCode, customCarrierLabel);
+    if (!resolvedCarrierCode) {
+      setError('กรุณาระบุช่องทางจัดส่ง');
+      return;
+    }
     setBusy(true);
     const result = await shipBeanOrder(
       order.id,
-      { deliveryType, carrierCode: carrierCode || undefined, trackingNumber },
+      { carrierCode: resolvedCarrierCode, trackingNumber },
       locale,
     );
     setBusy(false);
@@ -201,9 +204,9 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <h1 className="text-2xl font-normal">{order.orderNo}</h1>
-          <OrderStatusBadge
-            paymentStatus={order.paymentStatus}
-            fulfillmentStatus={order.fulfillmentStatus}
+          <OrderListStatusGroup
+            slipUploadedAt={order.payment?.uploadedAt}
+            trackingStatus={order.shipment?.trackingStatus}
             cancelledAt={order.cancelledAt}
           />
         </div>
@@ -373,20 +376,48 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                   <h2 className="text-sm text-muted-foreground">จัดส่ง</h2>
                   <div className="space-y-2">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-                      <select
-                        className={cn(inputClass, 'sm:min-w-[9rem] sm:flex-1')}
-                        value={carrierCode}
-                        onChange={(e) => setCarrierCode(e.target.value)}
-                      >
-                        {BEAN_ORDER_CARRIERS.map((c) => (
-                          <option key={c.code} value={c.code}>{c.label}</option>
-                        ))}
-                      </select>
+                      {carrierCode === OTHER_CARRIER_CODE ? (
+                        <div className={cn('relative sm:min-w-[9rem] sm:flex-1')}>
+                          <input
+                            className={cn(inputClass, 'w-full pr-10')}
+                            value={customCarrierLabel}
+                            onChange={(e) => setCustomCarrierLabel(e.target.value)}
+                            placeholder="อื่นๆ"
+                          />
+                          <button
+                            type="button"
+                            className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground"
+                            aria-label="เลือกช่องทางจัดส่ง"
+                            onClick={() => {
+                              setCarrierCode('kerryexpress-th');
+                              setCustomCarrierLabel('');
+                            }}
+                          >
+                            <ChevronDown className="h-4 w-4" aria-hidden />
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          className={cn(inputClass, 'sm:min-w-[9rem] sm:flex-1')}
+                          value={carrierCode}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setCarrierCode(next);
+                            if (next === OTHER_CARRIER_CODE) {
+                              setCustomCarrierLabel('');
+                            }
+                          }}
+                        >
+                          {BEAN_ORDER_CARRIERS.map((c) => (
+                            <option key={c.code} value={c.code}>{c.label}</option>
+                          ))}
+                        </select>
+                      )}
                       <input
                         className={cn(inputClass, 'sm:min-w-[10rem] sm:flex-[1.5]')}
                         value={trackingNumber}
                         onChange={(e) => setTrackingNumber(e.target.value)}
-                        placeholder={carrierCode === 'other' ? 'รายละเอียด' : 'เลขพัสดุ (ไม่บังคับ)'}
+                        placeholder="เลขพัสดุ (ไม่บังคับ)"
                       />
                     </div>
                     {canManualDeliver ? (
@@ -442,8 +473,6 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                   <h2 className="text-xs text-muted-foreground">การจัดส่ง</h2>
                   <span className="text-muted-foreground">/</span>
                   <span className="text-foreground">
-                    {getDeliveryTypeLabel(order.shipment.deliveryType)}
-                    {' / '}
                     {getCarrierLabel(order.shipment.carrierCode)}
                   </span>
                 </div>

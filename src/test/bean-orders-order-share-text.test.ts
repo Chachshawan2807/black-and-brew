@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatBeanOrderShareText } from '@/lib/bean-orders/order-share-text';
+import { formatBeanOrderShareText, formatShareDate } from '@/lib/bean-orders/order-share-text';
 
 const sampleOrder = {
   orderNo: 'BO-20260722-001',
@@ -10,18 +10,7 @@ const sampleOrder = {
   recipientAddress: '123/4 หมู่ 5',
   recipientProvince: 'ระยอง',
   recipientPostalCode: '21110',
-  paymentStatus: 'paid' as const,
-  fulfillmentStatus: 'shipped' as const,
-  cancelledAt: null,
-  subtotalBaht: 800,
-  discountBaht: 50,
-  shippingBaht: 60,
-  totalBaht: 810,
   notes: 'บดหยาบ',
-  deliveryType: 'parcel' as const,
-  carrierCode: 'kerryexpress-th',
-  trackingNumber: 'KEX123456789',
-  latestTrackingLabel: 'จัดส่งสำเร็จ',
   lines: [
     {
       itemName: 'Ethiopia Yirgacheffe',
@@ -41,41 +30,73 @@ const sampleOrder = {
 };
 
 describe('formatBeanOrderShareText', () => {
-  test('includes core order, recipient, lines, totals, and shipping details', () => {
+  test('copies compact order text with short date and optional fields only when present', () => {
     const text = formatBeanOrderShareText(sampleOrder);
 
-    expect(text).not.toContain('เลขที่:');
-    expect(text).toContain('วันที่:');
-    expect(text).not.toContain('วันที่สร้าง:');
-    expect(text).toContain('ลูกค้า: คุณเอ');
-    expect(text).not.toContain('ผู้รับ:');
-    expect(text).toContain('เบอร์: 0812345678');
-    expect(text).toContain('Ethiopia Yirgacheffe');
-    expect(text).toContain('ยอดรวม: 810 บาท');
-    expect(text).toContain('ผู้ให้บริการ: Kerry Express');
-    expect(text).toContain('เลขพัสดุ: KEX123456789');
-    expect(text).toContain('สถานะจัดส่งล่าสุด: จัดส่งสำเร็จ');
-    expect(text).toContain('หมายเหตุ: บดหยาบ');
-    expect(text).not.toContain('<');
+    expect(text).toBe(
+      [
+        'ออเดอร์เมล็ดกาแฟ',
+        formatShareDate(sampleOrder.createdAt),
+        '',
+        'ลูกค้า: คุณเอ',
+        'เบอร์: 0812345678',
+        'ที่อยู่: 123/4 หมู่ 5 ระยอง 21110',
+        '',
+        'รายการสินค้า:',
+        '1) Ethiopia Yirgacheffe  500 ก.  800 บาท/กก.  รวม 400 บาท',
+        '2) Colombia  1 กก.  400 บาท/กก.  รวม 400 บาท',
+        '',
+        'หมายเหตุ: บดหยาบ',
+      ].join('\n'),
+    );
+    expect(text).not.toContain('วันที่:');
+    expect(text).not.toContain('ที่อยู่จัดส่ง:');
   });
 
-  test('shows pending shipping state when order is not shipped yet', () => {
+  test('omits empty phone, address, and notes from copy text', () => {
     const text = formatBeanOrderShareText({
       ...sampleOrder,
-      fulfillmentStatus: 'pending',
-      deliveryType: null,
-      carrierCode: null,
-      trackingNumber: null,
-      latestTrackingLabel: null,
+      customerName: 'คุณลี',
+      recipientPhone: null,
+      recipientAddress: '',
+      recipientProvince: null,
+      recipientPostalCode: null,
+      notes: null,
+      lines: [
+        {
+          itemName: 'เมล็ดกาแฟคั่วเข้ม',
+          weightValue: 5,
+          weightUnit: 'kg' as const,
+          unitPricePerKg: 530,
+          lineTotalBaht: 2650,
+        },
+      ],
     });
 
-    expect(text).toContain('สถานะ: ชำระแล้ว / รอจัดส่ง');
-    expect(text).toContain('การจัดส่ง: ยังไม่บันทึกจัดส่ง');
+    expect(text).toBe(
+      [
+        'ออเดอร์เมล็ดกาแฟ',
+        formatShareDate(sampleOrder.createdAt),
+        '',
+        'ลูกค้า: คุณลี',
+        '',
+        'รายการสินค้า:',
+        '1) เมล็ดกาแฟคั่วเข้ม  5 กก.  530 บาท/กก.  รวม 2,650 บาท',
+      ].join('\n'),
+    );
+    expect(text).not.toContain('เบอร์:');
+    expect(text).not.toContain('ที่อยู่:');
+    expect(text).not.toContain('หมายเหตุ:');
   });
 
-  test('uses hyphen placeholder when notes are empty', () => {
-    const text = formatBeanOrderShareText({ ...sampleOrder, notes: null });
-    expect(text).toContain('หมายเหตุ: -');
-    expect(text).not.toContain('หมายเหตุ: —');
+  test('omits status, totals, delivery type, and shipping details from copy text', () => {
+    const text = formatBeanOrderShareText(sampleOrder);
+
+    expect(text).not.toContain('สถานะ:');
+    expect(text).not.toContain('รวมสินค้า:');
+    expect(text).not.toContain('ส่วนลด:');
+    expect(text).not.toContain('ค่าจัดส่ง:');
+    expect(text).not.toContain('ยอดรวม:');
+    expect(text).not.toContain(' / ');
   });
 });

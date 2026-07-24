@@ -11,6 +11,36 @@ export const BEAN_ORDER_CARRIERS: BeanOrderCarrier[] = [
   { code: 'other', label: 'อื่นๆ' },
 ];
 
+export const OTHER_CARRIER_CODE = 'other';
+
+export function isKnownCarrierCode(code: string | null | undefined): boolean {
+  if (!code) return false;
+  return BEAN_ORDER_CARRIERS.some((carrier) => carrier.code === code);
+}
+
+export function initialCarrierSelection(carrierCode: string | null | undefined): {
+  carrierCode: string;
+  customCarrierLabel: string;
+} {
+  if (!carrierCode) {
+    return { carrierCode: 'kerryexpress-th', customCarrierLabel: '' };
+  }
+  if (isKnownCarrierCode(carrierCode)) {
+    return { carrierCode, customCarrierLabel: '' };
+  }
+  return { carrierCode: OTHER_CARRIER_CODE, customCarrierLabel: carrierCode };
+}
+
+export function resolveCarrierCodeForSave(
+  carrierCode: string,
+  customCarrierLabel: string,
+): string | null {
+  if (carrierCode === OTHER_CARRIER_CODE) {
+    return customCarrierLabel.trim() || null;
+  }
+  return carrierCode;
+}
+
 export function getCarrierLabel(code: string | null | undefined): string {
   if (!code) return '—';
   return BEAN_ORDER_CARRIERS.find((c) => c.code === code)?.label ?? code;

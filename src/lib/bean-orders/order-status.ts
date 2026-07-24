@@ -5,23 +5,23 @@ import type {
   StatusHistoryEntry,
 } from './types';
 
-export type OrderStatusLabel =
-  | 'รอชำระ'
-  | 'ชำระแล้ว / รอจัดส่ง'
-  | 'จัดส่งแล้ว / รอชำระ'
-  | 'เสร็จสมบูรณ์'
-  | 'ยกเลิก';
+export const ORDER_PAYMENT_BADGE_LABEL = 'ชำระแล้ว' as const;
+export const ORDER_DELIVERY_BADGE_LABEL = 'จัดส่งสำเร็จ' as const;
 
-export function getOrderStatusLabel(
-  paymentStatus: PaymentStatus,
-  fulfillmentStatus: FulfillmentStatus,
+export function shouldShowOrderPaymentBadge(
+  slipUploadedAt: string | null | undefined,
   cancelledAt?: string | null,
-): OrderStatusLabel {
-  if (cancelledAt) return 'ยกเลิก';
-  if (paymentStatus === 'unpaid' && fulfillmentStatus === 'pending') return 'รอชำระ';
-  if (paymentStatus === 'paid' && fulfillmentStatus === 'pending') return 'ชำระแล้ว / รอจัดส่ง';
-  if (paymentStatus === 'unpaid' && fulfillmentStatus === 'shipped') return 'จัดส่งแล้ว / รอชำระ';
-  return 'เสร็จสมบูรณ์';
+): boolean {
+  if (cancelledAt) return false;
+  return Boolean(slipUploadedAt);
+}
+
+export function shouldShowOrderDeliveryBadge(
+  trackingStatus: string | null | undefined,
+  cancelledAt?: string | null,
+): boolean {
+  if (cancelledAt) return false;
+  return isTrackingDeliveredStatus(trackingStatus);
 }
 
 export function isOrderCancelled(cancelledAt?: string | null): boolean {

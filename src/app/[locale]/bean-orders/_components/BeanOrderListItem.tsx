@@ -8,7 +8,6 @@ import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { formatOrderDeliveryDestination } from '@/lib/bean-orders/address';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { getCarrierLabel } from '@/lib/bean-orders/carriers';
-import { getDeliveryTypeLabel } from '@/lib/bean-orders/delivery';
 import { formatBeanOrderShareText } from '@/lib/bean-orders/order-share-text';
 import { preloadRouteChunk } from '@/lib/route-chunk-preload';
 import { OrderListStatusGroup } from './OrderStatusBadge';
@@ -45,12 +44,8 @@ function formatDestinationLine(order: BeanOrderListRow): string {
 }
 
 function formatShippingChannel(order: BeanOrderListRow): string {
-  if (order.fulfillmentStatus !== 'shipped' || !order.deliveryType) {
+  if (order.fulfillmentStatus !== 'shipped') {
     return '—';
-  }
-
-  if (order.deliveryType === 'same_day') {
-    return getDeliveryTypeLabel(order.deliveryType);
   }
 
   return getCarrierLabel(order.carrierCode);
@@ -134,10 +129,9 @@ export function BeanOrderListItem({ order, locale }: Props) {
         <div className="mt-2 flex items-center justify-between gap-3">
           <p className="tabular-nums text-sm text-foreground">{formatBaht(order.totalBaht)} ฿</p>
           <OrderListStatusGroup
-            paymentStatus={order.paymentStatus}
-            fulfillmentStatus={order.fulfillmentStatus}
+            slipUploadedAt={order.slipUploadedAt}
+            trackingStatus={order.trackingStatus}
             cancelledAt={order.cancelledAt}
-            latestTrackingLabel={order.latestTrackingLabel}
           />
         </div>
       </Link>
@@ -187,10 +181,9 @@ export function BeanOrderListItem({ order, locale }: Props) {
 
         <div className={cn('min-w-0 flex justify-end lg:col-start-7', BEAN_ORDER_LIST_CELL)}>
           <OrderListStatusGroup
-            paymentStatus={order.paymentStatus}
-            fulfillmentStatus={order.fulfillmentStatus}
+            slipUploadedAt={order.slipUploadedAt}
+            trackingStatus={order.trackingStatus}
             cancelledAt={order.cancelledAt}
-            latestTrackingLabel={order.latestTrackingLabel}
           />
         </div>
       </Link>

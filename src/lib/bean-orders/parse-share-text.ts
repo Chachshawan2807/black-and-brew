@@ -18,7 +18,7 @@ export type ParsedBeanOrderCustomer = {
 };
 
 const PLACEHOLDER_VALUES = new Set(['', '-', '—', '–']);
-const ERP_CUSTOMER_LABEL_PATTERN = /^(?:ลูกค้า|เบอร์|ที่อยู่จัดส่ง)\s*:/m;
+const ERP_CUSTOMER_LABEL_PATTERN = /^(?:ลูกค้า|เบอร์|ที่อยู่จัดส่ง|ที่อยู่)\s*:/m;
 const ADDRESS_HINT_PATTERN =
   /(ถนน|ซอย|หมู่|ต\.|อ\.|จ\.|แขวง|เขต|ร้าน|สาขา|หน้า|ข้าง|ตรงข้าม|\d+\/\d+|\d{5}\s*$)/;
 const PASTE_NOISE_WORDS = new Set(['ครับ', 'ค่ะ', 'นะ', 'คะ', 'ขอบคุณ', 'ส่ง', 'เมล็ดกาแฟ', 'ให้']);
@@ -446,7 +446,8 @@ export function parseBeanOrderCustomerText(text: string): ParsedBeanOrderCustome
   if (hasErpCustomerLabels(text)) {
     const name = extractLabeledValue(text, 'ลูกค้า');
     const phone = extractLabeledValue(text, 'เบอร์');
-    const addressLine = extractLabeledValue(text, 'ที่อยู่จัดส่ง');
+    const addressLine =
+      extractLabeledValue(text, 'ที่อยู่จัดส่ง') ?? extractLabeledValue(text, 'ที่อยู่');
 
     return buildParsedBeanOrderCustomer({
       name,

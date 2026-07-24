@@ -8,7 +8,7 @@ import { Plus, Trash2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar
 import { startOfWeek, addDays, format } from 'date-fns';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
+import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -1697,26 +1697,12 @@ export default function ScheduleClient({
 
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">ระบุช่วงวันที่</label>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="flex-1 w-full">
-                      <ClickableDatePicker
-                        value={managementForm.startDate}
-                        onChange={(e) => setManagementForm(prev => ({ ...prev, startDate: e.target.value }))}
-                        placeholder="เริ่ม"
-                        containerClassName="w-full"
-                      />
-                    </div>
-                    <span className="text-foreground font-normal select-none hidden sm:block shrink-0">—</span>
-                    <div className="flex-1 w-full">
-                      <ClickableDatePicker
-                        value={managementForm.endDate}
-                        onChange={(e) => setManagementForm(prev => ({ ...prev, endDate: e.target.value }))}
-                        min={managementForm.startDate}
-                        placeholder="สิ้นสุด"
-                        containerClassName="w-full"
-                      />
-                    </div>
-                  </div>
+                  <ClickableDateRangePicker
+                    startValue={managementForm.startDate}
+                    endValue={managementForm.endDate}
+                    onChange={({ start, end }) => setManagementForm(prev => ({ ...prev, startDate: start, endDate: end }))}
+                    containerClassName="w-full"
+                  />
                 </div>
 
                 <div className="space-y-1.5 pt-2">
@@ -1757,25 +1743,14 @@ export default function ScheduleClient({
               </div>
 
               <div className="p-4 border-b border-border bg-card shrink-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 max-w-sm">
-                    <div className="flex-1 w-full">
-                      <ClickableDatePicker
-                        value={historyFilter.start}
-                        onChange={(e) => setHistoryFilter(prev => ({ ...prev, start: e.target.value }))}
-                        placeholder="กรองตั้งแต่วันที่"
-                        containerClassName="w-full"
-                      />
-                    </div>
-                    <span className="text-foreground font-normal select-none text-xs hidden sm:block shrink-0">—</span>
-                    <div className="flex-1 w-full">
-                      <ClickableDatePicker
-                        value={historyFilter.end}
-                        onChange={(e) => setHistoryFilter(prev => ({ ...prev, end: e.target.value }))}
-                        placeholder="ถึงวันที่"
-                        containerClassName="w-full"
-                      />
-                    </div>
-                  </div>
+                  <ClickableDateRangePicker
+                    startValue={historyFilter.start}
+                    endValue={historyFilter.end}
+                    onChange={({ start, end }) => setHistoryFilter({ start, end })}
+                    startPlaceholder="กรองตั้งแต่วันที่"
+                    endPlaceholder="ถึงวันที่"
+                    containerClassName="w-full"
+                  />
               </div>
 
               <div className="p-5 md:flex-1 md:min-h-0 md:overflow-y-auto md:bb-smooth-scroll">

@@ -10,19 +10,29 @@ import {
   canRevertPayment,
   canShip,
   canUploadSlip,
-  getOrderStatusLabel,
+  ORDER_DELIVERY_BADGE_LABEL,
+  ORDER_PAYMENT_BADGE_LABEL,
+  shouldShowOrderDeliveryBadge,
+  shouldShowOrderPaymentBadge,
 } from '@/lib/bean-orders/order-status';
 
-describe('getOrderStatusLabel', () => {
-  test('maps dual-axis statuses', () => {
-    expect(getOrderStatusLabel('unpaid', 'pending')).toBe('รอชำระ');
-    expect(getOrderStatusLabel('paid', 'pending')).toBe('ชำระแล้ว / รอจัดส่ง');
-    expect(getOrderStatusLabel('unpaid', 'shipped')).toBe('จัดส่งแล้ว / รอชำระ');
-    expect(getOrderStatusLabel('paid', 'shipped')).toBe('เสร็จสมบูรณ์');
+describe('order status badges', () => {
+  test('shows payment badge only after slip upload', () => {
+    expect(shouldShowOrderPaymentBadge(null)).toBe(false);
+    expect(shouldShowOrderPaymentBadge('2026-07-22T10:30:00.000Z')).toBe(true);
+    expect(shouldShowOrderPaymentBadge('2026-07-22T10:30:00.000Z', '2026-07-22T00:00:00Z')).toBe(false);
   });
 
-  test('cancelled overrides other statuses', () => {
-    expect(getOrderStatusLabel('paid', 'shipped', '2026-07-22T00:00:00Z')).toBe('ยกเลิก');
+  test('shows delivery badge only when tracking is delivered', () => {
+    expect(shouldShowOrderDeliveryBadge(null)).toBe(false);
+    expect(shouldShowOrderDeliveryBadge('in_transit')).toBe(false);
+    expect(shouldShowOrderDeliveryBadge('delivered')).toBe(true);
+    expect(shouldShowOrderDeliveryBadge('delivered', '2026-07-22T00:00:00Z')).toBe(false);
+  });
+
+  test('uses fixed badge labels', () => {
+    expect(ORDER_PAYMENT_BADGE_LABEL).toBe('ชำระแล้ว');
+    expect(ORDER_DELIVERY_BADGE_LABEL).toBe('จัดส่งสำเร็จ');
   });
 });
 
