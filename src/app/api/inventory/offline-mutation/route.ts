@@ -90,6 +90,9 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[offline-mutation] replay failed:', message);
-    return NextResponse.json({ success: false, error: message, retryable: true }, { status: 503 });
+    return NextResponse.json(
+      { success: false, error: 'Replay failed', retryable: true },
+      { status: 503 },
+    );
   }
 }

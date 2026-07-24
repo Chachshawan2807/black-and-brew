@@ -23,6 +23,8 @@ const subscriptionSchema = z.object({
       enabled: z.boolean(),
       systemNotifications: z.boolean(),
       dailyScheduleReports: z.boolean().optional(),
+      proactiveInsights: z.boolean().optional(),
+      securityAlerts: z.boolean().optional(),
       notifyOwnChanges: z.boolean(),
       // Legacy per-action flags — accepted then ignored (inventory master switch covers all)
       notifyCreate: z.boolean().optional(),

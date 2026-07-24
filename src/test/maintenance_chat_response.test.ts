@@ -1,8 +1,15 @@
 import { describe, expect, test } from 'vitest';
 import { isUpcomingMaintenanceQuery } from '@/lib/maintenance/detect-maintenance-query';
 import { computeUpcomingMaintenanceTasks } from '@/lib/maintenance/compute-upcoming-maintenance';
+import {
+  filterMaintenanceTasksForChat,
+  parseMaintenanceTargetMonth,
+} from '@/lib/maintenance/filter-maintenance-tasks-for-chat';
 import { formatMaintenanceChatResponse } from '@/lib/maintenance/format-maintenance-chat-response';
-import type { MaintenanceServiceRecord } from '@/lib/maintenance/types';
+import type {
+  MaintenanceServiceRecord,
+  UpcomingMaintenanceTask,
+} from '@/lib/maintenance/types';
 
 const sampleRecords: MaintenanceServiceRecord[] = [
   {
@@ -76,9 +83,79 @@ describe('compute-upcoming-maintenance', () => {
   });
 });
 
+const mixedUrgencyTasks: UpcomingMaintenanceTask[] = [
+  {
+    id: 'overdue',
+    equipment: 'เครื่องกรองน้ำ',
+    advice: 'เปลี่ยนไส้กรองหยาบ',
+    dueDate: '2026-07-04',
+    urgency: 'overdue',
+  },
+  {
+    id: 'week',
+    equipment: 'เครื่องชงกาแฟ',
+    advice: 'ล้างกรุ๊ปเฮด',
+    dueDate: '2026-07-12',
+    urgency: 'within_7_days',
+  },
+  {
+    id: 'month',
+    equipment: 'เครื่องบดกาแฟ',
+    advice: 'ทำความสะอาดใบมีด',
+    dueDate: '2026-07-28',
+    urgency: 'within_30_days',
+  },
+  {
+    id: 'august',
+    equipment: 'แอร์ 3 เครื่อง',
+    advice: 'ล้างทำความสะอาดด้วยช่างทั้ง 3 เครื่อง',
+    dueDate: '2026-08-15',
+    urgency: 'within_90_days',
+  },
+  {
+    id: 'later',
+    equipment: 'ปั๊มน้ำ',
+    advice: 'ตรวจสอบแรงดัน',
+    dueDate: '2027-01-15',
+    urgency: 'later',
+  },
+];
+
+describe('filterMaintenanceTasksForChat', () => {
+  test('keeps only overdue and within-one-month tasks for default upcoming query', () => {
+    const filtered = filterMaintenanceTasksForChat(
+      mixedUrgencyTasks,
+      'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น',
+      '2026-07-08',
+    );
+
+    expect(filtered.map((task) => task.id)).toEqual(['overdue', 'week', 'month']);
+  });
+
+  test('includes overdue tasks and tasks due in the requested month', () => {
+    const filtered = filterMaintenanceTasksForChat(
+      mixedUrgencyTasks,
+      'ขอรายการงานซ่อมบำรุงเดือนสิงหาคม',
+      '2026-07-08',
+    );
+
+    expect(filtered.map((task) => task.id)).toEqual(['overdue', 'august']);
+  });
+
+  test('does not treat horizon phrases as a specific calendar month', () => {
+    expect(
+      parseMaintenanceTargetMonth('งานซ่อมบำรุงภายใน 1 เดือน', '2026-07-08'),
+    ).toBeNull();
+  });
+});
+
 describe('formatMaintenanceChatResponse', () => {
   test('renders grouped multi-line output instead of dense single-line bullets', () => {
-    const tasks = computeUpcomingMaintenanceTasks(sampleRecords, '2026-07-08');
+    const tasks = filterMaintenanceTasksForChat(
+      computeUpcomingMaintenanceTasks(sampleRecords, '2026-07-08'),
+      'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น',
+      '2026-07-08',
+    );
     const text = formatMaintenanceChatResponse(tasks);
 
     expect(text).toContain('🔧 งานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้');

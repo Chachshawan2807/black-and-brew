@@ -22,10 +22,10 @@ import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
 const QUICK_ACTIONS = [
-  { id: 'shift', label: '👥 ตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
-  { id: 'holiday', label: '🎌 วันหยุดนักขัตฤกษ์', query: 'เช็กว่ามีวันหยุดนักขัตฤกษ์ใกล้ๆ นี้ไหม' },
-  { id: 'inventory', label: '📦 สต็อกต่ำกว่าจุดสั่งซื้อ', query: 'สรุปสินค้าที่สต็อกต่ำกว่าจุดสั่งซื้อ พร้อมจำนวนที่ควรสั่งเติม' },
-  { id: 'maintenance', label: '🧰 แจ้งงานซ่อมบำรุง', query: 'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น' },
+  { id: 'shift', label: 'ตารางงานพรุ่งนี้', query: 'ขอตารางงานของพนักงานทุกคนที่เข้ากะในวันพรุ่งนี้' },
+  { id: 'holiday', label: 'วันหยุดนักขัตฤกษ์', query: 'เช็กว่ามีวันหยุดนักขัตฤกษ์ใกล้ๆ นี้ไหม' },
+  { id: 'inventory', label: 'สต็อกต่ำกว่าจุดสั่ง', query: 'สรุปสินค้าที่สต็อกต่ำกว่าจุดสั่งซื้อ พร้อมจำนวนที่ควรสั่งเติม' },
+  { id: 'maintenance', label: 'งานซ่อมบำรุง', query: 'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น' },
 ];
 
 // Actual chat component containing useChat (only runs on client)
@@ -327,7 +327,7 @@ export default function AIChatOverlay() {
                   <motion.button
                     type="submit"
                     disabled={isLoading || !inputValue.trim()}
-                    className="w-9 h-9 rounded-3xl bg-[#000000] text-white flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity"
+                    className="w-9 h-9 rounded-3xl bg-foreground text-background flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity"
                     whileTap={ICON_COMPACT_TAP}
                     aria-label="ส่งข้อความ"
                   >

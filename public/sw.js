@@ -190,8 +190,10 @@ self.addEventListener('push', (event) => {
     (async () => {
       const isDailyReport = payload.kind === 'daily_report';
       const isBeanDelivered = payload.kind === 'bean_order_delivered';
+      const isInsight = payload.kind === 'proactive_insight';
+      const isSecurity = payload.kind === 'security_alert';
 
-      if (isDailyReport || isBeanDelivered) {
+      if (isDailyReport || isBeanDelivered || isInsight || isSecurity) {
         const unreadCount = await safeResolveUnreadCount(payload);
 
         const windowClients = await self.clients.matchAll({
@@ -208,12 +210,27 @@ self.addEventListener('push', (event) => {
           });
         }
 
+        const fallbackTag = isSecurity
+          ? 'bb-security'
+          : isInsight
+            ? 'bb-insight'
+            : isBeanDelivered
+              ? 'bb-bean-delivered'
+              : 'bb-daily-report';
+        const fallbackUrl = isSecurity
+          ? '/th/settings'
+          : isInsight
+            ? '/th'
+            : isBeanDelivered
+              ? '/th/bean-orders'
+              : '/th/schedule';
+
         await showPushNotification(payload.title, buildNotificationOptions(payload, unreadCount, {
-          tag: `${payload.tag || (isBeanDelivered ? 'bb-bean-delivered' : 'bb-daily-report')}-${Date.now()}`,
+          tag: `${payload.tag || fallbackTag}-${Date.now()}`,
           requireInteraction: true,
           timestamp: Date.now(),
           data: {
-            url: payload.url || (isBeanDelivered ? '/th/bean-orders' : '/th/schedule'),
+            url: payload.url || fallbackUrl,
             kind: payload.kind,
             unreadCount,
           },

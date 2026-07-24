@@ -82,6 +82,26 @@ describe('notification display icons', () => {
     expect(resolveNotificationDisplayIcon(item).kind).toBe('schedule');
   });
 
+  test('uses sparkles styling for proactive insight notifications', () => {
+    const item = sampleNotification({
+      title: 'คนน้อย · สต็อกต่ำ',
+      metadata: { kind: 'proactive_insight', module: 'insights', url: '/th/inventory' },
+    });
+
+    expect(resolveNotificationDisplayIcon(item).kind).toBe('insight');
+    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#f3e8ff]');
+  });
+
+  test('uses shield styling for security notifications', () => {
+    const item = sampleNotification({
+      title: '⚠️ มีการพยายามเดา PIN',
+      metadata: { kind: 'pin_lockout', module: 'security', url: '/th/settings' },
+    });
+
+    expect(resolveNotificationDisplayIcon(item).kind).toBe('security');
+    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#ffe4e6]');
+  });
+
   test('uses truck icon and stock-in green surface for bean order delivered notifications', () => {
     const item = sampleNotification({
       title: 'จัดส่งสำเร็จ',

@@ -21,7 +21,9 @@
     "skill:run": "node .agent-skills/scripts/skill-runner.mjs run",
     "skill:validate": "node .agent-skills/scripts/skill-runner.mjs validate",
     "asos:build": "node .agent-skills/scripts/asos-runner.mjs build",
-    "asos:ui": "node .agent-skills/scripts/asos-runner.mjs ui"
+    "asos:ui": "node .agent-skills/scripts/asos-runner.mjs ui",
+    "security:firewall:apply": "node scripts/apply-vercel-firewall.mjs",
+    "security:firewall:dry-run": "node scripts/apply-vercel-firewall.mjs --dry-run"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.79",
@@ -36,6 +38,8 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@simplewebauthn/server": "^13.3.1",
     "@supabase/supabase-js": "^2.105.1",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "ai": "^6.0.190",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -40,10 +40,12 @@ describe('shouldNotifyForAction', () => {
 });
 
 describe('notification master switch', () => {
-  it('is on only when inventory, system, and schedule alerts are all enabled', () => {
+  it('is on only when inventory, system, schedule, insight, and security alerts are all enabled', () => {
     expect(isNotificationMasterEnabled(prefs())).toBe(true);
     expect(isNotificationMasterEnabled(prefs({ systemNotifications: false }))).toBe(false);
     expect(isNotificationMasterEnabled(prefs({ dailyScheduleReports: false }))).toBe(false);
+    expect(isNotificationMasterEnabled(prefs({ proactiveInsights: false }))).toBe(false);
+    expect(isNotificationMasterEnabled(prefs({ securityAlerts: false }))).toBe(false);
     expect(isNotificationMasterEnabled(prefs({ enabled: false }))).toBe(false);
   });
 
@@ -52,11 +54,15 @@ describe('notification master switch', () => {
       enabled: false,
       systemNotifications: false,
       dailyScheduleReports: false,
+      proactiveInsights: false,
+      securityAlerts: false,
     });
     expect(notificationMasterPatch(true)).toEqual({
       enabled: true,
       systemNotifications: true,
       dailyScheduleReports: true,
+      proactiveInsights: true,
+      securityAlerts: true,
     });
   });
 });

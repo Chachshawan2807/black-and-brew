@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-23
+> Version: 9.3 | Last Updated: 2026-07-24
 
 ---
 
@@ -284,6 +284,17 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 - Compiles daily schedule report data
 - Sends daily schedule Web Push broadcasts through `push_subscriptions.branch_id` / `profile_id`
 
+### `GET /api/insight-alerts`
+
+- Vercel Cron endpoint — protected by `CRON_SECRET` (`Authorization: Bearer …`)
+- Compiles an operational snapshot across schedule, inventory, maintenance, bean orders, sales, and accuracy
+- Evaluates deterministic cross-module insight rules (`src/lib/proactive-insights/`)
+- Records `data_change_logs` (`module: insights`, `kind: proactive_insight`) with per-rule daily dedup
+- Dispatches Web Push via `dispatchInsightWebPush()` when prefs include `proactiveInsights`
+- Query: `?window=morning` (default) or `?window=evening`
+- Crons (UTC): `0 0 * * *` → 07:00 ICT morning; `0 10 * * *` → 17:00 ICT evening
+- Event-driven: `scheduleProactiveInsightEvaluation()` debounces 5 minutes after `saveShift` / inventory stock mutations
+
 ### `POST /api/push/webhook`
 
 - Optional Supabase Database Webhook target for inventory `data_change_logs` INSERTs
@@ -300,6 +311,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 ### `POST /api/bean-orders/tracking-webhook`
 
 - TrackingMore webhook receiver — updates `bean_order_shipments.tracking_status`
+- Protected by `TRACKING_WEBHOOK_SECRET` (`Authorization: Bearer …`)
 - Optional delivery notification via `maybeNotifyBeanOrderDelivered()`
 - Handles TrackingMore verification handshake
 

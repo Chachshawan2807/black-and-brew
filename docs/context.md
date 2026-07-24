@@ -67,7 +67,10 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 | `VAPID_PRIVATE_KEY` | Web Push server signing key | Server only |
 | `VAPID_SUBJECT` | Push service contact URI | Server only |
 | `PUSH_WEBHOOK_SECRET` | OPTION — `POST /api/push/webhook` auth | Server only |
+| `TRACKING_WEBHOOK_SECRET` | SECRET — `POST /api/bean-orders/tracking-webhook` auth | Server only |
 | `TRACKINGMORE_API_KEY` | Bean order shipment tracking (TrackingMore) | Server only |
+| `UPSTASH_REDIS_REST_URL` | OPTION — distributed rate limiting (Upstash) | Server only |
+| `UPSTASH_REDIS_REST_TOKEN` | OPTION — distributed rate limiting (Upstash) | Server only |
 
 Authoritative env list: [`.env.example`](../.env.example)
 

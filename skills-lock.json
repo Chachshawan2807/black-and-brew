@@ -13,6 +13,12 @@
       "skillPath": "skills/cloud/google-cloud-waf-security/SKILL.md",
       "computedHash": "b49e3f41dd7758c3392cde1ff10fbed769d7e089cd8c4a8bf0c914749f1276e3"
     },
+    "hallmark": {
+      "source": "nutlope/hallmark",
+      "sourceType": "github",
+      "skillPath": "skills/hallmark/SKILL.md",
+      "computedHash": "c25595fa30b123e0cf6f8bb4e2c584bd592c9ada9a4b5b4a1d161d97ff8105e3"
+    },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",

@@ -25,6 +25,8 @@ export function formatStockOperationBatchedTitle(
 
 export type NotificationDisplayIconKind =
   | 'schedule'
+  | 'insight'
+  | 'security'
   | 'bean-delivered'
   | 'stock-in'
   | 'stock-out'
@@ -35,6 +37,8 @@ export type NotificationDisplayIconKind =
   | 'update';
 
 const SCHEDULE_SURFACE = `${PASTEL_SURFACE} bg-[#e6f0ff] text-black border border-[#c2d6ff]`;
+const INSIGHT_SURFACE = `${PASTEL_SURFACE} bg-[#f3e8ff] text-black border border-[#e0c8ff]`;
+const SECURITY_SURFACE = `${PASTEL_SURFACE} bg-[#ffe4e6] text-black border border-[#fecdd3]`;
 const BEAN_DELIVERED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`;
 
 const STOCK_SURFACES: Record<StockOperation, string> = {
@@ -82,6 +86,20 @@ export function isBeanOrderDeliveredNotification(item: InventoryNotification): b
   return /^จัดส่งสำเร็จ/u.test(item.title) || /^Delivered/u.test(item.title);
 }
 
+export function isProactiveInsightNotification(item: InventoryNotification): boolean {
+  const meta = item.metadata ?? {};
+  if (meta.kind === 'proactive_insight') return true;
+  if (meta.module === 'insights') return true;
+  return false;
+}
+
+export function isSecurityNotification(item: InventoryNotification): boolean {
+  const meta = item.metadata ?? {};
+  if (meta.kind === 'pin_lockout') return true;
+  if (meta.module === 'security') return true;
+  return false;
+}
+
 function detectStockOperationFromTitle(title: string): StockOperation | null {
   if (/^\+[\s:]/u.test(title)) return 'IN';
   if (/^−[\s:]/u.test(title)) return 'OUT';
@@ -98,6 +116,14 @@ export function resolveNotificationDisplayIcon(item: InventoryNotification): {
 } {
   if (isScheduleNotification(item)) {
     return { kind: 'schedule', containerClass: SCHEDULE_SURFACE };
+  }
+
+  if (isProactiveInsightNotification(item)) {
+    return { kind: 'insight', containerClass: INSIGHT_SURFACE };
+  }
+
+  if (isSecurityNotification(item)) {
+    return { kind: 'security', containerClass: SECURITY_SURFACE };
   }
 
   if (isBeanOrderDeliveredNotification(item)) {

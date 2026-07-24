@@ -43,6 +43,7 @@ import { computeItemsToOrder, type InventoryStockFields } from '@/lib/inventory-
 import { createDeterministicChatStreamResponse } from '@/lib/schedule/create-deterministic-chat-stream';
 import { isUpcomingMaintenanceQuery } from '@/lib/maintenance/detect-maintenance-query';
 import { fetchUpcomingMaintenanceTasks } from '@/lib/maintenance/fetch-upcoming-maintenance';
+import { filterMaintenanceTasksForChat } from '@/lib/maintenance/filter-maintenance-tasks-for-chat';
 import { formatMaintenanceChatResponse } from '@/lib/maintenance/format-maintenance-chat-response';
 import {
   isDailyScheduleQuery,
@@ -53,10 +54,14 @@ import { formatScheduleChatResponse } from '@/lib/schedule/format-schedule-chat-
 import { optimizeThaiTokens } from '@/utils/thaiTokenOptimizer';
 import { sanitizePromptInput } from '@/lib/security/sanitize';
 import { requirePrivilegedSession } from '@/lib/policies/server-gate';
-import { SlidingWindowRateLimiter } from '@/lib/rate-limit/sliding-window';
+import { createRateLimiter } from '@/lib/rate-limit/create-rate-limiter';
 
 /** Separate rate-limiter instance dedicated to the chat endpoint (not shared with Tavily). */
-const chatRateLimiter = new SlidingWindowRateLimiter(30, 3_600_000); // 30 req / hr
+const chatRateLimiter = createRateLimiter({
+  prefix: 'chat',
+  maxRequests: 30,
+  windowMs: 3_600_000,
+});
 
 // ─────────────────────────────────────────────────────────
 // SECTION 1: ENVIRONMENT & CONSTANTS
@@ -486,7 +491,7 @@ export async function POST(req: Request) {
 
     // ── Chat rate-limit gate (30 requests / hour per authenticated user) ──────
     const chatUserId = auth.userId || 'PIN_AUTH_USER';
-    const chatRateCheck = chatRateLimiter.check(chatUserId);
+    const chatRateCheck = await chatRateLimiter.check(chatUserId);
     if (!chatRateCheck.allowed) {
       return new Response(
         JSON.stringify({
@@ -555,7 +560,12 @@ export async function POST(req: Request) {
     if (intents.maintenance >= INTENT_THRESHOLD && isUpcomingMaintenanceQuery(cleanInput)) {
       try {
         const tasks = await fetchUpcomingMaintenanceTasks(currentIsoDate);
-        const responseText = formatMaintenanceChatResponse(tasks);
+        const filteredTasks = filterMaintenanceTasksForChat(
+          tasks,
+          cleanInput,
+          currentIsoDate,
+        );
+        const responseText = formatMaintenanceChatResponse(filteredTasks);
 
         await logAuditTrail({
           userId: auth.userId || 'PIN_AUTH_USER',

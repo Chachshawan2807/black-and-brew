@@ -96,7 +96,7 @@ export function PushSubscriptionManager() {
 
   return showIosBanner ? (
     <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-[70] px-3 pointer-events-none">
-      <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-border bg-card/95 backdrop-blur-sm shadow-lg p-3">
+      <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-border bg-background/95 bb-shadow-lg p-3">
         <div className="flex items-start gap-3">
           <Bell size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-foreground" />
           <div className="min-w-0 flex-1">

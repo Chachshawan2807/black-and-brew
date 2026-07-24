@@ -4,8 +4,9 @@ import { cn } from '@/lib/utils';
 import { useSidebarToggle, useSidebarHydrated } from '@/hooks/use-sidebar-toggle';
 import { useMaxMd } from '@/hooks/use-max-md';
 import LiveStatusTracker from './LiveStatusTracker';
-import HomePurchaseOrdersSection from './HomePurchaseOrdersSection';
+import HomeOpsPanels from './HomeOpsPanels';
 import type { InventoryRealtimeItem } from '@/contexts/InventoryRealtimeContext';
+import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';
 
 import type { HomeSectionLayout } from './home-layout';
 
@@ -31,6 +32,7 @@ interface HomePageClientProps {
   currentThaiDate: string;
   tomorrowThaiDate: string;
   inventoryItems: InventoryRealtimeItem[];
+  maintenanceTasks: UpcomingMaintenanceTask[];
 }
 
 export default function HomePageClient({
@@ -41,6 +43,7 @@ export default function HomePageClient({
   currentThaiDate,
   tomorrowThaiDate,
   inventoryItems,
+  maintenanceTasks,
 }: HomePageClientProps) {
   const hydrated = useSidebarHydrated();
   const sidebarOpen = useSidebarToggle((state) => state.isOpen);
@@ -60,9 +63,10 @@ export default function HomePageClient({
     >
       <div
         className={cn(
-          'max-w-3xl mx-auto w-full space-y-6 md:space-y-8',
-          dashboardLayout &&
-            'md:max-w-[min(96rem,calc(100vw-6rem))] md:h-full md:min-h-0 md:flex md:flex-col md:gap-3 md:space-y-0',
+          'mx-auto w-full space-y-6 md:space-y-8',
+          dashboardLayout
+            ? 'md:max-w-[min(96rem,calc(100vw-6rem))] md:h-full md:min-h-0 md:flex md:flex-col md:gap-3 md:space-y-0'
+            : 'max-w-3xl',
         )}
       >
         <LiveStatusTracker
@@ -73,8 +77,9 @@ export default function HomePageClient({
           tomorrowThaiDate={tomorrowThaiDate}
           layout={sectionLayout}
         />
-        <HomePurchaseOrdersSection
+        <HomeOpsPanels
           initialItems={inventoryItems}
+          maintenanceTasks={maintenanceTasks}
           locale={locale}
           layout={sectionLayout}
         />

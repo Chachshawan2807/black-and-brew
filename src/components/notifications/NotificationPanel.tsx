@@ -21,10 +21,10 @@ import type { InventoryNotification } from '@/lib/notification-types';
 import { ExpandableLines } from '@/components/ui/expandable-lines';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { NotificationItemIcon } from '@/components/notifications/NotificationItemIcon';
-import { isScheduleNotification } from '@/lib/notification-display-icon';
+import { isScheduleNotification, isSecurityNotification } from '@/lib/notification-display-icon';
 
 function getNotificationDetailLines(item: InventoryNotification): string[] {
-  if (isScheduleNotification(item) && item.fieldSummary.trim()) {
+  if ((isScheduleNotification(item) || isSecurityNotification(item)) && item.fieldSummary.trim()) {
     return item.fieldSummary.split('\n').filter(Boolean);
   }
   return item.summary ? [item.summary] : [];
@@ -130,7 +130,7 @@ export function NotificationPanel() {
           transition={overlayMotion.transition}
         >
           <motion.div
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/30"
             onClick={closePanel}
             aria-hidden
           />
@@ -220,7 +220,7 @@ export function NotificationPanel() {
                 ) : (
                   groups.map((group) => (
                     <section key={group.key}>
-                      <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2 px-1">
+                      <h3 className="text-[12px] font-normal text-muted-foreground mb-2 px-1">
                         {group.label}
                       </h3>
                       <div className="space-y-2">

@@ -36,16 +36,37 @@ export function shouldNotifyForAction(
   return prefs.enabled;
 }
 
-/** Master switch — inventory, system push, and daily schedule reports together. */
+/** Master switch — inventory, system push, daily schedule, and proactive insights. */
 export function isNotificationMasterEnabled(prefs: NotificationPreferences): boolean {
-  return prefs.enabled && prefs.systemNotifications && prefs.dailyScheduleReports;
+  return (
+    prefs.enabled &&
+    prefs.systemNotifications &&
+    prefs.dailyScheduleReports &&
+    prefs.proactiveInsights &&
+    prefs.securityAlerts
+  );
 }
 
 export function notificationMasterPatch(
   enabled: boolean,
-): Pick<NotificationPreferences, 'enabled' | 'systemNotifications' | 'dailyScheduleReports'> {
+): Pick<
+  NotificationPreferences,
+  'enabled' | 'systemNotifications' | 'dailyScheduleReports' | 'proactiveInsights' | 'securityAlerts'
+> {
   if (!enabled) {
-    return { enabled: false, systemNotifications: false, dailyScheduleReports: false };
+    return {
+      enabled: false,
+      systemNotifications: false,
+      dailyScheduleReports: false,
+      proactiveInsights: false,
+      securityAlerts: false,
+    };
   }
-  return { enabled: true, systemNotifications: true, dailyScheduleReports: true };
+  return {
+    enabled: true,
+    systemNotifications: true,
+    dailyScheduleReports: true,
+    proactiveInsights: true,
+    securityAlerts: true,
+  };
 }

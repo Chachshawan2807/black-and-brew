@@ -25,6 +25,14 @@ import {
   isEligibleBeanOrderDeliveredNotification,
 } from '@/lib/bean-orders/delivery-notification';
 import {
+  formatInsightNotification,
+  isEligibleInsightNotification,
+} from '@/lib/insight-notification';
+import {
+  formatSecurityNotification,
+  isEligibleSecurityNotification,
+} from '@/lib/security-notification';
+import {
   loadNotificationPreferences,
   shouldNotifyForAction,
 } from '@/lib/notification-preferences';
@@ -63,7 +71,7 @@ import {
   SW_INVENTORY_PUSH_RECEIVED,
 } from '@/lib/pwa-notification-bridge';
 import { shouldDeferOsNotificationToPush, refreshLocalPushSubscriptionState, wantsPushRegistration } from '@/lib/push-subscription-client';
-import { isScheduleNotification } from '@/lib/notification-display-icon';
+import { isScheduleNotification, isSecurityNotification } from '@/lib/notification-display-icon';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { shouldReconnectRealtimeOnResume } from '@/lib/supabase-realtime-resume';
 
@@ -257,9 +265,11 @@ export function useInventoryNotifications() {
             : `/${metadataUrl}`
           : isScheduleNotification(notification)
             ? schedulePath
-            : notification.entityId
-              ? `${inventoryPath}?highlight=${notification.entityId}`
-              : inventoryPath;
+            : isSecurityNotification(notification)
+              ? `/${loc}/settings`
+              : notification.entityId
+                ? `${inventoryPath}?highlight=${notification.entityId}`
+                : inventoryPath;
 
       void showSystemNotification(notification.title, notification.summary, {
         tag: notification.logId,
@@ -282,8 +292,12 @@ export function useInventoryNotifications() {
       const isDailyReport = isEligibleDailyReportNotification(row);
       const isInventory = isEligibleInventoryNotification(row);
       const isBeanDelivered = isEligibleBeanOrderDeliveredNotification(row);
-      if (!isDailyReport && !isInventory && !isBeanDelivered) return false;
+      const isInsight = isEligibleInsightNotification(row);
+      const isSecurity = isEligibleSecurityNotification(row);
+      if (!isDailyReport && !isInventory && !isBeanDelivered && !isInsight && !isSecurity) return false;
       if (isDailyReport && !currentPrefs.dailyScheduleReports) return false;
+      if (isInsight && !currentPrefs.proactiveInsights) return false;
+      if (isSecurity && !currentPrefs.securityAlerts) return false;
       if (!currentPrefs.enabled) return false;
       if (!shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) return false;
       if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;
@@ -299,6 +313,12 @@ export function useInventoryNotifications() {
       if (isEligibleBeanOrderDeliveredNotification(row)) {
         return formatBeanOrderDeliveredNotification(row, locale);
       }
+      if (isEligibleInsightNotification(row)) {
+        return formatInsightNotification(row, locale);
+      }
+      if (isEligibleSecurityNotification(row)) {
+        return formatSecurityNotification(row, locale);
+      }
       return formatInventoryNotification(row, locale, batchedCount);
     },
     [],
@@ -313,7 +333,9 @@ export function useInventoryNotifications() {
 
       const allDailyReports = eligible.every(isEligibleDailyReportNotification);
       const allBeanDelivered = eligible.every(isEligibleBeanOrderDeliveredNotification);
-      if (allDailyReports || allBeanDelivered) {
+      const allInsights = eligible.every(isEligibleInsightNotification);
+      const allSecurity = eligible.every(isEligibleSecurityNotification);
+      if (allDailyReports || allBeanDelivered || allInsights || allSecurity) {
         for (const row of eligible) {
           pushNotification(formatNotificationRow(row, loc), undefined, {
             skipSystemNotification: true,
@@ -389,11 +411,55 @@ export function useInventoryNotifications() {
     }
   }, [filterEligibleRows, pushNotification]);
 
+  const syncInsightNotificationCatchUp = useCallback(async () => {
+    const currentPrefs = prefsRef.current;
+    if (!currentPrefs.enabled || !currentPrefs.proactiveInsights) return;
+
+    const result = await fetchDataChangeLogs({ module: 'insights', limit: 50 });
+    if (!result.success) return;
+
+    const eligible = filterEligibleRows(result.rows.filter(isEligibleInsightNotification));
+    if (eligible.length === 0) return;
+
+    const loc = localeRef.current;
+    for (const row of [...eligible].reverse()) {
+      pushNotification(formatInsightNotification(row, loc), undefined, {
+        skipSystemNotification: true,
+      });
+    }
+  }, [filterEligibleRows, pushNotification]);
+
+  const syncSecurityNotificationCatchUp = useCallback(async () => {
+    const currentPrefs = prefsRef.current;
+    if (!currentPrefs.enabled || !currentPrefs.securityAlerts) return;
+
+    const result = await fetchDataChangeLogs({ module: 'security', limit: 50 });
+    if (!result.success) return;
+
+    const eligible = filterEligibleRows(result.rows.filter(isEligibleSecurityNotification));
+    if (eligible.length === 0) return;
+
+    const loc = localeRef.current;
+    for (const row of [...eligible].reverse()) {
+      pushNotification(formatSecurityNotification(row, loc), undefined, {
+        skipSystemNotification: true,
+      });
+    }
+  }, [filterEligibleRows, pushNotification]);
+
   const syncNotificationCatchUp = useCallback(async () => {
     await syncInventoryNotificationCatchUp();
     await syncScheduleNotificationCatchUp();
     await syncBeanOrderNotificationCatchUp();
-  }, [syncInventoryNotificationCatchUp, syncScheduleNotificationCatchUp, syncBeanOrderNotificationCatchUp]);
+    await syncInsightNotificationCatchUp();
+    await syncSecurityNotificationCatchUp();
+  }, [
+    syncInventoryNotificationCatchUp,
+    syncScheduleNotificationCatchUp,
+    syncBeanOrderNotificationCatchUp,
+    syncInsightNotificationCatchUp,
+    syncSecurityNotificationCatchUp,
+  ]);
 
   const syncFromStorageAndServer = useCallback(async (writeBack = true) => {
     await syncFromStorage(writeBack);
@@ -423,7 +489,7 @@ export function useInventoryNotifications() {
 
     const attachChangeLogListener = (
       targetChannel: ReturnType<typeof supabase.channel>,
-      module: 'inventory' | 'schedule' | 'bean_orders',
+      module: 'inventory' | 'schedule' | 'bean_orders' | 'insights' | 'security',
     ) => {
       return targetChannel.on(
         'postgres_changes',
@@ -438,6 +504,8 @@ export function useInventoryNotifications() {
           const row = rowFromPayload(payload as { new: Record<string, unknown> });
           if (module === 'schedule' && !isEligibleDailyReportNotification(row)) return;
           if (module === 'bean_orders' && !isEligibleBeanOrderDeliveredNotification(row)) return;
+          if (module === 'insights' && !isEligibleInsightNotification(row)) return;
+          if (module === 'security' && !isEligibleSecurityNotification(row)) return;
           batcher.add(row);
         },
       );
@@ -457,6 +525,8 @@ export function useInventoryNotifications() {
       attachChangeLogListener(nextChannel, 'inventory');
       attachChangeLogListener(nextChannel, 'schedule');
       attachChangeLogListener(nextChannel, 'bean_orders');
+      attachChangeLogListener(nextChannel, 'insights');
+      attachChangeLogListener(nextChannel, 'security');
       if (cancelled) {
         void supabase.removeChannel(nextChannel);
         return;

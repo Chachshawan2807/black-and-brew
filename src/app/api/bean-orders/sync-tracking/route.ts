@@ -2,23 +2,15 @@ import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import { syncBeanOrderTrackingStatuses } from '@/lib/bean-orders/sync-tracking';
+import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
 
 export const maxDuration = 60;
 
 function authorizeCron(request: Request): NextResponse | null {
-  const cronSecret = process.env.CRON_SECRET?.trim();
-  if (!cronSecret) {
-    console.error('[CRON] Missing CRON_SECRET in environment');
-    return NextResponse.json({ ok: false, error: 'Server configuration error' }, { status: 500 });
-  }
-
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${cronSecret}`) {
-    console.error('[CRON] Unauthorized sync-tracking access attempt');
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  }
-
-  return null;
+  return denyUnlessBearerSecret(request, process.env.CRON_SECRET, {
+    logPrefix: '[CRON]',
+    secretName: 'CRON_SECRET',
+  });
 }
 
 export async function GET(request: Request) {

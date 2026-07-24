@@ -33,6 +33,10 @@ export interface NotificationPreferences {
   systemNotifications: boolean;
   /** Cron daily schedule reports at 05:00 / 18:00 ICT via Web Push */
   dailyScheduleReports: boolean;
+  /** Cross-module proactive insights (cron + event-driven) */
+  proactiveInsights: boolean;
+  /** External attack / PIN lockout security alerts */
+  securityAlerts: boolean;
   notifyOwnChanges: boolean;
 }
 
@@ -40,6 +44,8 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   enabled: true,
   systemNotifications: true,
   dailyScheduleReports: true,
+  proactiveInsights: true,
+  securityAlerts: true,
   notifyOwnChanges: true,
 };
 

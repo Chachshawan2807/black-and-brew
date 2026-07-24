@@ -7,7 +7,7 @@
  *  - Cache is checked BEFORE rate limit, so duplicate queries never consume a slot
  */
 import { createHash } from 'crypto';
-import { SlidingWindowRateLimiter } from '@/lib/rate-limit/sliding-window';
+import { createRateLimiter } from '@/lib/rate-limit/create-rate-limiter';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -25,7 +25,11 @@ const CACHE_TTL_MS = 3_600_000; // 1 hour
 const cache = new Map<string, { results: TavilyResult[]; expiresAt: number }>();
 
 /** 10 requests / hour per userId (fallback key: 'anonymous') */
-const rateLimiter = new SlidingWindowRateLimiter(10, 3_600_000);
+const rateLimiter = createRateLimiter({
+  prefix: 'tavily',
+  maxRequests: 10,
+  windowMs: 3_600_000,
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -70,7 +74,7 @@ export async function fetchTavily(
 
   // ── 2. Rate-limit check ────────────────────────────────────────────────────
   const userId = options?.userId ?? 'anonymous';
-  const { allowed, remaining, resetAt } = rateLimiter.check(userId);
+  const { allowed, remaining, resetAt } = await rateLimiter.check(userId);
 
   if (!allowed) {
     const resetInMin = Math.ceil((resetAt - Date.now()) / 60_000);

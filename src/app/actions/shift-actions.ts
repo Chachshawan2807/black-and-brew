@@ -4,8 +4,9 @@ import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
-import { requireMutationAccess } from '@/lib/policies/server-gate';
+import { requireMutationAccess, requireReadAccess } from '@/lib/policies/server-gate';
 import type { Json } from '@/lib/database.types';
+import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
 
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
@@ -184,9 +185,15 @@ export async function updateDashboardOrder(orderedIds: string[]) {
 }
 
 export async function revalidateAppPaths() {
+  const authError = await requireMutationAccess();
+  if (authError) {
+    return { success: false, error: authError };
+  }
+
   revalidatePath('/', 'layout');
   revalidatePath('/[locale]/schedule', 'page');
   revalidatePath('/[locale]/dashboard', 'page');
+  return { success: true };
 }
 
 const shiftSchema = z.object({
@@ -264,6 +271,7 @@ export async function saveShift(payload: ShiftPayload) {
       newValue: (data ?? payload) as Json,
     });
 
+    scheduleProactiveInsightEvaluation('shift_update');
     revalidateAppPaths();
     return { success: true, data };
   } catch (err) {
@@ -319,6 +327,11 @@ export async function deleteManagementHistoryRange(employeeId: string, startDate
  * @param endDate วันที่สิ้นสุด YYYY-MM-DD
  */
 export async function fetchRosterData(startDate: string, endDate: string) {
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false, profiles: [], shifts: [], holidays: [], error: authError };
+  }
+
   try {
     const [profilesRes, shiftsRes, holidaysRes] = await Promise.all([
       supabaseAdmin

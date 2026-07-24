@@ -82,3 +82,6 @@ graphify-out/
 .agent-skills/vendor/AgentSkillOS/data/
 .agent-skills/vendor/AgentSkillOS/.env
 .agent-skills/vendor/AgentSkillOS/**/__pycache__/
+
+# --- Hallmark (optional local audit session log) ---
+.hallmark/

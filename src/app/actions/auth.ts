@@ -2,6 +2,7 @@
 
 import { cache } from 'react';
 import { cookies } from 'next/headers';
+import { after } from 'next/server';
 import {
   clearAuthCookies,
   getCookieOpts,
@@ -34,13 +35,14 @@ import {
 import { resolveClientIp } from '@/lib/security/request-ip';
 import { resolveReadOnlyPin } from '@/lib/security/read-only-pin';
 import { ensureServerSession } from '@/lib/security/server-auth';
+import { recordPinLockoutSecurityAlert } from '@/lib/security-notification-server';
 import { createOfflineAuthSessionId } from '@/lib/offline-auth-session';
 
 async function assertMasterPin(
   pin: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const clientIp = await resolveClientIp();
-  const lockout = getPinLockoutStatus(clientIp);
+  const lockout = await getPinLockoutStatus(clientIp);
   if (!lockout.allowed) {
     return { ok: false, error: formatPinLockoutMessage(lockout.resetAt) };
   }
@@ -51,14 +53,17 @@ async function assertMasterPin(
     return { ok: false, error: 'System configuration error' };
   }
   if (pin !== systemPin) {
-    const failure = recordPinFailure(clientIp);
+    const failure = await recordPinFailure(clientIp);
     if (!failure.allowed) {
+      after(() => {
+        void recordPinLockoutSecurityAlert(clientIp, failure.resetAt);
+      });
       return { ok: false, error: formatPinLockoutMessage(failure.resetAt) };
     }
     return { ok: false, error: FORCE_LOGOUT_DENY_MSG };
   }
 
-  clearPinAttempts(clientIp);
+  await clearPinAttempts(clientIp);
   return { ok: true };
 }
 
@@ -97,7 +102,7 @@ export async function verifyPin(
   offlineAuthSessionId?: string;
 }> {
   const clientIp = await resolveClientIp();
-  const lockout = getPinLockoutStatus(clientIp);
+  const lockout = await getPinLockoutStatus(clientIp);
   if (!lockout.allowed) {
     return { success: false, error: formatPinLockoutMessage(lockout.resetAt) };
   }
@@ -114,7 +119,7 @@ export async function verifyPin(
   const cookieStore = await cookies();
 
   if (readOnlyPin && pin === readOnlyPin) {
-    clearPinAttempts(clientIp);
+    await clearPinAttempts(clientIp);
     if (device?.sessionFingerprint) {
       await clearSessionRevocation(device.sessionFingerprint);
     }
@@ -129,7 +134,7 @@ export async function verifyPin(
   }
 
   if (pin === systemPin) {
-    clearPinAttempts(clientIp);
+    await clearPinAttempts(clientIp);
     if (device?.sessionFingerprint) {
       await clearSessionRevocation(device.sessionFingerprint);
     }
@@ -143,7 +148,7 @@ export async function verifyPin(
     return { success: true, isReadOnly: false, offlineAuthSessionId };
   }
 
-  const failure = recordPinFailure(clientIp);
+  const failure = await recordPinFailure(clientIp);
   await recordLoginEvent({
     eventType: 'login_failure',
     status: 'failure',
@@ -152,6 +157,9 @@ export async function verifyPin(
   });
 
   if (!failure.allowed) {
+    after(() => {
+      void recordPinLockoutSecurityAlert(clientIp, failure.resetAt);
+    });
     return { success: false, error: formatPinLockoutMessage(failure.resetAt) };
   }
 

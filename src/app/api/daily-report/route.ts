@@ -8,6 +8,7 @@ import {
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 import { recordDailyReportNotificationLog } from '@/lib/daily-report-notification';
 import { dispatchDailyReportWebPush } from '@/lib/daily-report-web-push';
+import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
 
 export const maxDuration = 30;
 
@@ -16,18 +17,11 @@ export async function GET(request: Request) {
   noStore();
 
   try {
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-
-    if (!cronSecret) {
-      console.error('[CRON] Missing CRON_SECRET in environment');
-      return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 });
-    }
-
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      console.error('[CRON] Unauthorized access attempt');
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const denied = denyUnlessBearerSecret(request, process.env.CRON_SECRET, {
+      logPrefix: '[CRON]',
+      secretName: 'CRON_SECRET',
+    });
+    if (denied) return denied;
 
     const scheduleParam = new URL(request.url).searchParams.get('schedule');
     const schedule = resolveDailyReportSchedule(scheduleParam);
@@ -116,6 +110,6 @@ export async function GET(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';
     console.error('[CRON] Unexpected Error:', message);
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }

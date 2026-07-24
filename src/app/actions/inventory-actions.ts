@@ -21,6 +21,7 @@ import {
   requireMutationAccess,
   requireReadAccess,
 } from '@/lib/policies/server-gate';
+import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
@@ -227,6 +228,7 @@ export async function recordTransaction(
           auditOptions
         ),
       });
+      scheduleProactiveInsightEvaluation('inventory_update');
       revalidateInventoryPaths();
     });
 
@@ -467,6 +469,7 @@ export async function updateInventoryStock(
           options
         ),
       });
+      scheduleProactiveInsightEvaluation('inventory_update');
       revalidateInventoryPaths();
     });
 

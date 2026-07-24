@@ -131,7 +131,7 @@ export default function HomePurchaseOrdersSection({
       className={cn(
         'rounded-3xl border border-border bg-card bb-shadow-sm',
         isDashboard
-          ? 'md:flex-[9] md:min-h-0 md:flex md:flex-col p-5 md:p-5'
+          ? 'md:flex-1 md:min-h-0 md:flex md:flex-col p-5 md:p-5 h-full'
           : 'p-5 md:p-7',
       )}
     >

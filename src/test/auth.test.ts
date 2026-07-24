@@ -39,10 +39,10 @@ vi.mock('next/headers', () => ({
 describe('verifyPin Security Checks', () => {
   const originalEnv = process.env;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockGet.mockReturnValue(undefined);
-    clearPinAttempts('198.51.100.42');
+    await clearPinAttempts('198.51.100.42');
     process.env = { ...originalEnv, APP_PIN: '123456', APP_READ_ONLY_PIN: '111222' };
   });
 

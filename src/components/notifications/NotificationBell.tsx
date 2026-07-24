@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
@@ -19,6 +20,9 @@ type NotificationBellProps = {
 };
 
 export function NotificationBell({ variant = 'sidebar', className, stacked = false }: NotificationBellProps) {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'th';
+  const isTh = locale === 'th';
   const { unreadCount, panelOpen } = useNotificationState();
   const { setPanelOpen } = useNotificationActions();
   const [pulse, setPulse] = useState(false);
@@ -64,7 +68,11 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
         </span>
       )}
       <span className="sr-only" aria-live="polite" aria-atomic="true">
-        {unreadCount > 0 ? `${unreadCount} unread inventory notifications` : ''}
+        {unreadCount > 0
+          ? isTh
+            ? `การแจ้งเตือน ${unreadCount} รายการใหม่`
+            : `${unreadCount} new notifications`
+          : ''}
       </span>
     </>
   );
@@ -100,8 +108,8 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
         {...sharedProps}
         className={cn(
           'relative flex items-center justify-center rounded-2xl bb-transition h-11 w-11',
-          'hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15',
-          panelOpen && 'bg-black/5 dark:bg-white/10',
+          'hover:bg-muted active:bg-muted/80',
+          panelOpen && 'bg-muted',
           className
         )}
       >

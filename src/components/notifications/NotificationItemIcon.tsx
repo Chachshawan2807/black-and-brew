@@ -7,6 +7,8 @@ import {
   PackagePlus,
   Pencil,
   Plus,
+  ShieldAlert,
+  Sparkles,
   SlidersHorizontal,
   Trash2,
   Truck,
@@ -33,6 +35,8 @@ export function NotificationItemIcon({
   const { kind, containerClass } = resolveNotificationDisplayIcon(item);
   const isPastelKind =
     kind === 'schedule' ||
+    kind === 'insight' ||
+    kind === 'security' ||
     kind === 'bean-delivered' ||
     kind === 'stock-in' ||
     kind === 'stock-out' ||
@@ -54,6 +58,8 @@ export function NotificationItemIcon({
       )}
     >
       {kind === 'schedule' && <CalendarRange {...iconProps} />}
+      {kind === 'insight' && <Sparkles {...iconProps} />}
+      {kind === 'security' && <ShieldAlert {...iconProps} />}
       {kind === 'bean-delivered' && <Truck {...iconProps} />}
       {kind === 'stock-in' && <PackagePlus {...iconProps} />}
       {kind === 'stock-out' && <PackageMinus {...iconProps} />}

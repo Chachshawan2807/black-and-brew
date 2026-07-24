@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { unstable_noStore as noStore } from 'next/cache';
+import { headers } from 'next/headers';
 import {
   isTrackingWebhookVerification,
   parseTrackingWebhookEvents,
 } from '@/lib/bean-orders/tracking-webhook';
 import { maybeNotifyBeanOrderDelivered } from '@/lib/bean-orders/notify-delivered';
+import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 async function applyTrackingUpdate(
@@ -84,6 +87,15 @@ async function applyTrackingUpdate(
 }
 
 export async function POST(request: Request) {
+  await headers();
+  noStore();
+
+  const denied = denyUnlessBearerSecret(request, process.env.TRACKING_WEBHOOK_SECRET, {
+    logPrefix: '[tracking-webhook]',
+    secretName: 'TRACKING_WEBHOOK_SECRET',
+  });
+  if (denied) return denied;
+
   try {
     const payload = (await request.json()) as Record<string, unknown>;
 

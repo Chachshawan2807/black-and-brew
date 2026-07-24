@@ -414,7 +414,10 @@ npm run dev
 | `VAPID_PRIVATE_KEY` | SECRET | คีย์ลับสำหรับส่งการแจ้งเตือน — คู่กับคีย์สาธารณะ |
 | `VAPID_SUBJECT` | SECRET | อีเมลติดต่อ (เช่น `mailto:admin@yourshop.com`) ที่บริการ push ต้องการ |
 | `PUSH_WEBHOOK_SECRET` | SECRET, OPTION | รหัสสำรองสำหรับส่งแจ้งเตือนผ่าน webhook |
+| `TRACKING_WEBHOOK_SECRET` | SECRET | ป้องกัน `POST /api/bean-orders/tracking-webhook` |
 | `TRACKINGMORE_API_KEY` | SECRET, OPTION | คีย์ TrackingMore สำหรับติดตามพัสดุออเดอร์เมล็ดกาแฟ |
+| `UPSTASH_REDIS_REST_URL` | SECRET, OPTION | Upstash Redis สำหรับ rate limit แบบ distributed |
+| `UPSTASH_REDIS_REST_TOKEN` | SECRET, OPTION | Upstash token คู่กับ URL ด้านบน |
 
 ```bash
 # สร้างคู่คีย์ VAPID สำหรับการแจ้งเตือนบนมือถือ

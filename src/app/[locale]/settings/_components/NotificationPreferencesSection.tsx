@@ -200,6 +200,42 @@ export default function NotificationPreferencesSection({
     await refreshDeviceState();
   };
 
+  const handleProactiveInsights = async (enabled: boolean) => {
+    if (!enabled) {
+      update({ proactiveInsights: false });
+      await syncPushPrefsToServer({ ...prefs, proactiveInsights: false }, locale);
+      await refreshDeviceState();
+      return;
+    }
+    const state = await requestNotificationPermission();
+    setPermission(state);
+    const nextPrefs = { ...prefs, proactiveInsights: state === 'granted' };
+    update({ proactiveInsights: state === 'granted' });
+    if (state === 'granted') {
+      await ensurePushSubscriptionFromUserGesture(locale);
+    }
+    await syncPushPrefsToServer(nextPrefs, locale);
+    await refreshDeviceState();
+  };
+
+  const handleSecurityAlerts = async (enabled: boolean) => {
+    if (!enabled) {
+      update({ securityAlerts: false });
+      await syncPushPrefsToServer({ ...prefs, securityAlerts: false }, locale);
+      await refreshDeviceState();
+      return;
+    }
+    const state = await requestNotificationPermission();
+    setPermission(state);
+    const nextPrefs = { ...prefs, securityAlerts: state === 'granted' };
+    update({ securityAlerts: state === 'granted' });
+    if (state === 'granted') {
+      await ensurePushSubscriptionFromUserGesture(locale);
+    }
+    await syncPushPrefsToServer(nextPrefs, locale);
+    await refreshDeviceState();
+  };
+
   const handleSystemNotifications = async (enabled: boolean) => {
     if (!enabled) {
       update({ systemNotifications: false });
@@ -301,6 +337,28 @@ export default function NotificationPreferencesSection({
             }
             checked={prefs.dailyScheduleReports}
             onChange={(v) => void handleDailyScheduleReports(v)}
+            disabled={permission === 'unsupported'}
+          />
+          <ToggleRow
+            label={isTh ? 'แจ้งเตือนเชิงรุกข้ามโมดูล' : 'Cross-module proactive alerts'}
+            description={
+              isTh
+                ? 'เตือนเมื่อคนน้อย สต็อกต่ำ งานซ่อมค้าง หรือความเสี่ยงข้ามหน้าในเมนู'
+                : 'Alert when staffing, stock, maintenance, or cross-menu risks appear'
+            }
+            checked={prefs.proactiveInsights}
+            onChange={(v) => void handleProactiveInsights(v)}
+            disabled={permission === 'unsupported'}
+          />
+          <ToggleRow
+            label={isTh ? 'แจ้งเตือนความปลอดภัย' : 'Security alerts'}
+            description={
+              isTh
+                ? 'เตือนเมื่อมีการพยายามเดา PIN จากภายนอก (lockout 15 นาที)'
+                : 'Alert when repeated failed PIN attempts trigger a 15-minute lockout'
+            }
+            checked={prefs.securityAlerts}
+            onChange={(v) => void handleSecurityAlerts(v)}
             disabled={permission === 'unsupported'}
           />
           <ToggleRow

@@ -17,6 +17,27 @@ describe('Home desktop dashboard layout — collapsed sidebar', () => {
     expect(client).toMatch(/layout=\{sectionLayout\}/);
     expect(client).toMatch(/md:h-\[100svh\]/);
     expect(client).toMatch(/md:overflow-hidden/);
+    expect(client).toMatch(/HomeOpsPanels/);
+  });
+
+  test('HomeOpsPanels keeps mobile tab panels hidden on desktop', () => {
+    const panels = readFile('app/[locale]/_components/HomeOpsPanels.tsx');
+    expect(panels).toMatch(/<div className="md:hidden">/);
+    expect(panels).not.toMatch(/isDashboard && 'md:flex-1 md:min-h-0 md:flex md:flex-col'/);
+  });
+
+  test('HomeOpsPanels stacks on expanded sidebar and uses 50/50 only in dashboard mode', () => {
+    const panels = readFile('app/[locale]/_components/HomeOpsPanels.tsx');
+    expect(panels).toMatch(/isDashboard\s*\?\s*'md:grid-cols-2/);
+    expect(panels).toMatch(/:\s*'md:grid-cols-1'/);
+    expect(panels).toMatch(/role="tablist"/);
+    expect(panels).toMatch(/md:flex-\[9\]/);
+  });
+
+  test('HomePageClient keeps compact width when sidebar is expanded on desktop', () => {
+    const client = readFile('app/[locale]/_components/HomePageClient.tsx');
+    expect(client).toMatch(/:\s*'max-w-3xl'/);
+    expect(client).not.toMatch(/calc\(100vw-20rem\)/);
   });
 
   test('LiveStatusTracker fills dashboard panels with stretchable employee card grid', () => {

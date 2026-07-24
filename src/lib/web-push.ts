@@ -151,6 +151,14 @@ export function parsePushPrefs(raw: Record<string, unknown> | null | undefined):
       typeof raw?.dailyScheduleReports === 'boolean'
         ? raw.dailyScheduleReports
         : DEFAULT_NOTIFICATION_PREFERENCES.dailyScheduleReports,
+    proactiveInsights:
+      typeof raw?.proactiveInsights === 'boolean'
+        ? raw.proactiveInsights
+        : DEFAULT_NOTIFICATION_PREFERENCES.proactiveInsights,
+    securityAlerts:
+      typeof raw?.securityAlerts === 'boolean'
+        ? raw.securityAlerts
+        : DEFAULT_NOTIFICATION_PREFERENCES.securityAlerts,
   };
 }
 

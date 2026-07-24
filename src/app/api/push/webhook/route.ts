@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import { dispatchInventoryWebPush, rowToDataChangeLogRow } from '@/lib/web-push';
+import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
 
 export const maxDuration = 30;
 
@@ -10,15 +11,11 @@ export async function POST(request: Request) {
   await headers();
   noStore();
 
-  const secret = process.env.PUSH_WEBHOOK_SECRET;
-  if (!secret) {
-    return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 });
-  }
-
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${secret}`) {
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-  }
+  const denied = denyUnlessBearerSecret(request, process.env.PUSH_WEBHOOK_SECRET, {
+    logPrefix: '[push/webhook]',
+    secretName: 'PUSH_WEBHOOK_SECRET',
+  });
+  if (denied) return denied;
 
   try {
     const body = (await request.json()) as { record?: Record<string, unknown>; type?: string };

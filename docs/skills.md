@@ -1,6 +1,6 @@
 # BLACKANDBREW ERP Capability Inventory
 
-> Last Updated: 2026-07-23
+> Last Updated: 2026-07-24
 >
 > Companion: agent rules → [`AGENTS.md`](../AGENTS.md) · hard protocols → [`docs/rules.md`](rules.md)
 
@@ -16,7 +16,8 @@
 - External Intel: `internetSearchTool` + `tavily-client.ts` (Tavily; structured `{ ok:false, reason }` on error).
 - Inventory Truth Layer: `inventory-stock.ts`, `mergeInventoryRealtimeUpdate`, `computeItemsToOrder`, `updateInventoryStock`, RPC `set_inventory_stock`.
 - Supabase Session Bridge: `ensureSupabaseSession()` after PIN → anonymous `authenticated` RLS.
-- Web Push: `push-actions.ts`, `web-push.ts`, `push_subscriptions`, `PushSubscriptionManager` (inventory alerts + daily reports).
+- Web Push: `push-actions.ts`, `web-push.ts`, `push_subscriptions`, `PushSubscriptionManager` (inventory alerts + daily reports + proactive insights).
+- **Proactive cross-module insights:** `src/lib/proactive-insights/` + `GET /api/insight-alerts` — deterministic rules correlating schedule/inventory/maintenance/bean-orders/accuracy; Web Push + NotificationBell; prefs `proactiveInsights`.
 - Trusted-device Passkeys: `passkey-actions.ts`, `src/lib/passkey/`, `settings/_components/PasskeyDeviceSection.tsx`, `device_passkeys`.
 
 ### UI and Client Runtime
@@ -30,7 +31,9 @@
 
 - PIN auth + `assertWritableSession`; session audit via `login_history` / `revoked_sessions`.
 - Passkey: server-side challenges, RP verify, counter updates, revocation checks.
-- Prompt/XSS sanitizers on chat; rate limits (chat 30/hr, Tavily 10/hr).
+- Prompt/XSS sanitizers on chat; rate limits (chat 30/hr, Tavily 10/hr) via Upstash Redis when configured.
+- Edge protection: `config/vercel-firewall.json` + `npm run security:firewall:apply` (see `docs/security/waf-and-ddos.md`).
+- RLS audit: `docs/security/rls-audit.md` — migration `20260725120000_harden_rls_and_rpc_execute.sql`.
 - `data_change_logs` for mutation diffs + inventory notifications.
 
 ## Active AI Tool Surface
@@ -99,3 +102,13 @@ Use with `AGENTS.md` + `docs/rules.md`.
 | Dashboard query plan | Week + month overlap | `getDashboardShiftQueryPlan()` + `splitDashboardShiftsByRange()` |
 | Inventory bundle split | Heavy modals/charts | `next/dynamic` + intent preload |
 | Row containment | Dense inventory grid | `.bb-inventory-row-containment` |
+
+### Design anti-slop (Hallmark — supplementary)
+
+| Skill | When | How |
+| --- | --- | --- |
+| Hallmark audit | UI ดู generic / AI-generated | `hallmark audit <file>` — punch list only; read `.cursor/skills/hallmark-erp/SKILL.md` first |
+| Hallmark study | อยากดึง DNA จาก reference | `hallmark study <URL\|screenshot>` — diagnosis only; ไม่ rebuild ERP core |
+| ERP UI improvements | ปรับหน้า inventory/schedule/dashboard | ใช้ `web-design-guidelines` + `impeccable critique` — **ไม่ใช้** Hallmark default/redesign |
+
+Off-limits for Hallmark build/redesign: `inventory/`, `schedule/`, `dashboard/`, `sales/`, `settings/`, spreadsheet grids, pastel shift cards. Update upstream: `npx skills add nutlope/hallmark -y`.
