@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-23 | Engine: Supabase PostgreSQL
+> Version: 9.3 | Last Updated: 2026-07-25 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -33,6 +33,7 @@
 | `bean_order_lines` | รายการสินค้าต่อออเดอร์ | ✓ authenticated read | `supabase/migrations/20260722140000_bean_orders.sql` |
 | `bean_order_payments` | สลิปชำระเงิน | ✓ authenticated read | `supabase/migrations/20260722140000_bean_orders.sql` |
 | `bean_order_shipments` | การจัดส่ง + tracking | ✓ authenticated read | `supabase/migrations/20260722140000_bean_orders.sql` |
+| `app_preferences` | UI prefs ต่อสาขา (sidebar menu order sync) | ✓ authenticated read | `supabase/migrations/20260724120000_app_preferences_sidebar_menu.sql` |
 
 > Types: Generated types in `src/lib/database.types.ts`
 
@@ -325,6 +326,8 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260711223000_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening + authz |
 | `20260713100000_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel catch-up) |
 | `20260722140000_bean_orders.sql` | Bean order tables (`bean_*`), RLS, Storage bucket `bean-order-slips` |
+| `20260724120000_app_preferences_sidebar_menu.sql` | `app_preferences` table + Realtime for sidebar menu order sync |
+| `20260725120000_harden_rls_and_rpc_execute.sql` | RLS hardening (maintenance, holidays, sales server-only); RPC `EXECUTE` lockdown — see `docs/security/rls-audit.md` |
 
 Retired: inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 
@@ -343,6 +346,5 @@ Retired: inventory recommended target stock columns/UI (see `20260708104230_remo
 | `sql/sync_inventory_stock.sql` | `set_inventory_stock`, trigger, REPLICA IDENTITY |
 | `sql/fix_inventory_rls.sql` | RLS hardening — authenticated-only |
 | `sql/ai_agent_views.sql` | AI views/RPCs (`view_today_shifts`, `view_inventory_summary`, `get_ai_store_status`) |
-| `sql/inventory_transactions_readable_view.sql` | Readable ledger view |
 
 > Deprecated: `inventory-items.csv` — removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).

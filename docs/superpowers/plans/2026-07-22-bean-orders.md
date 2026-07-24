@@ -88,7 +88,7 @@ Storage bucket `bean-order-slips` with authenticated upload policy
 
 **Files:**
 - Create: `src/app/actions/bean-order-actions.ts`
-- Test: `src/test/bean-orders-actions.test.ts` (pure helpers + zod schemas)
+- Test: `src/test/bean-orders-pricing.test.ts`, `src/test/bean-orders-order-number.test.ts`, `src/test/bean-orders-order-input-normalize.test.ts`
 
 Actions: `searchBeanCustomers`, `createBeanCustomer`, `createBeanOrder`, `updateBeanOrder`, `fetchBeanOrders`, `fetchBeanOrderDetail`, `cancelBeanOrder`
 
@@ -103,7 +103,7 @@ Actions: `searchBeanCustomers`, `createBeanCustomer`, `createBeanOrder`, `update
 
 **Files:**
 - Modify: `src/app/actions/bean-order-actions.ts`
-- Test: `src/test/bean-orders-payment.test.ts`
+- Test: `src/test/bean-orders-delivery-notification.test.ts`, `src/test/bean-orders-delivery-web-push.test.ts`
 
 Actions: `uploadBeanOrderSlip`, `confirmBeanOrderPayment`
 

@@ -21,7 +21,7 @@ DevTools → Network → filter RSC/flight for payload size.
 | Route chunks | ScheduleClient / InventoryClient / SalesClient ~600–2000 lines, eager in page.tsx |
 | RSC payload | Sales `getSalesMetrics` loads all `sales_records`; inventory/maintenance full tables |
 | Waterfalls | `fetchAndPersistHolidays` on schedule critical path; `fetchCountAccuracyStats` sequential |
-| Loading UX | 6/10 routes have `loading.tsx`; no `error.tsx` |
+| Loading UX | 6/10 routes have `loading.tsx`; locale error boundary at `src/app/[locale]/error.tsx` |
 | Realtime | Inventory notifications subscribe on every route at mount |
 
 ## Post-optimization (2026-07-18)

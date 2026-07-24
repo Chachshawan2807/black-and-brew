@@ -1,0 +1,24 @@
+{
+  "managedRules": {
+    "owasp": {
+      "active": true,
+      "action": "deny"
+    },
+    "bot_protection": {
+      "active": true,
+      "action": "challenge"
+    },
+    "ai_bots": {
+      "active": true,
+      "action": "deny"
+    },
+    "vercel_ruleset": {
+      "active": true,
+      "action": "deny"
+    },
+    "traffic_sources": {
+      "active": true,
+      "action": "deny"
+    }
+  }
+}

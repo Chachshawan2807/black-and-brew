@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-23
+> Version: 9.3 | Last Updated: 2026-07-25
 
 ---
 
@@ -21,7 +21,9 @@ Notable completed work:
 - [x] Inventory accuracy gauge on `/inventory/accuracy`
 - [x] Bean orders module (`/bean-orders`, `bean_*` tables, TrackingMore, slip upload)
 - [x] AI full coverage: 24 AI-readable tables; deterministic bean orders + inventory accuracy routes
-- [x] Sidebar menu drag-reorder (`sidebar-menu-order.ts`)
+- [x] Sidebar menu drag-reorder (`sidebar-menu-order.ts`) + cross-device sync (`app_preferences`)
+- [x] Proactive cross-module insights (`/api/insight-alerts`, Web Push, Command Center ops panels)
+- [x] RLS hardening migration (`20260725120000`) + WAF config (`config/vercel-firewall.json`)
 - [x] Retired: inventory recommended target stock; weather API; Market Insights module; obsolete root protocol/skill stubs
 
 See `docs/changelog.md` and git history for dated entries.

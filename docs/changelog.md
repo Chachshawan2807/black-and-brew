@@ -2,6 +2,15 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-07-25 (Doc hygiene + orphan cleanup)
+
+- Removed unused code: `AIChatWrapper.tsx` (superseded by `DeferredOverlays` → `AIChatOverlay`), `src/lib/policies/index.ts` (unused barrel), `scripts/test-bean-delivered-notify.ts` (unreferenced dev script).
+- Removed unapplied SQL blueprint `sql/inventory_transactions_readable_view.sql` (never in migrations or app code).
+- Fixed `.gitignore`: track `config/vercel-firewall.json` (was blocked by blanket `config/` rule).
+- Synced docs to v9.3: proactive insights (`/api/insight-alerts`, `src/lib/proactive-insights/`), migrations `20260724120000` + `20260725120000`, `app_preferences`, Command Center ops panels, RLS audit docs.
+- Fixed broken test paths in `docs/superpowers/plans/2026-07-22-bean-orders.md`; updated `docs/performance-baseline.md` (`error.tsx` exists).
+- Recorded **DEC-086** (proactive insights) in `docs/memory.md`.
+
 ## 2026-07-23 (Doc scan — bean orders + AI full coverage)
 
 - Scanned project-owned `.md` keepers; synced to bean orders module, AI gateway expansion (24 tables), and TrackingMore API routes.

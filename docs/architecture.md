@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-23 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.3 | Last Updated: 2026-07-25 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -279,6 +279,18 @@ Vercel Cron → /api/daily-report → compileDailyReportPayload()
 → shifts + holidays
 → dispatch daily schedule Web Push to eligible push_subscriptions (branch/profile scoped)
 ```
+
+### Proactive Cross-Module Insights (v9.3)
+
+```text
+Vercel Cron (morning/evening) or debounced mutation hook
+→ GET /api/insight-alerts → compileOperationalSnapshot()
+→ evaluateInsightRules() → data_change_logs (module=insights, kind=proactive_insight)
+→ dispatchInsightWebPush() when push_subscriptions.prefs_json includes proactiveInsights
+→ NotificationBell + Command Center HomeOpsPanels
+```
+
+Event-driven debounce: `scheduleProactiveInsightEvaluation()` after `saveShift` and inventory stock mutations (`schedule-evaluation.ts`). Rules live in `src/lib/proactive-insights/rules.ts`; thresholds in `thresholds.ts`.
 
 ---
 

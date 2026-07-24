@@ -19,7 +19,8 @@ __pycache__/
 *.pyd
 
 # --- Python AI Tools (Clean Sweep) ---
-config/
+config/*
+!config/vercel-firewall.json
 workspace/
 storage/
 logs/

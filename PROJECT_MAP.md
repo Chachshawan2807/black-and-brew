@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-07-23 (GMT+7) | Version: 9.2
+> Generated: 2026-07-25 (GMT+7) | Version: 9.3
 
 Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) over reading this file wholesale. Canonical agent rules: `AGENTS.md`.
 
@@ -58,6 +58,9 @@ Locales: `th`, `en`
 | `/api/inventory/offline-mutation` | `src/app/api/inventory/offline-mutation/route.ts` |
 | `/api/bean-orders/sync-tracking` | `src/app/api/bean-orders/sync-tracking/route.ts` |
 | `/api/bean-orders/tracking-webhook` | `src/app/api/bean-orders/tracking-webhook/route.ts` |
+| `/api/insight-alerts` | `src/app/api/insight-alerts/route.ts` |
+
+Cron schedules: `vercel.json` (`daily-report`, `insight-alerts` morning/evening windows).
 
 ---
 
@@ -65,6 +68,7 @@ Locales: `th`, `en`
 
 ```text
 black-and-brew/
+├── config/                  # Vercel firewall rules (`vercel-firewall.json`)
 ├── docs/                    # Project documentation (see README § Documentation)
 ├── messages/                # th.json, en.json (next-intl)
 ├── public/                  # sw.js (PWA), images
@@ -86,7 +90,7 @@ black-and-brew/
 │   ├── components/          # Shared UI (2+ features): auth, sidebar, ui, ai, notifications
 │   ├── contexts/            # InventoryRealtimeContext
 │   ├── hooks/
-│   ├── lib/                 # Domain logic (schedule/, inventory-*, passkey/, policies/, offline-*, …)
+│   ├── lib/                 # Domain logic (schedule/, inventory-*, passkey/, policies/, proactive-insights/, offline-*, …)
 │   ├── test/                # Vitest suites
 │   ├── workers/             # Web Workers (inventory-table.worker.ts)
 │   └── proxy.ts             # next-intl middleware (Next.js 16)
@@ -112,6 +116,8 @@ black-and-brew/
 | `sales-actions.ts` | Excel upload, categories |
 | `daily-report-actions.ts` | Daily schedule report compiler |
 | `push-actions.ts` | Web Push subscription lifecycle |
+| `app-preferences-actions.ts` | Branch-scoped UI prefs (sidebar menu order sync) |
+| `daily-report-notification-actions.ts` | Daily report notification prefs |
 | `data-change-log-actions.ts` | Mutation audit + inventory Web Push hook |
 | `tools/database-tools.ts` | AI `readTable` (via `ai-data-gateway.ts`) |
 | `tools/search-tools.ts` | AI Tavily search |
@@ -120,7 +126,7 @@ black-and-brew/
 
 ## Tests (`src/test/`)
 
-Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `offline-mutation-route.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `live_shift_list.test.ts`, `bean-orders-*.test.ts`, `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-intent-classifier.test.ts`, `sidebar-menu-order.test.ts`, `pwa-sidebar-navigation.test.ts`
+Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `offline-mutation-route.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `live_shift_list.test.ts`, `bean-orders-*.test.ts`, `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-intent-classifier.test.ts`, `sidebar-menu-order.test.ts`, `pwa-sidebar-navigation.test.ts`, `proactive-insights-*.test.ts`, `insight-alerts-route.test.ts`, `insight-web-push.test.ts`, `home-ops-panels.test.tsx`
 
 ---
 

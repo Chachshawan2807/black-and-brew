@@ -27,7 +27,6 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `sync_inventory_stock.sql` | `set_inventory_stock` RPC, order_qty trigger, REPLICA IDENTITY |
 | `fix_inventory_rls.sql` | RLS hardening — authenticated-only |
 | `ai_agent_views.sql` | AI gateway neutral views/RPCs (`view_today_shifts`, `view_inventory_summary`, `get_ai_store_status`) |
-| `inventory_transactions_readable_view.sql` | Readable ledger view |
 
 ## Canonical migrations (`supabase/migrations/`)
 
@@ -58,6 +57,8 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260711223000_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening |
 | `20260713100000_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel) |
 | `20260722140000_bean_orders.sql` | Bean order tables (`bean_*`), RLS, Storage bucket `bean-order-slips` |
+| `20260724120000_app_preferences_sidebar_menu.sql` | `app_preferences` table + Realtime for sidebar menu order sync |
+| `20260725120000_harden_rls_and_rpc_execute.sql` | RLS hardening + RPC execute lockdown (see `docs/security/rls-audit.md`) |
 
 ## Cleanup notes
 

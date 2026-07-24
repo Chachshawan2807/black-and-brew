@@ -1,12 +1,24 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-23 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.3 | Last Updated: 2026-07-25 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
 ---
 
 ## Active Decisions
+
+### DEC-086: Proactive Cross-Module Insights (v9.3)
+
+- Date: July 2026
+- Context: Staff need early warnings when schedule, inventory, maintenance, bean orders, and accuracy signals correlate — without opening every module.
+- Decision:
+  1. **Rules engine:** `src/lib/proactive-insights/` (`compile-operational-snapshot.ts`, `rules.ts`, `evaluate-and-dispatch.ts`, `schedule-evaluation.ts`).
+  2. **Cron + debounce:** `GET /api/insight-alerts` (Vercel cron morning/evening) + `scheduleProactiveInsightEvaluation()` after shift/inventory mutations.
+  3. **Delivery:** `data_change_logs` rows (`module: insights`, `kind: proactive_insight`) with daily dedup; Web Push via `dispatchInsightWebPush()` when prefs include `proactiveInsights`.
+  4. **UI:** Command Center ops panels (`HomeOpsPanels.tsx`); NotificationBell + prefs in Settings.
+- Impact: Documented in `docs/api.md`, `docs/skills.md`, `docs/security/rls-audit.md`; crons in `vercel.json`.
+- Evidence: `proactive-insights-*.test.ts`, `insight-alerts-route.test.ts`, `insight-web-push.test.ts`
 
 ### DEC-085: AI Bru Full Coverage + Bean Order Gateway (v9.2)
 

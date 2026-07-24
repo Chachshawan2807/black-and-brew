@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 9.2 | Last Updated: 2026-07-23
+> Version: 9.3 | Last Updated: 2026-07-25
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | Project Name | BLACK-AND-BREW ERP System |
 | Type | Enterprise Resource Planning for Coffee Shop |
-| Current Version | 9.2 (bean orders + AI full coverage + sidebar menu reorder) |
+| Current Version | 9.3 (proactive insights + RLS hardening + sidebar prefs sync) |
 | Repository | `Chachshawan2807/black-and-brew` |
 | Local Path | `C:\Projects\black-and-brew` |
 
@@ -39,7 +39,7 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 
 | Component | Version |
 | --- | --- |
-| Node.js | 20+ (tested on 22.x) |
+| Node.js | 24.x (engines in `package.json`; Vercel runtime) |
 | Next.js | 16.2.4 |
 | React | 19.2.4 |
 | TypeScript | ^5 |
@@ -142,7 +142,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 
 | Module | Path |
 | --- | --- |
-| Command Center | `src/app/[locale]/page.tsx`, `_components/LiveStatusTracker.tsx` |
+| Command Center | `src/app/[locale]/page.tsx`, `_components/LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, `HomeMaintenanceDueSection.tsx` |
 | Dashboard | `src/app/[locale]/dashboard/`, `_components/LiveShiftList.tsx`, `MonthlyRoster.tsx` |
 | Schedule | `src/app/[locale]/schedule/ScheduleClient.tsx`, `_components/` |
 | Inventory | `src/app/[locale]/inventory/InventoryClient.tsx`, `_components/`, `count/`, `accuracy/`, `branch-withdraw/` |
@@ -178,7 +178,8 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Dashboard optimized loading | `getDashboardShiftQueryPlan()`, `splitDashboardShiftsByRange()` |
 | Inventory route performance | Row containment, stable grid handlers, dynamic modal loading, hover/focus modal preload |
 | PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |
-| Sidebar menu order | `sidebar-menu-order.ts`, `use-sidebar-menu-order.ts` — drag-reorder persisted in localStorage |
+| Sidebar menu order | `sidebar-menu-order.ts`, `app-preferences-actions.ts`, `app_preferences` table — cross-device sync |
 | Bean orders | `bean-order-actions.ts`, `lib/bean-orders/`, TrackingMore webhook + cron sync |
 | AI full coverage | 24 AI-readable tables; deterministic routes for bean orders + inventory accuracy |
+| Proactive insights | `src/lib/proactive-insights/`, `GET /api/insight-alerts`, Web Push + NotificationBell; prefs `proactiveInsights` |
 | SQL blueprint | `sql/record_inventory_transaction.sql` |
