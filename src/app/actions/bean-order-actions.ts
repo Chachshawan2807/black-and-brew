@@ -5,7 +5,7 @@ import { cookies, headers } from 'next/headers';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
-import { formatBeanOrderNo } from '@/lib/bean-orders/order-number';
+import { formatBeanOrderNo, buildBeanOrderNoDatePrefix, nextBeanOrderSequence } from '@/lib/bean-orders/order-number';
 import {
   appendStatusHistory,
   canCancelOrder,
@@ -53,6 +53,8 @@ import {
   fetchTrackingMoreStatusWithRepair,
   resolveTrackingMoreCarrierCode,
 } from '@/lib/bean-orders/trackingmore';
+import { THAI_TIMEZONE } from '@/lib/timezone';
+import { toZonedTime } from 'date-fns-tz';
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
@@ -196,22 +198,27 @@ async function resolveActorLabelFromSession(): Promise<string> {
 
 async function nextOrderNo(): Promise<string> {
   const supabase = getSupabaseAdmin();
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const bangkokNow = toZonedTime(new Date(), THAI_TIMEZONE);
+  const datePrefix = buildBeanOrderNoDatePrefix(bangkokNow);
 
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from('bean_orders')
-    .select('id', { count: 'exact', head: true })
-    .gte('created_at', start.toISOString())
-    .lt('created_at', end.toISOString());
+    .select('order_no')
+    .like('order_no', `${datePrefix}-%`)
+    .order('order_no', { ascending: false })
+    .limit(1);
 
   if (error) {
     console.error('Supabase Error (nextOrderNo):', error.message, error.details);
     throw error;
   }
 
-  return formatBeanOrderNo(now, (count ?? 0) + 1);
+  const latestOrderNo = (data?.[0]?.order_no as string | undefined) ?? null;
+  return formatBeanOrderNo(bangkokNow, nextBeanOrderSequence(latestOrderNo));
+}
+
+function isDuplicateBeanOrderNoError(error: { code?: string; message?: string }): boolean {
+  return error.code === '23505' && (error.message?.includes('bean_orders_order_no_key') ?? false);
 }
 
 async function loadInventoryNames(ids: string[]): Promise<Map<string, string>> {
@@ -751,41 +758,8 @@ export async function createBeanOrder(
     });
 
     const supabase = getSupabaseAdmin();
-    const orderNo = await nextOrderNo();
-
-    const { data: order, error: orderError } = await supabase
-      .from('bean_orders')
-      .insert({
-        order_no: orderNo,
-        customer_id: orderInput.customerId ?? null,
-        sender_name: orderInput.senderName || DEFAULT_SHOP_SENDER.name,
-        sender_phone: orderInput.senderPhone ?? null,
-        sender_address: orderInput.senderAddress ?? null,
-        recipient_name: orderInput.recipientName,
-        recipient_phone: orderInput.recipientPhone ?? null,
-        recipient_address: orderInput.recipientAddress,
-        recipient_province: orderInput.recipientProvince ?? null,
-        recipient_postal_code: orderInput.recipientPostalCode ?? null,
-        subtotal_baht: totals.subtotalBaht,
-        discount_baht: totals.discountBaht,
-        shipping_baht: totals.shippingBaht,
-        total_baht: totals.totalBaht,
-        payment_status: 'unpaid',
-        fulfillment_status: 'pending',
-        status_history: history,
-        notes: orderInput.notes ?? null,
-        created_by: actor,
-      })
-      .select('id, order_no')
-      .single();
-
-    if (orderError) {
-      console.error('Supabase Error (createBeanOrder):', orderError.message, orderError.details);
-      return { success: false, error: orderError.message };
-    }
 
     const lineRows = orderInput.lines.map((line, index) => ({
-      order_id: order.id,
       inventory_item_id: line.inventoryItemId,
       item_name: namesById.get(line.inventoryItemId) ?? '—',
       weight_value: line.weightValue,
@@ -795,7 +769,64 @@ export async function createBeanOrder(
       sort_order: index,
     }));
 
-    const { error: linesError } = await supabase.from('bean_order_lines').insert(lineRows);
+    let order: { id: string; order_no: string } | null = null;
+    let orderNo = '';
+    const maxOrderNoAttempts = 5;
+
+    for (let attempt = 0; attempt < maxOrderNoAttempts; attempt += 1) {
+      orderNo = await nextOrderNo();
+
+      const { data, error: orderError } = await supabase
+        .from('bean_orders')
+        .insert({
+          order_no: orderNo,
+          customer_id: orderInput.customerId ?? null,
+          sender_name: orderInput.senderName || DEFAULT_SHOP_SENDER.name,
+          sender_phone: orderInput.senderPhone ?? null,
+          sender_address: orderInput.senderAddress ?? null,
+          recipient_name: orderInput.recipientName,
+          recipient_phone: orderInput.recipientPhone ?? null,
+          recipient_address: orderInput.recipientAddress,
+          recipient_province: orderInput.recipientProvince ?? null,
+          recipient_postal_code: orderInput.recipientPostalCode ?? null,
+          subtotal_baht: totals.subtotalBaht,
+          discount_baht: totals.discountBaht,
+          shipping_baht: totals.shippingBaht,
+          total_baht: totals.totalBaht,
+          payment_status: 'unpaid',
+          fulfillment_status: 'pending',
+          status_history: history,
+          notes: orderInput.notes ?? null,
+          created_by: actor,
+        })
+        .select('id, order_no')
+        .single();
+
+      if (!orderError && data) {
+        order = data as { id: string; order_no: string };
+        break;
+      }
+
+      if (orderError && isDuplicateBeanOrderNoError(orderError) && attempt < maxOrderNoAttempts - 1) {
+        continue;
+      }
+
+      if (orderError) {
+        console.error('Supabase Error (createBeanOrder):', orderError.message, orderError.details);
+        return { success: false, error: orderError.message };
+      }
+    }
+
+    if (!order) {
+      return { success: false, error: 'สร้างเลขออเดอร์ไม่สำเร็จ กรุณาลองใหม่' };
+    }
+
+    const lineRowsWithOrderId = lineRows.map((line) => ({
+      ...line,
+      order_id: order.id,
+    }));
+
+    const { error: linesError } = await supabase.from('bean_order_lines').insert(lineRowsWithOrderId);
     if (linesError) {
       console.error('Supabase Error (createBeanOrder lines):', linesError.message, linesError.details);
       return { success: false, error: linesError.message };
