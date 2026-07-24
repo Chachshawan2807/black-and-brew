@@ -25,6 +25,7 @@ import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-disp
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
 import { TrackingTimeline } from './_components/TrackingTimeline';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
+import { BeanOrderSelect } from './_components/BeanOrderSelect';
 import {
   canCancelOrder,
   canConfirmManualDelivery,
@@ -397,8 +398,8 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                           </button>
                         </div>
                       ) : (
-                        <select
-                          className={cn(inputClass, 'sm:min-w-[9rem] sm:flex-1')}
+                        <BeanOrderSelect
+                          wrapperClassName="sm:min-w-[9rem] sm:flex-1"
                           value={carrierCode}
                           onChange={(e) => {
                             const next = e.target.value;
@@ -411,7 +412,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                           {BEAN_ORDER_CARRIERS.map((c) => (
                             <option key={c.code} value={c.code}>{c.label}</option>
                           ))}
-                        </select>
+                        </BeanOrderSelect>
                       )}
                       <input
                         className={cn(inputClass, 'sm:min-w-[10rem] sm:flex-[1.5]')}

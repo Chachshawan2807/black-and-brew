@@ -1,22 +1,29 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Clipboard, Plus, Trash2 } from 'lucide-react';
 import {
   createBeanCustomer,
   createBeanOrder,
+  confirmBeanOrderPayment,
   fetchBeanCustomerAddresses,
   parseBeanOrderCustomerFromText,
+  revertBeanOrderPayment,
   searchBeanCustomers,
+  shipBeanOrder,
   updateBeanOrder,
+  uploadBeanOrderSlip,
   type BeanCustomerAddressRow,
   type BeanCustomerRow,
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
 import { AddressProfilePickerDialog } from '@/app/[locale]/bean-orders/_components/AddressProfilePickerDialog';
 import { AutocompleteTextField } from '@/app/[locale]/bean-orders/_components/AutocompleteTextField';
+import { BeanOrderSelect } from '@/app/[locale]/bean-orders/_components/BeanOrderSelect';
+import { BeanOrderPaymentFields } from '@/app/[locale]/bean-orders/_components/BeanOrderPaymentFields';
+import { BeanOrderShippingFields } from '@/app/[locale]/bean-orders/_components/BeanOrderShippingFields';
 import { PasteCustomerDialog } from '@/app/[locale]/bean-orders/_components/PasteCustomerDialog';
 import { ClearCustomerConfirmDialog } from '@/app/[locale]/bean-orders/_components/ClearCustomerConfirmDialog';
 import {
@@ -29,6 +36,11 @@ import {
 } from '@/lib/bean-orders/address';
 import { mergeCustomerAddressProfiles } from '@/lib/bean-orders/customer-address-persist';
 import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
+import {
+  initialCarrierSelection,
+  OTHER_CARRIER_CODE,
+  resolveCarrierCodeForSave,
+} from '@/lib/bean-orders/carriers';
 import {
   normalizeBeanOrderLinesForSave,
   resolveBeanOrderRecipientName,
@@ -46,18 +58,25 @@ import {
   formatThaiPostalAddressLine,
   lookupThaiPostalAreas,
 } from '@/lib/bean-orders/thai-postal-lookup';
-import type { WeightUnit } from '@/lib/bean-orders/types';
+import type { PaymentStatus, WeightUnit } from '@/lib/bean-orders/types';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import {
   BEAN_ORDER_CARD,
   BEAN_ORDER_BTN_DANGER_GHOST,
-  BEAN_ORDER_BTN_GHOST,
   BEAN_ORDER_BTN_LIST,
   BEAN_ORDER_BTN_PASTEL_FULL,
   BEAN_ORDER_BTN_PRIMARY_FULL,
   BEAN_ORDER_BTN_SM_DANGER,
   BEAN_ORDER_BTN_SM_OUTLINE,
-  BEAN_ORDER_DETAIL_PAGE,
+  BEAN_ORDER_FORM_FULFILLMENT_GRID,
+  BEAN_ORDER_FORM_FULFILLMENT_CARD,
+  BEAN_ORDER_FORM_FULFILLMENT_CARD_BODY,
+  BEAN_ORDER_FORM_FULFILLMENT_COLUMN,
+  BEAN_ORDER_FORM_LINE_GRID,
+  BEAN_ORDER_FORM_MAIN_GRID,
+  BEAN_ORDER_FORM_PAGE,
+  BEAN_ORDER_FORM_PANEL,
+  BEAN_ORDER_FORM_SECTION,
   BEAN_ORDER_INPUT,
 } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
@@ -177,9 +196,10 @@ export default function BeanOrderFormClient({
   );
   const [customerAddressPicker, setCustomerAddressPicker] = useState<ThaiPostalAddressValue[] | null>(null);
 
-  const [recipient, setRecipient] = useState<ThaiPostalAddressValue>(() =>
-    initialOrder ? orderToRecipient(initialOrder) : emptyThaiPostalAddress(),
-  );
+  const [recipient, setRecipient] = useState<ThaiPostalAddressValue>(() => {
+    if (!initialOrder) return emptyThaiPostalAddress();
+    return { ...orderToRecipient(initialOrder), name: '' };
+  });
 
   const [lines, setLines] = useState<LineDraft[]>(() =>
     initialOrder ? orderToLines(initialOrder) : [emptyLine()],
@@ -191,11 +211,34 @@ export default function BeanOrderFormClient({
     () => (initialOrder ? String(initialOrder.shippingBaht || '') : ''),
   );
   const [notes, setNotes] = useState(() => initialOrder?.notes ?? '');
+  const initialCarrier = initialCarrierSelection(initialOrder?.shipment?.carrierCode);
+  const [carrierCode, setCarrierCode] = useState(initialCarrier.carrierCode);
+  const [customCarrierLabel, setCustomCarrierLabel] = useState(initialCarrier.customCarrierLabel);
+  const [trackingNumber, setTrackingNumber] = useState(
+    () => initialOrder?.shipment?.trackingNumber ?? '',
+  );
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(
+    () => initialOrder?.paymentStatus ?? 'unpaid',
+  );
+  const [pendingSlipFile, setPendingSlipFile] = useState<File | null>(null);
+  const [pendingSlipPreview, setPendingSlipPreview] = useState<string | null>(null);
+  const [confirmPaymentOnSave, setConfirmPaymentOnSave] = useState(false);
+  const [revertPaymentOnSave, setRevertPaymentOnSave] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteLoading, setPasteLoading] = useState(false);
   const [pasteError, setPasteError] = useState<string | null>(null);
   const [pasteData, setPasteData] = useState<ParsedBeanOrderCustomer | null>(null);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    if (!pendingSlipFile) {
+      setPendingSlipPreview(null);
+      return;
+    }
+    const previewUrl = URL.createObjectURL(pendingSlipFile);
+    setPendingSlipPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [pendingSlipFile]);
 
   const customerNameSuggestions = useMemo(() => {
     const fromCustomers = customerResults.map((customer) => customer.name);
@@ -223,7 +266,6 @@ export default function BeanOrderFormClient({
 
   async function handleCustomerSearch(q: string) {
     setCustomerQuery(q);
-    setRecipient((prev) => ({ ...prev, name: q }));
     setSelectedCustomer(null);
     setCustomerAddressPicker(null);
     if (!q.trim()) {
@@ -260,7 +302,6 @@ export default function BeanOrderFormClient({
     if (merged.length === 0) {
       setRecipient((prev) => ({
         ...prev,
-        name: customer.name,
         phone: customer.phone ?? prev.phone,
       }));
       return;
@@ -269,7 +310,7 @@ export default function BeanOrderFormClient({
     if (merged.length === 1) {
       setRecipient({
         ...merged[0]!,
-        name: customer.name,
+        name: '',
       });
       return;
     }
@@ -310,7 +351,7 @@ export default function BeanOrderFormClient({
 
     const profileMatches = profilesMatchingName(formSuggestions.recipientProfiles, name);
     if (profileMatches.length === 1) {
-      setRecipient({ ...profileMatches[0]!, name });
+      setRecipient({ ...profileMatches[0]!, name: '' });
       return;
     }
     if (profileMatches.length > 1) {
@@ -348,7 +389,6 @@ export default function BeanOrderFormClient({
       setCustomerResults([]);
       setRecipient((prev) => ({
         ...prev,
-        name: result.data!.name,
         phone: result.data!.phone ?? prev.phone,
       }));
     }
@@ -374,8 +414,8 @@ export default function BeanOrderFormClient({
   }
 
   function handleRecipientChange(value: ThaiPostalAddressValue) {
-    setRecipient(value);
-    if (value.name !== customerQuery) {
+    setRecipient({ ...value, name: '' });
+    if (value.name && value.name !== customerQuery) {
       setCustomerQuery(value.name);
       setSelectedCustomer(null);
     }
@@ -428,7 +468,7 @@ export default function BeanOrderFormClient({
     setCustomerAddressPicker(null);
     setRecipient({
       ...pasteData.address,
-      name: pasteData.name,
+      name: '',
       phone: pasteData.phone,
     });
     closePasteDialog();
@@ -458,6 +498,88 @@ export default function BeanOrderFormClient({
 
   function closeClearCustomerConfirm() {
     setClearConfirmOpen(false);
+  }
+
+  function shouldPersistShipment(): boolean {
+    if (trackingNumber.trim()) return true;
+    return isEdit && Boolean(initialOrder?.shipment);
+  }
+
+  function handleRequestRevertPayment() {
+    if (isReadOnly) {
+      setError(READ_ONLY_DENY_MSG);
+      return;
+    }
+    if (!confirm('เปลี่ยนสถานะเป็นรอชำระ?')) return;
+    setRevertPaymentOnSave(true);
+    setConfirmPaymentOnSave(false);
+  }
+
+  function handleSelectSlipFile(file: File | null) {
+    setPendingSlipFile(file);
+    setRevertPaymentOnSave(false);
+  }
+
+  async function persistPayment(
+    targetOrderId: string,
+  ): Promise<{ error?: string }> {
+    if (revertPaymentOnSave) {
+      const result = await revertBeanOrderPayment(targetOrderId, locale);
+      if (!result.success) {
+        return { error: result.error ?? 'เปลี่ยนสถานะไม่สำเร็จ' };
+      }
+      return {};
+    }
+
+    if (pendingSlipFile) {
+      const fd = new FormData();
+      fd.set('slip', pendingSlipFile);
+      const uploadResult = await uploadBeanOrderSlip(targetOrderId, fd, locale);
+      if (!uploadResult.success) {
+        return { error: uploadResult.error ?? 'อัปโหลดสลิปไม่สำเร็จ' };
+      }
+    }
+
+    if (confirmPaymentOnSave) {
+      const hasSlip = Boolean(pendingSlipFile || initialOrder?.payment?.uploadedAt);
+      if (!hasSlip) {
+        return { error: 'กรุณาอัปโหลดสลิปก่อนยืนยันชำระเงิน' };
+      }
+      const result = await confirmBeanOrderPayment(targetOrderId, locale);
+      if (!result.success) {
+        return { error: result.error ?? 'ยืนยันชำระไม่สำเร็จ' };
+      }
+    }
+
+    return {};
+  }
+
+  function shouldPersistPayment(): boolean {
+    return Boolean(pendingSlipFile || confirmPaymentOnSave || revertPaymentOnSave);
+  }
+
+  async function persistShipment(
+    targetOrderId: string,
+  ): Promise<{ error?: string; warning?: string }> {
+    if (!shouldPersistShipment()) return {};
+
+    const resolvedCarrierCode = resolveCarrierCodeForSave(carrierCode, customCarrierLabel);
+    if (carrierCode === OTHER_CARRIER_CODE && !customCarrierLabel.trim()) {
+      return { error: 'กรุณาระบุช่องทางจัดส่ง' };
+    }
+
+    const shipResult = await shipBeanOrder(
+      targetOrderId,
+      {
+        carrierCode: resolvedCarrierCode ?? undefined,
+        trackingNumber,
+      },
+      locale,
+    );
+    if (!shipResult.success) {
+      return { error: shipResult.error ?? 'บันทึกการจัดส่งไม่สำเร็จ' };
+    }
+    return { warning: shipResult.trackingWarning };
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -517,11 +639,43 @@ export default function BeanOrderFormClient({
       ? await updateBeanOrder(orderId, payload, locale)
       : await createBeanOrder(payload, locale);
 
-    setSaving(false);
     if (!result.success) {
+      setSaving(false);
       setError(result.error ?? (isEdit ? 'แก้ไขออเดอร์ไม่สำเร็จ' : 'สร้างออเดอร์ไม่สำเร็จ'));
       return;
     }
+
+    const rawTargetOrderId =
+      isEdit && orderId
+        ? orderId
+        : 'orderId' in result
+          ? result.orderId
+          : undefined;
+    const targetOrderId =
+      typeof rawTargetOrderId === 'string' ? rawTargetOrderId : undefined;
+    if (targetOrderId) {
+      if (shouldPersistPayment()) {
+        const paymentResult = await persistPayment(targetOrderId);
+        if (paymentResult.error) {
+          setSaving(false);
+          setError(`${paymentResult.error} — ออเดอร์ถูกบันทึกแล้ว`);
+          router.push(`/${locale}/bean-orders/${targetOrderId}`);
+          return;
+        }
+      }
+
+      if (shouldPersistShipment()) {
+        const shipmentResult = await persistShipment(targetOrderId);
+        if (shipmentResult.error) {
+          setSaving(false);
+          setError(`${shipmentResult.error} — ออเดอร์ถูกบันทึกแล้ว`);
+          router.push(`/${locale}/bean-orders/${targetOrderId}`);
+          return;
+        }
+      }
+    }
+
+    setSaving(false);
     if (isEdit && orderId) {
       router.push(`/${locale}/bean-orders/${orderId}`);
       return;
@@ -534,7 +688,7 @@ export default function BeanOrderFormClient({
   const inputClass = BEAN_ORDER_INPUT;
 
   return (
-    <form onSubmit={handleSubmit} className={BEAN_ORDER_DETAIL_PAGE}>
+    <form onSubmit={handleSubmit} className={BEAN_ORDER_FORM_PAGE}>
       <Link
         href={isEdit && orderId ? `/${locale}/bean-orders/${orderId}` : `/${locale}/bean-orders`}
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground"
@@ -547,7 +701,10 @@ export default function BeanOrderFormClient({
 
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-      <section className={`${BEAN_ORDER_CARD} mb-5 space-y-3 p-4`}>
+      <div className={BEAN_ORDER_FORM_SECTION}>
+        <h2 className="text-sm font-normal text-muted-foreground">ออเดอร์เมล็ดกาแฟ</h2>
+        <div className={BEAN_ORDER_FORM_MAIN_GRID}>
+      <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_PANEL, 'space-y-3')}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-normal text-muted-foreground">ลูกค้า</h2>
           <div className="flex items-center gap-2">
@@ -579,17 +736,6 @@ export default function BeanOrderFormClient({
           inputClass={inputClass}
           placeholder="ชื่อลูกค้า (ไม่บังคับที่อยู่)"
         />
-        {customerResults.length > 0 && (
-          <ul className="rounded-xl border border-border divide-y">
-            {customerResults.map((c) => (
-              <li key={c.id}>
-                <button type="button" onClick={() => void handleSelectCustomer(c)} className={BEAN_ORDER_BTN_LIST}>
-                  {c.name} {c.phone ? `/ ${c.phone}` : ''}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
         {!selectedCustomer && customerQuery.trim() && (
           <button
             type="button"
@@ -618,6 +764,7 @@ export default function BeanOrderFormClient({
         <ThaiPostalAddressSection
           title=""
           embedded
+          hideNameField
           value={recipient}
           onChange={handleRecipientChange}
           profiles={formSuggestions.recipientProfiles}
@@ -625,14 +772,10 @@ export default function BeanOrderFormClient({
         />
       </section>
 
-      <section className={`${BEAN_ORDER_CARD} mb-5 p-4`}>
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-xs text-muted-foreground">รายการสินค้า</h2>
-          <button type="button" onClick={() => setLines((prev) => [...prev, emptyLine()])} className={`h-10 ${BEAN_ORDER_BTN_GHOST}`}>
-            <Plus className="h-4 w-4" aria-hidden /> เพิ่มรายการ
-          </button>
-        </div>
-        <div className="space-y-3">
+      <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_PANEL)}>
+        <h2 className="mb-3 text-xs text-muted-foreground">รายการสินค้า</h2>
+        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex-1 space-y-3">
         {lines.map((line, index) => {
           const weightSuggestions = linePresetsForItem(
             formSuggestions.linePresets,
@@ -653,10 +796,9 @@ export default function BeanOrderFormClient({
           return (
             <div
               key={line.key}
-              className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start"
+              className={BEAN_ORDER_FORM_LINE_GRID}
             >
-              <select
-                className={inputClass}
+              <BeanOrderSelect
                 value={line.inventoryItemId}
                 onChange={(e) =>
                   setLines((prev) => prev.map((l, i) => (i === index ? { ...l, inventoryItemId: e.target.value } : l)))
@@ -666,20 +808,20 @@ export default function BeanOrderFormClient({
                 {inventoryItems.map((item) => (
                   <option key={item.id} value={item.id}>{item.name}</option>
                 ))}
-              </select>
-              <div className="flex gap-2">
+              </BeanOrderSelect>
+              <div className="flex min-w-0 gap-2">
                 <AutocompleteTextField
                   value={line.weightValue}
                   onChange={(weightValue) =>
                     setLines((prev) => prev.map((l, i) => (i === index ? { ...l, weightValue: sanitizeNum(weightValue) } : l)))
                   }
                   suggestions={filterStringSuggestions(weightSuggestions, line.weightValue)}
-                  inputClass={cn(inputClass, 'flex-1')}
-                  placeholder="น้ำหนัก (ไม่บังคับ)"
+                  inputClass={cn(inputClass, 'min-w-0 flex-1')}
+                  placeholder="น้ำหนัก"
                   inputMode="decimal"
                 />
-                <select
-                  className={cn(inputClass, 'w-24')}
+                <BeanOrderSelect
+                  className="w-[4.25rem] shrink-0 px-2 pr-8 text-center"
                   value={line.weightUnit}
                   onChange={(e) =>
                     setLines((prev) => prev.map((l, i) => (i === index ? { ...l, weightUnit: e.target.value as WeightUnit } : l)))
@@ -687,7 +829,7 @@ export default function BeanOrderFormClient({
                 >
                   <option value="g">ก.</option>
                   <option value="kg">กก.</option>
-                </select>
+                </BeanOrderSelect>
               </div>
               <AutocompleteTextField
                 value={line.unitPricePerKg}
@@ -695,8 +837,8 @@ export default function BeanOrderFormClient({
                   setLines((prev) => prev.map((l, i) => (i === index ? { ...l, unitPricePerKg: sanitizeNum(unitPricePerKg) } : l)))
                 }
                 suggestions={filterStringSuggestions(priceSuggestions, line.unitPricePerKg)}
-                inputClass={inputClass}
-                placeholder="ราคา/หน่วย (ไม่บังคับ)"
+                inputClass={cn(inputClass, 'min-w-0')}
+                placeholder="ราคา/หน่วย"
                 inputMode="decimal"
               />
               {linePresetOptions.length > 0 && (
@@ -731,11 +873,22 @@ export default function BeanOrderFormClient({
           );
         })}
         </div>
+        <div className="mt-3 flex shrink-0 justify-end">
+          <button
+            type="button"
+            onClick={() => setLines((prev) => [...prev, emptyLine()])}
+            className={BEAN_ORDER_BTN_SM_OUTLINE}
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            เพิ่มรายการ
+          </button>
+        </div>
+        </div>
       </section>
 
-      <section className={`${BEAN_ORDER_CARD} mb-5 space-y-3 p-4`}>
-        <h2 className="text-sm font-normal text-muted-foreground">สรุปยอด</h2>
-        <div className="grid grid-cols-2 gap-2">
+      <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_PANEL, 'space-y-3')}>
+        <h2 className="text-xs text-muted-foreground">สรุปยอด</h2>
+        <div className="flex min-h-0 flex-1 flex-col space-y-3">
           <AutocompleteTextField
             value={discountBaht}
             onChange={setDiscountBaht}
@@ -752,24 +905,68 @@ export default function BeanOrderFormClient({
             placeholder="ค่าส่ง (บาท)"
             inputMode="decimal"
           />
-        </div>
-        <AutocompleteTextField
-          value={notes}
-          onChange={setNotes}
-          suggestions={filterStringSuggestions(formSuggestions.notes, notes)}
-          inputClass={inputClass}
-          placeholder="หมายเหตุ"
-          multiline
-        />
-        <div className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl border border-border bg-muted/20 px-3 py-2.5 text-sm">
-          <p className="text-muted-foreground">
-            รวมสินค้า <span className="tabular-nums text-foreground">{totals.subtotalBaht.toLocaleString('th-TH')} ฿</span>
-          </p>
-          <p className="text-base text-foreground">
-            ยอดรวม <span className="tabular-nums">{totals.totalBaht.toLocaleString('th-TH')} ฿</span>
-          </p>
+          <AutocompleteTextField
+            value={notes}
+            onChange={setNotes}
+            suggestions={filterStringSuggestions(formSuggestions.notes, notes)}
+            inputClass={inputClass}
+            placeholder="หมายเหตุ"
+            multiline
+          />
+          <div className="mt-auto space-y-2 rounded-xl border border-border bg-muted/20 px-3 py-2.5 text-sm">
+            <p className="text-muted-foreground">
+              รวมสินค้า{' '}
+              <span className="tabular-nums text-foreground">{totals.subtotalBaht.toLocaleString('th-TH')} ฿</span>
+            </p>
+            <p className="text-base text-foreground">
+              ยอดรวม <span className="tabular-nums">{totals.totalBaht.toLocaleString('th-TH')} ฿</span>
+            </p>
+          </div>
         </div>
       </section>
+        </div>
+      </div>
+
+      <div className={BEAN_ORDER_FORM_FULFILLMENT_GRID}>
+        <div className={BEAN_ORDER_FORM_FULFILLMENT_COLUMN}>
+          <h2 className="text-sm font-normal text-muted-foreground">ข้อมูลการชำระเงิน</h2>
+          <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_FULFILLMENT_CARD)}>
+            <BeanOrderPaymentFields
+              orderId={orderId}
+              slipUrl={initialOrder?.payment?.slipUrl ?? null}
+              uploadedAt={initialOrder?.payment?.uploadedAt ?? null}
+              confirmedAt={initialOrder?.payment?.confirmedAt ?? null}
+              confirmedBy={initialOrder?.payment?.confirmedBy ?? null}
+              paymentStatus={paymentStatus}
+              pendingSlipFile={pendingSlipFile}
+              pendingSlipPreview={pendingSlipPreview}
+              onSelectSlipFile={handleSelectSlipFile}
+              confirmPaymentOnSave={confirmPaymentOnSave}
+              onConfirmPaymentOnSaveChange={setConfirmPaymentOnSave}
+              onRequestRevertPayment={handleRequestRevertPayment}
+              disabled={isReadOnly || saving}
+            />
+          </section>
+        </div>
+
+        <div className={BEAN_ORDER_FORM_FULFILLMENT_COLUMN}>
+          <h2 className="text-sm font-normal text-muted-foreground">ข้อมูลการจัดส่ง</h2>
+          <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_FULFILLMENT_CARD)}>
+            <div className={BEAN_ORDER_FORM_FULFILLMENT_CARD_BODY}>
+              <BeanOrderShippingFields
+                carrierCode={carrierCode}
+                customCarrierLabel={customCarrierLabel}
+                trackingNumber={trackingNumber}
+                onCarrierCodeChange={setCarrierCode}
+                onCustomCarrierLabelChange={setCustomCarrierLabel}
+                onTrackingNumberChange={setTrackingNumber}
+                inputClass={inputClass}
+                disabled={isReadOnly || saving}
+              />
+            </div>
+          </section>
+        </div>
+      </div>
 
       <button
         type="submit"

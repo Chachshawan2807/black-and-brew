@@ -5,6 +5,35 @@ export const BEAN_ORDER_PAGE =
 export const BEAN_ORDER_DETAIL_PAGE =
   'mx-auto w-full max-w-4xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]';
 
+/** Wider shell for create/edit form — customer + line items side-by-side on desktop */
+export const BEAN_ORDER_FORM_PAGE =
+  'mx-auto w-full max-w-6xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]';
+
+export const BEAN_ORDER_FORM_MAIN_GRID =
+  'grid grid-cols-1 gap-5 lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)_minmax(11rem,13rem)] lg:items-stretch lg:gap-6';
+
+export const BEAN_ORDER_FORM_SECTION =
+  'mb-5 space-y-4';
+
+export const BEAN_ORDER_FORM_FULFILLMENT_GRID =
+  'mb-5 grid grid-cols-1 gap-5 lg:grid-cols-[20rem_20rem] lg:items-stretch lg:gap-6';
+
+export const BEAN_ORDER_FORM_FULFILLMENT_COLUMN =
+  'flex min-w-0 max-w-[20rem] flex-col space-y-4';
+
+export const BEAN_ORDER_FORM_FULFILLMENT_CARD =
+  'flex flex-1 flex-col p-4';
+
+export const BEAN_ORDER_FORM_FULFILLMENT_CARD_BODY =
+  'flex min-h-[9rem] flex-1 flex-col justify-center';
+
+export const BEAN_ORDER_FORM_PANEL =
+  'flex min-w-0 flex-col p-4 lg:h-full';
+
+/** Line row: stacked on mobile; horizontal from sm when width allows */
+export const BEAN_ORDER_FORM_LINE_GRID =
+  'grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_minmax(6.5rem,0.85fr)_auto] sm:items-start';
+
 export const BEAN_ORDER_CARD =
   'rounded-2xl border border-border bg-card bb-shadow-md overflow-visible';
 
@@ -24,6 +53,9 @@ export const BEAN_ORDER_LIST_CELL =
 
 export const BEAN_ORDER_INPUT =
   'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-foreground/10';
+
+export const BEAN_ORDER_SELECT =
+  `${BEAN_ORDER_INPUT} appearance-none cursor-pointer pr-10`;
 
 /** Hover/press motion shared by bean-orders buttons and button-like links */
 export const BEAN_ORDER_BTN_MOTION =
@@ -59,7 +91,7 @@ export const BEAN_ORDER_PAYMENT_BODY =
   'flex min-h-[9rem] items-start gap-3';
 
 export const BEAN_ORDER_PAYMENT_SLIP_SLOT =
-  'min-h-[9rem] min-w-0 flex-1 self-stretch';
+  'h-[9rem] min-h-[9rem] min-w-0 flex-1 self-stretch overflow-hidden';
 
 export const BEAN_ORDER_ACTION_BTN_OUTLINE =
   `${BEAN_ORDER_ACTION_BTN_BASE} border border-border bg-background text-foreground hover:bg-muted/35 hover:bb-shadow-sm`;
@@ -110,7 +142,7 @@ export const BEAN_ORDER_BTN_SLIP =
   `group mr-auto inline-flex flex-col items-stretch overflow-hidden rounded-xl border border-border bg-muted/20 text-left ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/30 active:scale-[0.99]`;
 
 export const BEAN_ORDER_BTN_SLIP_PANEL =
-  `group flex h-full min-h-[9rem] w-full flex-col overflow-hidden rounded-xl border border-border bg-muted/20 text-left ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/30 active:scale-[0.99]`;
+  `group flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-muted/20 text-left ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/30 active:scale-[0.99]`;
 
 /** Desktop list/table columns: copy | customer | order no | destination | carrier | amount | status */
 export const BEAN_ORDER_LIST_GRID =

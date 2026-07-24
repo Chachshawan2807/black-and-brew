@@ -14,6 +14,7 @@ import {
 } from '@/lib/bean-orders/form-suggestions';
 import { cn } from '@/lib/utils';
 import { AutocompleteTextField } from './AutocompleteTextField';
+import { BeanOrderSelect } from './BeanOrderSelect';
 import { AddressProfilePicker } from './AddressProfilePicker';
 import { BEAN_ORDER_CARD } from './bean-order-layout';
 
@@ -30,6 +31,8 @@ type Props = {
   nameRequired?: boolean;
   addressRequired?: boolean;
   embedded?: boolean;
+  /** When true, omit the name field (caller owns customer name elsewhere). */
+  hideNameField?: boolean;
 };
 
 export function ThaiPostalAddressSection({
@@ -41,6 +44,7 @@ export function ThaiPostalAddressSection({
   nameRequired = false,
   addressRequired = false,
   embedded = false,
+  hideNameField = false,
 }: Props) {
   const [postalHint, setPostalHint] = useState<string | null>(null);
   const [profilePicker, setProfilePicker] = useState<ThaiPostalAddressValue[] | null>(null);
@@ -141,16 +145,18 @@ export function ThaiPostalAddressSection({
     <>
       {title ? <h2 className="text-sm font-normal text-muted-foreground">{title}</h2> : null}
 
-      <AutocompleteTextField
-        value={value.name}
-        onChange={(name) => patch({ name })}
-        onSelect={(name) => handleFieldSelect('name', name)}
-        suggestions={uniqueFieldValues(profiles, 'name', value.name)}
-        inputClass={inputClass}
-        placeholder="ชื่อ"
-        required={nameRequired}
-        autoComplete="name"
-      />
+      {!hideNameField && (
+        <AutocompleteTextField
+          value={value.name}
+          onChange={(name) => patch({ name })}
+          onSelect={(name) => handleFieldSelect('name', name)}
+          suggestions={uniqueFieldValues(profiles, 'name', value.name)}
+          inputClass={inputClass}
+          placeholder="ชื่อ"
+          required={nameRequired}
+          autoComplete="name"
+        />
+      )}
 
       <AutocompleteTextField
         value={value.phone}
@@ -180,8 +186,7 @@ export function ThaiPostalAddressSection({
       {showAreaPicker && (
         <div className="space-y-2">
           <label className="text-sm text-muted-foreground">เลือกพื้นที่ (ตำบล/แขวง)</label>
-          <select
-            className={inputClass}
+          <BeanOrderSelect
             value={value.areaId}
             onChange={(e) => {
               const option = areaOptions.find((item) => item.id === e.target.value);
@@ -195,7 +200,7 @@ export function ThaiPostalAddressSection({
                 {option.label}
               </option>
             ))}
-          </select>
+          </BeanOrderSelect>
         </div>
       )}
 
