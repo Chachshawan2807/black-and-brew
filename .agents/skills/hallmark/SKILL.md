@@ -279,7 +279,7 @@ Before loading any visual ruleset, **read the slim index at [`references/macrost
 
 If the previous output was Specimen (light · high-contrast-serif · warm), the next can be Studio (light · high-contrast-serif · chromatic-green) — the *accent hue* differs. But the next can't be Newsprint (light · roman-serif · warm) which only differs on display style and shares both paper band and accent — pick a more distant theme.
 
-The per-theme axis values live as comments at the top of each theme's tokens block in [`site/css/tokens.css`](../../site/css/tokens.css). When in doubt, name your candidate theme out loud and identify its three axis values; if two of three match the previous output, redirect.
+The per-theme axis values live in [`references/theme-axes.md`](references/theme-axes.md) (and in each opt-in [`references/themes/<name>.md`](references/themes/) spec when present). When in doubt, name your candidate theme out loud and identify its three axis values; if two of three match the previous output, redirect.
 
 **State your pick.** Before writing any code, say "Macrostructure: <name>. Theme: <name>. Differs from the last on: <axes>." in plain text. This is a deliberate accountability step — picking on the page (not in your head) prevents the default-attractor sameness that kept the skill emitting Specimen output.
 
@@ -354,6 +354,7 @@ The non-negotiables live in [`references/`](references/). **Be precise about wha
 - **If `references/themes/<theme>.md` exists for the catalog theme picked in Step 2.6, load it eagerly.** Opt-in per-theme spec — carries signature moves, macrostructure affinity / rejection, voice fixtures, and anti-patterns that the tokens block cannot encode. Most themes have no spec file; the load is a silent no-op when absent. Studied-DNA and custom routes skip this load.
 
 **Index-then-pick (read the slim index, then load only the picks):**
+- [`theme-axes.md`](references/theme-axes.md) — catalog theme diversification axes (paper · display · accent). Read when rotating catalog themes in Step 2 / 2.5.
 - [`macrostructures.md`](references/macrostructures.md) — slim index of the 21 macros. Pick one name from the index, then load ONLY `references/macrostructures/<NN-slug>.md` for that pick. **Never load the whole index plus more than one per-macro file in a single build.** ~30 lines per per-macro file vs. 660 lines for the old monolith.
 - [`component-cookbook.md`](references/component-cookbook.md) — slim index of 50 component archetypes (9 heroes, 5 section heads, 6 features, 4 CTAs, 4 testimonials, 8 footers, 14 navs) + the nav + footer routing tables at the bottom. Pick your archetype codes (H#, S#, F#, C#, T#, Ft#, N#) from the index, then load ONLY the matching `references/components/<code>-<slug>.md` files. A typical build loads 5–7 archetype files. **Loading the cookbook end-to-end or pre-loading more than one archetype per category is the single biggest token waste in the skill — don't.**
 
@@ -387,8 +388,8 @@ The non-negotiables live in [`references/`](references/). **Be precise about wha
 - [`study.md`](references/study.md) — load only when `hallmark study` runs.
 
 **Human-only (do NOT auto-load):**
-- [`../../docs/recipes.md`](../../docs/recipes.md) — eight worked briefs for human readers.
-- [`../../docs/study-examples.md`](../../docs/study-examples.md) — three worked DNA-extractions for human readers.
+- [`docs/recipes.md`](docs/recipes.md) — eight worked briefs for human readers.
+- [`docs/study-examples.md`](docs/study-examples.md) — three worked DNA-extractions for human readers.
 
 ### 4. Decide on hero enrichment
 
