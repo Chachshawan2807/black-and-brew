@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "next.config.ts",
+    "src/app/**/{page,layout,route,manifest,loading,error,not-found,default,opengraph-image,icon,apple-icon}.{ts,tsx}",
+    "src/app/actions/**/*.ts",
+    "src/proxy.ts",
+    "src/i18n/**/*.ts",
+    "src/workers/**/*.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["src/test/**"],
+  "ignoreFiles": ["src/lib/database.types.ts"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": [
+    "tailwindcss",
+    "@tailwindcss/postcss",
+    "cross-env",
+    "sharp"
+  ],
+  "ignoreBinaries": ["markdownlint-cli2"]
+}
