@@ -1,11 +1,10 @@
-import { supabase } from '@/lib/supabase';
 import HomePageClient from './_components/HomePageClient';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { startOfDay, endOfDay, addDays, format } from 'date-fns';
 import { connection } from 'next/server';
-import { computeMaintenanceDueWithinMonth } from '@/lib/maintenance/filter-due-within-month';
-import type { MaintenanceServiceRecord } from '@/lib/maintenance/types';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { fetchHomeMaintenanceTasks } from '@/lib/maintenance/fetch-home-maintenance';
 
 export default async function IndexPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -44,32 +43,29 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
     { data: shiftsData },
     { data: tomorrowShiftsData },
     { data: inventoryData, error: inventoryError },
-    { data: serviceRecordsData, error: serviceRecordsError },
+    { data: maintenanceTasks, error: maintenanceError },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
-    supabase.from('shifts').select('employee_id, start_time, end_time, status, metadata').gte('start_time', startUtc).lte('start_time', endUtc),
-    supabase.from('shifts').select('employee_id, start_time, end_time, status, metadata').gte('start_time', tomorrowStartUtc).lte('start_time', tomorrowEndUtc),
-    supabase.from('inventory_items').select(INVENTORY_ITEM_SELECT).order('sort_order', { ascending: true }),
-    supabase
-      .from('service_records')
-      .select(
-        'id, equipment, work_details, start_date, completion_date, recommended_frequency, status, task_type',
-      )
-      .order('start_date', { ascending: false }),
+    getSupabaseAdmin().from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
+    getSupabaseAdmin().from('shifts').select('employee_id, start_time, end_time, status, metadata').gte('start_time', startUtc).lte('start_time', endUtc),
+    getSupabaseAdmin().from('shifts').select('employee_id, start_time, end_time, status, metadata').gte('start_time', tomorrowStartUtc).lte('start_time', tomorrowEndUtc),
+    getSupabaseAdmin().from('inventory_items').select(INVENTORY_ITEM_SELECT).order('sort_order', { ascending: true }),
+    (async () => {
+      try {
+        return { data: await fetchHomeMaintenanceTasks(currentIsoDate), error: null };
+      } catch (error) {
+        return { data: [], error };
+      }
+    })(),
   ]);
 
   if (inventoryError) {
     console.error('Supabase Error:', inventoryError.message, inventoryError.details);
   }
 
-  if (serviceRecordsError) {
-    console.error('Supabase Error:', serviceRecordsError.message, serviceRecordsError.details);
+  if (maintenanceError) {
+    const message = maintenanceError instanceof Error ? maintenanceError.message : String(maintenanceError);
+    console.error('Supabase Error:', message);
   }
-
-  const maintenanceTasks = computeMaintenanceDueWithinMonth(
-    (serviceRecordsData || []) as MaintenanceServiceRecord[],
-    currentIsoDate,
-  );
 
   const profiles = profilesData || [];
   const shifts = shiftsData || [];
@@ -84,7 +80,7 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
       currentThaiDate={thaiFullDate}
       tomorrowThaiDate={tomorrowThaiDate}
       inventoryItems={inventoryData || []}
-      maintenanceTasks={maintenanceTasks}
+      maintenanceTasks={maintenanceTasks || []}
     />
   );
 }
