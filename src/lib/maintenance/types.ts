@@ -5,7 +5,6 @@ export interface MaintenanceServiceRecord {
   start_date?: string | null;
   completion_date?: string | null;
   recommended_frequency?: string | null;
-  status?: string | null;
   detected_problem?: string | null;
   task_type?: string | null;
 }

@@ -7,10 +7,13 @@ import {
 } from '@/app/actions/inventory-actions';
 import type { TransactionHistoryRow } from '@/app/[locale]/inventory/_components/InventoryHistoryModal';
 import {
-  consumeInventoryHistoryPrefetch,
+  getHistoryPageCache,
   invalidateInventoryHistoryPrefetch,
-  isInventoryHistoryPrefetchFresh,
+  isHistoryPageCacheFresh,
   prefetchInventoryHistoryFirstPage,
+  prefetchInventoryHistoryPage,
+  setHistoryPageCache,
+  warmInventoryHistoryFilterPages,
 } from '@/lib/inventory-history-prefetch';
 
 const HISTORY_PAGE_SIZE = 50;
@@ -37,6 +40,17 @@ export function useInventoryHistory() {
     return () => clearTimeout(timer);
   }, [historySearchQuery]);
 
+  const applyCachedPage = useCallback(
+    (type: InventoryTransactionFilterType, searchQuery: string) => {
+      const cached = getHistoryPageCache({ type, searchQuery });
+      if (!cached) return null;
+      setTransactionHistory(cached.data as TransactionHistoryRow[]);
+      setHasMoreHistory(cached.hasMore);
+      return cached;
+    },
+    [],
+  );
+
   const loadHistoryPage = useCallback(
     async ({
       type = historyTypeFilter,
@@ -59,17 +73,28 @@ export function useInventoryHistory() {
       }
 
       try {
-        const res = await fetchTransactionHistory({
-          type,
-          itemNameQuery: searchQuery || undefined,
-          offset,
-          limit: HISTORY_PAGE_SIZE,
-        });
+        const res =
+          offset === 0 && !append
+            ? await prefetchInventoryHistoryPage({ type, searchQuery })
+            : await fetchTransactionHistory({
+                type,
+                itemNameQuery: searchQuery || undefined,
+                offset,
+                limit: HISTORY_PAGE_SIZE,
+              });
 
         if (requestId !== requestIdRef.current) return;
 
         if (res.success && res.data) {
-          setTransactionHistory((prev) => (append ? [...prev, ...res.data] : res.data));
+          if (offset === 0 && !append) {
+            setHistoryPageCache(
+              { type, searchQuery },
+              { data: res.data, hasMore: Boolean(res.hasMore) },
+            );
+          }
+          setTransactionHistory((prev) =>
+            append ? [...prev, ...(res.data as TransactionHistoryRow[])] : (res.data as TransactionHistoryRow[]),
+          );
           setHasMoreHistory(Boolean(res.hasMore));
         } else if (res.error) {
           console.error('[UI] History fetch failed:', res.error);
@@ -88,13 +113,27 @@ export function useInventoryHistory() {
     setHistoryTypeFilter('ALL');
     setHistorySearchQuery('');
     setHistorySearchDebounced('');
+    const cached = applyCachedPage('ALL', '');
+    if (!cached) {
+      setTransactionHistory([]);
+      setHasMoreHistory(false);
+    }
     setShowHistoryModal(true);
     void prefetchInventoryHistoryFirstPage();
-  }, []);
+    warmInventoryHistoryFilterPages();
+  }, [applyCachedPage]);
 
-  const handleHistoryTypeFilterChange = useCallback((nextType: InventoryTransactionFilterType) => {
-    setHistoryTypeFilter(nextType);
-  }, []);
+  const handleHistoryTypeFilterChange = useCallback(
+    (nextType: InventoryTransactionFilterType) => {
+      setHistoryTypeFilter(nextType);
+      const cached = applyCachedPage(nextType, historySearchDebounced);
+      if (!cached) {
+        setTransactionHistory([]);
+        setHasMoreHistory(false);
+      }
+    },
+    [applyCachedPage, historySearchDebounced],
+  );
 
   const handleHistorySearchQueryChange = useCallback((nextQuery: string) => {
     setHistorySearchQuery(nextQuery);
@@ -114,26 +153,26 @@ export function useInventoryHistory() {
     }
 
     let cancelled = false;
+    const type = historyTypeFilter;
+    const searchQuery = historySearchDebounced;
+
+    const cached = applyCachedPage(type, searchQuery);
+    if (!cached) {
+      setTransactionHistory([]);
+      setHasMoreHistory(false);
+    } else if (isHistoryPageCacheFresh(cached.savedAt)) {
+      if (type === 'ALL' && searchQuery === '') {
+        warmInventoryHistoryFilterPages();
+      }
+      return;
+    }
 
     void (async () => {
-      const canUsePrefetch = historyTypeFilter === 'ALL' && historySearchDebounced === '';
-
-      if (canUsePrefetch) {
-        const prefetched = await consumeInventoryHistoryPrefetch();
-        if (cancelled) return;
-
-        if (prefetched?.success && prefetched.data) {
-          setTransactionHistory(prefetched.data);
-          setHasMoreHistory(Boolean(prefetched.hasMore));
-
-          if (isInventoryHistoryPrefetchFresh()) {
-            return;
-          }
-        }
-      }
-
       if (!cancelled) {
-        await loadHistoryPage({ offset: 0 });
+        await loadHistoryPage({ type, searchQuery, offset: 0 });
+      }
+      if (!cancelled && type === 'ALL' && searchQuery === '') {
+        warmInventoryHistoryFilterPages();
       }
     })();
 
@@ -141,7 +180,7 @@ export function useInventoryHistory() {
       cancelled = true;
       requestIdRef.current += 1;
     };
-  }, [historySearchDebounced, historyTypeFilter, showHistoryModal, loadHistoryPage]);
+  }, [historySearchDebounced, historyTypeFilter, showHistoryModal, loadHistoryPage, applyCachedPage]);
 
   return {
     showHistoryModal,

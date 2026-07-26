@@ -21,7 +21,7 @@ export default async function MaintenancePage({
   const { data, error } = await getSupabaseAdmin()
     .from('service_records')
     .select(
-      'id, start_date, equipment, detected_problem, task_type, work_details, recommended_frequency, cost, person_in_charge, status, notes, completion_date, created_at',
+      'id, start_date, equipment, detected_problem, task_type, work_details, recommended_frequency, completion_date, created_at',
     )
     .order('start_date', { ascending: false });
 

@@ -75,7 +75,6 @@ const COLUMN_ALIASES: Record<string, Record<string, string>> = {
     machine_name: 'equipment',
     maintenance_date: 'start_date',
     recorded_at: 'start_date',
-    operator: 'person_in_charge',
     description: 'work_details',
   },
   shifts: {
@@ -122,7 +121,7 @@ export const TABLE_COLUMN_PRESETS: Record<AiReadableTable, string> = {
     'id, inventory_item_id, counted_qty, system_stock_qty, matched, counted_at, created_at',
   service_records:
     'id, start_date, equipment, detected_problem, task_type, work_details, ' +
-    'cost, recommended_frequency, person_in_charge, status, completion_date, notes, created_at',
+    'recommended_frequency, completion_date, created_at',
   sales_uploads:
     'id, file_name, upload_date, total_records, status, analysis_summary, created_at',
   sales_records:

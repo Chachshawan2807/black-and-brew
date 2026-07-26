@@ -22,10 +22,6 @@ const serviceRecordSchema = z.object({
   task_type: z.string().min(1).max(100),
   work_details: z.string().max(2000).nullable(),
   recommended_frequency: z.string().max(100).nullable(),
-  cost: z.number().min(0),
-  person_in_charge: z.string().max(200).nullable(),
-  status: z.string().min(1).max(50),
-  notes: z.string().max(2000).nullable(),
   completion_date: z.string().nullable(),
 });
 

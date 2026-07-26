@@ -250,6 +250,27 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toContain('isolate');
   });
 
+  test('bulk submit confirm keeps actions visible when the preview list is long', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+    const confirmDialog = barCode.match(
+      /function BulkSubmitConfirmDialog\([\s\S]*?\n\}\n\nfunction SecondaryQuickActionButtons/,
+    )?.[0];
+
+    expect(confirmDialog).toBeTruthy();
+    expect(confirmDialog).toMatch(
+      /role="dialog"[\s\S]*max-h-\[min\(85dvh,calc\(100%-2rem\)\)\][\s\S]*overflow-hidden[\s\S]*min-h-0/,
+    );
+    expect(confirmDialog).toMatch(
+      /min-h-0 flex-1 overflow-y-auto bb-smooth-scroll/,
+    );
+    expect(confirmDialog).toMatch(
+      /shrink-0[\s\S]*ยืนยัน\$\{typeLabel\}/,
+    );
+  });
+
   test('quick action bar uses aligned 3-column mobile action grid', () => {
     const barCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
@@ -266,6 +287,33 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain("bulkMode ? 'min-w-[8.75rem] w-max' : 'w-[6rem]'");
     expect(barCode).toContain('whitespace-nowrap tabular-nums shrink-0');
     expect(barCode).not.toContain('bb-quick-search-fit');
+  });
+
+  test('bulk queue summary does not expose paste-multiple-names control', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+    const clientCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
+      'utf-8',
+    );
+    const hookCode = fs.readFileSync(
+      path.resolve(__dirname, '../hooks/use-inventory-quick-action.ts'),
+      'utf-8',
+    );
+
+    expect(barCode).not.toContain('วางชื่อหลายรายการ');
+    expect(barCode).not.toContain('ClipboardPaste');
+    expect(barCode).not.toContain('onBulkPaste');
+    expect(fabCode).not.toContain('onBulkPaste');
+    expect(clientCode).not.toContain('onBulkPaste');
+    expect(hookCode).not.toContain('handleBulkPaste');
+    expect(hookCode).not.toContain('buildBulkQueueFromPaste');
   });
 
   test('quick search suggestions support arrow-key navigation on desktop', () => {
@@ -388,6 +436,10 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toContain('openPurchaseOrderModal');
     expect(fabCode).toContain('openAddItemModal');
     expect(fabCode).toContain('openHistoryModal');
+    expect(fabCode).toContain('prefetchInventoryHistoryFirstPage');
+    expect(fabCode).toMatch(
+      /toggleQuickPanel[\s\S]*prefetchInventoryHistoryFirstPage/,
+    );
   });
 
   test('quick action wrapper mounts globally from deferred overlays on all routes', () => {

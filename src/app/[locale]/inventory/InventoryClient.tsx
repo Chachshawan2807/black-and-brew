@@ -1759,7 +1759,6 @@ export default function InventoryClient({
                 bulkSubmitReady={quickAction.bulkSubmitReady}
                 onSelectBulkItem={quickAction.selectBulkQuickItem}
                 onAddBulkFromSearch={quickAction.addBulkItemFromSearch}
-                onBulkPaste={quickAction.handleBulkPaste}
                 onRemoveBulkItem={quickAction.removeBulkItem}
                 onBulkLineQtyChange={quickAction.setBulkLineQty}
                 onClearBulkQueue={quickAction.clearBulkQueue}

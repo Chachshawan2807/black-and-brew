@@ -613,46 +613,34 @@ export type Database = {
       service_records: {
         Row: {
           completion_date: string | null
-          cost: number
           created_at: string | null
           detected_problem: string | null
           equipment: string | null
           id: string
-          notes: string | null
-          person_in_charge: string | null
           recommended_frequency: string | null
           start_date: string | null
-          status: string | null
           task_type: string | null
           work_details: string | null
         }
         Insert: {
           completion_date?: string | null
-          cost?: number
           created_at?: string | null
           detected_problem?: string | null
           equipment?: string | null
           id?: string
-          notes?: string | null
-          person_in_charge?: string | null
           recommended_frequency?: string | null
           start_date?: string | null
-          status?: string | null
           task_type?: string | null
           work_details?: string | null
         }
         Update: {
           completion_date?: string | null
-          cost?: number
           created_at?: string | null
           detected_problem?: string | null
           equipment?: string | null
           id?: string
-          notes?: string | null
-          person_in_charge?: string | null
           recommended_frequency?: string | null
           start_date?: string | null
-          status?: string | null
           task_type?: string | null
           work_details?: string | null
         }

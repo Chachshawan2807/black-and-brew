@@ -11,8 +11,6 @@ import type {
 } from '@/lib/maintenance/types';
 
 const BANGKOK_TZ = 'Asia/Bangkok';
-const IN_PROGRESS_STATUSES = new Set(['กำลังดำเนินการ', 'pending', 'in_progress']);
-const COMPLETED_STATUSES = new Set(['เสร็จสมบูรณ์', 'completed']);
 
 function parseIsoDate(value: string | null | undefined): Date | null {
   if (!value) return null;
@@ -28,6 +26,21 @@ function toDisplayDate(isoDate: string): string {
   const parsed = parseIsoDate(isoDate);
   if (!parsed) return isoDate;
   return format(parsed, 'dd-MM-yyyy');
+}
+
+export function formatDueDateWithDaysRemaining(
+  dueDate: string,
+  currentIsoDate: string,
+): string {
+  const displayDate = toDisplayDate(dueDate);
+  const due = parseIsoDate(dueDate);
+  const today = parseIsoDate(currentIsoDate);
+  if (!due || !today) return displayDate;
+
+  const daysUntilDue = differenceInCalendarDays(due, today);
+  if (daysUntilDue < 0) return `${displayDate} (เลย ${Math.abs(daysUntilDue)} วัน)`;
+  if (daysUntilDue === 0) return `${displayDate} (วันนี้)`;
+  return `${displayDate} (${daysUntilDue} วัน)`;
 }
 
 export function classifyMaintenanceUrgency(
@@ -57,23 +70,53 @@ function buildAdvice(record: MaintenanceServiceRecord): string {
   return 'ตรวจสอบและดำเนินการตามความถี่ที่กำหนด';
 }
 
+function normalizeEquipmentKey(equipment: string): string {
+  return equipment.trim().replace(/\s+/g, '').toLowerCase();
+}
+
+function recordBaseDateIso(record: MaintenanceServiceRecord): string | null {
+  const baseDate = parseIsoDate(record.completion_date) ?? parseIsoDate(record.start_date);
+  return baseDate ? toIsoDate(baseDate) : null;
+}
+
 function computeDueDate(record: MaintenanceServiceRecord): string | null {
-  const status = record.status?.trim() ?? '';
   const frequency = parseRecommendedFrequency(record.recommended_frequency);
-
-  if (IN_PROGRESS_STATUSES.has(status)) {
-    const activeDate = parseIsoDate(record.start_date);
-    return activeDate ? toIsoDate(activeDate) : null;
-  }
-
-  if (!COMPLETED_STATUSES.has(status) || !frequency) {
-    return null;
-  }
+  if (!frequency) return null;
 
   const baseDate = parseIsoDate(record.completion_date) ?? parseIsoDate(record.start_date);
   if (!baseDate) return null;
 
   return toIsoDate(addFrequencyInterval(baseDate, frequency));
+}
+
+/** Prefer the newest service event that can produce a due date for each asset. */
+function selectLatestRecordsPerEquipment(
+  records: MaintenanceServiceRecord[],
+): MaintenanceServiceRecord[] {
+  const latestByEquipment = new Map<
+    string,
+    { record: MaintenanceServiceRecord; baseDate: string; displayName: string }
+  >();
+
+  for (const record of records) {
+    const displayName = record.equipment?.trim();
+    if (!displayName) continue;
+    if (!computeDueDate(record)) continue;
+
+    const baseDate = recordBaseDateIso(record);
+    if (!baseDate) continue;
+
+    const key = normalizeEquipmentKey(displayName);
+    const existing = latestByEquipment.get(key);
+    if (!existing || baseDate > existing.baseDate) {
+      latestByEquipment.set(key, { record, baseDate, displayName });
+    }
+  }
+
+  return [...latestByEquipment.values()].map(({ record, displayName }) => ({
+    ...record,
+    equipment: displayName,
+  }));
 }
 
 export function computeUpcomingMaintenanceTasks(
@@ -82,7 +125,7 @@ export function computeUpcomingMaintenanceTasks(
 ): UpcomingMaintenanceTask[] {
   const tasks: UpcomingMaintenanceTask[] = [];
 
-  for (const record of records) {
+  for (const record of selectLatestRecordsPerEquipment(records)) {
     const dueDate = computeDueDate(record);
     const equipment = record.equipment?.trim();
     if (!dueDate || !equipment) continue;

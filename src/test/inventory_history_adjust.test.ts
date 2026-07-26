@@ -177,7 +177,7 @@ describe('inventory history pagination and filters', () => {
     );
 
     expect(prefetchCode).toContain('prefetchInventoryHistoryFirstPage');
-    expect(hookCode).toContain('consumeInventoryHistoryPrefetch');
+    expect(hookCode).toContain('getHistoryPageCache');
     expect(hookCode).toContain('isHistoryRefreshing');
     expect(hookCode).toContain('requestIdRef');
     expect(modalCode).toContain('isHistoryRefreshing');

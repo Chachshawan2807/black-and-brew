@@ -1318,7 +1318,9 @@ export async function shipBeanOrder(
     const supabase = getSupabaseAdmin();
     const { data: order, error: fetchError } = await supabase
       .from('bean_orders')
-      .select('id, order_no, payment_status, fulfillment_status, cancelled_at, status_history')
+      .select(
+        'id, order_no, payment_status, fulfillment_status, cancelled_at, status_history, recipient_name, bean_customers(name)',
+      )
       .eq('id', orderId)
       .maybeSingle();
 
@@ -1403,6 +1405,25 @@ export async function shipBeanOrder(
     if (shipError) {
       console.error('Supabase Error (shipBeanOrder shipment):', shipError.message, shipError.details);
       return { success: false, error: shipError.message };
+    }
+
+    if (isNewShipment) {
+      const customer = order.bean_customers as { name?: string } | null;
+      const { notifyBeanOrderShipped } = await import('@/lib/bean-orders/shipment-web-push');
+      const { getBeanOrderCustomerDisplayName } = await import('@/lib/bean-orders/customer-display');
+      void notifyBeanOrderShipped({
+        orderId,
+        orderNo: (order.order_no as string) || orderId,
+        customerName: getBeanOrderCustomerDisplayName({
+          customerName: customer?.name ?? null,
+          recipientName: (order.recipient_name as string) || '',
+        }),
+        trackingNumber: trackingNumber || null,
+        carrierCode: resolvedCarrierCode,
+        locale,
+      }).catch((error) => {
+        console.error('notifyBeanOrderShipped (ship):', error);
+      });
     }
 
     if (trackingStatus) {

@@ -1,9 +1,8 @@
 'use client';
 
+import { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  CheckCircle2,
-  Clock,
   ClipboardList,
   ChevronRight,
   Loader2,
@@ -16,20 +15,16 @@ import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import {
+  getTaskTypeInputValue,
+  getTaskTypeSelectValue,
+  getUniqueEquipmentSuggestions,
+  TASK_TYPE_PRESETS,
+  type ServiceRecordFormInput,
+} from '@/lib/maintenance/service-record-form';
 import { cn } from '@/lib/utils';
 
-export interface MaintenanceFormData {
-  start_date: string;
-  equipment: string;
-  detected_problem: string;
-  task_type: string;
-  work_details: string;
-  recommended_frequency: string;
-  cost: number;
-  person_in_charge: string;
-  status: 'กำลังดำเนินการ' | 'เสร็จสมบูรณ์';
-  notes: string;
-}
+export type MaintenanceFormData = ServiceRecordFormInput;
 
 const fieldClass =
   'w-full h-11 bg-background border border-border rounded-2xl px-4 py-2 text-base md:text-sm font-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all hover:bg-muted/30';
@@ -45,6 +40,7 @@ type MaintenanceModalsProps = {
   editingRecord: { id?: string } | null;
   formData: MaintenanceFormData;
   setFormData: React.Dispatch<React.SetStateAction<MaintenanceFormData>>;
+  equipmentSuggestions: string[];
   handleSubmit: (e: React.FormEvent) => void;
   handleDelete: () => void;
   loading: boolean;
@@ -59,11 +55,82 @@ export default function MaintenanceModals({
   editingRecord,
   formData,
   setFormData,
+  equipmentSuggestions,
   handleSubmit,
   handleDelete,
   loading,
   isReadOnly,
 }: MaintenanceModalsProps) {
+  const equipmentListId = useId();
+  const taskTypeListId = useId();
+  const equipmentRootRef = useRef<HTMLDivElement>(null);
+  const taskTypeRootRef = useRef<HTMLDivElement>(null);
+  const [showEquipmentSuggestions, setShowEquipmentSuggestions] = useState(false);
+  const [highlightedEquipmentIndex, setHighlightedEquipmentIndex] = useState(-1);
+  const [showTaskTypeList, setShowTaskTypeList] = useState(false);
+
+  const taskTypeSelect = getTaskTypeSelectValue(formData.task_type);
+  const taskTypeCustom = getTaskTypeInputValue(formData.task_type);
+  const filteredEquipmentSuggestions = getUniqueEquipmentSuggestions(
+    equipmentSuggestions,
+    formData.equipment,
+  );
+  const showEquipmentList =
+    showEquipmentSuggestions && filteredEquipmentSuggestions.length > 0 && !isReadOnly;
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setShowEquipmentSuggestions(false);
+      setHighlightedEquipmentIndex(-1);
+      setShowTaskTypeList(false);
+    }
+  }, [isModalOpen]);
+
+  const selectTaskType = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      task_type: value === 'อื่นๆ' ? 'อื่นๆ' : value,
+    }));
+    setShowTaskTypeList(false);
+  };
+
+  const selectEquipmentSuggestion = (value: string) => {
+    setFormData(prev => ({ ...prev, equipment: value }));
+    setShowEquipmentSuggestions(false);
+    setHighlightedEquipmentIndex(-1);
+  };
+
+  const handleEquipmentKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showEquipmentList) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setHighlightedEquipmentIndex(prev =>
+        prev < filteredEquipmentSuggestions.length - 1 ? prev + 1 : 0,
+      );
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setHighlightedEquipmentIndex(prev =>
+        prev > 0 ? prev - 1 : filteredEquipmentSuggestions.length - 1,
+      );
+      return;
+    }
+
+    if (event.key === 'Enter' && highlightedEquipmentIndex >= 0) {
+      event.preventDefault();
+      const selected = filteredEquipmentSuggestions[highlightedEquipmentIndex];
+      if (selected) selectEquipmentSuggestion(selected);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      setShowEquipmentSuggestions(false);
+      setHighlightedEquipmentIndex(-1);
+    }
+  };
   return (
     <>
       <AnimatePresence>
@@ -113,83 +180,158 @@ export default function MaintenanceModals({
                 <div className={isReadOnly ? 'pointer-events-none opacity-60' : ''}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5 flex-1">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">วันที่รับบริการ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">วันที่ดำเนินการ</label>
                       <ClickableDatePicker
                         value={formData.start_date}
                         onChange={e => setFormData({ ...formData, start_date: e.target.value })}
                         placeholder="เลือกวันที่"
                         disabled={isReadOnly}
-                        containerClassName="bg-background border-border hover:border-foreground/20 hover:bg-muted/30 transition-all"
+                        containerClassName="w-full"
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div
+                      ref={taskTypeRootRef}
+                      className="space-y-1.5 relative"
+                      onBlur={e => {
+                        const next = e.relatedTarget as Node | null;
+                        if (next && taskTypeRootRef.current?.contains(next)) return;
+                        window.setTimeout(() => setShowTaskTypeList(false), 150);
+                      }}
+                    >
                       <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ประเภทงาน</label>
                       <div className="relative">
-                        <select
-                          value={formData.task_type}
-                          onChange={e => setFormData({ ...formData, task_type: e.target.value })}
+                        <button
+                          type="button"
                           disabled={isReadOnly}
-                          className={`${fieldClass} appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed`}
+                          onClick={() => setShowTaskTypeList(prev => !prev)}
+                          aria-haspopup="listbox"
+                          aria-expanded={showTaskTypeList}
+                          aria-controls={showTaskTypeList ? taskTypeListId : undefined}
+                          className={`${fieldClass} appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed text-left pr-10`}
                         >
-                          <option value="ซ่อมแซม">ซ่อมแซม</option>
-                          <option value="บำรุงรักษา">บำรุงรักษา</option>
-                          <option value="ติดตั้ง">ติดตั้ง</option>
-                          <option value="เปลี่ยนอะไหล่">เปลี่ยนอะไหล่</option>
-                          <option value="อื่นๆ">อื่นๆ</option>
-                        </select>
+                          {taskTypeSelect}
+                        </button>
                         <ChevronRight className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-foreground/30 pointer-events-none" />
                       </div>
+                      {showTaskTypeList && !isReadOnly && (
+                        <ul
+                          id={taskTypeListId}
+                          data-testid="task-type-listbox"
+                          role="listbox"
+                          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-2xl border border-border bg-card text-foreground bb-shadow-lg"
+                        >
+                          {TASK_TYPE_PRESETS.map(preset => (
+                            <li key={preset} role="option" aria-selected={taskTypeSelect === preset}>
+                              <button
+                                type="button"
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={() => selectTaskType(preset)}
+                                className={cn(
+                                  'w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors',
+                                  taskTypeSelect === preset ? 'bg-muted' : 'hover:bg-muted/60',
+                                )}
+                              >
+                                {preset}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {taskTypeSelect === 'อื่นๆ' && (
+                        <input
+                          type="text"
+                          placeholder="ระบุประเภทงาน"
+                          value={taskTypeCustom}
+                          onChange={e =>
+                            setFormData(prev => ({
+                              ...prev,
+                              task_type: e.target.value.trim() === '' ? 'อื่นๆ' : e.target.value,
+                            }))
+                          }
+                          disabled={isReadOnly}
+                          className={fieldClass}
+                        />
+                      )}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
+                    <div
+                      ref={equipmentRootRef}
+                      className="space-y-1.5 relative"
+                      onBlur={e => {
+                        const next = e.relatedTarget as Node | null;
+                        if (next && equipmentRootRef.current?.contains(next)) return;
+                        window.setTimeout(() => setShowEquipmentSuggestions(false), 150);
+                      }}
+                    >
                       <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ชื่ออุปกรณ์</label>
                       <input
                         type="text"
                         required
                         placeholder="เช่น เครื่องชงเอสเปรสโซ"
                         value={formData.equipment}
-                        onChange={e => setFormData({ ...formData, equipment: e.target.value })}
+                        onChange={e => {
+                          setFormData(prev => ({ ...prev, equipment: e.target.value }));
+                          setShowEquipmentSuggestions(true);
+                          setHighlightedEquipmentIndex(-1);
+                        }}
+                        onFocus={() => setShowEquipmentSuggestions(true)}
+                        onKeyDown={handleEquipmentKeyDown}
+                        role="combobox"
+                        aria-expanded={showEquipmentList}
+                        aria-controls={showEquipmentList ? equipmentListId : undefined}
+                        aria-autocomplete="list"
+                        aria-activedescendant={
+                          showEquipmentList && highlightedEquipmentIndex >= 0
+                            ? `${equipmentListId}-option-${highlightedEquipmentIndex}`
+                            : undefined
+                        }
                         className={fieldClass}
                       />
+                      {showEquipmentList && (
+                        <ul
+                          id={equipmentListId}
+                          role="listbox"
+                          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-2xl border border-border bg-card bb-shadow-lg"
+                        >
+                          {filteredEquipmentSuggestions.map((suggestion, index) => (
+                            <li
+                              key={suggestion}
+                              id={`${equipmentListId}-option-${index}`}
+                              role="option"
+                              aria-selected={highlightedEquipmentIndex === index}
+                            >
+                              <button
+                                type="button"
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={() => selectEquipmentSuggestion(suggestion)}
+                                className={cn(
+                                  'w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors',
+                                  highlightedEquipmentIndex === index
+                                    ? 'bg-muted'
+                                    : 'hover:bg-muted/60',
+                                )}
+                              >
+                                {suggestion}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ความถี่ที่แนะนำ</label>
+                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ดำเนินการทุก (เดือน)</label>
                       <input
-                        type="text"
-                        placeholder="เช่น ทุก 3 เดือน"
+                        type="number"
+                        min="1"
+                        inputMode="numeric"
+                        placeholder="เช่น 3"
                         value={formData.recommended_frequency}
-                        onChange={e => setFormData({ ...formData, recommended_frequency: e.target.value })}
-                        className={fieldClass}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ค่าใช้จ่าย (บาท)</label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-base md:text-sm font-normal">฿</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={formData.cost === 0 ? '' : formData.cost}
-                          onChange={e => {
-                            const val = e.target.value.replace(/^0+/, '');
-                            setFormData({ ...formData, cost: val === '' ? 0 : Number(val) });
-                          }}
-                          className={`${fieldClass} pl-8`}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ผู้รับผิดชอบ</label>
-                      <input
-                        type="text"
-                        placeholder="ชื่อ"
-                        value={formData.person_in_charge}
-                        onChange={e => setFormData({ ...formData, person_in_charge: e.target.value })}
+                        onChange={e => {
+                          const val = e.target.value.replace(/^0+(?=\d)/, '');
+                          setFormData(prev => ({ ...prev, recommended_frequency: val }));
+                        }}
                         className={fieldClass}
                       />
                     </div>
@@ -214,42 +356,6 @@ export default function MaintenanceModals({
                         value={formData.work_details}
                         onChange={e => setFormData({ ...formData, work_details: e.target.value })}
                         className={textareaClass}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
-                    <div className="space-y-2">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">สถานะงาน</label>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setFormData({ ...formData, status: 'กำลังดำเนินการ' })}
-                          disabled={isReadOnly}
-                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'กำลังดำเนินการ' ? 'bb-pastel-surface bg-[#f0f9ff] text-[#000000] border border-[#e0f2fe] bb-shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'}`}
-                        >
-                          <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
-                          กำลังดำเนินการ
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFormData({ ...formData, status: 'เสร็จสมบูรณ์' })}
-                          disabled={isReadOnly}
-                          className={`flex-1 flex items-center justify-center gap-2 h-11 md:h-auto md:py-3 rounded-2xl text-base md:text-[13px] font-normal transition-all disabled:opacity-60 disabled:cursor-not-allowed ${formData.status === 'เสร็จสมบูรณ์' ? 'bb-pastel-surface bg-[#f0fdf4] text-[#000000] border border-[#dcfce7] bb-shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'}`}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                          เสร็จสิ้น
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">หมายเหตุ</label>
-                      <input
-                        type="text"
-                        placeholder="หมายเหตุ"
-                        value={formData.notes}
-                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                        className={fieldClass}
                       />
                     </div>
                   </div>

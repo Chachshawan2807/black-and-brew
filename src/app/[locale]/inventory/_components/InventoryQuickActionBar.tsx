@@ -16,7 +16,6 @@ import {
   ChevronDown,
   List,
   Layers,
-  ClipboardPaste,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -80,7 +79,6 @@ export type InventoryQuickActionBarProps = {
   bulkSubmitReady?: boolean;
   onSelectBulkItem?: (item: QuickActionItem) => void;
   onAddBulkFromSearch?: () => void;
-  onBulkPaste?: (text: string) => void;
   onRemoveBulkItem?: (itemId: string) => void;
   onBulkLineQtyChange?: (itemId: string, qty: string) => void;
   onClearBulkQueue?: () => void;
@@ -312,34 +310,19 @@ function BulkModeToggle({
 
 function BulkQueueSummaryCell({
   count,
-  onPaste,
   compact = false,
 }: {
   count: number;
-  onPaste?: () => void;
   compact?: boolean;
 }) {
   return (
     <div
       className={cn(
-        'flex w-full items-center gap-1 rounded-3xl border border-border bg-muted/30 px-2 text-sm text-foreground antialiased',
+        'flex w-full items-center justify-center gap-1 rounded-3xl border border-border bg-muted/30 px-2 text-sm text-foreground antialiased',
         compact ? 'h-9 rounded-xl text-xs' : 'h-11',
-        onPaste ? 'justify-between' : 'justify-center',
       )}
     >
       <span className="whitespace-nowrap tabular-nums shrink-0">{count} รายการ</span>
-      {onPaste && (
-        <HintTooltip tip="วางชื่อหลายรายการ">
-          <button
-            type="button"
-            onClick={onPaste}
-            aria-label="วางชื่อหลายรายการ"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ClipboardPaste className="w-3.5 h-3.5" strokeWidth={1.75} />
-          </button>
-        </HintTooltip>
-      )}
     </div>
   );
 }
@@ -477,16 +460,18 @@ function BulkSubmitConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="bulk-submit-confirm-title"
-        className="w-[min(640px,92vw)] max-h-[min(85dvh,100%)] rounded-2xl border border-border bg-card text-foreground bb-shadow-xl flex flex-col"
+        className="w-[min(640px,92vw)] max-h-[min(85dvh,calc(100%-2rem))] min-h-0 overflow-hidden rounded-2xl border border-border bg-card text-foreground bb-shadow-xl flex flex-col pb-[env(safe-area-inset-bottom)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex max-h-[min(85dvh,100%)] flex-col p-4 md:p-5">
-          <h3 id="bulk-submit-confirm-title" className="text-base font-normal">
-            สรุปรายการ{typeLabel}
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {bulkPreviews.length} รายการ — ตรวจสอบก่อนยืนยันบันทึก
-          </p>
+        <div className="flex min-h-0 flex-1 flex-col p-4 md:p-5">
+          <div className="shrink-0">
+            <h3 id="bulk-submit-confirm-title" className="text-base font-normal">
+              สรุปรายการ{typeLabel}
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {bulkPreviews.length} รายการ — ตรวจสอบก่อนยืนยันบันทึก
+            </p>
+          </div>
           <div className="mt-3 min-h-0 flex-1 overflow-y-auto bb-smooth-scroll rounded-xl border border-border bg-muted/15 divide-y divide-border/60">
             {bulkPreviews.map(({ line, preview }) => (
               <div key={line.itemId} className={cn('flex items-center gap-3 px-3 py-2.5 min-w-0', rowTone)}>
@@ -502,7 +487,7 @@ function BulkSubmitConfirmDialog({
               </div>
             ))}
           </div>
-          <div className="mt-4 flex justify-end gap-2">
+          <div className="mt-4 flex shrink-0 justify-end gap-2">
             <button
               type="button"
               onClick={onCancel}
@@ -623,7 +608,6 @@ export function InventoryQuickActionBar({
   bulkSubmitReady = false,
   onSelectBulkItem,
   onAddBulkFromSearch,
-  onBulkPaste,
   onRemoveBulkItem,
   onBulkLineQtyChange,
   onClearBulkQueue,
@@ -767,19 +751,6 @@ export function InventoryQuickActionBar({
       handleClearQuickSearch();
     }
   };
-  const handlePasteClick = () => {
-    if (!onBulkPaste) return;
-    void navigator.clipboard.readText().then((text) => {
-      if (!text.trim()) {
-        alert('ไม่พบข้อความในคลิปบอร์ด');
-        return;
-      }
-      onBulkPaste(text);
-    }).catch(() => {
-      alert('ไม่สามารถอ่านคลิปบอร์ดได้');
-    });
-  };
-
   const suggestionsListClassName =
     'bg-card border border-border rounded-xl bb-shadow-md overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200';
 
@@ -937,7 +908,6 @@ export function InventoryQuickActionBar({
               {bulkMode ? (
                 <BulkQueueSummaryCell
                   count={bulkQueue.length}
-                  onPaste={onBulkPaste ? handlePasteClick : undefined}
                   compact
                 />
               ) : (
@@ -987,7 +957,6 @@ export function InventoryQuickActionBar({
             {bulkMode ? (
               <BulkQueueSummaryCell
                 count={bulkQueue.length}
-                onPaste={onBulkPaste ? handlePasteClick : undefined}
               />
             ) : (
               <QuickActionQtyInput

@@ -1,4 +1,4 @@
-/** Bulk IN/OUT queue for inventory quick action — names only on paste; qty per row. */
+/** Bulk IN/OUT queue for inventory quick action — search/add lines; qty per row. */
 
 export type BulkStockItem = {
   id: string;
@@ -37,13 +37,6 @@ export function parseBulkEntry(line: string): { name: string; qty: string } {
     return { name: namePart, qty: qtyPart || '1' };
   }
   return { name: cleanedLine, qty: '1' };
-}
-
-export function parseBulkPasteNames(text: string): string[] {
-  return text
-    .split(/[\n,]+/)
-    .map((part) => parseBulkEntry(part).name.trim())
-    .filter(Boolean);
 }
 
 export function findItemByFuzzyName<T extends BulkStockItem>(items: T[], name: string): T | undefined {
@@ -129,42 +122,10 @@ export function setBulkLineQty(queue: BulkQueueItem[], itemId: string, qty: stri
   return queue.map((line) => (line.itemId === itemId ? { ...line, qty } : line));
 }
 
-export function buildBulkQueueFromPaste(
-  text: string,
-  items: BulkStockItem[],
-  existingQueue: BulkQueueItem[],
-): { queue: BulkQueueItem[]; added: BulkQueueItem[]; unknownNames: string[] } {
-  const rawLines = text.split(/[\n,]+/).map((part) => part.trim()).filter(Boolean);
-  const added: BulkQueueItem[] = [];
-  const unknownNames: string[] = [];
-  let queue = existingQueue;
-
-  for (const line of rawLines) {
-    const { name, qty } = parseBulkEntry(line);
-    const item = findItemByFuzzyName(items, name);
-    
-    if (!item) {
-      unknownNames.push(name);
-      continue;
-    }
-    
-    const beforeLen = queue.length;
-    const result = addBulkQueueItem(queue, item);
-    queue = result.queue;
-    
-    queue = setBulkLineQty(queue, item.id, qty);
-    
-    if (queue.length > beforeLen) {
-      added.push(queue[0]!);
-    }
-  }
-
-  return { queue, added, unknownNames };
-}
-
-function parsePositiveQty(qty: string): number | null {
+/** Empty qty means 1 for IN/OUT; rejects 0, negative, and non-numeric values. */
+export function resolveInOutQuantity(qty: string): number | null {
   const trimmed = qty.trim();
-  if (trimmed === '') return null;
+  if (trimmed === '') return 1;
   const parsed = Number(trimmed);
   if (Number.isNaN(parsed) || parsed <= 0) return null;
   return parsed;
@@ -172,7 +133,7 @@ function parsePositiveQty(qty: string): number | null {
 
 export function computeBulkPreview(line: BulkQueueItem, type: BulkQuickType): BulkPreview {
   const before = Number(line.currentStock) || 0;
-  const qty = parsePositiveQty(line.qty);
+  const qty = resolveInOutQuantity(line.qty);
 
   if (qty === null) {
     return { itemId: line.itemId, before, after: before, error: 'กรุณาระบุจำนวนที่ถูกต้อง' };
@@ -209,6 +170,6 @@ export function resolveBulkSubmitPayload(
     .map((line) => ({
       itemId: line.itemId,
       type,
-      quantity: Number(line.qty.trim()),
+      quantity: resolveInOutQuantity(line.qty)!,
     }));
 }

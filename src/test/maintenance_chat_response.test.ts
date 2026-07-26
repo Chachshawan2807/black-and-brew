@@ -19,7 +19,6 @@ const sampleRecords: MaintenanceServiceRecord[] = [
     start_date: '2026-04-17',
     completion_date: '2026-04-17',
     recommended_frequency: 'ทุก 3 เดือน',
-    status: 'เสร็จสมบูรณ์',
   },
   {
     id: '2',
@@ -28,7 +27,6 @@ const sampleRecords: MaintenanceServiceRecord[] = [
     start_date: '2026-04-04',
     completion_date: '2026-04-04',
     recommended_frequency: 'ทุก 3 เดือน',
-    status: 'เสร็จสมบูรณ์',
   },
   {
     id: '3',
@@ -37,7 +35,6 @@ const sampleRecords: MaintenanceServiceRecord[] = [
     start_date: '2026-05-06',
     completion_date: '2026-05-06',
     recommended_frequency: 'ทุก 6 เดือน',
-    status: 'เสร็จสมบูรณ์',
   },
 ];
 

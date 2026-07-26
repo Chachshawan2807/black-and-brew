@@ -11,7 +11,7 @@ export const EXECUTIVE_RULES = {
     inventory_count_verifications: "ตารางผลตรวจนับสต็อก (counted_qty vs system_stock_qty, matched) สำหรับรายงานความแม่นยำ",
     profiles: "ตารางรายชื่อพนักงานทั้งหมดในร้าน (ใช้เชื่อมโยงกับ employee_id เพื่อหาชื่อพนักงาน)",
     shifts: "ตารางกะการทำงานและวันลาของพนักงาน (ใช้ดูตารางงานล่วงหน้า โดยเช็กจาก start_time และ end_time)",
-    service_records: "ตารางประวัติการซ่อมบำรุง (คอลัมน์: id, start_date, equipment, detected_problem, task_type, work_details, cost, recommended_frequency, person_in_charge, status, completion_date, notes — ห้ามใช้ machine_name, maintenance_date, operator, description, recorded_at)",
+    service_records: "ตารางประวัติการซ่อมบำรุง (คอลัมน์: id, start_date, equipment, detected_problem, task_type, work_details, recommended_frequency, completion_date — ห้ามใช้ machine_name, maintenance_date, operator, description, recorded_at, cost, person_in_charge, status, notes)",
     holidays: "ตารางบันทึกวันหยุดนักขัตฤกษ์ล่วงหน้า (ใช้ประกอบการประเมินความหนาแน่นของลูกค้า)",
     sales_records: "ตารางรายการขายจากไฟล์อัปโหลด (sale_date, product_name, category, quantity, total_amount)",
     bean_orders: "ตารางคำสั่งซื้อเมล็ดกาแฟ (order_no, payment_status unpaid/paid, fulfillment_status pending/shipped, total_baht)",
@@ -78,9 +78,9 @@ export const EXECUTIVE_RULES = {
       ],
       urgency_logic: [
         'จัดลำดับความเร่งด่วนโดยใช้กฎต่อไปนี้:',
-        '  - status = "pending" หรือ "in_progress" ถือว่ายังไม่เสร็จ → เร่งด่วนกว่า "completed"',
+        '  - รวมบันทึกซ้ำของอุปกรณ์เดียวกัน: ใช้เฉพาะรอบบริการล่าสุดต่ออุปกรณ์ (normalize ชื่อ) เพื่อคำนวณวันครบกำหนด',
         '  - ถ้ามี recommended_frequency ให้คำนวณจาก completion_date (หรือ start_date) + frequency',
-        '  - ถ้าไม่มี recommended_frequency ให้ประเมินจากความรุนแรงของ detected_problem',
+        '  - ถ้าไม่มี recommended_frequency ให้ข้ามรายการนั้นในการจัดลำดับครบกำหนด',
       ],
       example_format:
         '1. 17-07-2026 | ท่อระบายน้ำทิ้งเครื่องชงกาแฟ\n   ทำความสะอาดด้วยโซดาไฟและล้วงท่อ',

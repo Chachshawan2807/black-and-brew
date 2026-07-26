@@ -20,6 +20,7 @@ import {
 } from '@/app/actions/inventory-actions';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryHistory } from '@/hooks/use-inventory-history';
+import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import {
   FAB_STACK_INNER_CLASS,
@@ -160,6 +161,7 @@ export default function InventoryQuickActionFAB() {
         return false;
       }
       setIsPanelRendered(true);
+      void prefetchInventoryHistoryFirstPage();
       return true;
     });
   }, []);
@@ -357,7 +359,6 @@ export default function InventoryQuickActionFAB() {
                   bulkSubmitReady={quickAction.bulkSubmitReady}
                   onSelectBulkItem={quickAction.selectBulkQuickItem}
                   onAddBulkFromSearch={quickAction.addBulkItemFromSearch}
-                  onBulkPaste={quickAction.handleBulkPaste}
                   onRemoveBulkItem={quickAction.removeBulkItem}
                   onBulkLineQtyChange={quickAction.setBulkLineQty}
                   onClearBulkQueue={quickAction.clearBulkQueue}

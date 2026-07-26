@@ -141,17 +141,14 @@ export default function HomePurchaseOrdersSection({
           isDashboard ? 'mb-3 md:mb-2.5' : 'mb-5',
         )}
       >
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
             <ShoppingCart className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} aria-hidden />
           </div>
           <div className="min-w-0">
             <h2 className="text-[clamp(1rem,2.5vw,1.25rem)] font-normal text-foreground tracking-tight leading-snug">
               รายการที่ต้องสั่งซื้อ
             </h2>
-            <p className="mt-1 text-[0.8rem] font-normal text-muted-foreground/90 tracking-wide">
-              คลังสินค้า · อัปเดตแบบเรียลไทม์
-            </p>
           </div>
         </div>
 

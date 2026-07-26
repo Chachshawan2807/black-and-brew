@@ -79,6 +79,17 @@ function QuickActionHarness({
       <button
         type="button"
         onClick={() => {
+          quickAction.setQuickType('IN');
+          quickAction.setQuickSearch('Beans');
+          quickAction.setQuickQty('');
+          quickAction.setIsSearchFocused(true);
+        }}
+      >
+        fill-normal-in-empty-qty
+      </button>
+      <button
+        type="button"
+        onClick={() => {
           quickAction.setQuickType('ADJUST');
           quickAction.setQuickSearch('Beans');
           quickAction.setQuickQty('8');
@@ -132,6 +143,51 @@ describe('useInventoryQuickAction save reset behavior', () => {
     expect(screen.getByTestId('quick-qty')).toHaveTextContent('');
     expect(screen.getByTestId('search-focused')).toHaveTextContent('false');
     expect(onAfterSave).toHaveBeenCalledTimes(1);
+  });
+
+  test('normal IN save with empty qty records quantity 1', async () => {
+    vi.mocked(recordTransaction).mockResolvedValue({ success: true, newStock: 6 });
+
+    render(<QuickActionHarness />);
+
+    fireEvent.click(screen.getByText('fill-normal-in-empty-qty'));
+    fireEvent.click(screen.getByText('save'));
+
+    await waitFor(() =>
+      expect(recordTransaction).toHaveBeenCalledWith(
+        'beans',
+        'IN',
+        1,
+        'Quick Entry',
+        expect.objectContaining({ notificationSource: 'inventory_quick_action_bar' }),
+      ),
+    );
+  });
+
+  test('bulk IN with empty line qty submits quantity 1', async () => {
+    vi.mocked(recordBulkInventoryTransactions).mockResolvedValue({
+      success: true,
+      error: undefined,
+      results: [{ itemId: 'milk', success: true, newStock: 4 }],
+    });
+
+    render(<QuickActionHarness />);
+
+    fireEvent.click(screen.getByText('bulk-on'));
+    fireEvent.click(screen.getByText('add-milk'));
+
+    await waitFor(() => expect(screen.getByTestId('bulk-ready')).toHaveTextContent('true'));
+
+    fireEvent.click(screen.getByText('save'));
+    fireEvent.click(screen.getByText('confirm-bulk'));
+
+    await waitFor(() =>
+      expect(recordBulkInventoryTransactions).toHaveBeenCalledWith(
+        [{ itemId: 'milk', type: 'IN', quantity: 1 }],
+        'Quick Entry - Bulk',
+        expect.objectContaining({ notificationSource: 'inventory_quick_action_bar' }),
+      ),
+    );
   });
 
   test('keeps quick submit pending until the server action settles', async () => {

@@ -7,6 +7,7 @@ import {
   useInventoryRealtime,
   type InventoryRealtimeItem,
 } from '@/contexts/InventoryRealtimeContext';
+import { useHomeMaintenanceTasks } from '@/hooks/use-home-maintenance-tasks';
 import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';
 import HomePurchaseOrdersSection from './HomePurchaseOrdersSection';
 import HomeMaintenanceDueSection from './HomeMaintenanceDueSection';
@@ -30,6 +31,7 @@ export default function HomeOpsPanels({
   const isDashboard = layout === 'dashboard';
   const [activeTab, setActiveTab] = useState<HomeOpsTab>('purchase');
   const { items, refresh, hasLoaded } = useInventoryRealtime();
+  const liveMaintenanceTasks = useHomeMaintenanceTasks(maintenanceTasks);
 
   const effectiveItems = hasLoaded ? items : initialItems;
 
@@ -43,7 +45,7 @@ export default function HomeOpsPanels({
   );
 
   const purchaseCount = itemsToOrder.length;
-  const maintenanceCount = maintenanceTasks.length;
+  const maintenanceCount = liveMaintenanceTasks.length;
 
   const tabButtonClass = (tab: HomeOpsTab) =>
     cn(
@@ -95,7 +97,7 @@ export default function HomeOpsPanels({
           />
         ) : (
           <HomeMaintenanceDueSection
-            tasks={maintenanceTasks}
+            tasks={liveMaintenanceTasks}
             locale={locale}
             layout={layout}
           />
@@ -116,7 +118,7 @@ export default function HomeOpsPanels({
           layout={layout}
         />
         <HomeMaintenanceDueSection
-          tasks={maintenanceTasks}
+          tasks={liveMaintenanceTasks}
           locale={locale}
           layout={layout}
         />

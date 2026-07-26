@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'vitest';
-import { computeUpcomingMaintenanceTasks } from '@/lib/maintenance/compute-upcoming-maintenance';
+import {
+  computeUpcomingMaintenanceTasks,
+  formatDueDateWithDaysRemaining,
+} from '@/lib/maintenance/compute-upcoming-maintenance';
 import {
   computeMaintenanceDueWithinMonth,
   filterMaintenanceDueWithinMonth,
@@ -14,7 +17,6 @@ const sampleRecords: MaintenanceServiceRecord[] = [
     start_date: '2026-04-04',
     completion_date: '2026-04-04',
     recommended_frequency: 'ทุก 3 เดือน',
-    status: 'เสร็จสมบูรณ์',
   },
   {
     id: '2',
@@ -23,7 +25,6 @@ const sampleRecords: MaintenanceServiceRecord[] = [
     start_date: '2026-05-06',
     completion_date: '2026-05-06',
     recommended_frequency: 'ทุก 6 เดือน',
-    status: 'เสร็จสมบูรณ์',
   },
 ];
 
@@ -41,5 +42,85 @@ describe('filter-due-within-month', () => {
     const tasks = computeMaintenanceDueWithinMonth(sampleRecords, '2026-07-08');
     const dueDates = tasks.map((task) => task.dueDate);
     expect([...dueDates].sort()).toEqual(dueDates);
+  });
+
+  test('keeps only the latest service per equipment when recomputing due dates', () => {
+    const records: MaintenanceServiceRecord[] = [
+      {
+        id: 'old',
+        equipment: 'เครื่องกรองน้ำ',
+        work_details: 'เปลี่ยนไส้กรองหยาบ',
+        start_date: '2026-04-04',
+        completion_date: '2026-04-04',
+        recommended_frequency: 'ทุก 3 เดือน',
+      },
+      {
+        id: 'new',
+        equipment: 'เครื่องกรองน้ำ',
+        work_details: 'เปลี่ยนไส้กรองละเอียด',
+        start_date: '2026-07-20',
+        completion_date: '2026-07-20',
+        recommended_frequency: 'ทุก 3 เดือน',
+      },
+    ];
+
+    const tasks = computeMaintenanceDueWithinMonth(records, '2026-07-26');
+
+    expect(tasks).toHaveLength(0);
+    expect(computeUpcomingMaintenanceTasks(records, '2026-07-26')).toEqual([
+      expect.objectContaining({
+        id: 'new',
+        equipment: 'เครื่องกรองน้ำ',
+        dueDate: '2026-10-20',
+        advice: 'เปลี่ยนไส้กรองละเอียด',
+      }),
+    ]);
+  });
+
+  test('treats equipment names with spacing differences as the same asset', () => {
+    const records: MaintenanceServiceRecord[] = [
+      {
+        id: 'a',
+        equipment: 'เครื่อง ชงกาแฟ',
+        work_details: 'ล้างกรุ๊ปเฮด',
+        start_date: '2026-06-01',
+        completion_date: '2026-06-01',
+        recommended_frequency: 'ทุก 1 เดือน',
+      },
+      {
+        id: 'b',
+        equipment: 'เครื่องชงกาแฟ',
+        work_details: 'ล้างกรุ๊ปเฮดรอบใหม่',
+        start_date: '2026-07-10',
+        completion_date: '2026-07-10',
+        recommended_frequency: 'ทุก 1 เดือน',
+      },
+    ];
+
+    const tasks = computeUpcomingMaintenanceTasks(records, '2026-07-26');
+
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]).toMatchObject({
+      id: 'b',
+      equipment: 'เครื่องชงกาแฟ',
+      dueDate: '2026-08-10',
+    });
+  });
+});
+
+describe('formatDueDateWithDaysRemaining', () => {
+  test('formats upcoming due date with remaining days', () => {
+    expect(formatDueDateWithDaysRemaining('2026-08-15', '2026-07-26')).toBe(
+      '15-08-2026 (20 วัน)',
+    );
+  });
+
+  test('formats due today and overdue days', () => {
+    expect(formatDueDateWithDaysRemaining('2026-07-26', '2026-07-26')).toBe(
+      '26-07-2026 (วันนี้)',
+    );
+    expect(formatDueDateWithDaysRemaining('2026-07-20', '2026-07-26')).toBe(
+      '20-07-2026 (เลย 6 วัน)',
+    );
   });
 });

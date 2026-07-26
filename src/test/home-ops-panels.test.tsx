@@ -10,6 +10,10 @@ vi.mock('@/lib/supabase-session', () => ({
   ensureSupabaseSession: vi.fn().mockResolvedValue(true),
 }));
 
+vi.mock('@/hooks/use-home-maintenance-tasks', () => ({
+  useHomeMaintenanceTasks: (tasks: UpcomingMaintenanceTask[]) => tasks,
+}));
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
@@ -107,5 +111,26 @@ describe('HomeMaintenanceDueSection', () => {
     expect(
       screen.getByText('ไม่มีรายการซ่อมบำรุงที่ต้องทำภายใน 1 เดือน'),
     ).toBeInTheDocument();
+  });
+
+  test('shows due date with remaining days and hides urgency column', () => {
+    render(
+      <HomeMaintenanceDueSection
+        tasks={[
+          {
+            id: 'm1',
+            equipment: 'เครื่องกรองน้ำ',
+            advice: 'เปลี่ยนไส้กรองหยาบ',
+            dueDate: '2026-08-15',
+            urgency: 'within_30_days',
+          },
+        ]}
+        locale="th"
+        currentIsoDate="2026-07-26"
+      />,
+    );
+
+    expect(screen.queryByRole('columnheader', { name: 'ความเร่งด่วน' })).not.toBeInTheDocument();
+    expect(screen.getAllByText('15-08-2026 (20 วัน)').length).toBeGreaterThanOrEqual(1);
   });
 });

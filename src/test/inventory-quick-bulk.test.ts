@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import {
   addBulkQueueItem,
-  buildBulkQueueFromPaste,
   canSubmitBulkQueue,
   computeBulkPreview,
   getBulkSubmitTypeLabel,
-  parseBulkPasteNames,
+  resolveBulkSubmitPayload,
+  resolveInOutQuantity,
   setBulkLineQty,
   type BulkQueueItem,
   type BulkStockItem,
@@ -18,26 +18,18 @@ const items: BulkStockItem[] = [
 ];
 
 describe('inventory-quick-bulk', () => {
+  test('resolveInOutQuantity treats empty as 1 and rejects non-positive values', () => {
+    expect(resolveInOutQuantity('')).toBe(1);
+    expect(resolveInOutQuantity('   ')).toBe(1);
+    expect(resolveInOutQuantity('3')).toBe(3);
+    expect(resolveInOutQuantity('0')).toBeNull();
+    expect(resolveInOutQuantity('-2')).toBeNull();
+    expect(resolveInOutQuantity('abc')).toBeNull();
+  });
+
   test('getBulkSubmitTypeLabel returns Thai labels for IN and OUT', () => {
     expect(getBulkSubmitTypeLabel('IN')).toBe('รับเข้า');
     expect(getBulkSubmitTypeLabel('OUT')).toBe('นำออก');
-  });
-
-  test('parseBulkPasteNames splits newline and comma separated names', () => {
-    expect(parseBulkPasteNames('นมสด\nกาแฟอาราบิกา, น้ำตาล')).toEqual([
-      'นมสด',
-      'กาแฟอาราบิกา',
-      'น้ำตาล',
-    ]);
-    expect(parseBulkPasteNames('  \n  ')).toEqual([]);
-  });
-
-  test('buildBulkQueueFromPaste resolves exact names and skips unknown', () => {
-    const { queue, added, unknownNames } = buildBulkQueueFromPaste('นมสด\nไม่มีในระบบ', items, []);
-    expect(added).toHaveLength(1);
-    expect(queue).toHaveLength(1);
-    expect(queue[0]?.itemId).toBe('a1');
-    expect(unknownNames).toEqual(['ไม่มีในระบบ']);
   });
 
   test('addBulkQueueItem deduplicates by item id', () => {
@@ -52,11 +44,6 @@ describe('inventory-quick-bulk', () => {
     const first = addBulkQueueItem([], items[0]!);
     const second = addBulkQueueItem(first.queue, items[1]!);
     expect(second.queue.map((line) => line.itemId)).toEqual(['b2', 'a1']);
-  });
-
-  test('buildBulkQueueFromPaste keeps last pasted line at top', () => {
-    const { queue } = buildBulkQueueFromPaste('นมสด\nกาแฟอาราบิกา', items, []);
-    expect(queue.map((line) => line.itemId)).toEqual(['b2', 'a1']);
   });
 
   test('computeBulkPreview IN adds qty to current stock', () => {
@@ -86,7 +73,31 @@ describe('inventory-quick-bulk', () => {
     expect(computeBulkPreview(bad, 'OUT').error).toMatch(/ไม่พอ/);
   });
 
-  test('canSubmitBulkQueue requires every line to have valid qty', () => {
+  test('empty qty defaults to 1 for IN/OUT preview and submit', () => {
+    const line: BulkQueueItem = {
+      itemId: 'a1',
+      name: 'นมสด',
+      unit: 'กล่อง',
+      currentStock: 12,
+      qty: '',
+    };
+    expect(computeBulkPreview(line, 'IN')).toEqual({
+      itemId: 'a1',
+      before: 12,
+      after: 13,
+    });
+    expect(computeBulkPreview(line, 'OUT')).toEqual({
+      itemId: 'a1',
+      before: 12,
+      after: 11,
+    });
+    expect(canSubmitBulkQueue([line], 'IN')).toBe(true);
+    expect(resolveBulkSubmitPayload([line], 'IN')).toEqual([
+      { itemId: 'a1', type: 'IN', quantity: 1 },
+    ]);
+  });
+
+  test('canSubmitBulkQueue rejects invalid non-empty qty', () => {
     const queue: BulkQueueItem[] = [
       {
         itemId: 'a1',
@@ -100,11 +111,11 @@ describe('inventory-quick-bulk', () => {
         name: 'กาแฟอาราบิกา',
         unit: 'kg',
         currentStock: 3,
-        qty: '',
+        qty: '0',
       },
     ];
     expect(canSubmitBulkQueue(queue, 'IN')).toBe(false);
-    expect(canSubmitBulkQueue([{ ...queue[0]!, qty: '2' }], 'IN')).toBe(true);
+    expect(canSubmitBulkQueue([{ ...queue[0]! }], 'IN')).toBe(true);
   });
 
   test('setBulkLineQty updates only matching row', () => {

@@ -112,6 +112,16 @@ describe('notification display icons', () => {
     expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d4edda]');
   });
 
+  test('uses truck icon for bean order shipped notifications', () => {
+    const item = sampleNotification({
+      title: 'ส่งแล้ว',
+      metadata: { kind: 'bean_order_shipped', url: '/th/bean-orders/order-1' },
+    });
+
+    expect(resolveNotificationDisplayIcon(item).kind).toBe('bean-delivered');
+    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d4edda]');
+  });
+
   test('notification panel uses shared item icon component', () => {
     const root = path.resolve(__dirname, '..');
     const panel = fs.readFileSync(

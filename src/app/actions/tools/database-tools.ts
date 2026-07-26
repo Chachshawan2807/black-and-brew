@@ -39,7 +39,7 @@ export const readTableTool = tool({
 
 [คอลัมน์สำคัญ]
 - inventory_items: name, stock, order_point, target_stock, order_qty, unit, source, count_policy
-- service_records: equipment, start_date, person_in_charge, status, detected_problem
+- service_records: equipment, start_date, detected_problem, task_type, recommended_frequency, completion_date
 - shifts: employee_id, status, start_time, end_time, metadata (shift_type มาจาก metadata.location)
 - sales_records: sale_date, product_name, category, quantity, unit_price, total_amount, payment_method
 - bean_orders: order_no, payment_status, fulfillment_status, total_baht, recipient_name

@@ -1,9 +1,11 @@
 'use client';
 
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { ArrowUpRight, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toDisplayDate } from '@/lib/maintenance/compute-upcoming-maintenance';
-import type { MaintenanceUrgencyGroup, UpcomingMaintenanceTask } from '@/lib/maintenance/types';
+import { formatDueDateWithDaysRemaining } from '@/lib/maintenance/compute-upcoming-maintenance';
+import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';
 import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import type { HomeSectionLayout } from './home-layout';
@@ -12,36 +14,25 @@ type HomeMaintenanceDueSectionProps = {
   tasks: UpcomingMaintenanceTask[];
   locale: string;
   layout?: HomeSectionLayout;
+  /** Optional override for tests; defaults to Bangkok calendar date. */
+  currentIsoDate?: string;
 };
 
-const URGENCY_LABELS: Record<MaintenanceUrgencyGroup, string> = {
-  overdue: 'เลยกำหนดแล้ว',
-  within_7_days: 'ภายใน 7 วัน',
-  within_30_days: 'ภายใน 1 เดือน',
-  within_90_days: 'ภายใน 3 เดือน',
-  later: 'อนาคต',
-};
+const BANGKOK_TZ = 'Asia/Bangkok';
 
-function urgencyBadgeClass(urgency: MaintenanceUrgencyGroup): string {
-  switch (urgency) {
-    case 'overdue':
-      return 'border-red-200/80 bg-red-50/70 text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300';
-    case 'within_7_days':
-      return 'border-amber-200/80 bg-amber-50/70 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200';
-    case 'within_30_days':
-      return 'border-border bg-muted/50 text-muted-foreground';
-    default:
-      return 'border-border bg-muted/50 text-muted-foreground';
-  }
+function bangkokIsoDate(now = new Date()): string {
+  return format(toZonedTime(now, BANGKOK_TZ), 'yyyy-MM-dd');
 }
 
 function MaintenanceTaskRow({
   task,
   index,
+  dueLabel,
   compact = false,
 }: {
   task: UpcomingMaintenanceTask;
   index: number;
+  dueLabel: string;
   compact?: boolean;
 }) {
   if (compact) {
@@ -53,18 +44,8 @@ function MaintenanceTaskRow({
         <td className="py-3 px-3 text-[14px] text-foreground font-normal min-w-0">
           <span className="line-clamp-2">{task.equipment}</span>
         </td>
-        <td className="py-3 px-3 text-center text-[13px] tabular-nums text-foreground w-28">
-          {toDisplayDate(task.dueDate)}
-        </td>
-        <td className="py-3 px-3 text-center w-32">
-          <span
-            className={cn(
-              'inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-normal whitespace-nowrap',
-              urgencyBadgeClass(task.urgency),
-            )}
-          >
-            {URGENCY_LABELS[task.urgency]}
-          </span>
+        <td className="py-3 px-3 text-center text-[13px] tabular-nums text-foreground whitespace-nowrap w-40">
+          {dueLabel}
         </td>
         <td className="py-3 px-3 text-[13px] text-muted-foreground min-w-0">
           <span className="line-clamp-2">{task.advice}</span>
@@ -89,22 +70,12 @@ function MaintenanceTaskRow({
         </div>
         <div className="shrink-0 text-right">
           <p className="text-[11px] text-black/45">ครบกำหนด</p>
-          <p className="text-[14px] tabular-nums font-normal text-black leading-none">
-            {toDisplayDate(task.dueDate)}
+          <p className="text-[14px] tabular-nums font-normal text-black leading-snug">
+            {dueLabel}
           </p>
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[12px]">
-        <span
-          className={cn(
-            'inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-normal',
-            urgencyBadgeClass(task.urgency),
-          )}
-        >
-          {URGENCY_LABELS[task.urgency]}
-        </span>
-        <span className="text-black/55 line-clamp-2 text-right">{task.advice}</span>
-      </div>
+      <p className="text-[12px] text-black/55 line-clamp-2">{task.advice}</p>
     </article>
   );
 }
@@ -113,9 +84,11 @@ export default function HomeMaintenanceDueSection({
   tasks,
   locale,
   layout = 'default',
+  currentIsoDate,
 }: HomeMaintenanceDueSectionProps) {
   const isDashboard = layout === 'dashboard';
   const maintenanceHref = `/${locale}/maintenance`;
+  const todayIso = currentIsoDate ?? bangkokIsoDate();
 
   return (
     <section
@@ -189,7 +162,12 @@ export default function HomeMaintenanceDueSection({
           <div className="md:hidden max-h-[min(60svh,28rem)] overflow-y-auto bb-smooth-scroll -mx-1 px-1">
             <div className="space-y-2.5">
               {tasks.map((task, idx) => (
-                <MaintenanceTaskRow key={task.id} task={task} index={idx} />
+                <MaintenanceTaskRow
+                  key={task.id}
+                  task={task}
+                  index={idx}
+                  dueLabel={formatDueDateWithDaysRemaining(task.dueDate, todayIso)}
+                />
               ))}
             </div>
           </div>
@@ -215,11 +193,8 @@ export default function HomeMaintenanceDueSection({
                     <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground">
                       อุปกรณ์
                     </th>
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-28">
+                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-40">
                       ครบกำหนด
-                    </th>
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-32">
-                      ความเร่งด่วน
                     </th>
                     <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground">
                       คำแนะนำ
@@ -228,7 +203,13 @@ export default function HomeMaintenanceDueSection({
                 </thead>
                 <tbody>
                   {tasks.map((task, idx) => (
-                    <MaintenanceTaskRow key={task.id} task={task} index={idx} compact />
+                    <MaintenanceTaskRow
+                      key={task.id}
+                      task={task}
+                      index={idx}
+                      dueLabel={formatDueDateWithDaysRemaining(task.dueDate, todayIso)}
+                      compact
+                    />
                   ))}
                 </tbody>
               </table>

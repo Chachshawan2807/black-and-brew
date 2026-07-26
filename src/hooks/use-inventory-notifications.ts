@@ -25,6 +25,10 @@ import {
   isEligibleBeanOrderDeliveredNotification,
 } from '@/lib/bean-orders/delivery-notification';
 import {
+  formatBeanOrderShippedNotification,
+  isEligibleBeanOrderShippedNotification,
+} from '@/lib/bean-orders/shipment-notification';
+import {
   formatInsightNotification,
   isEligibleInsightNotification,
 } from '@/lib/insight-notification';
@@ -292,9 +296,19 @@ export function useInventoryNotifications() {
       const isDailyReport = isEligibleDailyReportNotification(row);
       const isInventory = isEligibleInventoryNotification(row);
       const isBeanDelivered = isEligibleBeanOrderDeliveredNotification(row);
+      const isBeanShipped = isEligibleBeanOrderShippedNotification(row);
       const isInsight = isEligibleInsightNotification(row);
       const isSecurity = isEligibleSecurityNotification(row);
-      if (!isDailyReport && !isInventory && !isBeanDelivered && !isInsight && !isSecurity) return false;
+      if (
+        !isDailyReport &&
+        !isInventory &&
+        !isBeanDelivered &&
+        !isBeanShipped &&
+        !isInsight &&
+        !isSecurity
+      ) {
+        return false;
+      }
       if (isDailyReport && !currentPrefs.dailyScheduleReports) return false;
       if (isInsight && !currentPrefs.proactiveInsights) return false;
       if (isSecurity && !currentPrefs.securityAlerts) return false;
@@ -312,6 +326,9 @@ export function useInventoryNotifications() {
       }
       if (isEligibleBeanOrderDeliveredNotification(row)) {
         return formatBeanOrderDeliveredNotification(row, locale);
+      }
+      if (isEligibleBeanOrderShippedNotification(row)) {
+        return formatBeanOrderShippedNotification(row, locale);
       }
       if (isEligibleInsightNotification(row)) {
         return formatInsightNotification(row, locale);
@@ -332,10 +349,14 @@ export function useInventoryNotifications() {
       if (eligible.length === 0) return;
 
       const allDailyReports = eligible.every(isEligibleDailyReportNotification);
-      const allBeanDelivered = eligible.every(isEligibleBeanOrderDeliveredNotification);
+      const allBeanOrder = eligible.every(
+        (row) =>
+          isEligibleBeanOrderDeliveredNotification(row) ||
+          isEligibleBeanOrderShippedNotification(row),
+      );
       const allInsights = eligible.every(isEligibleInsightNotification);
       const allSecurity = eligible.every(isEligibleSecurityNotification);
-      if (allDailyReports || allBeanDelivered || allInsights || allSecurity) {
+      if (allDailyReports || allBeanOrder || allInsights || allSecurity) {
         for (const row of eligible) {
           pushNotification(formatNotificationRow(row, loc), undefined, {
             skipSystemNotification: true,
@@ -399,17 +420,21 @@ export function useInventoryNotifications() {
     if (!result.success) return;
 
     const eligible = filterEligibleRows(
-      result.rows.filter(isEligibleBeanOrderDeliveredNotification),
+      result.rows.filter(
+        (row) =>
+          isEligibleBeanOrderDeliveredNotification(row) ||
+          isEligibleBeanOrderShippedNotification(row),
+      ),
     );
     if (eligible.length === 0) return;
 
     const loc = localeRef.current;
     for (const row of [...eligible].reverse()) {
-      pushNotification(formatBeanOrderDeliveredNotification(row, loc), undefined, {
+      pushNotification(formatNotificationRow(row, loc), undefined, {
         skipSystemNotification: true,
       });
     }
-  }, [filterEligibleRows, pushNotification]);
+  }, [filterEligibleRows, formatNotificationRow, pushNotification]);
 
   const syncInsightNotificationCatchUp = useCallback(async () => {
     const currentPrefs = prefsRef.current;
@@ -503,7 +528,13 @@ export function useInventoryNotifications() {
           if (!payload.new) return;
           const row = rowFromPayload(payload as { new: Record<string, unknown> });
           if (module === 'schedule' && !isEligibleDailyReportNotification(row)) return;
-          if (module === 'bean_orders' && !isEligibleBeanOrderDeliveredNotification(row)) return;
+          if (
+            module === 'bean_orders' &&
+            !isEligibleBeanOrderDeliveredNotification(row) &&
+            !isEligibleBeanOrderShippedNotification(row)
+          ) {
+            return;
+          }
           if (module === 'insights' && !isEligibleInsightNotification(row)) return;
           if (module === 'security' && !isEligibleSecurityNotification(row)) return;
           batcher.add(row);

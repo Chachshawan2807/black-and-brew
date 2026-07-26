@@ -190,10 +190,12 @@ self.addEventListener('push', (event) => {
     (async () => {
       const isDailyReport = payload.kind === 'daily_report';
       const isBeanDelivered = payload.kind === 'bean_order_delivered';
+      const isBeanShipped = payload.kind === 'bean_order_shipped';
+      const isBeanOrder = isBeanDelivered || isBeanShipped;
       const isInsight = payload.kind === 'proactive_insight';
       const isSecurity = payload.kind === 'security_alert';
 
-      if (isDailyReport || isBeanDelivered || isInsight || isSecurity) {
+      if (isDailyReport || isBeanOrder || isInsight || isSecurity) {
         const unreadCount = await safeResolveUnreadCount(payload);
 
         const windowClients = await self.clients.matchAll({
@@ -214,14 +216,16 @@ self.addEventListener('push', (event) => {
           ? 'bb-security'
           : isInsight
             ? 'bb-insight'
-            : isBeanDelivered
-              ? 'bb-bean-delivered'
-              : 'bb-daily-report';
+            : isBeanShipped
+              ? 'bb-bean-shipped'
+              : isBeanDelivered
+                ? 'bb-bean-delivered'
+                : 'bb-daily-report';
         const fallbackUrl = isSecurity
           ? '/th/settings'
           : isInsight
             ? '/th'
-            : isBeanDelivered
+            : isBeanOrder
               ? '/th/bean-orders'
               : '/th/schedule';
 

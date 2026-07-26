@@ -43,7 +43,7 @@ export async function fetchHomeMaintenanceTasks(currentIsoDate: string) {
   const supabase = createAuthenticatedClient(accessToken);
   const { data, error } = await supabase
     .from('service_records')
-    .select('id, equipment, work_details, start_date, completion_date, recommended_frequency, status, task_type')
+    .select('id, equipment, work_details, start_date, completion_date, recommended_frequency, task_type')
     .order('start_date', { ascending: false });
 
   if (error) {

@@ -23,9 +23,9 @@
 - Create `src/lib/bean-orders/shipment-notification.ts`
 - Create `src/test/bean-orders-shipment-notification.test.ts`
 
-- [ ] Write failing tests for `shouldNotifyBeanOrderShipped`, log id, eligibility, format title/summary
-- [ ] Implement helpers mirroring `delivery-notification.ts` (entity_type `bean_order_shipment`)
-- [ ] Run tests green
+- [x] Write failing tests for `shouldNotifyBeanOrderShipped`, log id, eligibility, format title/summary
+- [x] Implement helpers mirroring `delivery-notification.ts` (entity_type `bean_order_shipment`)
+- [x] Run tests green
 
 ## Task 2: Web push helpers + tests
 
@@ -33,17 +33,17 @@
 - Create `src/lib/bean-orders/shipment-web-push.ts`
 - Create `src/test/bean-orders-shipment-web-push.test.ts`
 
-- [ ] Failing tests for payload kind/title/url and prefs gate
-- [ ] Implement `notifyBeanOrderShipped` (record + push, idempotent)
-- [ ] Run tests green
+- [x] Failing tests for payload kind/title/url and prefs gate
+- [x] Implement `notifyBeanOrderShipped` (record + push, idempotent)
+- [x] Run tests green
 
 ## Task 3: Wire `shipBeanOrder`
 
 **Files:**
 - Modify `src/app/actions/bean-order-actions.ts`
 
-- [ ] After successful DB write, if `isNewShipment`, fire-and-forget `notifyBeanOrderShipped` with order lookup for customer name
-- [ ] Ensure TrackingMore + `maybeNotifyBeanOrderDelivered` blocks remain untouched in order
+- [x] After successful DB write, if `isNewShipment`, fire-and-forget `notifyBeanOrderShipped` with order lookup for customer name
+- [x] Ensure TrackingMore + `maybeNotifyBeanOrderDelivered` blocks remain untouched in order
 
 ## Task 4: Hook + icon + SW
 
@@ -53,11 +53,11 @@
 - Modify `public/sw.js`
 - Update `src/test/notification-fab-sync.test.ts`, `src/test/notification-display-icon.test.ts` as needed
 
-- [ ] Filter/format/catch-up/realtime for shipped
-- [ ] Icon + SW kind handling
-- [ ] Wiring tests green
+- [x] Filter/format/catch-up/realtime for shipped
+- [x] Icon + SW kind handling
+- [x] Wiring tests green
 
 ## Task 5: Verify
 
-- [ ] Run targeted vitest suite for bean shipment + fab sync + display icon
-- [ ] Confirm delivered tests still pass
+- [x] Run targeted vitest suite for bean shipment + fab sync + display icon
+- [x] Confirm delivered tests still pass

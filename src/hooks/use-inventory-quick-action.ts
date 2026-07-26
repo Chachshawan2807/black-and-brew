@@ -14,11 +14,11 @@ import { getQuickBadgeStyles } from '@/lib/inventory-stock';
 import { READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import {
   addBulkQueueItem,
-  buildBulkQueueFromPaste,
   canSubmitBulkQueue,
   computeBulkPreview,
   removeBulkQueueItem,
   resolveBulkSubmitPayload,
+  resolveInOutQuantity,
   setBulkLineQty,
   toBulkQueueItem,
   parseBulkEntry,
@@ -212,17 +212,6 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     setIsSearchFocused(true);
   }, [items, quickSearch, bulkQueue]);
 
-  const handleBulkPaste = useCallback(
-    (text: string) => {
-      const { queue, unknownNames } = buildBulkQueueFromPaste(text, items, bulkQueue);
-      setBulkQueue(queue);
-      if (unknownNames.length > 0) {
-        alert(`ไม่พบในระบบ: ${unknownNames.join(', ')}`);
-      }
-    },
-    [items, bulkQueue],
-  );
-
   const refreshHistoryIfOpen = useCallback(async () => {
     if (!showHistoryModal || !onHistoryRefresh) return;
     await onHistoryRefresh();
@@ -316,7 +305,8 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         return;
       }
 
-      if (!quickSearch || !quickQty) return;
+      if (!quickSearch) return;
+      if (quickType === 'ADJUST' && quickQty.trim() === '') return;
 
       const item = items.find((row) => row.name === quickSearch || row.id === quickSearch);
       if (!item) {
@@ -324,15 +314,20 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         return;
       }
 
-      const qty = Number(quickQty);
+      let qty: number;
       if (quickType === 'ADJUST') {
+        qty = Number(quickQty);
         if (Number.isNaN(qty) || qty < 0) {
           alert('กรุณาระบุจำนวนคงเหลือที่ถูกต้องค่ะ');
           return;
         }
-      } else if (Number.isNaN(qty) || qty <= 0) {
-        alert('กรุณาระบุจำนวนที่ถูกต้องค่ะ');
-        return;
+      } else {
+        const resolved = resolveInOutQuantity(quickQty);
+        if (resolved === null) {
+          alert('กรุณาระบุจำนวนที่ถูกต้องค่ะ');
+          return;
+        }
+        qty = resolved;
       }
 
       void (async () => {
@@ -410,7 +405,6 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     addBulkItemById: selectBulkQuickItem,
     selectBulkQuickItem,
     addBulkItemFromSearch,
-    handleBulkPaste,
     removeBulkItem: (itemId: string) => setBulkQueue((prev) => removeBulkQueueItem(prev, itemId)),
     clearBulkQueue: () => {
       setBulkQueue([]);

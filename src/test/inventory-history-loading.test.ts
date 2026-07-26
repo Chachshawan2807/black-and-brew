@@ -12,13 +12,13 @@ const prefetchCode = fs.readFileSync(
 );
 
 describe('inventory history loading reliability', () => {
-  test('opening history keeps stale rows and prefetches instead of clearing first', () => {
+  test('opening history paints cache first and only clears when cache misses', () => {
     expect(hookCode).toContain('prefetchInventoryHistoryFirstPage');
-    expect(hookCode).not.toMatch(
-      /handleOpenHistory[\s\S]*setTransactionHistory\(\[\]\)/,
+    expect(hookCode).toMatch(
+      /handleOpenHistory[\s\S]*applyCachedPage\('ALL'/,
     );
-    expect(hookCode).not.toMatch(
-      /handleOpenHistory[\s\S]*setHasMoreHistory\(false\)/,
+    expect(hookCode).toMatch(
+      /handleOpenHistory[\s\S]*if \(!cached\)[\s\S]*setTransactionHistory\(\[\]\)/,
     );
   });
 
@@ -34,16 +34,30 @@ describe('inventory history loading reliability', () => {
     );
   });
 
-  test('fresh prefetch is consumed without forcing an immediate duplicate fetch', () => {
-    expect(prefetchCode).toContain('isInventoryHistoryPrefetchFresh');
-    expect(hookCode).toContain('isInventoryHistoryPrefetchFresh');
+  test('fresh page cache skips immediate network; stale still paints from cache', () => {
+    expect(prefetchCode).toContain('isHistoryPageCacheFresh');
+    expect(hookCode).toContain('getHistoryPageCache');
+    expect(hookCode).toContain('isHistoryPageCacheFresh');
     expect(hookCode).toMatch(
-      /isInventoryHistoryPrefetchFresh\(\)[\s\S]*return/,
+      /isHistoryPageCacheFresh\([\s\S]*return/,
     );
   });
 
-  test('prefetch module exposes freshness check for stale-while-revalidate', () => {
-    expect(prefetchCode).toContain('export function isInventoryHistoryPrefetchFresh');
+  test('prefetch module exposes keyed page cache and warmer APIs', () => {
+    expect(prefetchCode).toContain('export function getHistoryPageCache');
     expect(prefetchCode).toContain('export function prefetchInventoryHistoryFirstPage');
+    expect(prefetchCode).toContain('export function warmInventoryHistoryFilterPages');
+    expect(prefetchCode).toContain('HISTORY_PAGE_FRESH_TTL_MS');
+  });
+
+  test('hook paints cache on open/filter and warms IN/OUT/ADJUST pages', () => {
+    expect(hookCode).toContain('applyCachedPage');
+    expect(hookCode).toContain('warmInventoryHistoryFilterPages');
+    expect(hookCode).toMatch(
+      /handleHistoryTypeFilterChange[\s\S]*applyCachedPage/,
+    );
+    expect(hookCode).toMatch(
+      /handleOpenHistory[\s\S]*warmInventoryHistoryFilterPages/,
+    );
   });
 });

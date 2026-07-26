@@ -1,20 +1,23 @@
 'use client';
 
-import { useState, useEffect, useTransition, useCallback } from 'react';
+import { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { slideInLeft, staggerListItem, staggerDelay, BUTTON_HOVER, BUTTON_TAP } from '@/lib/motion-presets';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { saveServiceRecord, deleteServiceRecord } from '@/app/actions/maintenance-actions';
+import {
+  buildServiceRecordPayload,
+  parseFrequencyMonthsForDisplay,
+  type ServiceRecordFormInput,
+} from '@/lib/maintenance/service-record-form';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import {
   Plus,
   Wrench,
   Edit2,
   Trash2,
-  CheckCircle2,
-  Clock,
   Loader2,
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -38,10 +41,6 @@ export interface ServiceRecord {
   task_type: string;
   work_details: string;
   recommended_frequency: string;
-  cost: number;
-  person_in_charge: string;
-  status: 'กำลังดำเนินการ' | 'เสร็จสมบูรณ์';
-  notes: string;
   completion_date?: string | null;
   created_at?: string;
 }
@@ -61,17 +60,13 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
   const { toast, setToast } = useToast();
 
   // Form State
-  const [formData, setFormData] = useState<ServiceRecord>({
+  const [formData, setFormData] = useState<ServiceRecordFormInput>({
     start_date: '', // Hydration fix: Initialize empty, set in useEffect
     equipment: '',
     detected_problem: '',
     task_type: 'ซ่อมแซม',
     work_details: '',
     recommended_frequency: '',
-    cost: 0,
-    person_in_charge: '',
-    status: 'กำลังดำเนินการ',
-    notes: ''
   });
 
   const [isMounted, setIsMounted] = useState(false);
@@ -82,11 +77,8 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
     equipment: 185,
     issue: 280,
     frequency: 140,
-    technician: 160,
     taskType: 120,
-    cost: 100,
-    status: 110,
-    manage: 110
+    manage: 110,
   };
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_WIDTHS);
@@ -162,7 +154,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
       await ensureSupabaseSession();
       const { data, error } = await supabase
         .from('service_records')
-        .select('id, start_date, equipment, detected_problem, task_type, work_details, recommended_frequency, cost, person_in_charge, status, notes, completion_date, created_at')
+        .select('id, start_date, equipment, detected_problem, task_type, work_details, recommended_frequency, completion_date, created_at')
         .order('start_date', { ascending: false });
 
       if (error) {
@@ -178,6 +170,11 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
     }
   }, [setToast]);
 
+  const equipmentSuggestions = useMemo(
+    () => records.map(record => record.equipment),
+    [records],
+  );
+
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (isReadOnly) {
@@ -185,19 +182,8 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
       return;
     }
 
-    const payload = {
-      start_date: formData.start_date,
-      equipment: formData.equipment,
-      detected_problem: formData.detected_problem.trim() === "" ? null : formData.detected_problem,
-      task_type: formData.task_type,
-      work_details: formData.work_details.trim() === "" ? null : formData.work_details,
-      recommended_frequency: formData.recommended_frequency.trim() === "" ? null : formData.recommended_frequency,
-      cost: formData.cost || 0,
-      person_in_charge: formData.person_in_charge.trim() === "" ? null : formData.person_in_charge,
-      status: formData.status,
-      notes: formData.notes.trim() === "" ? null : formData.notes,
-      completion_date: formData.status === 'เสร็จสมบูรณ์' ? format(new Date(), 'yyyy-MM-dd') : null
-    };
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const payload = buildServiceRecordPayload(formData, today);
 
     startSubmitTransition(() => {
       void (async () => {
@@ -280,10 +266,6 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
       task_type: 'ซ่อมแซม',
       work_details: '',
       recommended_frequency: '',
-      cost: 0,
-      person_in_charge: '',
-      status: 'กำลังดำเนินการ',
-      notes: ''
     });
     setEditingRecord(null);
   }
@@ -296,11 +278,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
       detected_problem: record.detected_problem || '',
       task_type: record.task_type,
       work_details: record.work_details || '',
-      recommended_frequency: record.recommended_frequency || '',
-      cost: record.cost,
-      person_in_charge: record.person_in_charge || '',
-      status: record.status,
-      notes: record.notes || ''
+      recommended_frequency: parseFrequencyMonthsForDisplay(record.recommended_frequency || ''),
     });
     setIsModalOpen(true);
   }
@@ -365,7 +343,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
             </div>
           ) : (
             <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin pb-6 box-border bb-table-wrapper">
-              <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '1100px' }}>
+              <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '780px' }}>
                 <thead>
                   <tr className="border-b border-border bg-muted/50 bb-shadow-sm">
                     <th 
@@ -402,19 +380,9 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                       style={{ width: `${colWidths.frequency}px` }} 
                       className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
                     >
-                      ความถี่ที่แนะนำ
+                      ดำเนินการทุก (เดือน)
                       <div
                         onMouseDown={(e) => handleMouseDown('frequency', e)}
-                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
-                      />
-                    </th>
-                    <th 
-                      style={{ width: `${colWidths.technician}px` }} 
-                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
-                    >
-                      ผู้รับผิดชอบ
-                      <div
-                        onMouseDown={(e) => handleMouseDown('technician', e)}
                         className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
                       />
                     </th>
@@ -425,26 +393,6 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                       ประเภท
                       <div
                         onMouseDown={(e) => handleMouseDown('taskType', e)}
-                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
-                      />
-                    </th>
-                    <th 
-                      style={{ width: `${colWidths.cost}px` }} 
-                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
-                    >
-                      ค่าใช้จ่าย
-                      <div
-                        onMouseDown={(e) => handleMouseDown('cost', e)}
-                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
-                      />
-                    </th>
-                    <th 
-                      style={{ width: `${colWidths.status}px` }} 
-                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"
-                    >
-                      สถานะ
-                      <div
-                        onMouseDown={(e) => handleMouseDown('status', e)}
                         className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent group-hover:bg-neutral-300 transition-colors z-10"
                       />
                     </th>
@@ -482,24 +430,9 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                         <td className="py-3.5 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words border-r border-border/40">
                           {record.recommended_frequency || '-'}
                         </td>
-                        <td className="py-3.5 px-5 text-[14px] font-normal text-foreground antialiased whitespace-normal break-words border-r border-border/40">
-                          {record.person_in_charge || '-'}
-                        </td>
                         <td className="py-3.5 px-5 text-center border-r border-border/40">
                           <span className="inline-block px-3 py-1 bg-muted rounded-full uppercase tracking-widest font-normal text-[11px] text-muted-foreground">
                             {record.task_type}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-5 text-[15px] font-normal text-foreground antialiased text-right tabular-nums border-r border-border/40">
-                          ฿{(record.cost || 0).toLocaleString()}
-                        </td>
-                        <td className="py-3.5 px-5 text-sm font-normal antialiased text-center border-r border-border/40">
-                          <span className={`inline-flex px-3 py-1.5 text-xs rounded-2xl items-center justify-center gap-1.5 transition-all bb-shadow-sm border ${record.status === 'เสร็จสมบูรณ์'
-                            ? 'bb-pastel-surface bg-[#f0fdf4] text-[#000000] border-[#dcfce7]'
-                            : 'bb-pastel-surface bg-[#f0f9ff] text-[#000000] border-[#e0f2fe]'
-                            }`}>
-                            {record.status === 'เสร็จสมบูรณ์' ? <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} /> : <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                            {record.status}
                           </span>
                         </td>
                         <td className="py-3.5 px-5 text-center">
@@ -544,6 +477,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
         editingRecord={editingRecord}
         formData={formData}
         setFormData={setFormData}
+        equipmentSuggestions={equipmentSuggestions}
         handleSubmit={handleSubmit}
         handleDelete={handleDelete}
         loading={loading || isSubmitPending}
