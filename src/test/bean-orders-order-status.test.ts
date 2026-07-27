@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import {
   appendStatusHistory,
-  canCancelOrder,
+  canConfirmDelivered,
   canConfirmManualDelivery,
   canConfirmPayment,
+  canDeleteOrder,
   canEditOrder,
   canEditOrderLines,
   canEditShipment,
@@ -12,6 +13,8 @@ import {
   canUploadSlip,
   ORDER_DELIVERY_BADGE_LABEL,
   ORDER_PAYMENT_BADGE_LABEL,
+  shouldShowDeliveredButton,
+  shouldShowAutoTrackingBadge,
   shouldShowOrderDeliveryBadge,
   shouldShowOrderPaymentBadge,
 } from '@/lib/bean-orders/order-status';
@@ -48,10 +51,11 @@ describe('action guards', () => {
     expect(canEditShipment(cancelledAt)).toBe(false);
   });
 
-  test('can cancel only before shipped', () => {
-    expect(canCancelOrder('pending')).toBe(true);
-    expect(canCancelOrder('shipped')).toBe(false);
-    expect(canCancelOrder('pending', cancelledAt)).toBe(false);
+  test('can delete only before shipped', () => {
+    expect(canDeleteOrder('pending')).toBe(true);
+    expect(canDeleteOrder('shipped')).toBe(false);
+    // Soft-cancelled leftovers (cancelled_at set) can still be hard-deleted while pending
+    expect(canDeleteOrder('pending', cancelledAt)).toBe(true);
   });
 
   test('payment actions stay available until cancelled', () => {
@@ -77,6 +81,31 @@ describe('action guards', () => {
     expect(canConfirmManualDelivery('pending', null, null)).toBe(false);
     expect(canConfirmManualDelivery('shipped', null, 'delivered')).toBe(false);
     expect(canConfirmManualDelivery('shipped', null, null, cancelledAt)).toBe(false);
+  });
+
+  test('can confirm delivered for any shipped order not yet delivered', () => {
+    expect(canConfirmDelivered('shipped', null)).toBe(true);
+    expect(canConfirmDelivered('shipped', 'in_transit')).toBe(true);
+    expect(canConfirmDelivered('shipped', 'delivered')).toBe(false);
+    expect(canConfirmDelivered('pending', null)).toBe(false);
+    expect(canConfirmDelivered('shipped', null, cancelledAt)).toBe(false);
+  });
+
+  test('shows delivered button for pending and shipped until delivered', () => {
+    expect(shouldShowDeliveredButton('pending', null)).toBe(true);
+    expect(shouldShowDeliveredButton('shipped', 'in_transit')).toBe(true);
+    expect(shouldShowDeliveredButton('shipped', 'delivered')).toBe(false);
+    expect(shouldShowDeliveredButton('pending', null, null, cancelledAt)).toBe(false);
+    expect(shouldShowDeliveredButton('shipped', null, 'KEX123', null, 'kerryexpress-th')).toBe(false);
+    expect(shouldShowDeliveredButton('shipped', null, 'LM123', null, 'lalamove')).toBe(true);
+  });
+
+  test('shows auto tracking badge when tracking number is present', () => {
+    expect(shouldShowAutoTrackingBadge('shipped', null, 'KEX123', null, 'kerryexpress-th')).toBe(true);
+    expect(shouldShowAutoTrackingBadge('pending', null, 'KEX123', null, 'kerryexpress-th')).toBe(true);
+    expect(shouldShowAutoTrackingBadge('shipped', null, null, null, 'kerryexpress-th')).toBe(false);
+    expect(shouldShowAutoTrackingBadge('shipped', 'delivered', 'KEX123', null, 'kerryexpress-th')).toBe(false);
+    expect(shouldShowAutoTrackingBadge('shipped', null, 'LM123', null, 'lalamove')).toBe(false);
   });
 });
 

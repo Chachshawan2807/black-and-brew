@@ -1,4 +1,5 @@
 import { isTrackingDeliveredStatus } from '@/lib/bean-orders/delivery-notification';
+import { isTrackableCarrierCode } from '@/lib/bean-orders/carriers';
 import type {
   FulfillmentStatus,
   PaymentStatus,
@@ -37,11 +38,20 @@ export function canEditOrderLines(cancelledAt?: string | null): boolean {
   return canEditOrder(cancelledAt);
 }
 
+/** Pending (not yet shipped) orders can be hard-deleted. */
+export function canDeleteOrder(
+  fulfillmentStatus: FulfillmentStatus,
+  _cancelledAt?: string | null,
+): boolean {
+  return fulfillmentStatus === 'pending';
+}
+
+/** @deprecated Prefer canDeleteOrder — same guard for hard delete. */
 export function canCancelOrder(
   fulfillmentStatus: FulfillmentStatus,
   cancelledAt?: string | null,
 ): boolean {
-  return canEditOrder(cancelledAt) && fulfillmentStatus === 'pending';
+  return canDeleteOrder(fulfillmentStatus, cancelledAt);
 }
 
 export function canUploadSlip(cancelledAt?: string | null): boolean {
@@ -73,6 +83,56 @@ export function canShip(
   return canEditShipment(cancelledAt) && fulfillmentStatus === 'pending';
 }
 
+/** Manual จัดส่งสำเร็จ CTA — only when TrackingMore will not auto-update. */
+export function shouldShowDeliveredButton(
+  fulfillmentStatus: FulfillmentStatus,
+  trackingStatus: string | null | undefined,
+  trackingNumber?: string | null,
+  cancelledAt?: string | null,
+  carrierCode?: string | null,
+): boolean {
+  return getDeliveryActionMode(fulfillmentStatus, trackingStatus, trackingNumber, cancelledAt, carrierCode) === 'manual';
+}
+
+/** Grey ระบบอัตโนมัติ label — trackable carrier + tracking number; TrackingMore updates delivery. */
+export function shouldShowAutoTrackingBadge(
+  fulfillmentStatus: FulfillmentStatus,
+  trackingStatus: string | null | undefined,
+  trackingNumber?: string | null,
+  cancelledAt?: string | null,
+  carrierCode?: string | null,
+): boolean {
+  return getDeliveryActionMode(fulfillmentStatus, trackingStatus, trackingNumber, cancelledAt, carrierCode) === 'auto';
+}
+
+export type DeliveryActionMode = 'manual' | 'auto' | 'hidden';
+
+export function getDeliveryActionMode(
+  fulfillmentStatus: FulfillmentStatus,
+  trackingStatus: string | null | undefined,
+  trackingNumber?: string | null,
+  cancelledAt?: string | null,
+  carrierCode?: string | null,
+): DeliveryActionMode {
+  if (!canEditOrder(cancelledAt)) return 'hidden';
+  if (isTrackingDeliveredStatus(trackingStatus)) return 'hidden';
+  if (fulfillmentStatus !== 'pending' && fulfillmentStatus !== 'shipped') return 'hidden';
+  if (trackingNumber?.trim() && isTrackableCarrierCode(carrierCode)) return 'auto';
+  return 'manual';
+}
+
+/** Shipped orders not yet delivered — staff can mark จัดส่งสำเร็จ. */
+export function canConfirmDelivered(
+  fulfillmentStatus: FulfillmentStatus,
+  trackingStatus: string | null | undefined,
+  cancelledAt?: string | null,
+): boolean {
+  if (!canEditOrder(cancelledAt)) return false;
+  if (fulfillmentStatus !== 'shipped') return false;
+  if (isTrackingDeliveredStatus(trackingStatus)) return false;
+  return true;
+}
+
 /** Shipped orders without a tracking number — staff confirms delivery manually. */
 export function canConfirmManualDelivery(
   fulfillmentStatus: FulfillmentStatus,
@@ -80,10 +140,8 @@ export function canConfirmManualDelivery(
   trackingStatus: string | null | undefined,
   cancelledAt?: string | null,
 ): boolean {
-  if (!canEditOrder(cancelledAt)) return false;
-  if (fulfillmentStatus !== 'shipped') return false;
+  if (!canConfirmDelivered(fulfillmentStatus, trackingStatus, cancelledAt)) return false;
   if (trackingNumber?.trim()) return false;
-  if (isTrackingDeliveredStatus(trackingStatus)) return false;
   return true;
 }
 

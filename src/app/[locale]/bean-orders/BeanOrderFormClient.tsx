@@ -659,7 +659,7 @@ export default function BeanOrderFormClient({
         if (paymentResult.error) {
           setSaving(false);
           setError(`${paymentResult.error} — ออเดอร์ถูกบันทึกแล้ว`);
-          router.push(`/${locale}/bean-orders/${targetOrderId}`);
+          router.push(`/${locale}/bean-orders`);
           return;
         }
       }
@@ -669,7 +669,7 @@ export default function BeanOrderFormClient({
         if (shipmentResult.error) {
           setSaving(false);
           setError(`${shipmentResult.error} — ออเดอร์ถูกบันทึกแล้ว`);
-          router.push(`/${locale}/bean-orders/${targetOrderId}`);
+          router.push(`/${locale}/bean-orders`);
           return;
         }
       }
@@ -677,11 +677,11 @@ export default function BeanOrderFormClient({
 
     setSaving(false);
     if (isEdit && orderId) {
-      router.push(`/${locale}/bean-orders/${orderId}`);
+      router.push(`/${locale}/bean-orders`);
       return;
     }
     if ('orderId' in result && result.orderId) {
-      router.push(`/${locale}/bean-orders/${result.orderId}`);
+      router.push(`/${locale}/bean-orders`);
     }
   }
 

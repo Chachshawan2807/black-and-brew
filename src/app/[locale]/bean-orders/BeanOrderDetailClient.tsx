@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronLeft, Pencil } from 'lucide-react';
 import {
-  cancelBeanOrder,
+  deleteBeanOrder,
   confirmBeanOrderDelivered,
   confirmBeanOrderPayment,
   getBeanOrderSlipSignedUrl,
@@ -27,17 +27,18 @@ import { TrackingTimeline } from './_components/TrackingTimeline';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
 import { BeanOrderSelect } from './_components/BeanOrderSelect';
 import {
-  canCancelOrder,
-  canConfirmManualDelivery,
   canConfirmPayment,
+  canDeleteOrder,
   canEditOrder,
   canEditShipment,
   canRevertPayment,
   canUploadSlip,
+  shouldShowAutoTrackingBadge,
+  shouldShowDeliveredButton,
 } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { OrderListStatusGroup } from './_components/OrderStatusBadge';
-import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS, BEAN_ORDER_PAYMENT_BODY, BEAN_ORDER_PAYMENT_COLUMN, BEAN_ORDER_PAYMENT_SHIPPING_GRID, BEAN_ORDER_PAYMENT_SLIP_SLOT, BEAN_ORDER_SHIPPING_COLUMN } from './_components/bean-order-layout';
+import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BADGE_MUTED, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS, BEAN_ORDER_PAYMENT_BODY, BEAN_ORDER_PAYMENT_COLUMN, BEAN_ORDER_PAYMENT_SHIPPING_GRID, BEAN_ORDER_PAYMENT_SLIP_SLOT, BEAN_ORDER_SHIPPING_COLUMN } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -73,12 +74,20 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const canConfirm = canConfirmPayment(order.paymentStatus, order.cancelledAt);
   const canRevert = canRevertPayment(order.paymentStatus, order.cancelledAt);
   const canEditShipping = canEditShipment(order.cancelledAt);
-  const canCancel = canCancelOrder(order.fulfillmentStatus, order.cancelledAt);
-  const canManualDeliver = canConfirmManualDelivery(
+  const canDelete = canDeleteOrder(order.fulfillmentStatus, order.cancelledAt);
+  const showDeliveredButton = shouldShowDeliveredButton(
     order.fulfillmentStatus,
-    order.shipment?.trackingNumber,
     order.shipment?.trackingStatus,
+    trackingNumber,
     order.cancelledAt,
+    resolveCarrierCodeForSave(carrierCode, customCarrierLabel) ?? carrierCode,
+  );
+  const showAutoTrackingBadge = shouldShowAutoTrackingBadge(
+    order.fulfillmentStatus,
+    order.shipment?.trackingStatus,
+    trackingNumber,
+    order.cancelledAt,
+    resolveCarrierCodeForSave(carrierCode, customCarrierLabel) ?? carrierCode,
   );
   const hasSlip = Boolean(order.payment?.uploadedAt);
 
@@ -168,29 +177,58 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
   async function handleConfirmDelivered() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
-    if (!confirm('ยืนยันว่าจัดส่งถึงลูกค้าแล้ว?')) return;
+    if (!confirm('ยืนยันว่าจัดส่งสำเร็จแล้ว?')) return;
+
+    const resolvedCarrierCode = resolveCarrierCodeForSave(carrierCode, customCarrierLabel);
+    if (!resolvedCarrierCode) {
+      setError('กรุณาระบุช่องทางจัดส่ง');
+      return;
+    }
+
     setBusy(true);
     setError(null);
+
+    if (order.fulfillmentStatus !== 'shipped') {
+      const shipResult = await shipBeanOrder(
+        order.id,
+        { carrierCode: resolvedCarrierCode, trackingNumber },
+        locale,
+      );
+      if (!shipResult.success) {
+        setBusy(false);
+        setError(shipResult.error ?? 'บันทึกจัดส่งไม่สำเร็จ');
+        return;
+      }
+    }
+
     const result = await confirmBeanOrderDelivered(order.id, locale);
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'ยืนยันจัดส่งไม่สำเร็จ'); return; }
     setOrder((prev) => ({
       ...prev,
+      fulfillmentStatus: 'shipped',
       shipment: prev.shipment
         ? { ...prev.shipment, trackingStatus: 'delivered' }
-        : prev.shipment,
+        : {
+            deliveryType: 'parcel',
+            carrierCode: resolvedCarrierCode,
+            trackingNumber: trackingNumber.trim() || null,
+            trackingStatus: 'delivered',
+            trackingEvents: [],
+            shippedAt: new Date().toISOString(),
+          },
     }));
-    setMessage('ยืนยันจัดส่งแล้ว');
+    setMessage('จัดส่งสำเร็จ');
     await reload();
   }
 
-  async function handleCancel() {
+  async function handleDelete() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
-    if (!confirm('ยกเลิกออเดอร์นี้?')) return;
+    if (!confirm('ลบออเดอร์นี้?')) return;
     setBusy(true);
-    const result = await cancelBeanOrder(order.id, locale);
+    const result = await deleteBeanOrder(order.id, locale);
     setBusy(false);
-    if (!result.success) { setError(result.error ?? 'ยกเลิกไม่สำเร็จ'); return; }
+    if (!result.success) { setError(result.error ?? 'ลบไม่สำเร็จ'); return; }
     router.push(`/${locale}/bean-orders`);
   }
 
@@ -421,20 +459,22 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                         placeholder="เลขพัสดุ (ไม่บังคับ)"
                       />
                     </div>
-                    {canManualDeliver ? (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void handleConfirmDelivered()}
-                        className={cn(
-                          BEAN_ORDER_ACTION_BTN_CONFIRM,
-                          'h-auto min-h-11 w-full px-3 py-2 text-center text-xs leading-snug sm:text-sm',
-                        )}
-                      >
-                        ยืนยันจัดส่งแล้ว
-                      </button>
-                    ) : null}
-                    <div className="flex justify-end">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {showDeliveredButton ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleConfirmDelivered()}
+                          className={BEAN_ORDER_ACTION_BTN_INFO}
+                        >
+                          จัดส่งสำเร็จ
+                        </button>
+                      ) : null}
+                      {showAutoTrackingBadge ? (
+                        <span className={BEAN_ORDER_ACTION_BADGE_MUTED} title="สถานะจัดส่งสำเร็จอัปเดตจาก TrackingMore">
+                          ระบบอัตโนมัติ
+                        </span>
+                      ) : null}
                       <button
                         type="button"
                         disabled={busy}
@@ -450,15 +490,15 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
             </div>
           </section>
 
-          {canCancel && !isReadOnly ? (
+          {canDelete && !isReadOnly ? (
             <div className="mb-4 flex justify-end">
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void handleCancel()}
+                onClick={() => void handleDelete()}
                 className={BEAN_ORDER_ACTION_BTN_DANGER}
               >
-                ยกเลิกออเดอร์
+                ลบออเดอร์
               </button>
             </div>
           ) : null}

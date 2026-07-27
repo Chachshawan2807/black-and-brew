@@ -75,6 +75,14 @@ export const BEAN_ORDER_ACTION_BTN =
 export const BEAN_ORDER_ACTION_BTN_CONFIRM =
   `inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#c3e6cb] bg-[#d4edda] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
+/** Light blue pastel — mark delivery success CTA */
+export const BEAN_ORDER_ACTION_BTN_INFO =
+  `inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#b8daff] bg-[#cce5ff] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
+
+/** Grey non-action pill — auto tracking status (TrackingMore). */
+export const BEAN_ORDER_ACTION_BADGE_MUTED =
+  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-border bg-muted px-5 text-sm text-muted-foreground';
+
 export const BEAN_ORDER_PAYMENT_SHIPPING_GRID =
   'grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-8';
 

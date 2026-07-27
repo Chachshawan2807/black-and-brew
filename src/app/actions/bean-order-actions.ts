@@ -8,7 +8,7 @@ import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
 import { formatBeanOrderNo, buildBeanOrderNoDatePrefix, nextBeanOrderSequence } from '@/lib/bean-orders/order-number';
 import {
   appendStatusHistory,
-  canCancelOrder,
+  canDeleteOrder,
   canConfirmManualDelivery,
   canConfirmPayment,
   canEditOrder,
@@ -1028,7 +1028,7 @@ export async function getBeanOrderSlipSignedUrl(
   }
 }
 
-export async function cancelBeanOrder(
+export async function deleteBeanOrder(
   orderId: string,
   locale = 'th',
 ): Promise<{ success: boolean; error?: string }> {
@@ -1039,53 +1039,57 @@ export async function cancelBeanOrder(
     const supabase = getSupabaseAdmin();
     const { data: order, error: fetchError } = await supabase
       .from('bean_orders')
-      .select('id, order_no, fulfillment_status, cancelled_at, status_history')
+      .select('id, order_no, fulfillment_status, cancelled_at')
       .eq('id', orderId)
       .maybeSingle();
 
     if (fetchError || !order) {
       return { success: false, error: 'ไม่พบออเดอร์' };
     }
-    if (!canCancelOrder(order.fulfillment_status as 'pending' | 'shipped', order.cancelled_at as string | null)) {
-      return { success: false, error: 'ยกเลิกออเดอร์นี้ไม่ได้' };
+    if (!canDeleteOrder(order.fulfillment_status as 'pending' | 'shipped', order.cancelled_at as string | null)) {
+      return { success: false, error: 'ลบออเดอร์นี้ไม่ได้' };
     }
 
-    const actor = await resolveActorLabelFromSession();
-    const history = appendStatusHistory((order.status_history as StatusHistoryEntry[]) ?? [], {
-      by: actor,
-      action: 'cancelled',
-      payment_status: 'unpaid',
-      fulfillment_status: order.fulfillment_status as 'pending' | 'shipped',
-    });
+    const { data: payment } = await supabase
+      .from('bean_order_payments')
+      .select('slip_url')
+      .eq('order_id', orderId)
+      .maybeSingle();
+
+    const slipPath = (payment?.slip_url as string | null) ?? null;
 
     const { error } = await supabase
       .from('bean_orders')
-      .update({
-        cancelled_at: new Date().toISOString(),
-        cancelled_by: actor,
-        status_history: history,
-        updated_at: new Date().toISOString(),
-      })
+      .delete()
       .eq('id', orderId);
 
     if (error) {
-      console.error('Supabase Error (cancelBeanOrder):', error.message, error.details);
+      console.error('Supabase Error (deleteBeanOrder):', error.message, error.details);
       return { success: false, error: error.message };
     }
 
+    if (slipPath) {
+      const { error: storageError } = await supabase.storage
+        .from('bean-order-slips')
+        .remove([slipPath]);
+      if (storageError) {
+        console.error('Supabase Error (deleteBeanOrder slip):', storageError.message);
+      }
+    }
+
     void recordDataChange({
-      action: 'UPDATE',
+      action: 'DELETE',
       module: 'bean_orders',
       entityType: 'bean_order',
       entityId: orderId,
       entityLabel: order.order_no as string,
-      fieldChanges: [{ field: 'cancelled_at', old_value: null, new_value: new Date().toISOString() }],
+      oldValue: { order_no: order.order_no },
     });
 
     revalidateBeanOrders(locale);
     return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'ยกเลิกออเดอร์ไม่สำเร็จ';
+    const message = error instanceof Error ? error.message : 'ลบออเดอร์ไม่สำเร็จ';
     return { success: false, error: message };
   }
 }
@@ -1499,7 +1503,12 @@ export async function confirmBeanOrderDelivered(
         order.cancelled_at as string | null,
       )
     ) {
-      return { success: false, error: 'ยืนยันจัดส่งไม่ได้ในสถานะนี้' };
+      return {
+        success: false,
+        error: trackingNumber?.trim()
+          ? 'มีเลขพัสดุแล้ว — สถานะจัดส่งสำเร็จอัปเดตอัตโนมัติจาก TrackingMore'
+          : 'ยืนยันจัดส่งไม่ได้ในสถานะนี้',
+      };
     }
 
     const actor = await resolveActorLabelFromSession();
