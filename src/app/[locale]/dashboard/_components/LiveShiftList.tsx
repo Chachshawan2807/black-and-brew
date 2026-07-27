@@ -12,6 +12,7 @@ import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter } from 'next/navigation';
 import { format, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
+import { navigateWithoutViewTransition } from '@/lib/view-transition';
 import { SortableDragHandle } from '@/components/ui/sortable-drag-handle';
 import {
   DndContext,
@@ -191,7 +192,7 @@ export default function LiveShiftList({
   const handleDateChange = (start: string, end: string) => {
     document.cookie = `dashboard_start_date=${start}; path=/; max-age=31536000; SameSite=Lax`;
     document.cookie = `dashboard_end_date=${end}; path=/; max-age=31536000; SameSite=Lax`;
-    router.push(`?start=${start}&end=${end}`);
+    navigateWithoutViewTransition(router.push, `?start=${start}&end=${end}`);
   };
 
   const performanceData = useMemo(() => {

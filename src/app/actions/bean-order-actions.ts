@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
+import { after } from 'next/server';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
@@ -1305,7 +1306,7 @@ export async function shipBeanOrder(
   orderId: string,
   input: z.infer<typeof shipOrderSchema>,
   locale = 'th',
-): Promise<{ success: boolean; trackingWarning?: string; error?: string }> {
+): Promise<{ success: boolean; error?: string }> {
   const gate = await gateMutation();
   if (!gate.success) return gate;
 
@@ -1344,35 +1345,12 @@ export async function shipBeanOrder(
       fulfillment_status: 'shipped',
     });
 
-    let trackingStatus: string | null = null;
-    let trackingRaw: Record<string, unknown> | null = null;
-    let trackingWarning: string | undefined;
-
-    if (trackingNumber && carrierCode && isTrackableCarrierCode(carrierCode)) {
-      const resolvedCarrier =
-        resolveTrackingMoreCarrierCode(carrierCode) ?? carrierCode;
-      const tm = await createTrackingMoreShipment({
-        trackingNumber,
-        carrierCode: resolvedCarrier,
-      });
-      if (tm.ok) {
-        trackingRaw = tm.data;
-      } else {
-        trackingWarning = tm.error;
-      }
-
-      const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, carrierCode);
-      if (fetched.ok) {
-        trackingStatus = fetched.status;
-        trackingRaw = fetched.raw;
-      } else if (tm.ok) {
-        trackingStatus = 'registered';
-      }
-    }
-
     const resolvedCarrierCode = carrierCode
       ? resolveTrackingMoreCarrierCode(carrierCode) ?? carrierCode
       : null;
+    const shouldSyncTracking = Boolean(
+      trackingNumber && carrierCode && isTrackableCarrierCode(carrierCode),
+    );
 
     const orderUpdates: Record<string, unknown> = {
       status_history: history,
@@ -1393,8 +1371,8 @@ export async function shipBeanOrder(
           delivery_type: 'parcel',
           carrier_code: resolvedCarrierCode,
           tracking_number: trackingNumber || null,
-          tracking_status: trackingStatus,
-          tracking_raw: trackingRaw,
+          tracking_status: null,
+          tracking_raw: null,
           shipped_by: actor,
           shipped_at: new Date().toISOString(),
         },
@@ -1411,36 +1389,83 @@ export async function shipBeanOrder(
       return { success: false, error: shipError.message };
     }
 
-    if (isNewShipment) {
-      const customer = order.bean_customers as { name?: string } | null;
-      const { notifyBeanOrderShipped } = await import('@/lib/bean-orders/shipment-web-push');
-      const { getBeanOrderCustomerDisplayName } = await import('@/lib/bean-orders/customer-display');
-      void notifyBeanOrderShipped({
-        orderId,
-        orderNo: (order.order_no as string) || orderId,
-        customerName: getBeanOrderCustomerDisplayName({
-          customerName: customer?.name ?? null,
-          recipientName: (order.recipient_name as string) || '',
-        }),
-        trackingNumber: trackingNumber || null,
-        carrierCode: resolvedCarrierCode,
-        locale,
-      }).catch((error) => {
-        console.error('notifyBeanOrderShipped (ship):', error);
-      });
-    }
+    const customer = order.bean_customers as { name?: string } | null;
+    const recipientName = (order.recipient_name as string) || '';
+    const orderNo = (order.order_no as string) || orderId;
 
-    if (trackingStatus) {
-      const { maybeNotifyBeanOrderDelivered } = await import('@/lib/bean-orders/notify-delivered');
-      void maybeNotifyBeanOrderDelivered({
-        trackingNumber: trackingNumber || undefined,
-        previousStatus: null,
-        nextStatus: trackingStatus,
-        carrierCode: resolvedCarrierCode,
-      }).catch((error) => {
-        console.error('maybeNotifyBeanOrderDelivered (ship):', error);
-      });
-    }
+    after(async () => {
+      try {
+        if (isNewShipment) {
+          const { notifyBeanOrderShipped } = await import('@/lib/bean-orders/shipment-web-push');
+          const { getBeanOrderCustomerDisplayName } = await import('@/lib/bean-orders/customer-display');
+          await notifyBeanOrderShipped({
+            orderId,
+            orderNo,
+            customerName: getBeanOrderCustomerDisplayName({
+              customerName: customer?.name ?? null,
+              recipientName,
+            }),
+            trackingNumber: trackingNumber || null,
+            carrierCode: resolvedCarrierCode,
+            locale,
+          }).catch((error) => {
+            console.error('notifyBeanOrderShipped (ship):', error);
+          });
+        }
+
+        if (shouldSyncTracking) {
+          const resolvedCarrier =
+            resolveTrackingMoreCarrierCode(carrierCode) ?? carrierCode;
+          const tm = await createTrackingMoreShipment({
+            trackingNumber,
+            carrierCode: resolvedCarrier,
+          });
+
+          let trackingStatus: string | null = null;
+          let trackingRaw: Record<string, unknown> | null = tm.ok ? tm.data : null;
+          if (!tm.ok) {
+            console.error('TrackingMore create (deferred ship):', tm.error);
+          }
+
+          const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, carrierCode);
+          if (fetched.ok) {
+            trackingStatus = fetched.status;
+            trackingRaw = fetched.raw;
+          } else if (tm.ok) {
+            trackingStatus = 'registered';
+          }
+
+          if (trackingStatus || trackingRaw) {
+            const { error: syncError } = await supabase
+              .from('bean_order_shipments')
+              .update({
+                tracking_status: trackingStatus,
+                tracking_raw: trackingRaw,
+              })
+              .eq('order_id', orderId);
+            if (syncError) {
+              console.error('Supabase Error (shipBeanOrder deferred tracking):', syncError.message, syncError.details);
+            }
+          }
+
+          if (trackingStatus) {
+            const { maybeNotifyBeanOrderDelivered } = await import('@/lib/bean-orders/notify-delivered');
+            await maybeNotifyBeanOrderDelivered({
+              trackingNumber: trackingNumber || undefined,
+              previousStatus: null,
+              nextStatus: trackingStatus,
+              carrierCode: resolvedCarrierCode,
+            }).catch((error) => {
+              console.error('maybeNotifyBeanOrderDelivered (ship):', error);
+            });
+          }
+        }
+
+        revalidateBeanOrders(locale, orderId);
+      } catch (error) {
+        console.error('[shipBeanOrder] Deferred side-effect error:', error);
+      }
+    });
 
     void recordDataChange({
       action: 'UPDATE',
@@ -1455,7 +1480,7 @@ export async function shipBeanOrder(
     });
 
     revalidateBeanOrders(locale, orderId);
-    return { success: true, trackingWarning };
+    return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'บันทึกจัดส่งไม่สำเร็จ';
     return { success: false, error: message };
@@ -1552,7 +1577,7 @@ export async function confirmBeanOrderDelivered(
     }
 
     const { maybeNotifyBeanOrderDelivered } = await import('@/lib/bean-orders/notify-delivered');
-    await maybeNotifyBeanOrderDelivered({
+    void maybeNotifyBeanOrderDelivered({
       orderId,
       previousStatus,
       nextStatus,

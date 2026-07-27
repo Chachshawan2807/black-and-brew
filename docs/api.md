@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-07-25
+> Version: 9.3 | Last Updated: 2026-07-28
 
 ---
 
@@ -246,7 +246,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 | `getBeanOrderSlipSignedUrl(orderId)` | Signed URL สำหรับดูสลิป |
 | `confirmBeanOrderPayment(orderId)` | ยืนยันชำระเงิน |
 | `revertBeanOrderPayment(orderId)` | ย้อนสถานะชำระเงิน |
-| `shipBeanOrder(orderId, input)` | บันทึกการจัดส่ง + TrackingMore register |
+| `shipBeanOrder(orderId, input)` | บันทึกจัดส่งทันที; TrackingMore + push ใน `after()` |
 | `fetchInventoryItemsForBeanOrders()` | รายการสินค้าคลังสำหรับเลือกในออเดอร์ |
 | `fetchBeanOrderFormSuggestions()` | ค่าแนะนำในฟอร์ม (ลูกค้าล่าสุด, สินค้ายอดนิยม) |
 | `parseBeanOrderCustomerFromText(text)` | แยกข้อมูลลูกค้าจากข้อความที่ paste |

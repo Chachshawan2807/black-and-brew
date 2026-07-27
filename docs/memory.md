@@ -1,12 +1,23 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-07-25 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.3 | Last Updated: 2026-07-28 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
 ---
 
 ## Active Decisions
+
+### DEC-087: Ship path latency + doc/code hygiene (v9.3)
+
+- Date: July 2026
+- Context: TrackingMore on the critical ship path slowed saves; docs drifted after deleting `daily-report-notification-actions.ts` and adding UI/nav helpers.
+- Decision:
+  1. **`shipBeanOrder`:** persist shipment immediately; run TrackingMore create/poll, shipped push, and revalidate inside `after()` — no `trackingWarning` on the action result.
+  2. **Docs keepers:** `PROJECT_MAP` / `sql/README` / `database.md` must list files that exist on disk; migration history stays immutable.
+  3. **Shared UI:** `RoundedSelect` + `select-trigger-styles`; navigation via `view-transition.ts` (date filters use `navigateWithoutViewTransition`).
+- Impact: `docs/architecture.md`, `docs/api.md`, `PROJECT_MAP.md`, `docs/changelog.md`.
+- Evidence: `bean-orders-save-performance.test.ts`, `rounded-select.test.ts`, `schedule-clear-all-removed.test.ts`
 
 ### DEC-086: Proactive Cross-Module Insights (v9.3)
 

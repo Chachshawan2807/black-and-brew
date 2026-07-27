@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
+import { BB_SELECT_OPTION_CLASS, BB_SELECT_OPTION_SELECTED_CLASS, BB_SELECT_TRIGGER_CLASS } from '@/components/ui/select-trigger-styles';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -207,18 +208,18 @@ export default function MaintenanceModals({
                           aria-haspopup="listbox"
                           aria-expanded={showTaskTypeList}
                           aria-controls={showTaskTypeList ? taskTypeListId : undefined}
-                          className={`${fieldClass} appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed text-left pr-10`}
+                          className={cn(BB_SELECT_TRIGGER_CLASS, 'text-left disabled:opacity-60 disabled:cursor-not-allowed')}
                         >
                           {taskTypeSelect}
                         </button>
-                        <ChevronRight className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-foreground/30 pointer-events-none" />
+                        <ChevronRight className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-muted-foreground pointer-events-none" />
                       </div>
                       {showTaskTypeList && !isReadOnly && (
                         <ul
                           id={taskTypeListId}
                           data-testid="task-type-listbox"
                           role="listbox"
-                          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-2xl border border-border bg-card text-foreground bb-shadow-lg"
+                          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-2xl border border-border bg-card text-foreground p-1.5 bb-shadow-lg"
                         >
                           {TASK_TYPE_PRESETS.map(preset => (
                             <li key={preset} role="option" aria-selected={taskTypeSelect === preset}>
@@ -227,8 +228,8 @@ export default function MaintenanceModals({
                                 onMouseDown={e => e.preventDefault()}
                                 onClick={() => selectTaskType(preset)}
                                 className={cn(
-                                  'w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors',
-                                  taskTypeSelect === preset ? 'bg-muted' : 'hover:bg-muted/60',
+                                  BB_SELECT_OPTION_CLASS,
+                                  taskTypeSelect === preset && BB_SELECT_OPTION_SELECTED_CLASS,
                                 )}
                               >
                                 {preset}

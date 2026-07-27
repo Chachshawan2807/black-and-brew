@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { fetchRosterData } from '@/app/actions/shift-actions';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
+import { RoundedSelect } from '@/components/ui/rounded-select';
 import {
   getShiftColorClass,
   getShiftColorStyle,
@@ -162,7 +163,7 @@ export default function MonthlyRoster({
           <p className="text-foreground font-normal animate-pulse">บรูกำลังจัดแจงข้อมูลเวรให้สักครู่นะคะ...</p>
         </div>
       ) : (
-        <div className="bg-card rounded-[32px] border border-border shadow-xl shadow-black/5">
+        <div className="bg-card rounded-[32px] overflow-hidden border border-border shadow-xl shadow-black/5">
           {activeTab === 'consolidated' ? (
             <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y">
               <table className="w-max min-w-full border-collapse">
@@ -213,13 +214,14 @@ export default function MonthlyRoster({
                   <div className="p-2 bg-black rounded-xl"><User className="w-5 h-5 text-[#fdfcf0]" /></div>
                   <span className="text-foreground text-lg font-normal">เลือกพนักงาน:</span>
                 </div>
-                <select 
-                  value={selectedStaffId || ''} 
+                <RoundedSelect
+                  value={selectedStaffId || ''}
                   onChange={(e) => setSelectedStaffId(e.target.value)}
-                  className="flex-1 max-w-sm bg-card border border-border rounded-2xl px-5 py-3 text-md text-foreground focus:outline-none focus:ring-4 focus:ring-border transition-all appearance-none cursor-pointer"
+                  className="w-fit"
+                  wrapperClassName="w-fit"
                 >
                   {data.profiles.map(p => <option key={p.id} value={p.id} className="text-foreground">{p.full_name}</option>)}
-                </select>
+                </RoundedSelect>
               </div>
 
               <div className="grid grid-cols-7 gap-1 md:gap-2 pb-24">

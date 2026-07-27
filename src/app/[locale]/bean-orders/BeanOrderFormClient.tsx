@@ -34,6 +34,7 @@ import {
   parseThaiPostalAddressLine,
   type ThaiPostalAddressValue,
 } from '@/lib/bean-orders/address';
+import { navigateWithViewTransition } from '@/lib/view-transition';
 import { mergeCustomerAddressProfiles } from '@/lib/bean-orders/customer-address-persist';
 import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
 import {
@@ -560,7 +561,7 @@ export default function BeanOrderFormClient({
 
   async function persistShipment(
     targetOrderId: string,
-  ): Promise<{ error?: string; warning?: string }> {
+  ): Promise<{ error?: string }> {
     if (!shouldPersistShipment()) return {};
 
     const resolvedCarrierCode = resolveCarrierCodeForSave(carrierCode, customCarrierLabel);
@@ -579,7 +580,7 @@ export default function BeanOrderFormClient({
     if (!shipResult.success) {
       return { error: shipResult.error ?? 'บันทึกการจัดส่งไม่สำเร็จ' };
     }
-    return { warning: shipResult.trackingWarning };
+    return {};
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -659,7 +660,7 @@ export default function BeanOrderFormClient({
         if (paymentResult.error) {
           setSaving(false);
           setError(`${paymentResult.error} — ออเดอร์ถูกบันทึกแล้ว`);
-          router.push(`/${locale}/bean-orders`);
+          navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
           return;
         }
       }
@@ -669,7 +670,7 @@ export default function BeanOrderFormClient({
         if (shipmentResult.error) {
           setSaving(false);
           setError(`${shipmentResult.error} — ออเดอร์ถูกบันทึกแล้ว`);
-          router.push(`/${locale}/bean-orders`);
+          navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
           return;
         }
       }
@@ -677,11 +678,11 @@ export default function BeanOrderFormClient({
 
     setSaving(false);
     if (isEdit && orderId) {
-      router.push(`/${locale}/bean-orders`);
+      navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
       return;
     }
     if ('orderId' in result && result.orderId) {
-      router.push(`/${locale}/bean-orders`);
+      navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
     }
   }
 

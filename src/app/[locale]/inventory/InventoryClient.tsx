@@ -22,6 +22,11 @@ import { computePurchaseOrderDerivedState, formatInventoryNumericDisplay, getSto
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { getInventoryItemDisplayOrder } from '@/lib/inventory-grid-search';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
+import {
+  loadFrequentItemsCache,
+  saveFrequentItemsCache,
+  touchFrequentItemInCache,
+} from '@/lib/inventory-frequent-items';
 import { useInventoryGridFilter } from '@/hooks/use-inventory-grid-filter';
 import { useInventoryHistory } from '@/hooks/use-inventory-history';
 import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
@@ -924,7 +929,7 @@ export default function InventoryClient({
 
   // Quick Entry State
   const [isQuickActionBarOpen, setIsQuickActionBarOpen] = useState(true);
-  const [frequentItems, setFrequentItems] = useState<{ id: string, name: string }[]>([]);
+  const [frequentItems, setFrequentItems] = useState(() => loadFrequentItemsCache());
 
   const quickAction = useInventoryQuickAction({
     items,
@@ -934,13 +939,19 @@ export default function InventoryClient({
     onHistoryRefresh: history.refreshHistory,
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_BAR,
     onBeforeSave: () => setSavingState('saving'),
-    onAfterSave: () => {
+    onAfterSave: (saved) => {
       blurActiveElement();
       setIsQuickActionBarOpen(false);
       setSavingState('synced');
       setTimeout(() => setSavingState('idle'), 2000);
+      if (saved?.id && saved.name) {
+        setFrequentItems(touchFrequentItemInCache({ id: saved.id, name: saved.name }));
+      }
       void fetchFrequentItems().then((res) => {
-        if (res.success && res.data) setFrequentItems(res.data);
+        if (res.success && res.data) {
+          setFrequentItems(res.data);
+          saveFrequentItemsCache(res.data);
+        }
       });
     },
     onSaveError: () => setSavingState('idle'),
@@ -1651,6 +1662,7 @@ export default function InventoryClient({
     const res = await fetchFrequentItems();
     if (res.success && res.data) {
       setFrequentItems(res.data);
+      saveFrequentItemsCache(res.data);
     }
   }
 

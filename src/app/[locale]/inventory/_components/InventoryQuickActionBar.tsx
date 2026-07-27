@@ -29,7 +29,7 @@ import {
 } from '@/lib/inventory-quick-search-keyboard';
 import { blurQtyInputOnWheel, stepQuickQtyValue } from '@/lib/inventory-quick-qty-step';
 import type { BulkPreview, BulkQueueItem } from '@/lib/inventory-quick-bulk';
-import { getBulkSubmitTypeLabel, type BulkQuickType } from '@/lib/inventory-quick-bulk';
+import { formatBulkConfirmQty, getBulkSubmitTypeLabel, type BulkQuickType } from '@/lib/inventory-quick-bulk';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { useMaxMd } from '@/hooks/use-max-md';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
@@ -482,7 +482,7 @@ function BulkSubmitConfirmDialog({
                   </div>
                 </div>
                 <div className="shrink-0 text-sm font-normal tabular-nums text-foreground">
-                  {typeLabel} {line.qty} {line.unit}
+                  {typeLabel} {formatBulkConfirmQty(line.qty)} {line.unit}
                 </div>
               </div>
             ))}

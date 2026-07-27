@@ -1,5 +1,5 @@
 import { preloadCaptureLibraries } from '@/lib/capture-element-png';
-import { Plus, Trash2, Undo2, Redo2, UserCog, Calendar, Download, Settings } from 'lucide-react';
+import { Plus, Undo2, Redo2, UserCog, Calendar, Download, Settings } from 'lucide-react';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
@@ -13,7 +13,6 @@ interface ScheduleToolbarProps {
   onDateChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onShowRegularHolidayModal: () => void;
   onShowManagementModal: () => void;
-  onShowClearConfirm: () => void;
   onExportScheduleImage: () => void;
   onShowAddEmployeeModal: () => void;
   onShowShiftSettings: () => void;
@@ -29,7 +28,6 @@ export default function ScheduleToolbar({
   onDateChange,
   onShowRegularHolidayModal,
   onShowManagementModal,
-  onShowClearConfirm,
   onExportScheduleImage,
   onShowAddEmployeeModal,
   onShowShiftSettings,
@@ -93,15 +91,6 @@ export default function ScheduleToolbar({
         >
           <UserCog className="w-4 h-4" />
           การลา/เปลี่ยนกะ
-        </button>
-
-        <button
-          onClick={onShowClearConfirm}
-          disabled={isReadOnly}
-          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-        >
-          <Trash2 className="w-4 h-4" />
-          ล้างทั้งหมด
         </button>
 
         <button

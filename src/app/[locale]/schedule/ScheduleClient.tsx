@@ -4,11 +4,12 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, UserCog, AlertTriangle, Loader2, ChevronDown, X, Calendar, CalendarDays, Pencil } from 'lucide-react';
+import { Plus, Trash2, UserCog, Loader2, ChevronDown, X, Calendar, CalendarDays, Pencil } from 'lucide-react';
 import { startOfWeek, addDays, format } from 'date-fns';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
+import { navigateWithoutViewTransition } from '@/lib/view-transition';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -543,7 +544,6 @@ export default function ScheduleClient({
 
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [newEmployeeName, setNewEmployeeName] = useState('');
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
   const [originalHistoryRange, setOriginalHistoryRange] = useState<{
@@ -793,18 +793,6 @@ export default function ScheduleClient({
     setShifts,
     blockIfReadOnly,
   });
-
-  const handleClearAll = async () => {
-    if (blockIfReadOnly()) return;
-    pushToHistory(profiles, orderedProfileIds, shifts);
-    try {
-      await supabase.from('shifts').delete().gte('start_time', weekDays[0] + 'T00:00:00').lte('start_time', weekDays[6] + 'T23:59:59');
-      setShowClearConfirm(false);
-      await revalidateAppPaths();
-    } catch {
-      alert('ไม่สามารถลบข้อมูลได้ โปรดลองอีกครั้ง');
-    }
-  };
 
   const fetchMgmtHistory = useCallback(async () => {
     try {
@@ -1230,7 +1218,7 @@ export default function ScheduleClient({
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value) {
-      router.push(`?week=${e.target.value}`);
+      navigateWithoutViewTransition(router.push, `?week=${e.target.value}`);
     }
   };
 
@@ -1324,7 +1312,6 @@ export default function ScheduleClient({
         onDateChange={handleDateChange}
         onShowRegularHolidayModal={() => setShowRegularHolidayModal(true)}
         onShowManagementModal={() => setShowManagementModal(true)}
-        onShowClearConfirm={() => setShowClearConfirm(true)}
         onExportScheduleImage={exportScheduleImage}
         onShowAddEmployeeModal={() => setShowAddEmployeeModal(true)}
         onShowShiftSettings={() => setShowShiftSettingsModal(true)}
@@ -1564,41 +1551,6 @@ export default function ScheduleClient({
         </div>,
         document.body
       )}
-
-      <FadeModalScaffold
-        open={showClearConfirm}
-        onClose={() => setShowClearConfirm(false)}
-        zIndex={60}
-        overlayClassName="bg-[#000000]/20 backdrop-blur-sm"
-        panelClassName="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground text-center space-y-4"
-        aria-label="ยืนยันการลบข้อมูล"
-      >
-            <HintTooltip tip="ปิด">
-              <button onClick={() => setShowClearConfirm(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
-                <X className="w-5 h-5" />
-              </button>
-            </HintTooltip>
-            <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
-            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <h3 className="text-lg font-normal text-foreground">ยืนยันการลบข้อมูล</h3>
-            <p className="text-sm text-foreground/70">คุณแน่ใจหรือไม่ที่จะลบข้อมูลกะงาน<br />ของสัปดาห์นี้ทั้งหมด</p>
-            <div className="grid grid-cols-2 gap-3 pt-4">
-              <button
-                onClick={() => setShowClearConfirm(false)}
-                className="h-11 md:h-auto py-2.5 rounded-xl bg-[#000000]/5 hover:bg-[#000000]/10 text-foreground text-base md:text-sm font-normal transition-colors cursor-pointer"
-              >
-                ยกเลิก
-              </button>
-              <button
-                onClick={handleClearAll}
-                className="h-11 md:h-auto py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-[#ffffff] text-base md:text-sm font-normal transition-colors cursor-pointer"
-              >
-                ยืนยันการลบ
-              </button>
-            </div>
-      </FadeModalScaffold>
 
       <ExportProgressOverlay
         visible={isExportingImage}

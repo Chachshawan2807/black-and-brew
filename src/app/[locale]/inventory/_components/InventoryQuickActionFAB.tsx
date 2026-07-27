@@ -18,6 +18,11 @@ import {
 import {
   fetchFrequentItems,
 } from '@/app/actions/inventory-actions';
+import {
+  loadFrequentItemsCache,
+  saveFrequentItemsCache,
+  touchFrequentItemInCache,
+} from '@/lib/inventory-frequent-items';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryHistory } from '@/hooks/use-inventory-history';
 import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
@@ -65,7 +70,7 @@ export default function InventoryQuickActionFAB() {
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isPanelRendered, setIsPanelRendered] = useState(false);
-  const [frequentItems, setFrequentItems] = useState<{ id: string; name: string }[]>([]);
+  const [frequentItems, setFrequentItems] = useState(() => loadFrequentItemsCache());
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
@@ -98,6 +103,7 @@ export default function InventoryQuickActionFAB() {
     const res = await fetchFrequentItems();
     if (res.success && res.data) {
       setFrequentItems(res.data);
+      saveFrequentItemsCache(res.data);
     }
   }, []);
 
@@ -109,8 +115,11 @@ export default function InventoryQuickActionFAB() {
     onHistoryRefresh: history.refreshHistory,
     isItemsLoaded: hasLoadedItems,
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_FAB,
-    onAfterSave: () => {
+    onAfterSave: (saved) => {
       blurActiveElement();
+      if (saved?.id && saved.name) {
+        setFrequentItems(touchFrequentItemInCache({ id: saved.id, name: saved.name }));
+      }
       void loadFrequentItems();
       setIsOpen(false);
     },
@@ -201,12 +210,16 @@ export default function InventoryQuickActionFAB() {
   }, [isMounted, isMobile, isPanelRendered]);
 
   useEffect(() => {
+    if (!isMounted) return;
+    void loadFrequentItems();
+  }, [isMounted, loadFrequentItems]);
+
+  useEffect(() => {
     if (!isMounted || !isOpen) return;
 
-    void refresh();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- load frequent items when panel opens
+    void refresh({ soft: hasLoadedItems });
     void loadFrequentItems();
-  }, [isMounted, isOpen, refresh, loadFrequentItems]);
+  }, [isMounted, isOpen, refresh, loadFrequentItems, hasLoadedItems]);
 
   useEffect(() => {
     if (showPurchaseOrderModal && isOpen) {

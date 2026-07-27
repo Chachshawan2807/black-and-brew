@@ -13,7 +13,10 @@ describe('bean order navigation after save/delete', () => {
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderFormClient.tsx'),
       'utf8',
     );
-    expect(source).toContain("router.push(`/${locale}/bean-orders`)");
+    expect(source).toContain('navigateWithViewTransition');
+    expect(source).toMatch(
+      /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
+    );
     expect(source).not.toMatch(
       /setSaving\(false\);\s*if \(isEdit && orderId\) \{\s*router\.push\(`\/\$\{locale\}\/bean-orders\/\$\{orderId\}`\)/,
     );
@@ -26,8 +29,10 @@ describe('bean order navigation after save/delete', () => {
     );
     const deleteFnStart = source.indexOf('async function handleDelete');
     expect(deleteFnStart).toBeGreaterThan(-1);
-    const deleteFnBody = source.slice(deleteFnStart, deleteFnStart + 500);
-    expect(deleteFnBody).toContain("router.push(`/${locale}/bean-orders`)");
+    const deleteFnBody = source.slice(deleteFnStart, deleteFnStart + 600);
+    expect(deleteFnBody).toMatch(
+      /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
+    );
   });
 });
 

@@ -131,6 +131,13 @@ export function resolveInOutQuantity(qty: string): number | null {
   return parsed;
 }
 
+/** Display qty on bulk confirm dialog — empty defaults show as "1". */
+export function formatBulkConfirmQty(qty: string): string {
+  const resolved = resolveInOutQuantity(qty);
+  if (resolved !== null) return String(resolved);
+  return qty.trim();
+}
+
 export function computeBulkPreview(line: BulkQueueItem, type: BulkQuickType): BulkPreview {
   const before = Number(line.currentStock) || 0;
   const qty = resolveInOutQuantity(line.qty);

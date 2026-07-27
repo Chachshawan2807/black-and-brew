@@ -3,6 +3,7 @@ import {
   addBulkQueueItem,
   canSubmitBulkQueue,
   computeBulkPreview,
+  formatBulkConfirmQty,
   getBulkSubmitTypeLabel,
   resolveBulkSubmitPayload,
   resolveInOutQuantity,
@@ -95,6 +96,13 @@ describe('inventory-quick-bulk', () => {
     expect(resolveBulkSubmitPayload([line], 'IN')).toEqual([
       { itemId: 'a1', type: 'IN', quantity: 1 },
     ]);
+  });
+
+  test('formatBulkConfirmQty shows resolved quantity so empty defaults display as 1', () => {
+    expect(formatBulkConfirmQty('')).toBe('1');
+    expect(formatBulkConfirmQty('   ')).toBe('1');
+    expect(formatBulkConfirmQty('3')).toBe('3');
+    expect(formatBulkConfirmQty('0')).toBe('0');
   });
 
   test('canSubmitBulkQueue rejects invalid non-empty qty', () => {

@@ -35,6 +35,11 @@ describe('inventory save performance', () => {
     expect(inventoryActions).toContain('deferInventorySideEffects(');
   });
 
+  test('warehouse stock edit does not block on a pre-mutation item SELECT', () => {
+    const critical = criticalPathBeforeAfter('updateInventoryStock', inventoryActions);
+    expect(critical).not.toMatch(/\.from\(['"]inventory_items['"]\)[\s\S]*\.select\(/);
+  });
+
   test('warehouse field edit defers audit log and revalidation', () => {
     const critical = criticalPathBeforeAfter('updateInventoryItemField', inventoryActions);
     expect(critical).not.toContain('recordDataChange');
@@ -45,6 +50,18 @@ describe('inventory save performance', () => {
     const critical = criticalPathBeforeAfter('recordTransaction', inventoryActions);
     expect(critical).not.toContain('await recordDataChange');
     expect(critical).not.toContain('revalidatePath');
+  });
+
+  test('recordTransaction does not block on a pre-mutation item SELECT', () => {
+    const critical = criticalPathBeforeAfter('recordTransaction', inventoryActions);
+    expect(critical).not.toMatch(/\.from\(['"]inventory_items['"]\)[\s\S]*\.select\(/);
+  });
+
+  test('bulk transactions do not SELECT item metadata on the critical path', () => {
+    const critical = criticalPathBeforeAfter('recordBulkInventoryTransactions', inventoryActions);
+    expect(critical).not.toMatch(/\.from\(['"]inventory_items['"]\)[\s\S]*\.select\(/);
+    expect(critical).not.toContain('revalidatePath');
+    expect(inventoryActions).toContain("deferInventorySideEffects('recordBulkInventoryTransactions'");
   });
 
   test('reorderInventoryItems defers audit log and revalidation', () => {

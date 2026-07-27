@@ -45,6 +45,7 @@ import {
 } from '@/app/actions/sales-actions';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { RoundedSelect } from '@/components/ui/rounded-select';
 import { useTheme } from 'next-themes';
 import { getChartColors } from '@/lib/chart-theme';
 import { SALES_CATEGORY_CARD_COLORS, SALES_SECTION_COLORS } from '@/lib/shift-colors';
@@ -1283,21 +1284,19 @@ export default function SalesClient({
                   </div>
                   <div className="flex flex-wrap items-center gap-2.5">
                     {/* Category Filter */}
-                    <div className="relative">
-                      <select
-                        id="category-filter"
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                        aria-label="Filter by product category"
-                        className="appearance-none w-full sm:w-auto px-3 pr-8 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border hover:border-border bb-shadow-sm"
-                      >
-                        <option value="all">ทุกหมวดหมู่</option>
-                        {categories.map((cat, idx) => (
-                          <option key={idx} value={cat}>{cat}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                    </div>
+                    <RoundedSelect
+                      id="category-filter"
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      aria-label="Filter by product category"
+                      className="w-full sm:w-auto text-xs"
+                      wrapperClassName="w-full sm:w-auto"
+                    >
+                      <option value="all">ทุกหมวดหมู่</option>
+                      {categories.map((cat, idx) => (
+                        <option key={idx} value={cat}>{cat}</option>
+                      ))}
+                    </RoundedSelect>
                     {/* Sort Buttons */}
                     <button
                       onClick={() => {

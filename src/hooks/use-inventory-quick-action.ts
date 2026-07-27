@@ -45,7 +45,7 @@ type UseInventoryQuickActionOptions<T extends BulkStockItem> = {
   isReadOnly: boolean;
   showHistoryModal?: boolean;
   onHistoryRefresh?: () => void | Promise<void>;
-  onAfterSave?: () => void;
+  onAfterSave?: (saved?: { id: string; name: string }) => void;
   onBeforeSave?: () => void;
   onSaveError?: () => void;
   isItemsLoaded?: boolean;
@@ -253,10 +253,13 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
             .join('; ')}`,
         );
       } else {
+        const first = succeeded[0]
+          ? items.find((item) => item.id === succeeded[0]!.itemId)
+          : undefined;
         setBulkQueue([]);
         resetQuickEntryFields();
         clearInventoryQuickActionDraft();
-        onAfterSave?.();
+        onAfterSave?.(first ? { id: first.id, name: first.name } : undefined);
       }
 
       await refreshHistoryIfOpen();
@@ -354,7 +357,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
           setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)));
           resetQuickEntryFields();
           clearInventoryQuickActionDraft();
-          onAfterSave?.();
+          onAfterSave?.({ id: item.id, name: item.name });
           await refreshHistoryIfOpen();
         } finally {
           setIsQuickPending(false);

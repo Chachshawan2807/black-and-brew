@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-07-25
+> Version: 9.3 | Last Updated: 2026-07-28
 
 ---
 
@@ -24,7 +24,11 @@ Notable completed work:
 - [x] Sidebar menu drag-reorder (`sidebar-menu-order.ts`) + cross-device sync (`app_preferences`)
 - [x] Proactive cross-module insights (`/api/insight-alerts`, Web Push, Command Center ops panels)
 - [x] RLS hardening migration (`20260725120000`) + WAF config (`config/vercel-firewall.json`)
-- [x] Retired: inventory recommended target stock; weather API; Market Insights module; obsolete root protocol/skill stubs
+- [x] Shared `RoundedSelect` / select-trigger styles; view-transition navigation helpers
+- [x] Schedule toolbar “ล้างทั้งหมด” removed
+- [x] Inventory frequent-items localStorage cache
+- [x] `shipBeanOrder` deferred TrackingMore + push via `after()` (no sync `trackingWarning`)
+- [x] Retired: inventory recommended target stock; weather API; Market Insights module; obsolete root protocol/skill stubs; `daily-report-notification-actions.ts`
 
 See `docs/changelog.md` and git history for dated entries.
 

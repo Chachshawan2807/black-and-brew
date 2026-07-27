@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { Plus } from 'lucide-react';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { BeanOrderListItem } from './_components/BeanOrderListItem';
+import { RoundedSelect } from '@/components/ui/rounded-select';
 import {
   BEAN_ORDER_BTN_PRIMARY_LINK,
   BEAN_ORDER_INPUT,
@@ -64,24 +65,22 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
           placeholder="ค้นหาเลขออเดอร์ / ชื่อลูกค้า"
           className={BEAN_ORDER_INPUT}
         />
-        <select
+        <RoundedSelect
           value={paymentFilter}
           onChange={(e) => setPaymentFilter(e.target.value as typeof paymentFilter)}
-          className={BEAN_ORDER_INPUT}
         >
           <option value="all">ชำระเงิน: ทั้งหมด</option>
           <option value="unpaid">ยังไม่ชำระ</option>
           <option value="paid">ชำระแล้ว</option>
-        </select>
-        <select
+        </RoundedSelect>
+        <RoundedSelect
           value={fulfillmentFilter}
           onChange={(e) => setFulfillmentFilter(e.target.value as typeof fulfillmentFilter)}
-          className={BEAN_ORDER_INPUT}
         >
           <option value="all">จัดส่ง: ทั้งหมด</option>
           <option value="pending">ยังไม่ส่ง</option>
           <option value="shipped">ส่งแล้ว</option>
-        </select>
+        </RoundedSelect>
       </div>
 
       <div className={BEAN_ORDER_LIST_CARD}>

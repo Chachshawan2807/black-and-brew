@@ -26,6 +26,20 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
     expect(code).toMatch(/sticky left-0[\s\S]*bb-sticky-scroll-cell/);
   });
 
+  test('MonthlyRoster table shell clips square thead corners to rounded border', () => {
+    const code = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
+    expect(code).toMatch(
+      /bg-card rounded-\[32px\] overflow-hidden border border-border shadow-xl shadow-black\/5/,
+    );
+  });
+
+  test('MonthlyRoster individual staff select sizes to content instead of stretching', () => {
+    const code = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
+    expect(code).toContain('RoundedSelect');
+    expect(code).toMatch(/RoundedSelect[\s\S]*?\bw-fit\b/);
+    expect(code).not.toMatch(/RoundedSelect[\s\S]*?\bflex-1\b/);
+    expect(code).not.toMatch(/RoundedSelect[\s\S]*?\bmax-w-sm\b/);
+  });
   const scrollSurfaces: { file: string; pattern: RegExp }[] = [
     {
       file: 'app/[locale]/inventory/_components/InventoryHistoryModal.tsx',

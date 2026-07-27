@@ -37,6 +37,7 @@ import {
   shouldShowDeliveredButton,
 } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
+import { navigateWithViewTransition } from '@/lib/view-transition';
 import { OrderListStatusGroup } from './_components/OrderStatusBadge';
 import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BADGE_MUTED, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS, BEAN_ORDER_PAYMENT_BODY, BEAN_ORDER_PAYMENT_COLUMN, BEAN_ORDER_PAYMENT_SHIPPING_GRID, BEAN_ORDER_PAYMENT_SLIP_SLOT, BEAN_ORDER_SHIPPING_COLUMN } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
@@ -98,7 +99,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
       })
     : null;
 
-  async function reload() {
+  function reload() {
     router.refresh();
   }
 
@@ -115,7 +116,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     const slipResult = await getBeanOrderSlipSignedUrl(order.id);
     if (!slipResult.success) {
       setError(slipResult.error ?? 'โหลดสลิปไม่สำเร็จ');
-      await reload();
+      void reload();
       return;
     }
 
@@ -128,7 +129,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
         confirmedBy: prev.payment?.confirmedBy ?? null,
       },
     }));
-    await reload();
+    void reload();
   }
 
   async function handleConfirmPayment() {
@@ -139,7 +140,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     if (!result.success) { setError(result.error ?? 'ยืนยันไม่สำเร็จ'); return; }
     setOrder((prev) => ({ ...prev, paymentStatus: 'paid' }));
     setMessage('ยืนยันชำระเงินแล้ว');
-    await reload();
+    void reload();
   }
 
   async function handleRevertPayment() {
@@ -151,7 +152,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     if (!result.success) { setError(result.error ?? 'เปลี่ยนสถานะไม่สำเร็จ'); return; }
     setOrder((prev) => ({ ...prev, paymentStatus: 'unpaid' }));
     setMessage('เปลี่ยนเป็นรอชำระแล้ว');
-    await reload();
+    void reload();
   }
 
   async function handleShip() {
@@ -169,10 +170,20 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     );
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'บันทึกจัดส่งไม่สำเร็จ'); return; }
-    setOrder((prev) => ({ ...prev, fulfillmentStatus: 'shipped' }));
-    if (result.trackingWarning) setMessage(`บันทึกจัดส่งแล้ว (ติดตามพัสดุ: ${result.trackingWarning})`);
-    else setMessage(order.fulfillmentStatus === 'shipped' ? 'อัปเดตการจัดส่งแล้ว' : 'บันทึกจัดส่งแล้ว');
-    await reload();
+    setOrder((prev) => ({
+      ...prev,
+      fulfillmentStatus: 'shipped',
+      shipment: {
+        deliveryType: 'parcel',
+        carrierCode: resolvedCarrierCode,
+        trackingNumber: trackingNumber.trim() || null,
+        trackingStatus: prev.shipment?.trackingStatus ?? null,
+        trackingEvents: prev.shipment?.trackingEvents ?? [],
+        shippedAt: prev.shipment?.shippedAt ?? new Date().toISOString(),
+      },
+    }));
+    setMessage(order.fulfillmentStatus === 'shipped' ? 'อัปเดตการจัดส่งแล้ว' : 'บันทึกจัดส่งแล้ว');
+    void reload();
   }
 
   async function handleConfirmDelivered() {
@@ -219,7 +230,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
           },
     }));
     setMessage('จัดส่งสำเร็จ');
-    await reload();
+    void reload();
   }
 
   async function handleDelete() {
@@ -229,7 +240,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     const result = await deleteBeanOrder(order.id, locale);
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'ลบไม่สำเร็จ'); return; }
-    router.push(`/${locale}/bean-orders`);
+    navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
   }
 
   const inputClass = BEAN_ORDER_INPUT;

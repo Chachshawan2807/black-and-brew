@@ -35,7 +35,7 @@ type InventoryChangeCallback = (payload: InventoryChangePayload) => void;
 interface InventoryRealtimeContextValue {
   items: InventoryRealtimeItem[];
   setItems: Dispatch<SetStateAction<InventoryRealtimeItem[]>>;
-  refresh: () => Promise<InventoryRealtimeItem[]>;
+  refresh: (options?: { soft?: boolean }) => Promise<InventoryRealtimeItem[]>;
   isLoading: boolean;
   hasLoaded: boolean;
   subscribe: (callback: InventoryChangeCallback) => () => void;
@@ -126,8 +126,9 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
     };
   }, [stopRealtimeChannel]);
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
+  const refresh = useCallback(async (options?: { soft?: boolean }) => {
+    const soft = options?.soft === true;
+    if (!soft) setIsLoading(true);
     try {
       await ensureSupabaseSession();
       const { data, error } = await supabase
@@ -148,7 +149,7 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
       console.error('Failed to fetch inventory items:', err);
       return [];
     } finally {
-      setIsLoading(false);
+      if (!soft) setIsLoading(false);
     }
   }, []);
 

@@ -54,8 +54,7 @@ export const BEAN_ORDER_LIST_CELL =
 export const BEAN_ORDER_INPUT =
   'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-foreground/10';
 
-export const BEAN_ORDER_SELECT =
-  `${BEAN_ORDER_INPUT} appearance-none cursor-pointer pr-10`;
+export { BB_SELECT_TRIGGER_CLASS as BEAN_ORDER_SELECT } from '@/components/ui/select-trigger-styles';
 
 /** Hover/press motion shared by bean-orders buttons and button-like links */
 export const BEAN_ORDER_BTN_MOTION =

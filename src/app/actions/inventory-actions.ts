@@ -21,12 +21,30 @@ import {
   requireMutationAccess,
   requireReadAccess,
 } from '@/lib/policies/server-gate';
+import {
+  rankFrequentItemIds,
+  resolveFrequentItemNames,
+} from '@/lib/inventory-frequent-items';
 import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
 const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAdminKey);
+
+async function fetchInventoryItemAuditMeta(itemId: string) {
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .select('name, stock, order_point')
+    .eq('id', itemId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[fetchInventoryItemAuditMeta] Supabase Error:', error.message, error.details);
+    return null;
+  }
+  return data as { name: string; stock: number | null; order_point: number | null } | null;
+}
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -161,12 +179,6 @@ export async function recordTransaction(
       return { success: false, error: 'Quantity must be greater than 0' };
     }
 
-    const { data: beforeItem } = await supabase
-      .from('inventory_items')
-      .select('name, stock, order_point')
-      .eq('id', productId)
-      .maybeSingle();
-
     const { data, error } = await supabase.rpc('record_inventory_transaction', {
       p_product_id: productId,
       p_type: type,
@@ -177,12 +189,13 @@ export async function recordTransaction(
     if (error) {
       console.error('[recordTransaction] Supabase RPC Error:', error.message, error.details, error.hint);
       deferInventorySideEffects('recordTransaction', async () => {
+        const itemMeta = await fetchInventoryItemAuditMeta(productId);
         await recordDataChange({
           action: 'UPDATE',
           module: 'inventory',
           entityType: 'inventory_item',
           entityId: productId,
-          entityLabel: beforeItem?.name ?? null,
+          entityLabel: itemMeta?.name ?? null,
           status: 'failed',
           errorMessage: error.message,
           metadata: withAuditMetadata(
@@ -190,7 +203,7 @@ export async function recordTransaction(
               operation: 'record_transaction',
               type,
               quantity,
-              itemName: beforeItem?.name ?? null,
+              itemName: itemMeta?.name ?? null,
             },
             auditOptions
           ),
@@ -203,16 +216,17 @@ export async function recordTransaction(
     }
 
     deferInventorySideEffects('recordTransaction', async () => {
+      const itemMeta = await fetchInventoryItemAuditMeta(productId);
       await recordDataChange({
         action: 'UPDATE',
         module: 'inventory',
         entityType: 'inventory_item',
         entityId: productId,
-        entityLabel: beforeItem?.name ?? null,
+        entityLabel: itemMeta?.name ?? null,
         fieldChanges: [
           {
             field: 'stock',
-            old_value: data?.old_stock ?? beforeItem?.stock ?? null,
+            old_value: data?.old_stock ?? null,
             new_value: data?.new_stock ?? null,
           },
         ],
@@ -222,8 +236,8 @@ export async function recordTransaction(
             type,
             quantity,
             note,
-            itemName: beforeItem?.name ?? null,
-            order_point: data?.order_point ?? beforeItem?.order_point ?? null,
+            itemName: itemMeta?.name ?? null,
+            order_point: data?.order_point ?? itemMeta?.order_point ?? null,
           },
           auditOptions
         ),
@@ -281,12 +295,6 @@ export async function recordBulkInventoryTransactions(
     const results: BulkInventoryTransactionResult[] = await Promise.all(
       parsed.data.entries.map(async (entry) => {
         try {
-          const { data: beforeItem } = await supabase
-            .from('inventory_items')
-            .select('name, stock, order_point')
-            .eq('id', entry.itemId)
-            .maybeSingle();
-
           const { data, error } = await supabase.rpc('record_inventory_transaction', {
             p_product_id: entry.itemId,
             p_type: entry.type,
@@ -297,12 +305,13 @@ export async function recordBulkInventoryTransactions(
           if (error) {
             console.error('[recordBulkInventoryTransactions] Supabase RPC Error:', error.message, error.details, error.hint);
             pendingAudits.push(async () => {
+              const itemMeta = await fetchInventoryItemAuditMeta(entry.itemId);
               await recordDataChange({
                 action: 'UPDATE',
                 module: 'inventory',
                 entityType: 'inventory_item',
                 entityId: entry.itemId,
-                entityLabel: beforeItem?.name ?? null,
+                entityLabel: itemMeta?.name ?? null,
                 status: 'failed',
                 errorMessage: error.message,
                 metadata: withAuditMetadata(
@@ -311,7 +320,7 @@ export async function recordBulkInventoryTransactions(
                     type: entry.type,
                     quantity: entry.quantity,
                     bulk: true,
-                    itemName: beforeItem?.name ?? null,
+                    itemName: itemMeta?.name ?? null,
                   },
                   auditOptions,
                 ),
@@ -324,16 +333,17 @@ export async function recordBulkInventoryTransactions(
           }
 
           pendingAudits.push(async () => {
+            const itemMeta = await fetchInventoryItemAuditMeta(entry.itemId);
             await recordDataChange({
               action: 'UPDATE',
               module: 'inventory',
               entityType: 'inventory_item',
               entityId: entry.itemId,
-              entityLabel: beforeItem?.name ?? null,
+              entityLabel: itemMeta?.name ?? null,
               fieldChanges: [
                 {
                   field: 'stock',
-                  old_value: data?.old_stock ?? beforeItem?.stock ?? null,
+                  old_value: data?.old_stock ?? null,
                   new_value: data?.new_stock ?? null,
                 },
               ],
@@ -344,8 +354,8 @@ export async function recordBulkInventoryTransactions(
                   quantity: entry.quantity,
                   note,
                   bulk: true,
-                  itemName: beforeItem?.name ?? null,
-                  order_point: data?.order_point ?? beforeItem?.order_point ?? null,
+                  itemName: itemMeta?.name ?? null,
+                  order_point: data?.order_point ?? itemMeta?.order_point ?? null,
                 },
                 auditOptions,
               ),
@@ -412,13 +422,8 @@ export async function updateInventoryStock(
     }
 
     let newStock = stock;
+    let oldStock: number | null = null;
     const recordHistory = options?.recordHistory ?? true;
-
-    const { data: beforeItem } = await supabase
-      .from('inventory_items')
-      .select('name, stock, order_point')
-      .eq('id', itemId)
-      .maybeSingle();
 
     const { data, error } = await supabase.rpc('set_inventory_stock', {
       p_item_id: itemId,
@@ -445,17 +450,19 @@ export async function updateInventoryStock(
       }
     } else {
       newStock = data?.new_stock ?? stock;
+      oldStock = data?.old_stock ?? null;
     }
 
     deferInventorySideEffects('updateInventoryStock', async () => {
+      const itemMeta = await fetchInventoryItemAuditMeta(itemId);
       await recordDataChange({
         action: 'UPDATE',
         module: 'inventory',
         entityType: 'inventory_item',
         entityId: itemId,
-        entityLabel: beforeItem?.name ?? null,
+        entityLabel: itemMeta?.name ?? null,
         fieldChanges: computeFieldChanges(
-          { stock: beforeItem?.stock ?? null },
+          { stock: oldStock },
           { stock: newStock }
         ),
         metadata: withAuditMetadata(
@@ -463,8 +470,8 @@ export async function updateInventoryStock(
             operation: 'set_stock',
             note,
             recordHistory,
-            itemName: beforeItem?.name ?? null,
-            order_point: beforeItem?.order_point ?? null,
+            itemName: itemMeta?.name ?? null,
+            order_point: itemMeta?.order_point ?? null,
           },
           options
         ),
@@ -1004,23 +1011,10 @@ export async function fetchFrequentItems() {
 
     if (!data || data.length === 0) return { success: true, data: [] };
 
-    // Count frequencies using inventory_item_id — VERIFIED column name in actual DB
     type FrequentTxRow = { inventory_item_id: string | null };
-    const counts: Record<string, number> = {};
-    (data as FrequentTxRow[]).forEach((tx) => {
-      const id = tx.inventory_item_id;
-      if (id) counts[id] = (counts[id] || 0) + 1;
-    });
-
-    // Get top 10 IDs
-    const topIds = Object.entries(counts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 10)
-      .map(([id]) => id);
-
+    const topIds = rankFrequentItemIds(data as FrequentTxRow[]);
     if (topIds.length === 0) return { success: true, data: [] };
 
-    // Fetch names for top items
     const { data: itemsData, error: itemsError } = await supabase
       .from('inventory_items')
       .select('id, name')
@@ -1028,13 +1022,10 @@ export async function fetchFrequentItems() {
 
     if (itemsError || !itemsData) return { success: true, data: [] };
 
-    type InventoryItemNameRow = { id: string; name: string };
-    const result = topIds
-      .map(id => {
-        const item = (itemsData as InventoryItemNameRow[]).find((i) => i.id === id);
-        return item ? { id: item.id as string, name: item.name as string } : null;
-      })
-      .filter((x): x is { id: string; name: string } => x !== null);
+    const result = resolveFrequentItemNames(
+      topIds,
+      itemsData as Array<{ id: string; name: string }>,
+    );
 
     return { success: true, data: result };
   } catch (error: unknown) {

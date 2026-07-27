@@ -36,7 +36,7 @@ function QuickActionHarness({
   startingItems = initialItems,
   isItemsLoaded = true,
 }: {
-  onAfterSave?: () => void;
+  onAfterSave?: (saved?: { id: string; name: string }) => void;
   startingItems?: TestItem[];
   isItemsLoaded?: boolean;
 }) {

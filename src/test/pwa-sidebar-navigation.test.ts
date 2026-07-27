@@ -43,6 +43,16 @@ describe('PWA sidebar navigation reliability', () => {
     expect(state).toMatch(/setTimeout[\s\S]*completeViewTransitionNavigation/);
   });
 
+  test('view transition navigates synchronously and ignores superseded callbacks', () => {
+    const lib = readFile('lib/view-transition.ts');
+    expect(lib).not.toContain("import { startTransition } from 'react'");
+    expect(lib).toContain('navigationGeneration');
+    expect(lib).toMatch(/if \(generation !== navigationGeneration\)/);
+    expect(lib).toMatch(/document\.startViewTransition\(\(\) => \{[\s\S]*navigate\(href\)/);
+    expect(lib).toContain('navigateWithoutViewTransition');
+    expect(lib).toContain('invalidatePendingViewTransitionNavigations');
+  });
+
   test('view transition bridge closes mobile drawer on internal link click', () => {
     const nav = readFile('components/shell/ViewTransitionNavigation.tsx');
     expect(nav).toContain('closeDrawerForNavigation');

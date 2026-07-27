@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-07-25 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.3 | Last Updated: 2026-07-28 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -187,10 +187,18 @@ BranchWithdrawClient → saveBranchWithdrawal() → rpc('record_branch_withdrawa
 ```text
 BeanOrdersClient / BeanOrderFormClient / BeanOrderDetailClient
 → bean-order-actions.ts (CRUD, slip upload, payment confirm, ship)
+→ shipBeanOrder returns immediately; TrackingMore create/poll + shipped push run in `after()`
 → bean_* tables + Storage bucket bean-order-slips
-→ TrackingMore: tracking-webhook + sync-tracking cron
+→ TrackingMore: tracking-webhook + sync-tracking cron (plus deferred ship sync)
 → recordDataChange(module=bean_orders) for audit
 → AI: fetchBeanOrdersSummary() + deterministic Bru report short-circuit
+```
+
+### Shared select + navigation helpers (v9.3)
+
+```text
+RoundedSelect / BB_SELECT_TRIGGER_CLASS — shared native <select> chrome (bean-orders, sales, dashboard roster, maintenance listbox trigger)
+navigateWithViewTransition / navigateWithoutViewTransition — src/lib/view-transition.ts (date-filter navigations skip VT)
 ```
 
 ### Inventory Realtime Context (v8.6)
@@ -214,6 +222,7 @@ inventory_items.count_policy
 
 ```text
 InventoryQuickActionFAB → use-inventory-quick-action hook
+→ inventory-frequent-items.ts — localStorage cache + touch on save
 → inventory-quick-action-draft.ts   — draft persistence
 → inventory-quick-bulk.ts           — bulk entry batching
 → inventory-quick-qty-step.ts         — qty stepper logic

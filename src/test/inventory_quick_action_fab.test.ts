@@ -271,6 +271,16 @@ describe('Inventory Quick Action FAB', () => {
     );
   });
 
+  test('bulk submit confirm shows resolved qty so empty defaults appear as 1', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+    expect(barCode).toContain('formatBulkConfirmQty');
+    expect(barCode).toMatch(/formatBulkConfirmQty\(\s*line\.qty\s*\)/);
+    expect(barCode).not.toMatch(/\{typeLabel\} \{line\.qty\} \{line\.unit\}/);
+  });
+
   test('quick action bar uses aligned 3-column mobile action grid', () => {
     const barCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),

@@ -2,6 +2,15 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-07-28 (Doc hygiene + proven dead-code cleanup)
+
+- Removed dead `trackingWarning` from `shipBeanOrder` return type and bean-order clients (TrackingMore sync is deferred via `after()`).
+- Synced `PROJECT_MAP.md`: dropped deleted `daily-report-notification-actions.ts`; added `migrate-inventory-sort-order.ts`; noted `rounded-select` / `view-transition` / related tests.
+- Documented migration `20260726153946_drop_service_records_unused_columns.sql` in `docs/database.md` and `sql/README.md`.
+- Updated architecture notes: deferred ship TrackingMore, `RoundedSelect`, frequent-items cache.
+- Validated project-owned markdown links (37 files, 0 broken). Spec/plan: `docs/superpowers/specs|plans/2026-07-28-docs-deadcode-hygiene*`.
+- Bumped keeper stamps to 2026-07-28 (product v9.3 unchanged).
+
 ## 2026-07-25 (Doc hygiene + orphan cleanup)
 
 - Removed unused code: `AIChatWrapper.tsx` (superseded by `DeferredOverlays` → `AIChatOverlay`), `src/lib/policies/index.ts` (unused barrel), `scripts/test-bean-delivered-notify.ts` (unreferenced dev script).

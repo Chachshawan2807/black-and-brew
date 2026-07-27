@@ -6,7 +6,6 @@ import {
   fetchDataChangeLogs,
   type DataChangeLogRow,
 } from '@/app/actions/data-change-log-actions';
-import { ensureDailyReportNotificationHistory } from '@/app/actions/daily-report-notification-actions';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { isOwnChange, getClientSessionId } from '@/lib/client-session';
@@ -393,8 +392,6 @@ export function useInventoryNotifications() {
   const syncScheduleNotificationCatchUp = useCallback(async () => {
     const currentPrefs = prefsRef.current;
     if (!currentPrefs.enabled || !currentPrefs.dailyScheduleReports) return;
-
-    await ensureDailyReportNotificationHistory();
 
     const result = await fetchDataChangeLogs({ module: 'schedule', limit: 50 });
     if (!result.success) return;
