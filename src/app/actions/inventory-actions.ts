@@ -26,6 +26,7 @@ import {
   resolveFrequentItemNames,
 } from '@/lib/inventory-frequent-items';
 import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
+import { resolveRecordedStockChange } from '@/lib/inventory-transaction-result';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
@@ -215,6 +216,8 @@ export async function recordTransaction(
       return { success: false, error: error.message };
     }
 
+    const { oldStock, newStock } = resolveRecordedStockChange(data, type, quantity);
+
     deferInventorySideEffects('recordTransaction', async () => {
       const itemMeta = await fetchInventoryItemAuditMeta(productId);
       await recordDataChange({
@@ -226,8 +229,8 @@ export async function recordTransaction(
         fieldChanges: [
           {
             field: 'stock',
-            old_value: data?.old_stock ?? null,
-            new_value: data?.new_stock ?? null,
+            old_value: oldStock,
+            new_value: newStock,
           },
         ],
         metadata: withAuditMetadata(
@@ -246,7 +249,7 @@ export async function recordTransaction(
       revalidateInventoryPaths();
     });
 
-    return { success: true, newStock: data?.new_stock };
+    return { success: true, newStock: newStock ?? data?.new_stock };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
     console.error('[recordTransaction] Unexpected Error:', message);
@@ -332,6 +335,12 @@ export async function recordBulkInventoryTransactions(
             return { itemId: entry.itemId, success: false, error: message };
           }
 
+          const { oldStock, newStock } = resolveRecordedStockChange(
+            data,
+            entry.type,
+            entry.quantity,
+          );
+
           pendingAudits.push(async () => {
             const itemMeta = await fetchInventoryItemAuditMeta(entry.itemId);
             await recordDataChange({
@@ -343,8 +352,8 @@ export async function recordBulkInventoryTransactions(
               fieldChanges: [
                 {
                   field: 'stock',
-                  old_value: data?.old_stock ?? null,
-                  new_value: data?.new_stock ?? null,
+                  old_value: oldStock,
+                  new_value: newStock,
                 },
               ],
               metadata: withAuditMetadata(
@@ -362,7 +371,11 @@ export async function recordBulkInventoryTransactions(
             });
           });
 
-          return { itemId: entry.itemId, success: true, newStock: data?.new_stock };
+          return {
+            itemId: entry.itemId,
+            success: true,
+            newStock: newStock ?? data?.new_stock,
+          };
         } catch (err: unknown) {
           console.error(`[recordBulkInventoryTransactions] Error on itemId ${entry.itemId}:`, err);
           return { itemId: entry.itemId, success: false, error: getErrorMessage(err) || 'Error processing item' };

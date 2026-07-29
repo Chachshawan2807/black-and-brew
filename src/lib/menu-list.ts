@@ -4,6 +4,7 @@ import {
   Wrench,
   Home,
   Package,
+  Truck,
   Gauge,
   HandCoins,
   ClipboardList,
@@ -103,7 +104,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           href: `${prefix}/inventory/branch-withdraw`,
           label: 'เบิกของสาขา 2',
           active: pathname.includes('/inventory/branch-withdraw'),
-          icon: Package,
+          icon: Truck,
           submenus: []
         },
         {

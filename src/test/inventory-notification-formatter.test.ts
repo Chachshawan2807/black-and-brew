@@ -186,6 +186,19 @@ describe('formatInventoryNotification stock operations', () => {
     expect(n.summary).toContain('คงเหลือ: 10 → 8');
   });
 
+  test('OUT notification must not show false previous stock of 0 when old_value is set', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: 'นมอัลมอนด์',
+        field_changes: [{ field: 'stock', old_value: 4, new_value: 3 }],
+        metadata: { operation: 'record_transaction', type: 'OUT', quantity: 1 },
+      }),
+      'th'
+    );
+    expect(n.summary).toBe('−1 · คงเหลือ: 4 → 3');
+    expect(n.summary).not.toMatch(/คงเหลือ:\s*0\s*→/);
+  });
+
   test('shows ปรับจำนวน title for set_stock adjustment', () => {
     const n = formatInventoryNotification(
       makeRow({

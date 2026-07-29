@@ -1,37 +1,5 @@
--- =============================================================================
--- record_inventory_transaction — Atomic IN/OUT stock ledger RPC
--- =============================================================================
---
--- Purpose:
---   Atomically records a Quick Entry IN or OUT transaction:
---     1. Row-lock inventory_items (FOR UPDATE)
---     2. Validate stock (OUT cannot exceed current stock)
---     3. Update inventory_items.stock
---     4. Insert inventory_transactions ledger row
---
--- Parameters:
---   p_product_id  UUID    — inventory_items.id (legacy param name retained)
---   p_type        VARCHAR — 'IN' or 'OUT' only (ADD/DELETE/ADJUST use other paths)
---   p_quantity    NUMERIC — must be > 0
---   p_note        TEXT    — optional note stored on the ledger row
---
--- Returns (JSON):
---   { "success": true, "old_stock": <number>, "new_stock": <number>, "balance_after": <number> }
---
--- Security: SECURITY DEFINER — runs with function owner privileges.
---
--- Used by:
---   src/app/actions/inventory-actions.ts
---     - recordTransaction()
---     - recordBulkInventoryTransactions()
---
--- Schema dependencies:
---   inventory_items.stock
---   inventory_transactions.inventory_item_id (renamed from product_id)
---
--- Historical sources (archived — see supabase/migrations/ for schema changes):
---   setup_inventory_transactions.sql, fix_transaction_relationships.sql
--- =============================================================================
+-- Include old_stock in record_inventory_transaction JSON so inventory
+-- notifications can show the real previous balance (not null → "0").
 
 CREATE OR REPLACE FUNCTION public.record_inventory_transaction(
   p_product_id UUID,
