@@ -22,14 +22,19 @@ const PWA_ASSETS = {
   APPLE_TOUCH_ICON: '/images/apple-touch-icon.png',
   FAVICON: '/images/favicon.png',
   MASKABLE_ICON: '/images/maskable-icon-512.png',
-  CACHE_VERSION: 18,
+  CACHE_VERSION: 19,
   VIBRATE: [120, 60, 120],
 };
 
 /** PWA manifest background — baked into launch icons so Android splash never shows black tiles. */
 const PWA_SPLASH_BACKGROUND = { r: 247, g: 245, b: 232, alpha: 255 };
-/** logo.png ships on a black backdrop — pixels below this luminance become transparent. */
-const LOGO_BACKDROP_LUMINANCE_MAX = 32;
+/**
+ * logo.png is a near-black mark (peak ~34–36) on pure black.
+ * Soft-ramp alpha between these luminances keeps anti-aliased edges for splash.
+ * Binary thresholding here used to create jagged black↔cream stair-steps on Android.
+ */
+const LOGO_BACKDROP_LUMINANCE_MAX = 8;
+const LOGO_MARK_OPAQUE_LUMINANCE = 34;
 /** PWA splash / home-screen — balanced mark size (not a full-bleed block). */
 const PWA_ICON_PADDING_RATIO = 0.14;
 /** Android maskable safe zone (~80% center circle). */
@@ -42,22 +47,27 @@ const BADGE_MAX_FILL_RATIO = 0.72;
 
 /**
  * logo.png is a dark-gray mark on an opaque black canvas.
- * Drop the backdrop, then silhouette the mark so PWA splash shows the logo on
- * manifest background_color instead of a solid black square.
+ * Map luminance → alpha (soft edges), then black RGB so splash composites smoothly
+ * onto manifest background_color instead of a jagged hard silhouette.
  */
 async function extractLogoMark(image) {
   const { data, info } = await image.clone().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const ramp = LOGO_MARK_OPAQUE_LUMINANCE - LOGO_BACKDROP_LUMINANCE_MAX;
 
   for (let i = 0; i < data.length; i += 4) {
     const luminance = Math.max(data[i], data[i + 1], data[i + 2]);
-    if (luminance < LOGO_BACKDROP_LUMINANCE_MAX) {
-      data[i + 3] = 0;
-      continue;
+    let alpha = 0;
+    if (luminance > LOGO_BACKDROP_LUMINANCE_MAX) {
+      if (luminance >= LOGO_MARK_OPAQUE_LUMINANCE) {
+        alpha = 255;
+      } else {
+        alpha = Math.round(((luminance - LOGO_BACKDROP_LUMINANCE_MAX) / ramp) * 255);
+      }
     }
     data[i] = 0;
     data[i + 1] = 0;
     data[i + 2] = 0;
-    data[i + 3] = 255;
+    data[i + 3] = alpha;
   }
 
   return sharp(data, {
@@ -75,22 +85,35 @@ async function trimmedLogoMark() {
 }
 
 async function renderSquareIcon(trimmed, size, paddingRatio = 0.08, background = PWA_SPLASH_BACKGROUND) {
-  const inner = Math.max(1, Math.round(size * (1 - paddingRatio * 2)));
+  // Supersample 2× then downscale — soft alpha alone still leaves stair-steps after resize.
+  const renderSize = size * 2;
+  const inner = Math.max(1, Math.round(renderSize * (1 - paddingRatio * 2)));
   const resized = await trimmed
     .clone()
-    .resize(inner, inner, { fit: 'inside', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize(inner, inner, {
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    // Tiny blur after supersample resize softens residual stair-steps on curves.
+    .blur(0.6)
     .png()
     .toBuffer();
 
-  return sharp({
+  const large = await sharp({
     create: {
-      width: size,
-      height: size,
+      width: renderSize,
+      height: renderSize,
       channels: 4,
       background,
     },
   })
     .composite([{ input: resized, gravity: 'center' }])
+    .png()
+    .toBuffer();
+
+  return sharp(large)
+    .resize(size, size, { kernel: sharp.kernel.lanczos3 })
     .png({ compressionLevel: 9, adaptiveFiltering: true });
 }
 

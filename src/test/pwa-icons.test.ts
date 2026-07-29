@@ -133,6 +133,32 @@ async function visiblePixelBounds(filePath: string) {
   };
 }
 
+/** Count hard black↔cream stair-steps (aliased edges on baked splash icons). */
+async function hardSplashEdgeTransitions(filePath: string) {
+  const { data, info } = await sharp(filePath).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+  const lum = (offset: number) => (data[offset] + data[offset + 1] + data[offset + 2]) / 3;
+  const isDark = (L: number) => L < 40;
+  const isLight = (L: number) => L > 200;
+  let hard = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width - 1; x += 1) {
+      const a = lum((y * width + x) * 3);
+      const b = lum((y * width + x + 1) * 3);
+      if ((isDark(a) && isLight(b)) || (isLight(a) && isDark(b))) hard += 1;
+    }
+  }
+  for (let y = 0; y < height - 1; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const a = lum((y * width + x) * 3);
+      const b = lum(((y + 1) * width + x) * 3);
+      if ((isDark(a) && isLight(b)) || (isLight(a) && isDark(b))) hard += 1;
+    }
+  }
+  return hard;
+}
+
 describe('PWA notification icons', () => {
   test('notification badge uses transparent background corners', async () => {
     for (const rel of TRANSPARENT_BRAND_ICON_PATHS) {
@@ -170,6 +196,18 @@ describe('PWA notification icons', () => {
     const meta = await sharp(ICON).metadata();
     expect(meta.width).toBe(192);
     expect(meta.height).toBe(192);
+  });
+
+  test('PWA splash icons use soft anti-aliased edges (no hard black↔cream stair-steps)', async () => {
+    // Regression: binary logo threshold stripped edge ramps → jagged Android splash.
+    for (const rel of [
+      'public/images/notification-icon-512.png',
+      'public/images/maskable-icon-512.png',
+      'public/images/favicon.png',
+    ] as const) {
+      const hard = await hardSplashEdgeTransitions(path.join(ROOT, rel));
+      expect(hard, rel).toBeLessThan(120);
+    }
   });
 
   test('PWA launch icons keep the full brand mark centered without cover cropping', async () => {
