@@ -21,6 +21,51 @@ vi.mock('@/lib/maintenance/filter-due-within-month', () => ({
   ),
 }));
 
+function mockServiceRecordsOk(rows: unknown[]) {
+  from.mockReturnValue({ select });
+  select.mockReturnValue({ order });
+  order.mockResolvedValue({ data: rows, error: null });
+}
+
+describe('queryHomeMaintenanceTasks', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    from.mockReset();
+    select.mockReset();
+    order.mockReset();
+  });
+
+  test('reads service_records through the provided client (admin-safe for RSC)', async () => {
+    mockServiceRecordsOk([{ id: 'sr-1', equipment: 'เครื่องชง', start_date: '2026-07-01' }]);
+    const client = { from };
+
+    const { queryHomeMaintenanceTasks } = await import('@/lib/maintenance/fetch-home-maintenance');
+    const tasks = await queryHomeMaintenanceTasks(client as never, '2026-07-25');
+
+    expect(from).toHaveBeenCalledWith('service_records');
+    expect(getSupabaseAccessToken).not.toHaveBeenCalled();
+    expect(tasks).toEqual([{ id: 'sr-1', urgency: 'within_30_days' }]);
+  });
+
+  test('throws a real Error with message when Supabase returns PostgrestError-like object', async () => {
+    from.mockReturnValue({ select });
+    select.mockReturnValue({ order });
+    order.mockResolvedValue({
+      data: null,
+      error: { message: 'JWT expired', details: null, code: 'PGRST301' },
+    });
+
+    const { queryHomeMaintenanceTasks } = await import('@/lib/maintenance/fetch-home-maintenance');
+
+    await expect(queryHomeMaintenanceTasks({ from } as never, '2026-07-25')).rejects.toEqual(
+      expect.objectContaining({ message: 'JWT expired' }),
+    );
+    await expect(queryHomeMaintenanceTasks({ from } as never, '2026-07-25')).rejects.toBeInstanceOf(
+      Error,
+    );
+  });
+});
+
 describe('fetchHomeMaintenanceTasks', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -34,12 +79,7 @@ describe('fetchHomeMaintenanceTasks', () => {
 
   test('uses the authenticated session token when reading service_records', async () => {
     getSupabaseAccessToken.mockResolvedValue('tok-123');
-    from.mockReturnValue({ select });
-    select.mockReturnValue({ order });
-    order.mockResolvedValue({
-      data: [{ id: 'sr-1', equipment: 'เครื่องชง', start_date: '2026-07-01' }],
-      error: null,
-    });
+    mockServiceRecordsOk([{ id: 'sr-1', equipment: 'เครื่องชง', start_date: '2026-07-01' }]);
 
     const { fetchHomeMaintenanceTasks } = await import('@/lib/maintenance/fetch-home-maintenance');
     const tasks = await fetchHomeMaintenanceTasks('2026-07-25');

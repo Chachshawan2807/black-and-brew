@@ -4,7 +4,20 @@ import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { startOfDay, endOfDay, addDays, format } from 'date-fns';
 import { connection } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { fetchHomeMaintenanceTasks } from '@/lib/maintenance/fetch-home-maintenance';
+import { queryHomeMaintenanceTasks } from '@/lib/maintenance/fetch-home-maintenance';
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+  return String(error);
+}
 
 export default async function IndexPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -51,7 +64,12 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
     getSupabaseAdmin().from('inventory_items').select(INVENTORY_ITEM_SELECT).order('sort_order', { ascending: true }),
     (async () => {
       try {
-        return { data: await fetchHomeMaintenanceTasks(currentIsoDate), error: null };
+        // Use service-role admin — same as profiles/shifts/inventory.
+        // Browser session tokens expire under long-lived Node ("JWT expired").
+        return {
+          data: await queryHomeMaintenanceTasks(getSupabaseAdmin(), currentIsoDate),
+          error: null,
+        };
       } catch (error) {
         return { data: [], error };
       }
@@ -63,8 +81,7 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
   }
 
   if (maintenanceError) {
-    const message = maintenanceError instanceof Error ? maintenanceError.message : String(maintenanceError);
-    console.error('Supabase Error:', message);
+    console.error('Supabase Error:', getErrorMessage(maintenanceError));
   }
 
   const profiles = profilesData || [];
