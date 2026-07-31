@@ -11,6 +11,7 @@ const sampleOrder = {
   recipientProvince: 'ระยอง',
   recipientPostalCode: '21110',
   notes: 'บดหยาบ',
+  totalBaht: 800,
   lines: [
     {
       itemName: 'Ethiopia Yirgacheffe',
@@ -46,6 +47,8 @@ describe('formatBeanOrderShareText', () => {
         '1) Ethiopia Yirgacheffe  500 ก.  800 บาท/กก.  รวม 400 บาท',
         '2) Colombia  1 กก.  400 บาท/กก.  รวม 400 บาท',
         '',
+        'ยอดรวมทั้งหมด: 800 บาท',
+        '',
         'หมายเหตุ: บดหยาบ',
       ].join('\n'),
     );
@@ -62,6 +65,7 @@ describe('formatBeanOrderShareText', () => {
       recipientProvince: null,
       recipientPostalCode: null,
       notes: null,
+      totalBaht: 2650,
       lines: [
         {
           itemName: 'เมล็ดกาแฟคั่วเข้ม',
@@ -82,6 +86,8 @@ describe('formatBeanOrderShareText', () => {
         '',
         'รายการสินค้า:',
         '1) เมล็ดกาแฟคั่วเข้ม  5 กก.  530 บาท/กก.  รวม 2,650 บาท',
+        '',
+        'ยอดรวมทั้งหมด: 2,650 บาท',
       ].join('\n'),
     );
     expect(text).not.toContain('เบอร์:');
@@ -89,14 +95,14 @@ describe('formatBeanOrderShareText', () => {
     expect(text).not.toContain('หมายเหตุ:');
   });
 
-  test('omits status, totals, delivery type, and shipping details from copy text', () => {
+  test('includes grand total but omits status, item subtotal breakdown, and shipping details', () => {
     const text = formatBeanOrderShareText(sampleOrder);
 
+    expect(text).toContain('ยอดรวมทั้งหมด: 800 บาท');
     expect(text).not.toContain('สถานะ:');
     expect(text).not.toContain('รวมสินค้า:');
     expect(text).not.toContain('ส่วนลด:');
     expect(text).not.toContain('ค่าจัดส่ง:');
-    expect(text).not.toContain('ยอดรวม:');
     expect(text).not.toContain(' / ');
   });
 });

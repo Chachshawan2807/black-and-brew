@@ -21,6 +21,7 @@ export type BeanOrderShareInput = {
   recipientProvince: string | null;
   recipientPostalCode: string | null;
   notes: string | null;
+  totalBaht: number;
   lines: BeanOrderShareLine[];
 };
 
@@ -91,7 +92,13 @@ export function formatBeanOrderShareText(order: BeanOrderShareInput): string {
     lines.push(`ที่อยู่: ${address}`);
   }
 
-  lines.push('', 'รายการสินค้า:', ...lineItems);
+  lines.push(
+    '',
+    'รายการสินค้า:',
+    ...lineItems,
+    '',
+    `ยอดรวมทั้งหมด: ${formatBaht(order.totalBaht)} บาท`,
+  );
 
   if (hasShareTextValue(order.notes)) {
     lines.push('', `หมายเหตุ: ${order.notes!.trim()}`);
