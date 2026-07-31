@@ -65,6 +65,11 @@ export function canConfirmPayment(
   return canEditOrder(cancelledAt) && paymentStatus === 'unpaid';
 }
 
+/** Confirm-payment CTA stays clickable only before a slip is uploaded. */
+export function isConfirmPaymentButtonEnabled(hasSlip: boolean): boolean {
+  return !hasSlip;
+}
+
 export function canRevertPayment(
   paymentStatus: PaymentStatus,
   cancelledAt?: string | null,

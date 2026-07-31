@@ -11,6 +11,7 @@ import {
   canRevertPayment,
   canShip,
   canUploadSlip,
+  isConfirmPaymentButtonEnabled,
   ORDER_DELIVERY_BADGE_LABEL,
   ORDER_PAYMENT_BADGE_LABEL,
   shouldShowDeliveredButton,
@@ -65,6 +66,11 @@ describe('action guards', () => {
     expect(canConfirmPayment('paid')).toBe(false);
     expect(canRevertPayment('paid')).toBe(true);
     expect(canRevertPayment('unpaid')).toBe(false);
+  });
+
+  test('confirm payment button is clickable only before slip upload', () => {
+    expect(isConfirmPaymentButtonEnabled(false)).toBe(true);
+    expect(isConfirmPaymentButtonEnabled(true)).toBe(false);
   });
 
   test('can ship only when pending fulfillment', () => {

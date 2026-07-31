@@ -33,6 +33,7 @@ import {
   canEditShipment,
   canRevertPayment,
   canUploadSlip,
+  isConfirmPaymentButtonEnabled,
   shouldShowAutoTrackingBadge,
   shouldShowDeliveredButton,
 } from '@/lib/bean-orders/order-status';
@@ -91,6 +92,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     resolveCarrierCodeForSave(carrierCode, customCarrierLabel) ?? carrierCode,
   );
   const hasSlip = Boolean(order.payment?.uploadedAt);
+  const confirmEnabled = isConfirmPaymentButtonEnabled(hasSlip);
 
   const shipmentTrackingLabel = order.shipment
     ? formatShipmentTrackingLabel(order.shipment.trackingStatus, {
@@ -134,6 +136,10 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
   async function handleConfirmPayment() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
+    if (!isConfirmPaymentButtonEnabled(Boolean(order.payment?.uploadedAt))) {
+      setError('อัปโหลดสลิปแล้ว ไม่สามารถยืนยันชำระจากปุ่มนี้ได้');
+      return;
+    }
     setBusy(true);
     const result = await confirmBeanOrderPayment(order.id, locale);
     setBusy(false);
@@ -379,11 +385,13 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                       {canConfirm ? (
                         <button
                           type="button"
-                          disabled={busy}
+                          disabled={busy || !confirmEnabled}
                           onClick={() => void handleConfirmPayment()}
                           className={cn(
-                            BEAN_ORDER_ACTION_BTN_CONFIRM,
                             'h-auto min-h-11 w-full px-3 py-2 text-center text-xs leading-snug sm:text-sm',
+                            confirmEnabled
+                              ? BEAN_ORDER_ACTION_BTN_CONFIRM
+                              : 'inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-border bg-muted px-5 text-sm text-muted-foreground opacity-70',
                           )}
                         >
                           ยืนยันชำระแล้ว

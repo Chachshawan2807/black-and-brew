@@ -13,6 +13,7 @@ import {
   canConfirmPayment,
   canRevertPayment,
   canUploadSlip,
+  isConfirmPaymentButtonEnabled,
 } from '@/lib/bean-orders/order-status';
 import type { PaymentStatus } from '@/lib/bean-orders/types';
 import { cn } from '@/lib/utils';
@@ -51,7 +52,8 @@ export function BeanOrderPaymentFields({
   const fileRef = useRef<HTMLInputElement>(null);
   const hasSlip = Boolean(uploadedAt || pendingSlipFile);
   const canPay = canUploadSlip();
-  const canConfirm = canConfirmPayment(paymentStatus) && hasSlip;
+  const canConfirm = canConfirmPayment(paymentStatus);
+  const confirmEnabled = isConfirmPaymentButtonEnabled(hasSlip);
   const canRevert = canRevertPayment(paymentStatus);
 
   return (
@@ -96,15 +98,21 @@ export function BeanOrderPaymentFields({
             {canConfirm ? (
               <button
                 type="button"
-                disabled={disabled}
+                disabled={disabled || !confirmEnabled}
                 onClick={() => onConfirmPaymentOnSaveChange(!confirmPaymentOnSave)}
                 className={cn(
-                  BEAN_ORDER_ACTION_BTN_CONFIRM,
                   'h-auto min-h-11 w-full px-3 py-2 text-center text-xs leading-snug sm:text-sm',
-                  confirmPaymentOnSave && 'ring-2 ring-foreground/20',
+                  confirmEnabled
+                    ? cn(
+                        BEAN_ORDER_ACTION_BTN_CONFIRM,
+                        confirmPaymentOnSave && 'ring-2 ring-foreground/20',
+                      )
+                    : 'inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-border bg-muted px-5 text-sm text-muted-foreground opacity-70',
                 )}
               >
-                {confirmPaymentOnSave ? 'จะยืนยันชำระเมื่อบันทึก' : 'ยืนยันชำระแล้ว'}
+                {confirmPaymentOnSave && confirmEnabled
+                  ? 'จะยืนยันชำระเมื่อบันทึก'
+                  : 'ยืนยันชำระแล้ว'}
               </button>
             ) : null}
             {canRevert ? (

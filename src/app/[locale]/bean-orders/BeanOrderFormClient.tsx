@@ -543,8 +543,8 @@ export default function BeanOrderFormClient({
 
     if (confirmPaymentOnSave) {
       const hasSlip = Boolean(pendingSlipFile || initialOrder?.payment?.uploadedAt);
-      if (!hasSlip) {
-        return { error: 'กรุณาอัปโหลดสลิปก่อนยืนยันชำระเงิน' };
+      if (hasSlip) {
+        return { error: 'อัปโหลดสลิปแล้ว ไม่สามารถยืนยันชำระจากปุ่มนี้ได้' };
       }
       const result = await confirmBeanOrderPayment(targetOrderId, locale);
       if (!result.success) {
