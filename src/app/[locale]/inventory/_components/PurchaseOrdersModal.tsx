@@ -1,15 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import { preloadCaptureLibraries } from '@/lib/capture-element-png';
 import { motion } from 'framer-motion';
-import { ArrowDownToLine, ShoppingCart, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy, ImageDown, ShoppingCart, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { FloatingAlert } from '@/components/ui/floating-alert';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import { formatPurchaseOrderListCopyText } from '@/lib/inventory-purchase-order-copy-text';
 import type { PurchaseOrderCandidate } from '@/lib/inventory-stock';
 import { InventoryModalPortal } from './InventoryModalPortal';
+
+type CopyToast = {
+  message: string;
+  x: number;
+  y: number;
+  type: 'success' | 'error';
+};
 
 type PurchaseOrdersModalProps = {
   onClose?: () => void;
@@ -36,8 +46,25 @@ export default function PurchaseOrdersModal({
   isExportMode = false,
   exportTableId = 'blackandbrew-po-table-export',
 }: PurchaseOrdersModalProps) {
+  const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
   const itemsToShow = displayedPoItems;
   const tableId = isExportMode ? exportTableId : 'blackandbrew-po-table';
+
+  async function handleCopyList(event: React.MouseEvent<HTMLButtonElement>) {
+    const anchor = { x: event.clientX, y: event.clientY };
+
+    if (itemsToShow.length === 0) {
+      setCopyToast({ message: 'ไม่มีรายการให้คัดลอก', ...anchor, type: 'error' });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(formatPurchaseOrderListCopyText(itemsToShow));
+      setCopyToast({ message: 'คัดลอกแล้ว', ...anchor, type: 'success' });
+    } catch {
+      setCopyToast({ message: 'คัดลอกไม่สำเร็จ', ...anchor, type: 'error' });
+    }
+  }
 
   const tableContent = (
     <div id={tableId} className={isExportMode ? "relative flex flex-col w-full bg-[#fff3dd] rounded-3xl overflow-hidden" : "relative max-h-[75vh] overflow-y-auto bb-smooth-scroll flex flex-col w-full bg-card"}>
@@ -48,17 +75,42 @@ export default function PurchaseOrdersModal({
           !isExportMode && "sticky top-0 z-30",
         )}>
           {!isExportMode && (
-            <HintTooltip tip="ปิดรายการสั่งซื้อ">
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors z-40"
-                aria-label="ปิดรายการสั่งซื้อ"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </HintTooltip>
+            <div id="po-action-buttons" className="absolute top-4 right-4 z-40 flex items-center gap-1">
+              <HintTooltip tip="คัดลอกรายการ">
+                <button
+                  type="button"
+                  onClick={(event) => void handleCopyList(event)}
+                  className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                  aria-label="คัดลอกรายการ"
+                >
+                  <Copy className="w-4 h-4" aria-hidden />
+                </button>
+              </HintTooltip>
+              <HintTooltip tip="บันทึกเป็นรูปภาพ">
+                <button
+                  type="button"
+                  onClick={exportPOImage}
+                  onMouseEnter={preloadCaptureLibraries}
+                  onFocus={preloadCaptureLibraries}
+                  className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                  aria-label="บันทึกเป็นรูปภาพ"
+                >
+                  <ImageDown className="w-5 h-5" strokeWidth={1.75} aria-hidden />
+                </button>
+              </HintTooltip>
+              <HintTooltip tip="ปิดรายการสั่งซื้อ">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                  aria-label="ปิดรายการสั่งซื้อ"
+                >
+                  <X className="w-5 h-5" aria-hidden />
+                </button>
+              </HintTooltip>
+            </div>
           )}
-          <div className="px-6 flex items-center justify-between mb-4 pr-14">
+          <div className="px-6 flex items-center mb-4 pr-32">
             <h2 className="text-xl font-normal flex items-center gap-2 antialiased whitespace-nowrap">
               <ShoppingCart className="w-5 h-5 opacity-60" /> รายการสั่งซื้อ
               {isExportMode && !selectedChannels.includes('all') && (
@@ -67,19 +119,6 @@ export default function PurchaseOrdersModal({
                 </span>
               )}
             </h2>
-
-            {!isExportMode && (
-              <div id="po-action-buttons" className="flex items-center gap-3">
-                <button
-                  onClick={exportPOImage}
-                  onMouseEnter={preloadCaptureLibraries}
-                  onFocus={preloadCaptureLibraries}
-                  className="px-4 py-2 bg-white/80 hover:bg-white text-black/85 text-[14px] rounded-full flex items-center gap-2 transition-colors border border-black/10 bb-shadow-sm antialiased font-normal"
-                >
-                  <ArrowDownToLine className="w-4 h-4" /> บันทึกเป็นรูปภาพ
-                </button>
-              </div>
-            )}
           </div>
 
         {/* Tabs Navigation - only show in non-export mode */}
@@ -258,6 +297,20 @@ export default function PurchaseOrdersModal({
 
   return (
     <InventoryModalPortal>
+      {copyToast ? (
+        <FloatingAlert
+          message={copyToast.message}
+          anchor={{ x: copyToast.x, y: copyToast.y }}
+          icon={
+            copyToast.type === 'success' ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+            ) : (
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" aria-hidden />
+            )
+          }
+          onDismiss={() => setCopyToast(null)}
+        />
+      ) : null}
       <motion.div
         initial={fadeOverlay.initial}
         animate={fadeOverlay.animate}
