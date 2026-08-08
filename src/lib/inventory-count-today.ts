@@ -27,6 +27,13 @@ export type CountLogRow = {
   field_changes: unknown;
 };
 
+export type CountVerificationRow = {
+  inventory_item_id: string;
+  counted_at: string;
+  counted_qty: number;
+  system_stock_qty: number;
+};
+
 export function getBangkokTodayUtcBounds(now = new Date()): { startUtc: string; endUtc: string } {
   const bkkNow = toZonedTime(now, THAI_TIMEZONE);
   return {
@@ -71,6 +78,83 @@ export function extractStockQtyFromCountLog(row: CountLogRow): {
     countedQty: countedQty === null || Number.isNaN(countedQty) ? null : countedQty,
     systemStockQty:
       systemStockQty === null || Number.isNaN(systemStockQty) ? null : systemStockQty,
+  };
+}
+
+export function buildTodayCountStatusFromVerifications(
+  rows: CountVerificationRow[],
+  totalItems: number,
+  now = new Date(),
+): TodayCountSessionStatus {
+  const perItem: Record<string, ItemTodayCountRecord> = {};
+  let firstCountedAt: string | null = null;
+  let lastCountedAt: string | null = null;
+
+  for (const row of rows) {
+    const itemId = row.inventory_item_id;
+    if (!itemId || perItem[itemId]) continue;
+    if (!isSameThaiDay(row.counted_at, now)) continue;
+
+    const countedQty = Number(row.counted_qty);
+    const systemStockQty = Number(row.system_stock_qty);
+    if (Number.isNaN(countedQty)) continue;
+
+    perItem[itemId] = {
+      countedAt: row.counted_at,
+      countedQty,
+      systemStockQty: Number.isNaN(systemStockQty) ? null : systemStockQty,
+    };
+
+    if (!firstCountedAt || row.counted_at < firstCountedAt) {
+      firstCountedAt = row.counted_at;
+    }
+    if (!lastCountedAt || row.counted_at > lastCountedAt) {
+      lastCountedAt = row.counted_at;
+    }
+  }
+
+  const countedTodayCount = Object.keys(perItem).length;
+
+  return {
+    perItem,
+    session: {
+      totalItems,
+      countedTodayCount,
+      firstCountedAt,
+      lastCountedAt,
+      hasCountedToday: countedTodayCount > 0,
+      isFullyCountedToday: totalItems > 0 && countedTodayCount >= totalItems,
+    },
+  };
+}
+
+export function mergeTodayCountStatuses(
+  primary: TodayCountSessionStatus,
+  fallback: TodayCountSessionStatus,
+): TodayCountSessionStatus {
+  const perItem = { ...fallback.perItem, ...primary.perItem };
+  const remaining = Object.values(perItem);
+  const firstCountedAt =
+    remaining.length > 0
+      ? remaining.reduce((min, row) => (row.countedAt < min ? row.countedAt : min), remaining[0].countedAt)
+      : null;
+  const lastCountedAt =
+    remaining.length > 0
+      ? remaining.reduce((max, row) => (row.countedAt > max ? row.countedAt : max), remaining[0].countedAt)
+      : null;
+  const countedTodayCount = remaining.length;
+  const totalItems = Math.max(primary.session.totalItems, fallback.session.totalItems);
+
+  return {
+    perItem,
+    session: {
+      totalItems,
+      countedTodayCount,
+      firstCountedAt,
+      lastCountedAt,
+      hasCountedToday: countedTodayCount > 0,
+      isFullyCountedToday: totalItems > 0 && countedTodayCount >= totalItems,
+    },
   };
 }
 

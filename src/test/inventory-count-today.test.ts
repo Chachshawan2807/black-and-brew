@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   applyItemTodayCount,
   buildTodayCountStatusFromLogs,
+  buildTodayCountStatusFromVerifications,
   extractStockQtyFromCountLog,
   formatInventoryCountTime,
   getBangkokTodayUtcBounds,
@@ -20,6 +21,44 @@ describe('inventory count today status', () => {
         field_changes: [{ field: 'stock', old_value: 4, new_value: 7 }],
       }),
     ).toEqual({ countedQty: 7, systemStockQty: 4 });
+  });
+
+  test('buildTodayCountStatusFromVerifications keeps latest row per item including matching stock', () => {
+    const status = buildTodayCountStatusFromVerifications(
+      [
+        {
+          inventory_item_id: 'item-1',
+          counted_at: '2026-07-23T02:00:00.000Z',
+          counted_qty: 5,
+          system_stock_qty: 5,
+        },
+        {
+          inventory_item_id: 'item-2',
+          counted_at: '2026-07-23T03:00:00.000Z',
+          counted_qty: 3,
+          system_stock_qty: 7,
+        },
+        {
+          inventory_item_id: 'item-1',
+          counted_at: '2026-07-23T01:00:00.000Z',
+          counted_qty: 1,
+          system_stock_qty: 0,
+        },
+      ],
+      3,
+      new Date('2026-07-23T12:00:00.000Z'),
+    );
+
+    expect(status.perItem['item-1']).toEqual({
+      countedAt: '2026-07-23T02:00:00.000Z',
+      countedQty: 5,
+      systemStockQty: 5,
+    });
+    expect(status.session.countedTodayCount).toBe(2);
+    expect(status.session.hasCountedToday).toBe(true);
+    expect(status.session.isFullyCountedToday).toBe(false);
+    expect(status.session.firstCountedAt).toBe('2026-07-23T02:00:00.000Z');
+    expect(status.session.lastCountedAt).toBe('2026-07-23T03:00:00.000Z');
   });
 
   test('buildTodayCountStatusFromLogs keeps latest row per item and session summary', () => {
@@ -87,6 +126,46 @@ describe('inventory count today status', () => {
 
   test('formatInventoryCountTime renders Thai clock label', () => {
     expect(formatInventoryCountTime('2026-07-23T08:30:00.000Z')).toMatch(/น\.$/);
+  });
+});
+
+describe('fetchTodayInventoryCountStatus persistence source', () => {
+  test('reads durable inventory_count_verifications instead of deferred audit logs', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const actionsCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
+      'utf-8',
+    );
+
+    const fnStart = actionsCode.indexOf('export async function fetchTodayInventoryCountStatus');
+    const fnEnd = actionsCode.indexOf('// === FETCH INVENTORY ACCURACY REPORT ===', fnStart);
+    const fnBody = actionsCode.slice(fnStart, fnEnd === -1 ? undefined : fnEnd);
+
+    expect(fnBody).toContain('inventory_count_verifications');
+    expect(fnBody).toContain('buildTodayCountStatusFromVerifications');
+    expect(fnBody).toContain('mergeTodayCountStatuses');
+    expect(fnBody).toContain('buildTodayCountStatusFromLogs');
+  });
+});
+
+describe('inventory count save verification persistence', () => {
+  test('recordInventoryCountAndUpdateStock inserts verification for all count policies', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const actionsCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
+      'utf-8',
+    );
+
+    const fnStart = actionsCode.indexOf('export async function recordInventoryCountAndUpdateStock');
+    const fnEnd = actionsCode.indexOf('// === FETCH COUNT ACCURACY STATS ===', fnStart);
+    const fnBody = actionsCode.slice(fnStart, fnEnd === -1 ? undefined : fnEnd);
+    const afterIdx = fnBody.indexOf('after(async () => {');
+    const criticalPath = fnBody.slice(0, afterIdx);
+
+    expect(criticalPath).toContain('inventory_count_verifications');
+    expect(criticalPath).not.toMatch(/if\s*\(\s*countPolicy\s*===\s*'exact_count'\s*\)[\s\S]*inventory_count_verifications/);
   });
 });
 

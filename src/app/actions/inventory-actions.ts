@@ -13,7 +13,9 @@ import {
 } from '@/lib/inventory-count-accuracy';
 import {
   buildTodayCountStatusFromLogs,
+  buildTodayCountStatusFromVerifications,
   getBangkokTodayUtcBounds,
+  mergeTodayCountStatuses,
   type TodayCountSessionStatus,
 } from '@/lib/inventory-count-today';
 import type { InventoryNotificationSource } from '@/lib/inventory-notification-filter';
@@ -1344,46 +1346,43 @@ export async function recordInventoryCountAndUpdateStock(
       ? isCountMatch(countedQty, baselineStock)
       : false;
 
-    if (countPolicy === 'exact_count') {
-      if (options?.isUndo) {
-        // Find the latest verification ID to delete
-        const { data: latestVerifs, error: lookupError } = await supabase
+    if (options?.isUndo) {
+      const { data: latestVerifs, error: lookupError } = await supabase
+        .from('inventory_count_verifications')
+        .select('id')
+        .eq('inventory_item_id', itemId)
+        .order('counted_at', { ascending: false })
+        .limit(1);
+
+      if (lookupError) {
+        console.error('[recordInventoryCountAndUpdateStock] Undo Lookup Error:', lookupError.message);
+      } else if (latestVerifs && latestVerifs.length > 0) {
+        const { error: deleteError } = await supabase
           .from('inventory_count_verifications')
-          .select('id')
-          .eq('inventory_item_id', itemId)
-          .order('counted_at', { ascending: false })
-          .limit(1);
+          .delete()
+          .eq('id', latestVerifs[0].id);
 
-        if (lookupError) {
-          console.error('[recordInventoryCountAndUpdateStock] Undo Lookup Error:', lookupError.message);
-        } else if (latestVerifs && latestVerifs.length > 0) {
-          const { error: deleteError } = await supabase
-            .from('inventory_count_verifications')
-            .delete()
-            .eq('id', latestVerifs[0].id);
-
-          if (deleteError) {
-            console.error('[recordInventoryCountAndUpdateStock] Undo Delete Error:', deleteError.message);
-          }
+        if (deleteError) {
+          console.error('[recordInventoryCountAndUpdateStock] Undo Delete Error:', deleteError.message);
         }
-      } else {
-        const { error: verificationError } = await supabase
-          .from('inventory_count_verifications')
-          .insert({
-            inventory_item_id: itemId,
-            counted_qty: countedQty,
-            system_stock_qty: baselineStock,
-            matched,
-          });
+      }
+    } else {
+      const { error: verificationError } = await supabase
+        .from('inventory_count_verifications')
+        .insert({
+          inventory_item_id: itemId,
+          counted_qty: countedQty,
+          system_stock_qty: baselineStock,
+          matched,
+        });
 
-        if (verificationError) {
-          console.error(
-            '[recordInventoryCountAndUpdateStock] Supabase Error:',
-            verificationError.message,
-            verificationError.details,
-          );
-          return { success: false, error: verificationError.message };
-        }
+      if (verificationError) {
+        console.error(
+          '[recordInventoryCountAndUpdateStock] Supabase Error:',
+          verificationError.message,
+          verificationError.details,
+        );
+        return { success: false, error: verificationError.message };
       }
     }
 
@@ -1613,7 +1612,13 @@ export async function fetchTodayInventoryCountStatus(): Promise<{
 
   try {
     const { startUtc, endUtc } = getBangkokTodayUtcBounds();
-    const [logsResult, itemsResult] = await Promise.all([
+    const [verificationsResult, logsResult, itemsResult] = await Promise.all([
+      supabase
+        .from('inventory_count_verifications')
+        .select('inventory_item_id, counted_at, counted_qty, system_stock_qty')
+        .gte('counted_at', startUtc)
+        .lte('counted_at', endUtc)
+        .order('counted_at', { ascending: false }),
       supabase
         .from('data_change_logs')
         .select('entity_id, occurred_at, field_changes')
@@ -1627,7 +1632,8 @@ export async function fetchTodayInventoryCountStatus(): Promise<{
       supabase.from('inventory_items').select('id', { count: 'exact', head: true }),
     ]);
 
-    const { data: rows, error } = logsResult;
+    const { data: rows, error } = verificationsResult;
+    const { data: logRows, error: logsError } = logsResult;
     const { count: totalItems, error: itemsError } = itemsResult;
 
     if (error) {
@@ -1640,9 +1646,16 @@ export async function fetchTodayInventoryCountStatus(): Promise<{
       return { success: false, error: itemsError.message };
     }
 
+    if (logsError) {
+      console.error('[fetchTodayInventoryCountStatus] Supabase Error:', logsError.message, logsError.details);
+    }
+
+    const fromVerifications = buildTodayCountStatusFromVerifications(rows ?? [], totalItems ?? 0);
+    const fromLogs = buildTodayCountStatusFromLogs(logRows ?? [], totalItems ?? 0);
+
     return {
       success: true,
-      data: buildTodayCountStatusFromLogs(rows ?? [], totalItems ?? 0),
+      data: mergeTodayCountStatuses(fromVerifications, fromLogs),
     };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
