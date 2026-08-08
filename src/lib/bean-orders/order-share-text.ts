@@ -1,3 +1,4 @@
+import { getCarrierLabel } from '@/lib/bean-orders/carriers';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import type { WeightUnit } from '@/lib/bean-orders/types';
 
@@ -21,6 +22,8 @@ export type BeanOrderShareInput = {
   recipientProvince: string | null;
   recipientPostalCode: string | null;
   notes: string | null;
+  carrierCode?: string | null;
+  trackingNumber?: string | null;
   totalBaht: number;
   lines: BeanOrderShareLine[];
 };
@@ -92,12 +95,20 @@ export function formatBeanOrderShareText(order: BeanOrderShareInput): string {
     lines.push(`ที่อยู่: ${address}`);
   }
 
+  const carrierLabel = getCarrierLabel(order.carrierCode);
+  if (hasShareTextValue(carrierLabel)) {
+    lines.push(`ช่องทางจัดส่ง: ${carrierLabel}`);
+  }
+  if (hasShareTextValue(order.trackingNumber)) {
+    lines.push(`เลขพัสดุ: ${order.trackingNumber!.trim()}`);
+  }
+
   lines.push(
     '',
     'รายการสินค้า:',
     ...lineItems,
     '',
-    `ยอดรวมทั้งหมด: ${formatBaht(order.totalBaht)} บาท`,
+    `ยอดรวม: ${formatBaht(order.totalBaht)} บาท`,
   );
 
   if (hasShareTextValue(order.notes)) {

@@ -47,7 +47,7 @@ describe('formatBeanOrderShareText', () => {
         '1) Ethiopia Yirgacheffe  500 ก.  800 บาท/กก.  รวม 400 บาท',
         '2) Colombia  1 กก.  400 บาท/กก.  รวม 400 บาท',
         '',
-        'ยอดรวมทั้งหมด: 800 บาท',
+        'ยอดรวม: 800 บาท',
         '',
         'หมายเหตุ: บดหยาบ',
       ].join('\n'),
@@ -87,7 +87,7 @@ describe('formatBeanOrderShareText', () => {
         'รายการสินค้า:',
         '1) เมล็ดกาแฟคั่วเข้ม  5 กก.  530 บาท/กก.  รวม 2,650 บาท',
         '',
-        'ยอดรวมทั้งหมด: 2,650 บาท',
+        'ยอดรวม: 2,650 บาท',
       ].join('\n'),
     );
     expect(text).not.toContain('เบอร์:');
@@ -95,10 +95,19 @@ describe('formatBeanOrderShareText', () => {
     expect(text).not.toContain('หมายเหตุ:');
   });
 
-  test('includes grand total but omits status, item subtotal breakdown, and shipping details', () => {
+  test('includes shipping channel when carrier is set', () => {
+    const text = formatBeanOrderShareText({
+      ...sampleOrder,
+      carrierCode: 'flashexpress',
+    });
+
+    expect(text).toContain('ช่องทางจัดส่ง: Flash');
+  });
+
+  test('includes grand total but omits status and item subtotal breakdown', () => {
     const text = formatBeanOrderShareText(sampleOrder);
 
-    expect(text).toContain('ยอดรวมทั้งหมด: 800 บาท');
+    expect(text).toContain('ยอดรวม: 800 บาท');
     expect(text).not.toContain('สถานะ:');
     expect(text).not.toContain('รวมสินค้า:');
     expect(text).not.toContain('ส่วนลด:');

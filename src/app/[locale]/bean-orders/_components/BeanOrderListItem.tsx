@@ -44,10 +44,6 @@ function formatDestinationLine(order: BeanOrderListRow): string {
 }
 
 function formatShippingChannel(order: BeanOrderListRow): string {
-  if (order.fulfillmentStatus !== 'shipped') {
-    return '—';
-  }
-
   return getCarrierLabel(order.carrierCode);
 }
 

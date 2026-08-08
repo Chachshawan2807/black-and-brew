@@ -1302,6 +1302,65 @@ export async function revertBeanOrderPayment(
   }
 }
 
+export async function saveBeanOrderShipmentPlan(
+  orderId: string,
+  input: z.infer<typeof shipOrderSchema>,
+  locale = 'th',
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  const parsed = shipOrderSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: 'ข้อมูลจัดส่งไม่ถูกต้อง' };
+
+  const carrierCode = parsed.data.carrierCode?.trim() || '';
+  if (!carrierCode || carrierCode === 'other') {
+    return { success: false, error: 'กรุณาระบุช่องทางจัดส่ง' };
+  }
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data: order, error: fetchError } = await supabase
+      .from('bean_orders')
+      .select('id, order_no, fulfillment_status, cancelled_at')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (fetchError || !order) return { success: false, error: 'ไม่พบออเดอร์' };
+    if (!canEditShipment(order.cancelled_at as string | null)) {
+      return { success: false, error: 'แก้ไขการจัดส่งไม่ได้ในสถานะนี้' };
+    }
+    if ((order.fulfillment_status as string) === 'shipped') {
+      return { success: false, error: 'ออเดอร์จัดส่งแล้ว ใช้บันทึกการจัดส่งแทน' };
+    }
+
+    const actor = await resolveActorLabelFromSession();
+    const { error: shipError } = await supabase.from('bean_order_shipments').upsert(
+      {
+        order_id: orderId,
+        delivery_type: 'parcel',
+        carrier_code: carrierCode,
+        tracking_number: null,
+        tracking_status: null,
+        tracking_raw: null,
+        shipped_by: actor,
+      },
+      { onConflict: 'order_id' },
+    );
+
+    if (shipError) {
+      console.error('Supabase Error (saveBeanOrderShipmentPlan):', shipError.message, shipError.details);
+      return { success: false, error: shipError.message };
+    }
+
+    revalidateBeanOrders(locale, orderId);
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'บันทึกช่องทางจัดส่งไม่สำเร็จ';
+    return { success: false, error: message };
+  }
+}
+
 export async function shipBeanOrder(
   orderId: string,
   input: z.infer<typeof shipOrderSchema>,

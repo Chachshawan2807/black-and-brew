@@ -11,6 +11,7 @@ import {
   fetchBeanCustomerAddresses,
   parseBeanOrderCustomerFromText,
   revertBeanOrderPayment,
+  saveBeanOrderShipmentPlan,
   searchBeanCustomers,
   shipBeanOrder,
   updateBeanOrder,
@@ -42,6 +43,10 @@ import {
   OTHER_CARRIER_CODE,
   resolveCarrierCodeForSave,
 } from '@/lib/bean-orders/carriers';
+import {
+  shouldMarkBeanOrderShipped,
+  shouldPersistBeanOrderShipment,
+} from '@/lib/bean-orders/shipment-persist';
 import {
   normalizeBeanOrderLinesForSave,
   resolveBeanOrderRecipientName,
@@ -502,8 +507,13 @@ export default function BeanOrderFormClient({
   }
 
   function shouldPersistShipment(): boolean {
-    if (trackingNumber.trim()) return true;
-    return isEdit && Boolean(initialOrder?.shipment);
+    return shouldPersistBeanOrderShipment({
+      carrierCode,
+      customCarrierLabel,
+      trackingNumber,
+      isEdit,
+      hasInitialShipment: Boolean(initialOrder?.shipment),
+    });
   }
 
   function handleRequestRevertPayment() {
@@ -569,16 +579,35 @@ export default function BeanOrderFormClient({
       return { error: 'กรุณาระบุช่องทางจัดส่ง' };
     }
 
-    const shipResult = await shipBeanOrder(
+    const markShipped = shouldMarkBeanOrderShipped({
+      trackingNumber,
+      fulfillmentStatus: initialOrder?.fulfillmentStatus ?? 'pending',
+    });
+
+    if (markShipped) {
+      const shipResult = await shipBeanOrder(
+        targetOrderId,
+        {
+          carrierCode: resolvedCarrierCode ?? undefined,
+          trackingNumber,
+        },
+        locale,
+      );
+      if (!shipResult.success) {
+        return { error: shipResult.error ?? 'บันทึกการจัดส่งไม่สำเร็จ' };
+      }
+      return {};
+    }
+
+    if (!resolvedCarrierCode) return {};
+
+    const planResult = await saveBeanOrderShipmentPlan(
       targetOrderId,
-      {
-        carrierCode: resolvedCarrierCode ?? undefined,
-        trackingNumber,
-      },
+      { carrierCode: resolvedCarrierCode },
       locale,
     );
-    if (!shipResult.success) {
-      return { error: shipResult.error ?? 'บันทึกการจัดส่งไม่สำเร็จ' };
+    if (!planResult.success) {
+      return { error: planResult.error ?? 'บันทึกช่องทางจัดส่งไม่สำเร็จ' };
     }
     return {};
   }
