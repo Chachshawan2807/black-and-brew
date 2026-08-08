@@ -49,6 +49,10 @@ function buildNotificationOptions(payload, unreadCount, overrides = {}) {
   };
 }
 
+/** Keep in sync with OS_NOTIFICATION_* in src/lib/pwa-notification-bridge.ts */
+const OS_NOTIFICATION_TITLE_MAX = 120;
+const OS_NOTIFICATION_BODY_MAX = 240;
+
 /** Stock quick-action titles: "+ Item", "− Item", "⇄ Item", or batched "+ N รายการ". */
 function isStockOperationNotificationTitle(title) {
   return /^[+−⇄]\s/u.test(String(title || '').trim());
@@ -68,13 +72,13 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
   const trimmedSummary = String(logicalSummary).trim();
 
   if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
-    const titleLine = `${countPrefix}${trimmedTitle}`;
-    const bodyLine = `${countPrefix}${trimmedSummary}`;
+    const titleLine = `${countPrefix}${trimmedTitle}`.slice(0, OS_NOTIFICATION_TITLE_MAX);
+    const bodyLine = `${countPrefix}${trimmedSummary}`.slice(0, OS_NOTIFICATION_BODY_MAX);
 
     if (isIosPushClient()) {
       const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
       return {
-        title: merged,
+        title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
         body: '',
       };
     }
@@ -96,7 +100,7 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
   }
 
   return {
-    title: `${countPrefix}${merged}`,
+    title: `${countPrefix}${merged}`.slice(0, OS_NOTIFICATION_TITLE_MAX),
     body: '',
   };
 }

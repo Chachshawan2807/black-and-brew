@@ -58,6 +58,27 @@ describe('pwa-notification-bridge', () => {
     expect(multi.body).toBe('');
   });
 
+  test('buildInventoryOsNotification truncates long merged titles', () => {
+    const longTitle = 'A'.repeat(200);
+    const longSummary = 'B'.repeat(200);
+    const result = buildInventoryOsNotification(longTitle, longSummary, 1, true);
+    expect(result.title.length).toBeLessThanOrEqual(120);
+    expect(result.body).toBe('');
+  });
+
+  test('buildInventoryOsNotification truncates long iOS stock merge', () => {
+    const longItem = 'ก'.repeat(100);
+    const result = buildInventoryOsNotification(
+      `+ ${longItem}`,
+      `+2 คงเหลือ ${longItem}`,
+      1,
+      true,
+      { isIos: true },
+    );
+    expect(result.title.length).toBeLessThanOrEqual(240);
+    expect(result.body).toBe('');
+  });
+
   test('buildInventoryOsNotification merges non-stock notifications into title', () => {
     const daily = buildInventoryOsNotification(
       'ตารางงานพรุ่งนี้',
