@@ -571,18 +571,8 @@ export default function BeanOrderFormClient({
 
   async function persistShipment(
     targetOrderId: string,
+    resolvedCarrierCode: string,
   ): Promise<{ error?: string }> {
-    if (!shouldPersistShipment()) return {};
-
-    const carrierValidation = validateBeanOrderShipmentCarrier({
-      carrierCode,
-      customCarrierLabel,
-    });
-    if (!carrierValidation.ok) {
-      return { error: carrierValidation.error };
-    }
-    const resolvedCarrierCode = carrierValidation.resolvedCarrierCode;
-
     const markShipped = shouldMarkBeanOrderShipped({
       trackingNumber,
       fulfillmentStatus: initialOrder?.fulfillmentStatus ?? 'pending',
@@ -645,6 +635,7 @@ export default function BeanOrderFormClient({
       return;
     }
 
+    let resolvedShipmentCarrierCode: string | undefined;
     if (shouldPersistShipment()) {
       const carrierValidation = validateBeanOrderShipmentCarrier({
         carrierCode,
@@ -655,6 +646,7 @@ export default function BeanOrderFormClient({
         setError(carrierValidation.error);
         return;
       }
+      resolvedShipmentCarrierCode = carrierValidation.resolvedCarrierCode;
     }
 
     const payload = {
@@ -709,25 +701,22 @@ export default function BeanOrderFormClient({
         }
       }
 
-      if (shouldPersistShipment()) {
+      if (resolvedShipmentCarrierCode) {
         const previousCarrierCode = initialOrder?.shipment?.carrierCode ?? null;
-        const carrierValidation = validateBeanOrderShipmentCarrier({
-          carrierCode,
-          customCarrierLabel,
-        });
-        const shipmentResult = await persistShipment(targetOrderId);
+        const shipmentResult = await persistShipment(
+          targetOrderId,
+          resolvedShipmentCarrierCode,
+        );
         if (shipmentResult.error) {
           setSaving(false);
           setError(`${shipmentResult.error} — ออเดอร์ถูกบันทึกแล้ว`);
           navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
           return;
         }
-        if (carrierValidation.ok) {
-          shipmentFlashMessage = formatBeanOrderCarrierChangeMessage(
-            previousCarrierCode,
-            carrierValidation.resolvedCarrierCode,
-          );
-        }
+        shipmentFlashMessage = formatBeanOrderCarrierChangeMessage(
+          previousCarrierCode,
+          resolvedShipmentCarrierCode,
+        );
       }
     }
 

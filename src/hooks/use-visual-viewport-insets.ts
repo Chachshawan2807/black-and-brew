@@ -55,9 +55,9 @@ export function useVisualViewportInsets(enabled = true): VisualViewportInsets {
     const update = () => setInsets(readVisualViewportInsets());
 
     const vv = window.visualViewport;
-    vv?.addEventListener('resize', update);
-    vv?.addEventListener('scroll', update);
-    window.addEventListener('resize', update);
+    vv?.addEventListener('resize', update, { passive: true });
+    vv?.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
     update();
 
     return () => {

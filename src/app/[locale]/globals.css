@@ -245,6 +245,11 @@
     font-family: inherit;
   }
 
+  /* Faster tap response on touch devices — Baseline Widely available */
+  :where(a[href], button, [role='button'], label[for]) {
+    touch-action: manipulation;
+  }
+
   input[type="date"]::-webkit-calendar-picker-indicator {
     background: transparent;
     bottom: 0;

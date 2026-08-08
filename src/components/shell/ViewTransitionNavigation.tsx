@@ -42,8 +42,6 @@ export function ViewTransitionNavigation() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!shouldUseViewTransition()) return;
-
     const onDocumentClick = (event: MouseEvent) => {
       if (event.defaultPrevented || isModifiedClick(event)) return;
 
@@ -63,10 +61,13 @@ export function ViewTransitionNavigation() {
       const currentPath = normalizeAppPath(window.location.pathname);
       if (nextPath === currentPath) return;
 
-      event.preventDefault();
       if (window.innerWidth < 768) {
         closeDrawerForNavigation();
       }
+
+      if (!shouldUseViewTransition()) return;
+
+      event.preventDefault();
       if (anchor.dataset.bbNav === 'instant') {
         navigateWithoutViewTransition(router.push, href);
         return;

@@ -662,9 +662,9 @@ export function InventoryQuickActionBar({
 
     updatePortaledSuggestionsStyle();
     const vv = window.visualViewport;
-    vv?.addEventListener('resize', updatePortaledSuggestionsStyle);
-    vv?.addEventListener('scroll', updatePortaledSuggestionsStyle);
-    window.addEventListener('resize', updatePortaledSuggestionsStyle);
+    vv?.addEventListener('resize', updatePortaledSuggestionsStyle, { passive: true });
+    vv?.addEventListener('scroll', updatePortaledSuggestionsStyle, { passive: true });
+    window.addEventListener('resize', updatePortaledSuggestionsStyle, { passive: true });
 
     return () => {
       vv?.removeEventListener('resize', updatePortaledSuggestionsStyle);

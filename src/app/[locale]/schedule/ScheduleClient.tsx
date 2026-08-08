@@ -507,8 +507,8 @@ export default function ScheduleClient({
     // Calculate immediately
     updatePosition();
 
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true); // true for capturing phase to catch div scrolls
+    window.addEventListener('resize', updatePosition, { passive: true });
+    window.addEventListener('scroll', updatePosition, { passive: true, capture: true });
 
     return () => {
       window.removeEventListener('resize', updatePosition);

@@ -52,10 +52,10 @@ export function FloatingAlert({
   useEffect(() => {
     if (!anchor) return;
     updatePosition();
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-    window.visualViewport?.addEventListener('resize', updatePosition);
-    window.visualViewport?.addEventListener('scroll', updatePosition);
+    window.addEventListener('resize', updatePosition, { passive: true });
+    window.addEventListener('scroll', updatePosition, { passive: true, capture: true });
+    window.visualViewport?.addEventListener('resize', updatePosition, { passive: true });
+    window.visualViewport?.addEventListener('scroll', updatePosition, { passive: true });
     return () => {
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);

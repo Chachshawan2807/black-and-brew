@@ -28,7 +28,13 @@ describe('PWA navigation performance patterns', () => {
   test('nav links prefetch on touch for mobile PWA', () => {
     const link = readFileSync(resolve(ROOT, 'src/components/sidebar/NavPreloadLink.tsx'), 'utf-8');
     expect(link).toContain('onTouchStart');
+    expect(link).toContain('onPointerDown');
     expect(link).toContain('prefetch');
+  });
+
+  test('globals apply touch-action manipulation on interactive controls', () => {
+    const css = readFileSync(resolve(ROOT, 'src/app/[locale]/globals.css'), 'utf-8');
+    expect(css).toMatch(/:where\(a\[href\], button, \[role='button'\], label\[for\]\)\s*\{[\s\S]*touch-action:\s*manipulation/);
   });
 
   test('PWA register defers service worker to idle callback', () => {

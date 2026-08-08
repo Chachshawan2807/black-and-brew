@@ -14,6 +14,7 @@ export function NavPreloadLink({
   href,
   onMouseEnter,
   onFocus,
+  onPointerDown,
   onTouchStart,
   ...props
 }: NavPreloadLinkProps) {
@@ -30,6 +31,12 @@ export function NavPreloadLink({
       onFocus={(e) => {
         warmRoute(hrefStr);
         onFocus?.(e);
+      }}
+      onPointerDown={(e) => {
+        if (e.pointerType !== 'mouse' || e.button === 0) {
+          warmRoute(hrefStr);
+        }
+        onPointerDown?.(e);
       }}
       onTouchStart={(e) => {
         warmRoute(hrefStr);

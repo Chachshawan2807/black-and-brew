@@ -392,8 +392,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       setIsKeyboardOpen(viewport.height < window.innerHeight * 0.82);
     };
 
-    viewport.addEventListener('resize', updateKeyboardState);
-    viewport.addEventListener('scroll', updateKeyboardState);
+    viewport.addEventListener('resize', updateKeyboardState, { passive: true });
+    viewport.addEventListener('scroll', updateKeyboardState, { passive: true });
     updateKeyboardState();
 
     return () => {

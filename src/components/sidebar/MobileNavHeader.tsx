@@ -32,7 +32,7 @@ export function MobileNavHeader() {
           <button
             type="button"
             onClick={() => openDrawer()}
-            className="h-10 w-10 flex items-center justify-center rounded-full bb-transition hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15"
+            className="h-10 w-10 flex items-center justify-center rounded-full touch-manipulation bb-transition hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15"
             aria-label="เปิดเมนูนำทาง"
             aria-expanded={isOpen}
             aria-controls="bb-nav-drawer"

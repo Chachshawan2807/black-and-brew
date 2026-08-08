@@ -57,6 +57,8 @@ describe('PWA sidebar navigation reliability', () => {
     const nav = readFile('components/shell/ViewTransitionNavigation.tsx');
     expect(nav).toContain('closeDrawerForNavigation');
     expect(nav).toContain('normalizeAppPath');
+    expect(nav).toContain("if (!shouldUseViewTransition()) return");
+    expect(nav).not.toMatch(/useEffect\(\(\) => \{\s*if \(!shouldUseViewTransition\(\)\) return;\s*const onDocumentClick/);
   });
 
   test('instant nav links bypass view transitions', () => {
