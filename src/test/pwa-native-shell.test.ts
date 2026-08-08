@@ -63,7 +63,8 @@ describe('PWA native shell', () => {
 
   test('PwaRegister uses SPA navigation for notification deep links', () => {
     const pwa = readFileSync(resolve(ROOT, 'src/components/PwaRegister.tsx'), 'utf-8');
-    expect(pwa).toContain('navigateWithViewTransition');
+    expect(pwa).toContain('navigateWithoutViewTransition');
+    expect(pwa).not.toMatch(/navigateWithViewTransition\(router\.push, safeUrl\)/);
     expect(pwa).not.toContain('window.location.href = safeUrl');
   });
 
