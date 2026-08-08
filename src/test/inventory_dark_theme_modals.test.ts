@@ -20,7 +20,7 @@ describe('inventory modals dark theme readability', () => {
     );
 
     expect(code).toMatch(/<h2 className="[^"]*whitespace-nowrap[^"]*"/);
-    expect(code).toMatch(/isExportMode \? "relative flex flex-col w-full bg-\[#fff3dd\] rounded-3xl overflow-hidden"/);
+    expect(code).toContain('relative flex flex-col w-full bg-[#fff3dd] rounded-3xl overflow-hidden');
   });
 
   it('purchase order detail table clips its header background to rounded top corners', () => {
@@ -29,7 +29,8 @@ describe('inventory modals dark theme readability', () => {
       'utf-8',
     );
 
-    expect(code).toContain('"rounded-3xl bb-shadow-sm border overflow-hidden"');
+    expect(code).toContain('rounded-3xl bb-shadow-sm border min-h-0');
+    expect(code).toContain('bg-white border-black/5 overflow-hidden');
   });
 
   it('purchase order exports preserve overflow so rounded wrappers clip in PNG capture', () => {

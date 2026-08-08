@@ -67,12 +67,18 @@ export default function PurchaseOrdersModal({
   }
 
   const tableContent = (
-    <div id={tableId} className={isExportMode ? "relative flex flex-col w-full bg-[#fff3dd] rounded-3xl overflow-hidden" : "relative max-h-[75vh] overflow-y-auto bb-smooth-scroll flex flex-col w-full bg-card"}>
-      {/* STICKY STYLED WRAPPER FOR THE HEADER */}
+    <div
+      id={tableId}
+      className={
+        isExportMode
+          ? "relative flex flex-col w-full bg-[#fff3dd] rounded-3xl overflow-hidden"
+          : 'relative flex flex-col flex-1 min-h-0 overflow-hidden w-full bg-card'
+      }
+    >
+      {/* Header + channel filters — fixed above the single scroll region */}
         <div className={cn(
           PASTEL_SURFACE,
-          "bg-[#fff3dd] pt-4 pb-4 w-full box-border border-b border-black/5 bb-shadow-sm",
-          !isExportMode && "sticky top-0 z-30",
+          "bg-[#fff3dd] pt-4 pb-4 w-full shrink-0 box-border border-b border-black/5 bb-shadow-sm",
         )}>
           {!isExportMode && (
             <div id="po-action-buttons" className="absolute top-4 right-4 z-40 flex items-center gap-1">
@@ -175,8 +181,14 @@ export default function PurchaseOrdersModal({
         )}
       </div>
 
-      {/* Tab Content (Direct Sibling) */}
-      <div className="p-6">
+      {/* Table body — scroll (vertical + horizontal) only inside the table area */}
+      <div
+        className={
+          isExportMode
+            ? 'p-6'
+            : 'flex flex-1 min-h-0 flex-col overflow-hidden p-6'
+        }
+      >
         {itemsToShow.length === 0 ? (
           <div className={cn(
             "py-16 flex flex-col items-center justify-center rounded-3xl border bb-shadow-sm",
@@ -189,10 +201,10 @@ export default function PurchaseOrdersModal({
           </div>
         ) : (
           <div className={cn(
-            "rounded-3xl bb-shadow-sm border overflow-hidden",
+            "rounded-3xl bb-shadow-sm border min-h-0",
             isExportMode
-              ? "bg-white border-black/5"
-              : "bg-card border-border overflow-auto bb-smooth-scroll max-h-[calc(85vh-220px)] scrollbar-thin",
+              ? "bg-white border-black/5 overflow-hidden"
+              : "flex-1 bg-card border-border overflow-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin",
           )}>
             <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
@@ -327,7 +339,7 @@ export default function PurchaseOrdersModal({
           animate={modalContent.animate}
           exit={modalContent.exit}
           transition={modalContent.transition}
-          className="bg-card rounded-3xl bb-shadow-xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
+          className="bg-card rounded-3xl bb-shadow-xl w-full max-w-4xl max-h-[85svh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {tableContent}
