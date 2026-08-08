@@ -262,6 +262,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
           <h1 className="text-2xl font-normal">{order.orderNo}</h1>
           <OrderListStatusGroup
             slipUploadedAt={order.payment?.uploadedAt}
+            paymentStatus={order.paymentStatus}
             trackingStatus={order.shipment?.trackingStatus}
             cancelledAt={order.cancelledAt}
           />

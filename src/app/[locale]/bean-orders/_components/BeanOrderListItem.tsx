@@ -126,6 +126,7 @@ export function BeanOrderListItem({ order, locale }: Props) {
           <p className="tabular-nums text-sm text-foreground">{formatBaht(order.totalBaht)} ฿</p>
           <OrderListStatusGroup
             slipUploadedAt={order.slipUploadedAt}
+            paymentStatus={order.paymentStatus}
             trackingStatus={order.trackingStatus}
             cancelledAt={order.cancelledAt}
           />
@@ -178,6 +179,7 @@ export function BeanOrderListItem({ order, locale }: Props) {
         <div className={cn('min-w-0 flex justify-end lg:col-start-7', BEAN_ORDER_LIST_CELL)}>
           <OrderListStatusGroup
             slipUploadedAt={order.slipUploadedAt}
+            paymentStatus={order.paymentStatus}
             trackingStatus={order.trackingStatus}
             cancelledAt={order.cancelledAt}
           />

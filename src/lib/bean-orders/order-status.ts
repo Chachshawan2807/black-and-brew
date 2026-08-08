@@ -11,10 +11,11 @@ export const ORDER_DELIVERY_BADGE_LABEL = 'จัดส่งสำเร็จ'
 
 export function shouldShowOrderPaymentBadge(
   slipUploadedAt: string | null | undefined,
+  paymentStatus?: PaymentStatus,
   cancelledAt?: string | null,
 ): boolean {
   if (cancelledAt) return false;
-  return Boolean(slipUploadedAt);
+  return paymentStatus === 'paid' || Boolean(slipUploadedAt);
 }
 
 export function shouldShowOrderDeliveryBadge(

@@ -11,6 +11,7 @@ import {
 
 type OrderListStatusGroupProps = {
   slipUploadedAt?: string | null;
+  paymentStatus?: 'unpaid' | 'paid';
   trackingStatus?: string | null;
   cancelledAt?: string | null;
   className?: string;
@@ -35,11 +36,12 @@ function StatusBadge({ label, colorClass }: { label: string; colorClass: string 
 
 export function OrderListStatusGroup({
   slipUploadedAt,
+  paymentStatus,
   trackingStatus,
   cancelledAt,
   className,
 }: OrderListStatusGroupProps) {
-  const showPayment = shouldShowOrderPaymentBadge(slipUploadedAt, cancelledAt);
+  const showPayment = shouldShowOrderPaymentBadge(slipUploadedAt, paymentStatus, cancelledAt);
   const showDelivery = shouldShowOrderDeliveryBadge(trackingStatus, cancelledAt);
 
   if (!showPayment && !showDelivery) {

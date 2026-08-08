@@ -3,6 +3,14 @@ import { describe, expect, test } from 'vitest';
 import { OrderListStatusGroup } from '@/app/[locale]/bean-orders/_components/OrderStatusBadge';
 
 describe('OrderListStatusGroup', () => {
+  test('shows payment badge when payment is confirmed without slip', () => {
+    render(<OrderListStatusGroup paymentStatus="paid" />);
+
+    const badge = screen.getByText('ชำระแล้ว');
+    expect(badge.className).toContain('bg-[#e8f5e9]');
+    expect(badge.className).toContain('bb-pastel-surface');
+  });
+
   test('shows payment badge in light green after slip upload', () => {
     render(<OrderListStatusGroup slipUploadedAt="2026-07-22T10:30:00.000Z" />);
 

@@ -21,10 +21,11 @@ import {
 } from '@/lib/bean-orders/order-status';
 
 describe('order status badges', () => {
-  test('shows payment badge only after slip upload', () => {
+  test('shows payment badge after slip upload or payment confirmation', () => {
     expect(shouldShowOrderPaymentBadge(null)).toBe(false);
+    expect(shouldShowOrderPaymentBadge(null, 'paid')).toBe(true);
     expect(shouldShowOrderPaymentBadge('2026-07-22T10:30:00.000Z')).toBe(true);
-    expect(shouldShowOrderPaymentBadge('2026-07-22T10:30:00.000Z', '2026-07-22T00:00:00Z')).toBe(false);
+    expect(shouldShowOrderPaymentBadge('2026-07-22T10:30:00.000Z', 'paid', '2026-07-22T00:00:00Z')).toBe(false);
   });
 
   test('shows delivery badge only when tracking is delivered', () => {
