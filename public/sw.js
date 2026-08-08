@@ -191,7 +191,8 @@ self.addEventListener('push', (event) => {
       const isDailyReport = payload.kind === 'daily_report';
       const isBeanDelivered = payload.kind === 'bean_order_delivered';
       const isBeanShipped = payload.kind === 'bean_order_shipped';
-      const isBeanOrder = isBeanDelivered || isBeanShipped;
+      const isBeanPayment = payload.kind === 'bean_order_payment_confirmed';
+      const isBeanOrder = isBeanDelivered || isBeanShipped || isBeanPayment;
       const isInsight = payload.kind === 'proactive_insight';
       const isSecurity = payload.kind === 'security_alert';
 
@@ -216,11 +217,13 @@ self.addEventListener('push', (event) => {
           ? 'bb-security'
           : isInsight
             ? 'bb-insight'
-            : isBeanShipped
-              ? 'bb-bean-shipped'
-              : isBeanDelivered
-                ? 'bb-bean-delivered'
-                : 'bb-daily-report';
+            : isBeanPayment
+              ? 'bb-bean-paid'
+              : isBeanShipped
+                ? 'bb-bean-shipped'
+                : isBeanDelivered
+                  ? 'bb-bean-delivered'
+                  : 'bb-daily-report';
         const fallbackUrl = isSecurity
           ? '/th/settings'
           : isInsight

@@ -79,7 +79,7 @@ export function isScheduleNotification(item: InventoryNotification): boolean {
 
 export function isBeanOrderDeliveredNotification(item: InventoryNotification): boolean {
   const meta = item.metadata ?? {};
-  if (meta.kind === 'bean_order_delivered' || meta.kind === 'bean_order_shipped') return true;
+  if (meta.kind === 'bean_order_delivered' || meta.kind === 'bean_order_shipped' || meta.kind === 'bean_order_payment_confirmed') return true;
   if (meta.module === 'bean_orders' && typeof meta.url === 'string' && meta.url.includes('/bean-orders/')) {
     return true;
   }
@@ -87,7 +87,9 @@ export function isBeanOrderDeliveredNotification(item: InventoryNotification): b
     /^จัดส่งสำเร็จ/u.test(item.title) ||
     /^Delivered/u.test(item.title) ||
     /^ส่งแล้ว/u.test(item.title) ||
-    /^Shipped/u.test(item.title)
+    /^Shipped/u.test(item.title) ||
+    /^ชำระแล้ว/u.test(item.title) ||
+    /^Paid/u.test(item.title)
   );
 }
 

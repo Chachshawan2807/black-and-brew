@@ -24,6 +24,10 @@ import {
   isEligibleBeanOrderDeliveredNotification,
 } from '@/lib/bean-orders/delivery-notification';
 import {
+  formatBeanOrderPaymentNotification,
+  isEligibleBeanOrderPaymentNotification,
+} from '@/lib/bean-orders/payment-notification';
+import {
   formatBeanOrderShippedNotification,
   isEligibleBeanOrderShippedNotification,
 } from '@/lib/bean-orders/shipment-notification';
@@ -296,6 +300,7 @@ export function useInventoryNotifications() {
       const isInventory = isEligibleInventoryNotification(row);
       const isBeanDelivered = isEligibleBeanOrderDeliveredNotification(row);
       const isBeanShipped = isEligibleBeanOrderShippedNotification(row);
+      const isBeanPayment = isEligibleBeanOrderPaymentNotification(row);
       const isInsight = isEligibleInsightNotification(row);
       const isSecurity = isEligibleSecurityNotification(row);
       if (
@@ -303,6 +308,7 @@ export function useInventoryNotifications() {
         !isInventory &&
         !isBeanDelivered &&
         !isBeanShipped &&
+        !isBeanPayment &&
         !isInsight &&
         !isSecurity
       ) {
@@ -329,6 +335,9 @@ export function useInventoryNotifications() {
       if (isEligibleBeanOrderShippedNotification(row)) {
         return formatBeanOrderShippedNotification(row, locale);
       }
+      if (isEligibleBeanOrderPaymentNotification(row)) {
+        return formatBeanOrderPaymentNotification(row, locale);
+      }
       if (isEligibleInsightNotification(row)) {
         return formatInsightNotification(row, locale);
       }
@@ -351,7 +360,8 @@ export function useInventoryNotifications() {
       const allBeanOrder = eligible.every(
         (row) =>
           isEligibleBeanOrderDeliveredNotification(row) ||
-          isEligibleBeanOrderShippedNotification(row),
+          isEligibleBeanOrderShippedNotification(row) ||
+          isEligibleBeanOrderPaymentNotification(row),
       );
       const allInsights = eligible.every(isEligibleInsightNotification);
       const allSecurity = eligible.every(isEligibleSecurityNotification);
@@ -420,7 +430,8 @@ export function useInventoryNotifications() {
       result.rows.filter(
         (row) =>
           isEligibleBeanOrderDeliveredNotification(row) ||
-          isEligibleBeanOrderShippedNotification(row),
+          isEligibleBeanOrderShippedNotification(row) ||
+          isEligibleBeanOrderPaymentNotification(row),
       ),
     );
     if (eligible.length === 0) return;
@@ -528,7 +539,8 @@ export function useInventoryNotifications() {
           if (
             module === 'bean_orders' &&
             !isEligibleBeanOrderDeliveredNotification(row) &&
-            !isEligibleBeanOrderShippedNotification(row)
+            !isEligibleBeanOrderShippedNotification(row) &&
+            !isEligibleBeanOrderPaymentNotification(row)
           ) {
             return;
           }

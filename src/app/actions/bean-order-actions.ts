@@ -1175,7 +1175,9 @@ export async function confirmBeanOrderPayment(
     const supabase = getSupabaseAdmin();
     const { data: order, error: fetchError } = await supabase
       .from('bean_orders')
-      .select('id, order_no, payment_status, fulfillment_status, cancelled_at, status_history')
+      .select(
+        'id, order_no, payment_status, fulfillment_status, cancelled_at, status_history, recipient_name, total_baht, bean_customers(name)',
+      )
       .eq('id', orderId)
       .maybeSingle();
 
@@ -1223,6 +1225,31 @@ export async function confirmBeanOrderPayment(
       entityId: orderId,
       entityLabel: order.order_no as string,
       fieldChanges: [{ field: 'payment_status', old_value: 'unpaid', new_value: 'paid' }],
+    });
+
+    const customer = order.bean_customers as { name?: string } | null;
+    const recipientName = (order.recipient_name as string) || '';
+    const orderNo = (order.order_no as string) || orderId;
+
+    after(async () => {
+      try {
+        const { notifyBeanOrderPaymentConfirmed } = await import('@/lib/bean-orders/payment-web-push');
+        const { getBeanOrderCustomerDisplayName } = await import('@/lib/bean-orders/customer-display');
+        await notifyBeanOrderPaymentConfirmed({
+          orderId,
+          orderNo,
+          customerName: getBeanOrderCustomerDisplayName({
+            customerName: customer?.name ?? null,
+            recipientName,
+          }),
+          totalBaht: Number(order.total_baht) || 0,
+          locale,
+        }).catch((error) => {
+          console.error('notifyBeanOrderPaymentConfirmed:', error);
+        });
+      } catch (error) {
+        console.error('[confirmBeanOrderPayment] Deferred notification error:', error);
+      }
     });
 
     revalidateBeanOrders(locale, orderId);
