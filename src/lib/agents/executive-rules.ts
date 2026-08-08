@@ -14,7 +14,7 @@ export const EXECUTIVE_RULES = {
     service_records: "ตารางประวัติการซ่อมบำรุง (คอลัมน์: id, start_date, equipment, detected_problem, task_type, work_details, recommended_frequency, completion_date — ห้ามใช้ machine_name, maintenance_date, operator, description, recorded_at, cost, person_in_charge, status, notes)",
     holidays: "ตารางบันทึกวันหยุดนักขัตฤกษ์ล่วงหน้า (ใช้ประกอบการประเมินความหนาแน่นของลูกค้า)",
     sales_records: "ตารางรายการขายจากไฟล์อัปโหลด (sale_date, product_name, category, quantity, total_amount)",
-    bean_orders: "ตารางคำสั่งซื้อเมล็ดกาแฟ (order_no, payment_status unpaid/paid, fulfillment_status pending/shipped, total_baht)",
+    bean_orders: "ตารางออเดอร์เมล็ดกาแฟ (order_no, payment_status unpaid/paid, fulfillment_status pending/shipped, total_baht)",
     bean_order_lines: "รายการสินค้าในออเดอร์เมล็ด (item_name, weight_value, weight_unit, line_total_baht)",
     bean_customers: "ลูกค้าเมล็ดกาแฟ (name, phone)",
     bean_order_shipments: "การจัดส่งเมล็ด (carrier_code, tracking_number, tracking_status)",

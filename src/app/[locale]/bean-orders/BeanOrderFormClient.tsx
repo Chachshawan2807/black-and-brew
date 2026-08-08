@@ -897,7 +897,7 @@ export default function BeanOrderFormClient({
                           className={BEAN_ORDER_BTN_LIST}
                           onClick={() => applyLinePreset(index, preset)}
                         >
-                          {preset.weightValue} {preset.weightUnit === 'kg' ? 'กก.' : 'ก.'} / {preset.unitPricePerKg.toLocaleString('th-TH')} ฿/กก.
+                          {preset.weightValue} {preset.weightUnit === 'kg' ? 'กก.' : 'ก.'} / {preset.unitPricePerKg.toLocaleString('th-TH')}/กก.
                         </button>
                       </li>
                     ))}
@@ -961,10 +961,10 @@ export default function BeanOrderFormClient({
           <div className="mt-auto space-y-2 rounded-xl border border-border bg-muted/20 px-3 py-2.5 text-sm">
             <p className="text-muted-foreground">
               รวมสินค้า{' '}
-              <span className="tabular-nums text-foreground">{totals.subtotalBaht.toLocaleString('th-TH')} ฿</span>
+              <span className="tabular-nums text-foreground">{totals.subtotalBaht.toLocaleString('th-TH')}</span>
             </p>
             <p className="text-base text-foreground">
-              ยอดรวม <span className="tabular-nums">{totals.totalBaht.toLocaleString('th-TH')} ฿</span>
+              ยอดรวม <span className="tabular-nums">{totals.totalBaht.toLocaleString('th-TH')}</span>
             </p>
           </div>
         </div>

@@ -9,7 +9,7 @@ describe('bean orders sidebar menu', () => {
     const item = menus.find((m) => m.id === 'bean-orders');
     expect(item).toBeDefined();
     expect(item?.href).toBe('/th/bean-orders');
-    expect(item?.label).toBe('คำสั่งซื้อเมล็ดกาแฟ');
+    expect(item?.label).toBe('ออเดอร์เมล็ดกาแฟ');
     expect(item?.active).toBe(true);
     expect(item?.icon.displayName).toBe('ClipboardList');
   });

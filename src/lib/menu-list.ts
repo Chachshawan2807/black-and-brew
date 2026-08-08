@@ -118,7 +118,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
         {
           id: 'bean-orders',
           href: `${prefix}/bean-orders`,
-          label: 'คำสั่งซื้อเมล็ดกาแฟ',
+          label: 'ออเดอร์เมล็ดกาแฟ',
           active: pathname.includes('/bean-orders'),
           icon: Coffee,
           submenus: []

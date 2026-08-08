@@ -46,7 +46,7 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
     <div className={BEAN_ORDER_PAGE}>
       <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-normal text-foreground">คำสั่งซื้อเมล็ดกาแฟ</h1>
+          <h1 className="text-2xl font-normal text-foreground">ออเดอร์เมล็ดกาแฟ</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">รับออเดอร์ / ตรวจสลิป / จัดส่ง</p>
         </div>
         <Link
@@ -96,7 +96,7 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
             >
               <span className={BEAN_ORDER_LIST_CELL} />
               <span className={`whitespace-nowrap ${BEAN_ORDER_LIST_CELL}`}>ลูกค้า</span>
-              <span className={`whitespace-nowrap ${BEAN_ORDER_LIST_CELL}`}>หมายเลขคำสั่งซื้อ</span>
+              <span className={`whitespace-nowrap ${BEAN_ORDER_LIST_CELL}`}>หมายเลขออเดอร์</span>
               <span className={BEAN_ORDER_LIST_CELL}>ปลายทาง</span>
               <span className={`whitespace-nowrap ${BEAN_ORDER_LIST_CELL}`}>ช่องทางจัดส่ง</span>
               <span className={`whitespace-nowrap text-right ${BEAN_ORDER_LIST_CELL}`}>ยอด</span>

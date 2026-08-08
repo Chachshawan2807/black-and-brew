@@ -325,7 +325,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
       <section className={`${BEAN_ORDER_CARD} mb-4 p-4`}>
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <h2 className="text-xs text-muted-foreground">รายการ</h2>
-          <p className="tabular-nums text-base text-foreground">{formatBaht(order.totalBaht)} ฿</p>
+          <p className="tabular-nums text-base text-foreground">{formatBaht(order.totalBaht)}</p>
         </div>
         <ul className="divide-y divide-border text-sm">
           {order.lines.map((line) => (
@@ -334,22 +334,22 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                 {line.itemName} / {line.weightValue}
                 {line.weightUnit === 'g' ? ' ก.' : ' กก.'}
               </span>
-              <span className="shrink-0 tabular-nums">{formatBaht(line.lineTotalBaht)} ฿</span>
+              <span className="shrink-0 tabular-nums">{formatBaht(line.lineTotalBaht)}</span>
             </li>
           ))}
         </ul>
         <div className="mt-2 grid grid-cols-3 gap-x-3 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground sm:text-sm">
           <p className="flex justify-between gap-2 sm:block">
             <span>รวมสินค้า</span>
-            <span className="tabular-nums text-foreground sm:float-right">{formatBaht(order.subtotalBaht)} ฿</span>
+            <span className="tabular-nums text-foreground sm:float-right">{formatBaht(order.subtotalBaht)}</span>
           </p>
           <p className="flex justify-between gap-2 sm:block">
             <span>ส่วนลด</span>
-            <span className="tabular-nums text-foreground sm:float-right">-{formatBaht(order.discountBaht)} ฿</span>
+            <span className="tabular-nums text-foreground sm:float-right">-{formatBaht(order.discountBaht)}</span>
           </p>
           <p className="flex justify-between gap-2 sm:block">
             <span>ค่าส่ง</span>
-            <span className="tabular-nums text-foreground sm:float-right">{formatBaht(order.shippingBaht)} ฿</span>
+            <span className="tabular-nums text-foreground sm:float-right">{formatBaht(order.shippingBaht)}</span>
           </p>
         </div>
         {order.notes ? (

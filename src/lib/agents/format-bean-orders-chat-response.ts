@@ -8,15 +8,15 @@ function baht(n: number): string {
 export function formatBeanOrdersChatResponse(summary: BeanOrdersSummaryResult): string {
   if (!summary.ok) {
     return buildBruReport({
-      header: '☕ คำสั่งซื้อเมล็ดกาแฟ',
+      header: '☕ ออเดอร์เมล็ดกาแฟ',
       bullets: [],
-      emptyMessage: 'ดึงข้อมูลคำสั่งซื้อเมล็ดกาแฟไม่สำเร็จ',
+      emptyMessage: 'ดึงข้อมูลออเดอร์เมล็ดกาแฟไม่สำเร็จ',
     });
   }
 
   if (summary.open_orders.length === 0) {
     return buildBruReport({
-      header: '☕ คำสั่งซื้อเมล็ดกาแฟ',
+      header: '☕ ออเดอร์เมล็ดกาแฟ',
       bullets: [],
       emptyMessage: `ในช่วง ${summary.days} วันล่าสุด ไม่มีออเดอร์ค้างชำระหรือรอจัดส่ง`,
     });
@@ -37,7 +37,7 @@ export function formatBeanOrdersChatResponse(summary: BeanOrdersSummaryResult): 
   ];
 
   return buildBruReport({
-    header: '☕ คำสั่งซื้อเมล็ดกาแฟที่ต้องติดตาม',
+    header: '☕ ออเดอร์เมล็ดกาแฟที่ต้องติดตาม',
     bullets,
     footerCount: { label: 'ออเดอร์เปิดอยู่', count: summary.open_orders.length },
     maxBullets: 6,

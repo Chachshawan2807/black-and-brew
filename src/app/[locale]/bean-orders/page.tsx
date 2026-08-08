@@ -7,7 +7,7 @@ import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const BeanOrdersClient = createLazyFeatureClient(
   () => import('./BeanOrdersClient'),
-  'กำลังโหลดคำสั่งซื้อเมล็ดกาแฟ...',
+  'กำลังโหลดออเดอร์เมล็ดกาแฟ...',
 );
 
 export default async function BeanOrdersPage({

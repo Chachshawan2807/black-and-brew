@@ -51,7 +51,7 @@ export const readTableTool = tool({
 3. เมื่อถามสรุปภาพรวม: ไม่ควรระบุ limit ต่ำ — ใช้ default ของตาราง
 4. ตารางงานรายวัน (วันนี้/พรุ่งนี้): ใช้ getDailyShifts เป็นหลัก ไม่ใช่ readTable shifts
 5. ยอดขายช่วงวันที่: ใช้ getSalesSummary แทน dump sales_records
-6. คำสั่งซื้อเมล็ด: ใช้ getBeanOrdersSummary เป็นหลัก
+6. ออเดอร์เมล็ด: ใช้ getBeanOrdersSummary เป็นหลัก
 `.trim(),
 
   inputSchema: z.object({
@@ -289,7 +289,7 @@ export const getStoreStatusTool = tool({
 
 export const getBeanOrdersSummaryTool = tool({
   description:
-    'สรุปคำสั่งซื้อเมล็ดกาแฟที่เปิดอยู่ (ค้างชำระ / รอจัดส่ง) ในช่วงวันล่าสุด',
+    'สรุปออเดอร์เมล็ดกาแฟที่เปิดอยู่ (ค้างชำระ / รอจัดส่ง) ในช่วงวันล่าสุด',
   inputSchema: z.object({
     days: z.number().min(1).max(90).optional().describe('ย้อนหลังกี่วัน (default 30)'),
   }),

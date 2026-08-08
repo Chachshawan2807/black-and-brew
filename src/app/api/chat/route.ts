@@ -369,7 +369,7 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
 
   if (intents.beanOrders > 0) {
     sections.push(`
-[กฎคำสั่งซื้อเมล็ดกาแฟ]
+[กฎออเดอร์เมล็ดกาแฟ]
 1. ใช้ getBeanOrdersSummary เป็นหลัก หรือ readTable ตาราง bean_orders / bean_order_lines
 2. แยกสถานะ payment_status (unpaid/paid) และ fulfillment_status (pending/shipped)
 3. แสดงเลข order_no และชื่อผู้รับ ห้ามแสดง UUID
