@@ -7,6 +7,16 @@ const branchWithdrawClient = fs.readFileSync(
   'utf-8',
 );
 
+describe('branch withdraw withdrawal history', () => {
+  test('shows only the latest three entries until user expands', () => {
+    expect(branchWithdrawClient).toContain('BRANCH_WITHDRAW_HISTORY_INITIAL_COUNT = 3');
+    expect(branchWithdrawClient).toContain('historyExpanded');
+    expect(branchWithdrawClient).toContain('.slice(0, BRANCH_WITHDRAW_HISTORY_INITIAL_COUNT)');
+    expect(branchWithdrawClient).toContain('ดูเพิ่มเติม');
+    expect(branchWithdrawClient).toContain('setHistoryExpanded(true)');
+  });
+});
+
 describe('branch withdraw dialogs', () => {
   test('all modal dialogs center with m-auto and respect mobile viewport height', () => {
     expect(branchWithdrawClient).toMatch(/const BRANCH_WITHDRAW_DIALOG_BASE_CLASS[\s\S]*m-auto max-h-\[min\(85dvh,100%\)\]/);

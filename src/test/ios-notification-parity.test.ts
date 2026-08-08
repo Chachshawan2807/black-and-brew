@@ -86,6 +86,14 @@ describe('iOS notification parity', () => {
     expect(sw).toMatch(/isIosPushClient\(\)[\s\S]*buildIosSafeNotificationOptions/);
   });
 
+  test('service worker resolveOsNotificationDisplay matches buildInventoryOsNotification title merge', () => {
+    const sw = fs.readFileSync(SW, 'utf8');
+    expect(sw).toMatch(
+      /merged = `\$\{trimmedTitle\} · \$\{trimmedSummary\}`[\s\S]*title: `\$\{countPrefix\}\$\{merged\}`[\s\S]*body: ''/,
+    );
+    expect(sw).not.toMatch(/body: payload\.body \|\| trimmedSummary/);
+  });
+
   test('foreground notification bridge applies iOS-safe options before showNotification', () => {
     const bridge = fs.readFileSync(
       path.join(ROOT, 'src/lib/pwa-notification-bridge.ts'),

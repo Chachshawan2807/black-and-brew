@@ -65,10 +65,11 @@ export function ViewTransitionNavigation() {
         closeDrawerForNavigation();
       }
 
-      if (!shouldUseViewTransition()) return;
+      const isInstantNav = anchor.dataset.bbNav === 'instant';
+      if (!shouldUseViewTransition() && !isInstantNav) return;
 
       event.preventDefault();
-      if (anchor.dataset.bbNav === 'instant') {
+      if (isInstantNav) {
         navigateWithoutViewTransition(router.push, href);
         return;
       }

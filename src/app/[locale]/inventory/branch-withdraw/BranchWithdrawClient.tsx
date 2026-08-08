@@ -53,6 +53,7 @@ function formatHistoryDate(value: string): string {
 }
 
 const BRANCH2_UNIT_LABEL = 'หน่วยสาขา 2';
+const BRANCH_WITHDRAW_HISTORY_INITIAL_COUNT = 3;
 const DESKTOP_GRID_COLS =
   'md:grid-cols-[minmax(0,1fr)_4.25rem_4.25rem_minmax(6.75rem,8.5rem)]';
 const INPUT_LABEL_CLASS = 'text-center text-[10px] leading-tight text-foreground/70 md:text-xs';
@@ -260,6 +261,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [history, setHistory] = useState(initialHistory);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
   const [saveLineMessage, setSaveLineMessage] = useState('');
   const [lineMessageDialog, setLineMessageDialog] = useState<{ title: string; message: string } | null>(
@@ -284,7 +286,18 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
 
   useEffect(() => {
     setHistory(initialHistory);
+    setHistoryExpanded(false);
   }, [initialHistory]);
+
+  const visibleHistory = useMemo(() => {
+    if (historyExpanded || history.length <= BRANCH_WITHDRAW_HISTORY_INITIAL_COUNT) {
+      return history;
+    }
+    return history.slice(0, BRANCH_WITHDRAW_HISTORY_INITIAL_COUNT);
+  }, [history, historyExpanded]);
+
+  const hasMoreWithdrawalHistory =
+    history.length > BRANCH_WITHDRAW_HISTORY_INITIAL_COUNT && !historyExpanded;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -539,7 +552,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
             <p className="text-sm text-foreground/70">ยังไม่มีประวัติการเบิกสาขา 2</p>
           ) : (
             <div className="space-y-2">
-              {history.map((entry) => (
+              {visibleHistory.map((entry) => (
                 <article
                   key={entry.id}
                   className="flex flex-col gap-3 rounded-xl border border-border bg-background p-3 md:flex-row md:items-center md:justify-between"
@@ -557,6 +570,15 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
                   </button>
                 </article>
               ))}
+              {hasMoreWithdrawalHistory ? (
+                <button
+                  type="button"
+                  onClick={() => setHistoryExpanded(true)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/50"
+                >
+                  ดูเพิ่มเติม
+                </button>
+              ) : null}
             </div>
           )}
         </section>

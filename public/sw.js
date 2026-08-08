@@ -67,18 +67,37 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
   const trimmedTitle = String(logicalTitle).trim();
   const trimmedSummary = String(logicalSummary).trim();
 
-  if (isIosPushClient() && isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
+  if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
     const titleLine = `${countPrefix}${trimmedTitle}`;
     const bodyLine = `${countPrefix}${trimmedSummary}`;
-    return {
-      title: bodyLine ? `${titleLine}\n${bodyLine}` : titleLine,
-      body: '',
-    };
+
+    if (isIosPushClient()) {
+      const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
+      return {
+        title: merged,
+        body: '',
+      };
+    }
+
+    return { title: titleLine, body: bodyLine };
+  }
+
+  let merged = trimmedTitle;
+  if (trimmedSummary) {
+    if (!trimmedTitle) {
+      merged = trimmedSummary;
+    } else if (
+      trimmedSummary !== trimmedTitle &&
+      !trimmedSummary.startsWith(trimmedTitle) &&
+      !trimmedTitle.includes(trimmedSummary)
+    ) {
+      merged = `${trimmedTitle} · ${trimmedSummary}`;
+    }
   }
 
   return {
-    title: payload.title || trimmedTitle,
-    body: payload.body || trimmedSummary,
+    title: `${countPrefix}${merged}`,
+    body: '',
   };
 }
 

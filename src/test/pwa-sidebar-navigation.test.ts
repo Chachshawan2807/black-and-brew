@@ -57,13 +57,15 @@ describe('PWA sidebar navigation reliability', () => {
     const nav = readFile('components/shell/ViewTransitionNavigation.tsx');
     expect(nav).toContain('closeDrawerForNavigation');
     expect(nav).toContain('normalizeAppPath');
-    expect(nav).toContain("if (!shouldUseViewTransition()) return");
+    expect(nav).toContain('if (!shouldUseViewTransition() && !isInstantNav) return');
     expect(nav).not.toMatch(/useEffect\(\(\) => \{\s*if \(!shouldUseViewTransition\(\)\) return;\s*const onDocumentClick/);
   });
 
-  test('instant nav links bypass view transitions', () => {
+  test('instant nav links bypass view transitions even when view transitions are disabled', () => {
     const nav = readFile('components/shell/ViewTransitionNavigation.tsx');
     expect(nav).toContain("dataset.bbNav === 'instant'");
+    expect(nav).toContain('const isInstantNav');
+    expect(nav).toMatch(/if \(!shouldUseViewTransition\(\) && !isInstantNav\) return;[\s\S]*event\.preventDefault\(\)/);
     expect(nav).toContain('navigateWithoutViewTransition');
   });
 
