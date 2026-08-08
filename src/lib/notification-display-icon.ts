@@ -23,6 +23,11 @@ export function formatStockOperationBatchedTitle(
   return isTh ? `${symbol} ${count} รายการ` : `${symbol} ${count} items`;
 }
 
+/** Stock quick-action OS titles: "+ Item", "− Item", "⇄ Item", or batched "+ N รายการ". */
+export function isStockOperationNotificationTitle(title: string): boolean {
+  return /^[+−⇄]\s/u.test(title.trim());
+}
+
 export type NotificationDisplayIconKind =
   | 'schedule'
   | 'insight'

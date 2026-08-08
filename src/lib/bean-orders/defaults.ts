@@ -1,5 +1,5 @@
 export const DEFAULT_SHOP_SENDER = {
-  name: 'BLACKANDBREW',
+  name: 'black and brew',
   phone: '',
   address: '',
 } as const;

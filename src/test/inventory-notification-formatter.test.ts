@@ -168,8 +168,7 @@ describe('formatInventoryNotification stock operations', () => {
       'th'
     );
     expect(n.title).toBe('+ ฝาใส (แบบแพ็ค)');
-    expect(n.summary).toContain('+2');
-    expect(n.summary).toContain('คงเหลือ: 0 → 2');
+    expect(n.summary).toBe('+2 คงเหลือ 2');
   });
 
   test('shows นำออก title for OUT transaction', () => {
@@ -182,8 +181,7 @@ describe('formatInventoryNotification stock operations', () => {
       'th'
     );
     expect(n.title).toBe('− เมล็ดกาแฟ');
-    expect(n.summary).toContain('−2');
-    expect(n.summary).toContain('คงเหลือ: 10 → 8');
+    expect(n.summary).toBe('−2 คงเหลือ 8');
   });
 
   test('OUT notification must not show false previous stock of 0 when old_value is set', () => {
@@ -195,8 +193,7 @@ describe('formatInventoryNotification stock operations', () => {
       }),
       'th'
     );
-    expect(n.summary).toBe('−1 · คงเหลือ: 4 → 3');
-    expect(n.summary).not.toMatch(/คงเหลือ:\s*0\s*→/);
+    expect(n.summary).toBe('−1 คงเหลือ 3');
   });
 
   test('shows ปรับจำนวน title for set_stock adjustment', () => {
@@ -209,8 +206,7 @@ describe('formatInventoryNotification stock operations', () => {
       'th'
     );
     expect(n.title).toBe('⇄ ถ้วยกระดาษ');
-    expect(n.summary).toContain('→ 12');
-    expect(n.summary).toContain('คงเหลือ: 5 → 12');
+    expect(n.summary).toBe('คงเหลือ 12');
   });
 
   test('hides inventory sort_order from stock-in notification summary', () => {
@@ -231,7 +227,7 @@ describe('formatInventoryNotification stock operations', () => {
       'th'
     );
     expect(n.title).toBe('+ นมอัลมอนด์');
-    expect(n.summary).toContain('+3');
+    expect(n.summary).toBe('+3 คงเหลือ 6');
     expect(n.summary).not.toContain('ลำดับ');
     expect(n.summary).not.toMatch(/sort order/i);
   });
@@ -246,8 +242,7 @@ describe('formatInventoryNotification stock operations', () => {
       'en'
     );
     expect(n.title).toBe('+ Coffee beans');
-    expect(n.summary).toContain('+2');
-    expect(n.summary).toContain('Stock: 0 → 2');
+    expect(n.summary).toBe('+2 Stock 2');
   });
 });
 
@@ -260,8 +255,7 @@ describe('formatDataChangeLogDisplay', () => {
     });
     const display = formatDataChangeLogDisplay(row, 'th');
     expect(display.headline).toBe('+ ฝาใส');
-    expect(display.detail).toContain('+10');
-    expect(display.detail).toContain('คงเหลือ: 0 → 10');
+    expect(display.detail).toBe('+10 คงเหลือ 10');
   });
 
   test('uses generic headline for non-inventory modules', () => {

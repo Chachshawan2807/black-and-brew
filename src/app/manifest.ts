@@ -10,6 +10,7 @@ import {
 import {
   PWA_APP_ID,
   PWA_DEFAULT_LOCALE,
+  PWA_DISPLAY_NAME,
   PWA_SCOPE,
   PWA_START_URL,
   buildManifestShortcuts,
@@ -21,9 +22,9 @@ type AppManifest = MetadataRoute.Manifest & {
 
 export default function manifest(): AppManifest {
   return {
-    name: 'blackandbrew',
-    short_name: 'blackandbrew',
-    description: 'ระบบบริหารจัดการร้านกาแฟ blackandbrew',
+    name: PWA_DISPLAY_NAME,
+    short_name: PWA_DISPLAY_NAME,
+    description: `ระบบบริหารจัดการร้านกาแฟ ${PWA_DISPLAY_NAME}`,
     id: PWA_APP_ID,
     scope: PWA_SCOPE,
     start_url: PWA_START_URL,

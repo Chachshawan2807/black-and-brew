@@ -1,5 +1,6 @@
 import type { Insight } from '@/lib/proactive-insights/types';
 import { insightNotificationLogId } from '@/lib/insight-notification';
+import { buildInventoryOsNotification } from '@/lib/pwa-notification-bridge';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type InventoryNotification,
@@ -41,15 +42,16 @@ export function buildInsightPushPayload(
 ): InsightPushPayload {
   const url = `/${locale}${insight.urlPath}`;
   const tag = insightNotificationLogId(insight.ruleId, dateIso);
-  const body =
+  const detail =
     insight.summary.length > 220 ? `${insight.summary.slice(0, 217)}…` : insight.summary;
+  const osNotification = buildInventoryOsNotification(insight.title, detail, 1, locale === 'th');
   const now = new Date().toISOString();
 
   return {
     kind: 'proactive_insight',
     ruleId: insight.ruleId,
-    title: insight.title,
-    body,
+    title: osNotification.title,
+    body: osNotification.body,
     tag,
     url,
     locale,
@@ -63,7 +65,7 @@ export function buildInsightPushPayload(
       actorLabel: locale === 'th' ? 'ระบบแจ้งเตือนเชิงรุก' : 'Proactive insights',
       occurredAt: now,
       title: insight.title,
-      summary: body,
+      summary: detail,
       fieldSummary: insight.summary,
       priority: insight.priority,
       read: false,

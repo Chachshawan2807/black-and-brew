@@ -71,7 +71,8 @@ describe('web-push', () => {
   test('buildWebPushPayload formats eligible inventory row', () => {
     const payload = buildWebPushPayload(sampleRow(), 'th');
     expect(payload).not.toBeNull();
-    expect(payload?.title).toContain('+');
+    expect(payload?.title).toBe('+ กาแฟ');
+    expect(payload?.body).toBe('+2 คงเหลือ 2');
     expect(payload?.url).toContain('/th/inventory?highlight=item-1');
     expect(payload?.notification.logId).toBe('log-1');
     expect(payload?.notification.entityLabel).toBe('กาแฟ');

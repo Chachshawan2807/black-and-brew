@@ -48,7 +48,8 @@ describe('daily-report-web-push', () => {
     expect(payload.kind).toBe('daily_report');
     expect(payload.schedule).toBe('tomorrow');
     expect(payload.title).toContain('ตารางงาน');
-    expect(payload.body).toContain('21-06-2026');
+    expect(payload.title).toContain('21-06-2026');
+    expect(payload.body).toBe('');
     expect(payload.url).toBe('/th/schedule');
     expect(payload.tag).toContain('bb-daily-report-tomorrow');
     expect(payload.notification.logId).toBe(payload.tag);

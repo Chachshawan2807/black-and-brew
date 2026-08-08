@@ -478,7 +478,7 @@ async function categorizeProductsWithAI(
     // Then use AI for remaining products, and prioritize existing categories
     const { text } = await generateText({
       model: google('gemini-2.5-flash'),
-      system: `คุณคือผู้ช่วยจัดหมวดหมู่สินค้าสำหรับร้าน BLACKANDBREW (ร้านกาแฟและขนม)
+      system: `คุณคือผู้ช่วยจัดหมวดหมู่สินค้าสำหรับร้าน black and brew (ร้านกาแฟและขนม)
       
       ${existingCategories.length > 0 
         ? `หมวดหมู่ที่มีอยู่แล้ว (ใช้สิ่งนี้เป็นอันดับแรกถ้าเหมาะสม):
@@ -487,7 +487,7 @@ ${existingCategories.map(c => `- ${c}`).join('\n')}
         : ''
       }
       
-      ให้จัดหมวดหมู่สินค้าตามชื่อสินค้าให้เหมาะสมกับบริบทของร้านกาแฟ BLACKANDBREW
+      ให้จัดหมวดหมู่สินค้าตามชื่อสินค้าให้เหมาะสมกับบริบทของร้านกาแฟ black and brew
       หากเป็นไปได้ให้ใช้หมวดหมู่ที่มีอยู่แล้ว (ถ้ามี)
       ถ้าต้องสร้างหมวดหมู่ใหม่ก็ทำได้
       

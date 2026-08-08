@@ -260,10 +260,10 @@ describe('PWA cross-platform asset consistency', () => {
     expect(PWA_FAVICON).toBe('/images/favicon.png');
   });
 
-  test('manifest uses lowercase English app name', () => {
+  test('manifest uses home-screen display name', () => {
     const m = manifest();
-    expect(m.name).toBe('blackandbrew');
-    expect(m.short_name).toBe('blackandbrew');
+    expect(m.name).toBe('black & brew');
+    expect(m.short_name).toBe('black & brew');
   });
 
   test('manifest includes stable id for iOS home-screen PWA badging', () => {

@@ -4,6 +4,9 @@
 
 import { PWA_BRAND_ICON } from '@/lib/pwa-assets';
 
+/** Home-screen / notification display name (iOS shows "from [this name]"). */
+export const PWA_DISPLAY_NAME = 'black & brew';
+
 export const PWA_DEFAULT_LOCALE = 'th';
 export const PWA_SCOPE = '/';
 export const PWA_APP_ID = '/';

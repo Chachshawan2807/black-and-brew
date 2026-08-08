@@ -6,6 +6,7 @@ import {
   isIosWebPushClient,
   type OsNotificationOptions,
 } from '@/lib/pwa-assets';
+import { isStockOperationNotificationTitle } from '@/lib/notification-display-icon';
 import {
   applyAppBadgeCount,
   postBadgeToActiveServiceWorker,
@@ -65,22 +66,58 @@ export function isBenignPushRegistrationError(error: unknown): boolean {
   return false;
 }
 
-/** OS banner title/body with optional unread count prefix. */
+const OS_NOTIFICATION_TITLE_MAX = 120;
+const OS_NOTIFICATION_BODY_MAX = 240;
+
+/**
+ * OS banner title/body for Web Push and system notifications.
+ * Stock IN/OUT/ADJUST: Android keeps title + body separate; iOS merges both into title
+ * (newline) with empty body so WebKit's "from [app]" line sits at the bottom.
+ * Other kinds merge detail into title on all platforms.
+ */
 export function buildInventoryOsNotification(
   title: string,
   summary: string,
   unreadCount: number,
-  isTh: boolean,
+  _isTh: boolean,
+  options?: { isIos?: boolean },
 ): { title: string; body: string } {
-  const countPrefix =
-    unreadCount > 1
-      ? isTh
-        ? `[${unreadCount}] `
-        : `[${unreadCount}] `
-      : '';
+  const isIos = options?.isIos ?? false;
+  const countPrefix = unreadCount > 1 ? `[${unreadCount}] ` : '';
+  const trimmedTitle = title.trim();
+  const trimmedSummary = summary.trim();
+
+  if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
+    const titleLine = `${countPrefix}${trimmedTitle}`.slice(0, OS_NOTIFICATION_TITLE_MAX);
+    const bodyLine = `${countPrefix}${trimmedSummary}`.slice(0, OS_NOTIFICATION_BODY_MAX);
+
+    if (isIos) {
+      const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
+      return {
+        title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
+        body: '',
+      };
+    }
+
+    return { title: titleLine, body: bodyLine };
+  }
+
+  let merged = trimmedTitle;
+  if (trimmedSummary) {
+    if (!trimmedTitle) {
+      merged = trimmedSummary;
+    } else if (
+      trimmedSummary !== trimmedTitle &&
+      !trimmedSummary.startsWith(trimmedTitle) &&
+      !trimmedTitle.includes(trimmedSummary)
+    ) {
+      merged = `${trimmedTitle} · ${trimmedSummary}`;
+    }
+  }
+
   return {
-    title: title.slice(0, 120),
-    body: `${countPrefix}${summary}`.slice(0, 240),
+    title: `${countPrefix}${merged}`.slice(0, OS_NOTIFICATION_TITLE_MAX),
+    body: '',
   };
 }
 
@@ -135,6 +172,7 @@ export async function showSystemNotification(
     body,
     options?.unreadCount ?? 1,
     options?.isTh ?? true,
+    { isIos: isIosWebPushClient() },
   );
 
   const payload = buildSystemNotificationOptions({

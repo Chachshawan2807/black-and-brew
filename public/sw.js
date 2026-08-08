@@ -30,8 +30,9 @@ function resolvePushAssets(payload) {
 
 function buildNotificationOptions(payload, unreadCount, overrides = {}) {
   const { icon, badge } = resolvePushAssets(payload);
+  const display = resolveOsNotificationDisplay(payload, unreadCount);
   return {
-    body: payload.body,
+    body: display.body,
     icon,
     badge,
     tag: payload.tag || 'bb-inventory',
@@ -45,6 +46,39 @@ function buildNotificationOptions(payload, unreadCount, overrides = {}) {
       kind: payload.kind,
     },
     ...overrides,
+  };
+}
+
+/** Stock quick-action titles: "+ Item", "− Item", "⇄ Item", or batched "+ N รายการ". */
+function isStockOperationNotificationTitle(title) {
+  return /^[+−⇄]\s/u.test(String(title || '').trim());
+}
+
+/**
+ * iOS WebKit inserts "from [app]" between title and body. For stock ops, merge both
+ * lines into title so the byline appears below the quantity line.
+ */
+function resolveOsNotificationDisplay(payload, unreadCount = 1) {
+  const logicalTitle =
+    (payload.notification && payload.notification.title) || payload.title || '';
+  const logicalSummary =
+    (payload.notification && payload.notification.summary) || payload.body || '';
+  const countPrefix = unreadCount > 1 ? `[${unreadCount}] ` : '';
+  const trimmedTitle = String(logicalTitle).trim();
+  const trimmedSummary = String(logicalSummary).trim();
+
+  if (isIosPushClient() && isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
+    const titleLine = `${countPrefix}${trimmedTitle}`;
+    const bodyLine = `${countPrefix}${trimmedSummary}`;
+    return {
+      title: bodyLine ? `${titleLine}\n${bodyLine}` : titleLine,
+      body: '',
+    };
+  }
+
+  return {
+    title: payload.title || trimmedTitle,
+    body: payload.body || trimmedSummary,
   };
 }
 
@@ -169,7 +203,7 @@ async function safeResolveUnreadCount(payload) {
 
 self.addEventListener('push', (event) => {
   let payload = {
-    title: 'BLACKANDBREW',
+    title: 'black & brew',
     body: 'มีการเปลี่ยนแปลงคลังสินค้า',
     tag: 'bb-inventory',
     url: '/th/inventory',
@@ -232,7 +266,10 @@ self.addEventListener('push', (event) => {
               ? '/th/bean-orders'
               : '/th/schedule';
 
-        await showPushNotification(payload.title, buildNotificationOptions(payload, unreadCount, {
+        const display = resolveOsNotificationDisplay(payload, unreadCount);
+        await showPushNotification(
+          display.title,
+          buildNotificationOptions(payload, unreadCount, {
           tag: `${payload.tag || fallbackTag}-${Date.now()}`,
           requireInteraction: true,
           timestamp: Date.now(),
@@ -241,12 +278,14 @@ self.addEventListener('push', (event) => {
             kind: payload.kind,
             unreadCount,
           },
-        }));
+        }),
+        );
         await applyHomeScreenBadge(unreadCount);
         return;
       }
 
       const unreadCount = await safeResolveUnreadCount(payload);
+      const display = resolveOsNotificationDisplay(payload, unreadCount);
       const options = buildNotificationOptions(payload, unreadCount);
 
       const windowClients = await self.clients.matchAll({
@@ -263,7 +302,7 @@ self.addEventListener('push', (event) => {
         });
       }
 
-      await showPushNotification(payload.title, options);
+      await showPushNotification(display.title, options);
       await applyHomeScreenBadge(unreadCount);
     })(),
   );

@@ -17,6 +17,7 @@ import { FloatingOverlayProvider } from '@/components/floating/FloatingOverlayCo
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { AppTooltipProvider } from '@/components/providers/AppTooltipProvider';
 import { PWA_APPLE_TOUCH_ICON, PWA_FAVICON } from '@/lib/pwa-assets';
+import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
 import { PWA_SHELL_BOOTSTRAP_SCRIPT, PWA_THEME_COLORS } from '@/lib/pwa-standalone';
 import { appFontClassName } from '@/lib/fonts';
 import "./globals.css";
@@ -33,6 +34,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  applicationName: PWA_DISPLAY_NAME,
   title: "BLACK-AND-BREW",
   description: "High-Availability & Real-time Scheduling System for BLACK-AND-BREW",
   icons: {
@@ -43,7 +45,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "blackandbrew",
+    title: PWA_DISPLAY_NAME,
     statusBarStyle: "black-translucent",
   },
   formatDetection: {

@@ -38,8 +38,10 @@ describe('bean order payment web push', () => {
     const payload = buildBeanOrderPaymentPushPayload(sampleInput, 'th');
 
     expect(payload.kind).toBe('bean_order_payment_confirmed');
-    expect(payload.title).toBe('ชำระแล้ว');
-    expect(payload.body).toBe('คุณเอ · 800 บาท');
+    expect(payload.title).toContain('ชำระแล้ว');
+    expect(payload.title).toContain('คุณเอ');
+    expect(payload.title).toContain('800');
+    expect(payload.body).toBe('');
     expect(payload.url).toBe('/th/bean-orders/order-1');
     expect(payload.tag).toBe('bb-bean-paid-order-1');
     expect(payload.notification.metadata.kind).toBe('bean_order_payment_confirmed');

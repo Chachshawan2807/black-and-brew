@@ -611,7 +611,25 @@ function buildStockOperationSummary(
 
   const stockChange = row.field_changes?.find((c) => c.field === 'stock');
 
-  const stockLine = stockChange ? formatFieldChange(stockChange, isTh) : '';
+  const currentStock =
+
+    stockChange?.new_value != null && !Number.isNaN(Number(stockChange.new_value))
+
+      ? Number(stockChange.new_value)
+
+      : null;
+
+  const remainingLabel =
+
+    currentStock != null
+
+      ? isTh
+
+        ? `คงเหลือ ${currentStock}`
+
+        : `Stock ${currentStock}`
+
+      : '';
 
   const qty = meta.quantity != null ? Number(meta.quantity) : NaN;
 
@@ -619,41 +637,27 @@ function buildStockOperationSummary(
 
   if (operation === 'IN' && !Number.isNaN(qty)) {
 
-    const lead = `+${qty}`;
-
-    return stockLine ? `${lead} · ${stockLine}` : lead;
+    return remainingLabel ? `+${qty} ${remainingLabel}` : `+${qty}`;
 
   }
 
   if (operation === 'OUT' && !Number.isNaN(qty)) {
 
-    const lead = `−${qty}`;
-
-    return stockLine ? `${lead} · ${stockLine}` : lead;
+    return remainingLabel ? `−${qty} ${remainingLabel}` : `−${qty}`;
 
   }
 
   if (operation === 'ADJUST' && stockChange) {
 
-    const newVal = formatDisplayValue(stockChange.new_value, isTh);
+    if (remainingLabel) return remainingLabel;
 
-    const lead =
-
-      newVal != null
-
-        ? `→ ${newVal}`
-
-        : isTh
-
-          ? '⇄ ปรับจำนวนคงเหลือ'
-
-          : '⇄ Stock level adjusted';
-
-    return stockLine ? `${lead} · ${stockLine}` : lead;
+    return isTh ? '⇄ ปรับจำนวนคงเหลือ' : '⇄ Stock level adjusted';
 
   }
 
-  return stockLine || (isTh ? 'อัปเดตสต็อกแล้ว' : 'Stock updated');
+  if (remainingLabel) return remainingLabel;
+
+  return isTh ? 'อัปเดตสต็อกแล้ว' : 'Stock updated';
 
 }
 

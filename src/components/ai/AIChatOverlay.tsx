@@ -221,7 +221,7 @@ export default function AIChatOverlay() {
                   <div className="min-w-0">
                     <p className="text-[14px] font-normal text-foreground leading-tight">บรู</p>
                     <p className="text-[11px] font-normal text-muted-foreground leading-tight">
-                      AI ผู้ช่วยร้าน BLACKANDBREW
+                      AI ผู้ช่วยร้าน black and brew
                     </p>
                   </div>
                 </div>

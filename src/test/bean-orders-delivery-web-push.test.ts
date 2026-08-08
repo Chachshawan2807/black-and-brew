@@ -44,10 +44,10 @@ describe('bean order delivery web push', () => {
     const payload = buildBeanOrderDeliveredPushPayload(sampleInput, 'th');
 
     expect(payload.kind).toBe('bean_order_delivered');
-    expect(payload.title).toBe('จัดส่งสำเร็จ');
-    expect(payload.body).toContain('ทัพพ์เทพ นิจนิรันดร์กุล');
-    expect(payload.body).toContain('ต.คึกคัก');
-    expect(payload.body).not.toContain('BO-20260722-003');
+    expect(payload.title).toContain('จัดส่งสำเร็จ');
+    expect(payload.title).toContain('ทัพพ์เทพ นิจนิรันดร์กุล');
+    expect(payload.title).toContain('ต.คึกคัก');
+    expect(payload.body).toBe('');
     expect(payload.url).toBe('/th/bean-orders/order-1');
     expect(payload.tag).toBe('bb-bean-delivered-order-1');
     expect(payload.notification.metadata.kind).toBe('bean_order_delivered');

@@ -16,22 +16,61 @@ describe('pwa-notification-bridge', () => {
     expect(isUuidString(42)).toBe(false);
   });
 
-  test('buildInventoryOsNotification prefixes body with unread count', () => {
-    const single = buildInventoryOsNotification('+ กาแฟ', '+2 · คงเหลือ: 0 → 2', 1, true);
-    expect(single.title).toBe('+ กาแฟ');
-    expect(single.body).toBe('+2 · คงเหลือ: 0 → 2');
+  test('buildInventoryOsNotification keeps stock title and body separate on Android', () => {
+    const single = buildInventoryOsNotification(
+      '+ เมล็ดกาแฟคั่วอ่อน',
+      '+2 คงเหลือ 2',
+      1,
+      true,
+    );
+    expect(single.title).toBe('+ เมล็ดกาแฟคั่วอ่อน');
+    expect(single.body).toBe('+2 คงเหลือ 2');
 
     const multi = buildInventoryOsNotification(
-      'คลังสินค้า: 3 การเปลี่ยนแปลง',
-      'ผู้ใช้งาน แก้ไข 3 รายการ',
+      '+ นมอัลมอนด์',
+      '+3 คงเหลือ 6',
       5,
       true,
     );
-    expect(multi.body.startsWith('[5] ')).toBe(true);
+    expect(multi.title).toBe('[5] + นมอัลมอนด์');
+    expect(multi.body).toBe('[5] +3 คงเหลือ 6');
+  });
+
+  test('buildInventoryOsNotification merges stock lines into title on iOS so byline sits at bottom', () => {
+    const single = buildInventoryOsNotification(
+      '+ เมล็ดกาแฟคั่วอ่อน',
+      '+2 คงเหลือ 2',
+      1,
+      true,
+      { isIos: true },
+    );
+    expect(single.title).toBe('+ เมล็ดกาแฟคั่วอ่อน\n+2 คงเหลือ 2');
+    expect(single.body).toBe('');
+
+    const multi = buildInventoryOsNotification(
+      '+ นมอัลมอนด์',
+      '+3 คงเหลือ 6',
+      5,
+      true,
+      { isIos: true },
+    );
+    expect(multi.title).toBe('[5] + นมอัลมอนด์\n[5] +3 คงเหลือ 6');
+    expect(multi.body).toBe('');
+  });
+
+  test('buildInventoryOsNotification merges non-stock notifications into title', () => {
+    const daily = buildInventoryOsNotification(
+      'ตารางงานพรุ่งนี้',
+      '21-06-2026 · นิต้า 6:30',
+      1,
+      true,
+    );
+    expect(daily.title).toBe('ตารางงานพรุ่งนี้ · 21-06-2026 · นิต้า 6:30');
+    expect(daily.body).toBe('');
   });
 
   test('system notification uses brand icon and separate mobile badge mask', () => {
-    const opts = buildSystemNotificationOptions({ body: 'รับ 2 · คงเหลือ: 0 → 2' });
+    const opts = buildSystemNotificationOptions({ body: '+2 คงเหลือ 2' });
     expect(opts.icon).toContain(PWA_NOTIFICATION_ICON);
     expect(opts.badge).toContain(PWA_NOTIFICATION_BADGE);
     expect(opts.badge).not.toBe(opts.icon);

@@ -5,6 +5,7 @@ import {
   type NotificationPreferences,
 } from '@/lib/notification-types';
 import { formatSecurityNotification, isEligibleSecurityNotification } from '@/lib/security-notification';
+import { buildInventoryOsNotification } from '@/lib/pwa-notification-bridge';
 import {
   deliverWebPushPayload,
   ensureVapidConfigured,
@@ -54,10 +55,16 @@ export function buildSecurityPushPayload(
   if (!isEligibleSecurityNotification(row)) return null;
 
   const notification = formatSecurityNotification(row, locale);
-  const body =
+  const detail =
     notification.summary.length > 220
       ? `${notification.summary.slice(0, 217)}…`
       : notification.summary;
+  const osNotification = buildInventoryOsNotification(
+    notification.title,
+    detail,
+    1,
+    locale === 'th',
+  );
   const url =
     typeof notification.metadata.url === 'string'
       ? notification.metadata.url
@@ -66,8 +73,8 @@ export function buildSecurityPushPayload(
   return {
     kind: 'security_alert',
     alertKind: String(notification.metadata.kind ?? 'security'),
-    title: notification.title,
-    body,
+    title: osNotification.title,
+    body: osNotification.body,
     tag: notification.logId,
     url,
     locale,

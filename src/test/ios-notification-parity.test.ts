@@ -79,6 +79,7 @@ describe('iOS notification parity', () => {
   test('service worker proactively uses iOS-safe notification options', () => {
     const sw = fs.readFileSync(SW, 'utf8');
     expect(sw).toContain('function isIosPushClient');
+    expect(sw).toContain('function resolveOsNotificationDisplay');
     expect(sw).toContain('delete safe.badge');
     expect(sw).toContain('delete safe.requireInteraction');
     expect(sw).toContain('delete safe.timestamp');

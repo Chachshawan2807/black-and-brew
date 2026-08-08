@@ -34,7 +34,7 @@ const clientDeviceSchema = z.object({
   sessionFingerprint: z.string().max(200),
 });
 
-const RP_NAME = 'BLACKANDBREW';
+const RP_NAME = 'black and brew';
 
 interface StoredPasskeyRow {
   id: string;
@@ -137,7 +137,7 @@ export async function getPasskeyRegistrationOptions(
       rpName: RP_NAME,
       rpID: rpId,
       userName: deviceLabelFromPayload(safeDevice),
-      userDisplayName: 'BLACKANDBREW',
+      userDisplayName: 'black and brew',
       userID: fingerprintToPasskeyUserId(safeDevice.sessionFingerprint),
       attestationType: 'none',
       excludeCredentials: existing.map((row) => ({

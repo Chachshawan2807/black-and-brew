@@ -17,6 +17,7 @@ import {
   type PushSubscriptionRow,
 } from '@/lib/web-push';
 import { buildPwaNotificationAssetPaths, type PwaNotificationAssetPaths } from '@/lib/pwa-assets';
+import { buildInventoryOsNotification } from '@/lib/pwa-notification-bridge';
 
 export type { BeanOrderPaymentNotifyInput };
 
@@ -39,12 +40,13 @@ export function buildBeanOrderPaymentPushPayload(
   const { title, summary, fieldSummary } = buildBeanOrderPaymentCopy(input, locale);
   const tag = beanOrderPaymentNotificationLogId(input.orderId);
   const url = `/${locale}/bean-orders/${input.orderId}`;
+  const osNotification = buildInventoryOsNotification(title, summary, 1, locale === 'th');
   const now = new Date().toISOString();
 
   return {
     kind: 'bean_order_payment_confirmed',
-    title,
-    body: summary,
+    title: osNotification.title,
+    body: osNotification.body,
     tag,
     url,
     locale,
