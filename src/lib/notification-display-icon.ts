@@ -28,6 +28,7 @@ export type NotificationDisplayIconKind =
   | 'insight'
   | 'security'
   | 'bean-delivered'
+  | 'bean-paid'
   | 'stock-in'
   | 'stock-out'
   | 'stock-adjust'
@@ -40,6 +41,7 @@ const SCHEDULE_SURFACE = `${PASTEL_SURFACE} bg-[#e6f0ff] text-black border borde
 const INSIGHT_SURFACE = `${PASTEL_SURFACE} bg-[#f3e8ff] text-black border border-[#e0c8ff]`;
 const SECURITY_SURFACE = `${PASTEL_SURFACE} bg-[#ffe4e6] text-black border border-[#fecdd3]`;
 const BEAN_DELIVERED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`;
+const BEAN_PAYMENT_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.order} text-black`;
 
 const STOCK_SURFACES: Record<StockOperation, string> = {
   IN: `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`,
@@ -77,19 +79,30 @@ export function isScheduleNotification(item: InventoryNotification): boolean {
   return false;
 }
 
-export function isBeanOrderDeliveredNotification(item: InventoryNotification): boolean {
+export function isBeanOrderPaymentNotification(item: InventoryNotification): boolean {
   const meta = item.metadata ?? {};
-  if (meta.kind === 'bean_order_delivered' || meta.kind === 'bean_order_shipped' || meta.kind === 'bean_order_payment_confirmed') return true;
+  if (meta.kind === 'bean_order_payment_confirmed') return true;
+  return /^ชำระแล้ว/u.test(item.title) || /^Paid/u.test(item.title);
+}
+
+export function isBeanOrderDeliveredNotification(item: InventoryNotification): boolean {
+  if (isBeanOrderPaymentNotification(item)) return false;
+
+  const meta = item.metadata ?? {};
+  if (meta.kind === 'bean_order_delivered' || meta.kind === 'bean_order_shipped') return true;
   if (meta.module === 'bean_orders' && typeof meta.url === 'string' && meta.url.includes('/bean-orders/')) {
-    return true;
+    return (
+      /^จัดส่งสำเร็จ/u.test(item.title) ||
+      /^Delivered/u.test(item.title) ||
+      /^ส่งแล้ว/u.test(item.title) ||
+      /^Shipped/u.test(item.title)
+    );
   }
   return (
     /^จัดส่งสำเร็จ/u.test(item.title) ||
     /^Delivered/u.test(item.title) ||
     /^ส่งแล้ว/u.test(item.title) ||
-    /^Shipped/u.test(item.title) ||
-    /^ชำระแล้ว/u.test(item.title) ||
-    /^Paid/u.test(item.title)
+    /^Shipped/u.test(item.title)
   );
 }
 
@@ -131,6 +144,10 @@ export function resolveNotificationDisplayIcon(item: InventoryNotification): {
 
   if (isSecurityNotification(item)) {
     return { kind: 'security', containerClass: SECURITY_SURFACE };
+  }
+
+  if (isBeanOrderPaymentNotification(item)) {
+    return { kind: 'bean-paid', containerClass: BEAN_PAYMENT_SURFACE };
   }
 
   if (isBeanOrderDeliveredNotification(item)) {

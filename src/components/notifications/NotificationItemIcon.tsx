@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Banknote,
   CalendarRange,
   Layers,
   PackageMinus,
@@ -38,6 +39,7 @@ export function NotificationItemIcon({
     kind === 'insight' ||
     kind === 'security' ||
     kind === 'bean-delivered' ||
+    kind === 'bean-paid' ||
     kind === 'stock-in' ||
     kind === 'stock-out' ||
     kind === 'stock-adjust';
@@ -61,6 +63,7 @@ export function NotificationItemIcon({
       {kind === 'insight' && <Sparkles {...iconProps} />}
       {kind === 'security' && <ShieldAlert {...iconProps} />}
       {kind === 'bean-delivered' && <Truck {...iconProps} />}
+      {kind === 'bean-paid' && <Banknote {...iconProps} />}
       {kind === 'stock-in' && <PackagePlus {...iconProps} />}
       {kind === 'stock-out' && <PackageMinus {...iconProps} />}
       {kind === 'stock-adjust' && <SlidersHorizontal {...iconProps} />}

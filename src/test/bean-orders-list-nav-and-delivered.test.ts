@@ -22,6 +22,16 @@ describe('bean order navigation after save/delete', () => {
     );
   });
 
+  test('detail page reads shipment flash message when pathname changes', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
+      'utf8',
+    );
+    expect(source).toContain("sessionStorage.getItem('bb-bean-order-flash')");
+    expect(source).toContain('usePathname');
+    expect(source).toMatch(/useEffect\([\s\S]*bb-bean-order-flash[\s\S]*\[pathname\]/);
+  });
+
   test('detail delete success redirects to bean-orders list', () => {
     const source = readFileSync(
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),

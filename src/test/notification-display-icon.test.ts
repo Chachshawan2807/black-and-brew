@@ -122,6 +122,21 @@ describe('notification display icons', () => {
     expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d4edda]');
   });
 
+  test('uses banknote icon and order blue surface for bean order payment notifications', () => {
+    const item = sampleNotification({
+      title: 'ชำระแล้ว',
+      metadata: {
+        kind: 'bean_order_payment_confirmed',
+        module: 'bean_orders',
+        url: '/th/bean-orders/order-1',
+      },
+    });
+
+    expect(resolveNotificationDisplayIcon(item).kind).toBe('bean-paid');
+    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d1ecf1]');
+    expect(resolveNotificationDisplayIcon(item).containerClass).not.toContain('bg-[#d4edda]');
+  });
+
   test('notification panel uses shared item icon component', () => {
     const root = path.resolve(__dirname, '..');
     const panel = fs.readFileSync(
@@ -138,6 +153,7 @@ describe('notification display icons', () => {
     expect(itemIcon).toContain('PackagePlus');
     expect(itemIcon).toContain('PackageMinus');
     expect(itemIcon).toContain('Truck');
+    expect(itemIcon).toContain('Banknote');
     expect(itemIcon).toContain('SlidersHorizontal');
     expect(itemIcon).toContain('CalendarRange');
     const displayIcon = fs.readFileSync(

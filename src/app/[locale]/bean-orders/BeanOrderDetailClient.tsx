@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown, ChevronLeft, Pencil } from 'lucide-react';
 import {
   deleteBeanOrder,
@@ -57,6 +57,7 @@ function formatBaht(value: number): string {
 
 export default function BeanOrderDetailClient({ order: initialOrder, locale }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const isReadOnly = useReadOnly();
   const fileRef = useRef<HTMLInputElement>(null);
   const [order, setOrder] = useState(initialOrder);
@@ -78,7 +79,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     if (!flash) return;
     setMessage(flash);
     sessionStorage.removeItem('bb-bean-order-flash');
-  }, []);
+  }, [pathname]);
 
   const cancelled = Boolean(order.cancelledAt);
   const editable = canEditOrder(order.cancelledAt);
