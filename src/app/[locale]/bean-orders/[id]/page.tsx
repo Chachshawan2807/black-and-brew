@@ -22,5 +22,5 @@ export default async function BeanOrderDetailPage({
   const result = await fetchBeanOrderDetail(id);
   if (!result.success || !result.data) notFound();
 
-  return <BeanOrderDetailClient order={result.data} locale={locale} />;
+  return <BeanOrderDetailClient key={id} order={result.data} locale={locale} />;
 }

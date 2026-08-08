@@ -59,6 +59,12 @@ describe('PWA sidebar navigation reliability', () => {
     expect(nav).toContain('normalizeAppPath');
   });
 
+  test('instant nav links bypass view transitions', () => {
+    const nav = readFile('components/shell/ViewTransitionNavigation.tsx');
+    expect(nav).toContain("dataset.bbNav === 'instant'");
+    expect(nav).toContain('navigateWithoutViewTransition');
+  });
+
   test('auth session guard retries before forcing logout reload', () => {
     const guard = readFile('components/auth/AuthSessionGuard.tsx');
     expect(guard).toContain('SESSION_VERIFY_MAX_ATTEMPTS');

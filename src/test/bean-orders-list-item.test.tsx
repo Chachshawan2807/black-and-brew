@@ -74,6 +74,26 @@ describe('BeanOrderListItem', () => {
     expect(await screen.findByText('คัดลอกแล้ว')).toBeInTheDocument();
   });
 
+  test('detail links opt out of view transitions for reliable mobile navigation', () => {
+    render(<BeanOrderListItem order={sampleOrder} locale="th" />);
+
+    const detailLinks = screen
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('href') === '/th/bean-orders/order-1');
+
+    expect(detailLinks.length).toBeGreaterThan(0);
+    detailLinks.forEach((link) => {
+      expect(link).toHaveAttribute('data-bb-nav', 'instant');
+    });
+  });
+
+  test('mobile copy button is a flex sibling of the detail link, not absolutely positioned', () => {
+    render(<BeanOrderListItem order={sampleOrder} locale="th" />);
+
+    const copyButton = screen.getByRole('button', { name: 'คัดลอกรายละเอียดออเดอร์' });
+    expect(copyButton.className).not.toMatch(/\babsolute\b/);
+  });
+
   test('shows destination only in destination area and delivery badge in status column', () => {
     const orderWithTracking: BeanOrderListRow = {
       ...sampleOrder,

@@ -45,6 +45,7 @@ describe('loading performance patterns', () => {
     );
     expect(detailPage).toContain("import BeanOrderDetailClient from '../BeanOrderDetailClient'");
     expect(detailPage).not.toContain('createLazyFeatureClient');
+    expect(detailPage).toMatch(/key=\{id\}/);
   });
 
   test('lazy feature client defers to route loading.tsx instead of a second skeleton', () => {

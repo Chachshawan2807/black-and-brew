@@ -54,6 +54,11 @@ type CopyToast = {
   type: 'success' | 'error';
 };
 
+const DETAIL_LINK_PROPS = {
+  prefetch: true,
+  'data-bb-nav': 'instant',
+} as const;
+
 export function BeanOrderListItem({ order, locale }: Props) {
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
   const customerLabel = formatCustomerLabel(order);
@@ -82,86 +87,84 @@ export function BeanOrderListItem({ order, locale }: Props) {
   return (
     <li
       className={cn(
-        'bb-row-interactive relative lg:grid lg:grid-cols-subgrid lg:col-span-full lg:items-center lg:gap-x-0',
+        'bb-row-interactive relative flex items-start gap-1 lg:grid lg:grid-cols-subgrid lg:col-span-full lg:items-center lg:gap-x-0',
         BEAN_ORDER_LIST_ROW,
       )}
     >
-      <div className={cn('lg:col-start-1 lg:flex lg:items-center lg:justify-center', BEAN_ORDER_LIST_CELL)}>
-        <button
-          type="button"
-          onClick={(event) => void handleCopy(event)}
-          onPointerDown={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-          }}
-          className={`absolute left-3 top-3 z-10 h-9 w-9 shrink-0 text-muted-foreground sm:left-4 lg:static ${BEAN_ORDER_BTN_ICON}`}
-          aria-label="คัดลอกรายละเอียดออเดอร์"
-          title="คัดลอกรายละเอียด"
-        >
-          <Copy className="h-4 w-4" aria-hidden />
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={(event) => void handleCopy(event)}
+        className={cn(
+          'mt-3 ml-1 h-11 w-11 shrink-0 text-muted-foreground lg:col-start-1 lg:mt-0 lg:ml-0 lg:h-9 lg:w-9',
+          BEAN_ORDER_BTN_ICON,
+          BEAN_ORDER_LIST_CELL,
+          'lg:flex lg:items-center lg:justify-center',
+        )}
+        aria-label="คัดลอกรายละเอียดออเดอร์"
+        title="คัดลอกรายละเอียด"
+      >
+        <Copy className="h-4 w-4" aria-hidden />
+      </button>
 
       <Link
         href={detailHref}
-        prefetch
+        {...DETAIL_LINK_PROPS}
         onTouchStart={warmDetailRoute}
         onMouseEnter={warmDetailRoute}
         onFocus={warmDetailRoute}
-        className="block rounded-xl py-3 pl-14 pr-3 bb-transition hover:bg-muted/25 sm:pl-14 sm:pr-4 lg:hidden"
+        className="min-w-0 flex-1 touch-manipulation rounded-xl py-3 pr-3 bb-transition hover:bg-muted/25 lg:contents lg:p-0"
       >
-        <p className="min-w-0 truncate text-sm text-foreground/90" title={customerLabel}>
-          {customerLabel}
-        </p>
+        <div className="lg:hidden">
+          <p className="min-w-0 truncate text-sm text-foreground/90" title={customerLabel}>
+            {customerLabel}
+          </p>
 
-        <div className="mt-1 min-w-0">
-          <p className="truncate text-sm text-foreground">{order.orderNo}</p>
-          <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
+          <div className="mt-1 min-w-0">
+            <p className="truncate text-sm text-foreground">{order.orderNo}</p>
+            <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
+          </div>
+
+          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{destinationLine}</p>
+          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{shippingChannel}</p>
+
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p className="tabular-nums text-sm text-foreground">{formatBaht(order.totalBaht)}</p>
+            <OrderListStatusGroup
+              slipUploadedAt={order.slipUploadedAt}
+              paymentStatus={order.paymentStatus}
+              trackingStatus={order.trackingStatus}
+              cancelledAt={order.cancelledAt}
+            />
+          </div>
         </div>
 
-        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{destinationLine}</p>
-        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{shippingChannel}</p>
-
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="tabular-nums text-sm text-foreground">{formatBaht(order.totalBaht)}</p>
-          <OrderListStatusGroup
-            slipUploadedAt={order.slipUploadedAt}
-            paymentStatus={order.paymentStatus}
-            trackingStatus={order.trackingStatus}
-            cancelledAt={order.cancelledAt}
-          />
-        </div>
-      </Link>
-
-      <Link
-        href={detailHref}
-        prefetch
-        onTouchStart={warmDetailRoute}
-        onMouseEnter={warmDetailRoute}
-        onFocus={warmDetailRoute}
-        className="hidden lg:contents"
-      >
         <p
-          className={cn('min-w-0 truncate text-sm text-foreground/90 lg:col-start-2', BEAN_ORDER_LIST_CELL)}
+          className={cn('hidden min-w-0 truncate text-sm text-foreground/90 lg:col-start-2 lg:block', BEAN_ORDER_LIST_CELL)}
           title={customerLabel}
         >
           {customerLabel}
         </p>
 
-        <div className={cn('min-w-0 lg:col-start-3', BEAN_ORDER_LIST_CELL)}>
+        <div className={cn('hidden min-w-0 lg:col-start-3 lg:block', BEAN_ORDER_LIST_CELL)}>
           <p className="truncate text-sm text-foreground">{order.orderNo}</p>
           <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
         </div>
 
         <p
-          className={cn('min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-4', BEAN_ORDER_LIST_CELL)}
+          className={cn(
+            'hidden min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-4 lg:block',
+            BEAN_ORDER_LIST_CELL,
+          )}
           title={destinationLine}
         >
           {destinationLine}
         </p>
 
         <p
-          className={cn('min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-5', BEAN_ORDER_LIST_CELL)}
+          className={cn(
+            'hidden min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-5 lg:block',
+            BEAN_ORDER_LIST_CELL,
+          )}
           title={shippingChannel}
         >
           {shippingChannel}
@@ -169,14 +172,14 @@ export function BeanOrderListItem({ order, locale }: Props) {
 
         <p
           className={cn(
-            'whitespace-nowrap text-right tabular-nums text-sm text-foreground lg:col-start-6',
+            'hidden whitespace-nowrap text-right tabular-nums text-sm text-foreground lg:col-start-6 lg:block',
             BEAN_ORDER_LIST_CELL,
           )}
         >
           {formatBaht(order.totalBaht)}
         </p>
 
-        <div className={cn('min-w-0 flex justify-end lg:col-start-7', BEAN_ORDER_LIST_CELL)}>
+        <div className={cn('hidden min-w-0 justify-end lg:col-start-7 lg:flex', BEAN_ORDER_LIST_CELL)}>
           <OrderListStatusGroup
             slipUploadedAt={order.slipUploadedAt}
             paymentStatus={order.paymentStatus}

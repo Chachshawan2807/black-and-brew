@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { completeViewTransitionNavigation } from '@/lib/view-transition-navigation-state';
-import { navigateWithViewTransition, shouldUseViewTransition } from '@/lib/view-transition';
+import { navigateWithViewTransition, navigateWithoutViewTransition, shouldUseViewTransition } from '@/lib/view-transition';
 import { normalizeAppPath } from '@/lib/normalize-app-path';
 import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
 
@@ -66,6 +66,10 @@ export function ViewTransitionNavigation() {
       event.preventDefault();
       if (window.innerWidth < 768) {
         closeDrawerForNavigation();
+      }
+      if (anchor.dataset.bbNav === 'instant') {
+        navigateWithoutViewTransition(router.push, href);
+        return;
       }
       navigateWithViewTransition(router.push, href);
     };
