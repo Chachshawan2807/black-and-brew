@@ -39,6 +39,7 @@ import { navigateWithViewTransition } from '@/lib/view-transition';
 import { mergeCustomerAddressProfiles } from '@/lib/bean-orders/customer-address-persist';
 import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
 import {
+  formatBeanOrderCarrierChangeMessage,
   initialCarrierSelection,
   OTHER_CARRIER_CODE,
   resolveCarrierCodeForSave,
@@ -683,6 +684,7 @@ export default function BeanOrderFormClient({
           : undefined;
     const targetOrderId =
       typeof rawTargetOrderId === 'string' ? rawTargetOrderId : undefined;
+    let shipmentFlashMessage: string | undefined;
     if (targetOrderId) {
       if (shouldPersistPayment()) {
         const paymentResult = await persistPayment(targetOrderId);
@@ -695,6 +697,8 @@ export default function BeanOrderFormClient({
       }
 
       if (shouldPersistShipment()) {
+        const previousCarrierCode = initialOrder?.shipment?.carrierCode ?? null;
+        const resolvedCarrierCode = resolveCarrierCodeForSave(carrierCode, customCarrierLabel);
         const shipmentResult = await persistShipment(targetOrderId);
         if (shipmentResult.error) {
           setSaving(false);
@@ -702,12 +706,23 @@ export default function BeanOrderFormClient({
           navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
           return;
         }
+        if (resolvedCarrierCode) {
+          shipmentFlashMessage = formatBeanOrderCarrierChangeMessage(
+            previousCarrierCode,
+            resolvedCarrierCode,
+          );
+        }
       }
     }
 
     setSaving(false);
     if (isEdit && orderId) {
-      navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+      if (shipmentFlashMessage) {
+        sessionStorage.setItem('bb-bean-order-flash', shipmentFlashMessage);
+        navigateWithViewTransition(router.push, `/${locale}/bean-orders/${orderId}`);
+      } else {
+        navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
+      }
       return;
     }
     if ('orderId' in result && result.orderId) {

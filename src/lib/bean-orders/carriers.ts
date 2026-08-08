@@ -50,6 +50,21 @@ export function getCarrierLabel(code: string | null | undefined): string {
   return BEAN_ORDER_CARRIERS.find((c) => c.code === code)?.label ?? code;
 }
 
+export function formatBeanOrderCarrierChangeMessage(
+  previousCarrierCode: string | null | undefined,
+  nextCarrierCode: string | null | undefined,
+): string {
+  const nextLabel = getCarrierLabel(nextCarrierCode);
+  const previousLabel = getCarrierLabel(previousCarrierCode);
+  if (!previousCarrierCode || previousLabel === '—') {
+    return `บันทึกช่องทางจัดส่ง: ${nextLabel}`;
+  }
+  if (previousLabel === nextLabel) {
+    return 'อัปเดตการจัดส่งแล้ว';
+  }
+  return `เปลี่ยนช่องทางการจัดส่งจาก ${previousLabel} เป็น ${nextLabel}`;
+}
+
 const TRACKABLE_CARRIER_CODES = new Set(
   BEAN_ORDER_CARRIERS.map((carrier) => carrier.code).filter(
     (code) => !NON_TRACKABLE_CARRIER_CODES.has(code),

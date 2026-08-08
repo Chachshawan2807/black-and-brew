@@ -10,17 +10,20 @@ import {
   confirmBeanOrderPayment,
   getBeanOrderSlipSignedUrl,
   revertBeanOrderPayment,
+  saveBeanOrderShipmentPlan,
   shipBeanOrder,
   uploadBeanOrderSlip,
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
 import {
   BEAN_ORDER_CARRIERS,
+  formatBeanOrderCarrierChangeMessage,
   getCarrierLabel,
   initialCarrierSelection,
   OTHER_CARRIER_CODE,
   resolveCarrierCodeForSave,
 } from '@/lib/bean-orders/carriers';
+import { shouldMarkBeanOrderShipped } from '@/lib/bean-orders/shipment-persist';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
 import { TrackingTimeline } from './_components/TrackingTimeline';
@@ -69,6 +72,13 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   useEffect(() => {
     setOrder(initialOrder);
   }, [initialOrder]);
+
+  useEffect(() => {
+    const flash = sessionStorage.getItem('bb-bean-order-flash');
+    if (!flash) return;
+    setMessage(flash);
+    sessionStorage.removeItem('bb-bean-order-flash');
+  }, []);
 
   const cancelled = Boolean(order.cancelledAt);
   const editable = canEditOrder(order.cancelledAt);
@@ -168,27 +178,38 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
       setError('กรุณาระบุช่องทางจัดส่ง');
       return;
     }
+    const previousCarrierCode = order.shipment?.carrierCode ?? null;
+    const markShipped = shouldMarkBeanOrderShipped({
+      trackingNumber,
+      fulfillmentStatus: order.fulfillmentStatus,
+    });
     setBusy(true);
-    const result = await shipBeanOrder(
-      order.id,
-      { carrierCode: resolvedCarrierCode, trackingNumber },
-      locale,
-    );
+    const result = markShipped
+      ? await shipBeanOrder(
+          order.id,
+          { carrierCode: resolvedCarrierCode, trackingNumber },
+          locale,
+        )
+      : await saveBeanOrderShipmentPlan(
+          order.id,
+          { carrierCode: resolvedCarrierCode },
+          locale,
+        );
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'บันทึกจัดส่งไม่สำเร็จ'); return; }
     setOrder((prev) => ({
       ...prev,
-      fulfillmentStatus: 'shipped',
+      fulfillmentStatus: markShipped ? 'shipped' : prev.fulfillmentStatus,
       shipment: {
         deliveryType: 'parcel',
         carrierCode: resolvedCarrierCode,
-        trackingNumber: trackingNumber.trim() || null,
+        trackingNumber: trackingNumber.trim() || prev.shipment?.trackingNumber || null,
         trackingStatus: prev.shipment?.trackingStatus ?? null,
         trackingEvents: prev.shipment?.trackingEvents ?? [],
         shippedAt: prev.shipment?.shippedAt ?? new Date().toISOString(),
       },
     }));
-    setMessage(order.fulfillmentStatus === 'shipped' ? 'อัปเดตการจัดส่งแล้ว' : 'บันทึกจัดส่งแล้ว');
+    setMessage(formatBeanOrderCarrierChangeMessage(previousCarrierCode, resolvedCarrierCode));
     void reload();
   }
 

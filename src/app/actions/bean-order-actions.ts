@@ -1334,13 +1334,28 @@ export async function saveBeanOrderShipmentPlan(
       return { success: false, error: 'ออเดอร์จัดส่งแล้ว ใช้บันทึกการจัดส่งแทน' };
     }
 
+    const { data: existingShipment, error: existingShipmentError } = await supabase
+      .from('bean_order_shipments')
+      .select('carrier_code, tracking_number')
+      .eq('order_id', orderId)
+      .maybeSingle();
+
+    if (existingShipmentError) {
+      console.error(
+        'Supabase Error (saveBeanOrderShipmentPlan lookup):',
+        existingShipmentError.message,
+        existingShipmentError.details,
+      );
+      return { success: false, error: existingShipmentError.message };
+    }
+
     const actor = await resolveActorLabelFromSession();
     const { error: shipError } = await supabase.from('bean_order_shipments').upsert(
       {
         order_id: orderId,
         delivery_type: 'parcel',
         carrier_code: carrierCode,
-        tracking_number: null,
+        tracking_number: (existingShipment?.tracking_number as string | null) ?? null,
         tracking_status: null,
         tracking_raw: null,
         shipped_by: actor,

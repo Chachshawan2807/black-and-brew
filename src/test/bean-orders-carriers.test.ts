@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   BEAN_ORDER_CARRIERS,
+  formatBeanOrderCarrierChangeMessage,
   getCarrierLabel,
   initialCarrierSelection,
   isTrackableCarrierCode,
@@ -52,5 +53,17 @@ describe('carrier selection helpers', () => {
     expect(resolveCarrierCodeForSave('other', ' รถส่งเอง ')).toBe('รถส่งเอง');
     expect(resolveCarrierCodeForSave('other', '   ')).toBeNull();
     expect(resolveCarrierCodeForSave('flashexpress', '')).toBe('flashexpress');
+  });
+
+  test('formats carrier change message for updates and first save', () => {
+    expect(formatBeanOrderCarrierChangeMessage(null, 'kerryexpress-th')).toBe(
+      'บันทึกช่องทางจัดส่ง: Kerry',
+    );
+    expect(formatBeanOrderCarrierChangeMessage('kerryexpress-th', 'flashexpress')).toBe(
+      'เปลี่ยนช่องทางการจัดส่งจาก Kerry เป็น Flash',
+    );
+    expect(formatBeanOrderCarrierChangeMessage('kerryexpress-th', 'kerryexpress-th')).toBe(
+      'อัปเดตการจัดส่งแล้ว',
+    );
   });
 });
