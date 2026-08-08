@@ -89,10 +89,13 @@ describe('iOS notification parity', () => {
   test('service worker resolveOsNotificationDisplay matches buildInventoryOsNotification title merge', () => {
     const sw = fs.readFileSync(SW, 'utf8');
     expect(sw).toMatch(
-      /merged = `\$\{trimmedTitle\} · \$\{trimmedSummary\}`[\s\S]*title: `\$\{countPrefix\}\$\{merged\}`\.slice\(0, OS_NOTIFICATION_TITLE_MAX\)[\s\S]*body: ''/,
+      /merged = `\$\{trimmedTitle\} · \$\{trimmedSummary\}`[\s\S]*title: merged\.slice\(0, OS_NOTIFICATION_TITLE_MAX\)[\s\S]*body: ''/,
     );
     expect(sw).toContain('const OS_NOTIFICATION_TITLE_MAX = 120');
     expect(sw).toContain('const OS_NOTIFICATION_BODY_MAX = 240');
+    expect(sw).toMatch(
+      /if \(isIosPushClient\(\)\) \{[\s\S]*title: merged\.slice\(0, OS_NOTIFICATION_TITLE_MAX\)/,
+    );
     expect(sw).not.toMatch(/body: payload\.body \|\| trimmedSummary/);
   });
 

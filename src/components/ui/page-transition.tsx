@@ -23,15 +23,15 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     completeViewTransitionNavigation();
   }, [pathname]);
 
-  if (viewTransitionEnabled) {
+  const useLightTransition = reduced || isMaxMd !== false;
+
+  if (viewTransitionEnabled && !useLightTransition) {
     return (
       <div key={pathname} className="min-h-0 bb-view-transition-page">
         {children}
       </div>
     );
   }
-
-  const useLightTransition = reduced || isMaxMd !== false;
 
   if (useLightTransition) {
     return (

@@ -16,6 +16,17 @@ describe('pwa-notification-bridge', () => {
     expect(isUuidString(42)).toBe(false);
   });
 
+  test('buildInventoryOsNotification does not prefix unread count in banner text', () => {
+    const result = buildInventoryOsNotification(
+      'ชำระแล้ว',
+      'คุณลี · 5,300 บาท',
+      27,
+      true,
+    );
+    expect(result.title).toBe('ชำระแล้ว · คุณลี · 5,300 บาท');
+    expect(result.title).not.toContain('[27]');
+  });
+
   test('buildInventoryOsNotification keeps stock title and body separate on Android', () => {
     const single = buildInventoryOsNotification(
       '+ เมล็ดกาแฟคั่วอ่อน',
@@ -32,8 +43,8 @@ describe('pwa-notification-bridge', () => {
       5,
       true,
     );
-    expect(multi.title).toBe('[5] + นมอัลมอนด์');
-    expect(multi.body).toBe('[5] +3 คงเหลือ 6');
+    expect(multi.title).toBe('+ นมอัลมอนด์');
+    expect(multi.body).toBe('+3 คงเหลือ 6');
   });
 
   test('buildInventoryOsNotification merges stock lines into title on iOS so byline sits at bottom', () => {
@@ -54,7 +65,7 @@ describe('pwa-notification-bridge', () => {
       true,
       { isIos: true },
     );
-    expect(multi.title).toBe('[5] + นมอัลมอนด์\n[5] +3 คงเหลือ 6');
+    expect(multi.title).toBe('+ นมอัลมอนด์\n+3 คงเหลือ 6');
     expect(multi.body).toBe('');
   });
 
@@ -75,7 +86,7 @@ describe('pwa-notification-bridge', () => {
       true,
       { isIos: true },
     );
-    expect(result.title.length).toBeLessThanOrEqual(240);
+    expect(result.title.length).toBeLessThanOrEqual(120);
     expect(result.body).toBe('');
   });
 

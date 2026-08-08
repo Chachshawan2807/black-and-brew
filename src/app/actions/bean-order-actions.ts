@@ -646,6 +646,11 @@ export async function fetchBeanOrderDetail(
     }
     if (!orderResult.data) return { success: false, error: 'ไม่พบออเดอร์' };
 
+    if (linesResult.error) {
+      console.error('Supabase Error (fetchBeanOrderDetail lines):', linesResult.error.message, linesResult.error.details);
+      return { success: false, error: linesResult.error.message };
+    }
+
     const order = orderResult.data;
     const customer = order.bean_customers as { name?: string } | null;
 

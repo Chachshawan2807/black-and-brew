@@ -109,6 +109,11 @@ export function BeanOrderListItem({ order, locale }: Props) {
       <Link
         href={detailHref}
         {...DETAIL_LINK_PROPS}
+        onPointerDown={(event) => {
+          if (event.pointerType !== 'mouse' || event.button === 0) {
+            warmDetailRoute();
+          }
+        }}
         onTouchStart={warmDetailRoute}
         onMouseEnter={warmDetailRoute}
         onFocus={warmDetailRoute}

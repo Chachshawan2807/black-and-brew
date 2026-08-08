@@ -78,23 +78,22 @@ const OS_NOTIFICATION_BODY_MAX = 240;
 export function buildInventoryOsNotification(
   title: string,
   summary: string,
-  unreadCount: number,
+  _unreadCount: number,
   _isTh: boolean,
   options?: { isIos?: boolean },
 ): { title: string; body: string } {
   const isIos = options?.isIos ?? false;
-  const countPrefix = unreadCount > 1 ? `[${unreadCount}] ` : '';
   const trimmedTitle = title.trim();
   const trimmedSummary = summary.trim();
 
   if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
-    const titleLine = `${countPrefix}${trimmedTitle}`.slice(0, OS_NOTIFICATION_TITLE_MAX);
-    const bodyLine = `${countPrefix}${trimmedSummary}`.slice(0, OS_NOTIFICATION_BODY_MAX);
+    const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
+    const bodyLine = trimmedSummary.slice(0, OS_NOTIFICATION_BODY_MAX);
 
     if (isIos) {
       const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
       return {
-        title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
+        title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
         body: '',
       };
     }
@@ -116,7 +115,7 @@ export function buildInventoryOsNotification(
   }
 
   return {
-    title: `${countPrefix}${merged}`.slice(0, OS_NOTIFICATION_TITLE_MAX),
+    title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
     body: '',
   };
 }

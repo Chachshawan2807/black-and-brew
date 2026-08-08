@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { navigateWithViewTransition } from '@/lib/view-transition';
+import { navigateWithoutViewTransition } from '@/lib/view-transition';
 import { readNotificationState } from '@/lib/notification-sync';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import {
@@ -49,7 +49,7 @@ export default function PwaRegister() {
       }
 
       syncBadgeFromStorage();
-      navigateWithViewTransition(router.push, safeUrl);
+      navigateWithoutViewTransition(router.push, safeUrl);
     };
 
     const onResume = () => {

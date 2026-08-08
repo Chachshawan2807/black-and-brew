@@ -3,12 +3,7 @@ import { connection } from 'next/server';
 import { checkAuth } from '@/app/actions/auth';
 import { fetchBeanOrders } from '@/app/actions/bean-order-actions';
 import { syncStaleBeanOrderTrackingStatuses } from '@/lib/bean-orders/sync-tracking';
-import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
-
-const BeanOrdersClient = createLazyFeatureClient(
-  () => import('./BeanOrdersClient'),
-  'กำลังโหลดออเดอร์เมล็ดกาแฟ...',
-);
+import BeanOrdersClient from './BeanOrdersClient';
 
 export default async function BeanOrdersPage({
   params,

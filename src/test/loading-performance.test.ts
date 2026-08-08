@@ -43,9 +43,15 @@ describe('loading performance patterns', () => {
       resolve(__dirname, '../app/[locale]/bean-orders/[id]/page.tsx'),
       'utf-8',
     );
+    const listPage = readFileSync(
+      resolve(__dirname, '../app/[locale]/bean-orders/page.tsx'),
+      'utf-8',
+    );
     expect(detailPage).toContain("import BeanOrderDetailClient from '../BeanOrderDetailClient'");
     expect(detailPage).not.toContain('createLazyFeatureClient');
     expect(detailPage).toMatch(/key=\{id\}/);
+    expect(listPage).toContain("import BeanOrdersClient from './BeanOrdersClient'");
+    expect(listPage).not.toContain('createLazyFeatureClient');
   });
 
   test('lazy feature client defers to route loading.tsx instead of a second skeleton', () => {

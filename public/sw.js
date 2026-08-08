@@ -67,18 +67,17 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
     (payload.notification && payload.notification.title) || payload.title || '';
   const logicalSummary =
     (payload.notification && payload.notification.summary) || payload.body || '';
-  const countPrefix = unreadCount > 1 ? `[${unreadCount}] ` : '';
   const trimmedTitle = String(logicalTitle).trim();
   const trimmedSummary = String(logicalSummary).trim();
 
   if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
-    const titleLine = `${countPrefix}${trimmedTitle}`.slice(0, OS_NOTIFICATION_TITLE_MAX);
-    const bodyLine = `${countPrefix}${trimmedSummary}`.slice(0, OS_NOTIFICATION_BODY_MAX);
+    const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
+    const bodyLine = trimmedSummary.slice(0, OS_NOTIFICATION_BODY_MAX);
 
     if (isIosPushClient()) {
       const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
       return {
-        title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
+        title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
         body: '',
       };
     }
@@ -100,7 +99,7 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
   }
 
   return {
-    title: `${countPrefix}${merged}`.slice(0, OS_NOTIFICATION_TITLE_MAX),
+    title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
     body: '',
   };
 }

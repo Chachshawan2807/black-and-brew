@@ -76,7 +76,17 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
   useEffect(() => {
     setOrder(initialOrder);
+    const nextCarrier = initialCarrierSelection(initialOrder.shipment?.carrierCode);
+    setCarrierCode(nextCarrier.carrierCode);
+    setCustomCarrierLabel(nextCarrier.customCarrierLabel);
+    setTrackingNumber(initialOrder.shipment?.trackingNumber ?? '');
   }, [initialOrder]);
+
+  useEffect(() => {
+    if (initialOrder.lines.length === 0 && initialOrder.totalBaht > 0) {
+      router.refresh();
+    }
+  }, [initialOrder.id, initialOrder.lines.length, initialOrder.totalBaht, router]);
 
   useEffect(() => {
     const flash = sessionStorage.getItem('bb-bean-order-flash');
