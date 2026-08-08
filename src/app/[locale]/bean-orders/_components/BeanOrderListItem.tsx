@@ -110,7 +110,7 @@ export function BeanOrderListItem({ order, locale }: Props) {
         href={detailHref}
         {...DETAIL_LINK_PROPS}
         onPointerDown={(event) => {
-          if (event.pointerType !== 'mouse' || event.button === 0) {
+          if (event.button === 0) {
             warmDetailRoute();
           }
         }}

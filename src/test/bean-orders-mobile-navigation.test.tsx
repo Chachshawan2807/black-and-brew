@@ -76,16 +76,17 @@ describe('bean orders mobile navigation reliability', () => {
     expect(pwa).not.toMatch(/navigateWithViewTransition\(router\.push, safeUrl\)/);
   });
 
-  test('page transition prefers light mobile path over view-transition wrapper', () => {
+  test('page transition defers view transitions until viewport is known', () => {
     const pageTransition = readSrc('components/ui/page-transition.tsx');
     expect(pageTransition).toMatch(
-      /if \(viewTransitionEnabled && !useLightTransition\)/,
+      /if \(viewTransitionEnabled && isMaxMd === false && !reduced\)/,
     );
+    expect(pageTransition).toContain('const isViewportUnknown = isMaxMd === null');
   });
 
-  test('bean order list item warms detail route on pointer down', () => {
+  test('bean order list item warms detail route on primary pointer down', () => {
     const listItem = readSrc('app/[locale]/bean-orders/_components/BeanOrderListItem.tsx');
     expect(listItem).toContain('onPointerDown');
-    expect(listItem).toMatch(/onPointerDown[\s\S]*warmDetailRoute/);
+    expect(listItem).toMatch(/event\.button === 0[\s\S]*warmDetailRoute/);
   });
 });

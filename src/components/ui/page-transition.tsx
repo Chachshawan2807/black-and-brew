@@ -23,9 +23,10 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     completeViewTransitionNavigation();
   }, [pathname]);
 
-  const useLightTransition = reduced || isMaxMd !== false;
+  const useLightTransition = reduced || isMaxMd === true;
+  const isViewportUnknown = isMaxMd === null;
 
-  if (viewTransitionEnabled && !useLightTransition) {
+  if (viewTransitionEnabled && isMaxMd === false && !reduced) {
     return (
       <div key={pathname} className="min-h-0 bb-view-transition-page">
         {children}
@@ -36,6 +37,14 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   if (useLightTransition) {
     return (
       <div key={pathname} className="min-h-0 animate-page-enter motion-reduce:animate-none">
+        {children}
+      </div>
+    );
+  }
+
+  if (isViewportUnknown) {
+    return (
+      <div key={pathname} className="min-h-0">
         {children}
       </div>
     );

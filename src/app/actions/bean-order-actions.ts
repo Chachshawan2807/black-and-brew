@@ -651,6 +651,16 @@ export async function fetchBeanOrderDetail(
       return { success: false, error: linesResult.error.message };
     }
 
+    if (paymentResult.error) {
+      console.error('Supabase Error (fetchBeanOrderDetail payment):', paymentResult.error.message, paymentResult.error.details);
+      return { success: false, error: paymentResult.error.message };
+    }
+
+    if (shipmentResult.error) {
+      console.error('Supabase Error (fetchBeanOrderDetail shipment):', shipmentResult.error.message, shipmentResult.error.details);
+      return { success: false, error: shipmentResult.error.message };
+    }
+
     const order = orderResult.data;
     const customer = order.bean_customers as { name?: string } | null;
 
