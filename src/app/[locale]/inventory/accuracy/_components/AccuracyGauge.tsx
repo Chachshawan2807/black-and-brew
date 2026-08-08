@@ -1,5 +1,4 @@
 import {
-  ACCURACY_GAUGE_TICKS,
   ACCURACY_GAUGE_ZONES,
   accuracyGaugeZoneGradientId,
   clampAccuracyGaugeValue,
@@ -21,8 +20,6 @@ const OUTER_R = 68;
 const INNER_R = 48;
 const NEEDLE_R = 58;
 const BEZEL_R = 74;
-const TICK_OUTER_R = 72;
-const TICK_INNER_R = 66;
 
 function lightenHex(hex: string, amount: number): string {
   const normalized = hex.replace('#', '');
@@ -57,7 +54,7 @@ export function AccuracyGauge({ accuracyPct, className = '' }: AccuracyGaugeProp
 
   return (
     <svg
-      viewBox="0 0 200 124"
+      viewBox="0 0 200 128"
       className={`h-auto w-full max-w-[210px] drop-shadow-sm ${className}`.trim()}
       role="img"
       aria-label={`ความแม่นยำ ${value}% ระดับ${zone.label}`}
@@ -98,8 +95,6 @@ export function AccuracyGauge({ accuracyPct, className = '' }: AccuracyGaugeProp
           );
         })}
       </defs>
-
-      <ellipse cx={CX} cy={CY + 18} rx={58} ry={7} fill="#0f172a" opacity={0.08} />
 
       <path
         d={describeGaugeWedge(CX, CY, BEZEL_R, OUTER_R + 1.5, 180, 0)}
@@ -146,36 +141,6 @@ export function AccuracyGauge({ accuracyPct, className = '' }: AccuracyGaugeProp
         strokeWidth={0.5}
       />
 
-      {ACCURACY_GAUGE_TICKS.map((tick) => {
-        const angle = computeGaugeAngleForPct(tick);
-        const outer = polarToCartesian(CX, CY, TICK_OUTER_R, angle);
-        const inner = polarToCartesian(CX, CY, TICK_INNER_R, angle);
-        const labelPoint = polarToCartesian(CX, CY, TICK_OUTER_R + 9, angle);
-        return (
-          <g key={tick}>
-            <line
-              x1={inner.x}
-              y1={inner.y}
-              x2={outer.x}
-              y2={outer.y}
-              stroke="rgba(15,23,42,0.28)"
-              strokeWidth={tick % 50 === 0 ? 1.4 : 0.9}
-              strokeLinecap="round"
-            />
-            <text
-              x={labelPoint.x}
-              y={labelPoint.y}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="fill-black/55 bb-pastel-surface"
-              style={{ fontSize: 6.5, fontWeight: 500 }}
-            >
-              {tick}
-            </text>
-          </g>
-        );
-      })}
-
       <circle cx={CX} cy={CY} r={10} fill="#1f2937" filter="url(#accuracy-needle-shadow)" />
       <circle cx={CX} cy={CY} r={7.5} fill="#334155" />
       <circle cx={CX - 1.5} cy={CY - 1.5} r={3} fill="#f8fafc" opacity={0.85} />
@@ -203,7 +168,7 @@ export function AccuracyGauge({ accuracyPct, className = '' }: AccuracyGaugeProp
 
       <text
         x={CX}
-        y={110}
+        y={106}
         textAnchor="middle"
         dominantBaseline="middle"
         className="fill-black bb-pastel-surface"
@@ -213,7 +178,7 @@ export function AccuracyGauge({ accuracyPct, className = '' }: AccuracyGaugeProp
       </text>
       <text
         x={CX}
-        y={119}
+        y={122}
         textAnchor="middle"
         dominantBaseline="middle"
         className="fill-black/65 bb-pastel-surface"

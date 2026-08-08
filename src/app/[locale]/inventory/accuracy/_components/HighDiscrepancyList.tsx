@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import {
+  latestCountDiscrepancyQty,
   sortHighDiscrepancyItems,
   type HighDiscrepancyItem,
   type HighDiscrepancySortBy,
@@ -124,7 +125,7 @@ export function HighDiscrepancyList({ items }: HighDiscrepancyListProps) {
               <div className="flex items-center justify-between gap-2 border-t border-border pt-3 md:justify-center md:border-0 md:pt-0">
                 <span className="shrink-0 text-xs text-muted-foreground md:hidden">คลาดเคลื่อน</span>
                 <span className="inline-flex min-w-[5.5rem] justify-center rounded-2xl bg-[#fff3cd] px-3 py-1.5 text-sm tabular-nums text-black bb-pastel-surface">
-                  {formatQty(item.totalDiscrepancyQty)} หน่วย
+                  {formatQty(latestCountDiscrepancyQty(item))} หน่วย
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-border pt-3 md:justify-end md:border-0 md:pt-0">

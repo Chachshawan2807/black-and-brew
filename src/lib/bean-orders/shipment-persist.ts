@@ -1,4 +1,25 @@
-import { resolveCarrierCodeForSave } from '@/lib/bean-orders/carriers';
+import {
+  OTHER_CARRIER_CODE,
+  resolveCarrierCodeForSave,
+} from '@/lib/bean-orders/carriers';
+
+export const BEAN_ORDER_CARRIER_REQUIRED_ERROR = 'กรุณาระบุช่องทางจัดส่ง';
+
+export function validateBeanOrderShipmentCarrier(input: {
+  carrierCode: string;
+  customCarrierLabel: string;
+}): { ok: true; resolvedCarrierCode: string } | { ok: false; error: string } {
+  if (input.carrierCode === OTHER_CARRIER_CODE && !input.customCarrierLabel.trim()) {
+    return { ok: false, error: BEAN_ORDER_CARRIER_REQUIRED_ERROR };
+  }
+
+  const resolvedCarrierCode = resolveCarrierCodeForSave(input.carrierCode, input.customCarrierLabel);
+  if (!resolvedCarrierCode) {
+    return { ok: false, error: BEAN_ORDER_CARRIER_REQUIRED_ERROR };
+  }
+
+  return { ok: true, resolvedCarrierCode };
+}
 
 export function shouldPersistBeanOrderShipment(input: {
   carrierCode: string;

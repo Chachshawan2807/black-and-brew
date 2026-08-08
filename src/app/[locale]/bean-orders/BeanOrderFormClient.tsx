@@ -41,12 +41,11 @@ import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
 import {
   formatBeanOrderCarrierChangeMessage,
   initialCarrierSelection,
-  OTHER_CARRIER_CODE,
-  resolveCarrierCodeForSave,
 } from '@/lib/bean-orders/carriers';
 import {
   shouldMarkBeanOrderShipped,
   shouldPersistBeanOrderShipment,
+  validateBeanOrderShipmentCarrier,
 } from '@/lib/bean-orders/shipment-persist';
 import {
   normalizeBeanOrderLinesForSave,
@@ -575,10 +574,14 @@ export default function BeanOrderFormClient({
   ): Promise<{ error?: string }> {
     if (!shouldPersistShipment()) return {};
 
-    const resolvedCarrierCode = resolveCarrierCodeForSave(carrierCode, customCarrierLabel);
-    if (carrierCode === OTHER_CARRIER_CODE && !customCarrierLabel.trim()) {
-      return { error: 'กรุณาระบุช่องทางจัดส่ง' };
+    const carrierValidation = validateBeanOrderShipmentCarrier({
+      carrierCode,
+      customCarrierLabel,
+    });
+    if (!carrierValidation.ok) {
+      return { error: carrierValidation.error };
     }
+    const resolvedCarrierCode = carrierValidation.resolvedCarrierCode;
 
     const markShipped = shouldMarkBeanOrderShipped({
       trackingNumber,
@@ -589,7 +592,7 @@ export default function BeanOrderFormClient({
       const shipResult = await shipBeanOrder(
         targetOrderId,
         {
-          carrierCode: resolvedCarrierCode ?? undefined,
+          carrierCode: resolvedCarrierCode,
           trackingNumber,
         },
         locale,
@@ -599,8 +602,6 @@ export default function BeanOrderFormClient({
       }
       return {};
     }
-
-    if (!resolvedCarrierCode) return {};
 
     const planResult = await saveBeanOrderShipmentPlan(
       targetOrderId,
@@ -642,6 +643,18 @@ export default function BeanOrderFormClient({
       setSaving(false);
       setError('เลือกสินค้าอย่างน้อย 1 รายการ');
       return;
+    }
+
+    if (shouldPersistShipment()) {
+      const carrierValidation = validateBeanOrderShipmentCarrier({
+        carrierCode,
+        customCarrierLabel,
+      });
+      if (!carrierValidation.ok) {
+        setSaving(false);
+        setError(carrierValidation.error);
+        return;
+      }
     }
 
     const payload = {
@@ -698,7 +711,10 @@ export default function BeanOrderFormClient({
 
       if (shouldPersistShipment()) {
         const previousCarrierCode = initialOrder?.shipment?.carrierCode ?? null;
-        const resolvedCarrierCode = resolveCarrierCodeForSave(carrierCode, customCarrierLabel);
+        const carrierValidation = validateBeanOrderShipmentCarrier({
+          carrierCode,
+          customCarrierLabel,
+        });
         const shipmentResult = await persistShipment(targetOrderId);
         if (shipmentResult.error) {
           setSaving(false);
@@ -706,10 +722,10 @@ export default function BeanOrderFormClient({
           navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
           return;
         }
-        if (resolvedCarrierCode) {
+        if (carrierValidation.ok) {
           shipmentFlashMessage = formatBeanOrderCarrierChangeMessage(
             previousCarrierCode,
-            resolvedCarrierCode,
+            carrierValidation.resolvedCarrierCode,
           );
         }
       }

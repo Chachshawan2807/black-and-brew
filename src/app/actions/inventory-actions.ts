@@ -18,6 +18,7 @@ import {
   mergeTodayCountStatuses,
   type TodayCountSessionStatus,
 } from '@/lib/inventory-count-today';
+import { selectHighDiscrepancyItems } from '@/lib/inventory-accuracy-report';
 import type { InventoryNotificationSource } from '@/lib/inventory-notification-filter';
 import {
   requireMutationAccess,
@@ -1677,9 +1678,7 @@ export async function fetchInventoryAccuracyReport(): Promise<{
     return { success: false, error: statsResult.error || 'เกิดข้อผิดพลาดในการดึงรายงานความแม่นยำ' };
   }
 
-  const highDiscrepancyItems = Object.entries(statsResult.data.perItem)
-    .map(([itemId, stats]) => ({ itemId, ...stats }))
-    .filter((item) => item.totalDiscrepancyQty > 0);
+  const highDiscrepancyItems = selectHighDiscrepancyItems(statsResult.data.perItem);
 
   return {
     success: true,

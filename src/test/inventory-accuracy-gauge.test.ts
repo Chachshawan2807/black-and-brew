@@ -3,7 +3,10 @@ import {
   ACCURACY_GAUGE_ZONES,
   clampAccuracyGaugeValue,
   computeAccuracyGaugeNeedleAngle,
+  computeGaugeAngleForPct,
+  describeGaugeWedge,
   getAccuracyGaugeZone,
+  polarToCartesian,
 } from '@/lib/inventory-accuracy-gauge';
 
 describe('inventory accuracy gauge', () => {
@@ -17,6 +20,32 @@ describe('inventory accuracy gauge', () => {
     expect(computeAccuracyGaugeNeedleAngle(0)).toBe(180);
     expect(computeAccuracyGaugeNeedleAngle(50)).toBe(90);
     expect(computeAccuracyGaugeNeedleAngle(100)).toBe(0);
+  });
+
+  test('gauge wedge path follows angle interpolation without SVG arc commands', () => {
+    const path = describeGaugeWedge(100, 86, 68, 48, 180, 54);
+    expect(path).not.toMatch(/\sA\s/);
+    expect(path.startsWith('M ')).toBe(true);
+    expect(path.endsWith(' Z')).toBe(true);
+  });
+
+  test('gauge wedge midpoint stays on the top semicircle', () => {
+    const cx = 100;
+    const cy = 86;
+    const midAngle = computeGaugeAngleForPct(35);
+    const midpoint = polarToCartesian(cx, cy, 68, midAngle);
+
+    expect(midpoint.y).toBeLessThan(cy);
+  });
+
+  test('needle angle sits inside the active zone arc span', () => {
+    const value = 89.3;
+    const angle = computeAccuracyGaugeNeedleAngle(value);
+    const zoneStart = computeGaugeAngleForPct(80);
+    const zoneEnd = computeGaugeAngleForPct(90);
+
+    expect(angle).toBeGreaterThan(zoneEnd);
+    expect(angle).toBeLessThan(zoneStart);
   });
 
   test('zone labels follow international KPI accuracy bands', () => {

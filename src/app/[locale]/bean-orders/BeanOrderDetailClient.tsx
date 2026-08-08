@@ -23,7 +23,10 @@ import {
   OTHER_CARRIER_CODE,
   resolveCarrierCodeForSave,
 } from '@/lib/bean-orders/carriers';
-import { shouldMarkBeanOrderShipped } from '@/lib/bean-orders/shipment-persist';
+import {
+  shouldMarkBeanOrderShipped,
+  validateBeanOrderShipmentCarrier,
+} from '@/lib/bean-orders/shipment-persist';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
 import { TrackingTimeline } from './_components/TrackingTimeline';
@@ -174,11 +177,15 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
   async function handleShip() {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
-    const resolvedCarrierCode = resolveCarrierCodeForSave(carrierCode, customCarrierLabel);
-    if (!resolvedCarrierCode) {
-      setError('กรุณาระบุช่องทางจัดส่ง');
+    const carrierValidation = validateBeanOrderShipmentCarrier({
+      carrierCode,
+      customCarrierLabel,
+    });
+    if (!carrierValidation.ok) {
+      setError(carrierValidation.error);
       return;
     }
+    const resolvedCarrierCode = carrierValidation.resolvedCarrierCode;
     const previousCarrierCode = order.shipment?.carrierCode ?? null;
     const markShipped = shouldMarkBeanOrderShipped({
       trackingNumber,

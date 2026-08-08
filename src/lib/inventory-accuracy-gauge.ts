@@ -64,6 +64,24 @@ export function describeGaugeArc(
   return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} ${sweep} ${end.x} ${end.y}`;
 }
 
+function gaugeArcPoints(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  startAngleDeg: number,
+  endAngleDeg: number,
+  steps = 12,
+): Array<{ x: number; y: number }> {
+  const points: Array<{ x: number; y: number }> = [];
+  for (let index = 0; index <= steps; index += 1) {
+    const t = index / steps;
+    const angle = startAngleDeg + (endAngleDeg - startAngleDeg) * t;
+    points.push(polarToCartesian(centerX, centerY, radius, angle));
+  }
+  return points;
+}
+
+/** Annular sector along the top semicircle — uses angle interpolation to avoid SVG sweep ambiguity. */
 export function describeGaugeWedge(
   centerX: number,
   centerY: number,
@@ -72,20 +90,35 @@ export function describeGaugeWedge(
   startAngleDeg: number,
   endAngleDeg: number,
 ): string {
-  const outerStart = polarToCartesian(centerX, centerY, outerRadius, startAngleDeg);
-  const outerEnd = polarToCartesian(centerX, centerY, outerRadius, endAngleDeg);
-  const innerEnd = polarToCartesian(centerX, centerY, innerRadius, endAngleDeg);
-  const innerStart = polarToCartesian(centerX, centerY, innerRadius, startAngleDeg);
-  const sweep = endAngleDeg < startAngleDeg ? 1 : 0;
-  const largeArc = Math.abs(startAngleDeg - endAngleDeg) > 180 ? 1 : 0;
+  const span = Math.abs(endAngleDeg - startAngleDeg);
+  const steps = Math.max(4, Math.ceil(span / 12));
+  const outerPoints = gaugeArcPoints(
+    centerX,
+    centerY,
+    outerRadius,
+    startAngleDeg,
+    endAngleDeg,
+    steps,
+  );
+  const innerPoints = gaugeArcPoints(
+    centerX,
+    centerY,
+    innerRadius,
+    endAngleDeg,
+    startAngleDeg,
+    steps,
+  );
 
-  return [
-    `M ${outerStart.x} ${outerStart.y}`,
-    `A ${outerRadius} ${outerRadius} 0 ${largeArc} ${sweep} ${outerEnd.x} ${outerEnd.y}`,
-    `L ${innerEnd.x} ${innerEnd.y}`,
-    `A ${innerRadius} ${innerRadius} 0 ${largeArc} ${sweep === 1 ? 0 : 1} ${innerStart.x} ${innerStart.y}`,
-    'Z',
-  ].join(' ');
+  const commands = [`M ${outerPoints[0]!.x} ${outerPoints[0]!.y}`];
+  for (let index = 1; index < outerPoints.length; index += 1) {
+    const point = outerPoints[index]!;
+    commands.push(`L ${point.x} ${point.y}`);
+  }
+  for (const point of innerPoints) {
+    commands.push(`L ${point.x} ${point.y}`);
+  }
+  commands.push('Z');
+  return commands.join(' ');
 }
 
 export const ACCURACY_GAUGE_TICKS = [0, 25, 50, 75, 100] as const;

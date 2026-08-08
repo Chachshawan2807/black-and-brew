@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
+  latestCountDiscrepancyQty,
+  selectHighDiscrepancyItems,
   sortHighDiscrepancyItems,
   type HighDiscrepancyItem,
 } from '@/lib/inventory-accuracy-report';
@@ -46,13 +48,65 @@ const sampleItems: HighDiscrepancyItem[] = [
   },
 ];
 
+describe('selectHighDiscrepancyItems', () => {
+  test('includes only items whose latest count still mismatches system stock', () => {
+    const perItem = {
+      syrup: {
+        itemName: 'วานิลลา ไซรัป',
+        totalChecks: 4,
+        matchChecks: 3,
+        accuracyPct: 75,
+        totalDiscrepancyQty: 1,
+        totalComparedQty: 4,
+        lastSystemStockQty: 0,
+        lastCountedQty: 0,
+        lastCountedAt: '2026-08-08T10:00:00.000Z',
+        lastMatched: true,
+      },
+      milk: {
+        itemName: 'นม',
+        totalChecks: 2,
+        matchChecks: 1,
+        accuracyPct: 50,
+        totalDiscrepancyQty: 2,
+        totalComparedQty: 4,
+        lastSystemStockQty: 3,
+        lastCountedQty: 1,
+        lastCountedAt: '2026-08-08T11:00:00.000Z',
+        lastMatched: false,
+      },
+    };
+
+    const selected = selectHighDiscrepancyItems(perItem);
+    expect(selected.map((item) => item.itemId)).toEqual(['milk']);
+  });
+});
+
+describe('latestCountDiscrepancyQty', () => {
+  test('uses the latest system and counted quantities', () => {
+    expect(
+      latestCountDiscrepancyQty({
+        totalChecks: 2,
+        matchChecks: 1,
+        accuracyPct: 50,
+        totalDiscrepancyQty: 5,
+        totalComparedQty: 10,
+        lastSystemStockQty: 3,
+        lastCountedQty: 1,
+        lastCountedAt: null,
+        lastMatched: false,
+      }),
+    ).toBe(2);
+  });
+});
+
 describe('sortHighDiscrepancyItems', () => {
   test('sorts by discrepancy descending by default', () => {
     const sorted = sortHighDiscrepancyItems(sampleItems, {
       sortBy: 'discrepancy',
       sortOrder: 'desc',
     });
-    expect(sorted.map((item) => item.itemId)).toEqual(['a', 'b', 'c']);
+    expect(sorted.map((item) => item.itemId)).toEqual(['a', 'c', 'b']);
   });
 
   test('sorts by discrepancy ascending', () => {
@@ -60,7 +114,7 @@ describe('sortHighDiscrepancyItems', () => {
       sortBy: 'discrepancy',
       sortOrder: 'asc',
     });
-    expect(sorted.map((item) => item.itemId)).toEqual(['c', 'b', 'a']);
+    expect(sorted.map((item) => item.itemId)).toEqual(['b', 'c', 'a']);
   });
 
   test('sorts by accuracy descending', () => {
