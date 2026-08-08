@@ -39,3 +39,17 @@ export function shouldMarkBeanOrderShipped(input: {
 }): boolean {
   return Boolean(input.trackingNumber.trim()) || input.fulfillmentStatus === 'shipped';
 }
+
+/** Preserve existing tracking when a shipped order's field is left empty on save. */
+export function resolveBeanOrderTrackingNumberForSave(input: {
+  trackingNumber: string;
+  previousTrackingNumber?: string | null;
+  fulfillmentStatus: 'pending' | 'shipped';
+}): string {
+  const trimmed = input.trackingNumber.trim();
+  if (trimmed) return trimmed;
+  if (input.fulfillmentStatus === 'shipped') {
+    return input.previousTrackingNumber?.trim() ?? '';
+  }
+  return '';
+}

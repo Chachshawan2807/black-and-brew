@@ -43,6 +43,7 @@ import {
   initialCarrierSelection,
 } from '@/lib/bean-orders/carriers';
 import {
+  resolveBeanOrderTrackingNumberForSave,
   shouldMarkBeanOrderShipped,
   shouldPersistBeanOrderShipment,
   validateBeanOrderShipmentCarrier,
@@ -573,6 +574,11 @@ export default function BeanOrderFormClient({
     targetOrderId: string,
     resolvedCarrierCode: string,
   ): Promise<{ error?: string }> {
+    const resolvedTrackingNumber = resolveBeanOrderTrackingNumberForSave({
+      trackingNumber,
+      previousTrackingNumber: initialOrder?.shipment?.trackingNumber,
+      fulfillmentStatus: initialOrder?.fulfillmentStatus ?? 'pending',
+    });
     const markShipped = shouldMarkBeanOrderShipped({
       trackingNumber,
       fulfillmentStatus: initialOrder?.fulfillmentStatus ?? 'pending',
@@ -583,7 +589,7 @@ export default function BeanOrderFormClient({
         targetOrderId,
         {
           carrierCode: resolvedCarrierCode,
-          trackingNumber,
+          trackingNumber: resolvedTrackingNumber,
         },
         locale,
       );

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+  resolveBeanOrderTrackingNumberForSave,
   shouldMarkBeanOrderShipped,
   shouldPersistBeanOrderShipment,
   validateBeanOrderShipmentCarrier,
@@ -104,5 +105,37 @@ describe('shouldMarkBeanOrderShipped', () => {
         fulfillmentStatus: 'shipped',
       }),
     ).toBe(true);
+  });
+});
+
+describe('resolveBeanOrderTrackingNumberForSave', () => {
+  test('uses trimmed user input when provided', () => {
+    expect(
+      resolveBeanOrderTrackingNumberForSave({
+        trackingNumber: '  TH123  ',
+        previousTrackingNumber: 'OLD123',
+        fulfillmentStatus: 'shipped',
+      }),
+    ).toBe('TH123');
+  });
+
+  test('preserves previous tracking when shipped order field is cleared', () => {
+    expect(
+      resolveBeanOrderTrackingNumberForSave({
+        trackingNumber: '',
+        previousTrackingNumber: 'KEX123',
+        fulfillmentStatus: 'shipped',
+      }),
+    ).toBe('KEX123');
+  });
+
+  test('returns empty string for pending order without tracking', () => {
+    expect(
+      resolveBeanOrderTrackingNumberForSave({
+        trackingNumber: '',
+        previousTrackingNumber: null,
+        fulfillmentStatus: 'pending',
+      }),
+    ).toBe('');
   });
 });

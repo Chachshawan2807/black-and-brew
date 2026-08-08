@@ -24,6 +24,7 @@ import {
   resolveCarrierCodeForSave,
 } from '@/lib/bean-orders/carriers';
 import {
+  resolveBeanOrderTrackingNumberForSave,
   shouldMarkBeanOrderShipped,
   validateBeanOrderShipmentCarrier,
 } from '@/lib/bean-orders/shipment-persist';
@@ -79,9 +80,12 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
   useEffect(() => {
     const flash = sessionStorage.getItem('bb-bean-order-flash');
-    if (!flash) return;
-    setMessage(flash);
-    sessionStorage.removeItem('bb-bean-order-flash');
+    if (flash) {
+      setMessage(flash);
+      sessionStorage.removeItem('bb-bean-order-flash');
+    } else {
+      setMessage(null);
+    }
   }, [pathname]);
 
   const cancelled = Boolean(order.cancelledAt);
@@ -187,6 +191,11 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     }
     const resolvedCarrierCode = carrierValidation.resolvedCarrierCode;
     const previousCarrierCode = order.shipment?.carrierCode ?? null;
+    const resolvedTrackingNumber = resolveBeanOrderTrackingNumberForSave({
+      trackingNumber,
+      previousTrackingNumber: order.shipment?.trackingNumber,
+      fulfillmentStatus: order.fulfillmentStatus,
+    });
     const markShipped = shouldMarkBeanOrderShipped({
       trackingNumber,
       fulfillmentStatus: order.fulfillmentStatus,
@@ -195,7 +204,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     const result = markShipped
       ? await shipBeanOrder(
           order.id,
-          { carrierCode: resolvedCarrierCode, trackingNumber },
+          { carrierCode: resolvedCarrierCode, trackingNumber: resolvedTrackingNumber },
           locale,
         )
       : await saveBeanOrderShipmentPlan(
@@ -211,7 +220,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
       shipment: {
         deliveryType: 'parcel',
         carrierCode: resolvedCarrierCode,
-        trackingNumber: trackingNumber.trim() || prev.shipment?.trackingNumber || null,
+        trackingNumber: resolvedTrackingNumber || null,
         trackingStatus: prev.shipment?.trackingStatus ?? null,
         trackingEvents: prev.shipment?.trackingEvents ?? [],
         shippedAt: prev.shipment?.shippedAt ?? new Date().toISOString(),

@@ -32,6 +32,18 @@ describe('bean order navigation after save/delete', () => {
     expect(source).toMatch(/useEffect\([\s\S]*bb-bean-order-flash[\s\S]*\[pathname\]/);
   });
 
+  test('detail page clears stale message when pathname changes without flash', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
+      'utf8',
+    );
+    const flashEffect = source.match(
+      /useEffect\(\(\) => \{[\s\S]*?bb-bean-order-flash[\s\S]*?\}, \[pathname\]\)/,
+    );
+    expect(flashEffect?.[0]).toBeTruthy();
+    expect(flashEffect![0]).toMatch(/if \(flash\) \{[\s\S]*setMessage\(flash\)[\s\S]*\} else \{[\s\S]*setMessage\(null\)/);
+  });
+
   test('detail delete success redirects to bean-orders list', () => {
     const source = readFileSync(
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
