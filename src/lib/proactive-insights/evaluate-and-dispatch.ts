@@ -5,7 +5,7 @@ import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/compile-op
 import { recordInsightNotificationLog } from '@/lib/insight-notification';
 import { dispatchInsightWebPush } from '@/lib/insight-web-push';
 
-export type InsightTrigger = 'cron' | 'manual';
+export type InsightTrigger = 'cron' | 'shift_update' | 'inventory_update' | 'manual';
 
 export type EvaluateInsightsOptions = {
   trigger?: InsightTrigger;

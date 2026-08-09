@@ -50,6 +50,17 @@ describe('inventory save performance', () => {
     const critical = criticalPathBeforeAfter('recordTransaction', inventoryActions);
     expect(critical).not.toContain('await recordDataChange');
     expect(critical).not.toContain('revalidatePath');
+    expect(critical).not.toContain('scheduleProactiveInsightEvaluation');
+  });
+
+  test('stock mutations schedule debounced proactive insight evaluation', () => {
+    expect(inventoryActions).toContain('scheduleProactiveInsightEvaluation');
+    expect(inventoryActions).toMatch(
+      /deferInventorySideEffects\('recordTransaction'[\s\S]*scheduleProactiveInsightEvaluation\('inventory_update'\)/,
+    );
+    expect(inventoryActions).toMatch(
+      /deferInventorySideEffects\('updateInventoryStock'[\s\S]*scheduleProactiveInsightEvaluation\('inventory_update'\)/,
+    );
   });
 
   test('recordTransaction does not block on a pre-mutation item SELECT', () => {
