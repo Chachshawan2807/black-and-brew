@@ -14,6 +14,7 @@ import {
 import { useFloatingOverlay } from "@/components/floating/FloatingOverlayContext";
 import { PageTransition } from "@/components/ui/page-transition";
 import { SidebarMenuOrderSync } from "@/components/sidebar/SidebarMenuOrderSync";
+import { OfflineStatusBanner } from "@/components/shell/OfflineStatusBanner";
 
 export default function SidebarLayout({
   children
@@ -44,6 +45,7 @@ export default function SidebarLayout({
           sidebarOpen === false ? "md:ml-20" : "md:ml-[280px]"
         )}
       >
+        <OfflineStatusBanner />
         <PageTransition>{children}</PageTransition>
       </main>
     </>

@@ -40,6 +40,9 @@ describe('PWA offline shell + install config', () => {
     expect(html).toContain('ไม่มีการเชื่อมต่ออินเทอร์เน็ต');
     expect(html).toContain('id="retry"');
     expect(html).toContain("addEventListener('online'");
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('connection-status');
   });
 
   test('service worker precaches offline shell and uses navigation fallback', () => {

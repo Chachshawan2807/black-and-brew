@@ -12,6 +12,8 @@
         --fg: #161614;
         --muted: #5c5a52;
         --border: #d8d4c4;
+        --offline: #b45309;
+        --online: #15803d;
       }
       @media (prefers-color-scheme: dark) {
         :root {
@@ -20,6 +22,8 @@
           --fg: #f7f5e8;
           --muted: #a8a69c;
           --border: #3a3834;
+          --offline: #fbbf24;
+          --online: #4ade80;
         }
       }
       * {
@@ -43,6 +47,27 @@
         border-radius: 1rem;
         padding: 1.5rem;
         background: color-mix(in srgb, var(--bg) 92%, var(--fg));
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0 0 1rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+      .status-pill::before {
+        content: '';
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 50%;
+        background: var(--offline);
+      }
+      .status-pill[data-online='true']::before {
+        background: var(--online);
       }
       h1 {
         margin: 0 0 0.75rem;
@@ -75,17 +100,33 @@
   </head>
   <body>
     <main>
+      <p id="connection-status" class="status-pill" role="status" aria-live="polite" data-online="false">
+        Offline
+      </p>
       <h1>black &amp; brew</h1>
       <p>ไม่มีการเชื่อมต่ออินเทอร์เน็ต</p>
       <p>No internet connection</p>
-      <p>ข้อมูลที่แก้ไขขณะออฟไลน์จะซิงก์เมื่อกลับมาออนไลน์</p>
+      <p>หน้านี้ยังไม่ถูกบันทึกไว้ในเครื่อง — เปิดแอปคลังสินค้าก่อนหลุดเน็ตเพื่อแก้ไขและซิงก์ภายหลัง</p>
+      <p>This page is not cached yet — open Inventory while online so edits can queue and sync later.</p>
       <button type="button" id="retry">ลองอีกครั้ง / Retry</button>
     </main>
     <script>
-      document.getElementById('retry').addEventListener('click', function () {
+      var statusEl = document.getElementById('connection-status');
+
+      function renderConnectionStatus() {
+        var online = navigator.onLine;
+        statusEl.dataset.online = online ? 'true' : 'false';
+        statusEl.textContent = online ? 'Online / ออนไลน์' : 'Offline / ออฟไลน์';
+      }
+
+      renderConnectionStatus();
+      window.addEventListener('online', function () {
+        renderConnectionStatus();
         location.reload();
       });
-      window.addEventListener('online', function () {
+      window.addEventListener('offline', renderConnectionStatus);
+
+      document.getElementById('retry').addEventListener('click', function () {
         location.reload();
       });
     </script>

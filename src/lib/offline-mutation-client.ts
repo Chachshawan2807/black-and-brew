@@ -12,6 +12,10 @@ import {
   isOfflineMutationOwnedByCurrentSession,
 } from '@/lib/offline-auth-session';
 import {
+  OFFLINE_STATUS_CHANGED_EVENT,
+  type OfflineStatusSnapshot,
+} from '@/lib/offline-status';
+import {
   isOfflineRetryableError,
   isOfflineRetryableResult,
   OFFLINE_MUTATION_SYNC_TAG,
@@ -20,8 +24,12 @@ import {
 } from '@/lib/offline-mutation-types';
 
 export const FLUSH_OFFLINE_MUTATIONS_EVENT = 'bb-flush-offline-mutations';
+export { OFFLINE_STATUS_CHANGED_EVENT };
+export type { OfflineStatusSnapshot };
 
 let flushInFlight: Promise<OfflineFlushResult> | null = null;
+let isSyncingOfflineMutations = false;
+let lastOfflineSyncError: string | null = null;
 
 export type OfflineFlushResult = {
   flushed: number;
@@ -31,6 +39,36 @@ export type OfflineFlushResult = {
 
 export function isClientOnline(): boolean {
   return typeof navigator === 'undefined' ? true : navigator.onLine;
+}
+
+export async function countOwnedPendingOfflineMutations(): Promise<number> {
+  const currentAuthSessionId = getClientOfflineAuthSessionId();
+  const queue = await listOfflineMutations();
+  return queue.filter((mutation) =>
+    isOfflineMutationOwnedByCurrentSession(mutation, currentAuthSessionId),
+  ).length;
+}
+
+export async function getOfflineStatusSnapshot(): Promise<OfflineStatusSnapshot> {
+  return {
+    isOnline: isClientOnline(),
+    pendingCount: await countOwnedPendingOfflineMutations(),
+    isSyncing: isSyncingOfflineMutations,
+    lastSyncError: lastOfflineSyncError,
+  };
+}
+
+function publishOfflineStatus(snapshot: OfflineStatusSnapshot): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent(OFFLINE_STATUS_CHANGED_EVENT, { detail: snapshot }),
+  );
+}
+
+export async function refreshOfflineStatus(): Promise<OfflineStatusSnapshot> {
+  const snapshot = await getOfflineStatusSnapshot();
+  publishOfflineStatus(snapshot);
+  return snapshot;
 }
 
 export async function registerOfflineMutationSync(): Promise<void> {
@@ -59,6 +97,7 @@ export async function queueOfflineMutation(
   await registerOfflineMutationSync();
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(FLUSH_OFFLINE_MUTATIONS_EVENT));
+    await refreshOfflineStatus();
   }
   return entry;
 }
@@ -67,6 +106,10 @@ export async function flushOfflineMutations(): Promise<OfflineFlushResult> {
   if (flushInFlight) return flushInFlight;
 
   flushInFlight = (async () => {
+    isSyncingOfflineMutations = true;
+    lastOfflineSyncError = null;
+    await refreshOfflineStatus();
+
     const currentAuthSessionId = getClientOfflineAuthSessionId();
     if (currentAuthSessionId) {
       await purgeUnownedOfflineMutations(currentAuthSessionId);
@@ -74,34 +117,43 @@ export async function flushOfflineMutations(): Promise<OfflineFlushResult> {
 
     let flushed = 0;
     const queue = await listOfflineMutations();
+    let result: OfflineFlushResult;
 
-    for (const mutation of queue) {
-      if (!isOfflineMutationOwnedByCurrentSession(mutation, currentAuthSessionId)) {
-        await removeOfflineMutation(mutation.id);
-        continue;
-      }
-
-      const result = await replayOfflineMutation(mutation);
-      if (!result.success) {
-        if (!isOfflineRetryableResult(result, isClientOnline())) {
+    try {
+      for (const mutation of queue) {
+        if (!isOfflineMutationOwnedByCurrentSession(mutation, currentAuthSessionId)) {
           await removeOfflineMutation(mutation.id);
           continue;
         }
-        return {
-          flushed,
-          remaining: queue.length - flushed,
-          stoppedOnError: result.error,
-        };
+
+        const replayResult = await replayOfflineMutation(mutation);
+        if (!replayResult.success) {
+          if (!isOfflineRetryableResult(replayResult, isClientOnline())) {
+            await removeOfflineMutation(mutation.id);
+            continue;
+          }
+          lastOfflineSyncError = replayResult.error ?? 'Sync failed';
+          result = {
+            flushed,
+            remaining: queue.length - flushed,
+            stoppedOnError: replayResult.error,
+          };
+          return result;
+        }
+
+        await removeOfflineMutation(mutation.id);
+        flushed += 1;
       }
 
-      await removeOfflineMutation(mutation.id);
-      flushed += 1;
+      result = {
+        flushed,
+        remaining: (await listOfflineMutations()).length,
+      };
+      return result;
+    } finally {
+      isSyncingOfflineMutations = false;
+      await refreshOfflineStatus();
     }
-
-    return {
-      flushed,
-      remaining: (await listOfflineMutations()).length,
-    };
   })().finally(() => {
     flushInFlight = null;
   });
@@ -124,7 +176,13 @@ export function installOfflineMutationListeners(): () => void {
     void flushOfflineMutations();
   };
 
-  const onOnline = () => flush();
+  const onOnline = () => {
+    void refreshOfflineStatus();
+    flush();
+  };
+  const onOffline = () => {
+    void refreshOfflineStatus();
+  };
   const onCustomFlush = () => flush();
   const onServiceWorkerMessage = (event: MessageEvent) => {
     const data = event.data as { type?: string } | undefined;
@@ -132,15 +190,18 @@ export function installOfflineMutationListeners(): () => void {
   };
 
   window.addEventListener('online', onOnline);
+  window.addEventListener('offline', onOffline);
   window.addEventListener(FLUSH_OFFLINE_MUTATIONS_EVENT, onCustomFlush);
   navigator.serviceWorker?.addEventListener('message', onServiceWorkerMessage);
 
+  void refreshOfflineStatus();
   if (isClientOnline()) {
     void flushOfflineMutations();
   }
 
   return () => {
     window.removeEventListener('online', onOnline);
+    window.removeEventListener('offline', onOffline);
     window.removeEventListener(FLUSH_OFFLINE_MUTATIONS_EVENT, onCustomFlush);
     navigator.serviceWorker?.removeEventListener('message', onServiceWorkerMessage);
   };
