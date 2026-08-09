@@ -1110,6 +1110,44 @@ export async function deleteBeanOrder(
   }
 }
 
+type BeanOrderPaymentNotificationOrder = {
+  order_no: string;
+  recipient_name: string | null;
+  total_baht: number | null;
+  bean_customers: { name?: string } | null;
+};
+
+function scheduleBeanOrderPaymentNotification(
+  orderId: string,
+  order: BeanOrderPaymentNotificationOrder,
+  locale: string,
+): void {
+  const customer = order.bean_customers;
+  const recipientName = order.recipient_name || '';
+  const orderNo = order.order_no || orderId;
+
+  after(async () => {
+    try {
+      const { notifyBeanOrderPaymentConfirmed } = await import('@/lib/bean-orders/payment-web-push');
+      const { getBeanOrderCustomerDisplayName } = await import('@/lib/bean-orders/customer-display');
+      await notifyBeanOrderPaymentConfirmed({
+        orderId,
+        orderNo,
+        customerName: getBeanOrderCustomerDisplayName({
+          customerName: customer?.name ?? null,
+          recipientName,
+        }),
+        totalBaht: Number(order.total_baht) || 0,
+        locale,
+      }).catch((error) => {
+        console.error('notifyBeanOrderPaymentConfirmed:', error);
+      });
+    } catch (error) {
+      console.error('[scheduleBeanOrderPaymentNotification]', error);
+    }
+  });
+}
+
 export async function uploadBeanOrderSlip(
   orderId: string,
   formData: FormData,
@@ -1127,7 +1165,7 @@ export async function uploadBeanOrderSlip(
     const supabase = getSupabaseAdmin();
     const { data: order, error: fetchError } = await supabase
       .from('bean_orders')
-      .select('id, order_no, payment_status, cancelled_at')
+      .select('id, order_no, payment_status, cancelled_at, recipient_name, total_baht, bean_customers(name)')
       .eq('id', orderId)
       .maybeSingle();
 
@@ -1170,6 +1208,13 @@ export async function uploadBeanOrderSlip(
       entityLabel: order.order_no as string,
       metadata: { action: 'slip_uploaded' },
     });
+
+    scheduleBeanOrderPaymentNotification(orderId, {
+      order_no: order.order_no as string,
+      recipient_name: (order.recipient_name as string | null) ?? null,
+      total_baht: (order.total_baht as number | null) ?? null,
+      bean_customers: order.bean_customers as BeanOrderPaymentNotificationOrder['bean_customers'],
+    }, locale);
 
     revalidateBeanOrders(locale, orderId);
     return { success: true };
@@ -1242,30 +1287,12 @@ export async function confirmBeanOrderPayment(
       fieldChanges: [{ field: 'payment_status', old_value: 'unpaid', new_value: 'paid' }],
     });
 
-    const customer = order.bean_customers as { name?: string } | null;
-    const recipientName = (order.recipient_name as string) || '';
-    const orderNo = (order.order_no as string) || orderId;
-
-    after(async () => {
-      try {
-        const { notifyBeanOrderPaymentConfirmed } = await import('@/lib/bean-orders/payment-web-push');
-        const { getBeanOrderCustomerDisplayName } = await import('@/lib/bean-orders/customer-display');
-        await notifyBeanOrderPaymentConfirmed({
-          orderId,
-          orderNo,
-          customerName: getBeanOrderCustomerDisplayName({
-            customerName: customer?.name ?? null,
-            recipientName,
-          }),
-          totalBaht: Number(order.total_baht) || 0,
-          locale,
-        }).catch((error) => {
-          console.error('notifyBeanOrderPaymentConfirmed:', error);
-        });
-      } catch (error) {
-        console.error('[confirmBeanOrderPayment] Deferred notification error:', error);
-      }
-    });
+    scheduleBeanOrderPaymentNotification(orderId, {
+      order_no: order.order_no as string,
+      recipient_name: (order.recipient_name as string | null) ?? null,
+      total_baht: (order.total_baht as number | null) ?? null,
+      bean_customers: order.bean_customers as BeanOrderPaymentNotificationOrder['bean_customers'],
+    }, locale);
 
     revalidateBeanOrders(locale, orderId);
     return { success: true };
