@@ -1,4 +1,4 @@
-// v20
+// v21
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -58,10 +58,19 @@ function isStockOperationNotificationTitle(title) {
   return /^[+−⇄]\s/u.test(String(title || '').trim());
 }
 
-function isDailyReportPayload(payload) {
-  if (payload.kind === 'daily_report') return true;
-  const meta = payload.notification && payload.notification.metadata;
-  return meta && meta.kind === 'daily_report';
+function resolveSplitOsNotification(titleLine, detailLine) {
+  const title = String(titleLine).trim().slice(0, OS_NOTIFICATION_TITLE_MAX);
+  const body = String(detailLine).trim().slice(0, OS_NOTIFICATION_BODY_MAX);
+
+  if (isIosPushClient()) {
+    const merged = body ? `${title}\n${body}` : title;
+    return {
+      title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
+      body: '',
+    };
+  }
+
+  return { title, body };
 }
 
 /**
@@ -73,27 +82,12 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
     (payload.notification && payload.notification.title) || payload.title || '';
   const logicalSummary =
     (payload.notification && payload.notification.summary) || payload.body || '';
+  const fieldSummary =
+    payload.notification &&
+    (payload.notification.fieldSummary || payload.notification.summary);
   const trimmedTitle = String(logicalTitle).trim();
   const trimmedSummary = String(logicalSummary).trim();
-
-  if (isDailyReportPayload(payload)) {
-    const fieldSummary =
-      (payload.notification &&
-        (payload.notification.fieldSummary || payload.notification.summary)) ||
-      trimmedSummary;
-    const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
-    const bodyLine = String(fieldSummary).trim().slice(0, OS_NOTIFICATION_BODY_MAX);
-
-    if (isIosPushClient()) {
-      const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
-      return {
-        title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
-        body: '',
-      };
-    }
-
-    return { title: titleLine, body: bodyLine };
-  }
+  const detailSource = String(fieldSummary || trimmedSummary).trim();
 
   if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
     const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
@@ -110,23 +104,7 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
     return { title: titleLine, body: bodyLine };
   }
 
-  let merged = trimmedTitle;
-  if (trimmedSummary) {
-    if (!trimmedTitle) {
-      merged = trimmedSummary;
-    } else if (
-      trimmedSummary !== trimmedTitle &&
-      !trimmedSummary.startsWith(trimmedTitle) &&
-      !trimmedTitle.includes(trimmedSummary)
-    ) {
-      merged = `${trimmedTitle} · ${trimmedSummary}`;
-    }
-  }
-
-  return {
-    title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
-    body: '',
-  };
+  return resolveSplitOsNotification(trimmedTitle, detailSource);
 }
 
 /** iOS Web Push rejects or ignores several Chromium-only notification fields. */

@@ -40,10 +40,9 @@ describe('bean order shipped web push', () => {
 
     expect(payload.kind).toBe('bean_order_shipped');
     expect(payload.title).toContain('ส่งแล้ว');
-    expect(payload.title).toContain('ทัพพ์เทพ นิจนิรันดร์กุล');
-    expect(payload.title).toContain('KEX123456789');
+    expect(payload.body).toContain('ทัพพ์เทพ นิจนิรันดร์กุล');
+    expect(payload.body).toContain('KEX123456789');
     expect(payload.title).not.toContain('BO-20260726-001');
-    expect(payload.body).toBe('');
     expect(payload.url).toBe('/th/bean-orders/order-1');
     expect(payload.tag).toBe('bb-bean-shipped-order-1');
     expect(payload.notification.metadata.kind).toBe('bean_order_shipped');

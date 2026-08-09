@@ -39,9 +39,8 @@ describe('bean order payment web push', () => {
 
     expect(payload.kind).toBe('bean_order_payment_confirmed');
     expect(payload.title).toContain('ชำระแล้ว');
-    expect(payload.title).toContain('คุณเอ');
-    expect(payload.title).toContain('800');
-    expect(payload.body).toBe('');
+    expect(payload.body).toContain('คุณเอ');
+    expect(payload.body).toContain('800');
     expect(payload.url).toBe('/th/bean-orders/order-1');
     expect(payload.tag).toBe('bb-bean-paid-order-1');
     expect(payload.notification.metadata.kind).toBe('bean_order_payment_confirmed');

@@ -1,7 +1,7 @@
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 import { dailyReportNotificationLogId } from '@/lib/daily-report-notification';
-import { buildDailyReportOsNotification } from '@/lib/pwa-notification-bridge';
+import { buildSplitOsNotification } from '@/lib/pwa-notification-bridge';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type InventoryNotification,
@@ -53,7 +53,7 @@ export function buildDailyReportPushPayload(
   const tag = dailyReportNotificationLogId(data.schedule, data.dateStr);
   const headline = scheduleTitle(data.schedule, locale);
   const summaryPreview = alt.length > 220 ? `${alt.slice(0, 217)}…` : alt;
-  const osNotification = buildDailyReportOsNotification(headline, alt);
+  const osNotification = buildSplitOsNotification(headline, alt);
   const now = new Date().toISOString();
 
   return {

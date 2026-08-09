@@ -43,6 +43,17 @@ function sampleSubscription(overrides: Partial<PushSubscriptionRow> = {}): PushS
 }
 
 describe('insight-web-push', () => {
+  test('buildInsightPushPayload keeps insight title and full summary in OS body', () => {
+    const insight = sampleInsight({
+      title: 'ลาหลายคน',
+      summary: 'สัปดาห์นี้มีพนักงานลารวม 2 คน — ควรตรวจตารางงานค่ะ',
+    });
+    const payload = buildInsightPushPayload(insight, '2026-07-24', 'th');
+    expect(payload.title).toBe('ลาหลายคน');
+    expect(payload.body).toBe(insight.summary);
+    expect(payload.notification.fieldSummary).toBe(insight.summary);
+  });
+
   test('buildInsightPushPayload includes deep link and tag', () => {
     const insight = sampleInsight();
     const payload = buildInsightPushPayload(insight, '2026-07-24', 'th');

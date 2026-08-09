@@ -64,6 +64,7 @@ export function buildSecurityPushPayload(
     detail,
     1,
     locale === 'th',
+    { fieldSummary: notification.fieldSummary },
   );
   const url =
     typeof notification.metadata.url === 'string'

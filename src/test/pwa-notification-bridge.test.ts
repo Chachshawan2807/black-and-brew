@@ -2,10 +2,12 @@ import { describe, expect, test } from 'vitest';
 import {
   buildDailyReportOsNotification,
   buildInventoryOsNotification,
+  buildSplitOsNotification,
   buildSystemNotificationOptions,
   isBenignPushRegistrationError,
   isUuidString,
   OS_NOTIFICATION_BODY_MAX,
+  OS_NOTIFICATION_TITLE_MAX,
   PWA_NOTIFICATION_BADGE,
   PWA_NOTIFICATION_ICON,
   PWA_NOTIFICATION_VIBRATE,
@@ -18,15 +20,26 @@ describe('pwa-notification-bridge', () => {
     expect(isUuidString(42)).toBe(false);
   });
 
-  test('buildInventoryOsNotification does not prefix unread count in banner text', () => {
+  test('buildInventoryOsNotification keeps non-stock title and body separate on Android', () => {
     const result = buildInventoryOsNotification(
       'ชำระแล้ว',
       'คุณลี · 5,300 บาท',
       27,
       true,
     );
-    expect(result.title).toBe('ชำระแล้ว · คุณลี · 5,300 บาท');
+    expect(result.title).toBe('ชำระแล้ว');
+    expect(result.body).toBe('คุณลี · 5,300 บาท');
     expect(result.title).not.toContain('[27]');
+  });
+
+  test('buildInventoryOsNotification prefers fieldSummary for non-stock body', () => {
+    const insightSummary =
+      'สัปดาห์นี้วันที่คนน้อย: ส. 4 คน, อา. 4 คน, จ. 3 คน — ควรตรวจตารางงานค่ะ';
+    const result = buildInventoryOsNotification('คนน้อย', 'สัปดาห์นี้วันที่คนน้อย…', 1, true, {
+      fieldSummary: insightSummary,
+    });
+    expect(result.title).toBe('คนน้อย');
+    expect(result.body).toBe(insightSummary);
   });
 
   test('buildInventoryOsNotification keeps stock title and body separate on Android', () => {
@@ -71,12 +84,13 @@ describe('pwa-notification-bridge', () => {
     expect(multi.body).toBe('');
   });
 
-  test('buildInventoryOsNotification truncates long merged titles', () => {
+  test('buildInventoryOsNotification truncates long non-stock body on Android', () => {
     const longTitle = 'A'.repeat(200);
-    const longSummary = 'B'.repeat(200);
+    const longSummary = 'B'.repeat(300);
     const result = buildInventoryOsNotification(longTitle, longSummary, 1, true);
-    expect(result.title.length).toBeLessThanOrEqual(120);
-    expect(result.body).toBe('');
+    expect(result.title.length).toBeLessThanOrEqual(OS_NOTIFICATION_TITLE_MAX);
+    expect(result.body.length).toBe(OS_NOTIFICATION_BODY_MAX);
+    expect(result.body).toBe('B'.repeat(OS_NOTIFICATION_BODY_MAX));
   });
 
   test('buildInventoryOsNotification truncates long iOS stock merge', () => {
@@ -92,34 +106,34 @@ describe('pwa-notification-bridge', () => {
     expect(result.body).toBe('');
   });
 
-  test('buildInventoryOsNotification merges non-stock notifications into title', () => {
+  test('buildInventoryOsNotification keeps non-stock title and body separate', () => {
     const daily = buildInventoryOsNotification(
       'ตารางงานพรุ่งนี้',
       '21-06-2026 · นิต้า 6:30',
       1,
       true,
     );
-    expect(daily.title).toBe('ตารางงานพรุ่งนี้ · 21-06-2026 · นิต้า 6:30');
-    expect(daily.body).toBe('');
+    expect(daily.title).toBe('ตารางงานพรุ่งนี้');
+    expect(daily.body).toBe('21-06-2026 · นิต้า 6:30');
   });
 
-  test('buildDailyReportOsNotification keeps headline and schedule detail separate on Android', () => {
+  test('buildSplitOsNotification keeps headline and schedule detail separate on Android', () => {
     const scheduleBody = [
       'ตารางงาน 09-08-2026 (วันนี้) · เข้างาน 5 คน',
       'ปิ่น 6:30, มุก 7:00, นิต้า 8:00, ล่า 6:30, โบ๊ท 7:00',
       'งานอื่น: ล่า — ร้านซักผ้า',
     ].join('\n');
 
-    const android = buildDailyReportOsNotification('ตารางงานวันนี้', scheduleBody);
+    const android = buildSplitOsNotification('ตารางงานวันนี้', scheduleBody);
     expect(android.title).toBe('ตารางงานวันนี้');
     expect(android.body).toBe(scheduleBody.slice(0, OS_NOTIFICATION_BODY_MAX));
     expect(android.body).toContain('ปิ่น 6:30');
     expect(android.body).toContain('งานอื่น');
   });
 
-  test('buildDailyReportOsNotification merges schedule lines into title on iOS', () => {
+  test('buildSplitOsNotification merges schedule lines into title on iOS', () => {
     const scheduleBody = 'ตารางงาน 09-08-2026 (วันนี้) · เข้างาน 2 คน\nปิ่น 6:30, มุก 7:00';
-    const ios = buildDailyReportOsNotification('ตารางงานวันนี้', scheduleBody, { isIos: true });
+    const ios = buildSplitOsNotification('ตารางงานวันนี้', scheduleBody, { isIos: true });
     expect(ios.title).toContain('ตารางงานวันนี้');
     expect(ios.title).toContain('ปิ่น 6:30');
     expect(ios.body).toBe('');

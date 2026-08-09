@@ -44,7 +44,9 @@ export function buildInsightPushPayload(
   const tag = insightNotificationLogId(insight.ruleId, dateIso);
   const detail =
     insight.summary.length > 220 ? `${insight.summary.slice(0, 217)}…` : insight.summary;
-  const osNotification = buildInventoryOsNotification(insight.title, detail, 1, locale === 'th');
+  const osNotification = buildInventoryOsNotification(insight.title, detail, 1, locale === 'th', {
+    fieldSummary: insight.summary,
+  });
   const now = new Date().toISOString();
 
   return {

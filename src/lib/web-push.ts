@@ -192,7 +192,9 @@ export function buildWebPushPayload(row: DataChangeLogRow, locale = 'th'): WebPu
   const notification = formatInventoryNotification(row, locale);
   const isTh = locale === 'th';
   const inventoryPath = `/${locale}/inventory`;
-  const formatted = buildInventoryOsNotification(notification.title, notification.summary, 1, isTh);
+  const formatted = buildInventoryOsNotification(notification.title, notification.summary, 1, isTh, {
+    fieldSummary: notification.fieldSummary,
+  });
 
   return {
     title: formatted.title,

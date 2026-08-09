@@ -283,6 +283,7 @@ export function useInventoryNotifications() {
         url: resolvedUrl,
         unreadCount: nextUnread,
         isTh,
+        fieldSummary: notification.fieldSummary,
       });
     },
     []

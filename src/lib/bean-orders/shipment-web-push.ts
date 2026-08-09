@@ -40,7 +40,9 @@ export function buildBeanOrderShippedPushPayload(
   const { title, summary, fieldSummary } = buildBeanOrderShippedCopy(input, locale);
   const tag = beanOrderShippedNotificationLogId(input.orderId);
   const url = `/${locale}/bean-orders/${input.orderId}`;
-  const osNotification = buildInventoryOsNotification(title, summary, 1, locale === 'th');
+  const osNotification = buildInventoryOsNotification(title, summary, 1, locale === 'th', {
+    fieldSummary,
+  });
   const now = new Date().toISOString();
 
   return {

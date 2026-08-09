@@ -70,17 +70,17 @@ export const OS_NOTIFICATION_TITLE_MAX = 120;
 export const OS_NOTIFICATION_BODY_MAX = 240;
 
 /**
- * Daily schedule reports: short headline in title, full multi-line summary in body.
- * Android shows both; iOS merges into title (up to body max) so the byline stays at bottom.
+ * Short headline in title, detail in body (Android). iOS merges into title so the byline
+ * stays at the bottom. Used for schedule reports, insights, bean orders, security, etc.
  */
-export function buildDailyReportOsNotification(
+export function buildSplitOsNotification(
   headline: string,
-  fieldSummary: string,
+  detail: string,
   options?: { isIos?: boolean },
 ): { title: string; body: string } {
   const isIos = options?.isIos ?? false;
   const titleLine = headline.trim().slice(0, OS_NOTIFICATION_TITLE_MAX);
-  const bodyLine = fieldSummary.trim().slice(0, OS_NOTIFICATION_BODY_MAX);
+  const bodyLine = detail.trim().slice(0, OS_NOTIFICATION_BODY_MAX);
 
   if (isIos) {
     const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
@@ -93,22 +93,25 @@ export function buildDailyReportOsNotification(
   return { title: titleLine, body: bodyLine };
 }
 
+/** @deprecated Use buildSplitOsNotification */
+export const buildDailyReportOsNotification = buildSplitOsNotification;
+
 /**
  * OS banner title/body for Web Push and system notifications.
- * Stock IN/OUT/ADJUST: Android keeps title + body separate; iOS merges both into title
- * (newline) with empty body so WebKit's "from [app]" line sits at the bottom.
- * Other kinds merge detail into title on all platforms.
+ * Stock IN/OUT/ADJUST: Android keeps title + body separate; iOS merges both into title.
+ * All other kinds: short title + detail body (prefers fieldSummary when provided).
  */
 export function buildInventoryOsNotification(
   title: string,
   summary: string,
   _unreadCount: number,
   _isTh: boolean,
-  options?: { isIos?: boolean },
+  options?: { isIos?: boolean; fieldSummary?: string },
 ): { title: string; body: string } {
   const isIos = options?.isIos ?? false;
   const trimmedTitle = title.trim();
   const trimmedSummary = summary.trim();
+  const detail = (options?.fieldSummary ?? summary).trim();
 
   if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
     const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
@@ -125,23 +128,7 @@ export function buildInventoryOsNotification(
     return { title: titleLine, body: bodyLine };
   }
 
-  let merged = trimmedTitle;
-  if (trimmedSummary) {
-    if (!trimmedTitle) {
-      merged = trimmedSummary;
-    } else if (
-      trimmedSummary !== trimmedTitle &&
-      !trimmedSummary.startsWith(trimmedTitle) &&
-      !trimmedTitle.includes(trimmedSummary)
-    ) {
-      merged = `${trimmedTitle} · ${trimmedSummary}`;
-    }
-  }
-
-  return {
-    title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
-    body: '',
-  };
+  return buildSplitOsNotification(trimmedTitle, detail, { isIos });
 }
 
 export function dispatchInventoryNotificationEvent(unreadCount: number): void {
@@ -185,7 +172,13 @@ export function buildSystemNotificationOptions(input: {
 export async function showSystemNotification(
   title: string,
   body: string,
-  options?: { tag?: string; url?: string; unreadCount?: number; isTh?: boolean }
+  options?: {
+    tag?: string;
+    url?: string;
+    unreadCount?: number;
+    isTh?: boolean;
+    fieldSummary?: string;
+  },
 ): Promise<void> {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
@@ -195,7 +188,7 @@ export async function showSystemNotification(
     body,
     options?.unreadCount ?? 1,
     options?.isTh ?? true,
-    { isIos: isIosWebPushClient() },
+    { isIos: isIosWebPushClient(), fieldSummary: options?.fieldSummary },
   );
 
   const payload = buildSystemNotificationOptions({
