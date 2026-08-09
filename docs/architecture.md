@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-07-28 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.3 | Last Updated: 2026-08-09 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 

@@ -1,6 +1,6 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-07-28 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.3 | Last Updated: 2026-08-09 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 

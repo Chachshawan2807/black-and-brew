@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-07-28 | Engine: Supabase PostgreSQL
+> Version: 9.3 | Last Updated: 2026-08-09 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -329,6 +329,7 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260724120000_app_preferences_sidebar_menu.sql` | `app_preferences` table + Realtime for sidebar menu order sync |
 | `20260725120000_harden_rls_and_rpc_execute.sql` | RLS hardening (maintenance, holidays, sales server-only); RPC `EXECUTE` lockdown — see `docs/security/rls-audit.md` |
 | `20260726153946_drop_service_records_unused_columns.sql` | Drops unused `service_records` columns (`cost`, `person_in_charge`, `status`, `notes`); completion via `completion_date` |
+| `20260729100000_record_inventory_transaction_old_stock.sql` | `record_inventory_transaction` RPC returns `old_stock` in JSON for inventory notifications/audit |
 
 Retired: inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 

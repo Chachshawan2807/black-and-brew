@@ -2,6 +2,15 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-08-09 (Doc sync + graphify hook retirement)
+
+- Documented migration `20260729100000_record_inventory_transaction_old_stock.sql` in `docs/database.md` and `sql/README.md` (`old_stock` in `record_inventory_transaction` RPC JSON).
+- Replaced graphify guidance in `.codex/hooks.json` with codebase-memory-mcp (`search_graph` / `trace_path`); graphify remains retired per `AGENTS.md`.
+- Synced root `MASTER_BLUEPRINT.md` redirect stub to v9.3 / 2026-08-09.
+- Removed orphaned dev scripts: `scripts/fix-cursor-default-model.py` (personal Cursor config utility, zero references).
+- Validated project-owned markdown links (38 files, 0 broken). Orphan scan: 0 unreferenced `src/` modules.
+- Bumped keeper stamps to 2026-08-09 (product v9.3 unchanged).
+
 ## 2026-07-28 (Doc hygiene + proven dead-code cleanup)
 
 - Removed dead `trackingWarning` from `shipBeanOrder` return type and bean-order clients (TrackingMore sync is deferred via `after()`).

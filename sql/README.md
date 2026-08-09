@@ -60,6 +60,7 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260724120000_app_preferences_sidebar_menu.sql` | `app_preferences` table + Realtime for sidebar menu order sync |
 | `20260725120000_harden_rls_and_rpc_execute.sql` | RLS hardening + RPC execute lockdown (see `docs/security/rls-audit.md`) |
 | `20260726153946_drop_service_records_unused_columns.sql` | Drop unused `service_records` columns (`cost`, `person_in_charge`, `status`, `notes`) |
+| `20260729100000_record_inventory_transaction_old_stock.sql` | `record_inventory_transaction` RPC returns `old_stock` in JSON for notifications/audit |
 
 ## Cleanup notes
 

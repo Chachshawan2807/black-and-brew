@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-07-28
+> Version: 9.3 | Last Updated: 2026-08-09
 
 ---
 
