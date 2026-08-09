@@ -44,6 +44,8 @@ describe('PWA offline shell + install config', () => {
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain('connection-status');
+    expect(html).toContain('if (!statusEl) return');
+    expect(html).toContain('if (retryEl)');
   });
 
   test('service worker precaches offline shell and uses navigation fallback', () => {

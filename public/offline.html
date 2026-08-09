@@ -112,8 +112,10 @@
     </main>
     <script>
       var statusEl = document.getElementById('connection-status');
+      var retryEl = document.getElementById('retry');
 
       function renderConnectionStatus() {
+        if (!statusEl) return;
         var online = navigator.onLine;
         statusEl.dataset.online = online ? 'true' : 'false';
         statusEl.textContent = online ? 'Online / ออนไลน์' : 'Offline / ออฟไลน์';
@@ -126,9 +128,11 @@
       });
       window.addEventListener('offline', renderConnectionStatus);
 
-      document.getElementById('retry').addEventListener('click', function () {
-        location.reload();
-      });
+      if (retryEl) {
+        retryEl.addEventListener('click', function () {
+          location.reload();
+        });
+      }
     </script>
   </body>
 </html>
