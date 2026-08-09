@@ -36,6 +36,12 @@ describe('bean order save performance', () => {
     expect(deferred).toMatch(/createTrackingMoreShipment|fetchTrackingMoreStatusWithRepair/);
   });
 
+  test('shipBeanOrder deferred path always fetches TrackingMore status on ship', () => {
+    const deferred = functionBody('shipBeanOrder', beanOrderActions);
+    expect(deferred).toContain('fetchTrackingMoreStatusWithRepair');
+    expect(deferred).not.toContain('isTrackingWebhookPrimary');
+  });
+
   test('confirmBeanOrderDelivered does not await delivery notification', () => {
     const body = functionBody('confirmBeanOrderDelivered', beanOrderActions);
     expect(body).not.toMatch(/await maybeNotifyBeanOrderDelivered/);

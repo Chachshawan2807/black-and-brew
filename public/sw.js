@@ -58,6 +58,26 @@ function isStockOperationNotificationTitle(title) {
   return /^[+−⇄]\s/u.test(String(title || '').trim());
 }
 
+function isDailyReportPayload(payload) {
+  if (payload.kind === 'daily_report') return true;
+  const meta = payload.notification && payload.notification.metadata;
+  return meta && meta.kind === 'daily_report';
+}
+
+function readNotificationString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function resolveNotificationDetailSource(notification, trimmedSummary) {
+  if (notification && typeof notification === 'object') {
+    const fieldSummary = readNotificationString(notification.fieldSummary);
+    if (fieldSummary) return fieldSummary;
+    const notificationSummary = readNotificationString(notification.summary);
+    if (notificationSummary) return notificationSummary;
+  }
+  return trimmedSummary;
+}
+
 function resolveSplitOsNotification(titleLine, detailLine) {
   const title = String(titleLine).trim().slice(0, OS_NOTIFICATION_TITLE_MAX);
   const body = String(detailLine).trim().slice(0, OS_NOTIFICATION_BODY_MAX);
@@ -78,16 +98,13 @@ function resolveSplitOsNotification(titleLine, detailLine) {
  * lines into title so the byline appears below the quantity line.
  */
 function resolveOsNotificationDisplay(payload, unreadCount = 1) {
+  const notification = payload.notification;
   const logicalTitle =
-    (payload.notification && payload.notification.title) || payload.title || '';
+    (notification && notification.title) || payload.title || '';
   const logicalSummary =
-    (payload.notification && payload.notification.summary) || payload.body || '';
-  const fieldSummary =
-    payload.notification &&
-    (payload.notification.fieldSummary || payload.notification.summary);
+    (notification && notification.summary) || payload.body || '';
   const trimmedTitle = String(logicalTitle).trim();
   const trimmedSummary = String(logicalSummary).trim();
-  const detailSource = String(fieldSummary || trimmedSummary).trim();
 
   if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
     const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
@@ -104,6 +121,12 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
     return { title: titleLine, body: bodyLine };
   }
 
+  if (isDailyReportPayload(payload)) {
+    const fieldSummary = readNotificationString(notification && notification.fieldSummary);
+    return resolveSplitOsNotification(trimmedTitle, fieldSummary || trimmedSummary);
+  }
+
+  const detailSource = resolveNotificationDetailSource(notification, trimmedSummary);
   return resolveSplitOsNotification(trimmedTitle, detailSource);
 }
 

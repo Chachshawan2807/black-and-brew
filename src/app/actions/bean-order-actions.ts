@@ -54,7 +54,6 @@ import {
   fetchTrackingMoreStatusWithRepair,
   resolveTrackingMoreCarrierCode,
 } from '@/lib/bean-orders/trackingmore';
-import { isTrackingWebhookPrimary } from '@/lib/bean-orders/tracking-config';
 import { THAI_TIMEZONE } from '@/lib/timezone';
 import { toZonedTime } from 'date-fns-tz';
 import { google } from '@ai-sdk/google';
@@ -1571,17 +1570,12 @@ export async function shipBeanOrder(
             console.error('TrackingMore create (deferred ship):', tm.error);
           }
 
-          const webhookPrimary = isTrackingWebhookPrimary();
-          if (webhookPrimary && tm.ok) {
+          const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, carrierCode);
+          if (fetched.ok) {
+            trackingStatus = fetched.status;
+            trackingRaw = fetched.raw;
+          } else if (tm.ok) {
             trackingStatus = 'registered';
-          } else {
-            const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, carrierCode);
-            if (fetched.ok) {
-              trackingStatus = fetched.status;
-              trackingRaw = fetched.raw;
-            } else if (tm.ok) {
-              trackingStatus = 'registered';
-            }
           }
 
           if (trackingStatus || trackingRaw) {

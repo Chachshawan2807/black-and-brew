@@ -89,10 +89,19 @@ describe('iOS notification parity', () => {
   test('service worker resolveOsNotificationDisplay uses split title/body for non-stock payloads', () => {
     const sw = fs.readFileSync(SW, 'utf8');
     expect(sw).toContain('function resolveSplitOsNotification');
+    expect(sw).toContain('function isDailyReportPayload');
+    expect(sw).toContain('function readNotificationString');
+    expect(sw).toContain('function resolveNotificationDetailSource');
     expect(sw).toContain('const OS_NOTIFICATION_TITLE_MAX = 120');
     expect(sw).toContain('const OS_NOTIFICATION_BODY_MAX = 240');
     expect(sw).toMatch(
-      /fieldSummary[\s\S]*resolveSplitOsNotification\(trimmedTitle, detailSource\)/,
+      /isDailyReportPayload\(payload\)[\s\S]*resolveSplitOsNotification\(trimmedTitle, fieldSummary \|\| trimmedSummary\)/,
+    );
+    expect(sw).toMatch(
+      /resolveNotificationDetailSource\(notification, trimmedSummary\)[\s\S]*resolveSplitOsNotification\(trimmedTitle, detailSource\)/,
+    );
+    expect(sw).not.toMatch(
+      /payload\.notification\s*&&\s*\(payload\.notification\.fieldSummary/,
     );
     expect(sw).toMatch(
       /if \(isIosPushClient\(\)\) \{[\s\S]*title: merged\.slice\(0, OS_NOTIFICATION_TITLE_MAX\)/,
