@@ -51,9 +51,6 @@ export const BEAN_ORDER_LIST_ROW =
 export const BEAN_ORDER_LIST_CELL =
   'lg:border-r lg:border-border/45 lg:px-4 lg:py-3 lg:last:border-r-0';
 
-/** Copy column — no horizontal padding so the icon button is not crushed in a narrow track. */
-export const BEAN_ORDER_LIST_COPY_CELL = 'lg:py-3';
-
 export const BEAN_ORDER_INPUT =
   'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-foreground/10';
 
@@ -156,4 +153,4 @@ export const BEAN_ORDER_BTN_SLIP_PANEL =
 
 /** Desktop list/table columns: copy | customer | order no | destination | carrier | amount | status */
 export const BEAN_ORDER_LIST_GRID =
-  'lg:grid-cols-[3rem_minmax(0,1.2fr)_minmax(8.5rem,0.95fr)_minmax(5rem,0.8fr)_minmax(6rem,0.85fr)_5.75rem_minmax(12rem,1.3fr)]';
+  'lg:grid-cols-[2.5rem_minmax(0,1.2fr)_minmax(8.5rem,0.95fr)_minmax(5rem,0.8fr)_minmax(6rem,0.85fr)_5.75rem_minmax(12rem,1.3fr)]';

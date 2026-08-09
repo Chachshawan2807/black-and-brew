@@ -3,7 +3,12 @@ import type { NotificationPriority } from '@/lib/notification-types';
 export type InsightRuleId =
   | 'understaffed_low_stock'
   | 'leave_coverage_risk'
-  | 'bean_orders_inventory_gap';
+  | 'bean_orders_inventory_gap'
+  | 'daily_digest';
+
+export interface WeeklyLeaveStaff {
+  name: string;
+}
 
 export interface WeeklyDaySchedule {
   dateIso: string;
@@ -11,6 +16,12 @@ export interface WeeklyDaySchedule {
   dayIndex: number;
   headcount: number;
   leaveCount: number;
+  leaveStaff: WeeklyLeaveStaff[];
+}
+
+export interface PendingBeanOrderInsight {
+  customerName: string;
+  statusLabel: string;
 }
 
 export interface OperationalSnapshot {
@@ -21,7 +32,7 @@ export interface OperationalSnapshot {
   leaveCount: number;
   offCount: number;
   weeklyDays: WeeklyDaySchedule[];
-  pendingBeanOrders: number;
+  pendingBeanOrders: PendingBeanOrderInsight[];
   yesterdaySalesTotal: number;
   upcomingHoliday: { name: string; daysRemaining: number } | null;
 }
@@ -35,4 +46,3 @@ export interface Insight {
   modules: string[];
 }
 
-export type InsightWindow = 'morning' | 'evening';

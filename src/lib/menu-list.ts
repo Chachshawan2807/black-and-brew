@@ -110,7 +110,7 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
         {
           id: 'sales',
           href: `${prefix}/sales`,
-          label: 'จัดการยอดขาย',
+          label: 'รายงานการขาย',
           active: pathname.includes('/sales'),
           icon: HandCoins,
           submenus: []

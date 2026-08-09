@@ -87,9 +87,8 @@ def pin_application_user(data: dict) -> list[str]:
 
     feature = data.setdefault("featureModelConfigs", {})
     for key in AGENT_FEATURE_KEYS:
-        if key in feature:
-            feature[key] = composer_feature_entry()
-            changes.append(f"featureModelConfigs.{key}")
+        feature[key] = composer_feature_entry()
+        changes.append(f"featureModelConfigs.{key}")
 
     subagents = feature.setdefault("subagentModels", {})
     for key in list(subagents.keys()) + list(SUBAGENT_FEATURE_KEYS):

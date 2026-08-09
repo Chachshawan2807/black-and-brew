@@ -38,19 +38,18 @@ describe('/api/insight-alerts', () => {
     expect(res.status).toBe(401);
   });
 
-  test('dispatches morning window by default', async () => {
+  test('dispatches daily digest at 17:00 ICT cron', async () => {
     evaluateMock.mockResolvedValue({
       dateIso: '2026-07-24',
       trigger: 'cron',
-      insights: [{ ruleId: 'leave_coverage_risk' }],
-      recorded: [
-        {
-          ruleId: 'leave_coverage_risk',
-          logId: 'bb-insight-leave_coverage_risk-2026-07-24',
-          skipped: false,
-        },
-      ],
-      pushed: [{ ruleId: 'leave_coverage_risk', sent: 1, failed: 0, skipped: false }],
+      matchedRules: [{ ruleId: 'leave_coverage_risk' }],
+      digest: { ruleId: 'daily_digest', title: 'แจ้งเตือนเชิงรุก' },
+      recorded: {
+        ruleId: 'daily_digest',
+        logId: 'bb-insight-daily_digest-2026-07-24',
+        skipped: false,
+      },
+      pushed: { ruleId: 'daily_digest', sent: 1, failed: 0, skipped: false },
     });
 
     const { GET } = await import('@/app/api/insight-alerts/route');
@@ -62,30 +61,31 @@ describe('/api/insight-alerts', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
-    expect(body.window).toBe('morning');
+    expect(body.digestSent).toBe(true);
     expect(evaluateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ trigger: 'cron', window: 'morning' }),
+      expect.objectContaining({ trigger: 'cron', locale: 'th' }),
     );
   });
 
-  test('accepts evening window query param', async () => {
+  test('returns success with no digest when no rules matched', async () => {
     evaluateMock.mockResolvedValue({
       dateIso: '2026-07-24',
       trigger: 'cron',
-      insights: [],
-      recorded: [],
-      pushed: [],
+      matchedRules: [],
+      digest: null,
+      recorded: null,
+      pushed: null,
     });
 
     const { GET } = await import('@/app/api/insight-alerts/route');
     const res = await GET(
-      new Request('http://localhost/api/insight-alerts?window=evening', {
+      new Request('http://localhost/api/insight-alerts', {
         headers: { authorization: 'Bearer test-cron-secret' },
       }),
     );
     expect(res.status).toBe(200);
-    expect(evaluateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ window: 'evening' }),
-    );
+    const body = await res.json();
+    expect(body.matchedRuleCount).toBe(0);
+    expect(body.digestSent).toBe(false);
   });
 });

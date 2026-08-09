@@ -28,7 +28,6 @@ import {
   rankFrequentItemIds,
   resolveFrequentItemNames,
 } from '@/lib/inventory-frequent-items';
-import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
 import { resolveRecordedStockChange } from '@/lib/inventory-transaction-result';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -248,7 +247,6 @@ export async function recordTransaction(
           auditOptions
         ),
       });
-      scheduleProactiveInsightEvaluation('inventory_update');
       revalidateInventoryPaths();
     });
 
@@ -492,7 +490,6 @@ export async function updateInventoryStock(
           options
         ),
       });
-      scheduleProactiveInsightEvaluation('inventory_update');
       revalidateInventoryPaths();
     });
 

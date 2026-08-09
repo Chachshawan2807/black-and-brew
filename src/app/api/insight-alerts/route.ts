@@ -2,14 +2,9 @@ import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import { evaluateAndDispatchInsights } from '@/lib/proactive-insights/evaluate-and-dispatch';
-import type { InsightWindow } from '@/lib/proactive-insights/types';
 import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
 
 export const maxDuration = 45;
-
-function resolveInsightWindow(raw: string | null): InsightWindow {
-  return raw === 'evening' ? 'evening' : 'morning';
-}
 
 export async function GET(request: Request) {
   await headers();
@@ -22,18 +17,17 @@ export async function GET(request: Request) {
     });
     if (denied) return denied;
 
-    const window = resolveInsightWindow(new URL(request.url).searchParams.get('window'));
     const result = await evaluateAndDispatchInsights({
       trigger: 'cron',
-      window,
       locale: 'th',
     });
 
     return NextResponse.json({
       success: true,
-      window,
       dateIso: result.dateIso,
-      insightCount: result.insights.length,
+      matchedRuleCount: result.matchedRules.length,
+      matchedRules: result.matchedRules.map((insight) => insight.ruleId),
+      digestSent: Boolean(result.digest && result.pushed && !result.pushed.skipped),
       recorded: result.recorded,
       pushed: result.pushed,
       timestamp: new Date().toISOString(),

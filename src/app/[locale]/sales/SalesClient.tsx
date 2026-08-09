@@ -618,8 +618,8 @@ export default function SalesClient({
                   <TrendingUp className="w-6 h-6" strokeWidth={1.5} />
                 </div>
                 <div>
-                  <h1 className="text-2xl tracking-tight">Sales Dashboard</h1>
-                  <p className="text-muted-foreground text-xs mt-1">จัดการและวิเคราะห์ข้อมูลยอดขายอย่างมีประสิทธิภาพ</p>
+                  <h1 className="text-2xl tracking-tight">รายงานการขาย</h1>
+                  <p className="text-muted-foreground text-xs mt-1">อัปโหลดและวิเคราะห์รายงานการขาย</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2.5">
@@ -824,7 +824,7 @@ export default function SalesClient({
                 <Upload className="w-5 h-5" strokeWidth={1.5} />
               </div>
               <div>
-                <h3 className="text-base font-normal">อัปโหลดไฟล์ยอดขาย</h3>
+                <h3 className="text-base font-normal">อัปโหลดไฟล์รายงานการขาย</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">รองรับ .xlsx, .xls สูงสุด 24 ไฟล์</p>
               </div>
             </div>
@@ -1496,7 +1496,7 @@ export default function SalesClient({
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/60 border border-[#ffeeba] flex items-center justify-center">
               <BarChart3 className="w-10 h-10 text-muted-foreground/70" />
             </div>
-            <h3 className="text-xl font-normal mb-2">ยังไม่มีข้อมูลยอดขาย</h3>
+            <h3 className="text-xl font-normal mb-2">ยังไม่มีรายงานการขาย</h3>
             <p className="text-muted-foreground mb-6">อัปโหลดไฟล์ Excel ด้านบนเพื่อเริ่มต้นใช้งานระบบ</p>
           </motion.div>
         )}

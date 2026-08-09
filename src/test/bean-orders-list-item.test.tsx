@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { BeanOrderListItem } from '@/app/[locale]/bean-orders/_components/BeanOrderListItem';
+import { BEAN_ORDER_LIST_CELL } from '@/app/[locale]/bean-orders/_components/bean-order-layout';
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
@@ -94,12 +95,12 @@ describe('BeanOrderListItem', () => {
     expect(copyButton.className).not.toMatch(/\babsolute\b/);
   });
 
-  test('copy button avoids list cell horizontal padding that crushes the icon on desktop', () => {
+  test('copy button zeroes horizontal padding on desktop so the icon is not crushed', () => {
     render(<BeanOrderListItem order={sampleOrder} locale="th" />);
 
     const copyButton = screen.getByRole('button', { name: 'คัดลอกรายละเอียดออเดอร์' });
-    expect(copyButton.className).not.toContain('lg:px-4');
-    expect(copyButton.className).toContain('lg:justify-self-center');
+    expect(copyButton.className).toContain('lg:!px-0');
+    expect(copyButton.className).toContain(BEAN_ORDER_LIST_CELL);
   });
 
   test('shows destination only in destination area and delivery badge in status column', () => {

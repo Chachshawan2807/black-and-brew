@@ -13,7 +13,6 @@ import {
   BEAN_ORDER_LIST_GRID,
   BEAN_ORDER_LIST_HEADER,
   BEAN_ORDER_LIST_CELL,
-  BEAN_ORDER_LIST_COPY_CELL,
   BEAN_ORDER_PAGE,
 } from './_components/bean-order-layout';
 
@@ -99,7 +98,7 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
               className={`hidden ${BEAN_ORDER_LIST_HEADER} lg:grid lg:grid-cols-subgrid lg:col-span-full lg:items-center lg:gap-x-0`}
               aria-hidden
             >
-              <span className={BEAN_ORDER_LIST_COPY_CELL} />
+              <span className={BEAN_ORDER_LIST_CELL} />
               <span className={`whitespace-nowrap ${BEAN_ORDER_LIST_CELL}`}>ลูกค้า</span>
               <span className={`whitespace-nowrap ${BEAN_ORDER_LIST_CELL}`}>หมายเลขออเดอร์</span>
               <span className={BEAN_ORDER_LIST_CELL}>ปลายทาง</span>

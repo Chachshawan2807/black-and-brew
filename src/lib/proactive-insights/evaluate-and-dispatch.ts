@@ -1,14 +1,13 @@
 import { compileOperationalSnapshot } from '@/lib/proactive-insights/compile-operational-snapshot';
-import { evaluateInsightRules } from '@/lib/proactive-insights/rules';
-import type { Insight, InsightWindow } from '@/lib/proactive-insights/types';
+import { buildDailyInsightDigest, evaluateInsightRules } from '@/lib/proactive-insights/rules';
+import type { Insight } from '@/lib/proactive-insights/types';
 import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/compile-operational-snapshot';
 import { recordInsightNotificationLog } from '@/lib/insight-notification';
 import { dispatchInsightWebPush } from '@/lib/insight-web-push';
 
-export type InsightTrigger = 'cron' | 'shift_update' | 'inventory_update' | 'manual';
+export type InsightTrigger = 'cron' | 'manual';
 
 export type EvaluateInsightsOptions = {
-  window?: InsightWindow;
   trigger?: InsightTrigger;
   dateIso?: string;
   locale?: string;
@@ -19,62 +18,72 @@ export type EvaluateInsightsOptions = {
 export type InsightDispatchResult = {
   dateIso: string;
   trigger: InsightTrigger;
-  insights: Insight[];
-  recorded: Array<{ ruleId: string; logId: string; skipped: boolean }>;
-  pushed: Array<{ ruleId: string; sent: number; failed: number; skipped: boolean }>;
+  /** Matched rule insights before daily digest merge. */
+  matchedRules: Insight[];
+  /** Daily digest sent to users (null when no rules matched). */
+  digest: Insight | null;
+  recorded: { ruleId: string; logId: string; skipped: boolean } | null;
+  pushed: { ruleId: string; sent: number; failed: number; skipped: boolean } | null;
 };
 
 export async function evaluateAndDispatchInsights(
   options: EvaluateInsightsOptions = {},
 ): Promise<InsightDispatchResult> {
   const trigger = options.trigger ?? 'cron';
-  const window = options.window ?? 'morning';
   const locale = options.locale ?? 'th';
-  const dateIso = options.dateIso ?? resolveInsightTargetDateIso(window);
+  const dateIso = options.dateIso ?? resolveInsightTargetDateIso();
 
   const snapshot = await compileOperationalSnapshot({ dateIso, locale });
-  const insights = evaluateInsightRules(snapshot);
+  const matchedRules = evaluateInsightRules(snapshot);
+  const digest = buildDailyInsightDigest(matchedRules);
 
-  const recorded: InsightDispatchResult['recorded'] = [];
-  const pushed: InsightDispatchResult['pushed'] = [];
+  if (!digest) {
+    return {
+      dateIso,
+      trigger,
+      matchedRules: [],
+      digest: null,
+      recorded: null,
+      pushed: null,
+    };
+  }
 
-  for (const insight of insights) {
-    const logResult = await recordInsightNotificationLog(insight, dateIso, locale);
-    recorded.push({
-      ruleId: insight.ruleId,
-      logId: logResult.logId,
-      skipped: Boolean(logResult.skipped),
-    });
+  const logResult = await recordInsightNotificationLog(digest, dateIso, locale);
+  const recorded = {
+    ruleId: digest.ruleId,
+    logId: logResult.logId,
+    skipped: Boolean(logResult.skipped),
+  };
 
-    // Dedup: do not re-push if already recorded today.
-    if (logResult.skipped || options.skipPush) {
-      pushed.push({
-        ruleId: insight.ruleId,
+  if (logResult.skipped || options.skipPush || !logResult.success) {
+    return {
+      dateIso,
+      trigger,
+      matchedRules,
+      digest,
+      recorded,
+      pushed: {
+        ruleId: digest.ruleId,
         sent: 0,
         failed: 0,
         skipped: true,
-      });
-      continue;
-    }
+      },
+    };
+  }
 
-    if (!logResult.success) {
-      pushed.push({
-        ruleId: insight.ruleId,
-        sent: 0,
-        failed: 0,
-        skipped: true,
-      });
-      continue;
-    }
+  const pushResult = await dispatchInsightWebPush(digest, dateIso);
 
-    const pushResult = await dispatchInsightWebPush(insight, dateIso);
-    pushed.push({
-      ruleId: insight.ruleId,
+  return {
+    dateIso,
+    trigger,
+    matchedRules,
+    digest,
+    recorded,
+    pushed: {
+      ruleId: digest.ruleId,
       sent: pushResult.sent,
       failed: pushResult.failed,
       skipped: pushResult.skipped,
-    });
-  }
-
-  return { dateIso, trigger, insights, recorded, pushed };
+    },
+  };
 }

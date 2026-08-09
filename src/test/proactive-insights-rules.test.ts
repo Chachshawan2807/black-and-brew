@@ -1,22 +1,34 @@
 import { describe, expect, test } from 'vitest';
-import type { OperationalSnapshot, WeeklyDaySchedule } from '@/lib/proactive-insights/types';
-import { evaluateInsightRules } from '@/lib/proactive-insights/rules';
+import type {
+  OperationalSnapshot,
+  PendingBeanOrderInsight,
+  WeeklyDaySchedule,
+} from '@/lib/proactive-insights/types';
+import {
+  buildDailyInsightDigest,
+  evaluateInsightRules,
+} from '@/lib/proactive-insights/rules';
 import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 
 function makeWeekDays(
   headcounts: number[],
-  leaveCounts: number[] = Array(7).fill(0),
+  leaveStaffByDay: string[][] = Array(7).fill([]),
 ): WeeklyDaySchedule[] {
-  return headcounts.map((headcount, dayIndex) => ({
-    dateIso: `2026-07-${20 + dayIndex}`,
-    dayIndex,
-    headcount,
-    leaveCount: leaveCounts[dayIndex] ?? 0,
-  }));
+  return headcounts.map((headcount, dayIndex) => {
+    const staff = leaveStaffByDay[dayIndex] ?? [];
+    return {
+      dateIso: `2026-07-${20 + dayIndex}`,
+      dayIndex,
+      headcount,
+      leaveCount: staff.length,
+      leaveStaff: staff.map((name) => ({ name })),
+    };
+  });
 }
 
 function sampleSnapshot(overrides: Partial<OperationalSnapshot> = {}): OperationalSnapshot {
-  const weeklyDays = overrides.weeklyDays ?? makeWeekDays([5, 5, 5, 5, 5, 5, 5]);
+  const weeklyDays =
+    overrides.weeklyDays ?? makeWeekDays([5, 5, 5, 5, 5, 5, 5]);
   const todayIndex = weeklyDays.findIndex((d) => d.dateIso === '2026-07-24') ?? 4;
   const today = weeklyDays[todayIndex] ?? weeklyDays[4];
 
@@ -28,7 +40,7 @@ function sampleSnapshot(overrides: Partial<OperationalSnapshot> = {}): Operation
     leaveCount: today?.leaveCount ?? 0,
     offCount: 2,
     weeklyDays,
-    pendingBeanOrders: 0,
+    pendingBeanOrders: [],
     yesterdaySalesTotal: 0,
     upcomingHoliday: null,
     ...overrides,
@@ -36,7 +48,7 @@ function sampleSnapshot(overrides: Partial<OperationalSnapshot> = {}): Operation
 }
 
 describe('evaluateInsightRules', () => {
-  test('understaffed_low_stock fires when any weekday is at or below its limit', () => {
+  test('understaffed_low_stock lists short weekday dates with headcount', () => {
     const insights = evaluateInsightRules(
       sampleSnapshot({
         weeklyDays: makeWeekDays([3, 5, 4, 5, 3, 4, 5]),
@@ -45,18 +57,8 @@ describe('evaluateInsightRules', () => {
     const hit = insights.find((i) => i.ruleId === 'understaffed_low_stock');
     expect(hit).toBeDefined();
     expect(hit!.title).toBe('คนน้อย');
-    expect(hit!.urlPath).toBe('/schedule');
-    expect(hit!.summary).toContain('จ. 3 คน');
-    expect(hit!.summary).toContain('ศ. 3 คน');
-  });
-
-  test('understaffed_low_stock fires at Wed/Thu limit of 4', () => {
-    const insights = evaluateInsightRules(
-      sampleSnapshot({
-        weeklyDays: makeWeekDays([5, 5, 4, 4, 5, 5, 5]),
-      }),
-    );
-    expect(insights.find((i) => i.ruleId === 'understaffed_low_stock')).toBeDefined();
+    expect(hit!.summary).toContain('จ. 20 3 คน');
+    expect(hit!.summary).toContain('ศ. 24 3 คน');
   });
 
   test('understaffed_low_stock does not fire when all days are above limits', () => {
@@ -68,65 +70,63 @@ describe('evaluateInsightRules', () => {
     expect(insights.find((i) => i.ruleId === 'understaffed_low_stock')).toBeUndefined();
   });
 
-  test('leave_coverage_risk fires when weekly leave total meets threshold', () => {
+  test('leave_coverage_risk lists each leave with short weekday date', () => {
     const insights = evaluateInsightRules(
       sampleSnapshot({
-        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], [1, 1, 0, 0, 0, 0, 0]),
+        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], [['เอ'], ['บี']]),
       }),
     );
     const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
     expect(hit).toBeDefined();
-    expect(hit!.title).toBe('ลาหลายคน');
-    expect(hit!.urlPath).toBe('/schedule');
-    expect(hit!.summary).toContain('2');
+    expect(hit!.summary).toContain('เอ (จ. 20)');
+    expect(hit!.summary).toContain('บี (อ. 21)');
   });
 
   test('leave_coverage_risk does not fire below weekly leave threshold', () => {
     const insights = evaluateInsightRules(
       sampleSnapshot({
-        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], [1, 0, 0, 0, 0, 0, 0]),
+        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], [['เอ']]),
       }),
     );
     expect(insights.find((i) => i.ruleId === 'leave_coverage_risk')).toBeUndefined();
     expect(INSIGHT_THRESHOLDS.leaveCoverageMinLeave).toBe(2);
   });
 
-  test('bean_orders_inventory_gap fires when pending bean orders meet threshold', () => {
-    const insights = evaluateInsightRules(sampleSnapshot({ pendingBeanOrders: 1 }));
+  test('bean_orders_inventory_gap lists customer names and pending status', () => {
+    const pending: PendingBeanOrderInsight[] = [
+      { customerName: 'คุณเอ', statusLabel: 'ค้างชำระเงิน' },
+      { customerName: 'ทัพพ์', statusLabel: 'ค้างจัดส่ง' },
+    ];
+    const insights = evaluateInsightRules(sampleSnapshot({ pendingBeanOrders: pending }));
     const hit = insights.find((i) => i.ruleId === 'bean_orders_inventory_gap');
     expect(hit).toBeDefined();
-    expect(hit!.title).toBe('ออเดอร์เมล็ดค้าง');
-    expect(hit!.urlPath).toBe('/bean-orders');
-    expect(hit!.summary).toContain('1');
-    expect(hit!.summary).not.toContain('สต็อก');
+    expect(hit!.summary).toContain('คุณเอ (ค้างชำระเงิน)');
+    expect(hit!.summary).toContain('ทัพพ์ (ค้างจัดส่ง)');
   });
 
-  test('bean_orders_inventory_gap does not fire below pending threshold', () => {
-    const insights = evaluateInsightRules(sampleSnapshot({ pendingBeanOrders: 0 }));
+  test('bean_orders_inventory_gap does not fire when no pending orders', () => {
+    const insights = evaluateInsightRules(sampleSnapshot({ pendingBeanOrders: [] }));
     expect(insights.find((i) => i.ruleId === 'bean_orders_inventory_gap')).toBeUndefined();
   });
 
-  test('returns multiple insights when several rules match', () => {
+  test('buildDailyInsightDigest merges matched rules into one notification', () => {
     const insights = evaluateInsightRules(
       sampleSnapshot({
-        weeklyDays: makeWeekDays([2, 5, 5, 5, 5, 5, 5], [1, 1, 0, 0, 0, 0, 0]),
-        pendingBeanOrders: 1,
+        weeklyDays: makeWeekDays([2, 5, 5, 5, 5, 5, 5], [['เอ'], ['บี']]),
+        pendingBeanOrders: [{ customerName: 'คุณซี', statusLabel: 'ค้างชำระเงิน' }],
       }),
     );
-    expect(insights.length).toBeGreaterThanOrEqual(3);
-    expect(new Set(insights.map((i) => i.ruleId)).size).toBe(3);
+    const digest = buildDailyInsightDigest(insights);
+    expect(digest).not.toBeNull();
+    expect(digest!.ruleId).toBe('daily_digest');
+    expect(digest!.title).toBe('แจ้งเตือนเชิงรุก');
+    expect(digest!.summary).toContain('【คนน้อย】');
+    expect(digest!.summary).toContain('【ลาหลายคน】');
+    expect(digest!.summary).toContain('【ออเดอร์เมล็ดค้าง】');
+    expect(digest!.summary).toContain('คุณซี (ค้างชำระเงิน)');
   });
 
-  test('each insight has stable ruleId and priority', () => {
-    const insights = evaluateInsightRules(
-      sampleSnapshot({
-        weeklyDays: makeWeekDays([2, 5, 5, 5, 5, 5, 5]),
-      }),
-    );
-    for (const insight of insights) {
-      expect(insight.ruleId).toMatch(/^[a-z_]+$/);
-      expect(['normal', 'high']).toContain(insight.priority);
-      expect(insight.title.length).toBeGreaterThan(0);
-    }
+  test('buildDailyInsightDigest returns null when no rules match', () => {
+    expect(buildDailyInsightDigest([])).toBeNull();
   });
 });

@@ -3,13 +3,13 @@ import { compileOperationalSnapshot } from '@/lib/proactive-insights/compile-ope
 import type { OperationalSnapshotDeps } from '@/lib/proactive-insights/compile-operational-snapshot';
 
 const defaultWeeklyDays = [
-  { dateIso: '2026-07-20', dayIndex: 0, headcount: 4, leaveCount: 0 },
-  { dateIso: '2026-07-21', dayIndex: 1, headcount: 4, leaveCount: 1 },
-  { dateIso: '2026-07-22', dayIndex: 2, headcount: 5, leaveCount: 0 },
-  { dateIso: '2026-07-23', dayIndex: 3, headcount: 5, leaveCount: 0 },
-  { dateIso: '2026-07-24', dayIndex: 4, headcount: 1, leaveCount: 0 },
-  { dateIso: '2026-07-25', dayIndex: 5, headcount: 5, leaveCount: 0 },
-  { dateIso: '2026-07-26', dayIndex: 6, headcount: 5, leaveCount: 0 },
+  { dateIso: '2026-07-20', dayIndex: 0, headcount: 4, leaveCount: 0, leaveStaff: [] },
+  { dateIso: '2026-07-21', dayIndex: 1, headcount: 4, leaveCount: 1, leaveStaff: [{ name: 'เอ' }] },
+  { dateIso: '2026-07-22', dayIndex: 2, headcount: 5, leaveCount: 0, leaveStaff: [] },
+  { dateIso: '2026-07-23', dayIndex: 3, headcount: 5, leaveCount: 0, leaveStaff: [] },
+  { dateIso: '2026-07-24', dayIndex: 4, headcount: 1, leaveCount: 0, leaveStaff: [] },
+  { dateIso: '2026-07-25', dayIndex: 5, headcount: 5, leaveCount: 0, leaveStaff: [] },
+  { dateIso: '2026-07-26', dayIndex: 6, headcount: 5, leaveCount: 0, leaveStaff: [] },
 ];
 
 function makeDeps(overrides: Partial<OperationalSnapshotDeps> = {}): OperationalSnapshotDeps {
@@ -24,7 +24,11 @@ function makeDeps(overrides: Partial<OperationalSnapshotDeps> = {}): Operational
       headcount: 1,
     })),
     fetchWeekSchedule: vi.fn(async () => defaultWeeklyDays),
-    fetchPendingBeanOrders: vi.fn(async () => 3),
+    fetchPendingBeanOrders: vi.fn(async () => [
+      { customerName: 'คุณเอ', statusLabel: 'ค้างชำระเงิน' },
+      { customerName: 'ทัพพ์', statusLabel: 'ค้างจัดส่ง' },
+      { customerName: 'มุก', statusLabel: 'ค้างจัดส่ง' },
+    ]),
     fetchYesterdaySales: vi.fn(async () => 15000),
     fetchNextHoliday: vi.fn(async () => ({ name: 'สงกรานต์', daysRemaining: 10 })),
     ...overrides,
@@ -45,7 +49,11 @@ describe('compileOperationalSnapshot', () => {
     expect(snapshot.leaveCount).toBe(1);
     expect(snapshot.offCount).toBe(2);
     expect(snapshot.weeklyDays).toEqual(defaultWeeklyDays);
-    expect(snapshot.pendingBeanOrders).toBe(3);
+    expect(snapshot.pendingBeanOrders).toHaveLength(3);
+    expect(snapshot.pendingBeanOrders[0]).toEqual({
+      customerName: 'คุณเอ',
+      statusLabel: 'ค้างชำระเงิน',
+    });
     expect(snapshot.yesterdaySalesTotal).toBe(15000);
     expect(snapshot.upcomingHoliday).toEqual({ name: 'สงกรานต์', daysRemaining: 10 });
   });
@@ -83,6 +91,7 @@ describe('compileOperationalSnapshot', () => {
       deps,
     );
     expect(snapshot.weeklyDays).toHaveLength(7);
+    expect(snapshot.weeklyDays[0]?.leaveStaff).toEqual([]);
     expect(snapshot.upcomingHoliday).toBeNull();
     expect(snapshot.headcount).toBe(1);
   });

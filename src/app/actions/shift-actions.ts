@@ -6,8 +6,6 @@ import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { requireMutationAccess, requireReadAccess } from '@/lib/policies/server-gate';
 import type { Json } from '@/lib/database.types';
-import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
-
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
 
@@ -271,7 +269,6 @@ export async function saveShift(payload: ShiftPayload) {
       newValue: (data ?? payload) as Json,
     });
 
-    scheduleProactiveInsightEvaluation('shift_update');
     revalidateAppPaths();
     return { success: true, data };
   } catch (err) {

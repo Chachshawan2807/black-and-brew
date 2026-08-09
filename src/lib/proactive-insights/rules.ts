@@ -1,9 +1,9 @@
 import type { Insight, OperationalSnapshot } from '@/lib/proactive-insights/types';
+import { formatShortDayDate } from '@/lib/proactive-insights/format-short-day';
 import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 import {
+  collectWeeklyLeaveEntries,
   findUnderstaffedDays,
-  sumWeeklyLeave,
-  THAI_DAY_LABELS,
 } from '@/lib/proactive-insights/week-schedule';
 
 function ruleUnderstaffedWeekly(snapshot: OperationalSnapshot): Insight | null {
@@ -11,13 +11,16 @@ function ruleUnderstaffedWeekly(snapshot: OperationalSnapshot): Insight | null {
   if (understaffed.length === 0) return null;
 
   const dayParts = understaffed
-    .map((day) => `${THAI_DAY_LABELS[day.dayIndex]} ${day.headcount} คน`)
+    .map(
+      (day) =>
+        `${formatShortDayDate(day.dateIso, day.dayIndex)} ${day.headcount} คน`,
+    )
     .join(', ');
 
   return {
     ruleId: 'understaffed_low_stock',
     title: 'คนน้อย',
-    summary: `สัปดาห์นี้วันที่คนน้อย: ${dayParts} — ควรตรวจตารางงานค่ะ`,
+    summary: dayParts,
     urlPath: '/schedule',
     priority: 'high',
     modules: ['schedule'],
@@ -25,13 +28,20 @@ function ruleUnderstaffedWeekly(snapshot: OperationalSnapshot): Insight | null {
 }
 
 function ruleLeaveCoverageRisk(snapshot: OperationalSnapshot): Insight | null {
-  const weeklyLeave = sumWeeklyLeave(snapshot.weeklyDays);
-  if (weeklyLeave < INSIGHT_THRESHOLDS.leaveCoverageMinLeave) return null;
+  const leaveEntries = collectWeeklyLeaveEntries(snapshot.weeklyDays);
+  if (leaveEntries.length < INSIGHT_THRESHOLDS.leaveCoverageMinLeave) return null;
+
+  const detail = leaveEntries
+    .map(
+      (entry) =>
+        `${entry.name} (${formatShortDayDate(entry.dateIso, entry.dayIndex)})`,
+    )
+    .join(', ');
 
   return {
     ruleId: 'leave_coverage_risk',
     title: 'ลาหลายคน',
-    summary: `สัปดาห์นี้มีพนักงานลารวม ${weeklyLeave} คน — ควรตรวจตารางงานค่ะ`,
+    summary: detail,
     urlPath: '/schedule',
     priority: 'high',
     modules: ['schedule'],
@@ -39,12 +49,18 @@ function ruleLeaveCoverageRisk(snapshot: OperationalSnapshot): Insight | null {
 }
 
 function ruleBeanOrdersPending(snapshot: OperationalSnapshot): Insight | null {
-  if (snapshot.pendingBeanOrders < INSIGHT_THRESHOLDS.beanOrdersMinPending) return null;
+  if (snapshot.pendingBeanOrders.length < INSIGHT_THRESHOLDS.beanOrdersMinPending) {
+    return null;
+  }
+
+  const detail = snapshot.pendingBeanOrders
+    .map((order) => `${order.customerName} (${order.statusLabel})`)
+    .join(', ');
 
   return {
     ruleId: 'bean_orders_inventory_gap',
     title: 'ออเดอร์เมล็ดค้าง',
-    summary: `ออเดอร์เมล็ดค้าง ${snapshot.pendingBeanOrders} รายการ — ควรตรวจสอบค่ะ`,
+    summary: detail,
     urlPath: '/bean-orders',
     priority: 'normal',
     modules: ['bean_orders'],
@@ -60,4 +76,24 @@ export function evaluateInsightRules(snapshot: OperationalSnapshot): Insight[] {
     if (result) insights.push(result);
   }
   return insights;
+}
+
+/** One daily notification combining every rule that matched at 17:00 ICT. */
+export function buildDailyInsightDigest(insights: Insight[]): Insight | null {
+  if (insights.length === 0) return null;
+
+  const modules = [...new Set(insights.flatMap((insight) => insight.modules))];
+  const priority = insights.some((insight) => insight.priority === 'high') ? 'high' : 'normal';
+  const summary = insights
+    .map((insight) => `【${insight.title}】\n${insight.summary}`)
+    .join('\n\n');
+
+  return {
+    ruleId: 'daily_digest',
+    title: 'แจ้งเตือนเชิงรุก',
+    summary,
+    urlPath: '/dashboard',
+    priority,
+    modules,
+  };
 }

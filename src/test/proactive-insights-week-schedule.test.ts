@@ -32,8 +32,8 @@ describe('isDayUnderstaffed', () => {
 describe('findUnderstaffedDays', () => {
   test('returns only days at or below their limit', () => {
     const days = [
-      { dateIso: '2026-07-20', dayIndex: 0, headcount: 3, leaveCount: 0 },
-      { dateIso: '2026-07-21', dayIndex: 1, headcount: 5, leaveCount: 0 },
+      { dateIso: '2026-07-20', dayIndex: 0, headcount: 3, leaveCount: 0, leaveStaff: [] },
+      { dateIso: '2026-07-21', dayIndex: 1, headcount: 5, leaveCount: 0, leaveStaff: [] },
     ];
     expect(findUnderstaffedDays(days)).toHaveLength(1);
     expect(findUnderstaffedDays(days)[0]?.dayIndex).toBe(0);
@@ -43,8 +43,8 @@ describe('findUnderstaffedDays', () => {
 describe('sumWeeklyLeave', () => {
   test('sums leave counts across the week', () => {
     const days = [
-      { dateIso: 'a', dayIndex: 0, headcount: 5, leaveCount: 1 },
-      { dateIso: 'b', dayIndex: 1, headcount: 5, leaveCount: 2 },
+      { dateIso: 'a', dayIndex: 0, headcount: 5, leaveCount: 1, leaveStaff: [{ name: 'เอ' }] },
+      { dateIso: 'b', dayIndex: 1, headcount: 5, leaveCount: 2, leaveStaff: [{ name: 'บี' }, { name: 'ซี' }] },
     ];
     expect(sumWeeklyLeave(days)).toBe(3);
   });

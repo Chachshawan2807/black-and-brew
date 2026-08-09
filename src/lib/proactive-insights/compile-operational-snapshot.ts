@@ -6,9 +6,14 @@ import {
   fetchTodayShifts,
   type StaffShiftEntry,
 } from '@/app/actions/daily-report-actions';
-import { TABLE_COLUMN_PRESETS, TABLE_MAX_LIMITS } from '@/lib/ai-data-gateway';
-import type { OperationalSnapshot, WeeklyDaySchedule } from '@/lib/proactive-insights/types';
+import { TABLE_MAX_LIMITS } from '@/lib/ai-data-gateway';
+import type {
+  OperationalSnapshot,
+  PendingBeanOrderInsight,
+  WeeklyDaySchedule,
+} from '@/lib/proactive-insights/types';
 import { getWeekDateIsos } from '@/lib/proactive-insights/week-schedule';
+import { resolvePendingBeanOrderStatusLabel } from '@/lib/proactive-insights/pending-bean-order-status';
 
 export type ShiftSnapshotBlock = {
   activeStaff: StaffShiftEntry[];
@@ -20,7 +25,7 @@ export type ShiftSnapshotBlock = {
 export type OperationalSnapshotDeps = {
   fetchShifts: (date: Date) => Promise<ShiftSnapshotBlock>;
   fetchWeekSchedule: (anchorDate: Date) => Promise<WeeklyDaySchedule[]>;
-  fetchPendingBeanOrders: () => Promise<number>;
+  fetchPendingBeanOrders: () => Promise<PendingBeanOrderInsight[]>;
   fetchYesterdaySales: (yesterdayIso: string) => Promise<number>;
   fetchNextHoliday: (
     date: Date,
@@ -51,30 +56,43 @@ export function dateIsoToDisplay(dateIso: string): string {
   return format(parsed, 'dd-MM-yyyy');
 }
 
-async function defaultFetchPendingBeanOrders(): Promise<number> {
+async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[]> {
   const admin = getSupabaseAdmin();
-  if (!admin) return 0;
+  if (!admin) return [];
 
   const since = new Date();
   since.setDate(since.getDate() - 30);
   const { data, error } = await admin
     .from('bean_orders')
-    .select(TABLE_COLUMN_PRESETS.bean_orders)
+    .select('payment_status, fulfillment_status, recipient_name, bean_customers(name)')
     .gte('created_at', since.toISOString())
     .is('cancelled_at', null)
     .limit(TABLE_MAX_LIMITS.bean_orders);
 
   if (error) {
     console.error('[proactive-insights] bean_orders:', error.message, error.details);
-    return 0;
+    return [];
   }
 
-  let pending = 0;
+  const { getBeanOrderCustomerDisplayName } = await import('@/lib/bean-orders/customer-display');
+  const pending: PendingBeanOrderInsight[] = [];
+
   for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
     const payment = String(row.payment_status ?? '');
     const fulfillment = String(row.fulfillment_status ?? '');
-    if (payment === 'unpaid' || fulfillment === 'pending') pending += 1;
+    const statusLabel = resolvePendingBeanOrderStatusLabel(payment, fulfillment);
+    if (!statusLabel) continue;
+
+    const customer = row.bean_customers as { name?: string } | null;
+    pending.push({
+      customerName: getBeanOrderCustomerDisplayName({
+        customerName: customer?.name ?? null,
+        recipientName: String(row.recipient_name ?? ''),
+      }),
+      statusLabel,
+    });
   }
+
   return pending;
 }
 
@@ -123,6 +141,9 @@ async function defaultFetchWeekSchedule(anchorDate: Date): Promise<WeeklyDaySche
         dayIndex,
         headcount: shifts.headcount,
         leaveCount: countLeaveStaff(shifts.offStaff),
+        leaveStaff: shifts.offStaff
+          .filter((entry) => entry.shiftText.trim() === 'ลา')
+          .map((entry) => ({ name: entry.name })),
       };
     }),
   );
@@ -153,6 +174,7 @@ function emptyWeekSchedule(anchorDateIso: string): WeeklyDaySchedule[] {
     dayIndex,
     headcount: 0,
     leaveCount: 0,
+    leaveStaff: [],
   }));
 }
 
@@ -173,7 +195,7 @@ export async function compileOperationalSnapshot(
         headcount: 0,
       }),
       settle(deps.fetchWeekSchedule(date), emptyWeekSchedule(opts.dateIso)),
-      settle(deps.fetchPendingBeanOrders(), 0),
+      settle(deps.fetchPendingBeanOrders(), []),
       settle(deps.fetchYesterdaySales(yesterdayIso), 0),
       settle(deps.fetchNextHoliday(date), null),
     ]);
@@ -192,12 +214,8 @@ export async function compileOperationalSnapshot(
   };
 }
 
-/** Resolve which calendar day a cron window should evaluate (Bangkok wall date). */
-export function resolveInsightTargetDateIso(
-  window: 'morning' | 'evening',
-  now: Date = new Date(),
-): string {
-  void window;
+/** Resolve Bangkok calendar date for the daily 17:00 ICT insight cron. */
+export function resolveInsightTargetDateIso(now: Date = new Date()): string {
   const bkk = toZonedTime(now, 'Asia/Bangkok');
   return format(bkk, 'yyyy-MM-dd');
 }

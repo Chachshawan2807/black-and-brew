@@ -1,5 +1,5 @@
 import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
 
 export default function Loading() {
-  return <RouteLoadingSkeleton label="กำลังโหลดข้อมูลยอดขาย..." />;
+  return <RouteLoadingSkeleton label="กำลังโหลดรายงานการขาย..." />;
 }
