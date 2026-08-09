@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import {
+  buildDailyReportOsNotification,
   buildInventoryOsNotification,
   buildSystemNotificationOptions,
   isBenignPushRegistrationError,
   isUuidString,
+  OS_NOTIFICATION_BODY_MAX,
   PWA_NOTIFICATION_BADGE,
   PWA_NOTIFICATION_ICON,
   PWA_NOTIFICATION_VIBRATE,
@@ -99,6 +101,28 @@ describe('pwa-notification-bridge', () => {
     );
     expect(daily.title).toBe('ตารางงานพรุ่งนี้ · 21-06-2026 · นิต้า 6:30');
     expect(daily.body).toBe('');
+  });
+
+  test('buildDailyReportOsNotification keeps headline and schedule detail separate on Android', () => {
+    const scheduleBody = [
+      'ตารางงาน 09-08-2026 (วันนี้) · เข้างาน 5 คน',
+      'ปิ่น 6:30, มุก 7:00, นิต้า 8:00, ล่า 6:30, โบ๊ท 7:00',
+      'งานอื่น: ล่า — ร้านซักผ้า',
+    ].join('\n');
+
+    const android = buildDailyReportOsNotification('ตารางงานวันนี้', scheduleBody);
+    expect(android.title).toBe('ตารางงานวันนี้');
+    expect(android.body).toBe(scheduleBody.slice(0, OS_NOTIFICATION_BODY_MAX));
+    expect(android.body).toContain('ปิ่น 6:30');
+    expect(android.body).toContain('งานอื่น');
+  });
+
+  test('buildDailyReportOsNotification merges schedule lines into title on iOS', () => {
+    const scheduleBody = 'ตารางงาน 09-08-2026 (วันนี้) · เข้างาน 2 คน\nปิ่น 6:30, มุก 7:00';
+    const ios = buildDailyReportOsNotification('ตารางงานวันนี้', scheduleBody, { isIos: true });
+    expect(ios.title).toContain('ตารางงานวันนี้');
+    expect(ios.title).toContain('ปิ่น 6:30');
+    expect(ios.body).toBe('');
   });
 
   test('system notification uses brand icon and separate mobile badge mask', () => {

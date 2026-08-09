@@ -66,8 +66,32 @@ export function isBenignPushRegistrationError(error: unknown): boolean {
   return false;
 }
 
-const OS_NOTIFICATION_TITLE_MAX = 120;
-const OS_NOTIFICATION_BODY_MAX = 240;
+export const OS_NOTIFICATION_TITLE_MAX = 120;
+export const OS_NOTIFICATION_BODY_MAX = 240;
+
+/**
+ * Daily schedule reports: short headline in title, full multi-line summary in body.
+ * Android shows both; iOS merges into title (up to body max) so the byline stays at bottom.
+ */
+export function buildDailyReportOsNotification(
+  headline: string,
+  fieldSummary: string,
+  options?: { isIos?: boolean },
+): { title: string; body: string } {
+  const isIos = options?.isIos ?? false;
+  const titleLine = headline.trim().slice(0, OS_NOTIFICATION_TITLE_MAX);
+  const bodyLine = fieldSummary.trim().slice(0, OS_NOTIFICATION_BODY_MAX);
+
+  if (isIos) {
+    const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
+    return {
+      title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
+      body: '',
+    };
+  }
+
+  return { title: titleLine, body: bodyLine };
+}
 
 /**
  * OS banner title/body for Web Push and system notifications.

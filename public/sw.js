@@ -1,4 +1,4 @@
-// v19
+// v20
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -58,6 +58,12 @@ function isStockOperationNotificationTitle(title) {
   return /^[+−⇄]\s/u.test(String(title || '').trim());
 }
 
+function isDailyReportPayload(payload) {
+  if (payload.kind === 'daily_report') return true;
+  const meta = payload.notification && payload.notification.metadata;
+  return meta && meta.kind === 'daily_report';
+}
+
 /**
  * iOS WebKit inserts "from [app]" between title and body. For stock ops, merge both
  * lines into title so the byline appears below the quantity line.
@@ -69,6 +75,25 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
     (payload.notification && payload.notification.summary) || payload.body || '';
   const trimmedTitle = String(logicalTitle).trim();
   const trimmedSummary = String(logicalSummary).trim();
+
+  if (isDailyReportPayload(payload)) {
+    const fieldSummary =
+      (payload.notification &&
+        (payload.notification.fieldSummary || payload.notification.summary)) ||
+      trimmedSummary;
+    const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
+    const bodyLine = String(fieldSummary).trim().slice(0, OS_NOTIFICATION_BODY_MAX);
+
+    if (isIosPushClient()) {
+      const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
+      return {
+        title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
+        body: '',
+      };
+    }
+
+    return { title: titleLine, body: bodyLine };
+  }
 
   if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
     const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);

@@ -1,7 +1,7 @@
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 import { dailyReportNotificationLogId } from '@/lib/daily-report-notification';
-import { buildInventoryOsNotification } from '@/lib/pwa-notification-bridge';
+import { buildDailyReportOsNotification } from '@/lib/pwa-notification-bridge';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type InventoryNotification,
@@ -52,8 +52,8 @@ export function buildDailyReportPushPayload(
   const schedulePath = `/${locale}/schedule`;
   const tag = dailyReportNotificationLogId(data.schedule, data.dateStr);
   const headline = scheduleTitle(data.schedule, locale);
-  const detail = alt.length > 220 ? `${alt.slice(0, 217)}…` : alt;
-  const osNotification = buildInventoryOsNotification(headline, detail, 1, locale === 'th');
+  const summaryPreview = alt.length > 220 ? `${alt.slice(0, 217)}…` : alt;
+  const osNotification = buildDailyReportOsNotification(headline, alt);
   const now = new Date().toISOString();
 
   return {
@@ -74,7 +74,7 @@ export function buildDailyReportPushPayload(
       actorLabel: locale === 'th' ? 'ระบบตารางงาน' : 'Schedule system',
       occurredAt: now,
       title: headline,
-      summary: detail,
+      summary: summaryPreview,
       fieldSummary: alt,
       priority: 'normal',
       read: false,

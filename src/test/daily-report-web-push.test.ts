@@ -43,17 +43,29 @@ function sampleSubscription(overrides: Partial<PushSubscriptionRow> = {}): PushS
 }
 
 describe('daily-report-web-push', () => {
-  test('buildDailyReportPushPayload includes schedule metadata and schedule URL', () => {
-    const payload = buildDailyReportPushPayload(sampleReport({ schedule: 'tomorrow' }), 'th');
+  test('buildDailyReportPushPayload keeps headline in title and full schedule in body', () => {
+    const longStaff = Array.from({ length: 12 }, (_, i) => ({
+      name: `พนักงาน${i + 1}`,
+      shiftText: `${6 + (i % 3)}:${i % 2 === 0 ? '30' : '00'}`,
+    }));
+    const payload = buildDailyReportPushPayload(
+      sampleReport({
+        activeStaff: longStaff,
+        headcount: longStaff.length,
+      }),
+      'th',
+    );
     expect(payload.kind).toBe('daily_report');
-    expect(payload.schedule).toBe('tomorrow');
-    expect(payload.title).toContain('ตารางงาน');
-    expect(payload.title).toContain('21-06-2026');
-    expect(payload.body).toBe('');
+    expect(payload.schedule).toBe('today');
+    expect(payload.title).toBe('ตารางงานวันนี้');
+    expect(payload.body).toContain('ตารางงาน 21-06-2026 (วันนี้)');
+    expect(payload.body).toContain('พนักงาน1');
+    expect(payload.body.length).toBeGreaterThan(80);
     expect(payload.url).toBe('/th/schedule');
-    expect(payload.tag).toContain('bb-daily-report-tomorrow');
+    expect(payload.tag).toContain('bb-daily-report-today');
     expect(payload.notification.logId).toBe(payload.tag);
     expect(payload.notification.metadata.url).toBe('/th/schedule');
+    expect(payload.notification.fieldSummary).toContain('พนักงาน12');
     expect(payload.unreadCount).toBe(1);
     expect(payload.assets.icon).toBe('/images/push-notification-icon.png');
     expect(payload.assets.badge).toBe('/images/notification-badge.png');
