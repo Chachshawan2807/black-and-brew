@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
-import { syncBeanOrderTrackingStatuses } from '@/lib/bean-orders/sync-tracking';
+import {
+  syncBeanOrderTrackingStatuses,
+  syncStaleBeanOrderTrackingStatuses,
+} from '@/lib/bean-orders/sync-tracking';
+import { resolveTrackingSyncMode } from '@/lib/bean-orders/tracking-config';
 import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
 
 export const maxDuration = 60;
@@ -13,6 +17,14 @@ function authorizeCron(request: Request): NextResponse | null {
   });
 }
 
+async function runTrackingSync(request: Request) {
+  const mode = resolveTrackingSyncMode(new URL(request.url).searchParams);
+  if (mode === 'full') {
+    return syncBeanOrderTrackingStatuses();
+  }
+  return syncStaleBeanOrderTrackingStatuses();
+}
+
 export async function GET(request: Request) {
   await headers();
   noStore();
@@ -21,8 +33,9 @@ export async function GET(request: Request) {
   if (denied) return denied;
 
   try {
-    const result = await syncBeanOrderTrackingStatuses();
-    return NextResponse.json({ ok: true, ...result });
+    const mode = resolveTrackingSyncMode(new URL(request.url).searchParams);
+    const result = await runTrackingSync(request);
+    return NextResponse.json({ ok: true, mode, ...result });
   } catch (error) {
     console.error('sync-tracking error:', error);
     return NextResponse.json({ ok: false }, { status: 500 });
@@ -38,8 +51,9 @@ export async function POST(request: Request) {
   if (denied) return denied;
 
   try {
-    const result = await syncBeanOrderTrackingStatuses();
-    return NextResponse.json({ ok: true, ...result });
+    const mode = resolveTrackingSyncMode(new URL(request.url).searchParams);
+    const result = await runTrackingSync(request);
+    return NextResponse.json({ ok: true, mode, ...result });
   } catch (error) {
     console.error('sync-tracking error:', error);
     return NextResponse.json({ ok: false }, { status: 500 });

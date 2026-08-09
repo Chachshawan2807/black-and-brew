@@ -1,11 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import {
+  ensureFullNotificationPreferencesOnAuth,
+  hasNotificationUserOptOut,
   isNotificationMasterEnabled,
   notificationMasterPatch,
+  setNotificationUserOptOut,
   shouldNotifyForAction,
+  NOTIFICATION_OPT_OUT_KEY,
 } from '@/lib/notification-preferences';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
+  NOTIFICATION_PREFS_KEY,
   type NotificationPreferences,
 } from '@/lib/notification-types';
 
@@ -64,5 +69,40 @@ describe('notification master switch', () => {
       proactiveInsights: true,
       securityAlerts: true,
     });
+  });
+});
+
+describe('ensureFullNotificationPreferencesOnAuth', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('enables all main channels when the user has not opted out', () => {
+    localStorage.setItem(
+      NOTIFICATION_PREFS_KEY,
+      JSON.stringify({ ...DEFAULT_NOTIFICATION_PREFERENCES, proactiveInsights: false }),
+    );
+
+    const prefs = ensureFullNotificationPreferencesOnAuth();
+
+    expect(isNotificationMasterEnabled(prefs)).toBe(true);
+    expect(JSON.parse(localStorage.getItem(NOTIFICATION_PREFS_KEY) ?? '{}').proactiveInsights).toBe(true);
+  });
+
+  it('respects explicit opt-out from the master switch', () => {
+    setNotificationUserOptOut(true);
+    localStorage.setItem(
+      NOTIFICATION_PREFS_KEY,
+      JSON.stringify({ ...DEFAULT_NOTIFICATION_PREFERENCES, proactiveInsights: false }),
+    );
+
+    const prefs = ensureFullNotificationPreferencesOnAuth();
+
+    expect(prefs.proactiveInsights).toBe(false);
+    expect(hasNotificationUserOptOut()).toBe(true);
   });
 });

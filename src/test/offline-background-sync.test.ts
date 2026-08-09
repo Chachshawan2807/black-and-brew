@@ -17,6 +17,7 @@ describe('offline background sync wiring', () => {
   test('PwaRegister installs offline mutation listeners globally', () => {
     const source = readFileSync(pwaRegisterPath, 'utf-8');
     expect(source).toContain('installOfflineMutationListeners');
+    expect(source).toContain('unregisterOrphanedServiceWorkersInDev');
   });
 
   test('PwaRegister blocks cross-origin notification navigation', () => {

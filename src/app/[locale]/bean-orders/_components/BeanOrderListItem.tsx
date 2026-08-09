@@ -11,7 +11,7 @@ import { getCarrierLabel } from '@/lib/bean-orders/carriers';
 import { formatBeanOrderShareText } from '@/lib/bean-orders/order-share-text';
 import { preloadRouteChunk } from '@/lib/route-chunk-preload';
 import { OrderListStatusGroup } from './OrderStatusBadge';
-import { BEAN_ORDER_BTN_MOTION, BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
+import { BEAN_ORDER_BTN_ICON, BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -95,8 +95,8 @@ export function BeanOrderListItem({ order, locale }: Props) {
         type="button"
         onClick={(event) => void handleCopy(event)}
         className={cn(
-          'mt-3 ml-1 inline-flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground lg:col-start-1 lg:mt-0 lg:ml-0 lg:h-9 lg:w-9',
-          BEAN_ORDER_BTN_MOTION,
+          'mt-3 ml-1 h-11 w-11 shrink-0 text-muted-foreground lg:col-start-1 lg:mt-0 lg:ml-0 lg:h-9 lg:w-9',
+          BEAN_ORDER_BTN_ICON,
           BEAN_ORDER_LIST_CELL,
           'lg:flex lg:items-center lg:justify-center lg:!px-0',
         )}

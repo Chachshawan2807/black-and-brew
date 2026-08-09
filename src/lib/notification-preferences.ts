@@ -5,6 +5,9 @@ import {
 } from '@/lib/notification-types';
 import type { DataChangeAction } from '@/lib/data-change-log';
 
+/** Set when the user explicitly turns off the master notifications switch. */
+export const NOTIFICATION_OPT_OUT_KEY = 'bb-notification-user-opted-out';
+
 export function loadNotificationPreferences(): NotificationPreferences {
   if (typeof window === 'undefined') {
     return { ...DEFAULT_NOTIFICATION_PREFERENCES };
@@ -45,6 +48,47 @@ export function isNotificationMasterEnabled(prefs: NotificationPreferences): boo
     prefs.proactiveInsights &&
     prefs.securityAlerts
   );
+}
+
+export function hasNotificationUserOptOut(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(NOTIFICATION_OPT_OUT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function setNotificationUserOptOut(optedOut: boolean): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (optedOut) {
+      localStorage.setItem(NOTIFICATION_OPT_OUT_KEY, '1');
+    } else {
+      localStorage.removeItem(NOTIFICATION_OPT_OUT_KEY);
+    }
+  } catch {
+    // ignore quota / private browsing
+  }
+}
+
+/**
+ * After PIN auth, enable every notification channel unless the user previously
+ * opted out via the master switch in Settings.
+ */
+export function ensureFullNotificationPreferencesOnAuth(): NotificationPreferences {
+  if (hasNotificationUserOptOut()) {
+    return loadNotificationPreferences();
+  }
+
+  const current = loadNotificationPreferences();
+  const next: NotificationPreferences = {
+    ...current,
+    ...notificationMasterPatch(true),
+    notifyOwnChanges: current.notifyOwnChanges ?? true,
+  };
+  saveNotificationPreferences(next);
+  return next;
 }
 
 export function notificationMasterPatch(

@@ -13,6 +13,13 @@ describe('PWA navigation performance patterns', () => {
     expect(sw).toContain('networkFirstWithOfflineFallback');
   });
 
+  test('service worker bypasses dev Turbopack chunks on localhost', () => {
+    const sw = readFileSync(resolve(ROOT, 'public/sw.js'), 'utf-8');
+    expect(sw).toContain('shouldBypassSwFetchForDev');
+    expect(sw).toContain("url.pathname.includes('/_next/')");
+    expect(sw).toContain("hostname === 'localhost'");
+  });
+
   test('route preload warms common ERP routes on idle', () => {
     const preload = readFileSync(resolve(ROOT, 'src/lib/route-chunk-preload.ts'), 'utf-8');
     expect(preload).toContain('preloadCommonRouteChunks');

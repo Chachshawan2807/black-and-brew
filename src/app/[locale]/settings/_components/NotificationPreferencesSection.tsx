@@ -8,6 +8,7 @@ import {
   loadNotificationPreferences,
   notificationMasterPatch,
   saveNotificationPreferences,
+  setNotificationUserOptOut,
 } from '@/lib/notification-preferences';
 import {
   getNotificationPermissionState,
@@ -163,6 +164,7 @@ export default function NotificationPreferencesSection({
 
   const handleMasterNotifications = async (enabled: boolean) => {
     if (!enabled) {
+      setNotificationUserOptOut(true);
       const nextPrefs = { ...prefs, ...notificationMasterPatch(false) };
       setPrefs(nextPrefs);
       await syncPushPrefsToServer(nextPrefs, locale);
@@ -173,6 +175,7 @@ export default function NotificationPreferencesSection({
     const state = await requestNotificationPermission();
     setPermission(state);
     const granted = state === 'granted';
+    setNotificationUserOptOut(false);
     const nextPrefs = { ...prefs, ...notificationMasterPatch(granted) };
     setPrefs(nextPrefs);
     if (granted) {

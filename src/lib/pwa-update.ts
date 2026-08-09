@@ -28,3 +28,12 @@ export async function checkForServiceWorkerUpdate(): Promise<void> {
     // Non-fatal — e.g. offline or dev without SW
   }
 }
+
+/** Remove production SW left over in dev — it caches stale Turbopack chunks. */
+export async function unregisterOrphanedServiceWorkersInDev(): Promise<void> {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  if (process.env.NODE_ENV === 'production') return;
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(registrations.map((registration) => registration.unregister()));
+}

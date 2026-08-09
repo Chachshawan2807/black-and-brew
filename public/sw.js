@@ -1,4 +1,4 @@
-// v21
+// v22
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -424,10 +424,27 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
+function isLocalDevHost(hostname) {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname.endsWith('.localhost')
+  );
+}
+
+/** Dev Turbopack chunks change on every HMR — never intercept them or module factories go stale. */
+function shouldBypassSwFetchForDev(request) {
+  const url = new URL(request.url);
+  if (!isLocalDevHost(url.hostname)) return false;
+  return url.pathname.includes('/_next/');
+}
+
 self.addEventListener('fetch', (event) => {
   const requestUrl = event.request.url;
   if (!requestUrl.startsWith('http:') && !requestUrl.startsWith('https:')) return;
   if (event.request.method !== 'GET' || requestUrl.includes('/api/')) return;
+  if (shouldBypassSwFetchForDev(event.request)) return;
 
   const isNavigation = event.request.mode === 'navigate';
   const isImmutableAsset =

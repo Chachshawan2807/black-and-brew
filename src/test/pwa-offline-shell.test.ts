@@ -13,6 +13,7 @@ import {
 import {
   checkForServiceWorkerUpdate,
   installServiceWorkerUpdateListener,
+  unregisterOrphanedServiceWorkersInDev,
 } from '@/lib/pwa-update';
 
 const ROOT = resolve(__dirname, '../..');
@@ -72,5 +73,6 @@ describe('PWA offline shell + install config', () => {
   test('pwa-update exports lifecycle helpers', () => {
     expect(typeof installServiceWorkerUpdateListener).toBe('function');
     expect(typeof checkForServiceWorkerUpdate).toBe('function');
+    expect(typeof unregisterOrphanedServiceWorkersInDev).toBe('function');
   });
 });
