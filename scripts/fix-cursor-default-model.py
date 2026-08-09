@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pin Cursor agent model to Composer 2.5 (fast=false) and stop auto Grok promotion."""
+"""Pin Cursor agent + subagent models to Composer 2.5 (fast=false)."""
 from __future__ import annotations
 
 import json
@@ -23,6 +23,34 @@ OPEN_MODEL_CONFIG = {
     "selectedModels": [COMPOSER_MODEL],
     "maxMode": False,
 }
+COMPOSER_MODEL_CONFIG = {
+    "modelName": "composer-2.5",
+    "maxMode": False,
+    "selectedModels": [COMPOSER_MODEL],
+}
+
+# Agent surfaces that spawn or route subagent work.
+AGENT_MODEL_CONFIG_KEYS = (
+    "composer",
+    "background-composer",
+    "composer-ensemble",
+    "plan-execution",
+    "quick-agent",
+    "deep-search",
+    "spec",
+)
+
+# Server feature defaults (camelCase keys in featureModelConfigs).
+AGENT_FEATURE_KEYS = (
+    "composer",
+    "backgroundComposer",
+    "planExecution",
+    "quickAgent",
+    "deepSearch",
+    "spec",
+)
+
+SUBAGENT_FEATURE_KEYS = ("explore", "bash", "browser", "generalPurpose", "shell")
 
 
 def backup(path: Path) -> Path:
@@ -30,6 +58,45 @@ def backup(path: Path) -> Path:
     dest = path.with_suffix(path.suffix + f".bak-{stamp}")
     shutil.copy2(path, dest)
     return dest
+
+
+def composer_feature_entry() -> dict:
+    return {
+        "defaultModel": "composer-2.5",
+        "fallbackModels": [],
+        "bestOfNDefaultModels": [],
+    }
+
+
+def pin_application_user(data: dict) -> list[str]:
+    changes: list[str] = []
+
+    composer_cfg = data.setdefault("aiSettings", {}).setdefault("modelConfig", {})
+    for key in AGENT_MODEL_CONFIG_KEYS:
+        composer_cfg[key] = dict(COMPOSER_MODEL_CONFIG)
+        changes.append(f"aiSettings.modelConfig.{key}")
+
+    data["aiSettings"]["modelDefaultSwitchOnNewChat"] = False
+    data["aiSettings"]["modelParameterPreferences"] = {
+        "composer-2.5": {
+            "modelId": "composer-2.5",
+            "parameters": [{"id": "fast", "value": "false"}],
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
+        }
+    }
+
+    feature = data.setdefault("featureModelConfigs", {})
+    for key in AGENT_FEATURE_KEYS:
+        if key in feature:
+            feature[key] = composer_feature_entry()
+            changes.append(f"featureModelConfigs.{key}")
+
+    subagents = feature.setdefault("subagentModels", {})
+    for key in list(subagents.keys()) + list(SUBAGENT_FEATURE_KEYS):
+        subagents[key] = composer_feature_entry()
+        changes.append(f"featureModelConfigs.subagentModels.{key}")
+
+    return changes
 
 
 def update_state_db() -> list[str]:
@@ -60,32 +127,8 @@ def update_state_db() -> list[str]:
     ).fetchone()
     if row:
         data = json.loads(row[0])
-
-        composer_cfg = data.setdefault("aiSettings", {}).setdefault("modelConfig", {})
-        composer_cfg["composer"] = {
-            "modelName": "composer-2.5",
-            "maxMode": False,
-            "selectedModels": [COMPOSER_MODEL],
-        }
-        data["aiSettings"]["modelDefaultSwitchOnNewChat"] = False
-        data["aiSettings"]["modelParameterPreferences"] = {
-            "composer-2.5": {
-                "modelId": "composer-2.5",
-                "parameters": [{"id": "fast", "value": "false"}],
-                "updatedAt": datetime.now(timezone.utc).isoformat(),
-            }
-        }
-
-        feature = data.setdefault("featureModelConfigs", {})
-        if "composer" in feature:
-            feature["composer"]["defaultModel"] = "composer-2.5"
-        subagents = feature.setdefault("subagentModels", {})
-        if "explore" in subagents:
-            subagents["explore"]["defaultModel"] = "composer-2.5"
-            subagents["explore"]["fallbackModels"] = []
-
+        changes.extend(pin_application_user(data))
         set_item(APP_USER_KEY, json.dumps(data, separators=(",", ":")))
-        changes.append(f"{APP_USER_KEY} (composer + explore subagent)")
 
     conn.commit()
     conn.close()
