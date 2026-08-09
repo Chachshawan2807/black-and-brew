@@ -94,6 +94,14 @@ describe('BeanOrderListItem', () => {
     expect(copyButton.className).not.toMatch(/\babsolute\b/);
   });
 
+  test('copy button avoids list cell horizontal padding that crushes the icon on desktop', () => {
+    render(<BeanOrderListItem order={sampleOrder} locale="th" />);
+
+    const copyButton = screen.getByRole('button', { name: 'คัดลอกรายละเอียดออเดอร์' });
+    expect(copyButton.className).not.toContain('lg:px-4');
+    expect(copyButton.className).toContain('lg:justify-self-center');
+  });
+
   test('shows destination only in destination area and delivery badge in status column', () => {
     const orderWithTracking: BeanOrderListRow = {
       ...sampleOrder,

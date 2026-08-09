@@ -38,6 +38,9 @@ export function getNotificationPermissionState(): NotificationPermissionState {
 
 export function canRegisterServiceWorker(): boolean {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return false;
+  // Dev server compiles on demand; an active SW intercepts navigations and can leave
+  // localhost stuck on the PPR loading shell until caches are cleared manually.
+  if (process.env.NODE_ENV !== 'production') return false;
   return (
     window.location.protocol === 'https:' ||
     window.location.hostname === 'localhost' ||
@@ -85,7 +88,7 @@ export function buildSplitOsNotification(
   if (isIos) {
     const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
     return {
-      title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
+      title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
       body: '',
     };
   }

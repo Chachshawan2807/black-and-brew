@@ -65,7 +65,7 @@ function resolveSplitOsNotification(titleLine, detailLine) {
   if (isIosPushClient()) {
     const merged = body ? `${title}\n${body}` : title;
     return {
-      title: merged.slice(0, OS_NOTIFICATION_BODY_MAX),
+      title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
       body: '',
     };
   }

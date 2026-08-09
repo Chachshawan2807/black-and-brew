@@ -1,9 +1,10 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import {
   buildDailyReportOsNotification,
   buildInventoryOsNotification,
   buildSplitOsNotification,
   buildSystemNotificationOptions,
+  canRegisterServiceWorker,
   isBenignPushRegistrationError,
   isUuidString,
   OS_NOTIFICATION_BODY_MAX,
@@ -18,6 +19,12 @@ describe('pwa-notification-bridge', () => {
     expect(isUuidString('918198da-d6b9-4272-9474-e28acf5e88cb')).toBe(true);
     expect(isUuidString('ทดสอบ')).toBe(false);
     expect(isUuidString(42)).toBe(false);
+  });
+
+  test('canRegisterServiceWorker is disabled in development', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    expect(canRegisterServiceWorker()).toBe(false);
+    vi.unstubAllEnvs();
   });
 
   test('buildInventoryOsNotification keeps non-stock title and body separate on Android', () => {
@@ -136,6 +143,14 @@ describe('pwa-notification-bridge', () => {
     const ios = buildSplitOsNotification('ตารางงานวันนี้', scheduleBody, { isIos: true });
     expect(ios.title).toContain('ตารางงานวันนี้');
     expect(ios.title).toContain('ปิ่น 6:30');
+    expect(ios.body).toBe('');
+  });
+
+  test('buildSplitOsNotification truncates long iOS merge to title max', () => {
+    const longHeadline = 'ก'.repeat(80);
+    const longDetail = 'ข'.repeat(200);
+    const ios = buildSplitOsNotification(longHeadline, longDetail, { isIos: true });
+    expect(ios.title.length).toBeLessThanOrEqual(OS_NOTIFICATION_TITLE_MAX);
     expect(ios.body).toBe('');
   });
 
