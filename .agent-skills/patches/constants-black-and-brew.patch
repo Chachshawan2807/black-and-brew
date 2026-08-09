@@ -19,8 +19,8 @@
 +        "name": "BLACKANDBREW ERP Runbooks",
 +        "description": "Project-local terminal runbook skills",
 +        "skills_dir": str(AGENT_SKILLS_ROOT / "skills"),
-+        "tree_path": str(DATA_DIR / "capability_trees" / "tree_black_and_brew.yaml"),
-+        "vector_db_path": str(DATA_DIR / "vector_stores" / "black_and_brew"),
++        "tree_path": str(AGENT_SKILLS_ROOT / "data" / "capability_trees" / "tree_black_and_brew.yaml"),
++        "vector_db_path": str(AGENT_SKILLS_ROOT / "data" / "vector_stores" / "black_and_brew"),
 +        "is_default": False,
 +    },
  ]
