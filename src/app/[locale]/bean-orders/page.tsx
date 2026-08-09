@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { checkAuth } from '@/app/actions/auth';
 import { fetchBeanOrders } from '@/app/actions/bean-order-actions';
+import { syncStaleBeanOrderTrackingStatuses } from '@/lib/bean-orders/sync-tracking';
 import BeanOrdersClient from './BeanOrdersClient';
 
 export default async function BeanOrdersPage({
@@ -12,6 +13,10 @@ export default async function BeanOrdersPage({
   await connection();
   const [{ locale }, authed] = await Promise.all([params, checkAuth()]);
   if (!authed) redirect(`/${locale}`);
+
+  await syncStaleBeanOrderTrackingStatuses().catch((error) => {
+    console.error('syncStaleBeanOrderTrackingStatuses:', error);
+  });
 
   const result = await fetchBeanOrders();
 
