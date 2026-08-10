@@ -4,7 +4,7 @@
  * Manual Google Sheet sync for one schedule week (Mon–Sun).
  * Not called from shift mutations, realtime, or cron — only from ScheduleClient button.
  */
-import { addDays, format, startOfWeek } from 'date-fns';
+import { addDays, format, parseISO, startOfWeek } from 'date-fns';
 import { z } from 'zod';
 import { requireMutationAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
