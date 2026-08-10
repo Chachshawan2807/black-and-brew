@@ -1,4 +1,7 @@
 {
+  "env": {
+    "GIT_SUBMODULE_UPDATE": "0"
+  },
   "crons": [
     {
       "path": "/api/daily-report",

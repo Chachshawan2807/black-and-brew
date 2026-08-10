@@ -32,7 +32,11 @@ if (!existsSync(python)) {
 }
 
 if (!existsSync(runPy)) {
-  fail('AgentSkillOS vendor not found. Run: git submodule update --init .agent-skills/vendor/AgentSkillOS');
+  fail(
+    'AgentSkillOS vendor not found. Run:\n' +
+      '  git submodule update --init .agent-skills/vendor/AgentSkillOS\n' +
+      '  npm run asos:patch',
+  );
 }
 
 const [subcommand, ...extra] = process.argv.slice(2);

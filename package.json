@@ -20,8 +20,10 @@
     "skill:list": "node .agent-skills/scripts/skill-runner.mjs list",
     "skill:run": "node .agent-skills/scripts/skill-runner.mjs run",
     "skill:validate": "node .agent-skills/scripts/skill-runner.mjs validate",
+    "asos:patch": "node .agent-skills/scripts/apply-vendor-patch.mjs",
     "asos:build": "node .agent-skills/scripts/asos-runner.mjs build",
     "asos:ui": "node .agent-skills/scripts/asos-runner.mjs ui",
+    "postinstall": "node .agent-skills/scripts/apply-vendor-patch.mjs",
     "security:firewall:apply": "node scripts/apply-vercel-firewall.mjs",
     "security:firewall:dry-run": "node scripts/apply-vercel-firewall.mjs --dry-run"
   },

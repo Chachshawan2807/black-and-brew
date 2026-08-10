@@ -1,6 +1,8 @@
+diff --git a/src/constants.py b/src/constants.py
+index b0b7f9a..a4b3185 100644
 --- a/src/constants.py
 +++ b/src/constants.py
-@@ -11,6 +11,9 @@ from typing import Callable
+@@ -12,6 +12,9 @@ from typing import Callable
  from config import PROJECT_ROOT
  
  DATA_DIR = PROJECT_ROOT / "data"
@@ -10,7 +12,7 @@
  
  # ===== Skill Groups Configuration =====
  # Alias mapping for backward compatibility (e.g., "default" -> "skill_seeds")
-@@ -50,6 +53,15 @@ SKILL_GROUPS = [
+@@ -51,6 +54,15 @@ SKILL_GROUPS = [
          "tree_path": str(DATA_DIR / "capability_trees" / "tree_skill_10000.yaml"),
          "vector_db_path": str(DATA_DIR / "vector_stores" / "skill_10000"),
      },
@@ -24,3 +26,5 @@
 +        "is_default": False,
 +    },
  ]
+ 
+ 
