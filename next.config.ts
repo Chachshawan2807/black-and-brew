@@ -1,14 +1,12 @@
+import { createRequire } from 'node:module';
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
-import bundleAnalyzer from '@next/bundle-analyzer';
+
+const require = createRequire(import.meta.url);
 
 const withNextIntl = createNextIntlPlugin(
   './src/i18n/request.ts'
 );
-
-const withBundleAnalyzer = bundleAnalyzer({
-  enabled: process.env.ANALYZE === 'true',
-});
 
 /** @type {import('next').NextConfig} */
 const securityHeaders = [
@@ -79,4 +77,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withBundleAnalyzer(withNextIntl(nextConfig));
+const config = withNextIntl(nextConfig);
+
+const withBundleAnalyzer = process.env.ANALYZE === 'true'
+  ? require('@next/bundle-analyzer')({ enabled: true })
+  : (value: NextConfig) => value;
+
+export default withBundleAnalyzer(config);

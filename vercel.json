@@ -1,4 +1,5 @@
 {
+  "installCommand": "npm ci --ignore-scripts",
   "env": {
     "GIT_SUBMODULE_UPDATE": "0"
   },

@@ -29,13 +29,14 @@ describe('schedule management blue dot indicator', () => {
     );
   });
 
-  test('management modal uses bounded height with dedicated history scroll', () => {
-    expect(scheduleClientCode).toMatch(/showManagementModal[\s\S]*max-h-\[90dvh\] min-h-0 overflow-hidden/);
+  test('management modal uses bounded height with mobile outer scroll and desktop history scroll', () => {
+    expect(scheduleClientCode).toMatch(/showManagementModal[\s\S]*max-h-\[90dvh\] max-md:h-\[90dvh\] min-h-0 overflow-hidden/);
     expect(scheduleClientCode).toMatch(
-      /flex flex-1 min-h-0 min-w-0 overflow-y-auto md:overflow-hidden flex-col md:flex-row md:items-stretch bb-smooth-scroll/,
+      /mgmtModalScrollRef[\s\S]*flex flex-1 min-h-0 min-w-0 overflow-y-auto md:overflow-hidden flex-col md:flex-row md:items-stretch bb-smooth-scroll/,
     );
     expect(scheduleClientCode).toMatch(
-      /mgmtHistoryScrollRef[\s\S]*flex-1 min-h-0 overflow-y-auto overscroll-y-contain bb-smooth-scroll/,
+      /mgmtHistoryScrollRef[\s\S]*max-md:shrink-0 md:flex-1 md:min-h-0 md:overflow-y-auto md:overscroll-y-contain bb-smooth-scroll/,
     );
+    expect(scheduleClientCode).toContain('getMgmtHistoryScrollRoot');
   });
 });

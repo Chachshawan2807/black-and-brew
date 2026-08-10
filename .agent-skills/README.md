@@ -22,7 +22,7 @@ Project-local skill lifecycle management. Runbooks live in `.agent-skills/skills
 ├── scripts/          # skill-runner.mjs, asos-runner.mjs
 ├── asos/             # AgentSkillOS config (not gitignored config/)
 ├── patches/          # Vendor patch for black_and_brew skill group
-└── vendor/AgentSkillOS/  # Git submodule (upstream)
+└── vendor/AgentSkillOS/  # Optional git submodule — run `npm run agent-skills:init` after clone
 ```
 
 ## Add a new skill (4 steps)

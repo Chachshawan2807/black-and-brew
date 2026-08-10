@@ -563,6 +563,7 @@ export default function ScheduleClient({
   const [mgmtHistoryCursor, setMgmtHistoryCursor] = useState<string | null>(null);
   const [mgmtHistoryHasMore, setMgmtHistoryHasMore] = useState(true);
   const [mgmtHistoryLoading, setMgmtHistoryLoading] = useState(false);
+  const mgmtModalScrollRef = useRef<HTMLDivElement>(null);
   const mgmtHistoryScrollRef = useRef<HTMLDivElement>(null);
   const mgmtHistoryLoadMoreRef = useRef<HTMLTableRowElement>(null);
   const mgmtHistoryFetchingRef = useRef(false);
@@ -852,13 +853,20 @@ export default function ScheduleClient({
     }
   }, [historyFilter]);
 
+  const getMgmtHistoryScrollRoot = useCallback(() => {
+    if (typeof window === 'undefined') return mgmtHistoryScrollRef.current;
+    return window.matchMedia('(min-width: 768px)').matches
+      ? mgmtHistoryScrollRef.current
+      : mgmtModalScrollRef.current;
+  }, []);
+
   const prefetchMgmtHistoryIfShort = useCallback(() => {
-    const el = mgmtHistoryScrollRef.current;
+    const el = getMgmtHistoryScrollRoot();
     if (!el || !mgmtHistoryHasMoreRef.current || mgmtHistoryFetchingRef.current) return;
     if (el.scrollHeight <= el.clientHeight + 12) {
       void fetchMgmtHistory();
     }
-  }, [fetchMgmtHistory]);
+  }, [fetchMgmtHistory, getMgmtHistoryScrollRoot]);
 
   useEffect(() => {
     if (!showManagementModal) return;
@@ -887,9 +895,11 @@ export default function ScheduleClient({
 
   useEffect(() => {
     if (!showManagementModal) return;
-    const root = mgmtHistoryScrollRef.current;
     const target = mgmtHistoryLoadMoreRef.current;
-    if (!root || !target) return;
+    if (!target) return;
+
+    const root = getMgmtHistoryScrollRoot();
+    if (!root) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -904,6 +914,7 @@ export default function ScheduleClient({
     return () => observer.disconnect();
   }, [
     fetchMgmtHistory,
+    getMgmtHistoryScrollRoot,
     mgmtHistoryHasMore,
     mgmtHistory.length,
     showManagementModal,
@@ -1701,7 +1712,7 @@ export default function ScheduleClient({
         onClose={() => setShowManagementModal(false)}
         zIndex={70}
         overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
-        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90dvh] min-h-0 overflow-hidden bg-card shadow-2xl md:w-fit md:max-w-[calc(100vw-2rem)] text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
+        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90dvh] max-md:h-[90dvh] min-h-0 overflow-hidden bg-card shadow-2xl md:w-fit md:max-w-[calc(100vw-2rem)] text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
         panelOnClick={(e) => e.stopPropagation()}
         aria-label="จัดการพนักงานและกะ"
       >
@@ -1711,7 +1722,10 @@ export default function ScheduleClient({
               </button>
             </HintTooltip>
 
-            <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto md:overflow-hidden flex-col md:flex-row md:items-stretch bb-smooth-scroll">
+            <div
+              ref={mgmtModalScrollRef}
+              className="flex flex-1 min-h-0 min-w-0 overflow-y-auto md:overflow-hidden flex-col md:flex-row md:items-stretch bb-smooth-scroll overscroll-y-contain"
+            >
             <div className="w-full md:w-[340px] flex flex-col border-b md:border-b-0 md:border-r border-border shrink-0 md:min-h-0 md:self-stretch">
               <div className={cn(MGMT_MODAL_HEADER_CLASS, 'management-form-container')}>
                 <div className="flex items-center gap-2">
@@ -1806,7 +1820,7 @@ export default function ScheduleClient({
               </div>
             </div>
 
-            <div className="flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden w-full md:w-fit md:max-w-full md:self-stretch bg-card/30">
+            <div className="flex flex-col min-w-0 w-full shrink-0 md:flex-1 md:min-h-0 md:overflow-hidden md:w-fit md:max-w-full md:self-stretch bg-card/30">
               <div className={cn(MGMT_MODAL_HEADER_CLASS, 'pr-14')}>
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-muted/30 rounded-3xl shrink-0">
@@ -1829,7 +1843,7 @@ export default function ScheduleClient({
 
               <div
                 ref={mgmtHistoryScrollRef}
-                className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain bb-smooth-scroll px-5 pt-5 pb-5"
+                className="max-md:shrink-0 md:flex-1 md:min-h-0 md:overflow-y-auto md:overscroll-y-contain bb-smooth-scroll px-5 pt-5 pb-5"
               >
                 {mgmtHistoryLoading && mgmtHistory.length === 0 ? (
                   <div className="min-h-[12rem] flex flex-col items-center justify-center text-foreground/30 space-y-2">

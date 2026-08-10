@@ -76,6 +76,7 @@ graphify-out/
 .cursor/mcp.json
 
 # --- AgentSkillOS (isolated Python stack) ---
+.agent-skills/vendor/AgentSkillOS/
 .agent-skills/.venv/
 .agent-skills/asos/.env
 .agent-skills/runs/

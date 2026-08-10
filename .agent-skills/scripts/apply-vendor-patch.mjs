@@ -8,6 +8,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+if (process.env.VERCEL === '1') {
+  process.exit(0);
+}
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const VENDOR = join(ROOT, 'vendor', 'AgentSkillOS');
 const CONSTANTS = join(VENDOR, 'src', 'constants.py');
