@@ -1,17 +1,11 @@
-import { DEFAULT_SHIFT_TYPES, type ShiftTypeEntry } from '@/lib/shift-type-config';
 import { normalizeShiftLocation } from '@/lib/schedule/format-daily-shifts';
 import {
-  SHEETS_BRANCH1_LABEL_COLUMN,
   SHEETS_DAY_COLUMNS,
   SHEETS_FRONT_STORE_SHIFT_KEYS,
-  SHEETS_ROW_LABELS,
-  SHEETS_SHIFT_TIME_LABELS,
   type SheetsFrontStoreShiftKey,
 } from '@/lib/schedule/sheets-layout-config';
 import type { SheetsWeekBlockLayout } from '@/lib/schedule/sheets-week-block';
 import {
-  buildDayLabelRowValuesForSheet,
-  buildDateRowValuesForSheet,
   buildWeekDayIsoStrings,
   mapWeekValuesToSheetColumns,
 } from '@/lib/schedule/sheets-week-block';
@@ -40,28 +34,10 @@ interface DayAssignment {
   name: string;
   scheduleOrder: number;
   location: string;
-  remark?: string;
-  isManagement?: boolean;
 }
 
 function isSameCalendarDay(shiftStartTime: string, isoDate: string): boolean {
   return shiftStartTime.startsWith(isoDate);
-}
-
-function formatEmployeeSheetName(
-  name: string,
-  location: string,
-  remark?: string,
-  isManagement?: boolean,
-): string {
-  const trimmedRemark = remark?.trim();
-  if (location === 'ไปสาขา 2' && trimmedRemark) {
-    return `${name} (${trimmedRemark})`;
-  }
-  if (trimmedRemark && isManagement) {
-    return `${name} (${trimmedRemark})`;
-  }
-  return name;
 }
 
 function compareByScheduleOrderThenName(a: DayAssignment, b: DayAssignment): number {
@@ -74,10 +50,6 @@ function resolveFrontStoreBucket(location: string): SheetsFrontStoreShiftKey | n
     return location;
   }
   return null;
-}
-
-function getFohCountValues(types: ShiftTypeEntry[]): Set<string> {
-  return new Set(types.filter((type) => type.fohCount).map((type) => type.value));
 }
 
 function collectAssignmentsForDay(
@@ -105,56 +77,70 @@ function collectAssignmentsForDay(
       name: profile.full_name,
       scheduleOrder: profile.schedule_order ?? 0,
       location,
-      remark: shift.metadata?.remark ?? undefined,
-      isManagement: shift.metadata?.is_management ?? false,
     });
   }
 
   return assignments;
 }
 
-function joinNames(assignments: DayAssignment[]): string {
-  return assignments
-    .sort(compareByScheduleOrderThenName)
-    .map((entry) =>
-      formatEmployeeSheetName(entry.name, entry.location, entry.remark, entry.isManagement),
-    )
-    .join('\n');
+/** Replace slot contents top-down; leftover slots are cleared (never appended). */
+export function mergeNamesIntoSlots(existingSlots: string[], newNames: string[]): string[] {
+  return existingSlots.map((_, slotIdx) => newNames[slotIdx] ?? '');
 }
 
-function countFohStaff(
-  assignments: DayAssignment[],
-  fohLocations: Set<string>,
-): number {
-  const ids = new Set<string>();
-  for (const entry of assignments) {
-    if (fohLocations.has(entry.location)) {
-      ids.add(entry.profileId);
-    }
-  }
-  return ids.size;
-}
-
-function buildRowValues(
+/** One employee name per sub-row (Mon→Sun columns), replacing prior cell values. */
+export function buildFrontStoreShiftSubRows(
   weekDays: string[],
   profiles: SheetsWeekProfile[],
   shifts: SheetsWeekShift[],
-  picker: (assignments: DayAssignment[]) => string,
+  shiftKey: SheetsFrontStoreShiftKey,
+  subRowCount: number,
+): string[][] {
+  const rows: string[][] = Array.from({ length: subRowCount }, () =>
+    weekDays.map(() => ''),
+  );
+
+  for (let dayIdx = 0; dayIdx < weekDays.length; dayIdx += 1) {
+    const assignments = collectAssignmentsForDay(profiles, shifts, weekDays[dayIdx]);
+    const newNames = assignments
+      .filter((entry) => resolveFrontStoreBucket(entry.location) === shiftKey)
+      .sort(compareByScheduleOrderThenName)
+      .map((entry) => entry.name);
+
+    const merged = mergeNamesIntoSlots(
+      rows.map((row) => row[dayIdx]),
+      newNames,
+    );
+    for (let slot = 0; slot < subRowCount; slot += 1) {
+      rows[slot][dayIdx] = merged[slot];
+    }
+  }
+
+  return rows;
+}
+
+function firstEmployeeName(assignments: DayAssignment[]): string {
+  const sorted = [...assignments].sort(compareByScheduleOrderThenName);
+  return sorted[0]?.name ?? '';
+}
+
+function buildSingleNameRowValues(
+  weekDays: string[],
+  profiles: SheetsWeekProfile[],
+  shifts: SheetsWeekShift[],
+  location: string,
 ): string[] {
   return weekDays.map((date) => {
     const assignments = collectAssignmentsForDay(profiles, shifts, date);
-    return picker(assignments);
+    const bucket = assignments.filter((entry) => entry.location === location);
+    return firstEmployeeName(bucket);
   });
 }
 
-function branch1DayColumnRange(tabName: string, row: number): string {
-  const start = `${SHEETS_DAY_COLUMNS[0]}${row}`;
-  const end = `${SHEETS_DAY_COLUMNS[6]}${row}`;
+function branch1DayColumnRange(tabName: string, startRow: number, endRow: number = startRow): string {
+  const start = `${SHEETS_DAY_COLUMNS[0]}${startRow}`;
+  const end = `${SHEETS_DAY_COLUMNS[6]}${endRow}`;
   return quoteSheetRange(tabName, `${start}:${end}`);
-}
-
-function branch1LabelCell(tabName: string, row: number): string {
-  return quoteSheetRange(tabName, `${SHEETS_BRANCH1_LABEL_COLUMN}${row}`);
 }
 
 export function buildScheduleSheetsUpdates(
@@ -163,93 +149,51 @@ export function buildScheduleSheetsUpdates(
   shifts: SheetsWeekShift[],
   tabName: string,
   blockLayout: SheetsWeekBlockLayout,
-  shiftTypes: ShiftTypeEntry[] = DEFAULT_SHIFT_TYPES,
 ): SheetsValueUpdate[] {
   const weekDays = buildWeekDayIsoStrings(weekStartMonday);
   const columnMap = blockLayout.columnMap;
-  const fohLocations = getFohCountValues(shiftTypes);
-  const updates: SheetsValueUpdate[] = [];
+  const subRowCount = blockLayout.frontStoreShiftSubRows;
 
-  updates.push({
-    range: branch1DayColumnRange(tabName, blockLayout.dateRow),
-    values: [buildDateRowValuesForSheet(weekDays, columnMap)],
-  });
-
-  updates.push({
-    range: branch1DayColumnRange(tabName, blockLayout.dayLabelRow),
-    values: [
-      buildDayLabelRowValuesForSheet(weekDays, columnMap, blockLayout.sheetDayLabels),
-    ],
-  });
+  const frontStoreStart = blockLayout.frontStoreShiftRows['6:30'];
+  const frontStoreEnd =
+    blockLayout.frontStoreShiftRows['8:00'] + subRowCount - 1;
+  const frontStoreValues: string[][] = [];
 
   for (const shiftKey of SHEETS_FRONT_STORE_SHIFT_KEYS) {
-    const row = blockLayout.frontStoreShiftRows[shiftKey];
-    updates.push({
-      range: branch1LabelCell(tabName, row),
-      values: [[SHEETS_SHIFT_TIME_LABELS[shiftKey]]],
-    });
-    updates.push({
-      range: branch1DayColumnRange(tabName, row),
+    const subRows = buildFrontStoreShiftSubRows(
+      weekDays,
+      profiles,
+      shifts,
+      shiftKey,
+      subRowCount,
+    );
+    frontStoreValues.push(
+      ...subRows.map((row) => mapWeekValuesToSheetColumns(row, columnMap)),
+    );
+  }
+
+  return [
+    {
+      range: branch1DayColumnRange(tabName, frontStoreStart, frontStoreEnd),
+      values: frontStoreValues,
+    },
+    {
+      range: branch1DayColumnRange(tabName, blockLayout.laundryRow),
       values: [
         mapWeekValuesToSheetColumns(
-          buildRowValues(weekDays, profiles, shifts, (assignments) => {
-            const bucket = assignments.filter(
-              (entry) => resolveFrontStoreBucket(entry.location) === shiftKey,
-            );
-            return joinNames(bucket);
-          }),
+          buildSingleNameRowValues(weekDays, profiles, shifts, 'ร้านซักผ้า'),
           columnMap,
         ),
       ],
-    });
-  }
-
-  updates.push({
-    range: branch1DayColumnRange(tabName, blockLayout.fohCountRow),
-    values: [
-      mapWeekValuesToSheetColumns(
-        weekDays.map((date) => {
-          const assignments = collectAssignmentsForDay(profiles, shifts, date);
-          return String(countFohStaff(assignments, fohLocations));
-        }),
-        columnMap,
-      ),
-    ],
-  });
-
-  updates.push({
-    range: branch1LabelCell(tabName, blockLayout.laundryLabelRow),
-    values: [[SHEETS_ROW_LABELS.laundry]],
-  });
-  updates.push({
-    range: branch1DayColumnRange(tabName, blockLayout.laundryRow),
-    values: [
-      mapWeekValuesToSheetColumns(
-        buildRowValues(weekDays, profiles, shifts, (assignments) => {
-          const bucket = assignments.filter((entry) => entry.location === 'ร้านซักผ้า');
-          return joinNames(bucket);
-        }),
-        columnMap,
-      ),
-    ],
-  });
-
-  updates.push({
-    range: branch1LabelCell(tabName, blockLayout.branch2Row),
-    values: [[SHEETS_ROW_LABELS.branch2]],
-  });
-  updates.push({
-    range: branch1DayColumnRange(tabName, blockLayout.branch2Row),
-    values: [
-      mapWeekValuesToSheetColumns(
-        buildRowValues(weekDays, profiles, shifts, (assignments) => {
-          const bucket = assignments.filter((entry) => entry.location === 'ไปสาขา 2');
-          return joinNames(bucket);
-        }),
-        columnMap,
-      ),
-    ],
-  });
-
-  return updates;
+    },
+    {
+      range: branch1DayColumnRange(tabName, blockLayout.branch2Row),
+      values: [
+        mapWeekValuesToSheetColumns(
+          buildSingleNameRowValues(weekDays, profiles, shifts, 'ไปสาขา 2'),
+          columnMap,
+        ),
+      ],
+    },
+  ];
 }

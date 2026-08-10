@@ -1,7 +1,10 @@
 import { addDays, format, parseISO, startOfWeek } from 'date-fns';
 import {
   SHEETS_DAY_COLUMNS,
+  SHEETS_FRONT_STORE_SHIFT_KEYS,
+  SHEETS_FRONT_STORE_SHIFT_SUBROWS,
   SHEETS_LAYOUT_ROW_OFFSETS,
+  type SheetsFrontStoreShiftKey,
 } from '@/lib/schedule/sheets-layout-config';
 import { sheetDayLabelForWeekday, sheetDayLabelMatchesWeekday } from '@/lib/schedule/sheets-day-labels';
 
@@ -14,7 +17,8 @@ export interface SheetsWeekBlockLayout {
   columnMap: number[];
   /** Day labels read from the sheet (B–H), when present. */
   sheetDayLabels?: string[];
-  frontStoreShiftRows: Record<'6:30' | '7:00' | '8:00', number>;
+  frontStoreShiftRows: Record<SheetsFrontStoreShiftKey, number>;
+  frontStoreShiftSubRows: number;
   fohCountRow: number;
   laundryLabelRow: number;
   laundryRow: number;
@@ -217,16 +221,21 @@ export function deriveWeekBlockLayout(
   columnMap: number[] = [...DEFAULT_WEEK_COLUMN_MAP],
   sheetDayLabels?: string[],
 ): SheetsWeekBlockLayout {
+  const frontStoreStart = dateRow + SHEETS_LAYOUT_ROW_OFFSETS.frontStoreStart;
+  const frontStoreShiftRows = Object.fromEntries(
+    SHEETS_FRONT_STORE_SHIFT_KEYS.map((shiftKey, index) => [
+      shiftKey,
+      frontStoreStart + index * SHEETS_FRONT_STORE_SHIFT_SUBROWS,
+    ]),
+  ) as Record<SheetsFrontStoreShiftKey, number>;
+
   return {
     dateRow,
     dayLabelRow: dateRow + SHEETS_LAYOUT_ROW_OFFSETS.dayLabels,
     columnMap,
     sheetDayLabels,
-    frontStoreShiftRows: {
-      '6:30': dateRow + SHEETS_LAYOUT_ROW_OFFSETS.frontStoreShifts['6:30'],
-      '7:00': dateRow + SHEETS_LAYOUT_ROW_OFFSETS.frontStoreShifts['7:00'],
-      '8:00': dateRow + SHEETS_LAYOUT_ROW_OFFSETS.frontStoreShifts['8:00'],
-    },
+    frontStoreShiftRows,
+    frontStoreShiftSubRows: SHEETS_FRONT_STORE_SHIFT_SUBROWS,
     fohCountRow: dateRow + SHEETS_LAYOUT_ROW_OFFSETS.fohCount,
     laundryLabelRow: dateRow + SHEETS_LAYOUT_ROW_OFFSETS.laundryLabel,
     laundryRow: dateRow + SHEETS_LAYOUT_ROW_OFFSETS.laundry,

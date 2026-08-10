@@ -5,7 +5,11 @@ import {
   findWeekBlockDateRow,
   weekDayNumbersFromIsoDates,
 } from '@/lib/schedule/sheets-week-block';
-import { buildScheduleSheetsUpdates } from '@/lib/schedule/sheets-week-layout';
+import {
+  buildScheduleSheetsUpdates,
+  buildFrontStoreShiftSubRows,
+  mergeNamesIntoSlots,
+} from '@/lib/schedule/sheets-week-layout';
 
 const profiles = [
   { id: 'p1', full_name: 'มุก', schedule_order: 1 },
@@ -61,8 +65,44 @@ describe('sheets-week-block', () => {
   });
 });
 
+describe('mergeNamesIntoSlots', () => {
+  test('replaces existing slots top-down and clears leftovers', () => {
+    expect(mergeNamesIntoSlots(['เม', 'มีนา', 'เก่า'], ['มีนา'])).toEqual(['มีนา', '', '']);
+  });
+
+  test('fills empty slots without appending into occupied cells', () => {
+    expect(mergeNamesIntoSlots(['', ''], ['เม', 'มีนา'])).toEqual(['เม', 'มีนา']);
+  });
+});
+
+describe('buildFrontStoreShiftSubRows', () => {
+  test('places each employee on a separate row with name only', () => {
+    const weekDays = ['2026-07-27', '2026-07-28'];
+    const shifts = [
+      {
+        employee_id: 'p7',
+        start_time: '2026-07-28T00:00:00',
+        status: 'scheduled',
+        metadata: { location: '7:00' },
+      },
+      {
+        employee_id: 'p3',
+        start_time: '2026-07-28T00:00:00',
+        status: 'scheduled',
+        metadata: { location: '7:00' },
+      },
+    ];
+
+    const rows = buildFrontStoreShiftSubRows(weekDays, profiles, shifts, '7:00', 2);
+    expect(rows).toEqual([
+      ['', 'เม'],
+      ['', 'มีนา'],
+    ]);
+  });
+});
+
 describe('buildScheduleSheetsUpdates', () => {
-  test('pivots employee shifts into branch-1 rows only (A–H)', () => {
+  test('writes employee names only in branch-1 day columns (no dates, labels, or counts)', () => {
     const weekStart = '2026-07-27';
     const shifts = [
       {
@@ -121,15 +161,23 @@ describe('buildScheduleSheetsUpdates', () => {
     );
     const byRange = new Map(updates.map((entry) => [entry.range, entry.values]));
 
-    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B32:H32")).toEqual([
-      ['27', '28', '29', '30', '31', '1', '2'],
+    expect(updates).toHaveLength(3);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B34:H39")).toEqual([
+      ['ปิ่น', '', '', '', '', '', ''],
+      ['นิต้า', '', '', '', '', '', ''],
+      ['มุก', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', ''],
+      ['ฟิว', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', ''],
     ]);
-    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B33:H33")).toEqual([['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.']]);
-    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B34:H34")).toEqual([['ปิ่น\nนิต้า', '', '', '', '', '', '']]);
-    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B40:H40")).toEqual([['', '', 'ชัช (คั่วกาแฟ)', '', '', '', '']]);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B42:H42")).toEqual([['ล่า', '', '', '', '', '', '']]);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B43:H43")).toEqual([['', '', 'ชัช', '', '', '', '']]);
 
     for (const range of byRange.keys()) {
       expect(range).not.toMatch(/![I-Z]/);
+      expect(range).not.toMatch(/!A\d/);
+      expect(range).not.toMatch(/!B32:H33/);
+      expect(range).not.toMatch(/!B40:H40/);
     }
   });
 });

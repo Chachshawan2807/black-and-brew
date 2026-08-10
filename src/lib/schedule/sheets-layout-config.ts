@@ -14,18 +14,18 @@ export const SHEETS_FRONT_STORE_SHIFT_KEYS = ['6:30', '7:00', '8:00'] as const;
 
 export type SheetsFrontStoreShiftKey = (typeof SHEETS_FRONT_STORE_SHIFT_KEYS)[number];
 
+/** Name slots per front-store shift block (label row + overflow rows). */
+export const SHEETS_FRONT_STORE_SHIFT_SUBROWS = 2;
+
 /** Row offsets from the week’s date-number row within each weekly block. */
 export const SHEETS_LAYOUT_ROW_OFFSETS = {
   dayLabels: 1,
-  frontStoreShifts: {
-    '6:30': 2,
-    '7:00': 3,
-    '8:00': 4,
-  } satisfies Record<SheetsFrontStoreShiftKey, number>,
-  fohCount: 5,
-  laundryLabel: 6,
-  laundry: 7,
-  branch2: 8,
+  /** First row of the front-store section (6:30 label row). */
+  frontStoreStart: 2,
+  fohCount: 2 + SHEETS_FRONT_STORE_SHIFT_SUBROWS * SHEETS_FRONT_STORE_SHIFT_KEYS.length,
+  laundryLabel: 2 + SHEETS_FRONT_STORE_SHIFT_SUBROWS * SHEETS_FRONT_STORE_SHIFT_KEYS.length + 1,
+  laundry: 2 + SHEETS_FRONT_STORE_SHIFT_SUBROWS * SHEETS_FRONT_STORE_SHIFT_KEYS.length + 2,
+  branch2: 2 + SHEETS_FRONT_STORE_SHIFT_SUBROWS * SHEETS_FRONT_STORE_SHIFT_KEYS.length + 3,
 } as const;
 
 /** Max rows scanned per monthly tab when locating a week block. */

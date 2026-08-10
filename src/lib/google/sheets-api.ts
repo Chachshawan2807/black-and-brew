@@ -33,7 +33,7 @@ async function batchUpdateValues(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        valueInputOption: 'USER_ENTERED',
+        valueInputOption: 'RAW',
         data: updates.map((entry) => ({
           range: entry.range,
           majorDimension: 'ROWS',
