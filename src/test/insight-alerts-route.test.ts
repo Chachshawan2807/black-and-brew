@@ -63,7 +63,36 @@ describe('/api/insight-alerts', () => {
     expect(body.success).toBe(true);
     expect(body.digestSent).toBe(true);
     expect(evaluateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ trigger: 'cron', locale: 'th' }),
+      expect.objectContaining({ trigger: 'cron', locale: 'th', force: false }),
+    );
+  });
+
+  test('passes force=1 for cron-job.org test re-runs', async () => {
+    evaluateMock.mockResolvedValue({
+      dateIso: '2026-08-11',
+      trigger: 'cron',
+      matchedRules: [{ ruleId: 'understaffed_low_stock' }],
+      digest: { ruleId: 'daily_digest', title: 'การแจ้งเตือนที่ต้องตรวจสอบ' },
+      recorded: {
+        ruleId: 'daily_digest',
+        logId: 'bb-insight-daily_digest-2026-08-11',
+        skipped: false,
+      },
+      pushed: { ruleId: 'daily_digest', sent: 1, failed: 0, skipped: false },
+    });
+
+    const { GET } = await import('@/app/api/insight-alerts/route');
+    const res = await GET(
+      new Request('http://localhost/api/insight-alerts?force=1', {
+        headers: { authorization: 'Bearer test-cron-secret' },
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.force).toBe(true);
+    expect(body.digestSent).toBe(true);
+    expect(evaluateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ trigger: 'cron', locale: 'th', force: true }),
     );
   });
 

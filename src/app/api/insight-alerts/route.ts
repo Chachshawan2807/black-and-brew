@@ -17,17 +17,31 @@ export async function GET(request: Request) {
     });
     if (denied) return denied;
 
+    const force = new URL(request.url).searchParams.get('force') === '1';
+
     const result = await evaluateAndDispatchInsights({
       trigger: 'cron',
       locale: 'th',
+      force,
     });
+
+    const digestSent = Boolean(
+      result.digest && result.pushed && !result.pushed.skipped && result.pushed.sent > 0,
+    );
 
     return NextResponse.json({
       success: true,
       dateIso: result.dateIso,
       matchedRuleCount: result.matchedRules.length,
       matchedRules: result.matchedRules.map((insight) => insight.ruleId),
-      digestSent: Boolean(result.digest && result.pushed && !result.pushed.skipped),
+      digestSent,
+      digestSkippedReason:
+        result.recorded?.skipped && !force
+          ? 'already_sent_today'
+          : result.pushed?.skipped && result.recorded && !result.recorded.skipped
+            ? 'push_skipped'
+            : null,
+      force,
       recorded: result.recorded,
       pushed: result.pushed,
       timestamp: new Date().toISOString(),

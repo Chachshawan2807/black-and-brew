@@ -82,7 +82,7 @@ export async function recordInsightNotificationLog(
   insight: Insight,
   dateIso: string,
   locale = 'th',
-  options?: { trigger?: InsightTrigger },
+  options?: { trigger?: InsightTrigger; force?: boolean },
 ): Promise<{ success: boolean; skipped?: boolean; logId: string }> {
   const logId = insightNotificationLogId(insight.ruleId, dateIso);
   const supabase = getSupabaseAdmin();
@@ -109,7 +109,21 @@ export async function recordInsightNotificationLog(
     }
 
     if (existing && existing.length > 0) {
-      return { success: true, skipped: true, logId };
+      if (!options?.force) {
+        return { success: true, skipped: true, logId };
+      }
+
+      const { error: deleteError } = await supabase
+        .from('data_change_logs')
+        .delete()
+        .eq('module', 'insights')
+        .eq('entity_type', 'cross_module_insight')
+        .eq('entity_id', logId);
+
+      if (deleteError) {
+        console.error('Supabase Error:', deleteError.message, deleteError.details);
+        throw deleteError;
+      }
     }
 
     const occurredAt =

@@ -7,6 +7,12 @@ import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { requireMutationAccess, requireReadAccess } from '@/lib/policies/server-gate';
 import type { Json } from '@/lib/database.types';
 import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
+import {
+  getMgmtHistoryPaginationCursor,
+  isManagementHistoryShift,
+  MGMT_HISTORY_PAGE_SIZE,
+  MGMT_HISTORY_QUERY_OR,
+} from '@/lib/schedule/mgmt-history';
 // กำหนด Admin Client เพื่อทะลวง RLS สำหรับระบบที่ใช้ PIN Auth
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
 
@@ -506,5 +512,49 @@ export async function renameShiftLocations(renames: { oldValue: string; newValue
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : 'Unknown error';
     return { success: false, error: errorMsg };
+  }
+}
+
+export async function fetchManagementHistoryPage(params: {
+  cursor?: string | null;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+}) {
+  noStore();
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false as const, error: authError, batch: [], hasMore: false, cursor: null };
+  }
+
+  try {
+    const limit = params.limit ?? MGMT_HISTORY_PAGE_SIZE;
+    let query = supabaseAdmin
+      .from('shifts')
+      .select('id, employee_id, status, start_time, end_time, metadata, profiles(full_name)')
+      .or(MGMT_HISTORY_QUERY_OR)
+      .order('start_time', { ascending: false })
+      .limit(limit);
+
+    if (params.startDate) query = query.gte('start_time', `${params.startDate}T00:00:00`);
+    if (params.endDate) query = query.lte('start_time', `${params.endDate}T23:59:59`);
+    if (params.cursor) query = query.lt('start_time', params.cursor);
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('[fetchManagementHistoryPage] Supabase Error:', error.message, error.details);
+      return { success: false as const, error: error.message, batch: [], hasMore: false, cursor: null };
+    }
+
+    const batch = (data ?? []).filter(isManagementHistoryShift);
+    return {
+      success: true as const,
+      batch,
+      hasMore: (data?.length ?? 0) === limit,
+      cursor: getMgmtHistoryPaginationCursor(data ?? []),
+    };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    return { success: false as const, error: errorMsg, batch: [], hasMore: false, cursor: null };
   }
 }

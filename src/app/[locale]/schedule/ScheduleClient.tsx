@@ -20,7 +20,7 @@ import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 import { syncScheduleToGoogleSheet } from '@/app/actions/schedule-sheets-sync-actions';
 import { formatScheduleWeekRangeLabel } from '@/lib/schedule/sheets-sync-policy';
 
-import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations } from '@/app/actions/shift-actions';
+import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations, fetchManagementHistoryPage } from '@/app/actions/shift-actions';
 import dynamic from 'next/dynamic';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import {
@@ -89,6 +89,12 @@ import {
   MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY,
   sumMgmtHistoryColumnWidthsPx,
 } from '@/lib/schedule/mgmt-history-column-widths';
+import {
+  groupManagementHistoryShifts,
+  mergeManagementHistoryShiftPages,
+  type ManagementHistoryItem,
+  type ManagementHistoryShiftRow,
+} from '@/lib/schedule/mgmt-history';
 
 // --- Constants Outside Component ---
 const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
@@ -112,6 +118,9 @@ const defaultHistoryColumns: ColumnDef[] = [
 
 const MGMT_MODAL_FOOTER_CLASS =
   'p-4 bg-card border-t border-border flex gap-3 shrink-0';
+
+const MGMT_MODAL_HEADER_CLASS =
+  'min-h-[76px] px-5 py-4 border-b border-border flex items-center bg-card shrink-0';
 
 // ฟังก์ชันคำนวณตำแหน่ง Dropdown ไม่ให้ทะลุขอบจอ
 function getDropdownPosition(
@@ -405,19 +414,6 @@ type ShiftWithJoinedProfile = Shift & {
   profile_id?: string;
 };
 
-interface ManagementHistoryItem {
-  id: string;
-  employee_id: string;
-  employee_name: string;
-  location?: string;
-  remark?: string;
-  startDate: string;
-  endDate: string;
-  color: string;
-  colorStyle?: React.CSSProperties;
-  metadata: Shift['metadata'];
-}
-
 interface ScheduleClientProps {
   initialProfiles: Profile[];
   initialShifts: Shift[];
@@ -563,6 +559,16 @@ export default function ScheduleClient({
   });
 
   const [mgmtHistory, setMgmtHistory] = useState<ManagementHistoryItem[]>([]);
+  const [mgmtRawShifts, setMgmtRawShifts] = useState<ManagementHistoryShiftRow[]>([]);
+  const [mgmtHistoryCursor, setMgmtHistoryCursor] = useState<string | null>(null);
+  const [mgmtHistoryHasMore, setMgmtHistoryHasMore] = useState(true);
+  const [mgmtHistoryLoading, setMgmtHistoryLoading] = useState(false);
+  const mgmtHistoryScrollRef = useRef<HTMLDivElement>(null);
+  const mgmtHistoryLoadMoreRef = useRef<HTMLTableRowElement>(null);
+  const mgmtHistoryFetchingRef = useRef(false);
+  const mgmtHistoryHasMoreRef = useRef(true);
+  const mgmtHistoryCursorRef = useRef<string | null>(null);
+  const mgmtRawShiftsRef = useRef<ManagementHistoryShiftRow[]>([]);
   const [historyFilter, setHistoryFilter] = useState({ start: '', end: '' });
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -796,63 +802,112 @@ export default function ScheduleClient({
     blockIfReadOnly,
   });
 
-  const fetchMgmtHistory = useCallback(async () => {
+  const fetchMgmtHistory = useCallback(async ({ reset = false }: { reset?: boolean } = {}) => {
+    if (mgmtHistoryFetchingRef.current) return;
+
+    setMgmtHistoryLoading(true);
+    mgmtHistoryFetchingRef.current = true;
     try {
-      let query = supabase.from('shifts')
-        .select(`id, employee_id, status, start_time, end_time, metadata, profiles(full_name)`)
-        .eq('metadata->is_management', true)
-        .order('start_time', { ascending: false });
+      let cursor = reset ? null : mgmtHistoryCursorRef.current;
+      let accumulated = reset ? [] : [...mgmtRawShiftsRef.current];
+      let hasMore = true;
+      let pagesLoaded = 0;
+      const maxPages = reset ? 32 : 1;
 
-      if (historyFilter.start) query = query.gte('start_time', historyFilter.start + 'T00:00:00');
-      if (historyFilter.end) query = query.lte('start_time', historyFilter.end + 'T23:59:59');
+      while (hasMore && pagesLoaded < maxPages) {
+        const result = await fetchManagementHistoryPage({
+          cursor,
+          startDate: historyFilter.start || undefined,
+          endDate: historyFilter.end || undefined,
+        });
 
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const grouped: ManagementHistoryItem[] = [];
-      const sorted = [...(data || [])].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-
-      sorted.forEach(shift => {
-        const shiftRow = shift as ShiftWithJoinedProfile;
-        const prev = grouped.find(g =>
-          g.employee_id === shift.employee_id &&
-          g.metadata?.location === shift.metadata?.location &&
-          g.metadata?.remark === shift.metadata?.remark &&
-          format(addDays(new Date(g.endDate), 1), 'yyyy-MM-dd') === format(new Date(shift.start_time), 'yyyy-MM-dd')
-        );
-
-        if (prev) {
-          prev.endDate = shift.start_time;
-        } else {
-          grouped.push({
-            id: shift.id,
-            employee_id: shift.employee_id,
-            employee_name: (() => {
-              const profiles = shiftRow.profiles;
-              if (Array.isArray(profiles)) return profiles[0]?.full_name || 'Unknown';
-              return profiles?.full_name || 'Unknown';
-            })(),
-            location: shift.metadata?.location,
-            remark: shift.metadata?.remark,
-            startDate: shift.start_time,
-            endDate: shift.start_time,
-            color: shiftTypes.find(t => t.value === shift.metadata?.location)?.className || 'bb-pastel-surface bg-card border-border text-[#000000]',
-            colorStyle: shiftTypes.find(t => t.value === shift.metadata?.location)?.style,
-            metadata: { ...shift.metadata }
-          });
+        if (!result.success) {
+          console.error('Supabase Error:', result.error);
+          break;
         }
-      });
 
-      setMgmtHistory(grouped.reverse());
-    } catch { }
-  }, [historyFilter, shiftTypes]);
+        const batch = result.batch as ManagementHistoryShiftRow[];
+        accumulated = reset && pagesLoaded === 0
+          ? batch
+          : mergeManagementHistoryShiftPages(accumulated, batch);
 
-  useEffect(() => {
-    if (showManagementModal) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- load management history when modal opens
+        hasMore = result.hasMore;
+        cursor = result.cursor;
+        pagesLoaded += 1;
+
+        if (batch.length === 0 && hasMore) continue;
+        if (!reset) break;
+      }
+
+      mgmtHistoryCursorRef.current = cursor;
+      mgmtRawShiftsRef.current = accumulated;
+      mgmtHistoryHasMoreRef.current = hasMore;
+
+      setMgmtHistoryCursor(cursor);
+      setMgmtHistoryHasMore(hasMore);
+      setMgmtRawShifts(accumulated);
+    } finally {
+      mgmtHistoryFetchingRef.current = false;
+      setMgmtHistoryLoading(false);
+    }
+  }, [historyFilter]);
+
+  const prefetchMgmtHistoryIfShort = useCallback(() => {
+    const el = mgmtHistoryScrollRef.current;
+    if (!el || !mgmtHistoryHasMoreRef.current || mgmtHistoryFetchingRef.current) return;
+    if (el.scrollHeight <= el.clientHeight + 12) {
       void fetchMgmtHistory();
     }
-  }, [showManagementModal, fetchMgmtHistory]);
+  }, [fetchMgmtHistory]);
+
+  useEffect(() => {
+    if (!showManagementModal) return;
+    mgmtRawShiftsRef.current = [];
+    mgmtHistoryCursorRef.current = null;
+    mgmtHistoryHasMoreRef.current = true;
+    setMgmtRawShifts([]);
+    setMgmtHistory([]);
+    setMgmtHistoryCursor(null);
+    setMgmtHistoryHasMore(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset pagination when modal opens or filter changes
+    void fetchMgmtHistory({ reset: true });
+    // fetchMgmtHistory intentionally omitted — reset:true ignores cursor; avoid refetch loops
+  }, [showManagementModal, historyFilter.start, historyFilter.end]);
+
+  useEffect(() => {
+    if (!showManagementModal || mgmtRawShifts.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- regroup accumulated history rows
+    setMgmtHistory(groupManagementHistoryShifts(mgmtRawShifts, shiftTypes));
+  }, [mgmtRawShifts, shiftTypes, showManagementModal]);
+
+  useEffect(() => {
+    if (!showManagementModal || mgmtHistoryLoading) return;
+    prefetchMgmtHistoryIfShort();
+  }, [mgmtHistory.length, mgmtHistoryLoading, mgmtHistoryHasMore, prefetchMgmtHistoryIfShort, showManagementModal]);
+
+  useEffect(() => {
+    if (!showManagementModal) return;
+    const root = mgmtHistoryScrollRef.current;
+    const target = mgmtHistoryLoadMoreRef.current;
+    if (!root || !target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && mgmtHistoryHasMoreRef.current && !mgmtHistoryFetchingRef.current) {
+          void fetchMgmtHistory();
+        }
+      },
+      { root, rootMargin: '160px' },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [
+    fetchMgmtHistory,
+    mgmtHistoryHasMore,
+    mgmtHistory.length,
+    showManagementModal,
+  ]);
 
   useEffect(() => {
     if (!showManagementModal) {
@@ -1032,7 +1087,7 @@ export default function ScheduleClient({
       }
 
       setSaveSuccess(true);
-      fetchMgmtHistory();
+      fetchMgmtHistory({ reset: true });
       setTimeout(() => setSaveSuccess(false), 3000);
       setEditingHistoryId(null);
       setOriginalHistoryRange(null);
@@ -1646,7 +1701,7 @@ export default function ScheduleClient({
         onClose={() => setShowManagementModal(false)}
         zIndex={70}
         overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
-        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full h-fit max-h-[90vh] min-h-0 overflow-hidden bg-card shadow-2xl md:w-fit md:max-w-[calc(100vw-2rem)] text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
+        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90dvh] min-h-0 overflow-hidden bg-card shadow-2xl md:w-fit md:max-w-[calc(100vw-2rem)] text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
         panelOnClick={(e) => e.stopPropagation()}
         aria-label="จัดการพนักงานและกะ"
       >
@@ -1656,11 +1711,11 @@ export default function ScheduleClient({
               </button>
             </HintTooltip>
 
-            <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll flex flex-col md:flex-row md:items-stretch md:overflow-hidden">
+            <div className="flex flex-1 min-h-0 min-w-0 overflow-y-auto md:overflow-hidden flex-col md:flex-row md:items-stretch bb-smooth-scroll">
             <div className="w-full md:w-[340px] flex flex-col border-b md:border-b-0 md:border-r border-border shrink-0 md:min-h-0 md:self-stretch">
-              <div className="p-5 border-b border-border flex justify-between items-center bg-card management-form-container shrink-0">
+              <div className={cn(MGMT_MODAL_HEADER_CLASS, 'management-form-container')}>
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-emerald-50 rounded-3xl">
+                  <div className="p-2 bg-emerald-50 rounded-3xl shrink-0">
                     <UserCog className="w-5 h-5 text-emerald-600" />
                   </div>
                   <h3 className="text-lg font-normal text-foreground tracking-tight">การลา / เปลี่ยนกะ</h3>
@@ -1751,10 +1806,12 @@ export default function ScheduleClient({
               </div>
             </div>
 
-            <div className="flex flex-col w-full md:w-fit md:max-w-full shrink-0 md:min-h-0 md:self-stretch bg-card/30 min-w-0">
-              <div className="p-5 border-b border-border flex justify-between items-center bg-card pr-14 shrink-0">
+            <div className="flex flex-1 flex-col min-h-0 min-w-0 overflow-hidden w-full md:w-fit md:max-w-full md:self-stretch bg-card/30">
+              <div className={cn(MGMT_MODAL_HEADER_CLASS, 'pr-14')}>
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="w-5 h-5 text-muted-foreground" />
+                  <div className="p-2 bg-muted/30 rounded-3xl shrink-0">
+                    <CalendarDays className="w-5 h-5 text-muted-foreground" />
+                  </div>
                   <h3 className="text-lg font-normal text-foreground tracking-tight">ประวัติ</h3>
                 </div>
               </div>
@@ -1770,14 +1827,22 @@ export default function ScheduleClient({
                   />
               </div>
 
-              <div className="px-5 pt-5 pb-5 md:flex-1 md:min-h-0 md:overflow-y-auto md:bb-smooth-scroll flex flex-col">
-                {mgmtHistory.length === 0 ? (
+              <div
+                ref={mgmtHistoryScrollRef}
+                className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain bb-smooth-scroll px-5 pt-5 pb-5"
+              >
+                {mgmtHistoryLoading && mgmtHistory.length === 0 ? (
+                  <div className="min-h-[12rem] flex flex-col items-center justify-center text-foreground/30 space-y-2">
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <p className="text-sm font-normal uppercase tracking-widest">กำลังโหลดประวัติ...</p>
+                  </div>
+                ) : mgmtHistory.length === 0 ? (
                   <div className="min-h-[12rem] flex flex-col items-center justify-center text-foreground/20 space-y-2">
                     <CalendarDays className="w-8 h-8" />
                     <p className="text-sm font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
                   </div>
                 ) : (
-                  <div className="w-fit max-w-full overflow-x-auto overflow-y-hidden bb-smooth-scroll scrollbar-thin border border-border rounded-3xl">
+                  <div className="w-fit max-w-full overflow-x-auto bb-smooth-scroll-chain-y bb-smooth-scroll scrollbar-thin border border-border rounded-3xl">
                     <table
                       className="text-left border-collapse"
                       style={{ tableLayout: 'fixed', width: mgmtTableWidth }}
@@ -1859,6 +1924,33 @@ export default function ScheduleClient({
                             </td>
                           </tr>
                         ))}
+                        {(mgmtHistoryHasMore || mgmtHistoryLoading) && (
+                          <tr ref={mgmtHistoryLoadMoreRef}>
+                            <td colSpan={5} className="p-3 text-center text-muted-foreground text-[12px] bg-transparent">
+                              {mgmtHistoryLoading ? (
+                                <span className="inline-flex items-center gap-2">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  กำลังโหลดประวัติเพิ่มเติม...
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => void fetchMgmtHistory()}
+                                  className="text-emerald-700 hover:text-emerald-800 underline underline-offset-2 cursor-pointer"
+                                >
+                                  โหลดประวัติเก่าเพิ่มเติม
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                        {!mgmtHistoryHasMore && !mgmtHistoryLoading && mgmtHistory.length > 0 && (
+                          <tr>
+                            <td colSpan={5} className="p-3 text-center text-muted-foreground text-[12px] bg-transparent">
+                              แสดงครบแล้ว
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>

@@ -13,6 +13,8 @@ export type EvaluateInsightsOptions = {
   locale?: string;
   /** Skip Web Push (still record data_change_logs). */
   skipPush?: boolean;
+  /** Replace today's digest log and re-send push (for cron-job.org test runs). */
+  force?: boolean;
 };
 
 export type InsightDispatchResult = {
@@ -62,6 +64,7 @@ export async function evaluateAndDispatchInsights(
 
   const logResult = await recordInsightNotificationLog(digest, dateIso, locale, {
     trigger,
+    force: options.force,
   });
   const recorded = {
     ruleId: digest.ruleId,
