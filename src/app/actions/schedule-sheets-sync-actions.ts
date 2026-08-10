@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { requireMutationAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import {
+  clearGoogleSheetRanges,
   getConfiguredSheetTabNameOverride,
   isGoogleSheetsSyncConfigured,
   listGoogleSheetTabTitles,
@@ -16,8 +17,11 @@ import {
   readGoogleSheetValues,
   writeGoogleSheetUpdates,
 } from '@/lib/google/sheets-api';
-import { buildScheduleSheetsUpdates } from '@/lib/schedule/sheets-week-layout';
-import { buildMonthlySheetTabSearchOrder, parseMonthlySheetTabMonthYear } from '@/lib/schedule/sheets-month-tab';
+import {
+  buildScheduleSheetClearRanges,
+  buildScheduleSheetsUpdates,
+} from '@/lib/schedule/sheets-week-layout';
+import { buildMonthlySheetTabsForWeekSync, parseMonthlySheetTabMonthYear } from '@/lib/schedule/sheets-month-tab';
 import {
   buildWeekDayIsoStrings,
   deriveWeekBlockLayout,
@@ -98,7 +102,7 @@ export async function syncScheduleToGoogleSheet(
     const tabTitles = tabOverride ? [] : await listGoogleSheetTabTitles();
     const tabCandidates = tabOverride
       ? [tabOverride]
-      : buildMonthlySheetTabSearchOrder(tabTitles, mondayStr, sundayStr, viewedIso);
+      : buildMonthlySheetTabsForWeekSync(tabTitles, mondayStr, sundayStr, viewedIso);
 
     if (tabCandidates.length === 0) {
       return {
@@ -107,9 +111,7 @@ export async function syncScheduleToGoogleSheet(
       };
     }
 
-    let tabName: string | null = null;
-    let dateRow: number | null = null;
-    let blockLayout: ReturnType<typeof deriveWeekBlockLayout> | null = null;
+    const syncedTabs: Array<{ tabName: string; dateRow: number; cellUpdates: number }> = [];
 
     for (const candidate of tabCandidates) {
       const parsedTabMonth = parseMonthlySheetTabMonthYear(candidate);
@@ -130,19 +132,34 @@ export async function syncScheduleToGoogleSheet(
         tabMonthYear.month,
         tabMonthYear.year,
       );
-      if (match) {
-        tabName = candidate;
-        dateRow = match.dateRow;
-        blockLayout = deriveWeekBlockLayout(
-          match.dateRow,
-          match.columnMap,
-          match.sheetDayLabels,
-        );
-        break;
-      }
+      if (!match) continue;
+
+      const blockLayout = deriveWeekBlockLayout(
+        match.dateRow,
+        match.columnMap,
+        match.sheetDayLabels,
+      );
+
+      const clearRanges = buildScheduleSheetClearRanges(candidate, blockLayout);
+      const updates = buildScheduleSheetsUpdates(
+        mondayStr,
+        profilesRes.data ?? [],
+        shiftsRes.data ?? [],
+        candidate,
+        blockLayout,
+      );
+
+      await clearGoogleSheetRanges(clearRanges);
+      await writeGoogleSheetUpdates(updates);
+
+      syncedTabs.push({
+        tabName: candidate,
+        dateRow: match.dateRow,
+        cellUpdates: updates.length,
+      });
     }
 
-    if (!tabName || !dateRow || !blockLayout) {
+    if (syncedTabs.length === 0) {
       const daySummary = weekDays
         .map((iso) => `${new Date(iso).getDate()}/${new Date(iso).getMonth() + 1}`)
         .join(', ');
@@ -152,22 +169,13 @@ export async function syncScheduleToGoogleSheet(
       };
     }
 
-    const updates = buildScheduleSheetsUpdates(
-      mondayStr,
-      profilesRes.data ?? [],
-      shiftsRes.data ?? [],
-      tabName,
-      blockLayout,
-    );
-
-    await writeGoogleSheetUpdates(updates);
-
     return {
       success: true as const,
       weekStart: mondayStr,
-      sheetTab: tabName,
-      dateRow,
-      cellUpdates: updates.length,
+      sheetTabs: syncedTabs.map((tab) => tab.tabName),
+      sheetTab: syncedTabs[0].tabName,
+      dateRow: syncedTabs[0].dateRow,
+      cellUpdates: syncedTabs.reduce((sum, tab) => sum + tab.cellUpdates, 0),
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

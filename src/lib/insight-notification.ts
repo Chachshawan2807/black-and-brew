@@ -3,6 +3,8 @@ import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import { sanitizeJsonValue } from '@/lib/data-change-log';
 import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
 import type { Insight, InsightRuleId } from '@/lib/proactive-insights/types';
+import type { InsightTrigger } from '@/lib/proactive-insights/evaluate-and-dispatch';
+import { resolveInsightCronOccurredAt } from '@/lib/proactive-insights/insight-schedule';
 
 export function insightNotificationLogId(ruleId: InsightRuleId | string, dateIso: string): string {
   return `bb-insight-${ruleId}-${dateIso}`;
@@ -48,7 +50,7 @@ export function formatInsightNotification(
         : '';
   const summary =
     typeof meta.summary === 'string'
-      ? meta.summary
+      ? meta.summary.split('\n').filter(Boolean)[0] ?? meta.summary
       : fieldSummary.split('\n').filter(Boolean)[0] ?? '';
   const priority: NotificationPriority =
     meta.priority === 'high' ? 'high' : 'normal';
@@ -80,6 +82,7 @@ export async function recordInsightNotificationLog(
   insight: Insight,
   dateIso: string,
   locale = 'th',
+  options?: { trigger?: InsightTrigger },
 ): Promise<{ success: boolean; skipped?: boolean; logId: string }> {
   const logId = insightNotificationLogId(insight.ruleId, dateIso);
   const supabase = getSupabaseAdmin();
@@ -109,8 +112,13 @@ export async function recordInsightNotificationLog(
       return { success: true, skipped: true, logId };
     }
 
+    const occurredAt =
+      options?.trigger === 'cron'
+        ? resolveInsightCronOccurredAt(dateIso)
+        : new Date().toISOString();
+
     const { error } = await supabase.from('data_change_logs').insert({
-      occurred_at: new Date().toISOString(),
+      occurred_at: occurredAt,
       actor_id: null,
       actor_label: isTh ? 'ระบบแจ้งเตือนเชิงรุก' : 'Proactive insights',
       actor_access_level: 'system',

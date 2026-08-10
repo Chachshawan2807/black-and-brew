@@ -78,6 +78,33 @@ export function buildMonthlySheetTabSearchOrder(
   return ordered;
 }
 
+/** All monthly schedule tabs (payroll-cycle sheets that may duplicate cross-month weeks). */
+export function listMonthlySheetTabTitles(availableTitles: string[]): string[] {
+  return availableTitles.filter((title) => title.startsWith(MONTHLY_SHEET_TAB_PREFIX));
+}
+
+/**
+ * Monthly tabs to scan when syncing a week — priority tabs first (viewed / Mon / Sun month),
+ * then every other monthly tab so duplicated week blocks stay in sync.
+ */
+export function buildMonthlySheetTabsForWeekSync(
+  availableTitles: string[],
+  mondayIso: string,
+  sundayIso: string,
+  viewedIso?: string,
+): string[] {
+  const monthlyTabs = listMonthlySheetTabTitles(availableTitles);
+  const priorityTabs = buildMonthlySheetTabSearchOrder(
+    monthlyTabs,
+    mondayIso,
+    sundayIso,
+    viewedIso,
+  );
+  const remainingTabs = monthlyTabs.filter((title) => !priorityTabs.includes(title));
+
+  return [...priorityTabs, ...remainingTabs];
+}
+
 /** Parse Gregorian month (0–11) and year from a monthly tab title. */
 export function parseMonthlySheetTabMonthYear(tabTitle: string): { month: number; year: number } | null {
   const prefix = MONTHLY_SHEET_TAB_PREFIX;

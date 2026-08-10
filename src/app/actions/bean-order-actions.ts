@@ -20,6 +20,7 @@ import {
 } from '@/lib/bean-orders/order-status';
 import { computeLineTotal, computeOrderTotals } from '@/lib/bean-orders/pricing';
 import { filterBeanOrderInventoryItems, BEAN_ORDER_INVENTORY_ITEM_NAMES } from '@/lib/bean-orders/inventory-items';
+import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
 import { isTrackableCarrierCode } from '@/lib/bean-orders/carriers';
 import { parseTrackingEvents, type BeanOrderTrackingEvent } from '@/lib/bean-orders/tracking-events';
 import {
@@ -234,6 +235,7 @@ async function loadInventoryNames(ids: string[]): Promise<Map<string, string>> {
 }
 
 function revalidateBeanOrders(locale = 'th', orderId?: string) {
+  scheduleProactiveInsightEvaluation('manual');
   revalidatePath(`/${locale}/bean-orders`);
   if (orderId) {
     revalidatePath(`/${locale}/bean-orders/${orderId}`);

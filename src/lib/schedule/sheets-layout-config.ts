@@ -14,19 +14,31 @@ export const SHEETS_FRONT_STORE_SHIFT_KEYS = ['6:30', '7:00', '8:00'] as const;
 
 export type SheetsFrontStoreShiftKey = (typeof SHEETS_FRONT_STORE_SHIFT_KEYS)[number];
 
-/** Name slots per front-store shift block (label row + overflow rows). */
-export const SHEETS_FRONT_STORE_SHIFT_SUBROWS = 2;
+/** Name slot rows per front-store shift block (matches BAB sheet template). */
+export const SHEETS_FRONT_STORE_SHIFT_SLOT_ROWS: Record<SheetsFrontStoreShiftKey, number> = {
+  '6:30': 2,
+  '7:00': 3,
+  '8:00': 4,
+};
+
+const FRONT_STORE_TOTAL_SLOT_ROWS = SHEETS_FRONT_STORE_SHIFT_KEYS.reduce(
+  (sum, shiftKey) => sum + SHEETS_FRONT_STORE_SHIFT_SLOT_ROWS[shiftKey],
+  0,
+);
 
 /** Row offsets from the week’s date-number row within each weekly block. */
 export const SHEETS_LAYOUT_ROW_OFFSETS = {
   dayLabels: 1,
   /** First row of the front-store section (6:30 label row). */
   frontStoreStart: 2,
-  fohCount: 2 + SHEETS_FRONT_STORE_SHIFT_SUBROWS * SHEETS_FRONT_STORE_SHIFT_KEYS.length,
-  laundryLabel: 2 + SHEETS_FRONT_STORE_SHIFT_SUBROWS * SHEETS_FRONT_STORE_SHIFT_KEYS.length + 1,
-  laundry: 2 + SHEETS_FRONT_STORE_SHIFT_SUBROWS * SHEETS_FRONT_STORE_SHIFT_KEYS.length + 2,
-  branch2: 2 + SHEETS_FRONT_STORE_SHIFT_SUBROWS * SHEETS_FRONT_STORE_SHIFT_KEYS.length + 3,
+  fohCount: 2 + FRONT_STORE_TOTAL_SLOT_ROWS,
+  laundryLabel: 2 + FRONT_STORE_TOTAL_SLOT_ROWS + 1,
+  laundry: 2 + FRONT_STORE_TOTAL_SLOT_ROWS + 2,
+  branch2: 2 + FRONT_STORE_TOTAL_SLOT_ROWS + 3,
 } as const;
+
+/** @deprecated Use SHEETS_FRONT_STORE_SHIFT_SLOT_ROWS */
+export const SHEETS_FRONT_STORE_SHIFT_SUBROWS = SHEETS_FRONT_STORE_SHIFT_SLOT_ROWS['6:30'];
 
 /** Max rows scanned per monthly tab when locating a week block. */
 export const SHEETS_WEEK_BLOCK_SCAN_MAX_ROW = 500;

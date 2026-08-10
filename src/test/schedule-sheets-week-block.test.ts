@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   buildMonthlySheetTabSearchOrder,
+  buildMonthlySheetTabsForWeekSync,
   parseMonthlySheetTabMonthYear,
 } from '@/lib/schedule/sheets-month-tab';
 import {
@@ -26,6 +27,22 @@ describe('sheets-month-tab viewed date priority', () => {
       month: 7,
       year: 2026,
     });
+  });
+
+  test('buildMonthlySheetTabsForWeekSync includes all monthly tabs after priority order', () => {
+    const titles = [
+      'ตารางงานเดือน ก.ค. 69',
+      'ตารางงานเดือน ส.ค. 69',
+      'ตารางงานเดือน ก.ย. 69',
+      'อื่นๆ',
+    ];
+    expect(
+      buildMonthlySheetTabsForWeekSync(titles, '2026-07-27', '2026-08-02', '2026-08-02'),
+    ).toEqual([
+      'ตารางงานเดือน ส.ค. 69',
+      'ตารางงานเดือน ก.ค. 69',
+      'ตารางงานเดือน ก.ย. 69',
+    ]);
   });
 });
 
@@ -103,6 +120,17 @@ describe('findWeekBlockInSheet', () => {
     expect(match?.dateRow).toBe(1);
   });
 
+  test('matches cross-month week on August tab using Monday month anchor', () => {
+    const grid = [
+      ['27', '28', '29', '30', '31', '1', '2'],
+      ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'],
+    ];
+
+    const match = findWeekBlockInSheet(grid, weekDays, 7, 2026);
+    expect(match?.dateRow).toBe(1);
+    expect(match?.columnMap).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
   test('findWeekBlockDateRow still locates day-number rows', () => {
     const grid = [
       ['7', '8', '9', '10', '11', '12', '13'],
@@ -112,6 +140,9 @@ describe('findWeekBlockInSheet', () => {
     const row = findWeekBlockDateRow(grid, weekDayNumbersFromIsoDates(weekDays));
     expect(row).toBe(3);
     expect(deriveWeekBlockLayout(row!).frontStoreShiftRows['6:30']).toBe(5);
+    expect(deriveWeekBlockLayout(row!).frontStoreShiftRows['7:00']).toBe(7);
+    expect(deriveWeekBlockLayout(row!).frontStoreShiftRows['8:00']).toBe(10);
+    expect(deriveWeekBlockLayout(row!).fohCountRow).toBe(14);
   });
 });
 

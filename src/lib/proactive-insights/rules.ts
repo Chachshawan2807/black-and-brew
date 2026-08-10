@@ -1,5 +1,6 @@
 import type { Insight, OperationalSnapshot } from '@/lib/proactive-insights/types';
 import { formatShortDayDate } from '@/lib/proactive-insights/format-short-day';
+import { formatPendingBeanOrdersSummary } from '@/lib/proactive-insights/format-pending-bean-orders';
 import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 import {
   collectWeeklyLeaveEntries,
@@ -53,14 +54,10 @@ function ruleBeanOrdersPending(snapshot: OperationalSnapshot): Insight | null {
     return null;
   }
 
-  const detail = snapshot.pendingBeanOrders
-    .map((order) => `${order.customerName} (${order.statusLabel})`)
-    .join(', ');
-
   return {
     ruleId: 'bean_orders_inventory_gap',
     title: 'ออเดอร์เมล็ดค้าง',
-    summary: detail,
+    summary: formatPendingBeanOrdersSummary(snapshot.pendingBeanOrders),
     urlPath: '/bean-orders',
     priority: 'normal',
     modules: ['bean_orders'],
@@ -85,8 +82,8 @@ export function buildDailyInsightDigest(insights: Insight[]): Insight | null {
   const modules = [...new Set(insights.flatMap((insight) => insight.modules))];
   const priority = insights.some((insight) => insight.priority === 'high') ? 'high' : 'normal';
   const summary = insights
-    .map((insight) => `【${insight.title}】\n${insight.summary}`)
-    .join('\n\n');
+    .map((insight) => `${insight.title} — ${insight.summary}`)
+    .join('\n');
 
   return {
     ruleId: 'daily_digest',

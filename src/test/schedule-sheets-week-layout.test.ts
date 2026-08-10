@@ -6,8 +6,10 @@ import {
   weekDayNumbersFromIsoDates,
 } from '@/lib/schedule/sheets-week-block';
 import {
+  buildScheduleSheetClearRanges,
   buildScheduleSheetsUpdates,
   buildFrontStoreShiftSubRows,
+  buildFohCountFormulaRow,
   mergeNamesIntoSlots,
 } from '@/lib/schedule/sheets-week-layout';
 
@@ -62,6 +64,9 @@ describe('sheets-week-block', () => {
     const row = findWeekBlockDateRow(grid, weekDayNumbersFromIsoDates(weekDays));
     expect(row).toBe(3);
     expect(deriveWeekBlockLayout(row!).frontStoreShiftRows['6:30']).toBe(5);
+    expect(deriveWeekBlockLayout(row!).frontStoreShiftRows['7:00']).toBe(7);
+    expect(deriveWeekBlockLayout(row!).frontStoreShiftRows['8:00']).toBe(10);
+    expect(deriveWeekBlockLayout(row!).laundryRow).toBe(16);
   });
 });
 
@@ -72,6 +77,25 @@ describe('mergeNamesIntoSlots', () => {
 
   test('fills empty slots without appending into occupied cells', () => {
     expect(mergeNamesIntoSlots(['', ''], ['เม', 'มีนา'])).toEqual(['เม', 'มีนา']);
+  });
+});
+
+describe('deriveWeekBlockLayout', () => {
+  test('matches BAB sheet template row bands (2 / 3 / 4 name rows per shift)', () => {
+    const layout = deriveWeekBlockLayout(2);
+    expect(layout.frontStoreShiftRows).toEqual({
+      '6:30': 4,
+      '7:00': 6,
+      '8:00': 9,
+    });
+    expect(layout.frontStoreShiftSlotRows).toEqual({
+      '6:30': 2,
+      '7:00': 3,
+      '8:00': 4,
+    });
+    expect(layout.fohCountRow).toBe(13);
+    expect(layout.laundryRow).toBe(15);
+    expect(layout.branch2Row).toBe(16);
   });
 });
 
@@ -101,8 +125,29 @@ describe('buildFrontStoreShiftSubRows', () => {
   });
 });
 
+describe('buildFohCountFormulaRow', () => {
+  test('emits COUNTA over the full front-store name band per column', () => {
+    const layout = deriveWeekBlockLayout(2);
+    expect(buildFohCountFormulaRow(layout)).toEqual([
+      '=counta(B4:B12)',
+      '=counta(C4:C12)',
+      '=counta(D4:D12)',
+      '=counta(E4:E12)',
+      '=counta(F4:F12)',
+      '=counta(G4:G12)',
+      '=counta(H4:H12)',
+    ]);
+  });
+
+  test('matches weekly block at row 66 (grey count row 77)', () => {
+    const layout = deriveWeekBlockLayout(66);
+    expect(layout.fohCountRow).toBe(77);
+    expect(buildFohCountFormulaRow(layout)[0]).toBe('=counta(B68:B76)');
+  });
+});
+
 describe('buildScheduleSheetsUpdates', () => {
-  test('writes employee names only in branch-1 day columns (no dates, labels, or counts)', () => {
+  test('writes employee names and COUNTA formulas (no hard-coded totals)', () => {
     const weekStart = '2026-07-27';
     const shifts = [
       {
@@ -161,23 +206,38 @@ describe('buildScheduleSheetsUpdates', () => {
     );
     const byRange = new Map(updates.map((entry) => [entry.range, entry.values]));
 
-    expect(updates).toHaveLength(3);
-    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B34:H39")).toEqual([
-      ['ปิ่น', '', '', '', '', '', ''],
-      ['นิต้า', '', '', '', '', '', ''],
-      ['มุก', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', ''],
-      ['ฟิว', '', '', '', '', '', ''],
-      ['', '', '', '', '', '', ''],
+    expect(buildScheduleSheetClearRanges('ตารางงานเดือน ก.ค. 69', blockLayout)).toEqual([
+      "'ตารางงานเดือน ก.ค. 69'!B34:H42",
+      "'ตารางงานเดือน ก.ค. 69'!B45:H45",
+      "'ตารางงานเดือน ก.ค. 69'!B46:H46",
     ]);
-    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B42:H42")).toEqual([['ล่า', '', '', '', '', '', '']]);
-    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B43:H43")).toEqual([['', '', 'ชัช', '', '', '', '']]);
+
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B34")).toEqual([['ปิ่น']]);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B35")).toEqual([['นิต้า']]);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B36")).toEqual([['มุก']]);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B39")).toEqual([['ฟิว']]);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B45")).toEqual([['ล่า']]);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!D46")).toEqual([['ชัช']]);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B43:H43")).toEqual([
+      [
+        '=counta(B34:B42)',
+        '=counta(C34:C42)',
+        '=counta(D34:D42)',
+        '=counta(E34:E42)',
+        '=counta(F34:F42)',
+        '=counta(G34:G42)',
+        '=counta(H34:H42)',
+      ],
+    ]);
+    expect(updates.find((entry) => entry.range.includes('B43:H43'))?.inputOption).toBe(
+      'USER_ENTERED',
+    );
+    expect(updates.some((entry) => entry.values.flat().some((value) => value === ''))).toBe(false);
 
     for (const range of byRange.keys()) {
       expect(range).not.toMatch(/![I-Z]/);
       expect(range).not.toMatch(/!A\d/);
       expect(range).not.toMatch(/!B32:H33/);
-      expect(range).not.toMatch(/!B40:H40/);
     }
   });
 });

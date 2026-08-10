@@ -2,7 +2,7 @@ import { addDays, format, parseISO, startOfWeek } from 'date-fns';
 import {
   SHEETS_DAY_COLUMNS,
   SHEETS_FRONT_STORE_SHIFT_KEYS,
-  SHEETS_FRONT_STORE_SHIFT_SUBROWS,
+  SHEETS_FRONT_STORE_SHIFT_SLOT_ROWS,
   SHEETS_LAYOUT_ROW_OFFSETS,
   type SheetsFrontStoreShiftKey,
 } from '@/lib/schedule/sheets-layout-config';
@@ -18,7 +18,7 @@ export interface SheetsWeekBlockLayout {
   /** Day labels read from the sheet (B–H), when present. */
   sheetDayLabels?: string[];
   frontStoreShiftRows: Record<SheetsFrontStoreShiftKey, number>;
-  frontStoreShiftSubRows: number;
+  frontStoreShiftSlotRows: Record<SheetsFrontStoreShiftKey, number>;
   fohCountRow: number;
   laundryLabelRow: number;
   laundryRow: number;
@@ -85,62 +85,51 @@ export function resolveIsoDatesFromSheetDateRow(
   return resolved;
 }
 
-/** Map website week values (Mon→Sun) into B–H column order using columnMap. */
-export function mapWeekValuesToSheetColumns(
-  valuesByWeekIndex: string[],
-  columnMap: number[],
-): string[] {
-  const row = Array.from({ length: SHEETS_DAY_COLUMNS.length }, () => '');
-  for (let weekIdx = 0; weekIdx < valuesByWeekIndex.length; weekIdx += 1) {
-    const column = columnMap[weekIdx];
-    if (column >= 0 && column < row.length) {
-      row[column] = valuesByWeekIndex[weekIdx];
-    }
-  }
-  return row;
-}
-
-function buildDayLabelRowValues(
+export function resolveWeekBlockAnchorCandidates(
   weekDays: string[],
-  columnMap: number[],
-  sheetDayLabels?: string[],
-): string[] {
-  const valuesByWeekIndex = weekDays.map((isoDate, weekIdx) => {
-    const weekday = parseISO(isoDate).getDay();
-    const column = columnMap[weekIdx];
-    const preferred = sheetDayLabels?.[column];
-    return sheetDayLabelForWeekday(weekday, preferred);
-  });
+  tabMonth: number,
+  tabYear: number,
+): Array<{ month: number; year: number }> {
+  const monday = parseISO(weekDays[0]);
+  const sunday = parseISO(weekDays[6]);
+  const seen = new Set<string>();
+  const candidates: Array<{ month: number; year: number }> = [];
 
-  return mapWeekValuesToSheetColumns(valuesByWeekIndex, columnMap);
+  const push = (month: number, year: number) => {
+    const key = `${year}-${month}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    candidates.push({ month, year });
+  };
+
+  push(tabMonth, tabYear);
+  push(monday.getMonth(), monday.getFullYear());
+  push(sunday.getMonth(), sunday.getFullYear());
+
+  return candidates;
 }
 
-/**
- * Locate the week block by matching full calendar dates and Thai day abbreviations.
- * Scans all rows (row 1 may be empty) within branch-1 day columns B–H.
- */
-export function findWeekBlockInSheet(
+function weekBlockMatchFromRow(
   branchDayColumnRows: string[][],
+  index: number,
   weekDays: string[],
   tabMonth: number,
   tabYear: number,
 ): SheetsWeekBlockMatch | null {
-  if (weekDays.length !== SHEETS_DAY_COLUMNS.length) return null;
+  const dateCells = branchDayColumnRows[index];
+  if (!dateCells || dateCells.length < SHEETS_DAY_COLUMNS.length) return null;
 
-  for (let index = 0; index < branchDayColumnRows.length - 1; index += 1) {
-    const dateCells = branchDayColumnRows[index];
-    if (!dateCells || dateCells.length < SHEETS_DAY_COLUMNS.length) continue;
+  const dayNumbers = dateCells
+    .slice(0, SHEETS_DAY_COLUMNS.length)
+    .map((cell) => parseSheetDayNumber(cell));
 
-    const dayNumbers = dateCells
-      .slice(0, SHEETS_DAY_COLUMNS.length)
-      .map((cell) => parseSheetDayNumber(cell));
+  if (dayNumbers.some((day) => day === null)) return null;
 
-    if (dayNumbers.some((day) => day === null)) continue;
-
+  for (const anchor of resolveWeekBlockAnchorCandidates(weekDays, tabMonth, tabYear)) {
     const resolvedDates = resolveIsoDatesFromSheetDateRow(
       dayNumbers as number[],
-      tabMonth,
-      tabYear,
+      anchor.month,
+      anchor.year,
     );
     if (!resolvedDates) continue;
 
@@ -189,6 +178,62 @@ export function findWeekBlockInSheet(
   return null;
 }
 
+/** Map website week values (Mon→Sun) into B–H column order using columnMap. */
+export function mapWeekValuesToSheetColumns(
+  valuesByWeekIndex: string[],
+  columnMap: number[],
+): string[] {
+  const row = Array.from({ length: SHEETS_DAY_COLUMNS.length }, () => '');
+  for (let weekIdx = 0; weekIdx < valuesByWeekIndex.length; weekIdx += 1) {
+    const column = columnMap[weekIdx];
+    if (column >= 0 && column < row.length) {
+      row[column] = valuesByWeekIndex[weekIdx];
+    }
+  }
+  return row;
+}
+
+function buildDayLabelRowValues(
+  weekDays: string[],
+  columnMap: number[],
+  sheetDayLabels?: string[],
+): string[] {
+  const valuesByWeekIndex = weekDays.map((isoDate, weekIdx) => {
+    const weekday = parseISO(isoDate).getDay();
+    const column = columnMap[weekIdx];
+    const preferred = sheetDayLabels?.[column];
+    return sheetDayLabelForWeekday(weekday, preferred);
+  });
+
+  return mapWeekValuesToSheetColumns(valuesByWeekIndex, columnMap);
+}
+
+/**
+ * Locate the week block by matching full calendar dates and Thai day abbreviations.
+ * Scans all rows (row 1 may be empty) within branch-1 day columns B–H.
+ */
+export function findWeekBlockInSheet(
+  branchDayColumnRows: string[][],
+  weekDays: string[],
+  tabMonth: number,
+  tabYear: number,
+): SheetsWeekBlockMatch | null {
+  if (weekDays.length !== SHEETS_DAY_COLUMNS.length) return null;
+
+  for (let index = 0; index < branchDayColumnRows.length - 1; index += 1) {
+    const match = weekBlockMatchFromRow(
+      branchDayColumnRows,
+      index,
+      weekDays,
+      tabMonth,
+      tabYear,
+    );
+    if (match) return match;
+  }
+
+  return null;
+}
+
 /** @deprecated Use findWeekBlockInSheet — kept for tests that only need day numbers. */
 export function findWeekBlockDateRow(
   branchDayColumnRows: string[][],
@@ -222,12 +267,13 @@ export function deriveWeekBlockLayout(
   sheetDayLabels?: string[],
 ): SheetsWeekBlockLayout {
   const frontStoreStart = dateRow + SHEETS_LAYOUT_ROW_OFFSETS.frontStoreStart;
-  const frontStoreShiftRows = Object.fromEntries(
-    SHEETS_FRONT_STORE_SHIFT_KEYS.map((shiftKey, index) => [
-      shiftKey,
-      frontStoreStart + index * SHEETS_FRONT_STORE_SHIFT_SUBROWS,
-    ]),
-  ) as Record<SheetsFrontStoreShiftKey, number>;
+  const frontStoreShiftRows = {} as Record<SheetsFrontStoreShiftKey, number>;
+  let nextRow = frontStoreStart;
+
+  for (const shiftKey of SHEETS_FRONT_STORE_SHIFT_KEYS) {
+    frontStoreShiftRows[shiftKey] = nextRow;
+    nextRow += SHEETS_FRONT_STORE_SHIFT_SLOT_ROWS[shiftKey];
+  }
 
   return {
     dateRow,
@@ -235,7 +281,7 @@ export function deriveWeekBlockLayout(
     columnMap,
     sheetDayLabels,
     frontStoreShiftRows,
-    frontStoreShiftSubRows: SHEETS_FRONT_STORE_SHIFT_SUBROWS,
+    frontStoreShiftSlotRows: { ...SHEETS_FRONT_STORE_SHIFT_SLOT_ROWS },
     fohCountRow: dateRow + SHEETS_LAYOUT_ROW_OFFSETS.fohCount,
     laundryLabelRow: dateRow + SHEETS_LAYOUT_ROW_OFFSETS.laundryLabel,
     laundryRow: dateRow + SHEETS_LAYOUT_ROW_OFFSETS.laundry,

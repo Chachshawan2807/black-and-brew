@@ -143,6 +143,65 @@ function branch1DayColumnRange(tabName: string, startRow: number, endRow: number
   return quoteSheetRange(tabName, `${start}:${end}`);
 }
 
+function frontStoreEndRow(blockLayout: SheetsWeekBlockLayout): number {
+  return (
+    blockLayout.frontStoreShiftRows['8:00'] +
+    blockLayout.frontStoreShiftSlotRows['8:00'] -
+    1
+  );
+}
+
+/** COUNTA formulas for the grey staff-count row (one formula per day column). */
+export function buildFohCountFormulaRow(blockLayout: SheetsWeekBlockLayout): string[] {
+  const frontStoreStart = blockLayout.frontStoreShiftRows['6:30'];
+  const frontStoreEnd = frontStoreEndRow(blockLayout);
+
+  return SHEETS_DAY_COLUMNS.map(
+    (column) => `=counta(${column}${frontStoreStart}:${column}${frontStoreEnd})`,
+  );
+}
+
+/** Ranges cleared before sync so empty slots stay truly empty (COUNTA counts only names). */
+export function buildScheduleSheetClearRanges(
+  tabName: string,
+  blockLayout: SheetsWeekBlockLayout,
+): string[] {
+  const frontStoreStart = blockLayout.frontStoreShiftRows['6:30'];
+  return [
+    branch1DayColumnRange(tabName, frontStoreStart, frontStoreEndRow(blockLayout)),
+    branch1DayColumnRange(tabName, blockLayout.laundryRow),
+    branch1DayColumnRange(tabName, blockLayout.branch2Row),
+  ];
+}
+
+function pushSparseSheetRow(
+  updates: SheetsValueUpdate[],
+  tabName: string,
+  sheetRow: number,
+  valuesInSheetColumnOrder: string[],
+): void {
+  for (let colIdx = 0; colIdx < valuesInSheetColumnOrder.length; colIdx += 1) {
+    const name = valuesInSheetColumnOrder[colIdx]?.trim();
+    if (!name) continue;
+
+    updates.push({
+      range: quoteSheetRange(tabName, `${SHEETS_DAY_COLUMNS[colIdx]}${sheetRow}`),
+      values: [[name]],
+    });
+  }
+}
+
+function pushSparseSheetRows(
+  updates: SheetsValueUpdate[],
+  tabName: string,
+  startRow: number,
+  rowsInSheetColumnOrder: string[][],
+): void {
+  for (let rowOffset = 0; rowOffset < rowsInSheetColumnOrder.length; rowOffset += 1) {
+    pushSparseSheetRow(updates, tabName, startRow + rowOffset, rowsInSheetColumnOrder[rowOffset]);
+  }
+}
+
 export function buildScheduleSheetsUpdates(
   weekStartMonday: string,
   profiles: SheetsWeekProfile[],
@@ -152,48 +211,52 @@ export function buildScheduleSheetsUpdates(
 ): SheetsValueUpdate[] {
   const weekDays = buildWeekDayIsoStrings(weekStartMonday);
   const columnMap = blockLayout.columnMap;
-  const subRowCount = blockLayout.frontStoreShiftSubRows;
+  const updates: SheetsValueUpdate[] = [];
 
-  const frontStoreStart = blockLayout.frontStoreShiftRows['6:30'];
-  const frontStoreEnd =
-    blockLayout.frontStoreShiftRows['8:00'] + subRowCount - 1;
-  const frontStoreValues: string[][] = [];
-
+  let frontStoreRow = blockLayout.frontStoreShiftRows['6:30'];
   for (const shiftKey of SHEETS_FRONT_STORE_SHIFT_KEYS) {
+    const slotRows = blockLayout.frontStoreShiftSlotRows[shiftKey];
     const subRows = buildFrontStoreShiftSubRows(
       weekDays,
       profiles,
       shifts,
       shiftKey,
-      subRowCount,
+      slotRows,
     );
-    frontStoreValues.push(
-      ...subRows.map((row) => mapWeekValuesToSheetColumns(row, columnMap)),
+    pushSparseSheetRows(
+      updates,
+      tabName,
+      frontStoreRow,
+      subRows.map((row) => mapWeekValuesToSheetColumns(row, columnMap)),
     );
+    frontStoreRow += slotRows;
   }
 
-  return [
-    {
-      range: branch1DayColumnRange(tabName, frontStoreStart, frontStoreEnd),
-      values: frontStoreValues,
-    },
-    {
-      range: branch1DayColumnRange(tabName, blockLayout.laundryRow),
-      values: [
-        mapWeekValuesToSheetColumns(
-          buildSingleNameRowValues(weekDays, profiles, shifts, 'ร้านซักผ้า'),
-          columnMap,
-        ),
-      ],
-    },
-    {
-      range: branch1DayColumnRange(tabName, blockLayout.branch2Row),
-      values: [
-        mapWeekValuesToSheetColumns(
-          buildSingleNameRowValues(weekDays, profiles, shifts, 'ไปสาขา 2'),
-          columnMap,
-        ),
-      ],
-    },
-  ];
+  pushSparseSheetRow(
+    updates,
+    tabName,
+    blockLayout.laundryRow,
+    mapWeekValuesToSheetColumns(
+      buildSingleNameRowValues(weekDays, profiles, shifts, 'ร้านซักผ้า'),
+      columnMap,
+    ),
+  );
+
+  pushSparseSheetRow(
+    updates,
+    tabName,
+    blockLayout.branch2Row,
+    mapWeekValuesToSheetColumns(
+      buildSingleNameRowValues(weekDays, profiles, shifts, 'ไปสาขา 2'),
+      columnMap,
+    ),
+  );
+
+  updates.push({
+    range: branch1DayColumnRange(tabName, blockLayout.fohCountRow),
+    values: [buildFohCountFormulaRow(blockLayout)],
+    inputOption: 'USER_ENTERED',
+  });
+
+  return updates;
 }

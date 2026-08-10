@@ -92,16 +92,18 @@ describe('evaluateInsightRules', () => {
     expect(INSIGHT_THRESHOLDS.leaveCoverageMinLeave).toBe(2);
   });
 
-  test('bean_orders_inventory_gap lists customer names and pending status', () => {
+  test('bean_orders_inventory_gap summarizes pending statuses on one line', () => {
     const pending: PendingBeanOrderInsight[] = [
       { customerName: 'คุณเอ', statusLabel: 'ค้างชำระเงิน' },
       { customerName: 'ทัพพ์', statusLabel: 'ค้างจัดส่ง' },
+      { customerName: 'ทศกัณฐ์', statusLabel: 'ค้างชำระเงิน' },
+      { customerName: 'มุก', statusLabel: 'ค้างชำระเงิน' },
     ];
     const insights = evaluateInsightRules(sampleSnapshot({ pendingBeanOrders: pending }));
     const hit = insights.find((i) => i.ruleId === 'bean_orders_inventory_gap');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toContain('คุณเอ (ค้างชำระเงิน)');
-    expect(hit!.summary).toContain('ทัพพ์ (ค้างจัดส่ง)');
+    expect(hit!.summary).toBe('ค้างชำระเงิน 3 รายการ · ค้างจัดส่ง 1 รายการ');
+    expect(hit!.summary).not.toContain('คุณเอ');
   });
 
   test('bean_orders_inventory_gap does not fire when no pending orders', () => {
@@ -120,10 +122,11 @@ describe('evaluateInsightRules', () => {
     expect(digest).not.toBeNull();
     expect(digest!.ruleId).toBe('daily_digest');
     expect(digest!.title).toBe('แจ้งเตือนเชิงรุก');
-    expect(digest!.summary).toContain('【คนน้อย】');
-    expect(digest!.summary).toContain('【ลาหลายคน】');
-    expect(digest!.summary).toContain('【ออเดอร์เมล็ดค้าง】');
-    expect(digest!.summary).toContain('คุณซี (ค้างชำระเงิน)');
+    expect(digest!.summary).toContain('คนน้อย —');
+    expect(digest!.summary).toContain('ลาหลายคน —');
+    expect(digest!.summary).toContain('ออเดอร์เมล็ดค้าง —');
+    expect(digest!.summary).toContain('ค้างชำระเงิน 1 รายการ');
+    expect(digest!.summary).not.toContain('【');
   });
 
   test('buildDailyInsightDigest returns null when no rules match', () => {

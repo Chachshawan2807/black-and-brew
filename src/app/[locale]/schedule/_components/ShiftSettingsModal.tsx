@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Settings, RotateCcw, Loader2, Trash2, ChevronDown, Palette } from 'lucide-react';
+import { X, Settings, RotateCcw, Loader2, Trash2, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_SHIFT_TYPES,
   PASTEL_COLOR_PRESETS,
   buildShiftDisplay,
   createNewShiftEntry,
-  isDefaultShiftType,
   type ShiftTypeEntry,
 } from '@/lib/shift-type-config';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -24,80 +23,82 @@ interface ShiftSettingsModalProps {
   onSave: (entries: ShiftTypeEntry[]) => void;
 }
 
-function CollapsibleColorPicker({
+function ColorPickerButton({
   entry,
   open,
   onToggle,
-  onChange,
 }: {
   entry: ShiftTypeEntry;
   open: boolean;
   onToggle: () => void;
-  onChange: (bg: string, border: string) => void;
 }) {
   const activePreset = PASTEL_COLOR_PRESETS.find(
     (p) => p.bg === entry.bgColor && p.border === entry.borderColor
   );
 
+  const colorLabel = activePreset?.name ?? 'สีพาสเทล';
+
   return (
-    <div className="w-full">
+    <HintTooltip tip={colorLabel}>
       <button
         type="button"
         onClick={onToggle}
         className={cn(
-          'w-full flex items-center gap-2.5 h-11 px-3 rounded-xl border transition-all cursor-pointer',
+          'flex items-center justify-center h-11 w-11 rounded-xl border transition-all cursor-pointer',
           open
             ? 'border-emerald-500/30 bg-emerald-50/20'
             : 'border-border bg-background hover:bg-muted/30'
         )}
         aria-expanded={open}
+        aria-label={colorLabel}
       >
         <span
-          className="h-6 w-6 rounded-full border-2 shrink-0 shadow-sm"
+          className="h-7 w-7 rounded-full border-2 shadow-sm"
           style={{ backgroundColor: entry.bgColor, borderColor: entry.borderColor }}
         />
-        <span className="flex-1 text-left text-[13px] text-foreground truncate">
-          {activePreset?.name ?? 'สีพาสเทล'}
-        </span>
-        <Palette className="w-3.5 h-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
-        <ChevronDown
-          className={cn('w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200', open && 'rotate-180')}
-        />
       </button>
+    </HintTooltip>
+  );
+}
 
-      {open && (
-        <div className="mt-2 p-3 rounded-xl border border-border bg-muted/15 animate-in fade-in slide-in-from-top-1 duration-200">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2.5 px-0.5">
-            เลือกสีพาสเทล
-          </p>
-          <div className="grid grid-cols-4 gap-2.5">
-            {PASTEL_COLOR_PRESETS.map((preset) => {
-              const selected = entry.bgColor === preset.bg && entry.borderColor === preset.border;
-              return (
-                <HintTooltip key={`${preset.bg}-${preset.border}`} tip={preset.name}>
-                  <button
-                    type="button"
-                    onClick={() => onChange(preset.bg, preset.border)}
-                    className={cn(
-                      'flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all active:scale-95 cursor-pointer',
-                      selected
-                        ? 'border-emerald-500/50 bg-card shadow-sm ring-1 ring-emerald-500/20'
-                        : 'border-transparent hover:border-border hover:bg-card/80'
-                    )}
-                    aria-label={preset.name}
-                  >
-                  <span
-                    className="h-8 w-8 rounded-full border-2"
-                    style={{ backgroundColor: preset.bg, borderColor: preset.border }}
-                  />
-                  <span className="text-[10px] text-muted-foreground leading-none">{preset.name}</span>
-                </button>
-                </HintTooltip>
-              );
-            })}
-          </div>
-        </div>
-      )}
+function ColorPickerPanel({
+  entry,
+  onChange,
+}: {
+  entry: ShiftTypeEntry;
+  onChange: (bg: string, border: string) => void;
+}) {
+  return (
+    <div className="p-3 rounded-xl border border-border bg-muted/15 animate-in fade-in slide-in-from-top-1 duration-200">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2.5 px-0.5">
+        เลือกสีพาสเทล
+      </p>
+      <div className="grid grid-cols-4 gap-2.5">
+        {PASTEL_COLOR_PRESETS.map((preset) => {
+          const selected = entry.bgColor === preset.bg && entry.borderColor === preset.border;
+          return (
+            <HintTooltip key={`${preset.bg}-${preset.border}`} tip={preset.name}>
+              <button
+                type="button"
+                onClick={() => onChange(preset.bg, preset.border)}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all active:scale-95 cursor-pointer',
+                  selected
+                    ? 'border-emerald-500/50 bg-card shadow-sm ring-1 ring-emerald-500/20'
+                    : 'border-transparent hover:border-border hover:bg-card/80'
+                )}
+                aria-label={preset.name}
+              >
+                <span
+                  className="h-8 w-8 rounded-full border-2"
+                  style={{ backgroundColor: preset.bg, borderColor: preset.border }}
+                />
+                <span className="text-[10px] text-muted-foreground leading-none">{preset.name}</span>
+              </button>
+            </HintTooltip>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -206,7 +207,7 @@ export default function ShiftSettingsModal({
   };
 
   const isCreating = selectValue === SELECT_NEW_CUSTOM;
-  const canDelete = selectedEntry && !isDefaultShiftType(selectedEntry.id) && !isCreating;
+  const canDelete = Boolean(selectedEntry && !isCreating && draft.length > 1);
 
   return (
     <FadeModalScaffold
@@ -216,17 +217,17 @@ export default function ShiftSettingsModal({
       }}
       zIndex={75}
       overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
-      panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-w-md max-h-[90vh] overflow-hidden bg-card shadow-2xl flex flex-col"
+      panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full md:w-fit md:max-w-[22rem] max-w-[calc(100vw-2rem)] max-h-[90vh] overflow-hidden bg-card shadow-2xl flex flex-col"
       aria-label="ตั้งค่ากะการทำงาน"
     >
         {/* Header */}
-        <div className="px-5 pt-5 pb-4 flex items-start gap-3 shrink-0">
+        <div className="px-4 pt-5 pb-4 flex items-start gap-3 shrink-0">
           <div className="p-2 bg-muted/50 rounded-2xl mt-0.5">
             <Settings className="w-5 h-5 text-foreground" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-normal text-foreground tracking-tight">ตั้งค่ากะการทำงาน</h3>
-            <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">
+            <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed text-balance">
               เลือกกะ ปรับสีพาสเทล หรือกำหนดกะใหม่
             </p>
           </div>
@@ -244,54 +245,73 @@ export default function ShiftSettingsModal({
         </div>
 
         {/* Main editor */}
-        <div className="px-5 pb-5 space-y-3 shrink-0 flex-1 min-h-0 overflow-y-auto bb-smooth-scroll">
-          {/* Row: preview + เลือกกะ */}
-          <div className="flex items-end gap-2.5">
-            {preview && selectedEntry && !isCreating && (
-              <div
-                className={cn(
-                  'h-11 w-[76px] shrink-0 rounded-xl border flex items-center justify-center text-[13px] font-normal truncate px-1.5',
-                  preview.className
-                )}
-                style={preview.style}
-              >
-                {selectedEntry.label}
+        <div className="px-4 pb-5 space-y-3 shrink-0 flex-1 min-h-0 overflow-y-auto bb-smooth-scroll">
+          {/* Row: เลือกกะ + preview + เลือกสี + ลบ */}
+          <div className="space-y-2">
+            <div className="flex items-end gap-2.5">
+              <div className="shrink-0 w-[124px]">
+                <label className="text-[10px] text-muted-foreground uppercase tracking-widest px-0.5 mb-1 block">
+                  เลือกกะ
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectValue}
+                    onChange={(e) => handleSelectChange(e.target.value)}
+                    className="w-full h-11 pl-3 pr-8 rounded-xl border border-border bg-background text-[14px] text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  >
+                    {draft.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.label}
+                      </option>
+                    ))}
+                    <option value={SELECT_NEW_CUSTOM}>กำหนดเอง...</option>
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
-            )}
 
-            <div className="flex-1 min-w-0">
-              <label className="text-[10px] text-muted-foreground uppercase tracking-widest px-0.5 mb-1 block">
-                เลือกกะ
-              </label>
-              <div className="relative">
-                <select
-                  value={selectValue}
-                  onChange={(e) => handleSelectChange(e.target.value)}
-                  className="w-full h-11 pl-3 pr-9 rounded-xl border border-border bg-background text-[14px] text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              {preview && selectedEntry && !isCreating && (
+                <div
+                  className={cn(
+                    'h-11 w-[76px] shrink-0 rounded-xl border flex items-center justify-center text-[13px] font-normal truncate px-1.5',
+                    preview.className
+                  )}
+                  style={preview.style}
                 >
-                  {draft.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.label}
-                    </option>
-                  ))}
-                  <option value={SELECT_NEW_CUSTOM}>กำหนดเอง...</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              </div>
+                  {selectedEntry.label}
+                </div>
+              )}
+
+              {selectedEntry && !isCreating && (
+                <ColorPickerButton
+                  entry={selectedEntry}
+                  open={colorOpen}
+                  onToggle={() => setColorOpen((v) => !v)}
+                />
+              )}
+
+              {canDelete && (
+                <HintTooltip tip="ลบกะนี้">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveShift(selectedEntry!.id)}
+                    disabled={isSaving}
+                    className="shrink-0 flex items-center justify-center h-11 w-11 text-red-500/80 hover:text-red-600 hover:bg-red-50 rounded-xl border border-border transition-all disabled:opacity-50 cursor-pointer"
+                    aria-label="ลบกะนี้"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </HintTooltip>
+              )}
             </div>
 
-            {canDelete && (
-              <HintTooltip tip="ลบกะนี้">
-                <button
-                  type="button"
-                  onClick={() => handleRemoveShift(selectedEntry!.id)}
-                  disabled={isSaving || draft.length <= 1}
-                  className="shrink-0 flex items-center justify-center h-11 w-11 mb-0 text-red-500/80 hover:text-red-600 hover:bg-red-50 rounded-xl border border-border transition-all disabled:opacity-50 cursor-pointer"
-                  aria-label="ลบกะนี้"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </HintTooltip>
+            {colorOpen && selectedEntry && !isCreating && (
+              <ColorPickerPanel
+                entry={selectedEntry}
+                onChange={(bg, border) =>
+                  updateEntry({ ...selectedEntry, bgColor: bg, borderColor: border })
+                }
+              />
             )}
           </div>
 
@@ -318,21 +338,10 @@ export default function ShiftSettingsModal({
             </div>
           )}
 
-          {/* Collapsible color picker */}
-          {selectedEntry && !isCreating && (
-            <CollapsibleColorPicker
-              entry={selectedEntry}
-              open={colorOpen}
-              onToggle={() => setColorOpen((v) => !v)}
-              onChange={(bg, border) =>
-                updateEntry({ ...selectedEntry, bgColor: bg, borderColor: border })
-              }
-            />
-          )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-border flex flex-col gap-2 shrink-0 max-md:pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className="px-4 py-4 border-t border-border flex flex-col gap-2 shrink-0 w-full max-md:pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={handleReset}

@@ -21,10 +21,15 @@ import type { InventoryNotification } from '@/lib/notification-types';
 import { ExpandableLines } from '@/components/ui/expandable-lines';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { NotificationItemIcon } from '@/components/notifications/NotificationItemIcon';
-import { isScheduleNotification, isSecurityNotification } from '@/lib/notification-display-icon';
+import { isScheduleNotification, isSecurityNotification, isProactiveInsightNotification } from '@/lib/notification-display-icon';
 
 function getNotificationDetailLines(item: InventoryNotification): string[] {
-  if ((isScheduleNotification(item) || isSecurityNotification(item)) && item.fieldSummary.trim()) {
+  if (
+    (isScheduleNotification(item) ||
+      isSecurityNotification(item) ||
+      isProactiveInsightNotification(item)) &&
+    item.fieldSummary.trim()
+  ) {
     return item.fieldSummary.split('\n').filter(Boolean);
   }
   return item.summary ? [item.summary] : [];
@@ -62,8 +67,8 @@ function NotificationRow({
                   lines={detailLines}
                   isTh={isTh}
                   maxLines={isSchedule ? detailLines.length : undefined}
-                  lineClassName="text-[12px] text-muted-foreground leading-normal"
-                  className="mt-0.5"
+                  lineClassName="text-[12px] text-muted-foreground leading-normal text-left"
+                  className="mt-0.5 text-left"
                 />
               )}
               <p className="text-[12px] text-muted-foreground leading-normal mt-0.5">

@@ -48,7 +48,9 @@ export async function evaluateAndDispatchInsights(
     };
   }
 
-  const logResult = await recordInsightNotificationLog(digest, dateIso, locale);
+  const logResult = await recordInsightNotificationLog(digest, dateIso, locale, {
+    trigger,
+  });
   const recorded = {
     ruleId: digest.ruleId,
     logId: logResult.logId,

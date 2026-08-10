@@ -8,9 +8,10 @@ import {
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 import { recordDailyReportNotificationLog } from '@/lib/daily-report-notification';
 import { dispatchDailyReportWebPush } from '@/lib/daily-report-web-push';
+import { evaluateAndDispatchInsights } from '@/lib/proactive-insights/evaluate-and-dispatch';
 import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
 
-export const maxDuration = 30;
+export const maxDuration = 45;
 
 export async function GET(request: Request) {
   await headers();
@@ -88,6 +89,13 @@ export async function GET(request: Request) {
 
     const previewText = buildDailyReportAltText(reportData);
 
+    // Backup path: if the dedicated 17:00 insight cron was missed, run once with
+    // the 18:00 tomorrow schedule job (deduped per day in data_change_logs).
+    const insightResult =
+      schedule === 'tomorrow'
+        ? await evaluateAndDispatchInsights({ trigger: 'cron', locale: 'th' })
+        : null;
+
     return NextResponse.json({
       success: true,
       schedule,
@@ -106,6 +114,17 @@ export async function GET(request: Request) {
       removedDeviceCounts: pushResult.removedDeviceCounts ?? {},
       timestamp: new Date().toISOString(),
       previewText: previewText.substring(0, 80) + (previewText.length > 80 ? '…' : ''),
+      insightBackup: insightResult
+        ? {
+            dateIso: insightResult.dateIso,
+            matchedRuleCount: insightResult.matchedRules.length,
+            digestSent: Boolean(
+              insightResult.digest && insightResult.pushed && !insightResult.pushed.skipped,
+            ),
+            recorded: insightResult.recorded,
+            pushed: insightResult.pushed,
+          }
+        : null,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';
