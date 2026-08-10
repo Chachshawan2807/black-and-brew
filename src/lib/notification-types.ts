@@ -33,7 +33,7 @@ export interface NotificationPreferences {
   systemNotifications: boolean;
   /** Cron daily schedule reports at 05:00 / 18:00 ICT via Web Push */
   dailyScheduleReports: boolean;
-  /** Cross-module proactive insights — daily digest at 17:00 ICT via Web Push */
+  /** Cross-module proactive insights — daily digest at 07:00 ICT via Web Push */
   proactiveInsights: boolean;
   /** External attack / PIN lockout security alerts */
   securityAlerts: boolean;

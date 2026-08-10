@@ -21,7 +21,8 @@ export interface WeeklyDaySchedule {
 
 export interface PendingBeanOrderInsight {
   customerName: string;
-  statusLabel: string;
+  paymentStatus: string;
+  fulfillmentStatus: string;
 }
 
 export interface OperationalSnapshot {

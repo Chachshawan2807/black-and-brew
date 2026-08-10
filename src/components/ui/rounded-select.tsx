@@ -1,19 +1,22 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import {
-  BB_SELECT_LIST_CLASS,
+  BB_SELECT_LIST_BASE_CLASS,
   BB_SELECT_OPTION_CLASS,
   BB_SELECT_OPTION_SELECTED_CLASS,
   BB_SELECT_TRIGGER_CLASS,
   parseSelectOptions,
 } from '@/components/ui/select-trigger-styles';
+import { SELECT_LISTBOX_Z_CLASS } from '@/lib/floating-action-layout';
+import { getAnchoredSuggestionsOverlayStyle } from '@/lib/quick-search-suggestions-layout';
 import { cn } from '@/lib/utils';
 
 export {
   BB_SELECT_TRIGGER_CLASS,
-  BB_SELECT_LIST_CLASS,
+  BB_SELECT_LIST_BASE_CLASS,
   BB_SELECT_OPTION_CLASS,
   BB_SELECT_OPTION_SELECTED_CLASS,
   parseSelectOptions,
@@ -22,6 +25,9 @@ export {
 type RoundedSelectProps = Omit<React.ComponentProps<'select'>, 'size'> & {
   wrapperClassName?: string;
 };
+
+const LISTBOX_GAP_PX = 6;
+const LISTBOX_MAX_HEIGHT_PX = 240;
 
 function emitChange(
   onChange: RoundedSelectProps['onChange'] | undefined,
@@ -51,7 +57,11 @@ export function RoundedSelect({
 }: RoundedSelectProps) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [listStyle, setListStyle] = useState<CSSProperties>({});
   const [uncontrolled, setUncontrolled] = useState(() => String(defaultValue ?? ''));
 
   const options = useMemo(() => parseSelectOptions(children), [children]);
@@ -61,11 +71,69 @@ export function RoundedSelect({
   const displayLabel = selected?.label ?? '';
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const updateListPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const vv = window.visualViewport;
+    const anchored = getAnchoredSuggestionsOverlayStyle(
+      rect,
+      {
+        offsetTop: vv?.offsetTop ?? 0,
+        visibleHeight: vv?.height ?? window.innerHeight,
+      },
+      LISTBOX_GAP_PX,
+    );
+
+    setListStyle({
+      position: 'fixed',
+      left: anchored.left,
+      width: anchored.width,
+      maxWidth: anchored.maxWidth,
+      top: anchored.top,
+      bottom: anchored.bottom,
+      maxHeight: Math.min(anchored.maxHeight, LISTBOX_MAX_HEIGHT_PX),
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateListPosition();
+  }, [open, updateListPosition]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', updateListPosition, { passive: true });
+    vv?.addEventListener('scroll', updateListPosition, { passive: true });
+    window.addEventListener('resize', updateListPosition, { passive: true });
+    window.addEventListener('scroll', updateListPosition, { passive: true, capture: true });
+
+    return () => {
+      vv?.removeEventListener('resize', updateListPosition);
+      vv?.removeEventListener('scroll', updateListPosition);
+      window.removeEventListener('resize', updateListPosition);
+      window.removeEventListener('scroll', updateListPosition, true);
+    };
+  }, [open, updateListPosition]);
+
+  useEffect(() => {
     if (!open) return;
 
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node | null;
-      if (target && rootRef.current?.contains(target)) return;
+      if (
+        target &&
+        (rootRef.current?.contains(target) ||
+          listRef.current?.contains(target))
+      ) {
+        return;
+      }
       setOpen(false);
     };
 
@@ -87,6 +155,45 @@ export function RoundedSelect({
     setOpen(false);
   };
 
+  const listbox = open && !disabled ? (
+    <ul
+      ref={listRef}
+      id={listId}
+      role="listbox"
+      className={cn(
+        BB_SELECT_LIST_BASE_CLASS,
+        'fixed min-w-[10rem]',
+        SELECT_LISTBOX_Z_CLASS,
+      )}
+      style={listStyle}
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      {options.map((opt) => {
+        const isSelected = opt.value === currentValue;
+        return (
+          <li key={opt.value} role="presentation">
+            <button
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              disabled={opt.disabled}
+              onClick={() => {
+                if (opt.disabled) return;
+                selectValue(opt.value);
+              }}
+              className={cn(
+                BB_SELECT_OPTION_CLASS,
+                isSelected && BB_SELECT_OPTION_SELECTED_CLASS,
+              )}
+            >
+              {opt.label}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  ) : null;
+
   return (
     <div ref={rootRef} className={cn('relative', wrapperClassName)}>
       {/* Keep a hidden native select for name/form semantics & progressive enhancement. */}
@@ -105,6 +212,7 @@ export function RoundedSelect({
       </select>
 
       <button
+        ref={triggerRef}
         type="button"
         id={id}
         disabled={disabled}
@@ -114,6 +222,7 @@ export function RoundedSelect({
         aria-label={ariaLabel}
         onClick={() => {
           if (disabled) return;
+          if (!open) updateListPosition();
           setOpen((prev) => !prev);
         }}
         className={cn(BB_SELECT_TRIGGER_CLASS, 'text-left', className)}
@@ -128,34 +237,7 @@ export function RoundedSelect({
         />
       </button>
 
-      {open && !disabled ? (
-        <ul id={listId} role="listbox" className={BB_SELECT_LIST_CLASS}>
-          {options.map((opt) => {
-            const isSelected = opt.value === currentValue;
-            return (
-              <li key={opt.value} role="presentation">
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  disabled={opt.disabled}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    if (opt.disabled) return;
-                    selectValue(opt.value);
-                  }}
-                  className={cn(
-                    BB_SELECT_OPTION_CLASS,
-                    isSelected && BB_SELECT_OPTION_SELECTED_CLASS,
-                  )}
-                >
-                  {opt.label}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
+      {isMounted && listbox ? createPortal(listbox, document.body) : null}
     </div>
   );
 }

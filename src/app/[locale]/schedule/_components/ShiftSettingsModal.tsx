@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Settings, RotateCcw, Loader2, Trash2, ChevronDown } from 'lucide-react';
+import { X, Settings, RotateCcw, Loader2, Trash2 } from 'lucide-react';
+import { RoundedSelect } from '@/components/ui/rounded-select';
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_SHIFT_TYPES,
@@ -253,21 +254,18 @@ export default function ShiftSettingsModal({
                 <label className="text-[10px] text-muted-foreground uppercase tracking-widest px-0.5 mb-1 block">
                   เลือกกะ
                 </label>
-                <div className="relative">
-                  <select
-                    value={selectValue}
-                    onChange={(e) => handleSelectChange(e.target.value)}
-                    className="w-full h-11 pl-3 pr-8 rounded-xl border border-border bg-background text-[14px] text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                  >
-                    {draft.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.label}
-                      </option>
-                    ))}
-                    <option value={SELECT_NEW_CUSTOM}>กำหนดเอง...</option>
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                </div>
+                <RoundedSelect
+                  value={selectValue}
+                  onChange={(e) => handleSelectChange(e.target.value)}
+                  wrapperClassName="w-full"
+                >
+                  {draft.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.label}
+                    </option>
+                  ))}
+                  <option value={SELECT_NEW_CUSTOM}>กำหนดเอง...</option>
+                </RoundedSelect>
               </div>
 
               {preview && selectedEntry && !isCreating && (

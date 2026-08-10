@@ -4,13 +4,12 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ClipboardList,
-  ChevronRight,
   Loader2,
   Trash2,
   X,
 } from 'lucide-react';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
-import { BB_SELECT_OPTION_CLASS, BB_SELECT_OPTION_SELECTED_CLASS, BB_SELECT_TRIGGER_CLASS } from '@/components/ui/select-trigger-styles';
+import { RoundedSelect } from '@/components/ui/rounded-select';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -63,12 +62,9 @@ export default function MaintenanceModals({
   isReadOnly,
 }: MaintenanceModalsProps) {
   const equipmentListId = useId();
-  const taskTypeListId = useId();
   const equipmentRootRef = useRef<HTMLDivElement>(null);
-  const taskTypeRootRef = useRef<HTMLDivElement>(null);
   const [showEquipmentSuggestions, setShowEquipmentSuggestions] = useState(false);
   const [highlightedEquipmentIndex, setHighlightedEquipmentIndex] = useState(-1);
-  const [showTaskTypeList, setShowTaskTypeList] = useState(false);
 
   const taskTypeSelect = getTaskTypeSelectValue(formData.task_type);
   const taskTypeCustom = getTaskTypeInputValue(formData.task_type);
@@ -83,17 +79,8 @@ export default function MaintenanceModals({
     if (!isModalOpen) {
       setShowEquipmentSuggestions(false);
       setHighlightedEquipmentIndex(-1);
-      setShowTaskTypeList(false);
     }
   }, [isModalOpen]);
-
-  const selectTaskType = (value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      task_type: value === 'อื่นๆ' ? 'อื่นๆ' : value,
-    }));
-    setShowTaskTypeList(false);
-  };
 
   const selectEquipmentSuggestion = (value: string) => {
     setFormData(prev => ({ ...prev, equipment: value }));
@@ -190,54 +177,26 @@ export default function MaintenanceModals({
                         containerClassName="w-full"
                       />
                     </div>
-                    <div
-                      ref={taskTypeRootRef}
-                      className="space-y-1.5 relative"
-                      onBlur={e => {
-                        const next = e.relatedTarget as Node | null;
-                        if (next && taskTypeRootRef.current?.contains(next)) return;
-                        window.setTimeout(() => setShowTaskTypeList(false), 150);
-                      }}
-                    >
+                    <div className="space-y-1.5 flex-1">
                       <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ประเภทงาน</label>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          disabled={isReadOnly}
-                          onClick={() => setShowTaskTypeList(prev => !prev)}
-                          aria-haspopup="listbox"
-                          aria-expanded={showTaskTypeList}
-                          aria-controls={showTaskTypeList ? taskTypeListId : undefined}
-                          className={cn(BB_SELECT_TRIGGER_CLASS, 'text-left disabled:opacity-60 disabled:cursor-not-allowed')}
-                        >
-                          {taskTypeSelect}
-                        </button>
-                        <ChevronRight className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-muted-foreground pointer-events-none" />
-                      </div>
-                      {showTaskTypeList && !isReadOnly && (
-                        <ul
-                          id={taskTypeListId}
-                          data-testid="task-type-listbox"
-                          role="listbox"
-                          className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-2xl border border-border bg-card text-foreground p-1.5 bb-shadow-lg"
-                        >
-                          {TASK_TYPE_PRESETS.map(preset => (
-                            <li key={preset} role="option" aria-selected={taskTypeSelect === preset}>
-                              <button
-                                type="button"
-                                onMouseDown={e => e.preventDefault()}
-                                onClick={() => selectTaskType(preset)}
-                                className={cn(
-                                  BB_SELECT_OPTION_CLASS,
-                                  taskTypeSelect === preset && BB_SELECT_OPTION_SELECTED_CLASS,
-                                )}
-                              >
-                                {preset}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <RoundedSelect
+                        value={taskTypeSelect}
+                        disabled={isReadOnly}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setFormData(prev => ({
+                            ...prev,
+                            task_type: value === 'อื่นๆ' ? 'อื่นๆ' : value,
+                          }));
+                        }}
+                        wrapperClassName="w-full"
+                      >
+                        {TASK_TYPE_PRESETS.map(preset => (
+                          <option key={preset} value={preset}>
+                            {preset}
+                          </option>
+                        ))}
+                      </RoundedSelect>
                       {taskTypeSelect === 'อื่นๆ' && (
                         <input
                           type="text"

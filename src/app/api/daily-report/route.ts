@@ -89,7 +89,7 @@ export async function GET(request: Request) {
 
     const previewText = buildDailyReportAltText(reportData);
 
-    // Backup path: if the dedicated 17:00 insight cron was missed, run once with
+    // Backup path: if the dedicated 07:00 insight cron was missed, run once with
     // the 18:00 tomorrow schedule job (deduped per day in data_change_logs).
     const insightResult =
       schedule === 'tomorrow'

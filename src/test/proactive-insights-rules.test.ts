@@ -94,15 +94,15 @@ describe('evaluateInsightRules', () => {
 
   test('bean_orders_inventory_gap summarizes pending statuses on one line', () => {
     const pending: PendingBeanOrderInsight[] = [
-      { customerName: 'คุณเอ', statusLabel: 'ค้างชำระเงิน' },
-      { customerName: 'ทัพพ์', statusLabel: 'ค้างจัดส่ง' },
-      { customerName: 'ทศกัณฐ์', statusLabel: 'ค้างชำระเงิน' },
-      { customerName: 'มุก', statusLabel: 'ค้างชำระเงิน' },
+      { customerName: 'คุณเอ', paymentStatus: 'unpaid', fulfillmentStatus: 'pending' },
+      { customerName: 'ทัพพ์', paymentStatus: 'paid', fulfillmentStatus: 'pending' },
+      { customerName: 'ทศกัณฐ์', paymentStatus: 'unpaid', fulfillmentStatus: 'shipped' },
+      { customerName: 'มุก', paymentStatus: 'unpaid', fulfillmentStatus: 'shipped' },
     ];
     const insights = evaluateInsightRules(sampleSnapshot({ pendingBeanOrders: pending }));
     const hit = insights.find((i) => i.ruleId === 'bean_orders_inventory_gap');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toBe('ค้างชำระเงิน 3 รายการ · ค้างจัดส่ง 1 รายการ');
+    expect(hit!.summary).toBe('ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ');
     expect(hit!.summary).not.toContain('คุณเอ');
   });
 
@@ -115,16 +115,18 @@ describe('evaluateInsightRules', () => {
     const insights = evaluateInsightRules(
       sampleSnapshot({
         weeklyDays: makeWeekDays([2, 5, 5, 5, 5, 5, 5], [['เอ'], ['บี']]),
-        pendingBeanOrders: [{ customerName: 'คุณซี', statusLabel: 'ค้างชำระเงิน' }],
+        pendingBeanOrders: [
+          { customerName: 'คุณซี', paymentStatus: 'unpaid', fulfillmentStatus: 'pending' },
+        ],
       }),
     );
     const digest = buildDailyInsightDigest(insights);
     expect(digest).not.toBeNull();
     expect(digest!.ruleId).toBe('daily_digest');
-    expect(digest!.title).toBe('แจ้งเตือนเชิงรุก');
-    expect(digest!.summary).toContain('คนน้อย —');
-    expect(digest!.summary).toContain('ลาหลายคน —');
-    expect(digest!.summary).toContain('ออเดอร์เมล็ดค้าง —');
+    expect(digest!.title).toBe('การแจ้งเตือนที่ต้องตรวจสอบ');
+    expect(digest!.summary).toContain('คนน้อย:');
+    expect(digest!.summary).toContain('ลาหลายคน:');
+    expect(digest!.summary).toContain('ออเดอร์เมล็ดค้าง:');
     expect(digest!.summary).toContain('ค้างชำระเงิน 1 รายการ');
     expect(digest!.summary).not.toContain('【');
   });

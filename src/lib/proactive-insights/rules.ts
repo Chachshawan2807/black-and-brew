@@ -1,6 +1,6 @@
 import type { Insight, OperationalSnapshot } from '@/lib/proactive-insights/types';
 import { formatShortDayDate } from '@/lib/proactive-insights/format-short-day';
-import { formatPendingBeanOrdersSummary } from '@/lib/proactive-insights/format-pending-bean-orders';
+import { formatPendingBeanOrdersSummary, countBeanOrderPendingStatuses } from '@/lib/proactive-insights/format-pending-bean-orders';
 import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 import {
   collectWeeklyLeaveEntries,
@@ -50,14 +50,23 @@ function ruleLeaveCoverageRisk(snapshot: OperationalSnapshot): Insight | null {
 }
 
 function ruleBeanOrdersPending(snapshot: OperationalSnapshot): Insight | null {
-  if (snapshot.pendingBeanOrders.length < INSIGHT_THRESHOLDS.beanOrdersMinPending) {
+  const { unpaidCount, pendingShipmentCount } = countBeanOrderPendingStatuses(
+    snapshot.pendingBeanOrders,
+  );
+  if (
+    unpaidCount + pendingShipmentCount <
+    INSIGHT_THRESHOLDS.beanOrdersMinPending
+  ) {
     return null;
   }
+
+  const summary = formatPendingBeanOrdersSummary(snapshot.pendingBeanOrders);
+  if (!summary) return null;
 
   return {
     ruleId: 'bean_orders_inventory_gap',
     title: 'ออเดอร์เมล็ดค้าง',
-    summary: formatPendingBeanOrdersSummary(snapshot.pendingBeanOrders),
+    summary,
     urlPath: '/bean-orders',
     priority: 'normal',
     modules: ['bean_orders'],
@@ -75,19 +84,19 @@ export function evaluateInsightRules(snapshot: OperationalSnapshot): Insight[] {
   return insights;
 }
 
-/** One daily notification combining every rule that matched at 17:00 ICT. */
+/** One daily notification combining every rule that matched at 07:00 ICT. */
 export function buildDailyInsightDigest(insights: Insight[]): Insight | null {
   if (insights.length === 0) return null;
 
   const modules = [...new Set(insights.flatMap((insight) => insight.modules))];
   const priority = insights.some((insight) => insight.priority === 'high') ? 'high' : 'normal';
   const summary = insights
-    .map((insight) => `${insight.title} — ${insight.summary}`)
+    .map((insight) => `${insight.title}: ${insight.summary}`)
     .join('\n');
 
   return {
     ruleId: 'daily_digest',
-    title: 'แจ้งเตือนเชิงรุก',
+    title: 'การแจ้งเตือนที่ต้องตรวจสอบ',
     summary,
     urlPath: '/dashboard',
     priority,

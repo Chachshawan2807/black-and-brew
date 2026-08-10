@@ -40,8 +40,8 @@ export function formatInsightNotification(
     typeof meta.title === 'string'
       ? meta.title
       : isTh
-        ? 'แจ้งเตือนเชิงรุก'
-        : 'Proactive insight';
+        ? 'การแจ้งเตือนที่ต้องตรวจสอบ'
+        : 'Alerts to review';
   const fieldSummary =
     typeof meta.fieldSummary === 'string'
       ? meta.fieldSummary
@@ -120,7 +120,7 @@ export async function recordInsightNotificationLog(
     const { error } = await supabase.from('data_change_logs').insert({
       occurred_at: occurredAt,
       actor_id: null,
-      actor_label: isTh ? 'ระบบแจ้งเตือนเชิงรุก' : 'Proactive insights',
+      actor_label: isTh ? 'ระบบการแจ้งเตือนที่ต้องตรวจสอบ' : 'Review alerts',
       actor_access_level: 'system',
       action: 'UPDATE',
       module: 'insights',

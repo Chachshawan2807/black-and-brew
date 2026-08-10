@@ -38,12 +38,12 @@ describe('/api/insight-alerts', () => {
     expect(res.status).toBe(401);
   });
 
-  test('dispatches daily digest at 17:00 ICT cron', async () => {
+  test('dispatches daily digest at 07:00 ICT cron', async () => {
     evaluateMock.mockResolvedValue({
       dateIso: '2026-07-24',
       trigger: 'cron',
       matchedRules: [{ ruleId: 'leave_coverage_risk' }],
-      digest: { ruleId: 'daily_digest', title: 'แจ้งเตือนเชิงรุก' },
+      digest: { ruleId: 'daily_digest', title: 'การแจ้งเตือนที่ต้องตรวจสอบ' },
       recorded: {
         ruleId: 'daily_digest',
         logId: 'bb-insight-daily_digest-2026-07-24',

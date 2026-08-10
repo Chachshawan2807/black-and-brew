@@ -343,7 +343,7 @@ export default function NotificationPreferencesSection({
             disabled={permission === 'unsupported'}
           />
           <ToggleRow
-            label={isTh ? 'แจ้งเตือนเชิงรุกข้ามโมดูล' : 'Cross-module proactive alerts'}
+            label={isTh ? 'การแจ้งเตือนที่ต้องตรวจสอบข้ามโมดูล' : 'Cross-module review alerts'}
             description={
               isTh
                 ? 'เตือนเมื่อคนน้อย สต็อกต่ำ งานซ่อมค้าง หรือความเสี่ยงข้ามหน้าในเมนู'

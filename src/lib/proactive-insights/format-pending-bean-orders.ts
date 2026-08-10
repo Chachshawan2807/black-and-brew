@@ -1,15 +1,40 @@
 import type { PendingBeanOrderInsight } from '@/lib/proactive-insights/types';
 
-/** Aggregate pending bean orders by status label — one compact line. */
-export function formatPendingBeanOrdersSummary(orders: PendingBeanOrderInsight[]): string {
-  if (orders.length === 0) return '';
+export interface BeanOrderPendingCounts {
+  unpaidCount: number;
+  pendingShipmentCount: number;
+}
 
-  const counts = new Map<string, number>();
+/** Counts actionable payment/shipment queues (excludes legacy unpaid+shipped orders). */
+export function countBeanOrderPendingStatuses(
+  orders: Pick<PendingBeanOrderInsight, 'paymentStatus' | 'fulfillmentStatus'>[],
+): BeanOrderPendingCounts {
+  let unpaidCount = 0;
+  let pendingShipmentCount = 0;
+
   for (const order of orders) {
-    counts.set(order.statusLabel, (counts.get(order.statusLabel) ?? 0) + 1);
+    if (order.paymentStatus === 'unpaid' && order.fulfillmentStatus === 'pending') {
+      unpaidCount += 1;
+    }
+    if (order.fulfillmentStatus === 'pending') {
+      pendingShipmentCount += 1;
+    }
   }
 
-  return [...counts.entries()]
-    .map(([statusLabel, count]) => `${statusLabel} ${count} รายการ`)
-    .join(' · ');
+  return { unpaidCount, pendingShipmentCount };
+}
+
+/** Compact summary: payment and shipment counts on one line. */
+export function formatPendingBeanOrdersSummary(orders: PendingBeanOrderInsight[]): string {
+  const { unpaidCount, pendingShipmentCount } = countBeanOrderPendingStatuses(orders);
+  const parts: string[] = [];
+
+  if (unpaidCount > 0) {
+    parts.push(`ค้างชำระเงิน ${unpaidCount} รายการ`);
+  }
+  if (pendingShipmentCount > 0) {
+    parts.push(`ค้างจัดส่ง ${pendingShipmentCount} รายการ`);
+  }
+
+  return parts.join(' · ');
 }

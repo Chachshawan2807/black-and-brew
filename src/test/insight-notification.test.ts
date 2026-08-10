@@ -25,7 +25,7 @@ function sampleInsightRow(overrides: Partial<DataChangeLogRow> = {}): DataChange
     id: 'db-uuid-1',
     occurred_at: '2026-07-24T00:00:00.000Z',
     actor_id: null,
-    actor_label: 'ระบบแจ้งเตือนเชิงรุก',
+    actor_label: 'ระบบการแจ้งเตือนที่ต้องตรวจสอบ',
     actor_access_level: 'system',
     action: 'UPDATE',
     module: 'insights',

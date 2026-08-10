@@ -62,7 +62,7 @@ export function buildInsightPushPayload(
       action: 'UPDATE',
       entityId: tag,
       entityLabel: dateIso,
-      actorLabel: locale === 'th' ? 'ระบบแจ้งเตือนเชิงรุก' : 'Proactive insights',
+      actorLabel: locale === 'th' ? 'ระบบการแจ้งเตือนที่ต้องตรวจสอบ' : 'Review alerts',
       occurredAt: now,
       title: insight.title,
       summary: insight.summary,

@@ -13,7 +13,6 @@ import type {
   WeeklyDaySchedule,
 } from '@/lib/proactive-insights/types';
 import { getWeekDateIsos } from '@/lib/proactive-insights/week-schedule';
-import { resolvePendingBeanOrderStatusLabel } from '@/lib/proactive-insights/pending-bean-order-status';
 
 export type ShiftSnapshotBlock = {
   activeStaff: StaffShiftEntry[];
@@ -80,8 +79,7 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
   for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
     const payment = String(row.payment_status ?? '');
     const fulfillment = String(row.fulfillment_status ?? '');
-    const statusLabel = resolvePendingBeanOrderStatusLabel(payment, fulfillment);
-    if (!statusLabel) continue;
+    if (payment !== 'unpaid' && fulfillment !== 'pending') continue;
 
     const customer = row.bean_customers as { name?: string } | null;
     pending.push({
@@ -89,7 +87,8 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
         customerName: customer?.name ?? null,
         recipientName: String(row.recipient_name ?? ''),
       }),
-      statusLabel,
+      paymentStatus: payment,
+      fulfillmentStatus: fulfillment,
     });
   }
 
@@ -214,7 +213,7 @@ export async function compileOperationalSnapshot(
   };
 }
 
-/** Resolve Bangkok calendar date for the daily 17:00 ICT insight cron. */
+/** Resolve Bangkok calendar date for the daily 07:00 ICT insight cron. */
 export function resolveInsightTargetDateIso(now: Date = new Date()): string {
   const bkk = toZonedTime(now, 'Asia/Bangkok');
   return format(bkk, 'yyyy-MM-dd');

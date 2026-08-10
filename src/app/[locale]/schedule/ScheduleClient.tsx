@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, UserCog, Loader2, ChevronDown, X, Calendar, CalendarDays, Pencil } from 'lucide-react';
+import { Plus, Trash2, UserCog, Loader2, X, Calendar, CalendarDays, Pencil } from 'lucide-react';
+import { RoundedSelect } from '@/components/ui/rounded-select';
 import { startOfWeek, addDays, format } from 'date-fns';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -82,6 +83,11 @@ import {
   scheduleCrosshairNameClass,
   type ScheduleGridFocus,
 } from '@/lib/schedule/grid-crosshair';
+import {
+  computeMgmtHistoryColumnWidths,
+  formatMgmtHistoryDateRange,
+  MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY,
+} from '@/lib/schedule/mgmt-history-column-widths';
 
 // --- Constants Outside Component ---
 const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
@@ -96,11 +102,11 @@ interface ColumnDef {
 }
 
 const defaultHistoryColumns: ColumnDef[] = [
-  { id: 'employee_name', label: 'พนักงาน', width: '150px' },
-  { id: 'date_range', label: 'วันที่', width: '200px' },
-  { id: 'shift_type', label: 'ประเภท', width: '180px' },
-  { id: 'remark', label: 'หมายเหตุ', width: '250px' },
-  { id: 'actions', label: 'จัดการ', width: '100px' }
+  { id: 'employee_name', label: 'พนักงาน', width: '96px' },
+  { id: 'date_range', label: 'วันที่', width: '108px' },
+  { id: 'shift_type', label: 'ประเภท', width: '88px' },
+  { id: 'remark', label: 'หมายเหตุ', width: '120px' },
+  { id: 'actions', label: 'จัดการ', width: '96px' }
 ];
 
 // ฟังก์ชันคำนวณตำแหน่ง Dropdown ไม่ให้ทะลุขอบจอ
@@ -522,7 +528,7 @@ export default function ScheduleClient({
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('blackandbrew-shift-history-col-widths');
+      const saved = localStorage.getItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY);
       if (saved) {
         const widths: Record<string, string> = JSON.parse(saved);
         if (widths && typeof widths === 'object' && !Array.isArray(widths)) {
@@ -538,7 +544,7 @@ export default function ScheduleClient({
       }
     } catch (e) {
       console.error('Failed to parse saved history column widths:', e);
-      localStorage.removeItem('blackandbrew-shift-history-col-widths');
+      localStorage.removeItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY);
     }
   }, []);
 
@@ -855,6 +861,30 @@ export default function ScheduleClient({
     }
   }, [showManagementModal, fetchMgmtHistory]);
 
+  useEffect(() => {
+    if (!showManagementModal) return;
+
+    const saved = localStorage.getItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY);
+    if (saved) return;
+
+    const rows = mgmtHistory.map((item) => ({
+      employeeName: item.employee_name,
+      dateRange: formatMgmtHistoryDateRange(item.startDate, item.endDate),
+      shiftTypeLabel:
+        shiftTypes.find((t) => t.value === item.location)?.label || item.location || '',
+      remark: item.remark || '-',
+    }));
+
+    const widths = computeMgmtHistoryColumnWidths(defaultHistoryColumns, rows);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fit history columns to loaded row content
+    setMgmtColumns((prev) =>
+      prev.map((col) => ({
+        ...col,
+        width: `${widths[col.id] ?? (parseInt(col.width, 10) || 100)}px`,
+      })),
+    );
+  }, [mgmtHistory, shiftTypes, showManagementModal]);
+
   const handleColumnResize = useCallback((id: string, width: number) => {
     setMgmtColumns(prev => prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col));
   }, []);
@@ -867,7 +897,7 @@ export default function ScheduleClient({
         if (!isNaN(px)) acc[c.id] = String(px);
         return acc;
       }, {});
-      localStorage.setItem('blackandbrew-shift-history-col-widths', JSON.stringify(widths));
+      localStorage.setItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY, JSON.stringify(widths));
       return nextCols;
     });
   }, []);
@@ -1657,21 +1687,16 @@ export default function ScheduleClient({
 
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">พนักงาน</label>
-                  <div className="relative">
-                    <select
-                      className="w-full h-11 px-4 pr-10 rounded-3xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-foreground"
-                      value={managementForm.employeeId}
-                      onChange={(e) => setManagementForm(prev => ({ ...prev, employeeId: e.target.value }))}
-                    >
-                      <option value="">เลือกพนักงาน...</option>
-                      {profiles.map(p => (
-                        <option key={p.id} value={p.id}>{p.full_name}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-foreground/60">
-                      <ChevronDown className="w-4 h-4" />
-                    </div>
-                  </div>
+                  <RoundedSelect
+                    value={managementForm.employeeId}
+                    onChange={(e) => setManagementForm(prev => ({ ...prev, employeeId: e.target.value }))}
+                    wrapperClassName="w-full"
+                  >
+                    <option value="">เลือกพนักงาน...</option>
+                    {profiles.map(p => (
+                      <option key={p.id} value={p.id}>{p.full_name}</option>
+                    ))}
+                  </RoundedSelect>
                 </div>
 
                 <div className="space-y-1.5">
@@ -1761,7 +1786,7 @@ export default function ScheduleClient({
                   </div>
                 ) : (
                   <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin border border-border rounded-3xl pb-8">
-                    <table className="w-max text-left border-collapse" style={{ tableLayout: 'fixed' }}>
+                    <table className="min-w-full w-max text-left border-collapse" style={{ tableLayout: 'fixed' }}>
                       <thead className="sticky top-0 z-10 shadow-sm">
                         <tr>
                           {mgmtColumns.map(col => (
@@ -1777,14 +1802,13 @@ export default function ScheduleClient({
                       <tbody>
                         {mgmtHistory.map((item) => (
                           <tr key={item.id} className="bb-grid-row-offscreen border-b border-border hover:bg-muted/30 transition-colors">
-                            <td className="p-3 text-[13px] font-normal text-foreground border-r border-border truncate bg-transparent">
+                            <td className="p-3 text-[13px] font-normal text-foreground border-r border-border whitespace-nowrap bg-transparent">
                               {item.employee_name}
                             </td>
-                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-border truncate bg-transparent">
-                              {format(new Date(item.startDate), 'dd/MM/yyyy')}
-                              {item.startDate !== item.endDate && ` → ${format(new Date(item.endDate), 'dd/MM/yyyy')}`}
+                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-border whitespace-nowrap bg-transparent">
+                              {formatMgmtHistoryDateRange(item.startDate, item.endDate)}
                             </td>
-                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-border truncate bg-transparent">
+                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-border whitespace-nowrap bg-transparent">
                               <span
                                 className={`px-2 py-0.5 rounded-full ${item.color} border inline-block bb-pastel-surface`}
                                 style={item.colorStyle}
@@ -1792,7 +1816,7 @@ export default function ScheduleClient({
                                 {shiftTypes.find((t) => t.value === item.location)?.label || item.location}
                               </span>
                             </td>
-                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-border truncate bg-transparent">
+                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-border whitespace-normal break-words bg-transparent">
                               {item.remark || '-'}
                             </td>
                             <td className="p-3 text-center bg-transparent">
@@ -1901,25 +1925,20 @@ export default function ScheduleClient({
                 <div className="flex-1 flex flex-col space-y-6">
                   <div className="space-y-1.5">
                     <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">พนักงาน</label>
-                    <div className="relative">
-                      <select
-                        className="w-full h-11 px-4 pr-10 rounded-3xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer text-base md:text-[14px] font-normal appearance-none text-foreground"
-                        value={holidayFormEmployee}
-                        onChange={(e) => {
-                          setHolidayFormEmployee(e.target.value);
-                          setHolidayFormDays(regularHolidays[e.target.value] || []);
-                          setHolidaySaveSuccess(false);
-                        }}
-                      >
-                        <option value="">เลือกพนักงาน...</option>
-                        {profiles.map(p => (
-                          <option key={p.id} value={p.id}>{p.full_name}</option>
-                        ))}
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-foreground/40">
-                        <ChevronDown className="w-4 h-4" />
-                      </div>
-                    </div>
+                    <RoundedSelect
+                      value={holidayFormEmployee}
+                      onChange={(e) => {
+                        setHolidayFormEmployee(e.target.value);
+                        setHolidayFormDays(regularHolidays[e.target.value] || []);
+                        setHolidaySaveSuccess(false);
+                      }}
+                      wrapperClassName="w-full"
+                    >
+                      <option value="">เลือกพนักงาน...</option>
+                      {profiles.map(p => (
+                        <option key={p.id} value={p.id}>{p.full_name}</option>
+                      ))}
+                    </RoundedSelect>
                   </div>
                   
                   {holidayFormEmployee && (

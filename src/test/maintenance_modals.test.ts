@@ -30,8 +30,7 @@ describe('maintenance modals', () => {
     expect(modalsCode).not.toContain(
       'containerClassName="bg-background border-border hover:border-foreground/20 hover:bg-muted/30 transition-all"',
     );
-    expect(modalsCode).toContain('task-type-listbox');
-    expect(modalsCode).toContain('bg-card text-foreground');
+    expect(modalsCode).toContain('RoundedSelect');
     expect(modalsCode).not.toMatch(/<select[\s\S]*TASK_TYPE_PRESETS/);
   });
 

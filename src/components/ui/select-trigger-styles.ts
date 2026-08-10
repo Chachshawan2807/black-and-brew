@@ -5,8 +5,12 @@ export const BB_SELECT_TRIGGER_CLASS =
   'relative h-11 w-full appearance-none rounded-3xl border border-border bg-card px-4 pr-10 text-sm font-normal text-foreground bb-shadow-sm transition-all duration-200 hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:cursor-not-allowed disabled:opacity-60';
 
 /** Open listbox panel — theme tokens so dark mode stays readable. */
+export const BB_SELECT_LIST_BASE_CLASS =
+  'overflow-y-auto rounded-2xl border border-border bg-card p-1.5 text-foreground bb-shadow-lg';
+
+/** In-flow listbox (legacy); prefer portaled list in RoundedSelect. */
 export const BB_SELECT_LIST_CLASS =
-  'absolute z-50 mt-1.5 max-h-60 w-full min-w-[10rem] overflow-y-auto rounded-2xl border border-border bg-card p-1.5 text-foreground bb-shadow-lg';
+  `absolute z-50 mt-1.5 max-h-60 w-full min-w-[10rem] ${BB_SELECT_LIST_BASE_CLASS}`;
 
 /** Individual option row — rounded, no OS-blue highlight. */
 export const BB_SELECT_OPTION_CLASS =

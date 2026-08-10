@@ -20,7 +20,7 @@ describe('rounded select — shared date-picker-like trigger', () => {
     expect(BB_SELECT_TRIGGER_CLASS).toMatch(/\bborder-border\b/);
   });
 
-  test('in-scope surfaces use RoundedSelect; schedule stays untouched', () => {
+  test('project dropdowns use RoundedSelect (dashboard employee picker pattern)', () => {
     const monthly = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
     expect(monthly).toContain('RoundedSelect');
     expect(monthly).toMatch(/RoundedSelect[\s\S]*?\bw-fit\b/);
@@ -35,11 +35,23 @@ describe('rounded select — shared date-picker-like trigger', () => {
     expect(beanSelect).toMatch(/BB_SELECT_TRIGGER_CLASS|RoundedSelect/);
 
     const scheduleClient = readFile('app/[locale]/schedule/ScheduleClient.tsx');
-    expect(scheduleClient).not.toContain('RoundedSelect');
-    expect(scheduleClient).not.toContain('BB_SELECT_TRIGGER_CLASS');
+    expect(scheduleClient).toContain('RoundedSelect');
+    expect(scheduleClient).not.toMatch(/<select[\s\S]*?เลือกพนักงาน/);
 
     const shiftSettings = readFile('app/[locale]/schedule/_components/ShiftSettingsModal.tsx');
-    expect(shiftSettings).not.toContain('RoundedSelect');
-    expect(shiftSettings).not.toContain('BB_SELECT_TRIGGER_CLASS');
+    expect(shiftSettings).toContain('RoundedSelect');
+    expect(shiftSettings).not.toMatch(/<select[\s\S]*?SELECT_NEW_CUSTOM/);
+
+    const maintenance = readFile('app/[locale]/maintenance/_components/MaintenanceModals.tsx');
+    expect(maintenance).toContain('RoundedSelect');
+    expect(maintenance).not.toMatch(/<select[\s\S]*?TASK_TYPE_PRESETS/);
+  });
+
+  test('RoundedSelect portals listbox above overflow containers', () => {
+    const roundedSelect = readFile('components/ui/rounded-select.tsx');
+    expect(roundedSelect).toContain('createPortal');
+    expect(roundedSelect).toContain('SELECT_LISTBOX_Z_CLASS');
+    expect(roundedSelect).toContain('getAnchoredSuggestionsOverlayStyle');
+    expect(roundedSelect).not.toMatch(/role="listbox"[\s\S]*?BB_SELECT_LIST_CLASS/);
   });
 });

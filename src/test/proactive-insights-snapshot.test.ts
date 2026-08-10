@@ -25,9 +25,9 @@ function makeDeps(overrides: Partial<OperationalSnapshotDeps> = {}): Operational
     })),
     fetchWeekSchedule: vi.fn(async () => defaultWeeklyDays),
     fetchPendingBeanOrders: vi.fn(async () => [
-      { customerName: 'คุณเอ', statusLabel: 'ค้างชำระเงิน' },
-      { customerName: 'ทัพพ์', statusLabel: 'ค้างจัดส่ง' },
-      { customerName: 'มุก', statusLabel: 'ค้างจัดส่ง' },
+      { customerName: 'คุณเอ', paymentStatus: 'unpaid', fulfillmentStatus: 'pending' },
+      { customerName: 'ทัพพ์', paymentStatus: 'paid', fulfillmentStatus: 'pending' },
+      { customerName: 'มุก', paymentStatus: 'paid', fulfillmentStatus: 'pending' },
     ]),
     fetchYesterdaySales: vi.fn(async () => 15000),
     fetchNextHoliday: vi.fn(async () => ({ name: 'สงกรานต์', daysRemaining: 10 })),
@@ -52,7 +52,8 @@ describe('compileOperationalSnapshot', () => {
     expect(snapshot.pendingBeanOrders).toHaveLength(3);
     expect(snapshot.pendingBeanOrders[0]).toEqual({
       customerName: 'คุณเอ',
-      statusLabel: 'ค้างชำระเงิน',
+      paymentStatus: 'unpaid',
+      fulfillmentStatus: 'pending',
     });
     expect(snapshot.yesterdaySalesTotal).toBe(15000);
     expect(snapshot.upcomingHoliday).toEqual({ name: 'สงกรานต์', daysRemaining: 10 });
