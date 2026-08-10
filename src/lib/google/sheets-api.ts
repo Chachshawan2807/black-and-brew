@@ -12,7 +12,11 @@ export interface SheetsValueUpdate {
 }
 
 export function isGoogleSheetsSyncConfigured(): boolean {
-  return Boolean(getGoogleSheetsSpreadsheetId() && loadGoogleServiceAccountFromEnv());
+  try {
+    return Boolean(getGoogleSheetsSpreadsheetId() && loadGoogleServiceAccountFromEnv());
+  } catch {
+    return false;
+  }
 }
 
 async function batchUpdateValues(

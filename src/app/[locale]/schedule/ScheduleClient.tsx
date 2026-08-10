@@ -1298,7 +1298,11 @@ export default function ScheduleClient({
       alert(`Sync Google Sheet สำเร็จแล้วค่ะ\nสัปดาห์: ${weekLabel}\nชีท: ${result.sheetTab}`);
     } catch (err) {
       console.error('Failed to sync Google Sheet:', err);
-      alert('เกิดข้อผิดพลาดในการ Sync Google Sheet ค่ะ');
+      const message =
+        err instanceof Error && err.message
+          ? `Sync Google Sheet ไม่สำเร็จ: ${err.message}`
+          : 'เกิดข้อผิดพลาดในการ Sync Google Sheet ค่ะ';
+      alert(message);
     } finally {
       setIsSyncingGoogleSheet(false);
     }

@@ -21,7 +21,14 @@ export function parseGoogleServiceAccountJson(raw: string): GoogleServiceAccount
 export function loadGoogleServiceAccountFromEnv(): GoogleServiceAccount | null {
   const json = process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
   if (json) {
-    return parseGoogleServiceAccountJson(json);
+    try {
+      return parseGoogleServiceAccountJson(json);
+    } catch (error) {
+      console.error(
+        'Invalid GOOGLE_SERVICE_ACCOUNT_JSON — falling back to split env vars:',
+        error instanceof Error ? error.message : error,
+      );
+    }
   }
 
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();

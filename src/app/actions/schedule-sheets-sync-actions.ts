@@ -41,7 +41,8 @@ export async function syncScheduleToGoogleSheet(
   if (!isGoogleSheetsSyncConfigured()) {
     return {
       success: false as const,
-      error: 'ยังไม่ได้ตั้งค่า Google Sheets (GOOGLE_SHEETS_SPREADSHEET_ID / service account)',
+      error:
+        'ยังไม่ได้ตั้งค่า Google Sheets บนเซิร์ฟเวอร์ (GOOGLE_SHEETS_SPREADSHEET_ID / service account) — ถ้าใช้ Preview URL ให้เพิ่ม env ใน Vercel → Preview ด้วย',
     };
   }
 
