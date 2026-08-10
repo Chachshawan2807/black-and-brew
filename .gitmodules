@@ -1,3 +1,0 @@
-[submodule ".agent-skills/vendor/AgentSkillOS"]
-	path = .agent-skills/vendor/AgentSkillOS
-	url = https://github.com/ynulihao/AgentSkillOS.git
