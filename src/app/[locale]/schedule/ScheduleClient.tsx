@@ -16,6 +16,7 @@ import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { saveRegularHolidays } from '@/app/actions/holiday-actions';
+import { syncScheduleToGoogleSheet } from '@/app/actions/schedule-sheets-sync-actions';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations } from '@/app/actions/shift-actions';
 import dynamic from 'next/dynamic';
@@ -436,6 +437,7 @@ export default function ScheduleClient({
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [loading, setLoading] = useState(false);
   const [isExportingImage, setIsExportingImage] = useState(false);
+  const [isSyncingGoogleSheet, setIsSyncingGoogleSheet] = useState(false);
   const [, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [shiftTypes, setShiftTypes] = useState<ShiftTypeDisplay[]>(() => loadShiftTypesFromStorage());
@@ -1271,7 +1273,29 @@ export default function ScheduleClient({
     }
   };
 
-  const [todayStr, setTodayStr] = useState<string>(() => 
+  const syncGoogleSheet = async () => {
+    if (blockIfReadOnly()) return;
+
+    const weekStart = weekDays[0];
+    if (!weekStart) return;
+
+    setIsSyncingGoogleSheet(true);
+    try {
+      const result = await syncScheduleToGoogleSheet(weekStart);
+      if (!result.success) {
+        alert(`Sync Google Sheet ไม่สำเร็จ: ${result.error}`);
+        return;
+      }
+      alert(`Sync Google Sheet สำเร็จแล้วค่ะ (ชีท: ${result.sheetTab})`);
+    } catch (err) {
+      console.error('Failed to sync Google Sheet:', err);
+      alert('เกิดข้อผิดพลาดในการ Sync Google Sheet ค่ะ');
+    } finally {
+      setIsSyncingGoogleSheet(false);
+    }
+  };
+
+  const [todayStr, setTodayStr] = useState<string>(() =>
     formatToThai(new Date(), 'yyyy-MM-dd')
   );
 
@@ -1313,6 +1337,8 @@ export default function ScheduleClient({
         onShowRegularHolidayModal={() => setShowRegularHolidayModal(true)}
         onShowManagementModal={() => setShowManagementModal(true)}
         onExportScheduleImage={exportScheduleImage}
+        onSyncGoogleSheet={syncGoogleSheet}
+        isSyncingGoogleSheet={isSyncingGoogleSheet}
         onShowAddEmployeeModal={() => setShowAddEmployeeModal(true)}
         onShowShiftSettings={() => setShowShiftSettingsModal(true)}
       />
