@@ -54,7 +54,7 @@ export function mergeManagementHistoryShiftPages(
 }
 
 export function getMgmtHistoryPaginationCursor(
-  batch: ManagementHistoryShiftRow[],
+  batch: Array<{ start_time?: string | null }>,
 ): string | null {
   if (batch.length === 0) return null;
   return batch[batch.length - 1]?.start_time ?? null;
@@ -98,7 +98,7 @@ export function groupManagementHistoryShifts(
 
     grouped.push({
       id: shift.id,
-      employee_id: shift.employee_id,
+      employee_id: shift.employee_id ?? '',
       employee_name: resolveMgmtHistoryEmployeeName(shift),
       location: shift.metadata?.location,
       remark: shift.metadata?.remark,

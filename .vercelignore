@@ -1,0 +1,8 @@
+# Dev tooling and docs — not needed for production build
+.agent-skills/
+.agents/
+.cursor/
+docs/
+scratch/
+*.md
+!README.md

@@ -293,7 +293,7 @@ export default function NotificationPreferencesSection({
         >
           {devicePushState === 'server'
             ? isTh
-              ? 'เครื่องนี้ลงทะเบียนกับเซิร์ฟเวอร์แล้ว — รับการแจ้งเตือนได้แม้ปิดแอป'
+              ? 'ลงทะเบียนรับการแจ้งเตือนแล้ว'
               : 'This device is registered with the server — alerts work when the app is closed'
             : devicePushState === 'local_only'
               ? isTh
