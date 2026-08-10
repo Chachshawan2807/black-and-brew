@@ -17,19 +17,22 @@ import {
   writeGoogleSheetUpdates,
 } from '@/lib/google/sheets-api';
 import { buildScheduleSheetsUpdates } from '@/lib/schedule/sheets-week-layout';
-import { buildMonthlySheetTabSearchOrder } from '@/lib/schedule/sheets-month-tab';
+import { buildMonthlySheetTabSearchOrder, parseMonthlySheetTabMonthYear } from '@/lib/schedule/sheets-month-tab';
 import {
   buildWeekDayIsoStrings,
   deriveWeekBlockLayout,
-  findWeekBlockDateRow,
-  weekDayNumbersFromIsoDates,
+  findWeekBlockInSheet,
 } from '@/lib/schedule/sheets-week-block';
 import { SHEETS_WEEK_BLOCK_SCAN_MAX_ROW } from '@/lib/schedule/sheets-layout-config';
 import { SCHEDULE_SHEETS_SYNC_POLICY } from '@/lib/schedule/sheets-sync-policy';
 
 const weekStartSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const viewedDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-export async function syncScheduleToGoogleSheet(weekStartMonday: string) {
+export async function syncScheduleToGoogleSheet(
+  weekStartMonday: string,
+  viewedIsoDate?: string,
+) {
   const authError = await requireMutationAccess();
   if (authError) {
     return { success: false as const, error: authError };
@@ -45,6 +48,11 @@ export async function syncScheduleToGoogleSheet(weekStartMonday: string) {
   const parsedWeek = weekStartSchema.safeParse(weekStartMonday);
   if (!parsedWeek.success) {
     return { success: false as const, error: 'รูปแบบวันเริ่มสัปดาห์ไม่ถูกต้อง' };
+  }
+
+  const parsedViewed = viewedIsoDate ? viewedDateSchema.safeParse(viewedIsoDate) : null;
+  if (viewedIsoDate && !parsedViewed?.success) {
+    return { success: false as const, error: 'รูปแบบวันที่บนหน้าเว็บไม่ถูกต้อง' };
   }
 
   const monday = startOfWeek(new Date(parsedWeek.data), { weekStartsOn: 1 });
@@ -83,46 +91,66 @@ export async function syncScheduleToGoogleSheet(weekStartMonday: string) {
     }
 
     const weekDays = buildWeekDayIsoStrings(mondayStr);
-    const weekDayNumbers = weekDayNumbersFromIsoDates(weekDays);
+    const viewedIso = parsedViewed?.success ? parsedViewed.data : mondayStr;
     const tabOverride = getConfiguredSheetTabNameOverride();
 
     const tabTitles = tabOverride ? [] : await listGoogleSheetTabTitles();
     const tabCandidates = tabOverride
       ? [tabOverride]
-      : buildMonthlySheetTabSearchOrder(tabTitles, mondayStr, sundayStr);
+      : buildMonthlySheetTabSearchOrder(tabTitles, mondayStr, sundayStr, viewedIso);
 
     if (tabCandidates.length === 0) {
       return {
         success: false as const,
-        error: `ไม่พบชีทเดือนสำหรับวันจันทร์ ${mondayStr} — ตรวจชื่อแท็บ "ตารางงานเดือน …"`,
+        error: `ไม่พบชีทเดือนสำหรับวันที่ ${viewedIso} — ตรวจชื่อแท็บ "ตารางงานเดือน …"`,
       };
     }
 
     let tabName: string | null = null;
     let dateRow: number | null = null;
+    let blockLayout: ReturnType<typeof deriveWeekBlockLayout> | null = null;
 
     for (const candidate of tabCandidates) {
+      const parsedTabMonth = parseMonthlySheetTabMonthYear(candidate);
+      const viewedDate = parseISO(viewedIso);
+      const tabMonthYear = parsedTabMonth ?? {
+        month: viewedDate.getMonth(),
+        year: viewedDate.getFullYear(),
+      };
+
       const scanRange = quoteSheetRange(
         candidate,
         `B1:H${SHEETS_WEEK_BLOCK_SCAN_MAX_ROW}`,
       );
       const branchDayRows = await readGoogleSheetValues(scanRange);
-      const foundRow = findWeekBlockDateRow(branchDayRows, weekDayNumbers);
-      if (foundRow) {
+      const match = findWeekBlockInSheet(
+        branchDayRows,
+        weekDays,
+        tabMonthYear.month,
+        tabMonthYear.year,
+      );
+      if (match) {
         tabName = candidate;
-        dateRow = foundRow;
+        dateRow = match.dateRow;
+        blockLayout = deriveWeekBlockLayout(
+          match.dateRow,
+          match.columnMap,
+          match.sheetDayLabels,
+        );
         break;
       }
     }
 
-    if (!tabName || !dateRow) {
+    if (!tabName || !dateRow || !blockLayout) {
+      const daySummary = weekDays
+        .map((iso) => `${new Date(iso).getDate()}/${new Date(iso).getMonth() + 1}`)
+        .join(', ');
       return {
         success: false as const,
-        error: `ไม่พบบล็อกสัปดาห์ ${weekDayNumbers.join(',')} ในชีท: ${tabCandidates.join(', ')} (คอลัมน์ B–H)`,
+        error: `ไม่พบบล็อกสัปดาห์ ${daySummary} ในชีท: ${tabCandidates.join(', ')} (คอลัมน์ B–H)`,
       };
     }
 
-    const blockLayout = deriveWeekBlockLayout(dateRow);
     const updates = buildScheduleSheetsUpdates(
       mondayStr,
       profilesRes.data ?? [],

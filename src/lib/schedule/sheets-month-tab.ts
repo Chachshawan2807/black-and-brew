@@ -49,13 +49,14 @@ export function resolveMonthlySheetTabTitle(
 }
 
 /**
- * Tab search order for locating a week block — Monday month first, then Sunday month
- * when the week crosses months (e.g. ก.ค. then ส.ค.).
+ * Tab search order for locating a week block — viewed month first, then Monday month,
+ * then Sunday month when the week crosses months.
  */
 export function buildMonthlySheetTabSearchOrder(
   availableTitles: string[],
   mondayIso: string,
   sundayIso: string,
+  viewedIso?: string,
 ): string[] {
   const ordered: string[] = [];
 
@@ -66,10 +67,31 @@ export function buildMonthlySheetTabSearchOrder(
     }
   };
 
+  if (viewedIso) {
+    pushUnique(viewedIso);
+  }
   pushUnique(mondayIso);
   if (sundayIso !== mondayIso) {
     pushUnique(sundayIso);
   }
 
   return ordered;
+}
+
+/** Parse Gregorian month (0–11) and year from a monthly tab title. */
+export function parseMonthlySheetTabMonthYear(tabTitle: string): { month: number; year: number } | null {
+  const prefix = MONTHLY_SHEET_TAB_PREFIX;
+  if (!tabTitle.startsWith(prefix)) return null;
+
+  const rest = tabTitle.slice(prefix.length).trim();
+  const monthIndex = THAI_MONTH_TAB_ABBREV.findIndex((abbrev) => rest.startsWith(abbrev));
+  if (monthIndex === -1) return null;
+
+  const yearMatch = rest.match(/(\d{2})\s*$/);
+  if (!yearMatch) return null;
+
+  const buddhistShort = Number.parseInt(yearMatch[1], 10);
+  const gregorianYear = buddhistShort + 2500 - 543;
+
+  return { month: monthIndex, year: gregorianYear };
 }

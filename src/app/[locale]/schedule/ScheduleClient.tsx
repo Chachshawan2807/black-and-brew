@@ -1279,6 +1279,7 @@ export default function ScheduleClient({
 
     const weekStart = weekDays[0];
     const weekEnd = weekDays[6];
+    const viewedDateStr = format(currentDate, 'yyyy-MM-dd');
     if (!weekStart || !weekEnd) return;
 
     const weekLabel = formatScheduleWeekRangeLabel(weekStart, weekEnd);
@@ -1289,7 +1290,7 @@ export default function ScheduleClient({
 
     setIsSyncingGoogleSheet(true);
     try {
-      const result = await syncScheduleToGoogleSheet(weekStart);
+      const result = await syncScheduleToGoogleSheet(weekStart, viewedDateStr);
       if (!result.success) {
         alert(`Sync Google Sheet ไม่สำเร็จ: ${result.error}`);
         return;

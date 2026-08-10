@@ -3,14 +3,18 @@ import { normalizeShiftLocation } from '@/lib/schedule/format-daily-shifts';
 import {
   SHEETS_BRANCH1_LABEL_COLUMN,
   SHEETS_DAY_COLUMNS,
-  SHEETS_DAY_LABELS,
   SHEETS_FRONT_STORE_SHIFT_KEYS,
   SHEETS_ROW_LABELS,
   SHEETS_SHIFT_TIME_LABELS,
   type SheetsFrontStoreShiftKey,
 } from '@/lib/schedule/sheets-layout-config';
 import type { SheetsWeekBlockLayout } from '@/lib/schedule/sheets-week-block';
-import { buildWeekDayIsoStrings } from '@/lib/schedule/sheets-week-block';
+import {
+  buildDayLabelRowValuesForSheet,
+  buildDateRowValuesForSheet,
+  buildWeekDayIsoStrings,
+  mapWeekValuesToSheetColumns,
+} from '@/lib/schedule/sheets-week-block';
 import { quoteSheetRange } from '@/lib/google/sheets-api';
 import type { SheetsValueUpdate } from '@/lib/google/sheets-api';
 
@@ -162,19 +166,20 @@ export function buildScheduleSheetsUpdates(
   shiftTypes: ShiftTypeEntry[] = DEFAULT_SHIFT_TYPES,
 ): SheetsValueUpdate[] {
   const weekDays = buildWeekDayIsoStrings(weekStartMonday);
+  const columnMap = blockLayout.columnMap;
   const fohLocations = getFohCountValues(shiftTypes);
   const updates: SheetsValueUpdate[] = [];
 
   updates.push({
     range: branch1DayColumnRange(tabName, blockLayout.dateRow),
-    values: [
-      weekDays.map((date) => String(new Date(date).getDate())),
-    ],
+    values: [buildDateRowValuesForSheet(weekDays, columnMap)],
   });
 
   updates.push({
     range: branch1DayColumnRange(tabName, blockLayout.dayLabelRow),
-    values: [[...SHEETS_DAY_LABELS]],
+    values: [
+      buildDayLabelRowValuesForSheet(weekDays, columnMap, blockLayout.sheetDayLabels),
+    ],
   });
 
   for (const shiftKey of SHEETS_FRONT_STORE_SHIFT_KEYS) {
@@ -186,12 +191,15 @@ export function buildScheduleSheetsUpdates(
     updates.push({
       range: branch1DayColumnRange(tabName, row),
       values: [
-        buildRowValues(weekDays, profiles, shifts, (assignments) => {
-          const bucket = assignments.filter(
-            (entry) => resolveFrontStoreBucket(entry.location) === shiftKey,
-          );
-          return joinNames(bucket);
-        }),
+        mapWeekValuesToSheetColumns(
+          buildRowValues(weekDays, profiles, shifts, (assignments) => {
+            const bucket = assignments.filter(
+              (entry) => resolveFrontStoreBucket(entry.location) === shiftKey,
+            );
+            return joinNames(bucket);
+          }),
+          columnMap,
+        ),
       ],
     });
   }
@@ -199,10 +207,13 @@ export function buildScheduleSheetsUpdates(
   updates.push({
     range: branch1DayColumnRange(tabName, blockLayout.fohCountRow),
     values: [
-      weekDays.map((date) => {
-        const assignments = collectAssignmentsForDay(profiles, shifts, date);
-        return String(countFohStaff(assignments, fohLocations));
-      }),
+      mapWeekValuesToSheetColumns(
+        weekDays.map((date) => {
+          const assignments = collectAssignmentsForDay(profiles, shifts, date);
+          return String(countFohStaff(assignments, fohLocations));
+        }),
+        columnMap,
+      ),
     ],
   });
 
@@ -213,10 +224,13 @@ export function buildScheduleSheetsUpdates(
   updates.push({
     range: branch1DayColumnRange(tabName, blockLayout.laundryRow),
     values: [
-      buildRowValues(weekDays, profiles, shifts, (assignments) => {
-        const bucket = assignments.filter((entry) => entry.location === 'ร้านซักผ้า');
-        return joinNames(bucket);
-      }),
+      mapWeekValuesToSheetColumns(
+        buildRowValues(weekDays, profiles, shifts, (assignments) => {
+          const bucket = assignments.filter((entry) => entry.location === 'ร้านซักผ้า');
+          return joinNames(bucket);
+        }),
+        columnMap,
+      ),
     ],
   });
 
@@ -227,10 +241,13 @@ export function buildScheduleSheetsUpdates(
   updates.push({
     range: branch1DayColumnRange(tabName, blockLayout.branch2Row),
     values: [
-      buildRowValues(weekDays, profiles, shifts, (assignments) => {
-        const bucket = assignments.filter((entry) => entry.location === 'ไปสาขา 2');
-        return joinNames(bucket);
-      }),
+      mapWeekValuesToSheetColumns(
+        buildRowValues(weekDays, profiles, shifts, (assignments) => {
+          const bucket = assignments.filter((entry) => entry.location === 'ไปสาขา 2');
+          return joinNames(bucket);
+        }),
+        columnMap,
+      ),
     ],
   });
 

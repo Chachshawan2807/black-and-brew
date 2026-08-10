@@ -32,8 +32,11 @@ describe('sheets-month-tab', () => {
     expect(resolveMonthlySheetTabTitle(titles, '2026-08-03')).toBe('ตารางงานเดือน ส.ค. 69');
   });
 
-  test('buildMonthlySheetTabSearchOrder scans Monday month then Sunday month', () => {
+  test('buildMonthlySheetTabSearchOrder scans viewed month then Monday then Sunday month', () => {
     const titles = ['ตารางงานเดือน ก.ค. 69', 'ตารางงานเดือน ส.ค. 69'];
+    expect(
+      buildMonthlySheetTabSearchOrder(titles, '2026-07-27', '2026-08-02', '2026-08-02'),
+    ).toEqual(['ตารางงานเดือน ส.ค. 69', 'ตารางงานเดือน ก.ค. 69']);
     expect(buildMonthlySheetTabSearchOrder(titles, '2026-07-27', '2026-08-02')).toEqual([
       'ตารางงานเดือน ก.ค. 69',
       'ตารางงานเดือน ส.ค. 69',
@@ -100,7 +103,15 @@ describe('buildScheduleSheetsUpdates', () => {
       },
     ];
 
-    const blockLayout = deriveWeekBlockLayout(32);
+    const blockLayout = deriveWeekBlockLayout(32, [0, 1, 2, 3, 4, 5, 6], [
+      'จ.',
+      'อ.',
+      'พ.',
+      'พฤ.',
+      'ศ.',
+      'ส.',
+      'อา.',
+    ]);
     const updates = buildScheduleSheetsUpdates(
       weekStart,
       profiles,
@@ -113,7 +124,7 @@ describe('buildScheduleSheetsUpdates', () => {
     expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B32:H32")).toEqual([
       ['27', '28', '29', '30', '31', '1', '2'],
     ]);
-    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B33:H33")).toEqual([['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา']]);
+    expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B33:H33")).toEqual([['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.']]);
     expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B34:H34")).toEqual([['ปิ่น\nนิต้า', '', '', '', '', '', '']]);
     expect(byRange.get("'ตารางงานเดือน ก.ค. 69'!B40:H40")).toEqual([['', '', 'ชัช (คั่วกาแฟ)', '', '', '', '']]);
 

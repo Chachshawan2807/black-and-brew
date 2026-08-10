@@ -1,5 +1,5 @@
 import { preloadCaptureLibraries } from '@/lib/capture-element-png';
-import { Plus, Undo2, Redo2, UserCog, Calendar, Download, Settings, Sheet } from 'lucide-react';
+import { Plus, Undo2, Redo2, UserCog, Calendar, Download, Settings, RefreshCw } from 'lucide-react';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
@@ -111,8 +111,8 @@ export default function ScheduleToolbar({
             disabled={isReadOnly || isSyncingGoogleSheet}
             className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
-            <Sheet className="w-4 h-4" />
-            {isSyncingGoogleSheet ? 'กำลัง Sync…' : 'Sync Google Sheet'}
+            <RefreshCw className={`w-4 h-4 ${isSyncingGoogleSheet ? 'animate-spin' : ''}`} strokeWidth={1.5} />
+            {isSyncingGoogleSheet ? 'กำลังซิงค์…' : 'ซิงค์ Google Sheet'}
           </button>
         </HintTooltip>
 
