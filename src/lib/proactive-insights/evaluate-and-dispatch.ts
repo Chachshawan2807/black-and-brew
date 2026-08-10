@@ -48,6 +48,18 @@ export async function evaluateAndDispatchInsights(
     };
   }
 
+  // Daily digest is push/logged only from the scheduled cron — not inventory/shift saves.
+  if (trigger !== 'cron') {
+    return {
+      dateIso,
+      trigger,
+      matchedRules,
+      digest,
+      recorded: null,
+      pushed: null,
+    };
+  }
+
   const logResult = await recordInsightNotificationLog(digest, dateIso, locale, {
     trigger,
   });

@@ -32,7 +32,7 @@ describe('schedule management blue dot indicator', () => {
   test('management modal uses a single mobile scroll surface with bounded height', () => {
     expect(scheduleClientCode).toMatch(/showManagementModal[\s\S]*max-h-\[90vh\] min-h-0 overflow-hidden/);
     expect(scheduleClientCode).toMatch(
-      /flex-1 min-h-0 overflow-y-auto bb-smooth-scroll flex flex-col md:flex-row md:overflow-hidden/,
+      /flex-1 min-h-0 overflow-y-auto bb-smooth-scroll flex flex-col md:flex-row md:items-stretch md:overflow-hidden/,
     );
     expect(scheduleClientCode).not.toMatch(
       /showManagementModal[\s\S]{0,1200}max-h-\[90vh\][\s\S]{0,400}overflow-y-auto bb-smooth-scroll[\s\S]{0,200}flex flex-col md:flex-row/,

@@ -87,6 +87,7 @@ import {
   computeMgmtHistoryColumnWidths,
   formatMgmtHistoryDateRange,
   MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY,
+  sumMgmtHistoryColumnWidthsPx,
 } from '@/lib/schedule/mgmt-history-column-widths';
 
 // --- Constants Outside Component ---
@@ -108,6 +109,9 @@ const defaultHistoryColumns: ColumnDef[] = [
   { id: 'remark', label: 'หมายเหตุ', width: '120px' },
   { id: 'actions', label: 'จัดการ', width: '96px' }
 ];
+
+const MGMT_MODAL_FOOTER_CLASS =
+  'p-4 bg-card border-t border-border flex gap-3 shrink-0';
 
 // ฟังก์ชันคำนวณตำแหน่ง Dropdown ไม่ให้ทะลุขอบจอ
 function getDropdownPosition(
@@ -151,10 +155,11 @@ function getDropdownPosition(
   return { left, top };
 }
 
-function ColumnHeader({ col, onResize, onResizeEnd }: {
+function ColumnHeader({ col, onResize, onResizeEnd, isLast = false }: {
   col: ColumnDef;
   onResize: (id: string, width: number) => void;
   onResizeEnd: (id: string, width: number) => void;
+  isLast?: boolean;
 }) {
   const isResizing = useRef(false);
   const startX = useRef(0);
@@ -210,9 +215,13 @@ function ColumnHeader({ col, onResize, onResizeEnd }: {
   return (
     <th
       style={style}
-      className="p-3 text-[13px] font-normal text-muted-foreground border-b border-r border-border bg-card text-center relative group select-none overflow-hidden"
+      className={cn(
+        'p-3 text-[13px] font-normal text-muted-foreground border-b border-border bg-card text-center relative group select-none overflow-hidden',
+        !isLast && 'border-r border-border',
+        isLast && 'rounded-tr-3xl',
+      )}
     >
-      <div className="truncate w-full px-1">{col.label}</div>
+      <div className="whitespace-nowrap w-full px-1">{col.label}</div>
       <div
         onMouseDown={handleMouseDown}
         className="absolute right-0 top-0 bottom-0 w-1 px-0.5 cursor-col-resize hover:bg-black/10 transition-all z-20 group/resizer"
@@ -527,25 +536,9 @@ export default function ScheduleClient({
 
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY);
-      if (saved) {
-        const widths: Record<string, string> = JSON.parse(saved);
-        if (widths && typeof widths === 'object' && !Array.isArray(widths)) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect -- restore saved column widths from localStorage on mount
-          setMgmtColumns(prev => prev.map(col => {
-            const w = Number(widths[col.id]);
-            if (!isNaN(w) && w > 0 && w < 2000) {
-              return { ...col, width: `${w}px` };
-            }
-            return col;
-          }));
-        }
-      }
-    } catch (e) {
-      console.error('Failed to parse saved history column widths:', e);
-      localStorage.removeItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY);
-    }
+    localStorage.removeItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY);
+    localStorage.removeItem('blackandbrew-shift-history-col-widths');
+    localStorage.removeItem('blackandbrew-shift-history-col-widths-v2');
   }, []);
 
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
@@ -862,10 +855,11 @@ export default function ScheduleClient({
   }, [showManagementModal, fetchMgmtHistory]);
 
   useEffect(() => {
-    if (!showManagementModal) return;
-
-    const saved = localStorage.getItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY);
-    if (saved) return;
+    if (!showManagementModal) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset column widths when modal closes
+      setMgmtColumns(defaultHistoryColumns);
+      return;
+    }
 
     const rows = mgmtHistory.map((item) => ({
       employeeName: item.employee_name,
@@ -890,17 +884,15 @@ export default function ScheduleClient({
   }, []);
 
   const handleColumnResizeEnd = useCallback((id: string, width: number) => {
-    setMgmtColumns(prev => {
-      const nextCols = prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col);
-      const widths = nextCols.reduce<Record<string, string>>((acc, c) => {
-        const px = parseInt(c.width);
-        if (!isNaN(px)) acc[c.id] = String(px);
-        return acc;
-      }, {});
-      localStorage.setItem(MGMT_HISTORY_COL_WIDTHS_STORAGE_KEY, JSON.stringify(widths));
-      return nextCols;
-    });
+    setMgmtColumns(prev =>
+      prev.map(col => col.id === id ? { ...col, width: `${width}px` } : col),
+    );
   }, []);
+
+  const mgmtTableWidth = useMemo(
+    () => sumMgmtHistoryColumnWidthsPx(mgmtColumns),
+    [mgmtColumns],
+  );
 
   const handleEditHistory = (item: ManagementHistoryItem) => {
     setEditingHistoryId(item.id);
@@ -1654,7 +1646,7 @@ export default function ScheduleClient({
         onClose={() => setShowManagementModal(false)}
         zIndex={70}
         overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
-        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90vh] min-h-0 overflow-hidden bg-card shadow-2xl md:max-w-5xl text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
+        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full h-fit max-h-[90vh] min-h-0 overflow-hidden bg-card shadow-2xl md:w-fit md:max-w-[calc(100vw-2rem)] text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
         panelOnClick={(e) => e.stopPropagation()}
         aria-label="จัดการพนักงานและกะ"
       >
@@ -1664,8 +1656,8 @@ export default function ScheduleClient({
               </button>
             </HintTooltip>
 
-            <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll flex flex-col md:flex-row md:overflow-hidden">
-            <div className="w-full md:w-[340px] flex flex-col border-b md:border-b-0 md:border-r border-border shrink-0 md:min-h-0">
+            <div className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll flex flex-col md:flex-row md:items-stretch md:overflow-hidden">
+            <div className="w-full md:w-[340px] flex flex-col border-b md:border-b-0 md:border-r border-border shrink-0 md:min-h-0 md:self-stretch">
               <div className="p-5 border-b border-border flex justify-between items-center bg-card management-form-container shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-emerald-50 rounded-3xl">
@@ -1701,14 +1693,14 @@ export default function ScheduleClient({
 
                 <div className="space-y-1.5">
                   <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {shiftTypes.map(t => (
                       <button
                         key={t.value}
                         type="button"
                         onClick={() => setManagementForm(prev => ({ ...prev, shiftType: t.value }))}
                         className={cn(
-                          'h-9 px-3 rounded-full border text-[13px] font-normal shadow-sm transition-all active:scale-[0.97] cursor-pointer',
+                          'h-9 w-full px-2 rounded-full border text-[13px] font-normal shadow-sm transition-all active:scale-[0.97] cursor-pointer text-center truncate',
                           t.className,
                           managementForm.shiftType === t.value && 'ring-2 ring-emerald-500/40 ring-offset-1 ring-offset-card'
                         )}
@@ -1741,7 +1733,7 @@ export default function ScheduleClient({
                 </div>
               </div>
 
-              <div className="p-4 bg-card border-t border-border flex gap-3 shrink-0">
+              <div className={MGMT_MODAL_FOOTER_CLASS}>
                 <button
                   onClick={editingHistoryId ? cancelEditHistory : () => setShowManagementModal(false)}
                   className="flex-1 h-11 md:h-auto md:py-3 rounded-3xl bg-transparent border border-border text-foreground text-base md:text-[12px] font-normal hover:bg-muted/30 transition-all active:scale-95 shadow-sm cursor-pointer antialiased"
@@ -1759,7 +1751,7 @@ export default function ScheduleClient({
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col bg-card/30 min-w-0 md:min-h-0">
+            <div className="flex flex-col w-full md:w-fit md:max-w-full shrink-0 md:min-h-0 md:self-stretch bg-card/30 min-w-0">
               <div className="p-5 border-b border-border flex justify-between items-center bg-card pr-14 shrink-0">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="w-5 h-5 text-muted-foreground" />
@@ -1778,21 +1770,30 @@ export default function ScheduleClient({
                   />
               </div>
 
-              <div className="p-5 md:flex-1 md:min-h-0 md:overflow-y-auto md:bb-smooth-scroll">
+              <div className="px-5 pt-5 pb-5 md:flex-1 md:min-h-0 md:overflow-y-auto md:bb-smooth-scroll flex flex-col">
                 {mgmtHistory.length === 0 ? (
                   <div className="min-h-[12rem] flex flex-col items-center justify-center text-foreground/20 space-y-2">
                     <CalendarDays className="w-8 h-8" />
                     <p className="text-sm font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
                   </div>
                 ) : (
-                  <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin border border-border rounded-3xl pb-8">
-                    <table className="min-w-full w-max text-left border-collapse" style={{ tableLayout: 'fixed' }}>
-                      <thead className="sticky top-0 z-10 shadow-sm">
+                  <div className="w-fit max-w-full overflow-x-auto overflow-y-hidden bb-smooth-scroll scrollbar-thin border border-border rounded-3xl">
+                    <table
+                      className="text-left border-collapse"
+                      style={{ tableLayout: 'fixed', width: mgmtTableWidth }}
+                    >
+                      <colgroup>
+                        {mgmtColumns.map((col) => (
+                          <col key={col.id} style={{ width: col.width }} />
+                        ))}
+                      </colgroup>
+                      <thead className="sticky top-0 z-10 bg-card shadow-sm">
                         <tr>
-                          {mgmtColumns.map(col => (
+                          {mgmtColumns.map((col, index) => (
                             <ColumnHeader
                               key={col.id}
                               col={col}
+                              isLast={index === mgmtColumns.length - 1}
                               onResize={handleColumnResize}
                               onResizeEnd={handleColumnResizeEnd}
                             />
@@ -1800,12 +1801,18 @@ export default function ScheduleClient({
                         </tr>
                       </thead>
                       <tbody>
-                        {mgmtHistory.map((item) => (
-                          <tr key={item.id} className="bb-grid-row-offscreen border-b border-border hover:bg-muted/30 transition-colors">
+                        {mgmtHistory.map((item, rowIndex) => (
+                          <tr
+                            key={item.id}
+                            className={cn(
+                              'border-b border-border hover:bg-muted/30 transition-colors',
+                              rowIndex === mgmtHistory.length - 1 && 'last:border-b-0',
+                            )}
+                          >
                             <td className="p-3 text-[13px] font-normal text-foreground border-r border-border whitespace-nowrap bg-transparent">
                               {item.employee_name}
                             </td>
-                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-border whitespace-nowrap bg-transparent">
+                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-border whitespace-pre-line bg-transparent">
                               {formatMgmtHistoryDateRange(item.startDate, item.endDate)}
                             </td>
                             <td className="p-3 text-[12px] font-normal text-foreground border-r border-border whitespace-nowrap bg-transparent">
@@ -1816,10 +1823,18 @@ export default function ScheduleClient({
                                 {shiftTypes.find((t) => t.value === item.location)?.label || item.location}
                               </span>
                             </td>
-                            <td className="p-3 text-[12px] font-normal text-foreground border-r border-border whitespace-normal break-words bg-transparent">
+                            <td className={cn(
+                              'p-3 text-[12px] font-normal text-foreground border-r border-border bg-transparent',
+                              (item.remark || '-').length <= 24
+                                ? 'whitespace-nowrap'
+                                : 'whitespace-normal break-words [overflow-wrap:anywhere]',
+                            )}>
                               {item.remark || '-'}
                             </td>
-                            <td className="p-3 text-center bg-transparent">
+                            <td className={cn(
+                              'p-3 text-center bg-transparent',
+                              rowIndex === mgmtHistory.length - 1 && 'rounded-br-3xl',
+                            )}>
                               <div className="flex items-center justify-center gap-1.5">
                                 <HintTooltip tip="แก้ไขประวัติ">
                                   <button
@@ -1848,6 +1863,11 @@ export default function ScheduleClient({
                     </table>
                   </div>
                 )}
+              </div>
+
+              <div className={cn(MGMT_MODAL_FOOTER_CLASS, 'hidden md:flex pointer-events-none')} aria-hidden="true">
+                <div className="flex-1 h-11 md:py-3" />
+                <div className="flex-1 h-11 md:py-3" />
               </div>
             </div>
             </div>
