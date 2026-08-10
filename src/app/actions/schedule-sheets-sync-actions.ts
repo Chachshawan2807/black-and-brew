@@ -1,5 +1,9 @@
 'use server';
 
+/**
+ * Manual Google Sheet sync for one schedule week (Mon–Sun).
+ * Not called from shift mutations, realtime, or cron — only from ScheduleClient button.
+ */
 import { addDays, format, startOfWeek } from 'date-fns';
 import { z } from 'zod';
 import { requireMutationAccess } from '@/lib/policies/server-gate';
@@ -21,6 +25,7 @@ import {
   weekDayNumbersFromIsoDates,
 } from '@/lib/schedule/sheets-week-block';
 import { SHEETS_WEEK_BLOCK_SCAN_MAX_ROW } from '@/lib/schedule/sheets-layout-config';
+import { SCHEDULE_SHEETS_SYNC_POLICY } from '@/lib/schedule/sheets-sync-policy';
 
 const weekStartSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -45,6 +50,10 @@ export async function syncScheduleToGoogleSheet(weekStartMonday: string) {
   const monday = startOfWeek(new Date(parsedWeek.data), { weekStartsOn: 1 });
   const mondayStr = format(monday, 'yyyy-MM-dd');
   const sundayStr = format(addDays(monday, 6), 'yyyy-MM-dd');
+
+  if (!SCHEDULE_SHEETS_SYNC_POLICY.singleWeekOnly) {
+    return { success: false as const, error: 'การซิงค์ Sheet ถูกจำกัดให้ทำทีละสัปดาห์เท่านั้น' };
+  }
 
   try {
     const supabaseAdmin = getSupabaseAdmin();

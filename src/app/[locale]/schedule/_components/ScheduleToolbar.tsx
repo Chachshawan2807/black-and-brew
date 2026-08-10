@@ -16,6 +16,7 @@ interface ScheduleToolbarProps {
   onExportScheduleImage: () => void;
   onSyncGoogleSheet: () => void;
   isSyncingGoogleSheet: boolean;
+  syncWeekLabel?: string;
   onShowAddEmployeeModal: () => void;
   onShowShiftSettings: () => void;
 }
@@ -33,6 +34,7 @@ export default function ScheduleToolbar({
   onExportScheduleImage,
   onSyncGoogleSheet,
   isSyncingGoogleSheet,
+  syncWeekLabel,
   onShowAddEmployeeModal,
   onShowShiftSettings,
 }: ScheduleToolbarProps) {
@@ -97,14 +99,22 @@ export default function ScheduleToolbar({
           การลา/เปลี่ยนกะ
         </button>
 
-        <button
-          onClick={onSyncGoogleSheet}
-          disabled={isReadOnly || isSyncingGoogleSheet}
-          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+        <HintTooltip
+          tip={
+            syncWeekLabel
+              ? `ส่งสัปดาห์ ${syncWeekLabel} ไป Google Sheet (กดปุ่มเท่านั้น — ไม่ซิงค์อัตโนมัติ)`
+              : 'ส่งสัปดาห์ที่กำลังดูไป Google Sheet (กดปุ่มเท่านั้น — ไม่ซิงค์อัตโนมัติ)'
+          }
         >
-          <Sheet className="w-4 h-4" />
-          {isSyncingGoogleSheet ? 'กำลัง Sync…' : 'Sync Google Sheet'}
-        </button>
+          <button
+            onClick={onSyncGoogleSheet}
+            disabled={isReadOnly || isSyncingGoogleSheet}
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <Sheet className="w-4 h-4" />
+            {isSyncingGoogleSheet ? 'กำลัง Sync…' : 'Sync Google Sheet'}
+          </button>
+        </HintTooltip>
 
         <button
           onClick={onExportScheduleImage}

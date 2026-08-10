@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 import { syncScheduleToGoogleSheet } from '@/app/actions/schedule-sheets-sync-actions';
+import { formatScheduleWeekRangeLabel } from '@/lib/schedule/sheets-sync-policy';
 
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations } from '@/app/actions/shift-actions';
 import dynamic from 'next/dynamic';
@@ -1277,7 +1278,14 @@ export default function ScheduleClient({
     if (blockIfReadOnly()) return;
 
     const weekStart = weekDays[0];
-    if (!weekStart) return;
+    const weekEnd = weekDays[6];
+    if (!weekStart || !weekEnd) return;
+
+    const weekLabel = formatScheduleWeekRangeLabel(weekStart, weekEnd);
+    const confirmed = window.confirm(
+      `Sync Google Sheet สำหรับสัปดาห์ ${weekLabel} เท่านั้น\n(ซิงค์เมื่อกดปุ่มนี้เท่านั้น — ไม่มีการซิงค์อัตโนมัติ)`,
+    );
+    if (!confirmed) return;
 
     setIsSyncingGoogleSheet(true);
     try {
@@ -1286,7 +1294,7 @@ export default function ScheduleClient({
         alert(`Sync Google Sheet ไม่สำเร็จ: ${result.error}`);
         return;
       }
-      alert(`Sync Google Sheet สำเร็จแล้วค่ะ (ชีท: ${result.sheetTab})`);
+      alert(`Sync Google Sheet สำเร็จแล้วค่ะ\nสัปดาห์: ${weekLabel}\nชีท: ${result.sheetTab}`);
     } catch (err) {
       console.error('Failed to sync Google Sheet:', err);
       alert('เกิดข้อผิดพลาดในการ Sync Google Sheet ค่ะ');
@@ -1339,6 +1347,11 @@ export default function ScheduleClient({
         onExportScheduleImage={exportScheduleImage}
         onSyncGoogleSheet={syncGoogleSheet}
         isSyncingGoogleSheet={isSyncingGoogleSheet}
+        syncWeekLabel={
+          weekDays[0] && weekDays[6]
+            ? formatScheduleWeekRangeLabel(weekDays[0], weekDays[6])
+            : undefined
+        }
         onShowAddEmployeeModal={() => setShowAddEmployeeModal(true)}
         onShowShiftSettings={() => setShowShiftSettingsModal(true)}
       />

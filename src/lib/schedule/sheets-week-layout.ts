@@ -83,27 +83,30 @@ function collectAssignmentsForDay(
 ): DayAssignment[] {
   const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
 
-  return shifts
-    .filter((shift) => shift.employee_id && isSameCalendarDay(shift.start_time, isoDate))
-    .map((shift) => {
-      const profile = profileById.get(shift.employee_id!);
-      if (!profile) return null;
+  const assignments: DayAssignment[] = [];
 
-      const location = normalizeShiftLocation(
-        shift.metadata?.location ?? undefined,
-        shift.status ?? undefined,
-      );
+  for (const shift of shifts) {
+    if (!shift.employee_id || !isSameCalendarDay(shift.start_time, isoDate)) continue;
 
-      return {
-        profileId: profile.id,
-        name: profile.full_name,
-        scheduleOrder: profile.schedule_order ?? 0,
-        location,
-        remark: shift.metadata?.remark ?? undefined,
-        isManagement: shift.metadata?.is_management ?? false,
-      } satisfies DayAssignment;
-    })
-    .filter((entry): entry is DayAssignment => entry !== null);
+    const profile = profileById.get(shift.employee_id);
+    if (!profile) continue;
+
+    const location = normalizeShiftLocation(
+      shift.metadata?.location ?? undefined,
+      shift.status ?? undefined,
+    );
+
+    assignments.push({
+      profileId: profile.id,
+      name: profile.full_name,
+      scheduleOrder: profile.schedule_order ?? 0,
+      location,
+      remark: shift.metadata?.remark ?? undefined,
+      isManagement: shift.metadata?.is_management ?? false,
+    });
+  }
+
+  return assignments;
 }
 
 function joinNames(assignments: DayAssignment[]): string {
