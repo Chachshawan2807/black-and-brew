@@ -36,9 +36,10 @@ describe('inventory-quick-bulk', () => {
     expect(computeOptimisticStockAfterTransaction(5, 'ADJUST', 8)).toBe(8);
   });
 
-  test('getBulkSubmitTypeLabel returns Thai labels for IN and OUT', () => {
+  test('getBulkSubmitTypeLabel returns Thai labels for IN, OUT, and ADJUST', () => {
     expect(getBulkSubmitTypeLabel('IN')).toBe('รับเข้า');
     expect(getBulkSubmitTypeLabel('OUT')).toBe('นำออก');
+    expect(getBulkSubmitTypeLabel('ADJUST')).toBe('ปรับจำนวน');
   });
 
   test('addBulkQueueItem deduplicates by item id', () => {
@@ -106,11 +107,48 @@ describe('inventory-quick-bulk', () => {
     ]);
   });
 
-  test('formatBulkConfirmQty shows resolved quantity so empty defaults display as 1', () => {
+  test('computeBulkPreview ADJUST sets absolute stock and requires explicit qty', () => {
+    const line: BulkQueueItem = {
+      itemId: 'a1',
+      name: 'นมสด',
+      unit: 'กล่อง',
+      currentStock: 12,
+      qty: '',
+    };
+    expect(computeBulkPreview(line, 'ADJUST').error).toMatch(/คงเหลือใหม่/);
+
+    const withQty = { ...line, qty: '8' };
+    expect(computeBulkPreview(withQty, 'ADJUST')).toEqual({
+      itemId: 'a1',
+      before: 12,
+      after: 8,
+    });
+    expect(computeBulkPreview({ ...line, qty: '0' }, 'ADJUST').after).toBe(0);
+  });
+
+  test('resolveBulkSubmitPayload ADJUST uses new stock levels', () => {
+    const queue: BulkQueueItem[] = [
+      {
+        itemId: 'a1',
+        name: 'นมสด',
+        unit: 'กล่อง',
+        currentStock: 12,
+        qty: '8',
+      },
+    ];
+    expect(resolveBulkSubmitPayload(queue, 'ADJUST')).toEqual([
+      { itemId: 'a1', type: 'ADJUST', quantity: 8 },
+    ]);
+    expect(canSubmitBulkQueue(queue, 'ADJUST')).toBe(true);
+    expect(canSubmitBulkQueue([{ ...queue[0]!, qty: '' }], 'ADJUST')).toBe(false);
+  });
+
+  test('formatBulkConfirmQty shows resolved quantity so empty defaults display as 1 for IN/OUT', () => {
     expect(formatBulkConfirmQty('')).toBe('1');
     expect(formatBulkConfirmQty('   ')).toBe('1');
     expect(formatBulkConfirmQty('3')).toBe('3');
     expect(formatBulkConfirmQty('0')).toBe('0');
+    expect(formatBulkConfirmQty('', 'ADJUST')).toBe('');
   });
 
   test('canSubmitBulkQueue rejects invalid non-empty qty', () => {

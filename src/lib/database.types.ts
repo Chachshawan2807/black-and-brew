@@ -390,6 +390,7 @@ export type Database = {
           inventory_item_id: string | null
           note: string | null
           quantity: number
+          transaction_at: string
           type: string | null
         }
         Insert: {
@@ -399,6 +400,7 @@ export type Database = {
           inventory_item_id?: string | null
           note?: string | null
           quantity: number
+          transaction_at?: string
           type?: string | null
         }
         Update: {
@@ -408,6 +410,7 @@ export type Database = {
           inventory_item_id?: string | null
           note?: string | null
           quantity?: number
+          transaction_at?: string
           type?: string | null
         }
         Relationships: [
@@ -755,6 +758,7 @@ export type Database = {
           p_note: string
           p_product_id: string
           p_quantity: number
+          p_transaction_at?: string
           p_type: string
         }
         Returns: Json

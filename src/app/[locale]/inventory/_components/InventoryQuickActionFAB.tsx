@@ -393,6 +393,16 @@ export default function InventoryQuickActionFAB() {
                   bulkQuickType={quickAction.bulkQuickType}
                   onConfirmBulkSubmit={quickAction.confirmBulkSubmit}
                   onCancelBulkSubmit={quickAction.cancelBulkSubmit}
+                  backfillMode={quickAction.backfillMode}
+                  onBackfillModeChange={quickAction.setBackfillMode}
+                  showInOutGapWarning={quickAction.showInOutGapWarning}
+                  onDismissGapWarning={quickAction.dismissGapWarning}
+                  transactionDateModalOpen={quickAction.transactionDateModalOpen}
+                  transactionDate={quickAction.transactionDate}
+                  onTransactionDateChange={quickAction.setTransactionDate}
+                  transactionDateReason={quickAction.transactionDateReason}
+                  onConfirmTransactionDate={quickAction.confirmTransactionDate}
+                  onCancelTransactionDate={quickAction.cancelTransactionDate}
                   className="bb-shadow-xl"
                 />
               )}

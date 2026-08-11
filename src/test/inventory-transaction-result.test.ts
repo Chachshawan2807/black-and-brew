@@ -47,15 +47,22 @@ describe('record_inventory_transaction SQL contract', () => {
     expect(sql).toMatch(/'new_stock'\s*,\s*v_new_stock/);
   });
 
-  test('inventory actions resolve stock change via shared helper', () => {
+  test('RPC accepts optional p_transaction_at for business date', () => {
+    const sql = fs.readFileSync(
+      path.resolve(__dirname, '../../sql/record_inventory_transaction.sql'),
+      'utf-8',
+    );
+
+    expect(sql).toContain('p_transaction_at TIMESTAMPTZ');
+    expect(sql).toContain('transaction_at');
+  });
+
+  test('inventory actions pass transactionAt to RPC', () => {
     const actions = fs.readFileSync(
       path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
       'utf-8',
     );
 
-    expect(actions).toContain('resolveRecordedStockChange');
-    expect(actions).toMatch(
-      /resolveRecordedStockChange\(\s*data\s*,\s*(?:type|entry\.type)\s*,\s*(?:quantity|entry\.quantity)\s*\)/,
-    );
+    expect(actions).toContain('p_transaction_at: auditOptions?.transactionAt');
   });
 });

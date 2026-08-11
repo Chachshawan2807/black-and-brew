@@ -2,11 +2,15 @@
 
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw, Undo2, Clock3 } from 'lucide-react';
+import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw, Undo2, Clock3, SlidersHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { microFadeDown, microPopIn, staggerListItem } from '@/lib/motion-presets';
 import Link from 'next/link';
-import { fetchCountAccuracyStats, recordInventoryCountAndUpdateStock } from '@/app/actions/inventory-actions';
+import {
+  fetchCountAccuracyStats,
+  recordInventoryCountAndUpdateStock,
+  updateInventoryStock,
+} from '@/app/actions/inventory-actions';
 import type {
   CountAccuracyStatsResult,
   InventoryCountSaveOptions,
@@ -30,9 +34,16 @@ import {
 import { isSameThaiDay } from '@/lib/date-utils';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
+import {
+  isCountAdjustUnlocked,
+  setCountAdjustUnlocked,
+} from '@/lib/inventory-count-adjust-access';
+import { CountAdjustPinDialog } from '@/app/[locale]/inventory/count/_components/CountAdjustPinDialog';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
+
+type CountPageMode = 'count' | 'adjust';
 
 interface InventoryItem {
   id: string;
@@ -61,6 +72,7 @@ const CountInput = memo(function CountInput({
   isActive = false,
   onActiveChange,
   itemId,
+  placeholder = 'จำนวน',
 }: {
   index: number;
   onSave: (id: string, value: number) => Promise<void>;
@@ -68,6 +80,7 @@ const CountInput = memo(function CountInput({
   isActive?: boolean;
   onActiveChange?: (id: string | null) => void;
   itemId: string;
+  placeholder?: string;
 }) {
   const [val, setVal] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -165,7 +178,7 @@ const CountInput = memo(function CountInput({
         inputMode="decimal"
         enterKeyHint="next"
         value={val}
-        placeholder="จำนวน"
+        placeholder={placeholder}
         onChange={(e) => {
           let value = e.target.value.replace(/[^0-9.]/g, '');
           if (value.length > 1 && value.startsWith('0') && !value.startsWith('0.')) {
@@ -198,6 +211,191 @@ const CountInput = memo(function CountInput({
             ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm'
             : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus:ring-1 focus:ring-black/15',
           disabled && 'opacity-60 cursor-not-allowed'
+        )}
+      />
+      <AnimatePresence>
+        {isActive && val.length > 0 && (
+          <motion.span
+            {...microFadeDown}
+            transition={microFadeDown.transition}
+            className="text-[9px] text-black/40 bb-pastel-surface tracking-wide"
+          >
+            กด Enter เพื่อยืนยัน
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </form>
+  );
+});
+
+function formatAdjustStockDisplay(stock: number): string {
+  const value = Number(stock);
+  if (!Number.isFinite(value) || value === 0) return '';
+  return String(value);
+}
+
+// Adjust tab: pre-filled with current stock; stays editable after every save.
+const AdjustStockInput = memo(function AdjustStockInput({
+  index,
+  stock,
+  onSave,
+  disabled = false,
+  isActive = false,
+  onActiveChange,
+  itemId,
+}: {
+  index: number;
+  stock: number;
+  onSave: (id: string, value: number) => Promise<void>;
+  disabled?: boolean;
+  isActive?: boolean;
+  onActiveChange?: (id: string | null) => void;
+  itemId: string;
+}) {
+  const [val, setVal] = useState(() => formatAdjustStockDisplay(stock));
+  const inputRef = useRef<HTMLInputElement>(null);
+  const valueRef = useRef(val);
+  const isSavingRef = useRef(false);
+  const committingRef = useRef(false);
+  const isEditingRef = useRef(false);
+
+  useEffect(() => {
+    if (!isEditingRef.current) {
+      const next = formatAdjustStockDisplay(stock);
+      valueRef.current = next;
+      setVal(next);
+    }
+  }, [stock]);
+
+  const syncValue = useCallback((value: string) => {
+    valueRef.current = value;
+    setVal(value);
+  }, []);
+
+  const clearEditing = useCallback(() => {
+    isEditingRef.current = false;
+    onActiveChange?.(null);
+  }, [onActiveChange]);
+
+  const focusNextInput = useCallback(() => {
+    const nextInput = document.querySelector(
+      `input[data-count-row-index="${index + 1}"]`,
+    ) as HTMLInputElement | null;
+    if (!nextInput) return;
+    window.setTimeout(() => {
+      nextInput.focus();
+      nextInput.select();
+    }, 10);
+  }, [index]);
+
+  const commitSave = useCallback(async () => {
+    if (disabled || isSavingRef.current) return false;
+    const rawVal = valueRef.current.trim();
+    if (rawVal === '') {
+      clearEditing();
+      return false;
+    }
+    const numberVal = Number(rawVal);
+    const sanitized = Number.isNaN(numberVal) ? 0 : Math.max(0, numberVal);
+    isSavingRef.current = true;
+    committingRef.current = true;
+    isEditingRef.current = false;
+    onActiveChange?.(null);
+    void onSave(itemId, sanitized).finally(() => {
+      isSavingRef.current = false;
+      committingRef.current = false;
+    });
+    return true;
+  }, [clearEditing, disabled, itemId, onActiveChange, onSave]);
+
+  const handleSubmit = useCallback(
+    (event: React.FormEvent) => {
+      event.preventDefault();
+      void commitSave().then((saved) => {
+        if (saved) focusNextInput();
+      });
+    },
+    [commitSave, focusNextInput],
+  );
+
+  const handleBlur = useCallback(() => {
+    window.setTimeout(() => {
+      if (committingRef.current || isSavingRef.current) return;
+
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLInputElement &&
+        active.dataset.countRowIndex !== undefined &&
+        active !== inputRef.current
+      ) {
+        if (valueRef.current.trim() !== '') {
+          void commitSave();
+        } else {
+          clearEditing();
+        }
+        return;
+      }
+
+      if (inputRef.current === document.activeElement) return;
+      isEditingRef.current = false;
+      const next = formatAdjustStockDisplay(stock);
+      valueRef.current = next;
+      setVal(next);
+      onActiveChange?.(null);
+    }, 0);
+  }, [clearEditing, commitSave, onActiveChange, stock]);
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col items-end gap-1.5"
+      data-count-row-index={index}
+    >
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="decimal"
+        enterKeyHint="next"
+        value={val}
+        placeholder="ใหม่"
+        onChange={(e) => {
+          isEditingRef.current = true;
+          let value = e.target.value.replace(/[^0-9.]/g, '');
+          if (value.length > 1 && value.startsWith('0') && !value.startsWith('0.')) {
+            value = value.replace(/^0+/, '');
+          }
+          syncValue(value);
+        }}
+        onFocus={() => {
+          isEditingRef.current = true;
+          onActiveChange?.(itemId);
+          inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }}
+        onBlur={handleBlur}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault();
+            void commitSave().then((saved) => {
+              if (saved) focusNextInput();
+            });
+          }
+          if (e.key === 'Escape') {
+            isEditingRef.current = false;
+            const next = formatAdjustStockDisplay(stock);
+            valueRef.current = next;
+            setVal(next);
+            clearEditing();
+            inputRef.current?.blur();
+          }
+        }}
+        data-count-row-index={index}
+        disabled={disabled}
+        className={cn(
+          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums transition-all duration-200 bb-pastel-surface bg-white text-black placeholder:text-black/45',
+          isActive
+            ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm'
+            : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus:ring-1 focus:ring-black/15',
+          disabled && 'opacity-60 cursor-not-allowed',
         )}
       />
       <AnimatePresence>
@@ -488,6 +686,147 @@ const CountItemRow = memo(function CountItemRow({
   );
 });
 
+function CountPageTabSwitcher({
+  mode,
+  onChange,
+}: {
+  mode: CountPageMode;
+  onChange: (mode: CountPageMode) => void;
+}) {
+  const tabButtonClass = (tab: CountPageMode) =>
+    cn(
+      'flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[13px] rounded-full border transition-all duration-200 font-normal whitespace-nowrap',
+      mode === tab
+        ? 'bg-foreground border-foreground text-background bb-shadow-sm'
+        : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
+    );
+
+  return (
+    <div
+      role="tablist"
+      aria-label="สลับระหว่างตรวจนับและปรับจำนวน"
+      className="mb-5 flex gap-2"
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === 'count'}
+        onClick={() => onChange('count')}
+        className={tabButtonClass('count')}
+      >
+        <ClipboardList className="h-4 w-4 shrink-0" aria-hidden />
+        <span>ตรวจนับ</span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === 'adjust'}
+        onClick={() => onChange('adjust')}
+        className={tabButtonClass('adjust')}
+      >
+        <SlidersHorizontal className="h-4 w-4 shrink-0" aria-hidden />
+        <span>ปรับจำนวน</span>
+      </button>
+    </div>
+  );
+}
+
+type AdjustItemRowProps = {
+  item: InventoryItem;
+  index: number;
+  isActive: boolean;
+  isDimmed: boolean;
+  animateEntrance: boolean;
+  onSave: (id: string, value: number) => Promise<void>;
+  isReadOnly: boolean;
+  onActiveChange: (id: string | null) => void;
+};
+
+const AdjustItemRow = memo(function AdjustItemRow({
+  item,
+  index,
+  isActive,
+  isDimmed,
+  animateEntrance,
+  onSave,
+  isReadOnly,
+  onActiveChange,
+}: AdjustItemRowProps) {
+  const isSufficiencyCheck = item.count_policy === 'sufficiency_check';
+  const rowToneClass = isSufficiencyCheck
+    ? `${PASTEL_SURFACE} bg-[#f8d7da] border border-[#f5c6cb]`
+    : `${PASTEL_SURFACE} bg-[#dbeafe] border border-[#bfdbfe]`;
+
+  return (
+    <motion.div
+      initial={animateEntrance ? staggerListItem.initial : false}
+      animate={{
+        opacity: isDimmed ? 0.42 : 1,
+        y: 0,
+        scale: isActive ? 1.015 : 1,
+      }}
+      transition={{
+        duration: 0.2,
+        delay: animateEntrance && index < STAGGER_ANIMATION_CAP ? index * 0.02 : 0,
+      }}
+      className={cn(
+        'relative rounded-2xl p-4 flex items-start justify-between gap-3 transition-all duration-300',
+        rowToneClass,
+        isActive
+          ? 'bb-shadow-md ring-2 ring-black/8 z-10'
+          : 'bb-shadow-sm hover:ring-1 hover:ring-black/5',
+      )}
+    >
+      {isActive && (
+        <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-black/70" />
+      )}
+
+      <div className="flex items-start gap-3 flex-1 min-w-0 pl-1">
+        <span
+          className={cn(
+            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200',
+            isActive
+              ? 'bg-black text-white'
+              : 'bg-white/60 text-black/55',
+          )}
+        >
+          {(index + 1).toString().padStart(2, '0')}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-normal text-[15px] leading-tight text-black">
+              {item.name}
+            </span>
+            {item.unit ? (
+              <span className="rounded-full border border-black/10 bg-white/70 px-2 py-0.5 text-[10px] text-black/60 bb-pastel-surface">
+                {item.unit}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className={COUNT_STATUS_BADGE_CLASS}>
+              คงเหลือ {Number(item.stock) || 0}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="shrink-0 flex flex-col items-end gap-2">
+        <AdjustStockInput
+          itemId={item.id}
+          stock={Number(item.stock) || 0}
+          index={index}
+          onSave={onSave}
+          disabled={isReadOnly}
+          isActive={isActive}
+          onActiveChange={onActiveChange}
+        />
+      </div>
+    </motion.div>
+  );
+});
+
 interface InventoryCountClientProps {
   initialItems: InventoryItem[];
   initialAccuracyStats?: CountAccuracyStatsResult | null;
@@ -503,6 +842,8 @@ export default function InventoryCountClient({
 }: InventoryCountClientProps) {
   const isReadOnly = useReadOnly();
   const { subscribe } = useInventoryRealtime();
+  const [adjustUnlocked, setAdjustUnlocked] = useState(() => isCountAdjustUnlocked());
+  const [adjustPinOpen, setAdjustPinOpen] = useState(false);
 
   const [items, setItems] = useState<InventoryItem[]>(initialItems);
   const itemsRef = useRef(items);
@@ -514,6 +855,7 @@ export default function InventoryCountClient({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [pageMode, setPageMode] = useState<CountPageMode>('count');
   const [accuracyStats, setAccuracyStats] = useState<CountAccuracyStatsResult | null>(initialAccuracyStats);
   const accuracyTouchedRef = useRef(false);
   const [todayStatus, setTodayStatus] = useState<TodayCountSessionStatus>(
@@ -856,8 +1198,77 @@ export default function InventoryCountClient({
     await handleSaveStock(id, entry.prevStock, true);
   }, [undoMap, handleSaveStock]);
 
+  const handleAdjustStock = useCallback(async (id: string, value: number) => {
+    if (isReadOnly && !adjustUnlocked) {
+      setSaveErrorMessage(READ_ONLY_DENY_MSG);
+      return;
+    }
+
+    const currentItem = itemsRef.current.find((i) => i.id === id);
+    const previousStock = Number(currentItem?.stock ?? 0);
+    setSaveErrorMessage(null);
+
+    if (previousStock === value) {
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, stock: value } : item)),
+    );
+    setSavingState('saving');
+
+    try {
+      const result = await updateInventoryStock(id, value, 'Stock count page - Adjust', {
+        clientSessionId: getClientSessionId(),
+        suppressNotification: true,
+        notificationContext: 'inventory_count',
+      });
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      const savedStock = result.newStock ?? value;
+      if (savedStock !== value) {
+        setItems((prev) =>
+          prev.map((item) => (item.id === id ? { ...item, stock: savedStock } : item)),
+        );
+      }
+
+      setSavingState('synced');
+      setTimeout(() => setSavingState('idle'), 2000);
+    } catch (err) {
+      console.error('Failed to adjust stock:', err);
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, stock: previousStock } : item)),
+      );
+      setSavingState('idle');
+      setSaveErrorMessage('ปรับจำนวนคงเหลือไม่สำเร็จ ระบบได้โหลดข้อมูลล่าสุดกลับมาแล้ว');
+      fetchInventory();
+    }
+  }, [adjustUnlocked, fetchInventory, isReadOnly]);
+
   const handleActiveChange = useCallback((id: string | null) => {
     setActiveItemId(id);
+  }, []);
+
+  const handlePageModeChange = useCallback((nextMode: CountPageMode) => {
+    if (nextMode === 'adjust' && !adjustUnlocked) {
+      setAdjustPinOpen(true);
+      return;
+    }
+    setPageMode(nextMode);
+    setActiveItemId(null);
+    setSaveErrorMessage(null);
+  }, [adjustUnlocked]);
+
+  const handleAdjustPinSuccess = useCallback(() => {
+    setCountAdjustUnlocked();
+    setAdjustUnlocked(true);
+    setAdjustPinOpen(false);
+    setPageMode('adjust');
+    setActiveItemId(null);
+    setSaveErrorMessage(null);
   }, []);
 
   const isDimmedByActive = activeItemId !== null;
@@ -957,13 +1368,23 @@ export default function InventoryCountClient({
             <div className="min-w-0 text-left">
               <h1 className="text-xl font-medium text-foreground">ตรวจนับคลังสินค้า</h1>
               <p className="text-sm text-muted-foreground">
-                กรอกจำนวนที่นับได้ แล้วกด Enter เพื่อบันทึก
+                {pageMode === 'count'
+                  ? 'กรอกจำนวนที่นับได้ แล้วกด Enter เพื่อบันทึก'
+                  : 'กรอกจำนวนคงเหลือใหม่ แล้วกด Enter เพื่อปรับ'}
               </p>
             </div>
           </div>
         </div>
 
-        <TodayCountSessionBanner status={todayStatus} />
+        <CountPageTabSwitcher mode={pageMode} onChange={handlePageModeChange} />
+
+        <CountAdjustPinDialog
+          open={adjustPinOpen}
+          onCancel={() => setAdjustPinOpen(false)}
+          onSuccess={handleAdjustPinSuccess}
+        />
+
+        {pageMode === 'count' && <TodayCountSessionBanner status={todayStatus} />}
 
         {saveErrorMessage && (
           <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -976,7 +1397,7 @@ export default function InventoryCountClient({
             <div className="p-8 text-center text-base font-normal text-muted-foreground bg-card border border-border rounded-3xl">
               ไม่มีข้อมูลสินค้าในระบบ กรุณาเพิ่มข้อมูลในหน้าคลังสินค้าหลักก่อนนะคะ
             </div>
-          ) : (
+          ) : pageMode === 'count' ? (
             items.map((item, index) => (
               <CountItemRow
                 key={item.id}
@@ -991,6 +1412,20 @@ export default function InventoryCountClient({
                 onSave={handleSaveStock}
                 onUndo={handleUndo}
                 isReadOnly={isReadOnly}
+                onActiveChange={handleActiveChange}
+              />
+            ))
+          ) : (
+            items.map((item, index) => (
+              <AdjustItemRow
+                key={item.id}
+                item={item}
+                index={index}
+                isActive={activeItemId === item.id}
+                isDimmed={isDimmedByActive && activeItemId !== item.id}
+                animateEntrance={animateEntrance}
+                onSave={handleAdjustStock}
+                isReadOnly={isReadOnly && !adjustUnlocked}
                 onActiveChange={handleActiveChange}
               />
             ))

@@ -22,10 +22,12 @@ export type BulkPreview = {
   error?: string;
 };
 
-export type BulkQuickType = 'IN' | 'OUT';
+export type BulkQuickType = 'IN' | 'OUT' | 'ADJUST';
 
 export function getBulkSubmitTypeLabel(type: BulkQuickType): string {
-  return type === 'IN' ? 'รับเข้า' : 'นำออก';
+  if (type === 'IN') return 'รับเข้า';
+  if (type === 'OUT') return 'นำออก';
+  return 'ปรับจำนวน';
 }
 
 export function parseBulkEntry(line: string): { name: string; qty: string } {
@@ -131,6 +133,19 @@ export function resolveInOutQuantity(qty: string): number | null {
   return parsed;
 }
 
+/** ADJUST requires explicit new stock level (0 allowed). */
+export function resolveAdjustQuantity(qty: string): number | null {
+  const trimmed = qty.trim();
+  if (trimmed === '') return null;
+  const parsed = Number(trimmed);
+  if (Number.isNaN(parsed) || parsed < 0) return null;
+  return parsed;
+}
+
+export function resolveBulkLineQuantity(qty: string, type: BulkQuickType): number | null {
+  return type === 'ADJUST' ? resolveAdjustQuantity(qty) : resolveInOutQuantity(qty);
+}
+
 /** Client-side optimistic stock after a quick IN/OUT/ADJUST save. */
 export function computeOptimisticStockAfterTransaction(
   currentStock: number,
@@ -150,8 +165,12 @@ export function computeOptimisticStockAfterTransaction(
   return before - qty;
 }
 
-/** Display qty on bulk confirm dialog — empty defaults show as "1". */
-export function formatBulkConfirmQty(qty: string): string {
+/** Display qty on bulk confirm dialog — empty IN/OUT defaults show as "1". */
+export function formatBulkConfirmQty(qty: string, type: BulkQuickType = 'IN'): string {
+  if (type === 'ADJUST') {
+    const resolved = resolveAdjustQuantity(qty);
+    return resolved !== null ? String(resolved) : qty.trim();
+  }
   const resolved = resolveInOutQuantity(qty);
   if (resolved !== null) return String(resolved);
   return qty.trim();
@@ -159,6 +178,20 @@ export function formatBulkConfirmQty(qty: string): string {
 
 export function computeBulkPreview(line: BulkQueueItem, type: BulkQuickType): BulkPreview {
   const before = Number(line.currentStock) || 0;
+
+  if (type === 'ADJUST') {
+    const newStock = resolveAdjustQuantity(line.qty);
+    if (newStock === null) {
+      return {
+        itemId: line.itemId,
+        before,
+        after: before,
+        error: line.qty.trim() === '' ? 'กรุณาระบุจำนวนคงเหลือใหม่' : 'กรุณาระบุจำนวนที่ถูกต้อง',
+      };
+    }
+    return { itemId: line.itemId, before, after: newStock };
+  }
+
   const qty = resolveInOutQuantity(line.qty);
 
   if (qty === null) {
@@ -196,6 +229,6 @@ export function resolveBulkSubmitPayload(
     .map((line) => ({
       itemId: line.itemId,
       type,
-      quantity: resolveInOutQuantity(line.qty)!,
+      quantity: resolveBulkLineQuantity(line.qty, type)!,
     }));
 }

@@ -2,14 +2,18 @@ export type InOutLedgerRow = {
   type: 'IN' | 'OUT' | 'ADJUST' | 'ADD' | 'DELETE' | string;
   quantity: number;
   created_at: string;
+  transaction_at?: string | null;
   /** Set on ADJUST rows — absolute stock after manual correction (warehouse edit / ปรับจำนวน). */
   balance_after?: number | null;
 };
 
+function ledgerSortTimestamp(row: InOutLedgerRow): number {
+  const value = row.transaction_at ?? row.created_at;
+  return new Date(value).getTime();
+}
+
 function sortLedgerRows(rows: InOutLedgerRow[]): InOutLedgerRow[] {
-  return [...rows].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-  );
+  return [...rows].sort((a, b) => ledgerSortTimestamp(a) - ledgerSortTimestamp(b));
 }
 
 function applyInOutDelta(stock: number, row: InOutLedgerRow): number {

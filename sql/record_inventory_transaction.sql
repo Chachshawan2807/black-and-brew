@@ -10,10 +10,11 @@
 --     4. Insert inventory_transactions ledger row
 --
 -- Parameters:
---   p_product_id  UUID    — inventory_items.id (legacy param name retained)
---   p_type        VARCHAR — 'IN' or 'OUT' only (ADD/DELETE/ADJUST use other paths)
---   p_quantity    NUMERIC — must be > 0
---   p_note        TEXT    — optional note stored on the ledger row
+--   p_product_id      UUID        — inventory_items.id (legacy param name retained)
+--   p_type            VARCHAR     — 'IN' or 'OUT' only (ADD/DELETE/ADJUST use other paths)
+--   p_quantity        NUMERIC     — must be > 0
+--   p_note            TEXT        — optional note stored on the ledger row
+--   p_transaction_at    TIMESTAMPTZ — optional business date (defaults to now UTC)
 --
 -- Returns (JSON):
 --   { "success": true, "old_stock": <number>, "new_stock": <number>, "balance_after": <number> }
@@ -28,6 +29,7 @@
 -- Schema dependencies:
 --   inventory_items.stock
 --   inventory_transactions.inventory_item_id (renamed from product_id)
+--   inventory_transactions.transaction_at
 --
 -- Historical sources (archived — see supabase/migrations/ for schema changes):
 --   setup_inventory_transactions.sql, fix_transaction_relationships.sql
@@ -37,13 +39,17 @@ CREATE OR REPLACE FUNCTION public.record_inventory_transaction(
   p_product_id UUID,
   p_type VARCHAR,
   p_quantity NUMERIC,
-  p_note TEXT
+  p_note TEXT,
+  p_transaction_at TIMESTAMPTZ DEFAULT NULL
 ) RETURNS json AS $$
 DECLARE
   v_current_stock NUMERIC;
   v_new_stock NUMERIC;
+  v_tx_at TIMESTAMPTZ;
   v_result json;
 BEGIN
+  v_tx_at := COALESCE(p_transaction_at, timezone('utc', now()));
+
   -- Lock the row to prevent race conditions during concurrent updates
   SELECT COALESCE(stock, 0) INTO v_current_stock
   FROM public.inventory_items
@@ -76,14 +82,16 @@ BEGIN
     type,
     quantity,
     note,
-    balance_after
+    balance_after,
+    transaction_at
   )
   VALUES (
     p_product_id,
     p_type,
     p_quantity,
     p_note,
-    v_new_stock
+    v_new_stock,
+    v_tx_at
   );
 
   v_result := json_build_object(

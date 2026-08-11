@@ -12,6 +12,7 @@ import {
   PackageMinus,
   SlidersHorizontal,
   CloudUpload,
+  Calendar,
   ChevronUp,
   ChevronDown,
   List,
@@ -38,6 +39,7 @@ import {
   shouldCollapseBulkQueueForMobileSearch,
   shouldPortalQuickSearchSuggestions,
 } from '@/lib/quick-search-suggestions-layout';
+import { InventoryTransactionDateDialog } from '@/app/[locale]/inventory/_components/InventoryTransactionDateDialog';
 
 export type QuickActionItem = {
   id: string;
@@ -86,6 +88,16 @@ export type InventoryQuickActionBarProps = {
   bulkQuickType?: BulkQuickType;
   onConfirmBulkSubmit?: () => void;
   onCancelBulkSubmit?: () => void;
+  backfillMode?: boolean;
+  onBackfillModeChange?: (next: boolean) => void;
+  showInOutGapWarning?: boolean;
+  onDismissGapWarning?: () => void;
+  transactionDateModalOpen?: boolean;
+  transactionDate?: string;
+  onTransactionDateChange?: (date: string) => void;
+  transactionDateReason?: 'backfill' | 'gap';
+  onConfirmTransactionDate?: () => void;
+  onCancelTransactionDate?: () => void;
 };
 
 const ACTION_CELL_CLASS = 'min-w-0 w-full';
@@ -139,22 +151,20 @@ function QuickActionTypeToggle({
           <PackageMinus className="w-4 h-4 shrink-0" strokeWidth={1.75} />
         </button>
       </HintTooltip>
-      {!bulkMode && (
-        <HintTooltip tip="ปรับจำนวน">
-          <button
-            type="button"
-            onClick={() => setQuickType('ADJUST')}
-            aria-label="ปรับจำนวน"
-            aria-pressed={quickType === 'ADJUST'}
-            className={cn(
-              'flex-1 flex items-center justify-center h-full rounded-full transition-all duration-150',
-              quickType === 'ADJUST' ? INVENTORY_QUICK_ACTION_COLORS.adjust : INVENTORY_QUICK_ACTION_COLORS.inactive,
-            )}
-          >
-            <SlidersHorizontal className="w-4 h-4 shrink-0" strokeWidth={1.75} />
-          </button>
-        </HintTooltip>
-      )}
+      <HintTooltip tip="ปรับจำนวน">
+        <button
+          type="button"
+          onClick={() => setQuickType('ADJUST')}
+          aria-label="ปรับจำนวน"
+          aria-pressed={quickType === 'ADJUST'}
+          className={cn(
+            'flex-1 flex items-center justify-center h-full rounded-full transition-all duration-150',
+            quickType === 'ADJUST' ? INVENTORY_QUICK_ACTION_COLORS.adjust : INVENTORY_QUICK_ACTION_COLORS.inactive,
+          )}
+        >
+          <SlidersHorizontal className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+        </button>
+      </HintTooltip>
     </div>
   );
 }
@@ -281,6 +291,33 @@ function QuickActionSaveButton({
   );
 }
 
+function BackfillModeToggle({
+  backfillMode,
+  onBackfillModeChange,
+}: {
+  backfillMode: boolean;
+  onBackfillModeChange: (next: boolean) => void;
+}) {
+  return (
+    <HintTooltip tip={backfillMode ? 'ปิดโหมดลงย้อนหลัง' : 'ลงย้อนหลัง (เลือกวันที่)'}>
+      <button
+        type="button"
+        onClick={() => onBackfillModeChange(!backfillMode)}
+        aria-label={backfillMode ? 'ปิดโหมดลงย้อนหลัง' : 'ลงย้อนหลัง'}
+        aria-pressed={backfillMode}
+        className={cn(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all',
+          backfillMode
+            ? 'bb-pastel-surface bg-[#ffda66] border-[#f5cc4d] text-[#000000]'
+            : 'bg-background border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
+        )}
+      >
+        <Calendar className="w-4 h-4" strokeWidth={1.75} />
+      </button>
+    </HintTooltip>
+  );
+}
+
 function BulkModeToggle({
   bulkMode,
   onBulkModeChange,
@@ -343,7 +380,9 @@ function BulkQueuePanel({
   const rowTone =
     quickType === 'OUT'
       ? INVENTORY_QUICK_ACTION_COLORS.out
-      : INVENTORY_QUICK_ACTION_COLORS.in;
+      : quickType === 'ADJUST'
+        ? INVENTORY_QUICK_ACTION_COLORS.adjust
+        : INVENTORY_QUICK_ACTION_COLORS.in;
   if (bulkPreviews.length === 0) return null;
 
   return (
@@ -389,7 +428,7 @@ function BulkQueuePanel({
               value={line.qty}
               onChange={(e) => onBulkLineQtyChange?.(line.itemId, e.target.value)}
               onWheel={blurQtyInputOnWheel}
-              placeholder="จำนวน"
+              placeholder={quickType === 'ADJUST' ? 'ใหม่' : 'จำนวน'}
               aria-label={`จำนวน ${line.name}`}
               className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground text-center text-sm tabular-nums outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
@@ -432,7 +471,9 @@ function BulkSubmitConfirmDialog({
   const rowTone =
     bulkQuickType === 'OUT'
       ? INVENTORY_QUICK_ACTION_COLORS.out
-      : INVENTORY_QUICK_ACTION_COLORS.in;
+      : bulkQuickType === 'ADJUST'
+        ? INVENTORY_QUICK_ACTION_COLORS.adjust
+        : INVENTORY_QUICK_ACTION_COLORS.in;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
@@ -482,7 +523,7 @@ function BulkSubmitConfirmDialog({
                   </div>
                 </div>
                 <div className="shrink-0 text-sm font-normal tabular-nums text-foreground">
-                  {typeLabel} {formatBulkConfirmQty(line.qty)} {line.unit}
+                  {typeLabel} {formatBulkConfirmQty(line.qty, bulkQuickType)} {line.unit}
                 </div>
               </div>
             ))}
@@ -615,6 +656,16 @@ export function InventoryQuickActionBar({
   bulkQuickType = 'IN',
   onConfirmBulkSubmit,
   onCancelBulkSubmit,
+  backfillMode = false,
+  onBackfillModeChange,
+  showInOutGapWarning = false,
+  onDismissGapWarning,
+  transactionDateModalOpen = false,
+  transactionDate = '',
+  onTransactionDateChange,
+  transactionDateReason = 'backfill',
+  onConfirmTransactionDate,
+  onCancelTransactionDate,
 }: InventoryQuickActionBarProps) {
   const searchRootRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -813,6 +864,20 @@ export function InventoryQuickActionBar({
     <>
     <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border bb-shadow-sm', className)}>
       <form onSubmit={onSubmit} className="flex flex-col gap-2.5 w-full">
+        {showInOutGapWarning && onDismissGapWarning && (
+          <div
+            className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f5cc4d] bg-[#ffda66]/30 px-3 py-2 text-sm bb-pastel-surface text-[#000000]"
+          >
+            <span>ยังไม่มีบันทึกรับเข้า/นำออกวันก่อน — กดบันทึกเพื่อเลือกวันที่ของรายการ</span>
+            <button
+              type="button"
+              onClick={onDismissGapWarning}
+              className="shrink-0 rounded-lg border border-[#000000]/15 px-2 py-1 text-xs hover:bg-[#ffda66]/50"
+            >
+              ข้าม
+            </button>
+          </div>
+        )}
         <div
           className={cn(
             'flex flex-row flex-wrap sm:flex-nowrap items-center gap-2 w-full min-w-0 box-border',
@@ -827,6 +892,9 @@ export function InventoryQuickActionBar({
           >
             {onBulkModeChange && (
               <BulkModeToggle bulkMode={bulkMode} onBulkModeChange={onBulkModeChange} />
+            )}
+            {onBackfillModeChange && (
+              <BackfillModeToggle backfillMode={backfillMode} onBackfillModeChange={onBackfillModeChange} />
             )}
             <div
               ref={searchRootRef}
@@ -924,7 +992,7 @@ export function InventoryQuickActionBar({
               quickType={quickType}
               setQuickType={setQuickType}
               bulkMode={bulkMode}
-              className={cn('h-9', bulkMode ? 'w-[5rem]' : 'w-[6.25rem]')}
+              className={cn('h-9', bulkMode ? 'w-[7.25rem]' : 'w-[6.25rem]')}
             />
             <QuickActionSaveButton
               isQuickPending={isQuickPending}
@@ -1044,6 +1112,17 @@ export function InventoryQuickActionBar({
         isQuickPending={isQuickPending}
         onConfirm={onConfirmBulkSubmit}
         onCancel={onCancelBulkSubmit}
+      />
+    )}
+    {onConfirmTransactionDate && onCancelTransactionDate && onTransactionDateChange && (
+      <InventoryTransactionDateDialog
+        open={transactionDateModalOpen}
+        dateValue={transactionDate}
+        onDateChange={onTransactionDateChange}
+        reason={transactionDateReason}
+        isQuickPending={isQuickPending}
+        onConfirm={onConfirmTransactionDate}
+        onCancel={onCancelTransactionDate}
       />
     )}
     </>

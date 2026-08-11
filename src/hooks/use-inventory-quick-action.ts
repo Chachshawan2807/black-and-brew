@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  fetchInventoryInOutActivitySnapshot,
   recordBulkInventoryTransactions,
   recordTransaction,
   updateInventoryStock,
@@ -11,6 +12,15 @@ import type { InventoryNotificationSource } from '@/lib/inventory-notification-f
 import { filterInventoryQuickSearchItems } from '@/lib/inventory-quick-search-filter';
 import { filterInventoryQuickSearchAsync, shouldUseInventoryTableWorker } from '@/lib/inventory-table-worker-client';
 import { getQuickBadgeStyles } from '@/lib/inventory-stock';
+import {
+  bangkokDateStringToTransactionAt,
+  getBangkokTodayDateString,
+  getBangkokYesterdayDateString,
+  getDefaultTransactionDateString,
+  getGapDismissStorageKey,
+  isValidTransactionDateString,
+  shouldPromptTransactionDate,
+} from '@/lib/inventory-transaction-date';
 import { READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import {
   addBulkQueueItem,
@@ -39,6 +49,21 @@ import {
 } from '@/lib/inventory-quick-action-draft';
 
 type QuickType = QuickActionDraftType;
+
+type PendingSingleSubmit<T extends BulkStockItem> = {
+  kind: 'single';
+  item: T;
+  qty: number;
+  quickType: 'IN' | 'OUT';
+  previousStock: number;
+  optimisticStock: number;
+};
+
+type PendingBulkSubmit = { kind: 'bulk' };
+
+type PendingTransactionSubmit<T extends BulkStockItem> =
+  | PendingSingleSubmit<T>
+  | PendingBulkSubmit;
 
 type UseInventoryQuickActionOptions<T extends BulkStockItem> = {
   items: T[];
@@ -83,9 +108,19 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   const [bulkMode, setBulkMode] = useState(initialDraft.bulkMode);
   const [bulkQueue, setBulkQueue] = useState<BulkQueueItem[]>(initialDraft.bulkQueue);
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [backfillMode, setBackfillMode] = useState(false);
+  const [transactionDateModalOpen, setTransactionDateModalOpen] = useState(false);
+  const [transactionDate, setTransactionDate] = useState('');
+  const [transactionDateReason, setTransactionDateReason] = useState<'backfill' | 'gap'>('backfill');
+  const [pendingSubmit, setPendingSubmit] = useState<PendingTransactionSubmit<T> | null>(null);
+  const [hasYesterdayInOutGap, setHasYesterdayInOutGap] = useState(false);
+  const [gapWarningDismissed, setGapWarningDismissed] = useState(false);
+  const [yesterdayDate, setYesterdayDate] = useState('');
+  const [todayDate, setTodayDate] = useState('');
   const backgroundSyncRef = useRef(false);
 
-  const bulkQuickType: BulkQuickType = quickType === 'OUT' ? 'OUT' : 'IN';
+  const bulkQuickType: BulkQuickType =
+    quickType === 'OUT' ? 'OUT' : quickType === 'ADJUST' ? 'ADJUST' : 'IN';
 
   const setQuickTypeSafe = useCallback((type: QuickType) => {
     setQuickType(type);
@@ -101,7 +136,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     setBulkMode(next);
     setBulkConfirmOpen(false);
     if (next) {
-      setQuickType((prev) => (prev === 'OUT' ? 'OUT' : 'IN'));
+      setQuickType((prev) => (prev === 'OUT' || prev === 'ADJUST' ? prev : 'IN'));
       resetQuickEntryFields();
     } else {
       setBulkQueue([]);
@@ -118,6 +153,25 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       return JSON.stringify(prev) === JSON.stringify(hydrated) ? prev : hydrated;
     });
   }, [items, isItemsLoaded]);
+
+  useEffect(() => {
+    void fetchInventoryInOutActivitySnapshot().then((res) => {
+      if (!res.success || !res.data) return;
+      setTodayDate(res.data.todayDate);
+      setYesterdayDate(res.data.yesterdayDate);
+      if (!res.data.yesterdayHasInOut) {
+        setHasYesterdayInOutGap(true);
+        try {
+          const dismissed = localStorage.getItem(
+            getGapDismissStorageKey(res.data.yesterdayDate),
+          );
+          if (dismissed === '1') setGapWarningDismissed(true);
+        } catch {
+          /* private mode / disabled storage */
+        }
+      }
+    });
+  }, []);
 
   useEffect(() => {
     saveInventoryQuickActionDraft({
@@ -207,19 +261,56 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     }
     const result = addBulkQueueItem(bulkQueue, item);
     let newQueue = result.queue;
-    newQueue = setBulkLineQty(newQueue, item.id, qty);
+    const explicitQty = quickSearch.includes('=');
+    const lineQty =
+      quickType === 'ADJUST' && !explicitQty ? '' : qty;
+    newQueue = setBulkLineQty(newQueue, item.id, lineQty);
     
     setBulkQueue(newQueue);
     setQuickSearch('');
     setIsSearchFocused(true);
-  }, [items, quickSearch, bulkQueue]);
+  }, [items, quickSearch, bulkQueue, quickType]);
 
   const refreshHistoryIfOpen = useCallback(() => {
     if (!showHistoryModal || !onHistoryRefresh) return;
     void onHistoryRefresh();
   }, [showHistoryModal, onHistoryRefresh]);
 
-  const executeBulkSubmit = useCallback(async () => {
+  const getActiveGapWarning = useCallback(
+    () => hasYesterdayInOutGap && !gapWarningDismissed,
+    [hasYesterdayInOutGap, gapWarningDismissed],
+  );
+
+  const openTransactionDatePrompt = useCallback(
+    (pending: PendingTransactionSubmit<T>) => {
+      const today = todayDate || getBangkokTodayDateString();
+      const yesterday = yesterdayDate || getBangkokYesterdayDateString();
+      setTransactionDate(
+        getDefaultTransactionDateString({
+          backfillMode,
+          hasYesterdayInOutGap: getActiveGapWarning(),
+          today,
+          yesterday,
+        }),
+      );
+      setTransactionDateReason(backfillMode ? 'backfill' : 'gap');
+      setPendingSubmit(pending);
+      setTransactionDateModalOpen(true);
+    },
+    [backfillMode, getActiveGapWarning, todayDate, yesterdayDate],
+  );
+
+  const dismissGapWarning = useCallback(() => {
+    setGapWarningDismissed(true);
+    if (!yesterdayDate) return;
+    try {
+      localStorage.setItem(getGapDismissStorageKey(yesterdayDate), '1');
+    } catch {
+      /* ignore */
+    }
+  }, [yesterdayDate]);
+
+  const executeBulkSubmit = useCallback(async (transactionAt?: string) => {
     const queueSnapshot = bulkQueue;
     const payload = resolveBulkSubmitPayload(queueSnapshot, bulkQuickType);
     const optimisticUpdates = bulkPreviews
@@ -250,13 +341,40 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       onAfterSave?.(savedItem ? { id: savedItem.id, name: savedItem.name } : undefined);
       setIsQuickPending(false);
 
-      const res = await recordBulkInventoryTransactions(payload, 'Quick Entry - Bulk', {
-        clientSessionId: getClientSessionId(),
-        notificationSource,
-      });
+      const bulkNote =
+        bulkQuickType === 'ADJUST' ? 'Quick Entry - Bulk Adjust' : 'Quick Entry - Bulk';
 
-      const succeeded = res.results.filter((row) => row.success);
-      const failed = res.results.filter((row) => !row.success);
+      let succeeded: Array<{ itemId: string; newStock?: number }> = [];
+      let failed: Array<{ itemId: string; error?: string }> = [];
+
+      if (bulkQuickType === 'ADJUST') {
+        const results = await Promise.all(
+          payload.map(async (entry) => {
+            const result = await updateInventoryStock(entry.itemId, entry.quantity, bulkNote, {
+              clientSessionId: getClientSessionId(),
+              notificationSource,
+            });
+            return {
+              itemId: entry.itemId,
+              success: result.success,
+              newStock: result.newStock,
+              error: result.error,
+            };
+          }),
+        );
+        succeeded = results.filter((row) => row.success);
+        failed = results.filter((row) => !row.success);
+      } else {
+        const res = await recordBulkInventoryTransactions(payload, bulkNote, {
+          clientSessionId: getClientSessionId(),
+          notificationSource,
+          transactionAt,
+        });
+        succeeded = res.results.filter((row) => row.success);
+        failed = res.results.filter((row) => !row.success);
+      }
+
+      const resultCount = succeeded.length + failed.length;
 
       if (succeeded.length > 0) {
         setItems((prev) =>
@@ -283,7 +401,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
           setBulkQueue(restoredQueue);
         }
         alert(
-          `บันทึกสำเร็จ ${succeeded.length}/${res.results.length} — ${failed
+          `บันทึกสำเร็จ ${succeeded.length}/${resultCount} — ${failed
             .map((row) => {
               const name = items.find((item) => item.id === row.itemId)?.name ?? row.itemId;
               return `${name}: ${row.error ?? 'ล้มเหลว'}`;
@@ -310,6 +428,62 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     setItems,
   ]);
 
+  const executeSingleSubmit = useCallback(
+    async (pending: PendingSingleSubmit<T>, transactionAt?: string) => {
+      const { item, qty, quickType: txType, previousStock, optimisticStock } = pending;
+
+      backgroundSyncRef.current = true;
+      setIsQuickPending(true);
+      onBeforeSave?.();
+
+      setItems((prev) =>
+        prev.map((row) => (row.id === item.id ? { ...row, stock: optimisticStock } : row)),
+      );
+      resetQuickEntryFields();
+      clearInventoryQuickActionDraft();
+      onAfterSave?.({ id: item.id, name: item.name });
+      setIsQuickPending(false);
+
+      void (async () => {
+        try {
+          const res = await recordTransaction(item.id, txType, qty, 'Quick Entry', {
+            clientSessionId: getClientSessionId(),
+            notificationSource,
+            transactionAt,
+          });
+
+          if (!res.success) {
+            setItems((prev) =>
+              prev.map((row) => (row.id === item.id ? { ...row, stock: previousStock } : row)),
+            );
+            onSaveError?.();
+            alert(res.error);
+            return;
+          }
+
+          if (res.newStock != null && res.newStock !== optimisticStock) {
+            setItems((prev) =>
+              prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)),
+            );
+          }
+
+          refreshHistoryIfOpen();
+        } finally {
+          backgroundSyncRef.current = false;
+        }
+      })();
+    },
+    [
+      notificationSource,
+      onAfterSave,
+      onBeforeSave,
+      onSaveError,
+      refreshHistoryIfOpen,
+      resetQuickEntryFields,
+      setItems,
+    ],
+  );
+
   const confirmBulkSubmit = useCallback(() => {
     if (isReadOnly) {
       alert(READ_ONLY_DENY_MSG);
@@ -317,12 +491,74 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     }
     if (isQuickPending || !bulkSubmitReady) return;
     setBulkConfirmOpen(false);
+    if (
+      shouldPromptTransactionDate({
+        backfillMode,
+        hasYesterdayInOutGap: getActiveGapWarning(),
+        quickType: bulkQuickType,
+      })
+    ) {
+      openTransactionDatePrompt({ kind: 'bulk' });
+      return;
+    }
     void executeBulkSubmit();
-  }, [bulkSubmitReady, executeBulkSubmit, isQuickPending, isReadOnly]);
+  }, [
+    bulkSubmitReady,
+    executeBulkSubmit,
+    isQuickPending,
+    isReadOnly,
+    backfillMode,
+    getActiveGapWarning,
+    bulkQuickType,
+    openTransactionDatePrompt,
+  ]);
 
   const cancelBulkSubmit = useCallback(() => {
     setBulkConfirmOpen(false);
   }, []);
+
+  const confirmTransactionDate = useCallback(() => {
+    if (!pendingSubmit) return;
+    const today = todayDate || getBangkokTodayDateString();
+    if (!isValidTransactionDateString(transactionDate, today)) {
+      alert('กรุณาเลือกวันที่ที่ถูกต้อง (ไม่เกินวันนี้)');
+      return;
+    }
+
+    const transactionAt = bangkokDateStringToTransactionAt(transactionDate);
+    setTransactionDateModalOpen(false);
+    const pending = pendingSubmit;
+    setPendingSubmit(null);
+
+    if (yesterdayDate && transactionDate === yesterdayDate) {
+      setHasYesterdayInOutGap(false);
+      try {
+        localStorage.setItem(getGapDismissStorageKey(yesterdayDate), '1');
+      } catch {
+        /* ignore */
+      }
+    }
+
+    if (pending.kind === 'single') {
+      void executeSingleSubmit(pending, transactionAt);
+    } else {
+      void executeBulkSubmit(transactionAt);
+    }
+  }, [
+    pendingSubmit,
+    todayDate,
+    transactionDate,
+    yesterdayDate,
+    executeBulkSubmit,
+    executeSingleSubmit,
+  ]);
+
+  const cancelTransactionDate = useCallback(() => {
+    setTransactionDateModalOpen(false);
+    const wasBulk = pendingSubmit?.kind === 'bulk';
+    setPendingSubmit(null);
+    if (wasBulk) setBulkConfirmOpen(true);
+  }, [pendingSubmit]);
 
   const handleQuickSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -371,51 +607,75 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         return;
       }
 
-      backgroundSyncRef.current = true;
-      setIsQuickPending(true);
-      onBeforeSave?.();
+      if (quickType === 'ADJUST') {
+        backgroundSyncRef.current = true;
+        setIsQuickPending(true);
+        onBeforeSave?.();
 
-      setItems((prev) =>
-        prev.map((row) => (row.id === item.id ? { ...row, stock: optimisticStock } : row)),
-      );
-      resetQuickEntryFields();
-      clearInventoryQuickActionDraft();
-      onAfterSave?.({ id: item.id, name: item.name });
-      setIsQuickPending(false);
+        setItems((prev) =>
+          prev.map((row) => (row.id === item.id ? { ...row, stock: optimisticStock } : row)),
+        );
+        resetQuickEntryFields();
+        clearInventoryQuickActionDraft();
+        onAfterSave?.({ id: item.id, name: item.name });
+        setIsQuickPending(false);
 
-      void (async () => {
-        try {
-          const res =
-            quickType === 'ADJUST'
-              ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
-                  clientSessionId: getClientSessionId(),
-                  notificationSource,
-                })
-              : await recordTransaction(item.id, quickType, qty, 'Quick Entry', {
-                  clientSessionId: getClientSessionId(),
-                  notificationSource,
-                });
+        void (async () => {
+          try {
+            const res = await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
+              clientSessionId: getClientSessionId(),
+              notificationSource,
+            });
 
-          if (!res.success) {
-            setItems((prev) =>
-              prev.map((row) => (row.id === item.id ? { ...row, stock: previousStock } : row)),
-            );
-            onSaveError?.();
-            alert(res.error);
-            return;
+            if (!res.success) {
+              setItems((prev) =>
+                prev.map((row) => (row.id === item.id ? { ...row, stock: previousStock } : row)),
+              );
+              onSaveError?.();
+              alert(res.error);
+              return;
+            }
+
+            if (res.newStock != null && res.newStock !== optimisticStock) {
+              setItems((prev) =>
+                prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)),
+              );
+            }
+
+            refreshHistoryIfOpen();
+          } finally {
+            backgroundSyncRef.current = false;
           }
+        })();
+        return;
+      }
 
-          if (res.newStock != null && res.newStock !== optimisticStock) {
-            setItems((prev) =>
-              prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)),
-            );
-          }
+      if (
+        shouldPromptTransactionDate({
+          backfillMode,
+          hasYesterdayInOutGap: getActiveGapWarning(),
+          quickType,
+        })
+      ) {
+        openTransactionDatePrompt({
+          kind: 'single',
+          item,
+          qty,
+          quickType,
+          previousStock,
+          optimisticStock,
+        });
+        return;
+      }
 
-          refreshHistoryIfOpen();
-        } finally {
-          backgroundSyncRef.current = false;
-        }
-      })();
+      void executeSingleSubmit({
+        kind: 'single',
+        item,
+        qty,
+        quickType,
+        previousStock,
+        optimisticStock,
+      });
     },
     [
       isReadOnly,
@@ -426,13 +686,17 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       quickQty,
       items,
       quickType,
-      setItems,
+      backfillMode,
+      getActiveGapWarning,
+      openTransactionDatePrompt,
+      executeSingleSubmit,
+      notificationSource,
       onBeforeSave,
       onAfterSave,
       onSaveError,
       refreshHistoryIfOpen,
-      notificationSource,
       resetQuickEntryFields,
+      setItems,
     ],
   );
 
@@ -481,5 +745,15 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     },
     toBulkQueueItem,
     handleQuickSubmit,
+    backfillMode,
+    setBackfillMode,
+    transactionDateModalOpen,
+    transactionDate,
+    setTransactionDate,
+    transactionDateReason,
+    confirmTransactionDate,
+    cancelTransactionDate,
+    showInOutGapWarning: getActiveGapWarning(),
+    dismissGapWarning,
   };
 }

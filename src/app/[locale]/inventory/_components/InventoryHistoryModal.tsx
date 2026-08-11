@@ -31,6 +31,8 @@ export type TransactionHistoryRow = {
 
   created_at: string;
 
+  transaction_at?: string | null;
+
   type: InventoryTransactionType;
 
   quantity: number;
@@ -462,7 +464,7 @@ export function InventoryHistoryModal({
 
                         <td className="py-3.5 px-4 text-[14px] text-foreground/60 tabular-nums text-left whitespace-nowrap">
 
-                          {new Date(tx.created_at).toLocaleString('th-TH', {
+                          {new Date(tx.transaction_at ?? tx.created_at).toLocaleString('th-TH', {
 
                             dateStyle: 'short',
 

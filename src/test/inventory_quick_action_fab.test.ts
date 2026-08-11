@@ -263,7 +263,7 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
     expect(barCode).toContain('formatBulkConfirmQty');
-    expect(barCode).toMatch(/formatBulkConfirmQty\(\s*line\.qty\s*\)/);
+    expect(barCode).toMatch(/formatBulkConfirmQty\(\s*line\.qty\s*,\s*bulkQuickType\s*\)/);
     expect(barCode).not.toMatch(/\{typeLabel\} \{line\.qty\} \{line\.unit\}/);
   });
 

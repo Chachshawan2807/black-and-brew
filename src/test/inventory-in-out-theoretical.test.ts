@@ -59,4 +59,12 @@ describe('inventory-in-out-theoretical', () => {
     ];
     expect(computeInOutTheoreticalStock(rows)).toBe(10);
   });
+
+  test('sorts by transaction_at when backdated after created_at', () => {
+    const rows: InOutLedgerRow[] = [
+      { type: 'IN', quantity: 10, created_at: '2026-01-03T12:00:00Z', transaction_at: '2026-01-01T00:00:00Z' },
+      { type: 'OUT', quantity: 3, created_at: '2026-01-02T00:00:00Z', transaction_at: '2026-01-02T00:00:00Z' },
+    ];
+    expect(computeInOutTheoreticalStock(rows)).toBe(7);
+  });
 });

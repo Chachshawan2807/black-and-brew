@@ -30,6 +30,13 @@ import {
 } from '@/lib/inventory-frequent-items';
 import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
 import { resolveRecordedStockChange } from '@/lib/inventory-transaction-result';
+import {
+  getBangkokTodayDateString,
+  getBangkokYesterdayDateString,
+} from '@/lib/inventory-transaction-date';
+import { startOfDay } from 'date-fns';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { THAI_TIMEZONE } from '@/lib/timezone';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
@@ -63,6 +70,8 @@ type InventoryAuditOptions = {
   notificationSource?: InventoryNotificationSource;
   /** Client-known value before a field edit — avoids a pre-mutation SELECT on the critical path. */
   previousFieldValue?: string | number | null;
+  /** Business date for IN/OUT ledger rows (ISO UTC). */
+  transactionAt?: string;
 };
 
 type InventoryLifecycleType = 'ADD' | 'DELETE';
@@ -191,7 +200,8 @@ export async function recordTransaction(
       p_product_id: productId,
       p_type: type,
       p_quantity: quantity,
-      p_note: note
+      p_note: note,
+      p_transaction_at: auditOptions?.transactionAt ?? null,
     });
 
     if (error) {
@@ -310,6 +320,7 @@ export async function recordBulkInventoryTransactions(
             p_type: entry.type,
             p_quantity: entry.quantity,
             p_note: note,
+            p_transaction_at: auditOptions?.transactionAt ?? null,
           });
 
           if (error) {
@@ -807,6 +818,7 @@ type RawInventoryTransaction = {
   quantity: number;
   note: string | null;
   created_at: string;
+  transaction_at?: string | null;
   balance_after: number;
   inventory_items?: { name?: string } | null;
 };
@@ -830,7 +842,7 @@ function sanitizeHistorySearchQuery(query: string | undefined) {
 }
 
 const TRANSACTION_HISTORY_SELECT =
-  'id, inventory_item_id, type, quantity, note, created_at, balance_after, inventory_items(name)';
+  'id, inventory_item_id, type, quantity, note, created_at, transaction_at, balance_after, inventory_items(name)';
 
 async function fetchTransactionHistoryByItemName(options: {
   itemNameQuery: string;
@@ -1008,6 +1020,54 @@ export async function fetchTransactionHistory(
     const message = error instanceof Error ? error.message : String(error);
     console.error('[fetchTransactionHistory] Unexpected Error:', message);
     return { success: false, error: message || 'เกิดข้อผิดพลาดในการดึงประวัติ', data: [], hasMore: false };
+  }
+}
+
+// === FETCH IN/OUT ACTIVITY SNAPSHOT (gap warning) ===
+export async function fetchInventoryInOutActivitySnapshot() {
+  noStore();
+
+  const authError = await requireReadAccess();
+  if (authError) {
+    return { success: false, error: authError, data: null };
+  }
+
+  try {
+    const now = new Date();
+    const todayDate = getBangkokTodayDateString(now);
+    const yesterdayDate = getBangkokYesterdayDateString(now);
+    const [y, m, d] = yesterdayDate.split('-').map(Number);
+    const yesterdayBkk = new Date(y, m - 1, d);
+    const yesterdayStartUtc = fromZonedTime(startOfDay(yesterdayBkk), THAI_TIMEZONE).toISOString();
+    const todayStartUtc = fromZonedTime(
+      startOfDay(toZonedTime(now, THAI_TIMEZONE)),
+      THAI_TIMEZONE,
+    ).toISOString();
+
+    const { count, error } = await supabase
+      .from('inventory_transactions')
+      .select('id', { count: 'exact', head: true })
+      .in('type', ['IN', 'OUT'])
+      .gte('transaction_at', yesterdayStartUtc)
+      .lt('transaction_at', todayStartUtc);
+
+    if (error) {
+      console.error('[fetchInventoryInOutActivitySnapshot] Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message, data: null };
+    }
+
+    return {
+      success: true,
+      data: {
+        todayDate,
+        yesterdayDate,
+        yesterdayHasInOut: (count ?? 0) > 0,
+      },
+    };
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[fetchInventoryInOutActivitySnapshot] Unexpected Error:', message);
+    return { success: false, error: message, data: null };
   }
 }
 

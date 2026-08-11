@@ -116,7 +116,7 @@ export const TABLE_COLUMN_PRESETS: Record<AiReadableTable, string> = {
     'count_policy, sufficiency_order_qty, updated_at',
   inventory_config: 'id, settings',
   inventory_transactions:
-    'id, inventory_item_id, type, quantity, note, balance_after, created_at',
+    'id, inventory_item_id, type, quantity, note, balance_after, created_at, transaction_at',
   inventory_count_verifications:
     'id, inventory_item_id, counted_qty, system_stock_qty, matched, counted_at, created_at',
   service_records:
