@@ -77,7 +77,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toContain('InventoryQuickActionBar');
     expect(fabCode).toContain('overflow-y-auto');
     expect(fabCode).toContain('bb-smooth-scroll');
-    expect(fabCode).toContain('FAB_STACK_INNER_CLASS');
+    expect(fabCode).toContain('INVENTORY_QUICK_ACTION_COLORS.fab');
     expect(fabCode).toContain('FabFadePresence');
     expect(fabCode).toContain('<Package');
     expect(fabCode).not.toContain('PackagePlus');

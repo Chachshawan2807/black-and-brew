@@ -3,6 +3,7 @@ import {
   DAY_OFF_COLOR,
   getShiftColorClass,
   getShiftColorStyle,
+  INVENTORY_QUICK_ACTION_COLORS,
 } from '@/lib/shift-colors';
 
 describe('shift-colors presentation', () => {
@@ -48,5 +49,20 @@ describe('shift-colors presentation', () => {
 
   it('keeps day-off card using pink pastel class', () => {
     expect(DAY_OFF_COLOR).toContain('bg-[#f8d7da]');
+  });
+
+  it('uses distinct pastels for inventory secondary actions and FAB', () => {
+    expect(INVENTORY_QUICK_ACTION_COLORS.order).toContain('bg-[#d1ecf1]');
+    expect(INVENTORY_QUICK_ACTION_COLORS.addItem).toContain('bg-[#d4edda]');
+    expect(INVENTORY_QUICK_ACTION_COLORS.history).toContain('bg-[#f7f5e8]');
+    expect(INVENTORY_QUICK_ACTION_COLORS.fab).toContain('bg-[#fff3cd]');
+
+    const backgrounds = [
+      INVENTORY_QUICK_ACTION_COLORS.order,
+      INVENTORY_QUICK_ACTION_COLORS.addItem,
+      INVENTORY_QUICK_ACTION_COLORS.history,
+      INVENTORY_QUICK_ACTION_COLORS.fab,
+    ];
+    expect(new Set(backgrounds).size).toBe(4);
   });
 });

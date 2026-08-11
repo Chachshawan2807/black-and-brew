@@ -29,11 +29,12 @@ import { useInventoryHistory } from '@/hooks/use-inventory-history';
 import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import {
-  FAB_STACK_INNER_CLASS,
+  FAB_SIZE_CLASS,
   FAB_BOTTOM_QUICK_ACTION_CLASS,
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
   FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
 } from '@/lib/floating-action-layout';
+import { INVENTORY_QUICK_ACTION_COLORS, INVENTORY_QUICK_ACTION_HOVER } from '@/lib/shift-colors';
 import { blurActiveElement } from '@/lib/blur-active-element';
 import {
   getFabPanelKeyboardAwareStyle,
@@ -277,7 +278,12 @@ export default function InventoryQuickActionFAB() {
           <motion.button
             type="button"
             onClick={toggleQuickPanel}
-            className={FAB_STACK_INNER_CLASS}
+            className={cn(
+              'flex items-center justify-center rounded-full shadow-lg',
+              FAB_SIZE_CLASS,
+              INVENTORY_QUICK_ACTION_COLORS.fab,
+              INVENTORY_QUICK_ACTION_HOVER.fab,
+            )}
             whileHover={FAB_HOVER}
             whileTap={FAB_TAP}
             aria-label={isPanelRendered ? 'ปิด Quick Action' : 'เปิด Quick Action คลังสินค้า'}
@@ -298,7 +304,7 @@ export default function InventoryQuickActionFAB() {
                 {...fabIconOpen}
                 transition={fabIconOpen.transition}
               >
-                <Package size={18} className="text-white" strokeWidth={1.5} />
+                <Package size={18} strokeWidth={1.5} />
               </motion.span>
             )}
           </AnimatePresence>

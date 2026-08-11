@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuickBadgeStyles } from '@/lib/inventory-stock';
-import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
+import { INVENTORY_QUICK_ACTION_COLORS, INVENTORY_QUICK_ACTION_HOVER } from '@/lib/shift-colors';
 import { shouldShowQuickSearchSuggestions } from '@/lib/inventory-quick-search-filter';
 import {
   QUICK_SEARCH_NO_HIGHLIGHT,
@@ -537,7 +537,7 @@ function SecondaryQuickActionButtons({
         className={cn(
           'flex w-full items-center justify-center gap-1 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:bb-shadow-hover-md',
           INVENTORY_QUICK_ACTION_COLORS.order,
-          'hover:bg-[#bee5eb]/70',
+          INVENTORY_QUICK_ACTION_HOVER.order,
         )}
       >
         <ShoppingCart className="w-4 h-4 shrink-0" strokeWidth={1.5} />
@@ -554,7 +554,7 @@ function SecondaryQuickActionButtons({
         className={cn(
           'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:bb-shadow-hover-md',
           INVENTORY_QUICK_ACTION_COLORS.addItem,
-          'hover:bg-[#bee5eb]/70',
+          INVENTORY_QUICK_ACTION_HOVER.addItem,
         )}
       >
         <PlusCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
@@ -568,7 +568,7 @@ function SecondaryQuickActionButtons({
         className={cn(
           'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:bb-shadow-hover-md',
           INVENTORY_QUICK_ACTION_COLORS.history,
-          'hover:bg-[#bee5eb]/70',
+          INVENTORY_QUICK_ACTION_HOVER.history,
         )}
       >
         <History className="w-4 h-4 shrink-0" strokeWidth={1.5} />

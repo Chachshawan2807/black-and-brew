@@ -49,11 +49,23 @@ export const INVENTORY_QUICK_ACTION_COLORS = {
   in: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
   out: `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`,
   adjust: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
+  /** สั่งซื้อ — cyan (procurement / branch duty palette) */
   order: `${PASTEL} bg-[#d1ecf1] border border-[#bee5eb]`,
-  addItem: `${PASTEL} bg-[#d1ecf1] border border-[#bee5eb]`,
-  history: `${PASTEL} bg-[#d1ecf1] border border-[#bee5eb]`,
+  /** เพิ่มสินค้า — green (create / receive) */
+  addItem: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
+  /** ประวัติ — warm cream (neutral records) */
+  history: `${PASTEL} bg-[#f7f5e8] border border-[#e3dfd0]`,
+  /** ปรับสต็อกด่วน FAB — yellow (adjust / quick stock) */
+  fab: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
   toggleTrack: 'bg-muted/80 border border-border',
   inactive: 'text-muted-foreground hover:text-foreground',
+} as const;
+
+export const INVENTORY_QUICK_ACTION_HOVER = {
+  order: 'hover:bg-[#bee5eb]/70',
+  addItem: 'hover:bg-[#c3e6cb]/70',
+  history: 'hover:bg-[#e3dfd0]/70',
+  fab: 'hover:brightness-95',
 } as const;
 
 /** วันหยุด — โทนเดียวกับกะลา */
