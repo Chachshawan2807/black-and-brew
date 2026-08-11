@@ -227,6 +227,117 @@ describe('ScheduleClient regular holiday persistence', () => {
     expect(within(modal).getByDisplayValue('เลือกพนักงาน...')).toBeInTheDocument();
   });
 
+  test('renders holiday summary as a 3-column card grid on all viewports', async () => {
+    renderSchedule({
+      initialProfiles: [
+        { id: 'p1', full_name: 'นิด' },
+        { id: 'p2', full_name: 'แป้ง' },
+        { id: 'p3', full_name: 'มุก' },
+      ],
+      initialRegularHolidays: { p1: [1, 3], p2: [5], p3: [6, 0] },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
+
+    const modal = screen.getByRole('dialog', { name: 'จัดการวันหยุดประจำ' });
+    const grid = within(modal).getByTestId('regular-holiday-summary-grid');
+
+    expect(grid.className).toMatch(/grid-cols-3/);
+    expect(within(grid).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(grid).getByText('นิด')).toBeInTheDocument();
+    expect(within(grid).getByText('แป้ง')).toBeInTheDocument();
+    expect(within(grid).getByText('มุก')).toBeInTheDocument();
+  });
+
+  test('shows all weekly day buttons above the summary without burying the picker on mobile', async () => {
+    renderSchedule({
+      initialProfiles: [{ id: 'p1', full_name: 'นิด' }],
+      initialRegularHolidays: { p1: [1, 2, 0] },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
+    await selectHolidayEmployee('นิด');
+
+    const modal = screen.getByRole('dialog', { name: 'จัดการวันหยุดประจำ' });
+    const layout = within(modal).getByTestId('regular-holiday-modal-layout');
+    const dayPicker = within(modal).getByTestId('regular-holiday-day-picker');
+
+    expect(layout.className).toMatch(/\bflex-col\b/);
+    expect(layout.className).not.toMatch(/flex-col-reverse/);
+
+    for (const label of ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.']) {
+      expect(within(dayPicker).getByRole('button', { name: label })).toBeInTheDocument();
+    }
+
+    const summaryHeading = within(modal).getByRole('heading', { name: 'สรุปวันหยุดประจำของพนักงาน' });
+    expect(
+      dayPicker.compareDocumentPosition(summaryHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  test('uses an inner scroll region so holiday summary cards are reachable on mobile', async () => {
+    renderSchedule({
+      initialProfiles: [
+        { id: 'p1', full_name: 'นิด' },
+        { id: 'p2', full_name: 'แป้ง' },
+        { id: 'p3', full_name: 'มุก' },
+      ],
+      initialRegularHolidays: { p1: [1, 3], p2: [5], p3: [6, 0] },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
+
+    const modal = screen.getByRole('dialog', { name: 'จัดการวันหยุดประจำ' });
+    const body = within(modal).getByTestId('regular-holiday-modal-scroll');
+    const summaryScroll = within(modal).getByTestId('regular-holiday-summary-scroll');
+
+    expect(modal.className).toMatch(/overflow-hidden/);
+    expect(modal.className).toMatch(/flex-col/);
+    expect(modal.className).toMatch(/max-md:h-\[90dvh\]/);
+    expect(body.className).toMatch(/flex-1/);
+    expect(body.className).toMatch(/min-h-0/);
+    expect(body.className).toMatch(/max-md:overflow-hidden/);
+    expect(summaryScroll.className).toMatch(/flex-1/);
+    expect(summaryScroll.className).toMatch(/min-h-0/);
+    expect(summaryScroll.className).toMatch(/overflow-y-auto/);
+    expect(within(summaryScroll).getByTestId('regular-holiday-summary-grid')).toBeInTheDocument();
+  });
+
+  test('keeps summary cards scrollable on mobile after selecting an employee', async () => {
+    renderSchedule({
+      initialProfiles: [
+        { id: 'p1', full_name: 'นิด' },
+        { id: 'p2', full_name: 'แป้ง' },
+        { id: 'p3', full_name: 'มุก' },
+        { id: 'p4', full_name: 'เม' },
+        { id: 'p5', full_name: 'มีนา' },
+        { id: 'p6', full_name: 'ชัช' },
+      ],
+      initialRegularHolidays: {
+        p1: [1, 2, 0],
+        p2: [6, 0],
+        p3: [6, 0],
+        p4: [1, 2],
+        p5: [5, 6],
+        p6: [1, 2],
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
+    await selectHolidayEmployee('นิด');
+
+    const modal = screen.getByRole('dialog', { name: 'จัดการวันหยุดประจำ' });
+    const layout = within(modal).getByTestId('regular-holiday-modal-layout');
+    const summaryScroll = within(modal).getByTestId('regular-holiday-summary-scroll');
+
+    expect(layout.className).toMatch(/max-md:flex-1/);
+    expect(layout.className).toMatch(/max-md:min-h-0/);
+    expect(summaryScroll.className).toMatch(/flex-1/);
+    expect(summaryScroll.className).toMatch(/overflow-y-auto/);
+    expect(within(modal).getByTestId('regular-holiday-modal-footer')).toBeInTheDocument();
+    expect(within(summaryScroll).getByText('ชัช')).toBeInTheDocument();
+  });
+
   test('migrates cached recurring holidays into Supabase when the server is empty', async () => {
     localStorage.setItem('blackandbrew-regular-holidays', JSON.stringify({ p1: [1, 3] }));
 
@@ -243,6 +354,18 @@ describe('ScheduleClient regular holiday persistence', () => {
     expect(await screen.findByText('จ., พ.')).toBeInTheDocument();
   });
 
+  async function selectHolidayEmployee(name: string) {
+    const modal = screen.getByRole('dialog', { name: 'จัดการวันหยุดประจำ' });
+    fireEvent.click(within(modal).getByRole('button', { name: 'เลือกพนักงาน...' }));
+    fireEvent.click(await screen.findByRole('option', { name }));
+  }
+
+  function clickSaveHoliday() {
+    const modal = screen.getByRole('dialog', { name: 'จัดการวันหยุดประจำ' });
+    const footer = within(modal).getByTestId('regular-holiday-modal-footer');
+    fireEvent.click(within(footer).getByRole('button', { name: 'บันทึกข้อมูล' }));
+  }
+
   test('saves recurring holidays to the server and updates the cache after success', async () => {
     saveRegularHolidaysMock.mockResolvedValue({ success: true, data: [1, 3, 5] });
 
@@ -252,9 +375,9 @@ describe('ScheduleClient regular holiday persistence', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
-    fireEvent.change(screen.getByDisplayValue('เลือกพนักงาน...'), { target: { value: 'p1' } });
+    await selectHolidayEmployee('นิด');
     fireEvent.click(screen.getByRole('button', { name: 'ศ.' }));
-    fireEvent.click(screen.getByRole('button', { name: 'บันทึกข้อมูล' }));
+    clickSaveHoliday();
 
     expect(saveRegularHolidaysMock).toHaveBeenCalledWith('p1', [1, 3, 5]);
     expect(await screen.findByText('จ., พ., ศ.')).toBeInTheDocument();
@@ -270,9 +393,9 @@ describe('ScheduleClient regular holiday persistence', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'วันหยุดประจำ' }));
-    fireEvent.change(screen.getByDisplayValue('เลือกพนักงาน...'), { target: { value: 'p1' } });
+    await selectHolidayEmployee('นิด');
     fireEvent.click(screen.getByRole('button', { name: 'ศ.' }));
-    fireEvent.click(screen.getByRole('button', { name: 'บันทึกข้อมูล' }));
+    clickSaveHoliday();
 
     expect(saveRegularHolidaysMock).toHaveBeenCalledWith('p1', [1, 3, 5]);
     expect(await screen.findByText('จ., พ.')).toBeInTheDocument();

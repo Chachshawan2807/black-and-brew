@@ -1,24 +1,27 @@
 import { IBM_Plex_Sans_Thai, Inter, Prompt } from 'next/font/google';
 
+/** Latin fallback — loaded on demand only when Prompt/IBM Plex miss a glyph. */
 export const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400'],
   variable: '--font-inter',
   display: 'swap',
-  preload: true,
+  preload: false,
 });
 
+/** Primary UI font (Thai + Latin). Weights load via @font-face when used — no link preload. */
 export const prompt = Prompt({
   subsets: ['latin', 'thai'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600'],
   variable: '--font-prompt',
   display: 'swap',
-  preload: true,
+  preload: false,
 });
 
+/** Thai fallback before Inter — regular weight only. */
 export const ibmPlexSansThai = IBM_Plex_Sans_Thai({
   subsets: ['thai', 'latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400'],
   variable: '--font-ibm-plex-sans-thai',
   display: 'swap',
   preload: false,

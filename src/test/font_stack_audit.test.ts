@@ -58,6 +58,19 @@ describe('font stack audit', () => {
     expect(fonts).toContain('var(--font-prompt), var(--font-ibm-plex-sans-thai), var(--font-inter), system-ui, sans-serif');
   });
 
+  test('fonts.ts avoids eager preload of unused fallback weights', () => {
+    const fonts = fs.readFileSync(
+      path.resolve(__dirname, '../lib/fonts.ts'),
+      'utf-8'
+    );
+
+    expect(fonts).not.toContain('preload: true');
+    expect(fonts).not.toContain("'700'");
+    expect(fonts).toMatch(/export const inter = Inter\(\{[\s\S]*?weight: \['400'\]/);
+    expect(fonts).toMatch(/export const prompt = Prompt\(\{[\s\S]*?weight: \['400', '500', '600'\]/);
+    expect(fonts).toMatch(/export const ibmPlexSansThai = IBM_Plex_Sans_Thai\(\{[\s\S]*?weight: \['400'\]/);
+  });
+
   test('no component uses font-mono (system monospace breaks Prompt stack)', () => {
     const offenders: string[] = [];
 

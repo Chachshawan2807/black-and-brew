@@ -2029,137 +2029,186 @@ export default function ScheduleClient({
       <FadeModalScaffold
         open={showRegularHolidayModal}
         onClose={() => setShowRegularHolidayModal(false)}
-        zIndex={110}
+        zIndex={220}
         overlayClassName="bg-[#000000]/10 backdrop-blur-sm"
-        panelClassName="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-3xl md:max-w-3xl md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border"
+        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90dvh] max-md:h-[90dvh] min-h-0 overflow-hidden flex flex-col bg-card shadow-2xl md:max-w-3xl md:max-h-[90vh] text-foreground border border-border pb-[env(safe-area-inset-bottom,0px)]"
         aria-label="จัดการวันหยุดประจำ"
       >
-            <HintTooltip tip="ปิด">
-              <button onClick={() => setShowRegularHolidayModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
-                <X className="w-5 h-5" />
-              </button>
-            </HintTooltip>
-            <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
-            <h3 className="text-xl font-normal text-foreground mb-6 uppercase tracking-tight flex items-center gap-2 pr-10">
-              <Calendar className="w-5 h-5 text-foreground/40" />
-              จัดการวันหยุดประจำ
-            </h3>
-            
-            <div className="flex flex-col-reverse md:flex-row gap-6">
-              {/* Left Column: Form */}
-              <div className="flex flex-col w-full md:w-[260px] shrink-0">
-                <div className="flex-1 flex flex-col space-y-6">
-                  <div className="space-y-1.5">
-                    <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">พนักงาน</label>
-                    <RoundedSelect
-                      value={holidayFormEmployee}
-                      onChange={(e) => {
-                        setHolidayFormEmployee(e.target.value);
-                        setHolidayFormDays(regularHolidays[e.target.value] || []);
-                        setHolidaySaveSuccess(false);
-                      }}
-                      wrapperClassName="w-full"
-                    >
-                      <option value="">เลือกพนักงาน...</option>
-                      {profiles.map(p => (
-                        <option key={p.id} value={p.id}>{p.full_name}</option>
-                      ))}
-                    </RoundedSelect>
-                  </div>
-                  
-                  {holidayFormEmployee && (
-                    <div className="space-y-2.5">
-                      <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">เลือกวันหยุดประจำสัปดาห์</label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {[
-                          { id: 1, label: 'จ.' },
-                          { id: 2, label: 'อ.' },
-                          { id: 3, label: 'พ.' },
-                          { id: 4, label: 'พฤ.' },
-                          { id: 5, label: 'ศ.' },
-                          { id: 6, label: 'ส.' },
-                          { id: 0, label: 'อา.' },
-                        ].map(day => {
-                          const isSelected = holidayFormDays.includes(day.id);
-                          return (
-                            <button
-                              key={day.id}
-                              onClick={() => {
-                                setHolidayFormDays(prev => 
-                                  prev.includes(day.id) ? prev.filter(d => d !== day.id) : [...prev, day.id]
-                                );
-                                setHolidaySaveSuccess(false);
-                              }}
-                              className={`h-11 md:h-auto py-2 rounded-xl text-base md:text-[13px] font-normal transition-all cursor-pointer ${
-                                isSelected 
-                                  ? 'bg-[#000000] text-[#ffffff] shadow-md' 
-                                  : 'bg-card border border-border text-foreground hover:bg-muted/30'
-                              }`}
-                            >
-                              {day.label}
-                            </button>
-                          );
-                        })}
-                      </div>
+            <div className="shrink-0 px-6 pt-6">
+              <HintTooltip tip="ปิด">
+                <button onClick={() => setShowRegularHolidayModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
+                  <X className="w-5 h-5" />
+                </button>
+              </HintTooltip>
+              <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
+              <h3 className="text-xl font-normal text-foreground mb-4 uppercase tracking-tight flex items-center gap-2 pr-10">
+                <Calendar className="w-5 h-5 text-foreground/40" />
+                จัดการวันหยุดประจำ
+              </h3>
+            </div>
+
+            <div
+              data-testid="regular-holiday-modal-scroll"
+              className="flex flex-1 min-h-0 min-w-0 flex-col px-6 max-md:overflow-hidden md:overflow-y-auto md:bb-smooth-scroll md:bb-scroll-xy md:overscroll-y-contain md:pb-6"
+            >
+              <div
+                data-testid="regular-holiday-modal-layout"
+                className="flex flex-col md:flex-row gap-6 max-md:flex-1 max-md:min-h-0"
+              >
+                {/* Form first on mobile so day picker is not buried under the summary grid */}
+                <div className="flex flex-col w-full md:w-[260px] shrink-0">
+                  <div className="flex flex-col space-y-6">
+                    <div className="space-y-1.5">
+                      <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">พนักงาน</label>
+                      <RoundedSelect
+                        value={holidayFormEmployee}
+                        onChange={(e) => {
+                          setHolidayFormEmployee(e.target.value);
+                          setHolidayFormDays(regularHolidays[e.target.value] || []);
+                          setHolidaySaveSuccess(false);
+                        }}
+                        wrapperClassName="w-full"
+                      >
+                        <option value="">เลือกพนักงาน...</option>
+                        {profiles.map(p => (
+                          <option key={p.id} value={p.id}>{p.full_name}</option>
+                        ))}
+                      </RoundedSelect>
                     </div>
-                  )}
+                    
+                    {holidayFormEmployee && (
+                      <div className="space-y-2.5">
+                        <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">เลือกวันหยุดประจำสัปดาห์</label>
+                        <div
+                          data-testid="regular-holiday-day-picker"
+                          className="grid grid-cols-4 gap-2"
+                        >
+                          {[
+                            { id: 1, label: 'จ.' },
+                            { id: 2, label: 'อ.' },
+                            { id: 3, label: 'พ.' },
+                            { id: 4, label: 'พฤ.' },
+                            { id: 5, label: 'ศ.' },
+                            { id: 6, label: 'ส.' },
+                            { id: 0, label: 'อา.' },
+                          ].map(day => {
+                            const isSelected = holidayFormDays.includes(day.id);
+                            return (
+                              <button
+                                key={day.id}
+                                type="button"
+                                onClick={() => {
+                                  setHolidayFormDays(prev => 
+                                    prev.includes(day.id) ? prev.filter(d => d !== day.id) : [...prev, day.id]
+                                  );
+                                  setHolidaySaveSuccess(false);
+                                }}
+                                className={`h-11 md:h-auto py-2 rounded-xl text-base md:text-[13px] font-normal transition-all cursor-pointer ${
+                                  isSelected 
+                                    ? 'bg-[#000000] text-[#ffffff] shadow-md' 
+                                    : 'bg-card border border-border text-foreground hover:bg-muted/30'
+                                }`}
+                              >
+                                {day.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="hidden md:block pt-4 border-t border-border mt-6 space-y-3">
+                    {holidaySaveSuccess && (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 flex items-center justify-center gap-2 animate-in fade-in duration-300">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                        <span className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลสำเร็จนะคะ</span>
+                      </div>
+                    )}
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowRegularHolidayModal(false)}
+                        className="flex-1 h-11 md:h-auto md:py-3 text-foreground/60 font-normal hover:bg-muted/30 rounded-xl transition-all text-base md:text-sm cursor-pointer"
+                      >
+                        ปิดหน้าต่าง
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveRegularHolidays}
+                        disabled={!holidayFormEmployee}
+                        className="flex-1 h-11 md:h-auto md:py-3 bg-[#000000] text-[#ffffff] font-normal rounded-xl hover:bg-[#000000]/80 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm cursor-pointer"
+                      >
+                        บันทึกข้อมูล
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="pt-4 border-t border-border mt-6 space-y-3">
-                  {holidaySaveSuccess && (
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 flex items-center justify-center gap-2 animate-in fade-in duration-300">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                      <span className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลสำเร็จนะคะ</span>
-                    </div>
-                  )}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowRegularHolidayModal(false)}
-                      className="flex-1 h-11 md:h-auto md:py-3 text-foreground/60 font-normal hover:bg-muted/30 rounded-xl transition-all text-base md:text-sm cursor-pointer"
+                {/* Summary overview — 3-column cards; fills remaining height on mobile */}
+                <div className="flex flex-1 w-full min-w-0 min-h-0 flex-col overflow-hidden border border-border rounded-3xl p-4 bg-card/50">
+                  <h4 className="text-[14px] font-normal text-foreground mb-3 px-1 shrink-0">สรุปวันหยุดประจำของพนักงาน</h4>
+                  <div
+                    data-testid="regular-holiday-summary-scroll"
+                    className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll bb-scroll-xy overscroll-y-contain -mx-1 px-1"
+                  >
+                    <ul
+                      data-testid="regular-holiday-summary-grid"
+                      className="grid grid-cols-3 gap-2 list-none p-0 m-0"
                     >
-                      ปิดหน้าต่าง
-                    </button>
-                    <button
-                      onClick={handleSaveRegularHolidays}
-                      disabled={!holidayFormEmployee}
-                      className="flex-1 h-11 md:h-auto md:py-3 bg-[#000000] text-[#ffffff] font-normal rounded-xl hover:bg-[#000000]/80 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm cursor-pointer"
-                    >
-                      บันทึกข้อมูล
-                    </button>
+                      {profiles.map(p => {
+                        const days = regularHolidays[p.id] || [];
+                        if (days.length === 0) return null;
+                        const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+                        const sortedDays = [...days].sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b));
+
+                        return (
+                          <li
+                            key={p.id}
+                            className="min-w-0 flex flex-col gap-1 py-2.5 px-2.5 rounded-2xl border border-border bg-card"
+                          >
+                            <span className="text-[13px] font-normal text-foreground truncate">{p.full_name}</span>
+                            <span className="text-[12px] font-normal text-foreground/70 leading-snug break-words">
+                              {sortedDays.map(d => dayLabels[d]).join(', ')}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {profiles.every(p => (regularHolidays[p.id] || []).length === 0) && (
+                      <p className="text-[13px] text-foreground/50 px-1 py-2">ยังไม่มีการกำหนดวันหยุดประจำ</p>
+                    )}
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Summary overview — visible on all screen sizes */}
-              <div className="flex-1 w-full h-full border border-border rounded-3xl p-4 bg-card/50">
-                <h4 className="text-[14px] font-normal text-foreground mb-3 px-1">สรุปวันหยุดประจำของพนักงาน</h4>
-                <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-2 pb-2 border-b border-border text-[12px] text-foreground/60 uppercase tracking-widest px-1">
-                  <span>พนักงาน</span>
-                  <span>วันหยุดประจำ</span>
+            <div
+              data-testid="regular-holiday-modal-footer"
+              className="md:hidden shrink-0 border-t border-border px-6 py-4 space-y-3 bg-card"
+            >
+              {holidaySaveSuccess && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 flex items-center justify-center gap-2 animate-in fade-in duration-300">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                  <span className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลสำเร็จนะคะ</span>
                 </div>
-                <div className="space-y-2 md:space-y-0">
-                  {profiles.map(p => {
-                    const days = regularHolidays[p.id] || [];
-                    if (days.length === 0) return null;
-                    const dayLabels = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-                    const sortedDays = [...days].sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b));
-
-                    return (
-                      <div
-                        key={p.id}
-                        className="flex items-start justify-between gap-3 py-2.5 px-3 rounded-2xl border border-border bg-card md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] md:rounded-none md:border-0 md:border-b md:border-border md:bg-transparent md:px-1 md:py-2 md:hover:bg-muted/30 md:transition-colors"
-                      >
-                        <span className="text-[14px] md:text-[13px] font-normal text-foreground shrink-0">{p.full_name}</span>
-                        <span className="text-[13px] font-normal text-foreground/70 md:text-foreground text-right md:text-left">
-                          {sortedDays.map(d => dayLabels[d]).join(', ')}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {profiles.every(p => (regularHolidays[p.id] || []).length === 0) && (
-                    <p className="text-[13px] text-foreground/50 px-1 py-2">ยังไม่มีการกำหนดวันหยุดประจำ</p>
-                  )}
-                </div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowRegularHolidayModal(false)}
+                  className="flex-1 h-11 text-foreground/60 font-normal hover:bg-muted/30 rounded-xl transition-all text-base cursor-pointer"
+                >
+                  ปิดหน้าต่าง
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveRegularHolidays}
+                  disabled={!holidayFormEmployee}
+                  className="flex-1 h-11 bg-[#000000] text-[#ffffff] font-normal rounded-xl hover:bg-[#000000]/80 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 text-base cursor-pointer"
+                >
+                  บันทึกข้อมูล
+                </button>
               </div>
             </div>
       </FadeModalScaffold>
