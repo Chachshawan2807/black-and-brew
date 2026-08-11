@@ -81,6 +81,7 @@ import { shouldDeferOsNotificationToPush, refreshLocalPushSubscriptionState, wan
 import { isScheduleNotification, isSecurityNotification } from '@/lib/notification-display-icon';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { shouldReconnectRealtimeOnResume } from '@/lib/supabase-realtime-resume';
+import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
   const row = payload.new;
@@ -519,9 +520,19 @@ export function useInventoryNotifications() {
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    let teardownCancel: (() => void) | null = null;
     let retryCount = 0;
     let warnedUnavailable = false;
     const batcher = createBatchAccumulator((rows) => processRows(rows));
+
+    const stopChannel = (target = channel) => {
+      if (!target) return;
+      if (channel === target) channel = null;
+      teardownCancel?.();
+      teardownCancel = scheduleSupabaseChannelTeardown(target, {
+        shouldTeardown: () => channel !== target,
+      });
+    };
 
     const attachChangeLogListener = (
       targetChannel: ReturnType<typeof supabase.channel>,
@@ -559,8 +570,7 @@ export function useInventoryNotifications() {
       if (cancelled) return;
 
       if (channel) {
-        await supabase.removeChannel(channel);
-        channel = null;
+        stopChannel(channel);
         if (cancelled) return;
       }
 
@@ -571,7 +581,7 @@ export function useInventoryNotifications() {
       attachChangeLogListener(nextChannel, 'insights');
       attachChangeLogListener(nextChannel, 'security');
       if (cancelled) {
-        void supabase.removeChannel(nextChannel);
+        stopChannel(nextChannel);
         return;
       }
 
@@ -624,7 +634,9 @@ export function useInventoryNotifications() {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
       batcher.dispose();
-      if (channel) void supabase.removeChannel(channel);
+      teardownCancel?.();
+      teardownCancel = null;
+      stopChannel();
       window.removeEventListener('bb-notification-prefs-changed', onPrefsChange);
     };
   }, [realtimeReady, processRows, syncFromServerOnly, realtimeReconnectKey]);

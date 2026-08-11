@@ -1,11 +1,19 @@
 import React, { useEffect } from 'react';
 import { render, waitFor } from '@testing-library/react';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { InventoryRealtimeProvider, useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { supabase } from '@/lib/supabase';
 
 vi.mock('@/lib/supabase-session', () => ({
   ensureSupabaseSession: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock('@/lib/supabase-realtime-channel', () => ({
+  SUPABASE_REALTIME_TEARDOWN_DELAY_MS: 50,
+  scheduleSupabaseChannelTeardown: (channel: unknown) => {
+    void supabase.removeChannel(channel as never);
+    return () => {};
+  },
 }));
 
 function RealtimeSubscriber() {

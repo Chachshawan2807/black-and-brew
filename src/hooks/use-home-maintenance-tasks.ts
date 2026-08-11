@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 import { fetchHomeMaintenanceTasks } from '@/lib/maintenance/fetch-home-maintenance';
 import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';
 
@@ -30,6 +31,17 @@ export function useHomeMaintenanceTasks(initialTasks: UpcomingMaintenanceTask[])
   useEffect(() => {
     let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    let teardownCancel: (() => void) | null = null;
+
+    const stopChannel = () => {
+      if (!channel) return;
+      const activeChannel = channel;
+      channel = null;
+      teardownCancel?.();
+      teardownCancel = scheduleSupabaseChannelTeardown(activeChannel, {
+        shouldTeardown: () => channel === null,
+      });
+    };
 
     const refresh = async () => {
       try {
@@ -65,6 +77,11 @@ export function useHomeMaintenanceTasks(initialTasks: UpcomingMaintenanceTask[])
         )
         .subscribe();
 
+      if (cancelled) {
+        stopChannel();
+        return;
+      }
+
       // Soft navigations / stale RSC props: recompute once on mount.
       scheduleRefresh();
     })();
@@ -81,9 +98,9 @@ export function useHomeMaintenanceTasks(initialTasks: UpcomingMaintenanceTask[])
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
       }
-      if (channel) {
-        void supabase.removeChannel(channel);
-      }
+      teardownCancel?.();
+      teardownCancel = null;
+      stopChannel();
     };
   }, []);
 

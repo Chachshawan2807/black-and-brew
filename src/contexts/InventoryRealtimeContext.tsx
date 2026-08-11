@@ -14,6 +14,7 @@ import {
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 import { mergeInventoryRealtimeUpdate, type InventoryStockFields } from '@/lib/inventory-stock';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 
@@ -50,6 +51,7 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
   const subscribersRef = useRef<Set<InventoryChangeCallback>>(new Set());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const startChannelPromiseRef = useRef<Promise<void> | null>(null);
+  const teardownCancelRef = useRef<(() => void) | null>(null);
 
   const notifySubscribers = useCallback((payload: InventoryChangePayload) => {
     subscribersRef.current.forEach((cb) => cb(payload));
@@ -77,9 +79,14 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
   const stopRealtimeChannel = useCallback(() => {
     const channel = channelRef.current;
     channelRef.current = null;
+    teardownCancelRef.current?.();
+    teardownCancelRef.current = null;
 
     if (channel && typeof supabase.removeChannel === 'function') {
-      void supabase.removeChannel(channel);
+      teardownCancelRef.current = scheduleSupabaseChannelTeardown(channel, {
+        shouldTeardown: () =>
+          channelRef.current === null && subscribersRef.current.size === 0,
+      });
     }
   }, []);
 
@@ -91,6 +98,9 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
     if (channelRef.current || startChannelPromiseRef.current) {
       return;
     }
+
+    teardownCancelRef.current?.();
+    teardownCancelRef.current = null;
 
     startChannelPromiseRef.current = (async () => {
       await ensureSupabaseSession();

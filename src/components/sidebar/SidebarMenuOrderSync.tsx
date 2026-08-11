@@ -14,6 +14,7 @@ import {
 } from '@/lib/sidebar-menu-order-sync';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { supabase } from '@/lib/supabase';
+import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 
 type AppPreferencesRow = {
   branch_id: string;
@@ -113,6 +114,17 @@ export function SidebarMenuOrderSync() {
   useEffect(() => {
     let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
+    let teardownCancel: (() => void) | null = null;
+
+    const stopChannel = () => {
+      if (!channel) return;
+      const activeChannel = channel;
+      channel = null;
+      teardownCancel?.();
+      teardownCancel = scheduleSupabaseChannelTeardown(activeChannel, {
+        shouldTeardown: () => channel === null,
+      });
+    };
 
     const subscribe = async () => {
       await ensureSupabaseSession();
@@ -153,15 +165,19 @@ export function SidebarMenuOrderSync() {
           },
         )
         .subscribe();
+
+      if (cancelled) {
+        stopChannel();
+      }
     };
 
     void subscribe();
 
     return () => {
       cancelled = true;
-      if (channel) {
-        void supabase.removeChannel(channel);
-      }
+      teardownCancel?.();
+      teardownCancel = null;
+      stopChannel();
     };
   }, [setOrderIds]);
 

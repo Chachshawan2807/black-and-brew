@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
+import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 
 type Listener = () => void;
 
@@ -11,14 +12,11 @@ let profileListeners = new Set<Listener>();
 let channel: ReturnType<typeof supabase.channel> | null = null;
 let subscriberCount = 0;
 let channelStarting: Promise<void> | null = null;
-let teardownTimer: ReturnType<typeof setTimeout> | null = null;
-
-const SHIFT_CHANNEL_TEARDOWN_DELAY_MS = 50;
+let teardownCancel: (() => void) | null = null;
 
 function cancelSharedShiftChannelTeardown() {
-  if (!teardownTimer) return;
-  clearTimeout(teardownTimer);
-  teardownTimer = null;
+  teardownCancel?.();
+  teardownCancel = null;
 }
 
 async function ensureSharedShiftChannel() {
@@ -56,12 +54,11 @@ function teardownSharedShiftChannel() {
   if (subscriberCount > 0 || !channel) return;
 
   cancelSharedShiftChannelTeardown();
-  teardownTimer = setTimeout(() => {
-    teardownTimer = null;
-    if (subscriberCount > 0 || !channel) return;
-    void supabase.removeChannel(channel);
-    channel = null;
-  }, SHIFT_CHANNEL_TEARDOWN_DELAY_MS);
+  const activeChannel = channel;
+  teardownCancel = scheduleSupabaseChannelTeardown(activeChannel, {
+    shouldTeardown: () => subscriberCount === 0 && channel === activeChannel,
+  });
+  channel = null;
 }
 
 function createStableListener(getCurrent: () => Listener | undefined): Listener {
