@@ -5,6 +5,7 @@ import {
   isIosPwaInstallable,
   shouldShowPwaInstallOffer,
 } from '@/lib/pwa-install';
+import { PWA_KNOWN_IDB_NAMES } from '@/lib/pwa-install-reset';
 
 const ROOT = resolve(__dirname, '../..');
 
@@ -63,5 +64,26 @@ describe('pwa-install', () => {
       'utf-8',
     );
     expect(pinGateway).toContain('PwaInstallButton');
+  });
+});
+
+describe('pwa-install-reset', () => {
+  test('prepareFreshPwaInstall clears known IndexedDB stores', () => {
+    expect(PWA_KNOWN_IDB_NAMES).toContain('bb-notifications-v1');
+    expect(PWA_KNOWN_IDB_NAMES).toContain('bb-offline-mutations-v1');
+  });
+
+  test('prepareFreshPwaInstall is wired before the install prompt', () => {
+    const button = readFileSync(
+      resolve(ROOT, 'src/components/PwaInstallButton.tsx'),
+      'utf-8',
+    );
+    const reset = readFileSync(resolve(ROOT, 'src/lib/pwa-install-reset.ts'), 'utf-8');
+
+    expect(button).toContain('prepareFreshPwaInstall');
+    expect(button).toContain('กำลังเตรียมติดตั้งใหม่');
+    expect(reset).toContain('unregisterAllServiceWorkers');
+    expect(reset).toContain('deleteAllCacheStorage');
+    expect(reset).toContain('clearAuth');
   });
 });

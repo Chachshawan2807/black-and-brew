@@ -1,13 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
-import { Download, Share, SquarePlus, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Download, Loader2, Share, SquarePlus, X } from 'lucide-react';
 import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
+import { prepareFreshPwaInstall } from '@/lib/pwa-install-reset';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
 
 const COPY = {
   th: {
     install: 'ติดตั้งแอป',
+    preparing: 'กำลังเตรียมติดตั้งใหม่…',
     iosTitle: `ติดตั้ง ${PWA_DISPLAY_NAME}`,
     iosStep1: 'แตะปุ่ม แชร์',
     iosStep1Hint: 'ที่แถบด้านล่างของ Safari',
@@ -19,6 +21,7 @@ const COPY = {
   },
   en: {
     install: 'Install app',
+    preparing: 'Preparing fresh install…',
     iosTitle: `Install ${PWA_DISPLAY_NAME}`,
     iosStep1: 'Tap Share',
     iosStep1Hint: 'In the Safari toolbar at the bottom',
@@ -39,6 +42,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
   const t = COPY[locale];
   const { visible, mode, promptInstall } = usePwaInstall();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
 
   const openIosGuide = useCallback(() => {
     const dialog = dialogRef.current;
@@ -61,12 +65,21 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
 
   if (!visible) return null;
 
-  const handleInstall = () => {
-    if (mode === 'native') {
-      void promptInstall();
-      return;
+  const handleInstall = async () => {
+    if (isPreparing) return;
+
+    setIsPreparing(true);
+    try {
+      await prepareFreshPwaInstall();
+
+      if (mode === 'native') {
+        await promptInstall();
+        return;
+      }
+      openIosGuide();
+    } finally {
+      setIsPreparing(false);
     }
-    openIosGuide();
   };
 
   return (
@@ -74,12 +87,18 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
       <div className={className}>
         <button
           type="button"
-          onClick={handleInstall}
-          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/80 px-3.5 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm transition-colors hover:border-foreground/20 hover:text-foreground"
-          aria-label={t.install}
+          onClick={() => void handleInstall()}
+          disabled={isPreparing}
+          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/80 px-3.5 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm transition-colors hover:border-foreground/20 hover:text-foreground disabled:opacity-70"
+          aria-busy={isPreparing}
+          aria-label={isPreparing ? t.preparing : t.install}
         >
-          <Download size={14} strokeWidth={1.5} aria-hidden />
-          {t.install}
+          {isPreparing ? (
+            <Loader2 size={14} strokeWidth={1.5} className="animate-spin" aria-hidden />
+          ) : (
+            <Download size={14} strokeWidth={1.5} aria-hidden />
+          )}
+          {isPreparing ? t.preparing : t.install}
         </button>
       </div>
 

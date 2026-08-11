@@ -574,11 +574,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   if (isAuthenticated || isRestoringSession) {
     return (
       <AuthProvider isReadOnly={isReadOnly}>
-        {isAuthenticated ? (
-          <InventoryRealtimeProvider>{children}</InventoryRealtimeProvider>
-        ) : (
-          children
-        )}
+        <InventoryRealtimeProvider>{children}</InventoryRealtimeProvider>
       </AuthProvider>
     );
   }

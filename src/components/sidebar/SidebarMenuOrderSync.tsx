@@ -127,12 +127,25 @@ export function SidebarMenuOrderSync() {
     };
 
     const subscribe = async () => {
+      teardownCancel?.();
+      teardownCancel = null;
+
       await ensureSupabaseSession();
       if (cancelled) return;
 
       const branchId = resolveBranchId();
+      const channelName = `sidebar_menu_order_${branchId}`;
+      const topic = `realtime:${channelName}`;
+
+      for (const existing of supabase.getChannels()) {
+        if (existing.topic === topic) {
+          await supabase.removeChannel(existing);
+          if (cancelled) return;
+        }
+      }
+
       channel = supabase
-        .channel(`sidebar_menu_order_${branchId}`)
+        .channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -179,7 +192,7 @@ export function SidebarMenuOrderSync() {
       teardownCancel = null;
       stopChannel();
     };
-  }, [setOrderIds]);
+  }, []);
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
