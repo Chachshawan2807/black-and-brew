@@ -13,7 +13,7 @@ import {
   PIN_VERIFYING_LOCK_ANIMATE,
   pinVerifyingLockTransition,
 } from '@/lib/motion-presets';
-import { Lock, ShieldAlert, Loader2, Fingerprint } from 'lucide-react';
+import { Lock, ShieldAlert, Loader2, Fingerprint, ScanFace } from 'lucide-react';
 import { getAuthSessionInfo, verifyPin } from '@/app/actions/auth';
 import {
   clearClientAuthSession,
@@ -29,6 +29,13 @@ import {
   registerDevicePasskey,
   shouldOfferPasskeyEnrollment,
 } from '@/lib/passkey/client-flow';
+import {
+  detectBiometricKind,
+  getBiometricLabels,
+  resolveBiometricKind,
+  usesFaceBiometricIcon,
+  type BiometricKind,
+} from '@/lib/passkey/biometric-copy';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
 
@@ -44,13 +51,10 @@ const COPY = {
     wrongPin: (n: string) => `รหัส PIN ไม่ถูกต้อง (ครั้งที่ ${n}/5)`,
     biometricFailed: 'ยืนยันตัวตนไม่สำเร็จครบ 3 ครั้ง กรุณาใส่รหัส PIN แทน',
     or: 'หรือ',
-    biometricLogin: 'ใช้ลายนิ้วมือหรือใบหน้า',
     lockTitle: 'ถูกล็อกชั่วคราว',
     lockBody: 'ใส่รหัส PIN ผิดครบ 5 ครั้ง กรุณารอสักครู่แล้วลองใหม่',
     lockWait: 'กรุณารอสักครู่แล้วลองใหม่อีกครั้ง',
     enrollTitle: 'บันทึกเครื่องนี้',
-    enrollBody: 'ครั้งถัดไปเข้าสู่ระบบด้วยลายนิ้วมือหรือใบหน้าได้ โดยไม่ต้องพิมพ์รหัส PIN',
-    enrollAction: 'เปิดใช้ลายนิ้วมือหรือใบหน้า',
     enrollSkip: 'ข้ามไปก่อน',
   },
   en: {
@@ -61,13 +65,10 @@ const COPY = {
     wrongPin: (n: string) => `Incorrect PIN (attempt ${n}/5)`,
     biometricFailed: 'Biometric sign-in failed 3 times. Please enter your PIN instead.',
     or: 'or',
-    biometricLogin: 'Use fingerprint or face',
     lockTitle: 'Temporarily locked',
     lockBody: 'Too many incorrect PIN attempts. Please wait, then try again.',
     lockWait: 'Please wait and try again',
     enrollTitle: 'Save this device',
-    enrollBody: 'Next time, sign in with fingerprint or face — no PIN typing needed.',
-    enrollAction: 'Enable fingerprint or face',
     enrollSkip: 'Skip for now',
   },
 } as const;
@@ -76,6 +77,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   const params = useParams();
   const locale = params?.locale === 'en' ? 'en' : 'th';
   const t = COPY[locale];
+  const [biometricKind, setBiometricKind] = useState<BiometricKind>(() =>
+    detectBiometricKind()
+  );
+  const biometricLabels = getBiometricLabels(locale, biometricKind);
+  const BiometricIcon = usesFaceBiometricIcon(biometricKind) ? ScanFace : Fingerprint;
   const [isMounted, setIsMounted] = useState(false);
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
   const [hadClientSession, setHadClientSession] = useState(false);
@@ -162,15 +168,20 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
     let cancelled = false;
     const device = collectClientDeviceInfo();
 
-    void getBiometricAutoLoginReadiness(device.sessionFingerprint).then(readiness => {
+    void (async () => {
+      const [readiness, kind] = await Promise.all([
+        getBiometricAutoLoginReadiness(device.sessionFingerprint),
+        resolveBiometricKind(device.userAgent),
+      ]);
       if (cancelled) return;
+      setBiometricKind(kind);
       setBiometricSupported(readiness.supported);
       setBiometricCanAutoTrigger(readiness.canAutoTrigger);
       setDeviceHasPasskey(readiness.hasPasskey);
       if (!readiness.canAutoTrigger) {
         biometricAutoEnabledRef.current = false;
       }
-    });
+    })();
 
     return () => {
       cancelled = true;
@@ -526,7 +537,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           className="w-full max-w-sm flex flex-col items-center gap-6 text-center"
         >
           <div className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center bb-shadow-lg">
-            <Fingerprint size={32} strokeWidth={1.5} />
+            <BiometricIcon size={32} strokeWidth={1.5} />
           </div>
 
           <div className="space-y-2">
@@ -534,7 +545,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               {t.enrollTitle}
             </h1>
             <p className="text-sm font-normal text-muted-foreground leading-relaxed px-2">
-              {t.enrollBody}
+              {biometricLabels.enrollBody}
             </p>
           </div>
 
@@ -552,9 +563,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               {passkeyBusy ? (
                 <Loader2 size={18} className="animate-spin" />
               ) : (
-                <Fingerprint size={18} strokeWidth={1.5} />
+                <BiometricIcon size={18} strokeWidth={1.5} />
               )}
-              {t.enrollAction}
+              {biometricLabels.enrollAction}
             </button>
             <button
               type="button"
@@ -773,7 +784,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           </motion.p>
         ) : null}
 
-        {biometricSupported && !isVerifying ? (
+        {biometricSupported && deviceHasPasskey && !isVerifying ? (
           <div className="w-full max-w-[320px] flex flex-col items-center gap-2">
             <div className="w-full flex items-center gap-3 text-muted-foreground">
               <div className="h-px flex-1 bg-border" />
@@ -789,9 +800,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               {passkeyBusy ? (
                 <Loader2 size={18} className="animate-spin" strokeWidth={1.5} />
               ) : (
-                <Fingerprint size={18} strokeWidth={1.5} />
+                <BiometricIcon size={18} strokeWidth={1.5} />
               )}
-              {t.biometricLogin}
+              {biometricLabels.login}
             </button>
           </div>
         ) : null}

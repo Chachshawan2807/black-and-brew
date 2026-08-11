@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Fingerprint, Loader2 } from 'lucide-react';
+import { Fingerprint, Loader2, ScanFace } from 'lucide-react';
 import {
   getCurrentDevicePasskeyStatus,
   removePasskeyForCurrentDevice,
@@ -10,6 +10,13 @@ import {
   getBiometricLoginAvailability,
   registerDevicePasskey,
 } from '@/lib/passkey/client-flow';
+import {
+  detectBiometricKind,
+  getBiometricLabels,
+  resolveBiometricKind,
+  usesFaceBiometricIcon,
+  type BiometricKind,
+} from '@/lib/passkey/biometric-copy';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 
 interface PasskeyDeviceSectionProps {
@@ -83,6 +90,11 @@ function localizePasskeyError(error: string, isTh: boolean): string {
 
 export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionProps) {
   const isTh = locale === 'th';
+  const [biometricKind, setBiometricKind] = useState<BiometricKind>(() =>
+    detectBiometricKind()
+  );
+  const biometricLabels = getBiometricLabels(isTh ? 'th' : 'en', biometricKind);
+  const BiometricIcon = usesFaceBiometricIcon(biometricKind) ? ScanFace : Fingerprint;
   const [supported, setSupported] = useState(false);
   const [enrolled, setEnrolled] = useState(false);
   const [deviceLabel, setDeviceLabel] = useState<string | null>(null);
@@ -93,7 +105,12 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
 
   const loadStatus = useCallback(async () => {
     setLoading(true);
-    const biometric = await getBiometricLoginAvailability();
+    const device = collectClientDeviceInfo();
+    const [biometric, kind] = await Promise.all([
+      getBiometricLoginAvailability(),
+      resolveBiometricKind(device.userAgent),
+    ]);
+    setBiometricKind(kind);
     const platformOk = biometric.hasPlatformAuthenticator;
     setSupported(platformOk);
     if (!platformOk) {
@@ -124,11 +141,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
         setError(localizePasskeyError(result.error, isTh));
         return;
       }
-      setMessage(
-        isTh
-          ? 'บันทึกเครื่องนี้ด้วยลายนิ้วมือ/ใบหน้าเรียบร้อยแล้ว'
-          : 'Biometric login enabled on this device'
-      );
+      setMessage(biometricLabels.settingsEnabled);
       await loadStatus();
     } finally {
       setBusy(false);
@@ -146,7 +159,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
         return;
       }
       setMessage(
-        isTh ? 'ลบการเข้าด้วยลายนิ้วมือบนเครื่องนี้แล้ว' : 'Biometric login removed on this device'
+        isTh ? 'ลบการเข้าด้วยยืนยันตัวตนแบบไบโอเมตริกบนเครื่องนี้แล้ว' : 'Biometric login removed on this device'
       );
       await loadStatus();
     } finally {
@@ -163,9 +176,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
   if (!supported) {
     return (
       <p className="text-[13px] text-muted-foreground font-normal leading-relaxed">
-        {isTh
-          ? 'อุปกรณ์นี้ยังไม่รองรับลายนิ้วมือหรือใบหน้า — ใช้ PIN ได้ตามปกติ'
-          : 'This device does not support biometrics — you can still use a PIN.'}
+        {biometricLabels.settingsUnsupported}
       </p>
     );
   }
@@ -173,17 +184,15 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
   return (
     <div className="space-y-3">
       <p className="text-[13px] text-muted-foreground font-normal leading-relaxed">
-        {isTh
-          ? 'ใช้ลายนิ้วมือหรือใบหน้าแทนการพิมพ์ PIN บนเครื่องที่ไว้ใจ'
-          : 'Use fingerprint or face instead of a PIN on trusted devices'}
+        {biometricLabels.settingsBody}
       </p>
 
       {enrolled ? (
         <div className="rounded-2xl border border-border bg-card px-4 py-3 flex items-start gap-3">
-          <Fingerprint size={18} strokeWidth={1.5} className="text-foreground mt-0.5 shrink-0" />
+          <BiometricIcon size={18} strokeWidth={1.5} className="text-foreground mt-0.5 shrink-0" />
           <div className="min-w-0">
             <p className="text-[13px] text-foreground font-normal">
-              {isTh ? 'เปิดใช้งานแล้วบนเครื่องนี้' : 'Enabled on this device'}
+              {biometricLabels.settingsEnabled}
             </p>
             {deviceLabel ? (
               <p className="text-[12px] text-muted-foreground mt-0.5 truncate">{deviceLabel}</p>
@@ -205,7 +214,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
             disabled={busy}
             className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-[13px] text-foreground font-normal disabled:opacity-60"
           >
-            {busy ? <Loader2 size={16} className="animate-spin" /> : <Fingerprint size={16} />}
+            {busy ? <Loader2 size={16} className="animate-spin" /> : <BiometricIcon size={16} />}
             {isTh ? 'บันทึกเครื่องนี้' : 'Save this device'}
           </button>
         ) : (
@@ -216,7 +225,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
             className="inline-flex items-center gap-2 rounded-2xl border border-border px-4 py-2.5 text-[13px] text-muted-foreground font-normal disabled:opacity-60"
           >
             {busy ? <Loader2 size={16} className="animate-spin" /> : null}
-            {isTh ? 'ลบการเข้าด้วยลายนิ้วมือ' : 'Remove biometric login'}
+            {isTh ? 'ลบการเข้าด้วยยืนยันตัวตนแบบไบโอเมตริก' : 'Remove biometric login'}
           </button>
         )}
       </div>

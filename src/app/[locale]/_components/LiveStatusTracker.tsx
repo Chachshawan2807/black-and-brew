@@ -139,7 +139,6 @@ interface StatusGridProps {
   profiles: Profile[];
   shifts: Shift[];
   dateLabel?: string;
-  highlightToday?: boolean;
   dashboard?: boolean;
 }
 
@@ -147,7 +146,6 @@ function StatusGrid({
   profiles,
   shifts,
   dateLabel,
-  highlightToday = false,
   dashboard = false,
 }: StatusGridProps) {
   const sortedProfiles = sortProfiles(profiles, shifts);
@@ -161,7 +159,7 @@ function StatusGrid({
       )}
     >
       {sortedProfiles.map((profile) => {
-        const { displayText, colorClass, colorStyle, isWorkShift } = getEmployeeStatus(profile, shifts);
+        const { displayText, colorClass, colorStyle } = getEmployeeStatus(profile, shifts);
         const ShiftIcon = getShiftIcon(displayText);
 
         return (
@@ -174,7 +172,7 @@ function StatusGrid({
               dashboard
                 ? 'w-full h-full min-h-[5.75rem] p-4 gap-2.5'
                 : 'w-[7.25rem] shrink-0 p-3 min-h-[4.75rem] gap-2',
-              highlightToday && isWorkShift ? 'ring-2 ring-border bb-shadow-sm' : 'bb-shadow-sm',
+              'bb-shadow-sm',
             )}
             style={colorStyle}
           >
@@ -213,7 +211,6 @@ interface StatusSectionProps {
   profiles: Profile[];
   shifts: Shift[];
   dateLabel?: string;
-  highlightToday?: boolean;
   dashboard?: boolean;
 }
 
@@ -224,7 +221,6 @@ function StatusSection({
   profiles,
   shifts,
   dateLabel,
-  highlightToday,
   dashboard = false,
 }: StatusSectionProps) {
   const coffeeShopStaffCount = countFohCoffeeStaff(profiles, shifts, getClientShiftTypes());
@@ -282,7 +278,6 @@ function StatusSection({
           profiles={profiles}
           shifts={shifts}
           dateLabel={dateLabel}
-          highlightToday={highlightToday}
           dashboard={dashboard}
         />
       </div>
@@ -374,7 +369,6 @@ export default function LiveStatusTracker({
         profiles={profiles}
         shifts={shifts}
         dateLabel={currentThaiDate}
-        highlightToday
         dashboard={isDashboard}
       />
 

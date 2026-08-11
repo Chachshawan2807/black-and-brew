@@ -21,6 +21,7 @@ import type { ClientDevicePayload } from '@/lib/login-history-types';
 import { parseUserAgent } from '@/lib/parse-user-agent';
 import { consumePasskeyChallenge, storePasskeyChallenge } from '@/lib/passkey/challenge-cookie';
 import { fingerprintToPasskeyUserId } from '@/lib/passkey/passkey-user-id';
+import { platformPasskeyTransports } from '@/lib/passkey/biometric-copy';
 import { resolveWebAuthnContext } from '@/lib/passkey/webauthn-origin';
 import { clearSessionRevocation, isSessionFingerprintRevoked } from '@/lib/session-revocation';
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
@@ -142,7 +143,7 @@ export async function getPasskeyRegistrationOptions(
       attestationType: 'none',
       excludeCredentials: existing.map((row) => ({
         id: row.credential_id,
-        transports: row.transports as AuthenticatorTransport[],
+        transports: platformPasskeyTransports(row.transports),
       })),
       authenticatorSelection: {
         authenticatorAttachment: 'platform',
@@ -208,7 +209,7 @@ export async function verifyPasskeyRegistration(
         credential_id: credential.id,
         public_key: Buffer.from(credential.publicKey).toString('base64url'),
         counter: credential.counter,
-        transports: credential.transports ?? [],
+        transports: platformPasskeyTransports(credential.transports),
         device_label: deviceLabelFromPayload(safeDevice),
         session_fingerprint: safeDevice.sessionFingerprint,
         access_level: session.readOnly ? 'read_only' : 'full',
@@ -246,7 +247,7 @@ export async function getPasskeyLoginOptions(
       const existing = await fetchPasskeysForFingerprint(fingerprint);
       allowCredentials = existing.map((row) => ({
         id: row.credential_id,
-        transports: row.transports as AuthenticatorTransport[],
+        transports: platformPasskeyTransports(row.transports),
       }));
     }
 

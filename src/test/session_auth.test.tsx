@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect, test, describe, vi, beforeEach } from 'vitest';
 import PinGateway from '@/components/auth/PinGateway';
+import { getBiometricLabels } from '@/lib/passkey/biometric-copy';
 import {
   getBiometricAutoLoginReadiness,
   loginWithDevicePasskey,
@@ -259,8 +260,8 @@ describe('PinGateway Persistent Authentication', () => {
 
     expect(await screen.findByLabelText('รหัส PIN 6 หลัก')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'ใช้ลายนิ้วมือหรือใบหน้า' })
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: getBiometricLabels('th').login })
+    ).not.toBeInTheDocument();
   });
 
   test('should stop after 3 manual biometric failures and let manual button reset attempts', async () => {
@@ -268,7 +269,7 @@ describe('PinGateway Persistent Authentication', () => {
       supported: true,
       canAutoTrigger: false,
       hasPlatformAuthenticator: false,
-      hasPasskey: false,
+      hasPasskey: true,
     });
     vi.mocked(loginWithDevicePasskey).mockResolvedValue({
       success: false,
@@ -281,7 +282,9 @@ describe('PinGateway Persistent Authentication', () => {
       </PinGateway>
     );
 
-    const button = await screen.findByRole('button', { name: 'ใช้ลายนิ้วมือหรือใบหน้า' });
+    const button = await screen.findByRole('button', {
+      name: getBiometricLabels('th').login,
+    });
     fireEvent.click(button);
     await waitFor(() => {
       expect(loginWithDevicePasskey).toHaveBeenCalledTimes(1);
@@ -323,7 +326,7 @@ describe('PinGateway Persistent Authentication', () => {
     });
 
     const enrollButton = await screen.findByRole('button', {
-      name: 'เปิดใช้ลายนิ้วมือหรือใบหน้า',
+      name: getBiometricLabels('th').enrollAction,
     });
     fireEvent.click(enrollButton);
 
@@ -337,7 +340,7 @@ describe('PinGateway Persistent Authentication', () => {
       supported: true,
       canAutoTrigger: false,
       hasPlatformAuthenticator: false,
-      hasPasskey: false,
+      hasPasskey: true,
     });
 
     render(
@@ -347,7 +350,7 @@ describe('PinGateway Persistent Authentication', () => {
     );
 
     expect(
-      await screen.findByRole('button', { name: 'ใช้ลายนิ้วมือหรือใบหน้า' })
+      await screen.findByRole('button', { name: getBiometricLabels('th').login })
     ).toBeInTheDocument();
     expect(loginWithDevicePasskey).not.toHaveBeenCalled();
   });

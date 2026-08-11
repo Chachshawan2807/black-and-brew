@@ -1,6 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
+import {
+  detectBiometricKind,
+  getBiometricLabels,
+  resolveBiometricKind,
+  type BiometricKind,
+} from '@/lib/passkey/biometric-copy';
 import NotificationPreferencesSection from './NotificationPreferencesSection';
 import SettingsLazyCollapsibleSection from './SettingsLazyCollapsibleSection';
 
@@ -11,6 +18,21 @@ interface SettingsPageSectionsProps {
 
 export function SettingsPageSections({ locale, isTh }: SettingsPageSectionsProps) {
   const loadingLabel = isTh ? 'กำลังโหลด...' : 'Loading…';
+  const biometricLocale = isTh ? 'th' : 'en';
+  const [biometricKind, setBiometricKind] = useState<BiometricKind>(() =>
+    detectBiometricKind()
+  );
+  const biometricLabels = getBiometricLabels(biometricLocale, biometricKind);
+
+  useEffect(() => {
+    let cancelled = false;
+    void resolveBiometricKind().then((kind) => {
+      if (!cancelled) setBiometricKind(kind);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -51,7 +73,7 @@ export function SettingsPageSections({ locale, isTh }: SettingsPageSectionsProps
 
       <SettingsLazyCollapsibleSection
         icon="fingerprint"
-        title={isTh ? 'เข้าด้วยลายนิ้วมือ / ใบหน้า' : 'Biometric login'}
+        title={biometricLabels.settingsTitle}
         description={isTh ? 'เข้าสู่ระบบเร็วขึ้นโดยไม่ต้องพิมพ์ PIN' : 'Sign in faster without typing a PIN'}
         locale={locale}
         loadingLabel={loadingLabel}
