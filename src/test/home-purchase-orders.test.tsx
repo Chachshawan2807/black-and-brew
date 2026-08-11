@@ -114,4 +114,26 @@ describe('HomePurchaseOrdersSection', () => {
     expect(screen.getByRole('button', { name: /Makro/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Tops/i })).toBeInTheDocument();
   });
+
+  test('keeps space between source filter capsules and horizontal scrollbar', () => {
+    renderSection([
+      ...lowStockItems,
+      {
+        id: '3',
+        name: 'แก้ว',
+        stock: 0,
+        order_point: 5,
+        target_stock: 10,
+        unit: 'ใบ',
+        source: 'Tops',
+        sort_order: 3,
+      },
+    ]);
+
+    const allButton = screen.getByRole('button', { name: /ทั้งหมด/i });
+    const scroller = allButton.closest('.overflow-x-auto');
+    expect(scroller).toBeTruthy();
+    expect(scroller?.className).toMatch(/\bpb-(?:2\.5|3|3\.5|4)\b/);
+    expect(scroller?.className).toMatch(/scrollbar-none|scrollbar-width:none|\[::-webkit-scrollbar\]:hidden/);
+  });
 });

@@ -177,11 +177,11 @@ export default function HomePurchaseOrdersSection({
       {itemsToOrder.length > 0 && poSources.length > 0 && (
         <div
           className={cn(
-            'mb-4 -mx-1 px-1 overflow-x-auto bb-smooth-scroll scrollbar-hide shrink-0',
+            'mb-4 -mx-1 px-1 overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y shrink-0 pb-3 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
             isDashboard && 'md:mb-2.5',
           )}
         >
-          <div className="flex flex-nowrap gap-2 min-w-min pb-1">
+          <div className="flex flex-nowrap gap-2 min-w-min">
             <button
               type="button"
               onClick={() => setSelectedChannels(['all'])}

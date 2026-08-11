@@ -100,6 +100,15 @@ describe('HomeOpsPanels', () => {
       screen.getAllByRole('heading', { name: 'รายการซ่อมบำรุงที่ต้องทำภายใน 1 เดือน' }).length,
     ).toBeGreaterThanOrEqual(1);
   });
+
+  test('keeps space between mobile ops tabs and content card', () => {
+    renderOpsPanels();
+
+    const tablist = screen.getByRole('tablist', {
+      name: 'สลับระหว่างรายการสั่งซื้อและซ่อมบำรุง',
+    });
+    expect(tablist.className).toMatch(/\bmb-(?:3|3\.5|4|5)\b/);
+  });
 });
 
 describe('HomeMaintenanceDueSection', () => {

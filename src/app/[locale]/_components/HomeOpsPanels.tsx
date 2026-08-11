@@ -64,7 +64,7 @@ export default function HomeOpsPanels({
       <div
         role="tablist"
         aria-label="สลับระหว่างรายการสั่งซื้อและซ่อมบำรุง"
-        className="md:hidden flex gap-2 shrink-0"
+        className="md:hidden flex gap-2 shrink-0 mb-3"
       >
         <button
           type="button"
