@@ -52,6 +52,13 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    prefetch: vi.fn(),
+    push: vi.fn(),
+  }),
+}));
+
 describe('bean orders mobile navigation reliability', () => {
   test('BeanOrdersClient reflects updated initialOrders after soft navigation refresh', () => {
     const { rerender } = render(
@@ -82,6 +89,33 @@ describe('bean orders mobile navigation reliability', () => {
       /if \(viewTransitionEnabled && isMaxMd === false && !reduced\)/,
     );
     expect(pageTransition).toContain('const isViewportUnknown = isMaxMd === null');
+  });
+
+  test('mobile page transition avoids pathname remount and opacity-0 enter flash', () => {
+    const pageTransition = readSrc('components/ui/page-transition.tsx');
+    const mobileBranch = pageTransition.match(
+      /if \(useLightTransition \|\| isViewportUnknown\)[\s\S]*?return <div className="min-h-0">\{children\}<\/div>/,
+    );
+    expect(mobileBranch?.[0]).toBeTruthy();
+    expect(pageTransition).not.toMatch(
+      /useLightTransition[\s\S]*key=\{pathname\}[\s\S]*animate-page-enter/,
+    );
+  });
+
+  test('bean order list warms RSC payload via router prefetch on intent', () => {
+    const listItem = readSrc('app/[locale]/bean-orders/_components/BeanOrderListItem.tsx');
+    expect(listItem).toContain('warmRouteNavigation');
+    expect(listItem).toContain('router.prefetch');
+    const listClient = readSrc('app/[locale]/bean-orders/BeanOrdersClient.tsx');
+    expect(listClient).toContain('warmRouteNavigation');
+    expect(listClient).toContain('router.prefetch');
+  });
+
+  test('instant nav bridge prefetches route payload on pointer down', () => {
+    const nav = readSrc('components/shell/ViewTransitionNavigation.tsx');
+    expect(nav).toContain("addEventListener('pointerdown', onPointerDown, true)");
+    expect(nav).toContain('warmRouteNavigation');
+    expect(nav).toContain('router.prefetch');
   });
 
   test('bean order list item warms detail route on primary pointer down', () => {

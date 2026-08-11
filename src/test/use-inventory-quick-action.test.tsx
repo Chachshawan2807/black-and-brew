@@ -190,7 +190,7 @@ describe('useInventoryQuickAction save reset behavior', () => {
     );
   });
 
-  test('keeps quick submit pending until the server action settles', async () => {
+  test('completes quick save UI before server action settles', async () => {
     let resolveSave: (value: { success: true; newStock: number }) => void = () => {};
     vi.mocked(recordTransaction).mockReturnValue(
       new Promise((resolve) => {
@@ -203,13 +203,12 @@ describe('useInventoryQuickAction save reset behavior', () => {
     fireEvent.click(screen.getByText('fill-normal-in'));
     fireEvent.click(screen.getByText('save'));
 
-    await waitFor(() => expect(recordTransaction).toHaveBeenCalledTimes(1));
-    expect(screen.getByTestId('quick-pending')).toHaveTextContent('true');
+    await waitFor(() => expect(screen.getByTestId('quick-search')).toHaveTextContent(''));
+    expect(screen.getByTestId('quick-pending')).toHaveTextContent('false');
 
     resolveSave({ success: true, newStock: 7 });
 
-    await waitFor(() => expect(screen.getByTestId('quick-pending')).toHaveTextContent('false'));
-    expect(screen.getByTestId('quick-search')).toHaveTextContent('');
+    await waitFor(() => expect(recordTransaction).toHaveBeenCalledTimes(1));
   });
 
   test('can save bulk entries after a normal adjust save resets the quick state', async () => {

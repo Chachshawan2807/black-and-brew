@@ -13,6 +13,13 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    prefetch: vi.fn(),
+    push: vi.fn(),
+  }),
+}));
+
 const sampleOrder: BeanOrderListRow = {
   id: 'order-1',
   orderNo: 'BO-20260722-001',

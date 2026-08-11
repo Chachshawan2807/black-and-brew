@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AlertCircle, CheckCircle2, Copy } from 'lucide-react';
 import { FloatingAlert } from '@/components/ui/floating-alert';
@@ -9,7 +10,7 @@ import { formatOrderDeliveryDestination } from '@/lib/bean-orders/address';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { getCarrierLabel } from '@/lib/bean-orders/carriers';
 import { formatBeanOrderShareText } from '@/lib/bean-orders/order-share-text';
-import { preloadRouteChunk } from '@/lib/route-chunk-preload';
+import { warmRouteNavigation } from '@/lib/warm-route-navigation';
 import { OrderListStatusGroup } from './OrderStatusBadge';
 import { BEAN_ORDER_BTN_ICON, BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,7 @@ const DETAIL_LINK_PROPS = {
 } as const;
 
 export function BeanOrderListItem({ order, locale }: Props) {
+  const router = useRouter();
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
   const customerLabel = formatCustomerLabel(order);
   const destinationLine = formatDestinationLine(order);
@@ -67,7 +69,7 @@ export function BeanOrderListItem({ order, locale }: Props) {
   const detailHref = `/${locale}/bean-orders/${order.id}`;
 
   function warmDetailRoute() {
-    preloadRouteChunk(detailHref);
+    warmRouteNavigation(detailHref, router.prefetch);
   }
 
   async function handleCopy(event: React.MouseEvent<HTMLButtonElement>) {

@@ -37,7 +37,7 @@ export async function GET(request: Request) {
       digestSent,
       digestSkippedReason:
         result.recorded?.skipped && !force
-          ? 'already_sent_today'
+          ? 'morning_push_already_dispatched'
           : result.pushed?.skipped && result.recorded && !result.recorded.skipped
             ? 'push_skipped'
             : null,

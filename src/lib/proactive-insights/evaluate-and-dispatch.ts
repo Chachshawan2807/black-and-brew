@@ -2,7 +2,7 @@ import { compileOperationalSnapshot } from '@/lib/proactive-insights/compile-ope
 import { buildDailyInsightDigest, evaluateInsightRules } from '@/lib/proactive-insights/rules';
 import type { Insight } from '@/lib/proactive-insights/types';
 import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/compile-operational-snapshot';
-import { recordInsightNotificationLog } from '@/lib/insight-notification';
+import { recordInsightNotificationLog, markInsightMorningPushDispatched } from '@/lib/insight-notification';
 import { dispatchInsightWebPush } from '@/lib/insight-web-push';
 
 export type InsightTrigger = 'cron' | 'shift_update' | 'inventory_update' | 'manual';
@@ -89,6 +89,10 @@ export async function evaluateAndDispatchInsights(
   }
 
   const pushResult = await dispatchInsightWebPush(digest, dateIso);
+
+  if (pushResult.sent > 0) {
+    await markInsightMorningPushDispatched(logResult.logId);
+  }
 
   return {
     dateIso,

@@ -407,6 +407,44 @@ describe('Inventory Quick Action FAB', () => {
     expect(pageCode).toMatch(/isQuickActionBarOpen && !quickActionFabOpen/);
   });
 
+  test('quick action FAB defers history prefetch until idle', () => {
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+
+    expect(fabCode).toContain('requestIdleCallback');
+    expect(fabCode).toMatch(/scheduleHistoryPrefetch[\s\S]*prefetchInventoryHistoryFirstPage/);
+    expect(fabCode).not.toMatch(
+      /setIsPanelRendered\(true\);\s*\n\s*void prefetchInventoryHistoryFirstPage\(\)/,
+    );
+  });
+
+  test('quick action FAB does not refetch frequent items on every open', () => {
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+
+    const openEffect = fabCode.match(
+      /useEffect\(\(\) => \{\s*if \(!isMounted \|\| !isOpen\) return;[\s\S]*?\}, \[isMounted, isOpen, refresh, hasLoadedItems\]\);/,
+    )?.[0];
+
+    expect(openEffect).toBeTruthy();
+    expect(openEffect).not.toContain('loadFrequentItems');
+  });
+
+  test('quick save applies optimistic stock before server action returns', () => {
+    const hookCode = fs.readFileSync(
+      path.resolve(__dirname, '../hooks/use-inventory-quick-action.ts'),
+      'utf-8',
+    );
+
+    expect(hookCode).toContain('computeOptimisticStockAfterTransaction');
+    expect(hookCode).toMatch(/onAfterSave\?\.\([\s\S]*setIsQuickPending\(false\)/);
+    expect(hookCode).toMatch(/void \(async \(\) => \{[\s\S]*await recordTransaction/);
+  });
+
   test('inventory modals portal above FAB overlays with shared z-index', () => {
     const layoutCode = fs.readFileSync(
       path.resolve(__dirname, '../lib/floating-action-layout.ts'),

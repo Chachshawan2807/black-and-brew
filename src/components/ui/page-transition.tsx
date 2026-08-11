@@ -34,20 +34,10 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (useLightTransition) {
-    return (
-      <div key={pathname} className="min-h-0 animate-page-enter motion-reduce:animate-none">
-        {children}
-      </div>
-    );
-  }
-
-  if (isViewportUnknown) {
-    return (
-      <div key={pathname} className="min-h-0">
-        {children}
-      </div>
-    );
+  // Mobile / reduced motion: no pathname key or opacity-0 enter — avoids blank flashes
+  // while App Router streams the next segment (e.g. bean-order detail drill-in).
+  if (useLightTransition || isViewportUnknown) {
+    return <div className="min-h-0">{children}</div>;
   }
 
   const motionPreset = withReducedMotion(pageContent, reduced);

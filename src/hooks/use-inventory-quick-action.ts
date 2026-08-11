@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   recordBulkInventoryTransactions,
   recordTransaction,
@@ -16,6 +16,7 @@ import {
   addBulkQueueItem,
   canSubmitBulkQueue,
   computeBulkPreview,
+  computeOptimisticStockAfterTransaction,
   removeBulkQueueItem,
   resolveBulkSubmitPayload,
   resolveInOutQuantity,
@@ -82,6 +83,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   const [bulkMode, setBulkMode] = useState(initialDraft.bulkMode);
   const [bulkQueue, setBulkQueue] = useState<BulkQueueItem[]>(initialDraft.bulkQueue);
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const backgroundSyncRef = useRef(false);
 
   const bulkQuickType: BulkQuickType = quickType === 'OUT' ? 'OUT' : 'IN';
 
@@ -218,10 +220,36 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   }, [showHistoryModal, onHistoryRefresh]);
 
   const executeBulkSubmit = useCallback(async () => {
+    const queueSnapshot = bulkQueue;
+    const payload = resolveBulkSubmitPayload(queueSnapshot, bulkQuickType);
+    const optimisticUpdates = bulkPreviews
+      .map(({ line, preview }) =>
+        preview.error === undefined
+          ? { itemId: line.itemId, previousStock: preview.before, nextStock: preview.after }
+          : null,
+      )
+      .filter((row): row is { itemId: string; previousStock: number; nextStock: number } => row !== null);
+    const savedItem = items.find((item) => item.id === optimisticUpdates[0]?.itemId);
+
     try {
       setIsQuickPending(true);
       onBeforeSave?.();
-      const payload = resolveBulkSubmitPayload(bulkQueue, bulkQuickType);
+
+      if (optimisticUpdates.length > 0) {
+        setItems((prev) =>
+          prev.map((item) => {
+            const hit = optimisticUpdates.find((row) => row.itemId === item.id);
+            return hit ? { ...item, stock: hit.nextStock } : item;
+          }),
+        );
+      }
+
+      setBulkQueue([]);
+      resetQuickEntryFields();
+      clearInventoryQuickActionDraft();
+      onAfterSave?.(savedItem ? { id: savedItem.id, name: savedItem.name } : undefined);
+      setIsQuickPending(false);
+
       const res = await recordBulkInventoryTransactions(payload, 'Quick Entry - Bulk', {
         clientSessionId: getClientSessionId(),
         notificationSource,
@@ -242,8 +270,18 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       if (failed.length > 0) {
         onSaveError?.();
         const failedIds = new Set(failed.map((row) => row.itemId));
-        setBulkQueue((prev) => prev.filter((line) => failedIds.has(line.itemId)));
-        resetQuickEntryFields();
+        setItems((prev) =>
+          prev.map((item) => {
+            const rollback = optimisticUpdates.find((row) => row.itemId === item.id);
+            return rollback && failedIds.has(item.id)
+              ? { ...item, stock: rollback.previousStock }
+              : item;
+          }),
+        );
+        const restoredQueue = queueSnapshot.filter((line) => failedIds.has(line.itemId));
+        if (restoredQueue.length > 0) {
+          setBulkQueue(restoredQueue);
+        }
         alert(
           `บันทึกสำเร็จ ${succeeded.length}/${res.results.length} — ${failed
             .map((row) => {
@@ -252,14 +290,6 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
             })
             .join('; ')}`,
         );
-      } else {
-        const first = succeeded[0]
-          ? items.find((item) => item.id === succeeded[0]!.itemId)
-          : undefined;
-        setBulkQueue([]);
-        resetQuickEntryFields();
-        clearInventoryQuickActionDraft();
-        onAfterSave?.(first ? { id: first.id, name: first.name } : undefined);
       }
 
       await refreshHistoryIfOpen();
@@ -269,6 +299,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   }, [
     bulkQueue,
     bulkQuickType,
+    bulkPreviews,
     items,
     notificationSource,
     onAfterSave,
@@ -300,7 +331,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         alert(READ_ONLY_DENY_MSG);
         return;
       }
-      if (isQuickPending) return;
+      if (isQuickPending || backgroundSyncRef.current) return;
 
       if (bulkMode) {
         if (!bulkSubmitReady) return;
@@ -333,10 +364,27 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         qty = resolved;
       }
 
+      const previousStock = Number(item.stock) || 0;
+      const optimisticStock = computeOptimisticStockAfterTransaction(previousStock, quickType, qty);
+      if (optimisticStock === null) {
+        alert('ยอดคงเหลือไม่เพียงพอสำหรับการนำออก');
+        return;
+      }
+
+      backgroundSyncRef.current = true;
+      setIsQuickPending(true);
+      onBeforeSave?.();
+
+      setItems((prev) =>
+        prev.map((row) => (row.id === item.id ? { ...row, stock: optimisticStock } : row)),
+      );
+      resetQuickEntryFields();
+      clearInventoryQuickActionDraft();
+      onAfterSave?.({ id: item.id, name: item.name });
+      setIsQuickPending(false);
+
       void (async () => {
         try {
-          setIsQuickPending(true);
-          onBeforeSave?.();
           const res =
             quickType === 'ADJUST'
               ? await updateInventoryStock(item.id, qty, 'Quick Entry - Adjust', {
@@ -349,18 +397,23 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
                 });
 
           if (!res.success) {
+            setItems((prev) =>
+              prev.map((row) => (row.id === item.id ? { ...row, stock: previousStock } : row)),
+            );
             onSaveError?.();
             alert(res.error);
             return;
           }
 
-          setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)));
-          resetQuickEntryFields();
-          clearInventoryQuickActionDraft();
-          onAfterSave?.({ id: item.id, name: item.name });
+          if (res.newStock != null && res.newStock !== optimisticStock) {
+            setItems((prev) =>
+              prev.map((row) => (row.id === item.id ? { ...row, stock: res.newStock! } : row)),
+            );
+          }
+
           await refreshHistoryIfOpen();
         } finally {
-          setIsQuickPending(false);
+          backgroundSyncRef.current = false;
         }
       })();
     },

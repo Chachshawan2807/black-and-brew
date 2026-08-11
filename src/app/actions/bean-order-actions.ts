@@ -1447,10 +1447,16 @@ export async function saveBeanOrderShipmentPlan(
   }
 }
 
+export type ShipBeanOrderOptions = {
+  /** Skip 「ส่งแล้ว」 when shipping is only a prelude to manual จัดส่งสำเร็จ. */
+  suppressShippedNotification?: boolean;
+};
+
 export async function shipBeanOrder(
   orderId: string,
   input: z.infer<typeof shipOrderSchema>,
   locale = 'th',
+  options?: ShipBeanOrderOptions,
 ): Promise<{ success: boolean; error?: string }> {
   const gate = await gateMutation();
   if (!gate.success) return gate;
@@ -1540,7 +1546,7 @@ export async function shipBeanOrder(
 
     after(async () => {
       try {
-        if (isNewShipment) {
+        if (isNewShipment && !options?.suppressShippedNotification) {
           const { notifyBeanOrderShipped } = await import('@/lib/bean-orders/shipment-web-push');
           const { getBeanOrderCustomerDisplayName } = await import('@/lib/bean-orders/customer-display');
           await notifyBeanOrderShipped({

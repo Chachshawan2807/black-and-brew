@@ -6,8 +6,22 @@ import type { Insight, InsightRuleId } from '@/lib/proactive-insights/types';
 import type { InsightTrigger } from '@/lib/proactive-insights/evaluate-and-dispatch';
 import { resolveInsightCronOccurredAt } from '@/lib/proactive-insights/insight-schedule';
 
+export const INSIGHT_MORNING_PUSH_METADATA_KEY = 'morningPushDispatchedAt';
+
 export function insightNotificationLogId(ruleId: InsightRuleId | string, dateIso: string): string {
   return `bb-insight-${ruleId}-${dateIso}`;
+}
+
+/** Cron record path: insert, refresh stale log, skip after morning push, or force replace. */
+export function resolveCronInsightRecordAction(
+  hasExisting: boolean,
+  morningPushDispatchedAt: string | undefined,
+  force?: boolean,
+): 'insert' | 'update' | 'skip' | 'replace' {
+  if (!hasExisting) return 'insert';
+  if (force) return 'replace';
+  if (morningPushDispatchedAt) return 'skip';
+  return 'update';
 }
 
 function getSupabaseAdmin() {
@@ -77,7 +91,68 @@ export function formatInsightNotification(
   };
 }
 
-/** Persist insight so the in-app panel can catch up. Dedupes by entity_id per day. */
+function buildInsightLogMetadata(
+  insight: Insight,
+  logId: string,
+  locale: string,
+  url: string,
+): Record<string, unknown> {
+  return {
+    kind: 'proactive_insight',
+    ruleId: insight.ruleId,
+    url,
+    notificationLogId: logId,
+    title: insight.title,
+    summary: insight.summary,
+    fieldSummary: insight.summary,
+    locale,
+    modules: insight.modules,
+    priority: insight.priority,
+  };
+}
+
+/** Mark daily digest Web Push as delivered so duplicate cron hits skip re-send. */
+export async function markInsightMorningPushDispatched(logId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return;
+
+  try {
+    const { data, error } = await supabase
+      .from('data_change_logs')
+      .select('id, metadata')
+      .eq('module', 'insights')
+      .eq('entity_type', 'cross_module_insight')
+      .eq('entity_id', logId)
+      .limit(1);
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      throw error;
+    }
+
+    const row = data?.[0];
+    if (!row) return;
+
+    const metadata = {
+      ...(typeof row.metadata === 'object' && row.metadata !== null ? row.metadata : {}),
+      [INSIGHT_MORNING_PUSH_METADATA_KEY]: new Date().toISOString(),
+    };
+
+    const { error: updateError } = await supabase
+      .from('data_change_logs')
+      .update({ metadata })
+      .eq('id', row.id);
+
+    if (updateError) {
+      console.error('Supabase Error:', updateError.message, updateError.details);
+      throw updateError;
+    }
+  } catch (error) {
+    console.error('[markInsightMorningPushDispatched] Exception:', error);
+  }
+}
+
+/** Persist insight so the in-app panel can catch up. Dedupes morning push per calendar day. */
 export async function recordInsightNotificationLog(
   insight: Insight,
   dateIso: string,
@@ -90,11 +165,12 @@ export async function recordInsightNotificationLog(
 
   const isTh = locale === 'th';
   const url = `/${locale}${insight.urlPath}`;
+  const metadata = buildInsightLogMetadata(insight, logId, locale, url);
 
   try {
     const { data: existing, error: lookupError } = await supabase
       .from('data_change_logs')
-      .select('id')
+      .select('id, metadata')
       .eq('module', 'insights')
       .eq('entity_type', 'cross_module_insight')
       .eq('entity_id', logId)
@@ -108,11 +184,52 @@ export async function recordInsightNotificationLog(
       throw lookupError;
     }
 
-    if (existing && existing.length > 0) {
-      if (!options?.force) {
-        return { success: true, skipped: true, logId };
+    const existingRow = existing?.[0];
+    const existingMeta =
+      typeof existingRow?.metadata === 'object' && existingRow.metadata !== null
+        ? (existingRow.metadata as Record<string, unknown>)
+        : undefined;
+    const morningPushDispatchedAt =
+      typeof existingMeta?.[INSIGHT_MORNING_PUSH_METADATA_KEY] === 'string'
+        ? existingMeta[INSIGHT_MORNING_PUSH_METADATA_KEY]
+        : undefined;
+
+    const action = resolveCronInsightRecordAction(
+      Boolean(existingRow),
+      morningPushDispatchedAt,
+      options?.force,
+    );
+
+    if (action === 'skip') {
+      return { success: true, skipped: true, logId };
+    }
+
+    const occurredAt =
+      options?.trigger === 'cron'
+        ? resolveInsightCronOccurredAt(dateIso)
+        : new Date().toISOString();
+
+    if (action === 'update' && existingRow) {
+      const { error: updateError } = await supabase
+        .from('data_change_logs')
+        .update({
+          occurred_at: occurredAt,
+          actor_label: isTh ? 'ระบบการแจ้งเตือนที่ต้องตรวจสอบ' : 'Review alerts',
+          entity_label: dateIso,
+          new_value: sanitizeJsonValue(insight),
+          metadata,
+        })
+        .eq('id', existingRow.id);
+
+      if (updateError) {
+        console.error('Supabase Error:', updateError.message, updateError.details);
+        throw updateError;
       }
 
+      return { success: true, logId };
+    }
+
+    if (action === 'replace' && existingRow) {
       const { error: deleteError } = await supabase
         .from('data_change_logs')
         .delete()
@@ -125,11 +242,6 @@ export async function recordInsightNotificationLog(
         throw deleteError;
       }
     }
-
-    const occurredAt =
-      options?.trigger === 'cron'
-        ? resolveInsightCronOccurredAt(dateIso)
-        : new Date().toISOString();
 
     const { error } = await supabase.from('data_change_logs').insert({
       occurred_at: occurredAt,
@@ -146,18 +258,7 @@ export async function recordInsightNotificationLog(
       new_value: sanitizeJsonValue(insight),
       source: 'system',
       status: 'success',
-      metadata: {
-        kind: 'proactive_insight',
-        ruleId: insight.ruleId,
-        url,
-        notificationLogId: logId,
-        title: insight.title,
-        summary: insight.summary,
-        fieldSummary: insight.summary,
-        locale,
-        modules: insight.modules,
-        priority: insight.priority,
-      },
+      metadata,
     });
 
     if (error) {

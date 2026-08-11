@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { completeViewTransitionNavigation } from '@/lib/view-transition-navigation-state';
 import { navigateWithViewTransition, navigateWithoutViewTransition, shouldUseViewTransition } from '@/lib/view-transition';
 import { normalizeAppPath } from '@/lib/normalize-app-path';
+import { warmRouteNavigation } from '@/lib/warm-route-navigation';
 import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
 
 function isModifiedClick(event: MouseEvent): boolean {
@@ -42,6 +43,24 @@ export function ViewTransitionNavigation() {
   }, [pathname]);
 
   useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const anchor = target.closest('a[href]');
+      if (!(anchor instanceof HTMLAnchorElement)) return;
+      if (anchor.dataset.bbNav !== 'instant') return;
+      if (anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+
+      const rawHref = anchor.getAttribute('href');
+      if (!rawHref || !isInternalAppHref(rawHref, window.location.origin)) return;
+
+      const href = normalizeInternalHref(rawHref, window.location.origin);
+      warmRouteNavigation(href, router.prefetch);
+    };
+
     const onDocumentClick = (event: MouseEvent) => {
       if (event.defaultPrevented || isModifiedClick(event)) return;
 
@@ -76,8 +95,12 @@ export function ViewTransitionNavigation() {
       navigateWithViewTransition(router.push, href);
     };
 
+    document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('click', onDocumentClick, true);
-    return () => document.removeEventListener('click', onDocumentClick, true);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('click', onDocumentClick, true);
+    };
   }, [closeDrawerForNavigation, router]);
 
   return null;

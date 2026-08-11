@@ -88,6 +88,24 @@ describe('bean order delivered action beside shipping update', () => {
     expect(canConfirmDelivered('shipped', null, cancelledAt)).toBe(false);
   });
 
+  test('manual deliver suppresses shipped notification when pre-shipping pending order', () => {
+    const detailSource = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
+      'utf8',
+    );
+    const actionsSource = readFileSync(
+      resolve(process.cwd(), 'src/app/actions/bean-order-actions.ts'),
+      'utf8',
+    );
+
+    expect(detailSource).toMatch(
+      /handleConfirmDelivered[\s\S]*?shipBeanOrder\([\s\S]*?suppressShippedNotification:\s*true/,
+    );
+    expect(actionsSource).toMatch(
+      /if \(isNewShipment && !options\?\.suppressShippedNotification\)/,
+    );
+  });
+
   test('detail UI switches between จัดส่งสำเร็จ and ระบบอัตโนมัติ', () => {
     const source = readFileSync(
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),

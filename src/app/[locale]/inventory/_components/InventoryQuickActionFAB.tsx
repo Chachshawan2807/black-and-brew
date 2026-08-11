@@ -170,7 +170,14 @@ export default function InventoryQuickActionFAB() {
         return false;
       }
       setIsPanelRendered(true);
-      void prefetchInventoryHistoryFirstPage();
+      const scheduleHistoryPrefetch = () => {
+        void prefetchInventoryHistoryFirstPage();
+      };
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(scheduleHistoryPrefetch, { timeout: 2_000 });
+      } else {
+        setTimeout(scheduleHistoryPrefetch, 0);
+      }
       return true;
     });
   }, []);
@@ -218,8 +225,7 @@ export default function InventoryQuickActionFAB() {
     if (!isMounted || !isOpen) return;
 
     void refresh({ soft: hasLoadedItems });
-    void loadFrequentItems();
-  }, [isMounted, isOpen, refresh, loadFrequentItems, hasLoadedItems]);
+  }, [isMounted, isOpen, refresh, hasLoadedItems]);
 
   useEffect(() => {
     if (showPurchaseOrderModal && isOpen) {

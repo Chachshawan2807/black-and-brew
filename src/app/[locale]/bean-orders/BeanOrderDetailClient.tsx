@@ -252,6 +252,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
         order.id,
         { carrierCode: resolvedCarrierCode, trackingNumber },
         locale,
+        { suppressShippedNotification: true },
       );
       if (!shipResult.success) {
         setBusy(false);

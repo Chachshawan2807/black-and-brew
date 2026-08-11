@@ -3,6 +3,7 @@ import {
   addBulkQueueItem,
   canSubmitBulkQueue,
   computeBulkPreview,
+  computeOptimisticStockAfterTransaction,
   formatBulkConfirmQty,
   getBulkSubmitTypeLabel,
   resolveBulkSubmitPayload,
@@ -26,6 +27,13 @@ describe('inventory-quick-bulk', () => {
     expect(resolveInOutQuantity('0')).toBeNull();
     expect(resolveInOutQuantity('-2')).toBeNull();
     expect(resolveInOutQuantity('abc')).toBeNull();
+  });
+
+  test('computeOptimisticStockAfterTransaction applies IN/OUT/ADJUST rules', () => {
+    expect(computeOptimisticStockAfterTransaction(5, 'IN', 1)).toBe(6);
+    expect(computeOptimisticStockAfterTransaction(5, 'OUT', 2)).toBe(3);
+    expect(computeOptimisticStockAfterTransaction(1, 'OUT', 2)).toBeNull();
+    expect(computeOptimisticStockAfterTransaction(5, 'ADJUST', 8)).toBe(8);
   });
 
   test('getBulkSubmitTypeLabel returns Thai labels for IN and OUT', () => {

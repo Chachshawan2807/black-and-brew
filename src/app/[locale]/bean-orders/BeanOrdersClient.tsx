@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Plus } from 'lucide-react';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
@@ -15,6 +16,8 @@ import {
   BEAN_ORDER_LIST_CELL,
   BEAN_ORDER_PAGE,
 } from './_components/bean-order-layout';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
+import { warmRouteNavigation } from '@/lib/warm-route-navigation';
 
 type Props = {
   initialOrders: BeanOrderListRow[];
@@ -22,6 +25,7 @@ type Props = {
 };
 
 export default function BeanOrdersClient({ initialOrders, locale }: Props) {
+  const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
@@ -31,6 +35,23 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
   useEffect(() => {
     setOrders(initialOrders);
   }, [initialOrders]);
+
+  useEffect(() => {
+    let cancelled = false;
+    warmRouteNavigation(`/${locale}/bean-orders/warm-detail`, router.prefetch);
+
+    const cancelIdle = scheduleIdleWork(() => {
+      if (cancelled) return;
+      for (const order of orders.slice(0, 12)) {
+        warmRouteNavigation(`/${locale}/bean-orders/${order.id}`, router.prefetch);
+      }
+    }, { timeout: 1200 });
+
+    return () => {
+      cancelled = true;
+      cancelIdle();
+    };
+  }, [locale, orders, router]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

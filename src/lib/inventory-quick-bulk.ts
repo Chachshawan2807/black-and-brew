@@ -131,6 +131,25 @@ export function resolveInOutQuantity(qty: string): number | null {
   return parsed;
 }
 
+/** Client-side optimistic stock after a quick IN/OUT/ADJUST save. */
+export function computeOptimisticStockAfterTransaction(
+  currentStock: number,
+  type: 'IN' | 'OUT' | 'ADJUST',
+  quantity: number,
+): number | null {
+  if (type === 'ADJUST') {
+    return Number.isFinite(quantity) && quantity >= 0 ? quantity : null;
+  }
+
+  const qty = Number(quantity);
+  if (!Number.isFinite(qty) || qty <= 0) return null;
+
+  const before = Number(currentStock) || 0;
+  if (type === 'IN') return before + qty;
+  if (before < qty) return null;
+  return before - qty;
+}
+
 /** Display qty on bulk confirm dialog — empty defaults show as "1". */
 export function formatBulkConfirmQty(qty: string): string {
   const resolved = resolveInOutQuantity(qty);
