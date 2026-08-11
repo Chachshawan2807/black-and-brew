@@ -18,6 +18,7 @@ import {
 } from '@/lib/keyboard-aware-panel-style';
 
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { RoundedSelect } from '@/components/ui/rounded-select';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import type { InventoryTransactionFilterType, InventoryTransactionType } from '@/app/actions/inventory-actions';
@@ -293,32 +294,29 @@ export function InventoryHistoryModal({
 
             </div>
 
-            <fieldset className="min-w-0">
-              <legend className="sr-only">กรองประเภทประวัติคลังสินค้า</legend>
-              <div className="flex flex-wrap gap-2" aria-label="ตัวกรองประวัติคลังสินค้า">
+            <div className="space-y-1.5 min-w-0">
+              <label
+                htmlFor="history-type-filter"
+                className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1"
+              >
+                ประเภท
+              </label>
+              <RoundedSelect
+                id="history-type-filter"
+                value={historyTypeFilter}
+                onChange={(e) =>
+                  onTypeFilterChange(e.target.value as InventoryTransactionFilterType)
+                }
+                wrapperClassName="w-full"
+                aria-label="กรองประเภทประวัติคลังสินค้า"
+              >
                 {HISTORY_TYPE_FILTERS.map((filter) => (
-                  <label
-                    key={filter.value}
-                    className={cn(
-                      'min-h-11 cursor-pointer rounded-full border px-3.5 py-2 text-[13px] font-normal transition-all flex items-center gap-2',
-                      historyTypeFilter === filter.value
-                        ? 'bg-foreground text-background border-foreground'
-                        : 'bg-background text-foreground/70 border-border hover:border-foreground/30',
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="historyTypeFilter"
-                      value={filter.value}
-                      checked={historyTypeFilter === filter.value}
-                      onChange={() => onTypeFilterChange(filter.value)}
-                      className="accent-current"
-                    />
-                    <span>{filter.label}</span>
-                  </label>
+                  <option key={filter.value} value={filter.value}>
+                    {filter.label}
+                  </option>
                 ))}
-              </div>
-            </fieldset>
+              </RoundedSelect>
+            </div>
 
             <div className="min-w-0">
               <label htmlFor="history-item-search" className="sr-only">

@@ -131,6 +131,8 @@ describe('inventory history pagination and filters', () => {
 
     expect(modalCode).toContain('historyTypeFilter');
     expect(modalCode).toContain('onTypeFilterChange');
+    expect(modalCode).toContain('RoundedSelect');
+    expect(modalCode).not.toMatch(/type="radio"[\s\S]*?historyTypeFilter/);
     expect(modalCode).toContain('onLoadMore');
     expect(modalCode).toContain('hasMoreHistory');
     expect(modalCode).toContain('ดูเพิ่มเติม');
