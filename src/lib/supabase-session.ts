@@ -67,7 +67,12 @@ export async function getSupabaseAccessToken(): Promise<string | null> {
 export async function clearSupabaseSession(): Promise<void> {
   sessionReady = false;
   cachedAccessToken = null;
+  const pendingEnsure = ensureSessionPromise;
   ensureSessionPromise = null;
+
+  if (pendingEnsure) {
+    await pendingEnsure.catch(() => false);
+  }
 
   const { error } = await supabase.auth.signOut();
   if (error) {

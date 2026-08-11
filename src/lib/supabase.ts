@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createSupabaseAuthLock } from './supabase-auth-lock';
 
 export type { Database, Tables, TablesInsert, TablesUpdate } from './database.types';
 
@@ -29,6 +30,9 @@ const globalForSupabase = globalThis as typeof globalThis & {
 
 function createBrowserSupabaseClient(): SupabaseClient {
   return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      lock: createSupabaseAuthLock,
+    },
     realtime: {
       params: {
         eventsPerSecond: 2, // Optimized for mobile-first latency

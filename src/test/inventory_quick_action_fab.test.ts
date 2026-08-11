@@ -94,7 +94,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(notifyCode).toContain('FAB_BOTTOM_NOTIFICATION_CLASS');
     expect(notifyCode).not.toContain('FAB_BOTTOM_AI_CLASS');
     expect(bellCode).toContain('bg-red-500');
-    expect(bellCode).toContain('FAB_STACK_INNER_CLASS');
+    expect(bellCode).toContain('INVENTORY_QUICK_ACTION_COLORS.fab');
     expect(bellCode).toContain('<Bell');
     expect(bellCode).not.toContain('PWA_BRAND_ICON');
     expect(bellCode).not.toContain('bg-transparent');

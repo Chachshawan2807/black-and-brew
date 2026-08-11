@@ -61,6 +61,33 @@ describe('ensureSupabaseSession', () => {
     expect(signInAnonymously).not.toHaveBeenCalled();
   });
 
+  test('clearSupabaseSession waits for in-flight ensure before signOut', async () => {
+    let resolveGetSession: (value: { data: { session: null } }) => void = () => {};
+    getSession.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveGetSession = resolve;
+        }),
+    );
+    signInAnonymously.mockResolvedValue({
+      error: null,
+      data: { session: { user: { id: 'u1' }, access_token: 'tok-new' } },
+    });
+    signOut.mockResolvedValue({ error: null });
+
+    const { ensureSupabaseSession, clearSupabaseSession } = await import('@/lib/supabase-session');
+
+    const ensureTask = ensureSupabaseSession();
+    const clearTask = clearSupabaseSession();
+
+    resolveGetSession({ data: { session: null } });
+    await ensureTask;
+    await clearTask;
+
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(getSession).toHaveBeenCalledTimes(1);
+  });
+
   test('clearSupabaseSession resets the cache so auth runs again', async () => {
     getSession.mockResolvedValue({ data: { session: { user: { id: 'u1' }, access_token: 'tok-1' } } });
     signOut.mockResolvedValue({ error: null });

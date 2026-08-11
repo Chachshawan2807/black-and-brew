@@ -125,6 +125,9 @@ function resolveDisplayUnreadCount(
   return display;
 }
 
+/** Unique topic per subscribe — deferred teardown can leave old channels registered by name. */
+let notificationRealtimeChannelSeq = 0;
+
 export function useInventoryNotifications() {
   const params = useParams();
   const locale = (params?.locale as string) || 'th';
@@ -570,11 +573,16 @@ export function useInventoryNotifications() {
       if (cancelled) return;
 
       if (channel) {
-        stopChannel(channel);
+        const previousChannel = channel;
+        channel = null;
+        teardownCancel?.();
+        teardownCancel = null;
+        await supabase.removeChannel(previousChannel);
         if (cancelled) return;
       }
 
-      const nextChannel = supabase.channel(`inventory_change_notifications_${retryCount}`);
+      const channelId = ++notificationRealtimeChannelSeq;
+      const nextChannel = supabase.channel(`inventory_change_notifications_${channelId}`);
       attachChangeLogListener(nextChannel, 'inventory');
       attachChangeLogListener(nextChannel, 'schedule');
       attachChangeLogListener(nextChannel, 'bean_orders');

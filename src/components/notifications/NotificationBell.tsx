@@ -7,7 +7,8 @@ import { motion } from 'framer-motion';
 import { FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
 import { cn } from '@/lib/utils';
 import { formatInAppBadgeLabel, getInAppBadgeClassName } from '@/lib/notification-badge';
-import { FAB_BASE_CLASS, FAB_STACK_INNER_CLASS } from '@/lib/floating-action-layout';
+import { FAB_SIZE_CLASS, FAB_RIGHT_CLASS } from '@/lib/floating-action-layout';
+import { INVENTORY_QUICK_ACTION_COLORS, INVENTORY_QUICK_ACTION_HOVER } from '@/lib/shift-colors';
 import { INVENTORY_NOTIFICATION_EVENT } from '@/lib/pwa-notification-bridge';
 import { useNotificationState, useNotificationActions } from '@/components/notifications/NotificationProvider';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -50,8 +51,9 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
   const content = (
     <>
       <Bell
-        className={cn(isFab ? 'h-[22px] w-[22px]' : 'h-[18px] w-[18px] text-foreground/80')}
-        strokeWidth={1.75}
+        className={cn(!isFab && 'h-[18px] w-[18px] text-foreground/80')}
+        size={18}
+        strokeWidth={isFab ? 1.5 : 1.75}
         aria-hidden={isFab}
       />
       {unreadCount > 0 && (
@@ -92,7 +94,11 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
           whileTap={FAB_TAP}
           className={cn(
             'relative bb-transition',
-            stacked ? FAB_STACK_INNER_CLASS : cn(FAB_BASE_CLASS, 'z-[201]'),
+            'flex items-center justify-center rounded-full shadow-lg',
+            FAB_SIZE_CLASS,
+            INVENTORY_QUICK_ACTION_COLORS.fab,
+            INVENTORY_QUICK_ACTION_HOVER.fab,
+            !stacked && cn('fixed z-[201]', FAB_RIGHT_CLASS),
             className,
           )}
         >

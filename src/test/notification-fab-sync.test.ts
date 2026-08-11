@@ -80,6 +80,11 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('shouldDeferOsNotificationToPush');
   });
 
+  test('hook uses a unique realtime channel topic per subscribe attempt', () => {
+    expect(hookSource).toContain('notificationRealtimeChannelSeq');
+    expect(hookSource).toMatch(/inventory_change_notifications_\$\{channelId\}/);
+  });
+
   test('hook does not warn that realtime is unavailable for normal CLOSED channel cleanup', () => {
     expect(hookSource).not.toMatch(
       /status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT' && status !== 'CLOSED'/,
@@ -197,11 +202,14 @@ describe('notification fab cross-platform sync', () => {
     expect(bellSource).not.toContain('key="close"');
   });
 
-  test('notification FAB matches other stack buttons (black circle, white bell)', () => {
-    expect(bellSource).toContain('FAB_STACK_INNER_CLASS');
+  test('notification FAB matches quick action FAB (yellow pastel, same size)', () => {
+    expect(bellSource).toContain('INVENTORY_QUICK_ACTION_COLORS.fab');
+    expect(bellSource).toContain('INVENTORY_QUICK_ACTION_HOVER.fab');
+    expect(bellSource).toContain('FAB_SIZE_CLASS');
     expect(bellSource).toContain('<Bell');
     expect(bellSource).not.toContain('PWA_BRAND_ICON');
     expect(bellSource).not.toContain('bg-transparent');
+    expect(bellSource).not.toContain('bg-[#000000]');
   });
 
   test('notification FAB badge shows uncapped counts via shared formatter', () => {

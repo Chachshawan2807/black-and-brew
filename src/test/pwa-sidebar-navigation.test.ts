@@ -80,6 +80,8 @@ describe('PWA sidebar navigation reliability', () => {
     expect(pin).toContain('authCheckComplete');
     expect(pin).toContain('hadClientSession');
     expect(pin).toContain('isRestoringSession');
+    expect(pin).toContain('supabaseSessionTask');
+    expect(pin).toMatch(/isAuthenticated \? \([\s\S]*InventoryRealtimeProvider/);
     expect(pin).not.toContain('/images/logo.png');
   });
 });

@@ -30,6 +30,7 @@ import {
   shouldOfferPasskeyEnrollment,
 } from '@/lib/passkey/client-flow';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { PwaInstallButton } from '@/components/PwaInstallButton';
 import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
 
 const PIN_LENGTH = 6;
@@ -110,7 +111,9 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
       if (cancelled) return;
 
       setIsMounted(true);
-      setHadClientSession(isClientAuthVerified());
+      const hasClientSession = isClientAuthVerified();
+      setHadClientSession(hasClientSession);
+      const supabaseSessionTask = hasClientSession ? ensureSupabaseSession() : null;
 
       const storedLockout = localStorage.getItem('bb_lockout_until');
       const storedAttempts = localStorage.getItem('bb_failed_attempts') || '0';
@@ -133,7 +136,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
 
       if (serverSession.verified) {
         setClientAuthSession(serverSession.readOnly, serverSession.offlineAuthSessionId);
-        await ensureSupabaseSession();
+        await (supabaseSessionTask ?? ensureSupabaseSession());
         if (cancelled) return;
 
         setIsReadOnly(serverSession.readOnly);
@@ -571,7 +574,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
   if (isAuthenticated || isRestoringSession) {
     return (
       <AuthProvider isReadOnly={isReadOnly}>
-        <InventoryRealtimeProvider>{children}</InventoryRealtimeProvider>
+        {isAuthenticated ? (
+          <InventoryRealtimeProvider>{children}</InventoryRealtimeProvider>
+        ) : (
+          children
+        )}
       </AuthProvider>
     );
   }
@@ -794,6 +801,11 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           </div>
         ) : null}
       </motion.div>
+
+      <PwaInstallButton
+        locale={locale}
+        className="pointer-events-none absolute inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] flex justify-center"
+      />
     </div>
   );
 }
