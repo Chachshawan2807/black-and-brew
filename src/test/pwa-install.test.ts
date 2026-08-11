@@ -58,12 +58,9 @@ describe('pwa-install', () => {
     expect(isIosPwaInstallable('Mozilla/5.0 (Linux; Android 14)')).toBe(false);
   });
 
-  test('PinGateway exposes PWA install affordance on the PIN screen', () => {
-    const pinGateway = readFileSync(
-      resolve(ROOT, 'src/components/auth/PinGateway.tsx'),
-      'utf-8',
-    );
-    expect(pinGateway).toContain('PwaInstallButton');
+  test('PWA install affordance is mounted in the app shell for PIN and authenticated views', () => {
+    const layout = readFileSync(resolve(ROOT, 'src/app/[locale]/layout.tsx'), 'utf-8');
+    expect(layout).toContain('PwaInstallShell');
   });
 });
 
@@ -73,17 +70,58 @@ describe('pwa-install-reset', () => {
     expect(PWA_KNOWN_IDB_NAMES).toContain('bb-offline-mutations-v1');
   });
 
-  test('prepareFreshPwaInstall is wired before the install prompt', () => {
+  test('install prompt runs before storage reset so Chromium deferred prompt is not invalidated', () => {
     const button = readFileSync(
       resolve(ROOT, 'src/components/PwaInstallButton.tsx'),
       'utf-8',
     );
-    const reset = readFileSync(resolve(ROOT, 'src/lib/pwa-install-reset.ts'), 'utf-8');
 
-    expect(button).toContain('prepareFreshPwaInstall');
-    expect(button).toContain('กำลังเตรียมติดตั้งใหม่');
-    expect(reset).toContain('unregisterAllServiceWorkers');
-    expect(reset).toContain('deleteAllCacheStorage');
-    expect(reset).toContain('clearAuth');
+    const handleInstallStart = button.indexOf('const handleInstall');
+    const promptIndex = button.indexOf('promptInstall()', handleInstallStart);
+    const resetIndex = button.indexOf('prepareFreshPwaInstall', handleInstallStart);
+
+    expect(promptIndex).toBeGreaterThan(handleInstallStart);
+    expect(resetIndex).toBeGreaterThan(promptIndex);
+  });
+
+  test('iOS install opens the manual guide without awaiting storage reset', () => {
+    const button = readFileSync(
+      resolve(ROOT, 'src/components/PwaInstallButton.tsx'),
+      'utf-8',
+    );
+
+    expect(button).toContain("mode === 'ios-manual'");
+    expect(button).toContain('openIosGuide()');
+
+    const iosBranch = button.slice(
+      button.indexOf("mode === 'ios-manual'"),
+      button.indexOf('openIosGuide()') + 'openIosGuide()'.length,
+    );
+    expect(iosBranch).not.toContain('await prepareFreshPwaInstall');
+  });
+
+  test('PWA install affordance is mounted in the app shell, not only on the PIN screen', () => {
+    const layout = readFileSync(resolve(ROOT, 'src/app/[locale]/layout.tsx'), 'utf-8');
+    const pinGateway = readFileSync(
+      resolve(ROOT, 'src/components/auth/PinGateway.tsx'),
+      'utf-8',
+    );
+
+    expect(layout).toContain('PwaInstallShell');
+    expect(pinGateway).not.toContain('PwaInstallButton');
+  });
+});
+
+describe('pwa-install-flow', () => {
+  test('storage reset must not block install UI', async () => {
+    const { shouldBlockInstallOnStorageReset } = await import('@/lib/pwa-install-flow');
+    expect(shouldBlockInstallOnStorageReset('native')).toBe(false);
+    expect(shouldBlockInstallOnStorageReset('ios-manual')).toBe(false);
+  });
+
+  test('only Chromium native install shows a preparing spinner', async () => {
+    const { shouldShowPreparingState } = await import('@/lib/pwa-install-flow');
+    expect(shouldShowPreparingState('native')).toBe(true);
+    expect(shouldShowPreparingState('ios-manual')).toBe(false);
   });
 });

@@ -9,6 +9,8 @@ export type BeforeInstallPromptEvent = Event & {
 export const PWA_INSTALL_PROMPT_EVENT = 'beforeinstallprompt';
 export const PWA_APP_INSTALLED_EVENT = 'appinstalled';
 
+export type PwaInstallMode = 'native' | 'ios-manual' | 'hidden';
+
 export function isIosPwaInstallable(
   userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
 ): boolean {

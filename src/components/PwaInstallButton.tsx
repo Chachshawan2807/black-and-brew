@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, Loader2, Share, SquarePlus, X } from 'lucide-react';
 import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
 import { prepareFreshPwaInstall } from '@/lib/pwa-install-reset';
+import {
+  shouldResetStorageAfterAcceptedInstall,
+  shouldShowPreparingState,
+} from '@/lib/pwa-install-flow';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
 
 const COPY = {
@@ -68,19 +72,27 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
   const handleInstall = async () => {
     if (isPreparing) return;
 
+    if (mode === 'ios-manual') {
+      openIosGuide();
+      return;
+    }
+
+    if (mode !== 'native') return;
+
     setIsPreparing(true);
     try {
-      await prepareFreshPwaInstall();
-
-      if (mode === 'native') {
-        await promptInstall();
-        return;
+      const outcome = await promptInstall();
+      if (outcome === 'accepted' && shouldResetStorageAfterAcceptedInstall(mode)) {
+        void prepareFreshPwaInstall().catch(() => {
+          // Non-fatal — install already succeeded
+        });
       }
-      openIosGuide();
     } finally {
       setIsPreparing(false);
     }
   };
+
+  const showPreparing = isPreparing && shouldShowPreparingState(mode);
 
   return (
     <>
@@ -88,17 +100,17 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
         <button
           type="button"
           onClick={() => void handleInstall()}
-          disabled={isPreparing}
+          disabled={showPreparing}
           className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/80 px-3.5 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm transition-colors hover:border-foreground/20 hover:text-foreground disabled:opacity-70"
-          aria-busy={isPreparing}
-          aria-label={isPreparing ? t.preparing : t.install}
+          aria-busy={showPreparing}
+          aria-label={showPreparing ? t.preparing : t.install}
         >
-          {isPreparing ? (
+          {showPreparing ? (
             <Loader2 size={14} strokeWidth={1.5} className="animate-spin" aria-hidden />
           ) : (
             <Download size={14} strokeWidth={1.5} aria-hidden />
           )}
-          {isPreparing ? t.preparing : t.install}
+          {showPreparing ? t.preparing : t.install}
         </button>
       </div>
 

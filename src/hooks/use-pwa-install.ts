@@ -3,13 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   type BeforeInstallPromptEvent,
+  type PwaInstallMode,
   PWA_APP_INSTALLED_EVENT,
   PWA_INSTALL_PROMPT_EVENT,
   readPwaInstallVisibility,
   shouldShowPwaInstallOffer,
 } from '@/lib/pwa-install';
-
-export type PwaInstallMode = 'native' | 'ios-manual' | 'hidden';
 
 export function usePwaInstall() {
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);

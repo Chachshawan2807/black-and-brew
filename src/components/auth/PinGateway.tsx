@@ -30,7 +30,6 @@ import {
   shouldOfferPasskeyEnrollment,
 } from '@/lib/passkey/client-flow';
 import { AuthProvider } from '@/components/providers/AuthProvider';
-import { PwaInstallButton } from '@/components/PwaInstallButton';
 import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
 
 const PIN_LENGTH = 6;
@@ -797,11 +796,6 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           </div>
         ) : null}
       </motion.div>
-
-      <PwaInstallButton
-        locale={locale}
-        className="pointer-events-none absolute inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] flex justify-center"
-      />
     </div>
   );
 }
