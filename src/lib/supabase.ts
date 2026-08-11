@@ -13,15 +13,19 @@ export type { Database, Tables, TablesInsert, TablesUpdate } from './database.ty
  * - Strict Validation: Throws error if environment variables are missing.
  */
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseConfig = (() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error(
+      '❌ [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local'
+    );
+  }
+  return { url, anonKey };
+})();
 
-// R1 Validation: Ensure keys exist before initialization
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    '❌ [Supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local'
-  );
-}
+const supabaseUrl = supabaseConfig.url;
+const supabaseAnonKey = supabaseConfig.anonKey;
 
 // R0 (Critical) & R2 Mitigation: Initialize Singleton
 const globalForSupabase = globalThis as typeof globalThis & {

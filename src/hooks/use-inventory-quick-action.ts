@@ -365,11 +365,19 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         succeeded = results.filter((row) => row.success);
         failed = results.filter((row) => !row.success);
       } else {
-        const res = await recordBulkInventoryTransactions(payload, bulkNote, {
-          clientSessionId: getClientSessionId(),
-          notificationSource,
-          transactionAt,
-        });
+        const res = await recordBulkInventoryTransactions(
+          payload.map((entry) => ({
+            itemId: entry.itemId,
+            type: bulkQuickType,
+            quantity: entry.quantity,
+          })),
+          bulkNote,
+          {
+            clientSessionId: getClientSessionId(),
+            notificationSource,
+            transactionAt,
+          },
+        );
         succeeded = res.results.filter((row) => row.success);
         failed = res.results.filter((row) => !row.success);
       }
