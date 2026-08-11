@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
-const AIChatOverlay = dynamic(() => import('@/components/ai/AIChatOverlay'), { ssr: false });
 const InventoryQuickActionWrapper = dynamic(
   () => import('@/app/[locale]/inventory/_components/InventoryQuickActionWrapper'),
   { ssr: false },
@@ -43,7 +42,6 @@ export function DeferredOverlays() {
     <>
       <InventoryQuickActionWrapper />
       <InventoryNotificationFAB />
-      <AIChatOverlay />
     </>
   );
 }

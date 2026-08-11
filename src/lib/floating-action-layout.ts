@@ -1,12 +1,12 @@
 import { cn } from '@/lib/utils';
 
 /**
- * Shared bottom-right FAB stack (bottom → top): Hide toggle → AI Chat → Quick Action → Notifications.
+ * Shared bottom-right FAB stack (bottom → top): Hide toggle → Quick Action → Notifications.
  * Main buttons: 2.75rem (w-11). Hide toggle: 2rem (w-8). Gap between layers: 0.75rem.
  * Edge inset: 1.25rem mobile / 1.5rem desktop.
  *
- * Mobile bottoms: Hide 1.25rem | AI 4rem | Quick 7.5rem | Notify 11rem
- * Desktop bottoms: Hide 1.5rem | AI 4.25rem | Quick 7.75rem | Notify 11.25rem | Panel 14.75rem
+ * Mobile bottoms: Hide 1.25rem | Quick 4rem | Notify 7.5rem
+ * Desktop bottoms: Hide 1.5rem | Quick 4.25rem | Notify 7.75rem | Panel 11.25rem
  * Mobile quick-action panel: vertically centered (see FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS)
  */
 
@@ -32,32 +32,22 @@ export const FAB_STACK_INNER_CLASS = cn(
 export const FAB_BOTTOM_HIDE_TOGGLE_CLASS =
   'max-md:bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] md:bottom-6';
 
-export const FAB_BOTTOM_AI_CLASS =
-  'max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] md:bottom-[4.25rem]';
-
 export const FAB_BOTTOM_QUICK_ACTION_CLASS =
-  'max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[7.75rem]';
+  'max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] md:bottom-[4.25rem]';
 
 export const FAB_BOTTOM_NOTIFICATION_CLASS =
-  'max-md:bottom-[calc(11rem+env(safe-area-inset-bottom,0px))] md:bottom-[11.25rem]';
-
-export const FAB_PANEL_ABOVE_AI_CLASS =
-  'max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] md:bottom-[4.25rem]';
-
-/** Chat panel when AI FAB close button stays visible below the window */
-export const FAB_PANEL_CLEAR_OF_AI_CLASS =
   'max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[7.75rem]';
 
 /** Desktop-only bottom anchor for the inventory quick-action FAB panel */
-export const FAB_PANEL_ABOVE_NOTIFICATION_CLASS = 'md:bottom-[14.75rem]';
+export const FAB_PANEL_ABOVE_NOTIFICATION_CLASS = 'md:bottom-[11.25rem]';
 
 /** Mobile quick-action panel — flex center so height changes stay vertically balanced */
 export const FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS =
   'max-md:flex max-md:items-center max-md:justify-center max-md:pointer-events-none max-md:p-4';
 
-/** Page/content bottom inset to clear the full three-button stack + hide toggle */
+/** Page/content bottom inset to clear the two-button stack + hide toggle */
 export const FAB_PAGE_BOTTOM_PADDING_CLASS =
-  'max-md:pb-[calc(15rem+env(safe-area-inset-bottom,0px))]';
+  'max-md:pb-[calc(11rem+env(safe-area-inset-bottom,0px))]';
 
 /** Page/content bottom inset when only the hide toggle is visible */
 export const FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS =
@@ -69,5 +59,5 @@ export const INVENTORY_MODAL_Z_CLASS = 'z-[220]';
 /** Portaled RoundedSelect listbox — above modals, below tooltips and export overlay. */
 export const SELECT_LISTBOX_Z_CLASS = 'z-[245]';
 
-/** Image export / save progress — above every app overlay (modals, FAB, AI chat, tooltips). */
+/** Image export / save progress — above every app overlay (modals, FAB, tooltips). */
 export const EXPORT_PROGRESS_OVERLAY_Z_CLASS = 'z-[260]';

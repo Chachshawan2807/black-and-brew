@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 
-export type FloatingOverlayId = 'notification' | 'quick-action' | 'ai-chat';
+export type FloatingOverlayId = 'notification' | 'quick-action';
 
 const FAB_STACK_HIDDEN_KEY = 'bb-fab-stack-hidden';
 
@@ -39,7 +39,6 @@ export function FloatingOverlayProvider({ children }: { children: ReactNode }) {
   const [openMap, setOpenMap] = useState<Record<FloatingOverlayId, boolean>>({
     notification: false,
     'quick-action': false,
-    'ai-chat': false,
   });
   const [fabStackHidden, setFabStackHidden] = useState(getInitialFabStackHidden);
   const [fabStackSuppressed, setFabStackSuppressed] = useState(false);

@@ -267,14 +267,6 @@
 
 
 @layer components {
-  .thai-chat-readable {
-    font-family: var(--font-sans);
-    line-height: 1.85;
-    letter-spacing: 0;
-    font-kerning: normal;
-    text-rendering: optimizeLegibility;
-  }
-
   .glass-panel {
     background-color: rgb(250 249 242 / 0.95);
     backdrop-filter: blur(24px);

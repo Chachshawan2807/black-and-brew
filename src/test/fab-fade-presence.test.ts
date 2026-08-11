@@ -29,16 +29,13 @@ describe('FAB fade presence', () => {
       path.join(root, 'app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
     );
-    const aiChat = fs.readFileSync(path.join(root, 'components/ai/AIChatOverlay.tsx'), 'utf-8');
     const notifyFab = fs.readFileSync(
       path.join(root, 'components/notifications/InventoryNotificationFAB.tsx'),
       'utf-8',
     );
 
     expect(quickFab).toContain('FabFadePresence');
-    expect(quickFab).toContain('FAB_STACK_INNER_CLASS');
-    expect(aiChat).toContain('FabFadePresence');
-    expect(aiChat).toContain('FAB_STACK_INNER_CLASS');
+    expect(quickFab).toContain('FAB_BOTTOM_QUICK_ACTION_CLASS');
     expect(notifyFab).toContain('FabFadePresence');
     expect(notifyFab).not.toMatch(/if \(hidden\) return null/);
   });

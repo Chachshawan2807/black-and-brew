@@ -36,11 +36,6 @@ describe('motion-presets consolidation', () => {
       tap: 'FAB_TAP',
     },
     {
-      file: 'components/ai/AIChatOverlay.tsx',
-      hover: 'FAB_HOVER',
-      tap: 'FAB_TAP',
-    },
-    {
       file: 'components/notifications/NotificationBell.tsx',
       hover: 'FAB_HOVER',
       tap: 'FAB_TAP',
@@ -95,7 +90,6 @@ describe('motion-presets consolidation', () => {
     'app/[locale]/inventory/count/InventoryCountClient.tsx',
     'components/ui/floating-alert.tsx',
     'app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx',
-    'components/ai/AIChatOverlay.tsx',
     'components/auth/PinGateway.tsx',
   ];
 
@@ -109,7 +103,6 @@ describe('motion-presets consolidation', () => {
 
   const fabIconSwapFiles = [
     'app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx',
-    'components/ai/AIChatOverlay.tsx',
   ];
 
   for (const file of fabIconSwapFiles) {

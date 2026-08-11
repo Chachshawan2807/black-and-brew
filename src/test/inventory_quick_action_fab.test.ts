@@ -24,7 +24,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).not.toMatch(/max-md:bottom-\[calc\(14\.5rem/);
   });
 
-  test('layout mounts global quick action wrapper above AI chat', () => {
+  test('layout mounts global quick action and notification FABs', () => {
     const layoutCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/layout.tsx'),
       'utf-8',
@@ -39,27 +39,11 @@ describe('Inventory Quick Action FAB', () => {
     expect(deferredCode).toMatch(
       /<InventoryQuickActionWrapper\s*\/>\s*\r?\n\s*<InventoryNotificationFAB/,
     );
-    expect(deferredCode).toMatch(
-      /<InventoryNotificationFAB\s*\/>\s*\r?\n\s*<AIChatOverlay/,
-    );
+    expect(deferredCode).not.toContain('AIChatOverlay');
     expect(layoutCode).toContain('<FabStackHideToggle />');
   });
 
-  test('AI chat window stacks above the inventory FAB when open', () => {
-    const chatCode = fs.readFileSync(
-      path.resolve(__dirname, '../components/ai/AIChatOverlay.tsx'),
-      'utf-8',
-    );
-    const fabCode = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
-      'utf-8',
-    );
-
-    expect(chatCode).toContain('z-[203]');
-    expect(fabCode).toContain('z-[201]');
-  });
-
-  test('FAB is positioned above the AI chat trigger with safe-area support', () => {
+  test('FAB stack uses safe-area-aware positions without AI chat layer', () => {
     const fabCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
@@ -71,9 +55,11 @@ describe('Inventory Quick Action FAB', () => {
 
     expect(fabCode).toContain('z-[201]');
     expect(fabCode).toContain('FAB_BOTTOM_QUICK_ACTION_CLASS');
+    expect(layoutCode).toContain('max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))]');
+    expect(layoutCode).toContain('md:bottom-[4.25rem]');
     expect(layoutCode).toContain('max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom,0px))]');
     expect(layoutCode).toContain('md:bottom-[7.75rem]');
-    expect(layoutCode).toContain('max-md:bottom-[calc(11rem+env(safe-area-inset-bottom,0px))]');
+    expect(layoutCode).not.toContain('FAB_BOTTOM_AI_CLASS');
     expect(fabCode).toContain('InventoryQuickActionBar');
     expect(fabCode).toContain('overflow-y-auto');
     expect(fabCode).toContain('bb-smooth-scroll');
@@ -149,7 +135,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(hideCode).toContain('text-white');
     expect(hideCode).toContain('bg-white/10');
     expect(layoutCode).toContain('FAB_BOTTOM_HIDE_TOGGLE_CLASS');
-    expect(layoutCode).toMatch(/Hide toggle[\s\S]*AI Chat/);
+    expect(layoutCode).toMatch(/Hide toggle[\s\S]*Quick Action/);
     expect(contextCode).toContain('fabStackHidden');
     expect(contextCode).toContain('bb-fab-stack-hidden');
     expect(layoutCode).toContain('w-8 h-8');
