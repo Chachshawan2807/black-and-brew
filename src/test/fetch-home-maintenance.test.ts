@@ -9,10 +9,8 @@ vi.mock('@/lib/supabase-session', () => ({
   getSupabaseAccessToken,
 }));
 
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: vi.fn(() => ({
-    from,
-  })),
+vi.mock('@/lib/supabase', () => ({
+  supabase: { from },
 }));
 
 vi.mock('@/lib/maintenance/filter-due-within-month', () => ({
@@ -85,6 +83,7 @@ describe('fetchHomeMaintenanceTasks', () => {
     const tasks = await fetchHomeMaintenanceTasks('2026-07-25');
 
     expect(getSupabaseAccessToken).toHaveBeenCalledTimes(1);
+    expect(from).toHaveBeenCalledWith('service_records');
     expect(tasks).toEqual([{ id: 'sr-1', urgency: 'within_30_days' }]);
   });
 });

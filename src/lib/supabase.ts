@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export type { Database, Tables, TablesInsert, TablesUpdate } from './database.types';
 
@@ -23,16 +23,29 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // R0 (Critical) & R2 Mitigation: Initialize Singleton
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  realtime: {
-    params: {
-      eventsPerSecond: 2, // Optimized for mobile-first latency
+const globalForSupabase = globalThis as typeof globalThis & {
+  __bb_supabase__?: SupabaseClient;
+};
+
+function createBrowserSupabaseClient(): SupabaseClient {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    realtime: {
+      params: {
+        eventsPerSecond: 2, // Optimized for mobile-first latency
+      },
     },
-  },
-  db: {
-    schema: 'public',
-  },
-});
+    db: {
+      schema: 'public',
+    },
+  });
+}
+
+export const supabase =
+  globalForSupabase.__bb_supabase__ ?? createBrowserSupabaseClient();
+
+if (typeof window !== 'undefined') {
+  globalForSupabase.__bb_supabase__ = supabase;
+}
 
 // Implementation aligns with R0 (Timezone Drift) strategy:
 // All timestamp data from this client is handled as UTC ISO strings.
