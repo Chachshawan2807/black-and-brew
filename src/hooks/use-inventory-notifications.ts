@@ -482,11 +482,13 @@ export function useInventoryNotifications() {
   }, [filterEligibleRows, pushNotification]);
 
   const syncNotificationCatchUp = useCallback(async () => {
-    await syncInventoryNotificationCatchUp();
-    await syncScheduleNotificationCatchUp();
-    await syncBeanOrderNotificationCatchUp();
-    await syncInsightNotificationCatchUp();
-    await syncSecurityNotificationCatchUp();
+    await Promise.all([
+      syncInventoryNotificationCatchUp(),
+      syncScheduleNotificationCatchUp(),
+      syncBeanOrderNotificationCatchUp(),
+      syncInsightNotificationCatchUp(),
+      syncSecurityNotificationCatchUp(),
+    ]);
   }, [
     syncInventoryNotificationCatchUp,
     syncScheduleNotificationCatchUp,

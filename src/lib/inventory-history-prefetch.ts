@@ -135,7 +135,15 @@ const FILTER_WARM_TYPES: InventoryTransactionFilterType[] = ['IN', 'OUT', 'ADJUS
 
 /** Warm type-filter first pages after ALL is available (idle-friendly). */
 export function warmInventoryHistoryFilterPages(): void {
-  for (const type of FILTER_WARM_TYPES) {
-    void prefetchInventoryHistoryPage({ type, searchQuery: '' });
+  const warm = () => {
+    for (const type of FILTER_WARM_TYPES) {
+      void prefetchInventoryHistoryPage({ type, searchQuery: '' });
+    }
+  };
+
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(warm, { timeout: 4_000 });
+  } else {
+    setTimeout(warm, 250);
   }
 }

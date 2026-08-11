@@ -2,6 +2,7 @@ export type FrequentItem = { id: string; name: string };
 
 export const FREQUENT_ITEMS_CACHE_KEY = 'bb-frequent-inventory-items:v1';
 export const FREQUENT_ITEMS_LIMIT = 7;
+export const FREQUENT_ITEMS_CACHE_TTL_MS = 5 * 60 * 1000;
 const CACHE_VERSION = 1;
 
 type FrequentTxRow = { inventory_item_id: string | null };
@@ -38,6 +39,7 @@ export function resolveFrequentItemNames(
 type CachePayload = {
   v: number;
   items: FrequentItem[];
+  savedAt?: number;
 };
 
 function sanitizeFrequentItems(items: FrequentItem[]): FrequentItem[] {
@@ -49,6 +51,11 @@ function sanitizeFrequentItems(items: FrequentItem[]): FrequentItem[] {
         typeof item.name === 'string',
     )
     .slice(0, FREQUENT_ITEMS_LIMIT);
+}
+
+export function isFrequentItemsCacheFresh(savedAt?: number, now = Date.now()): boolean {
+  if (!savedAt) return false;
+  return now - savedAt < FREQUENT_ITEMS_CACHE_TTL_MS;
 }
 
 export function loadFrequentItemsCache(): FrequentItem[] {
@@ -67,10 +74,30 @@ export function loadFrequentItemsCache(): FrequentItem[] {
 export function saveFrequentItemsCache(items: FrequentItem[]): void {
   if (typeof localStorage === 'undefined') return;
   try {
-    const payload: CachePayload = { v: CACHE_VERSION, items: sanitizeFrequentItems(items) };
+    const payload: CachePayload = {
+      v: CACHE_VERSION,
+      items: sanitizeFrequentItems(items),
+      savedAt: Date.now(),
+    };
     localStorage.setItem(FREQUENT_ITEMS_CACHE_KEY, JSON.stringify(payload));
   } catch {
     // ignore quota / private mode
+  }
+}
+
+/** Skip server fetch when local cache is populated and still fresh. */
+export function shouldRefreshFrequentItems(): boolean {
+  if (typeof localStorage === 'undefined') return true;
+  try {
+    const raw = localStorage.getItem(FREQUENT_ITEMS_CACHE_KEY);
+    if (!raw) return true;
+    const parsed = JSON.parse(raw) as CachePayload;
+    if (parsed?.v !== CACHE_VERSION || !Array.isArray(parsed.items) || parsed.items.length === 0) {
+      return true;
+    }
+    return !isFrequentItemsCacheFresh(parsed.savedAt);
+  } catch {
+    return true;
   }
 }
 

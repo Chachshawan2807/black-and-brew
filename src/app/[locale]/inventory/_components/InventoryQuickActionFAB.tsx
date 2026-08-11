@@ -21,6 +21,7 @@ import {
 import {
   loadFrequentItemsCache,
   saveFrequentItemsCache,
+  shouldRefreshFrequentItems,
   touchFrequentItemInCache,
 } from '@/lib/inventory-frequent-items';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
@@ -120,7 +121,6 @@ export default function InventoryQuickActionFAB() {
       if (saved?.id && saved.name) {
         setFrequentItems(touchFrequentItemInCache({ id: saved.id, name: saved.name }));
       }
-      void loadFrequentItems();
       setIsOpen(false);
     },
   });
@@ -218,7 +218,9 @@ export default function InventoryQuickActionFAB() {
 
   useEffect(() => {
     if (!isMounted) return;
-    void loadFrequentItems();
+    if (shouldRefreshFrequentItems()) {
+      void loadFrequentItems();
+    }
   }, [isMounted, loadFrequentItems]);
 
   useEffect(() => {

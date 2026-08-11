@@ -61,6 +61,8 @@ type InventoryAuditOptions = {
   notificationContext?: 'inventory_count' | 'inventory';
   /** Tags audit logs with the UI origin that triggered the stock change. */
   notificationSource?: InventoryNotificationSource;
+  /** Client-known value before a field edit — avoids a pre-mutation SELECT on the critical path. */
+  previousFieldValue?: string | number | null;
 };
 
 type InventoryLifecycleType = 'ADD' | 'DELETE';
@@ -110,7 +112,9 @@ export async function recordItemAddHistory(
       itemName ?? ''
     );
 
-    revalidatePath('/[locale]/inventory', 'page');
+    deferInventorySideEffects('recordItemAddHistory', async () => {
+      revalidateInventoryPaths();
+    });
     return { success: true };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -540,21 +544,14 @@ export async function updateInventoryItemField(
     }
 
     const sanitizedValue = sanitizeInventoryFieldValue(parsed.data.field, parsed.data.value);
-    const { data: beforeItem, error: beforeError } = await supabase
-      .from('inventory_items')
-      .select('name, order_qty, order_point, target_stock, unit, source, count_policy')
-      .eq('id', itemId)
-      .maybeSingle();
+    const previousFieldValue = auditOptions?.previousFieldValue ?? null;
 
-    if (beforeError) {
-      console.error('[updateInventoryItemField] Supabase Error:', beforeError.message, beforeError.details);
-      return { success: false, error: beforeError.message };
-    }
-
-    const { error } = await supabase
+    const { data: updatedItem, error } = await supabase
       .from('inventory_items')
       .update({ [parsed.data.field]: sanitizedValue, updated_at: new Date().toISOString() })
-      .eq('id', itemId);
+      .eq('id', itemId)
+      .select('name, order_qty, order_point, target_stock, unit, source, count_policy')
+      .maybeSingle();
 
     if (error) {
       console.error('[updateInventoryItemField] Supabase Error:', error.message, error.details);
@@ -567,16 +564,16 @@ export async function updateInventoryItemField(
         module: 'inventory',
         entityType: 'inventory_item',
         entityId: itemId,
-        entityLabel: beforeItem?.name ?? null,
+        entityLabel: updatedItem?.name ?? null,
         fieldChanges: computeFieldChanges(
-          { [parsed.data.field]: beforeItem?.[parsed.data.field] ?? null },
+          { [parsed.data.field]: previousFieldValue },
           { [parsed.data.field]: sanitizedValue },
         ),
         metadata: withAuditMetadata(
           {
             operation: 'update_inventory_field',
             field: parsed.data.field,
-            itemName: beforeItem?.name ?? null,
+            itemName: updatedItem?.name ?? null,
           },
           auditOptions,
         ),
@@ -685,6 +682,23 @@ export async function deleteInventoryItem(itemId: string, auditOptions?: Invento
 
     if (error) {
       console.error('[deleteInventoryItem] Supabase Error:', error.message, error.details);
+      deferInventorySideEffects('deleteInventoryItem', async () => {
+        await recordDataChange({
+          action: 'DELETE',
+          module: 'inventory',
+          entityType: 'inventory_item',
+          entityId: itemId,
+          entityLabel: itemBeforeDelete?.name ?? null,
+          oldValue: itemBeforeDelete ?? null,
+          status: 'failed',
+          errorMessage: error.message,
+          metadata: withAuditMetadata({}, auditOptions),
+        });
+      });
+      return { success: false, error: error.message };
+    }
+
+    deferInventorySideEffects('deleteInventoryItem', async () => {
       await recordDataChange({
         action: 'DELETE',
         module: 'inventory',
@@ -692,25 +706,11 @@ export async function deleteInventoryItem(itemId: string, auditOptions?: Invento
         entityId: itemId,
         entityLabel: itemBeforeDelete?.name ?? null,
         oldValue: itemBeforeDelete ?? null,
-        status: 'failed',
-        errorMessage: error.message,
         metadata: withAuditMetadata({}, auditOptions),
       });
-      return { success: false, error: error.message };
-    }
-
-    await recordDataChange({
-      action: 'DELETE',
-      module: 'inventory',
-      entityType: 'inventory_item',
-      entityId: itemId,
-      entityLabel: itemBeforeDelete?.name ?? null,
-      oldValue: itemBeforeDelete ?? null,
-      metadata: withAuditMetadata({}, auditOptions),
+      revalidateInventoryPaths();
     });
 
-    // Step 3: UI Refresh Logic
-    revalidatePath('/[locale]/inventory');
     return { success: true };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -731,16 +731,18 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
       .select('id, name, stock')
       .in('id', itemIds);
 
-    for (const item of itemsBeforeDelete ?? []) {
-      const stockAtDelete = Number(item.stock ?? 0);
-      await insertInventoryLifecycleTransaction(
-        item.id,
-        'DELETE',
-        stockAtDelete < 0 ? 0 : stockAtDelete,
-        0,
-        item.name ?? ''
-      );
-    }
+    await Promise.all(
+      (itemsBeforeDelete ?? []).map(async (item) => {
+        const stockAtDelete = Number(item.stock ?? 0);
+        await insertInventoryLifecycleTransaction(
+          item.id,
+          'DELETE',
+          stockAtDelete < 0 ? 0 : stockAtDelete,
+          0,
+          item.name ?? '',
+        );
+      }),
+    );
 
     const { error } = await supabase
       .from('inventory_items')
@@ -749,32 +751,36 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
 
     if (error) {
       console.error('[deleteInventoryItemsBulk] Supabase Error:', error.message, error.details);
-      await recordDataChange({
-        action: 'BULK_DELETE',
-        module: 'inventory',
-        entityType: 'inventory_item',
-        status: 'failed',
-        errorMessage: error.message,
-        metadata: withAuditMetadata({ itemIds, count: itemIds.length }, auditOptions),
+      deferInventorySideEffects('deleteInventoryItemsBulk', async () => {
+        await recordDataChange({
+          action: 'BULK_DELETE',
+          module: 'inventory',
+          entityType: 'inventory_item',
+          status: 'failed',
+          errorMessage: error.message,
+          metadata: withAuditMetadata({ itemIds, count: itemIds.length }, auditOptions),
+        });
       });
       return { success: false, error: error.message, deleted: 0 };
     }
 
-    await recordDataChange({
-      action: 'BULK_DELETE',
-      module: 'inventory',
-      entityType: 'inventory_item',
-      metadata: withAuditMetadata(
-        {
-          itemIds,
-          count: itemIds.length,
-          labels: (itemsBeforeDelete ?? []).map((item) => item.name),
-        },
-        auditOptions
-      ),
+    deferInventorySideEffects('deleteInventoryItemsBulk', async () => {
+      await recordDataChange({
+        action: 'BULK_DELETE',
+        module: 'inventory',
+        entityType: 'inventory_item',
+        metadata: withAuditMetadata(
+          {
+            itemIds,
+            count: itemIds.length,
+            labels: (itemsBeforeDelete ?? []).map((item) => item.name),
+          },
+          auditOptions,
+        ),
+      });
+      revalidateInventoryPaths();
     });
 
-    revalidatePath('/[locale]/inventory');
     return { success: true, deleted: itemIds.length };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
@@ -1477,6 +1483,9 @@ export async function recordInventoryCountAndUpdateStock(
 }
 
 // === FETCH COUNT ACCURACY STATS ===
+/** Recent verification rows scanned for accuracy aggregation (newest first). */
+const COUNT_ACCURACY_VERIFICATION_LIMIT = 5000;
+
 export async function fetchCountAccuracyStats(): Promise<{
   success: boolean;
   data?: CountAccuracyStatsResult;
@@ -1494,7 +1503,8 @@ export async function fetchCountAccuracyStats(): Promise<{
       supabase
         .from('inventory_count_verifications')
         .select('inventory_item_id, matched, system_stock_qty, counted_qty, counted_at')
-        .order('counted_at', { ascending: false }),
+        .order('counted_at', { ascending: false })
+        .limit(COUNT_ACCURACY_VERIFICATION_LIMIT),
       supabase
         .from('inventory_items')
         .select('id, name, count_policy')

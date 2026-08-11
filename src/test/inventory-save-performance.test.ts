@@ -14,6 +14,10 @@ const branchWithdrawClient = fs.readFileSync(
   path.resolve(__dirname, '../app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx'),
   'utf-8',
 );
+const inventoryClient = fs.readFileSync(
+  path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
+  'utf-8',
+);
 
 function criticalPathBeforeAfter(fnName: string, source: string): string {
   const fnStart = source.indexOf(`export async function ${fnName}`);
@@ -100,5 +104,44 @@ describe('inventory save performance', () => {
     expect(branchWithdrawClient).not.toMatch(
       /await refresh\(\)[\s\S]*openDialog\(saveResultDialogRef\.current\)/,
     );
+    expect(branchWithdrawClient).toContain('Promise.all');
+  });
+
+  test('warehouse field edit uses one inventory_items query on the critical path', () => {
+    const critical = criticalPathBeforeAfter('updateInventoryItemField', inventoryActions);
+    expect((critical.match(/from\('inventory_items'\)/g) ?? []).length).toBe(1);
+    expect(critical).toContain('.update(');
+  });
+
+  test('deleteInventoryItem defers audit log and revalidation', () => {
+    const fnStart = inventoryActions.indexOf('export async function deleteInventoryItem');
+    const fnEnd = inventoryActions.indexOf('export async function deleteInventoryItemsBulk');
+    const fnBody = inventoryActions.slice(fnStart, fnEnd);
+    const successDefer = fnBody.indexOf("deferInventorySideEffects('deleteInventoryItem'");
+    expect(successDefer).toBeGreaterThan(-1);
+    expect(fnBody.slice(successDefer)).toContain('recordDataChange');
+    expect(fnBody.slice(successDefer)).toContain('revalidateInventoryPaths');
+    expect(fnBody.slice(0, successDefer)).not.toContain('await recordDataChange');
+  });
+
+  test('fetchCountAccuracyStats bounds verification scan', () => {
+    expect(inventoryActions).toContain('COUNT_ACCURACY_VERIFICATION_LIMIT');
+    expect(inventoryActions).toMatch(
+      /inventory_count_verifications[\s\S]*\.limit\(COUNT_ACCURACY_VERIFICATION_LIMIT\)/,
+    );
+  });
+
+  test('purchase order modal does not refetch full inventory on open', () => {
+    const openPo = inventoryClient.match(
+      /const handleOpenPurchaseOrders = useCallback\([\s\S]*?\}, \[[^\]]*\]\);/,
+    )?.[0];
+    expect(openPo).toBeTruthy();
+    expect(openPo).not.toContain('fetchConfigAndInventory');
+  });
+
+  test('inventory grid save field handler avoids items dependency churn', () => {
+    expect(inventoryClient).toContain('itemsRef');
+    expect(inventoryClient).toMatch(/const totalItems = itemsRef\.current\.length/);
+    expect(inventoryClient).toMatch(/previousFieldValue:/);
   });
 });

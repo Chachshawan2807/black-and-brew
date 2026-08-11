@@ -25,6 +25,7 @@ import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import {
   loadFrequentItemsCache,
   saveFrequentItemsCache,
+  shouldRefreshFrequentItems,
   touchFrequentItemInCache,
 } from '@/lib/inventory-frequent-items';
 import { useInventoryGridFilter } from '@/hooks/use-inventory-grid-filter';
@@ -890,6 +891,8 @@ export default function InventoryClient({
     return false;
   }, [isReadOnly]);
   const [items, setItems] = useState<InventoryItem[]>(initialItems);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const [columns, setColumns] = useState<ColumnDef[]>(() =>
     buildColumnsFromSettings(initialColumnSettings ?? undefined, parseLocalColumnWidths())
   );
@@ -947,12 +950,6 @@ export default function InventoryClient({
       if (saved?.id && saved.name) {
         setFrequentItems(touchFrequentItemInCache({ id: saved.id, name: saved.name }));
       }
-      void fetchFrequentItems().then((res) => {
-        if (res.success && res.data) {
-          setFrequentItems(res.data);
-          saveFrequentItemsCache(res.data);
-        }
-      });
     },
     onSaveError: () => setSavingState('idle'),
   });
@@ -1002,7 +999,9 @@ export default function InventoryClient({
   };
 
   useEffect(() => {
-    loadFrequentItems();
+    if (shouldRefreshFrequentItems()) {
+      void loadFrequentItems();
+    }
   }, []);
 
   useEffect(() => {
@@ -1108,9 +1107,7 @@ export default function InventoryClient({
   const handleOpenPurchaseOrders = useCallback(() => {
     preloadPurchaseOrdersModal();
     setShowPurchaseOrderModal(true);
-    // Refresh from DB when PO modal opens so stock matches other windows.
-    void fetchConfigAndInventory();
-  }, [fetchConfigAndInventory]);
+  }, []);
 
   const handleOpenAddItem = useCallback(() => {
     setShowAddModal(true);
@@ -1319,7 +1316,7 @@ export default function InventoryClient({
     if (field === 'sort_order') {
       // Step 1: Validate input
       const numValue = Number(value);
-      const totalItems = items.length;
+      const totalItems = itemsRef.current.length;
       
       // Check if valid number, >= 1, <= totalItems
       if (isNaN(numValue) || numValue < 1 || numValue > totalItems) {
@@ -1330,7 +1327,7 @@ export default function InventoryClient({
       }
 
       // Step 2: Get current items sorted by sort_order to find current position
-      const currentSorted = [...items].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      const currentSorted = [...itemsRef.current].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
       const currentIndex = currentSorted.findIndex(i => i.id === id);
       const targetIndex = numValue - 1; // convert to 0-based
 
@@ -1441,6 +1438,9 @@ export default function InventoryClient({
       } else {
         const result = await updateInventoryItemField(id, field, sanitizedValue, {
           clientSessionId: getClientSessionId(),
+          previousFieldValue: original
+            ? (original[field as keyof InventoryItem] as string | number | null | undefined) ?? null
+            : null,
         });
         if (!result.success) {
           if (shouldQueueMutationResult(result)) {
@@ -1493,7 +1493,6 @@ export default function InventoryClient({
     blockIfReadOnly,
     fetchConfigAndInventory,
     handleUpdateField,
-    items,
     markQueuedSave,
     pushHistory,
   ]);

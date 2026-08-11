@@ -214,9 +214,9 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     setIsSearchFocused(true);
   }, [items, quickSearch, bulkQueue]);
 
-  const refreshHistoryIfOpen = useCallback(async () => {
+  const refreshHistoryIfOpen = useCallback(() => {
     if (!showHistoryModal || !onHistoryRefresh) return;
-    await onHistoryRefresh();
+    void onHistoryRefresh();
   }, [showHistoryModal, onHistoryRefresh]);
 
   const executeBulkSubmit = useCallback(async () => {
@@ -292,7 +292,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
         );
       }
 
-      await refreshHistoryIfOpen();
+      refreshHistoryIfOpen();
     } finally {
       setIsQuickPending(false);
     }
@@ -411,7 +411,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
             );
           }
 
-          await refreshHistoryIfOpen();
+          refreshHistoryIfOpen();
         } finally {
           backgroundSyncRef.current = false;
         }

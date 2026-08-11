@@ -120,7 +120,11 @@ export function useInventoryHistory() {
     }
     setShowHistoryModal(true);
     void prefetchInventoryHistoryFirstPage();
-    warmInventoryHistoryFilterPages();
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(() => warmInventoryHistoryFilterPages(), { timeout: 4_000 });
+    } else {
+      setTimeout(() => warmInventoryHistoryFilterPages(), 250);
+    }
   }, [applyCachedPage]);
 
   const handleHistoryTypeFilterChange = useCallback(

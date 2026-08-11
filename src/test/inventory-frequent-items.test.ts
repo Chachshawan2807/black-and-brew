@@ -4,10 +4,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   FREQUENT_ITEMS_CACHE_KEY,
   FREQUENT_ITEMS_LIMIT,
+  isFrequentItemsCacheFresh,
   loadFrequentItemsCache,
   rankFrequentItemIds,
   saveFrequentItemsCache,
   resolveFrequentItemNames,
+  shouldRefreshFrequentItems,
   touchFrequentItemInCache,
 } from '@/lib/inventory-frequent-items';
 
@@ -92,6 +94,21 @@ describe('inventory frequent items local cache', () => {
     localStorage.setItem(FREQUENT_ITEMS_CACHE_KEY, '{not-json');
     expect(loadFrequentItemsCache()).toEqual([]);
   });
+
+  test('shouldRefreshFrequentItems skips network when cache is fresh', () => {
+    saveFrequentItemsCache([{ id: '1', name: 'Milk' }]);
+    expect(shouldRefreshFrequentItems()).toBe(false);
+  });
+
+  test('shouldRefreshFrequentItems requests refresh when cache is stale', () => {
+    saveFrequentItemsCache([{ id: '1', name: 'Milk' }]);
+    const raw = localStorage.getItem(FREQUENT_ITEMS_CACHE_KEY)!;
+    const parsed = JSON.parse(raw) as { savedAt?: number };
+    parsed.savedAt = Date.now() - 6 * 60 * 1000;
+    localStorage.setItem(FREQUENT_ITEMS_CACHE_KEY, JSON.stringify(parsed));
+    expect(isFrequentItemsCacheFresh(parsed.savedAt)).toBe(false);
+    expect(shouldRefreshFrequentItems()).toBe(true);
+  });
 });
 
 describe('frequent items UX contracts', () => {
@@ -107,6 +124,7 @@ describe('frequent items UX contracts', () => {
 
     expect(fabCode).toContain('loadFrequentItemsCache');
     expect(fabCode).toContain('saveFrequentItemsCache');
+    expect(fabCode).toContain('shouldRefreshFrequentItems');
     expect(fabCode).toMatch(/useEffect\([\s\S]*loadFrequentItems[\s\S]*\[\s*isMounted\s*,\s*loadFrequentItems\s*\]/);
     expect(fabCode).toMatch(/refresh\(\s*\{\s*soft:/);
     expect(contextCode).toMatch(/soft\s*[?:]|options\?\.soft|soft\?:/);

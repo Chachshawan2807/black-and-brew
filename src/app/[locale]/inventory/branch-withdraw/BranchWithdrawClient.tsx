@@ -409,8 +409,10 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
       openDialog(saveResultDialogRef.current);
 
       void (async () => {
-        await refresh();
-        const historyResult = await fetchBranchWithdrawalHistory(30);
+        const [, historyResult] = await Promise.all([
+          refresh(),
+          fetchBranchWithdrawalHistory(30),
+        ]);
         if (historyResult.success) {
           setHistory(historyResult.data);
         }
