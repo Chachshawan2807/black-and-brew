@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-09 | Enforcement: Mandatory
+> Version: 9.3 | Last Updated: 2026-08-11 | Enforcement: Mandatory
 
 ---
 
@@ -19,6 +19,7 @@
 | Table | Column | Notes |
 | --- | :--- | --- |
 | `inventory_transactions` | `inventory_item_id` | FK to `inventory_items.id` — renamed from `product_id` |
+| `inventory_transactions` | `transaction_at` | Business date for IN/OUT ledger rows (separate from `created_at` audit timestamp) |
 | `inventory_items` | `stock`, `order_qty`, `order_point`, `target_stock` | NUMERIC type, sanitize empty → 0 |
 | `inventory_items` | `count_policy` | `exact_count` or `sufficiency_check`; controls count accuracy and manual PO quantity |
 | `inventory_items` | `sort_order` | INTEGER, controls drag-and-drop ordering |

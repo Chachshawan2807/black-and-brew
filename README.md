@@ -362,6 +362,7 @@ npm run dev
 | `npm run start` | รันเวอร์ชัน production บนเครื่อง | ทดสอบหลัง build แล้ว |
 | `npm run lint` | ตรวจโค้ดว่าตามมาตรฐานหรือไม่ | ก่อน commit |
 | `npm run lint:md` | ตรวจไฟล์ Markdown | หลังแก้ README หรือ docs |
+| `npm run docs:links` | ตรวจลิงก์ในเอกสารโปรเจกต์ | หลังแก้ path ใน docs |
 | `npm test` | รันชุดทดสอบอัตโนมัติ | ก่อน commit หรือก่อน deploy |
 | `npm run db:verify` | ตรวจว่า migration ฐานข้อมูลตรงกับโค้ด | หลังดึงโค้ดใหม่หรือก่อน deploy |
 

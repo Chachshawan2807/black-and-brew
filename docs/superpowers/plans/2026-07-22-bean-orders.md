@@ -25,7 +25,7 @@
 
 | File | Responsibility |
 |------|----------------|
-| `supabase/migrations/20260722140000_bean_orders.sql` | Tables, RLS, storage bucket policy |
+| `supabase/migrations/20260722074607_bean_orders.sql` | Tables, RLS, storage bucket policy |
 | `src/lib/bean-orders/types.ts` | Shared TS types |
 | `src/lib/bean-orders/pricing.ts` | Weight conversion + totals |
 | `src/lib/bean-orders/order-status.ts` | Status labels, transitions, history append |
@@ -60,7 +60,7 @@
 ### Task 2: Database migration
 
 **Files:**
-- Create: `supabase/migrations/20260722140000_bean_orders.sql`
+- Create: `supabase/migrations/20260722074607_bean_orders.sql`
 
 Tables: `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments`
 

@@ -51,16 +51,19 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 | `20260622162719_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
 | `20260708095637_reset_accuracy_history.sql` | Reset count accuracy ledger after workflow changes |
 | `20260708104230_remove_inventory_recommended_target_stock.sql` | Remove inventory recommended target stock (retired) |
-| `20260710162206_harden_security_definer_views_and_search_path.sql` | `security_invoker` on AI views + lock `search_path` on inventory/AI RPCs |
-| `20260711120000_inventory_branch_withdrawals.sql` | Branch 2 withdrawal header table + `record_branch_withdrawal_batch` RPC |
-| `20260711164656_reset_accuracy_history_major_overhaul.sql` | Reset accuracy ledger after gauge/report overhaul |
-| `20260711223000_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening |
-| `20260713100000_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel) |
-| `20260722140000_bean_orders.sql` | Bean order tables (`bean_*`), RLS, Storage bucket `bean-order-slips` |
+| `20260710162439_harden_security_definer_views_and_search_path.sql` | `security_invoker` on AI views + lock `search_path` on inventory/AI RPCs |
+| `20260711150322_inventory_branch_withdrawals.sql` | Branch 2 withdrawal header table + `record_branch_withdrawal_batch` RPC |
+| `20260711164826_reset_accuracy_history_major_overhaul.sql` | Reset accuracy ledger after gauge/report overhaul |
+| `20260711153209_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening |
+| `20260713151502_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel) |
+| `20260722074607_bean_orders.sql` | Bean order tables (`bean_*`), RLS, Storage bucket `bean-order-slips` |
 | `20260724120000_app_preferences_sidebar_menu.sql` | `app_preferences` table + Realtime for sidebar menu order sync |
-| `20260725120000_harden_rls_and_rpc_execute.sql` | RLS hardening + RPC execute lockdown (see `docs/security/rls-audit.md`) |
-| `20260726153946_drop_service_records_unused_columns.sql` | Drop unused `service_records` columns (`cost`, `person_in_charge`, `status`, `notes`) |
-| `20260729100000_record_inventory_transaction_old_stock.sql` | `record_inventory_transaction` RPC returns `old_stock` in JSON for notifications/audit |
+| `20260724170556_harden_rls_and_rpc_execute.sql` | RLS hardening + RPC execute lockdown (see `docs/security/rls-audit.md`) |
+| `20260726154007_drop_service_records_unused_columns.sql` | Drop unused `service_records` columns (`cost`, `person_in_charge`, `status`, `notes`) |
+| `20260729034015_record_inventory_transaction_old_stock.sql` | `record_inventory_transaction` RPC returns `old_stock` in JSON for notifications/audit |
+| `20260810160403_insight_notification_realtime.sql` | RLS read scopes on `data_change_logs` for proactive insights, bean-order, and PIN lockout notifications |
+| `20260811105704_inventory_transaction_at.sql` | `inventory_transactions.transaction_at` business date + `p_transaction_at` on `record_inventory_transaction` RPC |
+| `20260811115400_reset_inventory_history_transaction_at.sql` | Reset IN/OUT ledger, count verifications, and branch withdrawals after `transaction_at` rollout |
 
 ## Cleanup notes
 

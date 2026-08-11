@@ -24,7 +24,7 @@
 
 **Files:**
 - Modify: `PROJECT_MAP.md` (drop deleted action; add `migrate-inventory-sort-order.ts`; refresh date; optional shared UI notes)
-- Modify: `sql/README.md` + `docs/database.md` (add `20260726153946_drop_service_records_unused_columns.sql`)
+- Modify: `sql/README.md` + `docs/database.md` (add `20260726154007_drop_service_records_unused_columns.sql`)
 
 ## Task 3: Validate paths + sync keepers
 

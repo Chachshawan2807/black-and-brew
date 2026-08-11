@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-09
+> Version: 9.3 | Last Updated: 2026-08-11
 
 ---
 
@@ -182,4 +182,6 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Bean orders | `bean-order-actions.ts`, `lib/bean-orders/`, TrackingMore webhook + cron sync |
 | AI full coverage | 24 AI-readable tables; deterministic routes for bean orders + inventory accuracy |
 | Proactive insights | `src/lib/proactive-insights/`, `GET /api/insight-alerts`, Web Push + NotificationBell; prefs `proactiveInsights` |
+| Navigation perf | `route-chunk-preload.ts`, `warm-route-navigation.ts`, `ViewTransitionNavigation.tsx` — idle/touch prefetch + view transitions |
+| Inventory ledger date | `inventory_transactions.transaction_at` + `p_transaction_at` on `record_inventory_transaction` RPC |
 | SQL blueprint | `sql/record_inventory_transaction.sql` |

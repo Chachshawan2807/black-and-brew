@@ -1,6 +1,6 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-09 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.3 | Last Updated: 2026-08-11 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
@@ -49,7 +49,7 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 - Context: Staff need a dedicated workflow for coffee bean orders with payment slips, shipping, and TrackingMore — separate from inventory stock deduction.
 - Decision:
   1. Route: `src/app/[locale]/bean-orders/` with list, create, detail, edit pages.
-  2. Tables: `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments` (`20260722140000_bean_orders.sql`).
+  2. Tables: `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments` (`20260722074607_bean_orders.sql`).
   3. Mutations: `bean-order-actions.ts`; domain logic in `src/lib/bean-orders/`.
   4. Tracking: `POST /api/bean-orders/tracking-webhook`, `GET /api/bean-orders/sync-tracking` (CRON_SECRET); `TRACKINGMORE_API_KEY`.
   5. Storage: `bean-order-slips` bucket; dual-axis status (`payment_status` × `fulfillment_status`).
@@ -81,7 +81,7 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
   2. Mutations: `branch-withdraw-actions.ts` → `record_branch_withdrawal_batch` RPC (blueprint in `sql/record_branch_withdrawal_batch.sql`).
   3. Header table: `inventory_branch_withdrawals`; draft in `sessionStorage` key `inventory-branch-withdraw-draft:v1`.
 - Impact: Sidebar link in `menu-list.ts`; inventory notifications via `recordDataChange()`.
-- Evidence: `supabase/migrations/20260711120000_inventory_branch_withdrawals.sql`, `inventory-branch-withdraw-format.test.ts`
+- Evidence: `supabase/migrations/20260711150322_inventory_branch_withdrawals.sql`, `inventory-branch-withdraw-format.test.ts`
 
 ### DEC-080: Feature `_components` Colocation (v9.1)
 

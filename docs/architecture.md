@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-09 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.3 | Last Updated: 2026-08-11 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -199,6 +199,9 @@ BeanOrdersClient / BeanOrderFormClient / BeanOrderDetailClient
 ```text
 RoundedSelect / BB_SELECT_TRIGGER_CLASS — shared native <select> chrome (bean-orders, sales, dashboard roster, maintenance listbox trigger)
 navigateWithViewTransition / navigateWithoutViewTransition — src/lib/view-transition.ts (date-filter navigations skip VT)
+warmRouteNavigation — src/lib/warm-route-navigation.ts (route chunk preload + router.prefetch before tap)
+route-chunk-preload — src/lib/route-chunk-preload.ts (NavPreloadLink, RoutePrefetchOnIdle, bean-orders list hover)
+ViewTransitionNavigation — src/components/shell/ViewTransitionNavigation.tsx (sidebar + in-app links)
 ```
 
 ### Inventory Realtime Context (v8.6)
@@ -241,7 +244,7 @@ Quick Entry / FAB → recordTransaction() → supabase.rpc('record_inventory_tra
 
 ```text
 Server mutation → recordDataChange() → data_change_logs INSERT (module=inventory or schedule/daily_report)
-→ Supabase Realtime on data_change_logs → useInventoryNotifications() (same device; schedule rows via RLS policy from `20260713100000`)
+→ Supabase Realtime on data_change_logs → useInventoryNotifications() (same device; schedule rows via RLS policy from `20260713151502`)
 → dispatchInventoryWebPush() (fire-and-forget) → web-push → push_subscriptions rows
 → PushSubscriptionManager (layout) registers endpoint via registerPushSubscription()
 → NotificationPreferencesSection syncs prefs to push_subscriptions.prefs_json

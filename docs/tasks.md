@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-09
+> Version: 9.3 | Last Updated: 2026-08-11
 
 ---
 
@@ -23,11 +23,12 @@ Notable completed work:
 - [x] AI full coverage: 24 AI-readable tables; deterministic bean orders + inventory accuracy routes
 - [x] Sidebar menu drag-reorder (`sidebar-menu-order.ts`) + cross-device sync (`app_preferences`)
 - [x] Proactive cross-module insights (`/api/insight-alerts`, Web Push, Command Center ops panels)
-- [x] RLS hardening migration (`20260725120000`) + WAF config (`config/vercel-firewall.json`)
+- [x] RLS hardening migration (`20260724170556`) + WAF config (`config/vercel-firewall.json`)
 - [x] Shared `RoundedSelect` / select-trigger styles; view-transition navigation helpers
 - [x] Schedule toolbar “ล้างทั้งหมด” removed
 - [x] Inventory frequent-items localStorage cache
 - [x] `shipBeanOrder` deferred TrackingMore + push via `after()` (no sync `trackingWarning`)
+- [x] `inventory_transactions.transaction_at` business date + ledger reset migration (`20260811105704`, `20260811115400`)
 - [x] Retired: inventory recommended target stock; weather API; Market Insights module; obsolete root protocol/skill stubs; `daily-report-notification-actions.ts`
 
 See `docs/changelog.md` and git history for dated entries.

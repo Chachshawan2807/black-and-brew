@@ -2,6 +2,16 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-08-11 (Doc sync + migration index + link validator)
+
+- Documented migrations `20260810160403_insight_notification_realtime.sql`, `20260811105704_inventory_transaction_at.sql`, and `20260811115400_reset_inventory_history_transaction_at.sql` in `docs/database.md` and `sql/README.md`.
+- Synced keeper migration filenames to on-disk `supabase/migrations/` timestamps (e.g. `20260722074607_bean_orders.sql`, `20260724170556_harden_rls_and_rpc_execute.sql`, `20260729034015_record_inventory_transaction_old_stock.sql`).
+- Synced keepers for `transaction_at` ledger column, `p_transaction_at` RPC param, and navigation prefetch helpers (`warm-route-navigation.ts`, `route-chunk-preload.ts`, `ViewTransitionNavigation.tsx`).
+- Added `scripts/validate-md-links.mjs` + `npm run docs:links` — validated 67 project-owned markdown files, 0 broken links.
+- Orphan scan (`scripts/scan-dead-imports.mjs`): 34 false positives from colocated `_components` relative imports — no `src/` deletions.
+- No `.db`/`.sqlite` artifacts in repo; no `graphify-out/` directory. Third-party `.agents/skills/` left unchanged.
+- Bumped keeper stamps to 2026-08-11 (product v9.3 unchanged).
+
 ## 2026-08-09 (Doc sync + graphify hook retirement)
 
 - Documented migration `20260729100000_record_inventory_transaction_old_stock.sql` in `docs/database.md` and `sql/README.md` (`old_stock` in `record_inventory_transaction` RPC JSON).

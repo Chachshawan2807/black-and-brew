@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-09
+> Version: 9.3 | Last Updated: 2026-08-11
 
 ---
 
@@ -253,7 +253,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 
 - Domain logic: `src/lib/bean-orders/` (`pricing.ts`, `order-status.ts`, `trackingmore.ts`, …)
 - Tables: `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments`
-- Migration: `supabase/migrations/20260722140000_bean_orders.sql`
+- Migration: `supabase/migrations/20260722074607_bean_orders.sql`
 - Audit: `recordDataChange()` with `module = 'bean_orders'`
 
 ---
@@ -322,7 +322,9 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 ### `record_inventory_transaction`
 
 - Source: `sql/record_inventory_transaction.sql`
-- Row lock → validate → update stock → insert transaction (IN/OUT only)
+- Parameters: `p_product_id`, `p_type` (`IN`/`OUT`), `p_quantity`, `p_note`, `p_transaction_at` (optional business date; defaults UTC now)
+- Row lock → validate → update stock → insert transaction with `transaction_at` (IN/OUT only)
+- Returns JSON: `{ success, old_stock, new_stock, balance_after }`
 - `SECURITY DEFINER`
 
 ### `set_inventory_stock` (v6.8+)

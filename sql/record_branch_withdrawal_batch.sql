@@ -27,7 +27,7 @@
 --   inventory_transactions (type IN, note prefix [branch2-withdraw:{id}])
 --
 -- Canonical migration:
---   supabase/migrations/20260711120000_inventory_branch_withdrawals.sql
+--   supabase/migrations/20260711150322_inventory_branch_withdrawals.sql
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.record_branch_withdrawal_batch(

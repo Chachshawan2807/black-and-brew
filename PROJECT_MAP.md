@@ -1,6 +1,6 @@
 # PROJECT_MAP — BLACK-AND-BREW ERP
 
-> Generated: 2026-08-09 (GMT+7) | Version: 9.3
+> Generated: 2026-08-11 (GMT+7) | Version: 9.3
 
 Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) over reading this file wholesale. Canonical agent rules: `AGENTS.md`.
 
@@ -87,10 +87,10 @@ black-and-brew/
 │   │   ├── api/
 │   │   ├── manifest.ts
 │   │   └── page.tsx
-│   ├── components/          # Shared UI (2+ features): auth, sidebar, ui (incl. rounded-select), ai, notifications
+│   ├── components/          # Shared UI (2+ features): auth, sidebar, shell (ViewTransitionNavigation, RoutePrefetchOnIdle), ui (incl. rounded-select), ai, notifications
 │   ├── contexts/            # InventoryRealtimeContext
 │   ├── hooks/
-│   ├── lib/                 # Domain logic (schedule/, inventory-*, view-transition, passkey/, policies/, proactive-insights/, offline-*, …)
+│   ├── lib/                 # Domain logic (schedule/, inventory-*, route-chunk-preload, warm-route-navigation, view-transition, passkey/, policies/, proactive-insights/, offline-*, …)
 │   ├── test/                # Vitest suites
 │   ├── workers/             # Web Workers (inventory-table.worker.ts)
 │   └── proxy.ts             # next-intl middleware (Next.js 16)
@@ -126,7 +126,7 @@ black-and-brew/
 
 ## Tests (`src/test/`)
 
-Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `offline-mutation-route.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `schedule-clear-all-removed.test.ts`, `live_shift_list.test.ts`, `bean-orders-*.test.ts`, `rounded-select.test.ts`, `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-intent-classifier.test.ts`, `sidebar-menu-order.test.ts`, `pwa-sidebar-navigation.test.ts`, `proactive-insights-*.test.ts`, `insight-alerts-route.test.ts`, `insight-web-push.test.ts`, `home-ops-panels.test.tsx`, `view-transition-navigation-race.test.ts`
+Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `offline-mutation-route.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `schedule-clear-all-removed.test.ts`, `live_shift_list.test.ts`, `bean-orders-*.test.ts`, `rounded-select.test.ts`, `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-intent-classifier.test.ts`, `sidebar-menu-order.test.ts`, `pwa-sidebar-navigation.test.ts`, `proactive-insights-*.test.ts`, `insight-alerts-route.test.ts`, `insight-web-push.test.ts`, `home-ops-panels.test.tsx`, `view-transition-navigation-race.test.ts`, `warm-route-navigation.test.ts`, `inventory-transaction-result.test.ts`, `inventory-in-out-theoretical.test.ts`
 
 ---
 

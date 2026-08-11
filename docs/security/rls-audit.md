@@ -37,7 +37,7 @@ Anyone with the public anon key can call PostgREST directly. RLS is the last lin
 
 ## Migration applied
 
-`supabase/migrations/20260725120000_harden_rls_and_rpc_execute.sql`
+`supabase/migrations/20260724170556_harden_rls_and_rpc_execute.sql`
 
 Changes:
 
@@ -78,7 +78,7 @@ Supabase advisor flags `USING (true)` on inventory/shifts mutations. Acceptable 
 
 ### 3. `data_change_logs` anon SELECT
 
-Intentional for inventory realtime + daily report history. Scoped by `module` / `entity_type` — keep monitored.
+Intentional for inventory realtime, daily report history, proactive insights, bean-order notifications, and PIN lockout alerts. Scoped by `module` / `entity_type` / `metadata.kind` — see `20260810160403_insight_notification_realtime.sql`. Keep monitored.
 
 ### 4. Leaked password protection
 
