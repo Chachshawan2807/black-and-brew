@@ -78,6 +78,10 @@ function resolveNotificationDetailSource(notification, trimmedSummary) {
   return trimmedSummary;
 }
 
+function isIosPushClient() {
+  return /iPhone|iPad|iPod/i.test(self.navigator?.userAgent ?? '');
+}
+
 function resolveSplitOsNotification(titleLine, detailLine) {
   const title = String(titleLine).trim().slice(0, OS_NOTIFICATION_TITLE_MAX);
   const body = String(detailLine).trim().slice(0, OS_NOTIFICATION_BODY_MAX);

@@ -30,7 +30,10 @@ export async function replayOfflineMutation(
         mutation.itemId,
         mutation.field,
         mutation.value,
-        { clientSessionId: mutation.clientSessionId },
+        {
+          clientSessionId: mutation.clientSessionId,
+          notificationSource: mutation.notificationSource,
+        },
       );
       if (!result.success) {
         return failureResult(result.error ?? '', 'Field update failed');

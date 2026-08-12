@@ -19,9 +19,8 @@ const fieldMutationSchema = z.object({
   value: z.union([z.string(), z.number()]),
   clientSessionId: z.string().optional(),
   authSessionId: z.string().optional(),
+  notificationSource: z.string().optional(),
 });
-
-const stockMutationSchema = z.object({
   id: z.string(),
   createdAt: z.number(),
   kind: z.literal('inventory_stock'),

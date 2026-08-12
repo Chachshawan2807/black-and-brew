@@ -81,7 +81,7 @@ describe('isAllowedInventoryNotificationSource', () => {
 });
 
 describe('isNotifyableStockOperation', () => {
-  test('allows IN, OUT, and ADJUST', () => {
+  test('allows IN, OUT, ADJUST, and warehouse item field edits', () => {
     expect(
       isNotifyableStockOperation({ operation: 'record_transaction', type: 'IN' })
     ).toBe(true);
@@ -89,10 +89,14 @@ describe('isNotifyableStockOperation', () => {
       isNotifyableStockOperation({ operation: 'record_transaction', type: 'OUT' })
     ).toBe(true);
     expect(isNotifyableStockOperation({ operation: 'set_stock' })).toBe(true);
+    expect(
+      isNotifyableStockOperation({ operation: 'update_inventory_field', field: 'name' })
+    ).toBe(true);
   });
 
   test('rejects create, delete, and reorder operations', () => {
     expect(isNotifyableStockOperation({ operation: 'reorder_sort_order' })).toBe(false);
+    expect(isNotifyableStockOperation({ operation: 'reorder_inventory_items' })).toBe(false);
     expect(isNotifyableStockOperation({})).toBe(false);
   });
 });
@@ -145,11 +149,35 @@ describe('isEligibleInventoryNotification', () => {
     ).toBe(false);
   });
 
-  test('mutes delete and field edits without stock notification source', () => {
+  test('allows warehouse grid item field edits with notification source', () => {
     expect(
       isEligibleInventoryNotification(
         makeRow({
-          operation: 'reorder_sort_order',
+          notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+          operation: 'update_inventory_field',
+          field: 'name',
+        })
+      )
+    ).toBe(true);
+  });
+
+  test('mutes item field edits without notification source', () => {
+    expect(
+      isEligibleInventoryNotification(
+        makeRow({
+          operation: 'update_inventory_field',
+          field: 'name',
+        })
+      )
+    ).toBe(false);
+  });
+
+  test('mutes reorder operations even with notification source', () => {
+    expect(
+      isEligibleInventoryNotification(
+        makeRow({
+          notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+          operation: 'reorder_inventory_items',
         })
       )
     ).toBe(false);

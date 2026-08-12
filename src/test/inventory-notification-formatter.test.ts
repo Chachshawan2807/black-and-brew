@@ -244,6 +244,25 @@ describe('formatInventoryNotification stock operations', () => {
     expect(n.title).toBe('+ Coffee beans');
     expect(n.summary).toBe('+2 Stock 2');
   });
+
+  test('shows warehouse item field edit title and summary', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: 'เมล็ดกาแฟ',
+        field_changes: [{ field: 'order_point', old_value: 5, new_value: 10 }],
+        metadata: {
+          notificationSource: 'inventory_warehouse_grid',
+          operation: 'update_inventory_field',
+          field: 'order_point',
+        },
+      }),
+      'th',
+    );
+    expect(n.title).toBe('แก้ไขรายการ: เมล็ดกาแฟ');
+    expect(n.summary).toContain('จุดสั่งซื้อ');
+    expect(n.summary).toContain('5');
+    expect(n.summary).toContain('10');
+  });
 });
 
 describe('formatDataChangeLogDisplay', () => {

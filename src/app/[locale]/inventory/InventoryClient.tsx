@@ -1459,6 +1459,7 @@ export default function InventoryClient({
       } else {
         const result = await updateInventoryItemField(id, field, sanitizedValue, {
           clientSessionId: getClientSessionId(),
+          notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
           previousFieldValue: original
             ? (original[field as keyof InventoryItem] as string | number | null | undefined) ?? null
             : null,
@@ -1471,6 +1472,7 @@ export default function InventoryClient({
               field,
               value: sanitizedValue,
               clientSessionId: getClientSessionId(),
+              notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
             });
             markQueuedSave();
             return true;
@@ -1500,6 +1502,7 @@ export default function InventoryClient({
             field,
             value: sanitizedValue,
             clientSessionId: getClientSessionId(),
+            notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
           });
         }
         markQueuedSave();

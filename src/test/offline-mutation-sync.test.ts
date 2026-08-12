@@ -30,6 +30,25 @@ describe('offline-mutation-sync', () => {
     expect(result.success).toBe(true);
     expect(updateInventoryItemField).toHaveBeenCalledWith('item-1', 'name', 'Milk', {
       clientSessionId: 'sess',
+      notificationSource: undefined,
+    });
+  });
+
+  test('replays inventory field mutation with warehouse notification source', async () => {
+    const result = await replayOfflineMutation({
+      id: '1b',
+      createdAt: Date.now(),
+      kind: 'inventory_field',
+      itemId: 'item-1',
+      field: 'name',
+      value: 'Milk',
+      clientSessionId: 'sess',
+      notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
+    });
+    expect(result.success).toBe(true);
+    expect(updateInventoryItemField).toHaveBeenCalledWith('item-1', 'name', 'Milk', {
+      clientSessionId: 'sess',
+      notificationSource: INVENTORY_NOTIFICATION_SOURCES.WAREHOUSE_GRID,
     });
   });
 

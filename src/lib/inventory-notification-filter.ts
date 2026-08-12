@@ -1,6 +1,6 @@
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 
-/** Allowed UI origins for desktop/mobile inventory stock notifications. */
+/** Allowed UI origins for desktop/mobile inventory stock and item-edit notifications. */
 export const INVENTORY_NOTIFICATION_SOURCES = {
   QUICK_ACTION_BAR: 'inventory_quick_action_bar',
   QUICK_ACTION_FAB: 'inventory_quick_action_fab',
@@ -31,7 +31,7 @@ export function isAllowedInventoryNotificationSource(
   return typeof source === 'string' && ALLOWED_SOURCES.has(source);
 }
 
-/** Only In / Out / Adjust stock movements may trigger notifications. */
+/** In / Out / Adjust stock movements and warehouse item field edits may trigger notifications. */
 export function isNotifyableStockOperation(metadata?: Record<string, unknown>): boolean {
   if (!metadata) return false;
   const operation = metadata.operation;
@@ -40,6 +40,7 @@ export function isNotifyableStockOperation(metadata?: Record<string, unknown>): 
     return type === 'IN' || type === 'OUT';
   }
   if (operation === 'set_stock') return true;
+  if (operation === 'update_inventory_field') return true;
   return false;
 }
 

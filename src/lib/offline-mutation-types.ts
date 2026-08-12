@@ -15,6 +15,7 @@ export type OfflineInventoryFieldMutation = {
   value: string | number;
   clientSessionId?: string;
   authSessionId?: string;
+  notificationSource?: InventoryNotificationSource;
 };
 
 export type OfflineInventoryStockMutation = {

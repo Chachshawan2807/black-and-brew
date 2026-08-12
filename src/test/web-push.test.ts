@@ -81,6 +81,26 @@ describe('web-push', () => {
     expect(payload?.assets.badge).toBe('/images/notification-badge.png');
   });
 
+  test('buildWebPushPayload formats warehouse item field edit', () => {
+    const payload = buildWebPushPayload(
+      sampleRow({
+        field_changes: [{ field: 'order_point', old_value: 5, new_value: 10 }],
+        entity_label: 'กาแฟ B',
+        metadata: {
+          notificationSource: 'inventory_warehouse_grid',
+          operation: 'update_inventory_field',
+          field: 'order_point',
+          itemName: 'กาแฟ B',
+          clientSessionId: 'device-a',
+        },
+      }),
+      'th',
+    );
+    expect(payload).not.toBeNull();
+    expect(payload?.title).toContain('กาแฟ B');
+    expect(payload?.body).toContain('จุดสั่งซื้อ');
+  });
+
   test('shouldSendPushToSubscription skips origin device session', () => {
     const row = sampleRow({ metadata: { ...sampleRow().metadata, clientSessionId: 'device-b' } });
     const subscription = sampleSubscription({ client_session_id: 'device-b' });
