@@ -21,28 +21,16 @@ import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
-import type { InventoryTransactionFilterType, InventoryTransactionType } from '@/app/actions/inventory-actions';
+import type {
+  InventoryHistoryDisplayRow,
+  InventoryTransactionFilterType,
+  InventoryTransactionType,
+} from '@/lib/inventory-history-query';
 import { InventoryModalPortal } from './InventoryModalPortal';
 
 
 
-export type TransactionHistoryRow = {
-
-  id: string;
-
-  created_at: string;
-
-  transaction_at?: string | null;
-
-  type: InventoryTransactionType;
-
-  quantity: number;
-
-  balance_after: number;
-
-  inventory_items?: { name?: string } | null;
-
-};
+export type TransactionHistoryRow = InventoryHistoryDisplayRow;
 
 
 

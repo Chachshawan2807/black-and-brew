@@ -1,10 +1,13 @@
+import { fetchTransactionHistory } from '@/app/actions/inventory-actions';
 import {
-  fetchTransactionHistory,
+  HISTORY_PAGE_SIZE,
+  type InventoryHistoryDisplayRow,
   type InventoryTransactionFilterType,
-} from '@/app/actions/inventory-actions';
-import { HISTORY_PAGE_SIZE } from '@/lib/inventory-history-query';
+} from '@/lib/inventory-history-query';
 
-type PrefetchResult = Awaited<ReturnType<typeof fetchTransactionHistory>>;
+export type HistoryPrefetchResult =
+  | { success: true; data: InventoryHistoryDisplayRow[]; hasMore: boolean }
+  | { success: false; error: string; data?: InventoryHistoryDisplayRow[]; hasMore?: false };
 
 export type HistoryCacheKeyInput = {
   type?: InventoryTransactionFilterType;
@@ -12,7 +15,7 @@ export type HistoryCacheKeyInput = {
 };
 
 export type HistoryPageCacheEntry = {
-  data: NonNullable<PrefetchResult['data']>;
+  data: InventoryHistoryDisplayRow[];
   hasMore: boolean;
   savedAt: number;
 };
@@ -21,7 +24,7 @@ export type HistoryPageCacheEntry = {
 export const HISTORY_PAGE_FRESH_TTL_MS = 30_000;
 
 const pageCache = new Map<string, HistoryPageCacheEntry>();
-const inFlight = new Map<string, Promise<PrefetchResult>>();
+const inFlight = new Map<string, Promise<HistoryPrefetchResult>>();
 
 export function historyCacheKey(input: HistoryCacheKeyInput = {}): string {
   const type = input.type ?? 'ALL';
@@ -37,7 +40,7 @@ export function getHistoryPageCache(
 
 export function setHistoryPageCache(
   input: HistoryCacheKeyInput,
-  page: { data: NonNullable<PrefetchResult['data']>; hasMore: boolean },
+  page: { data: InventoryHistoryDisplayRow[]; hasMore: boolean },
 ): void {
   pageCache.set(historyCacheKey(input), {
     data: page.data,
@@ -61,7 +64,7 @@ export function invalidateInventoryHistoryPrefetch(): void {
   inFlight.clear();
 }
 
-function storeSuccessfulResult(input: HistoryCacheKeyInput, result: PrefetchResult): void {
+function storeSuccessfulResult(input: HistoryCacheKeyInput, result: HistoryPrefetchResult): void {
   if (result.success && result.data) {
     setHistoryPageCache(input, {
       data: result.data,
@@ -72,7 +75,7 @@ function storeSuccessfulResult(input: HistoryCacheKeyInput, result: PrefetchResu
 
 export function prefetchInventoryHistoryPage(
   input: HistoryCacheKeyInput = {},
-): Promise<PrefetchResult> {
+): Promise<HistoryPrefetchResult> {
   const key = historyCacheKey(input);
   const type = input.type ?? 'ALL';
   const searchQuery = (input.searchQuery ?? '').trim();
@@ -95,8 +98,10 @@ export function prefetchInventoryHistoryPage(
     offset: 0,
     limit: HISTORY_PAGE_SIZE,
   })
-    .then((result) => {
-      storeSuccessfulResult({ type, searchQuery }, result);
+    .then((result): HistoryPrefetchResult => {
+      if (result.success) {
+        storeSuccessfulResult({ type, searchQuery }, result);
+      }
       return result;
     })
     .finally(() => {
@@ -112,7 +117,7 @@ export function prefetchInventoryHistoryFirstPage() {
 }
 
 /** @deprecated Prefer getHistoryPageCache + prefetch; kept for transitional callers. */
-export async function consumeInventoryHistoryPrefetch(): Promise<PrefetchResult | null> {
+export async function consumeInventoryHistoryPrefetch(): Promise<HistoryPrefetchResult | null> {
   const cached = getHistoryPageCache({ type: 'ALL', searchQuery: '' });
   if (cached) {
     return {
@@ -136,7 +141,7 @@ const FILTER_WARM_TYPES: InventoryTransactionFilterType[] = ['IN', 'OUT', 'ADJUS
 
 export function seedInventoryHistoryCacheIfEmpty(
   input: HistoryCacheKeyInput = {},
-  page: { data: NonNullable<PrefetchResult['data']>; hasMore: boolean },
+  page: { data: InventoryHistoryDisplayRow[]; hasMore: boolean },
 ): void {
   if (getHistoryPageCache(input)) return;
   setHistoryPageCache(input, page);

@@ -39,6 +39,7 @@ import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { THAI_TIMEZONE } from '@/lib/timezone';
 import {
   fetchTransactionHistoryPage,
+  type InventoryHistoryDisplayRow,
   type InventoryTransactionFilterType,
   type InventoryTransactionType,
 } from '@/lib/inventory-history-query';
@@ -805,8 +806,6 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
   }
 }
 
-export type { InventoryTransactionFilterType, InventoryTransactionType };
-
 type FetchTransactionHistoryOptions = {
   itemId?: string;
   itemNameQuery?: string;
@@ -824,7 +823,12 @@ export async function fetchTransactionHistory(
 
   const authError = await requireReadAccess();
   if (authError) {
-    return { success: false, error: authError, data: [], hasMore: false };
+    return {
+      success: false as const,
+      error: authError,
+      data: [] as InventoryHistoryDisplayRow[],
+      hasMore: false as const,
+    };
   }
 
   const options =

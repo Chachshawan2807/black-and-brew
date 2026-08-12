@@ -10,6 +10,17 @@ export type InventoryTransactionFilterType =
   | 'ALL'
   | Extract<InventoryTransactionType, 'IN' | 'OUT' | 'ADJUST'>;
 
+/** Row shape used by history modal, cache, and realtime merge. */
+export type InventoryHistoryDisplayRow = {
+  id: string;
+  created_at: string;
+  transaction_at?: string | null;
+  type: InventoryTransactionType;
+  quantity: number;
+  balance_after: number;
+  inventory_items?: { name?: string } | null;
+};
+
 export type RawInventoryTransaction = {
   id: string;
   inventory_item_id: string | null;

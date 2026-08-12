@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
-import {
-  fetchTransactionHistory,
-  type InventoryTransactionFilterType,
-  type InventoryTransactionType,
-} from '@/app/actions/inventory-actions';
+import { fetchTransactionHistory } from '@/app/actions/inventory-actions';
+import type {
+  InventoryTransactionFilterType,
+  InventoryTransactionType,
+} from '@/lib/inventory-history-query';
 import type { TransactionHistoryRow } from '@/app/[locale]/inventory/_components/InventoryHistoryModal';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
@@ -197,7 +197,10 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
 
         if (requestId !== requestIdRef.current) return;
 
-        if (res.success && res.data) {
+        if (!res.success) {
+          console.error('[UI] History fetch failed:', res.error);
+          if (!append) setHasMoreHistory(false);
+        } else if (res.data) {
           if (offset === 0 && !append) {
             setHistoryPageCache(
               { type, searchQuery },
@@ -208,8 +211,7 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
             append ? [...prev, ...(res.data as TransactionHistoryRow[])] : (res.data as TransactionHistoryRow[]),
           );
           setHasMoreHistory(Boolean(res.hasMore));
-        } else if (res.error) {
-          console.error('[UI] History fetch failed:', res.error);
+        } else {
           if (!append) setHasMoreHistory(false);
         }
       } finally {
