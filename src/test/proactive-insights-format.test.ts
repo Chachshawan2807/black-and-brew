@@ -13,19 +13,42 @@ describe('countBeanOrderPendingStatuses', () => {
         { paymentStatus: 'paid', fulfillmentStatus: 'pending' },
         { paymentStatus: 'unpaid', fulfillmentStatus: 'shipped' },
       ]),
-    ).toEqual({ unpaidCount: 1, pendingShipmentCount: 2 });
+    ).toEqual({ unpaidCount: 1, pendingShipmentCount: 2, awaitingDeliveryCount: 0 });
+  });
+
+  test('counts paid shipped undelivered orders as awaiting delivery', () => {
+    expect(
+      countBeanOrderPendingStatuses([
+        {
+          paymentStatus: 'paid',
+          fulfillmentStatus: 'shipped',
+          trackingStatus: null,
+        },
+        {
+          paymentStatus: 'paid',
+          fulfillmentStatus: 'shipped',
+          trackingStatus: 'delivered',
+        },
+      ]),
+    ).toEqual({ unpaidCount: 0, pendingShipmentCount: 0, awaitingDeliveryCount: 1 });
   });
 });
 
 describe('formatPendingBeanOrdersSummary', () => {
-  test('shows both payment and shipment counts', () => {
+  test('shows payment, shipment, and awaiting-delivery counts', () => {
     expect(
       formatPendingBeanOrdersSummary([
         { customerName: 'เอ', paymentStatus: 'unpaid', fulfillmentStatus: 'pending' },
         { customerName: 'บี', paymentStatus: 'paid', fulfillmentStatus: 'pending' },
         { customerName: 'ซี', paymentStatus: 'unpaid', fulfillmentStatus: 'shipped' },
+        {
+          customerName: 'ลี',
+          paymentStatus: 'paid',
+          fulfillmentStatus: 'shipped',
+          trackingStatus: null,
+        },
       ]),
-    ).toBe('ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ');
+    ).toBe('ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ · รอส่งมอบ 1 รายการ');
   });
 
   test('omits zero buckets', () => {

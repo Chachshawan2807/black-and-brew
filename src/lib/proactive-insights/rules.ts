@@ -50,11 +50,11 @@ function ruleLeaveCoverageRisk(snapshot: OperationalSnapshot): Insight | null {
 }
 
 function ruleBeanOrdersPending(snapshot: OperationalSnapshot): Insight | null {
-  const { unpaidCount, pendingShipmentCount } = countBeanOrderPendingStatuses(
+  const { unpaidCount, pendingShipmentCount, awaitingDeliveryCount } = countBeanOrderPendingStatuses(
     snapshot.pendingBeanOrders,
   );
   if (
-    unpaidCount + pendingShipmentCount <
+    unpaidCount + pendingShipmentCount + awaitingDeliveryCount <
     INSIGHT_THRESHOLDS.beanOrdersMinPending
   ) {
     return null;

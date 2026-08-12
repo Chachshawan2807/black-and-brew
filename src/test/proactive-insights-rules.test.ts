@@ -98,11 +98,19 @@ describe('evaluateInsightRules', () => {
       { customerName: 'ทัพพ์', paymentStatus: 'paid', fulfillmentStatus: 'pending' },
       { customerName: 'ทศกัณฐ์', paymentStatus: 'unpaid', fulfillmentStatus: 'shipped' },
       { customerName: 'มุก', paymentStatus: 'unpaid', fulfillmentStatus: 'shipped' },
+      {
+        customerName: 'คุณลี',
+        paymentStatus: 'paid',
+        fulfillmentStatus: 'shipped',
+        trackingStatus: null,
+      },
     ];
     const insights = evaluateInsightRules(sampleSnapshot({ pendingBeanOrders: pending }));
     const hit = insights.find((i) => i.ruleId === 'bean_orders_inventory_gap');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toBe('ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ');
+    expect(hit!.summary).toBe(
+      'ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ · รอส่งมอบ 1 รายการ',
+    );
     expect(hit!.summary).not.toContain('คุณเอ');
   });
 

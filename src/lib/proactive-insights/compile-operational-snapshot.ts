@@ -13,6 +13,7 @@ import type {
   WeeklyDaySchedule,
 } from '@/lib/proactive-insights/types';
 import { getWeekDateIsos } from '@/lib/proactive-insights/week-schedule';
+import { shouldIncludeBeanOrderInPendingInsights } from '@/lib/proactive-insights/pending-bean-order-eligibility';
 
 export type ShiftSnapshotBlock = {
   activeStaff: StaffShiftEntry[];
@@ -63,7 +64,9 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
   since.setDate(since.getDate() - 30);
   const { data, error } = await admin
     .from('bean_orders')
-    .select('payment_status, fulfillment_status, recipient_name, bean_customers(name)')
+    .select(
+      'payment_status, fulfillment_status, recipient_name, bean_customers(name), bean_order_shipments(tracking_status)',
+    )
     .gte('created_at', since.toISOString())
     .is('cancelled_at', null)
     .limit(TABLE_MAX_LIMITS.bean_orders);
@@ -79,17 +82,27 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
   for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
     const payment = String(row.payment_status ?? '');
     const fulfillment = String(row.fulfillment_status ?? '');
-    if (payment !== 'unpaid' && fulfillment !== 'pending') continue;
+    const shipment = row.bean_order_shipments as
+      | { tracking_status?: string | null }
+      | { tracking_status?: string | null }[]
+      | null;
+    const trackingStatus = Array.isArray(shipment)
+      ? (shipment[0]?.tracking_status ?? null)
+      : (shipment?.tracking_status ?? null);
 
-    const customer = row.bean_customers as { name?: string } | null;
-    pending.push({
+    const candidate: PendingBeanOrderInsight = {
       customerName: getBeanOrderCustomerDisplayName({
-        customerName: customer?.name ?? null,
+        customerName: (row.bean_customers as { name?: string } | null)?.name ?? null,
         recipientName: String(row.recipient_name ?? ''),
       }),
       paymentStatus: payment,
       fulfillmentStatus: fulfillment,
-    });
+      trackingStatus,
+    };
+
+    if (!shouldIncludeBeanOrderInPendingInsights(candidate)) continue;
+
+    pending.push(candidate);
   }
 
   return pending;

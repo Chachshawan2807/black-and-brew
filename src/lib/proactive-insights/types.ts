@@ -23,6 +23,7 @@ export interface PendingBeanOrderInsight {
   customerName: string;
   paymentStatus: string;
   fulfillmentStatus: string;
+  trackingStatus?: string | null;
 }
 
 export interface OperationalSnapshot {
