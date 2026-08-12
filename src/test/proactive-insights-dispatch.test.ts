@@ -38,6 +38,7 @@ vi.mock('@/lib/proactive-insights/rules', () => ({
 vi.mock('@/lib/insight-notification', () => ({
   recordInsightNotificationLog: (...args: unknown[]) => recordMock(...args),
   markInsightMorningPushDispatched: (...args: unknown[]) => markMorningPushMock(...args),
+  fetchDailyInsightDigestSummary: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('@/lib/insight-web-push', () => ({
@@ -76,6 +77,21 @@ describe('evaluateAndDispatchInsights', () => {
     expect(manualResult.digest?.title).toBe('การแจ้งเตือนที่ต้องตรวจสอบ');
     expect(manualResult.recorded).toBeNull();
     expect(manualResult.pushed).toBeNull();
+  });
+
+  test('bean_order_update records and pushes when pending bean orders match', async () => {
+    const { evaluateAndDispatchInsights } = await import(
+      '@/lib/proactive-insights/evaluate-and-dispatch'
+    );
+
+    const result = await evaluateAndDispatchInsights({
+      trigger: 'bean_order_update',
+      locale: 'th',
+    });
+    expect(recordMock).toHaveBeenCalledTimes(1);
+    expect(pushMock).toHaveBeenCalledTimes(1);
+    expect(result.recorded).not.toBeNull();
+    expect(result.pushed).not.toBeNull();
   });
 
   test('cron skips push only when morning digest was already dispatched', async () => {

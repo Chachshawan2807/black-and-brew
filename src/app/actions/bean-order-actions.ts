@@ -235,7 +235,7 @@ async function loadInventoryNames(ids: string[]): Promise<Map<string, string>> {
 }
 
 function revalidateBeanOrders(locale = 'th', orderId?: string) {
-  scheduleProactiveInsightEvaluation('manual');
+  scheduleProactiveInsightEvaluation('bean_order_update');
   revalidatePath(`/${locale}/bean-orders`);
   if (orderId) {
     revalidatePath(`/${locale}/bean-orders/${orderId}`);

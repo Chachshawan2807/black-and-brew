@@ -12,6 +12,40 @@ export function insightNotificationLogId(ruleId: InsightRuleId | string, dateIso
   return `bb-insight-${ruleId}-${dateIso}`;
 }
 
+export function dailyInsightDigestLogId(dateIso: string): string {
+  return insightNotificationLogId('daily_digest', dateIso);
+}
+
+/** Latest stored summary for today's daily digest (null when no log yet). */
+export async function fetchDailyInsightDigestSummary(dateIso: string): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const logId = dailyInsightDigestLogId(dateIso);
+  try {
+    const { data, error } = await supabase
+      .from('data_change_logs')
+      .select('metadata')
+      .eq('module', 'insights')
+      .eq('entity_type', 'cross_module_insight')
+      .eq('entity_id', logId)
+      .limit(1);
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return null;
+    }
+
+    const meta = data?.[0]?.metadata;
+    if (typeof meta !== 'object' || meta === null) return null;
+    const summary = (meta as Record<string, unknown>).summary;
+    return typeof summary === 'string' ? summary : null;
+  } catch (error) {
+    console.error('[fetchDailyInsightDigestSummary] Exception:', error);
+    return null;
+  }
+}
+
 /** Cron record path: insert, refresh stale log, skip after morning push, or force replace. */
 export function resolveCronInsightRecordAction(
   hasExisting: boolean,
