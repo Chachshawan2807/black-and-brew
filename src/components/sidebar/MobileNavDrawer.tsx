@@ -13,6 +13,7 @@ import {
   type MobileNavDrawerActions,
 } from '@/hooks/use-mobile-nav-drawer';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
 
 function drawerScrollBehavior(reduced: boolean): ScrollBehavior {
   return reduced ? 'auto' : 'smooth';
@@ -42,6 +43,7 @@ export function MobileNavDrawer() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLElement>(null);
   const popoverSupported = useRef(supportsPopoverApi());
+  const drawerOpen = useMobileNavDrawer((s) => s.isOpen);
   const setIsOpen = useMobileNavDrawer((s) => s.setIsOpen);
   const registerActions = useMobileNavDrawer((s) => s.registerActions);
 
@@ -83,6 +85,8 @@ export function MobileNavDrawer() {
       behavior: drawerScrollBehavior(reduced),
     });
   }, [reduced]);
+
+  useMobileBackLayer('mobile-nav-drawer', drawerOpen, closeDrawer);
 
   const closeDrawerForNavigation = useCallback(() => {
     const scroller = scrollerRef.current;

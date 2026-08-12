@@ -37,6 +37,11 @@ import {
 import { startOfDay } from 'date-fns';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { THAI_TIMEZONE } from '@/lib/timezone';
+import {
+  fetchTransactionHistoryPage,
+  type InventoryTransactionFilterType,
+  type InventoryTransactionType,
+} from '@/lib/inventory-history-query';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // ใช้ SERVICE_ROLE_KEY เพื่อให้ Server Action มีสิทธิ์สูงสุดในการอ่าน/เขียน ทะลุ RLS
@@ -800,8 +805,7 @@ export async function deleteInventoryItemsBulk(itemIds: string[], auditOptions?:
   }
 }
 
-export type InventoryTransactionType = 'IN' | 'OUT' | 'ADJUST' | 'ADD' | 'DELETE';
-export type InventoryTransactionFilterType = 'ALL' | Extract<InventoryTransactionType, 'IN' | 'OUT' | 'ADJUST'>;
+export type { InventoryTransactionFilterType, InventoryTransactionType };
 
 type FetchTransactionHistoryOptions = {
   itemId?: string;
@@ -811,216 +815,24 @@ type FetchTransactionHistoryOptions = {
   type?: InventoryTransactionFilterType;
 };
 
-type RawInventoryTransaction = {
-  id: string;
-  inventory_item_id: string | null;
-  type: InventoryTransactionType;
-  quantity: number;
-  note: string | null;
-  created_at: string;
-  transaction_at?: string | null;
-  balance_after: number;
-  inventory_items?: { name?: string } | null;
-};
-
-function sanitizeHistoryLimit(limit: number | undefined) {
-  const parsed = Math.floor(Number(limit ?? 50));
-  if (!Number.isFinite(parsed)) return 50;
-  return Math.min(Math.max(parsed, 1), 100);
-}
-
-function sanitizeHistoryOffset(offset: number | undefined) {
-  const parsed = Math.floor(Number(offset ?? 0));
-  if (!Number.isFinite(parsed)) return 0;
-  return Math.max(parsed, 0);
-}
-
-function sanitizeHistorySearchQuery(query: string | undefined) {
-  const trimmed = query?.trim() ?? '';
-  if (!trimmed) return undefined;
-  return trimmed.slice(0, 100);
-}
-
-const TRANSACTION_HISTORY_SELECT =
-  'id, inventory_item_id, type, quantity, note, created_at, transaction_at, balance_after, inventory_items(name)';
-
-async function fetchTransactionHistoryByItemName(options: {
-  itemNameQuery: string;
-  type?: Exclude<InventoryTransactionFilterType, 'ALL'>;
-  offset: number;
-  safeLimit: number;
-}): Promise<
-  | { success: true; data: RawInventoryTransaction[]; hasMore: boolean }
-  | { success: false; error: string }
-> {
-  const { itemNameQuery, type, offset, safeLimit } = options;
-
-  const { data: matchingItems, error: searchError } = await supabase
-    .from('inventory_items')
-    .select('id')
-    .ilike('name', `%${itemNameQuery}%`);
-
-  if (searchError) {
-    console.error(
-      '[fetchTransactionHistory] Item name search error:',
-      searchError.message,
-      searchError.details,
-    );
-    return { success: false, error: `DB Error: ${searchError.message}` };
-  }
-
-  const matchingIds = (matchingItems ?? []).map((item) => item.id);
-
-  const buildQuery = () => {
-    let historyQuery = supabase
-      .from('inventory_transactions')
-      .select(TRANSACTION_HISTORY_SELECT)
-      .order('created_at', { ascending: false });
-    if (type) historyQuery = historyQuery.eq('type', type);
-    return historyQuery;
-  };
-
-  const queries = [];
-  if (matchingIds.length > 0) {
-    queries.push(buildQuery().in('inventory_item_id', matchingIds));
-  }
-  queries.push(
-    buildQuery().in('type', ['ADD', 'DELETE']).ilike('note', `%${itemNameQuery}%`),
-  );
-
-  const results = await Promise.all(queries);
-  for (const result of results) {
-    if (result.error) {
-      console.error('[fetchTransactionHistory] Supabase Deep Error:', result.error);
-      console.error(
-        '[fetchTransactionHistory] Details:',
-        result.error.message,
-        result.error.details,
-        result.error.hint,
-      );
-      return { success: false, error: `DB Error: ${result.error.message}` };
-    }
-  }
-
-  const byId = new Map<string, RawInventoryTransaction>();
-  for (const result of results) {
-    for (const row of (result.data ?? []) as RawInventoryTransaction[]) {
-      byId.set(row.id, row);
-    }
-  }
-
-  const merged = [...byId.values()].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  );
-  const page = merged.slice(offset, offset + safeLimit + 1);
-  const hasMore = page.length > safeLimit;
-
-  return {
-    success: true,
-    data: page.slice(0, safeLimit),
-    hasMore,
-  };
-}
-
-function enrichTransactionRows(transactions: RawInventoryTransaction[]) {
-  return transactions.map((tx) => {
-    const joinedName = tx.inventory_items?.name;
-    const resolvedName =
-      joinedName ||
-      (tx.type === 'DELETE' && tx.note ? tx.note : null) ||
-      (tx.type === 'ADD' && tx.note ? tx.note : null) ||
-      'ไม่ทราบชื่อสินค้า';
-
-    return {
-      ...tx,
-      inventory_items: {
-        name: resolvedName,
-      },
-    };
-  });
-}
-
-// === FETCH TRANSACTION HISTORY (SPEC 3.1 — Two-Step Fetch) ===
-// Column: inventory_item_id (VERIFIED via Supabase Dashboard — DO NOT CHANGE)
-// Strategy: Two-step fetch (transactions -> item names -> merge in code)
+// === FETCH TRANSACTION HISTORY ===
 export async function fetchTransactionHistory(
   optionsOrItemId?: FetchTransactionHistoryOptions | string,
   legacyLimit: number = 50,
 ) {
-  noStore(); // Phase 1: Force disable cache — always fetch fresh from DB
+  noStore();
 
   const authError = await requireReadAccess();
   if (authError) {
     return { success: false, error: authError, data: [], hasMore: false };
   }
 
-  try {
-    const options =
-      typeof optionsOrItemId === 'object'
-        ? optionsOrItemId
-        : { itemId: optionsOrItemId, limit: legacyLimit, offset: 0 };
-    const itemId = options?.itemId;
-    const itemNameQuery = sanitizeHistorySearchQuery(options?.itemNameQuery);
-    const safeLimit = sanitizeHistoryLimit(options?.limit);
-    const offset = sanitizeHistoryOffset(options?.offset);
-    const type = options?.type && options.type !== 'ALL' ? options.type : undefined;
+  const options =
+    typeof optionsOrItemId === 'object'
+      ? optionsOrItemId
+      : { itemId: optionsOrItemId, limit: legacyLimit, offset: 0 };
 
-    // Step 1: Fetch transactions with item names in one query (join)
-    let query = supabase
-      .from('inventory_transactions')
-      .select(TRANSACTION_HISTORY_SELECT)
-      .order('created_at', { ascending: false });
-
-    if (itemId) {
-      query = query.eq('inventory_item_id', itemId);
-    } else if (itemNameQuery) {
-      const nameSearch = await fetchTransactionHistoryByItemName({
-        itemNameQuery,
-        type,
-        offset,
-        safeLimit,
-      });
-      if (!nameSearch.success) {
-        return { success: false, error: nameSearch.error, data: [], hasMore: false };
-      }
-      return {
-        success: true,
-        data: enrichTransactionRows(nameSearch.data),
-        hasMore: nameSearch.hasMore,
-      };
-    }
-
-    if (type) {
-      query = query.eq('type', type);
-    }
-
-    query = query.range(offset, offset + safeLimit);
-
-    const { data: transactionRows, error: txError } = await query;
-
-    if (txError) {
-      console.error('[fetchTransactionHistory] Supabase Deep Error:', txError);
-      console.error('[fetchTransactionHistory] Details:', txError.message, txError.details, txError.hint);
-      return { success: false, error: `DB Error: ${txError.message}`, data: [], hasMore: false };
-    }
-
-    const transactions = (transactionRows ?? []) as RawInventoryTransaction[];
-
-    if (transactions.length === 0) {
-      return { success: true, data: [], hasMore: false };
-    }
-
-    const hasMore = transactions.length > safeLimit;
-    const visibleTransactions = transactions.slice(0, safeLimit);
-
-    const enrichedData = enrichTransactionRows(visibleTransactions);
-
-    return { success: true, data: enrichedData, hasMore };
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('[fetchTransactionHistory] Unexpected Error:', message);
-    return { success: false, error: message || 'เกิดข้อผิดพลาดในการดึงประวัติ', data: [], hasMore: false };
-  }
+  return fetchTransactionHistoryPage(supabase, options);
 }
 
 // === FETCH IN/OUT ACTIVITY SNAPSHOT (gap warning) ===

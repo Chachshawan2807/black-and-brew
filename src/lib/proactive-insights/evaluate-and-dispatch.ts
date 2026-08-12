@@ -2,28 +2,15 @@ import { compileOperationalSnapshot } from '@/lib/proactive-insights/compile-ope
 import { buildDailyInsightDigest, evaluateInsightRules } from '@/lib/proactive-insights/rules';
 import type { Insight } from '@/lib/proactive-insights/types';
 import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/compile-operational-snapshot';
+import {
+  shouldDispatchInsightNotification,
+  shouldForceInsightDigestRefresh,
+  type InsightTrigger,
+} from '@/lib/proactive-insights/insight-dispatch-triggers';
 import { recordInsightNotificationLog, markInsightMorningPushDispatched, fetchDailyInsightDigestSummary } from '@/lib/insight-notification';
 import { dispatchInsightWebPush } from '@/lib/insight-web-push';
 
-export type InsightTrigger =
-  | 'cron'
-  | 'shift_update'
-  | 'inventory_update'
-  | 'bean_order_update'
-  | 'manual';
-
-const INSIGHT_NOTIFY_TRIGGERS: InsightTrigger[] = ['cron', 'bean_order_update'];
-
-function shouldDispatchInsightNotification(
-  trigger: InsightTrigger,
-  matchedRules: Insight[],
-): boolean {
-  if (!INSIGHT_NOTIFY_TRIGGERS.includes(trigger)) return false;
-  if (trigger === 'bean_order_update') {
-    return matchedRules.some((rule) => rule.ruleId === 'bean_orders_inventory_gap');
-  }
-  return true;
-}
+export type { InsightTrigger } from '@/lib/proactive-insights/insight-dispatch-triggers';
 
 async function resolveInsightRecordForce(
   trigger: InsightTrigger,
@@ -32,11 +19,8 @@ async function resolveInsightRecordForce(
   force?: boolean,
 ): Promise<boolean> {
   if (force) return true;
-  if (trigger !== 'bean_order_update') return false;
-
   const existingSummary = await fetchDailyInsightDigestSummary(dateIso);
-  if (existingSummary === null) return false;
-  return existingSummary !== digest.summary;
+  return shouldForceInsightDigestRefresh(trigger, existingSummary, digest.summary);
 }
 
 export type EvaluateInsightsOptions = {
@@ -94,7 +78,10 @@ export async function evaluateAndDispatchInsights(
     };
   }
 
-  const recordForce = await resolveInsightRecordForce(trigger, digest, dateIso, options.force);
+  const recordForce =
+    trigger === 'cron'
+      ? Boolean(options.force)
+      : await resolveInsightRecordForce(trigger, digest, dateIso, options.force);
   const logResult = await recordInsightNotificationLog(digest, dateIso, locale, {
     trigger: trigger === 'cron' ? 'cron' : undefined,
     force: recordForce,
@@ -124,7 +111,9 @@ export async function evaluateAndDispatchInsights(
   const pushResult = await dispatchInsightWebPush(digest, dateIso);
 
   if (pushResult.sent > 0) {
-    await markInsightMorningPushDispatched(logResult.logId);
+    await markInsightMorningPushDispatched(logResult.logId, {
+      scheduledPushDateIso: trigger === 'cron' ? dateIso : undefined,
+    });
   }
 
   return {

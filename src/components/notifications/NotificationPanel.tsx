@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { fadeOverlay, notificationOverlay, notificationPanel, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
 import {
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
@@ -103,6 +104,8 @@ export function NotificationPanel() {
   } = useNotifications();
 
   const viewportInsets = useVisualViewportInsets(panelOpen);
+
+  useMobileBackLayer('notification-panel', panelOpen, closePanel);
   const backdropStyle = getModalBackdropKeyboardAwareStyle({ insets: viewportInsets });
   const panelStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
 

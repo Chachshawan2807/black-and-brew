@@ -30,7 +30,7 @@ import {
 } from '@/lib/inventory-frequent-items';
 import { useInventoryGridFilter } from '@/hooks/use-inventory-grid-filter';
 import { useInventoryHistory } from '@/hooks/use-inventory-history';
-import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
+import { prefetchInventoryHistoryFirstPage, warmInventoryHistoryFilterPages } from '@/lib/inventory-history-prefetch';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from './_components/InventoryQuickActionBar';
 import { InventoryModalPortal } from './_components/InventoryModalPortal';
@@ -77,10 +77,13 @@ import {
   parseLocalColumnWidths,
   readInventoryField,
 } from './types';
+import type { TransactionHistoryRow } from './_components/InventoryHistoryModal';
 
 interface InventoryClientProps {
   initialItems: InventoryItem[];
   initialColumnSettings?: ColumnSettings;
+  initialTransactionHistory?: TransactionHistoryRow[];
+  initialHistoryHasMore?: boolean;
   locale: string;
 }
 
@@ -877,6 +880,8 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
 export default function InventoryClient({
   initialItems,
   initialColumnSettings = null,
+  initialTransactionHistory = [],
+  initialHistoryHasMore = false,
 }: InventoryClientProps) {
   const isReadOnly = useReadOnly();
   const { isOpen: isFloatingOverlayOpen } = useFloatingOverlay();
@@ -928,7 +933,14 @@ export default function InventoryClient({
 
   const sensors = useSafeDndSensors();
 
-  const history = useInventoryHistory();
+  const history = useInventoryHistory({
+    initialTransactionHistory,
+    initialHistoryHasMore,
+    resolveItemName: (itemId) => {
+      if (!itemId) return undefined;
+      return itemsRef.current.find((item) => item.id === itemId)?.name;
+    },
+  });
 
   // Quick Entry State
   const [isQuickActionBarOpen, setIsQuickActionBarOpen] = useState(true);
@@ -965,6 +977,15 @@ export default function InventoryClient({
     updateLayout();
     media.addEventListener('change', updateLayout);
     return () => media.removeEventListener('change', updateLayout);
+  }, []);
+
+  useEffect(() => {
+    preloadInventoryHistoryModal();
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(() => warmInventoryHistoryFilterPages(), { timeout: 5_000 });
+    } else {
+      setTimeout(() => warmInventoryHistoryFilterPages(), 500);
+    }
   }, []);
 
   const { itemsToOrder, poSources, displayedPoItems } = useMemo(

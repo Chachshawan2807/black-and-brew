@@ -1,4 +1,4 @@
-// v23
+// v24
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -131,9 +131,16 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
 }
 
 /** iOS Web Push rejects or ignores several Chromium-only notification fields. */
-function isIosPushClient() {
-  const ua = self.navigator?.userAgent ?? '';
-  return /iPhone|iPad|iPod/i.test(ua);
+function resolvePushLocale(payload) {
+  if (typeof payload.locale === 'string' && /^[a-z]{2}$/i.test(payload.locale)) {
+    return payload.locale.toLowerCase();
+  }
+  const url = payload.url;
+  if (typeof url === 'string') {
+    const match = url.match(/^\/([a-z]{2})\//i);
+    if (match) return match[1].toLowerCase();
+  }
+  return 'th';
 }
 
 function buildIosSafeNotificationOptions(options) {
@@ -301,13 +308,14 @@ self.addEventListener('push', (event) => {
                 : isBeanDelivered
                   ? 'bb-bean-delivered'
                   : 'bb-daily-report';
+        const locale = resolvePushLocale(payload);
         const fallbackUrl = isSecurity
-          ? '/th/settings'
+          ? `/${locale}/settings`
           : isInsight
-            ? '/th'
+            ? `/${locale}`
             : isBeanOrder
-              ? '/th/bean-orders'
-              : '/th/schedule';
+              ? `/${locale}/bean-orders`
+              : `/${locale}/schedule`;
 
         const display = resolveOsNotificationDisplay(payload, unreadCount);
         let systemNotificationShown = false;
@@ -348,7 +356,9 @@ self.addEventListener('push', (event) => {
 
       const unreadCount = await safeResolveUnreadCount(payload);
       const display = resolveOsNotificationDisplay(payload, unreadCount);
-      const options = buildNotificationOptions(payload, unreadCount);
+      const options = buildNotificationOptions(payload, unreadCount, {
+        tag: `${payload.tag || 'bb-inventory'}-${Date.now()}`,
+      });
       const appVisible = await hasVisibleWindowClient();
 
       let systemNotificationShown = false;

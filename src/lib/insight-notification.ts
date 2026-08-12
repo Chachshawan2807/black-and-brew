@@ -7,6 +7,8 @@ import type { InsightTrigger } from '@/lib/proactive-insights/evaluate-and-dispa
 import { resolveInsightCronOccurredAt } from '@/lib/proactive-insights/insight-schedule';
 
 export const INSIGHT_MORNING_PUSH_METADATA_KEY = 'morningPushDispatchedAt';
+/** ICT calendar date when the scheduled daily cron last pushed this digest. */
+export const INSIGHT_SCHEDULED_PUSH_DATE_KEY = 'scheduledPushDateIso';
 
 export function insightNotificationLogId(ruleId: InsightRuleId | string, dateIso: string): string {
   return `bb-insight-${ruleId}-${dateIso}`;
@@ -51,9 +53,19 @@ export function resolveCronInsightRecordAction(
   hasExisting: boolean,
   morningPushDispatchedAt: string | undefined,
   force?: boolean,
+  scheduled?: { todayIso: string; scheduledPushDateIso?: string },
 ): 'insert' | 'update' | 'skip' | 'replace' {
-  if (!hasExisting) return 'insert';
   if (force) return 'replace';
+
+  if (scheduled) {
+    if (scheduled.scheduledPushDateIso === scheduled.todayIso) {
+      return 'skip';
+    }
+    if (!hasExisting) return 'insert';
+    return 'update';
+  }
+
+  if (!hasExisting) return 'insert';
   if (morningPushDispatchedAt) return 'skip';
   return 'update';
 }
@@ -146,7 +158,10 @@ function buildInsightLogMetadata(
 }
 
 /** Mark daily digest Web Push as delivered so duplicate cron hits skip re-send. */
-export async function markInsightMorningPushDispatched(logId: string): Promise<void> {
+export async function markInsightMorningPushDispatched(
+  logId: string,
+  options?: { scheduledPushDateIso?: string },
+): Promise<void> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return;
 
@@ -170,6 +185,9 @@ export async function markInsightMorningPushDispatched(logId: string): Promise<v
     const metadata = {
       ...(typeof row.metadata === 'object' && row.metadata !== null ? row.metadata : {}),
       [INSIGHT_MORNING_PUSH_METADATA_KEY]: new Date().toISOString(),
+      ...(options?.scheduledPushDateIso
+        ? { [INSIGHT_SCHEDULED_PUSH_DATE_KEY]: options.scheduledPushDateIso }
+        : {}),
     };
 
     const { error: updateError } = await supabase
@@ -227,11 +245,16 @@ export async function recordInsightNotificationLog(
       typeof existingMeta?.[INSIGHT_MORNING_PUSH_METADATA_KEY] === 'string'
         ? existingMeta[INSIGHT_MORNING_PUSH_METADATA_KEY]
         : undefined;
+    const scheduledPushDateIso =
+      typeof existingMeta?.[INSIGHT_SCHEDULED_PUSH_DATE_KEY] === 'string'
+        ? existingMeta[INSIGHT_SCHEDULED_PUSH_DATE_KEY]
+        : undefined;
 
     const action = resolveCronInsightRecordAction(
       Boolean(existingRow),
       morningPushDispatchedAt,
       options?.force,
+      options?.trigger === 'cron' ? { todayIso: dateIso, scheduledPushDateIso } : undefined,
     );
 
     if (action === 'skip') {

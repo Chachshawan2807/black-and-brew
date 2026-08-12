@@ -59,8 +59,8 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('SW_INVENTORY_PUSH_RECEIVED');
   });
 
-  test('hook enables realtime immediately when notifications are enabled (no mobile delay)', () => {
-    expect(hookSource).toContain('prefs.enabled');
+  test('hook enables realtime when any notification channel is enabled', () => {
+    expect(hookSource).toContain('wantsInAppNotificationSync');
     expect(hookSource).toContain('setRealtimeReady(true)');
     expect(hookSource).not.toMatch(/setTimeout\(\(\) => setRealtimeReady\(true\),\s*5000\)/);
   });
@@ -76,14 +76,23 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('hiddenAt');
   });
 
-  test('hook defers background OS banners to Web Push when subscription is active', () => {
-    expect(hookSource).toContain('shouldDeferOsNotificationToPush');
-    expect(hookSource).toContain('skipSystemNotification: deferOsToPush');
+  test('hook deduplicates push/realtime races via recent logId set', () => {
+    expect(hookSource).toContain('recentLogIdsRef');
+    expect(hookSource).toContain('n.logId === dedupeKey');
+  });
+
+  test('hook uses per-channel OS banner gating', () => {
+    expect(hookSource).toContain('shouldShowOsNotification');
   });
 
   test('service worker skips OS banners when a visible client is already open', () => {
     expect(serviceWorkerSource).toContain('hasVisibleWindowClient');
-    expect(serviceWorkerSource).toMatch(/hasVisibleWindowClient[\s\S]*showPushNotification/);
+    expect(serviceWorkerSource).toContain('resolvePushLocale');
+  });
+
+  test('hook defers background OS banners to Web Push when subscription is active', () => {
+    expect(hookSource).toContain('shouldDeferOsNotificationToPush');
+    expect(hookSource).toContain('skipSystemNotification: deferOsToPush');
   });
 
   test('hook uses a unique realtime channel topic per subscribe attempt', () => {

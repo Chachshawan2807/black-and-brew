@@ -94,7 +94,7 @@ describe('evaluateAndDispatchInsights', () => {
     expect(result.pushed).not.toBeNull();
   });
 
-  test('cron skips push only when morning digest was already dispatched', async () => {
+  test('cron skips push only when scheduled digest was already sent today', async () => {
     const { evaluateAndDispatchInsights } = await import(
       '@/lib/proactive-insights/evaluate-and-dispatch'
     );
@@ -120,6 +120,8 @@ describe('evaluateAndDispatchInsights', () => {
     const pushResult = await evaluateAndDispatchInsights({ trigger: 'cron', locale: 'th' });
     expect(pushMock).toHaveBeenCalledTimes(1);
     expect(pushResult.pushed?.sent).toBe(2);
-    expect(markMorningPushMock).toHaveBeenCalledWith('bb-insight-daily_digest-2026-08-11');
+    expect(markMorningPushMock).toHaveBeenCalledWith('bb-insight-daily_digest-2026-08-11', {
+      scheduledPushDateIso: '2026-08-11',
+    });
   });
 });

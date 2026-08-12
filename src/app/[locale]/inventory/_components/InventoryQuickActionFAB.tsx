@@ -47,6 +47,7 @@ import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useMaxMd } from '@/hooks/use-max-md';
 import { FabFadePresence } from '@/components/floating/FabFadePresence';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
+import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';
 import { useReadOnly } from '@/components/providers/AuthProvider';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
@@ -183,8 +184,18 @@ export default function InventoryQuickActionFAB() {
     });
   }, []);
 
+  const dismissQuickOverlay = useCallback(() => {
+    blurActiveElement();
+    setIsOpen(false);
+    setShowAddModal(false);
+    history.setShowHistoryModal(false);
+    setShowPurchaseOrderModal(false);
+  }, [history]);
+
   const quickOverlayActive =
     isPanelRendered || showAddModal || history.showHistoryModal || showPurchaseOrderModal;
+
+  useMobileBackLayer('quick-action-overlay', quickOverlayActive, dismissQuickOverlay);
   const hideQuickActionButton =
     fabStackHidden ||
     fabStackSuppressed ||

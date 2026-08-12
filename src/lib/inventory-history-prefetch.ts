@@ -2,6 +2,7 @@ import {
   fetchTransactionHistory,
   type InventoryTransactionFilterType,
 } from '@/app/actions/inventory-actions';
+import { HISTORY_PAGE_SIZE } from '@/lib/inventory-history-query';
 
 type PrefetchResult = Awaited<ReturnType<typeof fetchTransactionHistory>>;
 
@@ -92,7 +93,7 @@ export function prefetchInventoryHistoryPage(
     type,
     itemNameQuery: searchQuery || undefined,
     offset: 0,
-    limit: 50,
+    limit: HISTORY_PAGE_SIZE,
   })
     .then((result) => {
       storeSuccessfulResult({ type, searchQuery }, result);
@@ -132,6 +133,14 @@ export async function consumeInventoryHistoryPrefetch(): Promise<PrefetchResult 
 }
 
 const FILTER_WARM_TYPES: InventoryTransactionFilterType[] = ['IN', 'OUT', 'ADJUST'];
+
+export function seedInventoryHistoryCacheIfEmpty(
+  input: HistoryCacheKeyInput = {},
+  page: { data: NonNullable<PrefetchResult['data']>; hasMore: boolean },
+): void {
+  if (getHistoryPageCache(input)) return;
+  setHistoryPageCache(input, page);
+}
 
 /** Warm type-filter first pages after ALL is available (idle-friendly). */
 export function warmInventoryHistoryFilterPages(): void {

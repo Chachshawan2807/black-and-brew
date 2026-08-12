@@ -84,4 +84,20 @@ describe('PWA sidebar navigation reliability', () => {
     expect(pin).toMatch(/isAuthenticated \|\| isRestoringSession[\s\S]*InventoryRealtimeProvider/);
     expect(pin).not.toContain('/images/logo.png');
   });
+
+  test('mobile overlays intercept system back via history state instead of exiting PWA', () => {
+    const hook = readFile('hooks/use-mobile-back-layer.ts');
+    const drawer = readFile('components/sidebar/MobileNavDrawer.tsx');
+    const panel = readFile('components/notifications/NotificationPanel.tsx');
+    const quickFab = readFile('app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx');
+
+    expect(hook).toContain('history.pushState');
+    expect(hook).toContain('popstate');
+    expect(drawer).toContain('useMobileBackLayer');
+    expect(drawer).toContain("'mobile-nav-drawer'");
+    expect(panel).toContain('useMobileBackLayer');
+    expect(panel).toContain("'notification-panel'");
+    expect(quickFab).toContain('useMobileBackLayer');
+    expect(quickFab).toContain("'quick-action-overlay'");
+  });
 });

@@ -115,12 +115,17 @@ describe('inventory history pagination and filters', () => {
       path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
       'utf-8',
     );
+    const queryCode = fs.readFileSync(
+      path.resolve(__dirname, '../lib/inventory-history-query.ts'),
+      'utf-8',
+    );
 
-    expect(actionsCode).toContain('InventoryTransactionFilterType');
-    expect(actionsCode).toContain('offset: number');
-    expect(actionsCode).toContain('.range(offset, offset + safeLimit)');
-    expect(actionsCode).toContain("query = query.eq('type', type)");
-    expect(actionsCode).toContain('hasMore');
+    expect(actionsCode).toContain('fetchTransactionHistoryPage');
+    expect(queryCode).toContain('InventoryTransactionFilterType');
+    expect(queryCode).toContain('offset: number');
+    expect(queryCode).toContain('.range(offset, offset + safeLimit)');
+    expect(queryCode).toContain("query = query.eq('type', type)");
+    expect(queryCode).toContain('hasMore');
   });
 
   test('history modal exposes type filters and load more control', () => {
@@ -151,17 +156,17 @@ describe('inventory history pagination and filters', () => {
   });
 
   test('inventory action fetches transaction history by item name query', () => {
-    const actionsCode = fs.readFileSync(
-      path.resolve(__dirname, '../app/actions/inventory-actions.ts'),
+    const queryCode = fs.readFileSync(
+      path.resolve(__dirname, '../lib/inventory-history-query.ts'),
       'utf-8',
     );
 
-    expect(actionsCode).toContain('itemNameQuery?: string');
-    expect(actionsCode).toContain('.ilike(\'name\'');
-    expect(actionsCode).toContain('sanitizeHistorySearchQuery');
-    expect(actionsCode).toContain('inventory_items(name)');
-    expect(actionsCode).toContain('fetchTransactionHistoryByItemName');
-    expect(actionsCode).not.toMatch(/\.or\(\s*`\s*inventory_item_id\.in\./);
+    expect(queryCode).toContain('itemNameQuery?: string');
+    expect(queryCode).toContain('.ilike(\'name\'');
+    expect(queryCode).toContain('sanitizeHistorySearchQuery');
+    expect(queryCode).toContain('inventory_items(name)');
+    expect(queryCode).toContain('fetchTransactionHistoryByItemName');
+    expect(queryCode).not.toMatch(/\.or\(\s*`\s*inventory_item_id\.in\./);
   });
 
   test('history hook prefetches first page and keeps stale rows while refreshing', () => {

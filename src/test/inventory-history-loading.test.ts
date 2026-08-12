@@ -47,6 +47,7 @@ describe('inventory history loading reliability', () => {
     expect(prefetchCode).toContain('export function getHistoryPageCache');
     expect(prefetchCode).toContain('export function prefetchInventoryHistoryFirstPage');
     expect(prefetchCode).toContain('export function warmInventoryHistoryFilterPages');
+    expect(prefetchCode).toContain('export function seedInventoryHistoryCacheIfEmpty');
     expect(prefetchCode).toContain('HISTORY_PAGE_FRESH_TTL_MS');
   });
 
@@ -59,5 +60,12 @@ describe('inventory history loading reliability', () => {
     expect(hookCode).toMatch(
       /handleOpenHistory[\s\S]*warmInventoryHistoryFilterPages/,
     );
+  });
+
+  test('hook seeds SSR history and subscribes to realtime inserts while modal is open', () => {
+    expect(hookCode).toContain('seedInventoryHistoryCacheIfEmpty');
+    expect(hookCode).toContain('initialTransactionHistory');
+    expect(hookCode).toContain('inventory_transactions');
+    expect(hookCode).toContain('prependRealtimeTransaction');
   });
 });

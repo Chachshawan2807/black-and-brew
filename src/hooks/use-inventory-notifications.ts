@@ -44,6 +44,10 @@ import {
   shouldNotifyForAction,
 } from '@/lib/notification-preferences';
 import {
+  shouldShowOsNotification,
+  wantsInAppNotificationSync,
+} from '@/lib/notification-channel-gates';
+import {
   countUnread,
   isAfterNotificationClearWatermark,
   loadNotificationClearWatermark,
@@ -143,6 +147,7 @@ export function useInventoryNotifications() {
   const localeRef = useRef(locale);
   const sessionIdRef = useRef('');
   const syncGenerationRef = useRef(0);
+  const recentLogIdsRef = useRef(new Set<string>());
 
   const applyHydratedState = useCallback(
     (notifications: InventoryNotification[], unread: number) => {
@@ -171,7 +176,7 @@ export function useInventoryNotifications() {
   }, [locale]);
 
   useEffect(() => {
-    if (!prefs.enabled) {
+    if (!wantsInAppNotificationSync(prefs)) {
       setRealtimeReady(false);
       return;
     }
@@ -189,7 +194,7 @@ export function useInventoryNotifications() {
       cancelIdle();
       setRealtimeReady(false);
     };
-  }, [prefs.enabled]);
+  }, [prefs]);
 
   useEffect(() => {
     sessionIdRef.current = getClientSessionId();
@@ -205,10 +210,10 @@ export function useInventoryNotifications() {
   }, [unreadCount]);
 
   useEffect(() => {
-    if (!prefs.enabled || !prefs.systemNotifications) return;
+    if (!wantsPushRegistration(prefs)) return;
     if (getNotificationPermissionState() !== 'default') return;
     void requestNotificationPermission();
-  }, [prefs.enabled, prefs.systemNotifications]);
+  }, [prefs]);
 
   const persist = useCallback((next: InventoryNotification[]) => {
     setNotifications(next);
@@ -232,10 +237,17 @@ export function useInventoryNotifications() {
       serviceWorkerUnreadCount?: number,
       options?: { skipSystemNotification?: boolean },
     ) => {
+      const dedupeKey = notification.logId || notification.id;
+      if (recentLogIdsRef.current.has(dedupeKey)) return;
+      recentLogIdsRef.current.add(dedupeKey);
+      if (recentLogIdsRef.current.size > 250) {
+        recentLogIdsRef.current = new Set(Array.from(recentLogIdsRef.current).slice(-125));
+      }
+
       let nextUnread = 0;
       let alreadyExists = false;
       setNotifications((prev) => {
-        if (prev.some((n) => n.id === notification.id)) {
+        if (prev.some((n) => n.id === notification.id || n.logId === dedupeKey)) {
           alreadyExists = true;
           return prev;
         }
@@ -259,7 +271,7 @@ export function useInventoryNotifications() {
       dispatchInventoryNotificationEvent(nextUnread);
 
       const currentPrefs = prefsRef.current;
-      if (!currentPrefs.enabled || !currentPrefs.systemNotifications) return;
+      if (!shouldShowOsNotification(notification, currentPrefs)) return;
       if (options?.skipSystemNotification) return;
       if (shouldDeferOsNotificationToPush(currentPrefs)) return;
       if (getNotificationPermissionState() !== 'granted') return;
@@ -322,8 +334,16 @@ export function useInventoryNotifications() {
       if (isDailyReport && !currentPrefs.dailyScheduleReports) return false;
       if (isInsight && !currentPrefs.proactiveInsights) return false;
       if (isSecurity && !currentPrefs.securityAlerts) return false;
-      if (!currentPrefs.enabled) return false;
-      if (!shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) return false;
+      if (isInventory && !currentPrefs.enabled) return false;
+      if (
+        (isBeanDelivered || isBeanShipped || isBeanPayment) &&
+        !currentPrefs.systemNotifications
+      ) {
+        return false;
+      }
+      if (isInventory && !shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) {
+        return false;
+      }
       if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;
       return true;
     });
@@ -407,7 +427,7 @@ export function useInventoryNotifications() {
 
   const syncScheduleNotificationCatchUp = useCallback(async () => {
     const currentPrefs = prefsRef.current;
-    if (!currentPrefs.enabled || !currentPrefs.dailyScheduleReports) return;
+    if (!currentPrefs.dailyScheduleReports) return;
 
     const result = await fetchDataChangeLogs({ module: 'schedule', limit: 50 });
     if (!result.success) return;
@@ -427,7 +447,7 @@ export function useInventoryNotifications() {
 
   const syncBeanOrderNotificationCatchUp = useCallback(async () => {
     const currentPrefs = prefsRef.current;
-    if (!currentPrefs.enabled) return;
+    if (!currentPrefs.systemNotifications) return;
 
     const result = await fetchDataChangeLogs({ module: 'bean_orders', limit: 50 });
     if (!result.success) return;
@@ -452,7 +472,7 @@ export function useInventoryNotifications() {
 
   const syncInsightNotificationCatchUp = useCallback(async () => {
     const currentPrefs = prefsRef.current;
-    if (!currentPrefs.enabled || !currentPrefs.proactiveInsights) return;
+    if (!currentPrefs.proactiveInsights) return;
 
     const result = await fetchDataChangeLogs({ module: 'insights', limit: 50 });
     if (!result.success) return;
@@ -470,7 +490,7 @@ export function useInventoryNotifications() {
 
   const syncSecurityNotificationCatchUp = useCallback(async () => {
     const currentPrefs = prefsRef.current;
-    if (!currentPrefs.enabled || !currentPrefs.securityAlerts) return;
+    if (!currentPrefs.securityAlerts) return;
 
     const result = await fetchDataChangeLogs({ module: 'security', limit: 50 });
     if (!result.success) return;
@@ -717,7 +737,7 @@ export function useInventoryNotifications() {
       pushNotification(data.notification, data.unreadCount, {
         skipSystemNotification: data.systemNotificationShown === true,
       });
-      syncFromStorageAndServerSoon(false);
+      void syncFromStorage(false);
     };
 
     navigator.serviceWorker.addEventListener('message', onSwMessage);
@@ -725,7 +745,7 @@ export function useInventoryNotifications() {
     return () => {
       navigator.serviceWorker.removeEventListener('message', onSwMessage);
     };
-  }, [pushNotification, syncFromStorageAndServerSoon]);
+  }, [pushNotification, syncFromStorage]);
 
   const markAllRead = useCallback(() => {
     setNotifications((prev) => {
