@@ -370,10 +370,11 @@ export function useInventoryNotifications() {
       );
       const allInsights = eligible.every(isEligibleInsightNotification);
       const allSecurity = eligible.every(isEligibleSecurityNotification);
+      const deferOsToPush = shouldDeferOsNotificationToPush(prefsRef.current);
       if (allDailyReports || allBeanOrder || allInsights || allSecurity) {
         for (const row of eligible) {
           pushNotification(formatNotificationRow(row, loc), undefined, {
-            skipSystemNotification: true,
+            skipSystemNotification: deferOsToPush,
           });
         }
         return;

@@ -1,4 +1,4 @@
-// v22
+// v23
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -166,6 +166,14 @@ async function showPushNotification(title, options) {
   }
 }
 
+async function hasVisibleWindowClient() {
+  const windowClients = await self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  });
+  return windowClients.some((client) => client.visibilityState === 'visible');
+}
+
 // Add list of files to cache here.
 const urlsToCache = [
   '/',
@@ -280,20 +288,7 @@ self.addEventListener('push', (event) => {
 
       if (isDailyReport || isBeanOrder || isInsight || isSecurity) {
         const unreadCount = await safeResolveUnreadCount(payload);
-
-        const windowClients = await self.clients.matchAll({
-          type: 'window',
-          includeUncontrolled: true,
-        });
-
-        for (const client of windowClients) {
-          client.postMessage({
-            type: 'INVENTORY_PUSH_RECEIVED',
-            notification: payload.notification,
-            unreadCount,
-            systemNotificationShown: true,
-          });
-        }
+        const appVisible = await hasVisibleWindowClient();
 
         const fallbackTag = isSecurity
           ? 'bb-security'
@@ -315,19 +310,38 @@ self.addEventListener('push', (event) => {
               : '/th/schedule';
 
         const display = resolveOsNotificationDisplay(payload, unreadCount);
-        await showPushNotification(
-          display.title,
-          buildNotificationOptions(payload, unreadCount, {
-          tag: `${payload.tag || fallbackTag}-${Date.now()}`,
-          requireInteraction: true,
-          timestamp: Date.now(),
-          data: {
-            url: payload.url || fallbackUrl,
-            kind: payload.kind,
+        let systemNotificationShown = false;
+        if (!appVisible) {
+          await showPushNotification(
+            display.title,
+            buildNotificationOptions(payload, unreadCount, {
+            tag: `${payload.tag || fallbackTag}-${Date.now()}`,
+            requireInteraction: true,
+            timestamp: Date.now(),
+            data: {
+              url: payload.url || fallbackUrl,
+              kind: payload.kind,
+              unreadCount,
+            },
+          }),
+          );
+          systemNotificationShown = true;
+        }
+
+        const windowClients = await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        });
+
+        for (const client of windowClients) {
+          client.postMessage({
+            type: 'INVENTORY_PUSH_RECEIVED',
+            notification: payload.notification,
             unreadCount,
-          },
-        }),
-        );
+            systemNotificationShown,
+          });
+        }
+
         await applyHomeScreenBadge(unreadCount);
         return;
       }
@@ -335,6 +349,13 @@ self.addEventListener('push', (event) => {
       const unreadCount = await safeResolveUnreadCount(payload);
       const display = resolveOsNotificationDisplay(payload, unreadCount);
       const options = buildNotificationOptions(payload, unreadCount);
+      const appVisible = await hasVisibleWindowClient();
+
+      let systemNotificationShown = false;
+      if (!appVisible) {
+        await showPushNotification(display.title, options);
+        systemNotificationShown = true;
+      }
 
       const windowClients = await self.clients.matchAll({
         type: 'window',
@@ -346,11 +367,10 @@ self.addEventListener('push', (event) => {
           type: 'INVENTORY_PUSH_RECEIVED',
           notification: payload.notification,
           unreadCount,
-          systemNotificationShown: true,
+          systemNotificationShown,
         });
       }
 
-      await showPushNotification(display.title, options);
       await applyHomeScreenBadge(unreadCount);
     })(),
   );

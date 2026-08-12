@@ -203,11 +203,21 @@ export type OsNotificationDeferContext = {
   hasSubscription?: boolean;
   hasServerRegistration?: boolean;
   userAgent?: string;
+  /** When true, realtime should show OS banners immediately (push may not surface on mobile). */
+  appInForeground?: boolean;
 };
 
+/** True when the PWA tab is visible — OS banners should come from realtime, not deferred push. */
+export function isAppInForeground(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.visibilityState === 'visible';
+}
+
 /**
- * When Web Push is active, the service worker owns OS banners so foreground
- * Supabase realtime does not duplicate alerts on Android/iOS PWAs.
+ * When Web Push is active and the app is in the background, the service worker owns
+ * OS banners so foreground Supabase realtime does not duplicate alerts.
+ * Foreground mobile PWAs must not defer — push often fails to surface banners while
+ * the app is open (LINE/TikTok-style heads-up still comes from the live session).
  * Only defer after the server has the endpoint — a local-only iOS subscription
  * must not suppress realtime banners when delivery cannot work.
  */
@@ -216,6 +226,9 @@ export function shouldDeferOsNotificationToPush(
   context: OsNotificationDeferContext = {},
 ): boolean {
   if (!wantsPushRegistration(prefs)) return false;
+
+  const appInForeground = context.appInForeground ?? isAppInForeground();
+  if (appInForeground) return false;
 
   const pushSupported = context.pushSupported ?? isPushManagerSupported();
   if (!pushSupported) return false;

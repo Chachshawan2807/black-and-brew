@@ -57,7 +57,7 @@ describe('push-subscription-client', () => {
     expect(formatPushRegistrationError('gesture_required', false)).toContain('Register');
   });
 
-  test('shouldDeferOsNotificationToPush defers when Android push is active', () => {
+  test('shouldDeferOsNotificationToPush defers when Android push is active in background', () => {
     const prefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, enabled: true, systemNotifications: true };
     expect(
       shouldDeferOsNotificationToPush(prefs, {
@@ -65,10 +65,26 @@ describe('push-subscription-client', () => {
         permission: 'granted',
         hasSubscription: true,
         hasServerRegistration: true,
+        appInForeground: false,
         userAgent:
           'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/150.0.0.0 Mobile Safari/537.36',
       }),
     ).toBe(true);
+  });
+
+  test('shouldDeferOsNotificationToPush keeps realtime OS banners when app is in foreground', () => {
+    const prefs = { ...DEFAULT_NOTIFICATION_PREFERENCES, enabled: true, systemNotifications: true };
+    expect(
+      shouldDeferOsNotificationToPush(prefs, {
+        pushSupported: true,
+        permission: 'granted',
+        hasSubscription: true,
+        hasServerRegistration: true,
+        appInForeground: true,
+        userAgent:
+          'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/150.0.0.0 Mobile Safari/537.36',
+      }),
+    ).toBe(false);
   });
 
   test('shouldDeferOsNotificationToPush keeps realtime OS banners on iOS until gesture subscription exists', () => {
@@ -91,6 +107,7 @@ describe('push-subscription-client', () => {
         permission: 'granted',
         hasSubscription: true,
         hasServerRegistration: true,
+        appInForeground: false,
         userAgent: iosUa,
       }),
     ).toBe(true);

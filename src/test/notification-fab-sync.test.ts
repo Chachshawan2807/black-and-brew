@@ -76,8 +76,14 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('hiddenAt');
   });
 
-  test('hook defers foreground OS banners to Web Push when subscription is active', () => {
+  test('hook defers background OS banners to Web Push when subscription is active', () => {
     expect(hookSource).toContain('shouldDeferOsNotificationToPush');
+    expect(hookSource).toContain('skipSystemNotification: deferOsToPush');
+  });
+
+  test('service worker skips OS banners when a visible client is already open', () => {
+    expect(serviceWorkerSource).toContain('hasVisibleWindowClient');
+    expect(serviceWorkerSource).toMatch(/hasVisibleWindowClient[\s\S]*showPushNotification/);
   });
 
   test('hook uses a unique realtime channel topic per subscribe attempt', () => {
