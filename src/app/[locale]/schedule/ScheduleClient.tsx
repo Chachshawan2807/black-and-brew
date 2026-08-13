@@ -23,6 +23,8 @@ import { formatScheduleWeekRangeLabel } from '@/lib/schedule/sheets-sync-policy'
 import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations, fetchManagementHistoryPage } from '@/app/actions/shift-actions';
 import dynamic from 'next/dynamic';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
+import { ModalPortal } from '@/components/ui/modal-portal';
+import { APP_MODAL_ABOVE_FAB_Z_INDEX } from '@/lib/floating-action-layout';
 import {
   loadShiftTypesFromStorage,
   saveShiftTypesToStorage,
@@ -1709,10 +1711,11 @@ export default function ScheduleClient({
         onSave={handleSaveShiftSettings}
       />
 
+      <ModalPortal>
       <FadeModalScaffold
         open={showManagementModal}
         onClose={() => setShowManagementModal(false)}
-        zIndex={70}
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
         overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
         panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90dvh] max-md:h-[90dvh] min-h-0 overflow-hidden bg-card shadow-2xl md:w-fit md:max-w-[calc(100vw-2rem)] text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
         panelOnClick={(e) => e.stopPropagation()}
@@ -1980,11 +1983,13 @@ export default function ScheduleClient({
             </div>
             </div>
       </FadeModalScaffold>
+      </ModalPortal>
 
+      <ModalPortal>
       <FadeModalScaffold
         open={showAddEmployeeModal}
         onClose={() => setShowAddEmployeeModal(false)}
-        zIndex={110}
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
         overlayClassName="bg-[#000000]/10 backdrop-blur-sm"
         panelClassName="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border"
         aria-label="เพิ่มพนักงานใหม่"
@@ -2027,11 +2032,13 @@ export default function ScheduleClient({
               </div>
             </div>
       </FadeModalScaffold>
+      </ModalPortal>
 
+      <ModalPortal>
       <FadeModalScaffold
         open={showRegularHolidayModal}
         onClose={() => setShowRegularHolidayModal(false)}
-        zIndex={220}
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
         overlayClassName="bg-[#000000]/10 backdrop-blur-sm"
         panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90dvh] max-md:h-[90dvh] min-h-0 overflow-hidden flex flex-col bg-card shadow-2xl md:max-w-3xl md:max-h-[90vh] text-foreground border border-border pb-[env(safe-area-inset-bottom,0px)]"
         aria-label="จัดการวันหยุดประจำ"
@@ -2214,6 +2221,7 @@ export default function ScheduleClient({
               </div>
             </div>
       </FadeModalScaffold>
+      </ModalPortal>
 
       {toastAlert && (
         <FloatingAlert

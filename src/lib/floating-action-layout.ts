@@ -53,6 +53,9 @@ export const FAB_PAGE_BOTTOM_PADDING_CLASS =
 export const FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS =
   'max-md:pb-[calc(4rem+env(safe-area-inset-bottom,0px))]';
 
+/** App modals that must cover the FAB stack (hide toggle z-199, buttons z-201). */
+export const APP_MODAL_ABOVE_FAB_Z_INDEX = 220;
+
 /** Inventory modals from quick action (inline bar or FAB) — above FAB panel (z-199) and FAB buttons (z-201). */
 export const INVENTORY_MODAL_Z_CLASS = 'z-[220]';
 

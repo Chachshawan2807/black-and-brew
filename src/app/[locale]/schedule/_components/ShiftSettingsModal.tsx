@@ -13,6 +13,8 @@ import {
 } from '@/lib/shift-type-config';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
+import { ModalPortal } from '@/components/ui/modal-portal';
+import { APP_MODAL_ABOVE_FAB_Z_INDEX } from '@/lib/floating-action-layout';
 
 const SELECT_NEW_CUSTOM = '__new_custom__';
 
@@ -211,12 +213,13 @@ export default function ShiftSettingsModal({
   const canDelete = Boolean(selectedEntry && !isCreating && draft.length > 1);
 
   return (
+    <ModalPortal>
     <FadeModalScaffold
       open={open}
       onClose={() => {
         if (!isSaving) onClose();
       }}
-      zIndex={75}
+      zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
       overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
       panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full md:w-fit md:max-w-[22rem] max-w-[calc(100vw-2rem)] max-h-[90vh] overflow-hidden bg-card shadow-2xl flex flex-col"
       aria-label="ตั้งค่ากะการทำงาน"
@@ -370,5 +373,6 @@ export default function ShiftSettingsModal({
           </div>
         </div>
     </FadeModalScaffold>
+    </ModalPortal>
   );
 }
