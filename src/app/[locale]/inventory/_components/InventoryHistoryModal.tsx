@@ -356,7 +356,7 @@ export function InventoryHistoryModal({
           ) : (
           <div
             className={cn(
-              'inline-block w-max min-w-full bg-background rounded-[2rem] border border-border bb-shadow-sm transition-opacity duration-150',
+              'inline-block w-max min-w-full bg-background rounded-[2rem] border border-border bb-shadow-sm overflow-hidden transition-opacity duration-150',
               isHistoryRefreshing && 'opacity-60',
             )}
           >
