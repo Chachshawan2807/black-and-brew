@@ -109,7 +109,7 @@ export function shouldSendDailyReportToSubscription(
   branchId: string = resolveDailyReportBranchId(),
 ): boolean {
   const prefs = parseDailyReportPushPrefs(subscription.prefs_json);
-  if (!prefs.enabled || !prefs.dailyScheduleReports) {
+  if (!prefs.dailyScheduleReports) {
     return false;
   }
 
@@ -119,7 +119,7 @@ export function shouldSendDailyReportToSubscription(
 
 function hasDailyReportPrefs(subscription: PushSubscriptionRow): boolean {
   const prefs = parseDailyReportPushPrefs(subscription.prefs_json);
-  return prefs.enabled && prefs.dailyScheduleReports;
+  return prefs.dailyScheduleReports;
 }
 
 function matchesDailyReportBranch(

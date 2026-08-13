@@ -35,4 +35,11 @@ describe('mobile home-screen badge (sw.js)', () => {
     expect(sw).toContain('systemNotificationShown = true');
     expect(sw).toContain('showPushNotification');
   });
+
+  test('scheduled digest pushes always show OS banners even when a client is visible', () => {
+    expect(sw).toContain('function shouldAlwaysShowOsBanner');
+    expect(sw).toContain("payload.kind === 'daily_report'");
+    expect(sw).toContain("payload.kind === 'proactive_insight'");
+    expect(sw).toMatch(/if \(!appVisible \|\| shouldAlwaysShowOsBanner\(payload\)\)/);
+  });
 });

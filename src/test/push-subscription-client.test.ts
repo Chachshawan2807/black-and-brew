@@ -6,6 +6,7 @@ import {
   requiresUserGestureForPushSubscribe,
   shouldDeferOsNotificationToPush,
   urlBase64ToUint8Array,
+  wantsPushRegistration,
 } from '@/lib/push-subscription-client';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notification-types';
 
@@ -143,5 +144,26 @@ describe('push-subscription-client', () => {
 
   test('hasServerPushRegistration defaults to false before any successful server sync', () => {
     expect(hasServerPushRegistration()).toBe(false);
+  });
+
+  test('wantsPushRegistration stays on for schedule or insight channels without inventory', () => {
+    const prefs = {
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      enabled: false,
+      systemNotifications: false,
+      dailyScheduleReports: false,
+      proactiveInsights: false,
+      securityAlerts: false,
+    };
+    expect(
+      wantsPushRegistration({ ...prefs, dailyScheduleReports: true }),
+    ).toBe(true);
+    expect(
+      wantsPushRegistration({ ...prefs, proactiveInsights: true }),
+    ).toBe(true);
+    expect(
+      wantsPushRegistration({ ...prefs, securityAlerts: true }),
+    ).toBe(true);
+    expect(wantsPushRegistration(prefs)).toBe(false);
   });
 });

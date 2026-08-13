@@ -71,7 +71,7 @@ describe('daily-report-web-push', () => {
     expect(payload.assets.badge).toBe('/images/notification-badge.png');
   });
 
-  test('shouldSendDailyReportToSubscription requires dailyScheduleReports and systemNotifications', () => {
+  test('shouldSendDailyReportToSubscription requires dailyScheduleReports only', () => {
     const report = sampleReport();
     expect(shouldSendDailyReportToSubscription(report, sampleSubscription())).toBe(true);
     expect(
@@ -80,6 +80,12 @@ describe('daily-report-web-push', () => {
         sampleSubscription({ prefs_json: { dailyScheduleReports: false } })
       )
     ).toBe(false);
+    expect(
+      shouldSendDailyReportToSubscription(
+        report,
+        sampleSubscription({ prefs_json: { enabled: false, dailyScheduleReports: true } })
+      )
+    ).toBe(true);
     expect(
       shouldSendDailyReportToSubscription(
         report,
@@ -118,8 +124,8 @@ describe('daily-report-web-push', () => {
     const result = selectDailyReportTargetSubscriptions([main, other, disabled], 'missing');
 
     expect(result.branchRows).toHaveLength(0);
-    expect(result.eligibleRows).toHaveLength(2);
-    expect(result.targetRows.map((row) => row.id).sort()).toEqual(['main-sub', 'other-sub']);
+    expect(result.eligibleRows).toHaveLength(3);
+    expect(result.targetRows.map((row) => row.id).sort()).toEqual(['disabled-sub', 'main-sub', 'other-sub']);
     expect(result.branchFallback).toBe(true);
   });
 

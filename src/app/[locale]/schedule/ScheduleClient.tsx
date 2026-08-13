@@ -1263,6 +1263,7 @@ export default function ScheduleClient({
       if (!res.success) {
         console.error('[handleSave] Server action failed:', res.error);
         setShifts(previousShifts);
+        alert(`ไม่สามารถบันทึกกะงานได้: ${res.error || 'เกิดข้อผิดพลาด'}`);
         return;
       }
       if (res.data?.id) {
@@ -1273,6 +1274,7 @@ export default function ScheduleClient({
     } catch (error) {
       console.error('[handleSave] Network Error:', error);
       setShifts(previousShifts);
+      alert('ไม่สามารถบันทึกกะงานได้: เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
   };
 

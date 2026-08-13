@@ -1,4 +1,4 @@
-// v24
+// v25
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -182,7 +182,18 @@ async function hasVisibleWindowClient() {
     type: 'window',
     includeUncontrolled: true,
   });
-  return windowClients.some((client) => client.visibilityState === 'visible');
+  return windowClients.some(
+    (client) => client.visibilityState === 'visible' && client.focused,
+  );
+}
+
+/** Morning cron digests must always surface in the OS tray (iOS/Android). */
+function shouldAlwaysShowOsBanner(payload) {
+  return (
+    payload.kind === 'daily_report' ||
+    payload.kind === 'proactive_insight' ||
+    payload.kind === 'security_alert'
+  );
 }
 
 // Add list of files to cache here.
@@ -323,7 +334,7 @@ self.addEventListener('push', (event) => {
 
         const display = resolveOsNotificationDisplay(payload, unreadCount);
         let systemNotificationShown = false;
-        if (!appVisible) {
+        if (!appVisible || shouldAlwaysShowOsBanner(payload)) {
           await showPushNotification(
             display.title,
             buildNotificationOptions(payload, unreadCount, {

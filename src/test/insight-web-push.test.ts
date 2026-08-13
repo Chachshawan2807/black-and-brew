@@ -79,7 +79,7 @@ describe('insight-web-push', () => {
         insight,
         sampleSubscription({ prefs_json: { enabled: false, proactiveInsights: true } }),
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test('selectInsightTargetSubscriptions falls back when branch has no match', () => {
@@ -93,7 +93,7 @@ describe('insight-web-push', () => {
 
     const result = selectInsightTargetSubscriptions([main, other, disabled], 'missing');
     expect(result.branchRows).toHaveLength(0);
-    expect(result.eligibleRows).toHaveLength(2);
+    expect(result.eligibleRows).toHaveLength(3);
     expect(result.branchFallback).toBe(true);
   });
 });

@@ -102,7 +102,7 @@ export function shouldSendInsightToSubscription(
   branchId: string = resolveInsightBranchId(),
 ): boolean {
   const prefs = parseInsightPushPrefs(subscription.prefs_json);
-  if (!prefs.enabled || !prefs.proactiveInsights) {
+  if (!prefs.proactiveInsights) {
     return false;
   }
 
@@ -112,7 +112,7 @@ export function shouldSendInsightToSubscription(
 
 function hasInsightPrefs(subscription: PushSubscriptionRow): boolean {
   const prefs = parseInsightPushPrefs(subscription.prefs_json);
-  return prefs.enabled && prefs.proactiveInsights;
+  return prefs.proactiveInsights;
 }
 
 function matchesInsightBranch(subscription: PushSubscriptionRow, branchId: string): boolean {

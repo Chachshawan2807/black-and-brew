@@ -228,39 +228,57 @@ export async function saveShift(payload: ShiftPayload) {
   const cleanEndTime = datePart + 'T23:59:59';
 
   try {
-    const isUpdate = Boolean(payload.id);
-    let shiftBefore = null;
-    if (isUpdate) {
-      const { data: existing } = await supabaseAdmin
-        .from('shifts')
-        .select('id, employee_id, start_time, status, metadata')
-        .eq('id', payload.id)
-        .maybeSingle();
-      shiftBefore = existing;
-    }
-
-    const { data, error } = await supabaseAdmin
+    const { data: shiftBefore } = await supabaseAdmin
       .from('shifts')
-      .upsert({
-        id: payload.id || undefined,
-        employee_id: payload.employee_id,
-        start_time: cleanStartTime,
-        end_time: cleanEndTime,
-        status: payload.status,
-        metadata: payload.metadata
-      }, { onConflict: 'employee_id,start_time' })
-      .select()
-      .single();
+      .select('id, employee_id, start_time, status, metadata')
+      .eq('employee_id', parsed.data.employee_id)
+      .eq('start_time', cleanStartTime)
+      .maybeSingle();
 
-    if (error) {
-      console.error('[saveShift] Upsert Error:', error);
+    const isUpdate = Boolean(shiftBefore);
+
+    const { error: deleteError } = await supabaseAdmin
+      .from('shifts')
+      .delete()
+      .eq('employee_id', parsed.data.employee_id)
+      .eq('start_time', cleanStartTime);
+
+    if (deleteError) {
+      console.error('[saveShift] Delete Error:', deleteError);
       await recordDataChange({
         action: isUpdate ? 'UPDATE' : 'CREATE',
         module: 'schedule',
         entityType: 'shift',
-        entityId: payload.id ?? null,
+        entityId: shiftBefore?.id ?? parsed.data.id ?? null,
         oldValue: (shiftBefore ?? null) as Json | null,
-        newValue: payload as Json,
+        newValue: parsed.data as Json,
+        status: 'failed',
+        errorMessage: deleteError.message,
+      });
+      return { success: false, error: deleteError.message };
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('shifts')
+      .insert({
+        employee_id: parsed.data.employee_id,
+        start_time: cleanStartTime,
+        end_time: cleanEndTime,
+        status: parsed.data.status,
+        metadata: (parsed.data.metadata ?? {}) as Json,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[saveShift] Insert Error:', error);
+      await recordDataChange({
+        action: isUpdate ? 'UPDATE' : 'CREATE',
+        module: 'schedule',
+        entityType: 'shift',
+        entityId: shiftBefore?.id ?? parsed.data.id ?? null,
+        oldValue: (shiftBefore ?? null) as Json | null,
+        newValue: parsed.data as Json,
         status: 'failed',
         errorMessage: error.message,
       });
@@ -271,9 +289,9 @@ export async function saveShift(payload: ShiftPayload) {
       action: isUpdate ? 'UPDATE' : 'CREATE',
       module: 'schedule',
       entityType: 'shift',
-      entityId: data?.id ?? payload.id ?? null,
+      entityId: data?.id ?? shiftBefore?.id ?? parsed.data.id ?? null,
       oldValue: (shiftBefore ?? null) as Json | null,
-      newValue: (data ?? payload) as Json,
+      newValue: (data ?? parsed.data) as Json,
     });
 
     scheduleProactiveInsightEvaluation('shift_update');
