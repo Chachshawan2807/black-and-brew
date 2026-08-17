@@ -47,7 +47,7 @@ function NotificationRow({
 }) {
   const isSchedule = isScheduleNotification(item);
   const detailLines = getNotificationDetailLines(item);
-  const metaLine = `${item.actorLabel} · ${formatNotificationTime(item.occurredAt, locale)}`;
+  const metaLine = formatNotificationTime(item.occurredAt, locale);
 
   return (
     <div
