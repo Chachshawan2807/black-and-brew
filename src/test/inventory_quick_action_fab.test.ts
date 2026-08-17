@@ -285,6 +285,43 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).not.toContain('bb-quick-search-fit');
   });
 
+  test('mobile qty type and save controls stay visible while search suggestions are open', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+
+    const mobileGridMatch = barCode.match(
+      /grid grid-cols-3 gap-2 w-full box-border sm:hidden[\s\S]*?SecondaryQuickActionButtons/,
+    );
+    expect(mobileGridMatch).toBeTruthy();
+    expect(mobileGridMatch![0]).not.toContain('collapseBulkQueueForSearch');
+    expect(barCode).toMatch(
+      /bulkMode && bulkPreviews\.length > 0 && !collapseBulkQueueForSearch/,
+    );
+  });
+
+  test('quick action save uses explicit button click for reliable mobile touch submit', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+
+    expect(barCode).toMatch(/function QuickActionSaveButton[\s\S]*type="button"/);
+    expect(barCode).toMatch(/function QuickActionSaveButton[\s\S]*blurActiveElement\(\)/);
+    expect(barCode).toMatch(/function QuickActionSaveButton[\s\S]*onSubmit\(e as unknown as React\.FormEvent\)/);
+  });
+
+  test('quick search suggestions select items via pointerdown for iOS touch', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+
+    expect(barCode).toMatch(/onPointerDown=\{\(e\) => \{[\s\S]*selectQuickSearchItem\(item\)/);
+    expect(barCode).not.toMatch(/onMouseDown=\{\(e\) => \{[\s\S]*selectQuickSearchItem\(item\)/);
+  });
+
   test('bulk queue summary does not expose paste-multiple-names control', () => {
     const barCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),

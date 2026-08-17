@@ -6,6 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useCoarsePointer } from '@/hooks/use-coarse-pointer';
 
 export type HintTooltipProps = {
   tip: string;
@@ -19,6 +20,7 @@ export type HintTooltipProps = {
 /**
  * Short styled hover/focus hint for icon buttons and compact controls.
  * Skips native `title` — pass copy via `tip` only.
+ * On touch-first devices, renders children directly so Radix tooltip does not intercept taps.
  */
 export function HintTooltip({
   tip,
@@ -27,7 +29,9 @@ export function HintTooltip({
   children,
   disabled = false,
 }: HintTooltipProps) {
-  if (disabled || !tip) return children;
+  const coarsePointer = useCoarsePointer();
+
+  if (disabled || !tip || coarsePointer) return children;
 
   const child = React.Children.only(children);
   const isChildDisabled =

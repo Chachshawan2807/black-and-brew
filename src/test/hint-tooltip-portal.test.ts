@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 const tooltipPath = resolve(__dirname, '../components/ui/tooltip.tsx');
+const hintTooltipPath = resolve(__dirname, '../components/ui/hint-tooltip.tsx');
 const sortableDragHandlePath = resolve(
   __dirname,
   '../components/ui/sortable-drag-handle.tsx',
@@ -31,5 +32,12 @@ describe('hint tooltip portal contract', () => {
     expect(inventorySource).toMatch(
       /MobileSortableRow[\s\S]*tipSide=["']right["']/,
     );
+  });
+
+  test('HintTooltip skips Radix wrapper on coarse pointers so touch taps reach controls', () => {
+    const source = readFileSync(hintTooltipPath, 'utf-8');
+
+    expect(source).toContain('useCoarsePointer');
+    expect(source).toMatch(/coarsePointer[\s\S]*return children/);
   });
 });

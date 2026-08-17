@@ -56,6 +56,7 @@ import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { blurActiveElement } from '@/lib/blur-active-element';
+import { scheduleInventoryGridCellBlur } from '@/lib/inventory-grid-cell-blur';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
@@ -676,24 +677,32 @@ function EditableCell({
   };
 
   const handleBlur = () => {
-    const val = inputRef.current?.value || '';
-    let finalVal: string | number = val;
+    const commit = () => {
+      const val = inputRef.current?.value || '';
+      let finalVal: string | number = val;
 
-    if (col.type === 'number') {
-      const numericValue = val === "" ? 0 : Number(val);
-      finalVal = isNaN(numericValue) ? 0 : numericValue;
-    }
+      if (col.type === 'number') {
+        const numericValue = val === '' ? 0 : Number(val);
+        finalVal = isNaN(numericValue) ? 0 : numericValue;
+      }
 
-    setLocalValue(
-      col.type === 'number' || col.id === 'order_qty'
-        ? formatInventoryNumericDisplay(finalVal)
-        : String(finalVal)
-    );
-    setIsFocused(false);
+      setLocalValue(
+        col.type === 'number' || col.id === 'order_qty'
+          ? formatInventoryNumericDisplay(finalVal)
+          : String(finalVal),
+      );
+      setIsFocused(false);
 
-    // PERSISTENCE ARMOR: Push updates to Supabase via parent handlers
-    handleUpdateField(item.id, col.id, finalVal);
-    handleSaveField(item.id, col.id, finalVal);
+      // PERSISTENCE ARMOR: Push updates to Supabase via parent handlers
+      handleUpdateField(item.id, col.id, finalVal);
+      handleSaveField(item.id, col.id, finalVal);
+    };
+
+    scheduleInventoryGridCellBlur({
+      inputRef,
+      siblingDatasetKey: 'colId',
+      onCommit: commit,
+    });
   };
 
   // ควบคุมการจัดเรียงข้อความและสีเฉพาะคอลัมน์คงเหลือ
@@ -827,23 +836,31 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
   };
 
   const handleBlur = () => {
-    const val = inputRef.current?.value || '';
-    let finalVal: string | number = val;
+    const commit = () => {
+      const val = inputRef.current?.value || '';
+      let finalVal: string | number = val;
 
-    if (col.type === 'number') {
-      const numericValue = val === "" ? 0 : Number(val);
-      finalVal = isNaN(numericValue) ? 0 : numericValue;
-    }
+      if (col.type === 'number') {
+        const numericValue = val === '' ? 0 : Number(val);
+        finalVal = isNaN(numericValue) ? 0 : numericValue;
+      }
 
-    setLocalValue(
-      col.type === 'number' || col.id === 'order_qty'
-        ? formatInventoryNumericDisplay(finalVal)
-        : String(finalVal)
-    );
-    setIsFocused(false);
+      setLocalValue(
+        col.type === 'number' || col.id === 'order_qty'
+          ? formatInventoryNumericDisplay(finalVal)
+          : String(finalVal),
+      );
+      setIsFocused(false);
 
-    handleUpdateField(item.id, col.id, finalVal);
-    handleSaveField(item.id, col.id, finalVal);
+      handleUpdateField(item.id, col.id, finalVal);
+      handleSaveField(item.id, col.id, finalVal);
+    };
+
+    scheduleInventoryGridCellBlur({
+      inputRef,
+      siblingDatasetKey: 'mobileColId',
+      onCommit: commit,
+    });
   };
 
   const input = (
@@ -867,6 +884,7 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
           }
         }
       }}
+      enterKeyHint={col.type === 'number' ? 'done' : 'next'}
       data-mobile-col-id={col.id}
       data-mobile-row-index={rowIndex}
       readOnly={col.id === 'order_qty' && !manualOrderQty}

@@ -70,7 +70,7 @@ export function getAnchoredSuggestionsOverlayStyle(
   };
 }
 
-/** Hide bulk queue rows while mobile search suggestions are active. */
+/** Hide bulk queue rows and chips while mobile search suggestions are active. */
 export function shouldCollapseBulkQueueForMobileSearch(
   isMobile: boolean,
   isSearchFocused: boolean,

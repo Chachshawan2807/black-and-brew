@@ -32,6 +32,7 @@ import { blurQtyInputOnWheel, stepQuickQtyValue } from '@/lib/inventory-quick-qt
 import type { BulkPreview, BulkQueueItem } from '@/lib/inventory-quick-bulk';
 import { formatBulkConfirmQty, getBulkSubmitTypeLabel, type BulkQuickType } from '@/lib/inventory-quick-bulk';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { blurActiveElement } from '@/lib/blur-active-element';
 import { useMaxMd } from '@/hooks/use-max-md';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import {
@@ -265,12 +266,14 @@ function QuickActionSaveButton({
   className,
   bulkCount,
   bulkSubmitReady,
+  onSubmit,
 }: {
   isQuickPending: boolean;
   isReadOnly: boolean;
   className?: string;
   bulkCount?: number;
   bulkSubmitReady?: boolean;
+  onSubmit: (e: React.FormEvent) => void;
 }) {
   const bulkMode = bulkCount !== undefined;
   const disabled =
@@ -278,8 +281,15 @@ function QuickActionSaveButton({
 
   return (
     <button
-      type="submit"
+      type="button"
       disabled={disabled}
+      onClick={(e) => {
+        if (disabled) return;
+        blurActiveElement();
+        window.setTimeout(() => {
+          onSubmit(e as unknown as React.FormEvent);
+        }, 0);
+      }}
       className={cn(
         'h-11 w-full bb-pastel-surface bg-[#d1ecf1] border border-[#bee5eb] hover:brightness-95 text-[#000000] rounded-3xl text-sm font-normal transition-all bb-shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased disabled:opacity-50',
         className,
@@ -817,7 +827,8 @@ export function InventoryQuickActionBar({
       type="button"
       role="option"
       aria-selected={highlightedIndex === index}
-      onMouseDown={(e) => {
+      onPointerDown={(e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
         e.preventDefault();
         selectQuickSearchItem(item);
       }}
@@ -847,7 +858,7 @@ export function InventoryQuickActionBar({
           : 'absolute top-full left-0 z-[210] mt-2 min-w-[min(100%,14rem)] w-max max-w-[min(100vw-2rem,20rem)]',
       )}
       style={portalSuggestions ? portaledSuggestionsStyle : undefined}
-      onMouseDown={(e) => e.preventDefault()}
+      onPointerDown={(e) => e.preventDefault()}
     >
       <div
         className={cn(
@@ -936,7 +947,10 @@ export function InventoryQuickActionBar({
                 <HintTooltip tip="ล้างการค้นหา">
                   <button
                     type="button"
-                    onMouseDown={(e) => e.preventDefault()}
+                    onPointerDown={(e) => {
+                      if (e.pointerType === 'mouse' && e.button !== 0) return;
+                      e.preventDefault();
+                    }}
                     onClick={handleClearQuickSearch}
                     aria-label="ล้างการค้นหา"
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -1000,6 +1014,7 @@ export function InventoryQuickActionBar({
               bulkCount={bulkMode ? bulkQueue.length : undefined}
               bulkSubmitReady={bulkSubmitReady}
               className="h-9 w-auto px-2.5 rounded-xl"
+              onSubmit={onSubmit}
             />
           </div>
         </div>
@@ -1014,7 +1029,6 @@ export function InventoryQuickActionBar({
           />
         )}
 
-        {!collapseBulkQueueForSearch && (
         <div
           className={cn(
             'grid grid-cols-3 gap-2 w-full box-border sm:hidden',
@@ -1044,6 +1058,7 @@ export function InventoryQuickActionBar({
               isReadOnly={isReadOnly}
               bulkCount={bulkMode ? bulkQueue.length : undefined}
               bulkSubmitReady={bulkSubmitReady}
+              onSubmit={onSubmit}
             />
           </div>
           <SecondaryQuickActionButtons
@@ -1055,7 +1070,6 @@ export function InventoryQuickActionBar({
             onPreloadHistory={onPreloadHistory}
           />
         </div>
-        )}
 
         <div
           className={cn(
