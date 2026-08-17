@@ -1632,7 +1632,7 @@ export default function ScheduleClient({
                       )}
                     >
                       <span className={`text-[15px] font-normal tabular-nums ${
-                        fohCount > 0 ? 'text-emerald-500' : 'text-muted-foreground'
+                        fohCount > 0 ? 'text-black' : 'text-muted-foreground'
                       }`}>{fohCount}</span>
                     </div>
                   );
