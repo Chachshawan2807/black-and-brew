@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Plus } from 'lucide-react';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
@@ -26,15 +26,27 @@ type Props = {
 
 export default function BeanOrdersClient({ initialOrders, locale }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const [orders, setOrders] = useState(initialOrders);
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
   const [fulfillmentFilter, setFulfillmentFilter] = useState<'all' | 'pending' | 'shipped'>('all');
+  const [message, setMessage] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
     setOrders(initialOrders);
   }, [initialOrders]);
+
+  useEffect(() => {
+    const flash = sessionStorage.getItem('bb-bean-order-flash');
+    if (flash) {
+      setMessage(flash);
+      sessionStorage.removeItem('bb-bean-order-flash');
+    } else {
+      setMessage(null);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +93,12 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
           <Plus className="h-4 w-4" aria-hidden /> สร้างออเดอร์
         </Link>
       </div>
+
+      {message && (
+        <p className="mb-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground">
+          {message}
+        </p>
+      )}
 
       <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input

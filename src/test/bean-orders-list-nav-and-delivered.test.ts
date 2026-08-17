@@ -56,6 +56,50 @@ describe('bean order navigation after save/delete', () => {
       /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
     );
   });
+
+  test('deliver success redirects to bean-orders list with flash message', () => {
+    const detailSource = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
+      'utf8',
+    );
+    const deliverFnStart = detailSource.indexOf('async function handleConfirmDelivered');
+    expect(deliverFnStart).toBeGreaterThan(-1);
+    const deliverFnBody = detailSource.slice(deliverFnStart, deliverFnStart + 1200);
+    expect(deliverFnBody).toMatch(
+      /sessionStorage\.setItem\('bb-bean-order-flash',\s*'จัดส่งสำเร็จ'\)/,
+    );
+    expect(deliverFnBody).toMatch(
+      /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
+    );
+    expect(deliverFnBody).not.toContain('void reload()');
+
+    const listSource = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrdersClient.tsx'),
+      'utf8',
+    );
+    expect(listSource).toContain("sessionStorage.getItem('bb-bean-order-flash')");
+  });
+
+  test('deliver uses single confirmBeanOrderDelivered call with optional shipment', () => {
+    const detailSource = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
+      'utf8',
+    );
+    const deliverFnStart = detailSource.indexOf('async function handleConfirmDelivered');
+    const deliverFnBody = detailSource.slice(deliverFnStart, deliverFnStart + 1200);
+    expect(deliverFnBody).toMatch(/confirmBeanOrderDelivered\([\s\S]*?\{[\s\S]*?shipment:/);
+    expect(deliverFnBody).not.toMatch(
+      /if \(order\.fulfillmentStatus !== 'shipped'\)[\s\S]*?await shipBeanOrder/,
+    );
+
+    const actionsSource = readFileSync(
+      resolve(process.cwd(), 'src/app/actions/bean-order-actions.ts'),
+      'utf8',
+    );
+    expect(actionsSource).toMatch(
+      /confirmBeanOrderDelivered\([\s\S]*?options\?[\s\S]*?shipment[\s\S]*?shipBeanOrder/,
+    );
+  });
 });
 
 describe('bean order delivered action beside shipping update', () => {
@@ -99,7 +143,10 @@ describe('bean order delivered action beside shipping update', () => {
     );
 
     expect(detailSource).toMatch(
-      /handleConfirmDelivered[\s\S]*?shipBeanOrder\([\s\S]*?suppressShippedNotification:\s*true/,
+      /handleConfirmDelivered[\s\S]*?confirmBeanOrderDelivered\([\s\S]*?shipment:/,
+    );
+    expect(actionsSource).toMatch(
+      /confirmBeanOrderDelivered[\s\S]*?fulfillmentStatus === 'pending'[\s\S]*?shipBeanOrder\([\s\S]*?suppressShippedNotification:\s*true/,
     );
     expect(actionsSource).toMatch(
       /if \(isNewShipment && !options\?\.suppressShippedNotification\)/,

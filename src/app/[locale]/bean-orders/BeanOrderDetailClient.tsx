@@ -247,39 +247,16 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     setBusy(true);
     setError(null);
 
-    if (order.fulfillmentStatus !== 'shipped') {
-      const shipResult = await shipBeanOrder(
-        order.id,
-        { carrierCode: resolvedCarrierCode, trackingNumber },
-        locale,
-        { suppressShippedNotification: true },
-      );
-      if (!shipResult.success) {
-        setBusy(false);
-        setError(shipResult.error ?? 'บันทึกจัดส่งไม่สำเร็จ');
-        return;
-      }
-    }
-
-    const result = await confirmBeanOrderDelivered(order.id, locale);
+    const result = await confirmBeanOrderDelivered(order.id, locale, {
+      shipment:
+        order.fulfillmentStatus !== 'shipped'
+          ? { carrierCode: resolvedCarrierCode, trackingNumber }
+          : undefined,
+    });
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'ยืนยันจัดส่งไม่สำเร็จ'); return; }
-    setOrder((prev) => ({
-      ...prev,
-      fulfillmentStatus: 'shipped',
-      shipment: prev.shipment
-        ? { ...prev.shipment, trackingStatus: 'delivered' }
-        : {
-            deliveryType: 'parcel',
-            carrierCode: resolvedCarrierCode,
-            trackingNumber: trackingNumber.trim() || null,
-            trackingStatus: 'delivered',
-            trackingEvents: [],
-            shippedAt: new Date().toISOString(),
-          },
-    }));
-    setMessage('จัดส่งสำเร็จ');
-    void reload();
+    sessionStorage.setItem('bb-bean-order-flash', 'จัดส่งสำเร็จ');
+    navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
   }
 
   async function handleDelete() {

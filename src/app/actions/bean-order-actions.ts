@@ -1638,9 +1638,15 @@ export async function shipBeanOrder(
   }
 }
 
+export type ConfirmBeanOrderDeliveredOptions = {
+  /** When order is still pending, ship with these details first (single client round-trip). */
+  shipment?: z.infer<typeof shipOrderSchema>;
+};
+
 export async function confirmBeanOrderDelivered(
   orderId: string,
   locale = 'th',
+  options?: ConfirmBeanOrderDeliveredOptions,
 ): Promise<{ success: boolean; error?: string }> {
   const gate = await gateMutation();
   if (!gate.success) return gate;
@@ -1655,6 +1661,18 @@ export async function confirmBeanOrderDelivered(
 
     if (fetchError || !order) return { success: false, error: 'ไม่พบออเดอร์' };
 
+    let fulfillmentStatus = order.fulfillment_status as 'pending' | 'shipped';
+    if (fulfillmentStatus === 'pending') {
+      if (!options?.shipment) {
+        return { success: false, error: 'ยังไม่ได้บันทึกการจัดส่ง' };
+      }
+      const shipResult = await shipBeanOrder(orderId, options.shipment, locale, {
+        suppressShippedNotification: true,
+      });
+      if (!shipResult.success) return shipResult;
+      fulfillmentStatus = 'shipped';
+    }
+
     const { data: shipment, error: shipmentError } = await supabase
       .from('bean_order_shipments')
       .select('tracking_number, tracking_status')
@@ -1667,7 +1685,6 @@ export async function confirmBeanOrderDelivered(
     }
     if (!shipment) return { success: false, error: 'ยังไม่มีข้อมูลการจัดส่ง' };
 
-    const fulfillmentStatus = order.fulfillment_status as 'pending' | 'shipped';
     const trackingNumber = (shipment.tracking_number as string | null) ?? null;
     const previousStatus = (shipment.tracking_status as string | null) ?? null;
 
