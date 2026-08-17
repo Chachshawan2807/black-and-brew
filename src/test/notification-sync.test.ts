@@ -3,6 +3,8 @@ import type { InventoryNotification } from '@/lib/notification-types';
 import {
   mergeNotificationLists,
   prependToNotificationList,
+  replaceNotificationByDedupeKey,
+  removeNotificationByDedupeKey,
 } from '@/lib/notification-sync';
 
 function sampleNotification(
@@ -59,6 +61,51 @@ describe('notification-sync', () => {
     expect(merged).toHaveLength(1);
     expect(merged[0].summary).toBe('from push');
     expect(merged[0].read).toBe(false);
+  });
+
+  test('replaceNotificationByDedupeKey preserves read state when digest updates', () => {
+    const existing = [
+      sampleNotification({
+        logId: 'bb-insight-daily_digest-2026-08-11',
+        id: 'bb-insight-daily_digest-2026-08-11',
+        read: true,
+        summary: 'ออเดอร์เมล็ดค้าง: ค้างชำระเงิน 2 รายการ',
+        metadata: { kind: 'proactive_insight' },
+      }),
+    ];
+    const incoming = sampleNotification({
+      logId: 'bb-insight-daily_digest-2026-08-11',
+      id: 'bb-insight-daily_digest-2026-08-11',
+      read: false,
+      summary: 'ออเดอร์เมล็ดค้าง: ค้างชำระเงิน 1 รายการ',
+      metadata: { kind: 'proactive_insight' },
+    });
+
+    const { list, replaced } = replaceNotificationByDedupeKey(existing, incoming);
+
+    expect(replaced).toBe(true);
+    expect(list).toHaveLength(1);
+    expect(list[0].summary).toBe('ออเดอร์เมล็ดค้าง: ค้างชำระเงิน 1 รายการ');
+    expect(list[0].read).toBe(true);
+  });
+
+  test('removeNotificationByDedupeKey drops cleared digest notifications', () => {
+    const existing = [
+      sampleNotification({
+        logId: 'bb-insight-daily_digest-2026-08-11',
+        id: 'bb-insight-daily_digest-2026-08-11',
+      }),
+      sampleNotification({ logId: 'log-2', id: 'log-2' }),
+    ];
+
+    const { list, removed } = removeNotificationByDedupeKey(
+      existing,
+      'bb-insight-daily_digest-2026-08-11',
+    );
+
+    expect(removed).toBe(true);
+    expect(list).toHaveLength(1);
+    expect(list[0].logId).toBe('log-2');
   });
 
   test('mergeNotificationLists sorts by occurredAt descending', () => {

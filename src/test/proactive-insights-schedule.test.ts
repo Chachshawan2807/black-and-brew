@@ -38,6 +38,19 @@ describe('scheduleProactiveInsightEvaluation', () => {
     );
   });
 
+  test('bean_order_update evaluates immediately without debounce', async () => {
+    scheduleProactiveInsightEvaluation('bean_order_update');
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(evaluateMock).toHaveBeenCalledTimes(1);
+    expect(evaluateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ trigger: 'bean_order_update' }),
+    );
+
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+    expect(evaluateMock).toHaveBeenCalledTimes(1);
+  });
+
   test('uses last trigger after debounce window', async () => {
     scheduleProactiveInsightEvaluation('shift_update');
     await vi.advanceTimersByTimeAsync(60_000);

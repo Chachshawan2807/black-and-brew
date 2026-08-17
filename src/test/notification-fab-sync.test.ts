@@ -116,6 +116,15 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('skipSystemNotification: true');
   });
 
+  test('hook syncs proactive insight digest via realtime UPDATE and server catch-up', () => {
+    expect(hookSource).toContain("attachChangeLogListener(nextChannel, 'insights', 'UPDATE')");
+    expect(hookSource).toContain("attachChangeLogListener(nextChannel, 'insights', 'DELETE')");
+    expect(hookSource).toContain('replaceNotificationByDedupeKey');
+    expect(hookSource).toContain('isProactiveInsightNotificationItem');
+    expect(hookSource).toContain('syncInsightNotificationCatchUp');
+    expect(hookSource).toContain("fetchDataChangeLogs({ module: 'insights'");
+  });
+
   test('hook syncs daily schedule report logs via realtime and server catch-up', () => {
     expect(hookSource).toContain("attachChangeLogListener(nextChannel, 'schedule')");
     expect(hookSource).toContain('isEligibleDailyReportNotification');

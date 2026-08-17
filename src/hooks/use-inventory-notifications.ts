@@ -58,7 +58,7 @@ import {
   mirrorNotificationsToIdb,
   saveUnreadCounterToIdb,
 } from '@/lib/notification-idb';
-import { prependToNotificationList, hydrateNotificationState, readNotificationState } from '@/lib/notification-sync';
+import { prependToNotificationList, hydrateNotificationState, readNotificationState, replaceNotificationByDedupeKey, removeNotificationByDedupeKey } from '@/lib/notification-sync';
 import {
   decrementUnreadCounter,
   incrementUnreadCounter,
@@ -91,26 +91,20 @@ function isDailyReportNotificationItem(notification: InventoryNotification): boo
   return notification.metadata?.kind === 'daily_report';
 }
 
+function isProactiveInsightNotificationItem(notification: InventoryNotification): boolean {
+  return notification.metadata?.kind === 'proactive_insight';
+}
+
+function isReplacableNotificationItem(notification: InventoryNotification): boolean {
+  return isDailyReportNotificationItem(notification) || isProactiveInsightNotificationItem(notification);
+}
+
 /** Replace an existing daily schedule report in the panel when roster data is refreshed. */
 export function replaceDailyReportNotification(
   prev: InventoryNotification[],
   notification: InventoryNotification,
 ): { list: InventoryNotification[]; replaced: boolean } {
-  const dedupeKey = notification.logId || notification.id;
-  const existingIndex = prev.findIndex(
-    (item) => item.id === notification.id || item.logId === dedupeKey,
-  );
-  if (existingIndex < 0) {
-    return { list: prev, replaced: false };
-  }
-
-  const previous = prev[existingIndex];
-  const next = [...prev];
-  next[existingIndex] = {
-    ...notification,
-    read: previous.read,
-  };
-  return { list: next, replaced: true };
+  return replaceNotificationByDedupeKey(prev, notification);
 }
 
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
@@ -264,10 +258,10 @@ export function useInventoryNotifications() {
       options?: { skipSystemNotification?: boolean },
     ) => {
       const dedupeKey = notification.logId || notification.id;
-      const isDailyReport = isDailyReportNotificationItem(notification);
+      const isReplacable = isReplacableNotificationItem(notification);
 
-      if (!isDailyReport && recentLogIdsRef.current.has(dedupeKey)) return;
-      if (!isDailyReport) {
+      if (!isReplacable && recentLogIdsRef.current.has(dedupeKey)) return;
+      if (!isReplacable) {
         recentLogIdsRef.current.add(dedupeKey);
         if (recentLogIdsRef.current.size > 250) {
           recentLogIdsRef.current = new Set(Array.from(recentLogIdsRef.current).slice(-125));
@@ -276,12 +270,12 @@ export function useInventoryNotifications() {
 
       let nextUnread = 0;
       let alreadyExists = false;
-      let replacedDailyReport = false;
+      let replacedExisting = false;
       setNotifications((prev) => {
-        if (isDailyReport) {
-          const { list: next, replaced } = replaceDailyReportNotification(prev, notification);
+        if (isReplacable) {
+          const { list: next, replaced } = replaceNotificationByDedupeKey(prev, notification);
           if (replaced) {
-            replacedDailyReport = true;
+            replacedExisting = true;
             nextUnread = resolveDisplayUnreadCount(next, serviceWorkerUnreadCount, loadUnreadCounter());
             setUnreadCount(nextUnread);
             saveStoredNotifications(next);
@@ -310,7 +304,7 @@ export function useInventoryNotifications() {
 
       if (alreadyExists) return;
 
-      if (replacedDailyReport) {
+      if (replacedExisting) {
         void syncAppBadge(nextUnread);
         return;
       }
@@ -421,6 +415,20 @@ export function useInventoryNotifications() {
     },
     [],
   );
+
+  const removeNotificationByLogId = useCallback((logId: string) => {
+    setNotifications((prev) => {
+      const { list: next, removed } = removeNotificationByDedupeKey(prev, logId);
+      if (!removed) return prev;
+
+      const display = resolveDisplayUnreadCount(next);
+      setUnreadCount(display);
+      saveStoredNotifications(next);
+      void mirrorNotificationsToIdb(next);
+      void syncAppBadge(display);
+      return next;
+    });
+  }, []);
 
   const processRows = useCallback(
     (rows: DataChangeLogRow[]) => {
@@ -609,7 +617,7 @@ export function useInventoryNotifications() {
     const attachChangeLogListener = (
       targetChannel: ReturnType<typeof supabase.channel>,
       module: 'inventory' | 'schedule' | 'bean_orders' | 'insights' | 'security',
-      event: 'INSERT' | 'UPDATE' = 'INSERT',
+      event: 'INSERT' | 'UPDATE' | 'DELETE' = 'INSERT',
     ) => {
       return targetChannel.on(
         'postgres_changes',
@@ -620,6 +628,16 @@ export function useInventoryNotifications() {
           filter: `module=eq.${module}`,
         },
         (payload) => {
+          if (event === 'DELETE') {
+            if (module !== 'insights' || !payload.old) return;
+            const oldRow = payload.old as Record<string, unknown>;
+            if (oldRow.entity_type !== 'cross_module_insight') return;
+            const entityId = oldRow.entity_id ? String(oldRow.entity_id) : '';
+            if (!entityId) return;
+            removeNotificationByLogId(entityId);
+            return;
+          }
+
           if (!payload.new) return;
           const row = rowFromPayload(payload as { new: Record<string, unknown> });
           if (module === 'schedule' && !isEligibleDailyReportNotification(row)) return;
@@ -658,6 +676,8 @@ export function useInventoryNotifications() {
       attachChangeLogListener(nextChannel, 'schedule', 'UPDATE');
       attachChangeLogListener(nextChannel, 'bean_orders');
       attachChangeLogListener(nextChannel, 'insights');
+      attachChangeLogListener(nextChannel, 'insights', 'UPDATE');
+      attachChangeLogListener(nextChannel, 'insights', 'DELETE');
       attachChangeLogListener(nextChannel, 'security');
       if (cancelled) {
         stopChannel(nextChannel);
@@ -718,7 +738,7 @@ export function useInventoryNotifications() {
       stopChannel();
       window.removeEventListener('bb-notification-prefs-changed', onPrefsChange);
     };
-  }, [realtimeReady, processRows, syncFromServerOnly, realtimeReconnectKey]);
+  }, [realtimeReady, processRows, syncFromServerOnly, realtimeReconnectKey, removeNotificationByLogId]);
 
   useEffect(() => {
     let hiddenAt: number | null = null;

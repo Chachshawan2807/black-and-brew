@@ -48,6 +48,32 @@ export async function fetchDailyInsightDigestSummary(dateIso: string): Promise<s
   }
 }
 
+/** Remove today's digest log when pending bean orders are fully cleared. */
+export async function clearDailyInsightDigestLog(dateIso: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return false;
+
+  const logId = dailyInsightDigestLogId(dateIso);
+  try {
+    const { error } = await supabase
+      .from('data_change_logs')
+      .delete()
+      .eq('module', 'insights')
+      .eq('entity_type', 'cross_module_insight')
+      .eq('entity_id', logId);
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      throw error;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('[clearDailyInsightDigestLog] Exception:', error);
+    return false;
+  }
+}
+
 /** Cron record path: insert, refresh stale log, skip after morning push, or force replace. */
 export function resolveCronInsightRecordAction(
   hasExisting: boolean,

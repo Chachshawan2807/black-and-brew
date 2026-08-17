@@ -7,7 +7,12 @@ import {
   shouldForceInsightDigestRefresh,
   type InsightTrigger,
 } from '@/lib/proactive-insights/insight-dispatch-triggers';
-import { recordInsightNotificationLog, markInsightMorningPushDispatched, fetchDailyInsightDigestSummary } from '@/lib/insight-notification';
+import {
+  clearDailyInsightDigestLog,
+  recordInsightNotificationLog,
+  markInsightMorningPushDispatched,
+  fetchDailyInsightDigestSummary,
+} from '@/lib/insight-notification';
 import { dispatchInsightWebPush } from '@/lib/insight-web-push';
 
 export type { InsightTrigger } from '@/lib/proactive-insights/insight-dispatch-triggers';
@@ -44,44 +49,15 @@ export type InsightDispatchResult = {
   pushed: { ruleId: string; sent: number; failed: number; skipped: boolean } | null;
 };
 
-export async function evaluateAndDispatchInsights(
-  options: EvaluateInsightsOptions = {},
+async function recordAndPushDigest(
+  digest: Insight,
+  dateIso: string,
+  locale: string,
+  trigger: InsightTrigger,
+  matchedRules: Insight[],
+  options: EvaluateInsightsOptions,
+  recordForce: boolean,
 ): Promise<InsightDispatchResult> {
-  const trigger = options.trigger ?? 'cron';
-  const locale = options.locale ?? 'th';
-  const dateIso = options.dateIso ?? resolveInsightTargetDateIso();
-
-  const snapshot = await compileOperationalSnapshot({ dateIso, locale });
-  const matchedRules = evaluateInsightRules(snapshot);
-  const digest = buildDailyInsightDigest(matchedRules);
-
-  if (!digest) {
-    return {
-      dateIso,
-      trigger,
-      matchedRules: [],
-      digest: null,
-      recorded: null,
-      pushed: null,
-    };
-  }
-
-  // Daily digest is push/logged from the scheduled cron and bean-order mutations.
-  if (!shouldDispatchInsightNotification(trigger, matchedRules)) {
-    return {
-      dateIso,
-      trigger,
-      matchedRules,
-      digest,
-      recorded: null,
-      pushed: null,
-    };
-  }
-
-  const recordForce =
-    trigger === 'cron'
-      ? Boolean(options.force)
-      : await resolveInsightRecordForce(trigger, digest, dateIso, options.force);
   const logResult = await recordInsightNotificationLog(digest, dateIso, locale, {
     trigger: trigger === 'cron' ? 'cron' : undefined,
     force: recordForce,
@@ -129,4 +105,94 @@ export async function evaluateAndDispatchInsights(
       skipped: pushResult.skipped,
     },
   };
+}
+
+export async function evaluateAndDispatchInsights(
+  options: EvaluateInsightsOptions = {},
+): Promise<InsightDispatchResult> {
+  const trigger = options.trigger ?? 'cron';
+  const locale = options.locale ?? 'th';
+  const dateIso = options.dateIso ?? resolveInsightTargetDateIso();
+
+  const snapshot = await compileOperationalSnapshot({ dateIso, locale });
+  const matchedRules = evaluateInsightRules(snapshot);
+  const digest = buildDailyInsightDigest(matchedRules);
+
+  if (trigger === 'bean_order_update') {
+    const existingSummary = await fetchDailyInsightDigestSummary(dateIso);
+    const nextSummary = digest?.summary ?? null;
+
+    if (existingSummary === nextSummary) {
+      return {
+        dateIso,
+        trigger,
+        matchedRules,
+        digest,
+        recorded: null,
+        pushed: null,
+      };
+    }
+
+    if (!digest) {
+      if (existingSummary !== null) {
+        await clearDailyInsightDigestLog(dateIso);
+      }
+      return {
+        dateIso,
+        trigger,
+        matchedRules,
+        digest: null,
+        recorded: null,
+        pushed: null,
+      };
+    }
+
+    return recordAndPushDigest(
+      digest,
+      dateIso,
+      locale,
+      trigger,
+      matchedRules,
+      options,
+      true,
+    );
+  }
+
+  if (!digest) {
+    return {
+      dateIso,
+      trigger,
+      matchedRules: [],
+      digest: null,
+      recorded: null,
+      pushed: null,
+    };
+  }
+
+  // Daily digest is push/logged from the scheduled cron and bean-order mutations.
+  if (!shouldDispatchInsightNotification(trigger, matchedRules)) {
+    return {
+      dateIso,
+      trigger,
+      matchedRules,
+      digest,
+      recorded: null,
+      pushed: null,
+    };
+  }
+
+  const recordForce =
+    trigger === 'cron'
+      ? Boolean(options.force)
+      : await resolveInsightRecordForce(trigger, digest, dateIso, options.force);
+
+  return recordAndPushDigest(
+    digest,
+    dateIso,
+    locale,
+    trigger,
+    matchedRules,
+    options,
+    recordForce,
+  );
 }

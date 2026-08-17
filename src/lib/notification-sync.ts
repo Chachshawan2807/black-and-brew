@@ -28,6 +28,36 @@ export function prependToNotificationList(
   return { list: next, unreadCount: countUnread(next), isNewNotification };
 }
 
+/** Replace an existing notification when realtime/server sends an updated digest. */
+export function replaceNotificationByDedupeKey(
+  prev: InventoryNotification[],
+  notification: InventoryNotification,
+): { list: InventoryNotification[]; replaced: boolean } {
+  const dedupeKey = notification.logId || notification.id;
+  const existingIndex = prev.findIndex(
+    (item) => item.id === notification.id || item.logId === dedupeKey,
+  );
+  if (existingIndex < 0) {
+    return { list: prev, replaced: false };
+  }
+
+  const previous = prev[existingIndex];
+  const next = [...prev];
+  next[existingIndex] = {
+    ...notification,
+    read: previous.read,
+  };
+  return { list: next, replaced: true };
+}
+
+export function removeNotificationByDedupeKey(
+  prev: InventoryNotification[],
+  dedupeKey: string,
+): { list: InventoryNotification[]; removed: boolean } {
+  const next = prev.filter((item) => item.id !== dedupeKey && item.logId !== dedupeKey);
+  return { list: next, removed: next.length !== prev.length };
+}
+
 export function mergeNotificationLists(
   ...lists: InventoryNotification[][]
 ): InventoryNotification[] {
