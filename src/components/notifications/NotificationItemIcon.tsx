@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  AlertTriangle,
   Banknote,
   CalendarRange,
   Layers,
@@ -9,7 +10,6 @@ import {
   Pencil,
   Plus,
   ShieldAlert,
-  Sparkles,
   SlidersHorizontal,
   Trash2,
   Truck,
@@ -60,7 +60,7 @@ export function NotificationItemIcon({
       )}
     >
       {kind === 'schedule' && <CalendarRange {...iconProps} />}
-      {kind === 'insight' && <Sparkles {...iconProps} />}
+      {kind === 'insight' && <AlertTriangle {...iconProps} />}
       {kind === 'security' && <ShieldAlert {...iconProps} />}
       {kind === 'bean-delivered' && <Truck {...iconProps} />}
       {kind === 'bean-paid' && <Banknote {...iconProps} />}

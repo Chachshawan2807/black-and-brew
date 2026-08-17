@@ -82,14 +82,14 @@ describe('notification display icons', () => {
     expect(resolveNotificationDisplayIcon(item).kind).toBe('schedule');
   });
 
-  test('uses sparkles styling for proactive insight notifications', () => {
+  test('uses warning triangle styling for proactive insight notifications', () => {
     const item = sampleNotification({
       title: 'คนน้อย · สต็อกต่ำ',
       metadata: { kind: 'proactive_insight', module: 'insights', url: '/th/inventory' },
     });
 
     expect(resolveNotificationDisplayIcon(item).kind).toBe('insight');
-    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#f3e8ff]');
+    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#ffe0a8]');
   });
 
   test('uses shield styling for security notifications', () => {
@@ -156,6 +156,7 @@ describe('notification display icons', () => {
     expect(itemIcon).toContain('Banknote');
     expect(itemIcon).toContain('SlidersHorizontal');
     expect(itemIcon).toContain('CalendarRange');
+    expect(itemIcon).toContain('AlertTriangle');
     const displayIcon = fs.readFileSync(
       path.join(root, 'lib/notification-display-icon.ts'),
       'utf-8',

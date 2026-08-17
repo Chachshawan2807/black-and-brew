@@ -43,7 +43,8 @@ export type NotificationDisplayIconKind =
   | 'update';
 
 const SCHEDULE_SURFACE = `${PASTEL_SURFACE} bg-[#e6f0ff] text-black border border-[#c2d6ff]`;
-const INSIGHT_SURFACE = `${PASTEL_SURFACE} bg-[#f3e8ff] text-black border border-[#e0c8ff]`;
+/** Deeper orange pastel than 8:00 / stock-adjust (#fff3cd) for at-a-glance distinction. */
+const INSIGHT_SURFACE = `${PASTEL_SURFACE} bg-[#ffe0a8] text-black border border-[#f0b866]`;
 const SECURITY_SURFACE = `${PASTEL_SURFACE} bg-[#ffe4e6] text-black border border-[#fecdd3]`;
 const BEAN_DELIVERED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`;
 const BEAN_PAYMENT_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.order} text-black`;
