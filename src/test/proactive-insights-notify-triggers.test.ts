@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import type { Insight } from '@/lib/proactive-insights/types';
 import {
+  isRealtimeInsightTrigger,
   shouldDispatchInsightNotification,
   shouldForceInsightDigestRefresh,
 } from '@/lib/proactive-insights/insight-dispatch-triggers';
@@ -24,15 +25,20 @@ const beanRule: Insight = {
 };
 
 describe('insight dispatch triggers', () => {
-  test('shift_update dispatches only for high-priority matched rules', () => {
-    expect(shouldDispatchInsightNotification('shift_update', [highRule])).toBe(true);
-    expect(shouldDispatchInsightNotification('shift_update', [beanRule])).toBe(false);
-    expect(shouldDispatchInsightNotification('manual', [highRule])).toBe(false);
+  test('realtime mutation triggers include shift, inventory, and bean order updates', () => {
+    expect(isRealtimeInsightTrigger('shift_update')).toBe(true);
+    expect(isRealtimeInsightTrigger('inventory_update')).toBe(true);
+    expect(isRealtimeInsightTrigger('bean_order_update')).toBe(true);
+    expect(isRealtimeInsightTrigger('cron')).toBe(false);
+    expect(isRealtimeInsightTrigger('manual')).toBe(false);
   });
 
-  test('bean_order_update dispatches only for pending bean rule', () => {
-    expect(shouldDispatchInsightNotification('bean_order_update', [beanRule])).toBe(true);
-    expect(shouldDispatchInsightNotification('bean_order_update', [highRule])).toBe(false);
+  test('mutation triggers dispatch whenever any rule matches', () => {
+    expect(shouldDispatchInsightNotification('shift_update', [highRule])).toBe(true);
+    expect(shouldDispatchInsightNotification('shift_update', [beanRule])).toBe(true);
+    expect(shouldDispatchInsightNotification('inventory_update', [beanRule])).toBe(true);
+    expect(shouldDispatchInsightNotification('bean_order_update', [highRule])).toBe(true);
+    expect(shouldDispatchInsightNotification('manual', [highRule])).toBe(false);
   });
 
   test('mutation triggers force refresh only when digest summary changed', () => {

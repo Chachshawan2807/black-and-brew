@@ -22,6 +22,7 @@ function makeWeekDays(
       headcount,
       leaveCount: staff.length,
       leaveStaff: staff.map((name) => ({ name })),
+      isPublicHoliday: false,
     };
   });
 }
@@ -70,6 +71,17 @@ describe('evaluateInsightRules', () => {
     expect(insights.find((i) => i.ruleId === 'understaffed_low_stock')).toBeUndefined();
   });
 
+  test('understaffed_low_stock fires on public holidays when headcount is at or below 4', () => {
+    const weeklyDays = makeWeekDays([5, 5, 5, 5, 5, 5, 5]);
+    weeklyDays[2] = { ...weeklyDays[2], headcount: 4, isPublicHoliday: true };
+
+    const insights = evaluateInsightRules(sampleSnapshot({ weeklyDays }));
+    const hit = insights.find((i) => i.ruleId === 'understaffed_low_stock');
+
+    expect(hit).toBeDefined();
+    expect(hit!.summary).toContain('พ. 22 4 คน');
+  });
+
   test('leave_coverage_risk lists each leave with short weekday date', () => {
     const insights = evaluateInsightRules(
       sampleSnapshot({
@@ -108,9 +120,7 @@ describe('evaluateInsightRules', () => {
     const insights = evaluateInsightRules(sampleSnapshot({ pendingBeanOrders: pending }));
     const hit = insights.find((i) => i.ruleId === 'bean_orders_inventory_gap');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toBe(
-      'ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ · รอส่งมอบ 1 รายการ',
-    );
+    expect(hit!.summary).toBe('ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ');
     expect(hit!.summary).not.toContain('คุณเอ');
   });
 

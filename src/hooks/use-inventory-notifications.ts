@@ -6,6 +6,7 @@ import {
   fetchDataChangeLogs,
   type DataChangeLogRow,
 } from '@/app/actions/data-change-log-actions';
+import { refreshProactiveInsightDigest } from '@/app/actions/insight-actions';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { isOwnChange, getClientSessionId } from '@/lib/client-session';
@@ -529,6 +530,8 @@ export function useInventoryNotifications() {
   const syncInsightNotificationCatchUp = useCallback(async () => {
     const currentPrefs = prefsRef.current;
     if (!currentPrefs.proactiveInsights) return;
+
+    await refreshProactiveInsightDigest(localeRef.current);
 
     const result = await fetchDataChangeLogs({ module: 'insights', limit: 50 });
     if (!result.success) return;

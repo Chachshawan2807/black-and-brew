@@ -13,10 +13,10 @@ describe('countBeanOrderPendingStatuses', () => {
         { paymentStatus: 'paid', fulfillmentStatus: 'pending' },
         { paymentStatus: 'unpaid', fulfillmentStatus: 'shipped' },
       ]),
-    ).toEqual({ unpaidCount: 1, pendingShipmentCount: 2, awaitingDeliveryCount: 0 });
+    ).toEqual({ unpaidCount: 1, pendingShipmentCount: 2 });
   });
 
-  test('counts paid shipped undelivered orders as awaiting delivery', () => {
+  test('ignores paid shipped undelivered orders', () => {
     expect(
       countBeanOrderPendingStatuses([
         {
@@ -30,12 +30,34 @@ describe('countBeanOrderPendingStatuses', () => {
           trackingStatus: 'delivered',
         },
       ]),
-    ).toEqual({ unpaidCount: 0, pendingShipmentCount: 0, awaitingDeliveryCount: 1 });
+    ).toEqual({ unpaidCount: 0, pendingShipmentCount: 0 });
+  });
+
+  test('does not count slip-uploaded unpaid orders as awaiting payment', () => {
+    expect(
+      countBeanOrderPendingStatuses([
+        {
+          paymentStatus: 'unpaid',
+          fulfillmentStatus: 'pending',
+          slipUploadedAt: '2026-08-18T02:00:00.000Z',
+        },
+      ]),
+    ).toEqual({ unpaidCount: 0, pendingShipmentCount: 1 });
+    expect(
+      formatPendingBeanOrdersSummary([
+        {
+          customerName: 'ลูกค้า',
+          paymentStatus: 'unpaid',
+          fulfillmentStatus: 'pending',
+          slipUploadedAt: '2026-08-18T02:00:00.000Z',
+        },
+      ]),
+    ).toBe('ค้างจัดส่ง 1 รายการ');
   });
 });
 
 describe('formatPendingBeanOrdersSummary', () => {
-  test('shows payment, shipment, and awaiting-delivery counts', () => {
+  test('shows payment and shipment counts only', () => {
     expect(
       formatPendingBeanOrdersSummary([
         { customerName: 'เอ', paymentStatus: 'unpaid', fulfillmentStatus: 'pending' },
@@ -48,7 +70,7 @@ describe('formatPendingBeanOrdersSummary', () => {
           trackingStatus: null,
         },
       ]),
-    ).toBe('ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ · รอส่งมอบ 1 รายการ');
+    ).toBe('ค้างชำระเงิน 1 รายการ · ค้างจัดส่ง 2 รายการ');
   });
 
   test('omits zero buckets', () => {

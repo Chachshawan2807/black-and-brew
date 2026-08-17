@@ -15,6 +15,14 @@ export function shouldShowOrderPaymentBadge(
   cancelledAt?: string | null,
 ): boolean {
   if (cancelledAt) return false;
+  return isBeanOrderPaymentSettled(paymentStatus, slipUploadedAt);
+}
+
+/** Matches list/detail UI: slip uploaded counts as payment handled even before confirm. */
+export function isBeanOrderPaymentSettled(
+  paymentStatus?: PaymentStatus | string | null,
+  slipUploadedAt?: string | null,
+): boolean {
   return paymentStatus === 'paid' || Boolean(slipUploadedAt);
 }
 

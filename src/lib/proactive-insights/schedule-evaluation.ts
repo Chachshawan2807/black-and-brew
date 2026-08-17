@@ -1,9 +1,7 @@
 import type { InsightTrigger } from '@/lib/proactive-insights/evaluate-and-dispatch';
 
-const DEBOUNCE_MS = 5 * 60 * 1000;
-
-let timer: ReturnType<typeof setTimeout> | null = null;
-let pendingTrigger: InsightTrigger = 'manual';
+let queuedTrigger: InsightTrigger | null = null;
+let flushScheduled = false;
 
 function runInsightEvaluation(trigger: InsightTrigger): void {
   void import('@/lib/proactive-insights/evaluate-and-dispatch')
@@ -15,30 +13,22 @@ function runInsightEvaluation(trigger: InsightTrigger): void {
     });
 }
 
-/**
- * Debounce cross-module insight evaluation after mutations.
- * Collapses rapid shift/inventory saves into one evaluation.
- */
+/** Run cross-module insight evaluation immediately after mutations. */
 export function scheduleProactiveInsightEvaluation(trigger: InsightTrigger): void {
-  if (trigger === 'bean_order_update') {
-    if (timer) clearTimeout(timer);
-    timer = null;
-    runInsightEvaluation('bean_order_update');
-    return;
-  }
+  queuedTrigger = trigger;
+  if (flushScheduled) return;
 
-  pendingTrigger = trigger;
-  if (timer) clearTimeout(timer);
-
-  timer = setTimeout(() => {
-    timer = null;
-    runInsightEvaluation(pendingTrigger);
-  }, DEBOUNCE_MS);
+  flushScheduled = true;
+  queueMicrotask(() => {
+    flushScheduled = false;
+    const nextTrigger = queuedTrigger ?? 'manual';
+    queuedTrigger = null;
+    runInsightEvaluation(nextTrigger);
+  });
 }
 
 /** Test-only: clear pending timer state. */
 export function __resetInsightScheduleForTests(): void {
-  if (timer) clearTimeout(timer);
-  timer = null;
-  pendingTrigger = 'manual';
+  queuedTrigger = null;
+  flushScheduled = false;
 }

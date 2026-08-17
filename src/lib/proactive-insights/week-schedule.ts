@@ -18,13 +18,16 @@ export function getWeekDateIsos(anchorDateIso: string): string[] {
   return Array.from({ length: 7 }, (_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
 }
 
-export function isDayUnderstaffed(dayIndex: number, headcount: number): boolean {
-  const limit = INSIGHT_THRESHOLDS.weeklyHeadcountLimits[dayIndex];
-  return headcount <= limit;
+export function isDayUnderstaffed(day: Pick<WeeklyDaySchedule, 'dayIndex' | 'headcount' | 'isPublicHoliday'>): boolean {
+  if (day.isPublicHoliday) {
+    return day.headcount <= INSIGHT_THRESHOLDS.publicHolidayHeadcountLimit;
+  }
+  const limit = INSIGHT_THRESHOLDS.weeklyHeadcountLimits[day.dayIndex];
+  return day.headcount <= limit;
 }
 
 export function findUnderstaffedDays(days: WeeklyDaySchedule[]): WeeklyDaySchedule[] {
-  return days.filter((day) => isDayUnderstaffed(day.dayIndex, day.headcount));
+  return days.filter((day) => isDayUnderstaffed(day));
 }
 
 export function sumWeeklyLeave(days: WeeklyDaySchedule[]): number {

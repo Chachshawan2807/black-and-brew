@@ -1210,6 +1210,8 @@ export async function uploadBeanOrderSlip(
       return { success: false, error: payError.message };
     }
 
+    scheduleProactiveInsightEvaluation('bean_order_update');
+
     scheduleBeanOrderPaymentNotification(orderId, {
       order_no: order.order_no as string,
       recipient_name: (order.recipient_name as string | null) ?? null,

@@ -58,9 +58,15 @@ describe('pwa-install', () => {
     expect(isIosPwaInstallable('Mozilla/5.0 (Linux; Android 14)')).toBe(false);
   });
 
-  test('PWA install affordance is mounted in the app shell for PIN and authenticated views', () => {
+  test('PWA install affordance is mounted only on the PIN entry screen', () => {
     const layout = readFileSync(resolve(ROOT, 'src/app/[locale]/layout.tsx'), 'utf-8');
-    expect(layout).toContain('PwaInstallShell');
+    const pinGateway = readFileSync(
+      resolve(ROOT, 'src/components/auth/PinGateway.tsx'),
+      'utf-8',
+    );
+
+    expect(layout).not.toContain('PwaInstallShell');
+    expect(pinGateway).toContain('PwaInstallShell');
   });
 });
 
@@ -100,15 +106,9 @@ describe('pwa-install-reset', () => {
     expect(iosBranch).not.toContain('await prepareFreshPwaInstall');
   });
 
-  test('PWA install affordance is mounted in the app shell, not only on the PIN screen', () => {
+  test('PWA install affordance is not mounted in the global app shell', () => {
     const layout = readFileSync(resolve(ROOT, 'src/app/[locale]/layout.tsx'), 'utf-8');
-    const pinGateway = readFileSync(
-      resolve(ROOT, 'src/components/auth/PinGateway.tsx'),
-      'utf-8',
-    );
-
-    expect(layout).toContain('PwaInstallShell');
-    expect(pinGateway).not.toContain('PwaInstallButton');
+    expect(layout).not.toContain('PwaInstallShell');
   });
 });
 

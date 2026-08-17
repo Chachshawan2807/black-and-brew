@@ -1,8 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import {
-  isAwaitingBeanOrderDelivery,
-  shouldIncludeBeanOrderInPendingInsights,
-} from '@/lib/proactive-insights/pending-bean-order-eligibility';
+import { shouldIncludeBeanOrderInPendingInsights } from '@/lib/proactive-insights/pending-bean-order-eligibility';
 
 describe('shouldIncludeBeanOrderInPendingInsights', () => {
   test('includes unpaid and pending-fulfillment orders', () => {
@@ -20,21 +17,21 @@ describe('shouldIncludeBeanOrderInPendingInsights', () => {
     ).toBe(true);
   });
 
-  test('includes paid shipped orders that are not delivered yet', () => {
+  test('excludes paid shipped orders awaiting delivery confirmation', () => {
     expect(
       shouldIncludeBeanOrderInPendingInsights({
         paymentStatus: 'paid',
         fulfillmentStatus: 'shipped',
         trackingStatus: null,
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldIncludeBeanOrderInPendingInsights({
         paymentStatus: 'paid',
         fulfillmentStatus: 'shipped',
         trackingStatus: 'in_transit',
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   test('excludes delivered paid shipped orders', () => {
@@ -55,21 +52,20 @@ describe('shouldIncludeBeanOrderInPendingInsights', () => {
       }),
     ).toBe(true);
   });
-});
 
-describe('isAwaitingBeanOrderDelivery', () => {
-  test('detects paid shipped pickup/parcel orders awaiting delivery confirmation', () => {
+  test('excludes unpaid orders with uploaded slip from payment queue', () => {
     expect(
-      isAwaitingBeanOrderDelivery({
-        paymentStatus: 'paid',
-        fulfillmentStatus: 'shipped',
-        trackingStatus: null,
+      shouldIncludeBeanOrderInPendingInsights({
+        paymentStatus: 'unpaid',
+        fulfillmentStatus: 'pending',
+        slipUploadedAt: '2026-08-18T02:00:00.000Z',
       }),
     ).toBe(true);
     expect(
-      isAwaitingBeanOrderDelivery({
-        paymentStatus: 'paid',
-        fulfillmentStatus: 'pending',
+      shouldIncludeBeanOrderInPendingInsights({
+        paymentStatus: 'unpaid',
+        fulfillmentStatus: 'shipped',
+        slipUploadedAt: '2026-08-18T02:00:00.000Z',
       }),
     ).toBe(false);
   });

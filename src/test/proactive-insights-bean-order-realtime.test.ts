@@ -41,7 +41,7 @@ const beanDigest: Insight = {
   modules: ['bean_orders'],
 };
 
-describe('bean order proactive insight realtime refresh', () => {
+describe('proactive insight realtime refresh', () => {
   beforeEach(() => {
     compileMock.mockReset();
     evaluateRulesMock.mockReset();
@@ -60,6 +60,40 @@ describe('bean order proactive insight realtime refresh', () => {
     fetchSummaryMock.mockResolvedValue(
       'ออเดอร์เมล็ดค้าง: ค้างชำระเงิน 2 รายการ · ค้างจัดส่ง 1 รายการ',
     );
+  });
+
+  test('shift_update records updated digest when summary changes', async () => {
+    evaluateRulesMock.mockReturnValue([
+      {
+        ruleId: 'understaffed_low_stock',
+        title: 'คนน้อย',
+        summary: 'จ. 20 3 คน',
+        urlPath: '/schedule',
+        priority: 'high',
+        modules: ['schedule'],
+      },
+    ]);
+    buildDigestMock.mockReturnValue({
+      ...beanDigest,
+      summary: 'คนน้อย: จ. 20 3 คน',
+    });
+    fetchSummaryMock.mockResolvedValue(
+      'ออเดอร์เมล็ดค้าง: ค้างชำระเงิน 2 รายการ · ค้างจัดส่ง 1 รายการ',
+    );
+
+    const { evaluateAndDispatchInsights } = await import(
+      '@/lib/proactive-insights/evaluate-and-dispatch'
+    );
+
+    await evaluateAndDispatchInsights({ trigger: 'shift_update', locale: 'th' });
+
+    expect(recordMock).toHaveBeenCalledWith(
+      expect.objectContaining({ summary: 'คนน้อย: จ. 20 3 คน' }),
+      '2026-08-11',
+      'th',
+      expect.objectContaining({ force: true }),
+    );
+    expect(pushMock).toHaveBeenCalledTimes(1);
   });
 
   test('bean_order_update refreshes digest when summary changes even without bean rule match', async () => {

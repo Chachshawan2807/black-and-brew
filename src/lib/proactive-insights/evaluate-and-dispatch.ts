@@ -3,6 +3,7 @@ import { buildDailyInsightDigest, evaluateInsightRules } from '@/lib/proactive-i
 import type { Insight } from '@/lib/proactive-insights/types';
 import { resolveInsightTargetDateIso } from '@/lib/proactive-insights/compile-operational-snapshot';
 import {
+  isRealtimeInsightTrigger,
   shouldDispatchInsightNotification,
   shouldForceInsightDigestRefresh,
   type InsightTrigger,
@@ -118,7 +119,7 @@ export async function evaluateAndDispatchInsights(
   const matchedRules = evaluateInsightRules(snapshot);
   const digest = buildDailyInsightDigest(matchedRules);
 
-  if (trigger === 'bean_order_update') {
+  if (isRealtimeInsightTrigger(trigger)) {
     const existingSummary = await fetchDailyInsightDigestSummary(dateIso);
     const nextSummary = digest?.summary ?? null;
 

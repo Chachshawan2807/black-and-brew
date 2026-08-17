@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { PwaInstallButton } from '@/components/PwaInstallButton';
 
-/** Global install affordance — above PinGateway (z-9999) so it works on PIN and authenticated screens. */
+/** Install affordance — shown only on the PIN entry screen (inside PinGateway). */
 export function PwaInstallShell() {
   const params = useParams();
   const locale = params?.locale === 'en' ? 'en' : 'th';

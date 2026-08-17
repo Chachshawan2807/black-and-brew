@@ -121,6 +121,7 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain("attachChangeLogListener(nextChannel, 'insights', 'DELETE')");
     expect(hookSource).toContain('replaceNotificationByDedupeKey');
     expect(hookSource).toContain('isProactiveInsightNotificationItem');
+    expect(hookSource).toContain('refreshProactiveInsightDigest');
     expect(hookSource).toContain('syncInsightNotificationCatchUp');
     expect(hookSource).toContain("fetchDataChangeLogs({ module: 'insights'");
   });

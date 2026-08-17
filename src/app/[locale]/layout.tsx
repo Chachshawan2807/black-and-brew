@@ -8,7 +8,6 @@ import { DeferredOverlays } from '@/components/shell/DeferredOverlays';
 import { RoutePrefetchOnIdle } from '@/components/shell/RoutePrefetchOnIdle';
 import { ViewTransitionNavigation } from '@/components/shell/ViewTransitionNavigation';
 import PwaRegister from '@/components/PwaRegister';
-import { PwaInstallShell } from '@/components/PwaInstallShell';
 import { PwaShellSync } from '@/components/PwaShellSync';
 import PinGateway from '@/components/auth/PinGateway';
 import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
@@ -79,7 +78,6 @@ export default async function RootLayout({
         <PwaShellSync />
         <AppTooltipProvider>
         <PwaRegister />
-        <PwaInstallShell />
         <RoutePrefetchOnIdle />
         <ViewTransitionNavigation />
         <PinGateway>

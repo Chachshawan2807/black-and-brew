@@ -14,6 +14,7 @@ import type {
 } from '@/lib/proactive-insights/types';
 import { getWeekDateIsos } from '@/lib/proactive-insights/week-schedule';
 import { shouldIncludeBeanOrderInPendingInsights } from '@/lib/proactive-insights/pending-bean-order-eligibility';
+import { resolveBeanOrderSlipUploadedAt } from '@/lib/proactive-insights/resolve-bean-order-slip';
 
 export type ShiftSnapshotBlock = {
   activeStaff: StaffShiftEntry[];
@@ -65,7 +66,7 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
   const { data, error } = await admin
     .from('bean_orders')
     .select(
-      'payment_status, fulfillment_status, recipient_name, bean_customers(name), bean_order_shipments(tracking_status)',
+      'payment_status, fulfillment_status, recipient_name, bean_customers(name), bean_order_shipments(tracking_status), bean_order_payments(uploaded_at, slip_url)',
     )
     .gte('created_at', since.toISOString())
     .is('cancelled_at', null)
@@ -89,6 +90,11 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
     const trackingStatus = Array.isArray(shipment)
       ? (shipment[0]?.tracking_status ?? null)
       : (shipment?.tracking_status ?? null);
+    const payments = row.bean_order_payments as
+      | { uploaded_at?: string | null; slip_url?: string | null }
+      | { uploaded_at?: string | null; slip_url?: string | null }[]
+      | null;
+    const slipUploadedAt = resolveBeanOrderSlipUploadedAt(payments);
 
     const candidate: PendingBeanOrderInsight = {
       customerName: getBeanOrderCustomerDisplayName({
@@ -98,6 +104,7 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
       paymentStatus: payment,
       fulfillmentStatus: fulfillment,
       trackingStatus,
+      slipUploadedAt,
     };
 
     if (!shouldIncludeBeanOrderInPendingInsights(candidate)) continue;
@@ -141,9 +148,32 @@ async function defaultFetchNextHoliday(
   return null;
 }
 
+async function fetchPublicHolidayDates(weekIsos: string[]): Promise<Set<string>> {
+  const admin = getSupabaseAdmin();
+  if (!admin || weekIsos.length === 0) return new Set();
+
+  const { data, error } = await admin
+    .from('holidays')
+    .select('date')
+    .gte('date', weekIsos[0])
+    .lte('date', weekIsos[weekIsos.length - 1]);
+
+  if (error) {
+    console.error('[proactive-insights] holidays:', error.message, error.details);
+    return new Set();
+  }
+
+  return new Set(
+    ((data ?? []) as { date?: string }[])
+      .map((row) => row.date)
+      .filter((date): date is string => typeof date === 'string'),
+  );
+}
+
 async function defaultFetchWeekSchedule(anchorDate: Date): Promise<WeeklyDaySchedule[]> {
   const anchorIso = format(anchorDate, 'yyyy-MM-dd');
   const weekIsos = getWeekDateIsos(anchorIso);
+  const holidayDates = await fetchPublicHolidayDates(weekIsos);
 
   const results = await Promise.all(
     weekIsos.map(async (dateIso, dayIndex) => {
@@ -156,6 +186,7 @@ async function defaultFetchWeekSchedule(anchorDate: Date): Promise<WeeklyDaySche
         leaveStaff: shifts.offStaff
           .filter((entry) => entry.shiftText.trim() === 'ลา')
           .map((entry) => ({ name: entry.name })),
+        isPublicHoliday: holidayDates.has(dateIso),
       };
     }),
   );
@@ -187,6 +218,7 @@ function emptyWeekSchedule(anchorDateIso: string): WeeklyDaySchedule[] {
     headcount: 0,
     leaveCount: 0,
     leaveStaff: [],
+    isPublicHoliday: false,
   }));
 }
 

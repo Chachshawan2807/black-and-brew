@@ -38,6 +38,7 @@ import {
 } from '@/lib/passkey/biometric-copy';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
+import { PwaInstallShell } from '@/components/PwaInstallShell';
 
 const PIN_LENGTH = 6;
 const BIOMETRIC_AUTO_MAX_ATTEMPTS = 3;
@@ -807,6 +808,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           </div>
         ) : null}
       </motion.div>
+      <PwaInstallShell />
     </div>
   );
 }

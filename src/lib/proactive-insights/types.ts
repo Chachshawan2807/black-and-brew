@@ -17,6 +17,7 @@ export interface WeeklyDaySchedule {
   headcount: number;
   leaveCount: number;
   leaveStaff: WeeklyLeaveStaff[];
+  isPublicHoliday: boolean;
 }
 
 export interface PendingBeanOrderInsight {
@@ -24,6 +25,7 @@ export interface PendingBeanOrderInsight {
   paymentStatus: string;
   fulfillmentStatus: string;
   trackingStatus?: string | null;
+  slipUploadedAt?: string | null;
 }
 
 export interface OperationalSnapshot {
