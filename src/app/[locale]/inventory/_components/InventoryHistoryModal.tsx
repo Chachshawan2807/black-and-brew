@@ -26,6 +26,8 @@ import type {
   InventoryTransactionFilterType,
   InventoryTransactionType,
 } from '@/lib/inventory-history-query';
+import { resolveInventoryHistoryTimestamp } from '@/lib/inventory-transaction-date';
+import { THAI_TIMEZONE } from '@/lib/timezone';
 import { InventoryModalPortal } from './InventoryModalPortal';
 
 
@@ -450,11 +452,13 @@ export function InventoryHistoryModal({
 
                         <td className="py-3.5 px-4 text-[14px] text-foreground/60 tabular-nums text-left whitespace-nowrap">
 
-                          {new Date(tx.transaction_at ?? tx.created_at).toLocaleString('th-TH', {
+                          {resolveInventoryHistoryTimestamp(tx).toLocaleString('th-TH', {
 
                             dateStyle: 'short',
 
                             timeStyle: 'short',
+
+                            timeZone: THAI_TIMEZONE,
 
                           })}
 

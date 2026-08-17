@@ -5,6 +5,7 @@ import {
   getBangkokYesterdayDateString,
   getDefaultTransactionDateString,
   getGapDismissStorageKey,
+  resolveInventoryHistoryTimestamp,
   shouldPromptTransactionDate,
   isValidTransactionDateString,
 } from '@/lib/inventory-transaction-date';
@@ -73,9 +74,33 @@ describe('getDefaultTransactionDateString', () => {
 });
 
 describe('bangkok date helpers', () => {
-  test('maps yyyy-MM-dd to ISO at Bangkok start of day', () => {
-    const iso = bangkokDateStringToTransactionAt('2026-08-10');
-    expect(iso).toMatch(/^2026-08-09T17:00:00\.000Z$/);
+  test('maps yyyy-MM-dd to ISO with current Bangkok clock time on that day', () => {
+    const now = new Date('2026-08-15T10:52:00+07:00');
+    const iso = bangkokDateStringToTransactionAt('2026-08-14', now);
+    expect(iso).toBe('2026-08-14T03:52:00.000Z');
+  });
+
+  test('resolveInventoryHistoryTimestamp uses created_at when transaction_at is absent', () => {
+    const resolved = resolveInventoryHistoryTimestamp({
+      created_at: '2026-08-15T03:52:00.000Z',
+    });
+    expect(resolved.toISOString()).toBe('2026-08-15T03:52:00.000Z');
+  });
+
+  test('resolveInventoryHistoryTimestamp keeps non-midnight transaction_at', () => {
+    const resolved = resolveInventoryHistoryTimestamp({
+      transaction_at: '2026-08-14T03:52:00.000Z',
+      created_at: '2026-08-15T03:20:00.000Z',
+    });
+    expect(resolved.toISOString()).toBe('2026-08-14T03:52:00.000Z');
+  });
+
+  test('resolveInventoryHistoryTimestamp repairs legacy midnight backdates with created_at clock', () => {
+    const resolved = resolveInventoryHistoryTimestamp({
+      transaction_at: '2026-08-13T17:00:00.000Z',
+      created_at: '2026-08-15T03:52:00.000Z',
+    });
+    expect(resolved.toISOString()).toBe('2026-08-14T03:52:00.000Z');
   });
 
   test('validates transaction date within allowed window', () => {

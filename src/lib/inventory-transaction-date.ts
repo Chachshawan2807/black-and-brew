@@ -29,11 +29,55 @@ function formatBangkokDate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-/** Start of calendar day in Bangkok → UTC ISO for DB `transaction_at`. */
-export function bangkokDateStringToTransactionAt(dateStr: string): string {
+/** Selected calendar day in Bangkok + current Bangkok clock time → UTC ISO for DB `transaction_at`. */
+export function bangkokDateStringToTransactionAt(dateStr: string, now = new Date()): string {
   const [year, month, day] = dateStr.split('-').map(Number);
-  const bkkLocal = new Date(year, month - 1, day, 0, 0, 0, 0);
-  return fromZonedTime(startOfDay(bkkLocal), THAI_TIMEZONE).toISOString();
+  const bkkNow = toZonedTime(now, THAI_TIMEZONE);
+  const bkkLocal = new Date(
+    year,
+    month - 1,
+    day,
+    bkkNow.getHours(),
+    bkkNow.getMinutes(),
+    bkkNow.getSeconds(),
+    bkkNow.getMilliseconds(),
+  );
+  return fromZonedTime(bkkLocal, THAI_TIMEZONE).toISOString();
+}
+
+function isBangkokMidnight(date: Date): boolean {
+  const bkk = toZonedTime(date, THAI_TIMEZONE);
+  return (
+    bkk.getHours() === 0 &&
+    bkk.getMinutes() === 0 &&
+    bkk.getSeconds() === 0 &&
+    bkk.getMilliseconds() === 0
+  );
+}
+
+/** History display: business date from `transaction_at`, actual clock from `created_at` for legacy midnight rows. */
+export function resolveInventoryHistoryTimestamp(row: {
+  transaction_at?: string | null;
+  created_at: string;
+}): Date {
+  const createdAt = new Date(row.created_at);
+  if (!row.transaction_at) return createdAt;
+
+  const transactionAt = new Date(row.transaction_at);
+  if (!isBangkokMidnight(transactionAt)) return transactionAt;
+
+  const txBkk = toZonedTime(transactionAt, THAI_TIMEZONE);
+  const createdBkk = toZonedTime(createdAt, THAI_TIMEZONE);
+  const combined = new Date(
+    txBkk.getFullYear(),
+    txBkk.getMonth(),
+    txBkk.getDate(),
+    createdBkk.getHours(),
+    createdBkk.getMinutes(),
+    createdBkk.getSeconds(),
+    createdBkk.getMilliseconds(),
+  );
+  return fromZonedTime(combined, THAI_TIMEZONE);
 }
 
 export function shouldPromptTransactionDate(context: TransactionDatePromptContext): boolean {
