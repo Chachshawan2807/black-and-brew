@@ -213,6 +213,17 @@ describe('Daily report protocol actions', () => {
       const result = await fetchTodayShifts(new Date('2026-05-26'));
       expect(result.offStaff[0]).toEqual({ name: 'หนูดี', shiftText: 'วันหยุด' });
     });
+
+    it('should normalize shift times the same way as the schedule page (06:30 → 6:30)', async () => {
+      mockProfilesData = [{ id: 'p1', full_name: 'นิต้า', schedule_order: 1 }];
+      mockShiftsData = [
+        { employee_id: 'p1', status: 'active', metadata: { location: '06:30' } },
+      ];
+
+      const result = await fetchTodayShifts(new Date('2026-05-26'));
+
+      expect(result.activeStaff[0]).toEqual({ name: 'นิต้า', shiftText: '6:30' });
+    });
   });
 
   describe('compileDailyReportData() staff formatting', () => {

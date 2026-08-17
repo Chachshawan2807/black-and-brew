@@ -124,6 +124,8 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toMatch(/openPanel[\s\S]*syncNotificationCatchUp/);
     // Schedule rows come only from cron (05:00 / 18:00) — no client backfill create
     expect(hookSource).not.toContain('ensureDailyReportNotificationHistory');
+    expect(hookSource).toContain("'UPDATE'");
+    expect(hookSource).toContain('replaceDailyReportNotification');
   });
 
   test('hook syncs bean order delivered logs via realtime and server catch-up', () => {

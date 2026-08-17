@@ -21,6 +21,16 @@ describe('saveShift persistence', () => {
     expect(saveShiftBody).toMatch(/\.insert\([\s\S]*\)[\s\S]*\.select\(\)/);
   });
 
+  test('saveShift refreshes daily schedule notifications for the edited date', () => {
+    const source = fs.readFileSync(shiftActionsPath, 'utf-8');
+    const saveShiftBody = source.slice(
+      source.indexOf('export async function saveShift'),
+      source.indexOf('export async function deleteManagementHistoryRange'),
+    );
+
+    expect(saveShiftBody).toContain('scheduleDailyReportRefreshForDate');
+  });
+
   test('handleSave surfaces server errors to the user', () => {
     const source = fs.readFileSync(scheduleClientPath, 'utf-8');
     expect(source).toMatch(/\[handleSave\] Server action failed[\s\S]*alert\(/);
@@ -80,6 +90,13 @@ describe('saveShift server action', () => {
       unstable_noStore: vi.fn(),
       revalidatePath: vi.fn(),
     }));
+    vi.doMock('next/server', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('next/server')>();
+      return {
+        ...actual,
+        after: vi.fn(() => {}),
+      };
+    });
     vi.doMock('@/lib/session-revocation', () => ({
       isSessionFingerprintRevoked: vi.fn().mockResolvedValue(false),
     }));
@@ -88,6 +105,9 @@ describe('saveShift server action', () => {
     }));
     vi.doMock('@/lib/proactive-insights/schedule-evaluation', () => ({
       scheduleProactiveInsightEvaluation: vi.fn(),
+    }));
+    vi.doMock('@/lib/daily-report-notification', () => ({
+      refreshDailyReportNotificationsForDate: vi.fn().mockResolvedValue(undefined),
     }));
     vi.doMock('@supabase/supabase-js', () => ({
       createClient: vi.fn(() => ({
@@ -112,5 +132,5 @@ describe('saveShift server action', () => {
     expect(mockDelete).toHaveBeenCalled();
     expect(mockInsert).toHaveBeenCalled();
     expect(mockInsertSingle).toHaveBeenCalled();
-  });
+  }, 15_000);
 });

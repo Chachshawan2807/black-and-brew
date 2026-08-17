@@ -1,9 +1,11 @@
 'use server';
 
 import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
+import { after } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
+import { refreshDailyReportNotificationsForDate } from '@/lib/daily-report-notification';
 import { requireMutationAccess, requireReadAccess } from '@/lib/policies/server-gate';
 import type { Json } from '@/lib/database.types';
 import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
@@ -20,6 +22,33 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAdmin = createClient(supabaseUrl, requireServiceRoleKey());
 
 const shiftIdSchema = z.string().uuid();
+
+function scheduleDailyReportRefreshForDate(datePart: string) {
+  const targetDate = new Date(`${datePart}T12:00:00`);
+  after(async () => {
+    try {
+      await refreshDailyReportNotificationsForDate(targetDate);
+    } catch (error) {
+      console.error('[scheduleDailyReportRefreshForDate] Exception:', error);
+    }
+  });
+}
+
+function scheduleDailyReportRefreshForRange(startDate: string, endDate: string) {
+  const start = new Date(`${startDate.split('T')[0]}T12:00:00`);
+  const end = new Date(`${endDate.split('T')[0]}T12:00:00`);
+  after(async () => {
+    try {
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        await refreshDailyReportNotificationsForDate(new Date(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    } catch (error) {
+      console.error('[scheduleDailyReportRefreshForRange] Exception:', error);
+    }
+  });
+}
 
 async function ensureShiftMutationAuthorized(): Promise<string | null> {
   return requireMutationAccess();
@@ -60,6 +89,10 @@ export async function deleteShift(id: string) {
       entityId: shiftId,
       oldValue: shiftBefore ?? null,
     });
+
+    if (shiftBefore?.start_time) {
+      scheduleDailyReportRefreshForDate(String(shiftBefore.start_time).split('T')[0]);
+    }
 
     revalidateAppPaths();
     return { success: true };
@@ -294,6 +327,7 @@ export async function saveShift(payload: ShiftPayload) {
       newValue: (data ?? parsed.data) as Json,
     });
 
+    scheduleDailyReportRefreshForDate(datePart);
     scheduleProactiveInsightEvaluation('shift_update');
     revalidateAppPaths();
     return { success: true, data };
@@ -335,6 +369,8 @@ export async function deleteManagementHistoryRange(employeeId: string, startDate
       entityType: 'shift',
       metadata: { employeeId, startDate, endDate, operation: 'delete_management_history' },
     });
+
+    scheduleDailyReportRefreshForRange(startDate, endDate);
 
     revalidateAppPaths();
     return { success: true };
@@ -476,6 +512,8 @@ export async function copyWeeklyShifts(sourceStartDate: string, targetStartDate:
       console.error('[copyWeeklyShifts] Insert Error:', insertError);
       throw insertError;
     }
+
+    scheduleDailyReportRefreshForRange(tStart, tEnd);
 
     revalidateAppPaths();
     return { success: true };

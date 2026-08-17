@@ -87,6 +87,32 @@ import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { shouldReconnectRealtimeOnResume } from '@/lib/supabase-realtime-resume';
 import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 
+function isDailyReportNotificationItem(notification: InventoryNotification): boolean {
+  return notification.metadata?.kind === 'daily_report';
+}
+
+/** Replace an existing daily schedule report in the panel when roster data is refreshed. */
+export function replaceDailyReportNotification(
+  prev: InventoryNotification[],
+  notification: InventoryNotification,
+): { list: InventoryNotification[]; replaced: boolean } {
+  const dedupeKey = notification.logId || notification.id;
+  const existingIndex = prev.findIndex(
+    (item) => item.id === notification.id || item.logId === dedupeKey,
+  );
+  if (existingIndex < 0) {
+    return { list: prev, replaced: false };
+  }
+
+  const previous = prev[existingIndex];
+  const next = [...prev];
+  next[existingIndex] = {
+    ...notification,
+    read: previous.read,
+  };
+  return { list: next, replaced: true };
+}
+
 function rowFromPayload(payload: { new: Record<string, unknown> }): DataChangeLogRow {
   const row = payload.new;
   return {
@@ -238,15 +264,32 @@ export function useInventoryNotifications() {
       options?: { skipSystemNotification?: boolean },
     ) => {
       const dedupeKey = notification.logId || notification.id;
-      if (recentLogIdsRef.current.has(dedupeKey)) return;
-      recentLogIdsRef.current.add(dedupeKey);
-      if (recentLogIdsRef.current.size > 250) {
-        recentLogIdsRef.current = new Set(Array.from(recentLogIdsRef.current).slice(-125));
+      const isDailyReport = isDailyReportNotificationItem(notification);
+
+      if (!isDailyReport && recentLogIdsRef.current.has(dedupeKey)) return;
+      if (!isDailyReport) {
+        recentLogIdsRef.current.add(dedupeKey);
+        if (recentLogIdsRef.current.size > 250) {
+          recentLogIdsRef.current = new Set(Array.from(recentLogIdsRef.current).slice(-125));
+        }
       }
 
       let nextUnread = 0;
       let alreadyExists = false;
+      let replacedDailyReport = false;
       setNotifications((prev) => {
+        if (isDailyReport) {
+          const { list: next, replaced } = replaceDailyReportNotification(prev, notification);
+          if (replaced) {
+            replacedDailyReport = true;
+            nextUnread = resolveDisplayUnreadCount(next, serviceWorkerUnreadCount, loadUnreadCounter());
+            setUnreadCount(nextUnread);
+            saveStoredNotifications(next);
+            void mirrorNotificationsToIdb(next);
+            return next;
+          }
+        }
+
         if (prev.some((n) => n.id === notification.id || n.logId === dedupeKey)) {
           alreadyExists = true;
           return prev;
@@ -266,6 +309,11 @@ export function useInventoryNotifications() {
       });
 
       if (alreadyExists) return;
+
+      if (replacedDailyReport) {
+        void syncAppBadge(nextUnread);
+        return;
+      }
 
       void syncAppBadge(nextUnread);
       dispatchInventoryNotificationEvent(nextUnread);
@@ -561,11 +609,12 @@ export function useInventoryNotifications() {
     const attachChangeLogListener = (
       targetChannel: ReturnType<typeof supabase.channel>,
       module: 'inventory' | 'schedule' | 'bean_orders' | 'insights' | 'security',
+      event: 'INSERT' | 'UPDATE' = 'INSERT',
     ) => {
       return targetChannel.on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event,
           schema: 'public',
           table: 'data_change_logs',
           filter: `module=eq.${module}`,
@@ -606,6 +655,7 @@ export function useInventoryNotifications() {
       const nextChannel = supabase.channel(`inventory_change_notifications_${channelId}`);
       attachChangeLogListener(nextChannel, 'inventory');
       attachChangeLogListener(nextChannel, 'schedule');
+      attachChangeLogListener(nextChannel, 'schedule', 'UPDATE');
       attachChangeLogListener(nextChannel, 'bean_orders');
       attachChangeLogListener(nextChannel, 'insights');
       attachChangeLogListener(nextChannel, 'security');

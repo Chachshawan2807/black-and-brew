@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import type { DailyReportData } from '@/app/actions/daily-report-actions';
 import {
@@ -90,5 +90,61 @@ describe('daily-report-notification', () => {
       holiday: null,
     };
     expect(dailyReportNotificationLogId(data.schedule, data.dateStr)).toContain(data.dateStr);
+  });
+});
+
+describe('daily report notification sync', () => {
+  const mockSelect = vi.fn();
+  const mockUpdate = vi.fn();
+  const mockEqThird = vi.fn();
+  const mockEqSecond = vi.fn();
+  const mockEqFirst = vi.fn();
+  const mockLimit = vi.fn();
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test_service_role_key';
+
+    mockLimit.mockResolvedValue({ data: [{ id: 'log-row-1' }], error: null });
+    mockEqThird.mockReturnValue({ limit: mockLimit });
+    mockEqSecond.mockReturnValue({ eq: mockEqThird });
+    mockEqFirst.mockReturnValue({ eq: mockEqSecond });
+    mockSelect.mockReturnValue({ eq: mockEqFirst });
+    mockUpdate.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+
+    vi.doMock('@supabase/supabase-js', () => ({
+      createClient: vi.fn(() => ({
+        from: vi.fn(() => ({
+          select: mockSelect,
+          update: mockUpdate,
+        })),
+      })),
+    }));
+  });
+
+  test('updateDailyReportNotificationLog updates existing cron log with fresh shift data', async () => {
+    mockLimit.mockResolvedValue({
+      data: [{ id: 'log-row-1' }],
+      error: null,
+    });
+
+    const { updateDailyReportNotificationLog } = await import('@/lib/daily-report-notification');
+    const data: DailyReportData = {
+      schedule: 'today',
+      dateStr: '13-07-2026',
+      activeStaff: [{ name: 'นิต้า', shiftText: '7:00' }],
+      otherDutyStaff: [],
+      offStaff: [{ name: 'ปิ่น', shiftText: 'วันหยุด' }],
+      headcount: 1,
+      holiday: null,
+    };
+
+    const result = await updateDailyReportNotificationLog(data, 'th');
+
+    expect(result.success).toBe(true);
+    expect(result.updated).toBe(true);
+    expect(mockUpdate).toHaveBeenCalled();
   });
 });

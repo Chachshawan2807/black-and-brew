@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { format } from 'date-fns';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
@@ -20,6 +21,47 @@ function scheduleTitle(schedule: DailyReportSchedule, locale: string): string {
   return isTh ? 'ตารางงานวันนี้' : "Today's schedule";
 }
 
+function buildDailyReportLogPayload(data: DailyReportData, locale: string) {
+  const logId = dailyReportNotificationLogId(data.schedule, data.dateStr);
+  const alt = buildDailyReportAltText(data);
+  const schedulePath = `/${locale}/schedule`;
+  const title = scheduleTitle(data.schedule, locale);
+  const summary = alt.length > 220 ? `${alt.slice(0, 217)}…` : alt;
+  const isTh = locale === 'th';
+
+  return {
+    logId,
+    alt,
+    schedulePath,
+    title,
+    summary,
+    isTh,
+  };
+}
+
+async function findDailyReportLogRow(
+  supabase: ReturnType<typeof createClient>,
+  logId: string,
+) {
+  const { data: existing, error: lookupError } = await supabase
+    .from('data_change_logs')
+    .select('id')
+    .eq('module', 'schedule')
+    .eq('entity_type', 'daily_report')
+    .eq('entity_id', logId)
+    .limit(1);
+
+  if (lookupError) {
+    if (lookupError.code === 'PGRST205' || lookupError.message?.includes('Could not find the table')) {
+      return { row: null, tableMissing: true };
+    }
+    console.error('Supabase Error:', lookupError.message, lookupError.details);
+    throw lookupError;
+  }
+
+  return { row: existing?.[0] ?? null, tableMissing: false };
+}
+
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -37,33 +79,12 @@ export async function recordDailyReportNotificationLog(
   const supabase = getSupabaseAdmin();
   if (!supabase) return { success: false };
 
-  const logId = dailyReportNotificationLogId(data.schedule, data.dateStr);
-  const alt = buildDailyReportAltText(data);
-  const schedulePath = `/${locale}/schedule`;
-  const title = scheduleTitle(data.schedule, locale);
-  const summary = alt.length > 220 ? `${alt.slice(0, 217)}…` : alt;
-  const isTh = locale === 'th';
+  const { logId, alt, schedulePath, title, summary, isTh } = buildDailyReportLogPayload(data, locale);
 
   try {
-    const { data: existing, error: lookupError } = await supabase
-      .from('data_change_logs')
-      .select('id')
-      .eq('module', 'schedule')
-      .eq('entity_type', 'daily_report')
-      .eq('entity_id', logId)
-      .limit(1);
-
-    if (lookupError) {
-      if (lookupError.code === 'PGRST205' || lookupError.message?.includes('Could not find the table')) {
-        return { success: false };
-      }
-      console.error('Supabase Error:', lookupError.message, lookupError.details);
-      throw lookupError;
-    }
-
-    if (existing && existing.length > 0) {
-      return { success: true, skipped: true };
-    }
+    const { row: existing, tableMissing } = await findDailyReportLogRow(supabase, logId);
+    if (tableMissing) return { success: false };
+    if (existing) return { success: true, skipped: true };
 
     const { error } = await supabase.from('data_change_logs').insert({
       occurred_at: new Date().toISOString(),
@@ -105,6 +126,78 @@ export async function recordDailyReportNotificationLog(
     console.error('[recordDailyReportNotificationLog] Exception:', error);
     return { success: false };
   }
+}
+
+/** Refresh an existing cron daily report log after roster edits (no new notification row). */
+export async function updateDailyReportNotificationLog(
+  data: DailyReportData,
+  locale = 'th',
+): Promise<{ success: boolean; updated: boolean }> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return { success: false, updated: false };
+
+  const { logId, alt, schedulePath, title, summary, isTh } = buildDailyReportLogPayload(data, locale);
+
+  try {
+    const { row: existing, tableMissing } = await findDailyReportLogRow(supabase, logId);
+    if (tableMissing) return { success: false, updated: false };
+    if (!existing) return { success: true, updated: false };
+
+    const { error } = await supabase
+      .from('data_change_logs')
+      .update({
+        occurred_at: new Date().toISOString(),
+        new_value: sanitizeJsonValue(data),
+        metadata: {
+          kind: 'daily_report',
+          schedule: data.schedule,
+          url: schedulePath,
+          notificationLogId: logId,
+          title,
+          summary,
+          fieldSummary: alt,
+          locale,
+        },
+      })
+      .eq('id', existing.id);
+
+    if (error) {
+      if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+        return { success: false, updated: false };
+      }
+      console.error('Supabase Error:', error.message, error.details);
+      throw error;
+    }
+
+    return { success: true, updated: true };
+  } catch (error) {
+    console.error('[updateDailyReportNotificationLog] Exception:', error);
+    return { success: false, updated: false };
+  }
+}
+
+/** Re-sync daily report notification logs for a calendar day after shift mutations. */
+export async function refreshDailyReportNotificationsForDate(
+  targetDate: Date,
+  locale = 'th',
+): Promise<void> {
+  const dateStr = format(targetDate, 'dd-MM-yyyy');
+  const schedules: DailyReportSchedule[] = ['today', 'tomorrow'];
+  const { compileDailyReportDataForDate } = await import('@/app/actions/daily-report-actions');
+
+  await Promise.all(
+    schedules.map(async (schedule) => {
+      const logId = dailyReportNotificationLogId(schedule, dateStr);
+      const supabase = getSupabaseAdmin();
+      if (!supabase) return;
+
+      const { row: existing } = await findDailyReportLogRow(supabase, logId);
+      if (!existing) return;
+
+      const data = await compileDailyReportDataForDate(targetDate, schedule);
+      await updateDailyReportNotificationLog(data, locale);
+    }),
+  );
 }
 
 export function isEligibleDailyReportNotification(row: DataChangeLogRow): boolean {
