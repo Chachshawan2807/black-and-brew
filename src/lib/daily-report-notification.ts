@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
@@ -40,7 +40,7 @@ function buildDailyReportLogPayload(data: DailyReportData, locale: string) {
 }
 
 async function findDailyReportLogRow(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   logId: string,
 ) {
   const { data: existing, error: lookupError } = await supabase
