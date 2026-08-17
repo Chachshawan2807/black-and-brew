@@ -1,6 +1,6 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-11
+> Version: 9.3 | Last Updated: 2026-08-18
 
 ---
 
@@ -45,7 +45,7 @@ See `docs/changelog.md` and git history for dated entries.
 
 ### Medium Priority
 
-- [ ] WCAG 2.2 accessibility audit
+- [ ] WCAG 2.2 accessibility audit (in progress: grid cell a11y libs, `ClickableDatePicker`, `dropdown-menu` focus-visible; see `*-grid-a11y.test.ts`, `ui-motion-focus-audit.test.ts`)
 - [ ] Per-staff Supabase Auth (upgrade from PIN-only)
 
 ### Low Priority

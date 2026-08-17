@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-11
+> Version: 9.3 | Last Updated: 2026-08-18
 
 ---
 
@@ -142,7 +142,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 
 | Module | Path |
 | --- | --- |
-| Command Center | `src/app/[locale]/page.tsx`, `_components/LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, `HomeMaintenanceDueSection.tsx` |
+| Command Center | `src/app/[locale]/page.tsx`, `_components/LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, `HomePurchaseOrdersSection.tsx`, `HomeMaintenanceDueSection.tsx` |
 | Dashboard | `src/app/[locale]/dashboard/`, `_components/LiveShiftList.tsx`, `MonthlyRoster.tsx` |
 | Schedule | `src/app/[locale]/schedule/ScheduleClient.tsx`, `_components/` |
 | Inventory | `src/app/[locale]/inventory/InventoryClient.tsx`, `_components/`, `count/`, `accuracy/`, `branch-withdraw/` |

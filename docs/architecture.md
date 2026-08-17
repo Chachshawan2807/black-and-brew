@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-11 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.3 | Last Updated: 2026-08-18 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -202,6 +202,17 @@ navigateWithViewTransition / navigateWithoutViewTransition — src/lib/view-tran
 warmRouteNavigation — src/lib/warm-route-navigation.ts (route chunk preload + router.prefetch before tap)
 route-chunk-preload — src/lib/route-chunk-preload.ts (NavPreloadLink, RoutePrefetchOnIdle, bean-orders list hover)
 ViewTransitionNavigation — src/components/shell/ViewTransitionNavigation.tsx (sidebar + in-app links)
+ClickableDatePicker / ClickableDateRangePicker — src/components/ui/ (full-width touch hitbox for date inputs)
+dropdown-menu — src/components/ui/dropdown-menu.tsx (Radix wrapper; focus-visible keyboard highlight)
+```
+
+### Spreadsheet grid accessibility helpers (v9.3, in progress)
+
+```text
+inventory-grid-cell-a11y.ts — inventory spreadsheet cell labels + roving tabindex
+schedule-grid-cell-a11y.ts — schedule grid cell keyboard/a11y metadata
+sales-category-cell-a11y.ts — sales category grid cell a11y
+inventory-grid-cell-blur.ts — mobile blur/commit scheduling for inventory cells
 ```
 
 ### Inventory Realtime Context (v8.6)

@@ -1,6 +1,6 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-11 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.3 | Last Updated: 2026-08-18 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
@@ -54,7 +54,7 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
   4. Tracking: `POST /api/bean-orders/tracking-webhook`, `GET /api/bean-orders/sync-tracking` (CRON_SECRET); `TRACKINGMORE_API_KEY`.
   5. Storage: `bean-order-slips` bucket; dual-axis status (`payment_status` × `fulfillment_status`).
 - Impact: Sidebar link in `menu-list.ts`; audit via `recordDataChange(module=bean_orders)`; no inventory stock auto-deduction.
-- Evidence: `bean-orders-*.test.ts`, `docs/superpowers/specs/2026-07-22-bean-orders-design.md`
+- Evidence: `bean-orders-*.test.ts`, `docs/changelog.md` (2026-07-23 bean orders entry)
 
 ### DEC-083: Offline Inventory Mutation Queue + Policy Gates (v9.2)
 

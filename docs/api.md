@@ -1,6 +1,6 @@
 # API Reference — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-11
+> Version: 9.3 | Last Updated: 2026-08-18
 
 ---
 
@@ -255,6 +255,16 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 - Tables: `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments`
 - Migration: `supabase/migrations/20260722074607_bean_orders.sql`
 - Audit: `recordDataChange()` with `module = 'bean_orders'`
+
+---
+
+### 1.15 Insights (`insight-actions.ts`)
+
+| Function | Purpose |
+| --- | --- |
+| `refreshProactiveInsightDigest(locale?)` | Recompute today's proactive insight digest from live ERP data (no Web Push); used by inventory notification hooks after bean-order updates |
+
+Requires read access (`requireReadAccess()`). Calls `evaluateAndDispatchInsights({ trigger: 'bean_order_update', skipPush: true })`.
 
 ---
 

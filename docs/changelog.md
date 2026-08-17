@@ -2,6 +2,14 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-08-18 (Doc hygiene + completed superpowers cleanup)
+
+- Deleted 10 merged `docs/superpowers/{specs,plans}/2026-07-*` artifacts per `docs/superpowers/README.md` (features shipped; history in `docs/changelog.md` + git).
+- Documented `insight-actions.ts` (`refreshProactiveInsightDigest`) in `docs/api.md` and `PROJECT_MAP.md`.
+- Synced keepers for Command Center `HomePurchaseOrdersSection.tsx`, grid a11y libs (`*-grid-cell-a11y.ts`, `inventory-grid-cell-blur.ts`), shared `ClickableDatePicker` / `dropdown-menu`, and new Vitest suites.
+- `npm run docs:links`: 56 project-owned markdown files, 0 broken links. Orphan scan: 34 false positives (colocated `_components` relative imports) — no `src/` deletions.
+- Bumped keeper stamps to 2026-08-18 (product v9.3 unchanged).
+
 ## 2026-08-11 (Doc sync + migration index + link validator)
 
 - Documented migrations `20260810160403_insight_notification_realtime.sql`, `20260811105704_inventory_transaction_at.sql`, and `20260811115400_reset_inventory_history_transaction_at.sql` in `docs/database.md` and `sql/README.md`.
