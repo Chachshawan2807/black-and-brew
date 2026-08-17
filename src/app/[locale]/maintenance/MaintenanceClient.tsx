@@ -441,7 +441,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                               <button
                                 onClick={() => handleEdit(record)}
                                 disabled={isReadOnly}
-                                className="p-2 hover:bg-muted/30 text-muted-foreground hover:text-foreground rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="p-2 hover:bg-muted/30 text-muted-foreground hover:text-foreground rounded-xl bb-transition active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                                 aria-label="แก้ไขบันทึก"
                               >
                                 <Edit2 className="w-4 h-4" strokeWidth={1.5} />
@@ -451,7 +451,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                               <button
                                 onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
                                 disabled={isReadOnly}
-                                className="p-2 hover:bg-red-50 dark:hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-xl transition-all active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="p-2 hover:bg-red-50 dark:hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-xl bb-transition active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                                 aria-label="ลบบันทึก"
                               >
                                 <Trash2 className="w-4 h-4" strokeWidth={1.5} />

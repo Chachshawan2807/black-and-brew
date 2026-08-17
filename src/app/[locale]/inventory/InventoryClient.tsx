@@ -57,6 +57,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { blurActiveElement } from '@/lib/blur-active-element';
 import { scheduleInventoryGridCellBlur } from '@/lib/inventory-grid-cell-blur';
+import {
+  getInventoryCellAriaLabel,
+  getInventoryCellInputName,
+} from '@/lib/inventory-grid-cell-a11y';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
@@ -147,7 +151,7 @@ function CountPolicyToggle({
       aria-label="สลับวิธีตรวจนับ"
       onClick={savePolicy}
       className={cn(
-        'bb-pastel-surface inline-flex h-8 shrink-0 items-center rounded-full border px-2.5 text-[12px] text-black bb-shadow-sm transition-all hover:scale-[1.02] active:scale-95',
+        'bb-pastel-surface inline-flex h-8 shrink-0 items-center rounded-full border px-2.5 text-[12px] text-black bb-shadow-sm bb-transition hover:scale-[1.02] active:scale-95',
         policy === 'exact_count'
           ? 'border-[#bfdbfe] bg-[#dbeafe]'
           : 'border-[#f5c6cb] bg-[#f8d7da]',
@@ -199,7 +203,7 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
           if (e.key === 'Enter') { e.preventDefault(); commit(); }
           if (e.key === 'Escape') setEditing(false);
         }}
-        className="w-8 h-5 text-[12px] tabular-nums text-center bg-muted border border-border rounded focus:outline-none focus:ring-1 focus:ring-foreground/20 shrink-0"
+        className="w-8 h-5 text-[12px] tabular-nums text-center bg-muted border border-border rounded outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20 shrink-0"
         style={{ width: '2rem' }}
       />
     );
@@ -255,7 +259,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
       data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "bb-inventory-row-containment bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        "bb-inventory-row-containment bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col bb-transition duration-200",
         isDragging && "opacity-80 scale-[1.02] bb-shadow-xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
@@ -292,7 +296,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
               type="button"
               onClick={() => requestDelete(item.id)}
               aria-label="ลบรายการ"
-              className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
+              className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl bb-transition shrink-0"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -472,7 +476,7 @@ const MobileSortableRow = React.memo(({
       data-inventory-item-id={item.id}
       style={style}
       className={cn(
-        "bb-inventory-row-containment w-full min-w-0 bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col transition-all duration-200",
+        "bb-inventory-row-containment w-full min-w-0 bg-card border border-border rounded-2xl p-3.5 bb-shadow-sm space-y-2.5 flex flex-col bb-transition duration-200",
         isDragging && "opacity-80 scale-[1.02] bb-shadow-xl ring-2 ring-foreground/10 cursor-grabbing"
       )}
     >
@@ -501,7 +505,7 @@ const MobileSortableRow = React.memo(({
               handleUpdateField(item.id, 'name', e.target.value);
               handleSaveField(item.id, 'name', e.target.value);
             }}
-            className="flex-1 bg-transparent border-none text-base text-foreground font-normal focus:bg-muted focus:outline-none rounded px-1.5 py-0.5 min-w-0"
+            className="flex-1 bg-transparent border-none text-base text-foreground font-normal focus-visible:bg-muted outline-none focus-visible:outline-none rounded px-1.5 py-0.5 min-w-0"
             placeholder="ชื่อสินค้า"
           />
         </div>
@@ -517,7 +521,7 @@ const MobileSortableRow = React.memo(({
               type="button"
               onClick={() => requestDelete(item.id)}
               aria-label="ลบรายการ"
-              className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shrink-0"
+              className="p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-xl bb-transition shrink-0"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -538,7 +542,7 @@ const MobileSortableRow = React.memo(({
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
             className={cn(
-              "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate",
+              "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition tabular-nums truncate",
               getStockColorClass(stock, orderPoint)
             )}
           />
@@ -556,10 +560,10 @@ const MobileSortableRow = React.memo(({
               handleSaveField={handleSaveField}
               handleFocus={handleFocus}
               className={cn(
-                "w-full h-8 px-1 rounded-lg border text-[13px] font-normal text-center focus:outline-none focus:ring-1 transition-all tabular-nums truncate",
+                "w-full h-8 px-1 rounded-lg border text-[13px] font-normal text-center outline-none focus-visible:outline-none focus-visible:ring-1 bb-transition tabular-nums truncate",
                 manualOrderQty
                   ? 'bb-pastel-surface border-[#f5c6cb] bg-[#f8d7da] text-black focus:bg-[#f8d7da]'
-                  : 'border-border bg-muted text-muted-foreground focus:bg-card focus:ring-foreground/10 cursor-not-allowed'
+                  : 'border-border bg-muted text-muted-foreground focus:bg-card focus-visible:ring-foreground/10 cursor-not-allowed'
               )}
             />
           )}
@@ -575,7 +579,7 @@ const MobileSortableRow = React.memo(({
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition tabular-nums truncate"
           />
         </div>
 
@@ -589,7 +593,7 @@ const MobileSortableRow = React.memo(({
             handleUpdateField={handleUpdateField}
             handleSaveField={handleSaveField}
             handleFocus={handleFocus}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition tabular-nums truncate"
           />
         </div>
 
@@ -603,7 +607,7 @@ const MobileSortableRow = React.memo(({
               handleUpdateField(item.id, 'unit', e.target.value);
               handleSaveField(item.id, 'unit', e.target.value);
             }}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition truncate"
             placeholder="หน่วย"
           />
         </div>
@@ -618,7 +622,7 @@ const MobileSortableRow = React.memo(({
               handleUpdateField(item.id, 'source', e.target.value);
               handleSaveField(item.id, 'source', e.target.value);
             }}
-            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all truncate"
+            className="w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition truncate"
             placeholder="ช่องทาง"
           />
         </div>
@@ -657,6 +661,10 @@ function EditableCell({
   className,
 }: InventoryCellBaseProps & { cardMode?: boolean; showDeleteButton?: boolean; className?: string }) {
   const manualOrderQty = isManualOrderQty(item);
+  const cellA11yProps = {
+    'aria-label': getInventoryCellAriaLabel(String(item.name ?? ''), col.label),
+    name: getInventoryCellInputName(item.id, col.id),
+  } as const;
   const [localValue, setLocalValue] = useState<string>(() => getInventoryCellDisplayValue(item, col, manualOrderQty));
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -727,15 +735,16 @@ function EditableCell({
             onBlur={handleBlur}
             data-col-id={col.id}
             data-row-index={rowIndex}
-            className="flex-1 min-w-0 bg-transparent border-none text-base text-foreground font-normal focus:bg-muted focus:outline-none rounded px-1.5 py-0.5 truncate"
-            placeholder="ชื่อสินค้า"
+            {...cellA11yProps}
+            className="flex-1 min-w-0 bg-transparent border-none text-base text-foreground font-normal focus-visible:bg-muted outline-none focus-visible:outline-none rounded px-1.5 py-0.5 truncate"
+            placeholder="ชื่อสินค้า…"
           />
           {showDeleteButton && (
             <HintTooltip tip="ลบรายการ">
               <button
                 onClick={() => requestDelete(item.id)}
                 aria-label="ลบรายการ"
-                className="ml-1 p-1 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all shrink-0"
+                className="ml-1 p-1 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-lg bb-transition shrink-0"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -755,8 +764,9 @@ function EditableCell({
         data-col-id={col.id}
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty' && !manualOrderQty}
+        {...cellA11yProps}
         className={cn(
-          "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card focus:outline-none focus:ring-1 focus:ring-foreground/10 transition-all tabular-nums truncate",
+          "w-full h-8 px-1 rounded-lg border border-border bg-muted text-[13px] font-normal text-center focus:bg-card outline-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition tabular-nums truncate",
           col.id === 'stock' && getStockColorClass(Number(item.stock) || 0, Number(item.order_point) || 0),
           col.id === 'order_qty' && !manualOrderQty && 'bg-muted border-border text-muted-foreground cursor-not-allowed',
           className,
@@ -794,8 +804,9 @@ function EditableCell({
         data-col-id={col.id}
         data-row-index={rowIndex}
         readOnly={col.id === 'order_qty' && !manualOrderQty}
+        {...cellA11yProps}
         className={cn(
-          `w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none focus:outline-none focus:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] transition-all ${getAlignmentAndColor()} ${col.type === 'number' ? 'tabular-nums' : ''}`,
+          `w-full px-4 py-4 pt-5 pb-3 min-h-[56px] bg-transparent border-none outline-none focus-visible:outline-none focus-visible:bg-muted/80 text-base md:text-sm font-normal leading-[1.6] bb-transition ${getAlignmentAndColor()} ${col.type === 'number' ? 'tabular-nums' : ''}`,
           col.id === 'order_qty' && !manualOrderQty && 'bg-muted cursor-not-allowed select-none',
           col.id === 'order_qty' && manualOrderQty && 'bb-pastel-surface bg-[#f8d7da] text-black',
         )}
@@ -805,7 +816,7 @@ function EditableCell({
           <button
             onClick={() => requestDelete(item.id)}
             aria-label="ลบรายการ"
-            className="absolute right-3 p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all opacity-0 group-hover/cell:opacity-100"
+            className="absolute right-3 p-1.5 text-foreground/20 hover:text-red-500 hover:bg-red-50 rounded-2xl bb-transition opacity-0 group-hover/cell:opacity-100"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -817,6 +828,10 @@ function EditableCell({
 
 function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSaveField, handleFocus, className }: Pick<InventoryCellBaseProps, 'item' | 'col' | 'rowIndex' | 'handleUpdateField' | 'handleSaveField' | 'handleFocus'> & { className?: string }) {
   const manualOrderQty = isManualOrderQty(item);
+  const cellA11yProps = {
+    'aria-label': getInventoryCellAriaLabel(String(item.name ?? ''), col.label),
+    name: getInventoryCellInputName(item.id, col.id),
+  } as const;
   const [localValue, setLocalValue] = useState<string>(() => getInventoryCellDisplayValue(item, col, manualOrderQty));
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -888,6 +903,7 @@ function MobileEditableCell({ item, col, rowIndex, handleUpdateField, handleSave
       data-mobile-col-id={col.id}
       data-mobile-row-index={rowIndex}
       readOnly={col.id === 'order_qty' && !manualOrderQty}
+      {...cellA11yProps}
       className={cn(className)}
     />
   );
@@ -1718,7 +1734,7 @@ export default function InventoryClient({
 
   return (
     <>
-      <div className="flex-1 w-full max-w-full bg-transparent text-foreground font-normal antialiased transition-all duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
+      <div className="flex-1 w-full max-w-full bg-transparent text-foreground font-normal antialiased bb-transition duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
         <div className="w-full max-w-7xl mx-auto flex flex-col items-stretch md:items-stretch">
           <div className="w-full flex flex-col items-center mb-8 text-center">
             <motion.h1
@@ -1753,7 +1769,7 @@ export default function InventoryClient({
                   <button
                     onClick={handleUndo}
                     disabled={isReadOnly || undoStack.length === 0 || isSyncing}
-                    className={`p-2.5 rounded-3xl transition-all ${undoStack.length === 0 || isSyncing
+                    className={`p-2.5 rounded-3xl bb-transition ${undoStack.length === 0 || isSyncing
                       ? 'text-[#94a3b8] cursor-default'
                       : 'text-foreground hover:bg-black/5'
                       }`}
@@ -1766,7 +1782,7 @@ export default function InventoryClient({
                   <button
                     onClick={handleRedo}
                     disabled={isReadOnly || redoStack.length === 0 || isSyncing}
-                    className={`p-2.5 rounded-3xl transition-all ${redoStack.length === 0 || isSyncing
+                    className={`p-2.5 rounded-3xl bb-transition ${redoStack.length === 0 || isSyncing
                       ? 'text-[#94a3b8] cursor-default'
                       : 'text-foreground hover:bg-black/5'
                       }`}
@@ -1958,7 +1974,7 @@ export default function InventoryClient({
                       required
                       value={newItemData.name || ''}
                       onChange={e => setNewItemData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full h-11 px-4 bg-background border border-border focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
+                      className="w-full h-11 px-4 bg-background border border-border focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -1973,7 +1989,7 @@ export default function InventoryClient({
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, stock: val }));
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -1982,7 +1998,7 @@ export default function InventoryClient({
                     <input
                       value={newItemData.unit === null || newItemData.unit === undefined ? '' : newItemData.unit}
                       onChange={e => setNewItemData(prev => ({ ...prev, unit: e.target.value }))}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -1997,7 +2013,7 @@ export default function InventoryClient({
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, order_point: val }));
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -2012,7 +2028,7 @@ export default function InventoryClient({
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, target_stock: val }));
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -2021,7 +2037,7 @@ export default function InventoryClient({
                     <input
                       value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}
                       onChange={e => setNewItemData(prev => ({ ...prev, source: e.target.value }))}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -2075,7 +2091,7 @@ export default function InventoryClient({
                         v = v.replace(/^0+(?=\d)/, '');
                         setNewItemInsertPosition(v);
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none transition-all"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
                 </div>

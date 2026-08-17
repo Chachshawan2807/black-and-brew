@@ -148,7 +148,7 @@ export default function ActiveRemoteSessionsPanel({
           className={cn(
             'h-9 w-full sm:max-w-[160px] rounded-xl border border-border bg-background px-3',
             'text-[13px] text-foreground placeholder:text-muted-foreground',
-            'focus:outline-none focus:ring-2 focus:ring-foreground/10'
+            'outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10'
           )}
         />
         {remoteSessions.length > 1 && (

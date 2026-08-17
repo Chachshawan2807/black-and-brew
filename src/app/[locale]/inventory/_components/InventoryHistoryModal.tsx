@@ -95,7 +95,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
       <HintTooltip tip="ปรับจำนวน">
         <span
 
-          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all bb-shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
+          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center bb-transition bb-shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
 
           aria-label="ปรับจำนวน"
 
@@ -114,7 +114,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
     return (
       <HintTooltip tip="เพิ่มรายการ">
         <span
-          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all bb-shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
+          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center bb-transition bb-shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
           aria-label="เพิ่มรายการ"
         >
           <Plus className="w-4.5 h-4.5" />
@@ -127,7 +127,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
     return (
       <HintTooltip tip="ลบรายการ">
         <span
-          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all bb-shadow-sm border bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]"
+          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center bb-transition bb-shadow-sm border bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]"
           aria-label="ลบรายการ"
         >
           <Trash2 className="w-4.5 h-4.5" />
@@ -147,7 +147,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
         className={cn(
 
-          'w-9 h-9 rounded-2xl inline-flex items-center justify-center transition-all bb-shadow-sm border',
+          'w-9 h-9 rounded-2xl inline-flex items-center justify-center bb-transition bb-shadow-sm border',
 
           isIn ? 'bb-pastel-surface bg-[#d4edda] text-[#000000] border-[#c3e6cb]' : 'bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]',
 
@@ -249,7 +249,7 @@ export function InventoryHistoryModal({
 
             onClick={onClose}
 
-            className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-all active:scale-95 z-10"
+            className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full bb-transition active:scale-95 z-10"
 
             aria-label="ปิดประวัติ"
 
@@ -327,7 +327,7 @@ export function InventoryHistoryModal({
                     }
                   }}
                   title={historySearchQuery || undefined}
-                  className="h-11 w-full min-w-0 pl-9 pr-9 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all antialiased"
+                  className="h-11 w-full min-w-0 pl-9 pr-9 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased"
                 />
                 {isSearchActive ? (
                   <button
@@ -535,7 +535,7 @@ export function InventoryHistoryModal({
               type="button"
               onClick={onLoadMore}
               disabled={isHistoryLoading}
-              className="min-h-11 rounded-full border border-border bg-background px-4 py-2 text-[13px] font-normal text-foreground transition-all hover:border-foreground/30 hover:bg-muted disabled:opacity-50"
+              className="min-h-11 rounded-full border border-border bg-background px-4 py-2 text-[13px] font-normal text-foreground bb-transition hover:border-foreground/30 hover:bg-muted disabled:opacity-50"
             >
               {isHistoryLoading ? (
                 <span className="inline-flex items-center gap-2">

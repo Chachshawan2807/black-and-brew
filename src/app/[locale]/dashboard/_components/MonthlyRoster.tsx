@@ -141,14 +141,14 @@ export default function MonthlyRoster({
           <div className="flex bg-muted rounded-[24px] p-1.5 gap-1.5">
             <button 
               onClick={() => setActiveTab('consolidated')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'consolidated' ? 'bg-card bb-shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:opacity-100 opacity-60'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl bb-transition duration-300 ${activeTab === 'consolidated' ? 'bg-card bb-shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:opacity-100 opacity-60'}`}
             >
               <Users className="w-4 h-4" />
               <span className="text-sm font-normal">รวมพนักงาน</span>
             </button>
             <button 
               onClick={() => setActiveTab('individual')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 ${activeTab === 'individual' ? 'bg-card bb-shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:opacity-100 opacity-60'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl bb-transition duration-300 ${activeTab === 'individual' ? 'bg-card bb-shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground hover:opacity-100 opacity-60'}`}
             >
               <User className="w-4 h-4" />
               <span className="text-sm font-normal">รายบุคคล</span>
@@ -243,7 +243,7 @@ export default function MonthlyRoster({
                     : undefined;
                   const display = shift ? getShiftDisplay(shift) : null;
                   return (
-                    <div key={day.toISOString()} className="bg-muted/30 h-20 sm:h-28 md:h-36 p-1 sm:p-3 md:p-4 flex flex-col justify-between rounded-xl sm:rounded-[24px] border border-border transition-all hover:bg-muted/30 hover:shadow-lg">
+                    <div key={day.toISOString()} className="bg-muted/30 h-20 sm:h-28 md:h-36 p-1 sm:p-3 md:p-4 flex flex-col justify-between rounded-xl sm:rounded-[24px] border border-border bb-transition hover:bg-muted/30 hover:shadow-lg">
                       <span className="text-foreground text-sm sm:text-base md:text-lg font-normal">{format(day, 'd')}</span>
                       {shift && display && (
                         <div

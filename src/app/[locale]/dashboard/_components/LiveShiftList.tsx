@@ -101,15 +101,15 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
           transition={SNAPPY_SPRING}
           className="grid grid-cols-3 gap-3"
         >
-          <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
+          <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95`}>
             <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
           </div>
-          <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
+          <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95`}>
             <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ลา</span>
           </div>
-          <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center transition-all hover:brightness-95`}>
+          <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95`}>
             <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
           </div>

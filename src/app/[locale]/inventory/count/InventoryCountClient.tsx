@@ -206,10 +206,10 @@ const CountInput = memo(function CountInput({
         data-count-row-index={index}
         disabled={disabled}
         className={cn(
-          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums transition-all duration-200 bb-pastel-surface bg-white text-black placeholder:text-black/45',
+          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums bb-transition duration-200 bb-pastel-surface bg-white text-black placeholder:text-black/45',
           isActive
             ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm'
-            : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus:ring-1 focus:ring-black/15',
+            : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus-visible:ring-1 focus-visible:ring-black/15',
           disabled && 'opacity-60 cursor-not-allowed'
         )}
       />
@@ -391,10 +391,10 @@ const AdjustStockInput = memo(function AdjustStockInput({
         data-count-row-index={index}
         disabled={disabled}
         className={cn(
-          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums transition-all duration-200 bb-pastel-surface bg-white text-black placeholder:text-black/45',
+          'px-3 rounded-xl border text-base font-normal text-center outline-none tabular-nums bb-transition duration-200 bb-pastel-surface bg-white text-black placeholder:text-black/45',
           isActive
             ? 'w-28 h-11 border-black/30 ring-2 ring-black/10 bb-shadow-sm'
-            : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus:ring-1 focus:ring-black/15',
+            : 'w-24 h-10 border-black/25 bb-shadow-sm focus:border-black/35 focus-visible:ring-1 focus-visible:ring-black/15',
           disabled && 'opacity-60 cursor-not-allowed',
         )}
       />
@@ -516,7 +516,7 @@ function TodayCountSessionBanner({ status }: { status: TodayCountSessionStatus }
             <div className="h-2 overflow-hidden rounded-full bg-muted">
               <div
                 className={cn(
-                  'h-full rounded-full transition-all duration-500',
+                  'h-full rounded-full bb-transition duration-500',
                   session.isFullyCountedToday ? 'bg-emerald-500' : 'bg-foreground/70',
                 )}
                 style={{ width: `${progressPct}%` }}
@@ -597,7 +597,7 @@ const CountItemRow = memo(function CountItemRow({
         delay: animateEntrance && index < STAGGER_ANIMATION_CAP ? index * 0.02 : 0,
       }}
       className={cn(
-        'relative rounded-2xl p-4 flex items-start justify-between gap-3 transition-all duration-300',
+        'relative rounded-2xl p-4 flex items-start justify-between gap-3 bb-transition duration-300',
         rowToneClass,
         isActive
           ? 'bb-shadow-md ring-2 ring-black/8 z-10'
@@ -611,7 +611,7 @@ const CountItemRow = memo(function CountItemRow({
       <div className="flex items-start gap-3 flex-1 min-w-0 pl-1">
         <span
           className={cn(
-            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200',
+            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 bb-transition duration-200',
             isActive
               ? 'bg-black text-white'
               : 'bg-white/60 text-black/55'
@@ -673,7 +673,7 @@ const CountItemRow = memo(function CountItemRow({
               {...microPopIn}
               transition={microPopIn.transition}
               onClick={() => onUndo(item.id)}
-              className="flex items-center gap-1 rounded-xl border border-black/15 bg-white/80 bb-pastel-surface px-2.5 py-1 text-[11px] text-black/60 bb-shadow-sm hover:bg-white hover:text-black transition-all"
+              className="flex items-center gap-1 rounded-xl border border-black/15 bg-white/80 bb-pastel-surface px-2.5 py-1 text-[11px] text-black/60 bb-shadow-sm hover:bg-white hover:text-black bb-transition"
               aria-label={`ย้อนกลับค่าเดิม (${undoEntry.prevStock})`}
             >
               <Undo2 className="w-3 h-3" />
@@ -695,7 +695,7 @@ function CountPageTabSwitcher({
 }) {
   const tabButtonClass = (tab: CountPageMode) =>
     cn(
-      'flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[13px] rounded-full border transition-all duration-200 font-normal whitespace-nowrap',
+      'flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[13px] rounded-full border bb-transition duration-200 font-normal whitespace-nowrap',
       mode === tab
         ? 'bg-foreground border-foreground text-background bb-shadow-sm'
         : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
@@ -770,7 +770,7 @@ const AdjustItemRow = memo(function AdjustItemRow({
         delay: animateEntrance && index < STAGGER_ANIMATION_CAP ? index * 0.02 : 0,
       }}
       className={cn(
-        'relative rounded-2xl p-4 flex items-start justify-between gap-3 transition-all duration-300',
+        'relative rounded-2xl p-4 flex items-start justify-between gap-3 bb-transition duration-300',
         rowToneClass,
         isActive
           ? 'bb-shadow-md ring-2 ring-black/8 z-10'
@@ -784,7 +784,7 @@ const AdjustItemRow = memo(function AdjustItemRow({
       <div className="flex items-start gap-3 flex-1 min-w-0 pl-1">
         <span
           className={cn(
-            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 transition-all duration-200',
+            'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 bb-transition duration-200',
             isActive
               ? 'bg-black text-white'
               : 'bg-white/60 text-black/55',

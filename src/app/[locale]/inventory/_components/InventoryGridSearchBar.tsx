@@ -46,7 +46,7 @@ export function InventoryGridSearchBar({
             }}
             title={gridSearchQuery || undefined}
             aria-label="ค้นหารายการเพื่อแก้ไข"
-            className="h-10 w-full min-w-0 pl-9 pr-9 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all antialiased"
+            className="h-10 w-full min-w-0 pl-9 pr-9 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased"
           />
           {isFiltering && (
             <button

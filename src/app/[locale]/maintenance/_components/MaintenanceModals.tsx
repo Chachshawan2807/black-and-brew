@@ -27,10 +27,10 @@ import { cn } from '@/lib/utils';
 export type MaintenanceFormData = ServiceRecordFormInput;
 
 const fieldClass =
-  'w-full h-11 bg-background border border-border rounded-2xl px-4 py-2 text-base md:text-sm font-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all hover:bg-muted/30';
+  'w-full h-11 bg-background border border-border rounded-2xl px-4 py-2 text-base md:text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus-visible:outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition hover:bg-muted/30';
 
 const textareaClass =
-  'w-full bg-background border border-border rounded-2xl px-4 py-2.5 text-base md:text-sm font-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all resize-none hover:bg-muted/30';
+  'w-full bg-background border border-border rounded-2xl px-4 py-2.5 text-base md:text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus-visible:outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition resize-none hover:bg-muted/30';
 
 type MaintenanceModalsProps = {
   isModalOpen: boolean;
@@ -198,10 +198,17 @@ export default function MaintenanceModals({
                         ))}
                       </RoundedSelect>
                       {taskTypeSelect === 'อื่นๆ' && (
-                        <input
-                          type="text"
-                          placeholder="ระบุประเภทงาน"
-                          value={taskTypeCustom}
+                        <>
+                          <label htmlFor="maintenance-task-type-custom" className="sr-only">
+                            ระบุประเภทงาน
+                          </label>
+                          <input
+                            id="maintenance-task-type-custom"
+                            type="text"
+                            name="task_type_custom"
+                            autoComplete="off"
+                            placeholder="ระบุประเภทงาน…"
+                            value={taskTypeCustom}
                           onChange={e =>
                             setFormData(prev => ({
                               ...prev,
@@ -211,6 +218,7 @@ export default function MaintenanceModals({
                           disabled={isReadOnly}
                           className={fieldClass}
                         />
+                        </>
                       )}
                     </div>
                   </div>
@@ -225,8 +233,10 @@ export default function MaintenanceModals({
                         window.setTimeout(() => setShowEquipmentSuggestions(false), 150);
                       }}
                     >
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ชื่ออุปกรณ์</label>
+                      <label htmlFor="maintenance-equipment" className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ชื่ออุปกรณ์</label>
                       <input
+                        id="maintenance-equipment"
+                        name="equipment"
                         type="text"
                         required
                         placeholder="เช่น เครื่องชงเอสเปรสโซ"
@@ -281,8 +291,10 @@ export default function MaintenanceModals({
                       )}
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ดำเนินการทุก (เดือน)</label>
+                      <label htmlFor="maintenance-frequency" className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">ดำเนินการทุก (เดือน)</label>
                       <input
+                        id="maintenance-frequency"
+                        name="recommended_frequency"
                         type="number"
                         min="1"
                         inputMode="numeric"
@@ -326,14 +338,14 @@ export default function MaintenanceModals({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-11 md:h-auto md:py-3 text-foreground/60 font-normal hover:text-foreground transition-all text-base md:text-[12px] uppercase tracking-widest"
+                  className="flex-1 h-11 md:h-auto md:py-3 text-foreground/60 font-normal hover:text-foreground bb-transition text-base md:text-[12px] uppercase tracking-widest"
                 >
                   ยกเลิก
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={loading || isReadOnly}
-                  className="flex-[2] h-11 md:h-auto md:py-3 bg-foreground text-background font-normal rounded-2xl hover:opacity-90 transition-all bb-shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
+                  className="flex-[2] h-11 md:h-auto md:py-3 bg-foreground text-background font-normal rounded-2xl hover:opacity-90 bb-transition bb-shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" strokeWidth={2} />}
                   ยืนยันบันทึก
@@ -372,13 +384,13 @@ export default function MaintenanceModals({
               <button
                 onClick={handleDelete}
                 disabled={loading || isReadOnly}
-                className="w-full h-11 md:h-auto md:py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 transition-all bb-shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-sm uppercase tracking-widest"
+                className="w-full h-11 md:h-auto md:py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 bb-transition bb-shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-sm uppercase tracking-widest"
               >
                 {loading ? 'Processing...' : 'Confirm Deletion'}
               </button>
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
-                className="w-full h-11 md:h-auto md:py-4 text-foreground/40 font-normal hover:text-foreground transition-all text-base md:text-sm uppercase tracking-widest"
+                className="w-full h-11 md:h-auto md:py-4 text-foreground/40 font-normal hover:text-foreground bb-transition text-base md:text-sm uppercase tracking-widest"
               >
                 Cancel
               </button>

@@ -49,7 +49,7 @@ export default function HomeOpsPanels({
 
   const tabButtonClass = (tab: HomeOpsTab) =>
     cn(
-      'flex-1 px-3.5 py-2 text-[13px] rounded-full border transition-all duration-200 font-normal whitespace-nowrap',
+      'flex-1 px-3.5 py-2 text-[13px] rounded-full border bb-transition duration-200 font-normal whitespace-nowrap',
       activeTab === tab
         ? 'bg-foreground border-foreground text-background bb-shadow-sm'
         : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',

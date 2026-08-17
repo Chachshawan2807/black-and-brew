@@ -323,7 +323,7 @@ export function ClickableDatePicker({
               onClick={e => handleSelectDay(day, e)}
               className={`
                 aspect-square rounded-xl text-[12px] font-normal
-                flex items-center justify-center transition-all cursor-pointer
+                flex items-center justify-center bb-transition cursor-pointer
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20
                 ${isSelected
                   ? 'bg-foreground text-background bb-shadow-md'
@@ -355,7 +355,7 @@ export function ClickableDatePicker({
         aria-expanded={isOpen}
         className={`flex items-center justify-center gap-1.5 h-11 px-4 text-xs font-normal
           text-foreground bg-card hover:bg-muted/50 rounded-3xl border border-border
-          transition-all duration-200 active:scale-95 uppercase
+          bb-transition duration-200 active:scale-95 uppercase
           tracking-wide bb-shadow-sm w-full
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20
           ${disabled ? 'opacity-60 cursor-not-allowed hover:bg-card' : 'cursor-pointer'}`}

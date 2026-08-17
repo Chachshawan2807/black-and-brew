@@ -47,7 +47,7 @@ function ColorPickerButton({
         type="button"
         onClick={onToggle}
         className={cn(
-          'flex items-center justify-center h-11 w-11 rounded-xl border transition-all cursor-pointer',
+          'flex items-center justify-center h-11 w-11 rounded-xl border bb-transition cursor-pointer',
           open
             ? 'border-emerald-500/30 bg-emerald-50/20'
             : 'border-border bg-background hover:bg-muted/30'
@@ -85,7 +85,7 @@ function ColorPickerPanel({
                 type="button"
                 onClick={() => onChange(preset.bg, preset.border)}
                 className={cn(
-                  'flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all active:scale-95 cursor-pointer',
+                  'flex flex-col items-center gap-1.5 p-2 rounded-xl border bb-transition active:scale-95 cursor-pointer',
                   selected
                     ? 'border-emerald-500/50 bg-card shadow-sm ring-1 ring-emerald-500/20'
                     : 'border-transparent hover:border-border hover:bg-card/80'
@@ -297,7 +297,7 @@ export default function ShiftSettingsModal({
                     type="button"
                     onClick={() => handleRemoveShift(selectedEntry!.id)}
                     disabled={isSaving}
-                    className="shrink-0 flex items-center justify-center h-11 w-11 text-red-500/80 hover:text-red-600 hover:bg-red-50 rounded-xl border border-border transition-all disabled:opacity-50 cursor-pointer"
+                    className="shrink-0 flex items-center justify-center h-11 w-11 text-red-500/80 hover:text-red-600 hover:bg-red-50 rounded-xl border border-border bb-transition disabled:opacity-50 cursor-pointer"
                     aria-label="ลบกะนี้"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -325,14 +325,14 @@ export default function ShiftSettingsModal({
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCustomNameSubmit()}
-                className="flex-1 h-11 px-3 rounded-xl border border-border bg-background text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                className="flex-1 h-11 px-3 rounded-xl border border-border bg-background text-[14px] text-foreground outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus:border-emerald-500"
                 placeholder="พิมพ์ชื่อกะใหม่"
               />
               <button
                 type="button"
                 onClick={handleCustomNameSubmit}
                 disabled={!customName.trim()}
-                className="h-11 px-4 text-[13px] text-[#ffffff] bg-[#000000] hover:bg-[#000000]/85 rounded-xl transition-all disabled:opacity-40 cursor-pointer shrink-0"
+                className="h-11 px-4 text-[13px] text-[#ffffff] bg-[#000000] hover:bg-[#000000]/85 rounded-xl bb-transition disabled:opacity-40 cursor-pointer shrink-0"
               >
                 เพิ่ม
               </button>
@@ -357,7 +357,7 @@ export default function ShiftSettingsModal({
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="flex-1 h-11 px-4 text-[13px] text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all disabled:opacity-50 cursor-pointer"
+              className="flex-1 h-11 px-4 text-[13px] text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition disabled:opacity-50 cursor-pointer"
             >
               ยกเลิก
             </button>
@@ -365,7 +365,7 @@ export default function ShiftSettingsModal({
               type="button"
               onClick={handleSave}
               disabled={isSaving || isCreating}
-              className="flex-1 h-11 px-4 text-[13px] text-[#ffffff] bg-[#000000] hover:bg-[#000000]/85 rounded-3xl transition-all disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
+              className="flex-1 h-11 px-4 text-[13px] text-[#ffffff] bg-[#000000] hover:bg-[#000000]/85 rounded-3xl bb-transition disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               บันทึก

@@ -186,7 +186,7 @@ export default function HomePurchaseOrdersSection({
               type="button"
               onClick={() => setSelectedChannels(['all'])}
               className={cn(
-                'px-3.5 py-1.5 text-[13px] rounded-full border transition-all duration-200 font-normal whitespace-nowrap shrink-0',
+                'px-3.5 py-1.5 text-[13px] rounded-full border bb-transition duration-200 font-normal whitespace-nowrap shrink-0',
                 selectedChannels.includes('all')
                   ? 'bg-foreground border-foreground text-background bb-shadow-sm'
                   : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
@@ -216,7 +216,7 @@ export default function HomePurchaseOrdersSection({
                     });
                   }}
                   className={cn(
-                    'px-3.5 py-1.5 text-[13px] rounded-full border transition-all duration-200 font-normal whitespace-nowrap shrink-0 max-w-[12rem] truncate',
+                    'px-3.5 py-1.5 text-[13px] rounded-full border bb-transition duration-200 font-normal whitespace-nowrap shrink-0 max-w-[12rem] truncate',
                     isActive
                       ? 'bg-foreground border-foreground text-background bb-shadow-sm'
                       : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',

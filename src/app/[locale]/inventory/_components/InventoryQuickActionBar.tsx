@@ -131,7 +131,7 @@ function QuickActionTypeToggle({
           aria-label="รับเข้า"
           aria-pressed={quickType === 'IN'}
           className={cn(
-            'flex-1 flex items-center justify-center h-full rounded-full transition-all duration-150',
+            'flex-1 flex items-center justify-center h-full rounded-full bb-transition duration-150',
             quickType === 'IN' ? INVENTORY_QUICK_ACTION_COLORS.in : INVENTORY_QUICK_ACTION_COLORS.inactive,
           )}
         >
@@ -145,7 +145,7 @@ function QuickActionTypeToggle({
           aria-label="นำออก"
           aria-pressed={quickType === 'OUT'}
           className={cn(
-            'flex-1 flex items-center justify-center h-full rounded-full transition-all duration-150',
+            'flex-1 flex items-center justify-center h-full rounded-full bb-transition duration-150',
             quickType === 'OUT' ? INVENTORY_QUICK_ACTION_COLORS.out : INVENTORY_QUICK_ACTION_COLORS.inactive,
           )}
         >
@@ -159,7 +159,7 @@ function QuickActionTypeToggle({
           aria-label="ปรับจำนวน"
           aria-pressed={quickType === 'ADJUST'}
           className={cn(
-            'flex-1 flex items-center justify-center h-full rounded-full transition-all duration-150',
+            'flex-1 flex items-center justify-center h-full rounded-full bb-transition duration-150',
             quickType === 'ADJUST' ? INVENTORY_QUICK_ACTION_COLORS.adjust : INVENTORY_QUICK_ACTION_COLORS.inactive,
           )}
         >
@@ -220,7 +220,7 @@ function QuickActionQtyInput({
         step="any"
         aria-label={quickType === 'ADJUST' ? 'จำนวนคงเหลือใหม่' : 'จำนวน'}
         className={cn(
-          'w-full text-sm font-normal pl-1.5 pr-8 text-center rounded-3xl bg-background border border-border placeholder:text-muted-foreground text-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all antialiased',
+          'w-full text-sm font-normal pl-1.5 pr-8 text-center rounded-3xl bg-background border border-border placeholder:text-muted-foreground text-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased',
           '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
           compact ? 'h-9 rounded-xl' : 'h-11',
           className,
@@ -234,7 +234,7 @@ function QuickActionQtyInput({
           aria-label="เพิ่มจำนวน"
           className={cn(
             'absolute right-0 top-0 flex items-center justify-center rounded-xl border border-border bg-card text-muted-foreground bb-shadow-sm',
-            'hover:bg-[#d4edda]/50 hover:border-[#c3e6cb] hover:text-foreground active:scale-95 transition-all',
+            'hover:bg-[#d4edda]/50 hover:border-[#c3e6cb] hover:text-foreground active:scale-95 bb-transition',
             stepBtnSize,
           )}
         >
@@ -249,7 +249,7 @@ function QuickActionQtyInput({
           aria-label="ลดจำนวน"
           className={cn(
             'absolute right-0 bottom-0 flex items-center justify-center rounded-xl border border-border bg-card text-muted-foreground bb-shadow-sm',
-            'hover:bg-[#f8d7da]/45 hover:border-[#f5c6cb] hover:text-foreground active:scale-95 transition-all',
+            'hover:bg-[#f8d7da]/45 hover:border-[#f5c6cb] hover:text-foreground active:scale-95 bb-transition',
             stepBtnSize,
           )}
         >
@@ -291,7 +291,7 @@ function QuickActionSaveButton({
         }, 0);
       }}
       className={cn(
-        'h-11 w-full bb-pastel-surface bg-[#d1ecf1] border border-[#bee5eb] hover:brightness-95 text-[#000000] rounded-3xl text-sm font-normal transition-all bb-shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased disabled:opacity-50',
+        'h-11 w-full bb-pastel-surface bg-[#d1ecf1] border border-[#bee5eb] hover:brightness-95 text-[#000000] rounded-3xl text-sm font-normal bb-transition bb-shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased disabled:opacity-50',
         className,
       )}
     >
@@ -316,7 +316,7 @@ function BackfillModeToggle({
         aria-label={backfillMode ? 'ปิดโหมดลงย้อนหลัง' : 'ลงย้อนหลัง'}
         aria-pressed={backfillMode}
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all',
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bb-transition',
           backfillMode
             ? 'bb-pastel-surface bg-[#ffda66] border-[#f5cc4d] text-[#000000]'
             : 'bg-background border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
@@ -343,7 +343,7 @@ function BulkModeToggle({
         aria-label={bulkMode ? 'โหมดรายการเดียว' : 'โหมดหลายรายการ'}
         aria-pressed={bulkMode}
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all',
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bb-transition',
           bulkMode
             ? 'bb-pastel-surface bg-[#d1ecf1] border-[#bee5eb] text-[#000000]'
             : 'bg-background border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
@@ -440,7 +440,7 @@ function BulkQueuePanel({
               onWheel={blurQtyInputOnWheel}
               placeholder={quickType === 'ADJUST' ? 'ใหม่' : 'จำนวน'}
               aria-label={`จำนวน ${line.name}`}
-              className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground text-center text-sm tabular-nums outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground text-center text-sm tabular-nums outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             {onRemoveBulkItem && (
               <HintTooltip tip="ลบออกจากคิว">
@@ -551,7 +551,7 @@ function BulkSubmitConfirmDialog({
               type="button"
               onClick={onConfirm}
               disabled={isQuickPending}
-              className="h-10 rounded-xl bb-pastel-surface border border-[#bee5eb] bg-[#d1ecf1] px-4 text-sm text-[#000000] transition-all hover:brightness-95 disabled:opacity-50"
+              className="h-10 rounded-xl bb-pastel-surface border border-[#bee5eb] bg-[#d1ecf1] px-4 text-sm text-[#000000] bb-transition hover:brightness-95 disabled:opacity-50"
             >
               {isQuickPending ? 'กำลังบันทึก...' : `ยืนยัน${typeLabel}`}
             </button>
@@ -586,7 +586,7 @@ function SecondaryQuickActionButtons({
         onMouseEnter={onPreloadPurchaseOrder}
         onFocus={onPreloadPurchaseOrder}
         className={cn(
-          'flex w-full items-center justify-center gap-1 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:bb-shadow-hover-md',
+          'flex w-full items-center justify-center gap-1 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased bb-transition hover:bb-shadow-hover-md',
           INVENTORY_QUICK_ACTION_COLORS.order,
           INVENTORY_QUICK_ACTION_HOVER.order,
         )}
@@ -603,7 +603,7 @@ function SecondaryQuickActionButtons({
         type="button"
         onClick={onOpenAddItem}
         className={cn(
-          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:bb-shadow-hover-md',
+          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased bb-transition hover:bb-shadow-hover-md',
           INVENTORY_QUICK_ACTION_COLORS.addItem,
           INVENTORY_QUICK_ACTION_HOVER.addItem,
         )}
@@ -617,7 +617,7 @@ function SecondaryQuickActionButtons({
         onMouseEnter={onPreloadHistory}
         onFocus={onPreloadHistory}
         className={cn(
-          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased transition-all hover:bb-shadow-hover-md',
+          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased bb-transition hover:bb-shadow-hover-md',
           INVENTORY_QUICK_ACTION_COLORS.history,
           INVENTORY_QUICK_ACTION_HOVER.history,
         )}
@@ -939,7 +939,7 @@ export function InventoryQuickActionBar({
                 }
                 title={quickSearch || undefined}
                 className={cn(
-                  'h-10 w-full min-w-0 pl-9 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus:ring-1 focus:ring-foreground/10 transition-all antialiased',
+                  'h-10 w-full min-w-0 pl-9 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased',
                   showClearSearch ? 'pr-9' : 'pr-3',
                 )}
               />
@@ -966,7 +966,7 @@ export function InventoryQuickActionBar({
             {!bulkMode && selectedQuickItem && (
               <div
                 className={cn(
-                  'flex h-10 shrink-0 items-center gap-1 px-2 rounded-xl text-[12px] border transition-all duration-200 animate-in fade-in zoom-in-95 whitespace-nowrap max-w-[40%] sm:max-w-none',
+                  'flex h-10 shrink-0 items-center gap-1 px-2 rounded-xl text-[12px] border bb-transition duration-200 animate-in fade-in zoom-in-95 whitespace-nowrap max-w-[40%] sm:max-w-none',
                   quickBadgeStyles.bg,
                 )}
               >

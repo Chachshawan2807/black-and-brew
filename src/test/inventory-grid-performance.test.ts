@@ -25,4 +25,21 @@ describe('inventory editable grid performance contract', () => {
     expect(css).toContain('@supports not (content-visibility: auto)');
     expect(css).toContain('contain: layout style paint');
   });
+
+  test('grid cells expose aria-label and name for screen readers', () => {
+    const source = readFileSync(inventoryClientPath, 'utf-8');
+
+    expect(source).toContain("from '@/lib/inventory-grid-cell-a11y'");
+    expect(source).toContain('getInventoryCellAriaLabel');
+    expect(source).toContain('getInventoryCellInputName');
+    expect(source).toMatch(/function EditableCell[\s\S]*cellA11yProps[\s\S]*aria-label/);
+    expect(source).toMatch(/function MobileEditableCell[\s\S]*cellA11yProps[\s\S]*aria-label/);
+  });
+
+  test('inventory grid avoids transition-all and focus:ring in spreadsheet cells', () => {
+    const source = readFileSync(inventoryClientPath, 'utf-8');
+
+    expect(source).not.toContain('transition-all');
+    expect(source).not.toMatch(/focus:ring-/);
+  });
 });

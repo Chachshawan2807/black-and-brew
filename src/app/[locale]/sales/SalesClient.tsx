@@ -33,6 +33,13 @@ import {
   staggerDelay,
 } from '@/lib/motion-presets';
 import {
+  getSalesCategoryCancelAriaLabel,
+  getSalesCategoryCellAriaLabel,
+  getSalesCategoryEditButtonAriaLabel,
+  getSalesCategoryInputName,
+  getSalesCategorySaveAriaLabel,
+} from '@/lib/sales-category-cell-a11y';
+import {
   uploadSalesFiles,
   fetchSalesHistory,
   getSalesMetrics,
@@ -626,7 +633,7 @@ export default function SalesClient({
                 <button
                   onClick={() => setShowManageCategories(true)}
                   disabled={isReadOnly}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted bb-transition bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <Edit3 className="w-4 h-4" />
                   <span className="text-sm">จัดการหมวดหมู่</span>
@@ -634,7 +641,7 @@ export default function SalesClient({
                 <button
                   onClick={handleRefresh}
                   disabled={isRefreshing}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed bb-shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-card border border-border rounded-xl hover:bg-muted bb-transition disabled:opacity-50 disabled:cursor-not-allowed bb-shadow-sm"
                 >
                   <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                   <span className="text-sm">รีเฟรช</span>
@@ -686,7 +693,7 @@ export default function SalesClient({
                     <HintTooltip tip="ปิด">
                       <button
                         onClick={() => setShowManageCategories(false)}
-                        className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl transition-all text-muted-foreground hover:text-foreground z-10"
+                        className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl bb-transition text-muted-foreground hover:text-foreground z-10"
                         aria-label="ปิด"
                       >
                         <X className="w-5 h-5" />
@@ -716,7 +723,7 @@ export default function SalesClient({
                             <HintTooltip tip="ลบหมวดหมู่">
                               <button
                                 onClick={() => handleDeleteCategory(category)}
-                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
+                                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl bb-transition"
                                 aria-label={`ลบหมวดหมู่ ${category}`}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -730,7 +737,7 @@ export default function SalesClient({
                     <div className="mt-6 flex justify-end">
                       <button
                         onClick={() => setShowManageCategories(false)}
-                        className="px-5 py-2.5 bg-muted border border-border rounded-xl hover:bg-muted/80 transition-all text-sm"
+                        className="px-5 py-2.5 bg-muted border border-border rounded-xl hover:bg-muted/80 bb-transition text-sm"
                       >
                         ปิด
                       </button>
@@ -762,7 +769,7 @@ export default function SalesClient({
                     <HintTooltip tip="ปิด">
                       <button
                         onClick={() => setCategoryToDelete(null)}
-                        className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl transition-all text-muted-foreground hover:text-foreground z-10"
+                        className="absolute top-4 right-4 p-2 hover:bg-muted rounded-2xl bb-transition text-muted-foreground hover:text-foreground z-10"
                         aria-label="ปิด"
                       >
                         <X className="w-5 h-5" />
@@ -785,14 +792,14 @@ export default function SalesClient({
                       <button
                         onClick={() => setCategoryToDelete(null)}
                         disabled={isReadOnly || isDeletingCategory}
-                        className="flex-1 px-5 py-3 bg-muted border border-border rounded-xl hover:bg-muted/80 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-5 py-3 bg-muted border border-border rounded-xl hover:bg-muted/80 bb-transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         ยกเลิก
                       </button>
                       <button
                         onClick={confirmDeleteCategory}
                         disabled={isReadOnly || isDeletingCategory}
-                        className="flex-1 px-5 py-3 bg-black text-white rounded-xl hover:bg-black/80 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="flex-1 px-5 py-3 bg-black text-white rounded-xl hover:bg-black/80 bb-transition text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {isDeletingCategory ? (
                           <>
@@ -842,7 +849,7 @@ export default function SalesClient({
                 />
                 <label
                   htmlFor="file-upload"
-                  className="cursor-pointer flex items-center gap-3 px-4 py-3 bg-card border-2 border-dashed border-border rounded-xl hover:bg-muted hover:border-foreground/20 transition-all"
+                  className="cursor-pointer flex items-center gap-3 px-4 py-3 bg-card border-2 border-dashed border-border rounded-xl hover:bg-muted hover:border-foreground/20 bb-transition"
                 >
                   <FileSpreadsheet className="w-5 h-5 text-foreground/70 shrink-0" strokeWidth={1.5} />
                   <span className="text-sm text-foreground/70">
@@ -868,7 +875,7 @@ export default function SalesClient({
               <button
                 type="submit"
                 disabled={isReadOnly || isUploading || selectedFiles.length === 0}
-                className="shrink-0 bg-[#000000] text-white px-6 py-3 rounded-xl hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2 bb-shadow-sm"
+                className="shrink-0 bg-[#000000] text-white px-6 py-3 rounded-xl hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed bb-transition text-sm flex items-center justify-center gap-2 bb-shadow-sm"
               >
                 {isUploading ? (
                   <>
@@ -987,7 +994,7 @@ export default function SalesClient({
                 initial={staggeredSection.initial}
                 animate={staggeredSection.animate}
                 transition={{ ...staggeredSection.transition, delay: staggerDelay(0, 0.1) }}
-                className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md transition-all duration-300 ${SALES_SECTION_COLORS.revenue}`}
+                className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md bb-transition duration-300 ${SALES_SECTION_COLORS.revenue}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-11 h-11 rounded-xl bg-white/50 border border-[#c3e6cb] flex items-center justify-center">
@@ -1003,7 +1010,7 @@ export default function SalesClient({
                 initial={staggeredSection.initial}
                 animate={staggeredSection.animate}
                 transition={{ ...staggeredSection.transition, delay: staggerDelay(1, 0.1) }}
-                className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md transition-all duration-300 ${SALES_SECTION_COLORS.quantity}`}
+                className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md bb-transition duration-300 ${SALES_SECTION_COLORS.quantity}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-11 h-11 rounded-xl bg-white/50 border border-[#ffeeba] flex items-center justify-center">
@@ -1019,7 +1026,7 @@ export default function SalesClient({
                 initial={staggeredSection.initial}
                 animate={staggeredSection.animate}
                 transition={{ ...staggeredSection.transition, delay: staggerDelay(2, 0.1) }}
-                className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md transition-all duration-300 ${SALES_SECTION_COLORS.menuItems}`}
+                className={`rounded-2xl bb-shadow-md p-4 hover:bb-shadow-hover-md bb-transition duration-300 ${SALES_SECTION_COLORS.menuItems}`}
               >
                 <div className="flex items-center gap-3 mb-2.5">
                   <div className="w-11 h-11 rounded-xl bg-white/50 border border-[#f5c6cb] flex items-center justify-center">
@@ -1047,7 +1054,7 @@ export default function SalesClient({
                   {metrics.categoryMetrics.map((category, index) => {
                     const cardColor = SALES_CATEGORY_CARD_COLORS[index % SALES_CATEGORY_CARD_COLORS.length];
                     return (
-                    <div key={index} className={`p-4 rounded-xl border hover:bb-shadow-hover-md transition-all duration-300 ${cardColor}`}>
+                    <div key={index} className={`p-4 rounded-xl border hover:bb-shadow-hover-md bb-transition duration-300 ${cardColor}`}>
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm">{category.category}</span>
                         <span className="text-[10px] text-black bg-white/50 border border-black/10 px-1.5 py-0.5 rounded-full">{category.revenuePercentage.toFixed(1)}%</span>
@@ -1056,7 +1063,7 @@ export default function SalesClient({
                       <div className="text-xs text-black/55">{formatNumber(category.totalQuantity)} ชิ้น • {formatNumber(category.transactionCount)} รายการ</div>
                       <div className="mt-2.5 h-2 bg-white/50 rounded-full overflow-hidden border border-black/5">
                         <div 
-                          className="h-full bg-black/25 rounded-full transition-all duration-700"
+                          className="h-full bg-black/25 rounded-full bb-transition duration-700"
                           style={{ width: `${Math.min(category.revenuePercentage, 100)}%` }}
                         />
                       </div>
@@ -1176,8 +1183,9 @@ export default function SalesClient({
                                       }}
                                       autoFocus
                                       list={`category-list-top-${product.productName}`}
-                                      aria-label={`Edit category for ${product.productName}`}
-                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed bb-shadow-sm"
+                                      aria-label={getSalesCategoryCellAriaLabel(product.productName)}
+                                      name={getSalesCategoryInputName(product.productName)}
+                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs bb-transition outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed bb-shadow-sm"
                                       placeholder="ป้อนชื่อหมวดหมู่"
                                       disabled={isReadOnly || updatingProduct === product.productName}
                                     />
@@ -1202,8 +1210,8 @@ export default function SalesClient({
                                             handleUpdateCategory(product.productName);
                                           }}
                                           disabled={isReadOnly || updatingProduct === product.productName}
-                                          aria-label={`Save category for ${product.productName}`}
-                                          className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                          aria-label={getSalesCategorySaveAriaLabel(product.productName)}
+                                          className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg bb-transition disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                           <Check className="w-4 h-4" />
                                         </button>
@@ -1221,8 +1229,8 @@ export default function SalesClient({
                                             });
                                           }}
                                           disabled={isReadOnly || updatingProduct === product.productName}
-                                          aria-label={`Cancel editing category for ${product.productName}`}
-                                          className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                          aria-label={getSalesCategoryCancelAriaLabel(product.productName)}
+                                          className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg bb-transition disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                           <ChevronUp className="w-4 h-4" />
                                         </button>
@@ -1247,8 +1255,11 @@ export default function SalesClient({
                                       isEnteringEditModeRef.current = false;
                                     }, 100);
                                   }}
-                                  aria-label={`Click to edit category for ${product.productName}`}
-                                  className="group inline-flex items-center px-2.5 py-1 rounded-full text-[10px] transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-black/10 focus:ring-offset-1"
+                                  aria-label={getSalesCategoryEditButtonAriaLabel(
+                                    product.productName,
+                                    productWithCategory.category ?? '',
+                                  )}
+                                  className="group inline-flex items-center px-2.5 py-1 rounded-full text-[10px] bb-transition duration-200 hover:scale-105 active:scale-95 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 focus-visible:ring-offset-1"
                                 >
                                   <span className={`${productWithCategory.category ? 'bg-muted text-foreground' : 'bg-muted/50 text-muted-foreground'} px-2 py-0.5 rounded-full group-hover:bg-muted/80`}>
                                     {productWithCategory.category || 'ยังไม่ระบุ'}
@@ -1307,7 +1318,7 @@ export default function SalesClient({
                           setSortOrder('desc');
                         }
                       }}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-all ${
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border bb-transition ${
                         sortBy === 'quantity'
                           ? 'bb-pastel-surface bg-[#fff3cd] text-black border-[#ffeeba]'
                           : 'bg-muted border-border text-foreground hover:bg-muted/80'
@@ -1327,7 +1338,7 @@ export default function SalesClient({
                           setSortOrder('desc');
                         }
                       }}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-all ${
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border bb-transition ${
                         sortBy === 'revenue'
                           ? 'bb-pastel-surface bg-[#d4edda] text-black border-[#c3e6cb]'
                           : 'bg-muted border-border text-foreground hover:bg-muted/80'
@@ -1393,8 +1404,9 @@ export default function SalesClient({
                                       }}
                                       autoFocus
                                       list={`category-list-${product.productName}`}
-                                      aria-label={`Edit category for ${product.productName}`}
-                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs transition-all focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed bb-shadow-sm"
+                                      aria-label={getSalesCategoryCellAriaLabel(product.productName)}
+                                      name={getSalesCategoryInputName(product.productName)}
+                                      className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-xs bb-transition outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus:border-border disabled:opacity-50 disabled:cursor-not-allowed bb-shadow-sm"
                                       placeholder="ป้อนชื่อหมวดหมู่"
                                       disabled={isReadOnly || updatingProduct === product.productName}
                                     />
@@ -1419,8 +1431,8 @@ export default function SalesClient({
                                             handleUpdateCategory(product.productName);
                                           }}
                                           disabled={isReadOnly || updatingProduct === product.productName}
-                                          aria-label={`Save category for ${product.productName}`}
-                                          className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                          aria-label={getSalesCategorySaveAriaLabel(product.productName)}
+                                          className="flex-shrink-0 p-1.5 text-foreground hover:bg-muted rounded-lg bb-transition disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                           <Check className="w-4 h-4" />
                                         </button>
@@ -1438,8 +1450,8 @@ export default function SalesClient({
                                             });
                                           }}
                                           disabled={isReadOnly || updatingProduct === product.productName}
-                                          aria-label={`Cancel editing category for ${product.productName}`}
-                                          className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                          aria-label={getSalesCategoryCancelAriaLabel(product.productName)}
+                                          className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg bb-transition disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                           <ChevronUp className="w-4 h-4" />
                                         </button>
@@ -1464,8 +1476,11 @@ export default function SalesClient({
                                       isEnteringEditModeRef.current = false;
                                     }, 100);
                                   }}
-                                  aria-label={`Click to edit category for ${product.productName}`}
-                                  className="group inline-flex items-center px-2.5 py-1 rounded-full text-[10px] transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-black/10 focus:ring-offset-1"
+                                  aria-label={getSalesCategoryEditButtonAriaLabel(
+                                    product.productName,
+                                    product.category ?? '',
+                                  )}
+                                  className="group inline-flex items-center px-2.5 py-1 rounded-full text-[10px] bb-transition duration-200 hover:scale-105 active:scale-95 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 focus-visible:ring-offset-1"
                                 >
                                   <span className={`${product.category ? 'bg-muted text-foreground' : 'bg-muted/50 text-muted-foreground'} px-2 py-0.5 rounded-full group-hover:bg-muted/80`}>
                                     {product.category || 'ยังไม่ระบุ'}

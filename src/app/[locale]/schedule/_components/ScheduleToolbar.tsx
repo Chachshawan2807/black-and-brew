@@ -46,7 +46,7 @@ export default function ScheduleToolbar({
             <button
               onClick={onUndo}
               disabled={isReadOnly || undoStackLength === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && undoStackLength > 0 ? 'hover:bg-muted/30 text-foreground cursor-pointer' : 'text-foreground/30 cursor-not-allowed'}`}
+              className={`h-11 px-3 rounded-3xl bb-transition duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && undoStackLength > 0 ? 'hover:bg-muted/30 text-foreground cursor-pointer' : 'text-foreground/30 cursor-not-allowed'}`}
               aria-label="เลิกทำ"
             >
               <Undo2 className="w-4 h-4" strokeWidth={1.5} />
@@ -56,7 +56,7 @@ export default function ScheduleToolbar({
             <button
               onClick={onRedo}
               disabled={isReadOnly || redoStackLength === 0}
-              className={`h-11 px-3 rounded-3xl transition-all duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && redoStackLength > 0 ? 'hover:bg-muted/30 text-foreground cursor-pointer' : 'text-foreground/30 cursor-not-allowed'}`}
+              className={`h-11 px-3 rounded-3xl bb-transition duration-200 active:scale-95 flex items-center justify-center ${!isReadOnly && redoStackLength > 0 ? 'hover:bg-muted/30 text-foreground cursor-pointer' : 'text-foreground/30 cursor-not-allowed'}`}
               aria-label="ทำซ้ำ"
             >
               <Redo2 className="w-4 h-4" strokeWidth={1.5} />
@@ -75,7 +75,7 @@ export default function ScheduleToolbar({
       <div className="flex items-center gap-2 w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y whitespace-nowrap pb-2 scrollbar-none md:overflow-visible md:pb-0 md:justify-end">
         <button
           onClick={onShowShiftSettings}
-          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm cursor-pointer"
+          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 uppercase tracking-wide shadow-sm cursor-pointer"
         >
           <Settings className="w-4 h-4" />
           ตั้งค่า
@@ -84,7 +84,7 @@ export default function ScheduleToolbar({
         <button
           onClick={onShowRegularHolidayModal}
           disabled={isReadOnly}
-          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
         >
           <Calendar className="w-4 h-4" />
           วันหยุดประจำ
@@ -93,7 +93,7 @@ export default function ScheduleToolbar({
         <button
           onClick={onShowManagementModal}
           disabled={isReadOnly}
-          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
         >
           <UserCog className="w-4 h-4" />
           การลา/เปลี่ยนกะ
@@ -109,7 +109,7 @@ export default function ScheduleToolbar({
           <button
             onClick={onSyncGoogleSheet}
             disabled={isReadOnly || isSyncingGoogleSheet}
-            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${isSyncingGoogleSheet ? 'animate-spin' : ''}`} strokeWidth={1.5} />
             {isSyncingGoogleSheet ? 'กำลังซิงค์…' : 'ซิงค์ Google Sheet'}
@@ -120,7 +120,7 @@ export default function ScheduleToolbar({
           onClick={onExportScheduleImage}
           onMouseEnter={preloadCaptureLibraries}
           onFocus={preloadCaptureLibraries}
-          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
         >
           <Download className="w-4 h-4" />
           บันทึกรูปภาพ
@@ -129,7 +129,7 @@ export default function ScheduleToolbar({
         <button
           onClick={onShowAddEmployeeModal}
           disabled={isReadOnly}
-          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border transition-all duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           เพิ่มพนักงาน

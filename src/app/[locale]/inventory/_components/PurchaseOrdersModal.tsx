@@ -134,7 +134,7 @@ export default function PurchaseOrdersModal({
               <button
                 onClick={() => setSelectedChannels(['all'])}
                 className={cn(
-                  'px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
+                  'px-4 py-2 text-[14px] rounded-full border bb-transition duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
                   selectedChannels.includes('all')
                     ? 'bg-[#000000] border-[#000000] text-white bb-shadow-sm'
                     : 'border-black/15 bg-transparent text-black/85 hover:bg-black/5',
@@ -163,7 +163,7 @@ export default function PurchaseOrdersModal({
                       });
                     }}
                     className={cn(
-                      'px-4 py-2 text-[14px] rounded-full border transition-all duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
+                      'px-4 py-2 text-[14px] rounded-full border bb-transition duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
                       isActive
                         ? 'bg-[#000000] border-[#000000] text-white bb-shadow-sm'
                         : 'border-black/15 bg-transparent text-black/85 hover:bg-black/5',

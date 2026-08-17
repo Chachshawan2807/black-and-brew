@@ -35,7 +35,7 @@ function SortButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 transition-all ${
+      className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 bb-transition ${
         active
           ? `bb-pastel-surface ${activeClassName}`
           : 'border-border bg-muted text-foreground hover:bg-muted/80'
