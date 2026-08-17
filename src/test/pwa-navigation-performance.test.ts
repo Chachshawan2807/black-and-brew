@@ -48,6 +48,14 @@ describe('PWA navigation performance patterns', () => {
     const pwa = readFileSync(resolve(ROOT, 'src/components/PwaRegister.tsx'), 'utf-8');
     expect(pwa).toContain('scheduleIdleWork');
     expect(pwa).not.toContain('setTimeout(() => {');
+    expect(pwa).toContain('{ timeout: 500 }');
+  });
+
+  test('push registration proactively ensures service worker readiness', () => {
+    const pushClient = readFileSync(resolve(ROOT, 'src/lib/push-subscription-client.ts'), 'utf-8');
+    const pwaUpdate = readFileSync(resolve(ROOT, 'src/lib/pwa-update.ts'), 'utf-8');
+    expect(pushClient).toContain('ensurePushServiceWorkerReady');
+    expect(pwaUpdate).toContain('export function ensurePushServiceWorkerReady');
   });
 
   test('notifications defer realtime subscription until idle', () => {

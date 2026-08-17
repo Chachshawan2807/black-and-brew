@@ -9,6 +9,7 @@ import {
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 import type { ColumnSettings } from './types';
 import type { TransactionHistoryRow } from './_components/InventoryHistoryModal';
+import { InventoryHistoryCacheSeed } from './_components/InventoryHistoryCacheSeed';
 
 const InventoryClient = createLazyFeatureClient(
   () => import('./InventoryClient'),
@@ -65,12 +66,18 @@ export default async function InventoryPage({
   }
 
   return (
-    <InventoryClient
-      initialItems={inventoryRes.data || []}
-      initialColumnSettings={initialColumnSettings}
-      initialTransactionHistory={initialTransactionHistory}
-      initialHistoryHasMore={initialHistoryHasMore}
-      locale={locale}
-    />
+    <>
+      <InventoryHistoryCacheSeed
+        initialTransactionHistory={initialTransactionHistory}
+        initialHistoryHasMore={initialHistoryHasMore}
+      />
+      <InventoryClient
+        initialItems={inventoryRes.data || []}
+        initialColumnSettings={initialColumnSettings}
+        initialTransactionHistory={initialTransactionHistory}
+        initialHistoryHasMore={initialHistoryHasMore}
+        locale={locale}
+      />
+    </>
   );
 }

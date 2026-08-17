@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const HISTORY_PAGE_SIZE = 50;
 
+export const HISTORY_ORDER_COLUMN = 'transaction_at' as const;
+
 export const TRANSACTION_HISTORY_SELECT =
   'id, inventory_item_id, type, quantity, note, created_at, transaction_at, balance_after, inventory_items(name)';
 
@@ -59,6 +61,10 @@ export function sanitizeHistorySearchQuery(query: string | undefined) {
   return trimmed.slice(0, 100);
 }
 
+export function historyRowSortTime(row: Pick<RawInventoryTransaction, 'transaction_at' | 'created_at'>) {
+  return new Date(row.transaction_at ?? row.created_at).getTime();
+}
+
 export function enrichTransactionRows(transactions: RawInventoryTransaction[]) {
   return transactions.map((tx) => {
     const joinedName = tx.inventory_items?.name;
@@ -111,7 +117,7 @@ async function fetchTransactionHistoryByItemName(
     let historyQuery = client
       .from('inventory_transactions')
       .select(TRANSACTION_HISTORY_SELECT)
-      .order('created_at', { ascending: false });
+      .order(HISTORY_ORDER_COLUMN, { ascending: false });
     if (type) historyQuery = historyQuery.eq('type', type);
     return historyQuery;
   };
@@ -145,9 +151,7 @@ async function fetchTransactionHistoryByItemName(
     }
   }
 
-  const merged = [...byId.values()].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  );
+  const merged = [...byId.values()].sort((a, b) => historyRowSortTime(b) - historyRowSortTime(a));
   const page = merged.slice(offset, offset + safeLimit + 1);
   const hasMore = page.length > safeLimit;
 
@@ -179,7 +183,7 @@ export async function fetchTransactionHistoryPage(
     let query = client
       .from('inventory_transactions')
       .select(TRANSACTION_HISTORY_SELECT)
-      .order('created_at', { ascending: false });
+      .order(HISTORY_ORDER_COLUMN, { ascending: false });
 
     if (itemId) {
       query = query.eq('inventory_item_id', itemId);

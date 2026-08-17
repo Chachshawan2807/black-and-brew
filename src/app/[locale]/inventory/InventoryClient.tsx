@@ -30,7 +30,7 @@ import {
 } from '@/lib/inventory-frequent-items';
 import { useInventoryGridFilter } from '@/hooks/use-inventory-grid-filter';
 import { useInventoryHistory } from '@/hooks/use-inventory-history';
-import { prefetchInventoryHistoryFirstPage, warmInventoryHistoryFilterPages } from '@/lib/inventory-history-prefetch';
+import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from './_components/InventoryQuickActionBar';
 import { InventoryModalPortal } from './_components/InventoryModalPortal';
@@ -83,6 +83,7 @@ import {
   readInventoryField,
 } from './types';
 import type { TransactionHistoryRow } from './_components/InventoryHistoryModal';
+import { InventoryHistoryModal } from './_components/InventoryHistoryModal';
 
 interface InventoryClientProps {
   initialItems: InventoryItem[];
@@ -634,17 +635,12 @@ const MobileSortableRow = React.memo(({
 MobileSortableRow.displayName = 'MobileSortableRow';
 
 const PurchaseOrdersModal = dynamic(() => import('./_components/PurchaseOrdersModal'), { ssr: false });
-const InventoryHistoryModal = dynamic(
-  () => import('./_components/InventoryHistoryModal').then((mod) => mod.InventoryHistoryModal),
-  { ssr: false },
-);
 
 const preloadPurchaseOrdersModal = () => {
   void import('./_components/PurchaseOrdersModal');
 };
 
 const preloadInventoryHistoryModal = () => {
-  void import('./_components/InventoryHistoryModal');
   void prefetchInventoryHistoryFirstPage();
 };
 
@@ -1015,11 +1011,6 @@ export default function InventoryClient({
 
   useEffect(() => {
     preloadInventoryHistoryModal();
-    if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(() => warmInventoryHistoryFilterPages(), { timeout: 5_000 });
-    } else {
-      setTimeout(() => warmInventoryHistoryFilterPages(), 500);
-    }
   }, []);
 
   const { itemsToOrder, poSources, displayedPoItems } = useMemo(

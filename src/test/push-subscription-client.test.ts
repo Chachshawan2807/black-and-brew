@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   formatPushRegistrationError,
   hasMatchingApplicationServerKey,
@@ -144,6 +146,23 @@ describe('push-subscription-client', () => {
 
   test('hasServerPushRegistration defaults to false before any successful server sync', () => {
     expect(hasServerPushRegistration()).toBe(false);
+  });
+
+  test('maintenance retry window stays under three seconds for mobile registration', () => {
+    const source = readFileSync(
+      resolve(__dirname, '../lib/push-subscription-client.ts'),
+      'utf8',
+    );
+    expect(source).toContain('MAINTENANCE_DEBOUNCE_MS = 400');
+    expect(source).toContain('MAINTENANCE_RETRY_MS = [0, 800, 2_000]');
+  });
+
+  test('refresh skips server verify when registration is already confirmed', () => {
+    const source = readFileSync(
+      resolve(__dirname, '../lib/push-subscription-client.ts'),
+      'utf8',
+    );
+    expect(source).toContain('if (!serverPushRegistrationConfirmed)');
   });
 
   test('wantsPushRegistration stays on for schedule or insight channels without inventory', () => {

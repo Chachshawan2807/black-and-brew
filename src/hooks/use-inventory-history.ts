@@ -42,6 +42,33 @@ type UseInventoryHistoryOptions = {
   resolveItemName?: (itemId: string | null) => string | undefined;
 };
 
+type InitialHistoryState = {
+  rows: TransactionHistoryRow[];
+  hasMore: boolean;
+};
+
+export function getInitialHistoryState(
+  options?: Pick<UseInventoryHistoryOptions, 'initialTransactionHistory' | 'initialHistoryHasMore'>,
+): InitialHistoryState {
+  const cached = getHistoryPageCache({ type: 'ALL', searchQuery: '' });
+  if (cached?.data?.length) {
+    return {
+      rows: cached.data as TransactionHistoryRow[],
+      hasMore: cached.hasMore,
+    };
+  }
+
+  const initialRows = options?.initialTransactionHistory ?? [];
+  if (initialRows.length > 0) {
+    return {
+      rows: initialRows,
+      hasMore: options?.initialHistoryHasMore ?? false,
+    };
+  }
+
+  return { rows: [], hasMore: false };
+}
+
 function matchesHistoryFilter(
   row: Pick<RealtimeTransactionRow, 'type' | 'note'>,
   itemName: string | undefined,
@@ -97,11 +124,15 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
   resolveItemNameRef.current = options?.resolveItemName;
 
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [transactionHistory, setTransactionHistory] = useState<TransactionHistoryRow[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<TransactionHistoryRow[]>(() =>
+    getInitialHistoryState(options).rows,
+  );
   const [historyTypeFilter, setHistoryTypeFilter] = useState<InventoryTransactionFilterType>('ALL');
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [historySearchDebounced, setHistorySearchDebounced] = useState('');
-  const [hasMoreHistory, setHasMoreHistory] = useState(false);
+  const [hasMoreHistory, setHasMoreHistory] = useState(
+    () => getInitialHistoryState(options).hasMore,
+  );
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryRefreshing, setIsHistoryRefreshing] = useState(false);
 

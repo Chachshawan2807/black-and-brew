@@ -103,7 +103,7 @@ export default function PwaRegister() {
               console.error('SW registration failed:', registrationError);
             });
         },
-        { timeout: 2000 },
+        { timeout: 500 },
       );
     }
 

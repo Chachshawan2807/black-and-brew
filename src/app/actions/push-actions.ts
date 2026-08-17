@@ -114,7 +114,7 @@ export async function registerPushSubscription(
   }
 
   const safe = parsed.data;
-  const userId = await resolveUserId(safe.accessToken);
+  const userId = auth.userId ?? (await resolveUserId(safe.accessToken));
   if (!userId) {
     console.error('[registerPushSubscription] Missing Supabase user id');
     return { success: false, error: 'supabase_session_missing' };

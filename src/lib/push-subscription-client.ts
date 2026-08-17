@@ -18,6 +18,7 @@ import {
   type PushSubscriptionRegisterPayload,
 } from '@/lib/push-subscription-payload';
 import { verifyDevicePushRegistration } from '@/app/actions/push-actions';
+import { ensurePushServiceWorkerReady } from '@/lib/pwa-update';
 
 let localPushSubscription: PushSubscription | null = null;
 let serverPushRegistrationConfirmed = false;
@@ -68,9 +69,9 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
 }
 
 /** Debounce window — merges resume / focus / pageshow bursts on mobile. */
-const MAINTENANCE_DEBOUNCE_MS = 2_000;
+const MAINTENANCE_DEBOUNCE_MS = 400;
 /** Retry when Supabase session is not ready yet after PIN unlock. */
-const MAINTENANCE_RETRY_MS = [0, 3_000, 8_000] as const;
+const MAINTENANCE_RETRY_MS = [0, 800, 2_000] as const;
 
 let maintenanceTimer: ReturnType<typeof setTimeout> | null = null;
 let maintenanceGeneration = 0;
@@ -336,7 +337,8 @@ export async function ensurePushSubscription(
   }
 
   const fromUserGesture = options.fromUserGesture === true;
-  const registrationPromise = navigator.serviceWorker.ready;
+  const registrationPromise = ensurePushServiceWorkerReady();
+  const sessionPromise = ensureSupabaseSession();
 
   try {
     if (!(await ensureNotificationPermissionGranted())) {
@@ -354,7 +356,7 @@ export async function ensurePushSubscription(
     }
 
     if (!existing) {
-      const sessionOk = await ensureSupabaseSession();
+      const sessionOk = await sessionPromise;
       if (!sessionOk) {
         setPushRegistrationError('supabase_session_missing');
         return false;
@@ -402,7 +404,7 @@ export async function removePushSubscription(): Promise<void> {
   if (typeof window === 'undefined') return;
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await ensurePushServiceWorkerReady();
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       const endpoint = subscription.endpoint;
@@ -441,7 +443,7 @@ export async function syncPushPrefsToServer(
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await ensurePushServiceWorkerReady();
     const subscription = await registration.pushManager.getSubscription();
     const vapidKey = getVapidPublicKey();
     if (!subscription || !vapidKey || !hasMatchingApplicationServerKey(subscription, vapidKey)) {
@@ -470,7 +472,7 @@ export async function refreshPushSubscriptionState(locale: string): Promise<void
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await ensurePushServiceWorkerReady();
     const subscription = await registration.pushManager.getSubscription();
     localPushSubscription = subscription;
     if (subscription) {
@@ -495,11 +497,13 @@ export async function refreshLocalPushSubscriptionState(): Promise<boolean> {
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await ensurePushServiceWorkerReady();
     const subscription = await registration.pushManager.getSubscription();
     localPushSubscription = subscription;
     if (subscription) {
-      await verifyServerPushRegistration(subscription.endpoint);
+      if (!serverPushRegistrationConfirmed) {
+        await verifyServerPushRegistration(subscription.endpoint);
+      }
     } else {
       serverPushRegistrationConfirmed = false;
     }

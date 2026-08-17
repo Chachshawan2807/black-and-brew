@@ -155,7 +155,6 @@ export default function NotificationPreferencesSection({
         return false;
       }
 
-      await syncPushPrefsToServer(prefs, locale);
       return true;
     } finally {
       setRegistering(false);
