@@ -16,6 +16,7 @@ type Props = {
   onCustomCarrierLabelChange: (label: string) => void;
   onTrackingNumberChange: (tracking: string) => void;
   inputClass: string;
+  trackingPlaceholder?: string;
   disabled?: boolean;
 };
 
@@ -27,6 +28,7 @@ export function BeanOrderShippingFields({
   onCustomCarrierLabelChange,
   onTrackingNumberChange,
   inputClass,
+  trackingPlaceholder = 'เลขพัสดุ',
   disabled = false,
 }: Props) {
   return (
@@ -77,7 +79,7 @@ export function BeanOrderShippingFields({
         className={cn(inputClass, 'w-full')}
         value={trackingNumber}
         onChange={(e) => onTrackingNumberChange(e.target.value)}
-        placeholder="เลขพัสดุ"
+        placeholder={trackingPlaceholder}
         disabled={disabled}
       />
     </div>

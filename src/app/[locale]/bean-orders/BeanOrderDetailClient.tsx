@@ -15,11 +15,9 @@ import {
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
 import {
-  BEAN_ORDER_CARRIERS,
   formatBeanOrderCarrierChangeMessage,
   getCarrierLabel,
   initialCarrierSelection,
-  OTHER_CARRIER_CODE,
   resolveCarrierCodeForSave,
 } from '@/lib/bean-orders/carriers';
 import {
@@ -31,7 +29,7 @@ import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-disp
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
 import { TrackingTimeline } from './_components/TrackingTimeline';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
-import { BeanOrderSelect } from './_components/BeanOrderSelect';
+import { BeanOrderShippingFields } from './_components/BeanOrderShippingFields';
 import {
   canConfirmPayment,
   canDeleteOrder,
@@ -46,7 +44,7 @@ import {
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { navigateWithViewTransition } from '@/lib/view-transition';
 import { OrderListStatusGroup } from './_components/OrderStatusBadge';
-import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BADGE_MUTED, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS, BEAN_ORDER_PAYMENT_BODY, BEAN_ORDER_PAYMENT_COLUMN, BEAN_ORDER_PAYMENT_SHIPPING_GRID, BEAN_ORDER_PAYMENT_SLIP_SLOT, BEAN_ORDER_SHIPPING_COLUMN } from './_components/bean-order-layout';
+import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_BODY_GRID, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, BEAN_ORDER_DETAIL_LINES_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_DETAIL_PAYMENT_BODY, BEAN_ORDER_DETAIL_PAYMENT_COLUMN, BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID, BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT, BEAN_ORDER_DETAIL_SHIPPING_COLUMN, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BADGE_MUTED, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -324,53 +322,66 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
         </div>
       </section>
 
-      <section className={`${BEAN_ORDER_CARD} mb-4 p-4`}>
-        <div className="mb-2 flex items-baseline justify-between gap-2">
-          <h2 className="text-xs text-muted-foreground">รายการ</h2>
-          <p className="tabular-nums text-base text-foreground">{formatBaht(order.totalBaht)}</p>
-        </div>
-        <ul className="divide-y divide-border text-sm">
-          {order.lines.map((line) => (
-            <li key={line.id} className="flex justify-between gap-3 py-2 first:pt-0 last:pb-0">
-              <span className="min-w-0 truncate">
-                {line.itemName} / {line.weightValue}
-                {line.weightUnit === 'g' ? ' ก.' : ' กก.'}
-              </span>
-              <span className="shrink-0 tabular-nums">{formatBaht(line.lineTotalBaht)}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-2 grid grid-cols-3 gap-x-3 gap-y-1 border-t border-border pt-2 text-xs text-muted-foreground sm:text-sm">
-          <p className="flex justify-between gap-2 sm:block">
-            <span>รวมสินค้า</span>
-            <span className="tabular-nums text-foreground sm:float-right">{formatBaht(order.subtotalBaht)}</span>
-          </p>
-          <p className="flex justify-between gap-2 sm:block">
-            <span>ส่วนลด</span>
-            <span className="tabular-nums text-foreground sm:float-right">-{formatBaht(order.discountBaht)}</span>
-          </p>
-          <p className="flex justify-between gap-2 sm:block">
-            <span>ค่าส่ง</span>
-            <span className="tabular-nums text-foreground sm:float-right">{formatBaht(order.shippingBaht)}</span>
-          </p>
-        </div>
-        {order.notes ? (
-          <p className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">
-            หมายเหตุ: <span className="text-foreground">{order.notes}</span>
-          </p>
-        ) : null}
-      </section>
+      <div
+        className={cn(
+          BEAN_ORDER_DETAIL_BODY_GRID,
+          cancelled && 'lg:grid-cols-1',
+        )}
+      >
+        <section
+          className={cn(
+            BEAN_ORDER_CARD,
+            BEAN_ORDER_DETAIL_LINES_CARD,
+            'p-4',
+            cancelled && 'lg:w-full',
+          )}
+        >
+          <h2 className="mb-2 shrink-0 text-sm text-muted-foreground">รายการ</h2>
+          <ul className="min-h-0 flex-1 divide-y divide-border text-sm">
+            {order.lines.map((line) => (
+              <li key={line.id} className="flex justify-between gap-4 py-2 first:pt-0 last:pb-0">
+                <span>
+                  {line.itemName} / {line.weightValue}
+                  {line.weightUnit === 'g' ? ' ก.' : ' กก.'}
+                </span>
+                <span className="shrink-0 tabular-nums">{formatBaht(line.lineTotalBaht)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2 shrink-0 space-y-1 border-t border-border pt-2 text-xs text-muted-foreground sm:text-sm">
+            <p className="flex justify-between gap-4">
+              <span>รวมสินค้า</span>
+              <span className="tabular-nums text-foreground">{formatBaht(order.subtotalBaht)}</span>
+            </p>
+            <p className="flex justify-between gap-4">
+              <span>ส่วนลด</span>
+              <span className="tabular-nums text-foreground">-{formatBaht(order.discountBaht)}</span>
+            </p>
+            <p className="flex justify-between gap-4">
+              <span>ค่าส่ง</span>
+              <span className="tabular-nums text-foreground">{formatBaht(order.shippingBaht)}</span>
+            </p>
+            <p className="flex justify-between gap-4 border-t border-border pt-1 text-foreground">
+              <span>ยอดรวม</span>
+              <span className="tabular-nums">{formatBaht(order.totalBaht)}</span>
+            </p>
+          </div>
+          {order.notes ? (
+            <p className="mt-2 border-t border-border pt-2 text-sm text-muted-foreground">
+              หมายเหตุ: <span className="text-foreground">{order.notes}</span>
+            </p>
+          ) : null}
+        </section>
 
-      {!cancelled && (
-        <>
-          <section className={`${BEAN_ORDER_CARD} mb-4 p-4`}>
+        {!cancelled ? (
+          <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, 'p-4')}>
             <div
               className={cn(
-                BEAN_ORDER_PAYMENT_SHIPPING_GRID,
+                BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID,
                 !(canEditShipping && !isReadOnly) && 'lg:grid-cols-1',
               )}
             >
-              <div className={BEAN_ORDER_PAYMENT_COLUMN}>
+              <div className={BEAN_ORDER_DETAIL_PAYMENT_COLUMN}>
                 <h2 className="text-sm text-muted-foreground">ชำระเงิน</h2>
                 {order.payment?.confirmedAt ? (
                   <p className="text-xs text-muted-foreground">
@@ -378,7 +389,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                     {order.payment.confirmedBy ? ` / ${order.payment.confirmedBy}` : ''}
                   </p>
                 ) : null}
-                <div className={BEAN_ORDER_PAYMENT_BODY}>
+                <div className={BEAN_ORDER_DETAIL_PAYMENT_BODY}>
                   {!isReadOnly && editable ? (
                     <div className={BEAN_ORDER_PAYMENT_ACTIONS}>
                       {canPay ? (
@@ -436,7 +447,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                       ) : null}
                     </div>
                   ) : null}
-                  <div className={BEAN_ORDER_PAYMENT_SLIP_SLOT}>
+                  <div className={BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT}>
                     {hasSlip ? (
                       <PaymentSlipViewer
                         orderId={order.id}
@@ -446,7 +457,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                         variant="panel"
                       />
                     ) : (
-                      <div className="flex h-full min-h-[9rem] items-center justify-center rounded-xl border border-dashed border-border bg-muted/10 px-4 text-sm text-muted-foreground">
+                      <div className="flex h-full min-h-[9rem] items-center justify-center rounded-xl border border-dashed border-border bg-muted/10 px-2 text-center text-xs text-muted-foreground">
                         ยังไม่มีสลิป
                       </div>
                     )}
@@ -455,55 +466,21 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
               </div>
 
               {canEditShipping && !isReadOnly ? (
-                <div className={BEAN_ORDER_SHIPPING_COLUMN}>
+                <div className={BEAN_ORDER_DETAIL_SHIPPING_COLUMN}>
                   <h2 className="text-sm text-muted-foreground">จัดส่ง</h2>
                   <div className="space-y-2">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-                      {carrierCode === OTHER_CARRIER_CODE ? (
-                        <div className={cn('relative sm:min-w-[9rem] sm:flex-1')}>
-                          <input
-                            className={cn(inputClass, 'w-full pr-10')}
-                            value={customCarrierLabel}
-                            onChange={(e) => setCustomCarrierLabel(e.target.value)}
-                            placeholder="อื่นๆ"
-                          />
-                          <button
-                            type="button"
-                            className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground"
-                            aria-label="เลือกช่องทางจัดส่ง"
-                            onClick={() => {
-                              setCarrierCode('kerryexpress-th');
-                              setCustomCarrierLabel('');
-                            }}
-                          >
-                            <ChevronDown className="h-4 w-4" aria-hidden />
-                          </button>
-                        </div>
-                      ) : (
-                        <BeanOrderSelect
-                          wrapperClassName="sm:min-w-[9rem] sm:flex-1"
-                          value={carrierCode}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setCarrierCode(next);
-                            if (next === OTHER_CARRIER_CODE) {
-                              setCustomCarrierLabel('');
-                            }
-                          }}
-                        >
-                          {BEAN_ORDER_CARRIERS.map((c) => (
-                            <option key={c.code} value={c.code}>{c.label}</option>
-                          ))}
-                        </BeanOrderSelect>
-                      )}
-                      <input
-                        className={cn(inputClass, 'sm:min-w-[10rem] sm:flex-[1.5]')}
-                        value={trackingNumber}
-                        onChange={(e) => setTrackingNumber(e.target.value)}
-                        placeholder="เลขพัสดุ (ไม่บังคับ)"
-                      />
-                    </div>
-                    <div className="flex flex-wrap justify-end gap-2">
+                    <BeanOrderShippingFields
+                      carrierCode={carrierCode}
+                      customCarrierLabel={customCarrierLabel}
+                      trackingNumber={trackingNumber}
+                      onCarrierCodeChange={setCarrierCode}
+                      onCustomCarrierLabelChange={setCustomCarrierLabel}
+                      onTrackingNumberChange={setTrackingNumber}
+                      inputClass={inputClass}
+                      trackingPlaceholder="เลขพัสดุ (ไม่บังคับ)"
+                      disabled={busy}
+                    />
+                    <div className="flex flex-wrap gap-2">
                       {showDeliveredButton ? (
                         <button
                           type="button"
@@ -533,21 +510,21 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
               ) : null}
             </div>
           </section>
+        ) : null}
+      </div>
 
-          {canDelete && !isReadOnly ? (
-            <div className="mb-4 flex justify-end">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleDelete()}
-                className={BEAN_ORDER_ACTION_BTN_DANGER}
-              >
-                ลบออเดอร์
-              </button>
-            </div>
-          ) : null}
-        </>
-      )}
+      {!cancelled && canDelete && !isReadOnly ? (
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleDelete()}
+            className={BEAN_ORDER_ACTION_BTN_DANGER}
+          >
+            ลบออเดอร์
+          </button>
+        </div>
+      ) : null}
 
       {order.shipment && (
         <section className={`${BEAN_ORDER_CARD} mb-4`}>

@@ -5,6 +5,16 @@ export const BEAN_ORDER_PAGE =
 export const BEAN_ORDER_DETAIL_PAGE =
   'mx-auto w-full max-w-4xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]';
 
+/** Desktop: line items content-width column, fulfillment fills remainder; equal row height */
+export const BEAN_ORDER_DETAIL_BODY_GRID =
+  'mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[max-content_minmax(0,1fr)] lg:items-stretch';
+
+export const BEAN_ORDER_DETAIL_LINES_CARD =
+  'flex h-full min-h-0 w-full max-w-full flex-col lg:w-auto';
+
+export const BEAN_ORDER_DETAIL_FULFILLMENT_CARD =
+  'flex h-full min-h-0 w-full flex-col';
+
 /** Wider shell for create/edit form — customer + line items side-by-side on desktop */
 export const BEAN_ORDER_FORM_PAGE =
   'mx-auto w-full max-w-6xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]';
@@ -85,20 +95,39 @@ export const BEAN_ORDER_ACTION_BADGE_MUTED =
 export const BEAN_ORDER_PAYMENT_SHIPPING_GRID =
   'grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-8';
 
+/** Detail: payment + shipping columns inside wider fulfillment card */
+export const BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID =
+  'grid h-full min-h-0 flex-1 gap-6 lg:grid-cols-[11rem_minmax(0,1fr)] lg:items-stretch lg:gap-6';
+
 export const BEAN_ORDER_PAYMENT_COLUMN =
   'min-w-0 space-y-3 lg:pr-8';
+
+export const BEAN_ORDER_DETAIL_PAYMENT_COLUMN =
+  'flex min-h-0 min-w-0 flex-col space-y-3';
 
 export const BEAN_ORDER_SHIPPING_COLUMN =
   'min-w-0 space-y-3 border-t-2 border-border pt-6 lg:border-l-2 lg:border-t-0 lg:pl-8 lg:pt-0';
 
+export const BEAN_ORDER_DETAIL_SHIPPING_COLUMN =
+  'flex min-h-0 min-w-0 flex-col space-y-3 border-t-2 border-border pt-6 lg:border-l-2 lg:border-t-0 lg:pl-6 lg:pt-0';
+
+export const BEAN_ORDER_PAYMENT_ACTIONS_WIDTH = 'w-[11rem]';
+
 export const BEAN_ORDER_PAYMENT_ACTIONS =
-  'flex w-[9.75rem] shrink-0 flex-col justify-start gap-2 self-start';
+  `flex ${BEAN_ORDER_PAYMENT_ACTIONS_WIDTH} shrink-0 flex-col justify-start gap-2 self-start`;
 
 export const BEAN_ORDER_PAYMENT_BODY =
   'flex min-h-[9rem] items-start gap-3';
 
+/** Detail page: action buttons then slip preview below */
+export const BEAN_ORDER_DETAIL_PAYMENT_BODY =
+  'flex flex-col gap-3';
+
 export const BEAN_ORDER_PAYMENT_SLIP_SLOT =
   'h-[9rem] min-h-[9rem] min-w-0 flex-1 self-stretch overflow-hidden';
+
+export const BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT =
+  `h-[9rem] min-h-[9rem] ${BEAN_ORDER_PAYMENT_ACTIONS_WIDTH} overflow-hidden`;
 
 export const BEAN_ORDER_ACTION_BTN_OUTLINE =
   `${BEAN_ORDER_ACTION_BTN_BASE} border border-border bg-background text-foreground hover:bg-muted/35 hover:bb-shadow-sm`;
