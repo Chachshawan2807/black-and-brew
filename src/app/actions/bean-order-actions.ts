@@ -1154,7 +1154,7 @@ export async function uploadBeanOrderSlip(
   orderId: string,
   formData: FormData,
   locale = 'th',
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; slipUrl?: string | null; uploadedAt?: string; error?: string }> {
   const gate = await gateMutation();
   if (!gate.success) return gate;
 
@@ -1165,11 +1165,14 @@ export async function uploadBeanOrderSlip(
 
   try {
     const supabase = getSupabaseAdmin();
-    const { data: order, error: fetchError } = await supabase
-      .from('bean_orders')
-      .select('id, order_no, payment_status, cancelled_at, recipient_name, total_baht, bean_customers(name)')
-      .eq('id', orderId)
-      .maybeSingle();
+    const [{ data: order, error: fetchError }, actor] = await Promise.all([
+      supabase
+        .from('bean_orders')
+        .select('id, order_no, payment_status, cancelled_at, recipient_name, total_baht, bean_customers(name)')
+        .eq('id', orderId)
+        .maybeSingle(),
+      resolveActorLabelFromSession(),
+    ]);
 
     if (fetchError || !order) return { success: false, error: 'ไม่พบออเดอร์' };
     if (!canUploadSlip(order.cancelled_at as string | null)) {
@@ -1189,27 +1192,23 @@ export async function uploadBeanOrderSlip(
       return { success: false, error: uploadError.message };
     }
 
-    const actor = await resolveActorLabelFromSession();
-    await supabase.from('bean_order_payments').delete().eq('order_id', orderId);
-    const { error: payError } = await supabase.from('bean_order_payments').insert({
-      order_id: orderId,
-      slip_url: path,
-      uploaded_by: actor,
-    });
+    const uploadedAt = new Date().toISOString();
+    const [{ error: payError }, slipUrl] = await Promise.all([
+      (async () => {
+        await supabase.from('bean_order_payments').delete().eq('order_id', orderId);
+        return supabase.from('bean_order_payments').insert({
+          order_id: orderId,
+          slip_url: path,
+          uploaded_by: actor,
+        });
+      })(),
+      signBeanOrderSlipPath(path),
+    ]);
 
     if (payError) {
       console.error('Supabase Error (uploadBeanOrderSlip payment):', payError.message, payError.details);
       return { success: false, error: payError.message };
     }
-
-    void recordDataChange({
-      action: 'UPDATE',
-      module: 'bean_orders',
-      entityType: 'bean_order_payment',
-      entityId: orderId,
-      entityLabel: order.order_no as string,
-      metadata: { action: 'slip_uploaded' },
-    });
 
     scheduleBeanOrderPaymentNotification(orderId, {
       order_no: order.order_no as string,
@@ -1218,8 +1217,23 @@ export async function uploadBeanOrderSlip(
       bean_customers: order.bean_customers as BeanOrderPaymentNotificationOrder['bean_customers'],
     }, locale);
 
-    revalidateBeanOrders(locale, orderId);
-    return { success: true };
+    after(async () => {
+      try {
+        await recordDataChange({
+          action: 'UPDATE',
+          module: 'bean_orders',
+          entityType: 'bean_order_payment',
+          entityId: orderId,
+          entityLabel: order.order_no as string,
+          metadata: { action: 'slip_uploaded' },
+        });
+        revalidateBeanOrders(locale, orderId);
+      } catch (error) {
+        console.error('[uploadBeanOrderSlip] Deferred side-effect error:', error);
+      }
+    });
+
+    return { success: true, slipUrl, uploadedAt };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'อัปโหลดสลิปไม่สำเร็จ';
     return { success: false, error: message };

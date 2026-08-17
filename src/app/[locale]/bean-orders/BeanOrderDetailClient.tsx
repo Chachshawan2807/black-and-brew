@@ -8,7 +8,6 @@ import {
   deleteBeanOrder,
   confirmBeanOrderDelivered,
   confirmBeanOrderPayment,
-  getBeanOrderSlipSignedUrl,
   revertBeanOrderPayment,
   saveBeanOrderShipmentPlan,
   shipBeanOrder,
@@ -68,6 +67,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingSlipPreview, setPendingSlipPreview] = useState<string | null>(null);
 
   const initialCarrier = initialCarrierSelection(order.shipment?.carrierCode);
   const [carrierCode, setCarrierCode] = useState(initialCarrier.carrierCode);
@@ -113,7 +113,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     order.cancelledAt,
     resolveCarrierCodeForSave(carrierCode, customCarrierLabel) ?? carrierCode,
   );
-  const hasSlip = Boolean(order.payment?.uploadedAt);
+  const hasSlip = Boolean(order.payment?.uploadedAt || pendingSlipPreview);
   const confirmEnabled = isConfirmPaymentButtonEnabled(hasSlip);
 
   const shipmentTrackingLabel = order.shipment
@@ -129,31 +129,34 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
 
   async function handleUploadSlip(file: File) {
     if (isReadOnly) { setError(READ_ONLY_DENY_MSG); return; }
+
+    const previewUrl = URL.createObjectURL(file);
+    setPendingSlipPreview(previewUrl);
     setBusy(true);
     setError(null);
+
     const fd = new FormData();
     fd.set('slip', file);
     const result = await uploadBeanOrderSlip(order.id, fd, locale);
-    setBusy(false);
-    if (!result.success) { setError(result.error ?? 'อัปโหลดไม่สำเร็จ'); return; }
 
-    const slipResult = await getBeanOrderSlipSignedUrl(order.id);
-    if (!slipResult.success) {
-      setError(slipResult.error ?? 'โหลดสลิปไม่สำเร็จ');
-      void reload();
+    URL.revokeObjectURL(previewUrl);
+    setPendingSlipPreview(null);
+    setBusy(false);
+
+    if (!result.success) {
+      setError(result.error ?? 'อัปโหลดไม่สำเร็จ');
       return;
     }
 
     setOrder((prev) => ({
       ...prev,
       payment: {
-        slipUrl: slipResult.slipUrl ?? null,
-        uploadedAt: new Date().toISOString(),
+        slipUrl: result.slipUrl ?? null,
+        uploadedAt: result.uploadedAt ?? new Date().toISOString(),
         confirmedAt: prev.payment?.confirmedAt ?? null,
         confirmedBy: prev.payment?.confirmedBy ?? null,
       },
     }));
-    void reload();
   }
 
   async function handleConfirmPayment() {
@@ -438,6 +441,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                       <PaymentSlipViewer
                         orderId={order.id}
                         slipUrl={order.payment?.slipUrl ?? null}
+                        previewUrl={pendingSlipPreview}
                         uploadedAt={order.payment?.uploadedAt}
                         variant="panel"
                       />

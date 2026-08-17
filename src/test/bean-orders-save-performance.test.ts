@@ -53,6 +53,34 @@ describe('bean order save performance', () => {
     expect(detailClient).not.toMatch(/await\s+reload\(\)/);
   });
 
+  test('uploadBeanOrderSlip defers audit log and revalidation off the critical path', () => {
+    const critical = criticalPathBeforeAfter('uploadBeanOrderSlip', beanOrderActions);
+    expect(critical).not.toContain('recordDataChange');
+    expect(critical).not.toContain('revalidateBeanOrders');
+    const deferred = functionBody('uploadBeanOrderSlip', beanOrderActions);
+    expect(deferred).toContain('after(async () => {');
+    expect(deferred).toContain('recordDataChange');
+    expect(deferred).toContain('revalidateBeanOrders');
+  });
+
+  test('uploadBeanOrderSlip returns signed slip URL without a follow-up fetch', () => {
+    const body = functionBody('uploadBeanOrderSlip', beanOrderActions);
+    expect(body).toContain('signBeanOrderSlipPath');
+    expect(body).toMatch(/return\s*\{\s*success:\s*true,\s*slipUrl/);
+    expect(body).toMatch(/Promise\.all/);
+  });
+
+  test('detail slip upload uses instant preview and skips redundant signed-url fetch', () => {
+    expect(detailClient).toContain('pendingSlipPreview');
+    expect(detailClient).toContain('URL.createObjectURL');
+    expect(detailClient).not.toContain('getBeanOrderSlipSignedUrl');
+    const uploadHandlerStart = detailClient.indexOf('async function handleUploadSlip');
+    const uploadHandlerEnd = detailClient.indexOf('\n  async function handleConfirmPayment', uploadHandlerStart);
+    const uploadHandler = detailClient.slice(uploadHandlerStart, uploadHandlerEnd);
+    expect(uploadHandler).not.toContain('reload(');
+    expect(uploadHandler).not.toContain('getBeanOrderSlipSignedUrl');
+  });
+
   test('shipBeanOrder no longer returns trackingWarning (deferred TrackingMore)', () => {
     const body = functionBody('shipBeanOrder', beanOrderActions);
     expect(body).not.toMatch(/trackingWarning/);
