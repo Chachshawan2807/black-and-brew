@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -98,6 +98,8 @@ export default function NotificationPreferencesSection({
     fcmSubscriptionCount: number;
     vapidConfigured: boolean;
   } | null>(null);
+  const prefsHydratedRef = useRef(false);
+  const wantsPush = wantsPushRegistration(prefs);
 
   const refreshDeviceState = useCallback(async () => {
     await refreshLocalPushSubscriptionState();
@@ -109,26 +111,46 @@ export default function NotificationPreferencesSection({
   }, [isTh]);
 
   useEffect(() => {
+    if (!prefsHydratedRef.current) {
+      prefsHydratedRef.current = true;
+      void refreshDeviceState();
+      return;
+    }
+
     saveNotificationPreferences(prefs);
     void syncPushPrefsToServer(prefs, locale).then(() => refreshDeviceState());
   }, [prefs, locale, refreshDeviceState]);
 
   useEffect(() => {
-    void refreshDeviceState();
-  }, [refreshDeviceState]);
+    if (!wantsPush) return;
 
-  useEffect(() => {
-    void getPushDiagnostics().then((result) => {
-      if (result.ok) {
+    let cancelled = false;
+    const loadDiagnostics = () => {
+      void getPushDiagnostics().then((result) => {
+        if (cancelled || !result.ok) return;
         setDiag({
           subscriptionCount: result.subscriptionCount,
           appleSubscriptionCount: result.appleSubscriptionCount,
           fcmSubscriptionCount: result.fcmSubscriptionCount,
           vapidConfigured: result.vapidConfigured,
         });
-      }
-    });
-  }, [prefs.systemNotifications, devicePushState]);
+      });
+    };
+
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(loadDiagnostics, { timeout: 3000 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(id);
+      };
+    }
+
+    const timer = window.setTimeout(loadDiagnostics, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [wantsPush, devicePushState]);
 
   const update = (patch: Partial<NotificationPreferences>) => {
     setPrefs((prev) => ({ ...prev, ...patch }));
@@ -256,7 +278,6 @@ export default function NotificationPreferencesSection({
     await refreshDeviceState();
   };
 
-  const wantsPush = wantsPushRegistration(prefs);
   const masterOn = isNotificationMasterEnabled(prefs);
   const showIosRegister =
     isIos && wantsPush && permission !== 'denied' && devicePushState !== 'server';

@@ -12,7 +12,10 @@ const ROUTE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   'bean-order-detail': () => import('@/app/[locale]/bean-orders/BeanOrderDetailClient'),
   maintenance: () => import('@/app/[locale]/maintenance/MaintenanceClient'),
   dashboard: () => import('@/app/[locale]/dashboard/_components/LiveShiftList'),
-  settings: () => import('@/app/[locale]/settings/_components/NotificationPreferencesSection'),
+  settings: () => import('@/lib/settings-chunk-preload').then((m) => {
+    m.preloadSettingsSection('pageSections');
+    m.preloadSettingsSection('notifications');
+  }),
 };
 
 /** Routes staff open most often — warmed on idle after first paint. */

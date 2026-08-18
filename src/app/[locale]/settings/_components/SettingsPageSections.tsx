@@ -8,6 +8,7 @@ import {
   resolveBiometricKind,
   type BiometricKind,
 } from '@/lib/passkey/biometric-copy';
+import { preloadSettingsSectionsOnIdle } from '@/lib/settings-chunk-preload';
 import NotificationPreferencesSection from './NotificationPreferencesSection';
 import SettingsLazyCollapsibleSection from './SettingsLazyCollapsibleSection';
 
@@ -32,6 +33,10 @@ export function SettingsPageSections({ locale, isTh }: SettingsPageSectionsProps
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    preloadSettingsSectionsOnIdle();
   }, []);
 
   return (

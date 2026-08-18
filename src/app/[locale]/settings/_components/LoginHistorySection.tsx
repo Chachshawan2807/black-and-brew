@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { HelpCircle, LogIn, LogOut, ShieldAlert, ShieldX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -21,6 +21,7 @@ interface LoginHistorySectionProps {
 }
 
 const PREVIEW_COUNT = 3;
+const INITIAL_FETCH_LIMIT = 50;
 
 function EventIcon({
   type,
@@ -167,10 +168,14 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const isTh = locale === "th";
+  const loadGenRef = useRef(0);
 
   const load = useCallback(async () => {
+    const gen = ++loadGenRef.current;
     setLoading(true);
-    const result = await fetchLoginHistoryBundle(200);
+    const result = await fetchLoginHistoryBundle(INITIAL_FETCH_LIMIT);
+    if (gen !== loadGenRef.current) return;
+
     if (!result.success) {
       setError(result.error);
       setRows([]);
@@ -184,29 +189,8 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    void (async () => {
-      setLoading(true);
-      const result = await fetchLoginHistoryBundle(200);
-      if (cancelled) return;
-
-      if (!result.success) {
-        setError(result.error);
-        setRows([]);
-        setSessions([]);
-      } else {
-        setError(null);
-        setRows(result.rows);
-        setSessions(result.sessions);
-      }
-      setLoading(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void load();
+  }, [load]);
 
   const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);
   const hasMoreRows = rows.length > PREVIEW_COUNT;

@@ -12,6 +12,7 @@ describe('settings lazy-load performance', () => {
       'utf-8',
     );
 
+    expect(page).toContain('createLazyFeatureClient');
     expect(page).toContain('SettingsPageSections');
     expect(page).not.toContain('DataChangeHistorySection');
     expect(page).not.toContain('LoginHistorySection');
@@ -20,6 +21,7 @@ describe('settings lazy-load performance', () => {
     expect(sections).toContain("load={() => import('./DataChangeHistorySection')}");
     expect(sections).toContain("load={() => import('./LoginHistorySection')}");
     expect(sections).toContain("load={() => import('./PasskeyDeviceSection')}");
+    expect(sections).toContain('preloadSettingsSectionsOnIdle');
   });
 
   test('collapsible section triggers onFirstOpen before mounting children', () => {
@@ -33,9 +35,36 @@ describe('settings lazy-load performance', () => {
     );
 
     expect(collapsible).toContain('onFirstOpen?: () => void');
+    expect(collapsible).toContain('onIntentPrefetch?: () => void');
     expect(collapsible).toContain('onFirstOpen?.()');
-    expect(lazy).toContain('onFirstOpen={handleFirstOpen}');
+    expect(collapsible).toContain('onIntentPrefetch?.()');
+    expect(lazy).toContain('onFirstOpen={mountSection}');
+    expect(lazy).toContain('onIntentPrefetch={warmChunk}');
     expect(lazy).toContain('void load()');
+  });
+
+  test('notification preferences skip server sync on first mount', () => {
+    const notifications = readFileSync(
+      resolve(ROOT, 'src/app/[locale]/settings/_components/NotificationPreferencesSection.tsx'),
+      'utf-8',
+    );
+
+    expect(notifications).toContain('prefsHydratedRef');
+    expect(notifications).toContain('requestIdleCallback');
+    expect(notifications).not.toMatch(
+      /useEffect\(\(\) => \{\s*saveNotificationPreferences\(prefs\);/,
+    );
+  });
+
+  test('login history uses a slimmer initial fetch limit', () => {
+    const loginHistory = readFileSync(
+      resolve(ROOT, 'src/app/[locale]/settings/_components/LoginHistorySection.tsx'),
+      'utf-8',
+    );
+
+    expect(loginHistory).toContain('INITIAL_FETCH_LIMIT = 50');
+    expect(loginHistory).not.toContain('fetchLoginHistoryBundle(200)');
+    expect(loginHistory).toContain('loadGenRef');
   });
 });
 

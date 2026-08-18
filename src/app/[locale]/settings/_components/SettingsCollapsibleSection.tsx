@@ -17,6 +17,7 @@ interface SettingsCollapsibleSectionProps {
   children: ReactNode;
   defaultOpen?: boolean;
   onFirstOpen?: () => void;
+  onIntentPrefetch?: () => void;
 }
 
 export default function SettingsCollapsibleSection({
@@ -26,6 +27,7 @@ export default function SettingsCollapsibleSection({
   children,
   defaultOpen = false,
   onFirstOpen,
+  onIntentPrefetch,
 }: SettingsCollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [hasOpened, setHasOpened] = useState(defaultOpen);
@@ -45,6 +47,12 @@ export default function SettingsCollapsibleSection({
             }
             return next;
           });
+        }}
+        onPointerEnter={() => {
+          if (!hasOpened) onIntentPrefetch?.();
+        }}
+        onFocus={() => {
+          if (!hasOpened) onIntentPrefetch?.();
         }}
         aria-expanded={open}
         aria-controls={panelId}
