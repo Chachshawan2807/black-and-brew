@@ -79,7 +79,7 @@ describe('evaluateAndDispatchInsights', () => {
     expect(manualResult.pushed).toBeNull();
   });
 
-  test('bean_order_update records and pushes when pending bean orders match', async () => {
+  test('bean_order_update records digest silently without Web Push', async () => {
     const { evaluateAndDispatchInsights } = await import(
       '@/lib/proactive-insights/evaluate-and-dispatch'
     );
@@ -89,9 +89,9 @@ describe('evaluateAndDispatchInsights', () => {
       locale: 'th',
     });
     expect(recordMock).toHaveBeenCalledTimes(1);
-    expect(pushMock).toHaveBeenCalledTimes(1);
+    expect(pushMock).not.toHaveBeenCalled();
     expect(result.recorded).not.toBeNull();
-    expect(result.pushed).not.toBeNull();
+    expect(result.pushed?.skipped).toBe(true);
   });
 
   test('cron skips push only when scheduled digest was already sent today', async () => {

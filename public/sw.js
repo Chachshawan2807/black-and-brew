@@ -1,4 +1,4 @@
-// v25
+// v26
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -15,21 +15,65 @@ function assetUrl(path) {
   return new URL(path, self.location.origin).href;
 }
 
+const NOTIFICATION_ASSET_PATHS = [
+  PUSH_NOTIFICATION_ICON,
+  NOTIFICATION_BADGE,
+  BRAND_ICON,
+  BRAND_ICON_512,
+];
+
+function normalizeAssetPath(pathOrUrl) {
+  if (typeof pathOrUrl !== 'string' || !pathOrUrl.trim()) return PUSH_NOTIFICATION_ICON;
+  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+    return new URL(pathOrUrl).pathname;
+  }
+  return pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
+}
+
+/**
+ * Cache-first: ensure push notification icon/badge are in Cache Storage before OS tray
+ * tries to fetch them (avoids Android bell + letter fallback on cold SW / flaky network).
+ */
+async function ensureNotificationAssetCached(assetPath) {
+  const path = normalizeAssetPath(assetPath);
+  const url = assetUrl(path);
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(url);
+    if (cached) return url;
+
+    const response = await fetch(url);
+    if (response && response.ok && response.type === 'basic') {
+      await cache.put(url, response.clone());
+      return url;
+    }
+    console.warn('[sw] notification asset fetch failed:', url, response?.status);
+  } catch (error) {
+    console.warn('[sw] notification asset cache failed:', url, error);
+  }
+  return url;
+}
+
+async function warmNotificationAssets() {
+  await Promise.all(NOTIFICATION_ASSET_PATHS.map((path) => ensureNotificationAssetCached(path)));
+}
+
 /**
  * Resolve push payload assets: icon = full-color brand mark, badge = alpha silhouette.
  * Server sends relative paths in payload.assets; SW falls back to PWA_ASSETS constants.
  */
-function resolvePushAssets(payload) {
+async function resolvePushAssets(payload) {
   const iconPath = payload.assets?.icon || PUSH_NOTIFICATION_ICON || BRAND_ICON;
   const badgePath = payload.assets?.badge || NOTIFICATION_BADGE;
-  return {
-    icon: assetUrl(iconPath),
-    badge: assetUrl(badgePath),
-  };
+  const [icon, badge] = await Promise.all([
+    ensureNotificationAssetCached(iconPath),
+    ensureNotificationAssetCached(badgePath),
+  ]);
+  return { icon, badge };
 }
 
-function buildNotificationOptions(payload, unreadCount, overrides = {}) {
-  const { icon, badge } = resolvePushAssets(payload);
+async function buildNotificationOptions(payload, unreadCount, overrides = {}) {
+  const { icon, badge } = await resolvePushAssets(payload);
   const display = resolveOsNotificationDisplay(payload, unreadCount);
   return {
     body: display.body,
@@ -160,17 +204,34 @@ function buildIosSafeNotificationOptions(options) {
   return safe;
 }
 
+/** Android retry: drop Chromium extras that can fail showNotification but keep icon + badge. */
+function buildAndroidRetryNotificationOptions(options) {
+  const safe = { ...options };
+  delete safe.vibrate;
+  delete safe.renotify;
+  delete safe.requireInteraction;
+  delete safe.timestamp;
+  delete safe.silent;
+  delete safe.actions;
+  delete safe.image;
+  return safe;
+}
+
 async function showPushNotification(title, options) {
-  const primary = isIosPushClient() ? buildIosSafeNotificationOptions(options) : options;
+  const isIos = isIosPushClient();
+  const primary = isIos ? buildIosSafeNotificationOptions(options) : options;
   try {
     await self.registration.showNotification(title, primary);
     return;
   } catch (error) {
-    console.warn('[sw] showNotification failed, retrying without mobile-only fields:', error);
+    console.warn('[sw] showNotification failed, retrying:', error);
   }
 
   try {
-    await self.registration.showNotification(title, buildIosSafeNotificationOptions(options));
+    const retry = isIos
+      ? buildIosSafeNotificationOptions(options)
+      : buildAndroidRetryNotificationOptions(options);
+    await self.registration.showNotification(title, retry);
   } catch (error) {
     console.error('[sw] showNotification fallback failed:', error);
     throw error;
@@ -235,6 +296,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     }).then(() => self.clients.claim())
+      .then(() => warmNotificationAssets())
   );
 });
 
@@ -337,7 +399,7 @@ self.addEventListener('push', (event) => {
         if (!appVisible || shouldAlwaysShowOsBanner(payload)) {
           await showPushNotification(
             display.title,
-            buildNotificationOptions(payload, unreadCount, {
+            await buildNotificationOptions(payload, unreadCount, {
             tag: `${payload.tag || fallbackTag}-${Date.now()}`,
             requireInteraction: true,
             timestamp: Date.now(),
@@ -371,7 +433,7 @@ self.addEventListener('push', (event) => {
 
       const unreadCount = await safeResolveUnreadCount(payload);
       const display = resolveOsNotificationDisplay(payload, unreadCount);
-      const options = buildNotificationOptions(payload, unreadCount, {
+      const options = await buildNotificationOptions(payload, unreadCount, {
         tag: `${payload.tag || 'bb-inventory'}-${Date.now()}`,
       });
       const appVisible = await hasVisibleWindowClient();

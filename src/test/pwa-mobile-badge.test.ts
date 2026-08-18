@@ -42,4 +42,23 @@ describe('mobile home-screen badge (sw.js)', () => {
     expect(sw).toContain("payload.kind === 'proactive_insight'");
     expect(sw).toMatch(/if \(!appVisible \|\| shouldAlwaysShowOsBanner\(payload\)\)/);
   });
+
+  test('warms notification icon assets into cache before showNotification', () => {
+    expect(sw).toContain('function ensureNotificationAssetCached');
+    expect(sw).toContain('function warmNotificationAssets');
+    expect(sw).toMatch(/async function buildNotificationOptions/);
+    expect(sw).toMatch(/ensureNotificationAssetCached\(iconPath\)/);
+    expect(sw).toMatch(/ensureNotificationAssetCached\(badgePath\)/);
+    expect(sw).toMatch(/activate[\s\S]*warmNotificationAssets/);
+  });
+
+  test('Android showNotification retry keeps icon and badge (no bell fallback)', () => {
+    expect(sw).toContain('function buildAndroidRetryNotificationOptions');
+    expect(sw).toMatch(
+      /buildAndroidRetryNotificationOptions\(options\)[\s\S]*showNotification\(title, retry\)/,
+    );
+    expect(sw).not.toMatch(
+      /!isIosPushClient\(\)[\s\S]*buildIosSafeNotificationOptions\(options\)/,
+    );
+  });
 });

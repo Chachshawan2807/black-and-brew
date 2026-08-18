@@ -4,6 +4,7 @@ import {
   buildIosSafeNotificationOptions,
   buildOsNotificationOptions,
   isIosWebPushClient,
+  prefetchPwaNotificationAssets,
   type OsNotificationOptions,
 } from '@/lib/pwa-assets';
 import { isStockOperationNotificationTitle } from '@/lib/notification-display-icon';
@@ -185,6 +186,8 @@ export async function showSystemNotification(
 ): Promise<void> {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
+
+  await prefetchPwaNotificationAssets();
 
   const formatted = buildInventoryOsNotification(
     title,

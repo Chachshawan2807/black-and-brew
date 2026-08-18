@@ -84,6 +84,10 @@ describe('iOS notification parity', () => {
     expect(sw).toContain('delete safe.requireInteraction');
     expect(sw).toContain('delete safe.timestamp');
     expect(sw).toMatch(/isIosPushClient\(\)[\s\S]*buildIosSafeNotificationOptions/);
+    expect(sw).toContain('function buildAndroidRetryNotificationOptions');
+    expect(sw).toMatch(
+      /buildAndroidRetryNotificationOptions\(options\)[\s\S]*showNotification\(title, retry\)/,
+    );
   });
 
   test('service worker resolveOsNotificationDisplay uses split title/body for non-stock payloads', () => {

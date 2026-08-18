@@ -93,7 +93,7 @@ describe('proactive insight realtime refresh', () => {
       'th',
       expect.objectContaining({ force: true }),
     );
-    expect(pushMock).toHaveBeenCalledTimes(1);
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   test('bean_order_update refreshes digest when summary changes even without bean rule match', async () => {
@@ -142,7 +142,7 @@ describe('proactive insight realtime refresh', () => {
       'th',
       expect.objectContaining({ force: true }),
     );
-    expect(pushMock).toHaveBeenCalledTimes(1);
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   test('bean_order_update skips when digest summary is unchanged', async () => {

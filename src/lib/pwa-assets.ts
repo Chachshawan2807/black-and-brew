@@ -35,6 +35,16 @@ export function buildPwaNotificationAssetPaths(): PwaNotificationAssetPaths {
   };
 }
 
+/** Warm OS notification images in HTTP cache before showNotification (foreground path). */
+export async function prefetchPwaNotificationAssets(): Promise<void> {
+  if (typeof fetch === 'undefined') return;
+  const urls = [
+    resolvePwaAssetUrl(PWA_PUSH_NOTIFICATION_ICON),
+    resolvePwaAssetUrl(PWA_NOTIFICATION_BADGE),
+  ];
+  await Promise.all(urls.map((url) => fetch(url).catch(() => undefined)));
+}
+
 export function resolvePwaSiteOrigin(): string {
   return (
     process.env.NEXT_PUBLIC_SITE_URL ??

@@ -92,7 +92,8 @@ describe('notification fab cross-platform sync', () => {
 
   test('hook defers background OS banners to Web Push when subscription is active', () => {
     expect(hookSource).toContain('shouldDeferOsNotificationToPush');
-    expect(hookSource).toContain('skipSystemNotification: deferOsToPush');
+    expect(hookSource).toContain('deferOsToPush');
+    expect(hookSource).toContain('skipInsightOsNotification');
   });
 
   test('hook uses a unique realtime channel topic per subscribe attempt', () => {
@@ -124,6 +125,7 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('refreshProactiveInsightDigest');
     expect(hookSource).toContain('syncInsightNotificationCatchUp');
     expect(hookSource).toContain("fetchDataChangeLogs({ module: 'insights'");
+    expect(hookSource).toContain('skipInsightOsNotification');
   });
 
   test('hook syncs daily schedule report logs via realtime and server catch-up', () => {

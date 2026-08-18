@@ -6,6 +6,7 @@ import {
   isRealtimeInsightTrigger,
   shouldDispatchInsightNotification,
   shouldForceInsightDigestRefresh,
+  shouldPushInsightNotification,
   type InsightTrigger,
 } from '@/lib/proactive-insights/insight-dispatch-triggers';
 import {
@@ -69,7 +70,7 @@ async function recordAndPushDigest(
     skipped: Boolean(logResult.skipped),
   };
 
-  if (logResult.skipped || options.skipPush || !logResult.success) {
+  if (logResult.skipped || options.skipPush || !shouldPushInsightNotification(trigger) || !logResult.success) {
     return {
       dateIso,
       trigger,

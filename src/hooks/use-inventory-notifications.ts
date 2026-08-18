@@ -88,6 +88,9 @@ import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { shouldReconnectRealtimeOnResume } from '@/lib/supabase-realtime-resume';
 import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 
+/** Proactive insight panel updates are silent — scheduled cron Web Push handles OS banners. */
+const skipInsightOsNotification = true;
+
 function isDailyReportNotificationItem(notification: InventoryNotification): boolean {
   return notification.metadata?.kind === 'daily_report';
 }
@@ -451,7 +454,8 @@ export function useInventoryNotifications() {
       if (allDailyReports || allBeanOrder || allInsights || allSecurity) {
         for (const row of eligible) {
           pushNotification(formatNotificationRow(row, loc), undefined, {
-            skipSystemNotification: deferOsToPush,
+            skipSystemNotification:
+              allInsights ? skipInsightOsNotification : deferOsToPush,
           });
         }
         return;
