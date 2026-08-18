@@ -216,11 +216,11 @@ export default function PurchaseOrdersModal({
                       : "sticky top-0 bg-muted backdrop-blur-sm text-muted-foreground border-border z-10",
                   )}>#</th>
                   <th className={cn(
-                    "py-4 font-normal text-[13px] text-left pl-4 border-r",
+                    "py-4 font-normal text-[13px] text-left pl-4 border-r max-w-[10.5rem] w-[10.5rem]",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
                       : "sticky top-0 bg-muted backdrop-blur-sm text-muted-foreground border-border z-10",
-                  )}>ชื่อรายการ</th>
+                  )}>รายการ</th>
                   <th className={cn(
                     "py-4 font-normal text-[13px] text-center w-32 border-r",
                     isExportMode
@@ -263,7 +263,7 @@ export default function PurchaseOrdersModal({
                       isExportMode ? "text-black/30 border-black/5" : "text-muted-foreground border-border",
                     )}>{idx + 1}</td>
                     <td className={cn(
-                      "py-4 text-[15px] font-normal text-left pl-4 border-r",
+                      "py-4 text-[15px] font-normal text-left pl-4 border-r max-w-[10.5rem] w-[10.5rem] truncate",
                       isExportMode ? "text-black border-black/5" : "text-foreground border-border",
                     )}>{item.name}</td>
                     <td className={cn(
