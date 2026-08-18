@@ -107,6 +107,17 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toContain('preferredFontFormat');
   });
 
+  test('MonthlyRoster save-as-image is limited to individual tab', () => {
+    const code = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
+    expect(code).toContain('บันทึกเป็นรูปภาพ');
+    expect(code).toContain('activeTab === \'individual\'');
+    expect(code).toContain('blackandbrew-roster-export');
+    expect(code).toContain('bb-schedule-export-surface');
+    expect(code).toContain('captureRosterAsPng');
+    expect(code).toContain('พนักงาน:');
+    expect(code).not.toContain('เลือกพนักงาน:');
+  });
+
   test('MonthlyRoster table keeps name column compact', () => {
     const code = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
     expect(code).toContain('whitespace-nowrap w-max');

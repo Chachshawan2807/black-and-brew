@@ -14,8 +14,12 @@ import { th } from 'date-fns/locale';
 import { 
   User, 
   Users, 
-  Calendar as CalendarIcon 
+  Calendar as CalendarIcon,
+  ImageDown,
 } from 'lucide-react';
+import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
+import { preloadCaptureLibraries } from '@/lib/capture-element-png';
 import { fetchRosterData } from '@/app/actions/shift-actions';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { RoundedSelect } from '@/components/ui/rounded-select';
@@ -68,6 +72,7 @@ export default function MonthlyRoster({
       : { profiles: [], shifts: [] },
   );
   const [loading, setLoading] = useState(!hasInitialData);
+  const [isExportingImage, setIsExportingImage] = useState(false);
 
   const daysInInterval = useMemo(() => {
     try {
@@ -119,6 +124,35 @@ export default function MonthlyRoster({
     };
   };
 
+  const exportRosterImage = async () => {
+    if (activeTab !== 'individual') return;
+
+    const element = document.getElementById('blackandbrew-roster-export');
+    if (!element) return;
+
+    try {
+      setIsExportingImage(true);
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
+
+      const { captureRosterAsPng, downloadPngBlob } = await import('@/lib/roster-export-capture');
+      const blob = await captureRosterAsPng(element, {
+        filter: (node: HTMLElement) => node?.id !== 'roster-action-buttons',
+      });
+
+      downloadPngBlob(
+        blob,
+        `Roster-Individual-${startDate}-${endDate}.png`,
+      );
+    } catch (err) {
+      console.error('Failed to export roster image:', err);
+      alert('เกิดข้อผิดพลาดในการบันทึกตารางเวรเป็นรูปภาพค่ะ');
+    } finally {
+      setIsExportingImage(false);
+    }
+  };
+
   return (
     <div className="w-full bg-card rounded-[32px] p-4 md:p-8 border border-border bb-shadow-sm min-h-[700px] antialiased">
       {/* Header Controls */}
@@ -131,6 +165,24 @@ export default function MonthlyRoster({
         </div>
 
         <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-4 md:gap-6 w-full lg:w-auto">
+          {activeTab === 'individual' && (
+            <div id="roster-action-buttons" className="flex items-center shrink-0">
+              <HintTooltip tip="บันทึกเป็นรูปภาพ">
+                <button
+                  type="button"
+                  onClick={() => void exportRosterImage()}
+                  onMouseEnter={preloadCaptureLibraries}
+                  onFocus={preloadCaptureLibraries}
+                  disabled={loading || isExportingImage}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  aria-label="บันทึกเป็นรูปภาพ"
+                >
+                  <ImageDown className="w-5 h-5" strokeWidth={1.75} aria-hidden />
+                </button>
+              </HintTooltip>
+            </div>
+          )}
+
           <ClickableDateRangePicker
             startValue={startDate}
             endValue={endDate}
@@ -208,11 +260,11 @@ export default function MonthlyRoster({
               </table>
             </div>
           ) : (
-            <div className="p-8">
+            <div id="blackandbrew-roster-export" className="bb-schedule-export-surface p-8">
               <div className="flex flex-col md:flex-row md:items-center gap-6 mb-8 p-6 bg-muted/50 rounded-3xl border border-border">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-black rounded-xl"><User className="w-5 h-5 text-[#fdfcf0]" /></div>
-                  <span className="text-foreground text-lg font-normal">เลือกพนักงาน:</span>
+                  <span className="text-foreground text-lg font-normal">พนักงาน:</span>
                 </div>
                 <RoundedSelect
                   value={selectedStaffId || ''}
@@ -224,7 +276,7 @@ export default function MonthlyRoster({
                 </RoundedSelect>
               </div>
 
-              <div className="grid grid-cols-7 gap-1 md:gap-2 pb-24">
+              <div className="bb-roster-export-grid grid grid-cols-7 gap-1 md:gap-2 pb-24">
                 {['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'].map((day, idx) => {
                   const fullDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
                   return (
@@ -261,6 +313,12 @@ export default function MonthlyRoster({
           )}
         </div>
       )}
+
+      <ExportProgressOverlay
+        visible={isExportingImage}
+        title="กำลังบันทึกรูปภาพ"
+        subtitle="กำลังจัดตารางเวร..."
+      />
     </div>
   );
 }

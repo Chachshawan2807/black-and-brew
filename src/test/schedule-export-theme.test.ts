@@ -24,6 +24,20 @@ describe('schedule export theme (dark mode PNG)', () => {
     );
   });
 
+  test('globals.css trims roster export bottom padding during capture', () => {
+    const css = readFile('app/[locale]/globals.css');
+    expect(css).toContain('.bb-roster-export-capturing#blackandbrew-roster-export');
+    expect(css).toContain('.bb-roster-export-capturing .bb-roster-export-grid');
+    expect(css).toMatch(/\.bb-roster-export-capturing \.bb-roster-export-grid[\s\S]*padding-bottom:\s*0\s*!important/);
+  });
+
+  test('globals.css maps muted surfaces inside bb-schedule-export-surface for PNG export', () => {
+    const css = readFile('app/[locale]/globals.css');
+    expect(css).toMatch(
+      /\.bb-schedule-export-surface :where\(\[class\*='bg-muted'\]\)[\s\S]*background-color:\s*rgb\(0 0 0 \/ 0\.04\)\s*!important/,
+    );
+  });
+
   test('schedule-export-capture strips dark class before capture', () => {
     const code = readFile('lib/schedule-export-capture.ts');
     expect(code).toContain('withLightDocumentTheme');

@@ -1219,6 +1219,11 @@
   background-color: #f7f5e8 !important;
 }
 
+.dark .bb-schedule-export-surface :where([class*='bg-muted']),
+.bb-schedule-export-surface :where([class*='bg-muted']) {
+  background-color: rgb(0 0 0 / 0.04) !important;
+}
+
 .dark .bb-schedule-export-surface :where([class*='border-border']),
 .bb-schedule-export-surface :where([class*='border-border']) {
   border-color: rgb(0 0 0 / 0.1) !important;
@@ -1380,4 +1385,14 @@
 
 .bb-schedule-export-capturing :is(.shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
   box-shadow: none !important;
+}
+
+/* Individual roster PNG export — crop bottom safe-area padding from capture */
+.bb-roster-export-capturing#blackandbrew-roster-export {
+  padding-bottom: 0 !important;
+}
+
+.bb-roster-export-capturing .bb-roster-export-grid {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
 }

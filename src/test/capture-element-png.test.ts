@@ -41,6 +41,19 @@ describe('captureElementAsPng', () => {
     );
   });
 
+  test('can override capture height when scrollHeight includes extra padding', async () => {
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'scrollWidth', { value: 800 });
+    Object.defineProperty(element, 'scrollHeight', { value: 1200 });
+
+    await captureElementAsPng(element, { height: 640, preserveOverflow: true });
+
+    expect(toBlobMock).toHaveBeenCalledWith(
+      element,
+      expect.objectContaining({ width: 800, height: 640 }),
+    );
+  });
+
   test('can preserve root overflow for rounded export wrappers', async () => {
     const element = document.createElement('div');
     Object.defineProperty(element, 'scrollWidth', { value: 800 });

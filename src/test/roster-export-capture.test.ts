@@ -1,0 +1,113 @@
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+
+const toBlobMock = vi.fn();
+const getFontEmbedCSSMock = vi.fn();
+
+vi.mock('html-to-image', () => ({
+  toBlob: (...args: unknown[]) => toBlobMock(...args),
+  getFontEmbedCSS: (...args: unknown[]) => getFontEmbedCSSMock(...args),
+}));
+
+import { captureRosterAsPng, measureRosterExportContentHeight } from '@/lib/roster-export-capture';
+
+describe('roster-export-capture', () => {
+  beforeEach(() => {
+    toBlobMock.mockReset();
+    getFontEmbedCSSMock.mockReset();
+    toBlobMock.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
+    getFontEmbedCSSMock.mockResolvedValue('@font-face { font-family: Prompt; }');
+    document.documentElement.classList.remove('dark');
+  });
+
+  test('captureRosterAsPng embeds fonts and preserves overflow for wide roster tables', async () => {
+    const element = document.createElement('div');
+    element.style.backgroundColor = 'rgb(253, 252, 240)';
+    Object.defineProperty(element, 'scrollWidth', { value: 1800 });
+    Object.defineProperty(element, 'scrollHeight', { value: 900 });
+
+    const blob = await captureRosterAsPng(element);
+
+    expect(blob.type).toBe('image/png');
+    expect(getFontEmbedCSSMock).toHaveBeenCalled();
+    expect(toBlobMock).toHaveBeenCalledWith(
+      element,
+      expect.objectContaining({
+        width: 1800,
+        height: 900,
+        backgroundColor: '#f7f5e8',
+        skipFonts: false,
+        fontEmbedCSS: '@font-face { font-family: Prompt; }',
+        preferredFontFormat: 'woff2',
+      }),
+    );
+  });
+
+  test('captureRosterAsPng temporarily removes dark theme during capture', async () => {
+    document.documentElement.classList.add('dark');
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'scrollWidth', { value: 400 });
+    Object.defineProperty(element, 'scrollHeight', { value: 300 });
+
+    await captureRosterAsPng(element);
+
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+  });
+
+  test('measureRosterExportContentHeight crops to calendar grid bottom edge', () => {
+    const root = document.createElement('div');
+    const grid = document.createElement('div');
+    grid.className = 'bb-roster-export-grid';
+    root.appendChild(grid);
+
+    root.getBoundingClientRect = () =>
+      ({ top: 80, bottom: 900, left: 0, right: 400, width: 400, height: 820, x: 0, y: 80, toJSON: () => {} }) as DOMRect;
+    grid.getBoundingClientRect = () =>
+      ({ top: 180, bottom: 520, left: 0, right: 400, width: 400, height: 340, x: 0, y: 180, toJSON: () => {} }) as DOMRect;
+
+    expect(measureRosterExportContentHeight(root)).toBe(440);
+  });
+
+  test('captureRosterAsPng passes measured content height to capture helper', async () => {
+    const root = document.createElement('div');
+    const grid = document.createElement('div');
+    grid.className = 'bb-roster-export-grid';
+    root.appendChild(grid);
+    Object.defineProperty(root, 'scrollWidth', { value: 640 });
+    Object.defineProperty(root, 'scrollHeight', { value: 1200 });
+    root.getBoundingClientRect = () =>
+      ({ top: 0, bottom: 1200, left: 0, right: 640, width: 640, height: 1200, x: 0, y: 0, toJSON: () => {} }) as DOMRect;
+    grid.getBoundingClientRect = () =>
+      ({ top: 120, bottom: 560, left: 0, right: 640, width: 640, height: 440, x: 0, y: 120, toJSON: () => {} }) as DOMRect;
+
+    await captureRosterAsPng(root);
+
+    expect(toBlobMock).toHaveBeenCalledWith(
+      root,
+      expect.objectContaining({ height: 560 }),
+    );
+  });
+
+  test('captureRosterAsPng applies export surface class during capture', async () => {
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'scrollWidth', { value: 400 });
+    Object.defineProperty(element, 'scrollHeight', { value: 300 });
+
+    await captureRosterAsPng(element);
+
+    expect(element.classList.contains('bb-roster-export-capturing')).toBe(false);
+  });
+
+  test('captureRosterAsPng forwards filter callback', async () => {
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'scrollWidth', { value: 400 });
+    Object.defineProperty(element, 'scrollHeight', { value: 300 });
+
+    const filter = vi.fn(() => true);
+    await captureRosterAsPng(element, { filter });
+
+    expect(toBlobMock).toHaveBeenCalledWith(
+      element,
+      expect.objectContaining({ filter }),
+    );
+  });
+});

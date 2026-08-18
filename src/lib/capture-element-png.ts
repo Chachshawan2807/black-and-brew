@@ -12,6 +12,8 @@ export type CaptureElementPngOptions = {
   preferredFontFormat?: 'woff' | 'woff2' | 'truetype' | 'opentype' | 'embedded-opentype' | 'svg' | string;
   /** Keep the root node's authored overflow, useful when border-radius must clip children. */
   preserveOverflow?: boolean;
+  /** Override capture height when scrollHeight includes extra bottom padding. */
+  height?: number;
 };
 
 type HtmlToImageModule = typeof import('html-to-image');
@@ -102,7 +104,7 @@ export async function captureElementAsPng(
   options: CaptureElementPngOptions = {},
 ): Promise<Blob> {
   const fullWidth = element.scrollWidth;
-  const fullHeight = element.scrollHeight;
+  const fullHeight = options.height ?? element.scrollHeight;
   const pixelRatio = resolvePixelRatio(fullWidth, fullHeight, options.pixelRatio ?? 2);
 
   const stickyNodes = element.querySelectorAll<HTMLElement>('.sticky');
