@@ -34,7 +34,7 @@ describe('roster-export-capture', () => {
       expect.objectContaining({
         width: 1800,
         height: 900,
-        backgroundColor: '#f7f5e8',
+        backgroundColor: '#faf9f2',
         skipFonts: false,
         fontEmbedCSS: '@font-face { font-family: Prompt; }',
         preferredFontFormat: 'woff2',
@@ -87,14 +87,18 @@ describe('roster-export-capture', () => {
     );
   });
 
-  test('captureRosterAsPng applies export surface class during capture', async () => {
+  test('captureRosterAsPng applies export classes only during capture', async () => {
     const element = document.createElement('div');
     Object.defineProperty(element, 'scrollWidth', { value: 400 });
     Object.defineProperty(element, 'scrollHeight', { value: 300 });
 
+    const addSpy = vi.spyOn(element.classList, 'add');
+
     await captureRosterAsPng(element);
 
+    expect(addSpy).toHaveBeenCalledWith('bb-roster-export-capturing', 'bb-roster-export-surface');
     expect(element.classList.contains('bb-roster-export-capturing')).toBe(false);
+    expect(element.classList.contains('bb-roster-export-surface')).toBe(false);
   });
 
   test('captureRosterAsPng forwards filter callback', async () => {

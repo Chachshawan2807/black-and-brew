@@ -1396,3 +1396,39 @@
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
 }
+
+/*
+ * Individual roster PNG — match on-screen bg-card (#faf9f2), not schedule export cream.
+ */
+.bb-roster-export-surface,
+.dark .bb-roster-export-surface {
+  --background: #faf9f2 !important;
+  --foreground: #000000 !important;
+  --card: #faf9f2 !important;
+  --card-foreground: #000000 !important;
+  --border: rgb(0 0 0 / 0.06) !important;
+  --muted: rgb(0 0 0 / 0.045) !important;
+  --muted-foreground: rgb(0 0 0 / 0.55) !important;
+  background-color: #faf9f2 !important;
+  color: #000000 !important;
+}
+
+.dark .bb-roster-export-surface :is(.text-foreground, .text-muted-foreground),
+.bb-roster-export-surface :is(.text-foreground, .text-muted-foreground) {
+  color: #000000 !important;
+}
+
+.dark .bb-roster-export-surface :is(.text-muted-foreground),
+.bb-roster-export-surface :is(.text-muted-foreground) {
+  color: rgb(0 0 0 / 0.55) !important;
+}
+
+.dark .bb-roster-export-surface :where([class*='bg-card']),
+.bb-roster-export-surface :where([class*='bg-card']) {
+  background-color: #faf9f2 !important;
+}
+
+.dark .bb-roster-export-surface :where([class*='border-border']),
+.bb-roster-export-surface :where([class*='border-border']) {
+  border-color: rgb(0 0 0 / 0.06) !important;
+}

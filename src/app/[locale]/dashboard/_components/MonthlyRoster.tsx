@@ -260,8 +260,8 @@ export default function MonthlyRoster({
               </table>
             </div>
           ) : (
-            <div id="blackandbrew-roster-export" className="bb-schedule-export-surface p-8">
-              <div className="flex flex-col md:flex-row md:items-center gap-6 mb-8 p-6 bg-muted/50 rounded-3xl border border-border">
+            <div id="blackandbrew-roster-export" className="bg-card p-8">
+              <div className="flex flex-col md:flex-row md:items-center gap-6 mb-8 p-6 bg-card rounded-3xl border border-border">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-black rounded-xl"><User className="w-5 h-5 text-[#fdfcf0]" /></div>
                   <span className="text-foreground text-lg font-normal">พนักงาน:</span>
@@ -287,7 +287,7 @@ export default function MonthlyRoster({
                   );
                 })}
                 {daysInInterval.length > 0 && Array.from({ length: getDay(daysInInterval[0]) }).map((_, i) => (
-                  <div key={`empty-${i}`} className="bg-muted/30 rounded-xl sm:rounded-3xl h-20 sm:h-28 md:h-36 border border-transparent" />
+                  <div key={`empty-${i}`} className="bg-card rounded-xl sm:rounded-3xl h-20 sm:h-28 md:h-36 border border-border" />
                 ))}
                 {daysInInterval.map((day) => {
                   const shift = selectedStaffId
@@ -295,7 +295,7 @@ export default function MonthlyRoster({
                     : undefined;
                   const display = shift ? getShiftDisplay(shift) : null;
                   return (
-                    <div key={day.toISOString()} className="bg-muted/30 h-20 sm:h-28 md:h-36 p-1 sm:p-3 md:p-4 flex flex-col justify-between rounded-xl sm:rounded-[24px] border border-border bb-transition hover:bg-muted/30 hover:shadow-lg">
+                    <div key={day.toISOString()} className="bg-card h-20 sm:h-28 md:h-36 p-1 sm:p-3 md:p-4 flex flex-col justify-between rounded-xl sm:rounded-[24px] border border-border bb-transition hover:bg-muted/30 hover:shadow-lg">
                       <span className="text-foreground text-sm sm:text-base md:text-lg font-normal">{format(day, 'd')}</span>
                       {shift && display && (
                         <div

@@ -6,8 +6,9 @@ import {
 } from '@/lib/capture-element-png';
 
 const ROSTER_EXPORT_FONT_FORMAT = 'woff2' as const;
-export const ROSTER_EXPORT_BG = '#f7f5e8';
+export const ROSTER_EXPORT_BG = '#faf9f2';
 export const ROSTER_EXPORT_CAPTURING_CLASS = 'bb-roster-export-capturing';
+export const ROSTER_EXPORT_SURFACE_CLASS = 'bb-roster-export-surface';
 const ROSTER_EXPORT_GRID_SELECTOR = '.bb-roster-export-grid';
 
 async function withLightDocumentTheme<T>(fn: () => Promise<T>): Promise<T> {
@@ -76,7 +77,7 @@ export async function captureRosterAsPng(
   preloadCaptureLibraries();
   return withLightDocumentTheme(async () => {
     await ensureCaptureFontsReady();
-    element.classList.add(ROSTER_EXPORT_CAPTURING_CLASS);
+    element.classList.add(ROSTER_EXPORT_CAPTURING_CLASS, ROSTER_EXPORT_SURFACE_CLASS);
     const restorePadding = trimRosterExportBottomPadding(element);
     try {
       await new Promise<void>((resolve) => {
@@ -99,7 +100,7 @@ export async function captureRosterAsPng(
       });
     } finally {
       restorePadding();
-      element.classList.remove(ROSTER_EXPORT_CAPTURING_CLASS);
+      element.classList.remove(ROSTER_EXPORT_CAPTURING_CLASS, ROSTER_EXPORT_SURFACE_CLASS);
     }
   });
 }

@@ -112,10 +112,11 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toContain('บันทึกเป็นรูปภาพ');
     expect(code).toContain('activeTab === \'individual\'');
     expect(code).toContain('blackandbrew-roster-export');
-    expect(code).toContain('bb-schedule-export-surface');
+    expect(code).not.toContain('bb-schedule-export-surface');
     expect(code).toContain('captureRosterAsPng');
     expect(code).toContain('พนักงาน:');
-    expect(code).not.toContain('เลือกพนักงาน:');
+    expect(code).toContain('bg-card h-20');
+    expect(code).not.toContain('bg-muted/30 rounded-xl sm:rounded-3xl');
   });
 
   test('MonthlyRoster table keeps name column compact', () => {

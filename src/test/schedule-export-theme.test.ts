@@ -24,6 +24,12 @@ describe('schedule export theme (dark mode PNG)', () => {
     );
   });
 
+  test('globals.css defines roster export surface matching bg-card token', () => {
+    const css = readFile('app/[locale]/globals.css');
+    expect(css).toMatch(/\.bb-roster-export-surface[\s\S]*--card:\s*#faf9f2\s*!important/);
+    expect(css).toMatch(/\.bb-roster-export-surface[\s\S]*background-color:\s*#faf9f2\s*!important/);
+  });
+
   test('globals.css trims roster export bottom padding during capture', () => {
     const css = readFile('app/[locale]/globals.css');
     expect(css).toContain('.bb-roster-export-capturing#blackandbrew-roster-export');
