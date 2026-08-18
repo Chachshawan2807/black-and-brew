@@ -48,7 +48,6 @@ import type { DeliveryType, StatusHistoryEntry, WeightUnit } from '@/lib/bean-or
 import { prepareBeanOrderInput } from '@/lib/bean-orders/order-input-normalize';
 import { resolveActorLabel } from '@/lib/data-change-log';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
-import { ensureServerSession } from '@/lib/security/server-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import {
   createTrackingMoreShipment,
@@ -189,7 +188,6 @@ export type BeanCustomerAddressRow = {
 };
 
 async function resolveActorLabelFromSession(): Promise<string> {
-  await ensureServerSession();
   const cookieStore = await cookies();
   const readOnly = cookieStore.get('bb_auth_read_only')?.value === 'true';
   const accessLevel = readOnly ? 'read_only' : 'full';
@@ -754,20 +752,24 @@ export async function createBeanOrder(
   const orderInput = prepared.data;
 
   try {
-    const namesById = await loadInventoryNames(orderInput.lines.map((l) => l.inventoryItemId));
-    for (const line of orderInput.lines) {
-      if (!namesById.has(line.inventoryItemId)) {
-        return { success: false, error: `ไม่พบสินค้าในคลัง (ID: ${line.inventoryItemId})` };
-      }
-    }
-
     const totals = computeOrderTotals(
       orderInput.lines,
       orderInput.discountBaht ?? 0,
       orderInput.shippingBaht ?? 0,
     );
 
-    const actor = await resolveActorLabelFromSession();
+    const [namesById, actor, initialOrderNo] = await Promise.all([
+      loadInventoryNames(orderInput.lines.map((l) => l.inventoryItemId)),
+      resolveActorLabelFromSession(),
+      nextOrderNo(),
+    ]);
+
+    for (const line of orderInput.lines) {
+      if (!namesById.has(line.inventoryItemId)) {
+        return { success: false, error: `ไม่พบสินค้าในคลัง (ID: ${line.inventoryItemId})` };
+      }
+    }
+
     const history = appendStatusHistory([], {
       by: actor,
       action: 'created',
@@ -788,11 +790,13 @@ export async function createBeanOrder(
     }));
 
     let order: { id: string; order_no: string } | null = null;
-    let orderNo = '';
+    let orderNo = initialOrderNo;
     const maxOrderNoAttempts = 5;
 
     for (let attempt = 0; attempt < maxOrderNoAttempts; attempt += 1) {
-      orderNo = await nextOrderNo();
+      if (attempt > 0) {
+        orderNo = await nextOrderNo();
+      }
 
       const { data, error: orderError } = await supabase
         .from('bean_orders')
@@ -850,30 +854,40 @@ export async function createBeanOrder(
       return { success: false, error: linesError.message };
     }
 
-    void recordDataChange({
-      action: 'CREATE',
-      module: 'bean_orders',
-      entityType: 'bean_order',
-      entityId: order.id as string,
-      entityLabel: order.order_no as string,
-      newValue: { orderNo, totalBaht: totals.totalBaht },
+    const orderId = order.id as string;
+    const savedOrderNo = order.order_no as string;
+
+    after(async () => {
+      try {
+        await recordDataChange({
+          action: 'CREATE',
+          module: 'bean_orders',
+          entityType: 'bean_order',
+          entityId: orderId,
+          entityLabel: savedOrderNo,
+          newValue: { orderNo: savedOrderNo, totalBaht: totals.totalBaht },
+        });
+
+        if (orderInput.customerId) {
+          const addressResult = await saveBeanCustomerAddressIfNew(orderInput.customerId, {
+            recipientName: orderInput.recipientName,
+            recipientPhone: orderInput.recipientPhone,
+            recipientAddress: orderInput.recipientAddress,
+            recipientProvince: orderInput.recipientProvince,
+            recipientPostalCode: orderInput.recipientPostalCode,
+          });
+          if (!addressResult.success) {
+            console.error('[createBeanOrder] Deferred address persist:', addressResult.error);
+          }
+        }
+
+        revalidateBeanOrders(locale, orderId);
+      } catch (error) {
+        console.error('[createBeanOrder] Deferred side-effect error:', error);
+      }
     });
 
-    if (orderInput.customerId) {
-      const addressResult = await saveBeanCustomerAddressIfNew(orderInput.customerId, {
-        recipientName: orderInput.recipientName,
-        recipientPhone: orderInput.recipientPhone,
-        recipientAddress: orderInput.recipientAddress,
-        recipientProvince: orderInput.recipientProvince,
-        recipientPostalCode: orderInput.recipientPostalCode,
-      });
-      if (!addressResult.success) {
-        return { success: false, error: addressResult.error };
-      }
-    }
-
-    revalidateBeanOrders(locale, order.id as string);
-    return { success: true, orderId: order.id as string };
+    return { success: true, orderId };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'สร้างออเดอร์ไม่สำเร็จ';
     return { success: false, error: message };

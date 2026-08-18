@@ -86,4 +86,39 @@ describe('bean order save performance', () => {
     expect(body).not.toMatch(/trackingWarning/);
     expect(detailClient).not.toMatch(/trackingWarning/);
   });
+
+  test('createBeanOrder defers audit log, revalidation, and address persist off the critical path', () => {
+    const critical = criticalPathBeforeAfter('createBeanOrder', beanOrderActions);
+    expect(critical).not.toContain('recordDataChange');
+    expect(critical).not.toContain('revalidateBeanOrders');
+    expect(critical).not.toContain('saveBeanCustomerAddressIfNew');
+    const deferred = functionBody('createBeanOrder', beanOrderActions);
+    expect(deferred).toContain('after(async () => {');
+    expect(deferred).toContain('recordDataChange');
+    expect(deferred).toContain('revalidateBeanOrders');
+    expect(deferred).toContain('saveBeanCustomerAddressIfNew');
+  });
+
+  test('createBeanOrder parallelizes inventory, actor, and order number prep', () => {
+    const critical = criticalPathBeforeAfter('createBeanOrder', beanOrderActions);
+    expect(critical).toContain('Promise.all');
+    expect(critical).toMatch(/Promise\.all[\s\S]*loadInventoryNames[\s\S]*resolveActorLabelFromSession[\s\S]*nextOrderNo/);
+  });
+
+  test('resolveActorLabelFromSession does not repeat ensureServerSession after gateMutation', () => {
+    expect(beanOrderActions).not.toMatch(
+      /async function resolveActorLabelFromSession\(\)[\s\S]*await ensureServerSession\(\)/,
+    );
+  });
+
+  test('form client clears saving before navigation after create', () => {
+    const formClient = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/bean-orders/BeanOrderFormClient.tsx'),
+      'utf-8',
+    );
+    const handleSubmitStart = formClient.indexOf('async function handleSubmit');
+    const handleSubmitEnd = formClient.indexOf('\n  const inputClass', handleSubmitStart);
+    const handleSubmit = formClient.slice(handleSubmitStart, handleSubmitEnd);
+    expect(handleSubmit).toMatch(/setSaving\(false\)[\s\S]*navigateWithViewTransition/);
+  });
 });
