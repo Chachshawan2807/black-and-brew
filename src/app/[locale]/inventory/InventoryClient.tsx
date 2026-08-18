@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Loader2, Undo2, Redo2, Trash2, X } from 'lucide-react';
+import { ClipboardList, Loader2, Undo2, Redo2, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeOverlay, modalContent, pageHeadingSpring } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';
@@ -14,6 +14,7 @@ import {
   recordItemAddHistory,
   updateInventoryItemField,
   reorderInventoryItems,
+  saveWithdrawRequiredItemOrder,
 } from '@/app/actions/inventory-actions';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { getClientSessionId } from '@/lib/client-session';
@@ -21,6 +22,7 @@ import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { computePurchaseOrderDerivedState, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { getInventoryItemDisplayOrder } from '@/lib/inventory-grid-search';
+import { filterWithdrawRequiredItems, applyWithdrawRequiredItemOrder } from '@/lib/inventory-withdraw-required-items';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import {
   loadFrequentItemsCache,
@@ -90,6 +92,7 @@ interface InventoryClientProps {
   initialColumnSettings?: ColumnSettings;
   initialTransactionHistory?: TransactionHistoryRow[];
   initialHistoryHasMore?: boolean;
+  initialWithdrawRequiredOrder?: string[];
   locale: string;
 }
 
@@ -636,8 +639,17 @@ MobileSortableRow.displayName = 'MobileSortableRow';
 
 const PurchaseOrdersModal = dynamic(() => import('./_components/PurchaseOrdersModal'), { ssr: false });
 
+const WithdrawRequiredItemsModal = dynamic(
+  () => import('./_components/WithdrawRequiredItemsModal'),
+  { ssr: false },
+);
+
 const preloadPurchaseOrdersModal = () => {
   void import('./_components/PurchaseOrdersModal');
+};
+
+const preloadWithdrawRequiredItemsModal = () => {
+  void import('./_components/WithdrawRequiredItemsModal');
 };
 
 const preloadInventoryHistoryModal = () => {
@@ -912,6 +924,7 @@ export default function InventoryClient({
   initialColumnSettings = null,
   initialTransactionHistory = [],
   initialHistoryHasMore = false,
+  initialWithdrawRequiredOrder = [],
 }: InventoryClientProps) {
   const isReadOnly = useReadOnly();
   const { isOpen: isFloatingOverlayOpen } = useFloatingOverlay();
@@ -948,6 +961,9 @@ export default function InventoryClient({
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
+  const [showWithdrawRequiredModal, setShowWithdrawRequiredModal] = useState(false);
+  const [withdrawRequiredOrder, setWithdrawRequiredOrder] = useState<string[]>(initialWithdrawRequiredOrder);
+  const [isSavingWithdrawRequiredOrder, setIsSavingWithdrawRequiredOrder] = useState(false);
   const [isExportingPO, setIsExportingPO] = useState(false);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -1017,6 +1033,32 @@ export default function InventoryClient({
     () => computePurchaseOrderDerivedState(items, selectedChannels),
     [items, selectedChannels],
   );
+
+  const withdrawRequiredItems = useMemo(
+    () => applyWithdrawRequiredItemOrder(items, withdrawRequiredOrder),
+    [items, withdrawRequiredOrder],
+  );
+
+  const handleWithdrawRequiredReorder = useCallback(async (orderedIds: string[]) => {
+    if (blockIfReadOnly()) return;
+
+    const rollbackOrder = withdrawRequiredOrder;
+    setWithdrawRequiredOrder(orderedIds);
+    setIsSavingWithdrawRequiredOrder(true);
+
+    try {
+      const result = await saveWithdrawRequiredItemOrder(orderedIds);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('[handleWithdrawRequiredReorder]', error);
+      setWithdrawRequiredOrder(rollbackOrder);
+      alert('บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsSavingWithdrawRequiredOrder(false);
+    }
+  }, [blockIfReadOnly, withdrawRequiredOrder]);
 
   const exportPOImage = async () => {
     const element = document.getElementById('blackandbrew-po-table-export');
@@ -1847,13 +1889,35 @@ export default function InventoryClient({
                 เปิด Quick Action
               </button>
             ) : null}
-            <InventoryGridSearchBar
-              gridSearchQuery={gridSearchQuery}
-              setGridSearchQuery={setGridSearchQuery}
-              filteredCount={visibleItems.length}
-              totalCount={items.length}
-              onEnter={handleGridSearchEnter}
-            />
+            <div className="flex flex-col-reverse sm:flex-row gap-2 w-full min-w-0">
+              <div className="min-w-0 flex-1">
+                <InventoryGridSearchBar
+                  gridSearchQuery={gridSearchQuery}
+                  setGridSearchQuery={setGridSearchQuery}
+                  filteredCount={visibleItems.length}
+                  totalCount={items.length}
+                  onEnter={handleGridSearchEnter}
+                />
+              </div>
+              <HintTooltip tip="ดูรายการสินค้าประเภทต้องเบิกทั้งหมด">
+                <button
+                  type="button"
+                  onClick={() => setShowWithdrawRequiredModal(true)}
+                  onMouseEnter={preloadWithdrawRequiredItemsModal}
+                  onFocus={preloadWithdrawRequiredItemsModal}
+                  aria-haspopup="dialog"
+                  className={cn(
+                    'bb-pastel-surface shrink-0 inline-flex h-[3.25rem] sm:h-auto sm:min-h-[3.25rem] w-full sm:w-auto items-center justify-center gap-2 rounded-3xl border border-[#bfdbfe] bg-[#dbeafe] px-4 text-sm font-normal text-black bb-shadow-sm bb-transition hover:brightness-[0.98] active:scale-[0.99]',
+                  )}
+                >
+                  <ClipboardList className="w-4 h-4 shrink-0" strokeWidth={1.5} aria-hidden />
+                  <span className="whitespace-nowrap">รายการที่ต้องเบิก</span>
+                  <span className="bb-pastel-surface shrink-0 rounded-full border border-[#bfdbfe] bg-[#bfdbfe]/60 px-2 py-0.5 text-[11px] tabular-nums">
+                    {withdrawRequiredItems.length}
+                  </span>
+                </button>
+              </HintTooltip>
+            </div>
           </div>
 
           <div className={cn(isReadOnly && 'pointer-events-none opacity-60')}>
@@ -2146,6 +2210,18 @@ export default function InventoryClient({
         )}
       </AnimatePresence>
 
+
+      <AnimatePresence>
+        {showWithdrawRequiredModal && (
+          <WithdrawRequiredItemsModal
+            items={withdrawRequiredItems}
+            onClose={() => setShowWithdrawRequiredModal(false)}
+            onReorder={handleWithdrawRequiredReorder}
+            isReadOnly={isReadOnly}
+            isSaving={isSavingWithdrawRequiredOrder}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Purchase Orders Modal */}
       <AnimatePresence>

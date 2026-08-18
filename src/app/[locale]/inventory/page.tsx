@@ -6,6 +6,7 @@ import {
   fetchTransactionHistoryPage,
   HISTORY_PAGE_SIZE,
 } from '@/lib/inventory-history-query';
+import { parseWithdrawRequiredOrder } from '@/lib/inventory-withdraw-required-items';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 import type { ColumnSettings } from './types';
 import type { TransactionHistoryRow } from './_components/InventoryHistoryModal';
@@ -28,7 +29,7 @@ export default async function InventoryPage({
 
   const supabaseAdmin = getSupabaseAdmin();
 
-  const [configRes, inventoryRes, historyRes] = await Promise.all([
+  const [configRes, inventoryRes, historyRes, withdrawOrderRes] = await Promise.all([
     supabaseAdmin.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
     supabaseAdmin
       .from('inventory_items')
@@ -39,6 +40,7 @@ export default async function InventoryPage({
       limit: HISTORY_PAGE_SIZE,
       type: 'ALL',
     }),
+    supabaseAdmin.from('inventory_config').select('settings').eq('id', 'withdraw_required_order').single(),
   ]);
 
   if (inventoryRes.error) {
@@ -65,6 +67,8 @@ export default async function InventoryPage({
     );
   }
 
+  const initialWithdrawRequiredOrder = parseWithdrawRequiredOrder(withdrawOrderRes.data?.settings);
+
   return (
     <>
       <InventoryHistoryCacheSeed
@@ -76,6 +80,7 @@ export default async function InventoryPage({
         initialColumnSettings={initialColumnSettings}
         initialTransactionHistory={initialTransactionHistory}
         initialHistoryHasMore={initialHistoryHasMore}
+        initialWithdrawRequiredOrder={initialWithdrawRequiredOrder}
         locale={locale}
       />
     </>

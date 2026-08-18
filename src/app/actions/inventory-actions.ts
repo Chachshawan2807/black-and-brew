@@ -659,6 +659,40 @@ export async function reorderInventoryItems(
   }
 }
 
+const withdrawRequiredOrderSchema = z.array(z.string().uuid());
+
+export async function saveWithdrawRequiredItemOrder(itemIds: string[]) {
+  try {
+    const authError = await requireMutationAccess();
+    if (authError) return { success: false, error: authError };
+
+    const parsed = withdrawRequiredOrderSchema.safeParse(itemIds);
+    if (!parsed.success) {
+      return { success: false, error: 'Invalid withdraw required order payload' };
+    }
+
+    const { error } = await supabase.from('inventory_config').upsert({
+      id: 'withdraw_required_order',
+      settings: { order: parsed.data },
+    });
+
+    if (error) {
+      console.error('[saveWithdrawRequiredItemOrder] Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    deferInventorySideEffects('saveWithdrawRequiredItemOrder', async () => {
+      revalidateInventoryPaths();
+    });
+
+    return { success: true };
+  } catch (error: unknown) {
+    const message = getErrorMessage(error);
+    console.error('[saveWithdrawRequiredItemOrder] Unexpected Error:', message);
+    return { success: false, error: message || 'เกิดข้อผิดพลาดในการบันทึกลำดับรายการที่ต้องเบิก' };
+  }
+}
+
 // === DELETE INVENTORY ITEM (Secure Server-Side Delete) ===
 /**
  * ADR: SEC-DEL-001 - Secure Server-Side Controlled Deletion
