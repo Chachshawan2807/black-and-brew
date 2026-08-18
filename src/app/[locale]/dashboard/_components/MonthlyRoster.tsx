@@ -29,6 +29,7 @@ import {
   getShiftDisplayText,
 } from '@/lib/shift-colors';
 import { createShiftDateLookup, getShiftForProfileDate } from '@/lib/schedule/shift-lookups';
+import { persistDashboardRosterRange } from '@/lib/dashboard-date-range';
 
 interface Profile {
   id: string;
@@ -113,6 +114,7 @@ export default function MonthlyRoster({
   const handleRangeChange = ({ start, end }: { start: string; end: string }) => {
     setStartDate(start);
     setEndDate(end);
+    persistDashboardRosterRange(start, end);
   };
 
   const getShiftDisplay = (shift: Shift) => {

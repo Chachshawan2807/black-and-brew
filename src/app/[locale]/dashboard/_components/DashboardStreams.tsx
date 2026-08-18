@@ -6,6 +6,13 @@ import LiveShiftList from './LiveShiftList';
 import MonthlyRoster from './MonthlyRoster';
 import { getDashboardShiftQueryPlan, splitDashboardShiftsByRange } from '../dashboard-data';
 import { DashboardSectionSkeleton } from './DashboardSectionSkeleton';
+import {
+  DASHBOARD_ROSTER_END_COOKIE,
+  DASHBOARD_ROSTER_START_COOKIE,
+  DASHBOARD_WEEKLY_END_COOKIE,
+  DASHBOARD_WEEKLY_START_COOKIE,
+  resolveDashboardDateRange,
+} from '@/lib/dashboard-date-range';
 
 async function resolveDashboardDates(searchParams: Promise<{ start?: string; end?: string }>) {
   const [{ start: startParam, end: endParam }, cookieStore] = await Promise.all([
@@ -13,17 +20,35 @@ async function resolveDashboardDates(searchParams: Promise<{ start?: string; end
     cookies(),
   ]);
 
-  const savedStart = cookieStore.get('dashboard_start_date')?.value;
-  const savedEnd = cookieStore.get('dashboard_end_date')?.value;
   const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
   const sunday = addDays(monday, 6);
-
-  const startDate = startParam || savedStart || format(monday, 'yyyy-MM-dd');
-  const endDate = endParam || savedEnd || format(sunday, 'yyyy-MM-dd');
   const monthStart = format(startOfMonth(new Date()), 'yyyy-MM-dd');
   const monthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
 
-  return { startDate, endDate, monthStart, monthEnd };
+  const weeklyRange = resolveDashboardDateRange({
+    urlStart: startParam,
+    urlEnd: endParam,
+    cookieStart: cookieStore.get(DASHBOARD_WEEKLY_START_COOKIE)?.value,
+    cookieEnd: cookieStore.get(DASHBOARD_WEEKLY_END_COOKIE)?.value,
+    fallbackStart: format(monday, 'yyyy-MM-dd'),
+    fallbackEnd: format(sunday, 'yyyy-MM-dd'),
+  });
+
+  const rosterRange = resolveDashboardDateRange({
+    cookieStart: cookieStore.get(DASHBOARD_ROSTER_START_COOKIE)?.value,
+    cookieEnd: cookieStore.get(DASHBOARD_ROSTER_END_COOKIE)?.value,
+    fallbackStart: monthStart,
+    fallbackEnd: monthEnd,
+  });
+
+  return {
+    startDate: weeklyRange.start,
+    endDate: weeklyRange.end,
+    rosterStartDate: rosterRange.start,
+    rosterEndDate: rosterRange.end,
+    monthStart,
+    monthEnd,
+  };
 }
 
 async function DashboardWeeklySection({
@@ -89,7 +114,8 @@ async function DashboardMonthlySection({
 }: {
   searchParams: Promise<{ start?: string; end?: string }>;
 }) {
-  const { startDate, endDate, monthStart, monthEnd } = await resolveDashboardDates(searchParams);
+  const { startDate, endDate, rosterStartDate, rosterEndDate, monthStart, monthEnd } =
+    await resolveDashboardDates(searchParams);
   const shiftQueryPlan = getDashboardShiftQueryPlan({
     startDate,
     endDate,
@@ -130,8 +156,8 @@ async function DashboardMonthlySection({
     <MonthlyRoster
       initialProfiles={profilesRes.data || []}
       initialShifts={rosterShifts}
-      initialStartDate={monthStart}
-      initialEndDate={monthEnd}
+      initialStartDate={rosterStartDate}
+      initialEndDate={rosterEndDate}
     />
   );
 }

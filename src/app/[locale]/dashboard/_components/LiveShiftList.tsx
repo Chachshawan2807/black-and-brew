@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { listRowSpring, SNAPPY_SPRING, CARD_LIFT_HOVER, CARD_PRESS_TAP } from '@/lib/motion-presets';
 import { Shift, Profile } from '../types';
@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { toZonedTime } from 'date-fns-tz';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { format, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { navigateWithoutViewTransition } from '@/lib/view-transition';
@@ -36,6 +36,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { DASHBOARD_STAT_COLORS } from '@/lib/shift-colors';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import {
+  persistDashboardWeeklyRange,
+  readDashboardWeeklyRangeFromStorage,
+} from '@/lib/dashboard-date-range';
 
 interface PerformanceData {
   profile: Profile;
@@ -135,7 +139,9 @@ export default function LiveShiftList({
   endDate
 }: LiveShiftListProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isReadOnly = useReadOnly();
+  const restoredWeeklyRangeRef = useRef(false);
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [holidays, setHolidays] = useState<{ id?: string; date: string; name?: string }[]>(initialHolidays);
@@ -180,6 +186,22 @@ export default function LiveShiftList({
   }, []);
 
   useEffect(() => {
+    if (restoredWeeklyRangeRef.current) return;
+    restoredWeeklyRangeRef.current = true;
+
+    const urlStart = searchParams.get('start');
+    const urlEnd = searchParams.get('end');
+    if (urlStart && urlEnd) return;
+
+    const saved = readDashboardWeeklyRangeFromStorage();
+    if (!saved) return;
+    if (saved.start === startDate && saved.end === endDate) return;
+
+    persistDashboardWeeklyRange(saved.start, saved.end);
+    navigateWithoutViewTransition(router.push, `?start=${saved.start}&end=${saved.end}`);
+  }, [searchParams, startDate, endDate, router]);
+
+  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync server-fetched props when parent revalidates
     setShifts(initialShifts);
     setProfiles(initialProfiles);
@@ -190,8 +212,7 @@ export default function LiveShiftList({
   const sensors = useSafeDndSensors();
 
   const handleDateChange = (start: string, end: string) => {
-    document.cookie = `dashboard_start_date=${start}; path=/; max-age=31536000; SameSite=Lax`;
-    document.cookie = `dashboard_end_date=${end}; path=/; max-age=31536000; SameSite=Lax`;
+    persistDashboardWeeklyRange(start, end);
     navigateWithoutViewTransition(router.push, `?start=${start}&end=${end}`);
   };
 
