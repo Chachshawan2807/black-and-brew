@@ -10,11 +10,7 @@ import { refreshProactiveInsightDigest } from '@/app/actions/insight-actions';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { isOwnChange, getClientSessionId } from '@/lib/client-session';
-import { createBatchAccumulator } from '@/lib/inventory-notification-batching';
-import {
-  formatBatchedNotificationFromRows,
-  formatInventoryNotification,
-} from '@/lib/inventory-notification-formatter';
+import { formatInventoryNotification } from '@/lib/inventory-notification-formatter';
 import { isEligibleInventoryNotification } from '@/lib/inventory-notification-filter';
 import {
   formatDailyReportNotification,
@@ -461,12 +457,9 @@ export function useInventoryNotifications() {
         return;
       }
 
-      const notification =
-        eligible.length > 1
-          ? formatBatchedNotificationFromRows(eligible, loc)
-          : formatNotificationRow(eligible[eligible.length - 1], loc);
-
-      pushNotification(notification);
+      for (const row of eligible) {
+        pushNotification(formatNotificationRow(row, loc));
+      }
     },
     [filterEligibleRows, formatNotificationRow, pushNotification]
   );
@@ -610,8 +603,6 @@ export function useInventoryNotifications() {
     let teardownCancel: (() => void) | null = null;
     let retryCount = 0;
     let warnedUnavailable = false;
-    const batcher = createBatchAccumulator((rows) => processRows(rows));
-
     const stopChannel = (target = channel) => {
       if (!target) return;
       if (channel === target) channel = null;
@@ -658,7 +649,7 @@ export function useInventoryNotifications() {
           }
           if (module === 'insights' && !isEligibleInsightNotification(row)) return;
           if (module === 'security' && !isEligibleSecurityNotification(row)) return;
-          batcher.add(row);
+          processRows([row]);
         },
       );
     };
@@ -739,7 +730,6 @@ export function useInventoryNotifications() {
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
-      batcher.dispose();
       teardownCancel?.();
       teardownCancel = null;
       stopChannel();

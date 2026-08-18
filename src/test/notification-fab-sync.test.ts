@@ -81,6 +81,13 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('n.logId === dedupeKey');
   });
 
+  test('inventory realtime emits one notification per change log row', () => {
+    expect(hookSource).not.toContain('createBatchAccumulator');
+    expect(hookSource).not.toContain('formatBatchedNotificationFromRows');
+    expect(hookSource).toMatch(/for \(const row of eligible\) \{\s*pushNotification\(formatNotificationRow\(row, loc\)\)/);
+    expect(hookSource).toContain('processRows([row])');
+  });
+
   test('hook uses per-channel OS banner gating', () => {
     expect(hookSource).toContain('shouldShowOsNotification');
   });
