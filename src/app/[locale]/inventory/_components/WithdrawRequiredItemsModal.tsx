@@ -26,7 +26,6 @@ import { SortableDragHandle } from '@/components/ui/sortable-drag-handle';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useSafeDndSensors } from '@/lib/dnd-sensors';
-import { formatInventoryNumericDisplay } from '@/lib/inventory-stock';
 import type { InventoryStockFields } from '@/lib/inventory-stock';
 import { InventoryModalPortal } from './InventoryModalPortal';
 
@@ -84,10 +83,6 @@ function SortableWithdrawRow({
       </span>
       <span className="flex-1 min-w-0 truncate text-foreground font-normal">
         {item.name}
-      </span>
-      <span className="shrink-0 text-[12px] text-muted-foreground tabular-nums whitespace-nowrap pr-1">
-        {formatInventoryNumericDisplay(item.stock)}
-        {item.unit ? ` ${item.unit}` : ''}
       </span>
     </li>
   );
@@ -152,7 +147,7 @@ export default function WithdrawRequiredItemsModal({
           animate={modalContent.animate}
           exit={modalContent.exit}
           transition={modalContent.transition}
-          className="relative bg-card rounded-t-3xl md:rounded-3xl bb-shadow-xl w-full md:max-w-lg max-h-[85vh] overflow-hidden flex flex-col border border-border min-h-0 pb-[env(safe-area-inset-bottom)] transition-[max-height] duration-200"
+          className="relative bg-card rounded-t-3xl md:rounded-3xl bb-shadow-xl w-full md:max-w-sm max-h-[85vh] overflow-hidden flex flex-col border border-border min-h-0 pb-[env(safe-area-inset-bottom)] transition-[max-height] duration-200"
           style={modalContentStyle}
           onClick={(e) => e.stopPropagation()}
           role="dialog"
