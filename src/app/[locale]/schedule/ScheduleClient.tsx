@@ -1511,12 +1511,12 @@ export default function ScheduleClient({
               style={{ minWidth: SCHEDULE_TABLE_MIN_WIDTH }}
               onPointerLeave={handleGridPointerLeave}
             >
-              <div className="sticky top-0 z-[16] shrink-0">
+              <div className="sticky top-0 z-[16] shrink-0 bg-card">
                 <div
-                  className="bb-schedule-grid grid border-b border-border dark:border-[#f5c6cb] bg-red-50/10 dark:bb-pastel-surface dark:bg-[#fdeaea]"
+                  className="bb-schedule-grid grid border-b border-border dark:border-[#f5c6cb] bg-[#fdeaea] dark:bb-pastel-surface dark:bg-[#fdeaea]"
                   style={SCHEDULE_GRID_STYLE}
                 >
-                  <div className="bb-schedule-name-cell px-2 py-2 border-r border-b border-border dark:border-[#f5c6cb] flex items-center justify-center bg-card sticky left-0 z-20 font-normal md:static md:bg-red-50/20 dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
+                  <div className="bb-schedule-name-cell px-2 py-2 border-r border-b border-border dark:border-[#f5c6cb] flex items-center justify-center bg-[#fdeaea] sticky left-0 z-20 font-normal md:static md:bg-[#fdeaea] dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
                     <span className="bb-schedule-nowrap text-[12px] text-[#991b1b] font-normal uppercase tracking-widest whitespace-nowrap">นักขัตฤกษ์</span>
                   </div>
                   {weekDays.map(date => {
@@ -1575,7 +1575,7 @@ export default function ScheduleClient({
                 </div>
 
                 <div
-                  className="bb-schedule-grid grid bg-muted/40 border-b border-border shrink-0"
+                  className="bb-schedule-grid grid bg-card border-b border-border shrink-0"
                   style={SCHEDULE_GRID_STYLE}
                 >
                 <div className="bb-schedule-name-cell px-2 py-2 border-r border-b border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
@@ -1589,7 +1589,7 @@ export default function ScheduleClient({
                       key={date}
                       onPointerEnter={() => handleCellFocus('', date)}
                       className={cn(
-                        'p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-border transition-colors duration-150 min-h-[50px] bg-transparent relative',
+                        'p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-border transition-colors duration-150 min-h-[50px] bg-card relative',
                         scheduleCrosshairColumnHeaderClass(date, gridFocus),
                       )}
                     >

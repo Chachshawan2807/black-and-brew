@@ -365,9 +365,9 @@ export function InventoryHistoryModal({
 
             <table className="w-max text-left border-collapse table-auto">
 
-              <thead>
+              <thead className="sticky top-0 z-10 bg-card">
 
-                <tr className="bg-muted/50 border-b border-border">
+                <tr className="bg-card border-b border-border">
 
                   <th className="py-5 px-4 font-normal text-foreground/40 text-[13px] uppercase tracking-wider text-left whitespace-nowrap">
 

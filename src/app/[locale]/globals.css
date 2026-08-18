@@ -1108,6 +1108,28 @@
     touch-action: pan-x pan-y;
   }
 
+  /*
+   * Scrollable tables — opaque sticky header surfaces so row text does not bleed through.
+   * --muted is intentionally translucent; headers must use solid --card.
+   */
+  .bb-smooth-scroll thead[class*='sticky'] {
+    background-color: var(--card);
+  }
+
+  .bb-smooth-scroll thead[class*='sticky'] > tr {
+    background-color: var(--card);
+  }
+
+  .bb-smooth-scroll th[class*='sticky'][class*='top-0'] {
+    background-color: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .bb-sticky-scroll-header {
+    background-color: var(--card);
+  }
+
   /* Inventory editable rows are isolated so cell edits and DnD do not force full-grid reflow. */
   .bb-inventory-row-containment {
     contain: layout style paint;

@@ -345,7 +345,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
             <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin pb-6 box-border bb-table-wrapper">
               <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '780px' }}>
                 <thead>
-                  <tr className="border-b border-border bg-muted/50 bb-shadow-sm">
+                  <tr className="border-b border-border bg-card bb-shadow-sm">
                     <th 
                       style={{ width: `${colWidths.date}px` }} 
                       className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none border-r border-border/50"

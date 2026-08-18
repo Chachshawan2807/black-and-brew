@@ -277,8 +277,8 @@ export default function HomePurchaseOrdersSection({
               )}
             >
               <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10">
-                  <tr className="border-b border-border bg-muted/60">
+                <thead className="sticky top-0 z-10 bg-card">
+                  <tr className="border-b border-border bg-card">
                     <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-10">
                       #
                     </th>

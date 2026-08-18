@@ -168,8 +168,8 @@ export default function MonthlyRoster({
             <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y">
               <table className="w-max min-w-full border-collapse">
                 <thead>
-                  <tr className="bg-muted/50">
-                    <th className="sticky left-0 z-30 bg-muted/50 px-3 py-3 text-left border-b border-r border-border text-foreground font-normal whitespace-nowrap w-max shadow-sm bb-sticky-scroll-cell">
+                  <tr className="bg-card">
+                    <th className="sticky left-0 z-30 bg-card px-3 py-3 text-left border-b border-r border-border text-foreground font-normal whitespace-nowrap w-max shadow-sm bb-sticky-scroll-cell">
                       พนักงาน
                     </th>
                     {daysInInterval.map((day) => (

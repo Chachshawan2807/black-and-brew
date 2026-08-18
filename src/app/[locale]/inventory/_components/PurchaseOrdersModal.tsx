@@ -213,37 +213,37 @@ export default function PurchaseOrdersModal({
                     "py-4 font-normal text-[13px] w-12 text-center border-r",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-muted backdrop-blur-sm text-muted-foreground border-border z-10",
+                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
                   )}>#</th>
                   <th className={cn(
                     "py-4 font-normal text-[13px] text-left pl-4 border-r max-w-[10.5rem] w-[10.5rem]",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-muted backdrop-blur-sm text-muted-foreground border-border z-10",
+                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
                   )}>รายการ</th>
                   <th className={cn(
                     "py-4 font-normal text-[13px] text-center w-32 border-r",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-muted backdrop-blur-sm text-muted-foreground border-border z-10",
+                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
                   )}>จำนวนสั่งซื้อ</th>
                   <th className={cn(
                     "py-4 font-normal text-[13px] text-center w-24 border-r",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-muted backdrop-blur-sm text-muted-foreground border-border z-10",
+                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
                   )}>คงเหลือ</th>
                   <th className={cn(
                     "py-4 font-normal text-[13px] w-24 text-center border-r",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40 border-black/5"
-                      : "sticky top-0 bg-muted backdrop-blur-sm text-muted-foreground border-border z-10",
+                      : "sticky top-0 bg-card text-muted-foreground border-border z-10",
                   )}>หน่วย</th>
                   <th className={cn(
                     "py-4 font-normal text-[13px] w-32 text-center",
                     isExportMode
                       ? "bg-slate-50/90 text-black/40"
-                      : "sticky top-0 bg-muted backdrop-blur-sm text-muted-foreground z-10",
+                      : "sticky top-0 bg-card text-muted-foreground z-10",
                   )}>อัปเดตล่าสุด</th>
                 </tr>
               </thead>
