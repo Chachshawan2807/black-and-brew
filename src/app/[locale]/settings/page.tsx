@@ -2,7 +2,7 @@ import { Settings2 } from 'lucide-react';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const SettingsPageSections = createLazyFeatureClient(
-  () => import('./_components/SettingsPageSections').then((m) => ({ default: m.SettingsPageSections })),
+  () => import('./_components/SettingsPageSections'),
 );
 
 export default async function SettingsPage({

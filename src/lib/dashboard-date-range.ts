@@ -19,7 +19,7 @@ type DateRangeInput = {
   fallbackEnd: string;
 };
 
-function isIsoDate(value?: string): value is string {
+function isIsoDate(value?: string | null): value is string {
   return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
 }
 

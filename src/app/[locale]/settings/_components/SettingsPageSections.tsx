@@ -17,7 +17,7 @@ interface SettingsPageSectionsProps {
   isTh: boolean;
 }
 
-export function SettingsPageSections({ locale, isTh }: SettingsPageSectionsProps) {
+export default function SettingsPageSections({ locale, isTh }: SettingsPageSectionsProps) {
   const loadingLabel = isTh ? 'กำลังโหลด...' : 'Loading…';
   const biometricLocale = isTh ? 'th' : 'en';
   const [biometricKind, setBiometricKind] = useState<BiometricKind>(() =>

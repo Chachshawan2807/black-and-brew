@@ -27,6 +27,7 @@ import {
   wantsPushRegistration,
 } from '@/lib/push-subscription-client';
 import type { NotificationPreferences } from '@/lib/notification-types';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
 interface NotificationPreferencesSectionProps {
   locale: string;
@@ -137,18 +138,10 @@ export default function NotificationPreferencesSection({
       });
     };
 
-    if ('requestIdleCallback' in window) {
-      const id = window.requestIdleCallback(loadDiagnostics, { timeout: 3000 });
-      return () => {
-        cancelled = true;
-        window.cancelIdleCallback(id);
-      };
-    }
-
-    const timer = window.setTimeout(loadDiagnostics, 250);
+    const cancelIdle = scheduleIdleWork(loadDiagnostics, { timeout: 3000 });
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
+      cancelIdle();
     };
   }, [wantsPush, devicePushState]);
 

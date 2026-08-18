@@ -1,6 +1,8 @@
 /**
  * Warm settings lazy section chunks during idle time or hover intent.
  */
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
+
 const preloaded = new Set<string>();
 
 const SECTION_LOADERS: Record<string, () => Promise<unknown>> = {
@@ -30,12 +32,7 @@ export function preloadSettingsSectionsOnIdle(): void {
     }
   };
 
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(run, { timeout: 5000 });
-    return;
-  }
-
-  window.setTimeout(run, 2000);
+  scheduleIdleWork(run, { timeout: 5000 });
 }
 
 export function resetSettingsChunkPreloadForTests(): void {
