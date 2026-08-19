@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+vi.mock('@/lib/fonts', () => ({
+  APP_FONT_FAMILY_CSS: 'Inter, sans-serif',
+  appFontClassName: 'font-inter',
+}));
+
 const toBlobMock = vi.fn();
 const getFontEmbedCSSMock = vi.fn();
 
@@ -8,7 +13,7 @@ vi.mock('html-to-image', () => ({
   getFontEmbedCSS: (...args: unknown[]) => getFontEmbedCSSMock(...args),
 }));
 
-import { captureRosterAsPng, measureRosterExportContentHeight } from '@/lib/roster-export-capture';
+import { captureRosterAsPng, measureRosterExportContentHeight, applyRosterCaptureStyles } from '@/lib/roster-export-capture';
 
 describe('roster-export-capture', () => {
   beforeEach(() => {
@@ -83,7 +88,7 @@ describe('roster-export-capture', () => {
 
     expect(toBlobMock).toHaveBeenCalledWith(
       root,
-      expect.objectContaining({ height: 560 }),
+      expect.objectContaining({ height: 592 }),
     );
   });
 
@@ -113,5 +118,57 @@ describe('roster-export-capture', () => {
       element,
       expect.objectContaining({ filter }),
     );
+  });
+
+  test('applyRosterCaptureStyles forces desktop grid width and full Thai day names', () => {
+    const root = document.createElement('div');
+    root.id = 'blackandbrew-roster-export';
+
+    const staffHeader = document.createElement('div');
+    root.appendChild(staffHeader);
+
+    const grid = document.createElement('div');
+    grid.className = 'bb-roster-export-grid';
+
+    const header = document.createElement('div');
+    const shortDay = document.createElement('span');
+    shortDay.className = 'md:hidden';
+    shortDay.textContent = 'อา.';
+    const fullDay = document.createElement('span');
+    fullDay.className = 'hidden md:inline';
+    fullDay.textContent = 'อาทิตย์';
+    header.append(shortDay, fullDay);
+    grid.appendChild(header);
+
+    for (let i = 1; i < 7; i++) {
+      grid.appendChild(document.createElement('div'));
+    }
+
+    const dayCell = document.createElement('div');
+    const dateLabel = document.createElement('span');
+    dateLabel.textContent = '1';
+    const shiftPill = document.createElement('div');
+    shiftPill.textContent = '6:30';
+    dayCell.append(dateLabel, shiftPill);
+    grid.appendChild(dayCell);
+
+    root.appendChild(grid);
+
+    const restore = applyRosterCaptureStyles(root);
+
+    expect(root.style.width).toBe('840px');
+    expect(grid.style.gridTemplateColumns).toBe('repeat(7, 104px)');
+    expect(grid.style.gap).toBe('8px');
+    expect(staffHeader.style.flexDirection).toBe('row');
+    expect(dayCell.style.height).toBe('144px');
+    expect(shortDay.style.display).toBe('none');
+    expect(fullDay.style.display).toBe('inline');
+    expect(shiftPill.style.minHeight).toBe('50px');
+
+    restore();
+    expect(root.style.width).toBe('');
+    expect(grid.style.gridTemplateColumns).toBe('');
+    expect(shortDay.style.display).toBe('');
+    expect(fullDay.style.display).toBe('');
   });
 });
