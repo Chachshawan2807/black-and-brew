@@ -38,7 +38,7 @@ function setInline(
   value: string,
   important = false,
 ) {
-  if (!restores.has(node)) restores.set(node, { props: new Map() });
+  if (!restores.has(node)) restores.set(node, { props: new Map<string, string>() });
   const entry = restores.get(node)!;
   if (!entry.props.has(prop)) entry.props.set(prop, node.style.getPropertyValue(prop));
   node.style.setProperty(prop, value, important ? 'important' : '');
@@ -90,7 +90,7 @@ function applyRosterExportDayNameLabels(
     const header = grid.children[i];
     if (!(header instanceof HTMLElement)) continue;
 
-    const entry = restores.get(header) ?? { props: new Map() };
+    const entry: HtmlRestore = restores.get(header) ?? { props: new Map<string, string>() };
     if (!entry.html) entry.html = header.innerHTML;
     restores.set(header, entry);
 
