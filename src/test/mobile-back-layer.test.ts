@@ -28,6 +28,17 @@ describe('mobile-back-layer', () => {
     ).toBe(false);
   });
 
+  test('shouldSyncHistoryOnLayerClose skips sync when closing for route navigation', () => {
+    expect(
+      shouldSyncHistoryOnLayerClose(
+        false,
+        createMobileBackHistoryState('mobile-nav-drawer'),
+        'mobile-nav-drawer',
+        true,
+      ),
+    ).toBe(false);
+  });
+
   test('shouldSyncHistoryOnLayerClose syncs when UI closed matching layer state', () => {
     expect(
       shouldSyncHistoryOnLayerClose(

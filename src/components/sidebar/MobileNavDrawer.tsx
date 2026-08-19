@@ -43,6 +43,7 @@ export function MobileNavDrawer() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLElement>(null);
   const popoverSupported = useRef(supportsPopoverApi());
+  const closingForNavigationRef = useRef(false);
   const drawerOpen = useMobileNavDrawer((s) => s.isOpen);
   const setIsOpen = useMobileNavDrawer((s) => s.setIsOpen);
   const registerActions = useMobileNavDrawer((s) => s.registerActions);
@@ -86,10 +87,13 @@ export function MobileNavDrawer() {
     });
   }, [reduced]);
 
-  useMobileBackLayer('mobile-nav-drawer', drawerOpen, closeDrawer);
+  useMobileBackLayer('mobile-nav-drawer', drawerOpen, closeDrawer, {
+    closingForNavigationRef,
+  });
 
   const closeDrawerForNavigation = useCallback(() => {
     const scroller = scrollerRef.current;
+    closingForNavigationRef.current = true;
     hidePopoverIfNeeded();
     setIsOpen(false);
     if (scroller) {

@@ -30,7 +30,8 @@ export function shouldSyncHistoryOnLayerClose(
   dismissedByGesture: boolean,
   historyState: unknown,
   layerId: MobileBackLayerId,
+  closingForNavigation = false,
 ): boolean {
-  if (dismissedByGesture) return false;
+  if (dismissedByGesture || closingForNavigation) return false;
   return readMobileBackLayerId(historyState) === layerId;
 }

@@ -85,6 +85,16 @@ describe('PWA sidebar navigation reliability', () => {
     expect(pin).not.toContain('/images/logo.png');
   });
 
+  test('mobile drawer skips history.back when closing for route navigation', () => {
+    const drawer = readFile('components/sidebar/MobileNavDrawer.tsx');
+    const hook = readFile('hooks/use-mobile-back-layer.ts');
+
+    expect(drawer).toContain('closingForNavigationRef');
+    expect(drawer).toMatch(/closingForNavigationRef\.current = true[\s\S]*setIsOpen\(false\)/);
+    expect(hook).toContain('closingForNavigationRef');
+    expect(hook).toContain('closingForNavigation');
+  });
+
   test('mobile overlays intercept system back via history state instead of exiting PWA', () => {
     const hook = readFile('hooks/use-mobile-back-layer.ts');
     const drawer = readFile('components/sidebar/MobileNavDrawer.tsx');
