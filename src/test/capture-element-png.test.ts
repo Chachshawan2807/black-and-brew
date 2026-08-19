@@ -54,6 +54,35 @@ describe('captureElementAsPng', () => {
     );
   });
 
+  test('can keep root padding on the html-to-image clone', async () => {
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'scrollWidth', { value: 840 });
+    Object.defineProperty(element, 'scrollHeight', { value: 600 });
+
+    await captureElementAsPng(element, {
+      width: 840,
+      preservePadding: true,
+      padding: '32px',
+    });
+
+    const options = toBlobMock.mock.calls[0]?.[1] as { style: Record<string, string> };
+    expect(options.style.padding).toBe('32px');
+    expect(options.style.boxSizing).toBe('border-box');
+  });
+
+  test('can override capture width when scrollWidth is narrower than export layout', async () => {
+    const element = document.createElement('div');
+    Object.defineProperty(element, 'scrollWidth', { value: 512 });
+    Object.defineProperty(element, 'scrollHeight', { value: 600 });
+
+    await captureElementAsPng(element, { width: 840 });
+
+    expect(toBlobMock).toHaveBeenCalledWith(
+      element,
+      expect.objectContaining({ width: 840, height: 600 }),
+    );
+  });
+
   test('can preserve root overflow for rounded export wrappers', async () => {
     const element = document.createElement('div');
     Object.defineProperty(element, 'scrollWidth', { value: 800 });

@@ -14,6 +14,12 @@ export type CaptureElementPngOptions = {
   preserveOverflow?: boolean;
   /** Override capture height when scrollHeight includes extra bottom padding. */
   height?: number;
+  /** Override capture width when scrollWidth is narrower than the export layout. */
+  width?: number;
+  /** Keep the root node's padding on the html-to-image clone (default zeros padding). */
+  preservePadding?: boolean;
+  /** Padding applied to the clone when preservePadding is true. */
+  padding?: string;
 };
 
 type HtmlToImageModule = typeof import('html-to-image');
@@ -103,7 +109,7 @@ export async function captureElementAsPng(
   element: HTMLElement,
   options: CaptureElementPngOptions = {},
 ): Promise<Blob> {
-  const fullWidth = element.scrollWidth;
+  const fullWidth = options.width ?? element.scrollWidth;
   const fullHeight = options.height ?? element.scrollHeight;
   const pixelRatio = resolvePixelRatio(fullWidth, fullHeight, options.pixelRatio ?? 2);
 
@@ -130,10 +136,18 @@ export async function captureElementAsPng(
       preferredFontFormat: options.preferredFontFormat,
       style: {
         margin: '0',
-        padding: '0',
         border: 'none',
         boxShadow: 'none',
         maxHeight: 'none',
+        width: `${fullWidth}px`,
+        minWidth: `${fullWidth}px`,
+        maxWidth: `${fullWidth}px`,
+        ...(options.preservePadding
+          ? {
+              padding: options.padding ?? '',
+              boxSizing: 'border-box',
+            }
+          : { padding: '0' }),
         ...(options.preserveOverflow ? {} : { overflow: 'visible' }),
       },
       filter: options.filter,

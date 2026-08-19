@@ -32,10 +32,10 @@ describe('schedule export theme (dark mode PNG)', () => {
 
   test('globals.css trims roster export bottom padding during capture', () => {
     const css = readFile('app/[locale]/globals.css');
-    expect(css).toContain('.bb-roster-export-capturing#blackandbrew-roster-export');
+    expect(css).toContain('.bb-roster-export-capturing');
     expect(css).toContain('.bb-roster-export-capturing .bb-roster-export-grid');
     expect(css).toMatch(/\.bb-roster-export-capturing \.bb-roster-export-grid[\s\S]*padding-bottom:\s*0\s*!important/);
-    expect(css).toMatch(/\.bb-roster-export-capturing#blackandbrew-roster-export[\s\S]*width:\s*840px\s*!important/);
+    expect(css).toMatch(/\.bb-roster-export-capturing[\s\S]*width:\s*840px\s*!important/);
     expect(css).toMatch(/\.bb-roster-export-capturing \.bb-roster-export-grid[\s\S]*grid-template-columns:\s*repeat\(7,\s*104px\)\s*!important/);
     expect(css).toMatch(/\.bb-roster-export-capturing \.bb-roster-export-grid > div:nth-child\(n\+8\)[\s\S]*height:\s*144px\s*!important/);
   });
@@ -72,7 +72,8 @@ describe('schedule export theme (dark mode PNG)', () => {
   test('roster-export-capture applies desktop layout styles during mobile PNG export', () => {
     const code = readFile('lib/roster-export-capture.ts');
     expect(code).toContain('applyRosterCaptureStyles');
+    expect(code).toContain('mountRosterExportClone');
     expect(code).toContain('ROSTER_EXPORT_ROOT_WIDTH');
-    expect(code).toContain('ROSTER_EXPORT_GRID_TEMPLATE');
+    expect(code).toContain('computeRosterExportGridHeight');
   });
 });

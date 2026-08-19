@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   format, 
   eachDayOfInterval, 
-  getDay, 
   parseISO,
   startOfMonth,
   endOfMonth,
@@ -30,6 +29,11 @@ import {
 } from '@/lib/shift-colors';
 import { createShiftDateLookup, getShiftForProfileDate } from '@/lib/schedule/shift-lookups';
 import { persistDashboardRosterRange } from '@/lib/dashboard-date-range';
+import {
+  ROSTER_INDIVIDUAL_DAY_LABELS_FULL,
+  ROSTER_INDIVIDUAL_DAY_LABELS_SHORT,
+  mondayStartPadCount,
+} from '@/lib/roster/week-start';
 
 interface Profile {
   id: string;
@@ -279,16 +283,13 @@ export default function MonthlyRoster({
               </div>
 
               <div className="bb-roster-export-grid grid grid-cols-7 gap-1 md:gap-2 pb-24">
-                {['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'].map((day, idx) => {
-                  const fullDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-                  return (
-                    <div key={day} className="py-2 px-1 text-center text-foreground text-[11px] md:text-[12px] font-normal uppercase tracking-wider">
-                      <span className="md:hidden">{day}</span>
-                      <span className="hidden md:inline">{fullDays[idx]}</span>
-                    </div>
-                  );
-                })}
-                {daysInInterval.length > 0 && Array.from({ length: getDay(daysInInterval[0]) }).map((_, i) => (
+                {ROSTER_INDIVIDUAL_DAY_LABELS_SHORT.map((day, idx) => (
+                  <div key={day} className="py-2 px-1 text-center text-foreground text-[11px] md:text-[12px] font-normal uppercase tracking-wider">
+                    <span className="md:hidden">{day}</span>
+                    <span className="hidden md:inline">{ROSTER_INDIVIDUAL_DAY_LABELS_FULL[idx]}</span>
+                  </div>
+                ))}
+                {daysInInterval.length > 0 && Array.from({ length: mondayStartPadCount(daysInInterval[0]) }).map((_, i) => (
                   <div key={`empty-${i}`} className="bg-card rounded-xl sm:rounded-3xl h-20 sm:h-28 md:h-36 border border-border" />
                 ))}
                 {daysInInterval.map((day) => {
