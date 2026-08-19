@@ -40,8 +40,23 @@ describe('schedule export theme (dark mode PNG)', () => {
   test('globals.css maps muted surfaces inside bb-schedule-export-surface for PNG export', () => {
     const css = readFile('app/[locale]/globals.css');
     expect(css).toMatch(
-      /\.bb-schedule-export-surface :where\(\[class\*='bg-muted'\]\)[\s\S]*background-color:\s*rgb\(0 0 0 \/ 0\.04\)\s*!important/,
+      /\.bb-schedule-export-surface :where\(\.bg-muted, \[class~='bg-muted\/50'\], \[class~='bg-muted\/80'\]\)[\s\S]*background-color:\s*rgb\(0 0 0 \/ 0\.04\)\s*!important/,
     );
+    expect(css).not.toMatch(/:where\(\[class\*='bg-muted'\]\)/);
+  });
+
+  test('globals.css keeps schedule drag handles transparent (no false bg-muted match)', () => {
+    const css = readFile('app/[locale]/globals.css');
+    expect(css).toMatch(
+      /\.bb-schedule-export-surface \.bb-schedule-drag-handle[\s\S]*background-color:\s*transparent\s*!important/,
+    );
+    const schedule = readFile('app/[locale]/schedule/ScheduleClient.tsx');
+    const dragHandleLine = schedule
+      .split('\n')
+      .find((line) => line.includes('bb-schedule-drag-handle') && line.includes('className'));
+    expect(dragHandleLine).toBeDefined();
+    expect(dragHandleLine).toContain('bg-transparent');
+    expect(dragHandleLine).not.toContain('hover:bg-muted/30');
   });
 
   test('schedule-export-capture strips dark class before capture', () => {

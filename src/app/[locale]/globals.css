@@ -1219,9 +1219,15 @@
   background-color: #f7f5e8 !important;
 }
 
-.dark .bb-schedule-export-surface :where([class*='bg-muted']),
-.bb-schedule-export-surface :where([class*='bg-muted']) {
+/* Token match only — substring bg-muted selectors falsely match hover:bg-muted utilities */
+.dark .bb-schedule-export-surface :where(.bg-muted, [class~='bg-muted/50'], [class~='bg-muted/80']),
+.bb-schedule-export-surface :where(.bg-muted, [class~='bg-muted/50'], [class~='bg-muted/80']) {
   background-color: rgb(0 0 0 / 0.04) !important;
+}
+
+.bb-schedule-export-surface .bb-schedule-drag-handle {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .dark .bb-schedule-export-surface :where([class*='border-border']),

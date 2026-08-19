@@ -328,7 +328,7 @@ const SortableEmployeeRow = React.memo(({
             <div
               {...attributes}
               {...(isReadOnly ? {} : listeners)}
-              className={`bb-schedule-drag-handle relative z-[1] shrink-0 p-1.5 min-h-[44px] min-w-[40px] rounded-2xl bb-transition touch-none flex items-center justify-center ${isReadOnly ? 'opacity-60 cursor-not-allowed text-foreground/20' : 'cursor-grab active:cursor-grabbing hover:bg-muted/30 text-muted-foreground hover:text-foreground'}`}
+              className={`bb-schedule-drag-handle relative z-[1] shrink-0 p-1.5 min-h-[44px] min-w-[40px] rounded-2xl bb-transition touch-none flex items-center justify-center bg-transparent shadow-none ${isReadOnly ? 'opacity-60 cursor-not-allowed text-foreground/20' : 'cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground'}`}
               aria-label="ลากเพื่อเปลี่ยนลำดับ"
             >
               <GripVertical className="w-5 h-5" />
