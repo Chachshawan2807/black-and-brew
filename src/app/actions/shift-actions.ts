@@ -262,15 +262,20 @@ export async function saveShift(payload: ShiftPayload) {
   const cleanEndTime = datePart + 'T23:59:59';
 
   try {
-    const { data: shiftBefore, error: deleteError } = await supabaseAdmin
+    const { data: shiftBefore } = await supabaseAdmin
       .from('shifts')
-      .delete()
+      .select('id, employee_id, start_time, status, metadata')
       .eq('employee_id', parsed.data.employee_id)
       .eq('start_time', cleanStartTime)
-      .select('id, employee_id, start_time, status, metadata')
       .maybeSingle();
 
     const isUpdate = Boolean(shiftBefore);
+
+    const { error: deleteError } = await supabaseAdmin
+      .from('shifts')
+      .delete()
+      .eq('employee_id', parsed.data.employee_id)
+      .eq('start_time', cleanStartTime);
 
     if (deleteError) {
       console.error('[saveShift] Delete Error:', deleteError);
