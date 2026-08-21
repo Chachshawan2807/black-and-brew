@@ -1,4 +1,4 @@
-// v26
+// v27
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -129,22 +129,10 @@ function isIosPushClient() {
 function resolveSplitOsNotification(titleLine, detailLine) {
   const title = String(titleLine).trim().slice(0, OS_NOTIFICATION_TITLE_MAX);
   const body = String(detailLine).trim().slice(0, OS_NOTIFICATION_BODY_MAX);
-
-  if (isIosPushClient()) {
-    const merged = body ? `${title}\n${body}` : title;
-    return {
-      title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
-      body: '',
-    };
-  }
-
   return { title, body };
 }
 
-/**
- * iOS WebKit inserts "from [app]" between title and body. For stock ops, merge both
- * lines into title so the byline appears below the quantity line.
- */
+/** Title + body on all platforms — iOS lock screen shows only the first title line when body is empty. */
 function resolveOsNotificationDisplay(payload, unreadCount = 1) {
   const notification = payload.notification;
   const logicalTitle =
@@ -157,15 +145,6 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
   if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
     const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
     const bodyLine = trimmedSummary.slice(0, OS_NOTIFICATION_BODY_MAX);
-
-    if (isIosPushClient()) {
-      const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
-      return {
-        title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
-        body: '',
-      };
-    }
-
     return { title: titleLine, body: bodyLine };
   }
 

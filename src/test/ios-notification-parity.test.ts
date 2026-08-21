@@ -107,10 +107,8 @@ describe('iOS notification parity', () => {
     expect(sw).not.toMatch(
       /payload\.notification\s*&&\s*\(payload\.notification\.fieldSummary/,
     );
-    expect(sw).toMatch(
-      /if \(isIosPushClient\(\)\) \{[\s\S]*title: merged\.slice\(0, OS_NOTIFICATION_TITLE_MAX\)/,
-    );
-    expect(sw).not.toMatch(/body: payload\.body \|\| trimmedSummary/);
+    expect(sw).toMatch(/return \{ title, body \}/);
+    expect(sw).not.toMatch(/title: merged\.slice\(0, OS_NOTIFICATION_TITLE_MAX\)/);
   });
 
   test('foreground notification bridge applies iOS-safe options before showNotification', () => {

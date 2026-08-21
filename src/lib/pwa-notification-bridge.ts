@@ -74,26 +74,16 @@ export const OS_NOTIFICATION_TITLE_MAX = 120;
 export const OS_NOTIFICATION_BODY_MAX = 240;
 
 /**
- * Short headline in title, detail in body (Android). iOS merges into title so the byline
- * stays at the bottom. Used for schedule reports, insights, bean orders, security, etc.
+ * Short headline in title, detail in body. iOS lock screen shows only the first title line
+ * when body is empty — keep both fields populated on every platform.
  */
 export function buildSplitOsNotification(
   headline: string,
   detail: string,
-  options?: { isIos?: boolean },
+  _options?: { isIos?: boolean },
 ): { title: string; body: string } {
-  const isIos = options?.isIos ?? false;
   const titleLine = headline.trim().slice(0, OS_NOTIFICATION_TITLE_MAX);
   const bodyLine = detail.trim().slice(0, OS_NOTIFICATION_BODY_MAX);
-
-  if (isIos) {
-    const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
-    return {
-      title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
-      body: '',
-    };
-  }
-
   return { title: titleLine, body: bodyLine };
 }
 
@@ -102,8 +92,7 @@ export const buildDailyReportOsNotification = buildSplitOsNotification;
 
 /**
  * OS banner title/body for Web Push and system notifications.
- * Stock IN/OUT/ADJUST: Android keeps title + body separate; iOS merges both into title.
- * All other kinds: short title + detail body (prefers fieldSummary when provided).
+ * Title + body stay separate on all platforms (iOS ignores multiline titles when body is empty).
  */
 export function buildInventoryOsNotification(
   title: string,
@@ -112,7 +101,6 @@ export function buildInventoryOsNotification(
   _isTh: boolean,
   options?: { isIos?: boolean; fieldSummary?: string },
 ): { title: string; body: string } {
-  const isIos = options?.isIos ?? false;
   const trimmedTitle = title.trim();
   const trimmedSummary = summary.trim();
   const detail = (options?.fieldSummary ?? summary).trim();
@@ -120,19 +108,10 @@ export function buildInventoryOsNotification(
   if (isStockOperationNotificationTitle(trimmedTitle) && trimmedSummary) {
     const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
     const bodyLine = trimmedSummary.slice(0, OS_NOTIFICATION_BODY_MAX);
-
-    if (isIos) {
-      const merged = bodyLine ? `${titleLine}\n${bodyLine}` : titleLine;
-      return {
-        title: merged.slice(0, OS_NOTIFICATION_TITLE_MAX),
-        body: '',
-      };
-    }
-
     return { title: titleLine, body: bodyLine };
   }
 
-  return buildSplitOsNotification(trimmedTitle, detail, { isIos });
+  return buildSplitOsNotification(trimmedTitle, detail);
 }
 
 export function dispatchInventoryNotificationEvent(unreadCount: number): void {

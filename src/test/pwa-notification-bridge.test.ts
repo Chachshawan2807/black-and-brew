@@ -69,7 +69,7 @@ describe('pwa-notification-bridge', () => {
     expect(multi.body).toBe('+3 คงเหลือ 6');
   });
 
-  test('buildInventoryOsNotification merges stock lines into title on iOS so byline sits at bottom', () => {
+  test('buildInventoryOsNotification keeps stock title and body separate on iOS', () => {
     const single = buildInventoryOsNotification(
       '+ เมล็ดกาแฟคั่วอ่อน',
       '+2 คงเหลือ 2',
@@ -77,8 +77,8 @@ describe('pwa-notification-bridge', () => {
       true,
       { isIos: true },
     );
-    expect(single.title).toBe('+ เมล็ดกาแฟคั่วอ่อน\n+2 คงเหลือ 2');
-    expect(single.body).toBe('');
+    expect(single.title).toBe('+ เมล็ดกาแฟคั่วอ่อน');
+    expect(single.body).toBe('+2 คงเหลือ 2');
 
     const multi = buildInventoryOsNotification(
       '+ นมอัลมอนด์',
@@ -87,8 +87,8 @@ describe('pwa-notification-bridge', () => {
       true,
       { isIos: true },
     );
-    expect(multi.title).toBe('+ นมอัลมอนด์\n+3 คงเหลือ 6');
-    expect(multi.body).toBe('');
+    expect(multi.title).toBe('+ นมอัลมอนด์');
+    expect(multi.body).toBe('+3 คงเหลือ 6');
   });
 
   test('buildInventoryOsNotification truncates long non-stock body on Android', () => {
@@ -100,7 +100,7 @@ describe('pwa-notification-bridge', () => {
     expect(result.body).toBe('B'.repeat(OS_NOTIFICATION_BODY_MAX));
   });
 
-  test('buildInventoryOsNotification truncates long iOS stock merge', () => {
+  test('buildInventoryOsNotification truncates long stock lines on iOS', () => {
     const longItem = 'ก'.repeat(100);
     const result = buildInventoryOsNotification(
       `+ ${longItem}`,
@@ -109,8 +109,9 @@ describe('pwa-notification-bridge', () => {
       true,
       { isIos: true },
     );
-    expect(result.title.length).toBeLessThanOrEqual(120);
-    expect(result.body).toBe('');
+    expect(result.title.length).toBeLessThanOrEqual(OS_NOTIFICATION_TITLE_MAX);
+    expect(result.body.length).toBeLessThanOrEqual(OS_NOTIFICATION_BODY_MAX);
+    expect(result.body).not.toBe('');
   });
 
   test('buildInventoryOsNotification keeps non-stock title and body separate', () => {
@@ -138,20 +139,20 @@ describe('pwa-notification-bridge', () => {
     expect(android.body).toContain('งานอื่น');
   });
 
-  test('buildSplitOsNotification merges schedule lines into title on iOS', () => {
+  test('buildSplitOsNotification keeps schedule headline and detail separate on iOS', () => {
     const scheduleBody = 'ตารางงาน 09-08-2026 (วันนี้) · เข้างาน 2 คน\nปิ่น 6:30, มุก 7:00';
     const ios = buildSplitOsNotification('ตารางงานวันนี้', scheduleBody, { isIos: true });
-    expect(ios.title).toContain('ตารางงานวันนี้');
-    expect(ios.title).toContain('ปิ่น 6:30');
-    expect(ios.body).toBe('');
+    expect(ios.title).toBe('ตารางงานวันนี้');
+    expect(ios.body).toBe(scheduleBody);
   });
 
-  test('buildSplitOsNotification truncates long iOS merge to title max', () => {
+  test('buildSplitOsNotification truncates long iOS title and body independently', () => {
     const longHeadline = 'ก'.repeat(80);
     const longDetail = 'ข'.repeat(200);
     const ios = buildSplitOsNotification(longHeadline, longDetail, { isIos: true });
     expect(ios.title.length).toBeLessThanOrEqual(OS_NOTIFICATION_TITLE_MAX);
-    expect(ios.body).toBe('');
+    expect(ios.body.length).toBeLessThanOrEqual(OS_NOTIFICATION_BODY_MAX);
+    expect(ios.body).not.toBe('');
   });
 
   test('system notification uses brand icon and separate mobile badge mask', () => {
