@@ -61,12 +61,8 @@ describe('NotificationPanel mobile layout', () => {
     expect(code).toMatch(/flex-1 min-h-0 min-w-0 overflow-y-auto/);
   });
 
-  test('notification rows are view-only and do not navigate on click', () => {
-    const code = readFile('components/notifications/NotificationPanel.tsx');
-    expect(code).not.toContain('useRouter');
-    expect(code).not.toContain('router.push');
-    expect(code).not.toContain('onNavigate');
-    expect(code).not.toMatch(/role="button"/);
-    expect(code).not.toContain('cursor-pointer');
+  test('view-only iron rule is enforced in notification-panel-view-only.test.ts', () => {
+    const ironRuleTest = readFile('test/notification-panel-view-only.test.ts');
+    expect(ironRuleTest).toContain('Notification panel view-only iron rule');
   });
 });

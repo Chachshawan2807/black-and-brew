@@ -61,11 +61,12 @@ describe('PWA native shell', () => {
     expect(m.orientation).toBeUndefined();
   });
 
-  test('PwaRegister uses SPA navigation for notification deep links', () => {
+  test('PwaRegister syncs badge on Web Push click without SPA navigation', () => {
     const pwa = readFileSync(resolve(ROOT, 'src/components/PwaRegister.tsx'), 'utf-8');
-    expect(pwa).toContain('navigateWithoutViewTransition');
-    expect(pwa).not.toMatch(/navigateWithViewTransition\(router\.push, safeUrl\)/);
-    expect(pwa).not.toContain('window.location.href = safeUrl');
+    expect(pwa).toContain("data?.type !== 'NOTIFICATION_CLICK'");
+    expect(pwa).toContain('syncBadgeFromStorage');
+    expect(pwa).not.toContain('navigateWithoutViewTransition');
+    expect(pwa).not.toContain('router.push');
   });
 
   test('PwaShellSync updates theme-color when resolved theme changes', () => {

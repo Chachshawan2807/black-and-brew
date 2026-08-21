@@ -20,9 +20,11 @@ describe('offline background sync wiring', () => {
     expect(source).toContain('unregisterOrphanedServiceWorkersInDev');
   });
 
-  test('PwaRegister blocks cross-origin notification navigation', () => {
+  test('PwaRegister syncs badge on Web Push click without route changes', () => {
     const source = readFileSync(pwaRegisterPath, 'utf-8');
-    expect(source).toContain('resolveSameOriginNavigationUrl');
-    expect(source).toContain('blocked cross-origin notification navigation');
+    expect(source).toContain("data?.type !== 'NOTIFICATION_CLICK'");
+    expect(source).toContain('syncBadgeFromStorage');
+    expect(source).not.toContain('resolveSameOriginNavigationUrl');
+    expect(source).not.toContain('router.push');
   });
 });

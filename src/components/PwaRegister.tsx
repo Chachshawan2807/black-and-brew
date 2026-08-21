@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { navigateWithoutViewTransition } from '@/lib/view-transition';
+import { useParams } from 'next/navigation';
 import { readNotificationState } from '@/lib/notification-sync';
 import { loadNotificationPreferences, ensureFullNotificationPreferencesOnAuth } from '@/lib/notification-preferences';
 import {
@@ -22,12 +21,10 @@ import {
   installServiceWorkerUpdateListener,
   unregisterOrphanedServiceWorkersInDev,
 } from '@/lib/pwa-update';
-import { resolveSameOriginNavigationUrl } from '@/lib/safe-navigation-url';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 
 export default function PwaRegister() {
   const params = useParams();
-  const router = useRouter();
   const locale = (params?.locale as string) || 'th';
 
   useEffect(() => {
@@ -49,17 +46,9 @@ export default function PwaRegister() {
       };
 
       onNotificationClick = (event: MessageEvent) => {
-        const data = event.data as { type?: string; url?: string } | undefined;
-        if (data?.type !== 'NOTIFICATION_CLICK' || !data.url) return;
-
-        const safeUrl = resolveSameOriginNavigationUrl(data.url, window.location.origin);
-        if (!safeUrl) {
-          console.warn('[PwaRegister] blocked cross-origin notification navigation:', data.url);
-          return;
-        }
-
+        const data = event.data as { type?: string } | undefined;
+        if (data?.type !== 'NOTIFICATION_CLICK') return;
         syncBadgeFromStorage();
-        navigateWithoutViewTransition(router.push, safeUrl);
       };
 
       onResume = () => {
@@ -122,7 +111,7 @@ export default function PwaRegister() {
       removeOfflineListeners();
       removeSwUpdateListener?.();
     };
-  }, [locale, router]);
+  }, [locale]);
 
   return null;
 }

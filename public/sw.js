@@ -528,8 +528,7 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const rawUrl = event.notification?.data?.url || '/';
-  const url = new URL(rawUrl, self.location.origin).href;
+  const appShellUrl = new URL(APP_SHELL_URL, self.location.origin).href;
   event.waitUntil(
     (async () => {
       let unread = event.notification?.data?.unreadCount;
@@ -546,12 +545,12 @@ self.addEventListener('notificationclick', (event) => {
       });
       for (const client of windowClients) {
         if ('focus' in client) {
-          client.postMessage({ type: 'NOTIFICATION_CLICK', url });
+          client.postMessage({ type: 'NOTIFICATION_CLICK' });
           return client.focus();
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow(url);
+        return self.clients.openWindow(appShellUrl);
       }
     })(),
   );

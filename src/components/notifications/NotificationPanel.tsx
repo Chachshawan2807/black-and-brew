@@ -1,5 +1,7 @@
 'use client';
 
+/** IRON RULE: in-app notification rows are view-only — no links or navigation. See AGENTS.md § notification-panel-view-only-standard */
+
 import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CalendarRange, CheckCheck, Trash2 } from 'lucide-react';

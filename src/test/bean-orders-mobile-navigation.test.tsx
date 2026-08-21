@@ -57,6 +57,7 @@ vi.mock('next/navigation', () => ({
     prefetch: vi.fn(),
     push: vi.fn(),
   }),
+  usePathname: () => '/th/bean-orders',
 }));
 
 describe('bean orders mobile navigation reliability', () => {
@@ -77,10 +78,10 @@ describe('bean orders mobile navigation reliability', () => {
     expect(page).not.toContain('createLazyFeatureClient');
   });
 
-  test('notification deep links bypass view transitions for reliable mobile opens', () => {
+  test('Web Push click does not navigate away from the current page', () => {
     const pwa = readSrc('components/PwaRegister.tsx');
-    expect(pwa).toContain('navigateWithoutViewTransition');
-    expect(pwa).not.toMatch(/navigateWithViewTransition\(router\.push, safeUrl\)/);
+    expect(pwa).not.toContain('navigateWithoutViewTransition');
+    expect(pwa).not.toContain('router.push');
   });
 
   test('page transition defers view transitions until viewport is known', () => {

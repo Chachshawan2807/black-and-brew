@@ -205,6 +205,19 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 - **Implementation Style:** ใช้สไตล์การเขียนแบบ Shared Component หรือ Tailwind Utility ที่ขยาย Hitbox ให้ครอบคลุมทั้งกรอบ Input เพื่อให้พนักงานใช้งานได้สะดวกบนทุกอุปกรณ์
 <!-- END:clickable-input-rules -->
 
+<!-- BEGIN:notification-panel-view-only-standard -->
+
+## NOTIFICATION PANEL — VIEW-ONLY (IRON RULE)
+
+หน้าต่างการแจ้งเตือนในแอป (`NotificationPanel` และแถวรายการภายใน) เป็น **inbox แบบดูอย่างเดียว** — แสดงข้อความ รายละเอียด และเวลาเท่านั้น
+
+- ❌ **ห้ามเด็ดขาด:** ลิงก์ ปุ่มนำทาง หรือการคลิกแถวเพื่อไปหน้าอื่น — ไม่มี `<Link>`, `<a href>`, `router.push`, `useRouter`, `window.open`, `metadata.url` สำหรับนำทางจากแถว, `role="button"` / `cursor-pointer` บนแถว, หรือเปิด modal/หน้าต่างอื่นจากรายการ
+- ✅ **อนุญาตเฉพาะ chrome ของ panel:** ปิด (backdrop / ปุ่ม X / mobile back), อ่านทั้งหมด, ล้างประวัติ
+- ✅ **ทดสอบบังคับ:** `src/test/notification-panel-view-only.test.ts` — ต้องผ่านก่อน merge ทุกครั้งที่แตะ `NotificationPanel` หรือแถวแจ้งเตือน
+- ℹ️ **ขอบเขต Web Push:** การแตะ OS notification เปิด/โฟกัสแอปเท่านั้น (`APP_SHELL_URL`) — ห้าม deep link ไปหน้าอื่น
+
+<!-- END:notification-panel-view-only-standard -->
+
 <!-- BEGIN:data-sync-standard -->
 
 ## DATA SYNCHRONIZATION STANDARD

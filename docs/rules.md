@@ -1,6 +1,6 @@
 # Rules — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-11 | Enforcement: Mandatory
+> Version: 9.4 | Last Updated: 2026-08-21 | Enforcement: Mandatory
 
 ---
 
@@ -93,6 +93,19 @@
 - Use functional updates: `setItems(prev => [...prev, newItem])`
 - Optimistic UI: update local state immediately, sync DB in background
 - Rollback on failure: restore previous state if DB sync fails
+
+### Notification Panel — View-Only (IRON RULE)
+
+หน้าต่างการแจ้งเตือนในแอป (`src/components/notifications/NotificationPanel.tsx`) เป็น inbox แบบดูอย่างเดียว — ห้ามนำทางออกจาก panel หรือเปิดหน้าต่างอื่นจากรายการ
+
+| Rule | Requirement |
+| --- | --- |
+| แถวรายการ | แสดง title, รายละเอียด, เวลา — ไม่มี onClick นำทาง |
+| ลิงก์ | ❌ ห้าม `<Link>`, `<a href>`, `router.push`, `window.open` บนแถว |
+| metadata.url | ❌ ห้ามใช้นำทางจาก in-app panel |
+| Web Push click | ✅ เปิด/โฟกัสแอป (`APP_SHELL_URL`) เท่านั้น — ❌ ห้าม deep link |
+| Chrome panel | ✅ ปิด, อ่านทั้งหมด, ล้างประวัติ เท่านั้น |
+| Regression test | `src/test/notification-panel-view-only.test.ts` |
 
 ### Spreadsheet UI Rules
 
