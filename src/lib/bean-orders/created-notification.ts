@@ -69,13 +69,53 @@ export function resolveBeanOrderCreatedCustomerName(
   });
 }
 
+export function getBeanOrderCreatedHeadline(locale = 'th'): string {
+  return locale === 'th' ? 'ออเดอร์เมล็ดกาแฟใหม่' : 'New coffee bean order';
+}
+
+export const BEAN_ORDER_CREATED_OS_TITLE_MAX = 120;
+export const BEAN_ORDER_CREATED_OS_BODY_MAX = 240;
+
+/** OS tray: headline + customer on title (iOS) or in body (Android), items always in body. */
+export function buildBeanOrderCreatedOsNotification(
+  headline: string,
+  customerLine: string,
+  itemsSummary: string,
+  isIos = false,
+): { title: string; body: string } {
+  const head = headline.trim().slice(0, BEAN_ORDER_CREATED_OS_TITLE_MAX);
+  const customer = customerLine.trim();
+  const items = itemsSummary.trim().slice(0, BEAN_ORDER_CREATED_OS_BODY_MAX);
+
+  if (isIos) {
+    const titleMerged = customer
+      ? `${head}\n${customer}`.slice(0, BEAN_ORDER_CREATED_OS_TITLE_MAX)
+      : head;
+    return { title: titleMerged, body: items };
+  }
+
+  const bodyParts: string[] = [];
+  if (customer) bodyParts.push(customer);
+  if (items) bodyParts.push(items);
+  return {
+    title: head,
+    body: bodyParts.join('\n').slice(0, BEAN_ORDER_CREATED_OS_BODY_MAX),
+  };
+}
+
 export function buildBeanOrderCreatedCopy(
   input: BeanOrderCreatedNotifyInput,
   locale = 'th',
-): { title: string; summary: string; fieldSummary: string } {
-  const title = resolveBeanOrderCreatedCustomerName(input);
+): {
+  headline: string;
+  customerLine: string;
+  summary: string;
+  fieldSummary: string;
+} {
+  const headline = getBeanOrderCreatedHeadline(locale);
+  const customerLine = resolveBeanOrderCreatedCustomerName(input);
   const summary = formatBeanOrderCreatedItemsSummary(input.lines, locale);
-  return { title, summary, fieldSummary: summary };
+  return { headline, customerLine, summary, fieldSummary: summary };
 }
 
 /** Persist order-created event so FAB / mobile panel catch it via data_change_logs realtime. */
@@ -87,7 +127,10 @@ export async function recordBeanOrderCreatedNotification(
 
   const locale = input.locale ?? 'th';
   const logId = beanOrderCreatedNotificationLogId(input.orderId);
-  const { title, summary, fieldSummary } = buildBeanOrderCreatedCopy(input, locale);
+  const { headline, customerLine, summary, fieldSummary } = buildBeanOrderCreatedCopy(
+    input,
+    locale,
+  );
   const url = `/${locale}/bean-orders/${input.orderId}`;
   const isTh = locale === 'th';
 
@@ -137,8 +180,8 @@ export async function recordBeanOrderCreatedNotification(
       metadata: {
         kind: 'bean_order_created',
         notificationLogId: logId,
-        title,
-        summary,
+        title: headline,
+        summary: customerLine,
         fieldSummary,
         url,
         locale,
@@ -206,22 +249,27 @@ export function formatBeanOrderCreatedNotification(
   const customerName = typeof meta.customerName === 'string' ? meta.customerName : null;
   const recipientName = typeof meta.recipientName === 'string' ? meta.recipientName : '';
   const lines = parseCreatedLines(meta);
-  const resolvedTitle =
+  const headline = getBeanOrderCreatedHeadline(locale);
+  const customerLine =
     customerName || recipientName
       ? resolveBeanOrderCreatedCustomerName({ customerName, recipientName })
-      : typeof meta.title === 'string'
-        ? meta.title
-        : locale === 'th'
-          ? 'ลูกค้า'
-          : 'Customer';
-  const summary =
+      : typeof meta.summary === 'string' && meta.summary.trim()
+        ? meta.summary.trim()
+        : typeof meta.title === 'string' && meta.title.trim() && meta.title !== headline
+          ? meta.title.trim()
+          : locale === 'th'
+            ? 'ลูกค้า'
+            : 'Customer';
+  const itemsSummary =
     lines.length > 0
       ? formatBeanOrderCreatedItemsSummary(lines, locale)
-      : typeof meta.summary === 'string'
-        ? meta.summary
-        : '';
-  const fieldSummary =
-    typeof meta.fieldSummary === 'string' && lines.length === 0 ? meta.fieldSummary : summary;
+      : typeof meta.fieldSummary === 'string' && meta.fieldSummary.trim()
+        ? meta.fieldSummary.trim()
+        : typeof meta.summary === 'string' &&
+            meta.summary.trim() &&
+            meta.summary.trim() !== customerLine
+          ? meta.summary.trim()
+          : '';
 
   return {
     id: logId,
@@ -231,9 +279,9 @@ export function formatBeanOrderCreatedNotification(
     entityLabel: row.entity_label,
     actorLabel: row.actor_label,
     occurredAt: row.occurred_at,
-    title: resolvedTitle,
-    summary,
-    fieldSummary,
+    title: headline,
+    summary: customerLine,
+    fieldSummary: itemsSummary,
     priority: 'high',
     read: false,
     batchedCount: 1,

@@ -38,13 +38,17 @@ function sampleSubscription(overrides: Partial<PushSubscriptionRow> = {}): PushS
 }
 
 describe('bean order created web push', () => {
-  test('builds payload with customer title, line summary, and bean-orders detail URL', () => {
+  test('builds payload with headline, customer, line summary, and bean-orders detail URL', () => {
     const payload = buildBeanOrderCreatedPushPayload(sampleInput, 'th');
 
     expect(payload.kind).toBe('bean_order_created');
-    expect(payload.title).toBe('คุณเอ');
+    expect(payload.title).toBe('ออเดอร์เมล็ดกาแฟใหม่');
+    expect(payload.body).toContain('คุณเอ');
     expect(payload.body).toContain('Ethiopia 250 ก.');
     expect(payload.body).toContain('Colombia 500 ก.');
+    expect(payload.notification.title).toBe('ออเดอร์เมล็ดกาแฟใหม่');
+    expect(payload.notification.summary).toBe('คุณเอ');
+    expect(payload.notification.fieldSummary).toContain('Ethiopia 250 ก.');
     expect(payload.url).toBe('/th/bean-orders/order-1');
     expect(payload.tag).toBe('bb-bean-created-order-1');
     expect(payload.notification.metadata.kind).toBe('bean_order_created');

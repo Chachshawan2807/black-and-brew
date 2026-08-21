@@ -107,8 +107,10 @@ describe('iOS notification parity', () => {
     expect(sw).not.toMatch(
       /payload\.notification\s*&&\s*\(payload\.notification\.fieldSummary/,
     );
-    expect(sw).toMatch(/return \{ title, body \}/);
-    expect(sw).not.toMatch(/title: merged\.slice\(0, OS_NOTIFICATION_TITLE_MAX\)/);
+    expect(sw).toContain('function resolveBeanOrderCreatedOsDisplay');
+    expect(sw).toMatch(
+      /payload\.kind === 'bean_order_created'[\s\S]*resolveBeanOrderCreatedOsDisplay/,
+    );
   });
 
   test('foreground notification bridge applies iOS-safe options before showNotification', () => {

@@ -124,7 +124,7 @@ describe('notification display icons', () => {
 
   test('uses coffee icon and order blue surface for bean order created notifications', () => {
     const item = sampleNotification({
-      title: 'คุณเอ',
+      title: 'ออเดอร์เมล็ดกาแฟใหม่',
       metadata: {
         kind: 'bean_order_created',
         module: 'bean_orders',

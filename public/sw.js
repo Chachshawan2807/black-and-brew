@@ -1,4 +1,4 @@
-// v27
+// v28
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -132,6 +132,27 @@ function resolveSplitOsNotification(titleLine, detailLine) {
   return { title, body };
 }
 
+function resolveBeanOrderCreatedOsDisplay(headline, customerLine, itemsSummary) {
+  const head = String(headline).trim().slice(0, OS_NOTIFICATION_TITLE_MAX);
+  const customer = String(customerLine).trim();
+  const items = String(itemsSummary).trim().slice(0, OS_NOTIFICATION_BODY_MAX);
+
+  if (isIosPushClient()) {
+    const titleMerged = customer
+      ? `${head}\n${customer}`.slice(0, OS_NOTIFICATION_TITLE_MAX)
+      : head;
+    return { title: titleMerged, body: items };
+  }
+
+  const bodyParts = [];
+  if (customer) bodyParts.push(customer);
+  if (items) bodyParts.push(items);
+  return {
+    title: head,
+    body: bodyParts.join('\n').slice(0, OS_NOTIFICATION_BODY_MAX),
+  };
+}
+
 /** Title + body on all platforms — iOS lock screen shows only the first title line when body is empty. */
 function resolveOsNotificationDisplay(payload, unreadCount = 1) {
   const notification = payload.notification;
@@ -146,6 +167,15 @@ function resolveOsNotificationDisplay(payload, unreadCount = 1) {
     const titleLine = trimmedTitle.slice(0, OS_NOTIFICATION_TITLE_MAX);
     const bodyLine = trimmedSummary.slice(0, OS_NOTIFICATION_BODY_MAX);
     return { title: titleLine, body: bodyLine };
+  }
+
+  if (payload.kind === 'bean_order_created') {
+    const headline =
+      readNotificationString(notification && notification.title) || trimmedTitle;
+    const customerLine = readNotificationString(notification && notification.summary);
+    const itemsSummary =
+      readNotificationString(notification && notification.fieldSummary) || trimmedSummary;
+    return resolveBeanOrderCreatedOsDisplay(headline, customerLine, itemsSummary);
   }
 
   if (isDailyReportPayload(payload)) {

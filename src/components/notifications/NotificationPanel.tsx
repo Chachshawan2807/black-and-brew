@@ -24,9 +24,15 @@ import type { InventoryNotification } from '@/lib/notification-types';
 import { ExpandableLines } from '@/components/ui/expandable-lines';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { NotificationItemIcon } from '@/components/notifications/NotificationItemIcon';
-import { isScheduleNotification, isSecurityNotification, isProactiveInsightNotification } from '@/lib/notification-display-icon';
+import { isScheduleNotification, isSecurityNotification, isProactiveInsightNotification, isBeanOrderCreatedNotification } from '@/lib/notification-display-icon';
 
 function getNotificationDetailLines(item: InventoryNotification): string[] {
+  if (isBeanOrderCreatedNotification(item)) {
+    const lines: string[] = [];
+    if (item.summary.trim()) lines.push(item.summary.trim());
+    if (item.fieldSummary.trim()) lines.push(item.fieldSummary.trim());
+    return lines;
+  }
   if (
     (isScheduleNotification(item) ||
       isSecurityNotification(item) ||

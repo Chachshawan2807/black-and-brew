@@ -1,9 +1,11 @@
 import {
   beanOrderCreatedNotificationLogId,
   buildBeanOrderCreatedCopy,
+  buildBeanOrderCreatedOsNotification,
   recordBeanOrderCreatedNotification,
   type BeanOrderCreatedNotifyInput,
 } from '@/lib/bean-orders/created-notification';
+import { isIosWebPushClient } from '@/lib/pwa-assets';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type InventoryNotification,
@@ -17,7 +19,6 @@ import {
   type PushSubscriptionRow,
 } from '@/lib/web-push';
 import { buildPwaNotificationAssetPaths, type PwaNotificationAssetPaths } from '@/lib/pwa-assets';
-import { buildInventoryOsNotification } from '@/lib/pwa-notification-bridge';
 
 export type { BeanOrderCreatedNotifyInput };
 
@@ -37,12 +38,18 @@ export function buildBeanOrderCreatedPushPayload(
   input: BeanOrderCreatedNotifyInput,
   locale = 'th',
 ): BeanOrderCreatedPushPayload {
-  const { title, summary, fieldSummary } = buildBeanOrderCreatedCopy(input, locale);
+  const { headline, customerLine, summary, fieldSummary } = buildBeanOrderCreatedCopy(
+    input,
+    locale,
+  );
   const tag = beanOrderCreatedNotificationLogId(input.orderId);
   const url = `/${locale}/bean-orders/${input.orderId}`;
-  const osNotification = buildInventoryOsNotification(title, summary, 1, locale === 'th', {
-    fieldSummary,
-  });
+  const osNotification = buildBeanOrderCreatedOsNotification(
+    headline,
+    customerLine,
+    summary,
+    isIosWebPushClient(),
+  );
   const now = new Date().toISOString();
 
   return {
@@ -62,8 +69,8 @@ export function buildBeanOrderCreatedPushPayload(
       entityLabel: input.orderNo,
       actorLabel: locale === 'th' ? 'ระบบออเดอร์เมล็ด' : 'Bean order system',
       occurredAt: now,
-      title,
-      summary,
+      title: headline,
+      summary: customerLine,
       fieldSummary,
       priority: 'high',
       read: false,

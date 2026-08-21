@@ -3,8 +3,10 @@ import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import {
   beanOrderCreatedNotificationLogId,
   buildBeanOrderCreatedCopy,
+  buildBeanOrderCreatedOsNotification,
   formatBeanOrderCreatedItemsSummary,
   formatBeanOrderCreatedNotification,
+  getBeanOrderCreatedHeadline,
   isEligibleBeanOrderCreatedNotification,
   resolveBeanOrderCreatedCustomerName,
 } from '@/lib/bean-orders/created-notification';
@@ -32,8 +34,8 @@ function sampleRow(overrides: Partial<DataChangeLogRow> = {}): DataChangeLogRow 
     metadata: {
       kind: 'bean_order_created',
       notificationLogId: 'bb-bean-created-order-1',
-      title: 'คุณเอ',
-      summary: 'Ethiopia 250 ก. · Colombia 500 ก.',
+      title: 'ออเดอร์เมล็ดกาแฟใหม่',
+      summary: 'คุณเอ',
       fieldSummary: 'Ethiopia 250 ก. · Colombia 500 ก.',
       url: '/th/bean-orders/order-1',
       orderNo: 'BO-20260722-003',
@@ -77,7 +79,7 @@ describe('bean order created notification helpers', () => {
     ).toBe('เอ ใจดี');
   });
 
-  test('builds copy with customer title and line summary only', () => {
+  test('builds copy with headline, customer line, and items summary', () => {
     const copy = buildBeanOrderCreatedCopy(
       {
         orderId: 'order-1',
@@ -89,9 +91,35 @@ describe('bean order created notification helpers', () => {
       'th',
     );
 
-    expect(copy.title).toBe('คุณเอ');
+    expect(copy.headline).toBe('ออเดอร์เมล็ดกาแฟใหม่');
+    expect(copy.customerLine).toBe('คุณเอ');
     expect(copy.summary).toBe('Ethiopia 250 ก.');
     expect(copy.fieldSummary).toBe('Ethiopia 250 ก.');
+  });
+
+  test('buildBeanOrderCreatedOsNotification splits headline, customer, and items per platform', () => {
+    const android = buildBeanOrderCreatedOsNotification(
+      'ออเดอร์เมล็ดกาแฟใหม่',
+      'คุณเอ',
+      'Ethiopia 250 ก. · Colombia 500 ก.',
+      false,
+    );
+    expect(android.title).toBe('ออเดอร์เมล็ดกาแฟใหม่');
+    expect(android.body).toBe('คุณเอ\nEthiopia 250 ก. · Colombia 500 ก.');
+
+    const ios = buildBeanOrderCreatedOsNotification(
+      'ออเดอร์เมล็ดกาแฟใหม่',
+      'คุณเอ',
+      'Ethiopia 250 ก. · Colombia 500 ก.',
+      true,
+    );
+    expect(ios.title).toBe('ออเดอร์เมล็ดกาแฟใหม่\nคุณเอ');
+    expect(ios.body).toBe('Ethiopia 250 ก. · Colombia 500 ก.');
+  });
+
+  test('getBeanOrderCreatedHeadline is localized', () => {
+    expect(getBeanOrderCreatedHeadline('th')).toBe('ออเดอร์เมล็ดกาแฟใหม่');
+    expect(getBeanOrderCreatedHeadline('en')).toBe('New coffee bean order');
   });
 
   test('eligibility and formatting for bean_order_created logs', () => {
@@ -106,8 +134,9 @@ describe('bean order created notification helpers', () => {
     ).toBe(false);
 
     const formatted = formatBeanOrderCreatedNotification(sampleRow(), 'th');
-    expect(formatted.title).toBe('คุณเอ');
-    expect(formatted.summary).toBe('Ethiopia 250 ก. · Colombia 500 ก.');
+    expect(formatted.title).toBe('ออเดอร์เมล็ดกาแฟใหม่');
+    expect(formatted.summary).toBe('คุณเอ');
+    expect(formatted.fieldSummary).toBe('Ethiopia 250 ก. · Colombia 500 ก.');
     expect(formatted.metadata.kind).toBe('bean_order_created');
     expect(formatted.metadata.url).toBe('/th/bean-orders/order-1');
     expect(formatted.logId).toBe('bb-bean-created-order-1');
