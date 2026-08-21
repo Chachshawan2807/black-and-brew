@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   Banknote,
   CalendarRange,
+  Coffee,
   Layers,
   PackageMinus,
   PackagePlus,
@@ -38,6 +39,7 @@ export function NotificationItemIcon({
     kind === 'schedule' ||
     kind === 'insight' ||
     kind === 'security' ||
+    kind === 'bean-created' ||
     kind === 'bean-delivered' ||
     kind === 'bean-paid' ||
     kind === 'stock-in' ||
@@ -62,6 +64,7 @@ export function NotificationItemIcon({
       {kind === 'schedule' && <CalendarRange {...iconProps} />}
       {kind === 'insight' && <AlertTriangle {...iconProps} />}
       {kind === 'security' && <ShieldAlert {...iconProps} />}
+      {kind === 'bean-created' && <Coffee {...iconProps} />}
       {kind === 'bean-delivered' && <Truck {...iconProps} />}
       {kind === 'bean-paid' && <Banknote {...iconProps} />}
       {kind === 'stock-in' && <PackagePlus {...iconProps} />}

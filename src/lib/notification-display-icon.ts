@@ -32,6 +32,7 @@ export type NotificationDisplayIconKind =
   | 'schedule'
   | 'insight'
   | 'security'
+  | 'bean-created'
   | 'bean-delivered'
   | 'bean-paid'
   | 'stock-in'
@@ -46,6 +47,7 @@ const SCHEDULE_SURFACE = `${PASTEL_SURFACE} bg-[#e6f0ff] text-black border borde
 /** Deeper orange pastel than 8:00 / stock-adjust (#fff3cd) for at-a-glance distinction. */
 const INSIGHT_SURFACE = `${PASTEL_SURFACE} bg-[#ffe0a8] text-black border border-[#f0b866]`;
 const SECURITY_SURFACE = `${PASTEL_SURFACE} bg-[#ffe4e6] text-black border border-[#fecdd3]`;
+const BEAN_CREATED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.order} text-black`;
 const BEAN_DELIVERED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`;
 const BEAN_PAYMENT_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.order} text-black`;
 
@@ -83,6 +85,11 @@ export function isScheduleNotification(item: InventoryNotification): boolean {
   if (/^(Today's|Tomorrow's) schedule/u.test(item.title)) return true;
 
   return false;
+}
+
+export function isBeanOrderCreatedNotification(item: InventoryNotification): boolean {
+  const meta = item.metadata ?? {};
+  return meta.kind === 'bean_order_created';
 }
 
 export function isBeanOrderPaymentNotification(item: InventoryNotification): boolean {
@@ -150,6 +157,10 @@ export function resolveNotificationDisplayIcon(item: InventoryNotification): {
 
   if (isSecurityNotification(item)) {
     return { kind: 'security', containerClass: SECURITY_SURFACE };
+  }
+
+  if (isBeanOrderCreatedNotification(item)) {
+    return { kind: 'bean-created', containerClass: BEAN_CREATED_SURFACE };
   }
 
   if (isBeanOrderPaymentNotification(item)) {

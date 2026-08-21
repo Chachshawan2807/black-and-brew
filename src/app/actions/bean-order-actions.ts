@@ -868,6 +868,39 @@ export async function createBeanOrder(
           newValue: { orderNo: savedOrderNo, totalBaht: totals.totalBaht },
         });
 
+        const { recordBeanOrderCreatedNotification } = await import(
+          '@/lib/bean-orders/created-notification'
+        );
+
+        let linkedCustomerName: string | null = null;
+        if (orderInput.customerId) {
+          const { data: customerRow, error: customerError } = await supabase
+            .from('bean_customers')
+            .select('name')
+            .eq('id', orderInput.customerId)
+            .maybeSingle();
+          if (customerError) {
+            console.error('[createBeanOrder] Customer lookup:', customerError.message, customerError.details);
+          } else if (typeof customerRow?.name === 'string') {
+            linkedCustomerName = customerRow.name;
+          }
+        }
+
+        await recordBeanOrderCreatedNotification({
+          orderId,
+          orderNo: savedOrderNo,
+          customerName: linkedCustomerName,
+          recipientName: orderInput.recipientName,
+          lines: lineRows.map((line) => ({
+            itemName: line.item_name,
+            weightValue: line.weight_value,
+            weightUnit: line.weight_unit as 'g' | 'kg',
+          })),
+          locale,
+        }).catch((error) => {
+          console.error('[createBeanOrder] Created notification:', error);
+        });
+
         if (orderInput.customerId) {
           const addressResult = await saveBeanCustomerAddressIfNew(orderInput.customerId, {
             recipientName: orderInput.recipientName,

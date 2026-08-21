@@ -92,9 +92,11 @@ describe('bean order save performance', () => {
     expect(critical).not.toContain('recordDataChange');
     expect(critical).not.toContain('revalidateBeanOrders');
     expect(critical).not.toContain('saveBeanCustomerAddressIfNew');
+    expect(critical).not.toContain('recordBeanOrderCreatedNotification');
     const deferred = functionBody('createBeanOrder', beanOrderActions);
     expect(deferred).toContain('after(async () => {');
     expect(deferred).toContain('recordDataChange');
+    expect(deferred).toContain('recordBeanOrderCreatedNotification');
     expect(deferred).toContain('revalidateBeanOrders');
     expect(deferred).toContain('saveBeanCustomerAddressIfNew');
   });

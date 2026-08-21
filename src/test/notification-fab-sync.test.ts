@@ -149,6 +149,8 @@ describe('notification fab cross-platform sync', () => {
 
   test('hook syncs bean order delivered logs via realtime and server catch-up', () => {
     expect(hookSource).toContain("attachChangeLogListener(nextChannel, 'bean_orders')");
+    expect(hookSource).toContain('isEligibleBeanOrderCreatedNotification');
+    expect(hookSource).toContain('formatBeanOrderCreatedNotification');
     expect(hookSource).toContain('isEligibleBeanOrderDeliveredNotification');
     expect(hookSource).toContain('formatBeanOrderDeliveredNotification');
     expect(hookSource).toContain('isEligibleBeanOrderShippedNotification');

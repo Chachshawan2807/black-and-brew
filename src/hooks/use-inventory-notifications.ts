@@ -17,6 +17,10 @@ import {
   isEligibleDailyReportNotification,
 } from '@/lib/daily-report-notification';
 import {
+  formatBeanOrderCreatedNotification,
+  isEligibleBeanOrderCreatedNotification,
+} from '@/lib/bean-orders/created-notification';
+import {
   formatBeanOrderDeliveredNotification,
   isEligibleBeanOrderDeliveredNotification,
 } from '@/lib/bean-orders/delivery-notification';
@@ -357,6 +361,7 @@ export function useInventoryNotifications() {
 
       const isDailyReport = isEligibleDailyReportNotification(row);
       const isInventory = isEligibleInventoryNotification(row);
+      const isBeanCreated = isEligibleBeanOrderCreatedNotification(row);
       const isBeanDelivered = isEligibleBeanOrderDeliveredNotification(row);
       const isBeanShipped = isEligibleBeanOrderShippedNotification(row);
       const isBeanPayment = isEligibleBeanOrderPaymentNotification(row);
@@ -365,6 +370,7 @@ export function useInventoryNotifications() {
       if (
         !isDailyReport &&
         !isInventory &&
+        !isBeanCreated &&
         !isBeanDelivered &&
         !isBeanShipped &&
         !isBeanPayment &&
@@ -378,7 +384,7 @@ export function useInventoryNotifications() {
       if (isSecurity && !currentPrefs.securityAlerts) return false;
       if (isInventory && !currentPrefs.enabled) return false;
       if (
-        (isBeanDelivered || isBeanShipped || isBeanPayment) &&
+        (isBeanCreated || isBeanDelivered || isBeanShipped || isBeanPayment) &&
         !currentPrefs.systemNotifications
       ) {
         return false;
@@ -395,6 +401,9 @@ export function useInventoryNotifications() {
     (row: DataChangeLogRow, locale: string, batchedCount = 1) => {
       if (isEligibleDailyReportNotification(row)) {
         return formatDailyReportNotification(row, locale);
+      }
+      if (isEligibleBeanOrderCreatedNotification(row)) {
+        return formatBeanOrderCreatedNotification(row, locale);
       }
       if (isEligibleBeanOrderDeliveredNotification(row)) {
         return formatBeanOrderDeliveredNotification(row, locale);
@@ -440,6 +449,7 @@ export function useInventoryNotifications() {
       const allDailyReports = eligible.every(isEligibleDailyReportNotification);
       const allBeanOrder = eligible.every(
         (row) =>
+          isEligibleBeanOrderCreatedNotification(row) ||
           isEligibleBeanOrderDeliveredNotification(row) ||
           isEligibleBeanOrderShippedNotification(row) ||
           isEligibleBeanOrderPaymentNotification(row),
@@ -509,6 +519,7 @@ export function useInventoryNotifications() {
     const eligible = filterEligibleRows(
       result.rows.filter(
         (row) =>
+          isEligibleBeanOrderCreatedNotification(row) ||
           isEligibleBeanOrderDeliveredNotification(row) ||
           isEligibleBeanOrderShippedNotification(row) ||
           isEligibleBeanOrderPaymentNotification(row),
@@ -641,6 +652,7 @@ export function useInventoryNotifications() {
           if (module === 'schedule' && !isEligibleDailyReportNotification(row)) return;
           if (
             module === 'bean_orders' &&
+            !isEligibleBeanOrderCreatedNotification(row) &&
             !isEligibleBeanOrderDeliveredNotification(row) &&
             !isEligibleBeanOrderShippedNotification(row) &&
             !isEligibleBeanOrderPaymentNotification(row)

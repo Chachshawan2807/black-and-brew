@@ -122,6 +122,20 @@ describe('notification display icons', () => {
     expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d4edda]');
   });
 
+  test('uses coffee icon and order blue surface for bean order created notifications', () => {
+    const item = sampleNotification({
+      title: 'คุณเอ',
+      metadata: {
+        kind: 'bean_order_created',
+        module: 'bean_orders',
+        url: '/th/bean-orders/order-1',
+      },
+    });
+
+    expect(resolveNotificationDisplayIcon(item).kind).toBe('bean-created');
+    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d1ecf1]');
+  });
+
   test('uses banknote icon and order blue surface for bean order payment notifications', () => {
     const item = sampleNotification({
       title: 'ชำระแล้ว',
@@ -150,6 +164,7 @@ describe('notification display icons', () => {
 
     expect(panel).toContain('NotificationItemIcon');
     expect(panel).not.toContain('function ActionIcon');
+    expect(itemIcon).toContain('Coffee');
     expect(itemIcon).toContain('PackagePlus');
     expect(itemIcon).toContain('PackageMinus');
     expect(itemIcon).toContain('Truck');
