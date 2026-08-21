@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, UserCog, Loader2, X, Calendar, CalendarDays, Pencil } from 'lucide-react';
+import { Plus, Trash2, UserCog, Loader2, X, Calendar, CalendarDays, Pencil, Check } from 'lucide-react';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { startOfWeek, addDays, format } from 'date-fns';
 
@@ -1807,7 +1807,7 @@ export default function ScheduleClient({
                 {saveSuccess && (
                   <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-                      <Plus className="w-4 h-4 text-[#ffffff] rotate-45" />
+                      <Check className="w-4 h-4 text-[#ffffff]" strokeWidth={3} aria-hidden />
                     </div>
                     <p className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลเรียบร้อยแล้วค่ะ</p>
                   </div>
