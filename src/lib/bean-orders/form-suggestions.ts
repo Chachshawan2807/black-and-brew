@@ -135,6 +135,28 @@ export function linePresetsForItem(
   });
 }
 
+export function linePresetsForInventoryItem(
+  presets: BeanOrderLinePreset[],
+  inventoryItemId: string,
+): BeanOrderLinePreset[] {
+  if (!inventoryItemId) return [];
+  return presets.filter((preset) => preset.inventoryItemId === inventoryItemId);
+}
+
+export function linePresetKey(preset: BeanOrderLinePreset): string {
+  return [
+    preset.inventoryItemId,
+    preset.weightValue,
+    preset.weightUnit,
+    preset.unitPricePerKg,
+  ].join('|');
+}
+
+export function formatLinePresetLabel(preset: BeanOrderLinePreset): string {
+  const unit = preset.weightUnit === 'kg' ? 'กก.' : 'ก.';
+  return `${preset.weightValue} ${unit} / ${preset.unitPricePerKg.toLocaleString('th-TH')}/กก.`;
+}
+
 export function findProfileByFieldValue(
   profiles: ThaiPostalAddressValue[],
   field: AddressField,

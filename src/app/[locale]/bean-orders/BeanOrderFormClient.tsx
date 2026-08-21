@@ -55,6 +55,9 @@ import {
 import {
   filterNumberSuggestions,
   filterStringSuggestions,
+  formatLinePresetLabel,
+  linePresetKey,
+  linePresetsForInventoryItem,
   linePresetsForItem,
   profilesMatchingName,
   type BeanOrderFormSuggestions,
@@ -70,7 +73,6 @@ import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProv
 import {
   BEAN_ORDER_CARD,
   BEAN_ORDER_BTN_DANGER_GHOST,
-  BEAN_ORDER_BTN_LIST,
   BEAN_ORDER_BTN_PASTEL_FULL,
   BEAN_ORDER_BTN_PRIMARY_FULL,
   BEAN_ORDER_BTN_SM_DANGER,
@@ -843,10 +845,9 @@ export default function BeanOrderFormClient({
             line.inventoryItemId,
             line.unitPricePerKg,
           ).map((preset) => String(preset.unitPricePerKg));
-          const linePresetOptions = linePresetsForItem(
+          const linePresetOptions = linePresetsForInventoryItem(
             formSuggestions.linePresets,
             line.inventoryItemId,
-            line.weightValue || line.unitPricePerKg,
           );
 
           return (
@@ -899,20 +900,23 @@ export default function BeanOrderFormClient({
               />
               {linePresetOptions.length > 0 && (
                 <div className="sm:col-span-4">
-                  <p className="mb-1.5 text-xs text-muted-foreground">รายการเดิมที่เคยสั่ง</p>
-                  <ul className="divide-y rounded-xl border border-border">
-                    {linePresetOptions.slice(0, 6).map((preset) => (
-                      <li key={`${preset.inventoryItemId}-${preset.weightValue}-${preset.unitPricePerKg}`}>
-                        <button
-                          type="button"
-                          className={BEAN_ORDER_BTN_LIST}
-                          onClick={() => applyLinePreset(index, preset)}
-                        >
-                          {preset.weightValue} {preset.weightUnit === 'kg' ? 'กก.' : 'ก.'} / {preset.unitPricePerKg.toLocaleString('th-TH')}/กก.
-                        </button>
-                      </li>
+                  <BeanOrderSelect
+                    value=""
+                    onChange={(e) => {
+                      const selectedKey = e.target.value;
+                      if (!selectedKey) return;
+                      const preset = linePresetOptions.find((p) => linePresetKey(p) === selectedKey);
+                      if (preset) applyLinePreset(index, preset);
+                    }}
+                    aria-label="รายการเดิมที่เคยสั่ง"
+                  >
+                    <option value="">รายการเดิมที่เคยสั่ง</option>
+                    {linePresetOptions.map((preset) => (
+                      <option key={linePresetKey(preset)} value={linePresetKey(preset)}>
+                        {formatLinePresetLabel(preset)}
+                      </option>
                     ))}
-                  </ul>
+                  </BeanOrderSelect>
                 </div>
               )}
               {lines.length > 1 && (
