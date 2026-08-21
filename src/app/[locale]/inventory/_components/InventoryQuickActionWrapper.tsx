@@ -2,7 +2,10 @@
 
 import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
+import {
+  prefetchInventoryHistoryFirstPage,
+  warmInventoryHistoryFilterPages,
+} from '@/lib/inventory-history-prefetch';
 
 const InventoryQuickActionFAB = dynamic(() => import('./InventoryQuickActionFAB'), {
   ssr: false,
@@ -11,6 +14,7 @@ const InventoryQuickActionFAB = dynamic(() => import('./InventoryQuickActionFAB'
 export default function InventoryQuickActionWrapper() {
   useEffect(() => {
     void prefetchInventoryHistoryFirstPage();
+    warmInventoryHistoryFilterPages();
   }, []);
 
   return <InventoryQuickActionFAB />;

@@ -83,6 +83,8 @@ export function enrichTransactionRows(transactions: RawInventoryTransaction[]) {
   });
 }
 
+const NAME_SEARCH_MAX_ITEM_IDS = 80;
+
 async function fetchTransactionHistoryByItemName(
   client: SupabaseClient,
   options: {
@@ -96,11 +98,13 @@ async function fetchTransactionHistoryByItemName(
   | { success: false; error: string }
 > {
   const { itemNameQuery, type, offset, safeLimit } = options;
+  const fetchCap = offset + safeLimit + 1;
 
   const { data: matchingItems, error: searchError } = await client
     .from('inventory_items')
     .select('id')
-    .ilike('name', `%${itemNameQuery}%`);
+    .ilike('name', `%${itemNameQuery}%`)
+    .limit(NAME_SEARCH_MAX_ITEM_IDS);
 
   if (searchError) {
     console.error(
@@ -113,22 +117,29 @@ async function fetchTransactionHistoryByItemName(
 
   const matchingIds = (matchingItems ?? []).map((item) => item.id);
 
-  const buildQuery = () => {
+  const buildQuery = (limit: number) => {
     let historyQuery = client
       .from('inventory_transactions')
       .select(TRANSACTION_HISTORY_SELECT)
-      .order(HISTORY_ORDER_COLUMN, { ascending: false });
+      .order(HISTORY_ORDER_COLUMN, { ascending: false })
+      .limit(limit);
     if (type) historyQuery = historyQuery.eq('type', type);
     return historyQuery;
   };
 
   const queries = [];
   if (matchingIds.length > 0) {
-    queries.push(buildQuery().in('inventory_item_id', matchingIds));
+    queries.push(buildQuery(fetchCap).in('inventory_item_id', matchingIds));
   }
-  queries.push(
-    buildQuery().in('type', ['ADD', 'DELETE']).ilike('note', `%${itemNameQuery}%`),
-  );
+  if (!type || type === 'ADD' || type === 'DELETE') {
+    queries.push(
+      buildQuery(fetchCap).in('type', ['ADD', 'DELETE']).ilike('note', `%${itemNameQuery}%`),
+    );
+  }
+
+  if (queries.length === 0) {
+    return { success: true, data: [], hasMore: false };
+  }
 
   const results = await Promise.all(queries);
   for (const result of results) {

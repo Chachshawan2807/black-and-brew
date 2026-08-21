@@ -10,7 +10,17 @@ import { parseWithdrawRequiredOrder } from '@/lib/inventory-withdraw-required-it
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 import type { ColumnSettings } from './types';
 import type { TransactionHistoryRow } from './_components/InventoryHistoryModal';
-import { InventoryHistoryCacheSeed } from './_components/InventoryHistoryCacheSeed';
+import {
+  InventoryHistoryCacheSeed,
+  type InventoryHistorySeedPage,
+} from './_components/InventoryHistoryCacheSeed';
+import type { InventoryTransactionFilterType } from '@/lib/inventory-history-query';
+
+const HISTORY_FILTER_TYPES: Exclude<InventoryTransactionFilterType, 'ALL'>[] = [
+  'IN',
+  'OUT',
+  'ADJUST',
+];
 
 const InventoryClient = createLazyFeatureClient(
   () => import('./InventoryClient'),
@@ -29,7 +39,8 @@ export default async function InventoryPage({
 
   const supabaseAdmin = getSupabaseAdmin();
 
-  const [configRes, inventoryRes, historyRes, withdrawOrderRes] = await Promise.all([
+  const [configRes, inventoryRes, historyAllRes, ...historyFilterResults, withdrawOrderRes] =
+    await Promise.all([
     supabaseAdmin.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
     supabaseAdmin
       .from('inventory_items')
@@ -40,6 +51,13 @@ export default async function InventoryPage({
       limit: HISTORY_PAGE_SIZE,
       type: 'ALL',
     }),
+    ...HISTORY_FILTER_TYPES.map((type) =>
+      fetchTransactionHistoryPage(supabaseAdmin, {
+        offset: 0,
+        limit: HISTORY_PAGE_SIZE,
+        type,
+      }),
+    ),
     supabaseAdmin.from('inventory_config').select('settings').eq('id', 'withdraw_required_order').single(),
   ]);
 
@@ -57,15 +75,21 @@ export default async function InventoryPage({
 
   let initialTransactionHistory: TransactionHistoryRow[] = [];
   let initialHistoryHasMore = false;
-  if (historyRes.success && historyRes.data) {
-    initialTransactionHistory = historyRes.data as TransactionHistoryRow[];
-    initialHistoryHasMore = historyRes.hasMore;
-  } else if (!historyRes.success) {
+  if (historyAllRes.success && historyAllRes.data) {
+    initialTransactionHistory = historyAllRes.data as TransactionHistoryRow[];
+    initialHistoryHasMore = historyAllRes.hasMore;
+  } else if (!historyAllRes.success) {
     console.error(
       'Supabase Error:',
-      historyRes.error,
+      historyAllRes.error,
     );
   }
+
+  const initialFilterPages: InventoryHistorySeedPage[] = HISTORY_FILTER_TYPES.flatMap((type, index) => {
+    const res = historyFilterResults[index];
+    if (!res?.success || !res.data) return [];
+    return [{ type, rows: res.data as TransactionHistoryRow[], hasMore: res.hasMore }];
+  });
 
   const initialWithdrawRequiredOrder = parseWithdrawRequiredOrder(withdrawOrderRes.data?.settings);
 
@@ -74,6 +98,7 @@ export default async function InventoryPage({
       <InventoryHistoryCacheSeed
         initialTransactionHistory={initialTransactionHistory}
         initialHistoryHasMore={initialHistoryHasMore}
+        initialFilterPages={initialFilterPages}
       />
       <InventoryClient
         initialItems={inventoryRes.data || []}

@@ -1,4 +1,4 @@
-import { fetchTransactionHistory } from '@/app/actions/inventory-actions';
+import { fetchTransactionHistoryClient } from '@/lib/inventory-history-client';
 import {
   HISTORY_PAGE_SIZE,
   type InventoryHistoryDisplayRow,
@@ -92,7 +92,7 @@ export function prefetchInventoryHistoryPage(
   const existing = inFlight.get(key);
   if (existing) return existing;
 
-  const promise = fetchTransactionHistory({
+  const promise = fetchTransactionHistoryClient({
     type,
     itemNameQuery: searchQuery || undefined,
     offset: 0,

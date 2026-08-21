@@ -166,7 +166,8 @@ describe('inventory history pagination and filters', () => {
     expect(queryCode).toContain('sanitizeHistorySearchQuery');
     expect(queryCode).toContain('inventory_items(name)');
     expect(queryCode).toContain('fetchTransactionHistoryByItemName');
-    expect(queryCode).not.toMatch(/\.or\(\s*`\s*inventory_item_id\.in\./);
+    expect(queryCode).toContain('NAME_SEARCH_MAX_ITEM_IDS');
+    expect(queryCode).toContain('.limit(limit)');
   });
 
   test('history hook prefetches first page and keeps stale rows while refreshing', () => {

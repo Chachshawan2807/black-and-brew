@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-const fetchTransactionHistory = vi.fn();
+const fetchTransactionHistoryClient = vi.fn();
 
-vi.mock('@/app/actions/inventory-actions', () => ({
-  fetchTransactionHistory: (...args: unknown[]) => fetchTransactionHistory(...args),
+vi.mock('@/lib/inventory-history-client', () => ({
+  fetchTransactionHistoryClient: (...args: unknown[]) => fetchTransactionHistoryClient(...args),
 }));
 
 describe('inventory history page cache', () => {
   beforeEach(() => {
     vi.resetModules();
-    fetchTransactionHistory.mockReset();
-    fetchTransactionHistory.mockResolvedValue({
+    fetchTransactionHistoryClient.mockReset();
+    fetchTransactionHistoryClient.mockResolvedValue({
       success: true,
       data: [{ id: 'tx-1' }],
       hasMore: false,
@@ -47,7 +47,7 @@ describe('inventory history page cache', () => {
     mod.setHistoryPageCache({ type: 'ALL' }, { data: [{ id: 'cached' }], hasMore: false });
 
     await mod.prefetchInventoryHistoryFirstPage();
-    expect(fetchTransactionHistory).not.toHaveBeenCalled();
+    expect(fetchTransactionHistoryClient).not.toHaveBeenCalled();
     expect(mod.isInventoryHistoryPrefetchFresh()).toBe(true);
 
     vi.advanceTimersByTime(30_001);
@@ -66,7 +66,7 @@ describe('inventory history page cache', () => {
 
   test('prefetch dedupes in-flight requests per key and stores result', async () => {
     let resolveFetch: (value: unknown) => void = () => {};
-    fetchTransactionHistory.mockImplementation(
+    fetchTransactionHistoryClient.mockImplementation(
       () =>
         new Promise((resolve) => {
           resolveFetch = resolve;
@@ -76,7 +76,7 @@ describe('inventory history page cache', () => {
     const mod = await loadModule();
     const p1 = mod.prefetchInventoryHistoryPage({ type: 'ADJUST' });
     const p2 = mod.prefetchInventoryHistoryPage({ type: 'ADJUST' });
-    expect(fetchTransactionHistory).toHaveBeenCalledTimes(1);
+    expect(fetchTransactionHistoryClient).toHaveBeenCalledTimes(1);
 
     resolveFetch({ success: true, data: [{ id: 'adj' }], hasMore: true });
     await Promise.all([p1, p2]);

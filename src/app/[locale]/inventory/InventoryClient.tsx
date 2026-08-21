@@ -32,7 +32,10 @@ import {
 } from '@/lib/inventory-frequent-items';
 import { useInventoryGridFilter } from '@/hooks/use-inventory-grid-filter';
 import { useInventoryHistory } from '@/hooks/use-inventory-history';
-import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
+import {
+  prefetchInventoryHistoryFirstPage,
+  warmInventoryHistoryFilterPages,
+} from '@/lib/inventory-history-prefetch';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { InventoryQuickActionBar } from './_components/InventoryQuickActionBar';
 import { InventoryModalPortal } from './_components/InventoryModalPortal';
@@ -654,6 +657,7 @@ const preloadWithdrawRequiredItemsModal = () => {
 
 const preloadInventoryHistoryModal = () => {
   void prefetchInventoryHistoryFirstPage();
+  warmInventoryHistoryFilterPages();
 };
 
 function EditableCell({

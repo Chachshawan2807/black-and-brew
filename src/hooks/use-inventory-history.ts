@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
-import { fetchTransactionHistory } from '@/app/actions/inventory-actions';
+import { fetchTransactionHistoryClient } from '@/lib/inventory-history-client';
 import type {
   InventoryTransactionFilterType,
   InventoryTransactionType,
@@ -219,7 +219,7 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
         const res =
           offset === 0 && !append
             ? await prefetchInventoryHistoryPage({ type, searchQuery })
-            : await fetchTransactionHistory({
+            : await fetchTransactionHistoryClient({
                 type,
                 itemNameQuery: searchQuery || undefined,
                 offset,

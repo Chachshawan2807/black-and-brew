@@ -90,6 +90,15 @@ describe('inventory history loading reliability', () => {
       'utf-8',
     );
     expect(pageCode).toContain('InventoryHistoryCacheSeed');
+    expect(pageCode).toContain('initialFilterPages');
+    expect(pageCode).toContain("'IN'");
+    expect(pageCode).toContain("'OUT'");
+    expect(pageCode).toContain("'ADJUST'");
+  });
+
+  test('prefetch uses direct client fetch instead of server action', () => {
+    expect(prefetchCode).toContain('fetchTransactionHistoryClient');
+    expect(prefetchCode).not.toContain("from '@/app/actions/inventory-actions'");
   });
 
   test('inventory client imports history modal statically for instant open', () => {
