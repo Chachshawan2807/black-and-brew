@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
+import { formatScheduleNotificationDateDisplay } from '@/lib/date-utils';
 import { sanitizeJsonValue } from '@/lib/data-change-log';
 import type { InventoryNotification } from '@/lib/notification-types';
 
@@ -95,7 +96,7 @@ export async function recordDailyReportNotificationLog(
       module: 'schedule',
       entity_type: 'daily_report',
       entity_id: logId,
-      entity_label: data.dateStr,
+      entity_label: formatScheduleNotificationDateDisplay(data.dateStr),
       field_changes: [],
       old_value: null,
       new_value: sanitizeJsonValue(data),

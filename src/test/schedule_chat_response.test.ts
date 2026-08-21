@@ -64,7 +64,7 @@ describe('formatScheduleChatResponse', () => {
 
     const text = formatScheduleChatResponse('2026-06-07', shifts);
 
-    expect(text).toContain('07-06-2026');
+    expect(text).toContain('07-06-2026 อา.');
     expect(text).toContain('พนักงานปฏิบัติงานหน้าร้าน (รวม 2 คน)');
     expect(text).toContain('ปิ่น - 6:30');
     expect(text).toContain('ล่า - ร้านซักผ้า');

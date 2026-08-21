@@ -1,4 +1,5 @@
 import type { DailyReportData, StaffShiftEntry } from '@/app/actions/daily-report-actions';
+import { formatScheduleNotificationDateDisplay } from '@/lib/date-utils';
 
 /** Include nearby public holidays in daily report summaries only within this many days. */
 export const HOLIDAY_SUMMARY_MAX_DAYS = 14;
@@ -31,8 +32,9 @@ export function shouldIncludeHolidaySummary(
 }
 
 export function buildDailyReportNotificationLines(data: DailyReportData): string[] {
+  const dateLabel = formatScheduleNotificationDateDisplay(data.dateStr);
   const lines: string[] = [
-    `ตารางงาน ${data.dateStr} (${scheduleLabel(data.schedule)}) · เข้างาน ${data.headcount} คน`,
+    `ตารางงาน ${dateLabel} (${scheduleLabel(data.schedule)}) · เข้างาน ${data.headcount} คน`,
   ];
 
   if (data.activeStaff.length > 0) {

@@ -58,7 +58,7 @@ describe('daily-report-web-push', () => {
     expect(payload.kind).toBe('daily_report');
     expect(payload.schedule).toBe('today');
     expect(payload.title).toBe('ตารางงานวันนี้');
-    expect(payload.body).toContain('ตารางงาน 21-06-2026 (วันนี้)');
+    expect(payload.body).toContain('ตารางงาน 21-06-2026 อา. (วันนี้)');
     expect(payload.body).toContain('พนักงาน1');
     expect(payload.body.length).toBeGreaterThan(80);
     expect(payload.url).toBe('/th/schedule');

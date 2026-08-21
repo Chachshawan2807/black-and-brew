@@ -1,5 +1,6 @@
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
+import { formatScheduleNotificationDateDisplay } from '@/lib/date-utils';
 import { dailyReportNotificationLogId } from '@/lib/daily-report-notification';
 import { buildSplitOsNotification } from '@/lib/pwa-notification-bridge';
 import {
@@ -70,7 +71,7 @@ export function buildDailyReportPushPayload(
       logId: tag,
       action: 'UPDATE',
       entityId: null,
-      entityLabel: data.dateStr,
+      entityLabel: formatScheduleNotificationDateDisplay(data.dateStr),
       actorLabel: locale === 'th' ? 'ระบบตารางงาน' : 'Schedule system',
       occurredAt: now,
       title: headline,

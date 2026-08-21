@@ -1,15 +1,11 @@
-import { format as formatDate } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
 import type { FormattedDailyShifts } from '@/lib/schedule/format-daily-shifts';
+import { formatScheduleNotificationDateDisplay } from '@/lib/date-utils';
 
 export function formatScheduleChatResponse(
   isoDate: string,
   shifts: FormattedDailyShifts,
 ): string {
-  const displayDate = formatDate(
-    toZonedTime(new Date(`${isoDate}T12:00:00`), 'Asia/Bangkok'),
-    'dd-MM-yyyy',
-  );
+  const displayDate = formatScheduleNotificationDateDisplay(isoDate);
 
   const lines: string[] = [`สำหรับตารางงานพนักงานในวันที่ ${displayDate} นะคะ`, ''];
 
