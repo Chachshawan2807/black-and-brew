@@ -131,7 +131,7 @@ async function fetchTransactionHistoryByItemName(
   if (matchingIds.length > 0) {
     queries.push(buildQuery(fetchCap).in('inventory_item_id', matchingIds));
   }
-  if (!type || type === 'ADD' || type === 'DELETE') {
+  if (!type) {
     queries.push(
       buildQuery(fetchCap).in('type', ['ADD', 'DELETE']).ilike('note', `%${itemNameQuery}%`),
     );

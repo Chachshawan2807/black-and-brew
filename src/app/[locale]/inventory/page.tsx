@@ -39,7 +39,7 @@ export default async function InventoryPage({
 
   const supabaseAdmin = getSupabaseAdmin();
 
-  const [configRes, inventoryRes, historyAllRes, ...historyFilterResults, withdrawOrderRes] =
+  const [configRes, inventoryRes, historyAllRes, withdrawOrderRes, ...historyFilterResults] =
     await Promise.all([
     supabaseAdmin.from('inventory_config').select('settings').eq('id', 'column_labels').single(),
     supabaseAdmin
@@ -51,6 +51,7 @@ export default async function InventoryPage({
       limit: HISTORY_PAGE_SIZE,
       type: 'ALL',
     }),
+    supabaseAdmin.from('inventory_config').select('settings').eq('id', 'withdraw_required_order').single(),
     ...HISTORY_FILTER_TYPES.map((type) =>
       fetchTransactionHistoryPage(supabaseAdmin, {
         offset: 0,
@@ -58,7 +59,6 @@ export default async function InventoryPage({
         type,
       }),
     ),
-    supabaseAdmin.from('inventory_config').select('settings').eq('id', 'withdraw_required_order').single(),
   ]);
 
   if (inventoryRes.error) {
