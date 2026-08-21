@@ -2,19 +2,5 @@
   "installCommand": "npm ci --ignore-scripts",
   "env": {
     "GIT_SUBMODULE_UPDATE": "0"
-  },
-  "crons": [
-    {
-      "path": "/api/daily-report",
-      "schedule": "0 22 * * *"
-    },
-    {
-      "path": "/api/daily-report?schedule=tomorrow",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/insight-alerts",
-      "schedule": "0 0 * * *"
-    }
-  ]
+  }
 }
