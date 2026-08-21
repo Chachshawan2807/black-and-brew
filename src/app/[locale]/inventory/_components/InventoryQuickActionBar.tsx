@@ -38,6 +38,7 @@ import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import {
   getAnchoredSuggestionsOverlayStyle,
   shouldCollapseBulkQueueForMobileSearch,
+  shouldHideQuickActionChromeForMobileSearch,
   shouldPortalQuickSearchSuggestions,
 } from '@/lib/quick-search-suggestions-layout';
 import { InventoryTransactionDateDialog } from '@/app/[locale]/inventory/_components/InventoryTransactionDateDialog';
@@ -697,6 +698,10 @@ export function InventoryQuickActionBar({
     isSearchFocused,
     showSuggestions,
   );
+  const hideMobileSearchChrome = shouldHideQuickActionChromeForMobileSearch(
+    isMobile,
+    isSearchFocused,
+  );
   const suggestionsListId = 'inventory-quick-search-suggestions';
   const showClearSearch = quickSearch.trim().length > 0;
 
@@ -854,7 +859,7 @@ export function InventoryQuickActionBar({
       className={cn(
         suggestionsListClassName,
         portalSuggestions
-          ? 'z-[210]'
+          ? 'z-[210] isolate bb-ios-scroll-host'
           : 'absolute top-full left-0 z-[210] mt-2 min-w-[min(100%,14rem)] w-max max-w-[min(100vw-2rem,20rem)]',
       )}
       style={portalSuggestions ? portaledSuggestionsStyle : undefined}
@@ -875,7 +880,7 @@ export function InventoryQuickActionBar({
     <>
     <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border bb-shadow-sm', className)}>
       <form onSubmit={onSubmit} className="flex flex-col gap-2.5 w-full">
-        {showInOutGapWarning && onDismissGapWarning && (
+        {showInOutGapWarning && onDismissGapWarning && !hideMobileSearchChrome && (
           <div
             className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f5cc4d] bg-[#ffda66]/30 px-3 py-2 text-sm bb-pastel-surface text-[#000000]"
           >
@@ -1088,7 +1093,7 @@ export function InventoryQuickActionBar({
         </div>
       </form>
 
-      {frequentItems.length > 0 && !collapseBulkQueueForSearch && (
+      {frequentItems.length > 0 && !collapseBulkQueueForSearch && !hideMobileSearchChrome && (
         <div
           className={cn(
             'flex items-center gap-2 mt-6 pt-3 border-t border-border overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-1 scrollbar-hide',

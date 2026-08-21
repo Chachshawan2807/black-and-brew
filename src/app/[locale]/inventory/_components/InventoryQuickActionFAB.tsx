@@ -40,8 +40,6 @@ import {
   getFabPanelKeyboardAwareStyle,
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
-  getMobileQuickActionKeyboardSheetBackdropStyle,
-  getMobileQuickActionKeyboardSheetPanelStyle,
 } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useMaxMd } from '@/hooks/use-max-md';
@@ -85,22 +83,16 @@ export default function InventoryQuickActionFAB() {
   const isMobile = maxMd === true;
   const isDesktop = maxMd === false;
   const viewportInsets = useVisualViewportInsets(isMounted && isPanelRendered);
-  const mobileKeyboardSheet = isMobile && viewportInsets.isKeyboardOpen;
+  const keyboardOpenOnMobile = isMobile && viewportInsets.isKeyboardOpen;
   const mobileBackdropStyle = isMobile
-    ? mobileKeyboardSheet
-      ? getMobileQuickActionKeyboardSheetBackdropStyle(viewportInsets)
-      : getModalBackdropKeyboardAwareStyle({ insets: viewportInsets })
+    ? getModalBackdropKeyboardAwareStyle({ insets: viewportInsets })
     : undefined;
   const mobilePanelStyle = isMobile
-    ? mobileKeyboardSheet
-      ? getMobileQuickActionKeyboardSheetPanelStyle(viewportInsets)
-      : getModalContentKeyboardAwareStyle({ insets: viewportInsets })
+    ? getModalContentKeyboardAwareStyle({ insets: viewportInsets })
     : undefined;
   const desktopPanelStyle = isDesktop
     ? getFabPanelKeyboardAwareStyle({ insets: viewportInsets })
-    : isMobile && !viewportInsets.isKeyboardOpen
-      ? getFabPanelKeyboardAwareStyle({ insets: viewportInsets })
-      : undefined;
+    : undefined;
 
   const loadFrequentItems = useCallback(async () => {
     const res = await fetchFrequentItems();
@@ -341,24 +333,25 @@ export default function InventoryQuickActionFAB() {
             <div
               className={cn(
                 'z-[199] md:contents',
-                !mobileKeyboardSheet && 'fixed inset-0',
-                !mobileKeyboardSheet && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
+                'fixed inset-0',
+                FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
               )}
               style={mobileBackdropStyle}
             >
               <motion.div
-                initial={mobileKeyboardSheet ? { opacity: 0 } : modalContent.initial}
-                animate={mobileKeyboardSheet ? { opacity: 1 } : modalContent.animate}
-                exit={mobileKeyboardSheet ? { opacity: 0 } : modalContent.exit}
+                initial={modalContent.initial}
+                animate={
+                  keyboardOpenOnMobile
+                    ? { opacity: 1, scale: 1, y: 0 }
+                    : modalContent.animate
+                }
+                exit={modalContent.exit}
                 transition={modalContent.transition}
                 className={cn(
-                  'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl',
-                  !mobileKeyboardSheet && 'isolate',
+                  'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate',
                   'max-md:relative max-md:w-full max-md:max-h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))]',
                   'max-md:transition-[max-height] max-md:duration-200',
-                  mobileKeyboardSheet
-                    ? 'max-md:overflow-y-auto max-md:bb-smooth-scroll'
-                    : 'overflow-y-auto bb-smooth-scroll',
+                  'overflow-y-auto bb-smooth-scroll',
                   'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6 md:overflow-y-auto md:bb-smooth-scroll md:isolate',
                   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
                 )}

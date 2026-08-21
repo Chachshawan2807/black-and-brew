@@ -400,11 +400,17 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
 
-    expect(fabCode).toContain('mobileKeyboardSheet');
-    expect(fabCode).toContain('getMobileQuickActionKeyboardSheetBackdropStyle');
+    expect(fabCode).not.toContain('mobileKeyboardSheet');
+    expect(fabCode).not.toContain('getMobileQuickActionKeyboardSheetBackdropStyle');
+    expect(fabCode).not.toContain('getMobileQuickActionKeyboardSheetPanelStyle');
+    expect(fabCode).toContain('getModalBackdropKeyboardAwareStyle');
+    expect(fabCode).toContain('getModalContentKeyboardAwareStyle');
+    expect(fabCode).toMatch(/FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS/);
+    expect(fabCode).not.toMatch(/!mobileKeyboardSheet && 'isolate'/);
     expect(fabCode).toContain('document.body.style.overflow = \'hidden\'');
     expect(barCode).toContain('shouldPortalQuickSearchSuggestions');
     expect(barCode).toContain('shouldCollapseBulkQueueForMobileSearch');
+    expect(barCode).toContain('shouldHideQuickActionChromeForMobileSearch');
     expect(barCode).toContain('getAnchoredSuggestionsOverlayStyle');
     expect(barCode).toContain('createPortal');
   });

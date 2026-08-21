@@ -78,3 +78,11 @@ export function shouldCollapseBulkQueueForMobileSearch(
 ): boolean {
   return isMobile && isSearchFocused && hasSuggestions;
 }
+
+/** Hide non-essential quick-action chrome while mobile search is focused (prevents compositing bleed). */
+export function shouldHideQuickActionChromeForMobileSearch(
+  isMobile: boolean,
+  isSearchFocused: boolean,
+): boolean {
+  return isMobile && isSearchFocused;
+}

@@ -3,6 +3,7 @@ import {
   getAnchoredSuggestionsOverlayStyle,
   getQuickSearchSuggestionsPlacement,
   shouldCollapseBulkQueueForMobileSearch,
+  shouldHideQuickActionChromeForMobileSearch,
   shouldPortalQuickSearchSuggestions,
 } from '@/lib/quick-search-suggestions-layout';
 
@@ -55,5 +56,11 @@ describe('quick search suggestions layout', () => {
     expect(shouldCollapseBulkQueueForMobileSearch(true, true, true)).toBe(true);
     expect(shouldCollapseBulkQueueForMobileSearch(true, true, false)).toBe(false);
     expect(shouldCollapseBulkQueueForMobileSearch(false, true, true)).toBe(false);
+  });
+
+  test('hides quick action chrome while mobile search is focused', () => {
+    expect(shouldHideQuickActionChromeForMobileSearch(true, true)).toBe(true);
+    expect(shouldHideQuickActionChromeForMobileSearch(true, false)).toBe(false);
+    expect(shouldHideQuickActionChromeForMobileSearch(false, true)).toBe(false);
   });
 });
