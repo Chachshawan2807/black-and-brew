@@ -20,7 +20,7 @@ import { saveRegularHolidays } from '@/app/actions/holiday-actions';
 import { syncScheduleToGoogleSheet } from '@/app/actions/schedule-sheets-sync-actions';
 import { formatScheduleWeekRangeLabel } from '@/lib/schedule/sheets-sync-policy';
 
-import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations, fetchManagementHistoryPage } from '@/app/actions/shift-actions';
+import { deleteShift, revalidateAppPaths, updateStaffOrder, saveShift, deleteManagementHistoryRange, renameShiftLocations, fetchManagementHistoryPage, saveManagementHistoryRange } from '@/app/actions/shift-actions';
 import dynamic from 'next/dynamic';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
@@ -92,6 +92,8 @@ import {
   sumMgmtHistoryColumnWidthsPx,
 } from '@/lib/schedule/mgmt-history-column-widths';
 import {
+  applyManagementSaveToRawShifts,
+  buildManagementDateRange,
   groupManagementHistoryShifts,
   mergeManagementHistoryShiftPages,
   type ManagementHistoryItem,
@@ -1078,79 +1080,74 @@ export default function ScheduleClient({
     setLoading(true);
     pushToHistory(profiles, orderedProfileIds, shifts);
 
-    try {
-      if (editingHistoryId && originalHistoryRange) {
-        const { success: delSuccess } = await deleteManagementHistoryRange(
-          originalHistoryRange.employeeId,
-          originalHistoryRange.start,
-          originalHistoryRange.end
-        );
-        if (!delSuccess) throw new Error('Failed to clear original range');
-      }
-
-      const start = new Date(managementForm.startDate);
-      const end = new Date(managementForm.endDate);
-      const newShifts: Array<{
-        employee_id: string;
-        start_time: string;
-        end_time: string;
-        status: 'scheduled' | 'on_leave';
-        metadata: { location: string; is_management: boolean; remark: string };
-      }> = [];
-      const datesToDelete: string[] = [];
-
-      for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
-        const dateStr = format(d, 'yyyy-MM-dd');
-        datesToDelete.push(dateStr + 'T00:00:00');
-        const isLeave = managementForm.shiftType === 'ลา' || managementForm.shiftType === 'on_leave';
-
-        newShifts.push({
-          employee_id: managementForm.employeeId,
-          start_time: dateStr + 'T00:00:00',
-          end_time: dateStr + 'T23:59:59',
-          status: isLeave ? 'on_leave' : 'scheduled',
-          metadata: {
-            location: managementForm.shiftType,
-            is_management: true,
-            remark: managementForm.remark
+    const employeeId = managementForm.employeeId;
+    const startDate = managementForm.startDate;
+    const endDate = managementForm.endDate;
+    const previousRange =
+      editingHistoryId && originalHistoryRange
+        ? {
+            employeeId: originalHistoryRange.employeeId,
+            startDate: originalHistoryRange.start.split('T')[0],
+            endDate: originalHistoryRange.end.split('T')[0],
           }
+        : undefined;
+    const affectedDates = new Set<string>([
+      ...buildManagementDateRange(startDate, endDate),
+      ...(previousRange
+        ? buildManagementDateRange(previousRange.startDate, previousRange.endDate)
+        : []),
+    ]);
+    const previousShifts = [...shifts];
+    const previousRawHistory = [...mgmtRawShiftsRef.current];
+
+    try {
+      const result = await saveManagementHistoryRange({
+        employeeId,
+        startDate,
+        endDate,
+        shiftType: managementForm.shiftType,
+        remark: managementForm.remark,
+        previousRange,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save management history');
+      }
+
+      const insertedShifts = (result.data ?? []) as ManagementHistoryShiftRow[];
+
+      setShifts((prev) => {
+        const filtered = prev.filter((s) => {
+          const sDate = s.start_time.split('T')[0];
+          const empIdMatch =
+            s.employee_id === employeeId ||
+            (s as ShiftWithJoinedProfile).profile_id === employeeId;
+          return !(empIdMatch && affectedDates.has(sDate));
         });
-      }
+        return [...filtered, ...insertedShifts];
+      });
 
-      if (datesToDelete.length > 0) {
-        const { error: delError } = await supabase.from('shifts')
-          .delete()
-          .eq('employee_id', managementForm.employeeId)
-          .in('start_time', datesToDelete);
-        if (delError) throw delError;
-      }
-
-      if (newShifts.length > 0) {
-        const { data: insertedShifts, error: insError } = await supabase.from('shifts')
-          .insert(newShifts)
-          .select('id, employee_id, start_time, end_time, status, metadata');
-        if (insError) throw insError;
-
-        const affectedDates = new Set(datesToDelete.map((d) => d.split('T')[0]));
-        setShifts((prev) => {
-          const filtered = prev.filter((s) => {
-            const sDate = s.start_time.split('T')[0];
-            const empIdMatch = s.employee_id === managementForm.employeeId || (s as ShiftWithJoinedProfile).profile_id === managementForm.employeeId;
-            return !(empIdMatch && affectedDates.has(sDate));
-          });
-          return [...filtered, ...(insertedShifts || newShifts)];
-        });
-      }
+      const nextRawHistory = applyManagementSaveToRawShifts(previousRawHistory, {
+        employeeId,
+        startDate,
+        endDate,
+        previousRange,
+        inserted: insertedShifts,
+      });
+      mgmtRawShiftsRef.current = nextRawHistory;
+      setMgmtRawShifts(nextRawHistory);
 
       setSaveSuccess(true);
-      fetchMgmtHistory({ reset: true });
       setTimeout(() => setSaveSuccess(false), 3000);
       setEditingHistoryId(null);
       setOriginalHistoryRange(null);
       setManagementForm({ employeeId: '', shiftType: '6:30', startDate: '', endDate: '', remark: '' });
-      await revalidateAppPaths();
-    } catch {
-      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    } catch (err: unknown) {
+      setShifts(previousShifts);
+      mgmtRawShiftsRef.current = previousRawHistory;
+      setMgmtRawShifts(previousRawHistory);
+      const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+      alert(message);
     } finally {
       setLoading(false);
     }

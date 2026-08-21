@@ -67,25 +67,15 @@ async function loadBranchWithdrawItemSnapshots(
   );
 }
 
-async function resolveBranchWithdrawLineNames(
+function toBranchWithdrawFormatLines(
   filtered: ReturnType<typeof filterBranchWithdrawSaveLines>,
-  itemsById: Map<string, InventoryItemSnapshot>,
-): Promise<BranchWithdrawFormatLine[] | { error: string }> {
-  const lines: BranchWithdrawFormatLine[] = [];
-  for (const line of filtered) {
-    const item = itemsById.get(line.itemId);
-    if (!item) {
-      return { error: `ไม่พบรายการสินค้า (ID: ${line.itemId})` };
-    }
-    lines.push({
-      name: item.name,
-      qtyBranch1: line.qtyBranch1,
-      qtyBranch2: line.qtyBranch2,
-      branch2Unit: line.branch2Unit,
-    });
-  }
-
-  return lines;
+): BranchWithdrawFormatLine[] {
+  return filtered.map((line) => ({
+    name: line.name,
+    qtyBranch1: line.qtyBranch1,
+    qtyBranch2: line.qtyBranch2,
+    branch2Unit: line.branch2Unit,
+  }));
 }
 
 async function recordBranchWithdrawInventoryNotifications(
@@ -113,8 +103,8 @@ async function recordBranchWithdrawInventoryNotifications(
     const item = itemsById.get(line.itemId);
     if (!item) continue;
 
-    const oldStock = item.stock;
-    const newStock = oldStock + line.qtyBranch1;
+    const newStock = item.stock;
+    const oldStock = newStock - line.qtyBranch1;
 
     auditTasks.push(() =>
       recordDataChange({
@@ -173,17 +163,7 @@ export async function saveBranchWithdrawal(raw: z.infer<typeof saveSchema>) {
       return { success: false as const, error: 'ไม่มีรายการที่บันทึก' };
     }
 
-    const itemSnapshots = await loadBranchWithdrawItemSnapshots(filtered.map((line) => line.itemId));
-    if ('error' in itemSnapshots) {
-      return { success: false as const, error: itemSnapshots.error };
-    }
-
-    const resolved = await resolveBranchWithdrawLineNames(filtered, itemSnapshots);
-    if ('error' in resolved) {
-      return { success: false as const, error: resolved.error };
-    }
-
-    const lineMessage = formatBranchWithdrawLineMessage(resolved);
+    const lineMessage = formatBranchWithdrawLineMessage(toBranchWithdrawFormatLines(filtered));
     const rpcLines = filtered.map((line) => ({
       item_id: line.itemId,
       quantity: line.qtyBranch1,
@@ -209,13 +189,23 @@ export async function saveBranchWithdrawal(raw: z.infer<typeof saveSchema>) {
     const withdrawalId = String(data?.withdrawal_id ?? '');
     if (withdrawalId) {
       const deferredFiltered = filtered;
-      const deferredSnapshots = itemSnapshots;
       const deferredClientSessionId = parsed.data.clientSessionId;
       after(async () => {
         try {
+          const itemSnapshots = await loadBranchWithdrawItemSnapshots(
+            deferredFiltered.map((line) => line.itemId),
+          );
+          if ('error' in itemSnapshots) {
+            console.error(
+              '[saveBranchWithdrawal] Deferred snapshot error:',
+              itemSnapshots.error,
+            );
+            return;
+          }
+
           await recordBranchWithdrawInventoryNotifications(
             deferredFiltered,
-            deferredSnapshots,
+            itemSnapshots,
             withdrawalId,
             deferredClientSessionId,
           );

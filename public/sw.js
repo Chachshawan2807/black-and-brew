@@ -366,7 +366,8 @@ self.addEventListener('push', (event) => {
       const isBeanDelivered = payload.kind === 'bean_order_delivered';
       const isBeanShipped = payload.kind === 'bean_order_shipped';
       const isBeanPayment = payload.kind === 'bean_order_payment_confirmed';
-      const isBeanOrder = isBeanDelivered || isBeanShipped || isBeanPayment;
+      const isBeanCreated = payload.kind === 'bean_order_created';
+      const isBeanOrder = isBeanDelivered || isBeanShipped || isBeanPayment || isBeanCreated;
       const isInsight = payload.kind === 'proactive_insight';
       const isSecurity = payload.kind === 'security_alert';
 
@@ -378,13 +379,15 @@ self.addEventListener('push', (event) => {
           ? 'bb-security'
           : isInsight
             ? 'bb-insight'
-            : isBeanPayment
-              ? 'bb-bean-paid'
-              : isBeanShipped
-                ? 'bb-bean-shipped'
-                : isBeanDelivered
-                  ? 'bb-bean-delivered'
-                  : 'bb-daily-report';
+            : isBeanCreated
+              ? 'bb-bean-created'
+              : isBeanPayment
+                ? 'bb-bean-paid'
+                : isBeanShipped
+                  ? 'bb-bean-shipped'
+                  : isBeanDelivered
+                    ? 'bb-bean-delivered'
+                    : 'bb-daily-report';
         const locale = resolvePushLocale(payload);
         const fallbackUrl = isSecurity
           ? `/${locale}/settings`

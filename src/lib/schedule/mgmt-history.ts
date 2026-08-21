@@ -70,6 +70,66 @@ export function shouldContinueMgmtHistoryPagination(
   return filteredLength === 0;
 }
 
+function dateOnly(iso: string): string {
+  return iso.split('T')[0];
+}
+
+function isDateInInclusiveRange(dateIso: string, startDate: string, endDate: string): boolean {
+  const value = dateOnly(dateIso);
+  return value >= dateOnly(startDate) && value <= dateOnly(endDate);
+}
+
+export function buildManagementDateRange(startDate: string, endDate: string): string[] {
+  const [startYear, startMonth, startDay] = dateOnly(startDate).split('-').map(Number);
+  const [endYear, endMonth, endDay] = dateOnly(endDate).split('-').map(Number);
+  const dates: string[] = [];
+  const cursor = new Date(startYear, startMonth - 1, startDay);
+  const end = new Date(endYear, endMonth - 1, endDay);
+
+  while (cursor <= end) {
+    const year = cursor.getFullYear();
+    const month = String(cursor.getMonth() + 1).padStart(2, '0');
+    const day = String(cursor.getDate()).padStart(2, '0');
+    dates.push(`${year}-${month}-${day}`);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates;
+}
+
+export function applyManagementSaveToRawShifts(
+  existing: ManagementHistoryShiftRow[],
+  params: {
+    employeeId: string;
+    startDate: string;
+    endDate: string;
+    previousRange?: { employeeId: string; startDate: string; endDate: string };
+    inserted: ManagementHistoryShiftRow[];
+  },
+): ManagementHistoryShiftRow[] {
+  const rangesToClear = [
+    {
+      employeeId: params.employeeId,
+      startDate: params.startDate,
+      endDate: params.endDate,
+    },
+  ];
+
+  if (params.previousRange) {
+    rangesToClear.push(params.previousRange);
+  }
+
+  const shouldRemove = (shift: ManagementHistoryShiftRow) =>
+    rangesToClear.some(
+      (range) =>
+        shift.employee_id === range.employeeId &&
+        isDateInInclusiveRange(shift.start_time, range.startDate, range.endDate),
+    );
+
+  const kept = existing.filter((shift) => !shouldRemove(shift));
+  return [...kept, ...params.inserted];
+}
+
 export function groupManagementHistoryShifts(
   shifts: ManagementHistoryShiftRow[],
   shiftTypes: ShiftTypeDisplay[],

@@ -868,9 +868,7 @@ export async function createBeanOrder(
           newValue: { orderNo: savedOrderNo, totalBaht: totals.totalBaht },
         });
 
-        const { recordBeanOrderCreatedNotification } = await import(
-          '@/lib/bean-orders/created-notification'
-        );
+        const { notifyBeanOrderCreated } = await import('@/lib/bean-orders/created-web-push');
 
         let linkedCustomerName: string | null = null;
         if (orderInput.customerId) {
@@ -886,7 +884,7 @@ export async function createBeanOrder(
           }
         }
 
-        await recordBeanOrderCreatedNotification({
+        await notifyBeanOrderCreated({
           orderId,
           orderNo: savedOrderNo,
           customerName: linkedCustomerName,

@@ -1,5 +1,6 @@
 import type { InventoryNotification, NotificationPreferences } from '@/lib/notification-types';
 import {
+  isBeanOrderCreatedNotification,
   isBeanOrderDeliveredNotification,
   isBeanOrderPaymentNotification,
   isProactiveInsightNotification,
@@ -19,7 +20,11 @@ export function wantsInAppNotificationSync(prefs: NotificationPreferences): bool
 }
 
 export function isBeanOrderNotification(item: InventoryNotification): boolean {
-  return isBeanOrderDeliveredNotification(item) || isBeanOrderPaymentNotification(item);
+  return (
+    isBeanOrderCreatedNotification(item) ||
+    isBeanOrderDeliveredNotification(item) ||
+    isBeanOrderPaymentNotification(item)
+  );
 }
 
 /** Per-channel OS banner gating — aligned with server Web Push prefs where possible. */

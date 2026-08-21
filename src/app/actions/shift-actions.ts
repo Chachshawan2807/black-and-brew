@@ -10,6 +10,7 @@ import { requireMutationAccess, requireReadAccess } from '@/lib/policies/server-
 import type { Json } from '@/lib/database.types';
 import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
 import {
+  buildManagementDateRange,
   getMgmtHistoryPaginationCursor,
   isManagementHistoryShift,
   MGMT_HISTORY_PAGE_SIZE,
@@ -364,20 +365,154 @@ export async function deleteManagementHistoryRange(employeeId: string, startDate
       throw error;
     }
 
-    await recordDataChange({
-      action: 'BULK_DELETE',
-      module: 'schedule',
-      entityType: 'shift',
-      metadata: { employeeId, startDate, endDate, operation: 'delete_management_history' },
+    after(async () => {
+      await recordDataChange({
+        action: 'BULK_DELETE',
+        module: 'schedule',
+        entityType: 'shift',
+        metadata: { employeeId, startDate, endDate, operation: 'delete_management_history' },
+      });
+      scheduleDailyReportRefreshForRange(startDate, endDate);
+      await revalidateAppPaths();
     });
 
-    scheduleDailyReportRefreshForRange(startDate, endDate);
-
-    revalidateAppPaths();
     return { success: true };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : 'Unknown error';
     return { success: false, error: errorMsg };
+  }
+}
+
+const managementRangeSchema = z.object({
+  employeeId: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
+  shiftType: z.string(),
+  remark: z.string().optional(),
+  previousRange: z
+    .object({
+      employeeId: z.string(),
+      startDate: z.string(),
+      endDate: z.string(),
+    })
+    .optional(),
+});
+
+type ManagementRangePayload = z.infer<typeof managementRangeSchema>;
+
+export async function saveManagementHistoryRange(payload: ManagementRangePayload) {
+  noStore();
+
+  const authError = await ensureShiftMutationAuthorized();
+  if (authError) return { success: false as const, error: authError };
+
+  const parsed = managementRangeSchema.safeParse(payload);
+  if (!parsed.success) {
+    return { success: false as const, error: 'Invalid payload structure' };
+  }
+
+  const { employeeId, startDate, endDate, shiftType, remark, previousRange } = parsed.data;
+
+  try {
+    if (previousRange) {
+      const { error: previousDeleteError } = await supabaseAdmin
+        .from('shifts')
+        .delete()
+        .eq('employee_id', previousRange.employeeId)
+        .eq('metadata->is_management', true)
+        .gte('start_time', `${previousRange.startDate.split('T')[0]}T00:00:00`)
+        .lte('start_time', `${previousRange.endDate.split('T')[0]}T23:59:59`);
+
+      if (previousDeleteError) {
+        console.error('[saveManagementHistoryRange] Previous range delete error:', previousDeleteError);
+        throw previousDeleteError;
+      }
+    }
+
+    const dateStrings = buildManagementDateRange(startDate, endDate);
+    const datesToDelete = dateStrings.map((date) => `${date}T00:00:00`);
+    const isLeave = shiftType === 'ลา' || shiftType === 'on_leave';
+    const newShifts = dateStrings.map((dateStr) => ({
+      employee_id: employeeId,
+      start_time: `${dateStr}T00:00:00`,
+      end_time: `${dateStr}T23:59:59`,
+      status: isLeave ? 'on_leave' : 'scheduled',
+      metadata: {
+        location: shiftType,
+        is_management: true,
+        remark: remark ?? '',
+      } as Json,
+    }));
+
+    if (datesToDelete.length > 0) {
+      const { error: deleteError } = await supabaseAdmin
+        .from('shifts')
+        .delete()
+        .eq('employee_id', employeeId)
+        .in('start_time', datesToDelete);
+
+      if (deleteError) {
+        console.error('[saveManagementHistoryRange] Delete Error:', deleteError);
+        throw deleteError;
+      }
+    }
+
+    if (newShifts.length === 0) {
+      return { success: true as const, data: [] };
+    }
+
+    const { data, error: insertError } = await supabaseAdmin
+      .from('shifts')
+      .insert(newShifts)
+      .select('id, employee_id, status, start_time, end_time, metadata, profiles(full_name)');
+
+    if (insertError) {
+      console.error('[saveManagementHistoryRange] Insert Error:', insertError);
+      after(async () => {
+        await recordDataChange({
+          action: 'BULK_UPDATE',
+          module: 'schedule',
+          entityType: 'shift',
+          status: 'failed',
+          errorMessage: insertError.message,
+          metadata: {
+            operation: 'save_management_history_range',
+            employeeId,
+            startDate,
+            endDate,
+            shiftType,
+          },
+        });
+      });
+      return { success: false as const, error: insertError.message };
+    }
+
+    after(async () => {
+      await recordDataChange({
+        action: 'BULK_UPDATE',
+        module: 'schedule',
+        entityType: 'shift',
+        metadata: {
+          operation: 'save_management_history_range',
+          employeeId,
+          startDate,
+          endDate,
+          shiftType,
+          count: data?.length ?? 0,
+        },
+      });
+      scheduleDailyReportRefreshForRange(startDate, endDate);
+      if (previousRange) {
+        scheduleDailyReportRefreshForRange(previousRange.startDate, previousRange.endDate);
+      }
+      scheduleProactiveInsightEvaluation('shift_update');
+      await revalidateAppPaths();
+    });
+
+    return { success: true as const, data: data ?? [] };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    return { success: false as const, error: errorMsg };
   }
 }
 

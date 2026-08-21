@@ -194,6 +194,7 @@ describe('notification fab cross-platform sync', () => {
     expect(serviceWorkerSource).toContain("payload.kind === 'daily_report'");
     expect(serviceWorkerSource).toContain("payload.kind === 'bean_order_delivered'");
     expect(serviceWorkerSource).toContain("payload.kind === 'bean_order_shipped'");
+    expect(serviceWorkerSource).toContain("payload.kind === 'bean_order_created'");
     expect(serviceWorkerSource).toContain('const unreadCount = await safeResolveUnreadCount(payload);');
     expect(serviceWorkerSource).toContain("type: 'INVENTORY_PUSH_RECEIVED'");
     expect(serviceWorkerSource).toContain('await applyHomeScreenBadge(unreadCount);');

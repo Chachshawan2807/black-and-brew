@@ -95,16 +95,28 @@ describe('inventory save performance', () => {
     const critical = fnBody.slice(0, afterIdx);
     expect(critical).not.toContain('recordBranchWithdrawInventoryNotifications');
     expect(critical).not.toContain('revalidatePath');
+    expect(critical).not.toContain('loadBranchWithdrawItemSnapshots');
     expect(fnBody.slice(afterIdx)).toContain('recordBranchWithdrawInventoryNotifications');
+    expect(fnBody.slice(afterIdx)).toContain('loadBranchWithdrawItemSnapshots');
+  });
+
+  test('branch withdraw save does not block on a pre-mutation item SELECT', () => {
+    const fnStart = branchWithdrawActions.indexOf('export async function saveBranchWithdrawal');
+    const fnEnd = branchWithdrawActions.indexOf('export async function fetchBranchWithdrawalHistory');
+    const fnBody = branchWithdrawActions.slice(fnStart, fnEnd);
+    const afterIdx = fnBody.indexOf('after(async () => {');
+    const critical = fnBody.slice(0, afterIdx);
+    expect(critical).not.toMatch(/\.from\(['"]inventory_items['"]\)[\s\S]*\.select\(/);
   });
 
   test('branch withdraw client shows success before background refresh', () => {
     expect(branchWithdrawClient).toMatch(/openDialog\(saveResultDialogRef\.current\)/);
-    expect(branchWithdrawClient).toMatch(/void[\s\S]*refresh\(\)/);
+    expect(branchWithdrawClient).toMatch(/void[\s\S]*refresh\(\{ soft: true \}\)/);
     expect(branchWithdrawClient).not.toMatch(
-      /await refresh\(\)[\s\S]*openDialog\(saveResultDialogRef\.current\)/,
+      /await refresh\([\s\S]*openDialog\(saveResultDialogRef\.current\)/,
     );
-    expect(branchWithdrawClient).toContain('Promise.all');
+    expect(branchWithdrawClient).not.toContain('fetchBranchWithdrawalHistory');
+    expect(branchWithdrawClient).not.toContain('router.refresh()');
   });
 
   test('warehouse field edit uses one inventory_items query on the critical path', () => {

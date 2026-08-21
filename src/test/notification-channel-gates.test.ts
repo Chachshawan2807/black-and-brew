@@ -81,6 +81,25 @@ describe('shouldShowOsNotification', () => {
     ).toBe(true);
   });
 
+  test('requires systemNotifications for bean order created alerts without inventory', () => {
+    const notification = sampleNotification({
+      title: 'คุณเอ',
+      metadata: { kind: 'bean_order_created', module: 'bean_orders' },
+    });
+    expect(
+      shouldShowOsNotification(
+        notification,
+        prefs({ enabled: false, systemNotifications: true }),
+      ),
+    ).toBe(true);
+    expect(
+      shouldShowOsNotification(
+        notification,
+        prefs({ enabled: true, systemNotifications: false }),
+      ),
+    ).toBe(false);
+  });
+
   test('requires inventory + systemNotifications for stock alerts', () => {
     const notification = sampleNotification({
       title: '+ กาแฟ',

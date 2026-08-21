@@ -139,6 +139,7 @@ vi.mock('@/app/actions/shift-actions', () => ({
   updateStaffOrder: vi.fn(),
   batchUpdateProfileNames: vi.fn().mockResolvedValue({ success: true }),
   saveShift: vi.fn(),
+  saveManagementHistoryRange: vi.fn(),
   deleteManagementHistoryRange: vi.fn(),
 }));
 

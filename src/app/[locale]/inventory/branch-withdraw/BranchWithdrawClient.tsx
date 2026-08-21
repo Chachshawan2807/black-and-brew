@@ -2,10 +2,8 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ChevronLeft, Copy, Eye, Loader2, Plus, Save, Search, X } from 'lucide-react';
 import {
-  fetchBranchWithdrawalHistory,
   saveBranchWithdrawal,
   type BranchWithdrawHistoryRow,
 } from '@/app/actions/branch-withdraw-actions';
@@ -233,7 +231,6 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
 }, branchWithdrawItemRowPropsEqual);
 
 export default function BranchWithdrawClient({ initialItems, initialHistory, locale }: Props) {
-  const router = useRouter();
   const isReadOnly = useReadOnly();
   const { items: realtimeItems, hasLoaded, refresh } = useInventoryRealtime();
 
@@ -377,7 +374,13 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
       const savedLines = filterBranchWithdrawSaveLines(lines);
 
       const result = await saveBranchWithdrawal({
-        lines,
+        lines: savedLines.map((line) => ({
+          itemId: line.itemId,
+          name: line.name,
+          qtyBranch1: String(line.qtyBranch1),
+          qtyBranch2: line.qtyBranch2 != null ? String(line.qtyBranch2) : '',
+          branch2Unit: line.branch2Unit ?? '',
+        })),
         clientSessionId: getClientSessionId(),
       });
       if (!result.success) {
@@ -408,23 +411,14 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
       setSaveLineMessage(result.lineMessage);
       openDialog(saveResultDialogRef.current);
 
-      void (async () => {
-        const [, historyResult] = await Promise.all([
-          refresh(),
-          fetchBranchWithdrawalHistory(30),
-        ]);
-        if (historyResult.success) {
-          setHistory(historyResult.data);
-        }
-        router.refresh();
-      })();
+      void refresh({ soft: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
       setSaveError(message);
     } finally {
       setIsSaving(false);
     }
-  }, [inventorySource, isReadOnly, refresh, router, rows, displayItems]);
+  }, [inventorySource, isReadOnly, refresh, rows, displayItems]);
 
   const openAddItemDialog = useCallback(() => {
     setAddItemQuery('');
