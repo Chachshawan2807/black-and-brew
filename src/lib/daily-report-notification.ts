@@ -147,7 +147,7 @@ export async function updateDailyReportNotificationLog(
     const { error } = await supabase
       .from('data_change_logs')
       .update({
-        occurred_at: new Date().toISOString(),
+        // Keep original cron occurred_at — roster edits must not re-trigger notifications.
         new_value: sanitizeJsonValue(data),
         metadata: {
           kind: 'daily_report',

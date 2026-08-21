@@ -19,6 +19,20 @@ describe('saveShift persistence', () => {
     expect(saveShiftBody).not.toContain("onConflict: 'employee_id,start_time'");
     expect(saveShiftBody).toMatch(/\.delete\(\)[\s\S]*\.eq\('employee_id'/);
     expect(saveShiftBody).toMatch(/\.insert\([\s\S]*\)[\s\S]*\.select\(\)/);
+    expect(saveShiftBody).toMatch(/\.delete\(\)[\s\S]*\.select\(/);
+  });
+
+  test('saveShift defers audit log and revalidation until after response', () => {
+    const source = fs.readFileSync(shiftActionsPath, 'utf-8');
+    const saveShiftBody = source.slice(
+      source.indexOf('export async function saveShift'),
+      source.indexOf('export async function deleteManagementHistoryRange'),
+    );
+
+    expect(saveShiftBody).toContain('after(async () => {');
+    expect(saveShiftBody).toMatch(/after\(async \(\) => \{[\s\S]*recordDataChange/);
+    expect(saveShiftBody).toMatch(/after\(async \(\) => \{[\s\S]*revalidateAppPaths/);
+    expect(saveShiftBody).not.toMatch(/revalidateAppPaths\(\);\s*return \{ success: true/);
   });
 
   test('saveShift refreshes daily schedule notifications for the edited date', () => {
@@ -38,15 +52,13 @@ describe('saveShift persistence', () => {
 });
 
 describe('saveShift server action', () => {
-  const mockMaybeSingle = vi.fn();
+  const mockDeleteMaybeSingle = vi.fn();
+  const mockDeleteSelect = vi.fn();
   const mockDeleteSecondEq = vi.fn();
   const mockDeleteFirstEq = vi.fn();
-  const mockSelectSecondEq = vi.fn();
-  const mockSelectFirstEq = vi.fn();
   const mockInsertSingle = vi.fn();
   const mockInsertSelect = vi.fn();
   const mockDelete = vi.fn();
-  const mockSelect = vi.fn();
   const mockInsert = vi.fn();
 
   beforeEach(() => {
@@ -55,14 +67,11 @@ describe('saveShift server action', () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
 
-    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
-    mockDeleteSecondEq.mockResolvedValue({ error: null });
+    mockDeleteMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockDeleteSelect.mockReturnValue({ maybeSingle: mockDeleteMaybeSingle });
+    mockDeleteSecondEq.mockReturnValue({ select: mockDeleteSelect });
     mockDeleteFirstEq.mockReturnValue({ eq: mockDeleteSecondEq });
     mockDelete.mockReturnValue({ eq: mockDeleteFirstEq });
-
-    mockSelectSecondEq.mockReturnValue({ maybeSingle: mockMaybeSingle });
-    mockSelectFirstEq.mockReturnValue({ eq: mockSelectSecondEq });
-    mockSelect.mockReturnValue({ eq: mockSelectFirstEq });
 
     mockInsertSingle.mockResolvedValue({
       data: {
@@ -112,7 +121,6 @@ describe('saveShift server action', () => {
     vi.doMock('@supabase/supabase-js', () => ({
       createClient: vi.fn(() => ({
         from: vi.fn(() => ({
-          select: mockSelect,
           delete: mockDelete,
           insert: mockInsert,
         })),

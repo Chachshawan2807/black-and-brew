@@ -145,6 +145,10 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).not.toContain('ensureDailyReportNotificationHistory');
     expect(hookSource).toContain("'UPDATE'");
     expect(hookSource).toContain('replaceDailyReportNotification');
+    expect(hookSource).toContain('silentlyReplaceDailyReportFromRow');
+    expect(hookSource).toMatch(
+      /module === 'schedule' && event === 'UPDATE'[\s\S]*silentlyReplaceDailyReportFromRow/,
+    );
   });
 
   test('hook syncs bean order delivered logs via realtime and server catch-up', () => {

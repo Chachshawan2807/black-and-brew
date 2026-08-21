@@ -261,32 +261,29 @@ export async function saveShift(payload: ShiftPayload) {
   const cleanEndTime = datePart + 'T23:59:59';
 
   try {
-    const { data: shiftBefore } = await supabaseAdmin
+    const { data: shiftBefore, error: deleteError } = await supabaseAdmin
       .from('shifts')
-      .select('id, employee_id, start_time, status, metadata')
+      .delete()
       .eq('employee_id', parsed.data.employee_id)
       .eq('start_time', cleanStartTime)
+      .select('id, employee_id, start_time, status, metadata')
       .maybeSingle();
 
     const isUpdate = Boolean(shiftBefore);
 
-    const { error: deleteError } = await supabaseAdmin
-      .from('shifts')
-      .delete()
-      .eq('employee_id', parsed.data.employee_id)
-      .eq('start_time', cleanStartTime);
-
     if (deleteError) {
       console.error('[saveShift] Delete Error:', deleteError);
-      await recordDataChange({
-        action: isUpdate ? 'UPDATE' : 'CREATE',
-        module: 'schedule',
-        entityType: 'shift',
-        entityId: shiftBefore?.id ?? parsed.data.id ?? null,
-        oldValue: (shiftBefore ?? null) as Json | null,
-        newValue: parsed.data as Json,
-        status: 'failed',
-        errorMessage: deleteError.message,
+      after(async () => {
+        await recordDataChange({
+          action: isUpdate ? 'UPDATE' : 'CREATE',
+          module: 'schedule',
+          entityType: 'shift',
+          entityId: shiftBefore?.id ?? parsed.data.id ?? null,
+          oldValue: (shiftBefore ?? null) as Json | null,
+          newValue: parsed.data as Json,
+          status: 'failed',
+          errorMessage: deleteError.message,
+        });
       });
       return { success: false, error: deleteError.message };
     }
@@ -305,31 +302,35 @@ export async function saveShift(payload: ShiftPayload) {
 
     if (error) {
       console.error('[saveShift] Insert Error:', error);
-      await recordDataChange({
-        action: isUpdate ? 'UPDATE' : 'CREATE',
-        module: 'schedule',
-        entityType: 'shift',
-        entityId: shiftBefore?.id ?? parsed.data.id ?? null,
-        oldValue: (shiftBefore ?? null) as Json | null,
-        newValue: parsed.data as Json,
-        status: 'failed',
-        errorMessage: error.message,
+      after(async () => {
+        await recordDataChange({
+          action: isUpdate ? 'UPDATE' : 'CREATE',
+          module: 'schedule',
+          entityType: 'shift',
+          entityId: shiftBefore?.id ?? parsed.data.id ?? null,
+          oldValue: (shiftBefore ?? null) as Json | null,
+          newValue: parsed.data as Json,
+          status: 'failed',
+          errorMessage: error.message,
+        });
       });
       return { success: false, error: error.message };
     }
 
-    await recordDataChange({
-      action: isUpdate ? 'UPDATE' : 'CREATE',
-      module: 'schedule',
-      entityType: 'shift',
-      entityId: data?.id ?? shiftBefore?.id ?? parsed.data.id ?? null,
-      oldValue: (shiftBefore ?? null) as Json | null,
-      newValue: (data ?? parsed.data) as Json,
+    after(async () => {
+      await recordDataChange({
+        action: isUpdate ? 'UPDATE' : 'CREATE',
+        module: 'schedule',
+        entityType: 'shift',
+        entityId: data?.id ?? shiftBefore?.id ?? parsed.data.id ?? null,
+        oldValue: (shiftBefore ?? null) as Json | null,
+        newValue: (data ?? parsed.data) as Json,
+      });
+      await revalidateAppPaths();
     });
 
     scheduleDailyReportRefreshForDate(datePart);
     scheduleProactiveInsightEvaluation('shift_update');
-    revalidateAppPaths();
     return { success: true, data };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };

@@ -425,6 +425,19 @@ export function useInventoryNotifications() {
     [],
   );
 
+  /** Roster sync updates an existing cron log — refresh panel content only, no banner/badge. */
+  const silentlyReplaceDailyReportFromRow = useCallback((row: DataChangeLogRow) => {
+    const loc = localeRef.current;
+    const notification = formatDailyReportNotification(row, loc);
+    setNotifications((prev) => {
+      const { list: next, replaced } = replaceNotificationByDedupeKey(prev, notification);
+      if (!replaced) return prev;
+      saveStoredNotifications(next);
+      void mirrorNotificationsToIdb(next);
+      return next;
+    });
+  }, []);
+
   const removeNotificationByLogId = useCallback((logId: string) => {
     setNotifications((prev) => {
       const { list: next, removed } = removeNotificationByDedupeKey(prev, logId);
@@ -650,6 +663,10 @@ export function useInventoryNotifications() {
           if (!payload.new) return;
           const row = rowFromPayload(payload as { new: Record<string, unknown> });
           if (module === 'schedule' && !isEligibleDailyReportNotification(row)) return;
+          if (module === 'schedule' && event === 'UPDATE') {
+            silentlyReplaceDailyReportFromRow(row);
+            return;
+          }
           if (
             module === 'bean_orders' &&
             !isEligibleBeanOrderCreatedNotification(row) &&
@@ -747,7 +764,7 @@ export function useInventoryNotifications() {
       stopChannel();
       window.removeEventListener('bb-notification-prefs-changed', onPrefsChange);
     };
-  }, [realtimeReady, processRows, syncFromServerOnly, realtimeReconnectKey, removeNotificationByLogId]);
+  }, [realtimeReady, processRows, syncFromServerOnly, realtimeReconnectKey, removeNotificationByLogId, silentlyReplaceDailyReportFromRow]);
 
   useEffect(() => {
     let hiddenAt: number | null = null;

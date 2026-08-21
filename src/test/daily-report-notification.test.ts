@@ -146,5 +146,7 @@ describe('daily report notification sync', () => {
     expect(result.success).toBe(true);
     expect(result.updated).toBe(true);
     expect(mockUpdate).toHaveBeenCalled();
+    const updatePayload = mockUpdate.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(updatePayload).not.toHaveProperty('occurred_at');
   });
 });
