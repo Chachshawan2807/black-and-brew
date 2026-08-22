@@ -68,6 +68,20 @@ export const INVENTORY_QUICK_ACTION_HOVER = {
   fab: 'hover:brightness-95',
 } as const;
 
+export type InventoryQuickActionType = 'IN' | 'OUT' | 'ADJUST';
+
+/** Pastel surface for IN / OUT / ADJUST — matches quick-action type toggle when selected */
+export function inventoryQuickActionTypeColors(type: InventoryQuickActionType): string {
+  switch (type) {
+    case 'OUT':
+      return INVENTORY_QUICK_ACTION_COLORS.out;
+    case 'ADJUST':
+      return INVENTORY_QUICK_ACTION_COLORS.adjust;
+    default:
+      return INVENTORY_QUICK_ACTION_COLORS.in;
+  }
+}
+
 /** วันหยุด — โทนเดียวกับกะลา */
 export const DAY_OFF_COLOR = `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`;
 

@@ -34,7 +34,10 @@ import {
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
   FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
 } from '@/lib/floating-action-layout';
-import { INVENTORY_QUICK_ACTION_COLORS, INVENTORY_QUICK_ACTION_HOVER } from '@/lib/shift-colors';
+import {
+  INVENTORY_QUICK_ACTION_HOVER,
+  inventoryQuickActionTypeColors,
+} from '@/lib/shift-colors';
 import { blurActiveElement } from '@/lib/blur-active-element';
 import {
   getFabPanelKeyboardAwareStyle,
@@ -284,7 +287,7 @@ export default function InventoryQuickActionFAB() {
             className={cn(
               'flex items-center justify-center rounded-full shadow-lg',
               FAB_SIZE_CLASS,
-              INVENTORY_QUICK_ACTION_COLORS.fab,
+              inventoryQuickActionTypeColors(quickAction.quickType),
               INVENTORY_QUICK_ACTION_HOVER.fab,
             )}
             whileHover={FAB_HOVER}

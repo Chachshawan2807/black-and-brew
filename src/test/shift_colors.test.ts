@@ -4,6 +4,7 @@ import {
   getShiftColorClass,
   getShiftColorStyle,
   INVENTORY_QUICK_ACTION_COLORS,
+  inventoryQuickActionTypeColors,
 } from '@/lib/shift-colors';
 
 describe('shift-colors presentation', () => {
@@ -64,5 +65,11 @@ describe('shift-colors presentation', () => {
       INVENTORY_QUICK_ACTION_COLORS.fab,
     ];
     expect(new Set(backgrounds).size).toBe(4);
+  });
+
+  it('maps quick action types to matching IN/OUT/ADJUST pastels', () => {
+    expect(inventoryQuickActionTypeColors('IN')).toBe(INVENTORY_QUICK_ACTION_COLORS.in);
+    expect(inventoryQuickActionTypeColors('OUT')).toBe(INVENTORY_QUICK_ACTION_COLORS.out);
+    expect(inventoryQuickActionTypeColors('ADJUST')).toBe(INVENTORY_QUICK_ACTION_COLORS.adjust);
   });
 });

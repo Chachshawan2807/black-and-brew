@@ -63,7 +63,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toContain('InventoryQuickActionBar');
     expect(fabCode).toContain('overflow-y-auto');
     expect(fabCode).toContain('bb-smooth-scroll');
-    expect(fabCode).toContain('INVENTORY_QUICK_ACTION_COLORS.fab');
+    expect(fabCode).toContain('inventoryQuickActionTypeColors(quickAction.quickType)');
     expect(fabCode).toContain('FabFadePresence');
     expect(fabCode).toContain('<Package');
     expect(fabCode).not.toContain('PackagePlus');
@@ -309,7 +309,7 @@ describe('Inventory Quick Action FAB', () => {
 
     expect(barCode).toMatch(/function QuickActionSaveButton[\s\S]*type="button"/);
     expect(barCode).toMatch(/function QuickActionSaveButton[\s\S]*blurActiveElement\(\)/);
-    expect(barCode).toMatch(/function QuickActionSaveButton[\s\S]*onSubmit\(e as unknown as React\.FormEvent\)/);
+    expect(barCode).toMatch(/function QuickActionSaveButton[\s\S]*inventoryQuickActionTypeColors\(quickType\)/);
   });
 
   test('quick search suggestions select items via pointerdown for iOS touch', () => {

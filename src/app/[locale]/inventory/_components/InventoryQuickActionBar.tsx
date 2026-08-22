@@ -21,7 +21,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuickBadgeStyles } from '@/lib/inventory-stock';
-import { INVENTORY_QUICK_ACTION_COLORS, INVENTORY_QUICK_ACTION_HOVER } from '@/lib/shift-colors';
+import {
+  INVENTORY_QUICK_ACTION_COLORS,
+  INVENTORY_QUICK_ACTION_HOVER,
+  inventoryQuickActionTypeColors,
+  type InventoryQuickActionType,
+} from '@/lib/shift-colors';
 import { shouldShowQuickSearchSuggestions } from '@/lib/inventory-quick-search-filter';
 import {
   QUICK_SEARCH_NO_HIGHLIGHT,
@@ -262,6 +267,7 @@ function QuickActionQtyInput({
 }
 
 function QuickActionSaveButton({
+  quickType,
   isQuickPending,
   isReadOnly,
   className,
@@ -269,6 +275,7 @@ function QuickActionSaveButton({
   bulkSubmitReady,
   onSubmit,
 }: {
+  quickType: InventoryQuickActionType;
   isQuickPending: boolean;
   isReadOnly: boolean;
   className?: string;
@@ -292,7 +299,8 @@ function QuickActionSaveButton({
         }, 0);
       }}
       className={cn(
-        'h-11 w-full bb-pastel-surface bg-[#d1ecf1] border border-[#bee5eb] hover:brightness-95 text-[#000000] rounded-3xl text-sm font-normal bb-transition bb-shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased disabled:opacity-50',
+        'h-11 w-full bb-pastel-surface hover:brightness-95 text-[#000000] rounded-3xl text-sm font-normal bb-transition bb-shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased disabled:opacity-50',
+        inventoryQuickActionTypeColors(quickType),
         className,
       )}
     >
@@ -388,12 +396,7 @@ function BulkQueuePanel({
   onBulkLineQtyChange?: (itemId: string, qty: string) => void;
   onClearBulkQueue?: () => void;
 }) {
-  const rowTone =
-    quickType === 'OUT'
-      ? INVENTORY_QUICK_ACTION_COLORS.out
-      : quickType === 'ADJUST'
-        ? INVENTORY_QUICK_ACTION_COLORS.adjust
-        : INVENTORY_QUICK_ACTION_COLORS.in;
+  const rowTone = inventoryQuickActionTypeColors(quickType);
   if (bulkPreviews.length === 0) return null;
 
   return (
@@ -479,12 +482,7 @@ function BulkSubmitConfirmDialog({
 }) {
   const [isMounted, setIsMounted] = useState(false);
   const typeLabel = getBulkSubmitTypeLabel(bulkQuickType);
-  const rowTone =
-    bulkQuickType === 'OUT'
-      ? INVENTORY_QUICK_ACTION_COLORS.out
-      : bulkQuickType === 'ADJUST'
-        ? INVENTORY_QUICK_ACTION_COLORS.adjust
-        : INVENTORY_QUICK_ACTION_COLORS.in;
+  const rowTone = inventoryQuickActionTypeColors(bulkQuickType);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
@@ -552,7 +550,10 @@ function BulkSubmitConfirmDialog({
               type="button"
               onClick={onConfirm}
               disabled={isQuickPending}
-              className="h-10 rounded-xl bb-pastel-surface border border-[#bee5eb] bg-[#d1ecf1] px-4 text-sm text-[#000000] bb-transition hover:brightness-95 disabled:opacity-50"
+              className={cn(
+                'h-10 rounded-xl bb-pastel-surface px-4 text-sm text-[#000000] bb-transition hover:brightness-95 disabled:opacity-50',
+                inventoryQuickActionTypeColors(bulkQuickType),
+              )}
             >
               {isQuickPending ? 'กำลังบันทึก...' : `ยืนยัน${typeLabel}`}
             </button>
@@ -1014,6 +1015,7 @@ export function InventoryQuickActionBar({
               className={cn('h-9', bulkMode ? 'w-[7.25rem]' : 'w-[6.25rem]')}
             />
             <QuickActionSaveButton
+              quickType={quickType}
               isQuickPending={isQuickPending}
               isReadOnly={isReadOnly}
               bulkCount={bulkMode ? bulkQueue.length : undefined}
@@ -1059,6 +1061,7 @@ export function InventoryQuickActionBar({
           </div>
           <div className={ACTION_CELL_CLASS}>
             <QuickActionSaveButton
+              quickType={quickType}
               isQuickPending={isQuickPending}
               isReadOnly={isReadOnly}
               bulkCount={bulkMode ? bulkQueue.length : undefined}
