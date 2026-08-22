@@ -119,6 +119,14 @@ describe('bean orders mobile navigation reliability', () => {
     expect(nav).toContain('router.prefetch');
   });
 
+  test('instant nav bridge navigates on touch pointerup to avoid lost mobile clicks', () => {
+    const nav = readSrc('components/shell/ViewTransitionNavigation.tsx');
+    expect(nav).toContain("addEventListener('pointerup', onPointerUp, true)");
+    expect(nav).toMatch(/pointerType !== 'touch'[\s\S]*pendingInstantTouch/);
+    expect(nav).toContain('INSTANT_NAV_TOUCH_MOVE_THRESHOLD_SQ');
+    expect(nav).toContain('suppressInstantNavClick');
+  });
+
   test('bean order list item warms detail route on primary pointer down', () => {
     const listItem = readSrc('app/[locale]/bean-orders/_components/BeanOrderListItem.tsx');
     expect(listItem).toContain('onPointerDown');

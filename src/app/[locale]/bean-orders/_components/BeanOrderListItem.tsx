@@ -119,7 +119,7 @@ export function BeanOrderListItem({ order, locale }: Props) {
         onTouchStart={warmDetailRoute}
         onMouseEnter={warmDetailRoute}
         onFocus={warmDetailRoute}
-        className="min-w-0 flex-1 touch-manipulation rounded-xl py-3 pr-3 bb-transition hover:bg-muted/25 lg:contents lg:p-0"
+        className="min-w-0 flex-1 touch-manipulation rounded-xl py-3 pr-3 bb-transition hover:bg-muted/25 active:bg-muted/35 lg:contents lg:p-0"
       >
         <div className="lg:hidden">
           <p className="min-w-0 truncate text-sm text-foreground/90" title={customerLabel}>
