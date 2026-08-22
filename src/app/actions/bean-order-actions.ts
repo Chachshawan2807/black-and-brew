@@ -1704,6 +1704,46 @@ export type ConfirmBeanOrderDeliveredOptions = {
   shipment?: z.infer<typeof shipOrderSchema>;
 };
 
+function scheduleBeanOrderDeliveredSideEffects(options: {
+  orderId: string;
+  orderNo: string;
+  locale: string;
+  previousStatus: string | null;
+  nextStatus: string;
+  manualDelivery: boolean;
+}): void {
+  void import('@/lib/bean-orders/notify-delivered')
+    .then(({ maybeNotifyBeanOrderDelivered }) =>
+      maybeNotifyBeanOrderDelivered({
+        orderId: options.orderId,
+        previousStatus: options.previousStatus,
+        nextStatus: options.nextStatus,
+      }),
+    )
+    .catch((error) => {
+      console.error('maybeNotifyBeanOrderDelivered (manual):', error);
+    });
+
+  after(async () => {
+    try {
+      await recordDataChange({
+        action: 'UPDATE',
+        module: 'bean_orders',
+        entityType: 'bean_order',
+        entityId: options.orderId,
+        entityLabel: options.orderNo,
+        fieldChanges: [
+          { field: 'tracking_status', old_value: options.previousStatus, new_value: options.nextStatus },
+        ],
+        metadata: { manualDelivery: options.manualDelivery },
+      });
+      revalidateBeanOrders(options.locale, options.orderId);
+    } catch (error) {
+      console.error('[confirmBeanOrderDelivered] Deferred side-effect error:', error);
+    }
+  });
+}
+
 export async function confirmBeanOrderDelivered(
   orderId: string,
   locale = 'th',
@@ -1714,49 +1754,137 @@ export async function confirmBeanOrderDelivered(
 
   try {
     const supabase = getSupabaseAdmin();
-    const { data: order, error: fetchError } = await supabase
-      .from('bean_orders')
-      .select('id, order_no, payment_status, fulfillment_status, cancelled_at, status_history')
-      .eq('id', orderId)
-      .maybeSingle();
+    const [{ data: order, error: fetchError }, { data: shipment, error: shipmentError }, actor] =
+      await Promise.all([
+        supabase
+          .from('bean_orders')
+          .select('id, order_no, payment_status, fulfillment_status, cancelled_at, status_history')
+          .eq('id', orderId)
+          .maybeSingle(),
+        supabase
+          .from('bean_order_shipments')
+          .select('tracking_number, tracking_status')
+          .eq('order_id', orderId)
+          .maybeSingle(),
+        resolveActorLabelFromSession(),
+      ]);
 
     if (fetchError || !order) return { success: false, error: 'ไม่พบออเดอร์' };
+    if (shipmentError) {
+      console.error(
+        'Supabase Error (confirmBeanOrderDelivered shipment):',
+        shipmentError.message,
+        shipmentError.details,
+      );
+      return { success: false, error: shipmentError.message };
+    }
 
-    let fulfillmentStatus = order.fulfillment_status as 'pending' | 'shipped';
+    const fulfillmentStatus = order.fulfillment_status as 'pending' | 'shipped';
+    const paymentStatus = order.payment_status as 'unpaid' | 'paid';
+    const cancelledAt = order.cancelled_at as string | null;
+    const orderNo = order.order_no as string;
+    const now = new Date().toISOString();
+    const nextStatus = 'delivered';
+
     if (fulfillmentStatus === 'pending') {
       if (!options?.shipment) {
         return { success: false, error: 'ยังไม่ได้บันทึกการจัดส่ง' };
       }
-      const shipResult = await shipBeanOrder(orderId, options.shipment, locale, {
-        suppressShippedNotification: true,
+
+      const parsed = shipOrderSchema.safeParse(options.shipment);
+      if (!parsed.success) return { success: false, error: 'ข้อมูลจัดส่งไม่ถูกต้อง' };
+
+      const inputTracking = parsed.data.trackingNumber?.trim() || '';
+      const inputCarrier = parsed.data.carrierCode?.trim() || '';
+      if (inputCarrier === 'other') {
+        return { success: false, error: 'กรุณาระบุช่องทางจัดส่ง' };
+      }
+      if (!canEditShipment(cancelledAt)) {
+        return { success: false, error: 'แก้ไขการจัดส่งไม่ได้ในสถานะนี้' };
+      }
+      if (!canConfirmManualDelivery('shipped', inputTracking || null, null, cancelledAt)) {
+        return {
+          success: false,
+          error: inputTracking
+            ? 'มีเลขพัสดุแล้ว — สถานะจัดส่งสำเร็จอัปเดตอัตโนมัติจาก TrackingMore'
+            : 'ยืนยันจัดส่งไม่ได้ในสถานะนี้',
+        };
+      }
+
+      const resolvedCarrierCode = inputCarrier
+        ? resolveTrackingMoreCarrierCode(inputCarrier) ?? inputCarrier
+        : null;
+      let history = appendStatusHistory((order.status_history as StatusHistoryEntry[]) ?? [], {
+        by: actor,
+        action: 'shipped',
+        payment_status: paymentStatus,
+        fulfillment_status: 'shipped',
       });
-      if (!shipResult.success) return shipResult;
-      fulfillmentStatus = 'shipped';
+      history = appendStatusHistory(history, {
+        by: actor,
+        action: 'delivery_confirmed',
+        payment_status: paymentStatus,
+        fulfillment_status: 'shipped',
+      });
+
+      const [{ error: orderError }, { error: shipError }] = await Promise.all([
+        supabase
+          .from('bean_orders')
+          .update({
+            fulfillment_status: 'shipped',
+            status_history: history,
+            updated_at: now,
+          })
+          .eq('id', orderId),
+        supabase.from('bean_order_shipments').upsert(
+          {
+            order_id: orderId,
+            delivery_type: 'parcel',
+            carrier_code: resolvedCarrierCode,
+            tracking_number: inputTracking || null,
+            tracking_status: nextStatus,
+            tracking_raw: {
+              source: 'manual',
+              confirmed_at: now,
+              confirmed_by: actor,
+            },
+            shipped_by: actor,
+            shipped_at: now,
+          },
+          { onConflict: 'order_id' },
+        ),
+      ]);
+
+      if (orderError) {
+        console.error('Supabase Error (confirmBeanOrderDelivered):', orderError.message, orderError.details);
+        return { success: false, error: orderError.message };
+      }
+      if (shipError) {
+        console.error(
+          'Supabase Error (confirmBeanOrderDelivered shipment):',
+          shipError.message,
+          shipError.details,
+        );
+        return { success: false, error: shipError.message };
+      }
+
+      scheduleBeanOrderDeliveredSideEffects({
+        orderId,
+        orderNo,
+        locale,
+        previousStatus: null,
+        nextStatus,
+        manualDelivery: true,
+      });
+      return { success: true };
     }
 
-    const { data: shipment, error: shipmentError } = await supabase
-      .from('bean_order_shipments')
-      .select('tracking_number, tracking_status')
-      .eq('order_id', orderId)
-      .maybeSingle();
-
-    if (shipmentError) {
-      console.error('Supabase Error (confirmBeanOrderDelivered shipment):', shipmentError.message, shipmentError.details);
-      return { success: false, error: shipmentError.message };
-    }
     if (!shipment) return { success: false, error: 'ยังไม่มีข้อมูลการจัดส่ง' };
 
     const trackingNumber = (shipment.tracking_number as string | null) ?? null;
     const previousStatus = (shipment.tracking_status as string | null) ?? null;
 
-    if (
-      !canConfirmManualDelivery(
-        fulfillmentStatus,
-        trackingNumber,
-        previousStatus,
-        order.cancelled_at as string | null,
-      )
-    ) {
+    if (!canConfirmManualDelivery(fulfillmentStatus, trackingNumber, previousStatus, cancelledAt)) {
       return {
         success: false,
         error: trackingNumber?.trim()
@@ -1765,15 +1893,12 @@ export async function confirmBeanOrderDelivered(
       };
     }
 
-    const actor = await resolveActorLabelFromSession();
     const history = appendStatusHistory((order.status_history as StatusHistoryEntry[]) ?? [], {
       by: actor,
       action: 'delivery_confirmed',
-      payment_status: order.payment_status as 'unpaid' | 'paid',
+      payment_status: paymentStatus,
       fulfillment_status: 'shipped',
     });
-    const now = new Date().toISOString();
-    const nextStatus = 'delivered';
 
     const [{ error: orderError }, { error: shipError }] = await Promise.all([
       supabase
@@ -1805,26 +1930,14 @@ export async function confirmBeanOrderDelivered(
       return { success: false, error: shipError.message };
     }
 
-    const { maybeNotifyBeanOrderDelivered } = await import('@/lib/bean-orders/notify-delivered');
-    void maybeNotifyBeanOrderDelivered({
+    scheduleBeanOrderDeliveredSideEffects({
       orderId,
+      orderNo,
+      locale,
       previousStatus,
       nextStatus,
-    }).catch((error) => {
-      console.error('maybeNotifyBeanOrderDelivered (manual):', error);
+      manualDelivery: true,
     });
-
-    void recordDataChange({
-      action: 'UPDATE',
-      module: 'bean_orders',
-      entityType: 'bean_order',
-      entityId: orderId,
-      entityLabel: order.order_no as string,
-      fieldChanges: [{ field: 'tracking_status', old_value: previousStatus, new_value: nextStatus }],
-      metadata: { manualDelivery: true },
-    });
-
-    revalidateBeanOrders(locale, orderId);
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'ยืนยันจัดส่งไม่สำเร็จ';

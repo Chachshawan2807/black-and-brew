@@ -97,7 +97,10 @@ describe('bean order navigation after save/delete', () => {
       'utf8',
     );
     expect(actionsSource).toMatch(
-      /confirmBeanOrderDelivered\([\s\S]*?options\?[\s\S]*?shipment[\s\S]*?shipBeanOrder/,
+      /confirmBeanOrderDelivered\([\s\S]*?options\?[\s\S]*?shipment/,
+    );
+    expect(actionsSource).not.toMatch(
+      /confirmBeanOrderDelivered[\s\S]*?await shipBeanOrder/,
     );
   });
 });
@@ -146,10 +149,10 @@ describe('bean order delivered action beside shipping update', () => {
       /handleConfirmDelivered[\s\S]*?confirmBeanOrderDelivered\([\s\S]*?shipment:/,
     );
     expect(actionsSource).toMatch(
-      /confirmBeanOrderDelivered[\s\S]*?fulfillmentStatus === 'pending'[\s\S]*?shipBeanOrder\([\s\S]*?suppressShippedNotification:\s*true/,
+      /confirmBeanOrderDelivered[\s\S]*?fulfillmentStatus === 'pending'[\s\S]*?action: 'shipped'/,
     );
     expect(actionsSource).toMatch(
-      /if \(isNewShipment && !options\?\.suppressShippedNotification\)/,
+      /confirmBeanOrderDelivered[\s\S]*?action: 'delivery_confirmed'/,
     );
   });
 

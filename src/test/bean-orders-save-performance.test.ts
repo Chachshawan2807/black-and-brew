@@ -45,7 +45,36 @@ describe('bean order save performance', () => {
   test('confirmBeanOrderDelivered does not await delivery notification', () => {
     const body = functionBody('confirmBeanOrderDelivered', beanOrderActions);
     expect(body).not.toMatch(/await maybeNotifyBeanOrderDelivered/);
-    expect(body).toMatch(/void maybeNotifyBeanOrderDelivered|after\(async \(\) => \{[\s\S]*maybeNotifyBeanOrderDelivered/);
+    expect(beanOrderActions).toMatch(
+      /scheduleBeanOrderDeliveredSideEffects[\s\S]*void import\('@\/lib\/bean-orders\/notify-delivered'\)/,
+    );
+  });
+
+  test('confirmBeanOrderDelivered defers audit log and revalidation off the critical path', () => {
+    const critical = functionBody('confirmBeanOrderDelivered', beanOrderActions);
+    expect(critical).not.toContain('revalidateBeanOrders');
+    expect(critical).not.toContain('recordDataChange');
+    expect(critical).toContain('scheduleBeanOrderDeliveredSideEffects');
+    const sideEffectsStart = beanOrderActions.indexOf('function scheduleBeanOrderDeliveredSideEffects');
+    const sideEffectsEnd = beanOrderActions.indexOf('export async function confirmBeanOrderDelivered');
+    const sideEffects = beanOrderActions.slice(sideEffectsStart, sideEffectsEnd);
+    expect(sideEffects).toContain('after(async () => {');
+    expect(sideEffects).toContain('recordDataChange');
+    expect(sideEffects).toContain('revalidateBeanOrders');
+  });
+
+  test('confirmBeanOrderDelivered parallelizes order, shipment, and actor prep', () => {
+    const critical = criticalPathBeforeAfter('confirmBeanOrderDelivered', beanOrderActions);
+    expect(critical).toContain('Promise.all');
+    expect(critical).toMatch(
+      /Promise\.all[\s\S]*bean_orders[\s\S]*bean_order_shipments[\s\S]*resolveActorLabelFromSession/,
+    );
+  });
+
+  test('confirmBeanOrderDelivered inlines pending ship+deliver instead of calling shipBeanOrder', () => {
+    const body = functionBody('confirmBeanOrderDelivered', beanOrderActions);
+    expect(body).not.toMatch(/await shipBeanOrder/);
+    expect(body).toMatch(/fulfillmentStatus === 'pending'[\s\S]*upsert/);
   });
 
   test('detail client clears busy before background refresh', () => {
@@ -111,6 +140,13 @@ describe('bean order save performance', () => {
     expect(beanOrderActions).not.toMatch(
       /async function resolveActorLabelFromSession\(\)[\s\S]*await ensureServerSession\(\)/,
     );
+  });
+
+  test('detail deliver clears busy before navigation after success', () => {
+    const deliverFnStart = detailClient.indexOf('async function handleConfirmDelivered');
+    const deliverFnEnd = detailClient.indexOf('\n  async function handleDelete', deliverFnStart);
+    const deliverFn = detailClient.slice(deliverFnStart, deliverFnEnd);
+    expect(deliverFn).toMatch(/setBusy\(false\)[\s\S]*navigateWithViewTransition/);
   });
 
   test('form client clears saving before navigation after create', () => {

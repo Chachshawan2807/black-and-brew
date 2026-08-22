@@ -254,9 +254,13 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
           ? { carrierCode: resolvedCarrierCode, trackingNumber }
           : undefined,
     });
-    setBusy(false);
-    if (!result.success) { setError(result.error ?? 'ยืนยันจัดส่งไม่สำเร็จ'); return; }
+    if (!result.success) {
+      setBusy(false);
+      setError(result.error ?? 'ยืนยันจัดส่งไม่สำเร็จ');
+      return;
+    }
     sessionStorage.setItem('bb-bean-order-flash', 'จัดส่งสำเร็จ');
+    setBusy(false);
     navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
   }
 
