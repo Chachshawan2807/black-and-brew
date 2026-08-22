@@ -79,7 +79,7 @@ describe('evaluateAndDispatchInsights', () => {
     expect(manualResult.pushed).toBeNull();
   });
 
-  test('bean_order_update records digest silently without Web Push', async () => {
+  test('bean_order_update does not record outside cron', async () => {
     const { evaluateAndDispatchInsights } = await import(
       '@/lib/proactive-insights/evaluate-and-dispatch'
     );
@@ -88,10 +88,10 @@ describe('evaluateAndDispatchInsights', () => {
       trigger: 'bean_order_update',
       locale: 'th',
     });
-    expect(recordMock).toHaveBeenCalledTimes(1);
+    expect(recordMock).not.toHaveBeenCalled();
     expect(pushMock).not.toHaveBeenCalled();
-    expect(result.recorded).not.toBeNull();
-    expect(result.pushed?.skipped).toBe(true);
+    expect(result.recorded).toBeNull();
+    expect(result.pushed).toBeNull();
   });
 
   test('cron skips push only when scheduled digest was already sent today', async () => {

@@ -33,11 +33,12 @@ describe('insight dispatch triggers', () => {
     expect(isRealtimeInsightTrigger('manual')).toBe(false);
   });
 
-  test('mutation triggers dispatch whenever any rule matches', () => {
-    expect(shouldDispatchInsightNotification('shift_update', [highRule])).toBe(true);
-    expect(shouldDispatchInsightNotification('shift_update', [beanRule])).toBe(true);
-    expect(shouldDispatchInsightNotification('inventory_update', [beanRule])).toBe(true);
-    expect(shouldDispatchInsightNotification('bean_order_update', [highRule])).toBe(true);
+  test('mutation triggers never dispatch — cron only', () => {
+    expect(shouldDispatchInsightNotification('shift_update', [highRule])).toBe(false);
+    expect(shouldDispatchInsightNotification('shift_update', [beanRule])).toBe(false);
+    expect(shouldDispatchInsightNotification('inventory_update', [beanRule])).toBe(false);
+    expect(shouldDispatchInsightNotification('bean_order_update', [highRule])).toBe(false);
+    expect(shouldDispatchInsightNotification('cron', [highRule])).toBe(true);
     expect(shouldDispatchInsightNotification('manual', [highRule])).toBe(false);
   });
 

@@ -135,32 +135,24 @@ export async function evaluateAndDispatchInsights(
       };
     }
 
-    if (!digest) {
-      if (existingSummary !== null) {
-        await clearDailyInsightDigestLog(dateIso);
-      }
-      return {
-        dateIso,
-        trigger,
-        matchedRules,
-        digest: null,
-        recorded: null,
-        pushed: null,
-      };
+    // Realtime mutations may clear a stale digest when issues are resolved,
+    // but must never record or push — only the scheduled cron does that.
+    if (!digest && existingSummary !== null) {
+      await clearDailyInsightDigestLog(dateIso);
     }
 
-    return recordAndPushDigest(
-      digest,
+    return {
       dateIso,
-      locale,
       trigger,
       matchedRules,
-      options,
-      true,
-    );
+      digest,
+      recorded: null,
+      pushed: null,
+    };
   }
 
   if (!digest) {
+    await clearDailyInsightDigestLog(dateIso);
     return {
       dateIso,
       trigger,
@@ -171,7 +163,7 @@ export async function evaluateAndDispatchInsights(
     };
   }
 
-  // Daily digest is push/logged from the scheduled cron and bean-order mutations.
+  // Daily digest is recorded and pushed only from the scheduled cron.
   if (!shouldDispatchInsightNotification(trigger, matchedRules)) {
     return {
       dateIso,

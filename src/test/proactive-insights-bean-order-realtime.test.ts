@@ -62,7 +62,7 @@ describe('proactive insight realtime refresh', () => {
     );
   });
 
-  test('shift_update records updated digest when summary changes', async () => {
+  test('shift_update does not record digest outside cron', async () => {
     evaluateRulesMock.mockReturnValue([
       {
         ruleId: 'understaffed_low_stock',
@@ -77,26 +77,21 @@ describe('proactive insight realtime refresh', () => {
       ...beanDigest,
       summary: 'คนน้อย: จ. 20 3 คน',
     });
-    fetchSummaryMock.mockResolvedValue(
-      'ออเดอร์เมล็ดค้าง: ค้างชำระเงิน 2 รายการ · ค้างจัดส่ง 1 รายการ',
-    );
+    fetchSummaryMock.mockResolvedValue(null);
 
     const { evaluateAndDispatchInsights } = await import(
       '@/lib/proactive-insights/evaluate-and-dispatch'
     );
 
-    await evaluateAndDispatchInsights({ trigger: 'shift_update', locale: 'th' });
+    const result = await evaluateAndDispatchInsights({ trigger: 'shift_update', locale: 'th' });
 
-    expect(recordMock).toHaveBeenCalledWith(
-      expect.objectContaining({ summary: 'คนน้อย: จ. 20 3 คน' }),
-      '2026-08-11',
-      'th',
-      expect.objectContaining({ force: true }),
-    );
+    expect(recordMock).not.toHaveBeenCalled();
     expect(pushMock).not.toHaveBeenCalled();
+    expect(result.recorded).toBeNull();
+    expect(result.digest?.summary).toBe('คนน้อย: จ. 20 3 คน');
   });
 
-  test('bean_order_update refreshes digest when summary changes even without bean rule match', async () => {
+  test('bean_order_update clears digest when issues resolved but does not record', async () => {
     evaluateRulesMock.mockReturnValue([]);
     buildDigestMock.mockReturnValue(null);
 
@@ -114,7 +109,7 @@ describe('proactive insight realtime refresh', () => {
     expect(result.digest).toBeNull();
   });
 
-  test('bean_order_update records updated digest when summary changes', async () => {
+  test('bean_order_update does not record digest outside cron', async () => {
     evaluateRulesMock.mockReturnValue([
       {
         ruleId: 'bean_orders_inventory_gap',
@@ -134,15 +129,11 @@ describe('proactive insight realtime refresh', () => {
       '@/lib/proactive-insights/evaluate-and-dispatch'
     );
 
-    await evaluateAndDispatchInsights({ trigger: 'bean_order_update', locale: 'th' });
+    const result = await evaluateAndDispatchInsights({ trigger: 'bean_order_update', locale: 'th' });
 
-    expect(recordMock).toHaveBeenCalledWith(
-      beanDigest,
-      '2026-08-11',
-      'th',
-      expect.objectContaining({ force: true }),
-    );
+    expect(recordMock).not.toHaveBeenCalled();
     expect(pushMock).not.toHaveBeenCalled();
+    expect(result.recorded).toBeNull();
   });
 
   test('bean_order_update skips when digest summary is unchanged', async () => {
