@@ -288,6 +288,17 @@ export function useInventoryNotifications() {
         }
 
         if (prev.some((n) => n.id === notification.id || n.logId === dedupeKey)) {
+          if (options?.skipSystemNotification) {
+            const { list: next, replaced } = replaceNotificationByDedupeKey(prev, notification);
+            if (replaced) {
+              replacedExisting = true;
+              nextUnread = resolveDisplayUnreadCount(next, serviceWorkerUnreadCount, loadUnreadCounter());
+              setUnreadCount(nextUnread);
+              saveStoredNotifications(next);
+              void mirrorNotificationsToIdb(next);
+              return next;
+            }
+          }
           alreadyExists = true;
           return prev;
         }

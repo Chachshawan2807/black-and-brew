@@ -10,6 +10,7 @@ import {
   eachDayOfInterval, isSameDay, addMonths, subMonths,
   getDay, isToday,
 } from 'date-fns';
+import { th } from 'date-fns/locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -280,7 +281,7 @@ export function ClickableDatePicker({
           <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-[13px] font-normal text-foreground uppercase tracking-wider select-none">
-          {format(viewDate, 'MMMM yyyy')}
+          {format(viewDate, 'MMMM yyyy', { locale: th })}
         </span>
         <button
           type="button"
@@ -318,7 +319,7 @@ export function ClickableDatePicker({
             <button
               key={day.toString()}
               type="button"
-              aria-label={format(day, 'dd MMMM yyyy')}
+              aria-label={format(day, 'dd MMMM yyyy', { locale: th })}
               aria-pressed={isSelected}
               onClick={e => handleSelectDay(day, e)}
               className={`

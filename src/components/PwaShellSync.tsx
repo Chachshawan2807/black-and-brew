@@ -3,7 +3,12 @@
 import { useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { isInstalledPwa } from '@/lib/pwa-app-badge';
-import { PWA_STANDALONE_CLASS, resolvePwaThemeColor } from '@/lib/pwa-standalone';
+import {
+  PWA_IOS_CLASS,
+  PWA_STANDALONE_CLASS,
+  isIosWebKit,
+  resolvePwaThemeColor,
+} from '@/lib/pwa-standalone';
 
 /** Keeps status-bar theme-color and standalone shell class in sync after hydration. */
 export function PwaShellSync() {
@@ -12,6 +17,9 @@ export function PwaShellSync() {
   useEffect(() => {
     if (!isInstalledPwa()) return;
     document.documentElement.classList.add(PWA_STANDALONE_CLASS);
+    if (isIosWebKit()) {
+      document.documentElement.classList.add(PWA_IOS_CLASS);
+    }
   }, []);
 
   useEffect(() => {

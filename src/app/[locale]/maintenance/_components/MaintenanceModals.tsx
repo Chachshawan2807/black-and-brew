@@ -364,7 +364,7 @@ export default function MaintenanceModals({
           zIndex={220}
           overlayClassName="bg-black/5 backdrop-blur-md"
           panelClassName="relative bg-card w-full max-w-sm rounded-3xl bb-shadow-xl overflow-hidden border border-border p-10 text-center"
-          aria-label="Delete Record?"
+          aria-label="ลบบันทึก?"
         >
             <HintTooltip tip="ปิด">
               <button
@@ -378,21 +378,21 @@ export default function MaintenanceModals({
             <div className="w-20 h-20 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" strokeWidth={1} />
             </div>
-            <h3 className="text-2xl font-normal text-foreground tracking-tighter mb-2 uppercase">Delete Record?</h3>
-            <p className="text-foreground/40 text-sm font-normal mb-8 leading-relaxed">This action is irreversible and will permanently remove this maintenance entry from the vault.</p>
+            <h3 className="text-2xl font-normal text-foreground tracking-tighter mb-2 uppercase">ลบบันทึก?</h3>
+            <p className="text-foreground/40 text-sm font-normal mb-8 leading-relaxed">การดำเนินการนี้ไม่สามารถย้อนกลับได้ และจะลบบันทึกการซ่อมบำรุงนี้อย่างถาวร</p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleDelete}
                 disabled={loading || isReadOnly}
                 className="w-full h-11 md:h-auto md:py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 bb-transition bb-shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-sm uppercase tracking-widest"
               >
-                {loading ? 'Processing...' : 'Confirm Deletion'}
+                {loading ? 'กำลังดำเนินการ...' : 'ยืนยันการลบ'}
               </button>
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
                 className="w-full h-11 md:h-auto md:py-4 text-foreground/40 font-normal hover:text-foreground bb-transition text-base md:text-sm uppercase tracking-widest"
               >
-                Cancel
+                ยกเลิก
               </button>
             </div>
         </FadeModalScaffold>

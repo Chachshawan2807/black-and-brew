@@ -20,6 +20,7 @@ import {
   isAfter,
   isWithinInterval,
 } from 'date-fns';
+import { th } from 'date-fns/locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface ClickableDateRangePickerProps {
@@ -298,7 +299,7 @@ export function ClickableDateRangePicker({
           <ChevronLeft className="w-4 h-4" />
         </button>
         <span className="text-[13px] font-normal text-foreground uppercase tracking-wider select-none">
-          {format(viewDate, 'MMMM yyyy')}
+          {format(viewDate, 'MMMM yyyy', { locale: th })}
         </span>
         <button
           type="button"
@@ -347,7 +348,7 @@ export function ClickableDateRangePicker({
               key={day.toString()}
               type="button"
               disabled={isDisabled}
-              aria-label={format(day, 'dd MMMM yyyy')}
+              aria-label={format(day, 'dd MMMM yyyy', { locale: th })}
               aria-pressed={isEndpoint}
               onClick={e => handleSelectDay(day, e)}
               className={`

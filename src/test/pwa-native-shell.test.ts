@@ -3,9 +3,11 @@ import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import manifest from '@/app/manifest';
 import {
+  PWA_IOS_CLASS,
   PWA_SHELL_BOOTSTRAP_SCRIPT,
   PWA_STANDALONE_CLASS,
   PWA_THEME_COLORS,
+  isIosWebKit,
   resolvePwaThemeColor,
   resolveThemePreferenceFromStorage,
 } from '@/lib/pwa-standalone';
@@ -27,9 +29,38 @@ describe('PWA native shell', () => {
 
   test('bootstrap script sets standalone class and theme-color before paint', () => {
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain(PWA_STANDALONE_CLASS);
+    expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain(PWA_IOS_CLASS);
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('theme-color');
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('bb-theme');
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('display-mode: standalone');
+    expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('navigator.standalone');
+  });
+
+  test('isIosWebKit detects iPhone and iPad user agents', () => {
+    expect(isIosWebKit('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)')).toBe(true);
+    expect(isIosWebKit('Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)')).toBe(true);
+    expect(isIosWebKit('Mozilla/5.0 (Linux; Android 14)')).toBe(false);
+  });
+
+  test('mobile app shell avoids stacking header on full viewport main height', () => {
+    const layout = readFileSync(resolve(ROOT, 'src/components/sidebar/SidebarLayout.tsx'), 'utf-8');
+    expect(layout).toMatch(/flex-1 min-h-0/);
+    expect(layout).not.toMatch(/min-h-\[100svh\]/);
+  });
+
+  test('mobile nav header grows with safe-area instead of fixed 72px height', () => {
+    const header = readFileSync(resolve(ROOT, 'src/components/sidebar/MobileNavHeader.tsx'), 'utf-8');
+    const headerClass = header.match(/<header className="([^"]+)"/)?.[1] ?? '';
+    expect(headerClass).toContain('min-h-[72px]');
+    expect(headerClass).not.toMatch(/(?:^|\s)h-\[72px\](?:\s|$)/);
+  });
+
+  test('globals.css applies iOS standalone safe-area and fill-available shell rules', () => {
+    const css = readFileSync(resolve(ROOT, 'src/app/[locale]/globals.css'), 'utf-8');
+    expect(css).toContain(`.${PWA_IOS_CLASS}`);
+    expect(css).toMatch(/-webkit-fill-available/);
+    expect(css).toMatch(/bb-mobile-nav-drawer__scroller[\s\S]*env\(safe-area-inset-top/);
+    expect(css).toMatch(/bb-main-container[\s\S]*flex:\s*1/);
   });
 
   test('layout injects PWA shell bootstrap without blocking hydration', () => {
@@ -74,5 +105,7 @@ describe('PWA native shell', () => {
     expect(sync).toContain('useTheme');
     expect(sync).toContain('theme-color');
     expect(sync).toContain('resolvePwaThemeColor');
+    expect(sync).toContain('PWA_IOS_CLASS');
+    expect(sync).toContain('isIosWebKit');
   });
 });

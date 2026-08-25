@@ -114,7 +114,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
       onSuccess(data);
       onClose();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = err instanceof Error ? err.message : 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ';
       console.error('Failed to add item:', message);
       alert('ไม่สามารถเพิ่มรายการได้: ' + message);
     } finally {

@@ -168,7 +168,7 @@ export function DashboardWeeklyStream({
   searchParams: Promise<{ start?: string; end?: string }>;
 }) {
   return (
-    <Suspense fallback={<DashboardSectionSkeleton label="Fetching live shifts..." />}>
+    <Suspense fallback={<DashboardSectionSkeleton label="กำลังโหลดกะงานล่าสุด..." />}>
       <DashboardWeeklySection searchParams={searchParams} />
     </Suspense>
   );
@@ -180,7 +180,7 @@ export function DashboardMonthlyStream({
   searchParams: Promise<{ start?: string; end?: string }>;
 }) {
   return (
-    <Suspense fallback={<DashboardSectionSkeleton label="Loading monthly roster..." />}>
+    <Suspense fallback={<DashboardSectionSkeleton label="กำลังโหลดตารางเวรรายเดือน..." />}>
       <DashboardMonthlySection searchParams={searchParams} />
     </Suspense>
   );

@@ -1086,7 +1086,7 @@ export default function SalesClient({
                     <BarChart3 className="w-5 h-5" strokeWidth={1.5} />
                   </div>
                   <div>
-                    <h3 className="text-base font-normal">สินค้ายอดนิยม (Top 10)</h3>
+                    <h3 className="text-base font-normal">สินค้ายอดนิยม (10 อันดับแรก)</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">เมนูที่มียอดขายสูงสุด</p>
                   </div>
                 </div>
@@ -1115,7 +1115,7 @@ export default function SalesClient({
                     <ShoppingCart className="w-5 h-5" strokeWidth={1.5} />
                   </div>
                   <div>
-                    <h3 className="text-base font-normal">สินค้ายอดนิยม (Top 10)</h3>
+                    <h3 className="text-base font-normal">สินค้ายอดนิยม (10 อันดับแรก)</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">รายละเอียดของ 10 เมนูยอดนิยม</p>
                   </div>
                 </div>
@@ -1299,7 +1299,7 @@ export default function SalesClient({
                       id="category-filter"
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
-                      aria-label="Filter by product category"
+                      aria-label="กรองตามหมวดหมู่สินค้า"
                       className="w-full sm:w-auto text-xs"
                       wrapperClassName="w-full sm:w-auto"
                     >

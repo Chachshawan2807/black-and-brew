@@ -327,18 +327,18 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
           {loading && records.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 text-foreground/20">
               <Loader2 className="w-12 h-12 animate-spin mb-6" strokeWidth={1} />
-              <span className="text-sm tracking-[0.3em] uppercase font-normal">Synchronizing Records...</span>
+              <span className="text-sm tracking-[0.3em] uppercase font-normal">กำลังโหลดบันทึก...</span>
             </div>
           ) : records.length === 0 ? (
             <div className="bg-card/50 border border-dashed border-border rounded-3xl py-32 flex flex-col items-center justify-center text-muted-foreground">
               <Wrench className="w-20 h-20 mb-8 opacity-10" strokeWidth={0.5} />
-              <p className="text-xl font-normal tracking-wide italic">No maintenance records discovered yet.</p>
+              <p className="text-xl font-normal tracking-wide italic">ยังไม่มีบันทึกการซ่อมบำรุง</p>
               <button
                 onClick={() => setIsModalOpen(true)}
                 disabled={isReadOnly}
                 className="mt-8 text-foreground hover:opacity-60 transition-opacity font-normal text-xs uppercase tracking-[0.3em] border-b border-foreground pb-1 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Begin your first entry
+                เริ่มบันทึกแรก
               </button>
             </div>
           ) : (

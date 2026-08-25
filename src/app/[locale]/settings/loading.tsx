@@ -48,5 +48,5 @@ export function SettingsLoadingSkeleton({ label }: SettingsLoadingProps = {}) {
 }
 
 export default function SettingsLoading() {
-  return <SettingsLoadingSkeleton label="Loading settings…" />;
+  return <SettingsLoadingSkeleton label="กำลังโหลดการตั้งค่า…" />;
 }

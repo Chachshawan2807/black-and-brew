@@ -1416,7 +1416,7 @@ export default function ScheduleClient({
 
     const weekLabel = formatScheduleWeekRangeLabel(weekStart, weekEnd);
     const confirmed = window.confirm(
-      `Sync Google Sheet สำหรับสัปดาห์ ${weekLabel} เท่านั้น\n(ซิงค์เมื่อกดปุ่มนี้เท่านั้น — ไม่มีการซิงค์อัตโนมัติ)`,
+      `ซิงค์ Google Sheet สำหรับสัปดาห์ ${weekLabel} เท่านั้น\n(ซิงค์เมื่อกดปุ่มนี้เท่านั้น — ไม่มีการซิงค์อัตโนมัติ)`,
     );
     if (!confirmed) return;
 
@@ -1424,20 +1424,20 @@ export default function ScheduleClient({
     try {
       const result = await syncScheduleToGoogleSheet(weekStart, viewedDateStr);
       if (!result.success) {
-        alert(`Sync Google Sheet ไม่สำเร็จ: ${result.error}`);
+        alert(`ซิงค์ Google Sheet ไม่สำเร็จ: ${result.error}`);
         return;
       }
       const sheetTabs =
         'sheetTabs' in result && result.sheetTabs.length > 0
           ? result.sheetTabs.join(', ')
           : result.sheetTab;
-      alert(`Sync Google Sheet สำเร็จแล้วค่ะ\nสัปดาห์: ${weekLabel}\nชีท: ${sheetTabs}`);
+      alert(`ซิงค์ Google Sheet สำเร็จแล้วค่ะ\nสัปดาห์: ${weekLabel}\nชีท: ${sheetTabs}`);
     } catch (err) {
       console.error('Failed to sync Google Sheet:', err);
       const message =
         err instanceof Error && err.message
-          ? `Sync Google Sheet ไม่สำเร็จ: ${err.message}`
-          : 'เกิดข้อผิดพลาดในการ Sync Google Sheet ค่ะ';
+          ? `ซิงค์ Google Sheet ไม่สำเร็จ: ${err.message}`
+          : 'เกิดข้อผิดพลาดในการซิงค์ Google Sheet ค่ะ';
       alert(message);
     } finally {
       setIsSyncingGoogleSheet(false);
