@@ -49,7 +49,7 @@ const INSIGHT_SURFACE = `${PASTEL_SURFACE} bg-[#ffe0a8] text-black border border
 const SECURITY_SURFACE = `${PASTEL_SURFACE} bg-[#ffe4e6] text-black border border-[#fecdd3]`;
 const BEAN_CREATED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.order} text-black`;
 const BEAN_DELIVERED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`;
-const BEAN_PAYMENT_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.order} text-black`;
+const BEAN_PAYMENT_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`;
 
 const STOCK_SURFACES: Record<StockOperation, string> = {
   IN: `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`,

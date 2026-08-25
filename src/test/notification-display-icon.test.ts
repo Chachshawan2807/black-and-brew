@@ -136,7 +136,7 @@ describe('notification display icons', () => {
     expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d1ecf1]');
   });
 
-  test('uses banknote icon and order blue surface for bean order payment notifications', () => {
+  test('uses banknote icon and green surface for bean order payment notifications', () => {
     const item = sampleNotification({
       title: 'ชำระแล้ว',
       metadata: {
@@ -147,8 +147,8 @@ describe('notification display icons', () => {
     });
 
     expect(resolveNotificationDisplayIcon(item).kind).toBe('bean-paid');
-    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d1ecf1]');
-    expect(resolveNotificationDisplayIcon(item).containerClass).not.toContain('bg-[#d4edda]');
+    expect(resolveNotificationDisplayIcon(item).containerClass).toContain('bg-[#d4edda]');
+    expect(resolveNotificationDisplayIcon(item).containerClass).not.toContain('bg-[#d1ecf1]');
   });
 
   test('notification panel uses shared item icon component', () => {
