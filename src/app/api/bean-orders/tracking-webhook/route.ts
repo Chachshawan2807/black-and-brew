@@ -5,8 +5,8 @@ import {
   isTrackingWebhookVerification,
   parseTrackingWebhookEvents,
 } from '@/lib/bean-orders/tracking-webhook';
+import { verifyTrackingMoreWebhookRequest } from '@/lib/bean-orders/tracking-webhook-auth';
 import { maybeNotifyBeanOrderDelivered } from '@/lib/bean-orders/notify-delivered';
-import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 async function applyTrackingUpdate(
@@ -86,20 +86,44 @@ async function applyTrackingUpdate(
   };
 }
 
+function denyTrackingWebhook(
+  reason: 'missing_secret' | 'missing_credentials' | 'stale_timestamp' | 'invalid_signature',
+): NextResponse {
+  if (reason === 'missing_secret') {
+    console.error('[tracking-webhook] Missing TRACKING_WEBHOOK_SECRET in environment');
+    return NextResponse.json(
+      { success: false, error: 'Server configuration error' },
+      { status: 500 },
+    );
+  }
+
+  console.error(`[tracking-webhook] Unauthorized access attempt (${reason})`);
+  return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+}
+
 export async function POST(request: Request) {
   await headers();
   noStore();
 
-  const denied = denyUnlessBearerSecret(request, process.env.TRACKING_WEBHOOK_SECRET, {
-    logPrefix: '[tracking-webhook]',
-    secretName: 'TRACKING_WEBHOOK_SECRET',
+  let payload: Record<string, unknown>;
+  try {
+    const rawBody = await request.text();
+    payload = rawBody ? (JSON.parse(rawBody) as Record<string, unknown>) : {};
+  } catch {
+    return NextResponse.json({ ok: false, error: 'invalid json' }, { status: 400 });
+  }
+
+  const isVerification = isTrackingWebhookVerification(payload);
+  const auth = verifyTrackingMoreWebhookRequest({
+    secret: process.env.TRACKING_WEBHOOK_SECRET,
+    headers: request.headers,
+    payload,
+    allowStaleTimestamp: isVerification,
   });
-  if (denied) return denied;
+  if (!auth.ok) return denyTrackingWebhook(auth.reason);
 
   try {
-    const payload = (await request.json()) as Record<string, unknown>;
-
-    if (isTrackingWebhookVerification(payload)) {
+    if (isVerification) {
       return NextResponse.json({ ok: true });
     }
 

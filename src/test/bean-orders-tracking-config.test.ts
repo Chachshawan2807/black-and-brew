@@ -37,7 +37,8 @@ describe('tracking-config', () => {
     expect(resolveTrackingSyncMode(new URLSearchParams('mode=stale'))).toBe('stale');
   });
 
-  it('uses full sync only when mode=full', () => {
-    expect(resolveTrackingSyncMode(new URLSearchParams('mode=full'))).toBe('full');
+  it('uses open sync for mode=open or legacy mode=full', () => {
+    expect(resolveTrackingSyncMode(new URLSearchParams('mode=open'))).toBe('open');
+    expect(resolveTrackingSyncMode(new URLSearchParams('mode=full'))).toBe('open');
   });
 });

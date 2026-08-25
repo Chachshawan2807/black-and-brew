@@ -1,4 +1,7 @@
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { describe, expect, test, vi, beforeAll } from 'vitest';
+import {
+  computeTrackingMoreWebhookSignature,
+} from '@/lib/bean-orders/tracking-webhook-auth';
 
 vi.mock('next/headers', () => ({
   headers: vi.fn(async () => new Headers()),
@@ -8,32 +11,29 @@ vi.mock('next/cache', () => ({
   unstable_noStore: vi.fn(),
 }));
 
-const applyTrackingUpdateMock = vi.fn();
-const maybeNotifyMock = vi.fn();
-
-vi.mock('@/lib/bean-orders/tracking-webhook', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/bean-orders/tracking-webhook')>();
-  return {
-    ...actual,
-    isTrackingWebhookVerification: actual.isTrackingWebhookVerification,
-    parseTrackingWebhookEvents: actual.parseTrackingWebhookEvents,
-  };
-});
-
 vi.mock('@/lib/supabase-server', () => ({
   getSupabaseAdmin: vi.fn(),
 }));
 
+const SECRET = 'test-tracking-secret';
+
+function signedHeaders(timestamp: string): HeadersInit {
+  return {
+    timestamp,
+    signature: computeTrackingMoreWebhookSignature(SECRET, timestamp),
+    'content-type': 'application/json',
+  };
+}
+
 describe('POST /api/bean-orders/tracking-webhook', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    applyTrackingUpdateMock.mockReset();
-    maybeNotifyMock.mockReset();
-    process.env.TRACKING_WEBHOOK_SECRET = 'test-tracking-secret';
+  let POST: typeof import('@/app/api/bean-orders/tracking-webhook/route').POST;
+
+  beforeAll(async () => {
+    process.env.TRACKING_WEBHOOK_SECRET = SECRET;
+    ({ POST } = await import('@/app/api/bean-orders/tracking-webhook/route'));
   });
 
-  test('rejects missing authorization', async () => {
-    const { POST } = await import('@/app/api/bean-orders/tracking-webhook/route');
+  test('rejects missing signature headers', async () => {
     const res = await POST(
       new Request('http://localhost/api/bean-orders/tracking-webhook', {
         method: 'POST',
@@ -44,13 +44,14 @@ describe('POST /api/bean-orders/tracking-webhook', () => {
     expect(res.status).toBe(401);
   });
 
-  test('rejects wrong secret', async () => {
-    const { POST } = await import('@/app/api/bean-orders/tracking-webhook/route');
+  test('rejects wrong signature', async () => {
+    const timestamp = String(Math.floor(Date.now() / 1000));
     const res = await POST(
       new Request('http://localhost/api/bean-orders/tracking-webhook', {
         method: 'POST',
         headers: {
-          authorization: 'Bearer wrong',
+          timestamp,
+          signature: 'deadbeef',
           'content-type': 'application/json',
         },
         body: JSON.stringify({ event: 'verify' }),
@@ -59,15 +60,12 @@ describe('POST /api/bean-orders/tracking-webhook', () => {
     expect(res.status).toBe(401);
   });
 
-  test('allows verification handshake with valid secret', async () => {
-    const { POST } = await import('@/app/api/bean-orders/tracking-webhook/route');
+  test('allows verification handshake with valid TrackingMore signature', async () => {
+    const timestamp = String(Math.floor(Date.now() / 1000));
     const res = await POST(
       new Request('http://localhost/api/bean-orders/tracking-webhook', {
         method: 'POST',
-        headers: {
-          authorization: 'Bearer test-tracking-secret',
-          'content-type': 'application/json',
-        },
+        headers: signedHeaders(timestamp),
         body: JSON.stringify({ event: 'verify' }),
       }),
     );

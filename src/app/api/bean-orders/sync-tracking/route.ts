@@ -19,7 +19,7 @@ function authorizeCron(request: Request): NextResponse | null {
 
 async function runTrackingSync(request: Request) {
   const mode = resolveTrackingSyncMode(new URL(request.url).searchParams);
-  if (mode === 'full') {
+  if (mode === 'open') {
     return syncBeanOrderTrackingStatuses();
   }
   return syncStaleBeanOrderTrackingStatuses();

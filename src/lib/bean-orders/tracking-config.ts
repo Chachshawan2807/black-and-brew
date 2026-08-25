@@ -8,7 +8,15 @@ export function resolveTrackingWebhookUrl(siteUrl: string): string {
   return `${base}/api/bean-orders/tracking-webhook`;
 }
 
-/** Default: stale-only fallback. Use mode=full for a manual full resync. */
-export function resolveTrackingSyncMode(searchParams: URLSearchParams): 'stale' | 'full' {
-  return searchParams.get('mode') === 'full' ? 'full' : 'stale';
+export type BeanOrderTrackingSyncMode = 'stale' | 'open';
+
+/**
+ * - `stale` (default): null / pending / notfound only — lightweight list-page refresh
+ * - `open`: every shipment with a tracking number that is not yet delivered (hourly cron)
+ * - `full`: alias for `open` (backward compatible)
+ */
+export function resolveTrackingSyncMode(searchParams: URLSearchParams): BeanOrderTrackingSyncMode {
+  const mode = searchParams.get('mode');
+  if (mode === 'open' || mode === 'full') return 'open';
+  return 'stale';
 }

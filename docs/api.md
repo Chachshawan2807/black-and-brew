@@ -312,16 +312,18 @@ Requires read access (`requireReadAccess()`). Calls `evaluateAndDispatchInsights
 - Dispatches `dispatchInventoryWebPush()` — backup when server-action hook is unavailable
 - Skips non-INSERT events and rows where `module !== 'inventory'` or `status !== 'success'`
 
-### `GET /api/bean-orders/sync-tracking`
+### `GET|POST /api/bean-orders/sync-tracking`
 
 - Cron endpoint — protected by `CRON_SECRET` (`Authorization: Bearer …`)
-- Polls TrackingMore for pending shipments via `syncBeanOrderTrackingStatuses()`
+- `?mode=open` (or `full`): poll TrackingMore for every shipment with a tracking number that is **not** `delivered` (`syncBeanOrderTrackingStatuses()`)
+- default / `?mode=stale`: only null / pending / notfound rows (`syncStaleBeanOrderTrackingStatuses()`)
+- Recommended cron-job.org schedule: **every 1 hour** with `?mode=open`
 - `maxDuration: 60`
 
 ### `POST /api/bean-orders/tracking-webhook`
 
 - TrackingMore webhook receiver — updates `bean_order_shipments.tracking_status`
-- Protected by `TRACKING_WEBHOOK_SECRET` (`Authorization: Bearer …`)
+- Protected by TrackingMore V4 webhook signature (`TRACKING_WEBHOOK_SECRET` = dashboard Webhook secret; headers `timestamp` + `signature`, or `verify` / `verifyInfo` in body)
 - Optional delivery notification via `maybeNotifyBeanOrderDelivered()`
 - Handles TrackingMore verification handshake
 

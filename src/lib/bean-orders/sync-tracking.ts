@@ -82,6 +82,7 @@ export async function syncBeanOrderTrackingStatuses(): Promise<SyncBeanOrderTrac
     throw new Error(error.message);
   }
 
+  /** Hourly cron (`?mode=open`): any row with tracking no. that is not yet delivered. */
   const rows = (data ?? []).filter((row) =>
     shouldIncludeInTrackingSync(row.tracking_status as string | null),
   );
