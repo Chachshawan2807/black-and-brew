@@ -189,7 +189,9 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
   }, []);
 
   useEffect(() => {
-    void load();
+    queueMicrotask(() => {
+      void load();
+    });
   }, [load]);
 
   const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);

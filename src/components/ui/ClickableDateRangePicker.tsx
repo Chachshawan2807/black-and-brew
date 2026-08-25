@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { fadeOverlay, withReducedMotion } from '@/lib/motion-presets';
@@ -82,31 +82,37 @@ export function ClickableDateRangePicker({
 
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<PopoverCoords | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const [viewDate, setViewDate] = useState(() => parseDate(startValue) ?? new Date());
   const [draftStart, setDraftStart] = useState<Date | null>(null);
   const [draftEnd, setDraftEnd] = useState<Date | null>(null);
+  const [prevStartValue, setPrevStartValue] = useState(startValue);
+  const [prevEndValue, setPrevEndValue] = useState(endValue);
+  const [prevDraftSync, setPrevDraftSync] = useState({ isOpen, startValue, endValue });
 
   const minDate = parseDate(min);
   const maxDate = parseDate(max);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
+  if (startValue !== prevStartValue || endValue !== prevEndValue) {
+    setPrevStartValue(startValue);
+    setPrevEndValue(endValue);
     const anchor = parseDate(startValue) ?? parseDate(endValue);
     if (anchor) {
       setViewDate(anchor);
     }
-  }, [startValue, endValue]);
+  }
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setDraftStart(parseDate(startValue));
-    setDraftEnd(parseDate(endValue));
-  }, [isOpen, startValue, endValue]);
+  if (
+    isOpen !== prevDraftSync.isOpen
+    || (isOpen && (startValue !== prevDraftSync.startValue || endValue !== prevDraftSync.endValue))
+  ) {
+    setPrevDraftSync({ isOpen, startValue, endValue });
+    if (isOpen) {
+      setDraftStart(parseDate(startValue));
+      setDraftEnd(parseDate(endValue));
+    }
+  }
 
   const calculatePosition = useCallback(() => {
     if (!triggerRef.current) return;

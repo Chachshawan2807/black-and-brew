@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 9.3 | Last Updated: 2026-08-11 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 9.4 | Last Updated: 2026-08-25 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## Architectural Core
 
@@ -40,8 +40,8 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 - Live screen context: client sends `clientContext` with route-preferred tools; route sanitizes and injects into the system prompt.
 - Shift labels come from `shifts.metadata.location` — never treat `start_time` as the shift name.
 - Security: Service Role read-only tools; full PIN session required (read-only kiosk rejected).
-- Hydration: `AIChatOverlay` `isMounted` guard; `next/dynamic` with `ssr: false`.
-- Branding: `/ai-agent-logo.svg` via `<Image />` (`dark:invert` on dark headers when needed).
+- Hydration: `isMounted` on `PinGateway` and clickable date inputs; `DeferredOverlays` uses `next/dynamic` with `ssr: false` for notification FAB + inventory quick action.
+- Branding: `/ai-agent-logo.svg` available for AI surfaces (`dark:invert` on dark headers when needed).
 
 ### 5. Persistent UI & Session States
 
@@ -92,7 +92,8 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 | Sales | `/[locale]/sales` | Active |
 | Bean Orders | `/[locale]/bean-orders` | Active — customers, slips, shipping, manual delivery confirm |
 | Settings | `/[locale]/settings` | Active |
-| AI Assistant (บรู) | Global overlay | Active — Gemini + Tavily |
+| AI Assistant (บรู) | `POST /api/chat` | Active — Gemini + Tavily (API; no in-app overlay) |
+| Proactive Insights | `GET /api/insight-alerts` | Active — cron 07:00/17:00 ICT + mutation debounce; Web Push + NotificationBell |
 | PIN Auth | PinGateway | Active — full + read-only |
 | Trusted-device Passkeys | Settings | Active |
 
@@ -102,7 +103,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 - Never score `sufficiency_check` items in accuracy.
 - Call `revalidateAppPaths` after cross-module mutations.
 - Follow TDD SOP for new logic.
-- AI: `isMounted` + `next/dynamic` `ssr: false`; use `maxOutputTokens` (never `maxTokens`).
+- Client hydration: `isMounted` / `next/dynamic` `ssr: false` where needed; AI: use `maxOutputTokens` (never `maxTokens`).
 - Zero-Bold: no `font-bold` / `font-semibold`.
 - Never parse raw `localStorage` without type validation.
 - Knowledge graph: **codebase-memory-mcp** only.
@@ -124,7 +125,7 @@ Authoritative list: [`.env.example`](../.env.example). Keys read in `src/`:
 | `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini (`@ai-sdk/google`) |
 | `TAVILY_API_KEY` | SECRET | `internetSearchTool` |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — holiday sync |
-| `CRON_SECRET` | SECRET | Protects `GET /api/daily-report` |
+| `CRON_SECRET` | SECRET | Protects `GET /api/daily-report` and `GET /api/insight-alerts` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | PUBLIC | Web Push VAPID public key |
 | `VAPID_PRIVATE_KEY` | SECRET | Web Push server signing key |
 | `VAPID_SUBJECT` | SECRET | Push service contact URI |

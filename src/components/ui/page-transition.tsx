@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageContent, withReducedMotion } from '@/lib/motion-presets';
@@ -13,11 +13,11 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const reduced = usePrefersReducedMotion();
   const isMaxMd = useMaxMd();
-  const [viewTransitionEnabled, setViewTransitionEnabled] = useState(false);
-
-  useEffect(() => {
-    setViewTransitionEnabled(shouldUseViewTransition());
-  }, []);
+  const viewTransitionEnabled = useSyncExternalStore(
+    () => () => {},
+    () => shouldUseViewTransition(),
+    () => false,
+  );
 
   useEffect(() => {
     completeViewTransitionNavigation();

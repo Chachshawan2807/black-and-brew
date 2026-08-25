@@ -61,7 +61,9 @@ describe('notification fab cross-platform sync', () => {
 
   test('hook enables realtime when any notification channel is enabled', () => {
     expect(hookSource).toContain('wantsInAppNotificationSync');
-    expect(hookSource).toContain('setRealtimeReady(true)');
+    expect(hookSource).toContain('idleRealtimeReady');
+    expect(hookSource).toContain('setIdleRealtimeReady(true)');
+    expect(hookSource).toMatch(/realtimeReady\s*=\s*wantsInAppSync\s*&&\s*idleRealtimeReady/);
     expect(hookSource).not.toMatch(/setTimeout\(\(\) => setRealtimeReady\(true\),\s*5000\)/);
   });
 

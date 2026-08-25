@@ -110,7 +110,7 @@ describe('schedule-export-capture', () => {
     makeRow(90, [80, 80, 80, 80, 80, 80, 80]);
     makeRow(100, [200, 80, 80, 80, 80, 80, 80]);
 
-    expect(buildScheduleExportGridTemplate(root)).toBe('88px repeat(7, 92px)');
+    expect(buildScheduleExportGridTemplate()).toBe('88px repeat(7, 92px)');
   });
 
   test('buildScheduleExportGridTemplate ignores long holiday labels and caps day columns', () => {
@@ -153,7 +153,7 @@ describe('schedule-export-capture', () => {
     }
     root.appendChild(shiftGrid);
 
-    const template = buildScheduleExportGridTemplate(root);
+    const template = buildScheduleExportGridTemplate();
     expect(template).toBe('88px repeat(7, 92px)');
   });
 

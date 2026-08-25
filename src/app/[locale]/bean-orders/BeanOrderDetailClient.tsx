@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronLeft, Pencil } from 'lucide-react';
@@ -63,8 +63,18 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const isReadOnly = useReadOnly();
   const fileRef = useRef<HTMLInputElement>(null);
   const [order, setOrder] = useState(initialOrder);
+  const [prevInitialOrder, setPrevInitialOrder] = useState(initialOrder);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const flash = sessionStorage.getItem('bb-bean-order-flash');
+    if (flash) {
+      sessionStorage.removeItem('bb-bean-order-flash');
+      return flash;
+    }
+    return null;
+  });
+  const [prevPathname, setPrevPathname] = useState(pathname);
   const [error, setError] = useState<string | null>(null);
   const [pendingSlipPreview, setPendingSlipPreview] = useState<string | null>(null);
 
@@ -73,23 +83,25 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const [customCarrierLabel, setCustomCarrierLabel] = useState(initialCarrier.customCarrierLabel);
   const [trackingNumber, setTrackingNumber] = useState(order.shipment?.trackingNumber ?? '');
 
-  useEffect(() => {
+  if (initialOrder !== prevInitialOrder) {
+    setPrevInitialOrder(initialOrder);
     setOrder(initialOrder);
     const nextCarrier = initialCarrierSelection(initialOrder.shipment?.carrierCode);
     setCarrierCode(nextCarrier.carrierCode);
     setCustomCarrierLabel(nextCarrier.customCarrierLabel);
     setTrackingNumber(initialOrder.shipment?.trackingNumber ?? '');
-  }, [initialOrder]);
+  }
 
-  useEffect(() => {
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     const flash = sessionStorage.getItem('bb-bean-order-flash');
     if (flash) {
-      setMessage(flash);
       sessionStorage.removeItem('bb-bean-order-flash');
+      setMessage(flash);
     } else {
       setMessage(null);
     }
-  }, [pathname]);
+  }
 
   const cancelled = Boolean(order.cancelledAt);
   const editable = canEditOrder(order.cancelledAt);
@@ -97,7 +109,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
   const canConfirm = canConfirmPayment(order.paymentStatus, order.cancelledAt);
   const canRevert = canRevertPayment(order.paymentStatus, order.cancelledAt);
   const canEditShipping = canEditShipment(order.cancelledAt);
-  const canDelete = canDeleteOrder(order.fulfillmentStatus, order.cancelledAt);
+  const canDelete = canDeleteOrder(order.fulfillmentStatus);
   const showDeliveredButton = shouldShowDeliveredButton(
     order.fulfillmentStatus,
     order.shipment?.trackingStatus,

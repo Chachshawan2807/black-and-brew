@@ -138,7 +138,7 @@ function finalizeScheduleExportHolidayLayout(
 /**
  * Fixed equal column widths for PNG export — same layout with or without long holiday names.
  */
-export function buildScheduleExportGridTemplate(_root: HTMLElement): string {
+export function buildScheduleExportGridTemplate(): string {
   return SCHEDULE_EXPORT_GRID_TEMPLATE;
 }
 

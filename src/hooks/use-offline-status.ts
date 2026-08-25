@@ -27,7 +27,9 @@ export function useOfflineStatus(): OfflineStatusSnapshot {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    queueMicrotask(() => {
+      void refresh();
+    });
 
     const onStatusChanged = (event: Event) => {
       if (!isOfflineStatusEvent(event)) return;

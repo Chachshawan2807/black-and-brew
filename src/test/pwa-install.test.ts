@@ -115,8 +115,8 @@ describe('pwa-install-reset', () => {
 describe('pwa-install-flow', () => {
   test('storage reset must not block install UI', async () => {
     const { shouldBlockInstallOnStorageReset } = await import('@/lib/pwa-install-flow');
-    expect(shouldBlockInstallOnStorageReset('native')).toBe(false);
-    expect(shouldBlockInstallOnStorageReset('ios-manual')).toBe(false);
+    expect(shouldBlockInstallOnStorageReset()).toBe(false);
+    expect(shouldBlockInstallOnStorageReset()).toBe(false);
   });
 
   test('only Chromium native install shows a preparing spinner', async () => {

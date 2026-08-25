@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ThaiPostalAddressValue } from '@/lib/bean-orders/address';
 import {
   lookupThaiPostalAreas,
@@ -12,7 +12,6 @@ import {
   profilesMatchingName,
   uniqueFieldValues,
 } from '@/lib/bean-orders/form-suggestions';
-import { cn } from '@/lib/utils';
 import { AutocompleteTextField } from './AutocompleteTextField';
 import { BeanOrderSelect } from './BeanOrderSelect';
 import { AddressProfilePicker } from './AddressProfilePicker';
@@ -46,24 +45,17 @@ export function ThaiPostalAddressSection({
   embedded = false,
   hideNameField = false,
 }: Props) {
-  const [postalHint, setPostalHint] = useState<string | null>(null);
   const [profilePicker, setProfilePicker] = useState<ThaiPostalAddressValue[] | null>(null);
   const areaOptions = useMemo(
     () => lookupThaiPostalAreas(value.postalCode),
     [value.postalCode],
   );
 
-  useEffect(() => {
+  const postalHint = useMemo(() => {
     const normalized = normalizeThaiPostalCode(value.postalCode);
-    if (normalized.length < 5) {
-      setPostalHint(null);
-      return;
-    }
-    if (areaOptions.length === 0) {
-      setPostalHint('ไม่พบรหัสไปรษณีย์นี้');
-      return;
-    }
-    setPostalHint(null);
+    if (normalized.length < 5) return null;
+    if (areaOptions.length === 0) return 'ไม่พบรหัสไปรษณีย์นี้';
+    return null;
   }, [areaOptions.length, value.postalCode]);
 
   function patch(partial: Partial<ThaiPostalAddressValue>) {

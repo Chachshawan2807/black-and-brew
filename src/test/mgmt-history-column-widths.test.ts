@@ -2,7 +2,6 @@ import { describe, expect, test } from 'vitest';
 import {
   computeMgmtHistoryColumnWidths,
   formatMgmtHistoryDateRange,
-  sumMgmtHistoryColumnWidthsPx,
   type MgmtHistoryColumnInput,
 } from '@/lib/schedule/mgmt-history-column-widths';
 

@@ -22,7 +22,7 @@ import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { computePurchaseOrderDerivedState, formatInventoryNumericDisplay, getStockColorClass, mergeInventoryRealtimeUpdate } from '@/lib/inventory-stock';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { getInventoryItemDisplayOrder } from '@/lib/inventory-grid-search';
-import { filterWithdrawRequiredItems, applyWithdrawRequiredItemOrder } from '@/lib/inventory-withdraw-required-items';
+import { applyWithdrawRequiredItemOrder } from '@/lib/inventory-withdraw-required-items';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import {
   loadFrequentItemsCache,

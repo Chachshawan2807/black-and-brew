@@ -22,11 +22,13 @@ function bangkokIsoDate(now = new Date()): string {
  */
 export function useHomeMaintenanceTasks(initialTasks: UpcomingMaintenanceTask[]) {
   const [tasks, setTasks] = useState(initialTasks);
+  const [prevInitialTasks, setPrevInitialTasks] = useState(initialTasks);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
+  if (initialTasks !== prevInitialTasks) {
+    setPrevInitialTasks(initialTasks);
     setTasks(initialTasks);
-  }, [initialTasks]);
+  }
 
   useEffect(() => {
     let cancelled = false;

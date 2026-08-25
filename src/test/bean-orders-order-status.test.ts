@@ -55,7 +55,7 @@ describe('action guards', () => {
     expect(canDeleteOrder('pending')).toBe(true);
     expect(canDeleteOrder('shipped')).toBe(false);
     // Soft-cancelled leftovers (cancelled_at set) can still be hard-deleted while pending
-    expect(canDeleteOrder('pending', cancelledAt)).toBe(true);
+    expect(canDeleteOrder('pending')).toBe(true);
   });
 
   test('payment actions stay available until cancelled', () => {

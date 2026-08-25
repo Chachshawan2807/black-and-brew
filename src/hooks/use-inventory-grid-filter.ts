@@ -13,32 +13,29 @@ export function useInventoryGridFilter<T extends { id: string; name: string; sor
   query: string,
 ) {
   const syncItems = useMemo(() => processInventoryGridView(items, query), [items, query]);
-  const [visibleItems, setVisibleItems] = useState<T[]>(syncItems);
-  const [isWorkerFiltering, setIsWorkerFiltering] = useState(false);
+  const useWorker = shouldUseInventoryTableWorker(items.length);
+  const workerKey = useMemo(() => `${items.length}\0${query}`, [items.length, query]);
+  const [workerVisibleItems, setWorkerVisibleItems] = useState<T[]>(syncItems);
+  const [resolvedWorkerKey, setResolvedWorkerKey] = useState(workerKey);
 
   useEffect(() => {
-    if (!shouldUseInventoryTableWorker(items.length)) {
-      setVisibleItems(syncItems);
-      setIsWorkerFiltering(false);
-      return;
-    }
+    if (!useWorker) return;
 
     let cancelled = false;
-    setIsWorkerFiltering(true);
 
     void processInventoryGridViewAsync(items, query).then((next) => {
       if (cancelled) return;
-      setVisibleItems(next);
-      setIsWorkerFiltering(false);
+      setWorkerVisibleItems(next);
+      setResolvedWorkerKey(workerKey);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [items, query, syncItems]);
+  }, [items, query, useWorker, workerKey]);
 
   return {
-    visibleItems: shouldUseInventoryTableWorker(items.length) ? visibleItems : syncItems,
-    isWorkerFiltering,
+    visibleItems: useWorker ? workerVisibleItems : syncItems,
+    isWorkerFiltering: useWorker && resolvedWorkerKey !== workerKey,
   };
 }

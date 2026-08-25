@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, CalendarRange, CheckCheck, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { fadeOverlay, notificationOverlay, notificationPanel, withReducedMotion } from '@/lib/motion-presets';
+import { notificationOverlay, notificationPanel, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useMobileBackLayer } from '@/hooks/use-mobile-back-layer';

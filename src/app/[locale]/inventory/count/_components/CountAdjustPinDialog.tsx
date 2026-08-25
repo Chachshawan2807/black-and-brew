@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Loader2, Lock } from 'lucide-react';
 import { verifyPin } from '@/app/actions/auth';
@@ -21,16 +21,21 @@ export function CountAdjustPinDialog({
   onCancel,
   onSuccess,
 }: CountAdjustPinDialogProps) {
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(open);
   const hiddenInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only mount gate
-    setIsMounted(true);
-  }, []);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (!open) {
+      setPin('');
+      setError(null);
+      setIsVerifying(false);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -44,18 +49,6 @@ export function CountAdjustPinDialog({
       document.body.style.overflow = previousOverflow;
     };
   }, [open]);
-
-  const resetState = useCallback(() => {
-    setPin('');
-    setError(null);
-    setIsVerifying(false);
-  }, []);
-
-  useEffect(() => {
-    if (!open) {
-      resetState();
-    }
-  }, [open, resetState]);
 
   const handlePinInput = useCallback(
     async (value: string) => {

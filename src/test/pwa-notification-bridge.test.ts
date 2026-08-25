@@ -1,6 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
 import {
-  buildDailyReportOsNotification,
   buildInventoryOsNotification,
   buildSplitOsNotification,
   buildSystemNotificationOptions,
@@ -141,7 +140,7 @@ describe('pwa-notification-bridge', () => {
 
   test('buildSplitOsNotification keeps schedule headline and detail separate on iOS', () => {
     const scheduleBody = 'ตารางงาน 09-08-2026 (วันนี้) · เข้างาน 2 คน\nปิ่น 6:30, มุก 7:00';
-    const ios = buildSplitOsNotification('ตารางงานวันนี้', scheduleBody, { isIos: true });
+    const ios = buildSplitOsNotification('ตารางงานวันนี้', scheduleBody);
     expect(ios.title).toBe('ตารางงานวันนี้');
     expect(ios.body).toBe(scheduleBody);
   });
@@ -149,7 +148,7 @@ describe('pwa-notification-bridge', () => {
   test('buildSplitOsNotification truncates long iOS title and body independently', () => {
     const longHeadline = 'ก'.repeat(80);
     const longDetail = 'ข'.repeat(200);
-    const ios = buildSplitOsNotification(longHeadline, longDetail, { isIos: true });
+    const ios = buildSplitOsNotification(longHeadline, longDetail);
     expect(ios.title.length).toBeLessThanOrEqual(OS_NOTIFICATION_TITLE_MAX);
     expect(ios.body.length).toBeLessThanOrEqual(OS_NOTIFICATION_BODY_MAX);
     expect(ios.body).not.toBe('');

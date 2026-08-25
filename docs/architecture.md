@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-18 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.4 | Last Updated: 2026-08-25 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -100,18 +100,21 @@ src/app/
 │   ├── sales-actions.ts               # Excel upload, categories
 │   ├── daily-report-actions.ts        # Daily report compiler
 │   ├── push-actions.ts                # Web Push subscription register/sync/unregister
+│   ├── app-preferences-actions.ts     # Branch-scoped UI prefs (sidebar menu order)
+│   ├── schedule-sheets-sync-actions.ts # Schedule → Google Sheets sync
 │   ├── data-change-log-actions.ts     # Mutation audit + dispatchInventoryWebPush hook
+│   ├── migrate-inventory-sort-order.ts # One-shot inventory sort-order helper
 │   └── tools/                         # AI agent tools
 ├── api/
 │   ├── chat/route.ts            # Streaming AI (ToolLoopAgent)
 │   ├── daily-report/route.ts    # cron-job.org → schedule Web Push
+│   ├── insight-alerts/route.ts  # cron-job.org → proactive insights
 │   ├── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
-│   ├── inventory/offline-mutation/route.ts  # Service worker background sync replay
-│   └── bean-orders/
+│   └── inventory/offline-mutation/route.ts  # Service worker background sync replay
 └── [locale]/
-    ├── layout.tsx               # PinGateway, sidebar, AI chat, PWA
+    ├── layout.tsx               # PinGateway, sidebar, DeferredOverlays, PWA
     ├── page.tsx                 # Command Center
-    ├── _components/             # LiveStatusTracker (locale-wide)
+    ├── _components/             # HomePageClient, LiveStatusTracker, HomeOpsPanels, …
     ├── dashboard/               # page.tsx + _components/ (LiveShiftList, MonthlyRoster)
     ├── schedule/                # ScheduleClient + _components/
     ├── inventory/               # InventoryClient + _components/ (FAB, modals)
@@ -277,10 +280,10 @@ Inventory edit (offline) → offline-mutation-queue.ts → IndexedDB queue
 
 Client-side state: `src/lib/offline-mutation-client.ts`; auth session bridge: `src/lib/offline-auth-session.ts`; mutation store: `public/offline-mutation-store.js`.
 
-### AI Chat
+### AI Chat (API)
 
 ```text
-AIChatOverlay → POST /api/chat → intent classify → Hybrid Router
+POST /api/chat → intent classify → Hybrid Router
 → Hot path (no LLM): schedule, maintenance, sales, holidays, low-stock,
   store status, bean orders, inventory accuracy → Bru report SSE
 → Warm/Cold: ToolLoopAgent (Gemini 2.5 Flash)
@@ -289,8 +292,9 @@ AIChatOverlay → POST /api/chat → intent classify → Hybrid Router
 → streaming response → XSS sanitization on display
 ```
 
-> AI tools live in `src/app/actions/tools/`; chat orchestration in `src/app/api/chat/route.ts`.
+> No in-app chat overlay UI. Tools live in `src/app/actions/tools/`; orchestration in `src/app/api/chat/route.ts`.
 > Intent: `src/lib/agents/intent/classify-intent.ts`. Report style: `src/lib/agents/report-response.ts`.
+> Shell overlays (`DeferredOverlays`): notification FAB + inventory quick action only.
 
 ### Daily Web Push Report
 
@@ -389,6 +393,7 @@ Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIM
 - Single doorway: `database-tools.ts` routes and shapes only. Add new AI-readable tables to `ai-data-gateway.ts` — never open a second Supabase admin client in a tool.
 - New public tables: add to `AI_ALLOWED_TABLES`, define a column preset, set `TABLE_MAX_LIMITS`, and extend tests in `src/test/ai-data-gateway.test.ts`.
 - Bru Report Style: deterministic and LLM answers follow `src/lib/agents/report-response.ts` (female politeness, no bold/tables/UUIDs, DD-MM-YYYY).
+
 ---
 
 ## 6. State Management

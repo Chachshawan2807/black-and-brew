@@ -1,6 +1,6 @@
 # BLACKANDBREW ERP Capability Inventory
 
-> Last Updated: 2026-08-11
+> Last Updated: 2026-08-25
 >
 > Companion: agent rules → [`AGENTS.md`](../AGENTS.md) · hard protocols → [`docs/rules.md`](rules.md)
 
@@ -22,7 +22,7 @@
 
 ### UI and Client Runtime
 
-- Hydration-safe: `isMounted` on `AIChatOverlay`, `PinGateway`, clickable date inputs.
+- Hydration-safe: `isMounted` on `PinGateway`, clickable date inputs; `DeferredOverlays` defers notification FAB + quick action via `next/dynamic` (`ssr: false`).
 - Optimistic UI for inventory/count; DnD via `useSafeDndSensors`.
 - Motion: `motion-presets.ts`, `PageTransition`, `.bb-modal-*`, `.bb-transition`.
 - Theme: `next-themes` + CSS tokens + `bb-pastel-surface` for pastel cards.

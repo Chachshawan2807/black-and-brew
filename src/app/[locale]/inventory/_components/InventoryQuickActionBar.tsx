@@ -113,7 +113,6 @@ function QuickActionTypeToggle({
   quickType,
   setQuickType,
   className,
-  bulkMode = false,
 }: {
   quickType: 'IN' | 'OUT' | 'ADJUST';
   setQuickType: (type: 'IN' | 'OUT' | 'ADJUST') => void;
@@ -683,6 +682,13 @@ export function InventoryQuickActionBar({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(QUICK_SEARCH_NO_HIGHLIGHT);
+  const highlightResetSignature = `${quickSearch}\0${filteredItems.length}\0${showSuggestions}`;
+  const [prevHighlightResetSignature, setPrevHighlightResetSignature] =
+    useState(highlightResetSignature);
+  if (highlightResetSignature !== prevHighlightResetSignature) {
+    setPrevHighlightResetSignature(highlightResetSignature);
+    setHighlightedIndex(QUICK_SEARCH_NO_HIGHLIGHT);
+  }
   const [isMounted, setIsMounted] = useState(false);
   const [portaledSuggestionsStyle, setPortaledSuggestionsStyle] = useState<CSSProperties>({});
   const maxMd = useMaxMd();
@@ -707,7 +713,6 @@ export function InventoryQuickActionBar({
   const showClearSearch = quickSearch.trim().length > 0;
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
   }, []);
 
@@ -746,10 +751,6 @@ export function InventoryQuickActionBar({
     setIsSearchFocused(true);
     searchInputRef.current?.focus();
   }, [setIsSearchFocused, setQuickSearch]);
-
-  useEffect(() => {
-    setHighlightedIndex(QUICK_SEARCH_NO_HIGHLIGHT);
-  }, [quickSearch, filteredItems.length, showSuggestions]);
 
   useEffect(() => {
     if (!showSuggestions || highlightedIndex < 0) return;

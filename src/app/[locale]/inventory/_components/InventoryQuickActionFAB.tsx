@@ -79,6 +79,21 @@ export default function InventoryQuickActionFAB() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseOrderModal, setShowPurchaseOrderModal] = useState(false);
   const history = useInventoryHistory();
+  const {
+    showHistoryModal,
+    setShowHistoryModal,
+    handleOpenHistory,
+    refreshHistory,
+    transactionHistory,
+    historyTypeFilter,
+    handleHistoryTypeFilterChange,
+    handleLoadMoreHistory,
+    hasMoreHistory,
+    isHistoryLoading,
+    isHistoryRefreshing,
+    historySearchQuery,
+    handleHistorySearchQueryChange,
+  } = history;
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [isExportingPO, setIsExportingPO] = useState(false);
 
@@ -109,8 +124,8 @@ export default function InventoryQuickActionFAB() {
     items,
     setItems,
     isReadOnly,
-    showHistoryModal: history.showHistoryModal,
-    onHistoryRefresh: history.refreshHistory,
+    showHistoryModal,
+    onHistoryRefresh: refreshHistory,
     isItemsLoaded: hasLoadedItems,
     notificationSource: INVENTORY_NOTIFICATION_SOURCES.QUICK_ACTION_FAB,
     onAfterSave: (saved) => {
@@ -156,9 +171,9 @@ export default function InventoryQuickActionFAB() {
   }, []);
 
   const openHistoryModal = useCallback(() => {
-    history.handleOpenHistory();
+    handleOpenHistory();
     setIsOpen(false);
-  }, [history]);
+  }, [handleOpenHistory]);
 
   const toggleQuickPanel = useCallback(() => {
     setIsOpen((prev) => {
@@ -183,12 +198,12 @@ export default function InventoryQuickActionFAB() {
     blurActiveElement();
     setIsOpen(false);
     setShowAddModal(false);
-    history.setShowHistoryModal(false);
+    setShowHistoryModal(false);
     setShowPurchaseOrderModal(false);
-  }, [history]);
+  }, [setShowHistoryModal]);
 
   const quickOverlayActive =
-    isPanelRendered || showAddModal || history.showHistoryModal || showPurchaseOrderModal;
+    isPanelRendered || showAddModal || showHistoryModal || showPurchaseOrderModal;
 
   useMobileBackLayer('quick-action-overlay', quickOverlayActive, dismissQuickOverlay);
   const hideQuickActionButton =
@@ -196,7 +211,7 @@ export default function InventoryQuickActionFAB() {
     fabStackSuppressed ||
     isAnyOtherOpen('quick-action') ||
     showAddModal ||
-    history.showHistoryModal ||
+    showHistoryModal ||
     showPurchaseOrderModal;
 
   useEffect(() => {
@@ -208,9 +223,9 @@ export default function InventoryQuickActionFAB() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- close overlays when fab stack is hidden
     setIsOpen(false);
     setShowAddModal(false);
-    history.setShowHistoryModal(false);
+    setShowHistoryModal(false);
     setShowPurchaseOrderModal(false);
-  }, [fabStackHidden, fabStackSuppressed]);
+  }, [fabStackHidden, fabStackSuppressed, setShowHistoryModal]);
 
   useEffect(() => {
     if (!isMounted || !isPanelRendered || !isMobile) return;
@@ -226,7 +241,9 @@ export default function InventoryQuickActionFAB() {
   useEffect(() => {
     if (!isMounted) return;
     if (shouldRefreshFrequentItems()) {
-      void loadFrequentItems();
+      queueMicrotask(() => {
+        void loadFrequentItems();
+      });
     }
   }, [isMounted, loadFrequentItems]);
 
@@ -430,8 +447,8 @@ export default function InventoryQuickActionFAB() {
                 return [...prev, item as InventoryItem];
               });
               void loadFrequentItems();
-              if (history.showHistoryModal) {
-                void history.refreshHistory();
+              if (showHistoryModal) {
+                void refreshHistory();
               }
             }}
           />
@@ -439,18 +456,18 @@ export default function InventoryQuickActionFAB() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {history.showHistoryModal && (
+        {showHistoryModal && (
           <InventoryHistoryModal
-            transactionHistory={history.transactionHistory}
-            onClose={() => history.setShowHistoryModal(false)}
-            historyTypeFilter={history.historyTypeFilter}
-            onTypeFilterChange={history.handleHistoryTypeFilterChange}
-            onLoadMore={history.handleLoadMoreHistory}
-            hasMoreHistory={history.hasMoreHistory}
-            isHistoryLoading={history.isHistoryLoading}
-            isHistoryRefreshing={history.isHistoryRefreshing}
-            historySearchQuery={history.historySearchQuery}
-            onSearchQueryChange={history.handleHistorySearchQueryChange}
+            transactionHistory={transactionHistory}
+            onClose={() => setShowHistoryModal(false)}
+            historyTypeFilter={historyTypeFilter}
+            onTypeFilterChange={handleHistoryTypeFilterChange}
+            onLoadMore={handleLoadMoreHistory}
+            hasMoreHistory={hasMoreHistory}
+            isHistoryLoading={isHistoryLoading}
+            isHistoryRefreshing={isHistoryRefreshing}
+            historySearchQuery={historySearchQuery}
+            onSearchQueryChange={handleHistorySearchQueryChange}
           />
         )}
       </AnimatePresence>

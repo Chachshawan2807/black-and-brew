@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, X, ZoomIn } from 'lucide-react';
 import { getBeanOrderSlipSignedUrl } from '@/app/actions/bean-order-actions';
 import {
@@ -38,29 +38,19 @@ export function PaymentSlipViewer({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [slipUrl, setSlipUrl] = useState(initialSlipUrl ?? null);
+  const [prevInitialSlipUrl, setPrevInitialSlipUrl] = useState(initialSlipUrl);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const resolvedPreviewUrl = previewUrl ?? slipUrl;
 
-  useEffect(() => {
+  if (initialSlipUrl !== prevInitialSlipUrl) {
+    setPrevInitialSlipUrl(initialSlipUrl);
     setSlipUrl(initialSlipUrl ?? null);
-  }, [initialSlipUrl]);
+  }
 
-  useEffect(() => {
-    if (previewUrl || slipUrl || !uploadedAt || !orderId) return;
-    void loadSlipUrl('preview');
-  }, [orderId, uploadedAt, slipUrl, previewUrl]);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (expanded && !dialog.open) dialog.showModal();
-    if (!expanded && dialog.open) dialog.close();
-  }, [expanded]);
-
-  async function loadSlipUrl(mode: 'preview' | 'modal') {
+  const loadSlipUrl = useCallback(async (mode: 'preview' | 'modal') => {
     if (!orderId) return;
 
     const setLoading = mode === 'preview' ? setPreviewLoading : setModalLoading;
@@ -79,7 +69,20 @@ export function PaymentSlipViewer({
       return;
     }
     setSlipUrl(result.slipUrl);
-  }
+  }, [orderId]);
+
+  useEffect(() => {
+    if (previewUrl || slipUrl || !uploadedAt || !orderId) return;
+    queueMicrotask(() => {
+      void loadSlipUrl('preview');
+    });
+  }, [orderId, uploadedAt, slipUrl, previewUrl, loadSlipUrl]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || !expanded) return;
+    if (!dialog.open) dialog.showModal();
+  }, [expanded]);
 
   async function handleExpand() {
     setExpanded(true);

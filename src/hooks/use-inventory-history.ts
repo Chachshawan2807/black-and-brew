@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { fetchTransactionHistoryClient } from '@/lib/inventory-history-client';
 import type {
   InventoryTransactionFilterType,
@@ -109,7 +108,9 @@ function toHistoryRow(
 
 export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
   const seededRef = useRef(false);
-  if (!seededRef.current && options?.initialTransactionHistory) {
+
+  useLayoutEffect(() => {
+    if (seededRef.current || !options?.initialTransactionHistory) return;
     seedInventoryHistoryCacheIfEmpty(
       { type: 'ALL', searchQuery: '' },
       {
@@ -118,10 +119,9 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
       },
     );
     seededRef.current = true;
-  }
+  }, [options?.initialHistoryHasMore, options?.initialTransactionHistory]);
 
   const resolveItemNameRef = useRef(options?.resolveItemName);
-  resolveItemNameRef.current = options?.resolveItemName;
 
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [transactionHistory, setTransactionHistory] = useState<TransactionHistoryRow[]>(() =>
@@ -138,11 +138,24 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
 
   const requestIdRef = useRef(0);
   const transactionHistoryRef = useRef(transactionHistory);
-  transactionHistoryRef.current = transactionHistory;
   const historyTypeFilterRef = useRef(historyTypeFilter);
-  historyTypeFilterRef.current = historyTypeFilter;
   const historySearchDebouncedRef = useRef(historySearchDebounced);
-  historySearchDebouncedRef.current = historySearchDebounced;
+
+  useEffect(() => {
+    resolveItemNameRef.current = options?.resolveItemName;
+    transactionHistoryRef.current = transactionHistory;
+    historyTypeFilterRef.current = historyTypeFilter;
+    historySearchDebouncedRef.current = historySearchDebounced;
+  });
+
+  const [prevShowHistoryModal, setPrevShowHistoryModal] = useState(showHistoryModal);
+  if (showHistoryModal !== prevShowHistoryModal) {
+    setPrevShowHistoryModal(showHistoryModal);
+    if (!showHistoryModal) {
+      setIsHistoryLoading(false);
+      setIsHistoryRefreshing(false);
+    }
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -297,42 +310,45 @@ export function useInventoryHistory(options?: UseInventoryHistoryOptions) {
   }, [hasMoreHistory, isHistoryLoading, loadHistoryPage]);
 
   useEffect(() => {
-    if (!showHistoryModal) {
-      requestIdRef.current += 1;
-      setIsHistoryLoading(false);
-      setIsHistoryRefreshing(false);
-      return;
-    }
+    if (!showHistoryModal) return;
 
     let cancelled = false;
     const type = historyTypeFilter;
     const searchQuery = historySearchDebounced;
 
-    const cached = applyCachedPage(type, searchQuery);
-    if (!cached) {
-      setTransactionHistory([]);
-      setHasMoreHistory(false);
-    } else if (isHistoryPageCacheFresh(cached.savedAt)) {
-      if (type === 'ALL' && searchQuery === '') {
-        warmInventoryHistoryFilterPages();
-      }
-      return;
-    }
+    queueMicrotask(() => {
+      if (cancelled) return;
 
-    void (async () => {
-      if (!cancelled) {
-        await loadHistoryPage({ type, searchQuery, offset: 0 });
+      const cached = getHistoryPageCache({ type, searchQuery });
+      if (cached) {
+        setTransactionHistory(cached.data as TransactionHistoryRow[]);
+        setHasMoreHistory(cached.hasMore);
+        if (isHistoryPageCacheFresh(cached.savedAt)) {
+          if (type === 'ALL' && searchQuery === '') {
+            warmInventoryHistoryFilterPages();
+          }
+          return;
+        }
+      } else {
+        setTransactionHistory([]);
+        setHasMoreHistory(false);
       }
-      if (!cancelled && type === 'ALL' && searchQuery === '') {
-        warmInventoryHistoryFilterPages();
-      }
-    })();
+
+      void (async () => {
+        if (!cancelled) {
+          await loadHistoryPage({ type, searchQuery, offset: 0 });
+        }
+        if (!cancelled && type === 'ALL' && searchQuery === '') {
+          warmInventoryHistoryFilterPages();
+        }
+      })();
+    });
 
     return () => {
       cancelled = true;
       requestIdRef.current += 1;
     };
-  }, [historySearchDebounced, historyTypeFilter, showHistoryModal, loadHistoryPage, applyCachedPage]);
+  }, [historySearchDebounced, historyTypeFilter, showHistoryModal, loadHistoryPage]);
 
   useEffect(() => {
     if (!showHistoryModal) return;

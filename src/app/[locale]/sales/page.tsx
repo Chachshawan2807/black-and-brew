@@ -5,7 +5,6 @@ import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const SalesClient = createLazyFeatureClient(
   () => import('./SalesClient'),
-  'กำลังโหลดรายงานการขาย...',
 );
 
 export default async function SalesPage({

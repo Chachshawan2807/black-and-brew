@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   type BeforeInstallPromptEvent,
   type PwaInstallMode,
@@ -10,19 +10,32 @@ import {
   shouldShowPwaInstallOffer,
 } from '@/lib/pwa-install';
 
+const SSR_PWA_VISIBILITY = { installed: false, isIosDevice: false };
+
+function subscribePwaVisibility(onStoreChange: () => void) {
+  const onAppInstalled = () => onStoreChange();
+  window.addEventListener(PWA_APP_INSTALLED_EVENT, onAppInstalled);
+  return () => window.removeEventListener(PWA_APP_INSTALLED_EVENT, onAppInstalled);
+}
+
+function getPwaVisibilitySnapshot() {
+  return readPwaInstallVisibility();
+}
+
 export function usePwaInstall() {
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   const [hasDeferredPrompt, setHasDeferredPrompt] = useState(false);
-  const [installed, setInstalled] = useState(false);
-  const [isIosDevice, setIsIosDevice] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [installedAccepted, setInstalledAccepted] = useState(false);
+  const pwaVisibility = useSyncExternalStore(
+    subscribePwaVisibility,
+    getPwaVisibilitySnapshot,
+    () => SSR_PWA_VISIBILITY,
+  );
+  const isReady = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const installed = pwaVisibility.installed || installedAccepted;
+  const { isIosDevice } = pwaVisibility;
 
   useEffect(() => {
-    const { installed: alreadyInstalled, isIosDevice: ios } = readPwaInstallVisibility();
-    setInstalled(alreadyInstalled);
-    setIsIosDevice(ios);
-    setIsReady(true);
-
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       deferredPromptRef.current = event as BeforeInstallPromptEvent;
@@ -32,7 +45,7 @@ export function usePwaInstall() {
     const onAppInstalled = () => {
       deferredPromptRef.current = null;
       setHasDeferredPrompt(false);
-      setInstalled(true);
+      setInstalledAccepted(true);
     };
 
     window.addEventListener(PWA_INSTALL_PROMPT_EVENT, onBeforeInstallPrompt);
@@ -63,7 +76,7 @@ export function usePwaInstall() {
       deferredPromptRef.current = null;
       setHasDeferredPrompt(false);
       if (outcome === 'accepted') {
-        setInstalled(true);
+        setInstalledAccepted(true);
       }
       return outcome;
     } catch {

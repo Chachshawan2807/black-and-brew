@@ -136,7 +136,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     setBulkMode(next);
     setBulkConfirmOpen(false);
     if (next) {
-      setQuickType((prev) => (prev === 'OUT' || prev === 'ADJUST' ? prev : 'IN'));
+      setQuickType((prev) => (prev === 'OUT' ? 'OUT' : 'IN'));
       resetQuickEntryFields();
     } else {
       setBulkQueue([]);
@@ -145,12 +145,13 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   }, [resetQuickEntryFields]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate bulk queue when inventory items load
-    setBulkQueue((prev) => {
-      if (prev.length === 0) return prev;
-      if (!isItemsLoaded || items.length === 0) return prev;
-      const hydrated = hydrateBulkQueueFromItems(prev, items);
-      return JSON.stringify(prev) === JSON.stringify(hydrated) ? prev : hydrated;
+    queueMicrotask(() => {
+      setBulkQueue((prev) => {
+        if (prev.length === 0) return prev;
+        if (!isItemsLoaded || items.length === 0) return prev;
+        const hydrated = hydrateBulkQueueFromItems(prev, items);
+        return JSON.stringify(prev) === JSON.stringify(hydrated) ? prev : hydrated;
+      });
     });
   }, [items, isItemsLoaded]);
 
@@ -191,13 +192,11 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     return filterInventoryQuickSearchItems(items, quickSearch, 10, excludeIds);
   }, [items, quickSearch, bulkMode, bulkQueue]);
 
+  const useWorkerFilter = shouldUseInventoryTableWorker(items.length);
   const [workerFilteredItems, setWorkerFilteredItems] = useState<typeof filteredItems>([]);
 
   useEffect(() => {
-    if (!shouldUseInventoryTableWorker(items.length)) {
-      setWorkerFilteredItems([]);
-      return;
-    }
+    if (!useWorkerFilter) return;
 
     const excludeIds = bulkMode ? bulkQueue.map((line) => line.itemId) : [];
     let cancelled = false;
@@ -209,11 +208,9 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     return () => {
       cancelled = true;
     };
-  }, [items, quickSearch, bulkMode, bulkQueue]);
+  }, [items, quickSearch, bulkMode, bulkQueue, useWorkerFilter]);
 
-  const resolvedFilteredItems = shouldUseInventoryTableWorker(items.length)
-    ? workerFilteredItems
-    : filteredItems;
+  const resolvedFilteredItems = useWorkerFilter ? workerFilteredItems : filteredItems;
 
   const selectedQuickItem = useMemo(
     () => items.find((item) => item.name === quickSearch || item.id === quickSearch),

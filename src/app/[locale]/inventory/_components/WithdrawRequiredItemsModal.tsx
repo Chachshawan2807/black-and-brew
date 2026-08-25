@@ -100,11 +100,13 @@ export default function WithdrawRequiredItemsModal({
   const modalContentStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
   const sensors = useSafeDndSensors();
   const [orderedItems, setOrderedItems] = useState(items);
+  const [prevItems, setPrevItems] = useState(items);
   const dragDisabled = isReadOnly || isSaving;
 
-  useEffect(() => {
+  if (items !== prevItems) {
+    setPrevItems(items);
     setOrderedItems(items);
-  }, [items]);
+  }
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

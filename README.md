@@ -2,7 +2,7 @@
 
 > ระบบจัดการร้านกาแฟ **BLACK AND BREW** แบบครบวงจร — รวมตารางงาน คลังสินค้า ยอดขาย การซ่อมบำรุง และผู้ช่วย AI ชื่อ **บรู** ไว้ในเว็บแอปเดียว พนักงานเปิดจากมือถือหรือแท็บเล็ตในร้านได้ทันที ไม่ต้องสลับหลายโปรแกรม
 
-**เวอร์ชัน 9.3** · รองรับภาษาไทย (หลัก) และอังกฤษ · เข้าเว็บแล้วไปหน้า `/th` อัตโนมัติ · ต้องใส่ PIN 6 หลักก่อนใช้งาน
+**เวอร์ชัน 9.4** · รองรับภาษาไทย (หลัก) และอังกฤษ · เข้าเว็บแล้วไปหน้า `/th` อัตโนมัติ · ต้องใส่ PIN 6 หลักก่อนใช้งาน
 
 ---
 
@@ -43,7 +43,7 @@
 | ตารางงาน | Schedule | `/[locale]/schedule` |
 | คลังสินค้า | Inventory, Stock Count, Accuracy, Branch Withdraw | `/[locale]/inventory/*` |
 | ข้อมูลร้าน | Sales, Maintenance, Bean Orders | `/[locale]/sales`, `/[locale]/maintenance`, `/[locale]/bean-orders` |
-| ระบบและ AI | Settings, AI Chat (บรู) | `/[locale]/settings`, เปิดได้ทุกหน้า |
+| ระบบและ AI | Settings, AI Chat API (บรู) | `/[locale]/settings`, `POST /api/chat` |
 
 > `[locale]` คือรหัสภาษา เช่น `th` (ไทย) หรือ `en` (อังกฤษ)
 
@@ -272,7 +272,7 @@
 
 #### AI Chat — บรู
 
-เปิดได้ทุกหน้า · ผู้ช่วย AI ของร้าน
+`POST /api/chat` · ผู้ช่วย AI ของร้าน (ไม่มี overlay ในแอปในเวอร์ชันปัจจุบัน)
 
 **ใช้ทำอะไร:** ถามคำถามเกี่ยวกับร้านเป็นภาษาพูดธรรมดา — เช่น "วันนี้ใครอยู่กะเช้า" "สต็อกนมเหลือน้อยไหม" "ยอดขายสัปดาห์นี้เท่าไหร่" "พรุ่งนี้หยุดไหม" — บรูจะดึงข้อมูลจริงจากระบบมาตอบ
 
@@ -280,10 +280,10 @@
 
 **ทำงานอย่างไร:**
 
-- ใช้ AI รุ่น Gemini เป็นสมองหลัก
+- ใช้ AI รุ่น Gemini เป็นสมองหลักผ่าน API streaming
 - อ่านข้อมูลร้านผ่านช่องทางเดียวที่ควบคุมได้ — ป้องกันการดึงข้อมูลส่วนที่ไม่ควรเปิดเผย
-- ตอบทีละส่วนแบบพิมพ์สดๆ (streaming) — เห็นคำตอบค่อยๆ โผล่มา
-- กรองคำตอบเพื่อความปลอดภัยก่อนแสดงบนหน้าจอ
+- ตอบทีละส่วนแบบพิมพ์สดๆ (streaming)
+- กรองคำตอบเพื่อความปลอดภัยก่อนแสดง
 - สามารถค้นหาข้อมูลบนอินเทอร์เน็ตเสริมได้ในบางคำถาม (เช่น ข่าวหรือข้อมูลทั่วไป)
 
 **จุดเด่น:** แชทบอททั่วไปตอบจากความรู้ทั่วไปที่อาจไม่ตรงกับร้านคุณ — บรูตอบจากข้อมูลร้านจริงที่อัปเดตอยู่ จึงน่าเชื่อถือกว่าเมื่อต้องตัดสินใจเรื่องงาน
@@ -442,8 +442,12 @@ src/
 │   └── [locale]/             # หน้าเว็บทั้งหมด (แยกภาษาไทย/อังกฤษ)
 │       ├── <feature>/page.tsx, *Client.tsx
 │       └── <feature>/_components/   # ส่วนประกอบเฉพาะแต่ละฟีเจอร์
-├── components/               # ส่วนประกอบ UI ที่ใช้ร่วมกันหลายหน้า
+├── components/               # UI ร่วม (auth, sidebar, shell/DeferredOverlays, notifications, ui)
+├── contexts/                 # React context ข้ามฟีเจอร์ (เช่น InventoryRealtime)
+├── hooks/                    # hooks ร่วม (notifications, schedule undo, …)
 ├── lib/                      # โค้ดช่วย (เชื่อมฐานข้อมูล, คำนวณคลัง, สีกะ, …)
+├── workers/                  # Web Workers (เช่น inventory table)
+├── test/                     # Vitest suites
 ├── i18n/                     # ระบบสองภาษา
 └── proxy.ts                  # ตัวกลางจัดการภาษาและเส้นทาง URL
 ```
@@ -471,7 +475,11 @@ src/
 | เอกสาร | เนื้อหา | อ่านเมื่อไหร่ |
 | --- | --- | --- |
 | [docs/context.md](docs/context.md) | สรุปโปรเจกต์ สภาพแวดล้อม และโครงสร้างไฟล์ | เริ่มงานใหม่หรือ onboard agent |
+| [docs/prd.md](docs/prd.md) | ข้อกำหนดผลิตภัณฑ์และโมดูล | ต้องการรู้ว่าฟีเจอร์ไหนเป็น requirement |
+| [docs/memory.md](docs/memory.md) | ADR / technical decisions | ต้องการรู้ว่าทำไมออกแบบแบบนี้ |
+| [docs/tasks.md](docs/tasks.md) | Backlog และสถานะงาน | เช็กงานค้าง / งานที่ปิดแล้ว |
 | [docs/skills.md](docs/skills.md) | ความสามารถระบบ + domain skills สำหรับ agent | ต้องการรู้ว่าโมดูลไหนอยู่ที่ไหน |
+| [docs/performance-baseline.md](docs/performance-baseline.md) | เกณฑ์ประสิทธิภาพและ loading coverage | ก่อน/หลังงาน performance |
 | [docs/security/rls-audit.md](docs/security/rls-audit.md) | RLS audit และ migration hardening | แก้สิทธิ์ฐานข้อมูล |
 | [docs/security/waf-and-ddos.md](docs/security/waf-and-ddos.md) | Vercel Firewall + rate limit | deploy production / hardening |
 | [docs/changelog.md](docs/changelog.md) | สิ่งที่เปลี่ยนในแต่ละเวอร์ชัน | อยากรู้ว่าเวอร์ชันใหม่มีอะไรใหม่ |

@@ -6,7 +6,6 @@ import {
   notificationMasterPatch,
   setNotificationUserOptOut,
   shouldNotifyForAction,
-  NOTIFICATION_OPT_OUT_KEY,
 } from '@/lib/notification-preferences';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
@@ -28,19 +27,19 @@ describe('shouldNotifyForAction', () => {
       notifyDelete: false,
     } as NotificationPreferences;
 
-    expect(shouldNotifyForAction(enabled, 'CREATE')).toBe(true);
-    expect(shouldNotifyForAction(enabled, 'UPDATE')).toBe(true);
-    expect(shouldNotifyForAction(enabled, 'BULK_UPDATE')).toBe(true);
-    expect(shouldNotifyForAction(enabled, 'DELETE')).toBe(true);
-    expect(shouldNotifyForAction(enabled, 'BULK_DELETE')).toBe(true);
+    expect(shouldNotifyForAction(enabled)).toBe(true);
+    expect(shouldNotifyForAction(enabled)).toBe(true);
+    expect(shouldNotifyForAction(enabled)).toBe(true);
+    expect(shouldNotifyForAction(enabled)).toBe(true);
+    expect(shouldNotifyForAction(enabled)).toBe(true);
   });
 
   it('notifies nothing when inventory alerts are disabled', () => {
     const disabled = prefs({ enabled: false });
 
-    expect(shouldNotifyForAction(disabled, 'CREATE')).toBe(false);
-    expect(shouldNotifyForAction(disabled, 'UPDATE')).toBe(false);
-    expect(shouldNotifyForAction(disabled, 'DELETE')).toBe(false);
+    expect(shouldNotifyForAction(disabled)).toBe(false);
+    expect(shouldNotifyForAction(disabled)).toBe(false);
+    expect(shouldNotifyForAction(disabled)).toBe(false);
   });
 });
 

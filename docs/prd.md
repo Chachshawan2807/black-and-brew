@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> Version: 9.3 | Last Updated: 2026-08-11 | Owner: System Architect
+> Version: 9.4 | Last Updated: 2026-08-25 | Owner: System Architect
 
 ---
 
@@ -34,8 +34,8 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 ### 3.1 Command Center
 
 - Route: `/[locale]`
-- Purpose: ภาพรวมกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์
-- Components: `src/app/[locale]/_components/LiveStatusTracker.tsx`
+- Purpose: ภาพรวมกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์ + ops panels (PO / maintenance due / insights)
+- Components: `HomePageClient.tsx`, `LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, `HomePurchaseOrdersSection.tsx`, `HomeMaintenanceDueSection.tsx`
 
 ### 3.2 Staff Dashboard
 
@@ -94,9 +94,9 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 ### 3.8 AI Assistant (บรู)
 
-- Route: Global overlay (ทุกหน้า)
-- Purpose: แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
-- API: `POST /api/chat` — ToolLoopAgent + Gemini 2.5 Flash
+- Route: `POST /api/chat` (no in-app overlay UI)
+- Purpose: แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน (API streaming)
+- Stack: ToolLoopAgent + Gemini 2.5 Flash; Tavily for external search
 
 ### 3.9 Settings
 
@@ -108,6 +108,13 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 - Route: `/api/daily-report` (cron-job.org — 05:00 / 18:00 ICT)
 - Purpose: แจ้งเตือนกะงานและวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
+
+### 3.11 Proactive Cross-Module Insights
+
+- Route: `GET /api/insight-alerts` (cron-job.org — 07:00 / 17:00 ICT; also debounced after shift/stock mutations)
+- Purpose: กฎ deterministic เชื่อม schedule / inventory / maintenance / bean-orders / accuracy → inbox + Web Push
+- Domain: `src/lib/proactive-insights/`; prefs key `proactiveInsights`; Command Center `HomeOpsPanels`
+- Auth: `CRON_SECRET` Bearer on cron; panel catch-up via `data_change_logs` only (no client re-evaluate stub)
 
 ---
 
@@ -123,6 +130,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 | Bean Order Fulfillment | จัดการออเดอร์เมล็ดกาแฟและติดตามพัสดุ | Bean Orders |
 | Real-time Sync | ข้อมูลอัปเดตทันทีข้ามเครื่อง | All |
 | Daily Web Push | แจ้งเตือนตารางงานผ่าน endpoint เดียวกับ inventory alerts | Schedule/Notifications |
+| Proactive Insights | แจ้งเตือนข้ามโมดูลเมื่อสต็อก/กะ/ซ่อม/ออเดอร์เมล็ดสัมพันธ์กัน | Notifications/Command Center |
 | Trusted-device Passkeys | ลด friction หลัง PIN verified โดยยังคุม device fingerprint | Settings/Auth |
 
 ---

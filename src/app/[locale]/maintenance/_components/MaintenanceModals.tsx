@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ClipboardList,
@@ -65,6 +65,7 @@ export default function MaintenanceModals({
   const equipmentRootRef = useRef<HTMLDivElement>(null);
   const [showEquipmentSuggestions, setShowEquipmentSuggestions] = useState(false);
   const [highlightedEquipmentIndex, setHighlightedEquipmentIndex] = useState(-1);
+  const [prevModalOpen, setPrevModalOpen] = useState(isModalOpen);
 
   const taskTypeSelect = getTaskTypeSelectValue(formData.task_type);
   const taskTypeCustom = getTaskTypeInputValue(formData.task_type);
@@ -75,12 +76,13 @@ export default function MaintenanceModals({
   const showEquipmentList =
     showEquipmentSuggestions && filteredEquipmentSuggestions.length > 0 && !isReadOnly;
 
-  useEffect(() => {
+  if (isModalOpen !== prevModalOpen) {
+    setPrevModalOpen(isModalOpen);
     if (!isModalOpen) {
       setShowEquipmentSuggestions(false);
       setHighlightedEquipmentIndex(-1);
     }
-  }, [isModalOpen]);
+  }
 
   const selectEquipmentSuggestion = (value: string) => {
     setFormData(prev => ({ ...prev, equipment: value }));

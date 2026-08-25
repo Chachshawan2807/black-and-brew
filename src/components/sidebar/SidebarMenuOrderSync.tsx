@@ -192,7 +192,7 @@ export function SidebarMenuOrderSync() {
       teardownCancel = null;
       stopChannel();
     };
-  }, []);
+  }, [setOrderIds]);
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {

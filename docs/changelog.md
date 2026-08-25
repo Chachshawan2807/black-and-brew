@@ -2,10 +2,23 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-08-25 (Codebase cleanup + doc sync)
+
+- Removed dead stub `src/app/actions/insight-actions.ts` (no production callers; panel catch-up reads cron-written logs only).
+- Removed duplicate `src/app/[locale]/dashboard/types.ts` — `LiveShiftList` imports `@/types`.
+- Removed empty scaffold dirs: `src/components/ai/`, `src/components/icons/`, `src/lib/inventory/`, `src/lib/line/`, `src/lib/market-insights/`, `src/app/api/security/`.
+- Deleted unreferenced `docs/master_lint_prompt.txt`.
+- Trimmed stale migration file table from `sql/README.md` → pointer to `supabase/migrations/` + `npm run db:verify` (kept `sql/historical/` archive).
+- Synced keepers to fact: no in-app AI chat overlay (`DeferredOverlays` = notification FAB + quick action); `POST /api/chat` remains; no `/api/bean-orders/*` routes on disk.
+- Documented proactive insights in `docs/prd.md` + `docs/MASTER_BLUEPRINT.md`; fixed `CRON_SECRET` scope; performance-baseline loading.tsx count → 13.
+- Added `npm run scan:orphans` for `scripts/scan-dead-imports.mjs`.
+- Corrected historical changelog migration id `20260729100000` → `20260729034015` (see 2026-08-09 entry).
+- Bumped keepers to v9.4 / 2026-08-25.
+
 ## 2026-08-18 (Doc hygiene + completed superpowers cleanup)
 
 - Deleted 10 merged `docs/superpowers/{specs,plans}/2026-07-*` artifacts per `docs/superpowers/README.md` (features shipped; history in `docs/changelog.md` + git).
-- Documented `insight-actions.ts` (`refreshProactiveInsightDigest`) in `docs/api.md` and `PROJECT_MAP.md`.
+- Documented then-present `insight-actions.ts` (`refreshProactiveInsightDigest`) in `docs/api.md` and `PROJECT_MAP.md` (removed 2026-08-25 as unused stub).
 - Synced keepers for Command Center `HomePurchaseOrdersSection.tsx`, grid a11y libs (`*-grid-cell-a11y.ts`, `inventory-grid-cell-blur.ts`), shared `ClickableDatePicker` / `dropdown-menu`, and new Vitest suites.
 - `npm run docs:links`: 56 project-owned markdown files, 0 broken links. Orphan scan: 34 false positives (colocated `_components` relative imports) — no `src/` deletions.
 - Bumped keeper stamps to 2026-08-18 (product v9.3 unchanged).
@@ -22,7 +35,7 @@
 
 ## 2026-08-09 (Doc sync + graphify hook retirement)
 
-- Documented migration `20260729100000_record_inventory_transaction_old_stock.sql` in `docs/database.md` and `sql/README.md` (`old_stock` in `record_inventory_transaction` RPC JSON).
+- Documented migration `20260729034015_record_inventory_transaction_old_stock.sql` in `docs/database.md` and `sql/README.md` (`old_stock` in `record_inventory_transaction` RPC JSON).
 - Replaced graphify guidance in `.codex/hooks.json` with codebase-memory-mcp (`search_graph` / `trace_path`); graphify remains retired per `AGENTS.md`.
 - Synced root `MASTER_BLUEPRINT.md` redirect stub to v9.3 / 2026-08-09.
 - Removed orphaned dev scripts: `scripts/fix-cursor-default-model.py` (personal Cursor config utility, zero references).

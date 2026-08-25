@@ -6,7 +6,6 @@ import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const BeanOrderFormClient = createLazyFeatureClient(
   () => import('../BeanOrderFormClient'),
-  'กำลังโหลดฟอร์มออเดอร์...',
 );
 
 export default async function NewBeanOrderPage({

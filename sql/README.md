@@ -30,41 +30,12 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 
 ## Canonical migrations (`supabase/migrations/`)
 
-| File | Purpose |
-| --- | --- |
-| `20260611120000_create_login_history.sql` | Login audit trail + device fingerprinting |
-| `20260612120000_create_data_change_logs.sql` | Data mutation audit log |
-| `20260612130000_inventory_notifications.sql` | Realtime + RLS read for inventory `data_change_logs` |
-| `20260612140000_inventory_add_delete_history.sql` | Transaction types ADD/DELETE; nullable `inventory_item_id` |
-| `20260612200000_revoked_sessions.sql` | Remote session revocation by fingerprint |
-| `20260614120000_inventory_count_verifications.sql` | Count accuracy ledger (initial table) |
-| `20260615120000_inventory_count_accuracy_refactor.sql` | `system_stock_qty` column; clear legacy verification rows |
-| `20260615130000_align_low_stock_with_purchase_orders.sql` | `view_inventory_summary` LOW/WARNING/OK aligned with purchase-order modal |
-| `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (cross-device inventory alerts) |
-| `20260617120000_device_passkeys.sql` | WebAuthn trusted-device credentials for biometric login |
-| `20260618163100_inventory_count_policy.sql` | `inventory_items.count_policy`; exact count vs sufficiency check |
-| `20260618175951_local_events.sql` | Created `local_events` (Market Insights) — later dropped |
-| `20260620221500_reset_accuracy_history.sql` | Reset count accuracy history after policy recalculation rules changed |
-| `20260621120000_push_subscriptions_daily_report.sql` | Extend `push_subscriptions` with `profile_id` and `branch_id` for daily schedule Web Push broadcasts |
-| `20260622143800_drop_market_insights_tables.sql` | Drop retired Market Insights tables (`local_events`, `market_insight_runs`) |
-| `20260622144706_drop_retired_ai_inventory_views.sql` | Drop retired AI-prefixed inventory helper views |
-| `20260622162719_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
-| `20260708095637_reset_accuracy_history.sql` | Reset count accuracy ledger after workflow changes |
-| `20260708104230_remove_inventory_recommended_target_stock.sql` | Remove inventory recommended target stock (retired) |
-| `20260710162439_harden_security_definer_views_and_search_path.sql` | `security_invoker` on AI views + lock `search_path` on inventory/AI RPCs |
-| `20260711150322_inventory_branch_withdrawals.sql` | Branch 2 withdrawal header table + `record_branch_withdrawal_batch` RPC |
-| `20260711164826_reset_accuracy_history_major_overhaul.sql` | Reset accuracy ledger after gauge/report overhaul |
-| `20260711153209_branch_withdrawal_hardening.sql` | Branch withdrawal RPC hardening |
-| `20260713151502_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel) |
-| `20260722074607_bean_orders.sql` | Bean order tables (`bean_*`), RLS, Storage bucket `bean-order-slips` |
-| `20260724120000_app_preferences_sidebar_menu.sql` | `app_preferences` table + Realtime for sidebar menu order sync |
-| `20260724170556_harden_rls_and_rpc_execute.sql` | RLS hardening + RPC execute lockdown (see `docs/security/rls-audit.md`) |
-| `20260726154007_drop_service_records_unused_columns.sql` | Drop unused `service_records` columns (`cost`, `person_in_charge`, `status`, `notes`) |
-| `20260729034015_record_inventory_transaction_old_stock.sql` | `record_inventory_transaction` RPC returns `old_stock` in JSON for notifications/audit |
-| `20260810160403_insight_notification_realtime.sql` | RLS read scopes on `data_change_logs` for proactive insights, bean-order, and PIN lockout notifications |
-| `20260811105704_inventory_transaction_at.sql` | `inventory_transactions.transaction_at` business date + `p_transaction_at` on `record_inventory_transaction` RPC |
-| `20260811115400_reset_inventory_history_transaction_at.sql` | Reset IN/OUT ledger, count verifications, and branch withdrawals after `transaction_at` rollout |
+Versioned schema history lives only under `supabase/migrations/`. Do not maintain a duplicate file-by-file table here — it drifts.
+
+- List / inspect: files in `supabase/migrations/`
+- Narrative of tables and RPCs: `docs/database.md`
+- Verify remote matches repo: `npm run db:verify`
 
 ## Cleanup notes
 
-Do **not** delete or squash applied migrations — history must stay linear for `supabase db push` / remote checksums. Later migrations may drop objects created earlier (e.g. Market Insights `local_events`, recommended target stock) or reset accuracy history; that is intentional.
+Do **not** delete or squash applied migrations — history must stay linear for `supabase db push` / remote checksums. Later migrations may drop objects created earlier (e.g. Market Insights `local_events`, recommended target stock) or reset accuracy history; that is intentional. Keep `sql/historical/` as long-term archive references for core tables created before the migrations folder existed.

@@ -138,7 +138,7 @@ export async function updateDailyReportNotificationLog(
   const supabase = getSupabaseAdmin();
   if (!supabase) return { success: false, updated: false };
 
-  const { logId, alt, schedulePath, title, summary, isTh } = buildDailyReportLogPayload(data, locale);
+  const { logId, alt, schedulePath, title, summary } = buildDailyReportLogPayload(data, locale);
 
   try {
     const { row: existing, tableMissing } = await findDailyReportLogRow(supabase, logId);

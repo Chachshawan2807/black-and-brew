@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import {
@@ -60,7 +60,7 @@ export function RoundedSelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [listStyle, setListStyle] = useState<CSSProperties>({});
   const [uncontrolled, setUncontrolled] = useState(() => String(defaultValue ?? ''));
 
@@ -69,10 +69,6 @@ export function RoundedSelect({
   const currentValue = isControlled ? String(value) : uncontrolled;
   const selected = options.find((opt) => opt.value === currentValue) ?? options[0];
   const displayLabel = selected?.label ?? '';
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const updateListPosition = useCallback(() => {
     const trigger = triggerRef.current;

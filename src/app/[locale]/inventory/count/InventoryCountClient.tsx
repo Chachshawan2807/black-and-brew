@@ -856,18 +856,16 @@ export default function InventoryCountClient({
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [pageMode, setPageMode] = useState<CountPageMode>('count');
-  const [accuracyStats, setAccuracyStats] = useState<CountAccuracyStatsResult | null>(initialAccuracyStats);
+  const accuracyStatsRef = useRef<CountAccuracyStatsResult | null>(initialAccuracyStats);
   const accuracyTouchedRef = useRef(false);
   const [todayStatus, setTodayStatus] = useState<TodayCountSessionStatus>(
     () => initialTodayStatus ?? createEmptyTodayStatus(initialItems.length),
   );
   const todayStatusRef = useRef(todayStatus);
-  todayStatusRef.current = todayStatus;
   const [lastVerification, setLastVerification] = useState<
     Record<string, { matched: boolean; systemStockQty: number; countedQty: number }>
   >(() => buildInitialLastVerification(initialTodayStatus, initialAccuracyStats, initialItems));
   const lastVerificationRef = useRef(lastVerification);
-  lastVerificationRef.current = lastVerification;
   // Per-item undo state: maps itemId → UndoEntry. Cleared after one use.
   const [undoMap, setUndoMap] = useState<Record<string, UndoEntry>>({});
   const [animateEntrance] = useState(
@@ -875,6 +873,13 @@ export default function InventoryCountClient({
   );
 
   useEffect(() => {
+    todayStatusRef.current = todayStatus;
+    lastVerificationRef.current = lastVerification;
+  });
+
+  const [prevItemsLength, setPrevItemsLength] = useState(items.length);
+  if (items.length !== prevItemsLength) {
+    setPrevItemsLength(items.length);
     setTodayStatus((prev) => ({
       ...prev,
       session: {
@@ -884,23 +889,20 @@ export default function InventoryCountClient({
           items.length > 0 && prev.session.countedTodayCount >= items.length,
       },
     }));
-  }, [items.length]);
+  }
 
   const loadAccuracyStats = useCallback(async () => {
     const res = await fetchCountAccuracyStats();
     if (res.success && res.data) {
       const fetchedStats = res.data;
-      setAccuracyStats((prev) =>
-        accuracyTouchedRef.current
-          ? mergeAccuracyStatsPreferringHigherChecks(fetchedStats, prev)
-          : fetchedStats,
-      );
+      accuracyStatsRef.current = accuracyTouchedRef.current
+        ? mergeAccuracyStatsPreferringHigherChecks(fetchedStats, accuracyStatsRef.current)
+        : fetchedStats;
     }
   }, []);
 
   useEffect(() => {
     if (initialAccuracyStats) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch accuracy stats on mount when not server-provided
     void loadAccuracyStats();
   }, [initialAccuracyStats, loadAccuracyStats]);
 
@@ -1015,8 +1017,9 @@ export default function InventoryCountClient({
 
     if (optimisticDelta) {
       accuracyTouchedRef.current = true;
-      setAccuracyStats((prev) =>
-        applyCountVerificationToAccuracyStats(prev, optimisticDelta),
+      accuracyStatsRef.current = applyCountVerificationToAccuracyStats(
+        accuracyStatsRef.current,
+        optimisticDelta,
       );
     } else if (undoPrior) {
       accuracyTouchedRef.current = true;
@@ -1025,13 +1028,14 @@ export default function InventoryCountClient({
         delete next[id];
         return next;
       });
-      setAccuracyStats((prev) =>
-        removeCountVerificationFromAccuracyStats(prev, {
+      accuracyStatsRef.current = removeCountVerificationFromAccuracyStats(
+        accuracyStatsRef.current,
+        {
           itemId: id,
           countedQty: undoPrior.countedQty,
           systemStockQty: undoPrior.systemStockQty,
           matched: undoPrior.matched,
-        }),
+        },
       );
     }
 
@@ -1057,8 +1061,9 @@ export default function InventoryCountClient({
       } else if (skipped) {
         // Sufficiency items must not affect accuracy — roll back any optimistic apply.
         if (optimisticDelta) {
-          setAccuracyStats((prev) =>
-            removeCountVerificationFromAccuracyStats(prev, optimisticDelta),
+          accuracyStatsRef.current = removeCountVerificationFromAccuracyStats(
+            accuracyStatsRef.current,
+            optimisticDelta,
           );
         }
         setLastVerification((prev) => ({
@@ -1094,12 +1099,16 @@ export default function InventoryCountClient({
 
         if (needsReconcile) {
           accuracyTouchedRef.current = true;
-          setAccuracyStats((prev) => {
-            const withoutOptimistic = optimisticDelta
-              ? removeCountVerificationFromAccuracyStats(prev, optimisticDelta)
-              : prev;
-            return applyCountVerificationToAccuracyStats(withoutOptimistic, serverDelta);
-          });
+          const withoutOptimistic = optimisticDelta
+            ? removeCountVerificationFromAccuracyStats(
+                accuracyStatsRef.current,
+                optimisticDelta,
+              )
+            : accuracyStatsRef.current;
+          accuracyStatsRef.current = applyCountVerificationToAccuracyStats(
+            withoutOptimistic,
+            serverDelta,
+          );
         }
       }
 
@@ -1119,8 +1128,9 @@ export default function InventoryCountClient({
         prev.map((item) => (item.id === id ? { ...item, stock: previousStock } : item)),
       );
       if (optimisticDelta) {
-        setAccuracyStats((prev) =>
-          removeCountVerificationFromAccuracyStats(prev, optimisticDelta),
+        accuracyStatsRef.current = removeCountVerificationFromAccuracyStats(
+          accuracyStatsRef.current,
+          optimisticDelta,
         );
       }
       if (optimisticMatch) {
@@ -1134,14 +1144,15 @@ export default function InventoryCountClient({
           ...prev,
           [id]: undoPrior,
         }));
-        setAccuracyStats((prev) =>
-          applyCountVerificationToAccuracyStats(prev, {
+        accuracyStatsRef.current = applyCountVerificationToAccuracyStats(
+          accuracyStatsRef.current,
+          {
             itemId: id,
             itemName: currentItem?.name,
             countedQty: undoPrior.countedQty,
             systemStockQty: undoPrior.systemStockQty,
             matched: undoPrior.matched,
-          }),
+          },
         );
       }
 

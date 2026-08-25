@@ -72,7 +72,6 @@ import type {
   InventoryNotification,
   NotificationPreferences,
 } from '@/lib/notification-types';
-import type { DataChangeAction } from '@/lib/data-change-log';
 import {
   showSystemNotification,
   syncAppBadge,
@@ -163,7 +162,9 @@ export function useInventoryNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [panelOpen, setPanelOpenState] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
-  const [realtimeReady, setRealtimeReady] = useState(false);
+  const wantsInAppSync = wantsInAppNotificationSync(prefs);
+  const [idleRealtimeReady, setIdleRealtimeReady] = useState(false);
+  const realtimeReady = wantsInAppSync && idleRealtimeReady;
   const [realtimeReconnectKey, setRealtimeReconnectKey] = useState(0);
 
   const prefsRef = useRef(prefs);
@@ -199,15 +200,12 @@ export function useInventoryNotifications() {
   }, [locale]);
 
   useEffect(() => {
-    if (!wantsInAppNotificationSync(prefs)) {
-      setRealtimeReady(false);
-      return;
-    }
+    if (!wantsInAppSync) return;
 
     let cancelled = false;
     const cancelIdle = scheduleIdleWork(
       () => {
-        if (!cancelled) setRealtimeReady(true);
+        if (!cancelled) setIdleRealtimeReady(true);
       },
       { timeout: 400 },
     );
@@ -215,9 +213,9 @@ export function useInventoryNotifications() {
     return () => {
       cancelled = true;
       cancelIdle();
-      setRealtimeReady(false);
+      queueMicrotask(() => setIdleRealtimeReady(false));
     };
-  }, [prefs]);
+  }, [wantsInAppSync]);
 
   useEffect(() => {
     void syncAppBadge(unreadCount);
@@ -390,7 +388,7 @@ export function useInventoryNotifications() {
       ) {
         return false;
       }
-      if (isInventory && !shouldNotifyForAction(currentPrefs, row.action as DataChangeAction)) {
+      if (isInventory && !shouldNotifyForAction(currentPrefs)) {
         return false;
       }
       if (!currentPrefs.notifyOwnChanges && isOwnChange(row.metadata, sessionId)) return false;

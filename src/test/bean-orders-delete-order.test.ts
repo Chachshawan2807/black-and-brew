@@ -4,12 +4,10 @@ import { resolve } from 'node:path';
 import { canDeleteOrder } from '@/lib/bean-orders/order-status';
 
 describe('bean order delete', () => {
-  const cancelledAt = '2026-07-22T00:00:00Z';
-
   test('can delete only before shipped', () => {
     expect(canDeleteOrder('pending')).toBe(true);
     expect(canDeleteOrder('shipped')).toBe(false);
-    expect(canDeleteOrder('pending', cancelledAt)).toBe(true);
+    expect(canDeleteOrder('pending')).toBe(true);
   });
 
   test('detail UI labels action as delete order', () => {

@@ -9,7 +9,6 @@ import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const ScheduleClient = createLazyFeatureClient(
   () => import('./ScheduleClient'),
-  'กำลังโหลดตารางงาน...',
 );
 
 export default async function SchedulePage({

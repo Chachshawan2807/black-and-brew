@@ -32,25 +32,37 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [orders, setOrders] = useState(initialOrders);
+  const [prevOrdersSync, setPrevOrdersSync] = useState({ initialOrders, pathname });
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
   const [fulfillmentFilter, setFulfillmentFilter] = useState<'all' | 'pending' | 'shipped'>('all');
-  const [message, setMessage] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
-
-  useEffect(() => {
-    setOrders(applyBeanOrderDeliveredPatch(initialOrders, consumeBeanOrderDeliveredPatch()));
-  }, [initialOrders, pathname]);
-
-  useEffect(() => {
+  const [message, setMessage] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
     const flash = sessionStorage.getItem('bb-bean-order-flash');
     if (flash) {
-      setMessage(flash);
       sessionStorage.removeItem('bb-bean-order-flash');
+      return flash;
+    }
+    return null;
+  });
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  const [, startTransition] = useTransition();
+
+  if (initialOrders !== prevOrdersSync.initialOrders || pathname !== prevOrdersSync.pathname) {
+    setPrevOrdersSync({ initialOrders, pathname });
+    setOrders(applyBeanOrderDeliveredPatch(initialOrders, consumeBeanOrderDeliveredPatch()));
+  }
+
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    const flash = sessionStorage.getItem('bb-bean-order-flash');
+    if (flash) {
+      sessionStorage.removeItem('bb-bean-order-flash');
+      setMessage(flash);
     } else {
       setMessage(null);
     }
-  }, [pathname]);
+  }
 
   useEffect(() => {
     let cancelled = false;

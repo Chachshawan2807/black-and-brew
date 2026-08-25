@@ -1,16 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { listRowSpring, SNAPPY_SPRING, CARD_LIFT_HOVER, CARD_PRESS_TAP } from '@/lib/motion-presets';
-import { Shift, Profile } from '../types';
+import type { Shift, Profile } from '@/types';
 import { CalendarDays, Users, GripVertical } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
-import { toZonedTime } from 'date-fns-tz';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { format, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { navigateWithoutViewTransition } from '@/lib/view-transition';
 import { SortableDragHandle } from '@/components/ui/sortable-drag-handle';
@@ -35,7 +33,7 @@ import {
 } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 import { DASHBOARD_STAT_COLORS } from '@/lib/shift-colors';
-import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
+import { useReadOnly } from '@/components/providers/AuthProvider';
 import {
   persistDashboardWeeklyRange,
   readDashboardWeeklyRangeFromStorage,
@@ -148,7 +146,6 @@ export default function LiveShiftList({
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [now, setNow] = useState(new Date());
 
   const refreshShiftsForRange = useCallback(async () => {
     const { data, error } = await supabase
@@ -168,17 +165,6 @@ export default function LiveShiftList({
       void refreshShiftsForRange();
     },
   });
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const checkIsWorking = (profileId: string) => {
-    const s = shifts.find(s => s.employee_id === profileId && s.status === 'scheduled');
-    if (!s) return false;
-    return isWithinInterval(toZonedTime(now, 'Asia/Bangkok'), { start: toZonedTime(parseISO(s.start_time), 'Asia/Bangkok'), end: toZonedTime(parseISO(s.end_time), 'Asia/Bangkok') });
-  };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only mount gate for date-dependent UI

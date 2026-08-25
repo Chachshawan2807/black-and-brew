@@ -47,19 +47,13 @@ export function canEditOrderLines(cancelledAt?: string | null): boolean {
 }
 
 /** Pending (not yet shipped) orders can be hard-deleted. */
-export function canDeleteOrder(
-  fulfillmentStatus: FulfillmentStatus,
-  _cancelledAt?: string | null,
-): boolean {
+export function canDeleteOrder(fulfillmentStatus: FulfillmentStatus): boolean {
   return fulfillmentStatus === 'pending';
 }
 
 /** @deprecated Prefer canDeleteOrder — same guard for hard delete. */
-export function canCancelOrder(
-  fulfillmentStatus: FulfillmentStatus,
-  cancelledAt?: string | null,
-): boolean {
-  return canDeleteOrder(fulfillmentStatus, cancelledAt);
+export function canCancelOrder(fulfillmentStatus: FulfillmentStatus): boolean {
+  return canDeleteOrder(fulfillmentStatus);
 }
 
 export function canUploadSlip(cancelledAt?: string | null): boolean {

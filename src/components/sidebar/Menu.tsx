@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname, useParams, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
 import { GripVertical, LogOut, Settings2 } from 'lucide-react';

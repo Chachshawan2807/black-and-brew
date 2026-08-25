@@ -226,11 +226,10 @@ export default function BeanOrderFormClient({
   const [trackingNumber, setTrackingNumber] = useState(
     () => initialOrder?.shipment?.trackingNumber ?? '',
   );
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(
+  const [paymentStatus] = useState<PaymentStatus>(
     () => initialOrder?.paymentStatus ?? 'unpaid',
   );
   const [pendingSlipFile, setPendingSlipFile] = useState<File | null>(null);
-  const [pendingSlipPreview, setPendingSlipPreview] = useState<string | null>(null);
   const [confirmPaymentOnSave, setConfirmPaymentOnSave] = useState(false);
   const [revertPaymentOnSave, setRevertPaymentOnSave] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -239,15 +238,15 @@ export default function BeanOrderFormClient({
   const [pasteData, setPasteData] = useState<ParsedBeanOrderCustomer | null>(null);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
-  useEffect(() => {
-    if (!pendingSlipFile) {
-      setPendingSlipPreview(null);
-      return;
-    }
-    const previewUrl = URL.createObjectURL(pendingSlipFile);
-    setPendingSlipPreview(previewUrl);
-    return () => URL.revokeObjectURL(previewUrl);
+  const pendingSlipPreview = useMemo(() => {
+    if (!pendingSlipFile) return null;
+    return URL.createObjectURL(pendingSlipFile);
   }, [pendingSlipFile]);
+
+  useEffect(() => {
+    if (!pendingSlipPreview) return;
+    return () => URL.revokeObjectURL(pendingSlipPreview);
+  }, [pendingSlipPreview]);
 
   const customerNameSuggestions = useMemo(() => {
     const fromCustomers = customerResults.map((customer) => customer.name);

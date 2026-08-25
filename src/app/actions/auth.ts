@@ -229,8 +229,9 @@ export async function clearAuth(device?: ClientDevicePayload | null): Promise<vo
 export async function forceRevokeDeviceSession(
   pin: string,
   sessionFingerprint: string,
-  _actorDevice?: ClientDevicePayload | null
+  actorDevice?: ClientDevicePayload | null
 ): Promise<{ success: boolean; error?: string }> {
+  void actorDevice;
   const auth = await ensureServerSession();
   if (!auth.ok) return { success: false, error: auth.error };
   if (auth.readOnly) return { success: false, error: READ_ONLY_DENY_MSG };
@@ -264,8 +265,9 @@ export async function forceRevokeDeviceSession(
 export async function forceRevokeAllRemoteSessions(
   pin: string,
   sessionFingerprints: string[],
-  _actorDevice?: ClientDevicePayload | null
+  actorDevice?: ClientDevicePayload | null
 ): Promise<{ success: boolean; error?: string; revokedCount?: number }> {
+  void actorDevice;
   const auth = await ensureServerSession();
   if (!auth.ok) return { success: false, error: auth.error };
   if (auth.readOnly) return { success: false, error: READ_ONLY_DENY_MSG };

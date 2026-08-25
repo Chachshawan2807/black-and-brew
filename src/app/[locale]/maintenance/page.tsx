@@ -5,7 +5,6 @@ import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const MaintenanceClient = createLazyFeatureClient(
   () => import('./MaintenanceClient'),
-  'กำลังโหลดข้อมูลซ่อมบำรุง...',
 );
 
 export default async function MaintenancePage({

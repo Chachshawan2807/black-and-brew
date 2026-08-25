@@ -24,7 +24,6 @@ const HISTORY_FILTER_TYPES: Exclude<InventoryTransactionFilterType, 'ALL'>[] = [
 
 const InventoryClient = createLazyFeatureClient(
   () => import('./InventoryClient'),
-  'กำลังโหลดข้อมูลสต็อกล่าสุด...',
 );
 
 export default async function InventoryPage({

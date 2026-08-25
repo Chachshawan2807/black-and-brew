@@ -12,7 +12,6 @@ import {
   canDeleteOrder,
   canConfirmDelivered,
   canConfirmPayment,
-  canEditOrder,
   canEditOrderLines,
   canEditShipment,
   canRevertPayment,
@@ -1104,7 +1103,7 @@ export async function deleteBeanOrder(
     if (fetchError || !order) {
       return { success: false, error: 'ไม่พบออเดอร์' };
     }
-    if (!canDeleteOrder(order.fulfillment_status as 'pending' | 'shipped', order.cancelled_at as string | null)) {
+    if (!canDeleteOrder(order.fulfillment_status as 'pending' | 'shipped')) {
       return { success: false, error: 'ลบออเดอร์นี้ไม่ได้' };
     }
 

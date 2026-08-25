@@ -8,7 +8,6 @@ import { buildInventoryOsNotification } from '@/lib/pwa-notification-bridge';
 import type { InventoryNotification, NotificationPreferences } from '@/lib/notification-types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notification-types';
 import { shouldNotifyForAction } from '@/lib/notification-preferences';
-import type { DataChangeAction } from '@/lib/data-change-log';
 import { requireServiceRoleKey } from '@/lib/security/server-auth';
 import {
   buildPwaNotificationAssetPaths,
@@ -216,7 +215,7 @@ export function shouldSendPushToSubscription(
 ): boolean {
   const prefs = parsePushPrefs(subscription.prefs_json);
   if (!prefs.enabled || !prefs.systemNotifications) return false;
-  if (!shouldNotifyForAction(prefs, row.action as DataChangeAction)) return false;
+  if (!shouldNotifyForAction(prefs)) return false;
 
   const originSessionId =
     typeof row.metadata?.clientSessionId === 'string' ? row.metadata.clientSessionId : '';

@@ -92,7 +92,7 @@ export interface FetchDataChangeLogsOptions {
 }
 
 /** Modules polled by the notification FAB for cross-device catch-up. */
-export const NOTIFICATION_CATCH_UP_MODULES = [
+const NOTIFICATION_CATCH_UP_MODULES = [
   'inventory',
   'schedule',
   'bean_orders',

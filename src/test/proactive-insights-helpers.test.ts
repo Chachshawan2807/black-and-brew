@@ -5,7 +5,7 @@ describe('resolvePendingBeanOrderStatusLabel', () => {
   test('resolvePendingBeanOrderStatusLabel prefers payment over fulfillment', () => {
     expect(resolvePendingBeanOrderStatusLabel('unpaid', 'pending')).toBe('ค้างชำระเงิน');
     expect(resolvePendingBeanOrderStatusLabel('paid', 'pending')).toBe('ค้างจัดส่ง');
-    expect(resolvePendingBeanOrderStatusLabel('paid', 'shipped', null)).toBeNull();
-    expect(resolvePendingBeanOrderStatusLabel('paid', 'shipped', 'delivered')).toBeNull();
+    expect(resolvePendingBeanOrderStatusLabel('paid', 'shipped')).toBeNull();
+    expect(resolvePendingBeanOrderStatusLabel('paid', 'shipped')).toBeNull();
   });
 });

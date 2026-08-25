@@ -11,7 +11,6 @@ import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const BeanOrderFormClient = createLazyFeatureClient(
   () => import('../../BeanOrderFormClient'),
-  'กำลังโหลดฟอร์มออเดอร์...',
 );
 
 /** Build-time validation path for Cache Components (requires ≥1 static param). */

@@ -13,6 +13,14 @@ vi.mock('@/app/actions/inventory-actions', () => ({
   recordBulkInventoryTransactions: vi.fn(),
   recordTransaction: vi.fn(),
   updateInventoryStock: vi.fn(),
+  fetchInventoryInOutActivitySnapshot: vi.fn().mockResolvedValue({
+    success: true,
+    data: {
+      todayDate: '2026-08-25',
+      yesterdayDate: '2026-08-24',
+      yesterdayHasInOut: true,
+    },
+  }),
 }));
 
 vi.mock('@/lib/client-session', () => ({

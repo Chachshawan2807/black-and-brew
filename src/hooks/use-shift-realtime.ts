@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 
 type Listener = () => void;
 
-let shiftListeners = new Set<Listener>();
-let profileListeners = new Set<Listener>();
+const shiftListeners = new Set<Listener>();
+const profileListeners = new Set<Listener>();
 let channel: ReturnType<typeof supabase.channel> | null = null;
 let subscriberCount = 0;
 let channelStarting: Promise<void> | null = null;
@@ -61,10 +61,6 @@ function teardownSharedShiftChannel() {
   channel = null;
 }
 
-function createStableListener(getCurrent: () => Listener | undefined): Listener {
-  return () => getCurrent()?.();
-}
-
 /** Single shared Supabase channel for shift/profile updates across home + dashboard. */
 export function useShiftRealtime(options?: {
   onShiftsChange?: () => void;
@@ -72,18 +68,18 @@ export function useShiftRealtime(options?: {
 }) {
   const onShiftsRef = useRef(options?.onShiftsChange);
   const onProfilesRef = useRef(options?.onProfilesChange);
-  onShiftsRef.current = options?.onShiftsChange;
-  onProfilesRef.current = options?.onProfilesChange;
 
-  const shiftListenerRef = useRef<Listener | null>(null);
-  const profileListenerRef = useRef<Listener | null>(null);
+  useEffect(() => {
+    onShiftsRef.current = options?.onShiftsChange;
+    onProfilesRef.current = options?.onProfilesChange;
+  });
 
-  if (!shiftListenerRef.current) {
-    shiftListenerRef.current = createStableListener(() => onShiftsRef.current);
-  }
-  if (!profileListenerRef.current) {
-    profileListenerRef.current = createStableListener(() => onProfilesRef.current);
-  }
+  const shiftListener = useCallback(() => {
+    onShiftsRef.current?.();
+  }, []);
+  const profileListener = useCallback(() => {
+    onProfilesRef.current?.();
+  }, []);
 
   const wantsShifts = Boolean(options?.onShiftsChange);
   const wantsProfiles = Boolean(options?.onProfilesChange);
@@ -105,9 +101,6 @@ export function useShiftRealtime(options?: {
   }, []);
 
   useEffect(() => {
-    const shiftListener = shiftListenerRef.current!;
-    const profileListener = profileListenerRef.current!;
-
     if (wantsShifts) shiftListeners.add(shiftListener);
     if (wantsProfiles) profileListeners.add(profileListener);
 
@@ -115,7 +108,7 @@ export function useShiftRealtime(options?: {
       if (wantsShifts) shiftListeners.delete(shiftListener);
       if (wantsProfiles) profileListeners.delete(profileListener);
     };
-  }, [wantsShifts, wantsProfiles]);
+  }, [wantsShifts, wantsProfiles, shiftListener, profileListener]);
 }
 
 /** @internal Test-only introspection for listener lifecycle assertions. */

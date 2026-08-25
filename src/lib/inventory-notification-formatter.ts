@@ -4,8 +4,6 @@ import type { FieldChange } from '@/lib/data-change-log';
 
 import { computeFieldChanges } from '@/lib/data-change-log';
 
-import { formatNotificationActorLabel } from '@/lib/data-change-log';
-
 import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
 import { logRowToNotificationInput } from '@/lib/notification-types';
 import { detectStockOperationFromMetadata, formatStockOperationBatchedTitle, formatStockOperationTitle } from '@/lib/notification-display-icon';

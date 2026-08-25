@@ -259,6 +259,12 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
   const [saveError, setSaveError] = useState<string | null>(null);
   const [history, setHistory] = useState(initialHistory);
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [prevInitialHistory, setPrevInitialHistory] = useState(initialHistory);
+  if (initialHistory !== prevInitialHistory) {
+    setPrevInitialHistory(initialHistory);
+    setHistory(initialHistory);
+    setHistoryExpanded(false);
+  }
 
   const [saveLineMessage, setSaveLineMessage] = useState('');
   const [lineMessageDialog, setLineMessageDialog] = useState<{ title: string; message: string } | null>(
@@ -281,10 +287,12 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
     [displayItems],
   );
 
-  useEffect(() => {
-    setHistory(initialHistory);
-    setHistoryExpanded(false);
-  }, [initialHistory]);
+  const [prevDisplayItemIdKey, setPrevDisplayItemIdKey] = useState(displayItemIdKey);
+  if (displayItemIdKey !== prevDisplayItemIdKey) {
+    setPrevDisplayItemIdKey(displayItemIdKey);
+    const itemIds = displayItemIdKey ? displayItemIdKey.split('\0') : [];
+    setRows((prev) => mergeRowsWithDisplayItemIds(itemIds, prev));
+  }
 
   const visibleHistory = useMemo(() => {
     if (historyExpanded || history.length <= BRANCH_WITHDRAW_HISTORY_INITIAL_COUNT) {
@@ -303,11 +311,6 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
     draftPersistSignatureRef.current = serialized;
     writeBranchWithdrawDraft(window.sessionStorage, { rows, extraItemIds });
   }, [extraItemIds, rows]);
-
-  useEffect(() => {
-    const itemIds = displayItemIdKey ? displayItemIdKey.split('\0') : [];
-    setRows((prev) => mergeRowsWithDisplayItemIds(itemIds, prev));
-  }, [displayItemIdKey]);
 
   const displayedItemIds = useMemo(() => new Set(displayItemIdKey.split('\0').filter(Boolean)), [displayItemIdKey]);
 
@@ -466,7 +469,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
     } catch {
       setHistoryCopyStatus('คัดลอกไม่สำเร็จ');
     }
-  }, [lineMessageDialog?.message]);
+  }, [lineMessageDialog]);
 
   const openPreviewDialog = useCallback(() => {
     setPreviewCopyStatus(null);

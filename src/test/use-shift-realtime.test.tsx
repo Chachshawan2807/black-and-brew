@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 let shiftChangeHandler: (() => void) | null = null;
-let profileChangeHandler: (() => void) | null = null;
 
 vi.mock('@/lib/supabase-session', () => ({
   ensureSupabaseSession: vi.fn().mockResolvedValue(true),
@@ -14,7 +13,6 @@ vi.mock('@/lib/supabase', () => ({
     channel: vi.fn(() => ({
       on: vi.fn(function on(this: { on: ReturnType<typeof vi.fn> }, event, filter, handler) {
         if (filter?.table === 'shifts') shiftChangeHandler = handler;
-        if (filter?.table === 'profiles') profileChangeHandler = handler;
         return this;
       }),
       subscribe: vi.fn().mockReturnThis(),
@@ -27,7 +25,6 @@ describe('useShiftRealtime listener lifecycle', () => {
   beforeEach(() => {
     vi.resetModules();
     shiftChangeHandler = null;
-    profileChangeHandler = null;
   });
 
   afterEach(() => {

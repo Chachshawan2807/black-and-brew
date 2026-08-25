@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-18
+> Version: 9.4 | Last Updated: 2026-08-25
 
 ---
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | Project Name | BLACK-AND-BREW ERP System |
 | Type | Enterprise Resource Planning for Coffee Shop |
-| Current Version | 9.3 (proactive insights + RLS hardening + sidebar prefs sync) |
+| Current Version | 9.4 (doc/code hygiene + DeferredOverlays; proactive insights + RLS hardening + sidebar prefs sync) |
 | Repository | `Chachshawan2807/black-and-brew` |
 | Local Path | `C:\Projects\black-and-brew` |
 
@@ -140,7 +140,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 
 | Module | Path |
 | --- | --- |
-| Command Center | `src/app/[locale]/page.tsx`, `_components/LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, `HomePurchaseOrdersSection.tsx`, `HomeMaintenanceDueSection.tsx` |
+| Command Center | `src/app/[locale]/page.tsx`, `_components/HomePageClient.tsx`, `LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, `HomePurchaseOrdersSection.tsx`, `HomeMaintenanceDueSection.tsx` |
 | Dashboard | `src/app/[locale]/dashboard/`, `_components/LiveShiftList.tsx`, `MonthlyRoster.tsx` |
 | Schedule | `src/app/[locale]/schedule/ScheduleClient.tsx`, `_components/` |
 | Inventory | `src/app/[locale]/inventory/InventoryClient.tsx`, `_components/`, `count/`, `accuracy/`, `branch-withdraw/` |
@@ -149,7 +149,8 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Bean Orders | `src/app/[locale]/bean-orders/`, `src/lib/bean-orders/`, `bean-order-actions.ts` |
 | Settings | `src/app/[locale]/settings/page.tsx`, `_components/` |
 | Auth | `src/components/auth/PinGateway.tsx`, `src/app/actions/auth.ts` |
-| AI Chat | `src/components/ai/`, `src/app/api/chat/route.ts` |
+| AI Chat | `src/app/api/chat/route.ts` (API only; no in-app overlay) |
+| Shell overlays | `src/components/shell/DeferredOverlays.tsx` (notification FAB + inventory quick action) |
 | i18n Middleware | `src/proxy.ts` |
 | Server Actions | `src/app/actions/` |
 | Agent tools | `src/app/actions/tools/` |
@@ -163,7 +164,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | --- | --- |
 | Count accuracy | `inventory_count_verifications` (`system_stock_qty`), `recordCountVerification()`, `src/lib/inventory-count-accuracy.ts`, `src/lib/inventory-accuracy-gauge.ts` |
 | Branch withdraw | `branch-withdraw-actions.ts`, `inventory-branch-withdraw-format.ts`, `record_branch_withdrawal_batch` RPC, sidebar link in `menu-list.ts` |
-| Inventory FAB layout | `floating-action-layout.ts` — shared FAB/modal z-index and safe-area classes for inventory + AI chat |
+| Inventory FAB layout | `floating-action-layout.ts` — shared FAB/modal z-index and safe-area classes for inventory + notification overlays |
 | Count policy | `inventory_items.count_policy`; `exact_count` scores accuracy, `sufficiency_check` skips scoring and uses manual `order_qty` |
 | Quick action bulk | `recordBulkInventoryTransactions()`, `inventory-quick-*` libs, `InventoryQuickActionFAB` |
 | Realtime context | `src/contexts/InventoryRealtimeContext.tsx` |

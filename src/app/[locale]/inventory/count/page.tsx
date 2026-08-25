@@ -7,7 +7,6 @@ import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const InventoryCountClient = createLazyFeatureClient(
   () => import('./InventoryCountClient'),
-  'กำลังโหลดหน้านับสต็อก...',
 );
 
 export default async function InventoryCountPage({

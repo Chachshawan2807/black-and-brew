@@ -80,7 +80,6 @@ export const OS_NOTIFICATION_BODY_MAX = 240;
 export function buildSplitOsNotification(
   headline: string,
   detail: string,
-  _options?: { isIos?: boolean },
 ): { title: string; body: string } {
   const titleLine = headline.trim().slice(0, OS_NOTIFICATION_TITLE_MAX);
   const bodyLine = detail.trim().slice(0, OS_NOTIFICATION_BODY_MAX);

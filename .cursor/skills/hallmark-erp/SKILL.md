@@ -51,7 +51,7 @@ Core ERP surfaces — treat as immutable design system unless the user explicitl
 ## Allowed audit targets (supplementary polish)
 
 - `src/components/notifications/**`
-- `src/app/[locale]/_components/AIChatOverlay*` (layout/a11y slop only — not brand overhaul)
+- `src/components/shell/DeferredOverlays.tsx` (layout/a11y slop only — not brand overhaul)
 - Pin / auth gateway shells
 - Empty states, toasts, onboarding one-offs
 - Future marketing or landing routes **outside** `[locale]` ERP shell

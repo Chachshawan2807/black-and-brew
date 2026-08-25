@@ -74,7 +74,7 @@ async function resolvePushAssets(payload) {
 
 async function buildNotificationOptions(payload, unreadCount, overrides = {}) {
   const { icon, badge } = await resolvePushAssets(payload);
-  const display = resolveOsNotificationDisplay(payload, unreadCount);
+  const display = resolveOsNotificationDisplay(payload);
   return {
     body: display.body,
     icon,
@@ -154,7 +154,7 @@ function resolveBeanOrderCreatedOsDisplay(headline, customerLine, itemsSummary) 
 }
 
 /** Title + body on all platforms — iOS lock screen shows only the first title line when body is empty. */
-function resolveOsNotificationDisplay(payload, unreadCount = 1) {
+function resolveOsNotificationDisplay(payload) {
   const notification = payload.notification;
   const logicalTitle =
     (notification && notification.title) || payload.title || '';
@@ -406,7 +406,7 @@ self.addEventListener('push', (event) => {
               ? `/${locale}/bean-orders`
               : `/${locale}/schedule`;
 
-        const display = resolveOsNotificationDisplay(payload, unreadCount);
+        const display = resolveOsNotificationDisplay(payload);
         let systemNotificationShown = false;
         if (!appVisible || shouldAlwaysShowOsBanner(payload)) {
           await showPushNotification(
@@ -444,7 +444,7 @@ self.addEventListener('push', (event) => {
       }
 
       const unreadCount = await safeResolveUnreadCount(payload);
-      const display = resolveOsNotificationDisplay(payload, unreadCount);
+      const display = resolveOsNotificationDisplay(payload);
       const options = await buildNotificationOptions(payload, unreadCount, {
         tag: `${payload.tag || 'bb-inventory'}-${Date.now()}`,
       });

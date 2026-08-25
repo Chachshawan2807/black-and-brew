@@ -607,7 +607,7 @@ export default function ScheduleClient({
 
   const [mgmtHistory, setMgmtHistory] = useState<ManagementHistoryItem[]>([]);
   const [mgmtRawShifts, setMgmtRawShifts] = useState<ManagementHistoryShiftRow[]>([]);
-  const [mgmtHistoryCursor, setMgmtHistoryCursor] = useState<string | null>(null);
+  const [, setMgmtHistoryCursor] = useState<string | null>(null);
   const [mgmtHistoryHasMore, setMgmtHistoryHasMore] = useState(true);
   const [mgmtHistoryLoading, setMgmtHistoryLoading] = useState(false);
   const mgmtModalScrollRef = useRef<HTMLDivElement>(null);
@@ -920,13 +920,15 @@ export default function ScheduleClient({
     mgmtRawShiftsRef.current = [];
     mgmtHistoryCursorRef.current = null;
     mgmtHistoryHasMoreRef.current = true;
-    setMgmtRawShifts([]);
-    setMgmtHistory([]);
-    setMgmtHistoryCursor(null);
-    setMgmtHistoryHasMore(true);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset pagination when modal opens or filter changes
-    void fetchMgmtHistory({ reset: true });
+    queueMicrotask(() => {
+      setMgmtRawShifts([]);
+      setMgmtHistory([]);
+      setMgmtHistoryCursor(null);
+      setMgmtHistoryHasMore(true);
+      void fetchMgmtHistory({ reset: true });
+    });
     // fetchMgmtHistory intentionally omitted — reset:true ignores cursor; avoid refetch loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showManagementModal, historyFilter.start, historyFilter.end]);
 
   useEffect(() => {
@@ -983,7 +985,6 @@ export default function ScheduleClient({
     }));
 
     const widths = computeMgmtHistoryColumnWidths(defaultHistoryColumns, rows);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fit history columns to loaded row content
     setMgmtColumns((prev) =>
       prev.map((col) => ({
         ...col,

@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   format, 
   eachDayOfInterval, 
   parseISO,
   startOfMonth,
   endOfMonth,
-  isValid
 } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { 
@@ -83,7 +82,7 @@ export default function MonthlyRoster({
     try {
       if (!startDate || !endDate) return [];
       return eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
-    } catch (e) {
+    } catch {
       return [];
     }
   }, [startDate, endDate]);
@@ -91,11 +90,18 @@ export default function MonthlyRoster({
   const shiftDateLookup = useMemo(() => createShiftDateLookup(data.shifts), [data.shifts]);
 
   // Track whether the initial server data has already been consumed
-  const initialDataConsumedRef = React.useRef(false);
+  const initialDataConsumedRef = useRef(false);
+  const selectedStaffIdRef = useRef(selectedStaffId);
+  const hasInitialDataRef = useRef(hasInitialData);
+
+  useEffect(() => {
+    selectedStaffIdRef.current = selectedStaffId;
+    hasInitialDataRef.current = hasInitialData;
+  });
 
   useEffect(() => {
     // Skip the first fetch when server-prefetched data was provided
-    if (hasInitialData && !initialDataConsumedRef.current) {
+    if (hasInitialDataRef.current && !initialDataConsumedRef.current) {
       initialDataConsumedRef.current = true;
       return;
     }
@@ -106,13 +112,13 @@ export default function MonthlyRoster({
       const res = await fetchRosterData(startDate, endDate);
       if (res.success) {
         setData({ profiles: res.profiles, shifts: res.shifts });
-        if (res.profiles.length > 0 && !selectedStaffId) {
+        if (res.profiles.length > 0 && !selectedStaffIdRef.current) {
           setSelectedStaffId(res.profiles[0].id);
         }
       }
       setLoading(false);
     }
-    loadData();
+    void loadData();
   }, [startDate, endDate]);
 
   const handleRangeChange = ({ start, end }: { start: string; end: string }) => {

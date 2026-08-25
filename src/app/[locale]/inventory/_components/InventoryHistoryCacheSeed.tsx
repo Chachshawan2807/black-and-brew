@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import {
   seedInventoryHistoryCacheIfEmpty,
   type HistoryCacheKeyInput,
@@ -31,12 +31,15 @@ export function InventoryHistoryCacheSeed({
   initialFilterPages = [],
 }: Props) {
   const seededRef = useRef(false);
-  if (!seededRef.current) {
+
+  useLayoutEffect(() => {
+    if (seededRef.current) return;
     seedPage({ type: 'ALL', searchQuery: '' }, initialTransactionHistory, initialHistoryHasMore);
     for (const page of initialFilterPages) {
       seedPage({ type: page.type, searchQuery: '' }, page.rows, page.hasMore);
     }
     seededRef.current = true;
-  }
+  }, [initialTransactionHistory, initialHistoryHasMore, initialFilterPages]);
+
   return null;
 }

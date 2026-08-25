@@ -41,7 +41,6 @@ import {
   fetchTransactionHistoryPage,
   type InventoryHistoryDisplayRow,
   type InventoryTransactionFilterType,
-  type InventoryTransactionType,
 } from '@/lib/inventory-history-query';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

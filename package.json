@@ -13,6 +13,7 @@
     "lint:md": "markdownlint-cli2",
     "lint:md:fix": "markdownlint-cli2 --fix",
     "docs:links": "node scripts/validate-md-links.mjs",
+    "scan:orphans": "node scripts/scan-dead-imports.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "analyze": "cross-env ANALYZE=true next build",

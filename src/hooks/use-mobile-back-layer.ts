@@ -24,8 +24,11 @@ export function useMobileBackLayer(
 ): void {
   const dismissedByGestureRef = useRef(false);
   const onDismissRef = useRef(onDismiss);
-  onDismissRef.current = onDismiss;
   const closingForNavigationRef = options?.closingForNavigationRef;
+
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  });
 
   useEffect(() => {
     if (!active || typeof window === 'undefined') return;

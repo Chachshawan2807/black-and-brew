@@ -127,7 +127,7 @@ export async function recordBeanOrderCreatedNotification(
 
   const locale = input.locale ?? 'th';
   const logId = beanOrderCreatedNotificationLogId(input.orderId);
-  const { headline, customerLine, summary, fieldSummary } = buildBeanOrderCreatedCopy(
+  const { headline, customerLine, fieldSummary } = buildBeanOrderCreatedCopy(
     input,
     locale,
   );

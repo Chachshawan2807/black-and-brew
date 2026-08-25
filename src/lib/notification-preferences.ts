@@ -3,7 +3,6 @@ import {
   NOTIFICATION_PREFS_KEY,
   type NotificationPreferences,
 } from '@/lib/notification-types';
-import type { DataChangeAction } from '@/lib/data-change-log';
 
 /** Set when the user explicitly turns off the master notifications switch. */
 export const NOTIFICATION_OPT_OUT_KEY = 'bb-notification-user-opted-out';
@@ -32,10 +31,7 @@ export function saveNotificationPreferences(prefs: NotificationPreferences): voi
   }
 }
 
-export function shouldNotifyForAction(
-  prefs: NotificationPreferences,
-  _action: DataChangeAction
-): boolean {
+export function shouldNotifyForAction(prefs: NotificationPreferences): boolean {
   return prefs.enabled;
 }
 

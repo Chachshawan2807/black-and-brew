@@ -24,7 +24,6 @@ import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import type {
   InventoryHistoryDisplayRow,
   InventoryTransactionFilterType,
-  InventoryTransactionType,
 } from '@/lib/inventory-history-query';
 import { resolveInventoryHistoryTimestamp } from '@/lib/inventory-transaction-date';
 import { THAI_TIMEZONE } from '@/lib/timezone';

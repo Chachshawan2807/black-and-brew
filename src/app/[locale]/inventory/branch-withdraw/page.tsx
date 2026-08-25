@@ -7,7 +7,6 @@ import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const BranchWithdrawClient = createLazyFeatureClient(
   () => import('./BranchWithdrawClient'),
-  'กำลังโหลดหน้าเบิกของสาขา 2...',
 );
 
 export default async function BranchWithdrawPage({

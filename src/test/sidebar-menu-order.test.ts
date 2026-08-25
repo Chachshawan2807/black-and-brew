@@ -3,7 +3,6 @@ import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 import {
-  SIDEBAR_MENU_ORDER_KEY,
   applySidebarMenuOrder,
   parseSidebarMenuOrder,
 } from '@/lib/sidebar-menu-order';

@@ -156,7 +156,9 @@ export default function DataChangeHistorySection({
   }, [moduleFilter]);
 
   useEffect(() => {
-    void load();
+    queueMicrotask(() => {
+      void load();
+    });
   }, [moduleFilter, load]);
 
   const filterOptions = [

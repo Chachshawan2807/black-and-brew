@@ -11,6 +11,9 @@ Quick reference for smoke testing after each refactor PR.
 | Schedule | drag shift, undo/redo, holidays, week nav |
 | Sales | charts, XLSX upload, category edit, metrics cache |
 | Dashboard | LiveShiftList, MonthlyRoster, LiveStatusTracker |
+| Bean orders | create/edit, payment slip, ship, manual delivery confirm |
+| Proactive insights | cron/manual `/api/insight-alerts`, NotificationBell digest, HomeOpsPanels |
+| Notification FAB | unread badge, panel view-only, cross-tab + visibility hydrate (`notification-fab-sync`) |
 | Auth | PIN, logout, session revocation |
 | Notifications | bell count (unread counter), panel, cross-tab sync, inventory alerts |
 | Settings | theme, notification prefs, data change history |
