@@ -33,6 +33,8 @@ import {
   FAB_BOTTOM_QUICK_ACTION_CLASS,
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
   FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
+  FAB_MOBILE_BULK_PANEL_SHELL_CLASS,
+  FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
 } from '@/lib/floating-action-layout';
 import {
   INVENTORY_QUICK_ACTION_HOVER,
@@ -139,10 +141,17 @@ export default function InventoryQuickActionFAB() {
     },
   });
 
+  const fabMobileBulkQueueActive =
+    isMobile && quickAction.bulkMode && quickAction.bulkQueue.length > 0;
+  const fabMobileBulkFixedHeight =
+    fabMobileBulkQueueActive && !viewportInsets.isKeyboardOpen;
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
 
   useEffect(() => {
     if (isOpen) {
@@ -367,9 +376,12 @@ export default function InventoryQuickActionFAB() {
                 transition={modalContent.transition}
                 className={cn(
                   'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate',
-                  'max-md:relative max-md:w-full max-md:max-h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))]',
+                  'max-md:relative max-md:w-full',
+                  fabMobileBulkQueueActive
+                    ? 'max-md:overflow-hidden max-md:flex max-md:flex-col'
+                    : cn(FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS, 'max-md:overflow-y-auto max-md:bb-smooth-scroll'),
+                  fabMobileBulkFixedHeight && FAB_MOBILE_BULK_PANEL_SHELL_CLASS,
                   'max-md:transition-[max-height] max-md:duration-200',
-                  'overflow-y-auto bb-smooth-scroll',
                   'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6 md:overflow-y-auto md:bb-smooth-scroll md:isolate',
                   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
                 )}
@@ -425,6 +437,7 @@ export default function InventoryQuickActionFAB() {
                   transactionDateReason={quickAction.transactionDateReason}
                   onConfirmTransactionDate={quickAction.confirmTransactionDate}
                   onCancelTransactionDate={quickAction.cancelTransactionDate}
+                  fabMobileBulkShell={fabMobileBulkQueueActive}
                   className="bb-shadow-xl"
                 />
               )}

@@ -105,6 +105,8 @@ export type InventoryQuickActionBarProps = {
   transactionDateReason?: 'backfill' | 'gap';
   onConfirmTransactionDate?: () => void;
   onCancelTransactionDate?: () => void;
+  /** FAB mobile bulk: queue scrolls inside a fixed-height centered shell */
+  fabMobileBulkShell?: boolean;
 };
 
 const ACTION_CELL_CLASS = 'min-w-0 w-full';
@@ -388,18 +390,26 @@ function BulkQueuePanel({
   onRemoveBulkItem,
   onBulkLineQtyChange,
   onClearBulkQueue,
+  fillAvailableHeight = false,
 }: {
   bulkPreviews: { line: BulkQueueItem; preview: BulkPreview }[];
   quickType: 'IN' | 'OUT' | 'ADJUST';
   onRemoveBulkItem?: (itemId: string) => void;
   onBulkLineQtyChange?: (itemId: string, qty: string) => void;
   onClearBulkQueue?: () => void;
+  fillAvailableHeight?: boolean;
 }) {
   const rowTone = inventoryQuickActionTypeColors(quickType);
   if (bulkPreviews.length === 0) return null;
 
   return (
-    <div className="w-full min-h-0 rounded-2xl border border-border bg-muted/15 overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-1 duration-200">
+    <div
+      className={cn(
+        'w-full min-h-0 rounded-2xl border border-border bg-muted/15 overflow-hidden flex flex-col animate-in fade-in duration-200',
+        !fillAvailableHeight && 'slide-in-from-top-1',
+        fillAvailableHeight && 'flex-1 min-h-0',
+      )}
+    >
       <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2 border-b border-border/70">
         <span className="text-[12px] text-muted-foreground">รายการในคิว — กรอกจำนวนแต่ละแถว</span>
         {onClearBulkQueue && bulkPreviews.length > 0 && (
@@ -413,7 +423,10 @@ function BulkQueuePanel({
         )}
       </div>
       <div
-        className="min-h-0 max-h-[min(42dvh,15rem)] overflow-y-auto bb-smooth-scroll divide-y divide-border/60"
+        className={cn(
+          'min-h-0 overflow-y-auto bb-smooth-scroll divide-y divide-border/60',
+          fillAvailableHeight ? 'flex-1 min-h-0' : 'max-h-[min(42dvh,15rem)]',
+        )}
         role="list"
         aria-label="รายการในคิว"
       >
@@ -677,6 +690,7 @@ export function InventoryQuickActionBar({
   transactionDateReason = 'backfill',
   onConfirmTransactionDate,
   onCancelTransactionDate,
+  fabMobileBulkShell = false,
 }: InventoryQuickActionBarProps) {
   const searchRootRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -896,8 +910,20 @@ export function InventoryQuickActionBar({
 
   return (
     <>
-    <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border bb-shadow-sm', className)}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-2.5 w-full">
+    <div
+      className={cn(
+        'w-full flex flex-col bg-card p-4 rounded-3xl border border-border bb-shadow-sm',
+        fabMobileBulkShell && 'min-h-0 flex-1 overflow-hidden',
+        className,
+      )}
+    >
+      <form
+        onSubmit={onSubmit}
+        className={cn(
+          'flex flex-col gap-2.5 w-full',
+          fabMobileBulkShell && 'min-h-0 flex-1 overflow-hidden',
+        )}
+      >
         {showInOutGapWarning && onDismissGapWarning && !hideMobileSearchChrome && (
           <div
             className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f5cc4d] bg-[#ffda66]/30 px-3 py-2 text-sm bb-pastel-surface text-[#000000]"
@@ -1050,6 +1076,7 @@ export function InventoryQuickActionBar({
             onRemoveBulkItem={onRemoveBulkItem}
             onBulkLineQtyChange={onBulkLineQtyChange}
             onClearBulkQueue={onClearBulkQueue}
+            fillAvailableHeight={fabMobileBulkShell}
           />
         )}
 

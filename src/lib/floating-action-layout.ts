@@ -45,6 +45,18 @@ export const FAB_PANEL_ABOVE_NOTIFICATION_CLASS = 'md:bottom-[11.25rem]';
 export const FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS =
   'max-md:flex max-md:items-center max-md:justify-center max-md:pointer-events-none max-md:p-4';
 
+const FAB_MOBILE_PANEL_HEIGHT =
+  'min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))';
+
+/** Cap FAB panel height on phone — used by InventoryQuickActionFAB shell */
+export const FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS = `max-md:max-h-[${FAB_MOBILE_PANEL_HEIGHT}]`;
+
+/**
+ * FAB bulk mode on phone: fixed shell height so the card stays centered while the queue scrolls inside.
+ * Skipped when the software keyboard is open (max-height comes from visual viewport instead).
+ */
+export const FAB_MOBILE_BULK_PANEL_SHELL_CLASS = `max-md:h-[${FAB_MOBILE_PANEL_HEIGHT}] max-md:overflow-hidden max-md:flex max-md:flex-col`;
+
 /** Page/content bottom inset to clear the two-button stack + hide toggle */
 export const FAB_PAGE_BOTTOM_PADDING_CLASS =
   'max-md:pb-[calc(11rem+env(safe-area-inset-bottom,0px))]';

@@ -403,6 +403,29 @@ describe('Inventory Quick Action FAB', () => {
     }
   });
 
+  test('FAB bulk mode on mobile uses fixed shell with internal queue scroll', () => {
+    const fabCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
+      'utf-8',
+    );
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+    const layoutCode = fs.readFileSync(
+      path.resolve(__dirname, '../lib/floating-action-layout.ts'),
+      'utf-8',
+    );
+
+    expect(layoutCode).toContain('FAB_MOBILE_BULK_PANEL_SHELL_CLASS');
+    expect(fabCode).toContain('fabMobileBulkQueueActive');
+    expect(fabCode).toContain('FAB_MOBILE_BULK_PANEL_SHELL_CLASS');
+    expect(fabCode).toContain('fabMobileBulkShell={fabMobileBulkQueueActive}');
+    expect(barCode).toContain('fabMobileBulkShell?: boolean');
+    expect(barCode).toContain('fillAvailableHeight={fabMobileBulkShell}');
+    expect(barCode).toMatch(/fillAvailableHeight \? 'flex-1 min-h-0' : 'max-h-\[min\(42dvh,15rem\)\]'/);
+  });
+
   test('quick action FAB keeps mobile panel centered when keyboard is open', () => {
     const fabCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
