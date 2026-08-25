@@ -60,7 +60,7 @@ export function buildBeanOrderDeliveredPushPayload(
       action: 'UPDATE',
       entityId: input.orderId,
       entityLabel: input.orderNo,
-      actorLabel: locale === 'th' ? 'ระบบติดตามพัสดุ' : 'Tracking system',
+      actorLabel: locale === 'th' ? 'ยืนยันจัดส่งด้วยมือ' : 'Manual delivery confirm',
       occurredAt: now,
       title,
       summary,

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, ChevronLeft, Pencil } from 'lucide-react';
+import { ChevronLeft, Pencil } from 'lucide-react';
 import {
   deleteBeanOrder,
   confirmBeanOrderDelivered,
@@ -27,7 +27,6 @@ import {
 } from '@/lib/bean-orders/shipment-persist';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/tracking-status-labels';
-import { TrackingTimeline } from './_components/TrackingTimeline';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
 import { BeanOrderShippingFields } from './_components/BeanOrderShippingFields';
 import {
@@ -221,7 +220,6 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
         carrierCode: resolvedCarrierCode,
         trackingNumber: resolvedTrackingNumber || null,
         trackingStatus: prev.shipment?.trackingStatus ?? null,
-        trackingEvents: prev.shipment?.trackingEvents ?? [],
         shippedAt: prev.shipment?.shippedAt ?? new Date().toISOString(),
       },
     }));
@@ -520,41 +518,22 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
         </div>
       ) : null}
 
-      {order.shipment && (
-        <section className={`${BEAN_ORDER_CARD} mb-4`}>
-          <details className="group">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 p-4 marker:content-none [&::-webkit-details-marker]:hidden">
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-                  <h2 className="text-xs text-muted-foreground">การจัดส่ง</h2>
-                  <span className="text-muted-foreground">/</span>
-                  <span className="text-foreground">
-                    {getCarrierLabel(order.shipment.carrierCode)}
-                  </span>
-                </div>
-                {order.shipment.trackingNumber ? (
-                  <p className="text-xs text-muted-foreground">
-                    พัสดุ <span className="text-foreground">{order.shipment.trackingNumber}</span>
-                    {shipmentTrackingLabel ? <span> / {shipmentTrackingLabel}</span> : null}
-                  </p>
-                ) : null}
-              </div>
-              <ChevronDown
-                className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-                aria-hidden
-              />
-            </summary>
-            <div className="border-t border-border px-4 pb-4 pt-3 text-sm">
-              <TrackingTimeline
-                trackingNumber={order.shipment.trackingNumber}
-                trackingStatus={order.shipment.trackingStatus}
-                fulfillmentStatus={order.fulfillmentStatus}
-                events={order.shipment.trackingEvents}
-              />
-            </div>
-          </details>
+      {order.shipment ? (
+        <section className={`${BEAN_ORDER_CARD} mb-4 p-4`}>
+          <h2 className="mb-2 text-xs text-muted-foreground">การจัดส่ง</h2>
+          <div className="space-y-1 text-sm">
+            <p className="text-foreground">{getCarrierLabel(order.shipment.carrierCode)}</p>
+            {order.shipment.trackingNumber ? (
+              <p className="text-muted-foreground">
+                พัสดุ <span className="text-foreground">{order.shipment.trackingNumber}</span>
+                {shipmentTrackingLabel ? <span> / {shipmentTrackingLabel}</span> : null}
+              </p>
+            ) : shipmentTrackingLabel ? (
+              <p className="text-muted-foreground">{shipmentTrackingLabel}</p>
+            ) : null}
+          </div>
         </section>
-      )}
+      ) : null}
 
       <section className={`${BEAN_ORDER_CARD} p-4`}>
         <h2 className="mb-2 text-xs text-muted-foreground">ประวัติ</h2>

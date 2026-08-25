@@ -22,7 +22,6 @@ import { computeLineTotal, computeOrderTotals } from '@/lib/bean-orders/pricing'
 import { filterBeanOrderInventoryItems, BEAN_ORDER_INVENTORY_ITEM_NAMES } from '@/lib/bean-orders/inventory-items';
 import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
 import { resolveCarrierCode } from '@/lib/bean-orders/carrier-codes';
-import { parseTrackingEvents, type BeanOrderTrackingEvent } from '@/lib/bean-orders/tracking-events';
 import {
   parseThaiPostalAddressLine,
   type ThaiPostalAddressValue,
@@ -98,8 +97,6 @@ const customerAddressInputSchema = z.object({
   recipientPostalCode: z.string().optional(),
 });
 
-export type { BeanOrderTrackingEvent } from '@/lib/bean-orders/tracking-events';
-
 export type BeanOrderListLineRow = {
   itemName: string;
   weightValue: number;
@@ -167,7 +164,6 @@ export type BeanOrderDetail = Omit<BeanOrderListRow, 'lines'> & {
     carrierCode: string | null;
     trackingNumber: string | null;
     trackingStatus: string | null;
-    trackingEvents: BeanOrderTrackingEvent[];
     shippedAt: string;
   } | null;
 };
@@ -504,7 +500,6 @@ export async function fetchBeanOrders(filters?: {
       carrier_code: string | null;
       tracking_number: string | null;
       tracking_status: string | null;
-      tracking_raw: unknown;
     }>();
     const linesByOrderId = new Map<string, BeanOrderListLineRow[]>();
     const slipUploadedAtByOrderId = new Map<string, string | null>();
@@ -513,7 +508,7 @@ export async function fetchBeanOrders(filters?: {
       const [shipmentsRes, linesRes, paymentsRes] = await Promise.all([
         supabase
           .from('bean_order_shipments')
-          .select('order_id, delivery_type, carrier_code, tracking_number, tracking_status, tracking_raw')
+          .select('order_id, delivery_type, carrier_code, tracking_number, tracking_status')
           .in('order_id', orderIds),
         supabase
           .from('bean_order_lines')
@@ -552,7 +547,6 @@ export async function fetchBeanOrders(filters?: {
           carrier_code: (shipment.carrier_code as string | null) ?? null,
           tracking_number: (shipment.tracking_number as string | null) ?? null,
           tracking_status: (shipment.tracking_status as string | null) ?? null,
-          tracking_raw: shipment.tracking_raw,
         });
       }
 
@@ -637,7 +631,7 @@ export async function fetchBeanOrderDetail(
         .maybeSingle(),
       supabase
         .from('bean_order_shipments')
-        .select('delivery_type, carrier_code, tracking_number, tracking_status, tracking_raw, shipped_at')
+        .select('delivery_type, carrier_code, tracking_number, tracking_status, shipped_at')
         .eq('order_id', orderId)
         .maybeSingle(),
     ]);
@@ -724,7 +718,6 @@ export async function fetchBeanOrderDetail(
               carrierCode: (shipmentResult.data.carrier_code as string | null) ?? null,
               trackingNumber: (shipmentResult.data.tracking_number as string | null) ?? null,
               trackingStatus: (shipmentResult.data.tracking_status as string | null) ?? null,
-              trackingEvents: parseTrackingEvents(shipmentResult.data.tracking_raw),
               shippedAt: shipmentResult.data.shipped_at as string,
             }
           : null,
@@ -1719,17 +1712,17 @@ function scheduleBeanOrderDeliveredSideEffects(options: {
 }): void {
   if (shouldNotifyBeanOrderDelivered(options.previousStatus, options.nextStatus)) {
     void import('@/lib/bean-orders/delivery-web-push')
-      .then(({ notifyBeanOrderDelivered }) => {
+      .then(async ({ notifyBeanOrderDelivered }) => {
         if (options.notifyInput) {
-          return notifyBeanOrderDelivered(options.notifyInput);
+          await notifyBeanOrderDelivered(options.notifyInput);
+          return;
         }
-        return import('@/lib/bean-orders/notify-delivered').then(({ maybeNotifyBeanOrderDelivered }) =>
-          maybeNotifyBeanOrderDelivered({
-            orderId: options.orderId,
-            previousStatus: options.previousStatus,
-            nextStatus: options.nextStatus,
-          }),
-        );
+        const { maybeNotifyBeanOrderDelivered } = await import('@/lib/bean-orders/notify-delivered');
+        await maybeNotifyBeanOrderDelivered({
+          orderId: options.orderId,
+          previousStatus: options.previousStatus,
+          nextStatus: options.nextStatus,
+        });
       })
       .catch((error) => {
         console.error('notifyBeanOrderDelivered (manual):', error);

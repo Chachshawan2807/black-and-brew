@@ -141,7 +141,7 @@ export async function recordBeanOrderDeliveredNotification(
     const { error } = await supabase.from('data_change_logs').insert({
       occurred_at: new Date().toISOString(),
       actor_id: null,
-      actor_label: isTh ? 'ระบบติดตามพัสดุ' : 'Tracking system',
+      actor_label: isTh ? 'ยืนยันจัดส่งด้วยมือ' : 'Manual delivery confirm',
       actor_access_level: 'system',
       action: 'UPDATE',
       module: 'bean_orders',

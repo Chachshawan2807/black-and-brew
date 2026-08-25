@@ -14,7 +14,7 @@ function sampleRow(overrides: Partial<DataChangeLogRow> = {}): DataChangeLogRow 
     id: 'log-1',
     occurred_at: '2026-07-22T12:00:00.000Z',
     actor_id: null,
-    actor_label: 'ระบบติดตามพัสดุ',
+    actor_label: 'ยืนยันจัดส่งด้วยมือ',
     actor_access_level: 'system',
     action: 'UPDATE',
     module: 'bean_orders',
