@@ -42,6 +42,9 @@ import {
 } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { navigateWithViewTransition } from '@/lib/view-transition';
+import {
+  stashBeanOrderDeliveredPatch,
+} from '@/lib/bean-orders/delivered-notify-snapshot';
 import { OrderListStatusGroup } from './_components/OrderStatusBadge';
 import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_BODY_GRID, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, BEAN_ORDER_DETAIL_LINES_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_DETAIL_PAYMENT_BODY, BEAN_ORDER_DETAIL_PAYMENT_COLUMN, BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID, BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT, BEAN_ORDER_DETAIL_SHIPPING_COLUMN, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
@@ -251,6 +254,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
       return;
     }
     sessionStorage.setItem('bb-bean-order-flash', 'จัดส่งสำเร็จ');
+    stashBeanOrderDeliveredPatch(order.id);
     setBusy(false);
     navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
   }

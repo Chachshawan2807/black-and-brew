@@ -67,6 +67,7 @@ describe('bean order navigation after save/delete', () => {
     expect(deliverFnBody).toMatch(
       /sessionStorage\.setItem\('bb-bean-order-flash',\s*'จัดส่งสำเร็จ'\)/,
     );
+    expect(deliverFnBody).toContain('stashBeanOrderDeliveredPatch');
     expect(deliverFnBody).toMatch(
       /navigateWithViewTransition\(\s*router\.push,\s*`\/\$\{locale\}\/bean-orders`\s*\)/,
     );
@@ -77,6 +78,9 @@ describe('bean order navigation after save/delete', () => {
       'utf8',
     );
     expect(listSource).toContain("sessionStorage.getItem('bb-bean-order-flash')");
+    expect(listSource).toContain('consumeBeanOrderDeliveredPatch');
+    expect(listSource).toContain('applyBeanOrderDeliveredPatch');
+    expect(listSource).toMatch(/\[initialOrders,\s*pathname\]/);
   });
 
   test('deliver uses single confirmBeanOrderDelivered call with optional shipment', () => {

@@ -119,11 +119,12 @@ export async function recordBeanOrderDeliveredNotification(
   try {
     const { data: existing, error: lookupError } = await supabase
       .from('data_change_logs')
-      .select('id, metadata')
+      .select('id')
       .eq('module', 'bean_orders')
       .eq('entity_type', 'bean_order_delivery')
       .eq('entity_id', input.orderId)
-      .limit(10);
+      .contains('metadata', { kind: 'bean_order_delivered', notificationLogId: logId })
+      .maybeSingle();
 
     if (lookupError) {
       if (lookupError.code === 'PGRST205' || lookupError.message?.includes('Could not find the table')) {
@@ -133,11 +134,7 @@ export async function recordBeanOrderDeliveredNotification(
       throw lookupError;
     }
 
-    if (
-      (existing ?? []).some(
-        (row) => (row.metadata as Record<string, unknown> | null)?.kind === 'bean_order_delivered',
-      )
-    ) {
+    if (existing) {
       return { success: true, skipped: true };
     }
 

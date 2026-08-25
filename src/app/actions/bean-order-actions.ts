@@ -50,6 +50,12 @@ import { resolveActorLabel } from '@/lib/data-change-log';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { shouldResetBeanOrderTrackingOnShip } from '@/lib/bean-orders/shipment-tracking-preserve';
+import {
+  buildBeanOrderDeliveredNotifyInput,
+  type BeanOrderDeliveredNotifySource,
+} from '@/lib/bean-orders/delivered-notify-snapshot';
+import { shouldNotifyBeanOrderDelivered } from '@/lib/bean-orders/delivery-notification';
+import type { BeanOrderDeliveredNotifyInput } from '@/lib/bean-orders/delivery-notification';
 import { THAI_TIMEZONE } from '@/lib/timezone';
 import { toZonedTime } from 'date-fns-tz';
 import { google } from '@ai-sdk/google';
@@ -1681,6 +1687,27 @@ export type ConfirmBeanOrderDeliveredOptions = {
   shipment?: z.infer<typeof shipOrderSchema>;
 };
 
+const CONFIRM_DELIVERED_ORDER_SELECT =
+  'id, order_no, payment_status, fulfillment_status, cancelled_at, status_history, recipient_name, recipient_address, recipient_province, recipient_postal_code, bean_customers(name)';
+const CONFIRM_DELIVERED_SHIPMENT_SELECT = 'tracking_number, tracking_status, carrier_code';
+
+function beanOrderDeliveredNotifySourceFromRow(
+  order: Record<string, unknown>,
+  orderId: string,
+  orderNo: string,
+): BeanOrderDeliveredNotifySource {
+  const customer = order.bean_customers as { name?: string } | null;
+  return {
+    id: orderId,
+    orderNo,
+    recipientName: (order.recipient_name as string) || '',
+    recipientAddress: (order.recipient_address as string) || '',
+    recipientProvince: (order.recipient_province as string | null) ?? null,
+    recipientPostalCode: (order.recipient_postal_code as string | null) ?? null,
+    customerName: customer?.name ?? null,
+  };
+}
+
 function scheduleBeanOrderDeliveredSideEffects(options: {
   orderId: string;
   orderNo: string;
@@ -1688,18 +1715,26 @@ function scheduleBeanOrderDeliveredSideEffects(options: {
   previousStatus: string | null;
   nextStatus: string;
   manualDelivery: boolean;
+  notifyInput?: BeanOrderDeliveredNotifyInput;
 }): void {
-  void import('@/lib/bean-orders/notify-delivered')
-    .then(({ maybeNotifyBeanOrderDelivered }) =>
-      maybeNotifyBeanOrderDelivered({
-        orderId: options.orderId,
-        previousStatus: options.previousStatus,
-        nextStatus: options.nextStatus,
-      }),
-    )
-    .catch((error) => {
-      console.error('maybeNotifyBeanOrderDelivered (manual):', error);
-    });
+  if (shouldNotifyBeanOrderDelivered(options.previousStatus, options.nextStatus)) {
+    void import('@/lib/bean-orders/delivery-web-push')
+      .then(({ notifyBeanOrderDelivered }) => {
+        if (options.notifyInput) {
+          return notifyBeanOrderDelivered(options.notifyInput);
+        }
+        return import('@/lib/bean-orders/notify-delivered').then(({ maybeNotifyBeanOrderDelivered }) =>
+          maybeNotifyBeanOrderDelivered({
+            orderId: options.orderId,
+            previousStatus: options.previousStatus,
+            nextStatus: options.nextStatus,
+          }),
+        );
+      })
+      .catch((error) => {
+        console.error('notifyBeanOrderDelivered (manual):', error);
+      });
+  }
 
   after(async () => {
     try {
@@ -1735,12 +1770,12 @@ export async function confirmBeanOrderDelivered(
       await Promise.all([
         supabase
           .from('bean_orders')
-          .select('id, order_no, payment_status, fulfillment_status, cancelled_at, status_history')
+          .select(CONFIRM_DELIVERED_ORDER_SELECT)
           .eq('id', orderId)
           .maybeSingle(),
         supabase
           .from('bean_order_shipments')
-          .select('tracking_number, tracking_status')
+          .select(CONFIRM_DELIVERED_SHIPMENT_SELECT)
           .eq('order_id', orderId)
           .maybeSingle(),
         resolveActorLabelFromSession(),
@@ -1842,6 +1877,12 @@ export async function confirmBeanOrderDelivered(
         previousStatus: null,
         nextStatus,
         manualDelivery: true,
+        notifyInput: buildBeanOrderDeliveredNotifyInput(
+          beanOrderDeliveredNotifySourceFromRow(order, orderId, orderNo),
+          inputTracking || null,
+          resolvedCarrierCode,
+          locale,
+        ),
       });
       return { success: true };
     }
@@ -1850,6 +1891,7 @@ export async function confirmBeanOrderDelivered(
 
     const trackingNumber = (shipment.tracking_number as string | null) ?? null;
     const previousStatus = (shipment.tracking_status as string | null) ?? null;
+    const carrierCode = (shipment.carrier_code as string | null) ?? null;
 
     if (!canConfirmDelivered(fulfillmentStatus, previousStatus, cancelledAt)) {
       return { success: false, error: 'ยืนยันจัดส่งไม่ได้ในสถานะนี้' };
@@ -1899,6 +1941,12 @@ export async function confirmBeanOrderDelivered(
       previousStatus,
       nextStatus,
       manualDelivery: true,
+      notifyInput: buildBeanOrderDeliveredNotifyInput(
+        beanOrderDeliveredNotifySourceFromRow(order, orderId, orderNo),
+        trackingNumber,
+        carrierCode,
+        locale,
+      ),
     });
     return { success: true };
   } catch (error) {

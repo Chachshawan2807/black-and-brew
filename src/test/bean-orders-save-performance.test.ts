@@ -53,8 +53,9 @@ describe('bean order save performance', () => {
   test('confirmBeanOrderDelivered does not await delivery notification', () => {
     const body = functionBody('confirmBeanOrderDelivered', beanOrderActions);
     expect(body).not.toMatch(/await maybeNotifyBeanOrderDelivered/);
+    expect(body).not.toMatch(/await notifyBeanOrderDelivered/);
     expect(beanOrderActions).toMatch(
-      /scheduleBeanOrderDeliveredSideEffects[\s\S]*void import\('@\/lib\/bean-orders\/notify-delivered'\)/,
+      /scheduleBeanOrderDeliveredSideEffects[\s\S]*notifyInput[\s\S]*void import\('@\/lib\/bean-orders\/delivery-web-push'\)/,
     );
   });
 
@@ -155,6 +156,7 @@ describe('bean order save performance', () => {
     const deliverFnEnd = detailClient.indexOf('\n  async function handleDelete', deliverFnStart);
     const deliverFn = detailClient.slice(deliverFnStart, deliverFnEnd);
     expect(deliverFn).toMatch(/setBusy\(false\)[\s\S]*navigateWithViewTransition/);
+    expect(deliverFn).toContain('stashBeanOrderDeliveredPatch');
   });
 
   test('form client clears saving before navigation after create', () => {
@@ -166,5 +168,25 @@ describe('bean order save performance', () => {
     const handleSubmitEnd = formClient.indexOf('\n  const inputClass', handleSubmitStart);
     const handleSubmit = formClient.slice(handleSubmitStart, handleSubmitEnd);
     expect(handleSubmit).toMatch(/setSaving\(false\)[\s\S]*navigateWithViewTransition/);
+  });
+
+  test('notifyBeanOrderDelivered parallelizes record and subscription load', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../lib/bean-orders/delivery-web-push.ts'),
+      'utf-8',
+    );
+    const notifyStart = source.indexOf('export async function notifyBeanOrderDelivered');
+    const notifyBody = source.slice(notifyStart, notifyStart + 600);
+    expect(notifyBody).toContain('Promise.all');
+    expect(notifyBody).toMatch(
+      /Promise\.all[\s\S]*recordBeanOrderDeliveredNotification[\s\S]*loadBeanOrderDeliveredPushSubscriptions/,
+    );
+  });
+
+  test('confirmBeanOrderDelivered passes notify snapshot to skip delivery re-fetch', () => {
+    const body = functionBody('confirmBeanOrderDelivered', beanOrderActions);
+    expect(body).toContain('buildBeanOrderDeliveredNotifyInput');
+    expect(body).toContain('notifyInput:');
+    expect(beanOrderActions).toContain('CONFIRM_DELIVERED_ORDER_SELECT');
   });
 });

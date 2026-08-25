@@ -18,6 +18,10 @@ import {
 } from './_components/bean-order-layout';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { warmRouteNavigation } from '@/lib/warm-route-navigation';
+import {
+  applyBeanOrderDeliveredPatch,
+  consumeBeanOrderDeliveredPatch,
+} from '@/lib/bean-orders/delivered-notify-snapshot';
 
 type Props = {
   initialOrders: BeanOrderListRow[];
@@ -35,8 +39,8 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    setOrders(initialOrders);
-  }, [initialOrders]);
+    setOrders(applyBeanOrderDeliveredPatch(initialOrders, consumeBeanOrderDeliveredPatch()));
+  }, [initialOrders, pathname]);
 
   useEffect(() => {
     const flash = sessionStorage.getItem('bb-bean-order-flash');

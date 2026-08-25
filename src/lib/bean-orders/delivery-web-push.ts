@@ -91,29 +91,44 @@ export function shouldSendBeanOrderDeliveredToSubscription(
   );
 }
 
-export async function dispatchBeanOrderDeliveredWebPush(
-  input: BeanOrderDeliveredNotifyInput,
-): Promise<{ sent: number; failed: number; skipped: boolean }> {
+const PUSH_SUBSCRIPTION_SELECT =
+  'id, user_id, endpoint, p256dh, auth, client_session_id, user_agent, prefs_json, branch_id, profile_id';
+
+async function loadBeanOrderDeliveredPushSubscriptions(): Promise<{
+  supabase: ReturnType<typeof getSupabaseAdminForPush>;
+  rows: PushSubscriptionRow[];
+  skipped: boolean;
+}> {
   if (!ensureVapidConfigured()) {
-    return { sent: 0, failed: 0, skipped: true };
+    return { supabase: getSupabaseAdminForPush(), rows: [], skipped: true };
   }
 
   const supabase = getSupabaseAdminForPush();
   const { data: subscriptions, error } = await supabase
     .from('push_subscriptions')
-    .select(
-      'id, user_id, endpoint, p256dh, auth, client_session_id, user_agent, prefs_json, branch_id, profile_id',
-    );
+    .select(PUSH_SUBSCRIPTION_SELECT);
 
   if (error) {
     if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
-      return { sent: 0, failed: 0, skipped: true };
+      return { supabase, rows: [], skipped: true };
     }
     console.error('Supabase Error:', error.message, error.details);
     throw error;
   }
 
-  const rows = (subscriptions ?? []) as PushSubscriptionRow[];
+  return { supabase, rows: (subscriptions ?? []) as PushSubscriptionRow[], skipped: false };
+}
+
+export async function dispatchBeanOrderDeliveredWebPush(
+  input: BeanOrderDeliveredNotifyInput,
+  preloaded?: Awaited<ReturnType<typeof loadBeanOrderDeliveredPushSubscriptions>>,
+): Promise<{ sent: number; failed: number; skipped: boolean }> {
+  const loaded = preloaded ?? (await loadBeanOrderDeliveredPushSubscriptions());
+  if (loaded.skipped) {
+    return { sent: 0, failed: 0, skipped: true };
+  }
+
+  const { supabase, rows } = loaded;
   const deliveries = rows.flatMap((subscription) => {
     if (!shouldSendBeanOrderDeliveredToSubscription(subscription)) return [];
     const prefs = parsePushPrefs(subscription.prefs_json);
@@ -140,7 +155,11 @@ export async function dispatchBeanOrderDeliveredWebPush(
 export async function notifyBeanOrderDelivered(
   input: BeanOrderDeliveredNotifyInput,
 ): Promise<{ recorded: boolean; skipped: boolean; pushSent: number }> {
-  const record = await recordBeanOrderDeliveredNotification(input);
+  const [record, subscriptions] = await Promise.all([
+    recordBeanOrderDeliveredNotification(input),
+    loadBeanOrderDeliveredPushSubscriptions(),
+  ]);
+
   if (!record.success) {
     return { recorded: false, skipped: false, pushSent: 0 };
   }
@@ -148,7 +167,7 @@ export async function notifyBeanOrderDelivered(
     return { recorded: true, skipped: true, pushSent: 0 };
   }
 
-  const push = await dispatchBeanOrderDeliveredWebPush(input).catch((error) => {
+  const push = await dispatchBeanOrderDeliveredWebPush(input, subscriptions).catch((error) => {
     console.error('[dispatchBeanOrderDeliveredWebPush]', error);
     return { sent: 0, failed: 0, skipped: true };
   });
