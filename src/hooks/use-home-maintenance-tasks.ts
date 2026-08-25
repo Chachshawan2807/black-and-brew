@@ -17,7 +17,7 @@ function bangkokIsoDate(now = new Date()): string {
 }
 
 /**
- * Keeps home "due within 1 month" tasks in sync with service_records changes.
+ * Keeps home "due within 1 week" tasks in sync with service_records changes.
  * Starts from RSC props, then refreshes on realtime + tab visibility.
  */
 export function useHomeMaintenanceTasks(initialTasks: UpcomingMaintenanceTask[]) {

@@ -1,14 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAccessToken } from '@/lib/supabase-session';
 import { supabase } from '@/lib/supabase';
-import { computeMaintenanceDueWithinMonth } from '@/lib/maintenance/filter-due-within-month';
+import { computeMaintenanceDueWithinWeek } from '@/lib/maintenance/filter-due-within-week';
 import type { MaintenanceServiceRecord } from '@/lib/maintenance/types';
 
 const SERVICE_RECORDS_HOME_SELECT =
   'id, equipment, work_details, start_date, completion_date, recommended_frequency, task_type';
 
 /**
- * Load home "due within 1 month" tasks using any Supabase client.
+ * Load home "due within 1 week" tasks using any Supabase client.
  * RSC home page must pass getSupabaseAdmin() — never a browser JWT
  * (module-cached anon tokens expire → "JWT expired" on the server).
  */
@@ -27,7 +27,7 @@ export async function queryHomeMaintenanceTasks(
     throw new Error(error.message || 'Failed to fetch service_records');
   }
 
-  return computeMaintenanceDueWithinMonth(
+  return computeMaintenanceDueWithinWeek(
     (data || []) as MaintenanceServiceRecord[],
     currentIsoDate,
   );

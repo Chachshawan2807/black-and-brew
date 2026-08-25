@@ -92,7 +92,7 @@ export default function HomeMaintenanceDueSection({
 
   return (
     <section
-      aria-label="รายการซ่อมบำรุงที่ต้องทำภายใน 1 เดือน"
+      aria-label="รายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์"
       className={cn(
         'rounded-3xl border border-border bg-card bb-shadow-sm',
         isDashboard
@@ -112,10 +112,10 @@ export default function HomeMaintenanceDueSection({
           </div>
           <div className="min-w-0">
             <h2 className="text-[clamp(1rem,2.5vw,1.25rem)] font-normal text-foreground tracking-tight leading-snug">
-              รายการซ่อมบำรุงที่ต้องทำภายใน 1 เดือน
+              รายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์
             </h2>
             <p className="mt-1 text-[0.8rem] font-normal text-muted-foreground/90 tracking-wide">
-              บันทึกการซ่อม · รวมงานค้างและงานที่ครบกำหนดภายใน 30 วัน
+              บันทึกการซ่อม · รวมงานค้างและงานที่ครบกำหนดภายใน 7 วัน
             </p>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function HomeMaintenanceDueSection({
         >
           <Wrench className="h-10 w-10 text-muted-foreground/25 mb-3" aria-hidden />
           <p className="text-[15px] text-muted-foreground font-normal">
-            ไม่มีรายการซ่อมบำรุงที่ต้องทำภายใน 1 เดือน
+            ไม่มีรายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์
           </p>
           <p className="mt-1 text-[13px] text-muted-foreground/70">
             งานซ่อมบำรุงทุกรายการอยู่ในกำหนดที่เหมาะสม

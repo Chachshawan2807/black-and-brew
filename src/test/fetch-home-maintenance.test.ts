@@ -13,9 +13,9 @@ vi.mock('@/lib/supabase', () => ({
   supabase: { from },
 }));
 
-vi.mock('@/lib/maintenance/filter-due-within-month', () => ({
-  computeMaintenanceDueWithinMonth: vi.fn((records) =>
-    records.map((record: { id: string }) => ({ id: record.id, urgency: 'within_30_days' })),
+vi.mock('@/lib/maintenance/filter-due-within-week', () => ({
+  computeMaintenanceDueWithinWeek: vi.fn((records) =>
+    records.map((record: { id: string }) => ({ id: record.id, urgency: 'within_7_days' })),
   ),
 }));
 
@@ -42,7 +42,7 @@ describe('queryHomeMaintenanceTasks', () => {
 
     expect(from).toHaveBeenCalledWith('service_records');
     expect(getSupabaseAccessToken).not.toHaveBeenCalled();
-    expect(tasks).toEqual([{ id: 'sr-1', urgency: 'within_30_days' }]);
+    expect(tasks).toEqual([{ id: 'sr-1', urgency: 'within_7_days' }]);
   });
 
   test('throws a real Error with message when Supabase returns PostgrestError-like object', async () => {
@@ -84,6 +84,6 @@ describe('fetchHomeMaintenanceTasks', () => {
 
     expect(getSupabaseAccessToken).toHaveBeenCalledTimes(1);
     expect(from).toHaveBeenCalledWith('service_records');
-    expect(tasks).toEqual([{ id: 'sr-1', urgency: 'within_30_days' }]);
+    expect(tasks).toEqual([{ id: 'sr-1', urgency: 'within_7_days' }]);
   });
 });

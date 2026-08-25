@@ -97,7 +97,7 @@ describe('HomeOpsPanels', () => {
     fireEvent.click(screen.getByRole('tab', { name: /ซ่อมบำรุง/ }));
 
     expect(
-      screen.getAllByRole('heading', { name: 'รายการซ่อมบำรุงที่ต้องทำภายใน 1 เดือน' }).length,
+      screen.getAllByRole('heading', { name: 'รายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์' }).length,
     ).toBeGreaterThanOrEqual(1);
   });
 
@@ -112,13 +112,13 @@ describe('HomeOpsPanels', () => {
 });
 
 describe('HomeMaintenanceDueSection', () => {
-  test('shows empty state when no maintenance tasks are due within one month', () => {
+  test('shows empty state when no maintenance tasks are due within one week', () => {
     render(
       <HomeMaintenanceDueSection tasks={[]} locale="th" />,
     );
 
     expect(
-      screen.getByText('ไม่มีรายการซ่อมบำรุงที่ต้องทำภายใน 1 เดือน'),
+      screen.getByText('ไม่มีรายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์'),
     ).toBeInTheDocument();
   });
 
