@@ -9,15 +9,19 @@ import {
 
 const keyboardInsets = {
   bottomInset: 280,
-  offsetTop: 0,
+  offsetTop: 12,
+  offsetLeft: 24,
   visibleHeight: 420,
+  visibleWidth: 342,
   isKeyboardOpen: true,
 };
 
 const closedInsets = {
   bottomInset: 0,
   offsetTop: 0,
+  offsetLeft: 0,
   visibleHeight: 700,
+  visibleWidth: 390,
   isKeyboardOpen: false,
 };
 
@@ -54,13 +58,23 @@ describe('keyboard-aware panel styles', () => {
     });
 
     expect(backdrop.alignItems).toBe('flex-start');
-    expect(backdrop.top).toBe(0);
+    expect(backdrop.top).toBe(12);
     expect(backdrop.bottom).toBe('auto');
-    expect(backdrop.left).toBe(0);
-    expect(backdrop.right).toBe(0);
-    expect(backdrop.width).toBe('100%');
+    expect(backdrop.left).toBe(24);
+    expect(backdrop.right).toBe('auto');
+    expect(backdrop.width).toBe(342);
     expect(backdrop.height).toBe(420);
     expect(content.maxHeight).toBe(396);
+  });
+
+  test('modal backdrop uses visual viewport horizontal bounds on iOS keyboard pan', () => {
+    const backdrop = getModalBackdropKeyboardAwareStyle({
+      insets: keyboardInsets,
+    });
+
+    expect(backdrop.left).toBe(keyboardInsets.offsetLeft);
+    expect(backdrop.width).toBe(keyboardInsets.visibleWidth);
+    expect(backdrop.right).toBe('auto');
   });
 
   test('mobile quick action sheet anchors to the visual viewport', () => {
@@ -68,7 +82,9 @@ describe('keyboard-aware panel styles', () => {
     const panel = getMobileQuickActionKeyboardSheetPanelStyle(keyboardInsets);
 
     expect(backdrop.position).toBe('fixed');
-    expect(backdrop.top).toBe(0);
+    expect(backdrop.top).toBe(12);
+    expect(backdrop.left).toBe(24);
+    expect(backdrop.width).toBe(342);
     expect(backdrop.bottom).toBe('auto');
     expect(backdrop.height).toBe(420);
     expect(panel.maxHeight).toBe(404);

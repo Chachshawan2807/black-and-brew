@@ -52,6 +52,17 @@ describe('quick search suggestions layout', () => {
     expect(style.maxHeight).toBe(172);
   });
 
+  test('clamps portaled suggestions within the visible viewport band on iOS keyboard pan', () => {
+    const style = getAnchoredSuggestionsOverlayStyle(
+      { top: 120, bottom: 160, left: 0, width: 390 },
+      { offsetTop: 12, offsetLeft: 24, visibleHeight: 420, visibleWidth: 342 },
+    );
+
+    expect(style.left).toBeGreaterThanOrEqual(40);
+    expect(style.left + style.width).toBeLessThanOrEqual(366);
+    expect(style.width).toBeLessThanOrEqual(310);
+  });
+
   test('collapses bulk queue while mobile suggestions are visible', () => {
     expect(shouldCollapseBulkQueueForMobileSearch(true, true, true)).toBe(true);
     expect(shouldCollapseBulkQueueForMobileSearch(true, true, false)).toBe(false);

@@ -4,10 +4,35 @@ type AnchorRect = Pick<DOMRect, 'top' | 'bottom' | 'left' | 'width'>;
 
 export type SuggestionsViewport = {
   offsetTop: number;
+  offsetLeft?: number;
   visibleHeight: number;
+  visibleWidth?: number;
 };
 
 const MIN_SUGGESTIONS_HEIGHT = 80;
+const SUGGESTIONS_EDGE_GAP = 16;
+
+function clampSuggestionsHorizontal(
+  anchorRect: AnchorRect,
+  viewport: SuggestionsViewport,
+): { left: number; width: number; maxWidth: string } {
+  const offsetLeft = viewport.offsetLeft ?? 0;
+  const visibleWidth = viewport.visibleWidth ?? anchorRect.width;
+  const minLeft = offsetLeft + SUGGESTIONS_EDGE_GAP;
+  const maxRight = offsetLeft + visibleWidth - SUGGESTIONS_EDGE_GAP;
+  const maxWidth = Math.max(0, visibleWidth - SUGGESTIONS_EDGE_GAP * 2);
+
+  let width = Math.min(anchorRect.width, maxWidth);
+  let left = anchorRect.left;
+
+  left = Math.max(minLeft, Math.min(left, maxRight - width));
+
+  return {
+    left,
+    width,
+    maxWidth: `${maxWidth}px`,
+  };
+}
 
 export function shouldPortalQuickSearchSuggestions(
   isMobile: boolean,
@@ -45,13 +70,12 @@ export function getAnchoredSuggestionsOverlayStyle(
   const spaceBelow = viewportBottom - anchorRect.bottom - gap;
   const spaceAbove = anchorRect.top - viewport.offsetTop - gap;
   const placement = getQuickSearchSuggestionsPlacement(spaceBelow, spaceAbove);
+  const horizontal = clampSuggestionsHorizontal(anchorRect, viewport);
 
   if (placement === 'below') {
     return {
       position: 'fixed',
-      left: anchorRect.left,
-      width: anchorRect.width,
-      maxWidth: 'min(100vw - 2rem, 20rem)',
+      ...horizontal,
       top: anchorRect.bottom + gap,
       maxHeight: Math.max(MIN_SUGGESTIONS_HEIGHT, spaceBelow),
       placement,
@@ -61,9 +85,7 @@ export function getAnchoredSuggestionsOverlayStyle(
   const maxHeight = Math.max(MIN_SUGGESTIONS_HEIGHT, spaceAbove);
   return {
     position: 'fixed',
-    left: anchorRect.left,
-    width: anchorRect.width,
-    maxWidth: 'min(100vw - 2rem, 20rem)',
+    ...horizontal,
     bottom: viewportBottom - anchorRect.top + gap,
     maxHeight,
     placement,

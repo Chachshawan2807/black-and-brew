@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { CSSProperties } from 'react';
 import {
@@ -722,13 +722,26 @@ export function InventoryQuickActionBar({
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
     const viewportHeight = viewportInsets.visibleHeight || window.innerHeight;
+    const viewportWidth = viewportInsets.visibleWidth || window.innerWidth;
     setPortaledSuggestionsStyle(
       getAnchoredSuggestionsOverlayStyle(rect, {
         offsetTop: viewportInsets.offsetTop,
+        offsetLeft: viewportInsets.offsetLeft,
         visibleHeight: viewportHeight,
+        visibleWidth: viewportWidth,
       }),
     );
-  }, [viewportInsets.offsetTop, viewportInsets.visibleHeight, setPortaledSuggestionsStyle]);
+  }, [
+    viewportInsets.offsetLeft,
+    viewportInsets.offsetTop,
+    viewportInsets.visibleHeight,
+    viewportInsets.visibleWidth,
+  ]);
+
+  useLayoutEffect(() => {
+    if (!showSuggestions || !portalSuggestions) return;
+    updatePortaledSuggestionsStyle();
+  }, [portalSuggestions, showSuggestions, updatePortaledSuggestionsStyle]);
 
   useEffect(() => {
     if (!showSuggestions || !portalSuggestions) return;

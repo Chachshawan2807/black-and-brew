@@ -80,7 +80,9 @@ export function RoundedSelect({
       rect,
       {
         offsetTop: vv?.offsetTop ?? 0,
+        offsetLeft: vv?.offsetLeft ?? 0,
         visibleHeight: vv?.height ?? window.innerHeight,
+        visibleWidth: vv?.width ?? window.innerWidth,
       },
       LISTBOX_GAP_PX,
     );

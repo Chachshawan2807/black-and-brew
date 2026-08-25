@@ -412,6 +412,10 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain('shouldHideQuickActionChromeForMobileSearch');
     expect(barCode).toContain('getAnchoredSuggestionsOverlayStyle');
     expect(barCode).toContain('createPortal');
+    expect(barCode).toContain('useLayoutEffect');
+    expect(barCode).toContain('viewportInsets.offsetLeft');
+    expect(barCode).toContain('viewportInsets.visibleWidth');
+    expect(fabCode).toContain('!keyboardOpenOnMobile && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS');
   });
 
   test('quick action FAB blurs focused input before closing after save', () => {

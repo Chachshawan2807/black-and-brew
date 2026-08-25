@@ -7,8 +7,12 @@ export type VisualViewportInsets = {
   bottomInset: number;
   /** Top offset of the visible viewport within the layout viewport. */
   offsetTop: number;
+  /** Left offset of the visible viewport within the layout viewport (iOS keyboard pan). */
+  offsetLeft: number;
   /** Height of the visible viewport. */
   visibleHeight: number;
+  /** Width of the visible viewport. */
+  visibleWidth: number;
   /** Software keyboard is likely open. */
   isKeyboardOpen: boolean;
 };
@@ -18,7 +22,9 @@ const KEYBOARD_OPEN_THRESHOLD_PX = 50;
 const DEFAULT_INSETS: VisualViewportInsets = {
   bottomInset: 0,
   offsetTop: 0,
+  offsetLeft: 0,
   visibleHeight: 0,
+  visibleWidth: 0,
   isKeyboardOpen: false,
 };
 
@@ -30,7 +36,9 @@ function readVisualViewportInsets(): VisualViewportInsets {
     return {
       bottomInset: 0,
       offsetTop: 0,
+      offsetLeft: 0,
       visibleHeight: window.innerHeight,
+      visibleWidth: window.innerWidth,
       isKeyboardOpen: false,
     };
   }
@@ -40,7 +48,9 @@ function readVisualViewportInsets(): VisualViewportInsets {
   return {
     bottomInset,
     offsetTop: vv.offsetTop,
+    offsetLeft: vv.offsetLeft,
     visibleHeight: vv.height,
+    visibleWidth: vv.width,
     isKeyboardOpen: bottomInset > KEYBOARD_OPEN_THRESHOLD_PX,
   };
 }

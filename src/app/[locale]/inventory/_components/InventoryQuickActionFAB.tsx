@@ -353,8 +353,8 @@ export default function InventoryQuickActionFAB() {
             <div
               className={cn(
                 'z-[199] md:contents',
-                'fixed inset-0',
-                FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
+                'max-md:fixed max-md:inset-0',
+                !keyboardOpenOnMobile && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
               )}
               style={mobileBackdropStyle}
             >

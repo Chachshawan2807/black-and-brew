@@ -29,6 +29,7 @@ type ModalBackdropStyleOptions = {
   insets: VisualViewportInsets;
   marginTop?: number;
   marginBottom?: number;
+  marginHorizontal?: number;
 };
 
 /** Shift centered / bottom-sheet modals into the visible viewport when the keyboard opens. */
@@ -36,19 +37,24 @@ export function getModalBackdropKeyboardAwareStyle({
   insets,
   marginTop = 8,
   marginBottom = 8,
+  marginHorizontal = 16,
 }: ModalBackdropStyleOptions): CSSProperties {
   if (!insets.isKeyboardOpen) return {};
 
   return {
+    display: 'flex',
+    pointerEvents: 'none',
     alignItems: 'flex-start',
     justifyContent: 'center',
     top: insets.offsetTop,
     bottom: 'auto',
-    left: 0,
-    right: 0,
-    width: '100%',
+    left: insets.offsetLeft,
+    right: 'auto',
+    width: insets.visibleWidth,
     paddingTop: marginTop,
     paddingBottom: marginBottom,
+    paddingLeft: marginHorizontal,
+    paddingRight: marginHorizontal,
     height: insets.visibleHeight,
     maxHeight: insets.visibleHeight,
     overflow: 'hidden',
@@ -77,10 +83,10 @@ export function getMobileQuickActionKeyboardSheetBackdropStyle(
   return {
     position: 'fixed',
     top: insets.offsetTop,
-    left: 0,
-    right: 0,
+    left: insets.offsetLeft,
+    right: 'auto',
     bottom: 'auto',
-    width: '100%',
+    width: insets.visibleWidth,
     height: insets.visibleHeight,
     maxHeight: insets.visibleHeight,
     display: 'flex',
