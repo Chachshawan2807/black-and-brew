@@ -49,6 +49,17 @@ describe('keyboard-aware panel styles', () => {
     expect(style.maxHeight).toBe('min(75vh, calc(100dvh - 12rem))');
   });
 
+  test('modal backdrop can vertically center inside visible viewport when keyboard is open', () => {
+    const backdrop = getModalBackdropKeyboardAwareStyle({
+      insets: keyboardInsets,
+      verticalAlign: 'center',
+    });
+
+    expect(backdrop.alignItems).toBe('center');
+    expect(backdrop.top).toBe(12);
+    expect(backdrop.height).toBe(420);
+  });
+
   test('modal backdrop shifts into visible viewport when keyboard is open', () => {
     const backdrop = getModalBackdropKeyboardAwareStyle({
       insets: keyboardInsets,

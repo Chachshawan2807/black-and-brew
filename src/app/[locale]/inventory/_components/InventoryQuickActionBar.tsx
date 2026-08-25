@@ -833,8 +833,10 @@ export function InventoryQuickActionBar({
       handleClearQuickSearch();
     }
   };
-  const suggestionsListClassName =
-    'bg-card border border-border rounded-xl bb-shadow-md overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200';
+  const suggestionsListClassName = cn(
+    'bg-card border border-border rounded-xl bb-shadow-md overflow-hidden animate-in fade-in duration-200',
+    !portalSuggestions && 'slide-in-from-top-2',
+  );
 
   const suggestionsScrollClassName = 'overflow-y-auto bb-smooth-scroll py-2';
 

@@ -101,9 +101,11 @@ export default function InventoryQuickActionFAB() {
   const isMobile = maxMd === true;
   const isDesktop = maxMd === false;
   const viewportInsets = useVisualViewportInsets(isMounted && isPanelRendered);
-  const keyboardOpenOnMobile = isMobile && viewportInsets.isKeyboardOpen;
   const mobileBackdropStyle = isMobile
-    ? getModalBackdropKeyboardAwareStyle({ insets: viewportInsets })
+    ? getModalBackdropKeyboardAwareStyle({
+        insets: viewportInsets,
+        verticalAlign: 'center',
+      })
     : undefined;
   const mobilePanelStyle = isMobile
     ? getModalContentKeyboardAwareStyle({ insets: viewportInsets })
@@ -354,17 +356,13 @@ export default function InventoryQuickActionFAB() {
               className={cn(
                 'z-[199] md:contents',
                 'max-md:fixed max-md:inset-0',
-                !keyboardOpenOnMobile && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
+                FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
               )}
               style={mobileBackdropStyle}
             >
               <motion.div
                 initial={modalContent.initial}
-                animate={
-                  keyboardOpenOnMobile
-                    ? { opacity: 1, scale: 1, y: 0 }
-                    : modalContent.animate
-                }
+                animate={modalContent.animate}
                 exit={modalContent.exit}
                 transition={modalContent.transition}
                 className={cn(

@@ -403,7 +403,7 @@ describe('Inventory Quick Action FAB', () => {
     }
   });
 
-  test('quick action FAB top-aligns mobile panel when keyboard is open', () => {
+  test('quick action FAB keeps mobile panel centered when keyboard is open', () => {
     const fabCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
@@ -420,6 +420,9 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toContain('getModalContentKeyboardAwareStyle');
     expect(fabCode).toMatch(/FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS/);
     expect(fabCode).not.toMatch(/!mobileKeyboardSheet && 'isolate'/);
+    expect(fabCode).toContain("verticalAlign: 'center'");
+    expect(fabCode).not.toContain('keyboardOpenOnMobile');
+    expect(fabCode).not.toContain('!keyboardOpenOnMobile && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS');
     expect(fabCode).toContain('document.body.style.overflow = \'hidden\'');
     expect(barCode).toContain('shouldPortalQuickSearchSuggestions');
     expect(barCode).toContain('shouldCollapseBulkQueueForMobileSearch');
@@ -429,7 +432,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain('useLayoutEffect');
     expect(barCode).toContain('viewportInsets.offsetLeft');
     expect(barCode).toContain('viewportInsets.visibleWidth');
-    expect(fabCode).toContain('!keyboardOpenOnMobile && FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS');
+    expect(barCode).toContain("!portalSuggestions && 'slide-in-from-top-2'");
   });
 
   test('quick action FAB blurs focused input before closing after save', () => {

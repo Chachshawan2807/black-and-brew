@@ -30,6 +30,8 @@ type ModalBackdropStyleOptions = {
   marginTop?: number;
   marginBottom?: number;
   marginHorizontal?: number;
+  /** Vertical alignment inside the visible viewport when the keyboard is open. */
+  verticalAlign?: 'start' | 'center';
 };
 
 /** Shift centered / bottom-sheet modals into the visible viewport when the keyboard opens. */
@@ -38,13 +40,14 @@ export function getModalBackdropKeyboardAwareStyle({
   marginTop = 8,
   marginBottom = 8,
   marginHorizontal = 16,
+  verticalAlign = 'start',
 }: ModalBackdropStyleOptions): CSSProperties {
   if (!insets.isKeyboardOpen) return {};
 
   return {
     display: 'flex',
     pointerEvents: 'none',
-    alignItems: 'flex-start',
+    alignItems: verticalAlign === 'center' ? 'center' : 'flex-start',
     justifyContent: 'center',
     top: insets.offsetTop,
     bottom: 'auto',
