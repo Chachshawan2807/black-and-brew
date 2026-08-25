@@ -27,7 +27,11 @@
     "postinstall": "node .agent-skills/scripts/apply-vendor-patch.mjs",
     "agent-skills:init": "git submodule update --init --recursive .agent-skills/vendor/AgentSkillOS",
     "security:firewall:apply": "node scripts/apply-vercel-firewall.mjs",
-    "security:firewall:dry-run": "node scripts/apply-vercel-firewall.mjs --dry-run"
+    "security:firewall:dry-run": "node scripts/apply-vercel-firewall.mjs --dry-run",
+    "cron:list": "node scripts/cron-job-org.mjs list",
+    "cron:status": "node scripts/cron-job-org.mjs status",
+    "cron:sync": "node scripts/cron-job-org.mjs sync",
+    "cron:sync:dry-run": "node scripts/cron-job-org.mjs sync --dry-run"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.79",
