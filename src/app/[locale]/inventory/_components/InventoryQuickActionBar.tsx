@@ -682,6 +682,11 @@ export function InventoryQuickActionBar({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(QUICK_SEARCH_NO_HIGHLIGHT);
+  const showSuggestions = shouldShowQuickSearchSuggestions(
+    isSearchFocused,
+    quickSearch,
+    filteredItems.length,
+  );
   const highlightResetSignature = `${quickSearch}\0${filteredItems.length}\0${showSuggestions}`;
   const [prevHighlightResetSignature, setPrevHighlightResetSignature] =
     useState(highlightResetSignature);
@@ -695,11 +700,6 @@ export function InventoryQuickActionBar({
   const isMobile = maxMd === true;
   const viewportInsets = useVisualViewportInsets(isMounted && isSearchFocused);
   const portalSuggestions = shouldPortalQuickSearchSuggestions(isMobile, isSearchFocused);
-  const showSuggestions = shouldShowQuickSearchSuggestions(
-    isSearchFocused,
-    quickSearch,
-    filteredItems.length,
-  );
   const collapseBulkQueueForSearch = shouldCollapseBulkQueueForMobileSearch(
     isMobile,
     isSearchFocused,
