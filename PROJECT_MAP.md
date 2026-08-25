@@ -58,7 +58,7 @@ Locales: `th`, `en`
 | `/api/inventory/offline-mutation` | `src/app/api/inventory/offline-mutation/route.ts` |
 | `/api/insight-alerts` | `src/app/api/insight-alerts/route.ts` |
 
-Cron schedules: `vercel.json` (`daily-report`, `insight-alerts` morning/evening windows).
+Cron schedules: **cron-job.org** (Asia/Bangkok) — not Vercel Cron. See `.env.example` § CRON.
 
 ---
 

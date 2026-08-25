@@ -104,7 +104,7 @@ src/app/
 │   └── tools/                         # AI agent tools
 ├── api/
 │   ├── chat/route.ts            # Streaming AI (ToolLoopAgent)
-│   ├── daily-report/route.ts    # Vercel Cron endpoint
+│   ├── daily-report/route.ts    # cron-job.org → schedule Web Push
 │   ├── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
 │   ├── inventory/offline-mutation/route.ts  # Service worker background sync replay
 │   └── bean-orders/
@@ -295,7 +295,7 @@ AIChatOverlay → POST /api/chat → intent classify → Hybrid Router
 ### Daily Web Push Report
 
 ```text
-Vercel Cron → /api/daily-report → compileDailyReportPayload()
+cron-job.org (Asia/Bangkok) → GET /api/daily-report → compileDailyReportData()
 → shifts + holidays
 → dispatch daily schedule Web Push to eligible push_subscriptions (branch/profile scoped)
 ```
@@ -303,7 +303,7 @@ Vercel Cron → /api/daily-report → compileDailyReportPayload()
 ### Proactive Cross-Module Insights (v9.3)
 
 ```text
-Vercel Cron (morning/evening) or debounced mutation hook
+cron-job.org (07:00 / 17:00 ICT) or debounced mutation hook
 → GET /api/insight-alerts → compileOperationalSnapshot()
 → evaluateInsightRules() → data_change_logs (module=insights, kind=proactive_insight)
 → dispatchInsightWebPush() when push_subscriptions.prefs_json includes proactiveInsights
@@ -414,7 +414,7 @@ Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIM
 | Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat (`@ai-sdk/google`) |
 | Tavily | `TAVILY_API_KEY` | AI web search |
 | Web Push (VAPID) | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | Cross-device inventory alerts via `web-push` |
-| Vercel | Git deployment | App hosting + Cron |
+| Vercel | Git deployment | App hosting (no Vercel Cron — schedules on cron-job.org) |
 
 ---
 

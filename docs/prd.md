@@ -106,7 +106,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 ### 3.10 Daily Web Push Notification
 
-- Route: `/api/daily-report` (Vercel Cron)
+- Route: `/api/daily-report` (cron-job.org — 05:00 / 18:00 ICT)
 - Purpose: แจ้งเตือนกะงานและวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
 
 ---

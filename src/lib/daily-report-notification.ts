@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { THAI_TIMEZONE } from '@/lib/timezone';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
@@ -182,7 +183,7 @@ export async function refreshDailyReportNotificationsForDate(
   targetDate: Date,
   locale = 'th',
 ): Promise<void> {
-  const dateStr = format(targetDate, 'dd-MM-yyyy');
+  const dateStr = formatInTimeZone(targetDate, THAI_TIMEZONE, 'dd-MM-yyyy');
   const schedules: DailyReportSchedule[] = ['today', 'tomorrow'];
   const { compileDailyReportDataForDate } = await import('@/app/actions/daily-report-actions');
 

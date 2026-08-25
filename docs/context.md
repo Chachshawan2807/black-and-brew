@@ -62,7 +62,7 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync (OPTION) | Server only |
 | `TAVILY_API_KEY` | AI web search | Server only |
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | Store coordinates | Public |
-| `CRON_SECRET` | Vercel cron auth | Server only |
+| `CRON_SECRET` | cron-job.org → `/api/daily-report`, `/api/insight-alerts` (`Authorization: Bearer …`) | Server only |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID public key | Public |
 | `VAPID_PRIVATE_KEY` | Web Push server signing key | Server only |
 | `VAPID_SUBJECT` | Push service contact URI | Server only |

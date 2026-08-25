@@ -1,8 +1,14 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { addDays, format, differenceInDays, startOfDay } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { differenceInDays, startOfDay } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import {
+  addBangkokCalendarDays,
+  bangkokCalendarIsoToDate,
+  getBangkokCalendarIso,
+} from '@/lib/date-utils';
 import { formatDailyShifts } from '@/lib/schedule/format-daily-shifts';
+import { THAI_TIMEZONE } from '@/lib/timezone';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const getSupabaseAdmin = () => {
@@ -57,7 +63,7 @@ export async function fetchTodayShifts(targetDate: Date) {
       return { activeStaff: [], otherDutyStaff: [], offStaff: [], headcount: 0 };
     }
 
-    const dateStr = format(targetDate, 'yyyy-MM-dd');
+    const dateStr = formatInTimeZone(targetDate, THAI_TIMEZONE, 'yyyy-MM-dd');
 
     const [profilesRes, shiftsRes] = await Promise.all([
       supabaseAdmin.from('profiles').select('id, full_name, schedule_order').order('schedule_order', { ascending: true }),
@@ -112,7 +118,7 @@ export async function fetchNextHoliday(targetDate: Date) {
       return { ok: false, error: { message: 'Missing SUPABASE_SERVICE_ROLE_KEY', details: null } };
     }
 
-    const dateStr = format(targetDate, 'yyyy-MM-dd');
+    const dateStr = formatInTimeZone(targetDate, THAI_TIMEZONE, 'yyyy-MM-dd');
 
     const { data, error } = await supabaseAdmin
       .from('holidays')
@@ -147,18 +153,43 @@ export type DailyReportSchedule = 'today' | 'tomorrow';
 /** Evening cron boundary in Asia/Bangkok (18:00 ICT → tomorrow's schedule). */
 const EVENING_SCHEDULE_HOUR_ICT = 18;
 
+/** Validates cron-job.org `?schedule=` values. */
+export function parseDailyReportScheduleParam(
+  explicit: string | null,
+): DailyReportSchedule | null {
+  if (explicit === 'tomorrow' || explicit === 'today') return explicit;
+  return null;
+}
+
+/**
+ * Bangkok calendar date (yyyy-MM-dd) covered by the notification.
+ * Independent of server timezone — safe on Vercel (UTC).
+ */
+export function resolveDailyReportTargetIso(
+  schedule: DailyReportSchedule,
+  now: Date = new Date(),
+): string {
+  const todayIso = getBangkokCalendarIso(now);
+  return schedule === 'tomorrow' ? addBangkokCalendarDays(todayIso, 1) : todayIso;
+}
+
 /**
  * Resolves which day's schedule the notification should cover.
- * Explicit `?schedule=` wins; otherwise infers from Bangkok wall-clock hour.
+ *
+ * cron-job.org jobs should pass explicit `?schedule=`:
+ * - 05:00 ICT → `?schedule=today`
+ * - 18:00 ICT → `?schedule=tomorrow`
+ *
+ * When omitted, infers from Bangkok wall-clock hour (fallback only).
  */
 export function resolveDailyReportSchedule(
   explicit: string | null,
   now: Date = new Date(),
 ): DailyReportSchedule {
-  if (explicit === 'tomorrow') return 'tomorrow';
-  if (explicit === 'today') return 'today';
+  const parsed = parseDailyReportScheduleParam(explicit);
+  if (parsed) return parsed;
 
-  const bkkHour = toZonedTime(now, 'Asia/Bangkok').getHours();
+  const bkkHour = Number(formatInTimeZone(now, THAI_TIMEZONE, 'H'));
   return bkkHour >= EVENING_SCHEDULE_HOUR_ICT ? 'tomorrow' : 'today';
 }
 
@@ -170,7 +201,7 @@ export async function compileDailyReportDataForDate(
   targetDate: Date,
   schedule: DailyReportSchedule,
 ): Promise<DailyReportData> {
-  const dateStr = format(targetDate, THAI_REPORT_DATE_FORMAT);
+  const dateStr = formatInTimeZone(targetDate, THAI_TIMEZONE, THAI_REPORT_DATE_FORMAT);
 
   const [{ activeStaff, otherDutyStaff, offStaff, headcount }, holiday] = await Promise.all([
     fetchTodayShifts(targetDate),
@@ -199,9 +230,9 @@ export async function compileDailyReportDataForDate(
  */
 export async function compileDailyReportData(
   schedule: DailyReportSchedule = 'today',
+  now: Date = new Date(),
 ): Promise<DailyReportData> {
-  const now = new Date();
-  const bkkNow = toZonedTime(now, 'Asia/Bangkok');
-  const reportDate = schedule === 'tomorrow' ? addDays(bkkNow, 1) : bkkNow;
+  const reportIso = resolveDailyReportTargetIso(schedule, now);
+  const reportDate = bangkokCalendarIsoToDate(reportIso);
   return compileDailyReportDataForDate(reportDate, schedule);
 }

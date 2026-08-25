@@ -3,8 +3,11 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import {
   compileDailyReportData,
+  parseDailyReportScheduleParam,
   resolveDailyReportSchedule,
+  resolveDailyReportTargetIso,
 } from '@/app/actions/daily-report-actions';
+import { getBangkokCalendarIso } from '@/lib/date-utils';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 import { recordDailyReportNotificationLog } from '@/lib/daily-report-notification';
 import { dispatchDailyReportWebPush } from '@/lib/daily-report-web-push';
@@ -25,9 +28,23 @@ export async function GET(request: Request) {
     if (denied) return denied;
 
     const scheduleParam = new URL(request.url).searchParams.get('schedule');
-    const schedule = resolveDailyReportSchedule(scheduleParam);
+    if (scheduleParam && !parseDailyReportScheduleParam(scheduleParam)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'invalid_schedule',
+          message: 'Use ?schedule=today (05:00 ICT) or ?schedule=tomorrow (18:00 ICT)',
+        },
+        { status: 400 },
+      );
+    }
 
-    const reportData = await compileDailyReportData(schedule);
+    const now = new Date();
+    const schedule = resolveDailyReportSchedule(scheduleParam, now);
+    const bangkokTodayIso = getBangkokCalendarIso(now);
+    const reportDateIso = resolveDailyReportTargetIso(schedule, now);
+
+    const reportData = await compileDailyReportData(schedule, now);
     await recordDailyReportNotificationLog(reportData, 'th');
     const pushResult = await dispatchDailyReportWebPush(reportData);
 
@@ -44,6 +61,9 @@ export async function GET(request: Request) {
       return NextResponse.json({
         success: true,
         schedule,
+        bangkokTodayIso,
+        reportDateIso,
+        dateStr: reportData.dateStr,
         channel: 'web_push',
         sent: 0,
         failed: 0,
@@ -99,6 +119,9 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       schedule,
+      bangkokTodayIso,
+      reportDateIso,
+      dateStr: reportData.dateStr,
       channel: 'web_push',
       sent: pushResult.sent,
       failed: pushResult.failed,

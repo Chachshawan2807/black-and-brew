@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { toZonedTime } from 'date-fns-tz';
-import { addDays, format } from 'date-fns';
+import { format } from 'date-fns';
 
 
 // Define mutable mock data variables
@@ -86,6 +86,7 @@ import {
   fetchNextHoliday,
   compileDailyReportData,
   resolveDailyReportSchedule,
+  resolveDailyReportTargetIso,
 } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
 
@@ -274,11 +275,33 @@ describe('Daily report protocol actions', () => {
       mockHolidaysData = null;
 
       const data = await compileDailyReportData('tomorrow');
-      const tomorrow = addDays(toZonedTime(new Date(), 'Asia/Bangkok'), 1);
-      const expectedDate = format(tomorrow, 'dd-MM-yyyy');
+      const altText = buildDailyReportAltText(data);
 
-      expect(data.dateStr).toBe(expectedDate);
+      expect(data.dateStr).toBe('27-05-2026');
       expect(data.schedule).toBe('tomorrow');
+      expect(altText).toContain('27-05-2026 พ.');
+    });
+
+    it('tomorrow at 18:01 ICT shows Bangkok next day on UTC servers (Vercel)', async () => {
+      const previousTz = process.env.TZ;
+      process.env.TZ = 'UTC';
+      vi.setSystemTime(new Date('2026-08-25T11:01:00.000Z'));
+
+      mockProfilesData = [{ id: 'p1', full_name: 'ปิ่น', schedule_order: 1 }];
+      mockShiftsData = [{ employee_id: 'p1', status: 'active', metadata: { location: 'เข้ากะ 6:30' } }];
+      mockHolidaysData = null;
+
+      try {
+        const data = await compileDailyReportData('tomorrow');
+        const altText = buildDailyReportAltText(data);
+
+        expect(data.dateStr).toBe('26-08-2026');
+        expect(altText).toContain('26-08-2026 พ.');
+        expect(altText).toContain('(พรุ่งนี้)');
+      } finally {
+        if (previousTz === undefined) delete process.env.TZ;
+        else process.env.TZ = previousTz;
+      }
     });
   });
 
@@ -302,6 +325,22 @@ describe('Daily report protocol actions', () => {
     it('honours explicit schedule=today after 18:00 ICT', () => {
       const at1800Ict = new Date('2026-06-12T11:00:00.000Z');
       expect(resolveDailyReportSchedule('today', at1800Ict)).toBe('today');
+    });
+  });
+
+  describe('resolveDailyReportTargetIso()', () => {
+    it('maps cron-job.org schedules to Bangkok calendar dates on UTC servers', () => {
+      const previousTz = process.env.TZ;
+      process.env.TZ = 'UTC';
+      const at1800IctAug25 = new Date('2026-08-25T11:00:00.000Z');
+
+      try {
+        expect(resolveDailyReportTargetIso('today', at1800IctAug25)).toBe('2026-08-25');
+        expect(resolveDailyReportTargetIso('tomorrow', at1800IctAug25)).toBe('2026-08-26');
+      } finally {
+        if (previousTz === undefined) delete process.env.TZ;
+        else process.env.TZ = previousTz;
+      }
     });
   });
 

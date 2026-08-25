@@ -290,19 +290,21 @@ Requires read access (`requireReadAccess()`). Calls `evaluateAndDispatchInsights
 
 ### `GET /api/daily-report`
 
-- Vercel Cron endpoint — protected by `CRON_SECRET`
+- **cron-job.org** HTTP trigger — protected by `CRON_SECRET` (`Authorization: Bearer …`)
 - Compiles daily schedule report data
 - Sends daily schedule Web Push broadcasts through `push_subscriptions.branch_id` / `profile_id`
+- Query: `?schedule=today` (05:00 ICT) or `?schedule=tomorrow` (18:00 ICT)
+- Timezone: set cron-job.org job to **Asia/Bangkok** (not UTC)
 
 ### `GET /api/insight-alerts`
 
-- Vercel Cron endpoint — protected by `CRON_SECRET` (`Authorization: Bearer …`)
+- **cron-job.org** HTTP trigger — protected by `CRON_SECRET` (`Authorization: Bearer …`)
 - Compiles an operational snapshot across schedule, inventory, maintenance, bean orders, sales, and accuracy
 - Evaluates deterministic cross-module insight rules (`src/lib/proactive-insights/`)
 - Records `data_change_logs` (`module: insights`, `kind: proactive_insight`) with per-rule daily dedup
 - Dispatches Web Push via `dispatchInsightWebPush()` when prefs include `proactiveInsights`
-- Query: `?window=morning` (default) or `?window=evening`
-- Crons (UTC): `0 0 * * *` → 07:00 ICT morning; `0 10 * * *` → 17:00 ICT evening
+- Query: `?window=morning` (default) or `?window=evening`; `?force=1` for manual re-run
+- cron-job.org (Asia/Bangkok): **07:00** morning, **17:00** evening
 - Event-driven: `scheduleProactiveInsightEvaluation()` debounces 5 minutes after `saveShift` / inventory stock mutations
 
 ### `POST /api/push/webhook`

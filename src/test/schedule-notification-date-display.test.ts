@@ -13,7 +13,19 @@ describe('formatScheduleNotificationDateDisplay', () => {
   });
 
   test('accepts Date objects in Bangkok timezone', () => {
-    const date = new Date('2026-08-21T12:00:00');
+    const date = new Date('2026-08-21T12:00:00+07:00');
     expect(formatScheduleNotificationDateDisplay(date)).toBe('21-08-2026 ศ.');
+  });
+
+  test('keeps calendar date stable on UTC servers (Vercel)', () => {
+    const previousTz = process.env.TZ;
+    process.env.TZ = 'UTC';
+    try {
+      expect(formatScheduleNotificationDateDisplay('26-08-2026')).toBe('26-08-2026 พ.');
+      expect(formatScheduleNotificationDateDisplay('21-08-2026')).toBe('21-08-2026 ศ.');
+    } finally {
+      if (previousTz === undefined) delete process.env.TZ;
+      else process.env.TZ = previousTz;
+    }
   });
 });

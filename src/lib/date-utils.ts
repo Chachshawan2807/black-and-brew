@@ -1,36 +1,82 @@
-import { format, parse, parseISO } from 'date-fns';
-import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { addDays, format, parse, parseISO } from 'date-fns';
+import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { THAI_TIMEZONE } from './timezone';
 
 const THAI_DAY_ABBREVS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'] as const;
 
-/** DD-MM-YYYY with abbreviated Thai weekday (e.g. "21-08-2026 ศ."). */
-export function formatScheduleNotificationDateDisplay(input: Date | string): string {
-  let zoned: Date;
+type CalendarParts = { y: number; m: number; d: number };
 
+function parseCalendarParts(input: Date | string): CalendarParts | null {
   if (typeof input === 'string') {
     const trimmed = input.trim();
     const ddMmYyyy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
     if (ddMmYyyy) {
-      const [, dd, mm, yyyy] = ddMmYyyy;
-      zoned = toZonedTime(new Date(`${yyyy}-${mm}-${dd}T12:00:00`), THAI_TIMEZONE);
-    } else {
-      const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
-      if (isoMatch) {
-        zoned = toZonedTime(new Date(`${isoMatch[0]}T12:00:00`), THAI_TIMEZONE);
-      } else {
-        const parsed = parse(trimmed, 'dd-MM-yyyy', new Date());
-        if (Number.isNaN(parsed.getTime())) return trimmed;
-        zoned = toZonedTime(parsed, THAI_TIMEZONE);
-      }
+      return {
+        d: Number(ddMmYyyy[1]),
+        m: Number(ddMmYyyy[2]),
+        y: Number(ddMmYyyy[3]),
+      };
     }
-  } else {
-    zoned = toZonedTime(input, THAI_TIMEZONE);
+
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+    if (isoMatch) {
+      return {
+        y: Number(isoMatch[1]),
+        m: Number(isoMatch[2]),
+        d: Number(isoMatch[3]),
+      };
+    }
+
+    const parsed = parse(trimmed, 'dd-MM-yyyy', new Date());
+    if (Number.isNaN(parsed.getTime())) return null;
+    return {
+      y: parsed.getFullYear(),
+      m: parsed.getMonth() + 1,
+      d: parsed.getDate(),
+    };
   }
 
-  const datePart = formatInTimeZone(zoned, THAI_TIMEZONE, 'dd-MM-yyyy');
-  const dayAbbrev = THAI_DAY_ABBREVS[zoned.getDay()];
+  return {
+    y: Number(formatInTimeZone(input, THAI_TIMEZONE, 'yyyy')),
+    m: Number(formatInTimeZone(input, THAI_TIMEZONE, 'MM')),
+    d: Number(formatInTimeZone(input, THAI_TIMEZONE, 'dd')),
+  };
+}
+
+function formatCalendarPartsThai({ y, m, d }: CalendarParts): string {
+  const datePart = `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
+  const dayAbbrev = THAI_DAY_ABBREVS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   return `${datePart} ${dayAbbrev}`;
+}
+
+/** Calendar date yyyy-MM-dd in Asia/Bangkok for the given instant. */
+export function getBangkokCalendarIso(now = new Date()): string {
+  return formatInTimeZone(now, THAI_TIMEZONE, 'yyyy-MM-dd');
+}
+
+/** Shift a Bangkok calendar date by N days (returns yyyy-MM-dd). */
+export function addBangkokCalendarDays(isoDate: string, days: number): string {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const anchor = fromZonedTime(new Date(y, m - 1, d, 12, 0, 0), THAI_TIMEZONE);
+  return formatInTimeZone(addDays(anchor, days), THAI_TIMEZONE, 'yyyy-MM-dd');
+}
+
+/** Anchor Date at noon Bangkok for shift DB queries on a calendar day. */
+export function bangkokCalendarIsoToDate(isoDate: string): Date {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return fromZonedTime(new Date(y, m - 1, d, 12, 0, 0), THAI_TIMEZONE);
+}
+
+export function bangkokIsoToThaiDisplay(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-');
+  return `${d}-${m}-${y}`;
+}
+
+/** DD-MM-YYYY with abbreviated Thai weekday (e.g. "21-08-2026 ศ."). */
+export function formatScheduleNotificationDateDisplay(input: Date | string): string {
+  const parts = parseCalendarParts(input);
+  if (!parts) return typeof input === 'string' ? input.trim() : '';
+  return formatCalendarPartsThai(parts);
 }
 
 export function formatToThai(date: Date | string, formatStr: string) {
