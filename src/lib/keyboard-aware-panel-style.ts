@@ -76,6 +76,18 @@ export function getModalContentKeyboardAwareStyle({
   };
 }
 
+/** FAB bulk shell on phone: pin height to visible viewport when keyboard is open (stay centered). */
+export function getFabMobileBulkPanelStyle(
+  insets: VisualViewportInsets,
+  marginTop = 8,
+  marginBottom = 8,
+): CSSProperties {
+  if (!insets.isKeyboardOpen) return {};
+
+  const height = Math.max(120, insets.visibleHeight - marginTop - marginBottom);
+  return { height, maxHeight: height };
+}
+
 /** Mobile quick-action sheet: anchor to the visual viewport, not layout inset-0. */
 export function getMobileQuickActionKeyboardSheetBackdropStyle(
   insets: VisualViewportInsets,

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   getFabPanelKeyboardAwareStyle,
+  getFabMobileBulkPanelStyle,
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
   getMobileQuickActionKeyboardSheetBackdropStyle,
@@ -47,6 +48,17 @@ describe('keyboard-aware panel styles', () => {
     expect(style.bottom).toBeUndefined();
     expect(style.top).toBeUndefined();
     expect(style.maxHeight).toBe('min(75vh, calc(100dvh - 12rem))');
+  });
+
+  test('FAB bulk shell pins height to visible viewport when keyboard is open', () => {
+    const style = getFabMobileBulkPanelStyle(keyboardInsets);
+
+    expect(style.height).toBe(404);
+    expect(style.maxHeight).toBe(404);
+  });
+
+  test('FAB bulk shell defers to CSS height when keyboard is closed', () => {
+    expect(getFabMobileBulkPanelStyle(closedInsets)).toEqual({});
   });
 
   test('modal backdrop can vertically center inside visible viewport when keyboard is open', () => {

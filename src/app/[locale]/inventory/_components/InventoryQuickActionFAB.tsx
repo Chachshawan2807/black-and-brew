@@ -43,6 +43,7 @@ import {
 import { blurActiveElement } from '@/lib/blur-active-element';
 import {
   getFabPanelKeyboardAwareStyle,
+  getFabMobileBulkPanelStyle,
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
 } from '@/lib/keyboard-aware-panel-style';
@@ -143,8 +144,8 @@ export default function InventoryQuickActionFAB() {
 
   const fabMobileBulkQueueActive =
     isMobile && quickAction.bulkMode && quickAction.bulkQueue.length > 0;
-  const fabMobileBulkFixedHeight =
-    fabMobileBulkQueueActive && !viewportInsets.isKeyboardOpen;
+  const fabMobileBulkPanelStyle =
+    fabMobileBulkQueueActive ? getFabMobileBulkPanelStyle(viewportInsets) : undefined;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
@@ -376,14 +377,16 @@ export default function InventoryQuickActionFAB() {
                   'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate',
                   'max-md:relative max-md:w-full',
                   fabMobileBulkQueueActive
-                    ? 'max-md:overflow-hidden max-md:flex max-md:flex-col'
+                    ? FAB_MOBILE_BULK_PANEL_SHELL_CLASS
                     : cn(FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS, 'max-md:overflow-y-auto max-md:bb-smooth-scroll'),
-                  fabMobileBulkFixedHeight && FAB_MOBILE_BULK_PANEL_SHELL_CLASS,
                   'max-md:transition-[max-height] max-md:duration-200',
                   'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6 md:overflow-y-auto md:bb-smooth-scroll md:isolate',
                   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
                 )}
-                style={{ ...desktopPanelStyle, ...mobilePanelStyle }}
+                style={{
+                  ...desktopPanelStyle,
+                  ...(fabMobileBulkQueueActive ? fabMobileBulkPanelStyle : mobilePanelStyle),
+                }}
               >
               {isLoadingItems && !hasLoadedItems ? (
                 <div className="bg-card rounded-3xl border border-border bb-shadow-xl p-8 flex flex-col items-center justify-center gap-3">

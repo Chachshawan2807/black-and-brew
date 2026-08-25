@@ -941,6 +941,7 @@ export function InventoryQuickActionBar({
         <div
           className={cn(
             'flex flex-row flex-wrap sm:flex-nowrap items-center gap-2 w-full min-w-0 box-border',
+            fabMobileBulkShell && 'shrink-0',
             isReadOnly && 'pointer-events-none opacity-60',
           )}
         >
@@ -1083,6 +1084,7 @@ export function InventoryQuickActionBar({
         <div
           className={cn(
             'grid grid-cols-3 gap-2 w-full box-border sm:hidden',
+            fabMobileBulkShell && 'shrink-0',
             isReadOnly && 'pointer-events-none opacity-60',
           )}
         >
@@ -1140,7 +1142,7 @@ export function InventoryQuickActionBar({
         </div>
       </form>
 
-      {frequentItems.length > 0 && !collapseBulkQueueForSearch && !hideMobileSearchChrome && (
+      {frequentItems.length > 0 && !collapseBulkQueueForSearch && !hideMobileSearchChrome && !fabMobileBulkShell && (
         <div
           className={cn(
             'flex items-center gap-2 mt-6 pt-3 border-t border-border overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-1 scrollbar-hide',
