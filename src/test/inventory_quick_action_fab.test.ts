@@ -389,6 +389,20 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toMatch(/aria-expanded=\{isPanelRendered\}/);
   });
 
+  test('quick action inputs use 16px on mobile to prevent iOS focus zoom', () => {
+    const barCode = fs.readFileSync(
+      path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
+      'utf-8',
+    );
+
+    // iOS Safari auto-zooms inputs with font-size < 16px, breaking visualViewport overlays.
+    const inputClassMatches = [...barCode.matchAll(/<input[\s\S]*?className=\{cn\([\s\S]*?\)\}/g)];
+    expect(inputClassMatches.length).toBeGreaterThanOrEqual(3);
+    for (const match of inputClassMatches) {
+      expect(match[0]).toContain('text-base md:text-sm');
+    }
+  });
+
   test('quick action FAB top-aligns mobile panel when keyboard is open', () => {
     const fabCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),

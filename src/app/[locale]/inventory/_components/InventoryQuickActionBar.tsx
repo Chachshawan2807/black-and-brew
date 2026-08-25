@@ -225,7 +225,7 @@ function QuickActionQtyInput({
         step="any"
         aria-label={quickType === 'ADJUST' ? 'จำนวนคงเหลือใหม่' : 'จำนวน'}
         className={cn(
-          'w-full text-sm font-normal pl-1.5 pr-8 text-center rounded-3xl bg-background border border-border placeholder:text-muted-foreground text-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased',
+          'w-full text-base md:text-sm font-normal pl-1.5 pr-8 text-center rounded-3xl bg-background border border-border placeholder:text-muted-foreground text-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased',
           '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
           compact ? 'h-9 rounded-xl' : 'h-11',
           className,
@@ -443,7 +443,7 @@ function BulkQueuePanel({
               onWheel={blurQtyInputOnWheel}
               placeholder={quickType === 'ADJUST' ? 'ใหม่' : 'จำนวน'}
               aria-label={`จำนวน ${line.name}`}
-              className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground text-center text-sm tabular-nums outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-[4.5rem] shrink-0 h-9 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground text-center text-base md:text-sm tabular-nums outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             {onRemoveBulkItem && (
               <HintTooltip tip="ลบออกจากคิว">
@@ -960,7 +960,7 @@ export function InventoryQuickActionBar({
                 }
                 title={quickSearch || undefined}
                 className={cn(
-                  'h-10 w-full min-w-0 pl-9 rounded-xl bg-background border border-border text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased',
+                  'h-10 w-full min-w-0 pl-9 rounded-xl bg-background border border-border text-base md:text-sm font-normal text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased',
                   showClearSearch ? 'pr-9' : 'pr-3',
                 )}
               />
