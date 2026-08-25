@@ -33,7 +33,6 @@ import {
   FAB_BOTTOM_QUICK_ACTION_CLASS,
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
   FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
-  FAB_MOBILE_BULK_PANEL_SHELL_CLASS,
   FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
 } from '@/lib/floating-action-layout';
 import {
@@ -376,9 +375,10 @@ export default function InventoryQuickActionFAB() {
                 className={cn(
                   'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate',
                   'max-md:relative max-md:w-full',
+                  FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
                   fabMobileBulkQueueActive
-                    ? FAB_MOBILE_BULK_PANEL_SHELL_CLASS
-                    : cn(FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS, 'max-md:overflow-y-auto max-md:bb-smooth-scroll'),
+                    ? 'max-md:overflow-hidden'
+                    : 'max-md:overflow-y-auto max-md:bb-smooth-scroll',
                   'max-md:transition-[max-height] max-md:duration-200',
                   'md:fixed md:z-[199] md:w-full md:max-w-2xl md:left-auto md:right-6 md:overflow-y-auto md:bb-smooth-scroll md:isolate',
                   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,

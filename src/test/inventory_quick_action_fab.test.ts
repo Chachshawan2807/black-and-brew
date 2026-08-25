@@ -403,7 +403,7 @@ describe('Inventory Quick Action FAB', () => {
     }
   });
 
-  test('FAB bulk mode on mobile uses fixed shell with internal queue scroll', () => {
+  test('FAB bulk mode shrink-wraps queue and scrolls list when tall', () => {
     const fabCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionFAB.tsx'),
       'utf-8',
@@ -417,20 +417,21 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
 
-    expect(layoutCode).toContain('FAB_MOBILE_BULK_PANEL_SHELL_CLASS');
-    expect(layoutCode).toContain(
-      'max-md:h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))]',
-    );
+    expect(layoutCode).toContain('FAB_MOBILE_BULK_QUEUE_LIST_MAX_HEIGHT_CLASS');
+    expect(layoutCode).not.toContain('FAB_MOBILE_BULK_PANEL_SHELL_CLASS');
     expect(layoutCode).not.toMatch(/`\$\{/);
     expect(fabCode).toContain('fabMobileBulkQueueActive');
-    expect(fabCode).toContain('FAB_MOBILE_BULK_PANEL_SHELL_CLASS');
+    expect(fabCode).toContain('FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS');
     expect(fabCode).toContain('getFabMobileBulkPanelStyle');
+    expect(fabCode).not.toContain('FAB_MOBILE_BULK_PANEL_SHELL_CLASS');
     expect(fabCode).not.toContain('fabMobileBulkFixedHeight');
     expect(fabCode).toContain('fabMobileBulkShell={fabMobileBulkQueueActive}');
     expect(barCode).toContain('fabMobileBulkShell?: boolean');
-    expect(barCode).toContain('fillAvailableHeight={fabMobileBulkShell}');
+    expect(barCode).toContain('fabMobileBulkShell={fabMobileBulkShell}');
+    expect(barCode).toContain('FAB_MOBILE_BULK_QUEUE_LIST_MAX_HEIGHT_CLASS');
+    expect(barCode).not.toContain('fillAvailableHeight');
+    expect(barCode).not.toMatch(/flex-1 min-h-0/);
     expect(barCode).toContain('!fabMobileBulkShell');
-    expect(barCode).toMatch(/fillAvailableHeight \? 'flex-1 min-h-0' : 'max-h-\[min\(42dvh,15rem\)\]'/);
   });
 
   test('quick action FAB keeps mobile panel centered when keyboard is open', () => {

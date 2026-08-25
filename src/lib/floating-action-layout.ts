@@ -50,11 +50,11 @@ export const FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS =
   'max-md:max-h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))]';
 
 /**
- * FAB bulk mode on phone: fixed shell height so the card stays centered while the queue scrolls inside.
+ * FAB bulk queue list scroll cap on phone — panel shrink-wraps to content; list scrolls when taller.
  * Literal string required for Tailwind JIT (no template interpolation).
  */
-export const FAB_MOBILE_BULK_PANEL_SHELL_CLASS =
-  'max-md:h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))] max-md:max-h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))] max-md:overflow-hidden max-md:flex max-md:flex-col';
+export const FAB_MOBILE_BULK_QUEUE_LIST_MAX_HEIGHT_CLASS =
+  'max-h-[min(50dvh,calc(75dvh-14rem))]';
 
 /** Page/content bottom inset to clear the two-button stack + hide toggle */
 export const FAB_PAGE_BOTTOM_PADDING_CLASS =

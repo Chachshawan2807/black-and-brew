@@ -50,11 +50,11 @@ describe('keyboard-aware panel styles', () => {
     expect(style.maxHeight).toBe('min(75vh, calc(100dvh - 12rem))');
   });
 
-  test('FAB bulk shell pins height to visible viewport when keyboard is open', () => {
+  test('FAB bulk shell caps max-height to visible viewport when keyboard is open', () => {
     const style = getFabMobileBulkPanelStyle(keyboardInsets);
 
-    expect(style.height).toBe(404);
     expect(style.maxHeight).toBe(404);
+    expect(style.height).toBeUndefined();
   });
 
   test('FAB bulk shell defers to CSS height when keyboard is closed', () => {
