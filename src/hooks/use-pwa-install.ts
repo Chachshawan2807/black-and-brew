@@ -6,11 +6,14 @@ import {
   type PwaInstallMode,
   PWA_APP_INSTALLED_EVENT,
   PWA_INSTALL_PROMPT_EVENT,
-  readPwaInstallVisibility,
+  isIosPwaInstallable,
   shouldShowPwaInstallOffer,
 } from '@/lib/pwa-install';
+import { isInstalledPwa } from '@/lib/pwa-app-badge';
 
 const SSR_PWA_VISIBILITY = { installed: false, isIosDevice: false };
+
+let cachedPwaVisibility = SSR_PWA_VISIBILITY;
 
 function subscribePwaVisibility(onStoreChange: () => void) {
   const onAppInstalled = () => onStoreChange();
@@ -19,7 +22,15 @@ function subscribePwaVisibility(onStoreChange: () => void) {
 }
 
 function getPwaVisibilitySnapshot() {
-  return readPwaInstallVisibility();
+  const installed = isInstalledPwa();
+  const isIosDevice = isIosPwaInstallable();
+  if (
+    cachedPwaVisibility.installed !== installed ||
+    cachedPwaVisibility.isIosDevice !== isIosDevice
+  ) {
+    cachedPwaVisibility = { installed, isIosDevice };
+  }
+  return cachedPwaVisibility;
 }
 
 export function usePwaInstall() {

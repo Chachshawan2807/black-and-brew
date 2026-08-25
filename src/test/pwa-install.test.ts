@@ -68,6 +68,13 @@ describe('pwa-install', () => {
     expect(layout).not.toContain('PwaInstallShell');
     expect(pinGateway).toContain('PwaInstallShell');
   });
+
+  test('usePwaInstall caches useSyncExternalStore snapshot to avoid infinite re-renders', () => {
+    const hook = readFileSync(resolve(ROOT, 'src/hooks/use-pwa-install.ts'), 'utf-8');
+
+    expect(hook).toContain('cachedPwaVisibility');
+    expect(hook).not.toContain('readPwaInstallVisibility()');
+  });
 });
 
 describe('pwa-install-reset', () => {
