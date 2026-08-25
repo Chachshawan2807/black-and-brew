@@ -50,6 +50,10 @@ import { resolveActorLabel } from '@/lib/data-change-log';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import {
+  shouldResetBeanOrderTrackingOnShip,
+  shouldSyncBeanOrderTrackingAfterShip,
+} from '@/lib/bean-orders/shipment-tracking-preserve';
+import {
   createTrackingMoreShipment,
   fetchTrackingMoreStatusWithRepair,
   resolveTrackingMoreCarrierCode,
@@ -1533,15 +1537,31 @@ export async function shipBeanOrder(
 
   try {
     const supabase = getSupabaseAdmin();
-    const { data: order, error: fetchError } = await supabase
-      .from('bean_orders')
-      .select(
-        'id, order_no, payment_status, fulfillment_status, cancelled_at, status_history, recipient_name, bean_customers(name)',
-      )
-      .eq('id', orderId)
-      .maybeSingle();
+    const [{ data: order, error: fetchError }, { data: existingShipment, error: shipmentFetchError }] =
+      await Promise.all([
+        supabase
+          .from('bean_orders')
+          .select(
+            'id, order_no, payment_status, fulfillment_status, cancelled_at, status_history, recipient_name, bean_customers(name)',
+          )
+          .eq('id', orderId)
+          .maybeSingle(),
+        supabase
+          .from('bean_order_shipments')
+          .select('carrier_code, tracking_number, tracking_status, tracking_raw, shipped_at')
+          .eq('order_id', orderId)
+          .maybeSingle(),
+      ]);
 
     if (fetchError || !order) return { success: false, error: 'ไม่พบออเดอร์' };
+    if (shipmentFetchError) {
+      console.error(
+        'Supabase Error (shipBeanOrder existing shipment):',
+        shipmentFetchError.message,
+        shipmentFetchError.details,
+      );
+      return { success: false, error: shipmentFetchError.message };
+    }
 
     const fulfillmentStatus = order.fulfillment_status as 'pending' | 'shipped';
     const isNewShipment = fulfillmentStatus === 'pending';
@@ -1560,9 +1580,26 @@ export async function shipBeanOrder(
     const resolvedCarrierCode = carrierCode
       ? resolveTrackingMoreCarrierCode(carrierCode) ?? carrierCode
       : null;
-    const shouldSyncTracking = Boolean(
+    const trackableShipment = Boolean(
       trackingNumber && carrierCode && isTrackableCarrierCode(carrierCode),
     );
+    const resetTracking = shouldResetBeanOrderTrackingOnShip(
+      existingShipment
+        ? {
+            carrierCode: (existingShipment.carrier_code as string | null) ?? null,
+            trackingNumber: (existingShipment.tracking_number as string | null) ?? null,
+            trackingStatus: (existingShipment.tracking_status as string | null) ?? null,
+          }
+        : null,
+      { carrierCode: resolvedCarrierCode, trackingNumber: trackingNumber || null },
+      isNewShipment,
+    );
+    const shouldSyncTracking = shouldSyncBeanOrderTrackingAfterShip(
+      trackableShipment,
+      resetTracking,
+      (existingShipment?.tracking_status as string | null) ?? null,
+    );
+    const previousTrackingStatus = (existingShipment?.tracking_status as string | null) ?? null;
 
     const orderUpdates: Record<string, unknown> = {
       status_history: history,
@@ -1583,10 +1620,17 @@ export async function shipBeanOrder(
           delivery_type: 'parcel',
           carrier_code: resolvedCarrierCode,
           tracking_number: trackingNumber || null,
-          tracking_status: null,
-          tracking_raw: null,
+          tracking_status: resetTracking
+            ? null
+            : ((existingShipment?.tracking_status as string | null) ?? null),
+          tracking_raw: resetTracking
+            ? null
+            : ((existingShipment?.tracking_raw as Record<string, unknown> | null) ?? null),
           shipped_by: actor,
-          shipped_at: new Date().toISOString(),
+          shipped_at:
+            isNewShipment || resetTracking
+              ? new Date().toISOString()
+              : ((existingShipment?.shipped_at as string | null) ?? new Date().toISOString()),
         },
         { onConflict: 'order_id' },
       ),
@@ -1664,7 +1708,7 @@ export async function shipBeanOrder(
             const { maybeNotifyBeanOrderDelivered } = await import('@/lib/bean-orders/notify-delivered');
             await maybeNotifyBeanOrderDelivered({
               trackingNumber: trackingNumber || undefined,
-              previousStatus: null,
+              previousStatus: previousTrackingStatus,
               nextStatus: trackingStatus,
               carrierCode: resolvedCarrierCode,
             }).catch((error) => {

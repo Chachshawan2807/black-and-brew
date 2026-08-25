@@ -40,6 +40,14 @@ describe('bean order save performance', () => {
     const deferred = functionBody('shipBeanOrder', beanOrderActions);
     expect(deferred).toContain('fetchTrackingMoreStatusWithRepair');
     expect(deferred).not.toContain('isTrackingWebhookPrimary');
+    expect(deferred).toContain('shouldSyncBeanOrderTrackingAfterShip');
+  });
+
+  test('shipBeanOrder preserves cached tracking when shipment identity is unchanged', () => {
+    const critical = criticalPathBeforeAfter('shipBeanOrder', beanOrderActions);
+    expect(critical).toContain('shouldResetBeanOrderTrackingOnShip');
+    expect(critical).toMatch(/tracking_status:\s*resetTracking/);
+    expect(critical).toMatch(/tracking_raw:\s*resetTracking/);
   });
 
   test('confirmBeanOrderDelivered does not await delivery notification', () => {
