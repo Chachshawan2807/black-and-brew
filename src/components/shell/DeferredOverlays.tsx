@@ -18,30 +18,37 @@ const InventoryNotificationFAB = dynamic(
 
 /**
  * Defers heavy global overlays until after first paint / idle so route content can hydrate first.
+ * Notification FAB mounts earlier than quick action — badge + panel sync are time-sensitive.
  */
 export function DeferredOverlays() {
-  const [overlaysReady, setOverlaysReady] = useState(false);
+  const [notificationFabReady, setNotificationFabReady] = useState(false);
+  const [quickActionReady, setQuickActionReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    const cancelIdle = scheduleIdleWork(
+    const cancelNotificationFab = scheduleIdleWork(
       () => {
-        if (!cancelled) setOverlaysReady(true);
+        if (!cancelled) setNotificationFabReady(true);
+      },
+      { timeout: 400 },
+    );
+    const cancelQuickAction = scheduleIdleWork(
+      () => {
+        if (!cancelled) setQuickActionReady(true);
       },
       { timeout: 1500 },
     );
     return () => {
       cancelled = true;
-      cancelIdle();
+      cancelNotificationFab();
+      cancelQuickAction();
     };
   }, []);
 
-  if (!overlaysReady) return null;
-
   return (
     <>
-      <InventoryQuickActionWrapper />
-      <InventoryNotificationFAB />
+      {quickActionReady ? <InventoryQuickActionWrapper /> : null}
+      {notificationFabReady ? <InventoryNotificationFAB /> : null}
     </>
   );
 }

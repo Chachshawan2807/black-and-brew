@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  fetchDataChangeLogs,
+  fetchNotificationCatchUpLogs,
   type DataChangeLogRow,
 } from '@/app/actions/data-change-log-actions';
 import { supabase } from '@/lib/supabase';
@@ -161,7 +161,7 @@ export function useInventoryNotifications() {
 
   const [notifications, setNotifications] = useState<InventoryNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelOpen, setPanelOpenState] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences>(() => loadNotificationPreferences());
   const [realtimeReady, setRealtimeReady] = useState(false);
   const [realtimeReconnectKey, setRealtimeReconnectKey] = useState(0);
@@ -209,7 +209,7 @@ export function useInventoryNotifications() {
       () => {
         if (!cancelled) setRealtimeReady(true);
       },
-      { timeout: 1200 },
+      { timeout: 400 },
     );
 
     return () => {
@@ -218,15 +218,6 @@ export function useInventoryNotifications() {
       setRealtimeReady(false);
     };
   }, [prefs]);
-
-  useEffect(() => {
-    sessionIdRef.current = getClientSessionId();
-    void syncFromStorage();
-    const prefs = loadNotificationPreferences();
-    if (wantsPushRegistration(prefs)) {
-      void refreshLocalPushSubscriptionState();
-    }
-  }, [syncFromStorage]);
 
   useEffect(() => {
     void syncAppBadge(unreadCount);
@@ -497,8 +488,8 @@ export function useInventoryNotifications() {
     [filterEligibleRows, formatNotificationRow, pushNotification]
   );
 
-  const syncInventoryNotificationCatchUp = useCallback(async () => {
-    const result = await fetchDataChangeLogs({ module: 'inventory', limit: 50 });
+  const syncNotificationCatchUp = useCallback(async () => {
+    const result = await fetchNotificationCatchUpLogs({ limit: 150 });
     if (!result.success) return;
 
     const eligible = filterEligibleRows(result.rows);
@@ -511,104 +502,6 @@ export function useInventoryNotifications() {
       });
     }
   }, [filterEligibleRows, formatNotificationRow, pushNotification]);
-
-  const syncScheduleNotificationCatchUp = useCallback(async () => {
-    const currentPrefs = prefsRef.current;
-    if (!currentPrefs.dailyScheduleReports) return;
-
-    const result = await fetchDataChangeLogs({ module: 'schedule', limit: 50 });
-    if (!result.success) return;
-
-    const eligible = filterEligibleRows(
-      result.rows.filter(isEligibleDailyReportNotification),
-    );
-    if (eligible.length === 0) return;
-
-    const loc = localeRef.current;
-    for (const row of [...eligible].reverse()) {
-      pushNotification(formatDailyReportNotification(row, loc), undefined, {
-        skipSystemNotification: true,
-      });
-    }
-  }, [filterEligibleRows, pushNotification]);
-
-  const syncBeanOrderNotificationCatchUp = useCallback(async () => {
-    const currentPrefs = prefsRef.current;
-    if (!currentPrefs.systemNotifications) return;
-
-    const result = await fetchDataChangeLogs({ module: 'bean_orders', limit: 50 });
-    if (!result.success) return;
-
-    const eligible = filterEligibleRows(
-      result.rows.filter(
-        (row) =>
-          isEligibleBeanOrderCreatedNotification(row) ||
-          isEligibleBeanOrderDeliveredNotification(row) ||
-          isEligibleBeanOrderShippedNotification(row) ||
-          isEligibleBeanOrderPaymentNotification(row),
-      ),
-    );
-    if (eligible.length === 0) return;
-
-    const loc = localeRef.current;
-    for (const row of [...eligible].reverse()) {
-      pushNotification(formatNotificationRow(row, loc), undefined, {
-        skipSystemNotification: true,
-      });
-    }
-  }, [filterEligibleRows, formatNotificationRow, pushNotification]);
-
-  const syncInsightNotificationCatchUp = useCallback(async () => {
-    const currentPrefs = prefsRef.current;
-    if (!currentPrefs.proactiveInsights) return;
-
-    const result = await fetchDataChangeLogs({ module: 'insights', limit: 50 });
-    if (!result.success) return;
-
-    const eligible = filterEligibleRows(result.rows.filter(isEligibleInsightNotification));
-    if (eligible.length === 0) return;
-
-    const loc = localeRef.current;
-    for (const row of [...eligible].reverse()) {
-      pushNotification(formatInsightNotification(row, loc), undefined, {
-        skipSystemNotification: true,
-      });
-    }
-  }, [filterEligibleRows, pushNotification]);
-
-  const syncSecurityNotificationCatchUp = useCallback(async () => {
-    const currentPrefs = prefsRef.current;
-    if (!currentPrefs.securityAlerts) return;
-
-    const result = await fetchDataChangeLogs({ module: 'security', limit: 50 });
-    if (!result.success) return;
-
-    const eligible = filterEligibleRows(result.rows.filter(isEligibleSecurityNotification));
-    if (eligible.length === 0) return;
-
-    const loc = localeRef.current;
-    for (const row of [...eligible].reverse()) {
-      pushNotification(formatSecurityNotification(row, loc), undefined, {
-        skipSystemNotification: true,
-      });
-    }
-  }, [filterEligibleRows, pushNotification]);
-
-  const syncNotificationCatchUp = useCallback(async () => {
-    await Promise.all([
-      syncInventoryNotificationCatchUp(),
-      syncScheduleNotificationCatchUp(),
-      syncBeanOrderNotificationCatchUp(),
-      syncInsightNotificationCatchUp(),
-      syncSecurityNotificationCatchUp(),
-    ]);
-  }, [
-    syncInventoryNotificationCatchUp,
-    syncScheduleNotificationCatchUp,
-    syncBeanOrderNotificationCatchUp,
-    syncInsightNotificationCatchUp,
-    syncSecurityNotificationCatchUp,
-  ]);
 
   const syncFromStorageAndServer = useCallback(async (writeBack = true) => {
     await syncFromStorage(writeBack);
@@ -625,6 +518,15 @@ export function useInventoryNotifications() {
     },
     [syncFromStorageAndServer],
   );
+
+  useEffect(() => {
+    sessionIdRef.current = getClientSessionId();
+    syncFromStorageAndServerSoon();
+    const loadedPrefs = loadNotificationPreferences();
+    if (wantsPushRegistration(loadedPrefs)) {
+      void refreshLocalPushSubscriptionState();
+    }
+  }, [syncFromStorageAndServerSoon]);
 
   useEffect(() => {
     if (!realtimeReady) return;
@@ -897,11 +799,16 @@ export function useInventoryNotifications() {
     persist([]);
   }, [persist]);
 
-  const openPanel = useCallback(() => {
-    setPanelOpen(true);
-    void syncNotificationCatchUp();
-  }, [syncNotificationCatchUp]);
-  const closePanel = useCallback(() => setPanelOpen(false), []);
+  const setPanelOpen = useCallback(
+    (open: boolean) => {
+      setPanelOpenState(open);
+      if (open) void syncNotificationCatchUp();
+    },
+    [syncNotificationCatchUp],
+  );
+
+  const openPanel = useCallback(() => setPanelOpen(true), [setPanelOpen]);
+  const closePanel = useCallback(() => setPanelOpen(false), [setPanelOpen]);
 
   return {
     notifications,

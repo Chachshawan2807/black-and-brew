@@ -91,6 +91,18 @@ export interface FetchDataChangeLogsOptions {
   module?: string;
 }
 
+/** Modules polled by the notification FAB for cross-device catch-up. */
+export const NOTIFICATION_CATCH_UP_MODULES = [
+  'inventory',
+  'schedule',
+  'bean_orders',
+  'insights',
+  'security',
+] as const;
+
+const DATA_CHANGE_LOG_SELECT =
+  'id, occurred_at, actor_id, actor_label, actor_access_level, action, module, entity_type, entity_id, entity_label, field_changes, old_value, new_value, source, ip_address, user_agent, status, error_message, metadata';
+
 async function ensureAuthenticated(): Promise<boolean> {
   const auth = await ensureServerSession();
   return auth.ok;
@@ -239,9 +251,7 @@ export async function fetchDataChangeLogs(
     const supabase = getSupabaseAdmin();
     let query = supabase
       .from('data_change_logs')
-      .select(
-        'id, occurred_at, actor_id, actor_label, actor_access_level, action, module, entity_type, entity_id, entity_label, field_changes, old_value, new_value, source, ip_address, user_agent, status, error_message, metadata'
-      )
+      .select(DATA_CHANGE_LOG_SELECT)
       .order('occurred_at', { ascending: false })
       .limit(limit);
 
@@ -262,5 +272,39 @@ export async function fetchDataChangeLogs(
     return { success: true, rows: (data ?? []) as DataChangeLogRow[] };
   } catch {
     return { success: false, error: 'Failed to load data change history' };
+  }
+}
+
+/** Single round-trip catch-up for notification FAB sync across all channels. */
+export async function fetchNotificationCatchUpLogs(
+  options: { limit?: number } = {},
+): Promise<{ success: true; rows: DataChangeLogRow[] } | { success: false; error: string }> {
+  const authenticated = await ensureAuthenticated();
+  if (!authenticated) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const limit = options.limit ?? 150;
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from('data_change_logs')
+      .select(DATA_CHANGE_LOG_SELECT)
+      .in('module', [...NOTIFICATION_CATCH_UP_MODULES])
+      .order('occurred_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      if (error.message?.includes('Could not find the table') || error.code === 'PGRST205') {
+        return { success: true, rows: [] };
+      }
+      console.error('Supabase Error:', error.message, error.details);
+      throw error;
+    }
+
+    return { success: true, rows: (data ?? []) as DataChangeLogRow[] };
+  } catch {
+    return { success: false, error: 'Failed to load notification catch-up history' };
   }
 }

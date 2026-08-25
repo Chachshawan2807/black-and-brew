@@ -36,9 +36,9 @@ describe('Inventory Quick Action FAB', () => {
 
     expect(layoutCode).toContain('<DeferredOverlays />');
     expect(deferredCode).toContain('<InventoryQuickActionWrapper />');
-    expect(deferredCode).toMatch(
-      /<InventoryQuickActionWrapper\s*\/>\s*\r?\n\s*<InventoryNotificationFAB/,
-    );
+    expect(deferredCode).toContain('<InventoryNotificationFAB />');
+    expect(deferredCode).toContain('notificationFabReady');
+    expect(deferredCode).toContain('quickActionReady');
     expect(deferredCode).not.toContain('AIChatOverlay');
     expect(layoutCode).toContain('<FabStackHideToggle />');
   });
@@ -84,9 +84,8 @@ describe('Inventory Quick Action FAB', () => {
     );
 
     expect(deferredCode).toContain('InventoryNotificationFAB');
-    expect(deferredCode).toMatch(
-      /<InventoryQuickActionWrapper\s*\/>\s*\r?\n\s*<InventoryNotificationFAB/,
-    );
+    expect(deferredCode).toContain('notificationFabReady');
+    expect(deferredCode).toContain('quickActionReady');
     expect(notifyCode).toContain('variant="fab"');
     expect(notifyCode).not.toContain('/inventory');
     expect(notifyCode).toMatch(/isAnyOtherOpen\('notification'\)/);

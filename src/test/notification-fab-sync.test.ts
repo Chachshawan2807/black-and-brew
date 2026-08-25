@@ -114,13 +114,9 @@ describe('notification fab cross-platform sync', () => {
     );
   });
 
-  test('hook catches up missed cross-device inventory logs from the server for mobile FAB sync', () => {
-    expect(hookSource).toContain('fetchDataChangeLogs');
-    expect(hookSource).toContain('syncInventoryNotificationCatchUp');
-    expect(hookSource).toContain('syncScheduleNotificationCatchUp');
+  test('hook catches up missed cross-device logs from the server for mobile FAB sync', () => {
+    expect(hookSource).toContain('fetchNotificationCatchUpLogs');
     expect(hookSource).toContain('syncNotificationCatchUp');
-    expect(hookSource).toContain("fetchDataChangeLogs({ module: 'inventory'");
-    expect(hookSource).toContain("fetchDataChangeLogs({ module: 'schedule'");
     expect(hookSource).toContain('skipSystemNotification: true');
   });
 
@@ -130,8 +126,7 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('replaceNotificationByDedupeKey');
     expect(hookSource).toContain('isProactiveInsightNotificationItem');
     expect(hookSource).not.toContain('refreshProactiveInsightDigest');
-    expect(hookSource).toContain('syncInsightNotificationCatchUp');
-    expect(hookSource).toContain("fetchDataChangeLogs({ module: 'insights'");
+    expect(hookSource).toContain('fetchNotificationCatchUpLogs');
     expect(hookSource).toContain('skipInsightOsNotification');
     expect(hookSource).toMatch(
       /module === 'insights' && event === 'UPDATE'[\s\S]*replaceNotificationByDedupeKey/,
@@ -143,7 +138,8 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('isEligibleDailyReportNotification');
     expect(hookSource).toContain('formatDailyReportNotification');
     expect(hookSource).toContain('dailyScheduleReports');
-    expect(hookSource).toMatch(/openPanel[\s\S]*syncNotificationCatchUp/);
+    expect(hookSource).toMatch(/setPanelOpen[\s\S]*syncNotificationCatchUp/);
+    expect(hookSource).toMatch(/openPanel[\s\S]*setPanelOpen\(true\)/);
     // Schedule rows come only from cron (05:00 / 18:00) — no client backfill create
     expect(hookSource).not.toContain('ensureDailyReportNotificationHistory');
     expect(hookSource).toContain("'UPDATE'");
@@ -162,7 +158,7 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('formatBeanOrderDeliveredNotification');
     expect(hookSource).toContain('isEligibleBeanOrderShippedNotification');
     expect(hookSource).toContain('formatBeanOrderShippedNotification');
-    expect(hookSource).toContain("fetchDataChangeLogs({ module: 'bean_orders'");
+    expect(hookSource).toContain('fetchNotificationCatchUpLogs');
   });
 
   test('clearing history prevents old server catch-up logs from being restored', () => {
@@ -266,6 +262,37 @@ describe('notification fab cross-platform sync', () => {
   test('notification panel dismisses via backdrop tap and header close', () => {
     expect(panelSource).toMatch(/onClick=\{closePanel\}/);
     expect(panelSource).toMatch(/aria-label=\{isTh \? 'ปิด' : 'Close'\}/);
+  });
+
+  test('notification bell FAB opens panel through openPanel for server catch-up', () => {
+    expect(bellSource).toContain('openPanel');
+    expect(bellSource).toContain('closePanel');
+    expect(bellSource).not.toMatch(/setPanelOpen\(!panelOpen\)/);
+  });
+
+  test('hook syncs from storage and server on initial mount', () => {
+    expect(hookSource).toContain('syncFromStorageAndServerSoon');
+    expect(hookSource).toMatch(/sessionIdRef\.current = getClientSessionId\(\)[\s\S]*syncFromStorageAndServerSoon/);
+  });
+
+  test('notification FAB mounts before quick action overlay', () => {
+    const deferredSource = readFileSync(
+      resolve(__dirname, '../components/shell/DeferredOverlays.tsx'),
+      'utf8',
+    );
+    expect(deferredSource).toContain('notificationFabReady');
+    expect(deferredSource).toMatch(/timeout:\s*400[\s\S]*notificationFabReady/);
+    expect(deferredSource).toMatch(/timeout:\s*1500[\s\S]*quickActionReady/);
+  });
+
+  test('unified server catch-up uses single fetchNotificationCatchUpLogs round trip', () => {
+    const actionsSource = readFileSync(
+      resolve(__dirname, '../app/actions/data-change-log-actions.ts'),
+      'utf8',
+    );
+    expect(actionsSource).toContain('fetchNotificationCatchUpLogs');
+    expect(actionsSource).toContain('NOTIFICATION_CATCH_UP_MODULES');
+    expect(hookSource).toMatch(/fetchNotificationCatchUpLogs\(\{ limit: 150 \}\)/);
   });
 
   test('notification FAB and panel use generic notification copy', () => {

@@ -25,7 +25,7 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
   const locale = (params?.locale as string) || 'th';
   const isTh = locale === 'th';
   const { unreadCount, panelOpen } = useNotificationState();
-  const { setPanelOpen } = useNotificationActions();
+  const { openPanel, closePanel } = useNotificationActions();
   const [pulse, setPulse] = useState(false);
   const isFab = variant === 'fab';
 
@@ -41,7 +41,7 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
 
   const sharedProps = {
     type: 'button' as const,
-    onClick: () => setPanelOpen(!panelOpen),
+    onClick: () => (panelOpen ? closePanel() : openPanel()),
     'aria-label':
       unreadCount > 0
         ? `การแจ้งเตือน ${unreadCount} รายการใหม่`
