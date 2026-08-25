@@ -713,6 +713,7 @@ export function InventoryQuickActionBar({
   const showClearSearch = quickSearch.trim().length > 0;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional client-only mount gate
     setIsMounted(true);
   }, []);
 
@@ -727,7 +728,7 @@ export function InventoryQuickActionBar({
         visibleHeight: viewportHeight,
       }),
     );
-  }, [viewportInsets.offsetTop, viewportInsets.visibleHeight]);
+  }, [viewportInsets.offsetTop, viewportInsets.visibleHeight, setPortaledSuggestionsStyle]);
 
   useEffect(() => {
     if (!showSuggestions || !portalSuggestions) return;
