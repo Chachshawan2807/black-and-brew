@@ -152,8 +152,6 @@ export default function InventoryQuickActionFAB() {
   }, []);
 
   useEffect(() => {
-
-  useEffect(() => {
     if (isOpen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- keep panel mounted through exit animation
       setIsPanelRendered(true);
