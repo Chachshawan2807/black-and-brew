@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { translateTrackingDetail } from '@/lib/bean-orders/tracking-detail-labels';
 
 describe('translateTrackingDetail', () => {
-  test('translates common Kerry/TrackingMore messages', () => {
+  test('translates common Kerry shipment messages', () => {
     expect(translateTrackingDetail('Successfully delivered')).toBe('จัดส่งสำเร็จ');
     expect(translateTrackingDetail('Courier has contacted the recipient')).toBe('พนักงานติดต่อผู้รับแล้ว');
     expect(translateTrackingDetail('Out for delivery')).toBe('กำลังนำจ่ายพัสดุ');

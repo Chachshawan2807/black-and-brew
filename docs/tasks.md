@@ -19,7 +19,7 @@ Notable completed work:
 - [x] Branch 2 withdrawal batch (`branch-withdraw`, `record_branch_withdrawal_batch` RPC)
 - [x] Notification unread badge counter (IDB + cross-tab sync)
 - [x] Inventory accuracy gauge on `/inventory/accuracy`
-- [x] Bean orders module (`/bean-orders`, `bean_*` tables, TrackingMore, slip upload)
+- [x] Bean orders module (`/bean-orders`, `bean_*` tables, manual delivery confirm, slip upload)
 - [x] AI full coverage: 24 AI-readable tables; deterministic bean orders + inventory accuracy routes
 - [x] Sidebar menu drag-reorder (`sidebar-menu-order.ts`) + cross-device sync (`app_preferences`)
 - [x] Proactive cross-module insights (`/api/insight-alerts`, Web Push, Command Center ops panels)
@@ -27,7 +27,7 @@ Notable completed work:
 - [x] Shared `RoundedSelect` / select-trigger styles; view-transition navigation helpers
 - [x] Schedule toolbar “ล้างทั้งหมด” removed
 - [x] Inventory frequent-items localStorage cache
-- [x] `shipBeanOrder` deferred TrackingMore + push via `after()` (no sync `trackingWarning`)
+- [x] `shipBeanOrder` deferred shipped push via `after()` (no external tracking sync)
 - [x] `inventory_transactions.transaction_at` business date + ledger reset migration (`20260811105704`, `20260811115400`)
 - [x] Retired: inventory recommended target stock; weather API; Market Insights module; obsolete root protocol/skill stubs; `daily-report-notification-actions.ts`
 

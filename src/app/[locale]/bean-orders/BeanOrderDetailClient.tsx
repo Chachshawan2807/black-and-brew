@@ -26,7 +26,7 @@ import {
   validateBeanOrderShipmentCarrier,
 } from '@/lib/bean-orders/shipment-persist';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
-import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
+import { formatShipmentTrackingLabel } from '@/lib/bean-orders/tracking-status-labels';
 import { TrackingTimeline } from './_components/TrackingTimeline';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
 import { BeanOrderShippingFields } from './_components/BeanOrderShippingFields';
@@ -38,13 +38,12 @@ import {
   canRevertPayment,
   canUploadSlip,
   isConfirmPaymentButtonEnabled,
-  shouldShowAutoTrackingBadge,
   shouldShowDeliveredButton,
 } from '@/lib/bean-orders/order-status';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
 import { navigateWithViewTransition } from '@/lib/view-transition';
 import { OrderListStatusGroup } from './_components/OrderStatusBadge';
-import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_BODY_GRID, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, BEAN_ORDER_DETAIL_LINES_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_DETAIL_PAYMENT_BODY, BEAN_ORDER_DETAIL_PAYMENT_COLUMN, BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID, BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT, BEAN_ORDER_DETAIL_SHIPPING_COLUMN, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BADGE_MUTED, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS } from './_components/bean-order-layout';
+import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_BODY_GRID, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, BEAN_ORDER_DETAIL_LINES_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_DETAIL_PAYMENT_BODY, BEAN_ORDER_DETAIL_PAYMENT_COLUMN, BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID, BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT, BEAN_ORDER_DETAIL_SHIPPING_COLUMN, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -102,14 +101,6 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     order.shipment?.trackingStatus,
     trackingNumber,
     order.cancelledAt,
-    resolveCarrierCodeForSave(carrierCode, customCarrierLabel) ?? carrierCode,
-  );
-  const showAutoTrackingBadge = shouldShowAutoTrackingBadge(
-    order.fulfillmentStatus,
-    order.shipment?.trackingStatus,
-    trackingNumber,
-    order.cancelledAt,
-    resolveCarrierCodeForSave(carrierCode, customCarrierLabel) ?? carrierCode,
   );
   const hasSlip = Boolean(order.payment?.uploadedAt || pendingSlipPreview);
   const confirmEnabled = isConfirmPaymentButtonEnabled(hasSlip);
@@ -494,11 +485,6 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                         >
                           จัดส่งสำเร็จ
                         </button>
-                      ) : null}
-                      {showAutoTrackingBadge ? (
-                        <span className={BEAN_ORDER_ACTION_BADGE_MUTED} title="สถานะจัดส่งสำเร็จอัปเดตจาก TrackingMore">
-                          ระบบอัตโนมัติ
-                        </span>
                       ) : null}
                       <button
                         type="button"

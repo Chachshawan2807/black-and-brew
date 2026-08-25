@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   canConfirmDelivered,
-  shouldShowAutoTrackingBadge,
   shouldShowDeliveredButton,
 } from '@/lib/bean-orders/order-status';
 
@@ -108,23 +107,14 @@ describe('bean order navigation after save/delete', () => {
 describe('bean order delivered action beside shipping update', () => {
   const cancelledAt = '2026-07-22T00:00:00Z';
 
-  test('shows green delivered button only without tracking number', () => {
+  test('shows green delivered button for pending and shipped orders', () => {
     expect(shouldShowDeliveredButton('pending', null, null)).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', null, '', null, 'kerryexpress-th')).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', 'in_transit', '  ', null, 'kerryexpress-th')).toBe(true);
-    expect(shouldShowDeliveredButton('shipped', null, 'KEX123', null, 'kerryexpress-th')).toBe(false);
-    expect(shouldShowDeliveredButton('shipped', null, 'LM123', null, 'lalamove')).toBe(true);
+    expect(shouldShowDeliveredButton('shipped', null, '', null)).toBe(true);
+    expect(shouldShowDeliveredButton('shipped', 'in_transit', '  ', null)).toBe(true);
+    expect(shouldShowDeliveredButton('shipped', null, 'KEX123', null)).toBe(true);
+    expect(shouldShowDeliveredButton('shipped', null, 'LM123', null)).toBe(true);
     expect(shouldShowDeliveredButton('shipped', 'delivered', null)).toBe(false);
     expect(shouldShowDeliveredButton('pending', null, null, cancelledAt)).toBe(false);
-  });
-
-  test('shows auto tracking badge when tracking number is present', () => {
-    expect(shouldShowAutoTrackingBadge('pending', null, 'KEX123', null, 'kerryexpress-th')).toBe(true);
-    expect(shouldShowAutoTrackingBadge('shipped', 'in_transit', 'KEX123', null, 'kerryexpress-th')).toBe(true);
-    expect(shouldShowAutoTrackingBadge('shipped', null, null, null, 'kerryexpress-th')).toBe(false);
-    expect(shouldShowAutoTrackingBadge('shipped', 'delivered', 'KEX123', null, 'kerryexpress-th')).toBe(false);
-    expect(shouldShowAutoTrackingBadge('pending', null, 'KEX123', cancelledAt, 'kerryexpress-th')).toBe(false);
-    expect(shouldShowAutoTrackingBadge('shipped', null, 'LM123', null, 'lalamove')).toBe(false);
   });
 
   test('can confirm delivered only after shipped and not yet delivered', () => {
@@ -156,19 +146,15 @@ describe('bean order delivered action beside shipping update', () => {
     );
   });
 
-  test('detail UI switches between จัดส่งสำเร็จ and ระบบอัตโนมัติ', () => {
+  test('detail UI shows manual delivered button', () => {
     const source = readFileSync(
       resolve(process.cwd(), 'src/app/[locale]/bean-orders/BeanOrderDetailClient.tsx'),
       'utf8',
     );
     expect(source).toContain('shouldShowDeliveredButton');
-    expect(source).toContain('shouldShowAutoTrackingBadge');
     expect(source).toContain('BEAN_ORDER_ACTION_BTN_INFO');
-    expect(source).toContain('BEAN_ORDER_ACTION_BADGE_MUTED');
     expect(source).toContain('จัดส่งสำเร็จ');
-    expect(source).toContain('ระบบอัตโนมัติ');
-    expect(source).toMatch(
-      /showDeliveredButton[\s\S]{0,500}?จัดส่งสำเร็จ[\s\S]{0,500}?showAutoTrackingBadge[\s\S]{0,400}?ระบบอัตโนมัติ/,
-    );
+    expect(source).not.toContain('shouldShowAutoTrackingBadge');
+    expect(source).not.toContain('ระบบอัตโนมัติ');
   });
 });

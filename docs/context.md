@@ -67,8 +67,6 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 | `VAPID_PRIVATE_KEY` | Web Push server signing key | Server only |
 | `VAPID_SUBJECT` | Push service contact URI | Server only |
 | `PUSH_WEBHOOK_SECRET` | OPTION — `POST /api/push/webhook` auth | Server only |
-| `TRACKING_WEBHOOK_SECRET` | SECRET — `POST /api/bean-orders/tracking-webhook` auth | Server only |
-| `TRACKINGMORE_API_KEY` | Bean order shipment tracking (TrackingMore) | Server only |
 | `UPSTASH_REDIS_REST_URL` | OPTION — distributed rate limiting (Upstash) | Server only |
 | `UPSTASH_REDIS_REST_TOKEN` | OPTION — distributed rate limiting (Upstash) | Server only |
 
@@ -179,7 +177,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Inventory route performance | Row containment, stable grid handlers, dynamic modal loading, hover/focus modal preload |
 | PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |
 | Sidebar menu order | `sidebar-menu-order.ts`, `app-preferences-actions.ts`, `app_preferences` table — cross-device sync |
-| Bean orders | `bean-order-actions.ts`, `lib/bean-orders/`, TrackingMore webhook + cron sync |
+| Bean orders | `bean-order-actions.ts`, `lib/bean-orders/`, manual delivery confirm |
 | AI full coverage | 24 AI-readable tables; deterministic routes for bean orders + inventory accuracy |
 | Proactive insights | `src/lib/proactive-insights/`, `GET /api/insight-alerts`, Web Push + NotificationBell; prefs `proactiveInsights` |
 | Navigation perf | `route-chunk-preload.ts`, `warm-route-navigation.ts`, `ViewTransitionNavigation.tsx` — idle/touch prefetch + view transitions |

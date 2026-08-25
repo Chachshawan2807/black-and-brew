@@ -3,7 +3,7 @@ import {
   formatTrackingEventDateTime,
   formatTrackingLocationParts,
 } from '@/lib/bean-orders/tracking-events';
-import { formatShipmentTrackingLabel } from '@/lib/bean-orders/trackingmore';
+import { formatShipmentTrackingLabel } from '@/lib/bean-orders/tracking-status-labels';
 
 type Props = {
   trackingNumber?: string | null;

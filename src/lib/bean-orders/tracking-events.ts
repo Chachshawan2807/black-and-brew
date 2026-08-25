@@ -1,4 +1,7 @@
-import { formatShipmentTrackingLabel, mapTrackingStatusLabel } from '@/lib/bean-orders/trackingmore';
+import {
+  formatShipmentTrackingLabel,
+  mapTrackingStatusLabel,
+} from '@/lib/bean-orders/tracking-status-labels';
 import { translateTrackingDetail } from '@/lib/bean-orders/tracking-detail-labels';
 import {
   formatThaiAdminAreaLabel,

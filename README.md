@@ -232,7 +232,7 @@
 
 `/[locale]/bean-orders` · ออเดอร์เมล็ดกาแฟ
 
-**ใช้ทำอะไร:** จัดการออเดอร์เมล็ดกาแฟสำหรับลูกค้า — สร้างออเดอร์หลายรายการ อัปโหลดสลิปชำระเงิน ยืนยันการชำระ จัดส่ง และติดตามพัสดุผ่าน TrackingMore
+**ใช้ทำอะไร:** จัดการออเดอร์เมล็ดกาแฟสำหรับลูกค้า — สร้างออเดอร์หลายรายการ อัปโหลดสลิปชำระเงิน ยืนยันการชำระ จัดส่ง และยืนยันจัดส่งสำเร็จด้วยตนเอง
 
 **เหมาะกับใคร:** พนักงานที่รับออเดอร์เมล็ดกาแฟและจัดส่งให้ลูกค้า
 
@@ -241,7 +241,7 @@
 - สร้างออเดอร์พร้อมข้อมูลลูกค้าและที่อยู่จัดส่ง (รองรับหลายที่อยู่ต่อลูกค้า)
 - สถานะแยก 2 แกน: การชำระเงิน (`payment_status`) และการจัดส่ง (`fulfillment_status`)
 - อัปโหลดสลิปชำระเงินไปยัง Supabase Storage (`bean-order-slips`)
-- จัดส่งพร้อมเลขพัสดุ — ซิงก์สถานะผ่าน TrackingMore webhook หรือ cron (`/api/bean-orders/sync-tracking`)
+- จัดส่งพร้อมเลขพัสดุ — พนักงานยืนยัน「จัดส่งสำเร็จ」ด้วยตนเอง
 - ไม่หักสต็อกคลังอัตโนมัติ — แยกจากโมดูล Inventory
 
 **จุดเด่น:** โมดูลเฉพาะทางสำหรับธุรกิจเมล็ดกาแฟ ไม่ต้องบันทึกใน Excel หรือ LINE แยก — บรู (AI) อ่านสรุปออเดอร์ค้างชำระ/ค้างส่งได้
@@ -416,8 +416,6 @@ npm run dev
 | `VAPID_PRIVATE_KEY` | SECRET | คีย์ลับสำหรับส่งการแจ้งเตือน — คู่กับคีย์สาธารณะ |
 | `VAPID_SUBJECT` | SECRET | อีเมลติดต่อ (เช่น `mailto:admin@yourshop.com`) ที่บริการ push ต้องการ |
 | `PUSH_WEBHOOK_SECRET` | SECRET, OPTION | รหัสสำรองสำหรับส่งแจ้งเตือนผ่าน webhook |
-| `TRACKING_WEBHOOK_SECRET` | SECRET | ป้องกัน `POST /api/bean-orders/tracking-webhook` |
-| `TRACKINGMORE_API_KEY` | SECRET, OPTION | คีย์ TrackingMore สำหรับติดตามพัสดุออเดอร์เมล็ดกาแฟ |
 | `UPSTASH_REDIS_REST_URL` | SECRET, OPTION | Upstash Redis สำหรับ rate limit แบบ distributed |
 | `UPSTASH_REDIS_REST_TOKEN` | SECRET, OPTION | Upstash token คู่กับ URL ด้านบน |
 
@@ -440,7 +438,7 @@ src/
 │   ├── page.tsx              # หน้าแรก — พาไป /th
 │   ├── manifest.ts           # ตั้งค่า PWA (ติดตั้งเป็นแอป)
 │   ├── actions/              # ฟังก์ชันแก้ข้อมูล (คลัง, ตารางงาน, ล็อกอิน, ยอดขาย, …)
-│   ├── api/                  # ช่องทางพิเศษ (แชท AI, รายงานประจำวัน, insight-alerts, แจ้งเตือน, offline, bean-orders tracking)
+│   ├── api/                  # ช่องทางพิเศษ (แชท AI, รายงานประจำวัน, insight-alerts, แจ้งเตือน, offline)
 │   └── [locale]/             # หน้าเว็บทั้งหมด (แยกภาษาไทย/อังกฤษ)
 │       ├── <feature>/page.tsx, *Client.tsx
 │       └── <feature>/_components/   # ส่วนประกอบเฉพาะแต่ละฟีเจอร์

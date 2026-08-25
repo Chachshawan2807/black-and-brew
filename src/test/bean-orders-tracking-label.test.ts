@@ -2,10 +2,10 @@ import { describe, expect, test } from 'vitest';
 import {
   formatShipmentTrackingLabel,
   mapTrackingStatusLabel,
-} from '@/lib/bean-orders/trackingmore';
+} from '@/lib/bean-orders/tracking-status-labels';
 
 describe('mapTrackingStatusLabel', () => {
-  test('maps common TrackingMore statuses', () => {
+  test('maps common shipment statuses', () => {
     expect(mapTrackingStatusLabel('registered')).toBe('ลงทะเบียนติดตามแล้ว');
     expect(mapTrackingStatusLabel('pending')).toBe('รอขนส่งอัปเดตสถานะ');
     expect(mapTrackingStatusLabel('inforeceived')).toBe('รับข้อมูลจากขนส่งแล้ว');

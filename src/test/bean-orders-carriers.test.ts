@@ -4,24 +4,8 @@ import {
   formatBeanOrderCarrierChangeMessage,
   getCarrierLabel,
   initialCarrierSelection,
-  isTrackableCarrierCode,
   resolveCarrierCodeForSave,
 } from '@/lib/bean-orders/carriers';
-
-describe('isTrackableCarrierCode', () => {
-  test('allows known carriers for TrackingMore sync', () => {
-    expect(isTrackableCarrierCode('kerryexpress-th')).toBe(true);
-    expect(isTrackableCarrierCode('flashexpress')).toBe(true);
-    expect(isTrackableCarrierCode('thailand-post')).toBe(true);
-  });
-
-  test('rejects manual, custom, or non-TrackingMore carriers', () => {
-    expect(isTrackableCarrierCode('other')).toBe(false);
-    expect(isTrackableCarrierCode('lalamove')).toBe(false);
-    expect(isTrackableCarrierCode('รถจัดส่งเอง')).toBe(false);
-    expect(isTrackableCarrierCode(null)).toBe(false);
-  });
-});
 
 describe('BEAN_ORDER_CARRIERS', () => {
   test('includes Lalamove as a selectable channel', () => {

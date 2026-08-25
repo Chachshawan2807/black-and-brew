@@ -56,8 +56,6 @@ Locales: `th`, `en`
 | `/api/daily-report` | `src/app/api/daily-report/route.ts` |
 | `/api/push/webhook` | `src/app/api/push/webhook/route.ts` |
 | `/api/inventory/offline-mutation` | `src/app/api/inventory/offline-mutation/route.ts` |
-| `/api/bean-orders/sync-tracking` | `src/app/api/bean-orders/sync-tracking/route.ts` |
-| `/api/bean-orders/tracking-webhook` | `src/app/api/bean-orders/tracking-webhook/route.ts` |
 | `/api/insight-alerts` | `src/app/api/insight-alerts/route.ts` |
 
 Cron schedules: `vercel.json` (`daily-report`, `insight-alerts` morning/evening windows).
@@ -109,7 +107,7 @@ black-and-brew/
 | `login-history-actions.ts` | Login audit + active sessions |
 | `inventory-actions.ts` | Stock RPC, count policy, transactions, CRUD |
 | `branch-withdraw-actions.ts` | Branch 2 withdrawal batch save + history |
-| `bean-order-actions.ts` | Bean order CRUD, payment slips, shipping, TrackingMore |
+| `bean-order-actions.ts` | Bean order CRUD, payment slips, shipping, manual delivery confirm |
 | `shift-actions.ts` | Shift CRUD, roster |
 | `holiday-actions.ts` | Google Calendar + regular holidays |
 | `maintenance-actions.ts` | Service record CRUD |

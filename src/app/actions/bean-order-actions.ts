@@ -10,7 +10,7 @@ import { formatBeanOrderNo, buildBeanOrderNoDatePrefix, nextBeanOrderSequence } 
 import {
   appendStatusHistory,
   canDeleteOrder,
-  canConfirmManualDelivery,
+  canConfirmDelivered,
   canConfirmPayment,
   canEditOrder,
   canEditOrderLines,
@@ -21,7 +21,7 @@ import {
 import { computeLineTotal, computeOrderTotals } from '@/lib/bean-orders/pricing';
 import { filterBeanOrderInventoryItems, BEAN_ORDER_INVENTORY_ITEM_NAMES } from '@/lib/bean-orders/inventory-items';
 import { scheduleProactiveInsightEvaluation } from '@/lib/proactive-insights/schedule-evaluation';
-import { isTrackableCarrierCode } from '@/lib/bean-orders/carriers';
+import { resolveCarrierCode } from '@/lib/bean-orders/carrier-codes';
 import { parseTrackingEvents, type BeanOrderTrackingEvent } from '@/lib/bean-orders/tracking-events';
 import {
   parseThaiPostalAddressLine,
@@ -49,15 +49,7 @@ import { prepareBeanOrderInput } from '@/lib/bean-orders/order-input-normalize';
 import { resolveActorLabel } from '@/lib/data-change-log';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import {
-  shouldResetBeanOrderTrackingOnShip,
-  shouldSyncBeanOrderTrackingAfterShip,
-} from '@/lib/bean-orders/shipment-tracking-preserve';
-import {
-  createTrackingMoreShipment,
-  fetchTrackingMoreStatusWithRepair,
-  resolveTrackingMoreCarrierCode,
-} from '@/lib/bean-orders/trackingmore';
+import { shouldResetBeanOrderTrackingOnShip } from '@/lib/bean-orders/shipment-tracking-preserve';
 import { THAI_TIMEZONE } from '@/lib/timezone';
 import { toZonedTime } from 'date-fns-tz';
 import { google } from '@ai-sdk/google';
@@ -1577,12 +1569,7 @@ export async function shipBeanOrder(
       fulfillment_status: 'shipped',
     });
 
-    const resolvedCarrierCode = carrierCode
-      ? resolveTrackingMoreCarrierCode(carrierCode) ?? carrierCode
-      : null;
-    const trackableShipment = Boolean(
-      trackingNumber && carrierCode && isTrackableCarrierCode(carrierCode),
-    );
+    const resolvedCarrierCode = carrierCode ? resolveCarrierCode(carrierCode) ?? carrierCode : null;
     const resetTracking = shouldResetBeanOrderTrackingOnShip(
       existingShipment
         ? {
@@ -1594,12 +1581,6 @@ export async function shipBeanOrder(
       { carrierCode: resolvedCarrierCode, trackingNumber: trackingNumber || null },
       isNewShipment,
     );
-    const shouldSyncTracking = shouldSyncBeanOrderTrackingAfterShip(
-      trackableShipment,
-      resetTracking,
-      (existingShipment?.tracking_status as string | null) ?? null,
-    );
-    const previousTrackingStatus = (existingShipment?.tracking_status as string | null) ?? null;
 
     const orderUpdates: Record<string, unknown> = {
       status_history: history,
@@ -1667,54 +1648,6 @@ export async function shipBeanOrder(
           }).catch((error) => {
             console.error('notifyBeanOrderShipped (ship):', error);
           });
-        }
-
-        if (shouldSyncTracking) {
-          const resolvedCarrier =
-            resolveTrackingMoreCarrierCode(carrierCode) ?? carrierCode;
-          const tm = await createTrackingMoreShipment({
-            trackingNumber,
-            carrierCode: resolvedCarrier,
-          });
-
-          let trackingStatus: string | null = null;
-          let trackingRaw: Record<string, unknown> | null = tm.ok ? tm.data : null;
-          if (!tm.ok) {
-            console.error('TrackingMore create (deferred ship):', tm.error);
-          }
-
-          const fetched = await fetchTrackingMoreStatusWithRepair(trackingNumber, carrierCode);
-          if (fetched.ok) {
-            trackingStatus = fetched.status;
-            trackingRaw = fetched.raw;
-          } else if (tm.ok) {
-            trackingStatus = 'registered';
-          }
-
-          if (trackingStatus || trackingRaw) {
-            const { error: syncError } = await supabase
-              .from('bean_order_shipments')
-              .update({
-                tracking_status: trackingStatus,
-                tracking_raw: trackingRaw,
-              })
-              .eq('order_id', orderId);
-            if (syncError) {
-              console.error('Supabase Error (shipBeanOrder deferred tracking):', syncError.message, syncError.details);
-            }
-          }
-
-          if (trackingStatus) {
-            const { maybeNotifyBeanOrderDelivered } = await import('@/lib/bean-orders/notify-delivered');
-            await maybeNotifyBeanOrderDelivered({
-              trackingNumber: trackingNumber || undefined,
-              previousStatus: previousTrackingStatus,
-              nextStatus: trackingStatus,
-              carrierCode: resolvedCarrierCode,
-            }).catch((error) => {
-              console.error('maybeNotifyBeanOrderDelivered (ship):', error);
-            });
-          }
         }
 
         revalidateBeanOrders(locale, orderId);
@@ -1846,18 +1779,8 @@ export async function confirmBeanOrderDelivered(
       if (!canEditShipment(cancelledAt)) {
         return { success: false, error: 'แก้ไขการจัดส่งไม่ได้ในสถานะนี้' };
       }
-      if (!canConfirmManualDelivery('shipped', inputTracking || null, null, cancelledAt)) {
-        return {
-          success: false,
-          error: inputTracking
-            ? 'มีเลขพัสดุแล้ว — สถานะจัดส่งสำเร็จอัปเดตอัตโนมัติจาก TrackingMore'
-            : 'ยืนยันจัดส่งไม่ได้ในสถานะนี้',
-        };
-      }
 
-      const resolvedCarrierCode = inputCarrier
-        ? resolveTrackingMoreCarrierCode(inputCarrier) ?? inputCarrier
-        : null;
+      const resolvedCarrierCode = inputCarrier ? resolveCarrierCode(inputCarrier) ?? inputCarrier : null;
       let history = appendStatusHistory((order.status_history as StatusHistoryEntry[]) ?? [], {
         by: actor,
         action: 'shipped',
@@ -1928,13 +1851,8 @@ export async function confirmBeanOrderDelivered(
     const trackingNumber = (shipment.tracking_number as string | null) ?? null;
     const previousStatus = (shipment.tracking_status as string | null) ?? null;
 
-    if (!canConfirmManualDelivery(fulfillmentStatus, trackingNumber, previousStatus, cancelledAt)) {
-      return {
-        success: false,
-        error: trackingNumber?.trim()
-          ? 'มีเลขพัสดุแล้ว — สถานะจัดส่งสำเร็จอัปเดตอัตโนมัติจาก TrackingMore'
-          : 'ยืนยันจัดส่งไม่ได้ในสถานะนี้',
-      };
+    if (!canConfirmDelivered(fulfillmentStatus, previousStatus, cancelledAt)) {
+      return { success: false, error: 'ยืนยันจัดส่งไม่ได้ในสถานะนี้' };
     }
 
     const history = appendStatusHistory((order.status_history as StatusHistoryEntry[]) ?? [], {

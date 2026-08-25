@@ -1,5 +1,5 @@
-/** TrackingMore courier_code values — see trackingmore.com help carrier list. */
-export const LEGACY_TRACKINGMORE_CARRIER_CODES: Record<string, string> = {
+/** Legacy carrier code aliases (historical DB values). */
+export const LEGACY_CARRIER_CODE_ALIASES: Record<string, string> = {
   'kerry-logistics': 'kerryexpress-th',
   'flash-express': 'flashexpress',
   'jt-express': 'jt-express-th',
@@ -7,18 +7,7 @@ export const LEGACY_TRACKINGMORE_CARRIER_CODES: Record<string, string> = {
   'best-express': 'best-th',
 };
 
-export function resolveTrackingMoreCarrierCode(code: string | null | undefined): string | null {
+export function resolveCarrierCode(code: string | null | undefined): string | null {
   if (!code) return null;
-  return LEGACY_TRACKINGMORE_CARRIER_CODES[code] ?? code;
-}
-
-export function isStaleTrackingStatus(status: string | null | undefined): boolean {
-  if (!status) return true;
-  const normalized = status.toLowerCase().replace(/[_\s-]+/g, '');
-  return (
-    normalized.includes('pending') ||
-    normalized.includes('notfound') ||
-    normalized === 'unknown' ||
-    normalized === 'registered'
-  );
+  return LEGACY_CARRIER_CODE_ALIASES[code] ?? code;
 }

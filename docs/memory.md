@@ -11,9 +11,9 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 ### DEC-087: Ship path latency + doc/code hygiene (v9.3)
 
 - Date: July 2026
-- Context: TrackingMore on the critical ship path slowed saves; docs drifted after deleting `daily-report-notification-actions.ts` and adding UI/nav helpers.
+- Context: TrackingMore on the critical ship path slowed saves; integration removed in favor of manual delivery confirm.
 - Decision:
-  1. **`shipBeanOrder`:** persist shipment immediately; run TrackingMore create/poll, shipped push, and revalidate inside `after()` — no `trackingWarning` on the action result.
+  1. **`shipBeanOrder`:** persist shipment immediately; run shipped push and revalidate inside `after()`.
   2. **Docs keepers:** `PROJECT_MAP` / `sql/README` / `database.md` must list files that exist on disk; migration history stays immutable.
   3. **Shared UI:** `RoundedSelect` + `select-trigger-styles`; navigation via `view-transition.ts` (date filters use `navigateWithoutViewTransition`).
 - Impact: `docs/architecture.md`, `docs/api.md`, `PROJECT_MAP.md`, `docs/changelog.md`.
@@ -46,12 +46,12 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 ### DEC-084: Bean Orders Module (v9.2)
 
 - Date: July 2026
-- Context: Staff need a dedicated workflow for coffee bean orders with payment slips, shipping, and TrackingMore — separate from inventory stock deduction.
+- Context: Staff need a dedicated workflow for coffee bean orders with payment slips, shipping, and manual delivery confirm — separate from inventory stock deduction.
 - Decision:
   1. Route: `src/app/[locale]/bean-orders/` with list, create, detail, edit pages.
   2. Tables: `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments` (`20260722074607_bean_orders.sql`).
   3. Mutations: `bean-order-actions.ts`; domain logic in `src/lib/bean-orders/`.
-  4. Tracking: `POST /api/bean-orders/tracking-webhook`, `GET /api/bean-orders/sync-tracking` (CRON_SECRET); `TRACKINGMORE_API_KEY`.
+  4. Delivery: staff confirm「จัดส่งสำเร็จ」manually; `tracking_number` / `tracking_status` stored on `bean_order_shipments`.
   5. Storage: `bean-order-slips` bucket; dual-axis status (`payment_status` × `fulfillment_status`).
 - Impact: Sidebar link in `menu-list.ts`; audit via `recordDataChange(module=bean_orders)`; no inventory stock auto-deduction.
 - Evidence: `bean-orders-*.test.ts`, `docs/changelog.md` (2026-07-23 bean orders entry)

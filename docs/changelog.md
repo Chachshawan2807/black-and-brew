@@ -54,7 +54,7 @@
 - Fixed stale `getInventoryItemDetails` references → `getBeanOrdersSummary` + inventory accuracy deterministic routes in `docs/api.md` and `docs/MASTER_BLUEPRINT.md`.
 - Added migration `20260722140000_bean_orders.sql` to `docs/database.md` and `sql/README.md`.
 - Recorded DEC-084 (bean orders) and DEC-085 (AI full coverage) in `docs/memory.md`.
-- Documented `TRACKINGMORE_API_KEY` in README, `docs/context.md`, `docs/MASTER_BLUEPRINT.md`.
+- Removed TrackingMore integration (API client, webhook, cron sync); bean orders use manual delivery confirm.
 - Removed orphaned empty route folder `src/app/[locale]/market-insights/` (Market Insights retired in migration `20260622143800`).
 - No `.db`/`.sqlite` files in repo (Supabase migrations only). Third-party `.agents/skills/` left unchanged.
 

@@ -1,8 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import {
-  shouldResetBeanOrderTrackingOnShip,
-  shouldSyncBeanOrderTrackingAfterShip,
-} from '@/lib/bean-orders/shipment-tracking-preserve';
+import { shouldResetBeanOrderTrackingOnShip } from '@/lib/bean-orders/shipment-tracking-preserve';
 
 describe('shouldResetBeanOrderTrackingOnShip', () => {
   const existing = {
@@ -49,24 +46,5 @@ describe('shouldResetBeanOrderTrackingOnShip', () => {
         false,
       ),
     ).toBe(false);
-  });
-});
-
-describe('shouldSyncBeanOrderTrackingAfterShip', () => {
-  test('skips sync for non-trackable carriers', () => {
-    expect(shouldSyncBeanOrderTrackingAfterShip(false, true, null)).toBe(false);
-  });
-
-  test('syncs when tracking identity changed', () => {
-    expect(shouldSyncBeanOrderTrackingAfterShip(true, true, 'delivered')).toBe(true);
-  });
-
-  test('skips sync when cached status is already delivered', () => {
-    expect(shouldSyncBeanOrderTrackingAfterShip(true, false, 'delivered')).toBe(false);
-  });
-
-  test('syncs when cached status is still stale', () => {
-    expect(shouldSyncBeanOrderTrackingAfterShip(true, false, null)).toBe(true);
-    expect(shouldSyncBeanOrderTrackingAfterShip(true, false, 'pending')).toBe(true);
   });
 });

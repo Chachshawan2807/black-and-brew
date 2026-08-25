@@ -88,7 +88,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - Features:
   - Dual-axis status (`payment_status` × `fulfillment_status`)
   - Slip upload to Storage (`bean-order-slips`)
-  - TrackingMore integration (webhook + cron sync)
+  - Manual delivery confirmation (staff marks จัดส่งสำเร็จ)
   - No automatic inventory stock deduction
   - AI summary via `fetchBeanOrdersSummary()` and deterministic Bru report
 

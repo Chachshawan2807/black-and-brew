@@ -90,7 +90,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 | Schedule | `/[locale]/schedule` | Active — DnD |
 | Maintenance | `/[locale]/maintenance` | Active |
 | Sales | `/[locale]/sales` | Active |
-| Bean Orders | `/[locale]/bean-orders` | Active — customers, slips, shipping, TrackingMore |
+| Bean Orders | `/[locale]/bean-orders` | Active — customers, slips, shipping, manual delivery confirm |
 | Settings | `/[locale]/settings` | Active |
 | AI Assistant (บรู) | Global overlay | Active — Gemini + Tavily |
 | PIN Auth | PinGateway | Active — full + read-only |
@@ -123,7 +123,6 @@ Authoritative list: [`.env.example`](../.env.example). Keys read in `src/`:
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | PUBLIC | Store coordinates |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini (`@ai-sdk/google`) |
 | `TAVILY_API_KEY` | SECRET | `internetSearchTool` |
-| `TRACKINGMORE_API_KEY` | SECRET | OPTION — bean order shipment tracking |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION — holiday sync |
 | `CRON_SECRET` | SECRET | Protects `GET /api/daily-report` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | PUBLIC | Web Push VAPID public key |

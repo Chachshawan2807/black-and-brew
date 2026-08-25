@@ -108,8 +108,6 @@ src/app/
 │   ├── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
 │   ├── inventory/offline-mutation/route.ts  # Service worker background sync replay
 │   └── bean-orders/
-│       ├── sync-tracking/route.ts       # Cron → TrackingMore poll
-│       └── tracking-webhook/route.ts    # TrackingMore webhook receiver
 └── [locale]/
     ├── layout.tsx               # PinGateway, sidebar, AI chat, PWA
     ├── page.tsx                 # Command Center
@@ -187,9 +185,8 @@ BranchWithdrawClient → saveBranchWithdrawal() → rpc('record_branch_withdrawa
 ```text
 BeanOrdersClient / BeanOrderFormClient / BeanOrderDetailClient
 → bean-order-actions.ts (CRUD, slip upload, payment confirm, ship)
-→ shipBeanOrder returns immediately; TrackingMore create/poll + shipped push run in `after()`
+→ shipBeanOrder returns immediately; shipped push runs in `after()`
 → bean_* tables + Storage bucket bean-order-slips
-→ TrackingMore: tracking-webhook + sync-tracking cron (plus deferred ship sync)
 → recordDataChange(module=bean_orders) for audit
 → AI: fetchBeanOrdersSummary() + deterministic Bru report short-circuit
 ```

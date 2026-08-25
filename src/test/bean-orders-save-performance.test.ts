@@ -26,21 +26,21 @@ function criticalPathBeforeAfter(fnName: string, source: string): string {
 }
 
 describe('bean order save performance', () => {
-  test('shipBeanOrder does not await TrackingMore on the critical path', () => {
+  test('shipBeanOrder does not sync external tracking on the critical path', () => {
     expect(beanOrderActions).toContain("import { after } from 'next/server'");
     const critical = criticalPathBeforeAfter('shipBeanOrder', beanOrderActions);
-    expect(critical).not.toContain('await createTrackingMoreShipment');
-    expect(critical).not.toContain('await fetchTrackingMoreStatusWithRepair');
+    expect(critical).not.toContain('syncTrackingMoreShipmentStatus');
     const deferred = functionBody('shipBeanOrder', beanOrderActions);
     expect(deferred).toContain('after(async () => {');
-    expect(deferred).toMatch(/createTrackingMoreShipment|fetchTrackingMoreStatusWithRepair/);
+    expect(deferred).not.toContain('syncTrackingMoreShipmentStatus');
   });
 
-  test('shipBeanOrder deferred path always fetches TrackingMore status on ship', () => {
+  test('shipBeanOrder deferred path only handles shipped notification and revalidation', () => {
     const deferred = functionBody('shipBeanOrder', beanOrderActions);
-    expect(deferred).toContain('fetchTrackingMoreStatusWithRepair');
-    expect(deferred).not.toContain('isTrackingWebhookPrimary');
-    expect(deferred).toContain('shouldSyncBeanOrderTrackingAfterShip');
+    expect(deferred).not.toContain('syncTrackingMoreShipmentStatus');
+    expect(deferred).not.toContain('shouldSyncBeanOrderTrackingAfterShip');
+    expect(deferred).toContain('notifyBeanOrderShipped');
+    expect(deferred).toContain('revalidateBeanOrders');
   });
 
   test('shipBeanOrder preserves cached tracking when shipment identity is unchanged', () => {
@@ -118,7 +118,7 @@ describe('bean order save performance', () => {
     expect(uploadHandler).not.toContain('getBeanOrderSlipSignedUrl');
   });
 
-  test('shipBeanOrder no longer returns trackingWarning (deferred TrackingMore)', () => {
+  test('shipBeanOrder no longer returns trackingWarning', () => {
     const body = functionBody('shipBeanOrder', beanOrderActions);
     expect(body).not.toMatch(/trackingWarning/);
     expect(detailClient).not.toMatch(/trackingWarning/);

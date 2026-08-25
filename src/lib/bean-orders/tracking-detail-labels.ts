@@ -50,7 +50,7 @@ function normalizeDetailKey(detail: string): string {
   return detail.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-/** แปลข้อความรายละเอียดจาก TrackingMore/Kerry เป็นภาษาไทยสำหรับพนักงาน */
+/** แปลข้อความรายละเอียดจากขนส่ง (เช่น Kerry) เป็นภาษาไทยสำหรับพนักงาน */
 export function translateTrackingDetail(detail: string): string {
   const trimmed = detail.trim();
   if (!trimmed) return trimmed;

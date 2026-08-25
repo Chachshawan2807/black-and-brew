@@ -3,7 +3,7 @@ export type BeanOrderCarrier = {
   label: string;
 };
 
-/** Common Thai carriers — codes must match TrackingMore V4 courier_code when trackable. */
+/** Common Thai carriers for bean order shipments. */
 export const BEAN_ORDER_CARRIERS: BeanOrderCarrier[] = [
   { code: 'kerryexpress-th', label: 'Kerry' },
   { code: 'flashexpress', label: 'Flash' },
@@ -13,9 +13,6 @@ export const BEAN_ORDER_CARRIERS: BeanOrderCarrier[] = [
 ];
 
 export const OTHER_CARRIER_CODE = 'other';
-
-/** Carriers without TrackingMore courier support (manual delivery confirm). */
-const NON_TRACKABLE_CARRIER_CODES = new Set(['other', 'lalamove']);
 
 export function isKnownCarrierCode(code: string | null | undefined): boolean {
   if (!code) return false;
@@ -63,16 +60,4 @@ export function formatBeanOrderCarrierChangeMessage(
     return 'อัปเดตการจัดส่งแล้ว';
   }
   return `เปลี่ยนช่องทางการจัดส่งจาก ${previousLabel} เป็น ${nextLabel}`;
-}
-
-const TRACKABLE_CARRIER_CODES = new Set(
-  BEAN_ORDER_CARRIERS.map((carrier) => carrier.code).filter(
-    (code) => !NON_TRACKABLE_CARRIER_CODES.has(code),
-  ),
-);
-
-/** Carriers that support TrackingMore auto-sync (excludes manual / other). */
-export function isTrackableCarrierCode(code: string | null | undefined): boolean {
-  if (!code) return false;
-  return TRACKABLE_CARRIER_CODES.has(code);
 }

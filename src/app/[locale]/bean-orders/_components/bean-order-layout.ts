@@ -88,7 +88,7 @@ export const BEAN_ORDER_ACTION_BTN_CONFIRM =
 export const BEAN_ORDER_ACTION_BTN_INFO =
   `inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#b8daff] bg-[#cce5ff] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
-/** Grey non-action pill — auto tracking status (TrackingMore). */
+/** Grey non-action pill — reserved for future non-clickable status labels. */
 export const BEAN_ORDER_ACTION_BADGE_MUTED =
   'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-border bg-muted px-5 text-sm text-muted-foreground';
 

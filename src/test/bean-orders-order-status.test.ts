@@ -2,7 +2,6 @@ import { describe, expect, test } from 'vitest';
 import {
   appendStatusHistory,
   canConfirmDelivered,
-  canConfirmManualDelivery,
   canConfirmPayment,
   canDeleteOrder,
   canEditOrder,
@@ -15,7 +14,6 @@ import {
   ORDER_DELIVERY_BADGE_LABEL,
   ORDER_PAYMENT_BADGE_LABEL,
   shouldShowDeliveredButton,
-  shouldShowAutoTrackingBadge,
   shouldShowOrderDeliveryBadge,
   shouldShowOrderPaymentBadge,
 } from '@/lib/bean-orders/order-status';
@@ -80,16 +78,6 @@ describe('action guards', () => {
     expect(canShip('pending', cancelledAt)).toBe(false);
   });
 
-  test('can confirm manual delivery only for shipped orders without tracking', () => {
-    expect(canConfirmManualDelivery('shipped', null, null)).toBe(true);
-    expect(canConfirmManualDelivery('shipped', '', null)).toBe(true);
-    expect(canConfirmManualDelivery('shipped', '  ', 'in_transit')).toBe(true);
-    expect(canConfirmManualDelivery('shipped', 'KEX123', null)).toBe(false);
-    expect(canConfirmManualDelivery('pending', null, null)).toBe(false);
-    expect(canConfirmManualDelivery('shipped', null, 'delivered')).toBe(false);
-    expect(canConfirmManualDelivery('shipped', null, null, cancelledAt)).toBe(false);
-  });
-
   test('can confirm delivered for any shipped order not yet delivered', () => {
     expect(canConfirmDelivered('shipped', null)).toBe(true);
     expect(canConfirmDelivered('shipped', 'in_transit')).toBe(true);
@@ -103,16 +91,8 @@ describe('action guards', () => {
     expect(shouldShowDeliveredButton('shipped', 'in_transit')).toBe(true);
     expect(shouldShowDeliveredButton('shipped', 'delivered')).toBe(false);
     expect(shouldShowDeliveredButton('pending', null, null, cancelledAt)).toBe(false);
-    expect(shouldShowDeliveredButton('shipped', null, 'KEX123', null, 'kerryexpress-th')).toBe(false);
-    expect(shouldShowDeliveredButton('shipped', null, 'LM123', null, 'lalamove')).toBe(true);
-  });
-
-  test('shows auto tracking badge when tracking number is present', () => {
-    expect(shouldShowAutoTrackingBadge('shipped', null, 'KEX123', null, 'kerryexpress-th')).toBe(true);
-    expect(shouldShowAutoTrackingBadge('pending', null, 'KEX123', null, 'kerryexpress-th')).toBe(true);
-    expect(shouldShowAutoTrackingBadge('shipped', null, null, null, 'kerryexpress-th')).toBe(false);
-    expect(shouldShowAutoTrackingBadge('shipped', 'delivered', 'KEX123', null, 'kerryexpress-th')).toBe(false);
-    expect(shouldShowAutoTrackingBadge('shipped', null, 'LM123', null, 'lalamove')).toBe(false);
+    expect(shouldShowDeliveredButton('shipped', null, 'KEX123')).toBe(true);
+    expect(shouldShowDeliveredButton('shipped', null, 'LM123')).toBe(true);
   });
 });
 

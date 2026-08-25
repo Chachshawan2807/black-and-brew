@@ -11,7 +11,7 @@ describe('bean orders sidebar menu', () => {
     expect(item?.href).toBe('/th/bean-orders');
     expect(item?.label).toBe('ออเดอร์เมล็ดกาแฟ');
     expect(item?.active).toBe(true);
-    expect(item?.icon.displayName).toBe('ClipboardList');
+    expect(item?.icon.displayName).toBe('Coffee');
   });
 
   test('route chunk preload includes bean-orders', () => {
