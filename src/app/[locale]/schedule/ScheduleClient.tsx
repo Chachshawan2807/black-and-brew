@@ -1015,7 +1015,7 @@ export default function ScheduleClient({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && mgmtHistoryHasMoreRef.current && !mgmtHistoryFetchingRef.current) {
+        if (entries[0]?.isIntersecting && mgmtHistoryHasMoreRef.current && !mgmtHistoryLoading) {
           void fetchMgmtHistory();
         }
       },
@@ -1029,6 +1029,7 @@ export default function ScheduleClient({
     getMgmtHistoryScrollRoot,
     mgmtHistoryHasMore,
     mgmtHistory.length,
+    mgmtHistoryLoading,
     showManagementModal,
   ]);
 
