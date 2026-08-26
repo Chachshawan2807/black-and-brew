@@ -9,15 +9,14 @@ import {
   parseFrequencyMonthsForDisplay,
   resolveTaskType,
 } from '@/lib/maintenance/service-record-form';
+import { REAL_EQUIPMENT_NAMES } from '@/test/fixtures/service-records.fixture';
 
 describe('maintenance service record form helpers', () => {
   test('deduplicates equipment suggestions and filters by typed text', () => {
-    expect(
-      getUniqueEquipmentSuggestions(
-        ['เครื่องชงกาแฟ', 'เครื่องบดกาแฟ', 'เครื่องชงกาแฟ', '  เครื่องชง  กาแฟ  '],
-        'เครื่องชง',
-      ),
-    ).toEqual(['เครื่องชงกาแฟ']);
+    expect(getUniqueEquipmentSuggestions([...REAL_EQUIPMENT_NAMES], 'ท่อ')).toEqual([
+      'ท่อระบายน้ำเครื่องชงกาแฟ',
+      'ท่อระบายน้ำเครื่องล้างแก้ว',
+    ]);
   });
 
   test('keeps custom task types editable while mapping presets correctly', () => {
@@ -51,9 +50,9 @@ describe('maintenance service record form helpers', () => {
       buildServiceRecordPayload(
         {
           start_date: '2026-07-26',
-          equipment: 'เครื่องชงกาแฟ',
+          equipment: 'ท่อระบายน้ำเครื่องชงกาแฟ',
           detected_problem: 'น้ำไม่ไหล',
-          task_type: 'ตรวจเช็กพิเศษ',
+          task_type: 'บำรุงรักษา',
           work_details: 'ล้างหัวชง',
           recommended_frequency: '6',
         },
@@ -61,9 +60,9 @@ describe('maintenance service record form helpers', () => {
       ),
     ).toEqual({
       start_date: '2026-07-26',
-      equipment: 'เครื่องชงกาแฟ',
+      equipment: 'ท่อระบายน้ำเครื่องชงกาแฟ',
       detected_problem: 'น้ำไม่ไหล',
-      task_type: 'ตรวจเช็กพิเศษ',
+      task_type: 'บำรุงรักษา',
       work_details: 'ล้างหัวชง',
       recommended_frequency: 'ทุก 6 เดือน',
       completion_date: '2026-07-26',

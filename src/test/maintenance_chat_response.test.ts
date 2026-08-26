@@ -6,37 +6,12 @@ import {
   parseMaintenanceTargetMonth,
 } from '@/lib/maintenance/filter-maintenance-tasks-for-chat';
 import { formatMaintenanceChatResponse } from '@/lib/maintenance/format-maintenance-chat-response';
-import type {
-  MaintenanceServiceRecord,
-  UpcomingMaintenanceTask,
-} from '@/lib/maintenance/types';
-
-const sampleRecords: MaintenanceServiceRecord[] = [
-  {
-    id: '1',
-    equipment: 'ท่อระบายน้ำทิ้งเครื่องชงกาแฟและท่อระบายน้ำทิ้ง Rinser',
-    work_details: 'ทำความสะอาดด้วยโซดาไฟและล้วงท่อ',
-    start_date: '2026-04-17',
-    completion_date: '2026-04-17',
-    recommended_frequency: 'ทุก 3 เดือน',
-  },
-  {
-    id: '2',
-    equipment: 'เครื่องกรองน้ำ',
-    work_details: 'เปลี่ยนไส้กรองหยาบ',
-    start_date: '2026-04-04',
-    completion_date: '2026-04-04',
-    recommended_frequency: 'ทุก 3 เดือน',
-  },
-  {
-    id: '3',
-    equipment: 'แอร์ 3 เครื่อง',
-    work_details: 'ล้างทำความสะอาดด้วยช่างทั้ง 3 เครื่อง',
-    start_date: '2026-05-06',
-    completion_date: '2026-05-06',
-    recommended_frequency: 'ทุก 6 เดือน',
-  },
-];
+import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';
+import {
+  REAL_MONTH_FILTER_SAMPLE_RECORDS,
+  REAL_SCHEDULED_SAMPLE_RECORDS,
+  REAL_SERVICE_RECORD_REFERENCE_DATE,
+} from '@/test/fixtures/service-records.fixture';
 
 describe('detect-maintenance-query', () => {
   test('detects upcoming maintenance summary prompts', () => {
@@ -49,31 +24,39 @@ describe('detect-maintenance-query', () => {
   });
 
   test('does not treat specific repair troubleshooting as summary query', () => {
-    expect(isUpcomingMaintenanceQuery('เครื่องชงกาแฟเสียวันนี้ควรทำอย่างไร')).toBe(false);
+    expect(
+      isUpcomingMaintenanceQuery('ท่อระบายน้ำเครื่องชงกาแฟเสียวันนี้ควรทำอย่างไร'),
+    ).toBe(false);
   });
 });
 
 describe('compute-upcoming-maintenance', () => {
   test('computes next due dates from completion date and frequency', () => {
-    const tasks = computeUpcomingMaintenanceTasks(sampleRecords, '2026-07-08');
+    const tasks = computeUpcomingMaintenanceTasks(
+      REAL_SCHEDULED_SAMPLE_RECORDS,
+      REAL_SERVICE_RECORD_REFERENCE_DATE,
+    );
 
     expect(tasks).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          equipment: 'เครื่องกรองน้ำ',
-          dueDate: '2026-07-04',
-          advice: 'เปลี่ยนไส้กรองหยาบ',
+          equipment: 'ไส้กรอง PP เครื่องชง',
+          dueDate: '2026-09-25',
+          advice: 'เปลี่ยนอะไหล่',
         }),
         expect.objectContaining({
-          equipment: 'ท่อระบายน้ำทิ้งเครื่องชงกาแฟและท่อระบายน้ำทิ้ง Rinser',
-          dueDate: '2026-07-17',
+          equipment: 'ท่อระบายน้ำเครื่องชงกาแฟ',
+          dueDate: '2026-09-25',
         }),
       ]),
     );
   });
 
   test('sorts tasks by due date ascending', () => {
-    const tasks = computeUpcomingMaintenanceTasks(sampleRecords, '2026-07-08');
+    const tasks = computeUpcomingMaintenanceTasks(
+      REAL_SCHEDULED_SAMPLE_RECORDS,
+      REAL_SERVICE_RECORD_REFERENCE_DATE,
+    );
     const dueDates = tasks.map((task) => task.dueDate);
     const sorted = [...dueDates].sort();
     expect(dueDates).toEqual(sorted);
@@ -83,36 +66,36 @@ describe('compute-upcoming-maintenance', () => {
 const mixedUrgencyTasks: UpcomingMaintenanceTask[] = [
   {
     id: 'overdue',
-    equipment: 'เครื่องกรองน้ำ',
-    advice: 'เปลี่ยนไส้กรองหยาบ',
-    dueDate: '2026-07-04',
+    equipment: 'ซิงค์ล้างจานบาร์ชง',
+    advice: 'ล้างทำความสะอาดด้วยโซดาไฟ',
+    dueDate: '2026-08-26',
     urgency: 'overdue',
   },
   {
     id: 'week',
-    equipment: 'เครื่องชงกาแฟ',
-    advice: 'ล้างกรุ๊ปเฮด',
-    dueDate: '2026-07-12',
+    equipment: 'ไส้กรอง PP เครื่องชง',
+    advice: 'เปลี่ยนอะไหล่',
+    dueDate: '2026-09-05',
     urgency: 'within_7_days',
   },
   {
     id: 'month',
-    equipment: 'เครื่องบดกาแฟ',
-    advice: 'ทำความสะอาดใบมีด',
-    dueDate: '2026-07-28',
+    equipment: 'ท่อระบายน้ำเครื่องชงกาแฟ',
+    advice: 'ล้างทำความสะอาดด้วยโซดาไฟ',
+    dueDate: '2026-09-25',
     urgency: 'within_30_days',
   },
   {
-    id: 'august',
-    equipment: 'แอร์ 3 เครื่อง',
-    advice: 'ล้างทำความสะอาดด้วยช่างทั้ง 3 เครื่อง',
-    dueDate: '2026-08-15',
+    id: 'october',
+    equipment: 'แอร์ 3 ห้องคั่ว',
+    advice: 'ล้างทำความสะอาดด้วยช่าง',
+    dueDate: '2026-10-26',
     urgency: 'within_90_days',
   },
   {
     id: 'later',
-    equipment: 'ปั๊มน้ำ',
-    advice: 'ตรวจสอบแรงดัน',
+    equipment: 'ไส้กรอง Resin เครื่องทำน้ำแข็ง',
+    advice: 'เปลี่ยนอะไหล่',
     dueDate: '2027-01-15',
     urgency: 'later',
   },
@@ -123,7 +106,7 @@ describe('filterMaintenanceTasksForChat', () => {
     const filtered = filterMaintenanceTasksForChat(
       mixedUrgencyTasks,
       'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น',
-      '2026-07-08',
+      REAL_SERVICE_RECORD_REFERENCE_DATE,
     );
 
     expect(filtered.map((task) => task.id)).toEqual(['overdue', 'week', 'month']);
@@ -132,16 +115,16 @@ describe('filterMaintenanceTasksForChat', () => {
   test('includes overdue tasks and tasks due in the requested month', () => {
     const filtered = filterMaintenanceTasksForChat(
       mixedUrgencyTasks,
-      'ขอรายการงานซ่อมบำรุงเดือนสิงหาคม',
-      '2026-07-08',
+      'ขอรายการงานซ่อมบำรุงเดือนตุลาคม',
+      REAL_SERVICE_RECORD_REFERENCE_DATE,
     );
 
-    expect(filtered.map((task) => task.id)).toEqual(['overdue', 'august']);
+    expect(filtered.map((task) => task.id)).toEqual(['overdue', 'october']);
   });
 
   test('does not treat horizon phrases as a specific calendar month', () => {
     expect(
-      parseMaintenanceTargetMonth('งานซ่อมบำรุงภายใน 1 เดือน', '2026-07-08'),
+      parseMaintenanceTargetMonth('งานซ่อมบำรุงภายใน 1 เดือน', REAL_SERVICE_RECORD_REFERENCE_DATE),
     ).toBeNull();
   });
 });
@@ -149,17 +132,20 @@ describe('filterMaintenanceTasksForChat', () => {
 describe('formatMaintenanceChatResponse', () => {
   test('renders grouped multi-line output instead of dense single-line bullets', () => {
     const tasks = filterMaintenanceTasksForChat(
-      computeUpcomingMaintenanceTasks(sampleRecords, '2026-07-08'),
+      computeUpcomingMaintenanceTasks(
+        REAL_MONTH_FILTER_SAMPLE_RECORDS,
+        REAL_SERVICE_RECORD_REFERENCE_DATE,
+      ),
       'ขอรายการงานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้ และคำแนะนำเบื้องต้น',
-      '2026-07-08',
+      REAL_SERVICE_RECORD_REFERENCE_DATE,
     );
     const text = formatMaintenanceChatResponse(tasks);
 
     expect(text).toContain('🔧 งานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้');
     expect(text).toContain('เลยกำหนดแล้ว');
-    expect(text).toContain('04-07-2026');
-    expect(text).toContain('เครื่องกรองน้ำ');
-    expect(text).toContain('เปลี่ยนไส้กรองหยาบ');
+    expect(text).toContain('26-08-2026');
+    expect(text).toContain('ซิงค์ล้างจานบาร์ชง');
+    expect(text).toContain('ล้างทำความสะอาดด้วยโซดาไฟ');
     expect(text).not.toMatch(/• .+ — แนะนำ: .+ \| ครบกำหนด:/);
     expect(text).toContain('รวม');
   });

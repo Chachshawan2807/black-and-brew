@@ -8,29 +8,18 @@ import {
   filterMaintenanceDueWithinMonth,
 } from '@/lib/maintenance/filter-due-within-month';
 import type { MaintenanceServiceRecord } from '@/lib/maintenance/types';
-
-const sampleRecords: MaintenanceServiceRecord[] = [
-  {
-    id: '1',
-    equipment: 'เครื่องกรองน้ำ',
-    work_details: 'เปลี่ยนไส้กรองหยาบ',
-    start_date: '2026-04-04',
-    completion_date: '2026-04-04',
-    recommended_frequency: 'ทุก 3 เดือน',
-  },
-  {
-    id: '2',
-    equipment: 'แอร์ 3 เครื่อง',
-    work_details: 'ล้างทำความสะอาดด้วยช่างทั้ง 3 เครื่อง',
-    start_date: '2026-05-06',
-    completion_date: '2026-05-06',
-    recommended_frequency: 'ทุก 6 เดือน',
-  },
-];
+import {
+  REAL_MONTH_FILTER_SAMPLE_RECORDS,
+  REAL_PP_FILTER_DEDUP_RECORDS,
+  REAL_SERVICE_RECORD_REFERENCE_DATE,
+} from '@/test/fixtures/service-records.fixture';
 
 describe('filter-due-within-month', () => {
   test('includes overdue, within 7 days, and within 30 days tasks only', () => {
-    const allTasks = computeUpcomingMaintenanceTasks(sampleRecords, '2026-07-08');
+    const allTasks = computeUpcomingMaintenanceTasks(
+      REAL_MONTH_FILTER_SAMPLE_RECORDS,
+      REAL_SERVICE_RECORD_REFERENCE_DATE,
+    );
     const filtered = filterMaintenanceDueWithinMonth(allTasks);
 
     expect(filtered.every((task) => task.urgency !== 'within_90_days')).toBe(true);
@@ -39,40 +28,23 @@ describe('filter-due-within-month', () => {
   });
 
   test('computeMaintenanceDueWithinMonth returns sorted due-within-month tasks', () => {
-    const tasks = computeMaintenanceDueWithinMonth(sampleRecords, '2026-07-08');
+    const tasks = computeMaintenanceDueWithinMonth(
+      REAL_MONTH_FILTER_SAMPLE_RECORDS,
+      REAL_SERVICE_RECORD_REFERENCE_DATE,
+    );
     const dueDates = tasks.map((task) => task.dueDate);
     expect([...dueDates].sort()).toEqual(dueDates);
   });
 
   test('keeps only the latest service per equipment when recomputing due dates', () => {
-    const records: MaintenanceServiceRecord[] = [
-      {
-        id: 'old',
-        equipment: 'เครื่องกรองน้ำ',
-        work_details: 'เปลี่ยนไส้กรองหยาบ',
-        start_date: '2026-04-04',
-        completion_date: '2026-04-04',
-        recommended_frequency: 'ทุก 3 เดือน',
-      },
-      {
-        id: 'new',
-        equipment: 'เครื่องกรองน้ำ',
-        work_details: 'เปลี่ยนไส้กรองละเอียด',
-        start_date: '2026-07-20',
-        completion_date: '2026-07-20',
-        recommended_frequency: 'ทุก 3 เดือน',
-      },
-    ];
-
-    const tasks = computeMaintenanceDueWithinMonth(records, '2026-07-26');
+    const tasks = computeMaintenanceDueWithinMonth(REAL_PP_FILTER_DEDUP_RECORDS, '2026-08-20');
 
     expect(tasks).toHaveLength(0);
-    expect(computeUpcomingMaintenanceTasks(records, '2026-07-26')).toEqual([
+    expect(computeUpcomingMaintenanceTasks(REAL_PP_FILTER_DEDUP_RECORDS, '2026-08-20')).toEqual([
       expect.objectContaining({
-        id: 'new',
-        equipment: 'เครื่องกรองน้ำ',
-        dueDate: '2026-10-20',
-        advice: 'เปลี่ยนไส้กรองละเอียด',
+        id: 'db718e9c-38d5-4fe5-8848-0e05a11b26b1',
+        equipment: 'ไส้กรอง PP เครื่องชง',
+        dueDate: '2026-09-25',
       }),
     ]);
   });
@@ -81,46 +53,46 @@ describe('filter-due-within-month', () => {
     const records: MaintenanceServiceRecord[] = [
       {
         id: 'a',
-        equipment: 'เครื่อง ชงกาแฟ',
-        work_details: 'ล้างกรุ๊ปเฮด',
+        equipment: 'ท่อระบายน้ำ เครื่องชงกาแฟ',
+        work_details: 'ล้างทำความสะอาดด้วยโซดาไฟ',
         start_date: '2026-06-01',
         completion_date: '2026-06-01',
         recommended_frequency: 'ทุก 1 เดือน',
       },
       {
-        id: 'b',
-        equipment: 'เครื่องชงกาแฟ',
-        work_details: 'ล้างกรุ๊ปเฮดรอบใหม่',
-        start_date: '2026-07-10',
-        completion_date: '2026-07-10',
+        id: 'f680e7f0-4d97-49db-9b3b-e673bc66ea4f',
+        equipment: 'ท่อระบายน้ำเครื่องชงกาแฟ',
+        work_details: null,
+        start_date: '2026-08-14',
+        completion_date: '2026-08-25',
         recommended_frequency: 'ทุก 1 เดือน',
       },
     ];
 
-    const tasks = computeUpcomingMaintenanceTasks(records, '2026-07-26');
+    const tasks = computeUpcomingMaintenanceTasks(records, '2026-08-20');
 
     expect(tasks).toHaveLength(1);
     expect(tasks[0]).toMatchObject({
-      id: 'b',
-      equipment: 'เครื่องชงกาแฟ',
-      dueDate: '2026-08-10',
+      id: 'f680e7f0-4d97-49db-9b3b-e673bc66ea4f',
+      equipment: 'ท่อระบายน้ำเครื่องชงกาแฟ',
+      dueDate: '2026-09-25',
     });
   });
 });
 
 describe('formatDueDateWithDaysRemaining', () => {
   test('formats upcoming due date with remaining days', () => {
-    expect(formatDueDateWithDaysRemaining('2026-08-15', '2026-07-26')).toBe(
-      '15-08-2026 (20 วัน)',
-    );
+    expect(
+      formatDueDateWithDaysRemaining('2026-10-26', REAL_SERVICE_RECORD_REFERENCE_DATE),
+    ).toBe('26-10-2026 (55 วัน)');
   });
 
   test('formats due today and overdue days', () => {
-    expect(formatDueDateWithDaysRemaining('2026-07-26', '2026-07-26')).toBe(
-      '26-07-2026 (วันนี้)',
-    );
-    expect(formatDueDateWithDaysRemaining('2026-07-20', '2026-07-26')).toBe(
-      '20-07-2026 (เลย 6 วัน)',
-    );
+    expect(
+      formatDueDateWithDaysRemaining('2026-09-01', REAL_SERVICE_RECORD_REFERENCE_DATE),
+    ).toBe('01-09-2026 (วันนี้)');
+    expect(
+      formatDueDateWithDaysRemaining('2026-08-26', REAL_SERVICE_RECORD_REFERENCE_DATE),
+    ).toBe('26-08-2026 (เลย 6 วัน)');
   });
 });

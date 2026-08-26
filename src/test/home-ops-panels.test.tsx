@@ -5,6 +5,7 @@ import HomeOpsPanels from '@/app/[locale]/_components/HomeOpsPanels';
 import HomeMaintenanceDueSection from '@/app/[locale]/_components/HomeMaintenanceDueSection';
 import { InventoryRealtimeProvider } from '@/contexts/InventoryRealtimeContext';
 import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';
+import { REAL_SERVICE_RECORD_REFERENCE_DATE } from '@/test/fixtures/service-records.fixture';
 
 vi.mock('@/lib/supabase-session', () => ({
   ensureSupabaseSession: vi.fn().mockResolvedValue(true),
@@ -53,9 +54,9 @@ const lowStockItems = [
 const maintenanceTasks: UpcomingMaintenanceTask[] = [
   {
     id: 'm1',
-    equipment: 'เครื่องกรองน้ำ',
-    advice: 'เปลี่ยนไส้กรองหยาบ',
-    dueDate: '2026-07-04',
+    equipment: 'ซิงค์ล้างจานบาร์ชง',
+    advice: 'ล้างทำความสะอาดด้วยโซดาไฟ',
+    dueDate: '2026-08-26',
     urgency: 'overdue',
   },
 ];
@@ -84,7 +85,7 @@ describe('HomeOpsPanels', () => {
     fireEvent.click(screen.getByRole('tab', { name: /ซ่อมบำรุง/ }));
 
     expect(screen.getByRole('tab', { name: /ซ่อมบำรุง/ })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getAllByText('เครื่องกรองน้ำ').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('ซิงค์ล้างจานบาร์ชง').length).toBeGreaterThanOrEqual(1);
   });
 
   test('renders purchase and maintenance sections in the page', () => {
@@ -128,18 +129,18 @@ describe('HomeMaintenanceDueSection', () => {
         tasks={[
           {
             id: 'm1',
-            equipment: 'เครื่องกรองน้ำ',
-            advice: 'เปลี่ยนไส้กรองหยาบ',
-            dueDate: '2026-08-15',
-            urgency: 'within_30_days',
+            equipment: 'แอร์ 3 ห้องคั่ว',
+            advice: 'ล้างทำความสะอาดด้วยช่าง',
+            dueDate: '2026-10-26',
+            urgency: 'within_90_days',
           },
         ]}
         locale="th"
-        currentIsoDate="2026-07-26"
+        currentIsoDate={REAL_SERVICE_RECORD_REFERENCE_DATE}
       />,
     );
 
     expect(screen.queryByRole('columnheader', { name: 'ความเร่งด่วน' })).not.toBeInTheDocument();
-    expect(screen.getAllByText('15-08-2026 (20 วัน)').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('26-10-2026 (55 วัน)').length).toBeGreaterThanOrEqual(1);
   });
 });

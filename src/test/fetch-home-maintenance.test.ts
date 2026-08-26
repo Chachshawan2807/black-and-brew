@@ -1,4 +1,5 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { pickServiceRecords } from '@/test/fixtures/service-records.fixture';
 
 const getSupabaseAccessToken = vi.fn();
 const from = vi.fn();
@@ -34,7 +35,8 @@ describe('queryHomeMaintenanceTasks', () => {
   });
 
   test('reads service_records through the provided client (admin-safe for RSC)', async () => {
-    mockServiceRecordsOk([{ id: 'sr-1', equipment: 'เครื่องชง', start_date: '2026-07-01' }]);
+    const realRecord = pickServiceRecords('f680e7f0-4d97-49db-9b3b-e673bc66ea4f')[0];
+    mockServiceRecordsOk([realRecord]);
     const client = { from };
 
     const { queryHomeMaintenanceTasks } = await import('@/lib/maintenance/fetch-home-maintenance');
@@ -42,7 +44,7 @@ describe('queryHomeMaintenanceTasks', () => {
 
     expect(from).toHaveBeenCalledWith('service_records');
     expect(getSupabaseAccessToken).not.toHaveBeenCalled();
-    expect(tasks).toEqual([{ id: 'sr-1', urgency: 'within_7_days' }]);
+    expect(tasks).toEqual([{ id: realRecord.id, urgency: 'within_7_days' }]);
   });
 
   test('throws a real Error with message when Supabase returns PostgrestError-like object', async () => {
@@ -77,13 +79,14 @@ describe('fetchHomeMaintenanceTasks', () => {
 
   test('uses the authenticated session token when reading service_records', async () => {
     getSupabaseAccessToken.mockResolvedValue('tok-123');
-    mockServiceRecordsOk([{ id: 'sr-1', equipment: 'เครื่องชง', start_date: '2026-07-01' }]);
+    const realRecord = pickServiceRecords('f680e7f0-4d97-49db-9b3b-e673bc66ea4f')[0];
+    mockServiceRecordsOk([realRecord]);
 
     const { fetchHomeMaintenanceTasks } = await import('@/lib/maintenance/fetch-home-maintenance');
     const tasks = await fetchHomeMaintenanceTasks('2026-07-25');
 
     expect(getSupabaseAccessToken).toHaveBeenCalledTimes(1);
     expect(from).toHaveBeenCalledWith('service_records');
-    expect(tasks).toEqual([{ id: 'sr-1', urgency: 'within_7_days' }]);
+    expect(tasks).toEqual([{ id: realRecord.id, urgency: 'within_7_days' }]);
   });
 });

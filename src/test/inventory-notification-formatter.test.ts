@@ -331,7 +331,7 @@ describe('formatDataChangeLogDisplay', () => {
     const display = formatDataChangeLogDisplay(
       makeRow({
         module: 'maintenance',
-        entity_label: 'เครื่องชงกาแฟ',
+        entity_label: 'ท่อระบายน้ำเครื่องชงกาแฟ',
         field_changes: [
           { field: 'status', old_value: 'pending', new_value: 'completed' },
           { field: 'cost', old_value: 500, new_value: 1200 },
