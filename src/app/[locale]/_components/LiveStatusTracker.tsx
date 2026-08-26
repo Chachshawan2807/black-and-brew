@@ -27,10 +27,17 @@ interface Profile {
 }
 
 interface Shift {
-  employee_id: string;
+  id?: string;
+  employee_id: string | null;
   start_time: string;
   end_time: string;
-  status: 'scheduled' | 'on_leave' | 'day_off';
+  status:
+    | 'scheduled'
+    | 'on_leave'
+    | 'day_off'
+    | 'completed'
+    | 'swapped'
+    | 'cancelled';
   metadata?: {
     location?: string;
   };

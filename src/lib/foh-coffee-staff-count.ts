@@ -9,7 +9,7 @@ interface StaffProfile {
 }
 
 interface StaffShift {
-  employee_id: string;
+  employee_id: string | null;
   status?: string;
   metadata?: {
     location?: string | null;
