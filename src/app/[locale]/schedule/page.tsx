@@ -1,6 +1,7 @@
 import { startOfWeek, addDays, format } from 'date-fns';
 import { redirect } from 'next/navigation';
 import { after } from 'next/server';
+import { unstable_noStore as noStore } from 'next/cache';
 import { checkAuth } from '@/app/actions/auth';
 import { groupRegularHolidayRows } from '@/lib/regular-holidays';
 import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
@@ -26,6 +27,8 @@ export default async function SchedulePage({
   if (!authed) {
     redirect(`/${locale}`);
   }
+
+  noStore();
 
   const supabaseAdmin = getSupabaseAdmin();
 

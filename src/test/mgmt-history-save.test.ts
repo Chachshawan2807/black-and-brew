@@ -13,7 +13,7 @@ const scheduleClientPath = path.resolve(
 );
 
 describe('saveManagementHistoryRange server action contract', () => {
-  test('uses bulk delete + insert and defers audit/revalidation', () => {
+  test('uses bulk delete + insert and revalidates before response', () => {
     const source = fs.readFileSync(shiftActionsPath, 'utf-8');
     const body = source.slice(
       source.indexOf('export async function saveManagementHistoryRange'),
@@ -22,23 +22,27 @@ describe('saveManagementHistoryRange server action contract', () => {
 
     expect(body).toContain('after(async () => {');
     expect(body).toMatch(/after\(async \(\) => \{[\s\S]*recordDataChange/);
-    expect(body).toMatch(/after\(async \(\) => \{[\s\S]*revalidateAppPaths/);
+    expect(body).toMatch(/await revalidateAppPaths\(\);\s*\n\s*return \{ success: true as const/);
+    expect(body).toMatch(
+      /scheduleProactiveInsightEvaluation\('shift_update'\);\s*\n\s*\}\);\s*\n\s*await revalidateAppPaths\(\);/,
+    );
     expect(body).toMatch(/\.delete\(\)[\s\S]*\.in\('start_time'/);
     expect(body).toMatch(/\.insert\(newShifts\)/);
-    expect(body).not.toMatch(/await revalidateAppPaths\(\);\s*return \{ success: true/);
   });
 
-  test('deleteManagementHistoryRange defers audit log and revalidation', () => {
+  test('deleteManagementHistoryRange defers audit log but revalidates before response', () => {
     const source = fs.readFileSync(shiftActionsPath, 'utf-8');
     const body = source.slice(
       source.indexOf('export async function deleteManagementHistoryRange'),
-      source.indexOf('export async function fetchRosterData'),
+      source.indexOf('const managementRangeSchema'),
     );
 
     expect(body).toContain('after(async () => {');
     expect(body).toMatch(/after\(async \(\) => \{[\s\S]*recordDataChange/);
-    expect(body).toMatch(/after\(async \(\) => \{[\s\S]*revalidateAppPaths/);
-    expect(body).not.toMatch(/await revalidateAppPaths\(\);\s*return \{ success: true/);
+    expect(body).toMatch(/await revalidateAppPaths\(\);\s*\n\s*return \{ success: true \}/);
+    expect(body).toMatch(
+      /scheduleDailyReportRefreshForRange\(startDate, endDate\);\s*\n\s*\}\);\s*\n\s*await revalidateAppPaths\(\);/,
+    );
   });
 });
 

@@ -11,6 +11,7 @@ import { startOfWeek, addDays, format } from 'date-fns';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { navigateWithoutViewTransition } from '@/lib/view-transition';
+import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -811,6 +812,58 @@ export default function ScheduleClient({
     return [...Array(7)].map((_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
   }, [currentDate]);
 
+  const refreshShiftsForWeek = useCallback(async () => {
+    if (weekDays.length < 7) return;
+
+    const { data, error } = await supabase
+      .from('shifts')
+      .select('id, employee_id, start_time, end_time, status, metadata')
+      .gte('start_time', `${weekDays[0]}T00:00:00`)
+      .lte('start_time', `${weekDays[6]}T23:59:59`)
+      .not('status', 'is', null)
+      .not('status', 'eq', '')
+      .not('metadata->>location', 'is', null)
+      .not('metadata->>location', 'eq', '');
+
+    if (error) {
+      console.error('Supabase Error (ScheduleClient refresh):', error.message, error.details);
+      return;
+    }
+
+    if (data) {
+      const normalized = data.map((shift) => {
+        const datePart = shift.start_time.split('T')[0];
+        return {
+          ...shift,
+          start_time: `${datePart}T00:00:00`,
+          end_time: `${datePart}T23:59:59`,
+        };
+      });
+      setShifts(normalized);
+    }
+  }, [weekDays]);
+
+  useShiftRealtime({
+    onShiftsChange: () => {
+      void refreshShiftsForWeek();
+    },
+  });
+
+  useEffect(() => {
+    void refreshShiftsForWeek();
+  }, [refreshShiftsForWeek]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshShiftsForWeek();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refreshShiftsForWeek]);
+
   const profileById = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles]);
   const activeProfileIds = useMemo(() => new Set(orderedProfileIds), [orderedProfileIds]);
   const holidayByDate = useMemo(() => new Map(holidays.map((holiday) => [holiday.date, holiday])), [holidays]);
@@ -824,9 +877,6 @@ export default function ScheduleClient({
       setProfiles(initialProfiles);
       setOrderedProfileIds(initialProfiles.map(p => p.id));
     }
-    if (initialShifts) {
-      setShifts(initialShifts);
-    }
     if (initialHolidays) {
       setHolidays(initialHolidays);
     }
@@ -837,7 +887,7 @@ export default function ScheduleClient({
       setRegularHolidays(initialRegularHolidays);
     }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [hasServerRegularHolidayData, initialProfiles, initialShifts, initialHolidays, initialRegularHolidays, initialDateStr]);
+  }, [hasServerRegularHolidayData, initialProfiles, initialHolidays, initialRegularHolidays, initialDateStr]);
 
   const { undoStack, redoStack, pushToHistory, undo, redo } = useScheduleUndo({
     profiles,

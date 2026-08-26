@@ -332,8 +332,9 @@ export async function saveShift(payload: ShiftPayload) {
         oldValue: (shiftBefore ?? null) as Json | null,
         newValue: (data ?? parsed.data) as Json,
       });
-      await revalidateAppPaths();
     });
+
+    await revalidateAppPaths();
 
     scheduleDailyReportRefreshForDate(datePart);
     scheduleProactiveInsightEvaluation('shift_update');
@@ -378,8 +379,9 @@ export async function deleteManagementHistoryRange(employeeId: string, startDate
         metadata: { employeeId, startDate, endDate, operation: 'delete_management_history' },
       });
       scheduleDailyReportRefreshForRange(startDate, endDate);
-      await revalidateAppPaths();
     });
+
+    await revalidateAppPaths();
 
     return { success: true };
   } catch (err) {
@@ -511,8 +513,9 @@ export async function saveManagementHistoryRange(payload: ManagementRangePayload
         scheduleDailyReportRefreshForRange(previousRange.startDate, previousRange.endDate);
       }
       scheduleProactiveInsightEvaluation('shift_update');
-      await revalidateAppPaths();
     });
+
+    await revalidateAppPaths();
 
     return { success: true as const, data: data ?? [] };
   } catch (err) {

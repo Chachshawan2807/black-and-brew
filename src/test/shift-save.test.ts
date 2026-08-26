@@ -22,7 +22,7 @@ describe('saveShift persistence', () => {
     expect(saveShiftBody).toMatch(/\.delete\(\)[\s\S]*\.select\(/);
   });
 
-  test('saveShift defers audit log and revalidation until after response', () => {
+  test('saveShift defers audit log but revalidates before response', () => {
     const source = fs.readFileSync(shiftActionsPath, 'utf-8');
     const saveShiftBody = source.slice(
       source.indexOf('export async function saveShift'),
@@ -31,8 +31,9 @@ describe('saveShift persistence', () => {
 
     expect(saveShiftBody).toContain('after(async () => {');
     expect(saveShiftBody).toMatch(/after\(async \(\) => \{[\s\S]*recordDataChange/);
-    expect(saveShiftBody).toMatch(/after\(async \(\) => \{[\s\S]*revalidateAppPaths/);
-    expect(saveShiftBody).not.toMatch(/revalidateAppPaths\(\);\s*return \{ success: true/);
+    expect(saveShiftBody).toMatch(
+      /after\(async \(\) => \{\s*await recordDataChange\([\s\S]*?\}\);\s*\n\s*await revalidateAppPaths\(\);/,
+    );
   });
 
   test('saveShift refreshes daily schedule notifications for the edited date', () => {
@@ -60,12 +61,21 @@ describe('saveShift server action', () => {
   const mockInsertSelect = vi.fn();
   const mockDelete = vi.fn();
   const mockInsert = vi.fn();
+  const mockShiftBeforeMaybeSingle = vi.fn();
+  const mockShiftBeforeSecondEq = vi.fn();
+  const mockShiftBeforeFirstEq = vi.fn();
+  const mockSelect = vi.fn();
 
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-key';
+
+    mockShiftBeforeMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockShiftBeforeSecondEq.mockReturnValue({ maybeSingle: mockShiftBeforeMaybeSingle });
+    mockShiftBeforeFirstEq.mockReturnValue({ eq: mockShiftBeforeSecondEq });
+    mockSelect.mockReturnValue({ eq: mockShiftBeforeFirstEq });
 
     mockDeleteMaybeSingle.mockResolvedValue({ data: null, error: null });
     mockDeleteSelect.mockReturnValue({ maybeSingle: mockDeleteMaybeSingle });
@@ -123,6 +133,7 @@ describe('saveShift server action', () => {
         from: vi.fn(() => ({
           delete: mockDelete,
           insert: mockInsert,
+          select: mockSelect,
         })),
       })),
     }));
