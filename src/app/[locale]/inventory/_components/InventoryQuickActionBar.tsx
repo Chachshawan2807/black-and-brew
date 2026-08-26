@@ -103,8 +103,6 @@ export type InventoryQuickActionBarProps = {
   onCancelBulkSubmit?: () => void;
   backfillMode?: boolean;
   onBackfillModeChange?: (next: boolean) => void;
-  showInOutGapWarning?: boolean;
-  onDismissGapWarning?: () => void;
   transactionDateModalOpen?: boolean;
   transactionDate?: string;
   onTransactionDateChange?: (date: string) => void;
@@ -694,8 +692,6 @@ export function InventoryQuickActionBar({
   onCancelBulkSubmit,
   backfillMode = false,
   onBackfillModeChange,
-  showInOutGapWarning = false,
-  onDismissGapWarning,
   transactionDateModalOpen = false,
   transactionDate = '',
   onTransactionDateChange,
@@ -935,20 +931,6 @@ export function InventoryQuickActionBar({
     <>
     <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border bb-shadow-sm', className)}>
       <form onSubmit={onSubmit} className="flex flex-col gap-2.5 w-full">
-        {showInOutGapWarning && onDismissGapWarning && !hideMobileSearchChrome && (
-          <div
-            className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#f5cc4d] bg-[#ffda66]/30 px-3 py-2 text-sm bb-pastel-surface text-[#000000]"
-          >
-            <span>ยังไม่มีบันทึกรับเข้า/นำออกวันก่อน — กดบันทึกเพื่อเลือกวันที่ของรายการ</span>
-            <button
-              type="button"
-              onClick={onDismissGapWarning}
-              className="shrink-0 rounded-lg border border-[#000000]/15 px-2 py-1 text-xs hover:bg-[#ffda66]/50"
-            >
-              ข้าม
-            </button>
-          </div>
-        )}
         <div
           className={cn(
             'flex flex-row flex-wrap sm:flex-nowrap items-center gap-2 w-full min-w-0 box-border',

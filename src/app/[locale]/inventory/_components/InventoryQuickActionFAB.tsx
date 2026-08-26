@@ -430,8 +430,6 @@ export default function InventoryQuickActionFAB() {
                   onCancelBulkSubmit={quickAction.cancelBulkSubmit}
                   backfillMode={quickAction.backfillMode}
                   onBackfillModeChange={quickAction.setBackfillMode}
-                  showInOutGapWarning={quickAction.showInOutGapWarning}
-                  onDismissGapWarning={quickAction.dismissGapWarning}
                   transactionDateModalOpen={quickAction.transactionDateModalOpen}
                   transactionDate={quickAction.transactionDate}
                   onTransactionDateChange={quickAction.setTransactionDate}

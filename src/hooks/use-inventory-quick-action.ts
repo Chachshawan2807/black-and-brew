@@ -114,7 +114,6 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
   const [transactionDateReason, setTransactionDateReason] = useState<'backfill' | 'gap'>('backfill');
   const [pendingSubmit, setPendingSubmit] = useState<PendingTransactionSubmit<T> | null>(null);
   const [hasYesterdayInOutGap, setHasYesterdayInOutGap] = useState(false);
-  const [gapWarningDismissed, setGapWarningDismissed] = useState(false);
   const [yesterdayDate, setYesterdayDate] = useState('');
   const [todayDate, setTodayDate] = useState('');
   const backgroundSyncRef = useRef(false);
@@ -162,14 +161,6 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       setYesterdayDate(res.data.yesterdayDate);
       if (!res.data.yesterdayHasInOut) {
         setHasYesterdayInOutGap(true);
-        try {
-          const dismissed = localStorage.getItem(
-            getGapDismissStorageKey(res.data.yesterdayDate),
-          );
-          if (dismissed === '1') setGapWarningDismissed(true);
-        } catch {
-          /* private mode / disabled storage */
-        }
       }
     });
   }, []);
@@ -273,11 +264,6 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     void onHistoryRefresh();
   }, [showHistoryModal, onHistoryRefresh]);
 
-  const getActiveGapWarning = useCallback(
-    () => hasYesterdayInOutGap && !gapWarningDismissed,
-    [hasYesterdayInOutGap, gapWarningDismissed],
-  );
-
   const openTransactionDatePrompt = useCallback(
     (pending: PendingTransactionSubmit<T>) => {
       const today = todayDate || getBangkokTodayDateString();
@@ -285,7 +271,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       setTransactionDate(
         getDefaultTransactionDateString({
           backfillMode,
-          hasYesterdayInOutGap: getActiveGapWarning(),
+          hasYesterdayInOutGap,
           today,
           yesterday,
         }),
@@ -294,18 +280,8 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       setPendingSubmit(pending);
       setTransactionDateModalOpen(true);
     },
-    [backfillMode, getActiveGapWarning, todayDate, yesterdayDate],
+    [backfillMode, hasYesterdayInOutGap, todayDate, yesterdayDate],
   );
-
-  const dismissGapWarning = useCallback(() => {
-    setGapWarningDismissed(true);
-    if (!yesterdayDate) return;
-    try {
-      localStorage.setItem(getGapDismissStorageKey(yesterdayDate), '1');
-    } catch {
-      /* ignore */
-    }
-  }, [yesterdayDate]);
 
   const executeBulkSubmit = useCallback(async (transactionAt?: string) => {
     const queueSnapshot = bulkQueue;
@@ -499,7 +475,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     if (
       shouldPromptTransactionDate({
         backfillMode,
-        hasYesterdayInOutGap: getActiveGapWarning(),
+        hasYesterdayInOutGap,
         quickType: bulkQuickType,
       })
     ) {
@@ -513,7 +489,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     isQuickPending,
     isReadOnly,
     backfillMode,
-    getActiveGapWarning,
+    hasYesterdayInOutGap,
     bulkQuickType,
     openTransactionDatePrompt,
   ]);
@@ -658,7 +634,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       if (
         shouldPromptTransactionDate({
           backfillMode,
-          hasYesterdayInOutGap: getActiveGapWarning(),
+          hasYesterdayInOutGap,
           quickType,
         })
       ) {
@@ -692,7 +668,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
       items,
       quickType,
       backfillMode,
-      getActiveGapWarning,
+      hasYesterdayInOutGap,
       openTransactionDatePrompt,
       executeSingleSubmit,
       notificationSource,
@@ -758,7 +734,5 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
     transactionDateReason,
     confirmTransactionDate,
     cancelTransactionDate,
-    showInOutGapWarning: getActiveGapWarning(),
-    dismissGapWarning,
   };
 }
