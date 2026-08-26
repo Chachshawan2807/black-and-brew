@@ -76,16 +76,47 @@ export function getModalContentKeyboardAwareStyle({
   };
 }
 
-/** FAB bulk panel on phone: cap max-height to visible viewport when keyboard is open (stay centered, shrink-wrap). */
+/** Estimated fixed chrome above the bulk queue scroll area (FAB mobile, keyboard closed). */
+export const FAB_MOBILE_BULK_QUEUE_CHROME_FULL_PX = 290;
+
+/** Estimated fixed chrome when the software keyboard is open (secondary row hidden). */
+export const FAB_MOBILE_BULK_QUEUE_CHROME_KEYBOARD_PX = 200;
+
+/** Cap FAB panel max-height for FAB bulk mode on phone. */
+export function getFabMobileBulkPanelMaxHeight(
+  insets: VisualViewportInsets,
+  marginTop = 16,
+  marginBottom = 16,
+): number {
+  if (insets.isKeyboardOpen && insets.visibleHeight > 0) {
+    return Math.max(120, insets.visibleHeight - marginTop - marginBottom);
+  }
+  if (typeof window === 'undefined') return 560;
+  const dvh = window.innerHeight;
+  return Math.max(120, Math.min(dvh * 0.75, dvh - marginTop - marginBottom));
+}
+
+/** Scroll cap for the bulk queue list — shrinks with keyboard, never exceeds panel chrome budget. */
+export function getFabMobileBulkQueueListMaxHeight(
+  insets: VisualViewportInsets,
+  marginTop = 16,
+  marginBottom = 16,
+): number {
+  const chromePx = insets.isKeyboardOpen
+    ? FAB_MOBILE_BULK_QUEUE_CHROME_KEYBOARD_PX
+    : FAB_MOBILE_BULK_QUEUE_CHROME_FULL_PX;
+  const panelMax = getFabMobileBulkPanelMaxHeight(insets, marginTop, marginBottom);
+  return Math.max(72, panelMax - chromePx);
+}
+
+/** FAB bulk panel on phone: always cap max-height so content cannot push the shell off-center. */
 export function getFabMobileBulkPanelStyle(
   insets: VisualViewportInsets,
-  marginTop = 8,
-  marginBottom = 8,
+  marginTop = 16,
+  marginBottom = 16,
 ): CSSProperties {
-  if (!insets.isKeyboardOpen) return {};
-
   return {
-    maxHeight: Math.max(120, insets.visibleHeight - marginTop - marginBottom),
+    maxHeight: getFabMobileBulkPanelMaxHeight(insets, marginTop, marginBottom),
   };
 }
 

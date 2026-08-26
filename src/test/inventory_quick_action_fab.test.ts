@@ -417,7 +417,6 @@ describe('Inventory Quick Action FAB', () => {
       'utf-8',
     );
 
-    expect(layoutCode).toContain('FAB_MOBILE_BULK_QUEUE_LIST_MAX_HEIGHT_CLASS');
     expect(layoutCode).not.toContain('FAB_MOBILE_BULK_PANEL_SHELL_CLASS');
     expect(layoutCode).not.toMatch(/`\$\{/);
     expect(fabCode).toContain('fabMobileBulkQueueActive');
@@ -428,7 +427,10 @@ describe('Inventory Quick Action FAB', () => {
     expect(fabCode).toContain('fabMobileBulkShell={fabMobileBulkQueueActive}');
     expect(barCode).toContain('fabMobileBulkShell?: boolean');
     expect(barCode).toContain('fabMobileBulkShell={fabMobileBulkShell}');
-    expect(barCode).toContain('FAB_MOBILE_BULK_QUEUE_LIST_MAX_HEIGHT_CLASS');
+    expect(barCode).toContain('getFabMobileBulkQueueListMaxHeight');
+    expect(barCode).toContain('queueListMaxHeightPx');
+    expect(barCode).toContain('hideFabBulkSecondaryRow');
+    expect(barCode).toMatch(/useVisualViewportInsets\([\s\S]*fabMobileBulkShell/);
     expect(barCode).not.toContain('fillAvailableHeight');
     expect(barCode).not.toMatch(/flex-1 min-h-0/);
     expect(barCode).toContain('!fabMobileBulkShell');

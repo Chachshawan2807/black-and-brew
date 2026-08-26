@@ -47,7 +47,7 @@ import {
   shouldPortalQuickSearchSuggestions,
 } from '@/lib/quick-search-suggestions-layout';
 import { InventoryTransactionDateDialog } from '@/app/[locale]/inventory/_components/InventoryTransactionDateDialog';
-import { FAB_MOBILE_BULK_QUEUE_LIST_MAX_HEIGHT_CLASS } from '@/lib/floating-action-layout';
+import { getFabMobileBulkQueueListMaxHeight } from '@/lib/keyboard-aware-panel-style';
 
 export type QuickActionItem = {
   id: string;
@@ -392,6 +392,7 @@ function BulkQueuePanel({
   onBulkLineQtyChange,
   onClearBulkQueue,
   fabMobileBulkShell = false,
+  queueListMaxHeightPx,
 }: {
   bulkPreviews: { line: BulkQueueItem; preview: BulkPreview }[];
   quickType: 'IN' | 'OUT' | 'ADJUST';
@@ -399,6 +400,7 @@ function BulkQueuePanel({
   onBulkLineQtyChange?: (itemId: string, qty: string) => void;
   onClearBulkQueue?: () => void;
   fabMobileBulkShell?: boolean;
+  queueListMaxHeightPx?: number;
 }) {
   const rowTone = inventoryQuickActionTypeColors(quickType);
   if (bulkPreviews.length === 0) return null;
@@ -424,11 +426,14 @@ function BulkQueuePanel({
       </div>
       <div
         className={cn(
-          'min-h-0 overflow-y-auto bb-smooth-scroll divide-y divide-border/60',
-          fabMobileBulkShell
-            ? FAB_MOBILE_BULK_QUEUE_LIST_MAX_HEIGHT_CLASS
-            : 'max-h-[min(42dvh,15rem)]',
+          'min-h-0 overflow-y-auto bb-smooth-scroll bb-ios-scroll-host divide-y divide-border/60',
+          queueListMaxHeightPx === undefined && 'max-h-[min(42dvh,15rem)]',
         )}
+        style={
+          queueListMaxHeightPx !== undefined
+            ? { maxHeight: queueListMaxHeightPx }
+            : undefined
+        }
         role="list"
         aria-label="รายการในคิว"
       >
@@ -714,7 +719,15 @@ export function InventoryQuickActionBar({
   const [portaledSuggestionsStyle, setPortaledSuggestionsStyle] = useState<CSSProperties>({});
   const maxMd = useMaxMd();
   const isMobile = maxMd === true;
-  const viewportInsets = useVisualViewportInsets(isMounted && isSearchFocused);
+  const viewportInsets = useVisualViewportInsets(
+    isMounted && (isSearchFocused || fabMobileBulkShell),
+  );
+  const fabBulkQueueListMaxHeightPx =
+    fabMobileBulkShell && isMounted
+      ? getFabMobileBulkQueueListMaxHeight(viewportInsets)
+      : undefined;
+  const hideFabBulkSecondaryRow =
+    fabMobileBulkShell && viewportInsets.isKeyboardOpen;
   const portalSuggestions = shouldPortalQuickSearchSuggestions(isMobile, isSearchFocused);
   const collapseBulkQueueForSearch = shouldCollapseBulkQueueForMobileSearch(
     isMobile,
@@ -1068,6 +1081,7 @@ export function InventoryQuickActionBar({
             onBulkLineQtyChange={onBulkLineQtyChange}
             onClearBulkQueue={onClearBulkQueue}
             fabMobileBulkShell={fabMobileBulkShell}
+            queueListMaxHeightPx={fabBulkQueueListMaxHeightPx}
           />
         )}
 
@@ -1105,14 +1119,16 @@ export function InventoryQuickActionBar({
               onSubmit={onSubmit}
             />
           </div>
-          <SecondaryQuickActionButtons
-            itemsToOrderCount={itemsToOrderCount}
-            onOpenPurchaseOrder={onOpenPurchaseOrder}
-            onOpenAddItem={onOpenAddItem}
-            onOpenHistory={onOpenHistory}
-            onPreloadPurchaseOrder={onPreloadPurchaseOrder}
-            onPreloadHistory={onPreloadHistory}
-          />
+          {!hideFabBulkSecondaryRow && (
+            <SecondaryQuickActionButtons
+              itemsToOrderCount={itemsToOrderCount}
+              onOpenPurchaseOrder={onOpenPurchaseOrder}
+              onOpenAddItem={onOpenAddItem}
+              onOpenHistory={onOpenHistory}
+              onPreloadPurchaseOrder={onPreloadPurchaseOrder}
+              onPreloadHistory={onPreloadHistory}
+            />
+          )}
         </div>
 
         <div

@@ -2,6 +2,10 @@ import { describe, expect, test } from 'vitest';
 import {
   getFabPanelKeyboardAwareStyle,
   getFabMobileBulkPanelStyle,
+  getFabMobileBulkPanelMaxHeight,
+  getFabMobileBulkQueueListMaxHeight,
+  FAB_MOBILE_BULK_QUEUE_CHROME_FULL_PX,
+  FAB_MOBILE_BULK_QUEUE_CHROME_KEYBOARD_PX,
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
   getMobileQuickActionKeyboardSheetBackdropStyle,
@@ -53,12 +57,27 @@ describe('keyboard-aware panel styles', () => {
   test('FAB bulk shell caps max-height to visible viewport when keyboard is open', () => {
     const style = getFabMobileBulkPanelStyle(keyboardInsets);
 
-    expect(style.maxHeight).toBe(404);
+    expect(style.maxHeight).toBe(388);
     expect(style.height).toBeUndefined();
   });
 
-  test('FAB bulk shell defers to CSS height when keyboard is closed', () => {
-    expect(getFabMobileBulkPanelStyle(closedInsets)).toEqual({});
+  test('FAB bulk shell always caps panel max-height when keyboard is closed', () => {
+    const style = getFabMobileBulkPanelStyle(closedInsets);
+
+    expect(typeof style.maxHeight).toBe('number');
+    expect(style.maxHeight).toBeGreaterThan(120);
+  });
+
+  test('FAB bulk queue list max-height subtracts chrome and shrinks with keyboard', () => {
+    const keyboardListMax = getFabMobileBulkQueueListMaxHeight(keyboardInsets);
+    const panelMax = getFabMobileBulkPanelMaxHeight(keyboardInsets);
+
+    expect(keyboardListMax).toBe(panelMax - FAB_MOBILE_BULK_QUEUE_CHROME_KEYBOARD_PX);
+    expect(keyboardListMax).toBeGreaterThanOrEqual(72);
+
+    const closedListMax = getFabMobileBulkQueueListMaxHeight(closedInsets);
+    const closedPanelMax = getFabMobileBulkPanelMaxHeight(closedInsets);
+    expect(closedListMax).toBe(closedPanelMax - FAB_MOBILE_BULK_QUEUE_CHROME_FULL_PX);
   });
 
   test('modal backdrop can vertically center inside visible viewport when keyboard is open', () => {
