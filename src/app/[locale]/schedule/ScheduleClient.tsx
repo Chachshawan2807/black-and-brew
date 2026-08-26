@@ -12,6 +12,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
 import { navigateWithoutViewTransition } from '@/lib/view-transition';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
+import { useDebouncedShiftRefresh } from '@/hooks/useDebouncedShiftRefresh';
+import { fetchWeekShiftsFromClient } from '@/lib/schedule/client-shift-queries';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -812,57 +814,60 @@ export default function ScheduleClient({
     return [...Array(7)].map((_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
   }, [currentDate]);
 
-  const refreshShiftsForWeek = useCallback(async () => {
+  const refreshGenerationRef = useRef(0);
+
+  const refreshShiftsForWeek = useCallback(async (options?: { force?: boolean }) => {
     if (weekDays.length < 7) return;
 
-    const { data, error } = await supabase
-      .from('shifts')
-      .select('id, employee_id, start_time, end_time, status, metadata')
-      .gte('start_time', `${weekDays[0]}T00:00:00`)
-      .lte('start_time', `${weekDays[6]}T23:59:59`)
-      .not('status', 'is', null)
-      .not('status', 'eq', '')
-      .not('metadata->>location', 'is', null)
-      .not('metadata->>location', 'eq', '');
+    const generation = ++refreshGenerationRef.current;
 
-    if (error) {
-      console.error('Supabase Error (ScheduleClient refresh):', error.message, error.details);
-      return;
-    }
-
-    if (data) {
-      const normalized = data.map((shift) => {
-        const datePart = shift.start_time.split('T')[0];
-        return {
-          ...shift,
-          start_time: `${datePart}T00:00:00`,
-          end_time: `${datePart}T23:59:59`,
-        };
-      });
-      setShifts(normalized);
+    try {
+      const data = await fetchWeekShiftsFromClient(weekDays[0], weekDays[6]);
+      if (generation !== refreshGenerationRef.current) return;
+      setShifts(data as Shift[]);
+    } catch (error) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        const supabaseError = error as { message: string; details?: string };
+        console.error(
+          'Supabase Error (ScheduleClient refresh):',
+          supabaseError.message,
+          supabaseError.details,
+        );
+      } else {
+        console.error('Supabase Error (ScheduleClient refresh):', error);
+      }
     }
   }, [weekDays]);
 
+  const {
+    beginShiftMutation,
+    endShiftMutation,
+    scheduleRefresh,
+    runRefresh,
+  } = useDebouncedShiftRefresh({
+    onRefresh: refreshShiftsForWeek,
+  });
+
   useShiftRealtime({
     onShiftsChange: () => {
-      void refreshShiftsForWeek();
+      scheduleRefresh();
     },
   });
 
   useEffect(() => {
-    void refreshShiftsForWeek();
-  }, [refreshShiftsForWeek]);
+    runRefresh({ force: true });
+  }, [runRefresh]);
 
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        void refreshShiftsForWeek();
+        scheduleRefresh();
       }
     };
 
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [refreshShiftsForWeek]);
+  }, [scheduleRefresh]);
 
   const profileById = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles]);
   const activeProfileIds = useMemo(() => new Set(orderedProfileIds), [orderedProfileIds]);
@@ -1351,6 +1356,7 @@ export default function ScheduleClient({
       return [...filtered, optimisticShift];
     });
 
+    beginShiftMutation();
     try {
       const res = await saveShift(payload);
       if (!res.success) {
@@ -1364,10 +1370,13 @@ export default function ScheduleClient({
           s.id === tempId ? { ...s, id: res.data!.id } : s
         ));
       }
+      await refreshShiftsForWeek({ force: true });
     } catch (error) {
       console.error('[handleSave] Network Error:', error);
       setShifts(previousShifts);
       alert('ไม่สามารถบันทึกกะงานได้: เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    } finally {
+      endShiftMutation();
     }
   };
 
@@ -1389,6 +1398,7 @@ export default function ScheduleClient({
     setSelectedCell(null);
     if (shiftId.startsWith('temp-')) return;
 
+    beginShiftMutation();
     try {
       const result = await deleteShift(shiftId);
       if (!result.success) {
@@ -1396,9 +1406,12 @@ export default function ScheduleClient({
         setShifts(previousShifts);
         return;
       }
+      await refreshShiftsForWeek({ force: true });
     } catch (error) {
       console.error('[handleClear] Network Error:', error);
       setShifts(previousShifts);
+    } finally {
+      endShiftMutation();
     }
   };
 

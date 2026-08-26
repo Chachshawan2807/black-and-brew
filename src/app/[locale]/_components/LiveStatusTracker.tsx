@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
-import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { parseISO, startOfDay, endOfDay, addDays } from 'date-fns';
+import { useDebouncedShiftRefresh } from '@/hooks/useDebouncedShiftRefresh';
+import { fetchShiftsForBkkDayFromClient } from '@/lib/schedule/client-shift-queries';
+import { toZonedTime } from 'date-fns-tz';
+import { parseISO, addDays } from 'date-fns';
 import { CalendarDays, CalendarOff, CalendarX, CalendarClock, CalendarRange, Sun, type LucideIcon } from 'lucide-react';
 import {
   getShiftColorClass,
@@ -122,17 +124,6 @@ function sortProfiles(profiles: Profile[], shifts: Shift[]): Profile[] {
     if (sA.sortTime !== sB.sortTime) return sA.sortTime - sB.sortTime;
     return a.schedule_order - b.schedule_order;
   });
-}
-
-async function fetchShiftsForBkkDay(bkkDate: Date): Promise<Shift[]> {
-  const startUtc = fromZonedTime(startOfDay(bkkDate), 'Asia/Bangkok').toISOString();
-  const endUtc = fromZonedTime(endOfDay(bkkDate), 'Asia/Bangkok').toISOString();
-  const { data } = await supabase
-    .from('shifts')
-    .select('employee_id, start_time, end_time, status, metadata')
-    .gte('start_time', startUtc)
-    .lte('start_time', endUtc);
-  return data ?? [];
 }
 
 interface StatusGridProps {
@@ -299,30 +290,40 @@ export default function LiveStatusTracker({
   const [tomorrowShifts, setTomorrowShifts] = useState(initialTomorrowShifts);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local state when server props refresh
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync profile order when server props refresh
     setProfiles(initialProfiles);
-    setShifts(initialShifts);
-    setTomorrowShifts(initialTomorrowShifts);
-  }, [initialProfiles, initialShifts, initialTomorrowShifts]);
+  }, [initialProfiles]);
 
-  const shiftDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const debouncedRefreshShifts = useCallback(() => {
-    if (shiftDebounceRef.current) clearTimeout(shiftDebounceRef.current);
-    shiftDebounceRef.current = setTimeout(() => {
-      void (async () => {
-        const bkkNow = toZonedTime(new Date(), 'Asia/Bangkok');
-        const bkkTomorrow = addDays(bkkNow, 1);
-        const [today, tomorrow] = await Promise.all([
-          fetchShiftsForBkkDay(bkkNow),
-          fetchShiftsForBkkDay(bkkTomorrow),
-        ]);
-        setShifts(today);
-        setTomorrowShifts(tomorrow);
-      })();
-    }, 300);
+  const refreshShiftPanels = useCallback(async () => {
+    const bkkNow = toZonedTime(new Date(), 'Asia/Bangkok');
+    const bkkTomorrow = addDays(bkkNow, 1);
+
+    try {
+      const [today, tomorrow] = await Promise.all([
+        fetchShiftsForBkkDayFromClient(bkkNow),
+        fetchShiftsForBkkDayFromClient(bkkTomorrow),
+      ]);
+      setShifts(today);
+      setTomorrowShifts(tomorrow);
+    } catch (error) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        const supabaseError = error as { message: string; details?: string };
+        console.error(
+          'Supabase Error (LiveStatusTracker refresh):',
+          supabaseError.message,
+          supabaseError.details,
+        );
+      } else {
+        console.error('Supabase Error (LiveStatusTracker refresh):', error);
+      }
+    }
   }, []);
+
+  const { scheduleRefresh, runRefresh } = useDebouncedShiftRefresh({
+    onRefresh: refreshShiftPanels,
+  });
 
   const debouncedRefreshProfiles = useCallback(() => {
     if (profileDebounceRef.current) clearTimeout(profileDebounceRef.current);
@@ -338,13 +339,27 @@ export default function LiveStatusTracker({
   }, []);
 
   useShiftRealtime({
-    onShiftsChange: debouncedRefreshShifts,
+    onShiftsChange: scheduleRefresh,
     onProfilesChange: debouncedRefreshProfiles,
   });
 
   useEffect(() => {
+    runRefresh({ force: true });
+  }, [runRefresh]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        scheduleRefresh();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [scheduleRefresh]);
+
+  useEffect(() => {
     return () => {
-      if (shiftDebounceRef.current) clearTimeout(shiftDebounceRef.current);
       if (profileDebounceRef.current) clearTimeout(profileDebounceRef.current);
     };
   }, []);

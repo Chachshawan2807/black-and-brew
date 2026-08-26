@@ -230,6 +230,7 @@ export async function revalidateAppPaths() {
   }
 
   revalidatePath('/', 'layout');
+  revalidatePath('/[locale]', 'page');
   revalidatePath('/[locale]/schedule', 'page');
   revalidatePath('/[locale]/dashboard', 'page');
   return { success: true };

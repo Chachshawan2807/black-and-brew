@@ -29,11 +29,12 @@ describe('schedule shift persistence across navigation', () => {
   test('ScheduleClient refreshes week shifts from Supabase and listens to realtime', () => {
     expect(scheduleClientCode).toContain('refreshShiftsForWeek');
     expect(scheduleClientCode).toContain('useShiftRealtime');
+    expect(scheduleClientCode).toContain('useDebouncedShiftRefresh');
     expect(scheduleClientCode).toMatch(
-      /useShiftRealtime\(\{[\s\S]*onShiftsChange:[\s\S]*refreshShiftsForWeek/,
+      /useShiftRealtime\(\{[\s\S]*scheduleRefresh/,
     );
     expect(scheduleClientCode).toMatch(
-      /useEffect\(\(\) => \{[\s\S]*void refreshShiftsForWeek\(\)/,
+      /runRefresh\(\{ force: true \}\)/,
     );
   });
 
