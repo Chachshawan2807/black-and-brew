@@ -127,19 +127,12 @@ describe('fetchTablePreset', () => {
   });
 
   test('covers every public ERP table in AI_ALLOWED_TABLES', () => {
-    expect(AI_ALLOWED_TABLES).toHaveLength(24);
+    expect(AI_ALLOWED_TABLES).toHaveLength(21);
     for (const table of AI_ALLOWED_TABLES) {
       expect(TABLE_COLUMN_PRESETS[table]).toBeTruthy();
       expect(TABLE_COLUMN_PRESETS[table]).not.toContain('public_key');
       expect(TABLE_COLUMN_PRESETS[table]).not.toContain('p256dh');
     }
-  });
-
-  test('reads sales_records through its preset columns', async () => {
-    const result = await fetchTablePreset('sales_records');
-    expect(captured.table).toBe('sales_records');
-    expect(captured.select).toBe(TABLE_COLUMN_PRESETS.sales_records);
-    expect(result.ok).toBe(true);
   });
 
   test('applies equality filters via the real column name', async () => {

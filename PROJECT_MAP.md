@@ -18,7 +18,6 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 | Inventory Accuracy | `src/app/[locale]/inventory/accuracy/` | Active |
 | Branch Withdraw | `src/app/[locale]/inventory/branch-withdraw/` | Active |
 | Maintenance | `src/app/[locale]/maintenance/` | Active |
-| Sales | `src/app/[locale]/sales/` | Active |
 | Bean Orders | `src/app/[locale]/bean-orders/` | Active |
 | Settings | `src/app/[locale]/settings/` | Active |
 
@@ -39,7 +38,6 @@ Agent navigation: prefer **codebase-memory-mcp** (`search_graph`, `trace_path`) 
 | `/[locale]/inventory/accuracy` | `accuracy/page.tsx` | `_components/AccuracyGauge.tsx` |
 | `/[locale]/inventory/branch-withdraw` | `branch-withdraw/page.tsx` | `BranchWithdrawClient.tsx` |
 | `/[locale]/maintenance` | `maintenance/page.tsx` | `MaintenanceClient.tsx`, `_components/MaintenanceModals.tsx` |
-| `/[locale]/sales` | `sales/page.tsx` | `SalesClient.tsx`, `_components/SalesTopProductsChart.tsx` |
 | `/[locale]/bean-orders` | `bean-orders/page.tsx` | `BeanOrdersClient.tsx`, `_components/BeanOrderListItem.tsx` |
 | `/[locale]/bean-orders/new` | `bean-orders/new/page.tsx` | `BeanOrderFormClient.tsx` |
 | `/[locale]/bean-orders/[id]` | `bean-orders/[id]/page.tsx` | `BeanOrderDetailClient.tsx` |
@@ -111,7 +109,6 @@ black-and-brew/
 | `shift-actions.ts` | Shift CRUD, roster |
 | `holiday-actions.ts` | Google Calendar + regular holidays |
 | `maintenance-actions.ts` | Service record CRUD |
-| `sales-actions.ts` | Excel upload, categories |
 | `daily-report-actions.ts` | Daily schedule report compiler |
 | `push-actions.ts` | Web Push subscription lifecycle |
 | `app-preferences-actions.ts` | Branch-scoped UI prefs (sidebar menu order sync) |
@@ -125,7 +122,7 @@ black-and-brew/
 
 ## Tests (`src/test/`)
 
-Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `inventory-grid-a11y.test.ts`, `inventory-grid-cell-blur.test.ts`, `schedule-grid-a11y.test.ts`, `sales-category-grid-a11y.test.ts`, `maintenance-form-a11y.test.ts`, `ui-motion-focus-audit.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `notification-fab-sync.test.ts`, `offline-mutation-route.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `schedule-clear-all-removed.test.ts`, `live_shift_list.test.ts`, `bean-orders-*.test.ts`, `rounded-select.test.ts`, `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-intent-classifier.test.ts`, `sidebar-menu-order.test.ts`, `pwa-sidebar-navigation.test.ts`, `proactive-insights-*.test.ts`, `insight-alerts-route.test.ts`, `insight-web-push.test.ts`, `home-ops-panels.test.tsx`, `view-transition-navigation-race.test.ts`, `warm-route-navigation.test.ts`, `inventory-transaction-result.test.ts`, `inventory-in-out-theoretical.test.ts`
+Key suites: `dashboard-data-loading.test.ts`, `inventory-grid-performance.test.ts`, `inventory-grid-a11y.test.ts`, `inventory-grid-cell-blur.test.ts`, `schedule-grid-a11y.test.ts`, `maintenance-form-a11y.test.ts`, `ui-motion-focus-audit.test.ts`, `bundle-route-loading.test.ts`, `daily-report-web-push.test.ts`, `inventory_count_policy.test.ts`, `inventory-branch-withdraw-format.test.ts`, `branch-withdraw-dialog.test.ts`, `inventory_quick_action_fab.test.ts`, `notification-fab-sync.test.ts`, `offline-mutation-route.test.ts`, `web-push.test.ts`, `inventory_stock_sync.test.ts`, `schedule-grid-crosshair.test.ts`, `schedule-clear-all-removed.test.ts`, `live_shift_list.test.ts`, `bean-orders-*.test.ts`, `rounded-select.test.ts`, `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-intent-classifier.test.ts`, `sidebar-menu-order.test.ts`, `pwa-sidebar-navigation.test.ts`, `proactive-insights-*.test.ts`, `insight-alerts-route.test.ts`, `insight-web-push.test.ts`, `home-ops-panels.test.tsx`, `view-transition-navigation-race.test.ts`, `warm-route-navigation.test.ts`, `inventory-transaction-result.test.ts`, `inventory-in-out-theoretical.test.ts`
 
 ---
 

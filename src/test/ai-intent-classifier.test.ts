@@ -16,11 +16,6 @@ describe('classifyIntent', () => {
     expect(scores.inventory).toBeGreaterThanOrEqual(INTENT_THRESHOLD);
   });
 
-  test('scores sales queries', () => {
-    const scores = classifyIntent('สรุปยอดขายสัปดาห์นี้');
-    expect(scores.sales).toBeGreaterThanOrEqual(INTENT_THRESHOLD);
-  });
-
   test('scores holiday queries', () => {
     const scores = classifyIntent('วันหยุดนักขัตฤกษ์ใกล้ๆ นี้มีอะไรบ้าง');
     expect(scores.holiday).toBeGreaterThanOrEqual(INTENT_THRESHOLD);
@@ -47,9 +42,9 @@ describe('classifyIntent', () => {
   });
 
   test('dominantIntents returns intents at or above threshold', () => {
-    const scores = classifyIntent('ยอดขายวันนี้ และสต็อกต่ำอะไรบ้าง');
+    const scores = classifyIntent('สต็อกต่ำอะไรบ้าง และออเดอร์เมล็ดค้างชำระ');
     const names = dominantIntents(scores);
-    expect(names).toContain('sales');
     expect(names).toContain('inventory');
+    expect(names).toContain('beanOrders');
   });
 });

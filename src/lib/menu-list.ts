@@ -6,7 +6,6 @@ import {
   Package,
   Truck,
   Gauge,
-  HandCoins,
   ClipboardList,
   Coffee,
   type LucideIcon
@@ -105,14 +104,6 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           label: 'เบิกของสาขา 2',
           active: pathname.includes('/inventory/branch-withdraw'),
           icon: Truck,
-          submenus: []
-        },
-        {
-          id: 'sales',
-          href: `${prefix}/sales`,
-          label: 'รายงานการขาย',
-          active: pathname.includes('/sales'),
-          icon: HandCoins,
           submenus: []
         },
         {

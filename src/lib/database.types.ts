@@ -423,33 +423,6 @@ export type Database = {
           },
         ]
       }
-      product_categories: {
-        Row: {
-          category: string
-          created_at: string | null
-          id: string
-          is_ai_generated: boolean | null
-          product_name: string
-          updated_at: string | null
-        }
-        Insert: {
-          category: string
-          created_at?: string | null
-          id?: string
-          is_ai_generated?: boolean | null
-          product_name: string
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string
-          created_at?: string | null
-          id?: string
-          is_ai_generated?: boolean | null
-          product_name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       app_preferences: {
         Row: {
           branch_id: string
@@ -532,86 +505,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      sales_records: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          id: string
-          notes: string | null
-          payment_method: string | null
-          product_name: string | null
-          quantity: number | null
-          sale_date: string | null
-          total_amount: number | null
-          unit_price: number | null
-          upload_id: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          id?: string
-          notes?: string | null
-          payment_method?: string | null
-          product_name?: string | null
-          quantity?: number | null
-          sale_date?: string | null
-          total_amount?: number | null
-          unit_price?: number | null
-          upload_id?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          id?: string
-          notes?: string | null
-          payment_method?: string | null
-          product_name?: string | null
-          quantity?: number | null
-          sale_date?: string | null
-          total_amount?: number | null
-          unit_price?: number | null
-          upload_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sales_records_upload_id_fkey"
-            columns: ["upload_id"]
-            isOneToOne: false
-            referencedRelation: "sales_uploads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sales_uploads: {
-        Row: {
-          analysis_summary: string | null
-          created_at: string | null
-          file_name: string
-          id: string
-          status: string | null
-          total_records: number | null
-          upload_date: string | null
-        }
-        Insert: {
-          analysis_summary?: string | null
-          created_at?: string | null
-          file_name: string
-          id?: string
-          status?: string | null
-          total_records?: number | null
-          upload_date?: string | null
-        }
-        Update: {
-          analysis_summary?: string | null
-          created_at?: string | null
-          file_name?: string
-          id?: string
-          status?: string | null
-          total_records?: number | null
-          upload_date?: string | null
-        }
-        Relationships: []
       }
       service_records: {
         Row: {

@@ -37,7 +37,6 @@ export interface OperationalSnapshot {
   offCount: number;
   weeklyDays: WeeklyDaySchedule[];
   pendingBeanOrders: PendingBeanOrderInsight[];
-  yesterdaySalesTotal: number;
   upcomingHoliday: { name: string; daysRemaining: number } | null;
 }
 

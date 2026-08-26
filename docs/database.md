@@ -17,9 +17,6 @@
 | `holidays` | วันหยุดราชการ | ✓ | Created via `holiday-actions.ts` |
 | `regular_holidays` | วันหยุดประจำของพนักงาน | ✓ | `sql/historical/regular_holidays_schema.sql` |
 | `service_records` | บันทึกการซ่อมบำรุงอุปกรณ์ | ✓ | Used by maintenance module |
-| `sales_uploads` | ไฟล์ Excel ที่อัปโหลด | ✓ | `sql/historical/sales_schema.sql` |
-| `sales_records` | รายการยอดขาย | ✓ | `sql/historical/sales_schema.sql` |
-| `product_categories` | หมวดหมู่สินค้า | ✓ | `sql/historical/product_categories_schema.sql` |
 | `audit_logs` | บันทึก audit สำหรับ AI | ✓ | `sql/historical/audit_log_schema.sql` |
 | `login_history` | บันทึกเหตุการณ์เข้าใช้ระบบ (PIN) | ✓ RLS enabled | `supabase/migrations/20260611120000_create_login_history.sql` |
 | `data_change_logs` | บันทึกการเปลี่ยนแปลงข้อมูล (actor, field diff) | ✓ RLS + selective read | `supabase/migrations/20260612120000_create_data_change_logs.sql` |
@@ -125,34 +122,6 @@ CREATE TABLE inventory_count_verifications (
 
 Written by `recordCountVerification()` in `inventory-actions.ts`. Baseline is `inventory_items.stock` at count time (before the count update). Match logic: `src/lib/inventory-count-accuracy.ts` (`isCountMatch`). Migration `20260615120000` renamed `in_out_theoretical_qty` → `system_stock_qty` and cleared legacy rows.
 
-### `sales_uploads` / `sales_records`
-
-```sql
-CREATE TABLE sales_uploads (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  file_name TEXT NOT NULL,
-  upload_date TIMESTAMPTZ DEFAULT NOW(),
-  total_records INTEGER,
-  status TEXT DEFAULT 'completed',
-  analysis_summary TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE sales_records (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  upload_id UUID REFERENCES sales_uploads(id) ON DELETE CASCADE,
-  sale_date DATE,
-  product_name TEXT,
-  category TEXT,
-  quantity NUMERIC,
-  unit_price NUMERIC,
-  total_amount NUMERIC,
-  payment_method TEXT,
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
 ### `login_history`
 
 Immutable authentication event log with device fingerprinting. Written by `login-history-actions.ts` using the service-role key.
@@ -247,9 +216,6 @@ CREATE INDEX idx_inventory_items_name ON inventory_items (name);
 CREATE INDEX idx_inventory_items_sort ON inventory_items (sort_order);
 CREATE INDEX idx_inventory_transactions_product_id ON inventory_transactions(inventory_item_id);
 CREATE INDEX idx_inventory_transactions_created_at ON inventory_transactions(created_at DESC);
-CREATE INDEX idx_sales_uploads_date ON sales_uploads(upload_date);
-CREATE INDEX idx_sales_records_upload ON sales_records(upload_id);
-CREATE INDEX idx_sales_records_date ON sales_records(sale_date);
 CREATE INDEX idx_login_history_occurred_at ON login_history (occurred_at DESC);
 CREATE INDEX idx_data_change_logs_module_occurred ON data_change_logs (module, occurred_at DESC);
 CREATE INDEX idx_revoked_sessions_revoked_at ON revoked_sessions (revoked_at DESC);
@@ -334,7 +300,7 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260811105704_inventory_transaction_at.sql` | `inventory_transactions.transaction_at` business date + `p_transaction_at` on `record_inventory_transaction` RPC |
 | `20260811115400_reset_inventory_history_transaction_at.sql` | Reset IN/OUT ledger, count verifications, and branch withdrawals after `transaction_at` rollout |
 
-Retired: inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
+Retired: Sales Report module (`sales_uploads`, `sales_records`, `product_categories`) — dropped in `20260826140000_drop_sales_report_tables.sql`. Inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 
 ### Historical (`sql/historical/`) + operational blueprints (`sql/`)
 
@@ -342,8 +308,6 @@ Retired: inventory recommended target stock columns/UI (see `20260708104230_remo
 | --- | --- |
 | `sql/historical/DB_SCHEMA.sql` | Core: profiles, shifts, inventory_items |
 | `sql/historical/inventory_config_schema.sql` | Config table + seed |
-| `sql/historical/sales_schema.sql` | Sales uploads + records |
-| `sql/historical/product_categories_schema.sql` | Product categories |
 | `sql/historical/regular_holidays_schema.sql` | Regular holidays per employee |
 | `sql/historical/audit_log_schema.sql` | AI audit logging |
 | `sql/record_inventory_transaction.sql` | Atomic IN/OUT RPC reference blueprint |

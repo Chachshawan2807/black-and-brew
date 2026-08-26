@@ -42,7 +42,6 @@ function sampleSnapshot(overrides: Partial<OperationalSnapshot> = {}): Operation
     offCount: 2,
     weeklyDays,
     pendingBeanOrders: [],
-    yesterdaySalesTotal: 0,
     upcomingHoliday: null,
     ...overrides,
   };

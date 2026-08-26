@@ -42,7 +42,7 @@ Core ERP surfaces — treat as immutable design system unless the user explicitl
 - `src/app/[locale]/inventory/**` — spreadsheet grid, inline inputs, no edit modals
 - `src/app/[locale]/schedule/**` — DnD, pastel shift cards
 - `src/app/[locale]/dashboard/**`
-- `src/app/[locale]/sales/**`
+- `src/app/[locale]/maintenance/**`
 - `src/app/[locale]/settings/**` (except isolated empty-state copy review via audit)
 - `src/components/**` shared UI that backs the above
 - Any `<td>` inline `<input>` spreadsheet pattern

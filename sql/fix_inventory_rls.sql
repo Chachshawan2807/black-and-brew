@@ -63,16 +63,3 @@ CREATE POLICY "Allow authenticated users to insert transactions"
 DROP POLICY IF EXISTS "Allow authenticated users to delete transactions" ON public.inventory_transactions;
 CREATE POLICY "Allow authenticated users to delete transactions"
   ON public.inventory_transactions FOR DELETE TO authenticated USING (true);
-
--- ── product_categories (inventory-adjacent) ────────────────────────────────────
-ALTER TABLE public.product_categories ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Public access for product_categories" ON public.product_categories;
-
-DROP POLICY IF EXISTS "Allow authenticated users to view product categories" ON public.product_categories;
-CREATE POLICY "Allow authenticated users to view product categories"
-  ON public.product_categories FOR SELECT TO authenticated USING (true);
-
-DROP POLICY IF EXISTS "Allow authenticated users to manage product categories" ON public.product_categories;
-CREATE POLICY "Allow authenticated users to manage product categories"
-  ON public.product_categories FOR ALL TO authenticated USING (true) WITH CHECK (true);

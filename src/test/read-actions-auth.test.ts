@@ -10,11 +10,6 @@ import {
   fetchFrequentItems,
   fetchTransactionHistory,
 } from '@/app/actions/inventory-actions';
-import {
-  fetchSalesHistory,
-  getAllProductCategories,
-  getSalesMetrics,
-} from '@/app/actions/sales-actions';
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn().mockImplementation(async () => ({
@@ -71,26 +66,6 @@ describe('read server actions auth gate', () => {
     const result = await fetchCountAccuracyStats();
     expect(result.success).toBe(false);
     expect(result.error).toContain('Unauthorized');
-    expect(mockFrom).not.toHaveBeenCalled();
-  });
-
-  test('fetchSalesHistory rejects unauthenticated callers', async () => {
-    const result = await fetchSalesHistory();
-    expect(result).toBeNull();
-    expect(mockFrom).not.toHaveBeenCalled();
-  });
-
-  test('getAllProductCategories rejects unauthenticated callers', async () => {
-    const result = await getAllProductCategories();
-    expect(result.success).toBe(false);
-    expect(result.error).toContain('Unauthorized');
-    expect(result.categories).toEqual([]);
-    expect(mockFrom).not.toHaveBeenCalled();
-  });
-
-  test('getSalesMetrics rejects unauthenticated callers', async () => {
-    const result = await getSalesMetrics();
-    expect(result).toBeNull();
     expect(mockFrom).not.toHaveBeenCalled();
   });
 });

@@ -7,7 +7,6 @@ const preloaded = new Set<string>();
 const ROUTE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   inventory: () => import('@/app/[locale]/inventory/InventoryClient'),
   schedule: () => import('@/app/[locale]/schedule/ScheduleClient'),
-  sales: () => import('@/app/[locale]/sales/SalesClient'),
   'bean-orders': () => import('@/app/[locale]/bean-orders/BeanOrdersClient'),
   'bean-order-detail': () => import('@/app/[locale]/bean-orders/BeanOrderDetailClient'),
   maintenance: () => import('@/app/[locale]/maintenance/MaintenanceClient'),

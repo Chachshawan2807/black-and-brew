@@ -42,7 +42,7 @@
 | งานประจำวัน | Command Center, Staff Dashboard | `/[locale]`, `/[locale]/dashboard` |
 | ตารางงาน | Schedule | `/[locale]/schedule` |
 | คลังสินค้า | Inventory, Stock Count, Accuracy, Branch Withdraw | `/[locale]/inventory/*` |
-| ข้อมูลร้าน | Sales, Maintenance, Bean Orders | `/[locale]/sales`, `/[locale]/maintenance`, `/[locale]/bean-orders` |
+| ข้อมูลร้าน | Maintenance, Bean Orders | `/[locale]/maintenance`, `/[locale]/bean-orders` |
 | ระบบและ AI | Settings, AI Chat API (บรู) | `/[locale]/settings`, `POST /api/chat` |
 
 > `[locale]` คือรหัสภาษา เช่น `th` (ไทย) หรือ `en` (อังกฤษ)
@@ -191,24 +191,6 @@
 ---
 
 ### 📊 ข้อมูลร้าน
-
-#### Sales
-
-`/[locale]/sales` · วิเคราะห์ยอดขาย
-
-**ใช้ทำอะไร:** อัปโหลดไฟล์ Excel ยอดขายจากเครื่อง POS (ระบบขายหน้าร้าน) แล้วดูสรุปยอดขายตามหมวดสินค้าและช่วงเวลา
-
-**เหมาะกับใคร:** เจ้าของร้าน ผู้จัดการ หรือคนที่ต้องการดูแนวโน้มยอดขายโดยไม่ต้องนั่งไล่ตัวเลขใน Excel เอง
-
-**ทำงานอย่างไร:**
-
-- อัปโหลดไฟล์ Excel ที่ export จาก POS — ระบบอ่านและเก็บข้อมูลในฐานข้อมูล
-- จัดหมวดสินค้าได้ (เช่น กาแฟ เบเกอรี เครื่องดื่มอื่น)
-- ดูยอดรวมตามช่วงวันที่ที่อัปโหลดมา
-
-**จุดเด่น:** ไม่ต้องเชื่อมต่อ API กับ POS โดยตรง (ซึ่งมักยุ่งยากและมีค่าใช้จ่าย) — แค่อัปโหลดไฟล์ที่มีอยู่แล้วก็วิเคราะห์ได้
-
----
 
 #### Maintenance
 

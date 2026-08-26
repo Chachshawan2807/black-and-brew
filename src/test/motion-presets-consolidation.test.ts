@@ -83,7 +83,6 @@ describe('motion-presets consolidation', () => {
   });
 
   const consolidatedFiles = [
-    'app/[locale]/sales/SalesClient.tsx',
     'app/[locale]/maintenance/MaintenanceClient.tsx',
     'app/[locale]/dashboard/_components/LiveShiftList.tsx',
     'app/[locale]/inventory/InventoryClient.tsx',

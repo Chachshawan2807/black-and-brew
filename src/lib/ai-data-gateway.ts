@@ -39,9 +39,6 @@ export const AI_ALLOWED_TABLES = [
   'inventory_transactions',
   'inventory_count_verifications',
   'service_records',
-  'sales_uploads',
-  'sales_records',
-  'product_categories',
   'bean_customers',
   'bean_customer_addresses',
   'bean_orders',
@@ -84,13 +81,6 @@ const COLUMN_ALIASES: Record<string, Record<string, string>> = {
   },
   profiles: { name: 'full_name' },
   holidays: { holiday_date: 'date', holiday_name: 'name' },
-  sales_records: {
-    product: 'product_name',
-    date: 'sale_date',
-    amount: 'total_amount',
-  },
-  sales_uploads: { filename: 'file_name', uploaded_at: 'upload_date' },
-  product_categories: { product: 'product_name' },
   regular_holidays: { employee_id: 'profile_id', weekday: 'day_of_week' },
   data_change_logs: { module_name: 'module', entity: 'entity_type' },
   bean_orders: {
@@ -122,12 +112,6 @@ export const TABLE_COLUMN_PRESETS: Record<AiReadableTable, string> = {
   service_records:
     'id, start_date, equipment, detected_problem, task_type, work_details, ' +
     'recommended_frequency, completion_date, created_at',
-  sales_uploads:
-    'id, file_name, upload_date, total_records, status, analysis_summary, created_at',
-  sales_records:
-    'id, upload_id, sale_date, product_name, category, quantity, unit_price, ' +
-    'total_amount, payment_method, notes, created_at',
-  product_categories: 'id, product_name, category, is_ai_generated, created_at, updated_at',
   bean_customers: 'id, name, phone, notes, created_at, updated_at',
   bean_customer_addresses:
     'id, customer_id, label, recipient_name, recipient_phone, province, postal_code, created_at',
@@ -167,16 +151,13 @@ export const TABLE_MAX_LIMITS: Record<AiReadableTable, number> = {
   inventory_transactions: 1000,
   inventory_count_verifications: 1000,
   service_records: 1000,
-  sales_records: 2000,
   data_change_logs: 2000,
   login_history: 500,
   audit_logs: 500,
-  product_categories: 500,
   shifts: 500,
   profiles: 200,
   holidays: 366,
   regular_holidays: 200,
-  sales_uploads: 100,
   inventory_config: 50,
   bean_customers: 500,
   bean_customer_addresses: 500,
@@ -246,165 +227,13 @@ export async function fetchShiftsByDate(date: string): Promise<FormattedDailyShi
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fetchSalesSummary — aggregate sales_records for AI (date range + top products)
+// fetchInventoryLedger — join inventory_transactions + item names for AI
 // ─────────────────────────────────────────────────────────────────────────────
-export interface SalesSummaryProduct {
-  product_name: string;
-  category: string;
-  quantity: number;
-  total_amount: number;
-}
-
-export interface SalesSummaryCategory {
-  category: string;
-  quantity: number;
-  total_amount: number;
-}
-
-export interface SalesSummaryResult {
-  ok: boolean;
-  from_date: string;
-  to_date: string;
-  total_amount: number;
-  total_quantity: number;
-  top_products: SalesSummaryProduct[];
-  category_breakdown: SalesSummaryCategory[];
-  row_count: number;
-  is_complete_dataset: boolean;
-  error?: GatewayError;
-}
-
 function toNumber(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
-export async function fetchSalesSummary(opts: {
-  fromDate: string;
-  toDate: string;
-  topN?: number;
-}): Promise<SalesSummaryResult> {
-  const topN = opts.topN ?? 10;
-  const session = await requirePrivilegedSession();
-  if (!session.ok) {
-    return {
-      ok: false,
-      from_date: opts.fromDate,
-      to_date: opts.toDate,
-      total_amount: 0,
-      total_quantity: 0,
-      top_products: [],
-      category_breakdown: [],
-      row_count: 0,
-      is_complete_dataset: false,
-      error: { message: session.error, details: null, hint: null },
-    };
-  }
-
-  try {
-    const admin = getAdminClient();
-    const effectiveLimit = TABLE_MAX_LIMITS.sales_records;
-    const { data, error } = await admin
-      .from('sales_records')
-      .select(TABLE_COLUMN_PRESETS.sales_records)
-      .gte('sale_date', opts.fromDate)
-      .lte('sale_date', opts.toDate)
-      .limit(effectiveLimit);
-
-    if (error) {
-      console.error('[ai-data-gateway] fetchSalesSummary:', error.message, error.details);
-      return {
-        ok: false,
-        from_date: opts.fromDate,
-        to_date: opts.toDate,
-        total_amount: 0,
-        total_quantity: 0,
-        top_products: [],
-        category_breakdown: [],
-        row_count: 0,
-        is_complete_dataset: false,
-        error: {
-          message: error.message,
-          details: error.details,
-          hint: (error as { hint?: unknown }).hint ?? null,
-        },
-      };
-    }
-
-    const rows = (data ?? []) as unknown as Record<string, unknown>[];
-    const byProduct = new Map<string, SalesSummaryProduct>();
-    const byCategory = new Map<string, SalesSummaryCategory>();
-    let totalAmount = 0;
-    let totalQuantity = 0;
-
-    for (const row of rows) {
-      const productName = String(row.product_name ?? 'ไม่ระบุ');
-      const category = String(row.category ?? 'ไม่ระบุ');
-      const qty = toNumber(row.quantity);
-      const amount = toNumber(row.total_amount);
-      totalAmount += amount;
-      totalQuantity += qty;
-
-      const product = byProduct.get(productName) ?? {
-        product_name: productName,
-        category,
-        quantity: 0,
-        total_amount: 0,
-      };
-      product.quantity += qty;
-      product.total_amount += amount;
-      byProduct.set(productName, product);
-
-      const cat = byCategory.get(category) ?? {
-        category,
-        quantity: 0,
-        total_amount: 0,
-      };
-      cat.quantity += qty;
-      cat.total_amount += amount;
-      byCategory.set(category, cat);
-    }
-
-    const topProducts = [...byProduct.values()]
-      .toSorted((a, b) => b.total_amount - a.total_amount)
-      .slice(0, topN);
-
-    const categoryBreakdown = [...byCategory.values()].toSorted(
-      (a, b) => b.total_amount - a.total_amount
-    );
-
-    return {
-      ok: true,
-      from_date: opts.fromDate,
-      to_date: opts.toDate,
-      total_amount: totalAmount,
-      total_quantity: totalQuantity,
-      top_products: topProducts,
-      category_breakdown: categoryBreakdown,
-      row_count: rows.length,
-      is_complete_dataset: rows.length < effectiveLimit,
-    };
-  } catch (err) {
-    const e = err as { message?: string; details?: unknown };
-    console.error('[ai-data-gateway] fetchSalesSummary crashed:', e?.message);
-    return {
-      ok: false,
-      from_date: opts.fromDate,
-      to_date: opts.toDate,
-      total_amount: 0,
-      total_quantity: 0,
-      top_products: [],
-      category_breakdown: [],
-      row_count: 0,
-      is_complete_dataset: false,
-      error: { message: e?.message ?? 'Unknown error', details: e?.details ?? null, hint: null },
-    };
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// fetchInventoryLedger — join inventory_transactions + item names for AI
-// ─────────────────────────────────────────────────────────────────────────────
 export interface InventoryLedgerEntry {
   id: string;
   item_name: string;

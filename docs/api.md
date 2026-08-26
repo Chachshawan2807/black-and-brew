@@ -163,22 +163,7 @@ Client: Service Role Key
 
 ---
 
-### 1.8 Sales (`sales-actions.ts`)
-
-| Function | Purpose |
-| --- | --- |
-| `uploadSalesFiles(formData)` | Parse Excel → `sales_uploads` + `sales_records` |
-| `fetchSalesHistory(page, pageSize)` | Paginated upload history |
-| `deleteSalesUpload(uploadId)` | Delete upload + cascading records |
-| `getAllProductCategories()` | List product categories |
-| `updateProductCategory(name, category)` | Update category mapping |
-| `deleteCategory(name)` | Delete category |
-| `autoCategorizeAllProducts()` | AI auto-categorize |
-| `getSalesMetrics(start?, end?)` | Sales metrics for date range |
-
----
-
-### 1.9 Daily Report (`daily-report-actions.ts`)
+### 1.8 Daily Report (`daily-report-actions.ts`)
 
 | Function | Purpose |
 | --- | --- |
@@ -272,9 +257,9 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 ### `POST /api/chat`
 
 - Streaming AI chat via `ToolLoopAgent` (`google('gemini-2.5-flash')`)
-- Tools: `getDailyShifts`, `getStoreStatus`, `getSalesSummary`, `getInventoryLedger`, `getBeanOrdersSummary`, `readTable`, `internetSearchTool`
+- Tools: `getDailyShifts`, `getStoreStatus`, `getInventoryLedger`, `getBeanOrdersSummary`, `readTable`, `internetSearchTool`
 - Body: `{ messages, clientContext? }` — structured screen context + preferred tools by route
-- Deterministic SSE short-circuits: daily schedule, maintenance, low-stock, sales, holidays, store status, bean orders, inventory accuracy (multi-turn aware)
+- Deterministic SSE short-circuits: daily schedule, maintenance, low-stock, holidays, store status, bean orders, inventory accuracy (multi-turn aware)
 - Server-side auth gate: privileged PIN session required (401/403 otherwise; read-only kiosk denied)
 - Multi-turn weighted intent scoring + conditional executive rules; `maxSteps` up to 7; `maxOutputTokens: 1600`
 
@@ -289,7 +274,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 ### `GET /api/insight-alerts`
 
 - **cron-job.org** HTTP trigger — protected by `CRON_SECRET` (`Authorization: Bearer …`)
-- Compiles an operational snapshot across schedule, inventory, maintenance, bean orders, sales, and accuracy
+- Compiles an operational snapshot across schedule, inventory, maintenance, and bean orders
 - Evaluates deterministic cross-module insight rules (`src/lib/proactive-insights/`)
 - Records `data_change_logs` (`module: insights`, `kind: proactive_insight`) with per-rule daily dedup
 - Dispatches Web Push via `dispatchInsightWebPush()` when prefs include `proactiveInsights`

@@ -18,7 +18,6 @@ const MAIN_FEATURE_FILES = [
   'app/[locale]/schedule/ScheduleClient.tsx',
   'app/[locale]/schedule/_components/ShiftSettingsModal.tsx',
   'app/[locale]/schedule/_components/ScheduleToolbar.tsx',
-  'app/[locale]/sales/SalesClient.tsx',
   'app/[locale]/maintenance/MaintenanceClient.tsx',
   'app/[locale]/maintenance/_components/MaintenanceModals.tsx',
   'components/ui/dropdown-menu.tsx',

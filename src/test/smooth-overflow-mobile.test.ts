@@ -58,10 +58,6 @@ describe('bb-smooth-scroll — mobile overflow utility', () => {
       pattern: /overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y/,
     },
     {
-      file: 'app/[locale]/sales/SalesClient.tsx',
-      pattern: /overflow-x-auto[\s\S]*bb-smooth-scroll/,
-    },
-    {
       file: 'app/[locale]/inventory/_components/InventoryQuickActionBar.tsx',
       pattern: /overflow-y-auto[\s\S]*bb-smooth-scroll/,
     },

@@ -29,7 +29,6 @@ function makeDeps(overrides: Partial<OperationalSnapshotDeps> = {}): Operational
       { customerName: 'ทัพพ์', paymentStatus: 'paid', fulfillmentStatus: 'pending' },
       { customerName: 'มุก', paymentStatus: 'paid', fulfillmentStatus: 'pending' },
     ]),
-    fetchYesterdaySales: vi.fn(async () => 15000),
     fetchNextHoliday: vi.fn(async () => ({ name: 'สงกรานต์', daysRemaining: 10 })),
     ...overrides,
   };
@@ -55,7 +54,6 @@ describe('compileOperationalSnapshot', () => {
       paymentStatus: 'unpaid',
       fulfillmentStatus: 'pending',
     });
-    expect(snapshot.yesterdaySalesTotal).toBe(15000);
     expect(snapshot.upcomingHoliday).toEqual({ name: 'สงกรานต์', daysRemaining: 10 });
   });
 

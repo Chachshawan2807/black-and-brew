@@ -3,7 +3,6 @@ import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 const schedulePagePath = resolve(__dirname, '../app/[locale]/schedule/page.tsx');
-const salesPagePath = resolve(__dirname, '../app/[locale]/sales/page.tsx');
 const layoutPath = resolve(__dirname, '../app/[locale]/layout.tsx');
 const holidaySyncPath = resolve(__dirname, '../lib/holiday-sync.ts');
 
@@ -15,12 +14,6 @@ describe('loading performance patterns', () => {
     expect(source).not.toMatch(
       /\[profilesRes[\s\S]*fetchAndPersistHolidays/,
     );
-  });
-
-  test('sales page requests slim metrics payload', () => {
-    const source = readFileSync(salesPagePath, 'utf-8');
-    expect(source).toContain('includeAllProducts: false');
-    expect(source).toContain('createLazyFeatureClient');
   });
 
   test('layout defers global overlays', () => {

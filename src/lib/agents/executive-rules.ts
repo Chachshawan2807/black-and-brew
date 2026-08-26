@@ -13,7 +13,6 @@ export const EXECUTIVE_RULES = {
     shifts: "ตารางกะการทำงานและวันลาของพนักงาน (ใช้ดูตารางงานล่วงหน้า โดยเช็กจาก start_time และ end_time)",
     service_records: "ตารางประวัติการซ่อมบำรุง (คอลัมน์: id, start_date, equipment, detected_problem, task_type, work_details, recommended_frequency, completion_date — ห้ามใช้ machine_name, maintenance_date, operator, description, recorded_at, cost, person_in_charge, status, notes)",
     holidays: "ตารางบันทึกวันหยุดนักขัตฤกษ์ล่วงหน้า (ใช้ประกอบการประเมินความหนาแน่นของลูกค้า)",
-    sales_records: "ตารางรายการขายจากไฟล์อัปโหลด (sale_date, product_name, category, quantity, total_amount)",
     bean_orders: "ตารางออเดอร์เมล็ดกาแฟ (order_no, payment_status unpaid/paid, fulfillment_status pending/shipped, total_baht)",
     bean_order_lines: "รายการสินค้าในออเดอร์เมล็ด (item_name, weight_value, weight_unit, line_total_baht)",
     bean_customers: "ลูกค้าเมล็ดกาแฟ (name, phone)",

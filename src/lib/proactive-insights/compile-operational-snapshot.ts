@@ -1,4 +1,4 @@
-import { format, parseISO, subDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -27,7 +27,6 @@ export type OperationalSnapshotDeps = {
   fetchShifts: (date: Date) => Promise<ShiftSnapshotBlock>;
   fetchWeekSchedule: (anchorDate: Date) => Promise<WeeklyDaySchedule[]>;
   fetchPendingBeanOrders: () => Promise<PendingBeanOrderInsight[]>;
-  fetchYesterdaySales: (yesterdayIso: string) => Promise<number>;
   fetchNextHoliday: (
     date: Date,
   ) => Promise<{ name: string; daysRemaining: number } | null>;
@@ -40,11 +39,6 @@ function getSupabaseAdmin() {
   return createClient(supabaseUrl, supabaseAdminKey, {
     global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) },
   });
-}
-
-function toNumber(value: unknown): number {
-  const n = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(n) ? n : 0;
 }
 
 export function countLeaveStaff(offStaff: StaffShiftEntry[]): number {
@@ -115,29 +109,6 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
   return pending;
 }
 
-async function defaultFetchYesterdaySales(yesterdayIso: string): Promise<number> {
-  const admin = getSupabaseAdmin();
-  if (!admin) return 0;
-
-  const { data, error } = await admin
-    .from('sales_records')
-    .select('total_amount')
-    .gte('sale_date', yesterdayIso)
-    .lte('sale_date', yesterdayIso)
-    .limit(TABLE_MAX_LIMITS.sales_records);
-
-  if (error) {
-    console.error('[proactive-insights] sales_records:', error.message, error.details);
-    return 0;
-  }
-
-  let total = 0;
-  for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
-    total += toNumber(row.total_amount);
-  }
-  return total;
-}
-
 async function defaultFetchNextHoliday(
   date: Date,
 ): Promise<{ name: string; daysRemaining: number } | null> {
@@ -198,7 +169,6 @@ export const defaultOperationalSnapshotDeps: OperationalSnapshotDeps = {
   fetchShifts: fetchTodayShifts,
   fetchWeekSchedule: defaultFetchWeekSchedule,
   fetchPendingBeanOrders: defaultFetchPendingBeanOrders,
-  fetchYesterdaySales: defaultFetchYesterdaySales,
   fetchNextHoliday: defaultFetchNextHoliday,
 };
 
@@ -228,9 +198,8 @@ export async function compileOperationalSnapshot(
 ): Promise<OperationalSnapshot> {
   const locale = opts.locale ?? 'th';
   const date = parseISO(opts.dateIso);
-  const yesterdayIso = format(subDays(date, 1), 'yyyy-MM-dd');
 
-  const [shifts, weeklyDays, pendingBeanOrders, yesterdaySalesTotal, upcomingHoliday] =
+  const [shifts, weeklyDays, pendingBeanOrders, upcomingHoliday] =
     await Promise.all([
       settle(deps.fetchShifts(date), {
         activeStaff: [],
@@ -240,7 +209,6 @@ export async function compileOperationalSnapshot(
       }),
       settle(deps.fetchWeekSchedule(date), emptyWeekSchedule(opts.dateIso)),
       settle(deps.fetchPendingBeanOrders(), []),
-      settle(deps.fetchYesterdaySales(yesterdayIso), 0),
       settle(deps.fetchNextHoliday(date), null),
     ]);
 
@@ -253,7 +221,6 @@ export async function compileOperationalSnapshot(
     offCount: shifts.offStaff.length,
     weeklyDays,
     pendingBeanOrders,
-    yesterdaySalesTotal,
     upcomingHoliday,
   };
 }

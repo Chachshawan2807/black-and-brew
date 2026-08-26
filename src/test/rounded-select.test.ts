@@ -25,9 +25,6 @@ describe('rounded select — shared date-picker-like trigger', () => {
     expect(monthly).toContain('RoundedSelect');
     expect(monthly).toMatch(/RoundedSelect[\s\S]*?\bw-fit\b/);
 
-    const sales = readFile('app/[locale]/sales/SalesClient.tsx');
-    expect(sales).toContain('RoundedSelect');
-
     const beanList = readFile('app/[locale]/bean-orders/BeanOrdersClient.tsx');
     expect(beanList).toContain('RoundedSelect');
 

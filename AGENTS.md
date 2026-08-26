@@ -76,9 +76,7 @@ schedule/   → app/[locale]/schedule/ScheduleClient.tsx
 settings/   → app/[locale]/settings/page.tsx
               app/[locale]/settings/_components/*
 
-sales/      → app/[locale]/sales/SalesClient.tsx
-              app/[locale]/sales/_components/*
-              app/actions/sales-actions.ts
+sales/      → (removed — retired Sales Report module)
 ```
 
 ### Agent checklist (structure)
@@ -180,7 +178,7 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 - **Overlay (read first):** `.cursor/skills/hallmark-erp/SKILL.md` — ERP constraints for this repo
 - **Upstream:** `.agents/skills/hallmark/SKILL.md` — anti-AI-slop rules, slop-test gates, `audit` / `study` protocols
 - **Allowed:** `hallmark audit <target>` (punch list, no edits) · `hallmark study <screenshot|URL>` (DNA diagnosis; no ERP rebuild unless user explicitly requests a non-ERP surface)
-- **Forbidden on ERP:** default Hallmark build · `hallmark redesign` on inventory/schedule/dashboard/sales/settings · Hallmark themes/macrostructures replacing `shift-colors.ts` or CSS token surfaces
+- **Forbidden on ERP:** default Hallmark build · `hallmark redesign` on inventory/schedule/dashboard/settings · Hallmark themes/macrostructures replacing `shift-colors.ts` or CSS token surfaces
 - **Update:** `npx skills add nutlope/hallmark -y`
 <!-- END:hallmark-skill -->
 <!-- BEGIN:dark-theme-standard -->

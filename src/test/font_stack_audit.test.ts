@@ -89,12 +89,8 @@ describe('font stack audit', () => {
       path.resolve(__dirname, '../lib/chart-theme.ts'),
       'utf-8'
     );
-    const salesChart = fs.readFileSync(
-      path.resolve(__dirname, '../app/[locale]/sales/_components/SalesTopProductsChartInner.tsx'),
-      'utf-8'
-    );
 
     expect(chartTheme).toContain('APP_FONT_FAMILY_CSS');
-    expect(salesChart).toContain('getChartAxisTick(chartColors.tick)');
+    expect(chartTheme).toContain('getChartAxisTick');
   });
 });

@@ -6,7 +6,6 @@ export type IntentScores = {
   externalSearch: number;
   maintenance: number;
   holiday: number;
-  sales: number;
   beanOrders: number;
   inventoryAccuracy: number;
   storeStatus: number;
@@ -56,13 +55,6 @@ const HOLIDAY_SIGNALS: Signal[] = [
   { pattern: /หยุดเมื่อไหร่|อีกกี่วัน|วันหยุดถัดไป/i, weight: 3 },
 ];
 
-const SALES_SIGNALS: Signal[] = [
-  { pattern: /ยอดขาย|sales|revenue/i, weight: 3 },
-  { pattern: /ขายดี|best.?seller|สินค้าขาย/i, weight: 2 },
-  { pattern: /รายได้|กำไร|turnover/i, weight: 2 },
-  { pattern: /product_categories|หมวดหมู่สินค้า/i, weight: 2 },
-];
-
 const BEAN_ORDERS_SIGNALS: Signal[] = [
   { pattern: /คำสั่งซื้อเมล็ด|ออเดอร์เมล็ด|bean.?order/i, weight: 4 },
   { pattern: /เมล็ดกาแฟ.*(สั่ง|ออเดอร์|ค้าง|จัดส่ง)/i, weight: 3 },
@@ -90,7 +82,6 @@ export function classifyIntent(text: string): IntentScores {
     maintenance: score(text, MAINTENANCE_SIGNALS),
     externalSearch: score(text, EXTERNAL_SEARCH_SIGNALS),
     holiday: score(text, HOLIDAY_SIGNALS),
-    sales: score(text, SALES_SIGNALS),
     beanOrders: score(text, BEAN_ORDERS_SIGNALS),
     inventoryAccuracy: score(text, INVENTORY_ACCURACY_SIGNALS),
     storeStatus: score(text, STORE_STATUS_SIGNALS),

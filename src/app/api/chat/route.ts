@@ -5,7 +5,6 @@ import { toZonedTime } from 'date-fns-tz';
 import {
   readTableTool,
   getDailyShiftsTool,
-  getSalesSummaryTool,
   getInventoryLedgerTool,
   getStoreStatusTool,
   getBeanOrdersSummaryTool,
@@ -20,20 +19,17 @@ import {
   isSingleDomainIntent,
   type IntentScores,
 } from '@/lib/agents/intent/classify-intent';
-import { isSalesSummaryQuery, resolveSalesDateRange } from '@/lib/agents/detect-sales-query';
 import { isUpcomingHolidaysQuery } from '@/lib/agents/detect-holidays-query';
 import { isLowStockQuery } from '@/lib/agents/detect-low-stock-query';
 import { isStoreStatusQuery } from '@/lib/agents/detect-store-status-query';
 import { isBeanOrdersSummaryQuery } from '@/lib/agents/detect-bean-orders-query';
 import { isInventoryAccuracyQuery } from '@/lib/agents/detect-inventory-accuracy-query';
-import { formatSalesChatResponse } from '@/lib/agents/format-sales-chat-response';
 import { formatHolidaysChatResponse } from '@/lib/agents/format-holidays-chat-response';
 import { formatLowStockChatResponse } from '@/lib/agents/format-low-stock-chat-response';
 import { formatStoreStatusChatResponse } from '@/lib/agents/format-store-status-chat-response';
 import { formatBeanOrdersChatResponse } from '@/lib/agents/format-bean-orders-chat-response';
 import { formatInventoryAccuracyChatResponse } from '@/lib/agents/format-inventory-accuracy-chat-response';
 import {
-  fetchSalesSummary,
   fetchBeanOrdersSummary,
   fetchInventorySummary,
   fetchInventoryAccuracySummary,
@@ -239,7 +235,7 @@ function buildSystemPrompt(
 - คุณเป็นผู้หญิง: ต้องใช้คำลงท้ายว่า "ค่ะ" หรือ "นะคะ" เท่านั้น
 - กฎเหล็ก: ห้าม! ใช้คำว่า "ครับ" หรือแทนตัวเองว่า "ผม" อย่างเด็ดขาด
 - ผู้ใช้คือ "คุณ" ห้ามเรียกผู้ใช้ด้วยคำอื่น
-- คุณมีเครื่องมือ: getDailyShifts, readTable, getSalesSummary, getInventoryLedger, getStoreStatus, getBeanOrdersSummary, internetSearchTool — เรียกทันทีเมื่อสอบถาม ห้ามปฏิเสธว่าไม่มีเครื่องมือ
+- คุณมีเครื่องมือ: getDailyShifts, readTable, getInventoryLedger, getStoreStatus, getBeanOrdersSummary, internetSearchTool — เรียกทันทีเมื่อสอบถาม ห้ามปฏิเสธว่าไม่มีเครื่องมือ
 - [CRITICAL] เมื่อเรียกเครื่องมือเสร็จและได้ผลลัพธ์แล้ว ต้องนำข้อมูลมาสรุปเป็นภาษาไทยสั้น กระชับ ตรงประเด็นทันที ห้ามส่งข้อความว่างเปล่า (Empty Response) เด็ดขาด
 
 ${BRU_REPORT_RULES}
@@ -359,14 +355,6 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
 `.trim());
   }
 
-  if (intents.sales > 0) {
-    sections.push(`
-[กฎยอดขาย]
-1. ใช้ getSalesSummary(fromDate, toDate) เป็นหลัก ห้าม dump sales_records ทั้งตาราง
-2. สรุปยอดรวม สินค้าขายดี และหมวดหมู่ — สไตล์รายงานสั้น
-`.trim());
-  }
-
   if (intents.beanOrders > 0) {
     sections.push(`
 [กฎออเดอร์เมล็ดกาแฟ]
@@ -412,7 +400,6 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
 const ALL_AI_TOOLS = {
   getDailyShifts: wrapTool(getDailyShiftsTool),
   readTable: wrapTool(readTableTool),
-  getSalesSummary: wrapTool(getSalesSummaryTool),
   getInventoryLedger: wrapTool(getInventoryLedgerTool),
   getStoreStatus: wrapTool(getStoreStatusTool),
   getBeanOrdersSummary: wrapTool(getBeanOrdersSummaryTool),
@@ -433,14 +420,10 @@ function selectTools(intents: IntentScores): {
     || intents.inventory >= INTENT_THRESHOLD
     || intents.maintenance >= INTENT_THRESHOLD
     || intents.holiday >= INTENT_THRESHOLD
-    || intents.sales >= INTENT_THRESHOLD
     || intents.beanOrders >= INTENT_THRESHOLD
     || intents.inventoryAccuracy >= INTENT_THRESHOLD
     || intents.storeStatus >= INTENT_THRESHOLD;
 
-  if (intents.sales >= INTENT_THRESHOLD) {
-    tools.getSalesSummary = ALL_AI_TOOLS.getSalesSummary;
-  }
   if (intents.inventory >= INTENT_THRESHOLD) {
     tools.getInventoryLedger = ALL_AI_TOOLS.getInventoryLedger;
   }
@@ -578,30 +561,6 @@ export async function POST(req: Request) {
         return createDeterministicChatStreamResponse(responseText);
       } catch (maintenanceError) {
         console.error('[BRU_AI] Deterministic maintenance fetch failed:', maintenanceError);
-      }
-    }
-
-    if (
-      isSingleDomainIntent(intents, 'sales') &&
-      isSalesSummaryQuery(cleanInput)
-    ) {
-      try {
-        const range = resolveSalesDateRange(cleanInput, currentIsoDate);
-        const summary = await fetchSalesSummary({
-          fromDate: range.fromDate,
-          toDate: range.toDate,
-        });
-        const responseText = formatSalesChatResponse(summary);
-        await logAuditTrail({
-          userId: auth.userId || 'PIN_AUTH_USER',
-          model: 'deterministic-sales',
-          intent: 'sales',
-          tokenEstimate: 0,
-          status: 'SUCCESS',
-        });
-        return createDeterministicChatStreamResponse(responseText);
-      } catch (err) {
-        console.error('[BRU_AI] Deterministic sales fetch failed:', err);
       }
     }
 
