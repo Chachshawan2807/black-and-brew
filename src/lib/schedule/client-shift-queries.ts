@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { startOfDay, endOfDay } from 'date-fns';
 import type { Shift } from '@/types';
@@ -20,7 +21,12 @@ export function normalizeClientShiftRow<T extends ClientShiftRow>(shift: T): T {
 export async function fetchWeekShiftsFromClient(
   weekStart: string,
   weekEnd: string,
-): Promise<ClientShiftRow[]> {
+): Promise<ClientShiftRow[] | null> {
+  const sessionOk = await ensureSupabaseSession();
+  if (!sessionOk) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('shifts')
     .select('id, employee_id, start_time, end_time, status, metadata')
@@ -38,7 +44,12 @@ export async function fetchWeekShiftsFromClient(
   return (data ?? []).map((shift) => normalizeClientShiftRow(shift as ClientShiftRow));
 }
 
-export async function fetchShiftsForBkkDayFromClient(bkkDate: Date): Promise<ClientShiftRow[]> {
+export async function fetchShiftsForBkkDayFromClient(bkkDate: Date): Promise<ClientShiftRow[] | null> {
+  const sessionOk = await ensureSupabaseSession();
+  if (!sessionOk) {
+    return null;
+  }
+
   const startUtc = fromZonedTime(startOfDay(bkkDate), 'Asia/Bangkok').toISOString();
   const endUtc = fromZonedTime(endOfDay(bkkDate), 'Asia/Bangkok').toISOString();
 

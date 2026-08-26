@@ -99,6 +99,8 @@ import {
   buildManagementDateRange,
   groupManagementHistoryShifts,
   mergeManagementHistoryShiftPages,
+  MGMT_HISTORY_MAX_CHAINED_PAGES,
+  shouldContinueMgmtHistoryPagination,
   type ManagementHistoryItem,
   type ManagementHistoryShiftRow,
 } from '@/lib/schedule/mgmt-history';
@@ -616,7 +618,7 @@ export default function ScheduleClient({
   const mgmtModalScrollRef = useRef<HTMLDivElement>(null);
   const mgmtHistoryScrollRef = useRef<HTMLDivElement>(null);
   const mgmtHistoryLoadMoreRef = useRef<HTMLTableRowElement>(null);
-  const mgmtHistoryFetchingRef = useRef(false);
+  const mgmtFetchGenerationRef = useRef(0);
   const mgmtHistoryHasMoreRef = useRef(true);
   const mgmtHistoryCursorRef = useRef<string | null>(null);
   const mgmtRawShiftsRef = useRef<ManagementHistoryShiftRow[]>([]);
@@ -824,6 +826,7 @@ export default function ScheduleClient({
     try {
       const data = await fetchWeekShiftsFromClient(weekDays[0], weekDays[6]);
       if (generation !== refreshGenerationRef.current) return;
+      if (data === null) return;
       setShifts(data as Shift[]);
     } catch (error) {
       if (error && typeof error === 'object' && 'message' in error) {
@@ -906,23 +909,29 @@ export default function ScheduleClient({
   });
 
   const fetchMgmtHistory = useCallback(async ({ reset = false }: { reset?: boolean } = {}) => {
-    if (mgmtHistoryFetchingRef.current) return;
+    const generation = ++mgmtFetchGenerationRef.current;
 
-    setMgmtHistoryLoading(true);
-    mgmtHistoryFetchingRef.current = true;
+    if (reset || mgmtRawShiftsRef.current.length === 0) {
+      setMgmtHistoryLoading(true);
+    }
+
     try {
       let cursor = reset ? null : mgmtHistoryCursorRef.current;
       let accumulated = reset ? [] : [...mgmtRawShiftsRef.current];
       let hasMore = true;
       let pagesLoaded = 0;
-      const maxPages = reset ? 32 : 1;
+      const maxPages = reset ? MGMT_HISTORY_MAX_CHAINED_PAGES : 1;
 
       while (hasMore && pagesLoaded < maxPages) {
+        if (generation !== mgmtFetchGenerationRef.current) return;
+
         const result = await fetchManagementHistoryPage({
           cursor,
           startDate: historyFilter.start || undefined,
           endDate: historyFilter.end || undefined,
         });
+
+        if (generation !== mgmtFetchGenerationRef.current) return;
 
         if (!result.success) {
           console.error('Supabase Error:', result.error);
@@ -930,6 +939,8 @@ export default function ScheduleClient({
         }
 
         const batch = result.batch as ManagementHistoryShiftRow[];
+        const rawBatchSize = result.rawBatchSize ?? batch.length;
+
         accumulated = reset && pagesLoaded === 0
           ? batch
           : mergeManagementHistoryShiftPages(accumulated, batch);
@@ -938,20 +949,24 @@ export default function ScheduleClient({
         cursor = result.cursor;
         pagesLoaded += 1;
 
-        if (batch.length === 0 && hasMore) continue;
+        mgmtHistoryCursorRef.current = cursor;
+        mgmtRawShiftsRef.current = accumulated;
+        mgmtHistoryHasMoreRef.current = hasMore;
+
+        setMgmtHistoryCursor(cursor);
+        setMgmtHistoryHasMore(hasMore);
+        setMgmtRawShifts(accumulated);
+
         if (!reset) break;
+
+        if (shouldContinueMgmtHistoryPagination(rawBatchSize, batch.length, pagesLoaded)) {
+          continue;
+        }
       }
-
-      mgmtHistoryCursorRef.current = cursor;
-      mgmtRawShiftsRef.current = accumulated;
-      mgmtHistoryHasMoreRef.current = hasMore;
-
-      setMgmtHistoryCursor(cursor);
-      setMgmtHistoryHasMore(hasMore);
-      setMgmtRawShifts(accumulated);
     } finally {
-      mgmtHistoryFetchingRef.current = false;
-      setMgmtHistoryLoading(false);
+      if (generation === mgmtFetchGenerationRef.current) {
+        setMgmtHistoryLoading(false);
+      }
     }
   }, [historyFilter]);
 
@@ -964,27 +979,20 @@ export default function ScheduleClient({
 
   const prefetchMgmtHistoryIfShort = useCallback(() => {
     const el = getMgmtHistoryScrollRoot();
-    if (!el || !mgmtHistoryHasMoreRef.current || mgmtHistoryFetchingRef.current) return;
+    if (!el || !mgmtHistoryHasMoreRef.current || mgmtHistoryLoading) return;
     if (el.scrollHeight <= el.clientHeight + 12) {
       void fetchMgmtHistory();
     }
   }, [fetchMgmtHistory, getMgmtHistoryScrollRoot]);
 
   useEffect(() => {
+    void fetchMgmtHistory({ reset: true });
+  }, [fetchMgmtHistory]);
+
+  useEffect(() => {
     if (!showManagementModal) return;
-    mgmtRawShiftsRef.current = [];
-    mgmtHistoryCursorRef.current = null;
-    mgmtHistoryHasMoreRef.current = true;
-    queueMicrotask(() => {
-      setMgmtRawShifts([]);
-      setMgmtHistory([]);
-      setMgmtHistoryCursor(null);
-      setMgmtHistoryHasMore(true);
-      void fetchMgmtHistory({ reset: true });
-    });
-    // fetchMgmtHistory intentionally omitted — reset:true ignores cursor; avoid refetch loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showManagementModal, historyFilter.start, historyFilter.end]);
+    void fetchMgmtHistory({ reset: true });
+  }, [showManagementModal, fetchMgmtHistory]);
 
   useEffect(() => {
     if (!showManagementModal || mgmtRawShifts.length === 0) return;

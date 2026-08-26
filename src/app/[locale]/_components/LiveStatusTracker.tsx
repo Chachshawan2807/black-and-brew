@@ -312,8 +312,8 @@ export default function LiveStatusTracker({
         fetchShiftsForBkkDayFromClient(bkkNow),
         fetchShiftsForBkkDayFromClient(bkkTomorrow),
       ]);
-      setShifts(today);
-      setTomorrowShifts(tomorrow);
+      if (today !== null) setShifts(today);
+      if (tomorrow !== null) setTomorrowShifts(tomorrow);
     } catch (error) {
       if (error && typeof error === 'object' && 'message' in error) {
         const supabaseError = error as { message: string; details?: string };

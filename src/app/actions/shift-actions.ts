@@ -747,11 +747,13 @@ export async function fetchManagementHistoryPage(params: {
       return { success: false as const, error: error.message, batch: [], hasMore: false, cursor: null };
     }
 
+    const rawBatchSize = data?.length ?? 0;
     const batch = (data ?? []).filter(isManagementHistoryShift);
     return {
       success: true as const,
       batch,
-      hasMore: (data?.length ?? 0) === limit,
+      rawBatchSize,
+      hasMore: rawBatchSize === limit,
       cursor: getMgmtHistoryPaginationCursor(data ?? []),
     };
   } catch (err) {
