@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select-trigger-styles';
 import { SELECT_LISTBOX_Z_CLASS } from '@/lib/floating-action-layout';
 import { getAnchoredSuggestionsOverlayStyle } from '@/lib/quick-search-suggestions-layout';
+import { bindPointerSafeOptionSelect } from '@/lib/pointer-overlay-selection';
 import { cn } from '@/lib/utils';
 
 export {
@@ -164,7 +165,10 @@ export function RoundedSelect({
         SELECT_LISTBOX_Z_CLASS,
       )}
       style={listStyle}
-      onMouseDown={(e) => e.preventDefault()}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
     >
       {options.map((opt) => {
         const isSelected = opt.value === currentValue;
@@ -175,14 +179,15 @@ export function RoundedSelect({
               role="option"
               aria-selected={isSelected}
               disabled={opt.disabled}
-              onClick={() => {
-                if (opt.disabled) return;
-                selectValue(opt.value);
-              }}
               className={cn(
                 BB_SELECT_OPTION_CLASS,
+                'touch-manipulation',
                 isSelected && BB_SELECT_OPTION_SELECTED_CLASS,
               )}
+              {...bindPointerSafeOptionSelect(() => {
+                if (opt.disabled) return;
+                selectValue(opt.value);
+              })}
             >
               {opt.label}
             </button>

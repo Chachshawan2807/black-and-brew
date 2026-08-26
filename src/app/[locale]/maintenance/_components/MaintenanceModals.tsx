@@ -23,6 +23,7 @@ import {
   type ServiceRecordFormInput,
 } from '@/lib/maintenance/service-record-form';
 import { cn } from '@/lib/utils';
+import { bindPointerSafeOptionSelect } from '@/lib/pointer-overlay-selection';
 
 export type MaintenanceFormData = ServiceRecordFormInput;
 
@@ -276,13 +277,14 @@ export default function MaintenanceModals({
                             >
                               <button
                                 type="button"
-                                onMouseDown={e => e.preventDefault()}
-                                onClick={() => selectEquipmentSuggestion(suggestion)}
                                 className={cn(
-                                  'w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors',
+                                  'w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors touch-manipulation',
                                   highlightedEquipmentIndex === index
                                     ? 'bg-muted'
                                     : 'hover:bg-muted/60',
+                                )}
+                                {...bindPointerSafeOptionSelect(() =>
+                                  selectEquipmentSuggestion(suggestion),
                                 )}
                               >
                                 {suggestion}

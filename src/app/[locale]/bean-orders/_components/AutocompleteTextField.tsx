@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { bindPointerSafeOptionSelect } from '@/lib/pointer-overlay-selection';
 import { BEAN_ORDER_BTN_LIST } from './bean-order-layout';
 
 type Props = {
@@ -76,9 +77,8 @@ export function AutocompleteTextField({
             <li key={suggestion}>
               <button
                 type="button"
-                className={BEAN_ORDER_BTN_LIST}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleSelect(suggestion)}
+                className={cn(BEAN_ORDER_BTN_LIST, 'touch-manipulation')}
+                {...bindPointerSafeOptionSelect(() => handleSelect(suggestion))}
               >
                 {suggestion}
               </button>

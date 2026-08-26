@@ -48,6 +48,10 @@ import {
 } from '@/lib/quick-search-suggestions-layout';
 import { InventoryTransactionDateDialog } from '@/app/[locale]/inventory/_components/InventoryTransactionDateDialog';
 import { getFabMobileBulkQueueListMaxHeight } from '@/lib/keyboard-aware-panel-style';
+import {
+  bindPointerSafeOptionSelect,
+  guardPointerClickThrough,
+} from '@/lib/pointer-overlay-selection';
 
 export type QuickActionItem = {
   id: string;
@@ -135,7 +139,7 @@ function QuickActionTypeToggle({
       <HintTooltip tip="รับเข้า">
         <button
           type="button"
-          onClick={() => setQuickType('IN')}
+          onClick={guardPointerClickThrough(() => setQuickType('IN'))}
           aria-label="รับเข้า"
           aria-pressed={quickType === 'IN'}
           className={cn(
@@ -149,7 +153,7 @@ function QuickActionTypeToggle({
       <HintTooltip tip="นำออก">
         <button
           type="button"
-          onClick={() => setQuickType('OUT')}
+          onClick={guardPointerClickThrough(() => setQuickType('OUT'))}
           aria-label="นำออก"
           aria-pressed={quickType === 'OUT'}
           className={cn(
@@ -163,7 +167,7 @@ function QuickActionTypeToggle({
       <HintTooltip tip="ปรับจำนวน">
         <button
           type="button"
-          onClick={() => setQuickType('ADJUST')}
+          onClick={guardPointerClickThrough(() => setQuickType('ADJUST'))}
           aria-label="ปรับจำนวน"
           aria-pressed={quickType === 'ADJUST'}
           className={cn(
@@ -869,7 +873,13 @@ export function InventoryQuickActionBar({
 
   const suggestionsScrollClassName = 'overflow-y-auto bb-smooth-scroll py-2';
 
-  const suggestionButtons = filteredItems.map((item, index) => (
+  const suggestionButtons = filteredItems.map((item, index) => {
+    const pointerHandlers = bindPointerSafeOptionSelect(
+      () => selectQuickSearchItem(item),
+      { onPointerDown: () => setHighlightedIndex(index) },
+    );
+
+    return (
     <button
       key={item.id}
       id={`${suggestionsListId}-option-${index}`}
@@ -879,14 +889,10 @@ export function InventoryQuickActionBar({
       type="button"
       role="option"
       aria-selected={highlightedIndex === index}
-      onPointerDown={(e) => {
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
-        e.preventDefault();
-        selectQuickSearchItem(item);
-      }}
+      {...pointerHandlers}
       onMouseEnter={() => setHighlightedIndex(index)}
       className={cn(
-        'w-full text-left px-5 py-3 transition-colors flex items-center justify-between gap-3 group min-w-0',
+        'w-full text-left px-5 py-3 transition-colors flex items-center justify-between gap-3 group min-w-0 touch-manipulation',
         highlightedIndex === index ? 'bg-muted' : 'hover:bg-muted',
       )}
     >
@@ -897,7 +903,8 @@ export function InventoryQuickActionBar({
         {item.stock} {item.unit}
       </span>
     </button>
-  ));
+    );
+  });
 
   const suggestionsListbox = showSuggestions ? (
     <div
@@ -910,7 +917,10 @@ export function InventoryQuickActionBar({
           : 'absolute top-full left-0 z-[210] mt-2 min-w-[min(100%,14rem)] w-max max-w-[min(100vw-2rem,20rem)]',
       )}
       style={portalSuggestions ? portaledSuggestionsStyle : undefined}
-      onPointerDown={(e) => e.preventDefault()}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
     >
       <div
         className={cn(

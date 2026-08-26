@@ -35,6 +35,7 @@ describe('Inventory Quick Action FAB', () => {
     );
 
     expect(layoutCode).toContain('<DeferredOverlays />');
+    expect(layoutCode).toContain('<PointerClickThroughGuard />');
     expect(deferredCode).toContain('<InventoryQuickActionWrapper />');
     expect(deferredCode).toContain('<InventoryNotificationFAB />');
     expect(deferredCode).toContain('notificationFabReady');
@@ -311,14 +312,16 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toMatch(/function QuickActionSaveButton[\s\S]*inventoryQuickActionTypeColors\(quickType\)/);
   });
 
-  test('quick search suggestions select items via pointerdown for iOS touch', () => {
+  test('quick search suggestions select items via pointer-safe handlers for iOS touch', () => {
     const barCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/_components/InventoryQuickActionBar.tsx'),
       'utf-8',
     );
 
-    expect(barCode).toMatch(/onPointerDown=\{\(e\) => \{[\s\S]*selectQuickSearchItem\(item\)/);
-    expect(barCode).not.toMatch(/onMouseDown=\{\(e\) => \{[\s\S]*selectQuickSearchItem\(item\)/);
+    expect(barCode).toContain('bindPointerSafeOptionSelect');
+    expect(barCode).toMatch(/bindPointerSafeOptionSelect[\s\S]*selectQuickSearchItem/);
+    expect(barCode).not.toMatch(/onPointerDown=\{\(e\) => \{[\s\S]*selectQuickSearchItem\(item\)/);
+    expect(barCode).toContain('guardPointerClickThrough');
   });
 
   test('bulk queue summary does not expose paste-multiple-names control', () => {

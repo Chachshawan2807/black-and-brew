@@ -7,6 +7,7 @@ import { FabStackHideToggle } from '@/components/floating/FabStackHideToggle';
 import { DeferredOverlays } from '@/components/shell/DeferredOverlays';
 import { RoutePrefetchOnIdle } from '@/components/shell/RoutePrefetchOnIdle';
 import { ViewTransitionNavigation } from '@/components/shell/ViewTransitionNavigation';
+import { PointerClickThroughGuard } from '@/components/shell/PointerClickThroughGuard';
 import PwaRegister from '@/components/PwaRegister';
 import { PwaShellSync } from '@/components/PwaShellSync';
 import PinGateway from '@/components/auth/PinGateway';
@@ -80,6 +81,7 @@ export default async function RootLayout({
         <PwaRegister />
         <RoutePrefetchOnIdle />
         <ViewTransitionNavigation />
+        <PointerClickThroughGuard />
         <PinGateway>
           <PushSubscriptionManager />
           <NotificationProvider>
