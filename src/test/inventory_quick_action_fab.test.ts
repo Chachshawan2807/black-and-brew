@@ -319,6 +319,7 @@ describe('Inventory Quick Action FAB', () => {
     );
 
     expect(barCode).toContain('bindPointerSafeOptionSelect');
+    expect(barCode).toContain('POINTER_SAFE_OPTION_INNER_CLASS');
     expect(barCode).toMatch(/bindPointerSafeOptionSelect[\s\S]*selectQuickSearchItem/);
     expect(barCode).not.toMatch(/onPointerDown=\{\(e\) => \{[\s\S]*selectQuickSearchItem\(item\)/);
     expect(barCode).toContain('guardPointerClickThrough');

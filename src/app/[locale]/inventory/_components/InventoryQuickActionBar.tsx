@@ -51,6 +51,7 @@ import { getFabMobileBulkQueueListMaxHeight } from '@/lib/keyboard-aware-panel-s
 import {
   bindPointerSafeOptionSelect,
   guardPointerClickThrough,
+  POINTER_SAFE_OPTION_INNER_CLASS,
 } from '@/lib/pointer-overlay-selection';
 
 export type QuickActionItem = {
@@ -896,10 +897,10 @@ export function InventoryQuickActionBar({
         highlightedIndex === index ? 'bg-muted' : 'hover:bg-muted',
       )}
     >
-      <span className="text-[14px] text-foreground font-normal truncate min-w-0 flex-1">
+      <span className={cn('text-[14px] text-foreground font-normal truncate min-w-0 flex-1', POINTER_SAFE_OPTION_INNER_CLASS)}>
         {item.name}
       </span>
-      <span className="text-[12px] text-muted-foreground group-hover:text-foreground/70 transition-colors uppercase tracking-widest tabular-nums shrink-0 whitespace-nowrap">
+      <span className={cn('text-[12px] text-muted-foreground group-hover:text-foreground/70 transition-colors uppercase tracking-widest tabular-nums shrink-0 whitespace-nowrap', POINTER_SAFE_OPTION_INNER_CLASS)}>
         {item.stock} {item.unit}
       </span>
     </button>
@@ -917,10 +918,7 @@ export function InventoryQuickActionBar({
           : 'absolute top-full left-0 z-[210] mt-2 min-w-[min(100%,14rem)] w-max max-w-[min(100vw-2rem,20rem)]',
       )}
       style={portalSuggestions ? portaledSuggestionsStyle : undefined}
-      onPointerDown={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
+      onPointerDown={(e) => e.preventDefault()}
     >
       <div
         className={cn(

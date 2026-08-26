@@ -165,10 +165,7 @@ export function RoundedSelect({
         SELECT_LISTBOX_Z_CLASS,
       )}
       style={listStyle}
-      onPointerDown={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
+      onPointerDown={(e) => e.preventDefault()}
     >
       {options.map((opt) => {
         const isSelected = opt.value === currentValue;

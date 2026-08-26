@@ -2,6 +2,9 @@ import type { MouseEvent, PointerEvent } from 'react';
 
 const DEFAULT_GUARD_MS = 450;
 
+/** Apply to decorative children inside pointer-safe option buttons (iOS text hitbox). */
+export const POINTER_SAFE_OPTION_INNER_CLASS = 'pointer-events-none select-none';
+
 let guardUntil = 0;
 
 /** Block synthesized ghost clicks after overlay option selection (touch / pen). */
@@ -34,39 +37,41 @@ export type PointerSafeOptionHandlers = {
 };
 
 /**
- * Select on pointerup so overlays can stay mounted through the full touch gesture.
- * Prevents iOS ghost clicks from hitting controls revealed under the finger.
+ * Select on pointerdown for instant single-tap UX.
+ * Activates click-through guard before onSelect so ghost clicks cannot reach controls below.
  */
 export function bindPointerSafeOptionSelect(
   onSelect: () => void,
   options?: { onPointerDown?: () => void },
 ): PointerSafeOptionHandlers {
-  let activePointerId: number | null = null;
+  let consumedPointerId: number | null = null;
+
+  const runSelect = (pointerId: number) => {
+    if (consumedPointerId === pointerId) return;
+    consumedPointerId = pointerId;
+    activatePointerClickThroughGuard();
+    options?.onPointerDown?.();
+    onSelect();
+  };
 
   return {
     onPointerDown(event) {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
       event.preventDefault();
       event.stopPropagation();
-      options?.onPointerDown?.();
-      activePointerId = event.pointerId;
-      try {
-        event.currentTarget.setPointerCapture(event.pointerId);
-      } catch {
-        // JSDOM / unsupported environments
-      }
+      runSelect(event.pointerId);
     },
     onPointerUp(event) {
-      if (activePointerId === null || event.pointerId !== activePointerId) return;
-      if (event.pointerType === 'mouse' && event.button !== 0) return;
-      event.preventDefault();
-      event.stopPropagation();
-      activePointerId = null;
-      activatePointerClickThroughGuard();
-      onSelect();
+      if (event.pointerType === 'mouse') return;
+      if (consumedPointerId === event.pointerId) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
     },
-    onPointerCancel() {
-      activePointerId = null;
+    onPointerCancel(event) {
+      if (consumedPointerId === event.pointerId) {
+        consumedPointerId = null;
+      }
     },
     onClick(event) {
       if (isPointerClickThroughGuardActive()) {

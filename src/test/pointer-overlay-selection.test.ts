@@ -76,16 +76,16 @@ describe('pointer-overlay-selection', () => {
     cleanup();
   });
 
-  test('bindPointerSafeOptionSelect selects on pointerup, not pointerdown', () => {
+  test('bindPointerSafeOptionSelect selects immediately on pointerdown', () => {
     const onSelect = vi.fn();
     const handlers = bindPointerSafeOptionSelect(onSelect);
 
     handlers.onPointerDown(createPointerEvent('pointerdown'));
-    expect(onSelect).not.toHaveBeenCalled();
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(isPointerClickThroughGuardActive()).toBe(true);
 
     handlers.onPointerUp(createPointerEvent('pointerup'));
     expect(onSelect).toHaveBeenCalledTimes(1);
-    expect(isPointerClickThroughGuardActive()).toBe(true);
   });
 
   test('bindPointerSafeOptionSelect ignores non-primary mouse buttons', () => {
