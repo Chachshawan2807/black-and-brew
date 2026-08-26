@@ -65,9 +65,15 @@ export function useDebouncedShiftRefresh({
     clearDebounce();
   }, [clearDebounce]);
 
-  const endShiftMutation = useCallback(() => {
-    pendingMutationsRef.current = Math.max(0, pendingMutationsRef.current - 1);
-  }, []);
+  const endShiftMutation = useCallback(
+    (options?: { scheduleRefresh?: boolean }) => {
+      pendingMutationsRef.current = Math.max(0, pendingMutationsRef.current - 1);
+      if (options?.scheduleRefresh && pendingMutationsRef.current === 0) {
+        scheduleRefresh();
+      }
+    },
+    [scheduleRefresh],
+  );
 
   useEffect(() => clearDebounce, [clearDebounce]);
 

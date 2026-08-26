@@ -22,7 +22,13 @@ describe('schedule shift sync hardening', () => {
     expect(scheduleClientCode).toContain('beginShiftMutation');
     expect(scheduleClientCode).toContain('endShiftMutation');
     expect(scheduleClientCode).toMatch(
-      /const handleSave = async[\s\S]*beginShiftMutation\(\)[\s\S]*await refreshShiftsForWeek\(\{ force: true \}\)[\s\S]*finally[\s\S]*endShiftMutation\(\)/,
+      /const handleSave = async[\s\S]*beginShiftMutation\(\)[\s\S]*finally[\s\S]*endShiftMutation\(\{ scheduleRefresh: true \}\)/,
+    );
+    expect(scheduleClientCode).not.toMatch(
+      /const handleSave = async[\s\S]*await refreshShiftsForWeek\(\{ force: true \}\)/,
+    );
+    expect(scheduleClientCode).toMatch(
+      /const handleClear = async[\s\S]*finally[\s\S]*endShiftMutation\(\{ scheduleRefresh: true \}\)/,
     );
     expect(scheduleClientCode).toMatch(
       /useShiftRealtime\(\{[\s\S]*scheduleRefresh/,

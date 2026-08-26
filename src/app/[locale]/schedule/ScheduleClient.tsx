@@ -1370,13 +1370,12 @@ export default function ScheduleClient({
           s.id === tempId ? { ...s, id: res.data!.id } : s
         ));
       }
-      await refreshShiftsForWeek({ force: true });
     } catch (error) {
       console.error('[handleSave] Network Error:', error);
       setShifts(previousShifts);
       alert('ไม่สามารถบันทึกกะงานได้: เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
-      endShiftMutation();
+      endShiftMutation({ scheduleRefresh: true });
     }
   };
 
@@ -1406,12 +1405,11 @@ export default function ScheduleClient({
         setShifts(previousShifts);
         return;
       }
-      await refreshShiftsForWeek({ force: true });
     } catch (error) {
       console.error('[handleClear] Network Error:', error);
       setShifts(previousShifts);
     } finally {
-      endShiftMutation();
+      endShiftMutation({ scheduleRefresh: true });
     }
   };
 
