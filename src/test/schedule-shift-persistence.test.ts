@@ -39,6 +39,9 @@ describe('schedule shift persistence across navigation', () => {
   });
 
   test('ScheduleClient does not reset shifts from initialShifts on every server prop refresh', () => {
+    expect(scheduleClientCode).toMatch(
+      /if \(initialDateStr !== hydratedWeekRef\.current\) \{[\s\S]*setShifts\(initialShifts\)/,
+    );
     expect(scheduleClientCode).not.toMatch(
       /if \(initialShifts\) \{\s*setShifts\(initialShifts\);\s*\}/,
     );

@@ -6,11 +6,12 @@ import { checkAuth } from '@/app/actions/auth';
 import { groupRegularHolidayRows } from '@/lib/regular-holidays';
 import { fetchAndPersistHolidays } from '@/lib/holiday-sync';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
+import dynamic from 'next/dynamic';
+import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
 
-const ScheduleClient = createLazyFeatureClient(
-  () => import('./ScheduleClient'),
-);
+const ScheduleClient = dynamic(() => import('./ScheduleClient'), {
+  loading: () => <RouteLoadingSkeleton label="กำลังโหลดตารางเวร..." />,
+});
 
 export default async function SchedulePage({
   params,

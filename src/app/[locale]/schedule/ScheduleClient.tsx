@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, UserCog, Loader2, X, Calendar, CalendarDays, Pencil, Check } from 'lucide-react';
 import { RoundedSelect } from '@/components/ui/rounded-select';
-import { startOfWeek, addDays, format } from 'date-fns';
+import { format } from 'date-fns';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClickableDateRangePicker } from '@/components/ui/ClickableDateRangePicker';
@@ -14,6 +14,11 @@ import { navigateWithoutViewTransition } from '@/lib/view-transition';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { useDebouncedShiftRefresh } from '@/hooks/useDebouncedShiftRefresh';
 import { fetchWeekShiftsFromClient } from '@/lib/schedule/client-shift-queries';
+import {
+  getScheduleWeekDays,
+  parseScheduleDateOnly,
+  weekHasShiftData,
+} from '@/lib/schedule/schedule-week-sync';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -494,7 +499,7 @@ export default function ScheduleClient({
     return false;
   }, [isReadOnly]);
 
-  const [currentDate, setCurrentDate] = useState(new Date(initialDateStr));
+  const [currentDate, setCurrentDate] = useState(() => parseScheduleDateOnly(initialDateStr));
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [holidays, setHolidays] = useState<ScheduleHoliday[]>(initialHolidays);
@@ -811,22 +816,55 @@ export default function ScheduleClient({
     }
   };
 
-  const weekDays = useMemo(() => {
-    const monday = startOfWeek(new Date(currentDate), { weekStartsOn: 1 });
-    return [...Array(7)].map((_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
-  }, [currentDate]);
+  const weekDays = useMemo(() => getScheduleWeekDays(initialDateStr), [initialDateStr]);
 
   const refreshGenerationRef = useRef(0);
+  const clientRefreshRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clientRefreshEmptyRetriesRef = useRef(0);
+  const hydratedWeekRef = useRef(initialDateStr);
+  const runRefreshRef = useRef<(options?: { force?: boolean }) => void>(() => {});
+
+  const clearClientRefreshRetry = useCallback(() => {
+    if (clientRefreshRetryRef.current) {
+      clearTimeout(clientRefreshRetryRef.current);
+      clientRefreshRetryRef.current = null;
+    }
+  }, []);
+
+  const scheduleClientRefreshRetry = useCallback((delayMs = 400) => {
+    clearClientRefreshRetry();
+    clientRefreshRetryRef.current = setTimeout(() => {
+      clientRefreshRetryRef.current = null;
+      runRefreshRef.current({ force: true });
+    }, delayMs);
+  }, [clearClientRefreshRetry]);
 
   const refreshShiftsForWeek = useCallback(async (options?: { force?: boolean }) => {
     if (weekDays.length < 7) return;
 
     const generation = ++refreshGenerationRef.current;
+    const weekStart = weekDays[0];
+    const weekEnd = weekDays[6];
 
     try {
-      const data = await fetchWeekShiftsFromClient(weekDays[0], weekDays[6]);
+      const data = await fetchWeekShiftsFromClient(weekStart, weekEnd);
       if (generation !== refreshGenerationRef.current) return;
-      if (data === null) return;
+
+      if (data === null) {
+        scheduleClientRefreshRetry();
+        return;
+      }
+
+      const serverHasWeekData = weekHasShiftData(initialShifts, weekStart, weekEnd);
+
+      if (data.length === 0 && serverHasWeekData && clientRefreshEmptyRetriesRef.current < 3) {
+        clientRefreshEmptyRetriesRef.current += 1;
+        setShifts((current) => (current.length > 0 ? current : initialShifts));
+        scheduleClientRefreshRetry(500);
+        return;
+      }
+
+      clientRefreshEmptyRetriesRef.current = 0;
       setShifts(data as Shift[]);
     } catch (error) {
       if (error && typeof error === 'object' && 'message' in error) {
@@ -840,7 +878,7 @@ export default function ScheduleClient({
         console.error('Supabase Error (ScheduleClient refresh):', error);
       }
     }
-  }, [weekDays]);
+  }, [initialShifts, scheduleClientRefreshRetry, weekDays]);
 
   const {
     beginShiftMutation,
@@ -851,6 +889,12 @@ export default function ScheduleClient({
     onRefresh: refreshShiftsForWeek,
   });
 
+  useEffect(() => {
+    runRefreshRef.current = runRefresh;
+  }, [runRefresh]);
+
+  useEffect(() => clearClientRefreshRetry, [clearClientRefreshRetry]);
+
   useShiftRealtime({
     onShiftsChange: () => {
       scheduleRefresh();
@@ -859,7 +903,7 @@ export default function ScheduleClient({
 
   useEffect(() => {
     runRefresh({ force: true });
-  }, [runRefresh]);
+  }, [initialDateStr, runRefresh]);
 
   useEffect(() => {
     const onVisible = () => {
@@ -889,13 +933,18 @@ export default function ScheduleClient({
       setHolidays(initialHolidays);
     }
     if (initialDateStr) {
-      setCurrentDate(new Date(initialDateStr));
+      setCurrentDate(parseScheduleDateOnly(initialDateStr));
     }
     if (hasServerRegularHolidayData) {
       setRegularHolidays(initialRegularHolidays);
     }
+    if (initialDateStr !== hydratedWeekRef.current) {
+      hydratedWeekRef.current = initialDateStr;
+      clientRefreshEmptyRetriesRef.current = 0;
+      setShifts(initialShifts);
+    }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [hasServerRegularHolidayData, initialProfiles, initialHolidays, initialRegularHolidays, initialDateStr]);
+  }, [hasServerRegularHolidayData, initialProfiles, initialHolidays, initialRegularHolidays, initialDateStr, initialShifts]);
 
   const { undoStack, redoStack, pushToHistory, undo, redo } = useScheduleUndo({
     profiles,
