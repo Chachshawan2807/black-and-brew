@@ -10,3 +10,10 @@ export function getInventoryCellAriaLabel(itemName: string, colLabel: string): s
 export function getInventoryCellInputName(itemId: string, colId: string): string {
   return `inventory-${itemId}-${colId}`;
 }
+
+export function getInventoryCountInputName(
+  itemId: string,
+  mode: 'count' | 'adjust',
+): string {
+  return `inventory-${mode}-${itemId}`;
+}

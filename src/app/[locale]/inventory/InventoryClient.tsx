@@ -199,6 +199,8 @@ function EditableSortIndex({ id, displayIndex, totalItems, handleSaveField }: {
         autoFocus
         type="text"
         inputMode="numeric"
+        name={getInventoryCellInputName(id, 'sort_order')}
+        aria-label="ลำดับรายการ"
         value={localVal}
         onChange={e => {
           let v = e.target.value.replace(/[^0-9]/g, '');
@@ -507,6 +509,8 @@ const MobileSortableRow = React.memo(({
           />
           <input
             type="text"
+            name={getInventoryCellInputName(item.id, 'name')}
+            aria-label={getInventoryCellAriaLabel(String(item.name ?? ''), 'ชื่อ')}
             defaultValue={item.name}
             onBlur={(e) => {
               handleUpdateField(item.id, 'name', e.target.value);
@@ -609,6 +613,8 @@ const MobileSortableRow = React.memo(({
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">หน่วย</span>
           <input
             type="text"
+            name={getInventoryCellInputName(item.id, 'unit')}
+            aria-label={getInventoryCellAriaLabel(String(item.name ?? ''), 'หน่วย')}
             defaultValue={item.unit}
             onBlur={(e) => {
               handleUpdateField(item.id, 'unit', e.target.value);
@@ -624,6 +630,8 @@ const MobileSortableRow = React.memo(({
           <span className="text-[9px] text-foreground/45 font-normal uppercase tracking-tight text-center truncate">ช่องทาง</span>
           <input
             type="text"
+            name={getInventoryCellInputName(item.id, 'source')}
+            aria-label={getInventoryCellAriaLabel(String(item.name ?? ''), 'ช่องทาง')}
             defaultValue={item.source}
             onBlur={(e) => {
               handleUpdateField(item.id, 'source', e.target.value);
@@ -2029,6 +2037,7 @@ export default function InventoryClient({
                     <label className="text-[12px] font-normal text-muted-foreground ml-1 uppercase tracking-wider">ชื่อรายการ</label>
                     <input
                       required
+                      name="new-item-name"
                       value={newItemData.name || ''}
                       onChange={e => setNewItemData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full h-11 px-4 bg-background border border-border focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
@@ -2040,6 +2049,7 @@ export default function InventoryClient({
                     <input
                       type="text"
                       inputMode="decimal"
+                      name="new-item-stock"
                       value={formatNumericFormValue(newItemData.stock)}
                       onChange={e => {
                         let val = e.target.value.replace(/[^0-9.]/g, '');
@@ -2053,6 +2063,7 @@ export default function InventoryClient({
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[12px] font-normal text-muted-foreground ml-1">หน่วย</label>
                     <input
+                      name="new-item-unit"
                       value={newItemData.unit === null || newItemData.unit === undefined ? '' : newItemData.unit}
                       onChange={e => setNewItemData(prev => ({ ...prev, unit: e.target.value }))}
                       className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
@@ -2064,6 +2075,7 @@ export default function InventoryClient({
                     <input
                       type="text"
                       inputMode="decimal"
+                      name="new-item-order-point"
                       value={formatNumericFormValue(newItemData.order_point)}
                       onChange={e => {
                         let val = e.target.value.replace(/[^0-9.]/g, '');
@@ -2079,6 +2091,7 @@ export default function InventoryClient({
                     <input
                       type="text"
                       inputMode="decimal"
+                      name="new-item-target-stock"
                       value={formatNumericFormValue(newItemData.target_stock)}
                       onChange={e => {
                         let val = e.target.value.replace(/[^0-9.]/g, '');
@@ -2092,6 +2105,7 @@ export default function InventoryClient({
                   <div className="col-span-2 flex flex-col gap-1.5">
                     <label className="text-[12px] font-normal text-muted-foreground ml-1">ช่องทางสั่งซื้อ</label>
                     <input
+                      name="new-item-source"
                       value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}
                       onChange={e => setNewItemData(prev => ({ ...prev, source: e.target.value }))}
                       className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
@@ -2141,6 +2155,7 @@ export default function InventoryClient({
                       data-testid="insert-position-input"
                       type="text"
                       inputMode="numeric"
+                      name="new-item-insert-position"
                       placeholder={String(items.length + 1)}
                       value={newItemInsertPosition}
                       onChange={e => {

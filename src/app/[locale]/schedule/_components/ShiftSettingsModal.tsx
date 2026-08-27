@@ -321,6 +321,7 @@ export default function ShiftSettingsModal({
             <div className="flex gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
               <input
                 type="text"
+                name="shift-custom-name"
                 autoFocus
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}

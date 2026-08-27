@@ -130,6 +130,8 @@ export function CountAdjustPinDialog({
           <div className="relative w-full max-w-[280px] min-h-14">
             <input
               ref={hiddenInputRef}
+              id="count-adjust-pin"
+              name="count-adjust-pin"
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"

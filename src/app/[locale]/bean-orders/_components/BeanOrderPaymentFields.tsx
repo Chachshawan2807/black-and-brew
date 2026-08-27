@@ -72,6 +72,7 @@ export function BeanOrderPaymentFields({
                 <input
                   ref={fileRef}
                   type="file"
+                  name="bean-order-payment-slip"
                   accept="image/*"
                   className="hidden"
                   disabled={disabled}

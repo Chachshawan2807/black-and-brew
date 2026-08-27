@@ -699,6 +699,8 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               >
                 <input
                   ref={hiddenInputRef}
+                  id="bb-pin-gateway"
+                  name="bb-pin"
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"

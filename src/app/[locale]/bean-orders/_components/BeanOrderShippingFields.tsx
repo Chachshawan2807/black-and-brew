@@ -37,6 +37,7 @@ export function BeanOrderShippingFields({
         <div className="relative w-full">
           <input
             className={cn(inputClass, 'w-full pr-10')}
+            name="bean-order-custom-carrier"
             value={customCarrierLabel}
             onChange={(e) => onCustomCarrierLabelChange(e.target.value)}
             placeholder="อื่นๆ"
@@ -77,6 +78,7 @@ export function BeanOrderShippingFields({
       )}
       <input
         className={cn(inputClass, 'w-full')}
+        name="bean-order-tracking-number"
         value={trackingNumber}
         onChange={(e) => onTrackingNumberChange(e.target.value)}
         placeholder={trackingPlaceholder}

@@ -119,12 +119,15 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
       <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input
           type="search"
+          id="bean-orders-search"
+          name="bean-orders-search"
           value={search}
           onChange={(e) => startTransition(() => setSearch(e.target.value))}
           placeholder="ค้นหาเลขออเดอร์ / ชื่อลูกค้า"
           className={BEAN_ORDER_INPUT}
         />
         <RoundedSelect
+          name="bean-orders-payment-filter"
           value={paymentFilter}
           onChange={(e) => setPaymentFilter(e.target.value as typeof paymentFilter)}
         >
@@ -133,6 +136,7 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
           <option value="paid">ชำระแล้ว</option>
         </RoundedSelect>
         <RoundedSelect
+          name="bean-orders-fulfillment-filter"
           value={fulfillmentFilter}
           onChange={(e) => setFulfillmentFilter(e.target.value as typeof fulfillmentFilter)}
         >

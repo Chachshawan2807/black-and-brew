@@ -71,11 +71,13 @@ const COPY_ICON_BUTTON_CLASS =
   'inline-flex items-center justify-center rounded-xl border border-border bg-background p-2 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 
 function WithdrawRowInputs({
+  itemId,
   row,
   onQtyBranch1,
   onQtyBranch2,
   onBranch2Unit,
 }: {
+  itemId: string;
   row: BranchWithdrawDraftRow;
   onQtyBranch1: (value: string) => void;
   onQtyBranch2: (value: string) => void;
@@ -88,6 +90,8 @@ function WithdrawRowInputs({
         <input
           type="text"
           inputMode="numeric"
+          name={`branch-withdraw-${itemId}-qty1`}
+          aria-label="จำนวนสาขา 1"
           value={row.qtyBranch1}
           onChange={(event) => onQtyBranch1(sanitizeQtyInput(event.target.value))}
           className={INPUT_FIELD_CLASS}
@@ -98,6 +102,8 @@ function WithdrawRowInputs({
         <input
           type="text"
           inputMode="numeric"
+          name={`branch-withdraw-${itemId}-qty2`}
+          aria-label="จำนวนสาขา 2"
           value={row.qtyBranch2}
           onChange={(event) => onQtyBranch2(sanitizeQtyInput(event.target.value))}
           className={INPUT_FIELD_CLASS}
@@ -110,6 +116,8 @@ function WithdrawRowInputs({
         </span>
         <input
           type="text"
+          name={`branch-withdraw-${itemId}-unit2`}
+          aria-label="หน่วยสาขา 2"
           value={row.branch2Unit}
           onChange={(event) => onBranch2Unit(event.target.value)}
           className={UNIT_INPUT_FIELD_CLASS}
@@ -219,6 +227,7 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
 
         <div className={MOBILE_INPUT_GRID_CLASS}>
           <WithdrawRowInputs
+            itemId={item.id}
             row={row}
             onQtyBranch1={handleQtyBranch1}
             onQtyBranch2={handleQtyBranch2}
@@ -669,6 +678,8 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/50" />
             <input
               type="search"
+              id="branch-withdraw-add-item-search"
+              name="branch-withdraw-add-item-search"
               value={addItemQuery}
               onChange={(event) => setAddItemQuery(event.target.value)}
               placeholder="ค้นหาชื่อสินค้า"
@@ -714,6 +725,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
           <h3 className="text-base">ข้อความ LINE สำหรับส่ง</h3>
           <textarea
             readOnly
+            name="branch-withdraw-save-line-message"
             value={saveLineMessage}
             className="mt-3 min-h-56 w-full rounded-xl border border-border bg-background p-3 text-sm outline-none"
           />
@@ -745,6 +757,7 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
           <h3 className="text-base">{lineMessageDialog?.title ?? 'สรุปรายการ'}</h3>
           <textarea
             readOnly
+            name="branch-withdraw-history-line-message"
             value={lineMessageDialog?.message ?? ''}
             className="mt-3 min-h-56 w-full rounded-xl border border-border bg-background p-3 text-sm outline-none md:min-h-48"
           />

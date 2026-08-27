@@ -13,6 +13,8 @@ type Props = {
   inputClass: string;
   placeholder?: string;
   required?: boolean;
+  name?: string;
+  id?: string;
   inputMode?: 'text' | 'numeric' | 'tel' | 'decimal';
   autoComplete?: string;
   maxLength?: number;
@@ -27,12 +29,17 @@ export function AutocompleteTextField({
   inputClass,
   placeholder,
   required,
+  name,
+  id,
   inputMode,
   autoComplete,
   maxLength,
   multiline = false,
 }: Props) {
   const listId = useId();
+  const autoId = useId();
+  const fieldId = id ?? autoId;
+  const fieldName = name ?? `autocomplete-${fieldId.replace(/:/g, '')}`;
   const [open, setOpen] = useState(false);
   const visibleSuggestions = useMemo(() => suggestions.slice(0, 12), [suggestions]);
 
@@ -43,6 +50,8 @@ export function AutocompleteTextField({
   }
 
   const fieldProps = {
+    id: fieldId,
+    name: fieldName,
     value,
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       onChange(e.target.value);

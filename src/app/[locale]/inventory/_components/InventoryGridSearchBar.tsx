@@ -30,6 +30,8 @@ export function InventoryGridSearchBar({
         <div className="relative min-w-0 flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
           <input
+            id="inventory-grid-search"
+            name="inventory-grid-search"
             type="text"
             enterKeyHint="search"
             placeholder="ค้นหารายการเพื่อแก้ไข..."

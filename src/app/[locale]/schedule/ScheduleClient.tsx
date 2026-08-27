@@ -1981,6 +1981,7 @@ export default function ScheduleClient({
                 <div className="space-y-1.5 pt-2">
                   <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">หมายเหตุ</label>
                   <textarea
+                    name="schedule-management-remark"
                     placeholder="รายละเอียดเพิ่มเติม..."
                     className="w-full h-20 p-4 rounded-3xl border border-border bg-card outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus:border-emerald-500 bb-transition resize-none text-base md:text-[13px] leading-relaxed font-normal text-foreground placeholder:text-muted-foreground"
                     value={managementForm.remark}

@@ -57,6 +57,9 @@ export function RoundedSelect({
   ...rest
 }: RoundedSelectProps) {
   const listId = useId();
+  const autoFieldId = useId();
+  const resolvedId = id ?? autoFieldId;
+  const resolvedName = name ?? `bb-select-${resolvedId.replace(/:/g, '')}`;
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -150,7 +153,7 @@ export function RoundedSelect({
 
   const selectValue = (next: string) => {
     if (!isControlled) setUncontrolled(next);
-    emitChange(onChange, name, next);
+    emitChange(onChange, resolvedName, next);
     setOpen(false);
   };
 
@@ -202,8 +205,8 @@ export function RoundedSelect({
         aria-hidden
         className="sr-only"
         disabled={disabled}
-        name={name}
-        id={id ? `${id}-native` : undefined}
+        name={resolvedName}
+        id={`${resolvedId}-native`}
         value={currentValue}
         onChange={() => {}}
         {...rest}
@@ -214,7 +217,7 @@ export function RoundedSelect({
       <button
         ref={triggerRef}
         type="button"
-        id={id}
+        id={resolvedId}
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}

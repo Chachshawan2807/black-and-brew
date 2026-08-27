@@ -317,6 +317,7 @@ export default function MaintenanceModals({
                     <div className="space-y-1.5">
                       <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">อาการที่พบ</label>
                       <textarea
+                        name="maintenance-detected-problem"
                         placeholder="อธิบายปัญหา"
                         rows={2}
                         value={formData.detected_problem}
@@ -327,6 +328,7 @@ export default function MaintenanceModals({
                     <div className="space-y-1.5">
                       <label className="text-[13px] font-normal uppercase tracking-widest text-foreground ml-1">รายละเอียดการซ่อม</label>
                       <textarea
+                        name="maintenance-work-details"
                         placeholder="ดำเนินการอะไรบ้าง?"
                         rows={2}
                         value={formData.work_details}

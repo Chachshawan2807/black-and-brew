@@ -207,6 +207,7 @@ function QuickActionQtyInput({
     <div className="relative w-full">
       <input
         type="number"
+        name="quick-action-qty"
         placeholder={quickType === 'ADJUST' ? 'ใหม่' : 'จำนวน'}
         value={quickQty}
         onChange={(e) => setQuickQty(e.target.value)}
@@ -461,6 +462,7 @@ function BulkQueuePanel({
               type="number"
               min="0"
               step="any"
+              name={`quick-bulk-qty-${line.itemId}`}
               value={line.qty}
               onChange={(e) => onBulkLineQtyChange?.(line.itemId, e.target.value)}
               onWheel={blurQtyInputOnWheel}
@@ -962,6 +964,8 @@ export function InventoryQuickActionBar({
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
               <input
                 ref={searchInputRef}
+                id="quick-action-search"
+                name="quick-action-search"
                 type="text"
                 placeholder={bulkMode ? 'ค้นหาแล้วเพิ่มลงคิว...' : 'ค้นหาสินค้า...'}
                 value={quickSearch}

@@ -164,6 +164,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
               <label className="text-[12px] font-normal text-muted-foreground ml-1 uppercase tracking-wider">ชื่อรายการ</label>
               <input
                 required
+                name="new-item-name"
                 value={newItemData.name ?? ''}
                 onChange={(e) => setNewItemData((prev) => ({ ...prev, name: e.target.value }))}
                 className="w-full h-11 px-4 bg-background border border-border focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
@@ -175,6 +176,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
               <input
                 type="text"
                 inputMode="decimal"
+                name="new-item-stock"
                 value={
                   newItemData.stock === undefined || newItemData.stock === null || newItemData.stock === ''
                     ? ''
@@ -192,6 +194,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-normal text-muted-foreground ml-1">หน่วย</label>
               <input
+                name="new-item-unit"
                 value={newItemData.unit ?? ''}
                 onChange={(e) => setNewItemData((prev) => ({ ...prev, unit: e.target.value }))}
                 className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
@@ -203,6 +206,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
               <input
                 type="text"
                 inputMode="decimal"
+                name="new-item-order-point"
                 value={
                   newItemData.order_point === undefined || newItemData.order_point === null || newItemData.order_point === ''
                     ? ''
@@ -222,6 +226,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
               <input
                 type="text"
                 inputMode="decimal"
+                name="new-item-target-stock"
                 value={
                   newItemData.target_stock === undefined || newItemData.target_stock === null || newItemData.target_stock === ''
                     ? ''
@@ -239,6 +244,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
             <div className="col-span-2 flex flex-col gap-1.5">
               <label className="text-[12px] font-normal text-muted-foreground ml-1">ช่องทางสั่งซื้อ</label>
               <input
+                name="new-item-source"
                 value={newItemData.source ?? ''}
                 onChange={(e) => setNewItemData((prev) => ({ ...prev, source: e.target.value }))}
                 className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
@@ -253,6 +259,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
               <input
                 type="text"
                 inputMode="numeric"
+                name="new-item-insert-position"
                 placeholder={String(itemsCount + 1)}
                 value={insertPosition}
                 onChange={(e) => {

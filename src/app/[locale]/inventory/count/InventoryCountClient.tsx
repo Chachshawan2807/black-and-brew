@@ -42,6 +42,7 @@ import { CountAdjustPinDialog } from '@/app/[locale]/inventory/count/_components
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import { getInventoryCountInputName } from '@/lib/inventory-grid-cell-a11y';
 
 type CountPageMode = 'count' | 'adjust';
 
@@ -177,6 +178,8 @@ const CountInput = memo(function CountInput({
         type="text"
         inputMode="decimal"
         enterKeyHint="next"
+        name={getInventoryCountInputName(itemId, 'count')}
+        aria-label="จำนวนนับ"
         value={val}
         placeholder={placeholder}
         onChange={(e) => {
@@ -356,6 +359,8 @@ const AdjustStockInput = memo(function AdjustStockInput({
         type="text"
         inputMode="decimal"
         enterKeyHint="next"
+        name={getInventoryCountInputName(itemId, 'adjust')}
+        aria-label="ปรับสต็อก"
         value={val}
         placeholder="ใหม่"
         onChange={(e) => {

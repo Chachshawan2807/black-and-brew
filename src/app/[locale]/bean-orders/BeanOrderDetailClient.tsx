@@ -406,6 +406,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
                           <input
                             ref={fileRef}
                             type="file"
+                            name="bean-order-detail-payment-slip"
                             accept="image/*"
                             className="hidden"
                             onChange={(e) => {
