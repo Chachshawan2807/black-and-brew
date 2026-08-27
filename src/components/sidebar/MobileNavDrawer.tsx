@@ -6,7 +6,7 @@ import {
   useRef,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import Image from 'next/image';
+import { BrandLogo } from '@/components/sidebar/BrandLogo';
 import Menu from '@/components/sidebar/Menu';
 import {
   useMobileNavDrawer,
@@ -204,20 +204,7 @@ export function MobileNavDrawer() {
           aria-label="เมนูนำทาง"
         >
           <div className="px-2 pt-4 pb-2 border-b border-black/5 dark:border-white/10">
-            <Image
-              src="/images/logo.png"
-              alt="BLACK AND BREW"
-              width={200}
-              height={68}
-              className="dark:invert dark:brightness-0 dark:opacity-90"
-              style={{
-                width: '200px',
-                height: '68px',
-                objectFit: 'contain',
-                objectPosition: 'left center',
-              }}
-              priority
-            />
+            <BrandLogo size="mobile" />
           </div>
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col pl-2 pr-3 py-2">
             <Menu isOpen={true} />

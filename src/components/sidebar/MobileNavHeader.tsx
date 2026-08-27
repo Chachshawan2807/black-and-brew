@@ -1,7 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import { Menu } from 'lucide-react';
+import { BrandLogo } from '@/components/sidebar/BrandLogo';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
 
@@ -12,20 +12,7 @@ export function MobileNavHeader() {
   return (
     <header className="bb-mobile-nav-header md:hidden sticky top-0 z-50 shrink-0 bg-[var(--sidebar-surface)] border-b border-black/5 dark:border-white/10 pl-1 pr-3 flex justify-between items-center min-h-[72px] bb-shadow-sm">
       <div className="flex items-center">
-        <Image
-          src="/images/logo.png"
-          alt="BLACK AND BREW"
-          width={200}
-          height={68}
-          className="dark:invert dark:brightness-0 dark:opacity-90"
-          style={{
-            width: '200px',
-            height: '68px',
-            objectFit: 'contain',
-            objectPosition: 'left center',
-          }}
-          priority
-        />
+        <BrandLogo size="mobile" />
       </div>
       <div className="flex items-center gap-1">
         <HintTooltip tip="เปิดเมนูนำทาง" side="bottom">

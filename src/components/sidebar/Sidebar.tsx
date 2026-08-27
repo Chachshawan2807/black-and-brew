@@ -7,7 +7,7 @@ import { useSidebarToggle, useSidebarHydrated } from "@/hooks/use-sidebar-toggle
 import { SidebarToggle } from "@/components/sidebar/SidebarToggle";
 import { sidebarSurface, withReducedMotion, MODAL_EASE } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
-import Image from "next/image";
+import { BrandLogo } from '@/components/sidebar/BrandLogo';
 
 function SidebarLogo({
   sidebarOpen,
@@ -39,20 +39,7 @@ function SidebarLogo({
         style={{ pointerEvents: sidebarOpen ? 'auto' : 'none' }}
         aria-hidden={!sidebarOpen}
       >
-        <Image
-          src="/images/logo.png"
-          alt="BLACK AND BREW"
-          width={240}
-          height={90}
-          className="dark:invert dark:brightness-0 dark:opacity-90"
-          style={{
-            width: '240px',
-            height: '90px',
-            objectFit: 'contain',
-            objectPosition: 'left center',
-          }}
-          priority
-        />
+        <BrandLogo size="sidebar-expanded" />
       </motion.div>
       <motion.div
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 origin-center"
@@ -65,15 +52,7 @@ function SidebarLogo({
         style={{ pointerEvents: sidebarOpen ? 'none' : 'auto' }}
         aria-hidden={sidebarOpen}
       >
-        <Image
-          src="/images/logo.png"
-          alt=""
-          width={56}
-          height={56}
-          className="dark:invert dark:brightness-0 dark:opacity-90"
-          style={{ width: '56px', height: '56px', objectFit: 'contain' }}
-          priority
-        />
+        <BrandLogo size="sidebar-icon" alt="" />
       </motion.div>
     </div>
   );
