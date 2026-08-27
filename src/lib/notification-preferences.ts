@@ -7,6 +7,26 @@ import {
 /** Set when the user explicitly turns off the master notifications switch. */
 export const NOTIFICATION_OPT_OUT_KEY = 'bb-notification-user-opted-out';
 
+/** Blocks nested `bb-notification-prefs-changed` while a save is already dispatching. */
+let isDispatchingPrefsChanged = false;
+
+/** Blocks re-entrant ensureFull while an outer call is still applying prefs. */
+let isEnsuringFullOnAuth = false;
+
+export function notificationPreferencesEqual(
+  a: NotificationPreferences,
+  b: NotificationPreferences,
+): boolean {
+  return (
+    a.enabled === b.enabled &&
+    a.systemNotifications === b.systemNotifications &&
+    a.dailyScheduleReports === b.dailyScheduleReports &&
+    a.proactiveInsights === b.proactiveInsights &&
+    a.securityAlerts === b.securityAlerts &&
+    (a.notifyOwnChanges ?? true) === (b.notifyOwnChanges ?? true)
+  );
+}
+
 export function loadNotificationPreferences(): NotificationPreferences {
   if (typeof window === 'undefined') {
     return { ...DEFAULT_NOTIFICATION_PREFERENCES };
@@ -23,9 +43,26 @@ export function loadNotificationPreferences(): NotificationPreferences {
 
 export function saveNotificationPreferences(prefs: NotificationPreferences): void {
   if (typeof window === 'undefined') return;
+
+  // No-op when nothing changed — stops prefs-changed → save → prefs-changed loops.
+  if (notificationPreferencesEqual(loadNotificationPreferences(), prefs)) {
+    return;
+  }
+
   try {
     localStorage.setItem(NOTIFICATION_PREFS_KEY, JSON.stringify(prefs));
-    window.dispatchEvent(new CustomEvent('bb-notification-prefs-changed', { detail: prefs }));
+
+    // Nested saves during an in-flight dispatch update storage only (no re-dispatch).
+    if (isDispatchingPrefsChanged) {
+      return;
+    }
+
+    isDispatchingPrefsChanged = true;
+    try {
+      window.dispatchEvent(new CustomEvent('bb-notification-prefs-changed', { detail: prefs }));
+    } finally {
+      isDispatchingPrefsChanged = false;
+    }
   } catch {
     // ignore quota errors
   }
@@ -75,30 +112,32 @@ export function setNotificationUserOptOut(optedOut: boolean): void {
  * synchronous prefs-changed → resume → ensureFull loop (stack overflow).
  */
 export function ensureFullNotificationPreferencesOnAuth(): NotificationPreferences {
-  if (hasNotificationUserOptOut()) {
+  if (isEnsuringFullOnAuth) {
     return loadNotificationPreferences();
   }
 
-  const current = loadNotificationPreferences();
-  const next: NotificationPreferences = {
-    ...current,
-    ...notificationMasterPatch(true),
-    notifyOwnChanges: current.notifyOwnChanges ?? true,
-  };
+  isEnsuringFullOnAuth = true;
+  try {
+    if (hasNotificationUserOptOut()) {
+      return loadNotificationPreferences();
+    }
 
-  if (
-    current.enabled === next.enabled &&
-    current.systemNotifications === next.systemNotifications &&
-    current.dailyScheduleReports === next.dailyScheduleReports &&
-    current.proactiveInsights === next.proactiveInsights &&
-    current.securityAlerts === next.securityAlerts &&
-    (current.notifyOwnChanges ?? true) === next.notifyOwnChanges
-  ) {
-    return current;
+    const current = loadNotificationPreferences();
+    const next: NotificationPreferences = {
+      ...current,
+      ...notificationMasterPatch(true),
+      notifyOwnChanges: current.notifyOwnChanges ?? true,
+    };
+
+    if (notificationPreferencesEqual(current, next)) {
+      return current;
+    }
+
+    saveNotificationPreferences(next);
+    return next;
+  } finally {
+    isEnsuringFullOnAuth = false;
   }
-
-  saveNotificationPreferences(next);
-  return next;
 }
 
 export function notificationMasterPatch(
