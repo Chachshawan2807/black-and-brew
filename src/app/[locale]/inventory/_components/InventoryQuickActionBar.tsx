@@ -379,8 +379,8 @@ function BulkQueueSummaryCell({
   return (
     <div
       className={cn(
-        'flex w-full items-center justify-center gap-1 rounded-3xl border border-border bg-muted/30 px-2 text-sm text-foreground antialiased',
-        compact ? 'h-9 rounded-xl text-xs' : 'h-11',
+        'flex w-full items-center justify-center gap-1 rounded-3xl border border-border bg-muted/30 text-foreground antialiased',
+        compact ? 'h-9 rounded-xl px-1.5 text-xs' : 'h-11 px-2 text-sm',
       )}
     >
       <span className="whitespace-nowrap tabular-nums shrink-0">{count} รายการ</span>
@@ -1029,7 +1029,7 @@ export function InventoryQuickActionBar({
             role="group"
             aria-label="จำนวน ประเภท และบันทึก"
           >
-            <div className={cn('shrink-0', bulkMode ? 'min-w-[8.75rem] w-max' : 'w-[6rem]')}>
+            <div className={cn('shrink-0', bulkMode ? 'min-w-[5.75rem] w-max' : 'w-[6rem]')}>
               {bulkMode ? (
                 <BulkQueueSummaryCell
                   count={bulkQueue.length}

@@ -280,7 +280,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain('aria-label="เพิ่มจำนวน"');
     expect(barCode).toContain('sm:flex-1 sm:min-w-0');
     expect(barCode).toContain('sm:flex-1 sm:min-w-[9rem]');
-    expect(barCode).toContain("bulkMode ? 'min-w-[8.75rem] w-max' : 'w-[6rem]'");
+    expect(barCode).toContain("bulkMode ? 'min-w-[5.75rem] w-max' : 'w-[6rem]'");
     expect(barCode).toContain('whitespace-nowrap tabular-nums shrink-0');
     expect(barCode).not.toContain('bb-quick-search-fit');
   });
