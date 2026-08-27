@@ -5,7 +5,10 @@ import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
-import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
+import {
+  removeSupabaseChannelByName,
+  scheduleSupabaseChannelTeardown,
+} from '@/lib/supabase-realtime-channel';
 import { fetchHomeMaintenanceTasks } from '@/lib/maintenance/fetch-home-maintenance';
 import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';
 
@@ -66,6 +69,9 @@ export function useHomeMaintenanceTasks(initialTasks: UpcomingMaintenanceTask[])
 
     void (async () => {
       await ensureSupabaseSession();
+      if (cancelled) return;
+
+      await removeSupabaseChannelByName('bb-home-service-records');
       if (cancelled) return;
 
       channel = supabase

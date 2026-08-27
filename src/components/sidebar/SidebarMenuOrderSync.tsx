@@ -14,7 +14,10 @@ import {
 } from '@/lib/sidebar-menu-order-sync';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { supabase } from '@/lib/supabase';
-import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
+import {
+  removeSupabaseChannelByName,
+  scheduleSupabaseChannelTeardown,
+} from '@/lib/supabase-realtime-channel';
 
 type AppPreferencesRow = {
   branch_id: string;
@@ -135,14 +138,9 @@ export function SidebarMenuOrderSync() {
 
       const branchId = resolveBranchId();
       const channelName = `sidebar_menu_order_${branchId}`;
-      const topic = `realtime:${channelName}`;
 
-      for (const existing of supabase.getChannels()) {
-        if (existing.topic === topic) {
-          await supabase.removeChannel(existing);
-          if (cancelled) return;
-        }
-      }
+      await removeSupabaseChannelByName(channelName);
+      if (cancelled) return;
 
       channel = supabase
         .channel(channelName)

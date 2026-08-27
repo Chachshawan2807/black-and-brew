@@ -15,9 +15,11 @@ vi.mock('@/lib/supabase', () => ({
 import {
   SUPABASE_REALTIME_TEARDOWN_DELAY_MS,
   findSupabaseChannelByName,
+  isSupabaseChannelAttached,
   isSupabaseChannelReusable,
   prepareSupabaseChannelName,
   scheduleSupabaseChannelTeardown,
+  waitUntilSupabaseChannelRemoved,
 } from '@/lib/supabase-realtime-channel';
 
 describe('scheduleSupabaseChannelTeardown', () => {
@@ -76,14 +78,38 @@ describe('prepareSupabaseChannelName', () => {
     expect(removeChannel).not.toHaveBeenCalled();
   });
 
+  test('reuses joining channels without removeChannel', async () => {
+    const joining = { topic: 'realtime:bb-shifts-shared', state: 'joining' };
+    getChannels.mockReturnValue([joining]);
+
+    const result = await prepareSupabaseChannelName('bb-shifts-shared');
+
+    expect(result.reused).toBe(joining);
+    expect(removeChannel).not.toHaveBeenCalled();
+    expect(isSupabaseChannelAttached(joining as never)).toBe(true);
+  });
+
   test('removes stale channels before creating a fresh listener set', async () => {
     const stale = { topic: 'realtime:bb-shifts-shared', state: 'closed' };
-    getChannels.mockReturnValue([stale]);
+    getChannels.mockReturnValueOnce([stale]).mockReturnValue([]);
 
     const result = await prepareSupabaseChannelName('bb-shifts-shared');
 
     expect(result.reused).toBeNull();
     expect(removeChannel).toHaveBeenCalledWith(stale);
+  });
+
+  test('waitUntilSupabaseChannelRemoved polls until topic is gone', async () => {
+    vi.useFakeTimers();
+    const stale = { topic: 'realtime:inventory_items_shared', state: 'leaving' };
+    getChannels.mockReturnValueOnce([stale]).mockReturnValue([]);
+
+    const pending = waitUntilSupabaseChannelRemoved('inventory_items_shared');
+    await vi.advanceTimersByTimeAsync(10);
+    await pending;
+
+    expect(getChannels).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 
   test('findSupabaseChannelByName matches realtime topic', () => {

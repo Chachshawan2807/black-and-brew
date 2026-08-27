@@ -14,7 +14,12 @@ import {
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
-import { scheduleSupabaseChannelTeardown, findSupabaseChannelByName, isSupabaseChannelReusable, prepareSupabaseChannelName } from '@/lib/supabase-realtime-channel';
+import {
+  scheduleSupabaseChannelTeardown,
+  findSupabaseChannelByName,
+  isSupabaseChannelReusable,
+  prepareSupabaseChannelName,
+} from '@/lib/supabase-realtime-channel';
 import { mergeInventoryRealtimeUpdate, type InventoryStockFields } from '@/lib/inventory-stock';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 
@@ -44,18 +49,91 @@ interface InventoryRealtimeContextValue {
 
 const InventoryRealtimeContext = createContext<InventoryRealtimeContextValue | null>(null);
 
+const INVENTORY_SHARED_CHANNEL_NAME = 'inventory_items_shared';
+
+const inventoryListeners = new Set<InventoryChangeCallback>();
+let applyInventoryPayload: ((payload: InventoryChangePayload) => void) | null = null;
+let sharedInventoryChannel: ReturnType<typeof supabase.channel> | null = null;
+let inventorySubscriberCount = 0;
+let inventoryChannelStarting: Promise<void> | null = null;
+let inventoryTeardownCancel: (() => void) | null = null;
+
+function cancelSharedInventoryChannelTeardown() {
+  inventoryTeardownCancel?.();
+  inventoryTeardownCancel = null;
+}
+
+function dispatchInventoryPayload(payload: InventoryChangePayload) {
+  applyInventoryPayload?.(payload);
+  inventoryListeners.forEach((listener) => listener(payload));
+}
+
+async function ensureSharedInventoryChannel() {
+  cancelSharedInventoryChannelTeardown();
+
+  const existing = findSupabaseChannelByName(INVENTORY_SHARED_CHANNEL_NAME);
+  if (existing && isSupabaseChannelReusable(existing)) {
+    sharedInventoryChannel = existing;
+    return;
+  }
+
+  if (sharedInventoryChannel) return;
+  if (inventoryChannelStarting) {
+    await inventoryChannelStarting;
+    return;
+  }
+
+  inventoryChannelStarting = (async () => {
+    await ensureSupabaseSession();
+    if (inventorySubscriberCount === 0 || typeof supabase.channel !== 'function') return;
+
+    const prepared = await prepareSupabaseChannelName(INVENTORY_SHARED_CHANNEL_NAME);
+    if (inventorySubscriberCount === 0) return;
+
+    if (prepared.reused) {
+      sharedInventoryChannel = prepared.reused;
+      return;
+    }
+
+    sharedInventoryChannel = supabase
+      .channel(INVENTORY_SHARED_CHANNEL_NAME)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'inventory_items' },
+        (payload) => {
+          dispatchInventoryPayload(payload as InventoryChangePayload);
+        },
+      )
+      .subscribe();
+  })();
+
+  try {
+    await inventoryChannelStarting;
+  } catch (error) {
+    console.error('[inventory realtime] Failed to start channel:', error);
+  } finally {
+    inventoryChannelStarting = null;
+    if (inventorySubscriberCount === 0) {
+      teardownSharedInventoryChannel();
+    }
+  }
+}
+
+function teardownSharedInventoryChannel() {
+  if (inventorySubscriberCount > 0 || !sharedInventoryChannel) return;
+
+  cancelSharedInventoryChannelTeardown();
+  const activeChannel = sharedInventoryChannel;
+  inventoryTeardownCancel = scheduleSupabaseChannelTeardown(activeChannel, {
+    shouldTeardown: () => inventorySubscriberCount === 0 && sharedInventoryChannel === activeChannel,
+  });
+  sharedInventoryChannel = null;
+}
+
 export function InventoryRealtimeProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<InventoryRealtimeItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const subscribersRef = useRef<Set<InventoryChangeCallback>>(new Set());
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const startChannelPromiseRef = useRef<Promise<void> | null>(null);
-  const teardownCancelRef = useRef<(() => void) | null>(null);
-
-  const notifySubscribers = useCallback((payload: InventoryChangePayload) => {
-    subscribersRef.current.forEach((cb) => cb(payload));
-  }, []);
 
   const applyPayloadToItems = useCallback((payload: InventoryChangePayload) => {
     if (payload.eventType === 'INSERT') {
@@ -76,79 +154,22 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
     }
   }, []);
 
-  const stopRealtimeChannel = useCallback(() => {
-    const channel = channelRef.current;
-    channelRef.current = null;
-    teardownCancelRef.current?.();
-    teardownCancelRef.current = null;
-
-    if (channel && typeof supabase.removeChannel === 'function') {
-      teardownCancelRef.current = scheduleSupabaseChannelTeardown(channel, {
-        shouldTeardown: () =>
-          channelRef.current === null && subscribersRef.current.size === 0,
-      });
-    }
-  }, []);
-
-  const startRealtimeChannel = useCallback(() => {
-    if (typeof supabase.channel !== 'function') {
-      return;
-    }
-
-    teardownCancelRef.current?.();
-    teardownCancelRef.current = null;
-
-    const existing = findSupabaseChannelByName('inventory_items_shared');
-    if (existing && isSupabaseChannelReusable(existing)) {
-      channelRef.current = existing;
-      return;
-    }
-
-    if (channelRef.current || startChannelPromiseRef.current) {
-      return;
-    }
-
-    startChannelPromiseRef.current = (async () => {
-      await ensureSupabaseSession();
-      if (subscribersRef.current.size === 0 || typeof supabase.channel !== 'function') return;
-
-      const prepared = await prepareSupabaseChannelName('inventory_items_shared');
-      if (subscribersRef.current.size === 0) return;
-
-      if (prepared.reused) {
-        channelRef.current = prepared.reused;
-        return;
-      }
-
-      channelRef.current = supabase
-        .channel('inventory_items_shared')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'inventory_items' },
-          (payload) => {
-            const typedPayload = payload as InventoryChangePayload;
-            applyPayloadToItems(typedPayload);
-            notifySubscribers(typedPayload);
-          },
-        )
-        .subscribe();
-    })()
-      .catch((error) => {
-        console.error('[inventory realtime] Failed to start channel:', error);
-      })
-      .finally(() => {
-        startChannelPromiseRef.current = null;
-        if (subscribersRef.current.size === 0) {
-          stopRealtimeChannel();
-        }
-      });
-  }, [applyPayloadToItems, notifySubscribers, stopRealtimeChannel]);
+  const applyPayloadRef = useRef(applyPayloadToItems);
+  useEffect(() => {
+    applyPayloadRef.current = applyPayloadToItems;
+  }, [applyPayloadToItems]);
 
   useEffect(() => {
-    return () => {
-      stopRealtimeChannel();
+    applyInventoryPayload = (payload) => {
+      applyPayloadRef.current(payload);
     };
-  }, [stopRealtimeChannel]);
+
+    return () => {
+      if (applyInventoryPayload) {
+        applyInventoryPayload = null;
+      }
+    };
+  }, []);
 
   const refresh = useCallback(async (options?: { soft?: boolean }) => {
     const soft = options?.soft === true;
@@ -178,16 +199,16 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
   }, []);
 
   const subscribe = useCallback((callback: InventoryChangeCallback) => {
-    subscribersRef.current.add(callback);
-    startRealtimeChannel();
+    inventoryListeners.add(callback);
+    inventorySubscriberCount += 1;
+    void ensureSharedInventoryChannel();
 
     return () => {
-      subscribersRef.current.delete(callback);
-      if (subscribersRef.current.size === 0) {
-        stopRealtimeChannel();
-      }
+      inventoryListeners.delete(callback);
+      inventorySubscriberCount = Math.max(0, inventorySubscriberCount - 1);
+      teardownSharedInventoryChannel();
     };
-  }, [startRealtimeChannel, stopRealtimeChannel]);
+  }, []);
 
   return (
     <InventoryRealtimeContext.Provider
@@ -204,4 +225,17 @@ export function useInventoryRealtime() {
     throw new Error('useInventoryRealtime must be used within InventoryRealtimeProvider');
   }
   return ctx;
+}
+
+/** @internal Test-only introspection for shared inventory channel lifecycle. */
+export function __getInventoryRealtimeStateForTests() {
+  if (process.env.VITEST !== 'true') {
+    throw new Error('__getInventoryRealtimeStateForTests is only available under Vitest');
+  }
+
+  return {
+    listenerCount: inventoryListeners.size,
+    subscriberCount: inventorySubscriberCount,
+    hasChannel: sharedInventoryChannel !== null,
+  };
 }

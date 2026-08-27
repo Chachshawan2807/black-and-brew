@@ -2,6 +2,7 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SidebarMenuOrderSync } from '@/components/sidebar/SidebarMenuOrderSync';
+import { removeSupabaseChannelByName } from '@/lib/supabase-realtime-channel';
 
 vi.mock('@/lib/supabase-session', () => ({
   ensureSupabaseSession: vi.fn().mockResolvedValue(true),
@@ -29,6 +30,15 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
+vi.mock('@/lib/supabase-realtime-channel', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/supabase-realtime-channel')>();
+  return {
+    ...actual,
+    removeSupabaseChannelByName: vi.fn().mockResolvedValue(undefined),
+    scheduleSupabaseChannelTeardown: vi.fn(() => () => {}),
+  };
+});
+
 describe('SidebarMenuOrderSync channel lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,12 +46,11 @@ describe('SidebarMenuOrderSync channel lifecycle', () => {
   });
 
   test('removes stale channels before subscribing again', async () => {
-    const staleChannel = { topic: 'realtime:sidebar_menu_order_main' };
-    channelMocks.getChannels.mockReturnValue([staleChannel]);
-
     const { unmount } = render(<SidebarMenuOrderSync />);
 
-    await waitFor(() => expect(channelMocks.removeChannel).toHaveBeenCalledWith(staleChannel));
+    await waitFor(() =>
+      expect(removeSupabaseChannelByName).toHaveBeenCalledWith('sidebar_menu_order_main'),
+    );
     await waitFor(() =>
       expect(channelMocks.channel).toHaveBeenCalledWith('sidebar_menu_order_main'),
     );

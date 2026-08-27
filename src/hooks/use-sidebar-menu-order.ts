@@ -6,7 +6,6 @@ import {
   SIDEBAR_MENU_ORDER_KEY,
   parseSidebarMenuOrder,
 } from '@/lib/sidebar-menu-order';
-import { broadcastSidebarMenuOrderChange } from '@/lib/sidebar-menu-order-sync';
 
 interface SidebarMenuOrderStore {
   orderIds: string[] | null;
@@ -53,7 +52,6 @@ export const useSidebarMenuOrder = create(
       orderIds: null,
       setOrderIds: (orderIds) => {
         set({ orderIds });
-        broadcastSidebarMenuOrderChange(orderIds);
       },
     }),
     {
