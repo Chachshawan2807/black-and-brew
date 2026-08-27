@@ -191,6 +191,27 @@ describe('notification fab cross-platform sync', () => {
     expect(pushClientSource).toContain('MAINTENANCE_RETRY_MS');
   });
 
+  test('PwaRegister does not re-enter ensureFull on prefs-changed (prevents stack overflow)', () => {
+    const pwaRegisterSource = readFileSync(
+      resolve(__dirname, '../components/PwaRegister.tsx'),
+      'utf8',
+    );
+
+    // prefs-changed must not share the same handler that calls ensureFull…
+    expect(pwaRegisterSource).toMatch(
+      /addEventListener\('bb-notification-prefs-changed',\s*onPrefsChanged\)/,
+    );
+    expect(pwaRegisterSource).toMatch(
+      /onPrefsChanged = \(\) => \{[\s\S]*?schedulePushSubscriptionMaintenance\(locale\);[\s\S]*?\};/,
+    );
+    expect(pwaRegisterSource).not.toMatch(
+      /addEventListener\('bb-notification-prefs-changed',\s*onResume\)/,
+    );
+    expect(pwaRegisterSource).toMatch(
+      /onResume = \(\) => \{[\s\S]*?ensureFullNotificationPreferencesOnAuth\(\);/,
+    );
+  });
+
   test('daily report web pushes are stored and forwarded to the notification panel', () => {
     expect(serviceWorkerSource).toContain("payload.kind === 'daily_report'");
     expect(serviceWorkerSource).toContain("payload.kind === 'bean_order_delivered'");

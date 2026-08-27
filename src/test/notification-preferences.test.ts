@@ -3,6 +3,7 @@ import {
   ensureFullNotificationPreferencesOnAuth,
   hasNotificationUserOptOut,
   isNotificationMasterEnabled,
+  loadNotificationPreferences,
   notificationMasterPatch,
   setNotificationUserOptOut,
   shouldNotifyForAction,
@@ -103,5 +104,42 @@ describe('ensureFullNotificationPreferencesOnAuth', () => {
 
     expect(prefs.proactiveInsights).toBe(false);
     expect(hasNotificationUserOptOut()).toBe(true);
+  });
+
+  it('does not re-dispatch prefs-changed when channels are already fully enabled', () => {
+    localStorage.setItem(
+      NOTIFICATION_PREFS_KEY,
+      JSON.stringify(DEFAULT_NOTIFICATION_PREFERENCES),
+    );
+
+    let dispatchCount = 0;
+    const onPrefsChanged = () => {
+      dispatchCount += 1;
+    };
+    window.addEventListener('bb-notification-prefs-changed', onPrefsChanged);
+
+    ensureFullNotificationPreferencesOnAuth();
+    ensureFullNotificationPreferencesOnAuth();
+    ensureFullNotificationPreferencesOnAuth();
+
+    window.removeEventListener('bb-notification-prefs-changed', onPrefsChanged);
+    expect(dispatchCount).toBe(0);
+  });
+
+  it('survives a prefs-changed listener that re-enters ensureFull without stack overflow', () => {
+    localStorage.setItem(
+      NOTIFICATION_PREFS_KEY,
+      JSON.stringify({ ...DEFAULT_NOTIFICATION_PREFERENCES, proactiveInsights: false }),
+    );
+
+    const onPrefsChanged = () => {
+      ensureFullNotificationPreferencesOnAuth();
+    };
+    window.addEventListener('bb-notification-prefs-changed', onPrefsChanged);
+
+    expect(() => ensureFullNotificationPreferencesOnAuth()).not.toThrow();
+    expect(isNotificationMasterEnabled(loadNotificationPreferences())).toBe(true);
+
+    window.removeEventListener('bb-notification-prefs-changed', onPrefsChanged);
   });
 });

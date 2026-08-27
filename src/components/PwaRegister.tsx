@@ -35,6 +35,7 @@ export default function PwaRegister() {
     let removeSwUpdateListener: (() => void) | null = null;
     let onNotificationClick: ((event: MessageEvent) => void) | null = null;
     let onResume: (() => void) | null = null;
+    let onPrefsChanged: (() => void) | null = null;
 
     if (!canRegisterServiceWorker()) {
       void unregisterOrphanedServiceWorkersInDev();
@@ -59,12 +60,19 @@ export default function PwaRegister() {
         schedulePushSubscriptionMaintenance(locale);
       };
 
+      // Prefs-changed must NOT call ensureFull — that function saves prefs and
+      // re-dispatches this event (infinite recursion / Maximum call stack).
+      onPrefsChanged = () => {
+        syncBadgeFromStorage();
+        schedulePushSubscriptionMaintenance(locale);
+      };
+
       navigator.serviceWorker.addEventListener('message', onNotificationClick);
       document.addEventListener('visibilitychange', onResume);
       window.addEventListener('focus', onResume);
       window.addEventListener('pageshow', onResume);
       window.addEventListener('bb-pin-authenticated', onResume);
-      window.addEventListener('bb-notification-prefs-changed', onResume);
+      window.addEventListener('bb-notification-prefs-changed', onPrefsChanged);
 
       removeSwUpdateListener = installServiceWorkerUpdateListener();
 
@@ -106,7 +114,9 @@ export default function PwaRegister() {
         window.removeEventListener('focus', onResume);
         window.removeEventListener('pageshow', onResume);
         window.removeEventListener('bb-pin-authenticated', onResume);
-        window.removeEventListener('bb-notification-prefs-changed', onResume);
+      }
+      if (onPrefsChanged) {
+        window.removeEventListener('bb-notification-prefs-changed', onPrefsChanged);
       }
       removeOfflineListeners();
       removeSwUpdateListener?.();

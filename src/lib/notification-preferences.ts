@@ -71,6 +71,8 @@ export function setNotificationUserOptOut(optedOut: boolean): void {
 /**
  * After PIN auth, enable every notification channel unless the user previously
  * opted out via the master switch in Settings.
+ * Skips save/dispatch when prefs are already fully enabled — prevents a
+ * synchronous prefs-changed → resume → ensureFull loop (stack overflow).
  */
 export function ensureFullNotificationPreferencesOnAuth(): NotificationPreferences {
   if (hasNotificationUserOptOut()) {
@@ -83,6 +85,18 @@ export function ensureFullNotificationPreferencesOnAuth(): NotificationPreferenc
     ...notificationMasterPatch(true),
     notifyOwnChanges: current.notifyOwnChanges ?? true,
   };
+
+  if (
+    current.enabled === next.enabled &&
+    current.systemNotifications === next.systemNotifications &&
+    current.dailyScheduleReports === next.dailyScheduleReports &&
+    current.proactiveInsights === next.proactiveInsights &&
+    current.securityAlerts === next.securityAlerts &&
+    (current.notifyOwnChanges ?? true) === next.notifyOwnChanges
+  ) {
+    return current;
+  }
+
   saveNotificationPreferences(next);
   return next;
 }
