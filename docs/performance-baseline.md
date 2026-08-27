@@ -1,6 +1,6 @@
 # Performance Baseline — BLACKANDBREW ERP
 
-Recorded before loading-performance optimization work (2026-07-08). Updated 2026-08-25 for current loading coverage.
+Recorded before loading-performance optimization work (2026-07-08). Updated 2026-08-27 for current loading coverage.
 
 ## How to reproduce
 
@@ -9,7 +9,7 @@ npm run build          # chunk sizes in build output
 npm run analyze        # webpack bundle analyzer (ANALYZE=true)
 ```
 
-Lighthouse (mobile + desktop): `/th`, `/th/inventory`, `/th/schedule`, `/th/sales`
+Lighthouse (mobile + desktop): `/th`, `/th/inventory`, `/th/schedule`, `/th/dashboard`
 
 DevTools → Network → filter RSC/flight for payload size.
 
@@ -18,17 +18,17 @@ DevTools → Network → filter RSC/flight for payload size.
 | Area | Finding |
 | --- | --- |
 | Global shell | PinGateway, SidebarLayout, NotificationProvider, FAB on every route |
-| Route chunks | ScheduleClient / InventoryClient / SalesClient ~600–2000 lines, eager in page.tsx |
-| RSC payload | Sales `getSalesMetrics` loads all `sales_records`; inventory/maintenance full tables |
+| Route chunks | ScheduleClient / InventoryClient ~600–2000 lines, eager in page.tsx |
+| RSC payload | Inventory/maintenance full tables on first load |
 | Waterfalls | `fetchAndPersistHolidays` on schedule critical path; `fetchCountAccuracyStats` sequential |
 | Loading UX | Few routes had `loading.tsx`; locale error boundary at `src/app/[locale]/error.tsx` |
 | Realtime | Inventory notifications subscribe on every route at mount |
 
-## Current loading coverage (2026-08-25)
+## Current loading coverage (2026-08-27)
 
-**13** `loading.tsx` files under `src/app/[locale]/`:
+**11** `loading.tsx` files under `src/app/[locale]/`:
 
-- locale root, dashboard, schedule, sales, maintenance, settings, bean-orders (+ `[id]`)
+- locale root, dashboard, schedule, maintenance, settings, bean-orders (+ `[id]`)
 - inventory (+ count, accuracy, branch-withdraw)
 
 ## Post-optimization (2026-07-18 → ongoing)

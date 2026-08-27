@@ -2,6 +2,14 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-08-27 (Sales Report retirement — doc sync)
+
+- Synced keepers to retired Sales Report module: no `src/app/[locale]/sales/`, no `sales-actions.ts`, no `getSalesSummary` / `fetchSalesSummary`; migration `20260826140000_drop_sales_report_tables.sql`.
+- AI-readable table count 24 → 21 (`AI_ALLOWED_TABLES` in `ai-data-gateway.ts`).
+- Corrected `loading.tsx` count 13 → 11 (no `/sales` route).
+- Recorded **DEC-088** in `docs/memory.md`. Removed Sales from PRD, regression checklist, RLS audit active tables, and Hallmark off-limits list in `AGENTS.md`.
+- Bumped keeper stamps to 2026-08-27 (product v9.4 unchanged).
+
 ## 2026-08-25 (Codebase cleanup + doc sync)
 
 - Removed dead stub `src/app/actions/insight-actions.ts` (no production callers; panel catch-up reads cron-written logs only).

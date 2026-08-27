@@ -13,7 +13,9 @@
 
 Anyone with the public anon key can call PostgREST directly. RLS is the last line of defense for tables the browser can reach.
 
-## Table coverage (27 public tables)
+## Table coverage (24 public tables)
+
+> Sales Report tables (`sales_records`, `sales_uploads`, `product_categories`) dropped in `20260826140000_drop_sales_report_tables.sql`.
 
 | Table | RLS | Client access | Status |
 | --- | --- | --- | --- |
@@ -25,13 +27,10 @@ Anyone with the public anon key can call PostgREST directly. RLS is the last lin
 | `holidays` | ON | authenticated | **Fixed** — removed public ALL |
 | `inventory_*` | ON | authenticated | OK after anon sign-in |
 | `login_history` | ON | **deny all** (no policies) | OK — server only |
-| `product_categories` | ON | authenticated | OK |
 | `profiles` | ON | authenticated + legacy public read | **Partial** — see debt |
 | `push_subscriptions` | ON | `auth.uid()` scoped | OK |
 | `regular_holidays` | ON | authenticated | **Fixed** — removed public ALL |
 | `revoked_sessions` | ON | **deny all** (no policies) | OK — server only |
-| `sales_records` | ON | **server only** | **Fixed** — removed public ALL |
-| `sales_uploads` | ON | **server only** | **Fixed** — removed public ALL |
 | `service_records` | ON | authenticated | **Fixed** — removed public ALL |
 | `shifts` | ON | authenticated + legacy public read | **Partial** — see debt |
 
@@ -41,7 +40,7 @@ Anyone with the public anon key can call PostgREST directly. RLS is the last lin
 
 Changes:
 
-1. Removed `public` ALL policies on `audit_logs`, `sales_records`, `sales_uploads`
+1. Removed `public` ALL policies on `audit_logs` (sales tables dropped in `20260826140000`)
 2. Replaced `service_records` public policies with `authenticated` CRUD
 3. Replaced `holidays` / `regular_holidays` public ALL with `authenticated` policies
 4. Removed anonymous **write** policies on `shifts` and `profiles`
@@ -97,8 +96,7 @@ Manual checks:
 - [ ] PIN login still works; `ensureSupabaseSession()` runs after verify
 - [ ] Schedule page loads shifts/profiles/holidays
 - [ ] Maintenance page refreshes `service_records`
-- [ ] Sales module still loads via server actions
-- [ ] Direct anon REST call to `sales_records` returns empty / 401
+- [ ] Direct anon REST call to `inventory_items` without auth returns empty / 401
 - [ ] Direct anon RPC `get_inventory_summary` returns permission denied
 
 ## Apply to production

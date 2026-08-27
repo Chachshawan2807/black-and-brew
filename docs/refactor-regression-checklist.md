@@ -9,7 +9,6 @@ Quick reference for smoke testing after each refactor PR.
 | Inventory quick bulk | multi-item IN/OUT via FAB, per-entry success/error feedback |
 | Count verification | count page blur saves stock; accuracy badge after verification |
 | Schedule | drag shift, undo/redo, holidays, week nav |
-| Sales | charts, XLSX upload, category edit, metrics cache |
 | Dashboard | LiveShiftList, MonthlyRoster, LiveStatusTracker |
 | Bean orders | create/edit, payment slip, ship, manual delivery confirm |
 | Proactive insights | cron/manual `/api/insight-alerts`, NotificationBell digest, HomeOpsPanels |

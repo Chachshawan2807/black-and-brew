@@ -33,7 +33,7 @@ Theme persistence: `next-themes` + `storageKey="bb-theme"` — ตั้งค�
 
 ### 2b. Pastel Accent Surfaces (Both Themes)
 
-Pastel hex backgrounds (shift types, sales metrics, inventory quick actions) **ไม่เปลี่ยนตาม theme** — ต้องใช้ class `bb-pastel-surface` (หรือ `PASTEL_SURFACE` จาก `shift-colors.ts`) เพื่อบังคับ:
+Pastel hex backgrounds (shift types, inventory quick actions) **ไม่เปลี่ยนตาม theme** — ต้องใช้ class `bb-pastel-surface` (หรือ `PASTEL_SURFACE` จาก `shift-colors.ts`) เพื่อบังคับ:
 
 - ข้อความและไอคอน = `#000000`
 - Override `.text-foreground`, `h1–h6`, และ muted classes ภายใน container

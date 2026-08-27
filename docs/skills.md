@@ -1,6 +1,6 @@
 # BLACKANDBREW ERP Capability Inventory
 
-> Last Updated: 2026-08-25
+> Last Updated: 2026-08-27
 >
 > Companion: agent rules → [`AGENTS.md`](../AGENTS.md) · hard protocols → [`docs/rules.md`](rules.md)
 
@@ -8,9 +8,9 @@
 
 ### Data and Integration
 
-- AI Data Gateway: `src/lib/ai-data-gateway.ts` is the single AI read doorway (presets, limits, service-role, schedule lookup, `get_ai_store_status`, `fetchSalesSummary`, `fetchInventoryLedger`, `fetchBeanOrdersSummary`, `fetchInventoryAccuracySummary`).
-- Universal DB Reader: `readTableTool` routes through the gateway (24 AI-readable tables including bean orders).
-- Hybrid Router: deterministic short-circuits for schedule, maintenance, sales, holidays, low-stock, store status, bean orders, inventory accuracy → Bru report SSE (no LLM).
+- AI Data Gateway: `src/lib/ai-data-gateway.ts` is the single AI read doorway (presets, limits, service-role, schedule lookup, `get_ai_store_status`, `fetchInventoryLedger`, `fetchBeanOrdersSummary`, `fetchInventoryAccuracySummary`).
+- Universal DB Reader: `readTableTool` routes through the gateway (21 AI-readable tables including bean orders).
+- Hybrid Router: deterministic short-circuits for schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy → Bru report SSE (no LLM).
 - Intent classifier: `src/lib/agents/intent/classify-intent.ts` (weighted scores + tool subset selection).
 - Bru Report Style: `src/lib/agents/report-response.ts` (female politeness, hyper-concise bullets).
 - External Intel: `internetSearchTool` + `tavily-client.ts` (Tavily; structured `{ ok:false, reason }` on error).
@@ -42,7 +42,6 @@
 | --- | --- | --- |
 | `getDailyShifts` | `src/app/actions/tools/database-tools.ts` | Daily roster (names + groups) |
 | `getStoreStatus` | `src/app/actions/tools/database-tools.ts` | One-shot today shifts + inventory via `get_ai_store_status` |
-| `getSalesSummary` | `src/app/actions/tools/database-tools.ts` | Aggregated sales by date range |
 | `getInventoryLedger` | `src/app/actions/tools/database-tools.ts` | Transactions joined with item names |
 | `getBeanOrdersSummary` | `src/app/actions/tools/database-tools.ts` | Open bean orders (unpaid / pending ship) |
 | `readTable` | `src/app/actions/tools/database-tools.ts` | Preset-locked table reads via gateway |
@@ -111,4 +110,4 @@ Use with `AGENTS.md` + `docs/rules.md`.
 | Hallmark study | อยากดึง DNA จาก reference | `hallmark study <URL\|screenshot>` — diagnosis only; ไม่ rebuild ERP core |
 | ERP UI improvements | ปรับหน้า inventory/schedule/dashboard | ใช้ `web-design-guidelines` + `impeccable critique` — **ไม่ใช้** Hallmark default/redesign |
 
-Off-limits for Hallmark build/redesign: `inventory/`, `schedule/`, `dashboard/`, `sales/`, `settings/`, spreadsheet grids, pastel shift cards. Update upstream: `npx skills add nutlope/hallmark -y`.
+Off-limits for Hallmark build/redesign: `inventory/`, `schedule/`, `dashboard/`, `settings/`, spreadsheet grids, pastel shift cards. Update upstream: `npx skills add nutlope/hallmark -y`.

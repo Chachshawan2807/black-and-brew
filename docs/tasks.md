@@ -1,12 +1,12 @@
 # Tasks — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-18
+> Version: 9.4 | Last Updated: 2026-08-27
 
 ---
 
 ## Completed (summary)
 
-Core ERP modules are shipped: Command Center, Dashboard, Schedule (DnD), Inventory (spreadsheet + count + accuracy), Maintenance, Sales, Settings, AI Chat, PWA, PIN auth + passkeys, Web Push (inventory + daily report).
+Core ERP modules are shipped: Command Center, Dashboard, Schedule (DnD), Inventory (spreadsheet + count + accuracy), Maintenance, Bean Orders, Settings, AI Chat, PWA, PIN auth + passkeys, Web Push (inventory + daily report).
 
 Notable completed work:
 
@@ -14,13 +14,13 @@ Notable completed work:
 - [x] Count policy (`exact_count` / `sufficiency_check`) + accuracy report
 - [x] Cross-device Web Push + daily report on shared `push_subscriptions`
 - [x] Dark theme (`next-themes`, CSS tokens, `bb-pastel-surface`)
-- [x] Feature `_components` colocation (dashboard, inventory, schedule, settings, sales, maintenance)
+- [x] Feature `_components` colocation (dashboard, inventory, schedule, settings, maintenance, bean-orders)
 - [x] Performance phases: dashboard query consolidation, inventory row containment, dynamic modals
 - [x] Branch 2 withdrawal batch (`branch-withdraw`, `record_branch_withdrawal_batch` RPC)
 - [x] Notification unread badge counter (IDB + cross-tab sync)
 - [x] Inventory accuracy gauge on `/inventory/accuracy`
 - [x] Bean orders module (`/bean-orders`, `bean_*` tables, manual delivery confirm, slip upload)
-- [x] AI full coverage: 24 AI-readable tables; deterministic bean orders + inventory accuracy routes
+- [x] AI full coverage: 21 AI-readable tables; deterministic schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy routes
 - [x] Sidebar menu drag-reorder (`sidebar-menu-order.ts`) + cross-device sync (`app_preferences`)
 - [x] Proactive cross-module insights (`/api/insight-alerts`, Web Push, Command Center ops panels)
 - [x] RLS hardening migration (`20260724170556`) + WAF config (`config/vercel-firewall.json`)
@@ -30,6 +30,7 @@ Notable completed work:
 - [x] `shipBeanOrder` deferred shipped push via `after()` (no external tracking sync)
 - [x] `inventory_transactions.transaction_at` business date + ledger reset migration (`20260811105704`, `20260811115400`)
 - [x] Retired: inventory recommended target stock; weather API; Market Insights module; obsolete root protocol/skill stubs; `daily-report-notification-actions.ts`
+- [x] Retired: Sales Report module (`/sales`, `sales_*` tables — migration `20260826140000_drop_sales_report_tables.sql`)
 
 See `docs/changelog.md` and git history for dated entries.
 

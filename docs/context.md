@@ -1,6 +1,6 @@
 # Context — BLACKANDBREW ERP
 
-> Version: 9.4 | Last Updated: 2026-08-25
+> Version: 9.4 | Last Updated: 2026-08-27
 
 ---
 
@@ -22,7 +22,7 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 
 1. ตารางงาน (Scheduling) — จัดกะงานพนักงานแบบ Drag-and-Drop พร้อมรองรับการสลับกะ
 2. คลังสินค้า (Inventory) — Single Source of Truth (`inventory_items.stock`), ตรวจนับ, สั่งซื้อตามช่องทาง
-3. ยอดขาย (Sales) — อัปโหลด Excel วิเคราะห์ยอดขายและหมวดหมู่สินค้า
+3. ออเดอร์เมล็ด (Bean Orders) — รับออเดอร์ ชำระเงิน จัดส่งเมล็ดกาแฟ
 4. บำรุงรักษา (Maintenance) — บันทึกสถานะอุปกรณ์
 5. AI Assistant (บรู) — แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
 6. การตั้งค่า (Settings) — เลือกธีม, ประวัติการเข้าใช้, trusted-device passkeys, และการแจ้งเตือนคลังสินค้า
@@ -145,7 +145,6 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Schedule | `src/app/[locale]/schedule/ScheduleClient.tsx`, `_components/` |
 | Inventory | `src/app/[locale]/inventory/InventoryClient.tsx`, `_components/`, `count/`, `accuracy/`, `branch-withdraw/` |
 | Maintenance | `src/app/[locale]/maintenance/MaintenanceClient.tsx`, `_components/` |
-| Sales | `src/app/[locale]/sales/SalesClient.tsx`, `_components/` |
 | Bean Orders | `src/app/[locale]/bean-orders/`, `src/lib/bean-orders/`, `bean-order-actions.ts` |
 | Settings | `src/app/[locale]/settings/page.tsx`, `_components/` |
 | Auth | `src/components/auth/PinGateway.tsx`, `src/app/actions/auth.ts` |
@@ -179,7 +178,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |
 | Sidebar menu order | `sidebar-menu-order.ts`, `app-preferences-actions.ts`, `app_preferences` table — cross-device sync |
 | Bean orders | `bean-order-actions.ts`, `lib/bean-orders/`, manual delivery confirm |
-| AI full coverage | 24 AI-readable tables; deterministic routes for bean orders + inventory accuracy |
+| AI full coverage | 21 AI-readable tables; deterministic routes for schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy |
 | Proactive insights | `src/lib/proactive-insights/`, `GET /api/insight-alerts`, Web Push + NotificationBell; prefs `proactiveInsights` |
 | Navigation perf | `route-chunk-preload.ts`, `warm-route-navigation.ts`, `ViewTransitionNavigation.tsx` — idle/touch prefetch + view transitions |
 | Inventory ledger date | `inventory_transactions.transaction_at` + `p_transaction_at` on `record_inventory_transaction` RPC |

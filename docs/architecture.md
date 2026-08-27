@@ -1,6 +1,6 @@
 # Architecture — BLACKANDBREW ERP
 
-> Version: 9.4 | Last Updated: 2026-08-25 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.4 | Last Updated: 2026-08-27 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -97,7 +97,6 @@ src/app/
 │   ├── shift-actions.ts               # Shift CRUD
 │   ├── holiday-actions.ts             # Google Calendar + regular holidays
 │   ├── maintenance-actions.ts         # Service records
-│   ├── sales-actions.ts               # Excel upload, categories
 │   ├── daily-report-actions.ts        # Daily report compiler
 │   ├── push-actions.ts                # Web Push subscription register/sync/unregister
 │   ├── app-preferences-actions.ts     # Branch-scoped UI prefs (sidebar menu order)
@@ -122,7 +121,6 @@ src/app/
     │   ├── accuracy/            # Exact-count accuracy report + gauge
     │   └── branch-withdraw/     # Branch 2 withdrawal batch
     ├── maintenance/             # MaintenanceClient + _components/
-    ├── sales/                   # SalesClient + _components/
     ├── bean-orders/             # BeanOrdersClient + form/detail pages + _components/
     └── settings/                # page.tsx + _components/ (theme, sessions, passkeys)
 ```
@@ -197,7 +195,7 @@ BeanOrdersClient / BeanOrderFormClient / BeanOrderDetailClient
 ### Shared select + navigation helpers (v9.3)
 
 ```text
-RoundedSelect / BB_SELECT_TRIGGER_CLASS — shared native <select> chrome (bean-orders, sales, dashboard roster, maintenance listbox trigger)
+RoundedSelect / BB_SELECT_TRIGGER_CLASS — shared native <select> chrome (bean-orders, dashboard roster, maintenance listbox trigger)
 navigateWithViewTransition / navigateWithoutViewTransition — src/lib/view-transition.ts (date-filter navigations skip VT)
 warmRouteNavigation — src/lib/warm-route-navigation.ts (route chunk preload + router.prefetch before tap)
 route-chunk-preload — src/lib/route-chunk-preload.ts (NavPreloadLink, RoutePrefetchOnIdle, bean-orders list hover)
@@ -211,7 +209,6 @@ dropdown-menu — src/components/ui/dropdown-menu.tsx (Radix wrapper; focus-visi
 ```text
 inventory-grid-cell-a11y.ts — inventory spreadsheet cell labels + roving tabindex
 schedule-grid-cell-a11y.ts — schedule grid cell keyboard/a11y metadata
-sales-category-cell-a11y.ts — sales category grid cell a11y
 inventory-grid-cell-blur.ts — mobile blur/commit scheduling for inventory cells
 ```
 
@@ -284,10 +281,10 @@ Client-side state: `src/lib/offline-mutation-client.ts`; auth session bridge: `s
 
 ```text
 POST /api/chat → intent classify → Hybrid Router
-→ Hot path (no LLM): schedule, maintenance, sales, holidays, low-stock,
+→ Hot path (no LLM): schedule, maintenance, holidays, low-stock,
   store status, bean orders, inventory accuracy → Bru report SSE
 → Warm/Cold: ToolLoopAgent (Gemini 2.5 Flash)
-→ tools (subset by intent): getDailyShifts, getStoreStatus, getSalesSummary,
+→ tools (subset by intent): getDailyShifts, getStoreStatus,
   getInventoryLedger, getBeanOrdersSummary, readTable, internetSearchTool
 → streaming response → XSS sanitization on display
 ```
@@ -328,12 +325,11 @@ Every read the AI layer performs funnels through `src/lib/ai-data-gateway.ts` �
 Hybrid Router (/api/chat)
   │
   ├─ Deterministic short-circuits (Bru report formatters)
-  │     schedule | maintenance | sales | holidays | low-stock
+  │     schedule | maintenance | holidays | low-stock
   │     store status | bean orders | inventory accuracy
   │
   └─ ToolLoopAgent (Gemini)
         ├─ getDailyShifts(date) ──────────▶ fetchDailyShiftsByDate() (DEC-068)
-        ├─ getSalesSummary ───────────────▶ fetchSalesSummary()
         ├─ getInventoryLedger ────────────▶ fetchInventoryLedger()
         ├─ getStoreStatus ────────────────▶ fetchInventorySummary() / RPC
         ├─ getBeanOrdersSummary ──────────▶ fetchBeanOrdersSummary()
@@ -344,14 +340,13 @@ Hybrid Router (/api/chat)
               └─ other allowed tables ──────────▶ fetchTablePreset(…)
 ```
 
-### AI-readable tables (24 — public ERP tables)
+### AI-readable tables (21 — public ERP tables)
 
 | Domain | Tables | Default row limit |
 | --- | --- | --- |
 | Schedule | `profiles`, `shifts`, `holidays`, `regular_holidays` | 200–500 |
 | Inventory | `inventory_items`, `inventory_config`, `inventory_transactions`, `inventory_count_verifications` | 50–1000 |
 | Maintenance | `service_records` | 1000 |
-| Sales | `sales_uploads`, `sales_records`, `product_categories` | 100–2000 |
 | Bean orders | `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments` | 500–1000 |
 | System / audit | `audit_logs`, `login_history`, `data_change_logs`, `revoked_sessions`, `push_subscriptions`, `device_passkeys` | 50–2000 |
 
@@ -363,7 +358,6 @@ Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIM
 | --- | :--- | --- | :--- |
 | `fetchInventorySummary()` | `rpc('get_ai_store_status')` | `{ inventory_summary, low_stock_items, shifts, timestamp }` | Store-status snapshot |
 | `fetchShiftsByDate(date)` | `fetchDailyShiftsByDate` | `FormattedDailyShifts` | Canonical grouped roster |
-| `fetchSalesSummary(...)` | `sales_records` aggregate | totals + top products | Prefer over dump |
 | `fetchInventoryLedger(...)` | transactions + item names | ledger entries | Prefer over join-in-LLM |
 | `fetchBeanOrdersSummary(...)` | `bean_orders` | unpaid / pending ship | Open orders only |
 | `fetchInventoryAccuracySummary()` | `inventory_count_verifications` | accuracy % + discrepancy | Count report |

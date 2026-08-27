@@ -1,6 +1,6 @@
 # Database Schema — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-11 | Engine: Supabase PostgreSQL
+> Version: 9.4 | Last Updated: 2026-08-27 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -299,6 +299,7 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260810160403_insight_notification_realtime.sql` | RLS read scopes on `data_change_logs` for proactive insights, bean-order, and PIN lockout notifications |
 | `20260811105704_inventory_transaction_at.sql` | `inventory_transactions.transaction_at` business date + `p_transaction_at` on `record_inventory_transaction` RPC |
 | `20260811115400_reset_inventory_history_transaction_at.sql` | Reset IN/OUT ledger, count verifications, and branch withdrawals after `transaction_at` rollout |
+| `20260826140000_drop_sales_report_tables.sql` | Drops retired Sales Report tables (`sales_records`, `sales_uploads`, `product_categories`) |
 
 Retired: Sales Report module (`sales_uploads`, `sales_records`, `product_categories`) — dropped in `20260826140000_drop_sales_report_tables.sql`. Inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 

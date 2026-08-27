@@ -1,6 +1,6 @@
 # PRD — BLACKANDBREW ERP System
 
-> Version: 9.4 | Last Updated: 2026-08-25 | Owner: System Architect
+> Version: 9.4 | Last Updated: 2026-08-27 | Owner: System Architect
 
 ---
 
@@ -13,7 +13,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - ลดเวลาในการจัดตารางงานผ่าน Drag-to-Shift UI
 - ป้องกันสินค้าขาดสต็อกผ่าน Computed Auto-Ordering สำหรับสินค้านับจริง และ manual `order_qty` สำหรับรายการเช็คว่าพอใช้
 - เพิ่มความโปร่งใสด้วย Real-time Sync และ Transaction Ledger
-- วิเคราะห์ยอดขายจากข้อมูลที่อัปโหลด และช่วยตอบคำถามด้วย AI Assistant
+- ช่วยตอบคำถามด้วย AI Assistant จากข้อมูลร้านจริง
 
 ---
 
@@ -74,13 +74,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - Purpose: บันทึกการซ่อมบำรุงอุปกรณ์
 - Table: `service_records`
 
-### 3.6 Sales
-
-- Route: `/[locale]/sales`
-- Purpose: อัปโหลด Excel วิเคราะห์ยอดขาย
-- Features: File upload, category management, AI auto-categorize, charts (`recharts`)
-
-### 3.7 Bean Orders
+### 3.6 Bean Orders
 
 - Route: `/[locale]/bean-orders`, `/new`, `/[id]`, `/[id]/edit`
 - Purpose: จัดการออเดอร์เมล็ดกาแฟ — ลูกค้า, สลิปชำระเงิน, จัดส่ง, ติดตามพัสดุ
@@ -92,24 +86,24 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
   - No automatic inventory stock deduction
   - AI summary via `fetchBeanOrdersSummary()` and deterministic Bru report
 
-### 3.8 AI Assistant (บรู)
+### 3.7 AI Assistant (บรู)
 
 - Route: `POST /api/chat` (no in-app overlay UI)
 - Purpose: แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน (API streaming)
 - Stack: ToolLoopAgent + Gemini 2.5 Flash; Tavily for external search
 
-### 3.9 Settings
+### 3.8 Settings
 
 - Route: `/[locale]/settings`
 - Purpose: การตั้งค่าระบบสำหรับพนักงาน
 - Features: Theme picker; login history; trusted-device passkeys; notification preferences; data change history (`settings/_components/`)
 
-### 3.10 Daily Web Push Notification
+### 3.9 Daily Web Push Notification
 
 - Route: `/api/daily-report` (cron-job.org — 05:00 / 18:00 ICT)
 - Purpose: แจ้งเตือนกะงานและวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
 
-### 3.11 Proactive Cross-Module Insights
+### 3.10 Proactive Cross-Module Insights
 
 - Route: `GET /api/insight-alerts` (cron-job.org — 07:00 / 17:00 ICT; also debounced after shift/stock mutations)
 - Purpose: กฎ deterministic เชื่อม schedule / inventory / maintenance / bean-orders / accuracy → inbox + Web Push
@@ -126,7 +120,6 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 | Transaction Ledger | ตรวจสอบความถูกต้องของสต็อก | Inventory |
 | Shift Scheduling | จัดพนักงานให้เหมาะสม | Schedule |
 | Holiday Sync | วางแผนล่วงหน้าตามวันหยุดราชการ | Schedule |
-| Sales Analytics | วิเคราะห์ยอดขายและหมวดหมู่ | Sales |
 | Bean Order Fulfillment | จัดการออเดอร์เมล็ดกาแฟและติดตามพัสดุ | Bean Orders |
 | Real-time Sync | ข้อมูลอัปเดตทันทีข้ามเครื่อง | All |
 | Daily Web Push | แจ้งเตือนตารางงานผ่าน endpoint เดียวกับ inventory alerts | Schedule/Notifications |

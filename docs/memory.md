@@ -1,12 +1,23 @@
 # Memory Log — BLACKANDBREW ERP
 
-> Version: 9.3 | Last Updated: 2026-08-18 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.4 | Last Updated: 2026-08-27 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
 ---
 
 ## Active Decisions
+
+### DEC-088: Retire Sales Report module (v9.4)
+
+- Date: August 2026
+- Context: Sales Report UI (`/[locale]/sales`), server actions, AI tools, and `sales_*` tables duplicated analytics outside core ERP workflows and were removed from code.
+- Decision:
+  1. Drop `sales_uploads`, `sales_records`, `product_categories` via `20260826140000_drop_sales_report_tables.sql`.
+  2. Remove `getSalesSummary` / `fetchSalesSummary` and sales deterministic chat routes.
+  3. Keep `module: 'sales'` labels in audit/history formatters for legacy `data_change_logs` rows only.
+- Impact: `AI_ALLOWED_TABLES` count 24 → 21; docs must not list `/[locale]/sales` as active.
+- Evidence: migration `20260826140000_drop_sales_report_tables.sql`; no `src/app/[locale]/sales/` route files on disk.
 
 ### DEC-087: Ship path latency + doc/code hygiene (v9.3)
 
@@ -34,13 +45,13 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 ### DEC-085: AI Bru Full Coverage + Bean Order Gateway (v9.2)
 
 - Date: July 2026
-- Context: บรูต้องตอบคำถามออเดอร์เมล็ดกาแฟและความแม่นยำคลังได้แบบ deterministic โดยไม่พึ่ง LLM เดา; ขยาย AI-readable tables เป็น 24 ตาราง
+- Context: บรูต้องตอบคำถามออเดอร์เมล็ดกาแฟและความแม่นยำคลังได้แบบ deterministic โดยไม่พึ่ง LLM เดา; ขยาย AI-readable tables (bean orders; sales tables later retired in DEC-088)
 - Decision:
   1. **Gateway:** `fetchBeanOrdersSummary()`, `fetchInventoryAccuracySummary()` in `ai-data-gateway.ts`; bean `bean_*` tables in `AI_ALLOWED_TABLES` with PII-safe presets.
   2. **Deterministic routes:** `detect-bean-orders-query.ts`, `detect-inventory-accuracy-query.ts` → Bru report SSE (no LLM).
   3. **Tool surface:** `getBeanOrdersSummary` in `database-tools.ts`; removed stale `getInventoryItemDetails` from chat tools.
   4. **Intent classifier:** weighted scores route to tool subset + deterministic short-circuits.
-- Impact: `/api/chat` hot-path covers schedule, maintenance, sales, holidays, low-stock, store status, bean orders, inventory accuracy.
+- Impact: `/api/chat` hot-path covers schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy.
 - Evidence: `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-bean-orders-gateway.test.ts`, `format-bean-orders-chat-response.ts`, `format-inventory-accuracy-chat-response.ts`
 
 ### DEC-084: Bean Orders Module (v9.2)

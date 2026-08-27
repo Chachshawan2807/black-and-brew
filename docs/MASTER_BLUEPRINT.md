@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 9.4 | Last Updated: 2026-08-25 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 9.4 | Last Updated: 2026-08-27 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## Architectural Core
 
@@ -35,8 +35,8 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 - Transport: `DefaultChatTransport` → `POST /api/chat`.
 - Architecture: ToolLoopAgent (`stopWhen: stepCountIs(maxSteps)`).
 - Token budget: `MAX_MEMORY_MESSAGES = 8`, char cap 2000, `maxOutputTokens: 1600`, `maxSteps` up to 7.
-- Tools: `getDailyShifts`, `getStoreStatus`, `getSalesSummary`, `getInventoryLedger`, `getBeanOrdersSummary`, `readTable`, `internetSearchTool` (Tavily) in `/api/chat`.
-- Deterministic short-circuits: daily schedule (DEC-068), upcoming maintenance, low-stock PO summary, sales, holidays, store status, bean orders, inventory accuracy (multi-turn query text).
+- Tools: `getDailyShifts`, `getStoreStatus`, `getInventoryLedger`, `getBeanOrdersSummary`, `readTable`, `internetSearchTool` (Tavily) in `/api/chat`.
+- Deterministic short-circuits: daily schedule (DEC-068), upcoming maintenance, low-stock PO summary, holidays, store status, bean orders, inventory accuracy (multi-turn query text).
 - Live screen context: client sends `clientContext` with route-preferred tools; route sanitizes and injects into the system prompt.
 - Shift labels come from `shifts.metadata.location` — never treat `start_time` as the shift name.
 - Security: Service Role read-only tools; full PIN session required (read-only kiosk rejected).
@@ -89,7 +89,6 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 | Staff Dashboard | `/[locale]/dashboard` | Active |
 | Schedule | `/[locale]/schedule` | Active — DnD |
 | Maintenance | `/[locale]/maintenance` | Active |
-| Sales | `/[locale]/sales` | Active |
 | Bean Orders | `/[locale]/bean-orders` | Active — customers, slips, shipping, manual delivery confirm |
 | Settings | `/[locale]/settings` | Active |
 | AI Assistant (บรู) | `POST /api/chat` | Active — Gemini + Tavily (API; no in-app overlay) |
