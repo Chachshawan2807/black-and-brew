@@ -8,13 +8,16 @@ vi.mock('@/lib/supabase-session', () => ({
   ensureSupabaseSession: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock('@/lib/supabase-realtime-channel', () => ({
-  SUPABASE_REALTIME_TEARDOWN_DELAY_MS: 50,
-  scheduleSupabaseChannelTeardown: (channel: unknown) => {
-    void supabase.removeChannel(channel as never);
-    return () => {};
-  },
-}));
+vi.mock('@/lib/supabase-realtime-channel', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/supabase-realtime-channel')>();
+  return {
+    ...actual,
+    scheduleSupabaseChannelTeardown: (channel: unknown) => {
+      void supabase.removeChannel(channel as never);
+      return () => {};
+    },
+  };
+});
 
 function RealtimeSubscriber() {
   const { subscribe } = useInventoryRealtime();
@@ -27,6 +30,7 @@ function RealtimeSubscriber() {
 describe('InventoryRealtimeProvider channel lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(supabase.getChannels).mockReturnValue([]);
   });
 
   test('does not open an inventory websocket until a consumer subscribes', async () => {
@@ -53,5 +57,22 @@ describe('InventoryRealtimeProvider channel lifecycle', () => {
     unmount();
 
     expect(supabase.removeChannel).toHaveBeenCalled();
+  });
+
+  test('reuses a joined shared channel instead of attaching listeners after subscribe', async () => {
+    const joinedChannel = {
+      topic: 'realtime:inventory_items_shared',
+      state: 'joined',
+    };
+    vi.mocked(supabase.getChannels).mockReturnValue([joinedChannel as never]);
+
+    render(
+      <InventoryRealtimeProvider>
+        <RealtimeSubscriber />
+      </InventoryRealtimeProvider>,
+    );
+
+    await waitFor(() => expect(supabase.getChannels).toHaveBeenCalled());
+    expect(supabase.channel).not.toHaveBeenCalled();
   });
 });

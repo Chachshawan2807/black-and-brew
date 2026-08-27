@@ -23,7 +23,7 @@ export function NavPreloadLink({
   return (
     <Link
       href={href}
-      prefetch
+      prefetch={false}
       onMouseEnter={(e) => {
         warmRoute(hrefStr);
         onMouseEnter?.(e);

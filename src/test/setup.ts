@@ -32,6 +32,7 @@ vi.mock('@/lib/supabase', () => ({
       on: vi.fn().mockReturnThis(),
       subscribe: vi.fn().mockReturnThis(),
     })),
+    getChannels: vi.fn().mockReturnValue([]),
     removeChannel: vi.fn(),
   },
 }));

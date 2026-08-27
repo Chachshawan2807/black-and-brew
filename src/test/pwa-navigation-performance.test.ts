@@ -32,11 +32,12 @@ describe('PWA navigation performance patterns', () => {
     expect(layout).toContain('RouteLoadingSkeleton');
   });
 
-  test('nav links prefetch on touch for mobile PWA', () => {
+  test('nav links warm routes on intent without eager viewport prefetch', () => {
     const link = readFileSync(resolve(ROOT, 'src/components/sidebar/NavPreloadLink.tsx'), 'utf-8');
     expect(link).toContain('onTouchStart');
     expect(link).toContain('onPointerDown');
-    expect(link).toContain('prefetch');
+    expect(link).toContain('prefetch={false}');
+    expect(link).toContain('preloadRouteChunk');
   });
 
   test('globals apply touch-action manipulation on interactive controls', () => {
@@ -61,6 +62,6 @@ describe('PWA navigation performance patterns', () => {
   test('notifications defer realtime subscription until idle', () => {
     const hook = readFileSync(resolve(ROOT, 'src/hooks/use-inventory-notifications.ts'), 'utf-8');
     expect(hook).toContain('scheduleIdleWork');
-    expect(hook).toContain('setRealtimeReady(true)');
+    expect(hook).toContain('setIdleRealtimeReady(true)');
   });
 });

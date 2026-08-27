@@ -14,7 +14,7 @@ import {
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
-import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
+import { scheduleSupabaseChannelTeardown, findSupabaseChannelByName, isSupabaseChannelReusable, prepareSupabaseChannelName } from '@/lib/supabase-realtime-channel';
 import { mergeInventoryRealtimeUpdate, type InventoryStockFields } from '@/lib/inventory-stock';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 
@@ -95,16 +95,30 @@ export function InventoryRealtimeProvider({ children }: { children: ReactNode })
       return;
     }
 
+    teardownCancelRef.current?.();
+    teardownCancelRef.current = null;
+
+    const existing = findSupabaseChannelByName('inventory_items_shared');
+    if (existing && isSupabaseChannelReusable(existing)) {
+      channelRef.current = existing;
+      return;
+    }
+
     if (channelRef.current || startChannelPromiseRef.current) {
       return;
     }
 
-    teardownCancelRef.current?.();
-    teardownCancelRef.current = null;
-
     startChannelPromiseRef.current = (async () => {
       await ensureSupabaseSession();
       if (subscribersRef.current.size === 0 || typeof supabase.channel !== 'function') return;
+
+      const prepared = await prepareSupabaseChannelName('inventory_items_shared');
+      if (subscribersRef.current.size === 0) return;
+
+      if (prepared.reused) {
+        channelRef.current = prepared.reused;
+        return;
+      }
 
       channelRef.current = supabase
         .channel('inventory_items_shared')

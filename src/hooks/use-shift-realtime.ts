@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
-import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
+import {
+  scheduleSupabaseChannelTeardown,
+  findSupabaseChannelByName,
+  isSupabaseChannelReusable,
+  prepareSupabaseChannelName,
+} from '@/lib/supabase-realtime-channel';
 
 type Listener = () => void;
 
@@ -22,6 +27,12 @@ function cancelSharedShiftChannelTeardown() {
 async function ensureSharedShiftChannel() {
   cancelSharedShiftChannelTeardown();
 
+  const existing = findSupabaseChannelByName('bb-shifts-shared');
+  if (existing && isSupabaseChannelReusable(existing)) {
+    channel = existing;
+    return;
+  }
+
   if (channel) return;
   if (channelStarting) {
     await channelStarting;
@@ -30,7 +41,12 @@ async function ensureSharedShiftChannel() {
 
   channelStarting = (async () => {
     await ensureSupabaseSession();
-    if (channel) return;
+
+    const prepared = await prepareSupabaseChannelName('bb-shifts-shared');
+    if (prepared.reused) {
+      channel = prepared.reused;
+      return;
+    }
 
     channel = supabase
       .channel('bb-shifts-shared')
