@@ -363,12 +363,12 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
               <span className="tabular-nums text-foreground">{formatBaht(order.subtotalBaht)}</span>
             </p>
             <p className="flex justify-between gap-4">
-              <span>ส่วนลด</span>
-              <span className="tabular-nums text-foreground">-{formatBaht(order.discountBaht)}</span>
-            </p>
-            <p className="flex justify-between gap-4">
               <span>ค่าส่ง</span>
               <span className="tabular-nums text-foreground">{formatBaht(order.shippingBaht)}</span>
+            </p>
+            <p className="flex justify-between gap-4">
+              <span>ส่วนลด</span>
+              <span className="tabular-nums text-foreground">-{formatBaht(order.discountBaht)}</span>
             </p>
             <p className="flex justify-between gap-4 border-t border-border pt-1 text-foreground">
               <span>ยอดรวม</span>
