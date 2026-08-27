@@ -90,7 +90,7 @@ black-and-brew/
 │   ├── test/                # Vitest suites
 │   ├── workers/             # Web Workers (inventory-table.worker.ts)
 │   └── proxy.ts             # next-intl middleware (Next.js 16)
-├── AGENTS.md, CLAUDE.md, README.md, PROJECT_MAP.md
+├── AGENTS.md, README.md, PROJECT_MAP.md
 └── package.json, next.config.ts, vitest.config.ts, vercel.json
 ```
 
