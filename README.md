@@ -45,17 +45,19 @@
 
 ![Next.js](https://img.shields.io/badge/Next.js-16.2.4-black?style=for-the-badge&logo=next.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-19.2.4-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Zod](https://img.shields.io/badge/Zod-4-3E67B1?style=for-the-badge)
 
 | เทคโนโลยี | หน้าที่ |
 | --- | --- |
-| **Next.js 16** | โครงสร้างแอป App Router, Server Actions, API routes |
+| **Next.js 16** | โครงสร้างแอป App Router, Server Actions, API routes, PWA |
 | **React 19** | ส่วนติดต่อผู้ใช้ คอมโพเนนต์ และตารางแก้ไขออนไลน์ |
-| **Supabase** | ฐานข้อมูล PostgreSQL ซิงก์เรียลไทม์ และการจัดเก็บไฟล์ |
-| **Tailwind CSS 4** | ระบบสไตล์และเลย์เอาต์สม่ำเสมอทุกหน้า |
-| **TypeScript 5** | ภาษาหลักของโปรเจกต์ — ตรวจสอบชนิดข้อมูล |
+| **TypeScript 5** | ภาษาหลักของโปรเจกต์ — ตรวจสอบชนิดข้อมูลทุกเลเยอร์ |
+| **Supabase** | ฐานข้อมูล PostgreSQL ซิงก์เรียลไทม์ การจัดเก็บไฟล์ และ RLS |
+| **Tailwind CSS 4** | ระบบสไตล์ เลย์เอาต์ และธีมสว่าง/มืด (`next-themes`) |
+| **Zod** | ตรวจสอบข้อมูลนำเข้าใน Server Actions และ API routes |
 
 ## 📄 License
 
