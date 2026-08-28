@@ -4,6 +4,7 @@ import { formatPendingBeanOrdersSummary, countBeanOrderPendingStatuses } from '@
 import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 import {
   collectWeeklyLeaveEntries,
+  filterUpcomingLeaveEntries,
   findUnderstaffedDays,
 } from '@/lib/proactive-insights/week-schedule';
 
@@ -29,7 +30,10 @@ function ruleUnderstaffedWeekly(snapshot: OperationalSnapshot): Insight | null {
 }
 
 function ruleLeaveCoverageRisk(snapshot: OperationalSnapshot): Insight | null {
-  const leaveEntries = collectWeeklyLeaveEntries(snapshot.weeklyDays);
+  const leaveEntries = filterUpcomingLeaveEntries(
+    collectWeeklyLeaveEntries(snapshot.weeklyDays),
+    snapshot.dateIso,
+  );
   if (leaveEntries.length < INSIGHT_THRESHOLDS.leaveCoverageMinLeave) return null;
 
   const detail = leaveEntries

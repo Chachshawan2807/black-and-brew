@@ -81,16 +81,54 @@ describe('evaluateInsightRules', () => {
     expect(hit!.summary).toContain('พ. 22 4 คน');
   });
 
-  test('leave_coverage_risk lists each leave with short weekday date', () => {
+  test('leave_coverage_risk lists each upcoming leave with short weekday date', () => {
+    const leaveStaffByDay = Array(7).fill([]) as string[][];
+    leaveStaffByDay[4] = ['เอ'];
+    leaveStaffByDay[5] = ['บี'];
+
     const insights = evaluateInsightRules(
       sampleSnapshot({
-        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], [['เอ'], ['บี']]),
+        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], leaveStaffByDay),
       }),
     );
     const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toContain('เอ (จ. 20)');
-    expect(hit!.summary).toContain('บี (อ. 21)');
+    expect(hit!.summary).toContain('เอ (ศ. 24)');
+    expect(hit!.summary).toContain('บี (ส. 25)');
+  });
+
+  test('leave_coverage_risk excludes leave on past dates', () => {
+    const leaveStaffByDay = Array(7).fill([]) as string[][];
+    leaveStaffByDay[0] = ['เอ'];
+    leaveStaffByDay[1] = ['บี'];
+    leaveStaffByDay[5] = ['ซี'];
+
+    const insights = evaluateInsightRules(
+      sampleSnapshot({
+        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], leaveStaffByDay),
+      }),
+    );
+    const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
+    expect(hit).toBeUndefined();
+    expect(INSIGHT_THRESHOLDS.leaveCoverageMinLeave).toBe(2);
+  });
+
+  test('leave_coverage_risk includes leave on today and future dates only', () => {
+    const leaveStaffByDay = Array(7).fill([]) as string[][];
+    leaveStaffByDay[0] = ['เอ'];
+    leaveStaffByDay[4] = ['บี'];
+    leaveStaffByDay[5] = ['ซี'];
+
+    const insights = evaluateInsightRules(
+      sampleSnapshot({
+        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], leaveStaffByDay),
+      }),
+    );
+    const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
+    expect(hit).toBeDefined();
+    expect(hit!.summary).toContain('บี (ศ. 24)');
+    expect(hit!.summary).toContain('ซี (ส. 25)');
+    expect(hit!.summary).not.toContain('เอ');
   });
 
   test('leave_coverage_risk does not fire below weekly leave threshold', () => {
@@ -129,9 +167,13 @@ describe('evaluateInsightRules', () => {
   });
 
   test('buildDailyInsightDigest merges matched rules into one notification', () => {
+    const leaveStaffByDay = Array(7).fill([]) as string[][];
+    leaveStaffByDay[4] = ['เอ'];
+    leaveStaffByDay[5] = ['บี'];
+
     const insights = evaluateInsightRules(
       sampleSnapshot({
-        weeklyDays: makeWeekDays([2, 5, 5, 5, 5, 5, 5], [['เอ'], ['บี']]),
+        weeklyDays: makeWeekDays([2, 5, 5, 5, 5, 5, 5], leaveStaffByDay),
         pendingBeanOrders: [
           { customerName: 'คุณซี', paymentStatus: 'unpaid', fulfillmentStatus: 'pending' },
         ],
