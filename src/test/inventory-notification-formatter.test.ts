@@ -48,6 +48,24 @@ describe('formatFieldChange', () => {
       formatFieldChange({ field: 'stock', old_value: 10, new_value: 8 }, false)
     ).toBe('Stock: 10 → 8');
   });
+
+  test('formats count_policy change in concise Thai', () => {
+    expect(
+      formatFieldChange(
+        { field: 'count_policy', old_value: 'exact_count', new_value: 'sufficiency_check' },
+        true
+      )
+    ).toBe('การเบิก: ต้องเบิก → ไม่ต้องเบิก');
+  });
+
+  test('formats count_policy change in English', () => {
+    expect(
+      formatFieldChange(
+        { field: 'count_policy', old_value: 'exact_count', new_value: 'sufficiency_check' },
+        false
+      )
+    ).toBe('Withdraw: required → not required');
+  });
 });
 
 describe('summarizeFieldChanges', () => {
@@ -262,6 +280,23 @@ describe('formatInventoryNotification stock operations', () => {
     expect(n.summary).toContain('จุดสั่งซื้อ');
     expect(n.summary).toContain('5');
     expect(n.summary).toContain('10');
+  });
+
+  test('shows Thai count_policy labels in notification summary', () => {
+    const n = formatInventoryNotification(
+      makeRow({
+        entity_label: 'ชาตรามือ',
+        field_changes: [
+          { field: 'count_policy', old_value: 'exact_count', new_value: 'sufficiency_check' },
+        ],
+      }),
+      'th'
+    );
+    expect(n.title).toBe('แก้ไขรายการ: ชาตรามือ');
+    expect(n.summary).toBe('การเบิก: ต้องเบิก → ไม่ต้องเบิก');
+    expect(n.summary).not.toContain('count_policy');
+    expect(n.summary).not.toContain('exact_count');
+    expect(n.summary).not.toContain('sufficiency_check');
   });
 });
 

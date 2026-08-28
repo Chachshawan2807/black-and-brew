@@ -949,19 +949,19 @@ export default function BeanOrderFormClient({
         <h2 className="text-xs text-muted-foreground">สรุปยอด</h2>
         <div className="flex min-h-0 flex-1 flex-col space-y-3">
           <AutocompleteTextField
-            value={discountBaht}
-            onChange={setDiscountBaht}
-            suggestions={filterNumberSuggestions(formSuggestions.discountBahtValues, discountBaht)}
-            inputClass={inputClass}
-            placeholder="ส่วนลด (บาท)"
-            inputMode="decimal"
-          />
-          <AutocompleteTextField
             value={shippingBaht}
             onChange={setShippingBaht}
             suggestions={filterNumberSuggestions(formSuggestions.shippingBahtValues, shippingBaht)}
             inputClass={inputClass}
             placeholder="ค่าส่ง (บาท)"
+            inputMode="decimal"
+          />
+          <AutocompleteTextField
+            value={discountBaht}
+            onChange={setDiscountBaht}
+            suggestions={filterNumberSuggestions(formSuggestions.discountBahtValues, discountBaht)}
+            inputClass={inputClass}
+            placeholder="ส่วนลด (บาท)"
             inputMode="decimal"
           />
           <AutocompleteTextField

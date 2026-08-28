@@ -28,6 +28,8 @@ const FIELD_LABELS: Record<string, { th: string; en: string }> = {
 
   source: { th: 'ช่องทางสั่งซื้อ', en: 'Source' },
 
+  count_policy: { th: 'การเบิก', en: 'Withdraw' },
+
   sort_order: { th: 'ลำดับ', en: 'Sort order' },
 
   employee_id: { th: 'พนักงาน', en: 'Employee' },
@@ -112,6 +114,11 @@ const DAY_NAMES_TH = ['อาทิตย์', 'จันทร์', 'อัง�
 
 const DAY_NAMES_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+const COUNT_POLICY_LABELS: Record<string, { th: string; en: string }> = {
+  exact_count: { th: 'ต้องเบิก', en: 'required' },
+  sufficiency_check: { th: 'ไม่ต้องเบิก', en: 'not required' },
+};
+
 
 
 const ACTION_LABELS: Record<string, { th: string; en: string }> = {
@@ -183,6 +190,8 @@ const DISPLAY_PRIORITY = [
 
   'source',
 
+  'count_policy',
+
 ];
 
 
@@ -224,6 +233,14 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 
+
+function formatCountPolicyValue(value: unknown, isTh: boolean): string | null {
+  if (value === null || value === undefined) return null;
+  const key = String(value);
+  const label = COUNT_POLICY_LABELS[key];
+  if (label) return label[isTh ? 'th' : 'en'];
+  return formatDisplayValue(value, isTh);
+}
 
 function formatDisplayValue(value: unknown, isTh: boolean): string | null {
 
@@ -338,6 +355,22 @@ export function formatFieldChange(change: FieldChange, isTh: boolean): string {
     const newVal = formatDayList(change.new_value, isTh);
 
     if (oldVal === newVal) return '';
+
+    return `${label}: ${oldVal} → ${newVal}`;
+
+  }
+
+  if (change.field === 'count_policy') {
+
+    const oldVal = formatCountPolicyValue(change.old_value, isTh);
+
+    const newVal = formatCountPolicyValue(change.new_value, isTh);
+
+    if (oldVal === null && newVal === null) return '';
+
+    if (oldVal === null && newVal !== null) return `${label}: ${newVal}`;
+
+    if (oldVal !== null && newVal === null) return `${label}: ${oldVal}`;
 
     return `${label}: ${oldVal} → ${newVal}`;
 
