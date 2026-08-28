@@ -1,0 +1,588 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { fetchSecretarySnapshot } from '@/lib/secretary/adapters';
+import {
+  buildSnapshotForDerive,
+  fetchSecretarySnapshotSlices,
+  type SecretarySnapshotPatch,
+} from '@/lib/secretary/adapters/snapshot-slices';
+import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
+import { applyDerivedTaskDrafts } from '@/lib/secretary/apply-derived-task-drafts';
+import {
+  modulesForSyncScopes,
+  type SecretaryBoardSyncPlan,
+  type SecretarySyncScope,
+} from '@/lib/secretary/board-sync-scope';
+import { nextScheduledDateIso } from '@/lib/secretary/defer-tasks';
+import { deriveTasksFromSnapshot, deriveTasksFromSnapshotByScopes } from '@/lib/secretary/module-registry';
+import { computeSessionTiming } from '@/lib/secretary/task-duration';
+import type {
+  SecretarySnapshot,
+  SecretaryTask,
+  SecretaryTaskPriority,
+  SecretaryTaskStatus,
+} from '@/lib/secretary/types';
+import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
+
+const TASK_SELECT =
+  'id, task_type, title, description, priority, status, module, due_at, scheduled_date, assignee_profile_id, source_kind, source_ref, source_ref_hash, action_href, metadata, completed_at, completed_by, snoozed_until, active_session_started_at, created_at, updated_at';
+
+function isOperationalTasksTableMissing(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  if (error.code === 'PGRST205') return true;
+  return Boolean(error.message?.includes("Could not find the table 'public.operational_tasks'"));
+}
+
+function mapRow(row: Record<string, unknown>): SecretaryTask {
+  return {
+    id: String(row.id),
+    task_type: row.task_type as SecretaryTask['task_type'],
+    title: String(row.title),
+    description: row.description ? String(row.description) : null,
+    priority: row.priority as SecretaryTaskPriority,
+    status: row.status as SecretaryTaskStatus,
+    module: row.module as SecretaryTask['module'],
+    due_at: row.due_at ? String(row.due_at) : null,
+    scheduled_date: String(row.scheduled_date),
+    assignee_profile_id: row.assignee_profile_id ? String(row.assignee_profile_id) : null,
+    source_kind: row.source_kind as SecretaryTask['source_kind'],
+    source_ref: (row.source_ref as Record<string, unknown>) ?? null,
+    source_ref_hash: row.source_ref_hash ? String(row.source_ref_hash) : null,
+    action_href: row.action_href ? String(row.action_href) : null,
+    metadata: (row.metadata as Record<string, unknown>) ?? null,
+    completed_at: row.completed_at ? String(row.completed_at) : null,
+    completed_by: row.completed_by ? String(row.completed_by) : null,
+    snoozed_until: row.snoozed_until ? String(row.snoozed_until) : null,
+    active_session_started_at: row.active_session_started_at
+      ? String(row.active_session_started_at)
+      : null,
+    created_at: String(row.created_at),
+    updated_at: String(row.updated_at),
+  };
+}
+
+export async function fetchSecretaryTasks(dateIso: string): Promise<{
+  success: boolean;
+  tasks?: SecretaryTask[];
+  error?: string;
+}> {
+  const authError = await requireReadAccess();
+  if (authError) return { success: false, error: authError };
+
+  try {
+    const { data, error } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .select(TASK_SELECT)
+      .eq('scheduled_date', dateIso)
+      .order('priority', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      if (isOperationalTasksTableMissing(error)) {
+        return { success: true, tasks: [] };
+      }
+      console.error('Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, tasks: (data ?? []).map(mapRow) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[fetchSecretaryTasks]', message);
+    return { success: false, error: message };
+  }
+}
+
+export async function countPendingSecretaryTasks(dateIso: string): Promise<number> {
+  const authError = await requireReadAccess();
+  if (authError) return 0;
+
+  try {
+    const now = new Date().toISOString();
+    const { count, error } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('scheduled_date', dateIso)
+      .eq('status', 'pending')
+      .or(`snoozed_until.is.null,snoozed_until.lte.${now}`);
+
+    if (error) {
+      if (isOperationalTasksTableMissing(error)) return 0;
+      console.error('Supabase Error:', error.message, error.details);
+      return 0;
+    }
+
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+export async function syncDerivedSecretaryTasks(opts?: {
+  dateIso?: string;
+  locale?: string;
+  scopes?: readonly Exclude<SecretarySyncScope, 'tasks'>[];
+  baseSnapshot?: SecretarySnapshot;
+}): Promise<{ success: boolean; upserted?: number; autoCompleted?: number; error?: string }> {
+  try {
+    const dateIso = opts?.dateIso ?? (await fetchSecretarySnapshot(opts)).dateIso;
+    const locale = opts?.locale ?? 'th';
+
+    let drafts;
+    if (opts?.scopes?.length) {
+      const patch = await fetchSecretarySnapshotSlices({ dateIso, locale }, opts.scopes);
+      const snapshot = opts.baseSnapshot
+        ? mergeSecretarySnapshot(opts.baseSnapshot, patch)
+        : buildSnapshotForDerive(dateIso, locale, patch);
+      drafts = deriveTasksFromSnapshotByScopes(snapshot, opts.scopes);
+      return applyDerivedTaskDrafts(drafts, dateIso, {
+        limitModules: modulesForSyncScopes(opts.scopes),
+      });
+    }
+
+    const snapshot = await fetchSecretarySnapshot(opts);
+    drafts = deriveTasksFromSnapshot(snapshot);
+    return applyDerivedTaskDrafts(drafts, snapshot.dateIso);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[syncDerivedSecretaryTasks]', message);
+    return { success: false, error: message };
+  }
+}
+
+export async function refreshDerivedSecretaryTasks(opts?: {
+  dateIso?: string;
+  locale?: string;
+}): Promise<{ success: boolean; upserted?: number; autoCompleted?: number; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  const result = await syncDerivedSecretaryTasks(opts);
+  if (result.success) {
+    const locale = opts?.locale ?? 'th';
+    revalidatePath(`/${locale}/secretary`);
+  }
+  return result;
+}
+
+const manualTaskSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(1000).optional(),
+  priority: z.enum(['urgent', 'normal', 'low']).default('normal'),
+  scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  estimatedMinutes: z.number().int().min(5).max(480).optional(),
+});
+
+export async function createManualSecretaryTask(
+  input: z.infer<typeof manualTaskSchema>,
+): Promise<{ success: boolean; task?: SecretaryTask; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  const parsed = manualTaskSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: 'Invalid task payload' };
+
+  try {
+    const { data, error } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .insert({
+        task_type: 'custom',
+        title: parsed.data.title,
+        description: parsed.data.description ?? null,
+        priority: parsed.data.priority,
+        status: 'pending',
+        module: 'custom',
+        scheduled_date: parsed.data.scheduledDate,
+        source_kind: 'manual',
+        metadata: parsed.data.estimatedMinutes
+          ? { estimatedMinutes: parsed.data.estimatedMinutes }
+          : null,
+      })
+      .select(TASK_SELECT)
+      .single();
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/th/secretary');
+    revalidatePath('/en/secretary');
+    return { success: true, task: mapRow(data as Record<string, unknown>) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+export async function deferSecretaryTasksToNextDay(
+  taskIds: string[],
+  fromDateIso: string,
+): Promise<{ success: boolean; deferred?: number; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  if (taskIds.length === 0) {
+    return { success: true, deferred: 0 };
+  }
+
+  const nextDate = nextScheduledDateIso(fromDateIso);
+  const now = new Date().toISOString();
+
+  try {
+    const { error } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .update({
+        scheduled_date: nextDate,
+        status: 'pending',
+        active_session_started_at: null,
+        updated_at: now,
+      })
+      .in('id', taskIds)
+      .eq('scheduled_date', fromDateIso)
+      .in('status', ['pending', 'in_progress']);
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/th/secretary');
+    revalidatePath('/en/secretary');
+    return { success: true, deferred: taskIds.length };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+export async function startSecretaryTask(
+  taskId: string,
+): Promise<{ success: boolean; task?: SecretaryTask; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  const now = new Date().toISOString();
+
+  try {
+    const { data: existing, error: fetchError } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .select('id, scheduled_date, status')
+      .eq('id', taskId)
+      .maybeSingle();
+
+    if (fetchError || !existing) {
+      console.error('Supabase Error:', fetchError?.message, fetchError?.details);
+      return { success: false, error: fetchError?.message ?? 'Task not found' };
+    }
+
+    if (existing.status === 'done' || existing.status === 'skipped') {
+      return { success: false, error: 'Task already completed' };
+    }
+
+    if (existing.status === 'in_progress') {
+      const { data: current, error: currentError } = await getSupabaseAdmin()
+        .from('operational_tasks')
+        .select(TASK_SELECT)
+        .eq('id', taskId)
+        .single();
+
+      if (currentError || !current) {
+        console.error('Supabase Error:', currentError?.message, currentError?.details);
+        return { success: false, error: currentError?.message ?? 'Task not found' };
+      }
+
+      return { success: true, task: mapRow(current as Record<string, unknown>) };
+    }
+
+    const { data, error } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .update({
+        status: 'in_progress',
+        active_session_started_at: now,
+        updated_at: now,
+      })
+      .eq('id', taskId)
+      .select(TASK_SELECT)
+      .single();
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/th/secretary');
+    revalidatePath('/en/secretary');
+    return { success: true, task: mapRow(data as Record<string, unknown>) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+export async function stopSecretaryTask(
+  taskId: string,
+): Promise<{ success: boolean; task?: SecretaryTask; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  const endedAt = new Date().toISOString();
+
+  try {
+    const { data: taskRow, error: fetchError } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .select(TASK_SELECT)
+      .eq('id', taskId)
+      .maybeSingle();
+
+    if (fetchError || !taskRow) {
+      console.error('Supabase Error:', fetchError?.message, fetchError?.details);
+      return { success: false, error: fetchError?.message ?? 'Task not found' };
+    }
+
+    const task = mapRow(taskRow as Record<string, unknown>);
+    if (task.status !== 'in_progress' || !task.active_session_started_at) {
+      return { success: false, error: 'Task is not in progress' };
+    }
+
+    const duration = computeSessionTiming(task.active_session_started_at, endedAt);
+
+    const { data: priorSessions } = await getSupabaseAdmin()
+      .from('operational_task_sessions')
+      .select('duration_seconds')
+      .eq('task_id', taskId);
+
+    const priorSeconds = (priorSessions ?? []).reduce(
+      (sum, row) => sum + Number(row.duration_seconds ?? 0),
+      0,
+    );
+    const totalActualSeconds = priorSeconds + duration.durationSeconds;
+
+    const { error: sessionError } = await getSupabaseAdmin().from('operational_task_sessions').insert({
+      task_id: taskId,
+      task_type: task.task_type,
+      started_at: task.active_session_started_at,
+      ended_at: endedAt,
+      duration_seconds: duration.durationSeconds,
+    });
+
+    if (sessionError) {
+      console.error('Supabase Error:', sessionError.message, sessionError.details);
+      return { success: false, error: sessionError.message };
+    }
+
+    const { data, error } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .update({
+        status: 'done',
+        completed_at: endedAt,
+        active_session_started_at: null,
+        updated_at: endedAt,
+        metadata: {
+          ...(task.metadata ?? {}),
+          lastActualMinutes: duration.durationMinutes,
+          lastActualSeconds: duration.durationSeconds,
+          totalActualSeconds,
+        },
+      })
+      .eq('id', taskId)
+      .select(TASK_SELECT)
+      .single();
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/th/secretary');
+    revalidatePath('/en/secretary');
+    return { success: true, task: mapRow(data as Record<string, unknown>) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+export async function syncAndFetchSecretaryBoard(opts?: {
+  dateIso?: string;
+  locale?: string;
+  plan?: SecretaryBoardSyncPlan;
+  baseSnapshot?: SecretarySnapshot;
+}): Promise<{
+  success: boolean;
+  tasks?: SecretaryTask[];
+  snapshot?: SecretarySnapshot;
+  snapshotPatch?: SecretarySnapshotPatch;
+  error?: string;
+}> {
+  const authError = await requireReadAccess();
+  if (authError) return { success: false, error: authError };
+
+  const plan = opts?.plan ?? { kind: 'full' as const, scopes: [] };
+  const locale = opts?.locale ?? 'th';
+
+  try {
+    if (plan.kind === 'light') {
+      const dateIso = opts?.dateIso ?? (await fetchSecretarySnapshot({ locale })).dateIso;
+      const tasksResult = await fetchSecretaryTasks(dateIso);
+
+      if (!tasksResult.success || !tasksResult.tasks) {
+        return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+      }
+
+      return {
+        success: true,
+        tasks: tasksResult.tasks,
+      };
+    }
+
+    if (plan.kind === 'scoped') {
+      const dateIso = opts?.dateIso ?? opts?.baseSnapshot?.dateIso ?? (await fetchSecretarySnapshot({ locale })).dateIso;
+      const dataScopes = plan.scopes.filter(
+        (scope): scope is Exclude<typeof scope, 'tasks'> => scope !== 'tasks',
+      );
+
+      const syncResult = await syncDerivedSecretaryTasks({
+        dateIso,
+        locale,
+        scopes: dataScopes,
+        baseSnapshot: opts?.baseSnapshot,
+      });
+      if (!syncResult.success) {
+        return { success: false, error: syncResult.error };
+      }
+
+      const snapshotPatch = await fetchSecretarySnapshotSlices({ dateIso, locale }, dataScopes);
+      const tasksResult = await fetchSecretaryTasks(dateIso);
+
+      if (!tasksResult.success || !tasksResult.tasks) {
+        return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+      }
+
+      return {
+        success: true,
+        tasks: tasksResult.tasks,
+        snapshotPatch,
+      };
+    }
+
+    await syncDerivedSecretaryTasks(opts);
+    const snapshot = await fetchSecretarySnapshot(opts);
+    const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
+
+    if (!tasksResult.success || !tasksResult.tasks) {
+      return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+    }
+
+    return {
+      success: true,
+      tasks: tasksResult.tasks,
+      snapshot,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+export async function updateSecretaryTaskStatus(
+  taskId: string,
+  status: SecretaryTaskStatus,
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  try {
+    const patch: Record<string, unknown> = {
+      status,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (status === 'done' || status === 'skipped') {
+      patch.completed_at = new Date().toISOString();
+    } else {
+      patch.completed_at = null;
+      patch.completed_by = null;
+    }
+
+    const { error } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .update(patch)
+      .eq('id', taskId);
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/th/secretary');
+    revalidatePath('/en/secretary');
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+export async function deleteManualSecretaryTask(
+  taskId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  try {
+    const { error } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .delete()
+      .eq('id', taskId)
+      .eq('source_kind', 'manual');
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/th/secretary');
+    revalidatePath('/en/secretary');
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+export type SecretaryBoard = {
+  snapshot: SecretarySnapshot;
+  tasks: SecretaryTask[];
+};
+
+export async function loadSecretaryBoard(opts?: {
+  dateIso?: string;
+  locale?: string;
+}): Promise<{ success: boolean; board?: SecretaryBoard; error?: string }> {
+  const authError = await requireReadAccess();
+  if (authError) return { success: false, error: authError };
+
+  try {
+    await syncDerivedSecretaryTasks(opts);
+    const snapshot = await fetchSecretarySnapshot(opts);
+    const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
+    if (!tasksResult.success || !tasksResult.tasks) {
+      return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
+    }
+
+    return {
+      success: true,
+      board: {
+        snapshot,
+        tasks: tasksResult.tasks,
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}

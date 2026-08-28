@@ -9,14 +9,16 @@ import {
 } from '../../scripts/cron-job-org-config.mjs';
 
 describe('cron-job-org-config', () => {
-  it('defines four Bangkok-scheduled ERP jobs', () => {
-    expect(JOB_DEFINITIONS).toHaveLength(4);
+  it('defines five Bangkok-scheduled ERP jobs', () => {
+    expect(JOB_DEFINITIONS).toHaveLength(5);
     expect(JOB_DEFINITIONS.map((job) => job.path)).toEqual([
       '/api/daily-report?schedule=today',
       '/api/daily-report?schedule=tomorrow',
       '/api/insight-alerts?window=morning',
       '/api/insight-alerts?window=evening',
+      '/api/secretary/alerts?locale=th',
     ]);
+    expect(JOB_DEFINITIONS[4]).toMatchObject({ hour: 8, minute: 0 });
   });
 
   it('buildDesiredJobs attaches site URL and Authorization header', () => {

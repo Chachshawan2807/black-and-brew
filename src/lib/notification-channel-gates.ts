@@ -5,6 +5,7 @@ import {
   isBeanOrderPaymentNotification,
   isProactiveInsightNotification,
   isScheduleNotification,
+  isSecretaryNotification,
   isSecurityNotification,
 } from '@/lib/notification-display-icon';
 
@@ -15,6 +16,7 @@ export function wantsInAppNotificationSync(prefs: NotificationPreferences): bool
     prefs.systemNotifications ||
     prefs.dailyScheduleReports ||
     prefs.proactiveInsights ||
+    prefs.secretaryAlerts ||
     prefs.securityAlerts
   );
 }
@@ -35,6 +37,7 @@ export function shouldShowOsNotification(
   if (isSecurityNotification(notification)) return prefs.securityAlerts;
   if (isScheduleNotification(notification)) return prefs.dailyScheduleReports;
   if (isProactiveInsightNotification(notification)) return prefs.proactiveInsights;
+  if (isSecretaryNotification(notification)) return prefs.secretaryAlerts;
   if (isBeanOrderNotification(notification)) return prefs.systemNotifications;
   return prefs.enabled && prefs.systemNotifications;
 }

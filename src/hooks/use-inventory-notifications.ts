@@ -36,6 +36,10 @@ import {
   isEligibleInsightNotification,
 } from '@/lib/insight-notification';
 import {
+  isEligibleSecretaryLogRow,
+} from '@/lib/secretary/alerts/secretary-notification-gates';
+import { formatSecretaryLogNotification } from '@/lib/secretary/alerts/secretary-notification-log';
+import {
   formatSecurityNotification,
   isEligibleSecurityNotification,
 } from '@/lib/security-notification';
@@ -365,6 +369,7 @@ export function useInventoryNotifications() {
       const isBeanShipped = isEligibleBeanOrderShippedNotification(row);
       const isBeanPayment = isEligibleBeanOrderPaymentNotification(row);
       const isInsight = isEligibleInsightNotification(row);
+      const isSecretary = isEligibleSecretaryLogRow(row);
       const isSecurity = isEligibleSecurityNotification(row);
       if (
         !isDailyReport &&
@@ -374,12 +379,14 @@ export function useInventoryNotifications() {
         !isBeanShipped &&
         !isBeanPayment &&
         !isInsight &&
+        !isSecretary &&
         !isSecurity
       ) {
         return false;
       }
       if (isDailyReport && !currentPrefs.dailyScheduleReports) return false;
       if (isInsight && !currentPrefs.proactiveInsights) return false;
+      if (isSecretary && !currentPrefs.secretaryAlerts) return false;
       if (isSecurity && !currentPrefs.securityAlerts) return false;
       if (isInventory && !currentPrefs.enabled) return false;
       if (
@@ -415,6 +422,9 @@ export function useInventoryNotifications() {
       }
       if (isEligibleInsightNotification(row)) {
         return formatInsightNotification(row, locale);
+      }
+      if (isEligibleSecretaryLogRow(row)) {
+        return formatSecretaryLogNotification(row, locale);
       }
       if (isEligibleSecurityNotification(row)) {
         return formatSecurityNotification(row, locale);

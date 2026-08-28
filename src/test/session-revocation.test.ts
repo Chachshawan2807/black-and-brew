@@ -18,7 +18,11 @@ vi.mock('@supabase/supabase-js', () => ({
   })),
 }));
 
-import { getRevokedFingerprints, isSessionFingerprintRevoked } from '@/lib/session-revocation';
+import {
+  getRevokedFingerprints,
+  isSessionFingerprintRevoked,
+  isTransientSupabaseFetchError,
+} from '@/lib/session-revocation';
 
 describe('isSessionFingerprintRevoked', () => {
   beforeEach(() => {
@@ -47,19 +51,45 @@ describe('isSessionFingerprintRevoked', () => {
     expect(await isSessionFingerprintRevoked('fp-1')).toBe(false);
   });
 
-  test('fails closed when Supabase returns an error', async () => {
+  test('fails closed when Supabase returns a non-transient error', async () => {
     mockMaybeSingle.mockResolvedValue({
       data: null,
-      error: { message: 'connection failed', details: null },
+      error: { message: 'permission denied for table revoked_sessions', details: null },
     });
 
     expect(await isSessionFingerprintRevoked('fp-1')).toBe(true);
   });
 
-  test('fails closed on unexpected exceptions', async () => {
-    mockMaybeSingle.mockRejectedValue(new Error('network down'));
+  test('fails open on transient fetch errors', async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: null,
+      error: {
+        message: 'TypeError: fetch failed',
+        details:
+          'TypeError: fetch failed\n\nCaused by: SocketError: other side closed (UND_ERR_SOCKET)',
+      },
+    });
 
-    expect(await isSessionFingerprintRevoked('fp-1')).toBe(true);
+    expect(await isSessionFingerprintRevoked('fp-1')).toBe(false);
+  });
+
+  test('fails open on transient network exceptions', async () => {
+    mockMaybeSingle.mockRejectedValue(
+      new Error('fetch failed', { cause: new Error('other side closed') }),
+    );
+
+    expect(await isSessionFingerprintRevoked('fp-1')).toBe(false);
+  });
+});
+
+describe('isTransientSupabaseFetchError', () => {
+  test('detects undici socket errors', () => {
+    expect(
+      isTransientSupabaseFetchError({
+        message: 'TypeError: fetch failed',
+        details: 'SocketError: other side closed (UND_ERR_SOCKET)',
+      }),
+    ).toBe(true);
   });
 });
 

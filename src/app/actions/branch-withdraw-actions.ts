@@ -10,6 +10,7 @@ import {
   formatBranchWithdrawLineMessage,
   type BranchWithdrawFormatLine,
 } from '@/lib/inventory-branch-withdraw-format';
+import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-filter';
 import { evaluateAuthz, subjectFromServerAuth } from '@/lib/policies/authz';
 import { requireReadAccess } from '@/lib/policies/server-gate';
@@ -272,6 +273,45 @@ export async function fetchBranchWithdrawalHistory(limit = 30) {
       success: false as const,
       error: getErrorMessage(error),
       data: [] as BranchWithdrawHistoryRow[],
+    };
+  }
+}
+
+export async function fetchBranchWithdrawInventoryItems() {
+  try {
+    const authError = await requireReadAccess();
+    if (authError) {
+      return {
+        success: false as const,
+        error: authError,
+        data: [],
+      };
+    }
+
+    const { data, error } = await getSupabaseAdmin()
+      .from('inventory_items')
+      .select(INVENTORY_ITEM_SELECT)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error(
+        '[fetchBranchWithdrawInventoryItems] Supabase Error:',
+        error.message,
+        error.details,
+      );
+      return {
+        success: false as const,
+        error: error.message,
+        data: [],
+      };
+    }
+
+    return { success: true as const, data: data ?? [] };
+  } catch (error: unknown) {
+    return {
+      success: false as const,
+      error: getErrorMessage(error),
+      data: [],
     };
   }
 }

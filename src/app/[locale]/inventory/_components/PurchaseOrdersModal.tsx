@@ -30,6 +30,7 @@ type PurchaseOrdersModalProps = {
   poSources: string[];
   displayedPoItems: PurchaseOrderCandidate[];
   getStockColorClass: (stock: number, orderPoint: number) => string;
+  allTabItemCount?: number;
   isExportMode?: boolean;
   exportTableId?: string;
 };
@@ -43,11 +44,13 @@ export default function PurchaseOrdersModal({
   poSources,
   displayedPoItems,
   getStockColorClass,
+  allTabItemCount,
   isExportMode = false,
   exportTableId = 'blackandbrew-po-table-export',
 }: PurchaseOrdersModalProps) {
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
   const itemsToShow = displayedPoItems;
+  const totalTabCount = allTabItemCount ?? itemsToOrder.length;
   const tableId = isExportMode ? exportTableId : 'blackandbrew-po-table';
 
   async function handleCopyList(event: React.MouseEvent<HTMLButtonElement>) {
@@ -142,7 +145,7 @@ export default function PurchaseOrdersModal({
               >
                 ทั้งหมด{' '}
                 <span className={selectedChannels.includes('all') ? 'text-white/60 text-[12px] ml-1 tabular-nums font-normal' : 'text-black/50 text-[12px] ml-1 tabular-nums font-normal'}>
-                  ({itemsToOrder.length})
+                  ({totalTabCount})
                 </span>
               </button>
               {poSources.map((source) => {

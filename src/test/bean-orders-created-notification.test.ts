@@ -22,7 +22,7 @@ function sampleRow(overrides: Partial<DataChangeLogRow> = {}): DataChangeLogRow 
     module: 'bean_orders',
     entity_type: 'bean_order_created',
     entity_id: 'order-1',
-    entity_label: 'BO-20260722-003',
+    entity_label: 'BO-20260722-3',
     field_changes: [],
     old_value: null,
     new_value: null,
@@ -38,7 +38,7 @@ function sampleRow(overrides: Partial<DataChangeLogRow> = {}): DataChangeLogRow 
       summary: 'คุณเอ',
       fieldSummary: 'Ethiopia 250 ก. · Colombia 500 ก.',
       url: '/th/bean-orders/order-1',
-      orderNo: 'BO-20260722-003',
+      orderNo: 'BO-20260722-3',
       customerName: 'คุณเอ',
       recipientName: 'คุณเอ ใจดี',
       lines: [
@@ -83,7 +83,7 @@ describe('bean order created notification helpers', () => {
     const copy = buildBeanOrderCreatedCopy(
       {
         orderId: 'order-1',
-        orderNo: 'BO-20260722-003',
+        orderNo: 'BO-20260722-3',
         customerName: 'คุณเอ',
         recipientName: 'เอ ใจดี',
         lines: [{ itemName: 'Ethiopia', weightValue: 250, weightUnit: 'g' }],

@@ -8,7 +8,7 @@ import type { PushSubscriptionRow } from '@/lib/web-push';
 
 const sampleInput: BeanOrderShippedNotifyInput = {
   orderId: 'order-1',
-  orderNo: 'BO-20260726-001',
+  orderNo: 'BO-20260726-1',
   customerName: 'ทัพพ์เทพ นิจนิรันดร์กุล',
   trackingNumber: 'KEX123456789',
   carrierCode: 'kerryexpress-th',
@@ -42,7 +42,7 @@ describe('bean order shipped web push', () => {
     expect(payload.title).toContain('ส่งแล้ว');
     expect(payload.body).toContain('ทัพพ์เทพ นิจนิรันดร์กุล');
     expect(payload.body).toContain('KEX123456789');
-    expect(payload.title).not.toContain('BO-20260726-001');
+    expect(payload.title).not.toContain('BO-20260726-1');
     expect(payload.url).toBe('/th/bean-orders/order-1');
     expect(payload.tag).toBe('bb-bean-shipped-order-1');
     expect(payload.notification.metadata.kind).toBe('bean_order_shipped');

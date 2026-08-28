@@ -1,16 +1,22 @@
-import { isTrackingDeliveredStatus } from '@/lib/bean-orders/delivery-notification';
+import {
+  shouldIncludeIncompleteBeanOrder,
+  type BeanOrderWorkflowStatusInput,
+} from '@/lib/bean-orders/workflow-status';
 
-export type BeanOrderInsightStatus = {
+export type BeanOrderInsightStatus = BeanOrderWorkflowStatusInput & {
   paymentStatus: string;
   fulfillmentStatus: string;
-  trackingStatus?: string | null;
-  slipUploadedAt?: string | null;
 };
 
-/** Orders that still need staff action in proactive insight alerts. */
+export {
+  isBeanOrderPaymentComplete,
+  isBeanOrderDeliveryComplete,
+  shouldIncludeIncompleteBeanOrder,
+} from '@/lib/bean-orders/workflow-status';
+
+export { isBeanOrderPaymentSettled } from '@/lib/bean-orders/order-status';
+
+/** @deprecated Use shouldIncludeIncompleteBeanOrder */
 export function shouldIncludeBeanOrderInPendingInsights(order: BeanOrderInsightStatus): boolean {
-  if (isTrackingDeliveredStatus(order.trackingStatus)) return false;
-  if (order.paymentStatus === 'unpaid' && !order.slipUploadedAt) return true;
-  if (order.fulfillmentStatus === 'pending') return true;
-  return false;
+  return shouldIncludeIncompleteBeanOrder(order);
 }

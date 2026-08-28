@@ -3,6 +3,7 @@ import {
   computeItemsToOrder,
   computeBranchWithdrawItems,
   computeOrderQty,
+  computePurchaseOrderDerivedState,
   formatInventoryNumericDisplay,
   mergeInventoryRealtimeUpdate,
   sanitizeStockValue,
@@ -155,5 +156,39 @@ describe('inventory stock sync utilities', () => {
     expect(branchItems).toHaveLength(1);
     expect(branchItems[0]?.id).toBe('branch-low');
     expect(branchItems[0]?.computedOrderQty).toBe(8);
+  });
+
+  test('computePurchaseOrderDerivedState can exclude branch-2 from all tab only', () => {
+    const items = [
+      {
+        id: 'branch-low',
+        name: 'นม',
+        stock: 2,
+        order_point: 5,
+        target_stock: 10,
+        source: BRANCH_WITHDRAW_ORDER_SOURCE,
+      },
+      {
+        id: 'makro-low',
+        name: 'กาแฟ',
+        stock: 1,
+        order_point: 5,
+        target_stock: 10,
+        source: 'Makro',
+      },
+    ];
+
+    const allTab = computePurchaseOrderDerivedState(items, ['all'], {
+      excludeFromAllSources: [BRANCH_WITHDRAW_ORDER_SOURCE],
+    });
+    expect(allTab.allTabItemCount).toBe(1);
+    expect(allTab.displayedPoItems).toHaveLength(1);
+    expect(allTab.displayedPoItems[0]?.id).toBe('makro-low');
+
+    const branchTab = computePurchaseOrderDerivedState(items, [BRANCH_WITHDRAW_ORDER_SOURCE], {
+      excludeFromAllSources: [BRANCH_WITHDRAW_ORDER_SOURCE],
+    });
+    expect(branchTab.displayedPoItems).toHaveLength(1);
+    expect(branchTab.displayedPoItems[0]?.id).toBe('branch-low');
   });
 });

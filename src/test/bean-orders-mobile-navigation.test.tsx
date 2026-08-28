@@ -14,7 +14,7 @@ function readSrc(relativePath: string): string {
 
 const sampleOrder: BeanOrderListRow = {
   id: 'order-lee',
-  orderNo: 'BO-20260722-042',
+  orderNo: 'BO-20260722-42',
   createdAt: '2026-07-22T14:00:00.000Z',
   customerName: 'คุณลี',
   recipientName: 'คุณลี',

@@ -154,6 +154,10 @@ export function parsePushPrefs(raw: Record<string, unknown> | null | undefined):
       typeof raw?.proactiveInsights === 'boolean'
         ? raw.proactiveInsights
         : DEFAULT_NOTIFICATION_PREFERENCES.proactiveInsights,
+    secretaryAlerts:
+      typeof raw?.secretaryAlerts === 'boolean'
+        ? raw.secretaryAlerts
+        : DEFAULT_NOTIFICATION_PREFERENCES.secretaryAlerts,
     securityAlerts:
       typeof raw?.securityAlerts === 'boolean'
         ? raw.securityAlerts

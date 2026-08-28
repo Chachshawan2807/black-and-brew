@@ -235,6 +235,24 @@ export default function NotificationPreferencesSection({
     await refreshDeviceState();
   };
 
+  const handleSecretaryAlerts = async (enabled: boolean) => {
+    if (!enabled) {
+      update({ secretaryAlerts: false });
+      await syncPushPrefsToServer({ ...prefs, secretaryAlerts: false }, locale);
+      await refreshDeviceState();
+      return;
+    }
+    const state = await requestNotificationPermission();
+    setPermission(state);
+    const nextPrefs = { ...prefs, secretaryAlerts: state === 'granted' };
+    update({ secretaryAlerts: state === 'granted' });
+    if (state === 'granted') {
+      await ensurePushSubscriptionFromUserGesture(locale);
+    }
+    await syncPushPrefsToServer(nextPrefs, locale);
+    await refreshDeviceState();
+  };
+
   const handleSecurityAlerts = async (enabled: boolean) => {
     if (!enabled) {
       update({ securityAlerts: false });
@@ -364,6 +382,17 @@ export default function NotificationPreferencesSection({
             }
             checked={prefs.proactiveInsights}
             onChange={(v) => void handleProactiveInsights(v)}
+            disabled={permission === 'unsupported'}
+          />
+          <ToggleRow
+            label={isTh ? 'เลขาส่วนตัว' : 'Personal secretary'}
+            description={
+              isTh
+                ? 'คำแนะนำจัดลำดับงานจากเลขาส่วนตัวทุกวันเวลา 08:00 (ปิดอยู่โดยค่าเริ่มต้น)'
+                : 'Daily task-order guidance from Personal Secretary at 08:00 (off by default)'
+            }
+            checked={prefs.secretaryAlerts}
+            onChange={(v) => void handleSecretaryAlerts(v)}
             disabled={permission === 'unsupported'}
           />
           <ToggleRow

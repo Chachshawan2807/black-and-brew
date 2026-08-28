@@ -109,6 +109,10 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
   return pending;
 }
 
+export async function fetchPendingBeanOrdersInsightSlice(): Promise<PendingBeanOrderInsight[]> {
+  return defaultFetchPendingBeanOrders();
+}
+
 async function defaultFetchNextHoliday(
   date: Date,
 ): Promise<{ name: string; daysRemaining: number } | null> {

@@ -37,6 +37,7 @@ import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
 import { useSidebarMenuOrder } from '@/hooks/use-sidebar-menu-order';
+import { useSecretaryPendingCount } from '@/hooks/use-secretary-pending-count';
 import { applySidebarMenuOrder } from '@/lib/sidebar-menu-order';
 
 interface MenuProps {
@@ -93,6 +94,11 @@ function StaticMenuItem({
                 <p className={sidebarLabelClass(isOpen, 'text-foreground')}>
                   {label}
                 </p>
+                {menu.badgeCount ? (
+                  <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-foreground px-1.5 py-0.5 text-[10px] tabular-nums text-background">
+                    {menu.badgeCount > 99 ? '99+' : menu.badgeCount}
+                  </span>
+                ) : null}
               </NavPreloadLink>
             </Button>
           </TooltipTrigger>
@@ -174,6 +180,11 @@ function SortableMenuItem({
                 <p className={sidebarLabelClass(isOpen, 'max-w-[170px] text-foreground')}>
                   {label}
                 </p>
+                {menu.badgeCount ? (
+                  <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-foreground px-1.5 py-0.5 text-[10px] tabular-nums text-background">
+                    {menu.badgeCount > 99 ? '99+' : menu.badgeCount}
+                  </span>
+                ) : null}
               </NavPreloadLink>
             </Button>
           </TooltipTrigger>
@@ -206,6 +217,7 @@ export default function Menu({ isOpen }: MenuProps) {
 
   const orderIds = useSidebarMenuOrder((state) => state.orderIds);
   const setOrderIds = useSidebarMenuOrder((state) => state.setOrderIds);
+  const secretaryPendingCount = useSecretaryPendingCount();
 
   const [isMounted, setIsMounted] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -213,7 +225,7 @@ export default function Menu({ isOpen }: MenuProps) {
   const sensors = useSafeDndSensors();
 
   // Build menu from pathname (active state always fresh)
-  const menuList = getMenuList(pathname, locale);
+  const menuList = getMenuList(pathname, locale, { secretaryPendingCount });
   const showHolidays = searchParams?.get('showRegularHolidays') === 'true';
 
   const adjustedMenuList = menuList.map(group => ({

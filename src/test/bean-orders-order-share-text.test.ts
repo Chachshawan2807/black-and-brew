@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { formatBeanOrderShareText, formatShareDate } from '@/lib/bean-orders/order-share-text';
 
 const sampleOrder = {
-  orderNo: 'BO-20260722-001',
+  orderNo: 'BO-20260722-1',
   createdAt: '2026-07-22T10:30:00.000Z',
   customerName: 'คุณเอ',
   recipientName: 'คุณบี',

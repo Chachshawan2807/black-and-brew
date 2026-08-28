@@ -8,7 +8,7 @@ import type { PushSubscriptionRow } from '@/lib/web-push';
 
 const sampleInput: BeanOrderDeliveredNotifyInput = {
   orderId: 'order-1',
-  orderNo: 'BO-20260722-003',
+  orderNo: 'BO-20260722-3',
   customerName: 'ทัพพ์เทพ นิจนิรันดร์กุล',
   destination: {
     subdistrict: 'คึกคัก',

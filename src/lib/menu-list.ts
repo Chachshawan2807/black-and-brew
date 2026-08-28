@@ -8,6 +8,7 @@ import {
   Gauge,
   ClipboardList,
   Coffee,
+  ClipboardCheck,
   type LucideIcon
 } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export type MenuItem = {
   active: boolean;
   icon: LucideIcon;
   submenus: Submenu[];
+  badgeCount?: number;
 };
 
 export type MenuGroup = {
@@ -31,8 +33,9 @@ export type MenuGroup = {
   menus: MenuItem[];
 };
 
-export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[] {
+export function getMenuList(pathname: string, locale: string = 'th', opts?: { secretaryPendingCount?: number }): MenuGroup[] {
   const prefix = `/${locale}`;
+  const secretaryPendingCount = opts?.secretaryPendingCount ?? 0;
   return [
     {
       groupLabel: "",
@@ -44,6 +47,15 @@ export function getMenuList(pathname: string, locale: string = 'th'): MenuGroup[
           active: pathname === `${prefix}` || pathname === `${prefix}/`,
           icon: Home,
           submenus: []
+        },
+        {
+          id: 'secretary',
+          href: `${prefix}/secretary`,
+          label: "เลขาส่วนตัว",
+          active: pathname.includes('/secretary'),
+          icon: ClipboardCheck,
+          submenus: [],
+          badgeCount: secretaryPendingCount > 0 ? secretaryPendingCount : undefined,
         },
         {
           id: 'dashboard',

@@ -126,6 +126,13 @@ export function isProactiveInsightNotification(item: InventoryNotification): boo
   return false;
 }
 
+export function isSecretaryNotification(item: InventoryNotification): boolean {
+  const meta = item.metadata ?? {};
+  if (meta.kind === 'secretary_digest') return true;
+  if (meta.module === 'secretary') return true;
+  return false;
+}
+
 export function isSecurityNotification(item: InventoryNotification): boolean {
   const meta = item.metadata ?? {};
   if (meta.kind === 'pin_lockout') return true;
@@ -152,6 +159,10 @@ export function resolveNotificationDisplayIcon(item: InventoryNotification): {
   }
 
   if (isProactiveInsightNotification(item)) {
+    return { kind: 'insight', containerClass: INSIGHT_SURFACE };
+  }
+
+  if (isSecretaryNotification(item)) {
     return { kind: 'insight', containerClass: INSIGHT_SURFACE };
   }
 

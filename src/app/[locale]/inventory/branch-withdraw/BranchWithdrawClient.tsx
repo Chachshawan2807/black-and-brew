@@ -33,7 +33,12 @@ import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProv
 import { getClientSessionId } from '@/lib/client-session';
 
 type Item = BranchWithdrawDisplayItem;
-type Props = { initialItems: InventoryRealtimeItem[]; initialHistory: BranchWithdrawHistoryRow[]; locale: string };
+type Props = {
+  initialItems: InventoryRealtimeItem[];
+  initialHistory: BranchWithdrawHistoryRow[];
+  locale: string;
+  embedded?: boolean;
+};
 
 function sanitizeQtyInput(raw: string): string {
   const digitsOnly = raw.replace(/[^0-9]/g, '');
@@ -239,7 +244,12 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
   );
 }, branchWithdrawItemRowPropsEqual);
 
-export default function BranchWithdrawClient({ initialItems, initialHistory, locale }: Props) {
+export default function BranchWithdrawClient({
+  initialItems,
+  initialHistory,
+  locale,
+  embedded = false,
+}: Props) {
   const isReadOnly = useReadOnly();
   const { items: realtimeItems, hasLoaded, refresh } = useInventoryRealtime();
 
@@ -492,21 +502,31 @@ export default function BranchWithdrawClient({ initialItems, initialHistory, loc
   }, []);
 
   return (
-    <div className="min-h-screen bg-background p-4 text-foreground md:p-8">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <header className="flex items-center justify-between border-b border-border pb-4">
-          <Link
-            href={`/${locale}/inventory`}
-            className="flex items-center gap-1.5 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span>กลับไปคลังสินค้า</span>
-          </Link>
-        </header>
+    <div
+      className={
+        embedded
+          ? 'bg-background text-foreground'
+          : 'min-h-screen bg-background p-4 text-foreground md:p-8'
+      }
+    >
+      <div className={embedded ? 'flex w-full flex-col gap-4' : 'mx-auto flex w-full max-w-3xl flex-col gap-6'}>
+        {embedded ? null : (
+          <header className="flex items-center justify-between border-b border-border pb-4">
+            <Link
+              href={`/${locale}/inventory`}
+              className="flex items-center gap-1.5 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>กลับไปคลังสินค้า</span>
+            </Link>
+          </header>
+        )}
 
-        <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-          <h1 className="text-xl font-normal md:text-2xl">เบิกของสาขา 2</h1>
-          <p className="mt-1 text-sm text-foreground/70">
+        <section className={embedded ? 'space-y-4' : 'rounded-2xl border border-border bg-card p-4 md:p-6'}>
+          {embedded ? null : (
+            <h1 className="text-xl font-normal md:text-2xl">เบิกของสาขา 2</h1>
+          )}
+          <p className={embedded ? 'text-sm text-foreground/70' : 'mt-1 text-sm text-foreground/70'}>
             แสดงรายการสั่งซื้อช่องทางสาขา 2 ที่ต้องเติมสต็อก — สามารถเพิ่มสินค้าจากคลังได้
           </p>
           <button

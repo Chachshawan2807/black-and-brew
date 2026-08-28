@@ -6,7 +6,7 @@ import { after } from 'next/server';
 import { z } from 'zod';
 import { recordDataChange } from '@/app/actions/data-change-log-actions';
 import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
-import { formatBeanOrderNo, buildBeanOrderNoDatePrefix, nextBeanOrderSequence } from '@/lib/bean-orders/order-number';
+import { formatBeanOrderNo, buildBeanOrderNoDatePrefix, maxBeanOrderSequence } from '@/lib/bean-orders/order-number';
 import {
   appendStatusHistory,
   canDeleteOrder,
@@ -201,17 +201,15 @@ async function nextOrderNo(): Promise<string> {
   const { data, error } = await supabase
     .from('bean_orders')
     .select('order_no')
-    .like('order_no', `${datePrefix}-%`)
-    .order('order_no', { ascending: false })
-    .limit(1);
+    .like('order_no', `${datePrefix}-%`);
 
   if (error) {
     console.error('Supabase Error (nextOrderNo):', error.message, error.details);
     throw error;
   }
 
-  const latestOrderNo = (data?.[0]?.order_no as string | undefined) ?? null;
-  return formatBeanOrderNo(bangkokNow, nextBeanOrderSequence(latestOrderNo));
+  const maxSeq = maxBeanOrderSequence((data ?? []).map((row) => row.order_no as string));
+  return formatBeanOrderNo(bangkokNow, maxSeq + 1);
 }
 
 function isDuplicateBeanOrderNoError(error: { code?: string; message?: string }): boolean {

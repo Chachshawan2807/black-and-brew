@@ -7,6 +7,45 @@ function adminClient() {
   return createClient(supabaseUrl, supabaseAdminKey);
 }
 
+function collectErrorText(error: unknown): string {
+  const parts: string[] = [];
+  if (error instanceof Error) {
+    parts.push(error.message);
+    if (error.cause instanceof Error) {
+      parts.push(error.cause.message);
+    } else if (typeof error.cause === 'string') {
+      parts.push(error.cause);
+    }
+  } else if (error && typeof error === 'object') {
+    const record = error as { message?: string; details?: string; cause?: unknown };
+    if (record.message) parts.push(record.message);
+    if (record.details) parts.push(String(record.details));
+    if (record.cause instanceof Error) {
+      parts.push(record.cause.message);
+    } else if (typeof record.cause === 'string') {
+      parts.push(record.cause);
+    }
+  } else if (typeof error === 'string') {
+    parts.push(error);
+  }
+  return parts.join(' ').toLowerCase();
+}
+
+/** Brief Supabase/network blips should not log staff out or spam error logs. */
+export function isTransientSupabaseFetchError(error: unknown): boolean {
+  const text = collectErrorText(error);
+  return (
+    text.includes('fetch failed') ||
+    text.includes('socket') ||
+    text.includes('und_err') ||
+    text.includes('econnreset') ||
+    text.includes('econnrefused') ||
+    text.includes('network') ||
+    text.includes('timeout') ||
+    text.includes('aborted')
+  );
+}
+
 export async function isSessionFingerprintRevoked(fingerprint: string): Promise<boolean> {
   if (!fingerprint) return false;
   try {
@@ -18,11 +57,25 @@ export async function isSessionFingerprintRevoked(fingerprint: string): Promise<
       .maybeSingle();
 
     if (error) {
+      if (isTransientSupabaseFetchError(error)) {
+        console.warn(
+          '[isSessionFingerprintRevoked] Transient fetch error — treating session as not revoked:',
+          error.message,
+        );
+        return false;
+      }
       console.error('Supabase Error:', error.message, error.details);
       return true;
     }
     return Boolean(data);
   } catch (error) {
+    if (isTransientSupabaseFetchError(error)) {
+      console.warn(
+        '[isSessionFingerprintRevoked] Transient exception — treating session as not revoked:',
+        error,
+      );
+      return false;
+    }
     console.error('[isSessionFingerprintRevoked] Exception:', error);
     return true;
   }

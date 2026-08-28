@@ -194,7 +194,7 @@ function logPushClientIssue(context: string, error: unknown): void {
 }
 
 export function wantsPushRegistration(prefs: NotificationPreferences): boolean {
-  if (prefs.dailyScheduleReports || prefs.proactiveInsights || prefs.securityAlerts) {
+  if (prefs.dailyScheduleReports || prefs.proactiveInsights || prefs.secretaryAlerts || prefs.securityAlerts) {
     return true;
   }
   return prefs.enabled && prefs.systemNotifications;

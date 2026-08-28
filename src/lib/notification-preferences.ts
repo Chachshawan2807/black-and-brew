@@ -22,6 +22,7 @@ export function notificationPreferencesEqual(
     a.systemNotifications === b.systemNotifications &&
     a.dailyScheduleReports === b.dailyScheduleReports &&
     a.proactiveInsights === b.proactiveInsights &&
+    a.secretaryAlerts === b.secretaryAlerts &&
     a.securityAlerts === b.securityAlerts &&
     (a.notifyOwnChanges ?? true) === (b.notifyOwnChanges ?? true)
   );
@@ -144,7 +145,7 @@ export function notificationMasterPatch(
   enabled: boolean,
 ): Pick<
   NotificationPreferences,
-  'enabled' | 'systemNotifications' | 'dailyScheduleReports' | 'proactiveInsights' | 'securityAlerts'
+  'enabled' | 'systemNotifications' | 'dailyScheduleReports' | 'proactiveInsights' | 'secretaryAlerts' | 'securityAlerts'
 > {
   if (!enabled) {
     return {
@@ -152,6 +153,7 @@ export function notificationMasterPatch(
       systemNotifications: false,
       dailyScheduleReports: false,
       proactiveInsights: false,
+      secretaryAlerts: false,
       securityAlerts: false,
     };
   }
@@ -160,6 +162,7 @@ export function notificationMasterPatch(
     systemNotifications: true,
     dailyScheduleReports: true,
     proactiveInsights: true,
+    secretaryAlerts: false,
     securityAlerts: true,
   };
 }

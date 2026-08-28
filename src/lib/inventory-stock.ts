@@ -100,21 +100,27 @@ export function computeItemsToOrder<T extends InventoryStockFields>(
 export function computePurchaseOrderDerivedState<T extends InventoryStockFields>(
   items: T[],
   selectedChannels: string[] = ['all'],
+  options?: {
+    /** Hidden from the “ทั้งหมด” tab; still listed when that source tab is selected. */
+    excludeFromAllSources?: string[];
+  },
 ) {
   const itemsToOrder = computeItemsToOrder(items);
-  const poSources = Array.from(
-    new Set(itemsToOrder.map((item) => item.source || 'ไม่ได้ระบุแหล่งที่มา')),
-  );
+  const sourceLabel = (item: T) => item.source || 'ไม่ได้ระบุแหล่งที่มา';
+  const poSources = Array.from(new Set(itemsToOrder.map((item) => sourceLabel(item))));
+  const excludeFromAll = new Set(options?.excludeFromAllSources ?? []);
   const displayedPoItems = selectedChannels.includes('all')
-    ? itemsToOrder
-    : itemsToOrder.filter((item) =>
-        selectedChannels.includes(item.source || 'ไม่ได้ระบุแหล่งที่มา'),
-      );
+    ? itemsToOrder.filter((item) => !excludeFromAll.has(sourceLabel(item)))
+    : itemsToOrder.filter((item) => selectedChannels.includes(sourceLabel(item)));
+  const allTabItemCount = itemsToOrder.filter(
+    (item) => !excludeFromAll.has(sourceLabel(item)),
+  ).length;
 
   return {
     itemsToOrder,
     poSources,
     displayedPoItems,
+    allTabItemCount,
   };
 }
 

@@ -35,6 +35,8 @@ export interface NotificationPreferences {
   dailyScheduleReports: boolean;
   /** Cross-module proactive insights — daily digest at 07:00 ICT via Web Push */
   proactiveInsights: boolean;
+  /** Personal secretary task digest — default off */
+  secretaryAlerts: boolean;
   /** External attack / PIN lockout security alerts */
   securityAlerts: boolean;
   notifyOwnChanges: boolean;
@@ -45,6 +47,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   systemNotifications: true,
   dailyScheduleReports: true,
   proactiveInsights: true,
+  secretaryAlerts: false,
   securityAlerts: true,
   notifyOwnChanges: true,
 };

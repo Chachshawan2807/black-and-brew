@@ -22,7 +22,7 @@ describe('bean order delivered optimistic patch', () => {
     const input = buildBeanOrderDeliveredNotifyInput(
       {
         id: 'order-1',
-        orderNo: 'BO-20260722-003',
+        orderNo: 'BO-20260722-3',
         recipientName: 'ทัพพ์เทพ',
         recipientAddress: '123 ต.คึกคัก อ.เมืองพังงา',
         recipientProvince: 'พังงา',

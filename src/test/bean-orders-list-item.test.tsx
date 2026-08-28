@@ -22,7 +22,7 @@ vi.mock('next/navigation', () => ({
 
 const sampleOrder: BeanOrderListRow = {
   id: 'order-1',
-  orderNo: 'BO-20260722-001',
+  orderNo: 'BO-20260722-1',
   createdAt: '2026-07-22T10:30:00.000Z',
   customerName: 'คุณเอ',
   recipientName: 'คุณบี',
