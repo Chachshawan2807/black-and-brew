@@ -32,39 +32,73 @@ function task(partial: Partial<SecretaryTask> & Pick<SecretaryTask, 'id' | 'stat
 }
 
 describe('filterVisibleSecretaryBoardTasks', () => {
-  test('keeps completed tasks visible on the board', () => {
+  const visibility = { workDateIso: '2026-08-29' };
+
+  test('keeps completed tasks visible on the board for the current work day', () => {
     const visible = filterVisibleSecretaryBoardTasks(
       [
         task({ id: 'pending', status: 'pending' }),
-        task({ id: 'done', status: 'done', metadata: { totalActualSeconds: 90 } }),
+        task({
+          id: 'done',
+          status: 'done',
+          completed_at: '2026-08-29T10:00:00.000Z',
+          metadata: { totalActualSeconds: 90 },
+        }),
         task({ id: 'skipped', status: 'skipped' }),
       ],
       'all',
+      visibility,
     );
 
     expect(visible.map((entry) => entry.id)).toEqual(['pending', 'done']);
   });
 
+  test('hides tasks completed on a previous work day when viewing a new day', () => {
+    const visible = filterVisibleSecretaryBoardTasks(
+      [
+        task({ id: 'done-yesterday', status: 'done', completed_at: '2026-08-28T15:00:00.000Z' }),
+        task({ id: 'done-today', status: 'done', completed_at: '2026-08-29T10:00:00.000Z' }),
+        task({ id: 'pending', status: 'pending' }),
+      ],
+      'all',
+      visibility,
+    );
+
+    expect(visible.map((entry) => entry.id)).toEqual(['pending', 'done-today']);
+  });
+
   test('sorts in-progress before pending before done', () => {
     const visible = filterVisibleSecretaryBoardTasks(
       [
-        task({ id: 'done', status: 'done' }),
+        task({ id: 'done', status: 'done', completed_at: '2026-08-29T10:00:00.000Z' }),
         task({ id: 'pending', status: 'pending' }),
         task({ id: 'active', status: 'in_progress', active_session_started_at: '2026-08-29T01:00:00.000Z' }),
       ],
       'all',
+      visibility,
     );
 
     expect(visible.map((entry) => entry.id)).toEqual(['active', 'pending', 'done']);
   });
 
-  test('counts completed tasks in module filters', () => {
+  test('counts completed tasks in module filters for the current work day only', () => {
     const tasks = [
       task({ id: 'inventory-pending', status: 'pending', module: 'inventory' }),
-      task({ id: 'inventory-done', status: 'done', module: 'inventory' }),
+      task({
+        id: 'inventory-done',
+        status: 'done',
+        module: 'inventory',
+        completed_at: '2026-08-29T10:00:00.000Z',
+      }),
+      task({
+        id: 'inventory-done-yesterday',
+        status: 'done',
+        module: 'inventory',
+        completed_at: '2026-08-28T10:00:00.000Z',
+      }),
     ];
 
-    expect(countSecretaryBoardTasksByModule(tasks, 'inventory')).toBe(2);
+    expect(countSecretaryBoardTasksByModule(tasks, 'inventory', visibility)).toBe(2);
   });
 
   test('hides legacy split bean-order task types from the board', () => {
@@ -75,6 +109,7 @@ describe('filterVisibleSecretaryBoardTasks', () => {
         task({ id: 'legacy-ship', status: 'done', module: 'bean_orders', task_type: 'bean_ship_pending' }),
       ],
       'all',
+      visibility,
     );
 
     expect(visible.map((entry) => entry.id)).toEqual(['unified']);

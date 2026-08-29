@@ -107,14 +107,16 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     snapshot: board.snapshot,
   });
 
+  const visibility = { workDateIso };
+
   const visibleTasks = useMemo(
-    () => filterVisibleSecretaryBoardTasks(board.tasks, moduleFilter),
-    [board.tasks, moduleFilter],
+    () => filterVisibleSecretaryBoardTasks(board.tasks, moduleFilter, visibility),
+    [board.tasks, moduleFilter, workDateIso],
   );
 
   const visibleTaskCount = useMemo(
-    () => filterVisibleSecretaryBoardTasks(board.tasks, 'all').length,
-    [board.tasks],
+    () => filterVisibleSecretaryBoardTasks(board.tasks, 'all', visibility).length,
+    [board.tasks, workDateIso],
   );
 
   const handleStart = (taskId: string) => {
@@ -233,7 +235,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
           tip="แสดงงานทุกโมดูล รวมงานที่เสร็จแล้ว"
         />
         {(Object.keys(MODULE_LABELS) as SecretaryTask['module'][]).map((module) => {
-          const count = countSecretaryBoardTasksByModule(board.tasks, module);
+          const count = countSecretaryBoardTasksByModule(board.tasks, module, { workDateIso });
           if (count === 0) return null;
           return (
             <FilterChip
