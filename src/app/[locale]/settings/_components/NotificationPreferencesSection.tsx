@@ -244,10 +244,12 @@ export default function NotificationPreferencesSection({
     }
     const state = await requestNotificationPermission();
     setPermission(state);
-    const nextPrefs = { ...prefs, secretaryAlerts: state === 'granted' };
-    update({ secretaryAlerts: state === 'granted' });
+    const nextPrefs = { ...prefs, secretaryAlerts: true };
+    update({ secretaryAlerts: true });
     if (state === 'granted') {
       await ensurePushSubscriptionFromUserGesture(locale);
+    } else {
+      setRegisterError(formatPushRegistrationError('permission_denied', isTh));
     }
     await syncPushPrefsToServer(nextPrefs, locale);
     await refreshDeviceState();

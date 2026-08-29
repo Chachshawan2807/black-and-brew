@@ -62,6 +62,7 @@ describe('notification master switch', () => {
       systemNotifications: false,
       dailyScheduleReports: false,
       proactiveInsights: false,
+      secretaryAlerts: false,
       securityAlerts: false,
     });
     expect(notificationMasterPatch(true)).toEqual({
@@ -71,6 +72,14 @@ describe('notification master switch', () => {
       proactiveInsights: true,
       securityAlerts: true,
     });
+  });
+
+  it('notificationMasterPatch(true) preserves secretaryAlerts opt-in', () => {
+    const merged = {
+      ...prefs({ secretaryAlerts: true }),
+      ...notificationMasterPatch(true),
+    };
+    expect(merged.secretaryAlerts).toBe(true);
   });
 });
 
@@ -93,6 +102,22 @@ describe('ensureFullNotificationPreferencesOnAuth', () => {
 
     expect(isNotificationMasterEnabled(prefs)).toBe(true);
     expect(JSON.parse(localStorage.getItem(NOTIFICATION_PREFS_KEY) ?? '{}').proactiveInsights).toBe(true);
+  });
+
+  it('preserves secretaryAlerts when re-enabling channels on auth', () => {
+    localStorage.setItem(
+      NOTIFICATION_PREFS_KEY,
+      JSON.stringify({
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        proactiveInsights: false,
+        secretaryAlerts: true,
+      }),
+    );
+
+    const result = ensureFullNotificationPreferencesOnAuth();
+
+    expect(result.secretaryAlerts).toBe(true);
+    expect(JSON.parse(localStorage.getItem(NOTIFICATION_PREFS_KEY) ?? '{}').secretaryAlerts).toBe(true);
   });
 
   it('respects explicit opt-out from the master switch', () => {

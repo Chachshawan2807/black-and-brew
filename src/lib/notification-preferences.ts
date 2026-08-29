@@ -145,8 +145,9 @@ export function notificationMasterPatch(
   enabled: boolean,
 ): Pick<
   NotificationPreferences,
-  'enabled' | 'systemNotifications' | 'dailyScheduleReports' | 'proactiveInsights' | 'secretaryAlerts' | 'securityAlerts'
-> {
+  'enabled' | 'systemNotifications' | 'dailyScheduleReports' | 'proactiveInsights' | 'securityAlerts'
+> &
+  Partial<Pick<NotificationPreferences, 'secretaryAlerts'>> {
   if (!enabled) {
     return {
       enabled: false,
@@ -162,7 +163,6 @@ export function notificationMasterPatch(
     systemNotifications: true,
     dailyScheduleReports: true,
     proactiveInsights: true,
-    secretaryAlerts: false,
     securityAlerts: true,
   };
 }
