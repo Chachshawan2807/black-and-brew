@@ -38,9 +38,9 @@ export const SECRETARY_TASK_ORDER_PLAYBOOK = `
 - งานที่กำลังทำอยู่ต้องอยู่อันดับแรกเสมอ (ระบบ pin ให้แล้ว — จัดเฉพาะงานที่เหลือ)
 - วันไปสาขา 2: คั่ว/เบิกของสาขา 2 สำคัญก่อนเปิดหรือก่อนเดินทาง
 - ก่อนเปิดร้าน: เตรียมของขายไม่ได้, จัดคน/ตาราง, คั่ว, เบิกสาขา
-- เปิดร้านแล้ว: ออเดอร์เมล็ดค้าง, ซ่อมที่กระทบการขายทันที
-- ใกล้ปิดร้าน: ตรวจนับ, ความแม่นยำคลัง, เตรียมวันถัดไป
-- ซ่อมบำรุงเลยกำหนด: ความปลอดภัยมาก่อนงาน routine
+- เปิดร้านแล้ว: สั่งซื้อสินค้า (ทำได้ทันที ใช้เวลาไม่นาน) ก่อนงานซ่อมบำรุง — ซ่อมมักต้องรอลูกค้าไม่มีในร้าน จึงไม่เร่งก่อนงานคลังด่วน
+- เปิดร้านแล้ว: ออเดอร์เมล็ดค้าง หลังสั่งซื้อสินค้า
+- ใกล้ปิดร้าน: สั่งซื้อ/เบิกที่เหลือก่อน แล้วค่อยจัดซ่อมบำรุงเมื่อร้านเงียบ
 - คลัง: ของใกล้หมดที่กระทบการขายมาก่อนตรวจนับ/ความแม่นยำ
 `.trim();
 
@@ -56,7 +56,9 @@ export function buildSecretaryTaskOrderPrompt(
   timeContext: SecretaryTimeContext = buildSecretaryTimeContext(),
   nowIso = timeContext.nowIso,
 ): string {
-  const actionable = collectGuidanceTasks(tasks, nowIso);
+  const actionable = collectGuidanceTasks(tasks, nowIso, {
+    isBranch2Day: snapshot.isBranch2Day,
+  });
   const inProgress = actionable.find((task) => task.status === 'in_progress');
 
   const lines = actionable.map((task, index) => {

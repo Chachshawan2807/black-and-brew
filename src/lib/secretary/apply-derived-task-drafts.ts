@@ -77,10 +77,28 @@ async function autoCompleteDerivedTaskIds(taskIds: string[]): Promise<number> {
   return taskIds.length;
 }
 
+async function autoCompleteInactiveBranch2DerivedTasks(dateIso: string): Promise<number> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('operational_tasks')
+    .select('id')
+    .eq('scheduled_date', dateIso)
+    .eq('source_kind', 'derived')
+    .eq('module', 'branch2')
+    .in('status', ['pending', 'in_progress']);
+
+  if (error) {
+    console.error('Supabase Error:', error.message, error.details);
+    throw error;
+  }
+
+  const taskIds = (data ?? []).map((row) => String(row.id));
+  return autoCompleteDerivedTaskIds(taskIds);
+}
+
 export async function applyDerivedTaskDrafts(
   drafts: DerivedTaskDraft[],
   dateIso: string,
-  options?: { limitModules?: SecretaryModule[] },
+  options?: { limitModules?: SecretaryModule[]; isBranch2Day?: boolean },
 ): Promise<{ success: boolean; upserted?: number; autoCompleted?: number; error?: string }> {
   const activeHashes = new Set(drafts.map((draft) => draft.sourceRefHash));
   const limitModules = options?.limitModules?.length ? new Set(options.limitModules) : null;
@@ -204,6 +222,15 @@ export async function applyDerivedTaskDrafts(
         const message = error instanceof Error ? error.message : 'Unknown error';
         return { success: false, error: message };
       }
+    }
+  }
+
+  if (options?.isBranch2Day === false) {
+    try {
+      autoCompleted += await autoCompleteInactiveBranch2DerivedTasks(dateIso);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, error: message };
     }
   }
 

@@ -12,7 +12,17 @@ const BOARD_STATUS_RANK: Record<SecretaryTask['status'], number> = {
 export type SecretaryBoardVisibilityOptions = {
   workDateIso: string;
   nowIso?: string;
+  /** งานสาขา 2 (คั่วกาแฟ) แสดงเฉพาะวันที่ชัชมีกะไปสาขา 2 */
+  isBranch2Day?: boolean;
 };
+
+export function isBranch2ScheduleTask(task: SecretaryTask): boolean {
+  return task.module === 'branch2' || task.task_type === 'roast_carry';
+}
+
+export function isBranch2ScheduleTaskVisible(isBranch2Day?: boolean): boolean {
+  return isBranch2Day === true;
+}
 
 export function isSecretaryBoardTaskVisible(
   task: SecretaryTask,
@@ -23,6 +33,9 @@ export function isSecretaryBoardTaskVisible(
   const { workDateIso } = options;
 
   if (isLegacyBeanOrderTaskType(task.task_type)) {
+    return false;
+  }
+  if (isBranch2ScheduleTask(task) && !isBranch2ScheduleTaskVisible(options.isBranch2Day)) {
     return false;
   }
   if (task.status !== 'pending' && task.status !== 'in_progress' && task.status !== 'done') {

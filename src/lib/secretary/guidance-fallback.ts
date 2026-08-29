@@ -16,7 +16,9 @@ export function buildFallbackSecretaryGuidance(
   snapshot: SecretarySnapshot,
   nowIso = new Date().toISOString(),
 ): string {
-  const actionable = collectGuidanceTasks(tasks, nowIso);
+  const actionable = collectGuidanceTasks(tasks, nowIso, {
+    isBranch2Day: snapshot.isBranch2Day,
+  });
   return buildSecretaryGuidanceFromOrderedTasks(actionable, snapshot);
 }
 

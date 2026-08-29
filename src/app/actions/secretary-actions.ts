@@ -152,13 +152,16 @@ export async function syncDerivedSecretaryTasks(opts?: {
       drafts = deriveTasksFromSnapshotByScopes(snapshot, opts.scopes);
       const result = await applyDerivedTaskDrafts(drafts, dateIso, {
         limitModules: modulesForSyncScopes(opts.scopes),
+        isBranch2Day: snapshot.isBranch2Day,
       });
       return { ...result, snapshotPatch: patch };
     }
 
     const snapshot = opts?.snapshot ?? (await fetchSecretarySnapshot(opts));
     drafts = deriveTasksFromSnapshot(snapshot);
-    return applyDerivedTaskDrafts(drafts, snapshot.dateIso);
+    return applyDerivedTaskDrafts(drafts, snapshot.dateIso, {
+      isBranch2Day: snapshot.isBranch2Day,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[syncDerivedSecretaryTasks]', message);

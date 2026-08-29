@@ -56,7 +56,9 @@ export function resolveSecretaryGuidanceFromAi(
   snapshot: SecretarySnapshot,
   nowIso = new Date().toISOString(),
 ): string {
-  const actionable = collectGuidanceTasks(tasks, nowIso);
+  const actionable = collectGuidanceTasks(tasks, nowIso, {
+    isBranch2Day: snapshot.isBranch2Day,
+  });
   const fallback = buildFallbackSecretaryGuidance(tasks, snapshot, nowIso);
   return resolveGuidanceText(candidate, fallback, actionable.length, actionable);
 }

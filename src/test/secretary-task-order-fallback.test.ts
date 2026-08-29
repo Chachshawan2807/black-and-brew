@@ -53,4 +53,28 @@ describe('buildFallbackTaskOrder', () => {
     expect(ordered).toHaveLength(1);
     expect(ordered[0]?.id).toBe('next');
   });
+
+  test('orders purchase reorder before maintenance even when maintenance is urgent', () => {
+    const ordered = buildFallbackTaskOrder(
+      [
+        task({
+          id: 'maintenance',
+          title: 'ซ่อมบำรุงเลยกำหนด (3)',
+          task_type: 'maintenance_overdue',
+          module: 'maintenance',
+          priority: 'urgent',
+        }),
+        task({
+          id: 'purchase',
+          title: 'สั่งซื้อสินค้า (9 รายการ)',
+          task_type: 'inventory_reorder',
+          module: 'inventory',
+          priority: 'normal',
+        }),
+      ],
+      '2026-08-29T10:00:00.000Z',
+    );
+
+    expect(ordered.map((item) => item.id)).toEqual(['purchase', 'maintenance']);
+  });
 });

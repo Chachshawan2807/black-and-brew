@@ -123,16 +123,16 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     aiOrderingEnabled,
   });
 
-  const visibility = { workDateIso };
+  const visibility = { workDateIso, isBranch2Day: board.snapshot.isBranch2Day };
 
   const visibleTasks = useMemo(() => {
     const filtered = filterVisibleSecretaryBoardTasks(board.tasks, moduleFilter, visibility);
     return taskOrder.sortTasks(filtered);
-  }, [board.tasks, moduleFilter, workDateIso, taskOrder.sortTasks]);
+  }, [board.tasks, moduleFilter, workDateIso, board.snapshot.isBranch2Day, taskOrder.sortTasks]);
 
   const visibleTaskCount = useMemo(
     () => filterVisibleSecretaryBoardTasks(board.tasks, 'all', visibility).length,
-    [board.tasks, workDateIso],
+    [board.tasks, workDateIso, board.snapshot.isBranch2Day],
   );
 
   const handleStart = (taskId: string) => {
