@@ -20,7 +20,9 @@ import {
   filterVisibleSecretaryBoardTasks,
 } from '@/lib/secretary/visible-board-tasks';
 import { useSecretaryBoardSync, type BoardSyncPayload } from '@/hooks/use-secretary-board-sync';
-import { useSecretaryGuidance } from '@/hooks/use-secretary-guidance';
+import { useSecretaryTaskOrder } from '@/hooks/use-secretary-task-order';
+import { loadNotificationPreferences } from '@/lib/notification-preferences';
+import type { NotificationPreferences } from '@/lib/notification-types';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/secretary-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
@@ -67,6 +69,19 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
   const [isPending, startTransition] = useTransition();
   const [overlayTask, setOverlayTask] = useState<SecretaryTask | null>(null);
 
+  const [aiOrderingEnabled, setAiOrderingEnabled] = useState(
+    () => loadNotificationPreferences().secretaryAiOrdering ?? true,
+  );
+
+  useEffect(() => {
+    const onPrefsChanged = (event: Event) => {
+      const detail = (event as CustomEvent<NotificationPreferences>).detail;
+      setAiOrderingEnabled(detail?.secretaryAiOrdering ?? true);
+    };
+    window.addEventListener('bb-notification-prefs-changed', onPrefsChanged);
+    return () => window.removeEventListener('bb-notification-prefs-changed', onPrefsChanged);
+  }, []);
+
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
     setBoard((prev) => {
       const nextSnapshot = payload.snapshot
@@ -102,17 +117,18 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     skipInitialFullSync: true,
   });
 
-  const guidance = useSecretaryGuidance({
+  const taskOrder = useSecretaryTaskOrder({
     tasks: board.tasks,
     snapshot: board.snapshot,
+    aiOrderingEnabled,
   });
 
   const visibility = { workDateIso };
 
-  const visibleTasks = useMemo(
-    () => filterVisibleSecretaryBoardTasks(board.tasks, moduleFilter, visibility),
-    [board.tasks, moduleFilter, workDateIso],
-  );
+  const visibleTasks = useMemo(() => {
+    const filtered = filterVisibleSecretaryBoardTasks(board.tasks, moduleFilter, visibility);
+    return taskOrder.sortTasks(filtered);
+  }, [board.tasks, moduleFilter, workDateIso, taskOrder.sortTasks]);
 
   const visibleTaskCount = useMemo(
     () => filterVisibleSecretaryBoardTasks(board.tasks, 'all', visibility).length,
@@ -170,23 +186,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
         </p>
       </header>
 
-      <SecretaryGuidanceBar text={guidance.text} loading={guidance.loading} />
-
-      {board.snapshot.isBranch2Day ? (
-        <HintTooltip tip="วันนี้มีกะไปสาขา 2 — ใช้เมนูเบิกของสาขา 2 ในคลังได้ตามปกติ">
-          <div
-            className={cn(
-              'rounded-2xl px-4 py-3 border border-[#a8e6a8] w-fit max-w-full',
-              `${PASTEL_SURFACE} bg-[#d4f5d4]`,
-            )}
-          >
-            <p className="text-[14px] text-black font-normal">วันไปสาขา 2</p>
-            <p className="text-[12px] text-black/80 mt-0.5">
-              {board.snapshot.branch2Remark ?? 'คั่วและนำของ — เบิก/รับใช้หน้าคลังที่มีอยู่'}
-            </p>
-          </div>
-        </HintTooltip>
-      ) : null}
+      <SecretaryGuidanceBar text={taskOrder.guidanceText} loading={taskOrder.loading} />
 
       <div className="flex flex-wrap gap-2 items-center">
         <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">

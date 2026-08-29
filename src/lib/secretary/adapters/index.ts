@@ -8,7 +8,8 @@ import {
 } from '@/lib/inventory-stock';
 import { queryHomeMaintenanceTasks } from '@/lib/maintenance/fetch-home-maintenance';
 import { compileOperationalSnapshot } from '@/lib/proactive-insights/compile-operational-snapshot';
-import { detectBranch2Day } from '@/lib/secretary/detect-branch2-day';
+import { resolveSecretaryBranch2Day } from '@/lib/secretary/detect-branch2-day';
+import { SECRETARY_FOCUS_STAFF_NAME } from '@/lib/secretary/manager-day-config';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryReorderItem, SecretarySnapshot } from '@/lib/secretary/types';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
@@ -40,11 +41,10 @@ const fetchSecretarySnapshotCached = cache(async (dateIso: string, locale: strin
     name: String(item.name),
   }));
 
-  const branchShifts = shiftsBlock.otherDutyStaff.map((entry) => ({
-    metadata: { location: entry.shiftText },
-  }));
-
-  const branch2 = detectBranch2Day(branchShifts);
+  const branch2 = resolveSecretaryBranch2Day(
+    shiftsBlock.otherDutyStaff,
+    SECRETARY_FOCUS_STAFF_NAME,
+  );
 
   return {
     dateIso,

@@ -22,6 +22,7 @@ const getSupabaseAdmin = () => {
 export interface StaffShiftEntry {
   name: string;
   shiftText: string;
+  remark?: string;
 }
 
 export interface DailyReportData {
@@ -91,6 +92,7 @@ export async function fetchTodayShifts(targetDate: Date) {
     const otherDutyStaff: StaffShiftEntry[] = formatted.other_duty.map((entry) => ({
       name: entry.name,
       shiftText: entry.shift,
+      remark: entry.remark,
     }));
     const offStaff: StaffShiftEntry[] = formatted.off_or_leave.map((entry) => ({
       name: entry.name,

@@ -398,6 +398,16 @@ export default function NotificationPreferencesSection({
             disabled={permission === 'unsupported'}
           />
           <ToggleRow
+            label={isTh ? 'จัดลำดับงานด้วย AI' : 'AI task ordering'}
+            description={
+              isTh
+                ? 'บรูจัดลำดับการ์ดและคำแนะนำบนเลขาส่วนตัวตามบริบทร้าน (ปิดแล้วใช้ลำดับมาตรฐาน)'
+                : 'Bru orders secretary cards and guidance by shop context (off uses standard order)'
+            }
+            checked={prefs.secretaryAiOrdering ?? true}
+            onChange={(v) => update({ secretaryAiOrdering: v })}
+          />
+          <ToggleRow
             label={isTh ? 'แจ้งเตือนความปลอดภัย' : 'Security alerts'}
             description={
               isTh

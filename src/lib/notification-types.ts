@@ -37,6 +37,8 @@ export interface NotificationPreferences {
   proactiveInsights: boolean;
   /** Personal secretary task digest — default off */
   secretaryAlerts: boolean;
+  /** AI task ordering on Personal Secretary board — default on */
+  secretaryAiOrdering: boolean;
   /** External attack / PIN lockout security alerts */
   securityAlerts: boolean;
   notifyOwnChanges: boolean;
@@ -48,6 +50,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   dailyScheduleReports: true,
   proactiveInsights: true,
   secretaryAlerts: false,
+  secretaryAiOrdering: true,
   securityAlerts: true,
   notifyOwnChanges: true,
 };

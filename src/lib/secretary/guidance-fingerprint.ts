@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { isLegacyBeanOrderTaskType } from '@/lib/secretary/bean-order-task-consolidation';
+import { compareSecretaryBoardTasks } from '@/lib/secretary/visible-board-tasks';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 
 export type SecretaryGuidanceSnapshotSlice = Pick<
@@ -20,7 +21,7 @@ export function collectGuidanceTasks(
 ): SecretaryTask[] {
   return tasks
     .filter((task) => isActionableGuidanceTask(task, nowIso))
-    .toSorted((a, b) => a.id.localeCompare(b.id));
+    .toSorted(compareSecretaryBoardTasks);
 }
 
 export function buildSecretaryGuidanceFingerprint(

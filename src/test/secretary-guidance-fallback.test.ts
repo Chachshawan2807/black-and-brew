@@ -66,4 +66,60 @@ describe('buildFallbackSecretaryGuidance', () => {
     );
     expect(text.indexOf('งานเร่งด่วน')).toBeLessThan(text.indexOf('งานปกติ'));
   });
+
+  test('lists every actionable task in one sentence', () => {
+    const text = buildFallbackSecretaryGuidance(
+      [
+        task({ id: 'a', title: 'เบิกของสาขา 2' }),
+        task({ id: 'b', title: 'สั่งซื้อสินค้า (3 รายการ)' }),
+        task({ id: 'c', title: 'ซ่อมบำรุงเลยกำหนด (2)' }),
+      ],
+      snapshot,
+    );
+    expect(text).toContain('เบิกของสาขา 2');
+    expect(text).toContain('สั่งซื้อสินค้า (3 รายการ)');
+    expect(text).toContain('ซ่อมบำรุงเลยกำหนด (2)');
+    expect(text.split(/[.!?]/).filter(Boolean)).toHaveLength(1);
+  });
+
+  test('chains tasks with แล้วต่อด้วย in priority order', () => {
+    const text = buildFallbackSecretaryGuidance(
+      [
+        task({ id: 'a', title: 'งาน A', priority: 'normal', created_at: '2026-08-29T02:00:00.000Z' }),
+        task({ id: 'b', title: 'งาน B', priority: 'urgent', created_at: '2026-08-29T01:00:00.000Z' }),
+      ],
+      snapshot,
+    );
+    expect(text).toMatch(/งาน B.*แล้วต่อด้วย.*งาน A/);
+  });
+
+  test('uses branch2 prefix on branch2 days', () => {
+    const text = buildFallbackSecretaryGuidance(
+      [task({ id: 'a', title: 'เบิกของสาขา 2' })],
+      { ...snapshot, isBranch2Day: true },
+    );
+    expect(text).toContain('วันไปสาขา 2');
+  });
+
+  test('omits completed tasks from the ordered sentence', () => {
+    const text = buildFallbackSecretaryGuidance(
+      [
+        task({ id: 'done', title: 'งานเสร็จแล้ว', status: 'done', completed_at: '2026-08-29T08:00:00.000Z' }),
+        task({ id: 'next', title: 'งานถัดไป' }),
+      ],
+      snapshot,
+    );
+    expect(text).not.toContain('งานเสร็จแล้ว');
+    expect(text).toContain('งานถัดไป');
+  });
+
+  test('uses female assistant voice with นะคะ or ค่ะ', () => {
+    const withTasks = buildFallbackSecretaryGuidance([task({ id: 'a', title: 'งาน A' })], snapshot);
+    const empty = buildFallbackSecretaryGuidance([], snapshot);
+
+    expect(withTasks).toMatch(/(ค่ะ|นะคะ)/);
+    expect(empty).toMatch(/(ค่ะ|นะคะ)/);
+    expect(withTasks).not.toMatch(/ครับ|ผม/);
+    expect(empty).not.toMatch(/ครับ|ผม/);
+  });
 });

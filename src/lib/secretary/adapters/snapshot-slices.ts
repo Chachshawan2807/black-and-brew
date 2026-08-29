@@ -7,7 +7,8 @@ import {
   computeItemsToOrder,
 } from '@/lib/inventory-stock';
 import { queryHomeMaintenanceTasks } from '@/lib/maintenance/fetch-home-maintenance';
-import { detectBranch2Day } from '@/lib/secretary/detect-branch2-day';
+import { resolveSecretaryBranch2Day } from '@/lib/secretary/detect-branch2-day';
+import { SECRETARY_FOCUS_STAFF_NAME } from '@/lib/secretary/manager-day-config';
 import type { SecretarySyncScope } from '@/lib/secretary/board-sync-scope';
 import type { SecretarySnapshotPatch } from '@/lib/secretary/snapshot-patch';
 import type { SecretaryReorderItem, SecretarySnapshot } from '@/lib/secretary/types';
@@ -76,10 +77,10 @@ export async function fetchScheduleSnapshotSlice(opts: {
     fetchTodayShifts(date),
   ]);
 
-  const branchShifts = shiftsBlock.otherDutyStaff.map((entry) => ({
-    metadata: { location: entry.shiftText },
-  }));
-  const branch2 = detectBranch2Day(branchShifts);
+  const branch2 = resolveSecretaryBranch2Day(
+    shiftsBlock.otherDutyStaff,
+    SECRETARY_FOCUS_STAFF_NAME,
+  );
 
   return {
     operational,

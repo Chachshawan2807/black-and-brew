@@ -23,6 +23,7 @@ export function notificationPreferencesEqual(
     a.dailyScheduleReports === b.dailyScheduleReports &&
     a.proactiveInsights === b.proactiveInsights &&
     a.secretaryAlerts === b.secretaryAlerts &&
+    (a.secretaryAiOrdering ?? true) === (b.secretaryAiOrdering ?? true) &&
     a.securityAlerts === b.securityAlerts &&
     (a.notifyOwnChanges ?? true) === (b.notifyOwnChanges ?? true)
   );

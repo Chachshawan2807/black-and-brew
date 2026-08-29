@@ -1,5 +1,6 @@
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import { collectGuidanceTasks } from '@/lib/secretary/guidance-fingerprint';
+import { SECRETARY_BRU_IDENTITY } from '@/lib/secretary/guidance-voice';
 
 const MODULE_LABELS: Record<SecretaryTask['module'], string> = {
   schedule: 'ตารางงาน',
@@ -62,11 +63,12 @@ export function buildSecretaryGuidancePrompt(
     'งานที่ต้องจัดการวันนี้:',
     lines.length > 0 ? lines.join('\n') : '- ไม่มีงานค้าง',
     '',
-    'ตอบภาษาไทย 1-2 ประโยค แนะนำลำดับงานที่ควรทำก่อน ใช้ชื่องานจากรายการเท่านั้น',
+    'ตอบภาษาไทย 1 ประโยคเดียว แนะนำงานทั้งหมดตามลำดับที่ควรทำ คั่นแต่ละงานด้วย "แล้วต่อด้วย" และใส่ชื่องานในเครื่องหมายคำพูด ใช้ชื่องานจากรายการเท่านั้น ห้ามข้ามงานใดในรายการ ลงท้ายด้วย "ค่ะ" หรือ "นะคะ"',
   ].join('\n');
 }
 
-export const SECRETARY_GUIDANCE_SYSTEM = `คุณเป็นผู้ช่วยจัดลำดับงานประจำวันของร้านกาแฟ
-ตอบสั้น กระชับ เป็นภาษาไทย 1-2 ประโยค
+export const SECRETARY_GUIDANCE_SYSTEM = `${SECRETARY_BRU_IDENTITY}
+ตอบสั้น กระชับ เป็นภาษาไทย 1 ประโยคเดียว
+ต้องกล่าวถึงงานที่ต้องทำทั้งหมดตามลำดับ คั่นด้วย "แล้วต่อด้วย" และใส่ชื่องานในเครื่องหมายคำพูด
 ให้ความสำคัญกับงานที่กำลังทำอยู่ งานเร่งด่วน งานที่เกี่ยวกับสาขา 2 ในวันไปสาขา 2 และงานคลังที่กระทบการขาย
-ห้ามใช้ markdown หรือ bullet list`;
+ห้ามใช้ markdown หรือ bullet list ห้ามข้ามงานในรายการ`;

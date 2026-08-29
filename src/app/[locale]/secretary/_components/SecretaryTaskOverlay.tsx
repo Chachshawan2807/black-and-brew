@@ -112,7 +112,13 @@ export default function SecretaryTaskOverlay({
   }
 
   if (overlayKind === 'branch_withdraw_panel') {
-    return <BranchWithdrawOverlay locale={locale} onClose={onClose} />;
+    return (
+      <BranchWithdrawOverlay
+        locale={locale}
+        seedItems={snapshot.branchWithdrawItems}
+        onClose={onClose}
+      />
+    );
   }
 
   if (overlayKind === 'bean_orders_list') {

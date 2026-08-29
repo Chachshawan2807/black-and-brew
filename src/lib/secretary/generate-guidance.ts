@@ -11,7 +11,7 @@ import {
 } from '@/lib/secretary/guidance-prompt';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 
-import { resolveGuidanceText } from '@/lib/secretary/guidance-quality';
+import { resolveSecretaryGuidanceFromAi } from '@/lib/secretary/guidance-quality';
 
 const guidanceCache = new Map<string, { text: string; at: number }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -47,9 +47,6 @@ export async function generateSecretaryGuidance(input: {
   }
 
   const fallback = buildFallbackSecretaryGuidance(input.tasks, input.snapshot);
-  const actionableCount = input.tasks.filter(
-    (task) => task.status === 'pending' || task.status === 'in_progress',
-  ).length;
   const apiKey =
     process.env.GEMINI_API_KEY ??
     process.env.GOOGLE_GENERATIVE_AI_API_KEY ??
@@ -65,10 +62,10 @@ export async function generateSecretaryGuidance(input: {
       model: google('gemini-2.5-flash'),
       system: SECRETARY_GUIDANCE_SYSTEM,
       prompt: buildSecretaryGuidancePrompt(input.tasks, input.snapshot),
-      maxOutputTokens: 256,
+      maxOutputTokens: 512,
     });
 
-    const resolved = resolveGuidanceText(text, fallback, actionableCount);
+    const resolved = resolveSecretaryGuidanceFromAi(text, input.tasks, input.snapshot);
     writeCachedGuidance(fingerprint, resolved);
     return {
       text: resolved,

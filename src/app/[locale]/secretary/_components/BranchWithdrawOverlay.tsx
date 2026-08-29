@@ -1,60 +1,81 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import {
   fetchBranchWithdrawInventoryItems,
   fetchBranchWithdrawalHistory,
   type BranchWithdrawHistoryRow,
 } from '@/app/actions/branch-withdraw-actions';
-import type { InventoryRealtimeItem } from '@/contexts/InventoryRealtimeContext';
+import BranchWithdrawClient from '@/app/[locale]/inventory/branch-withdraw/BranchWithdrawClient';
+import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import { mapSecretaryReorderItemsToInventoryRealtime } from '@/lib/inventory-branch-withdraw-seed';
+import type { SecretaryReorderItem } from '@/lib/secretary/types';
 import { cn } from '@/lib/utils';
-
-const BranchWithdrawClient = dynamic(() => import('@/app/[locale]/inventory/branch-withdraw/BranchWithdrawClient'), {
-  ssr: false,
-  loading: () => (
-    <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">กำลังโหลดเบิกของสาขา 2...</div>
-  ),
-});
 
 type BranchWithdrawOverlayProps = {
   locale: string;
+  seedItems: SecretaryReorderItem[];
   onClose: () => void;
 };
 
-export default function BranchWithdrawOverlay({ locale, onClose }: BranchWithdrawOverlayProps) {
+export default function BranchWithdrawOverlay({
+  locale,
+  seedItems,
+  onClose,
+}: BranchWithdrawOverlayProps) {
+  const { items: realtimeItems, hasLoaded: hasRealtimeInventory } = useInventoryRealtime();
+  const seedInventory = useMemo(
+    () => mapSecretaryReorderItemsToInventoryRealtime(seedItems),
+    [seedItems],
+  );
+
+  const [fetchedItems, setFetchedItems] = useState<typeof seedInventory | null>(null);
   const [history, setHistory] = useState<BranchWithdrawHistoryRow[]>([]);
-  const [items, setItems] = useState<InventoryRealtimeItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(!hasRealtimeInventory);
+
+  const initialItems = useMemo(() => {
+    if (hasRealtimeInventory && realtimeItems.length > 0) {
+      return realtimeItems;
+    }
+    if (fetchedItems && fetchedItems.length > 0) {
+      return fetchedItems;
+    }
+    return seedInventory;
+  }, [fetchedItems, hasRealtimeInventory, realtimeItems, seedInventory]);
 
   useEffect(() => {
     let cancelled = false;
+
     void (async () => {
-      setIsLoading(true);
-      setLoadError(null);
-      const [itemsResult, historyResult] = await Promise.all([
-        fetchBranchWithdrawInventoryItems(),
-        fetchBranchWithdrawalHistory(30),
-      ]);
-      if (cancelled) return;
-      if (!itemsResult.success) {
-        setLoadError(itemsResult.error ?? 'ไม่สามารถโหลดรายการคลังได้');
-        setItems([]);
+      const historyPromise = fetchBranchWithdrawalHistory(30);
+
+      if (!hasRealtimeInventory) {
+        const itemsResult = await fetchBranchWithdrawInventoryItems();
+        if (cancelled) return;
+        if (!itemsResult.success) {
+          setLoadError(itemsResult.error ?? 'ไม่สามารถโหลดรายการคลังได้');
+        } else {
+          setFetchedItems(itemsResult.data as typeof seedInventory);
+        }
+        setCatalogLoading(false);
       } else {
-        setItems(itemsResult.data as InventoryRealtimeItem[]);
+        setCatalogLoading(false);
       }
+
+      const historyResult = await historyPromise;
+      if (cancelled) return;
       setHistory(historyResult.success ? historyResult.data : []);
-      setIsLoading(false);
     })();
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hasRealtimeInventory]);
 
   return (
     <ModalPortal>
@@ -64,10 +85,10 @@ export default function BranchWithdrawOverlay({ locale, onClose }: BranchWithdra
         zIndex={220}
         overlayClassName={cn('bg-black/20 backdrop-blur-md', INVENTORY_MODAL_Z_CLASS)}
         layoutClassName="items-end justify-center p-0 md:items-center md:p-4"
-        panelClassName="w-full max-w-3xl"
+        panelClassName="w-full max-w-3xl md:max-h-[85svh]"
         aria-label="เบิกของสาขา 2"
       >
-        <div className="flex max-h-[min(92svh,100%)] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-background md:max-h-[85svh] md:rounded-3xl">
+        <div className="flex h-[min(92svh,100%)] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-background md:h-full md:max-h-[85svh] md:rounded-3xl">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
             <h2 className="text-[15px] font-normal text-foreground">เบิกของสาขา 2</h2>
             <button
@@ -79,21 +100,17 @@ export default function BranchWithdrawOverlay({ locale, onClose }: BranchWithdra
               <X size={16} />
             </button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
-            {isLoading ? (
-              <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">
-                กำลังโหลดเบิกของสาขา 2...
-              </div>
-            ) : loadError ? (
-              <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">{loadError}</div>
-            ) : (
-              <BranchWithdrawClient
-                embedded
-                initialItems={items}
-                initialHistory={history}
-                locale={locale}
-              />
-            )}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+            {loadError ? (
+              <p className="mb-2 text-center text-[13px] text-muted-foreground">{loadError}</p>
+            ) : null}
+            <BranchWithdrawClient
+              embedded
+              initialItems={initialItems}
+              initialHistory={history}
+              locale={locale}
+              catalogLoading={catalogLoading}
+            />
           </div>
         </div>
       </FadeModalScaffold>

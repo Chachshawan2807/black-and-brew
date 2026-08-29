@@ -6,3 +6,6 @@ export const MANAGER_WORK_DAY = {
   breakFixed: false,
   productiveHours: 8,
 } as const;
+
+/** เลขาส่วนตัวติดตามกะและงานของพนักงานคนนี้เท่านั้น */
+export const SECRETARY_FOCUS_STAFF_NAME = 'ชัช';

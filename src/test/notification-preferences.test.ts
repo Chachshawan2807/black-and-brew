@@ -104,6 +104,14 @@ describe('ensureFullNotificationPreferencesOnAuth', () => {
     expect(JSON.parse(localStorage.getItem(NOTIFICATION_PREFS_KEY) ?? '{}').proactiveInsights).toBe(true);
   });
 
+  it('defaults secretaryAiOrdering to true and persists updates', () => {
+    const loaded = loadNotificationPreferences();
+    expect(loaded.secretaryAiOrdering).toBe(true);
+
+    saveNotificationPreferences({ ...loaded, secretaryAiOrdering: false });
+    expect(loadNotificationPreferences().secretaryAiOrdering).toBe(false);
+  });
+
   it('preserves secretaryAlerts when re-enabling channels on auth', () => {
     localStorage.setItem(
       NOTIFICATION_PREFS_KEY,

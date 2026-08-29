@@ -38,6 +38,8 @@ type Props = {
   initialHistory: BranchWithdrawHistoryRow[];
   locale: string;
   embedded?: boolean;
+  /** True while the full inventory catalog is still loading in an embedded overlay. */
+  catalogLoading?: boolean;
 };
 
 function sanitizeQtyInput(raw: string): string {
@@ -249,6 +251,7 @@ export default function BranchWithdrawClient({
   initialHistory,
   locale,
   embedded = false,
+  catalogLoading = false,
 }: Props) {
   const isReadOnly = useReadOnly();
   const { items: realtimeItems, hasLoaded, refresh } = useInventoryRealtime();
@@ -501,27 +504,53 @@ export default function BranchWithdrawClient({
     openDialog(historyLineDialogRef.current);
   }, []);
 
-  return (
+  const actionBar = (
     <div
       className={
         embedded
-          ? 'bg-background text-foreground'
-          : 'min-h-screen bg-background p-4 text-foreground md:p-8'
+          ? 'shrink-0 border-t border-border bg-background/95 py-3 backdrop-blur [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]'
+          : 'sticky bottom-0 z-20 mt-2 border-t border-border bg-background/95 py-4 backdrop-blur [padding-bottom:max(1rem,env(safe-area-inset-bottom))]'
       }
     >
-      <div className={embedded ? 'flex w-full flex-col gap-4' : 'mx-auto flex w-full max-w-3xl flex-col gap-6'}>
-        {embedded ? null : (
-          <header className="flex items-center justify-between border-b border-border pb-4">
-            <Link
-              href={`/${locale}/inventory`}
-              className="flex items-center gap-1.5 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span>กลับไปคลังสินค้า</span>
-            </Link>
-          </header>
-        )}
+      <div className="flex flex-row gap-2">
+        <button
+          type="button"
+          onClick={openPreviewDialog}
+          disabled={previewLineCount === 0}
+          className={STICKY_ACTION_BUTTON_CLASS}
+        >
+          <Eye className="h-4 w-4 shrink-0" />
+          <span className="truncate">สรุปรายการ</span>
+          {previewLineCount > 0 ? (
+            <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs tabular-nums">
+              {previewLineCount}
+            </span>
+          ) : null}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={isReadOnly || isSaving || previewLineCount === 0}
+          className={STICKY_ACTION_BUTTON_CLASS}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+              <span className="truncate">กำลังบันทึก...</span>
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 shrink-0" />
+              <span className="truncate">บันทึก</span>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
 
+  const mainSections = (
+    <>
         <section className={embedded ? 'space-y-4' : 'rounded-2xl border border-border bg-card p-4 md:p-6'}>
           {embedded ? null : (
             <h1 className="text-xl font-normal md:text-2xl">เบิกของสาขา 2</h1>
@@ -532,11 +561,11 @@ export default function BranchWithdrawClient({
           <button
             type="button"
             onClick={openAddItemDialog}
-            disabled={availablePickItems.length === 0}
+            disabled={catalogLoading || availablePickItems.length === 0}
             className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-sm transition-colors hover:bg-card disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
-            <span>เพิ่มรายการจากคลังสินค้า</span>
+            <span>{catalogLoading ? 'กำลังโหลดรายการคลัง...' : 'เพิ่มรายการจากคลังสินค้า'}</span>
           </button>
         </section>
 
@@ -546,7 +575,7 @@ export default function BranchWithdrawClient({
           </div>
         )}
 
-        <section className="space-y-2 pb-28">
+        <section className={embedded ? 'space-y-2' : 'space-y-2 pb-28'}>
           {displayItems.length === 0 ? (
             <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-foreground/70">
               ไม่มีรายการสั่งซื้อจากสาขา 2 ที่ต้องเบิกในขณะนี้ — กดปุ่มด้านบนเพื่อเพิ่มสินค้าจากคลัง
@@ -610,43 +639,45 @@ export default function BranchWithdrawClient({
             </div>
           )}
         </section>
+    </>
+  );
 
-        <div className="sticky bottom-0 z-20 mt-2 border-t border-border bg-background/95 py-4 backdrop-blur [padding-bottom:max(1rem,env(safe-area-inset-bottom))]">
-          <div className="flex flex-row gap-2">
-            <button
-              type="button"
-              onClick={openPreviewDialog}
-              disabled={previewLineCount === 0}
-              className={STICKY_ACTION_BUTTON_CLASS}
+  return (
+    <div
+      className={
+        embedded
+          ? 'flex h-full min-h-0 flex-col bg-background text-foreground'
+          : 'min-h-screen bg-background p-4 text-foreground md:p-8'
+      }
+    >
+      <div
+        className={
+          embedded
+            ? 'flex min-h-0 flex-1 flex-col'
+            : 'mx-auto flex w-full max-w-3xl flex-col gap-6'
+        }
+      >
+        {embedded ? null : (
+          <header className="flex items-center justify-between border-b border-border pb-4">
+            <Link
+              href={`/${locale}/inventory`}
+              className="flex items-center gap-1.5 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
             >
-              <Eye className="h-4 w-4 shrink-0" />
-              <span className="truncate">สรุปรายการ</span>
-              {previewLineCount > 0 ? (
-                <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs tabular-nums">
-                  {previewLineCount}
-                </span>
-              ) : null}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleSave()}
-              disabled={isReadOnly || isSaving || previewLineCount === 0}
-              className={STICKY_ACTION_BUTTON_CLASS}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                  <span className="truncate">กำลังบันทึก...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 shrink-0" />
-                  <span className="truncate">บันทึก</span>
-                </>
-              )}
-            </button>
+              <ChevronLeft className="h-4 w-4" />
+              <span>กลับไปคลังสินค้า</span>
+            </Link>
+          </header>
+        )}
+
+        {embedded ? (
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
+            {mainSections}
           </div>
-        </div>
+        ) : (
+          mainSections
+        )}
+
+        {actionBar}
       </div>
 
       <dialog ref={previewDialogRef} className={BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS}>

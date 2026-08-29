@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   fetchSecretarySnapshot: vi.fn(),
   fetchSecretaryTasks: vi.fn(),
-  generateSecretaryGuidance: vi.fn(),
+  generateSecretaryTaskOrder: vi.fn(),
   recordSecretaryNotificationLog: vi.fn(),
   markSecretaryMorningPushDispatched: vi.fn(),
   ensureVapidConfigured: vi.fn(),
@@ -19,8 +19,8 @@ vi.mock('@/app/actions/secretary-actions', () => ({
   fetchSecretaryTasks: mocks.fetchSecretaryTasks,
 }));
 
-vi.mock('@/lib/secretary/generate-guidance', () => ({
-  generateSecretaryGuidance: mocks.generateSecretaryGuidance,
+vi.mock('@/lib/secretary/generate-task-order', () => ({
+  generateSecretaryTaskOrder: mocks.generateSecretaryTaskOrder,
 }));
 
 vi.mock('@/lib/secretary/alerts/secretary-notification-log', () => ({
@@ -79,8 +79,9 @@ describe('evaluateSecretaryAlerts', () => {
     vi.clearAllMocks();
     mocks.fetchSecretarySnapshot.mockResolvedValue(snapshot);
     mocks.fetchSecretaryTasks.mockResolvedValue({ success: true, tasks });
-    mocks.generateSecretaryGuidance.mockResolvedValue({
-      text: 'แนะนำเริ่มจาก "งาน A"',
+    mocks.generateSecretaryTaskOrder.mockResolvedValue({
+      orderedTaskIds: ['task-1'],
+      orderedTasks: tasks,
       fingerprint: 'abc',
       source: 'ai',
     });
@@ -94,14 +95,14 @@ describe('evaluateSecretaryAlerts', () => {
   test('records guidance and skips push when VAPID is not configured', async () => {
     const result = await evaluateSecretaryAlerts({ locale: 'th' });
 
-    expect(mocks.generateSecretaryGuidance).toHaveBeenCalledWith({ tasks, snapshot });
+    expect(mocks.generateSecretaryTaskOrder).toHaveBeenCalledWith({ tasks, snapshot });
     expect(mocks.recordSecretaryNotificationLog).toHaveBeenCalledWith(
       expect.objectContaining({
-        guidanceText: 'แนะนำเริ่มจาก "งาน A"',
+        guidanceText: expect.stringContaining('งาน A'),
         trigger: 'cron',
       }),
     );
-    expect(result.guidanceText).toBe('แนะนำเริ่มจาก "งาน A"');
+    expect(result.guidanceText).toContain('งาน A');
     expect(result.pushed.skipped).toBe(true);
   });
 

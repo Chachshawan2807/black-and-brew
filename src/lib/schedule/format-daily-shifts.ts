@@ -6,6 +6,7 @@ export interface DailyShiftEntry {
   name: string;
   shift: string;
   category: ShiftCategory;
+  remark?: string;
 }
 
 export interface FormattedDailyShifts {
@@ -25,7 +26,7 @@ interface ProfileRow {
 interface ShiftRow {
   employee_id: string | null;
   status?: string | null;
-  metadata?: { location?: string | null } | null;
+  metadata?: { location?: string | null; remark?: string | null } | null;
 }
 
 export function normalizeShiftLocation(
@@ -97,6 +98,7 @@ export function formatDailyShifts(
       name: profile.full_name,
       shift: shiftText,
       category: categorizeShift(shiftText),
+      remark: shift?.metadata?.remark?.trim() || undefined,
     };
   });
 

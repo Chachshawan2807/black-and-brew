@@ -8,7 +8,8 @@ import {
   buildSecretaryPushPayload,
   shouldSendSecretaryToSubscription,
 } from '@/lib/secretary/alerts/secretary-notification';
-import { generateSecretaryGuidance } from '@/lib/secretary/generate-guidance';
+import { generateSecretaryTaskOrder } from '@/lib/secretary/generate-task-order';
+import { buildSecretaryGuidanceFromOrderedTasks } from '@/lib/secretary/guidance-fallback';
 import type { SecretaryTask } from '@/lib/secretary/types';
 import {
   deliverWebPushPayload,
@@ -90,12 +91,14 @@ export async function evaluateSecretaryAlerts(opts?: {
   const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
   const tasks = tasksResult.success && tasksResult.tasks ? tasksResult.tasks : [];
 
-  const guidance = await generateSecretaryGuidance({ tasks, snapshot });
+  const order = await generateSecretaryTaskOrder({ tasks, snapshot });
+  const guidanceText = buildSecretaryGuidanceFromOrderedTasks(order.orderedTasks, snapshot);
+  const guidanceSource = order.source;
 
   const recorded = await recordSecretaryNotificationLog({
     tasks,
     snapshot,
-    guidanceText: guidance.text,
+    guidanceText,
     locale,
     force: opts?.force,
     trigger: 'cron',
@@ -106,7 +109,7 @@ export async function evaluateSecretaryAlerts(opts?: {
     pushed = await dispatchSecretaryWebPush({
       tasks,
       snapshot,
-      guidanceText: guidance.text,
+      guidanceText,
       locale,
     });
 
@@ -122,8 +125,8 @@ export async function evaluateSecretaryAlerts(opts?: {
   return {
     dateIso: snapshot.dateIso,
     pendingCount,
-    guidanceText: guidance.text,
-    guidanceSource: guidance.source,
+    guidanceText,
+    guidanceSource,
     recorded,
     pushed,
   };

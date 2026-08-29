@@ -22,8 +22,8 @@ export function deriveBranch2Tasks(snapshot: SecretarySnapshot): DerivedTaskDraf
   return [
     {
       taskType: 'roast_carry',
-      title: 'คั่วกาแฟ — checklist วันไปสาขา 2',
-      description: descriptionParts.join(' · ') || 'ตรวจ checklist คั่วตามออเดอร์/ความต้องการสาขา 1',
+      title: 'คั่วกาแฟ',
+      description: descriptionParts.join(' · ') || 'ตรวจรายการคั่วตามออเดอร์/ความต้องการสาขา 1',
       priority: 'urgent',
       module: 'branch2',
       sourceRef,
