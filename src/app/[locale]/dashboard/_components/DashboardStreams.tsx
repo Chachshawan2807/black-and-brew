@@ -124,7 +124,7 @@ async function DashboardMonthlySection({
   });
   const supabaseAdmin = getSupabaseAdmin();
 
-  const [profilesRes, shiftsResult] = await Promise.all([
+  const [profilesRes, shiftsResult, holidaysRes] = await Promise.all([
     supabaseAdmin
       .from('profiles')
       .select('id, full_name, dashboard_order, schedule_order')
@@ -140,6 +140,11 @@ async function DashboardMonthlySection({
           .select('id, employee_id, start_time, end_time, status, metadata')
           .gte('start_time', shiftQueryPlan.monthlyStart + 'T00:00:00')
           .lte('start_time', shiftQueryPlan.monthlyEnd + 'T23:59:59'),
+    supabaseAdmin
+      .from('holidays')
+      .select('id, date, name')
+      .gte('date', rosterStartDate)
+      .lte('date', rosterEndDate),
   ]);
 
   const rosterShifts =
@@ -156,6 +161,7 @@ async function DashboardMonthlySection({
     <MonthlyRoster
       initialProfiles={profilesRes.data || []}
       initialShifts={rosterShifts}
+      initialHolidays={holidaysRes.data || []}
       initialStartDate={rosterStartDate}
       initialEndDate={rosterEndDate}
     />

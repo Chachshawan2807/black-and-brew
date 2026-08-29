@@ -99,6 +99,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     onSync: applyBoardSync,
     onWorkDateChange: setWorkDateIso,
     getBaseSnapshot: () => boardRef.current.snapshot,
+    skipInitialFullSync: true,
   });
 
   const guidance = useSecretaryGuidance({

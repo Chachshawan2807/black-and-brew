@@ -212,12 +212,16 @@ export function useSecretaryBoardSync(options: {
   onSync: (payload: BoardSyncPayload) => void;
   onWorkDateChange?: (dateIso: string) => void;
   getBaseSnapshot?: () => SecretarySnapshot;
+  /** Skip the mount full-sync when SSR already hydrated the board. */
+  skipInitialFullSync?: boolean;
 }) {
   const onSyncRef = useRef(options.onSync);
   const onWorkDateChangeRef = useRef(options.onWorkDateChange);
   const dateIsoRef = useRef(options.dateIso);
   const localeRef = useRef(options.locale);
   const getBaseSnapshotRef = useRef(options.getBaseSnapshot);
+  const skipInitialFullSyncRef = useRef(options.skipInitialFullSync ?? false);
+  const skipNextDateLocaleSyncRef = useRef(options.skipInitialFullSync ?? false);
 
   useEffect(() => {
     onSyncRef.current = options.onSync;
@@ -225,6 +229,7 @@ export function useSecretaryBoardSync(options: {
     dateIsoRef.current = options.dateIso;
     localeRef.current = options.locale;
     getBaseSnapshotRef.current = options.getBaseSnapshot;
+    skipInitialFullSyncRef.current = options.skipInitialFullSync ?? false;
   });
 
   const listener = useCallback<Listener>((payload) => {
@@ -246,7 +251,9 @@ export function useSecretaryBoardSync(options: {
     void (async () => {
       await ensureSharedSecretaryChannel();
       if (cancelled) return;
-      requestSecretaryBoardFullSync();
+      if (!skipInitialFullSyncRef.current) {
+        requestSecretaryBoardFullSync();
+      }
     })();
 
     return () => {
@@ -258,6 +265,10 @@ export function useSecretaryBoardSync(options: {
   }, [listener]);
 
   useEffect(() => {
+    if (skipNextDateLocaleSyncRef.current) {
+      skipNextDateLocaleSyncRef.current = false;
+      return;
+    }
     requestSecretaryBoardFullSync();
   }, [options.dateIso, options.locale]);
 

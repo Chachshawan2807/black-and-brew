@@ -126,10 +126,22 @@ export async function syncDerivedSecretaryTasks(opts?: {
   locale?: string;
   scopes?: readonly Exclude<SecretarySyncScope, 'tasks'>[];
   baseSnapshot?: SecretarySnapshot;
-}): Promise<{ success: boolean; upserted?: number; autoCompleted?: number; error?: string }> {
+  /** Pre-fetched full snapshot — skips a second `fetchSecretarySnapshot` on full sync. */
+  snapshot?: SecretarySnapshot;
+}): Promise<{
+  success: boolean;
+  upserted?: number;
+  autoCompleted?: number;
+  snapshotPatch?: SecretarySnapshotPatch;
+  error?: string;
+}> {
   try {
-    const dateIso = opts?.dateIso ?? (await fetchSecretarySnapshot(opts)).dateIso;
-    const locale = opts?.locale ?? 'th';
+    const dateIso =
+      opts?.dateIso ??
+      opts?.snapshot?.dateIso ??
+      opts?.baseSnapshot?.dateIso ??
+      (await fetchSecretarySnapshot(opts)).dateIso;
+    const locale = opts?.locale ?? opts?.snapshot?.locale ?? opts?.baseSnapshot?.locale ?? 'th';
 
     let drafts;
     if (opts?.scopes?.length) {
@@ -138,12 +150,13 @@ export async function syncDerivedSecretaryTasks(opts?: {
         ? mergeSecretarySnapshot(opts.baseSnapshot, patch)
         : buildSnapshotForDerive(dateIso, locale, patch);
       drafts = deriveTasksFromSnapshotByScopes(snapshot, opts.scopes);
-      return applyDerivedTaskDrafts(drafts, dateIso, {
+      const result = await applyDerivedTaskDrafts(drafts, dateIso, {
         limitModules: modulesForSyncScopes(opts.scopes),
       });
+      return { ...result, snapshotPatch: patch };
     }
 
-    const snapshot = await fetchSecretarySnapshot(opts);
+    const snapshot = opts?.snapshot ?? (await fetchSecretarySnapshot(opts));
     drafts = deriveTasksFromSnapshot(snapshot);
     return applyDerivedTaskDrafts(drafts, snapshot.dateIso);
   } catch (error) {
@@ -455,7 +468,6 @@ export async function syncAndFetchSecretaryBoard(opts?: {
         return { success: false, error: syncResult.error };
       }
 
-      const snapshotPatch = await fetchSecretarySnapshotSlices({ dateIso, locale }, dataScopes);
       const tasksResult = await fetchSecretaryTasks(dateIso);
 
       if (!tasksResult.success || !tasksResult.tasks) {
@@ -465,12 +477,12 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       return {
         success: true,
         tasks: tasksResult.tasks,
-        snapshotPatch,
+        snapshotPatch: syncResult.snapshotPatch,
       };
     }
 
-    await syncDerivedSecretaryTasks(opts);
     const snapshot = await fetchSecretarySnapshot(opts);
+    await syncDerivedSecretaryTasks({ ...opts, snapshot });
     const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
 
     if (!tasksResult.success || !tasksResult.tasks) {
@@ -567,8 +579,12 @@ export async function loadSecretaryBoard(opts?: {
   if (authError) return { success: false, error: authError };
 
   try {
-    await syncDerivedSecretaryTasks(opts);
     const snapshot = await fetchSecretarySnapshot(opts);
+    const syncResult = await syncDerivedSecretaryTasks({ ...opts, snapshot });
+    if (!syncResult.success) {
+      return { success: false, error: syncResult.error };
+    }
+
     const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
     if (!tasksResult.success || !tasksResult.tasks) {
       return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };

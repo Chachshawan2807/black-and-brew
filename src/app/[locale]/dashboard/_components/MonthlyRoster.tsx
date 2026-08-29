@@ -33,6 +33,19 @@ import {
   ROSTER_INDIVIDUAL_DAY_LABELS_SHORT,
   mondayStartPadCount,
 } from '@/lib/roster/week-start';
+import {
+  collectLeaveEntries,
+  collectPublicHolidayWorkEntries,
+  computeDashboardStaffStatCounts,
+  createHolidayDateLookup,
+  getPublicHolidayEntry,
+  isLeaveShift,
+} from '@/lib/dashboard/leave-details';
+import type { HolidayLike, LeaveDetailEntry } from '@/lib/dashboard/leave-details';
+import { LeaveDetailDialog } from './LeaveDetailDialog';
+import { RosterExportStatSummary } from './RosterExportStatSummary';
+
+const ROSTER_HOLIDAY_FRAME = 'ring-2 ring-inset ring-[#ffeeba]';
 
 interface Profile {
   id: string;
@@ -47,12 +60,16 @@ interface Shift {
   status: string;
   metadata?: {
     location?: string;
+    remark?: string;
+    notes?: string;
+    is_management?: boolean;
   };
 }
 
 interface MonthlyRosterProps {
   initialProfiles?: Profile[];
   initialShifts?: Shift[];
+  initialHolidays?: HolidayLike[];
   initialStartDate?: string;
   initialEndDate?: string;
 }
@@ -60,6 +77,7 @@ interface MonthlyRosterProps {
 export default function MonthlyRoster({
   initialProfiles,
   initialShifts,
+  initialHolidays,
   initialStartDate,
   initialEndDate,
 }: MonthlyRosterProps) {
@@ -75,8 +93,14 @@ export default function MonthlyRoster({
       ? { profiles: initialProfiles!, shifts: initialShifts! }
       : { profiles: [], shifts: [] },
   );
+  const [holidays, setHolidays] = useState<HolidayLike[]>(initialHolidays ?? []);
   const [loading, setLoading] = useState(!hasInitialData);
   const [isExportingImage, setIsExportingImage] = useState(false);
+  const [statDialog, setStatDialog] = useState<{
+    title: string;
+    entries: LeaveDetailEntry[];
+    variant: 'leave' | 'holiday';
+  } | null>(null);
 
   const daysInInterval = useMemo(() => {
     try {
@@ -88,6 +112,37 @@ export default function MonthlyRoster({
   }, [startDate, endDate]);
 
   const shiftDateLookup = useMemo(() => createShiftDateLookup(data.shifts), [data.shifts]);
+  const holidayDateLookup = useMemo(() => createHolidayDateLookup(holidays), [holidays]);
+
+  const selectedStaffExportSummary = useMemo(() => {
+    if (!selectedStaffId) {
+      return {
+        workDays: 0,
+        leaveDays: 0,
+        publicHolidays: 0,
+        leaveEntries: [] as LeaveDetailEntry[],
+        holidayWorkEntries: [] as LeaveDetailEntry[],
+      };
+    }
+
+    const statCounts = computeDashboardStaffStatCounts(
+      data.shifts,
+      selectedStaffId,
+      holidays,
+      { startDate, endDate },
+    );
+
+    return {
+      ...statCounts,
+      leaveEntries: collectLeaveEntries(data.shifts, selectedStaffId, { startDate, endDate }),
+      holidayWorkEntries: collectPublicHolidayWorkEntries(
+        data.shifts,
+        selectedStaffId,
+        holidays,
+        { startDate, endDate },
+      ),
+    };
+  }, [selectedStaffId, data.shifts, holidays, startDate, endDate]);
 
   // Track whether the initial server data has already been consumed
   const initialDataConsumedRef = useRef(false);
@@ -112,6 +167,11 @@ export default function MonthlyRoster({
       const res = await fetchRosterData(startDate, endDate);
       if (res.success) {
         setData({ profiles: res.profiles, shifts: res.shifts });
+        setHolidays(
+          (res.holidays ?? []).filter(
+            (holiday) => holiday.date >= startDate && holiday.date <= endDate,
+          ),
+        );
         if (res.profiles.length > 0 && !selectedStaffIdRef.current) {
           setSelectedStaffId(res.profiles[0].id);
         }
@@ -133,7 +193,28 @@ export default function MonthlyRoster({
       text: getShiftDisplayText(loc, shift.status),
       color: getShiftColorClass(loc, shift.status),
       colorStyle: getShiftColorStyle(loc, shift.status),
+      isLeave: isLeaveShift(shift),
     };
+  };
+
+  const openLeaveDialog = (profileId: string, profileName: string, date: string) => {
+    const entries = collectLeaveEntries(data.shifts, profileId, { singleDate: date });
+    if (entries.length === 0) return;
+    setStatDialog({
+      title: `รายละเอียดวันลา — ${profileName}`,
+      entries,
+      variant: 'leave',
+    });
+  };
+
+  const openHolidayDialog = (date: string) => {
+    const entry = getPublicHolidayEntry(date, holidays);
+    if (!entry) return;
+    setStatDialog({
+      title: 'รายละเอียดวันนักขัตฯ',
+      entries: [entry],
+      variant: 'holiday',
+    });
   };
 
   const exportRosterImage = async () => {
@@ -236,12 +317,32 @@ export default function MonthlyRoster({
                     <th className="sticky left-0 z-30 bg-card px-3 py-3 text-left border-b border-r border-border text-foreground font-normal whitespace-nowrap w-max shadow-sm bb-sticky-scroll-cell">
                       พนักงาน
                     </th>
-                    {daysInInterval.map((day) => (
-                      <th key={day.toISOString()} className="p-3 text-center border-b border-r border-border text-foreground font-normal min-w-[6.5rem] whitespace-nowrap">
-                        <div className="text-[11px] text-foreground font-normal uppercase mb-1 opacity-80">{format(day, 'EEE', { locale: th })}</div>
-                        <div className="text-lg leading-none">{format(day, 'd')}</div>
-                      </th>
-                    ))}
+                    {daysInInterval.map((day) => {
+                      const dateKey = format(day, 'yyyy-MM-dd');
+                      const isHoliday = holidayDateLookup.has(dateKey);
+                      return (
+                        <th
+                          key={day.toISOString()}
+                          className={`p-3 text-center border-b border-r border-border text-foreground font-normal min-w-[6.5rem] whitespace-nowrap ${isHoliday ? `${ROSTER_HOLIDAY_FRAME} touch-manipulation cursor-pointer` : ''}`}
+                          onClick={isHoliday ? () => openHolidayDialog(dateKey) : undefined}
+                          onKeyDown={
+                            isHoliday
+                              ? (event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    openHolidayDialog(dateKey);
+                                  }
+                                }
+                              : undefined
+                          }
+                          tabIndex={isHoliday ? 0 : undefined}
+                          aria-label={isHoliday ? `ดูรายละเอียดวันนักขัตฯ ${dateKey}` : undefined}
+                        >
+                          <div className="text-[11px] text-foreground font-normal uppercase mb-1 opacity-80">{format(day, 'EEE', { locale: th })}</div>
+                          <div className="text-lg leading-none">{format(day, 'd')}</div>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -251,18 +352,32 @@ export default function MonthlyRoster({
                         {profile.full_name}
                       </td>
                       {daysInInterval.map((day) => {
-                        const shift = getShiftForProfileDate(shiftDateLookup, profile.id, format(day, 'yyyy-MM-dd'));
+                        const dateKey = format(day, 'yyyy-MM-dd');
+                        const shift = getShiftForProfileDate(shiftDateLookup, profile.id, dateKey);
                         const display = shift ? getShiftDisplay(shift) : null;
                         return (
-                          <td key={day.toISOString()} className="p-1.5 border-r border-b border-border h-[4.25rem] align-middle min-w-[6.5rem]">
-                            {display && (
+                          <td
+                            key={day.toISOString()}
+                            className="h-[4.25rem] min-w-[6.5rem] border-r border-b border-border p-1.5 align-middle"
+                          >
+                            {display?.isLeave ? (
+                              <button
+                                type="button"
+                                onClick={() => openLeaveDialog(profile.id, profile.full_name, dateKey)}
+                                className={`flex h-full min-h-[3rem] w-full items-center justify-center rounded-xl border px-2 py-1 text-center text-[12px] font-normal whitespace-nowrap shadow-sm touch-manipulation ${display.color}`}
+                                style={display.colorStyle}
+                                aria-label={`ดูรายละเอียดวันลา ${profile.full_name} ${dateKey}`}
+                              >
+                                {display.text}
+                              </button>
+                            ) : display ? (
                               <div
-                                className={`w-full h-full min-h-[3rem] flex items-center justify-center rounded-xl text-[12px] font-normal shadow-sm px-2 py-1 text-center whitespace-nowrap border ${display.color}`}
+                                className={`flex h-full min-h-[3rem] w-full items-center justify-center rounded-xl border px-2 py-1 text-center text-[12px] font-normal whitespace-nowrap shadow-sm ${display.color}`}
                                 style={display.colorStyle}
                               >
                                 {display.text}
                               </div>
-                            )}
+                            ) : null}
                           </td>
                         );
                       })}
@@ -288,7 +403,7 @@ export default function MonthlyRoster({
                 </RoundedSelect>
               </div>
 
-              <div className="bb-roster-export-grid grid grid-cols-7 gap-1 md:gap-2 pb-24">
+              <div className="bb-roster-export-grid grid grid-cols-7 gap-1 md:gap-2">
                 {ROSTER_INDIVIDUAL_DAY_LABELS_SHORT.map((day, idx) => (
                   <div key={day} className="py-2 px-1 text-center text-foreground text-[11px] md:text-[12px] font-normal uppercase tracking-wider">
                     <span className="md:hidden">{day}</span>
@@ -299,25 +414,101 @@ export default function MonthlyRoster({
                   <div key={`empty-${i}`} className="bg-card rounded-xl sm:rounded-3xl h-20 sm:h-28 md:h-36 border border-border" />
                 ))}
                 {daysInInterval.map((day) => {
+                  const dateKey = format(day, 'yyyy-MM-dd');
                   const shift = selectedStaffId
-                    ? getShiftForProfileDate(shiftDateLookup, selectedStaffId, format(day, 'yyyy-MM-dd'))
+                    ? getShiftForProfileDate(shiftDateLookup, selectedStaffId, dateKey)
                     : undefined;
                   const display = shift ? getShiftDisplay(shift) : null;
+                  const selectedProfile = data.profiles.find((profile) => profile.id === selectedStaffId);
+                  const isHoliday = holidayDateLookup.has(dateKey);
+                  const dayFrameClass = isHoliday
+                    ? ROSTER_HOLIDAY_FRAME
+                    : 'border border-border';
+
+                  if (isHoliday) {
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openHolidayDialog(dateKey)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openHolidayDialog(dateKey);
+                          }
+                        }}
+                        className={`flex h-20 cursor-pointer flex-col justify-between rounded-xl bg-card p-1 text-left bb-transition hover:bg-muted/30 hover:shadow-lg sm:h-28 sm:rounded-[24px] sm:p-3 md:h-36 md:p-4 touch-manipulation ${dayFrameClass}`}
+                        aria-label={`ดูรายละเอียดวันนักขัตฯ ${dateKey}`}
+                      >
+                        <span className="text-sm font-normal text-foreground sm:text-base md:text-lg">{format(day, 'd')}</span>
+                        {shift && display && display.isLeave ? (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (!selectedStaffId || !selectedProfile) return;
+                              openLeaveDialog(selectedStaffId, selectedProfile.full_name, dateKey);
+                            }}
+                            className={`flex min-h-[24px] w-full items-center justify-center truncate rounded-lg border p-0.5 text-center text-[10px] font-normal leading-tight shadow-sm sm:min-h-[40px] sm:rounded-xl sm:p-2 sm:text-xs md:min-h-[50px] md:p-2.5 md:text-[13px] md:leading-relaxed ${display.color}`}
+                            style={display.colorStyle}
+                            aria-label={`ดูรายละเอียดวันลา ${dateKey}`}
+                          >
+                            {display.text}
+                          </button>
+                        ) : shift && display ? (
+                          <div
+                            className={`flex min-h-[24px] w-full items-center justify-center truncate rounded-lg border p-0.5 text-center text-[10px] font-normal leading-tight shadow-sm sm:min-h-[40px] sm:rounded-xl sm:p-2 sm:text-xs md:min-h-[50px] md:p-2.5 md:text-[13px] md:leading-relaxed ${display.color}`}
+                            style={display.colorStyle}
+                          >
+                            {display.text}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div key={day.toISOString()} className="bg-card h-20 sm:h-28 md:h-36 p-1 sm:p-3 md:p-4 flex flex-col justify-between rounded-xl sm:rounded-[24px] border border-border bb-transition hover:bg-muted/30 hover:shadow-lg">
-                      <span className="text-foreground text-sm sm:text-base md:text-lg font-normal">{format(day, 'd')}</span>
+                    <div
+                      key={day.toISOString()}
+                      className={`flex h-20 flex-col justify-between rounded-xl bg-card p-1 bb-transition hover:bg-muted/30 hover:shadow-lg sm:h-28 sm:rounded-[24px] sm:p-3 md:h-36 md:p-4 ${dayFrameClass}`}
+                    >
+                      <span className="text-sm font-normal text-foreground sm:text-base md:text-lg">{format(day, 'd')}</span>
                       {shift && display && (
-                        <div
-                          className={`w-full p-0.5 sm:p-2 md:p-2.5 rounded-lg sm:rounded-xl flex items-center justify-center text-center text-[10px] sm:text-xs md:text-[13px] font-normal leading-tight md:leading-relaxed shadow-sm min-h-[24px] sm:min-h-[40px] md:min-h-[50px] truncate border ${display.color}`}
-                          style={display.colorStyle}
-                        >
-                          {display.text}
-                        </div>
+                        display.isLeave ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!selectedStaffId || !selectedProfile) return;
+                              openLeaveDialog(selectedStaffId, selectedProfile.full_name, dateKey);
+                            }}
+                            className={`flex min-h-[24px] w-full items-center justify-center truncate rounded-lg border p-0.5 text-center text-[10px] font-normal leading-tight shadow-sm touch-manipulation sm:min-h-[40px] sm:rounded-xl sm:p-2 sm:text-xs md:min-h-[50px] md:p-2.5 md:text-[13px] md:leading-relaxed ${display.color}`}
+                            style={display.colorStyle}
+                            aria-label={`ดูรายละเอียดวันลา ${dateKey}`}
+                          >
+                            {display.text}
+                          </button>
+                        ) : (
+                          <div
+                            className={`flex min-h-[24px] w-full items-center justify-center truncate rounded-lg border p-0.5 text-center text-[10px] font-normal leading-tight shadow-sm sm:min-h-[40px] sm:rounded-xl sm:p-2 sm:text-xs md:min-h-[50px] md:p-2.5 md:text-[13px] md:leading-relaxed ${display.color}`}
+                            style={display.colorStyle}
+                          >
+                            {display.text}
+                          </div>
+                        )
                       )}
                     </div>
                   );
                 })}
               </div>
+
+              <RosterExportStatSummary
+                workDays={selectedStaffExportSummary.workDays}
+                leaveDays={selectedStaffExportSummary.leaveDays}
+                publicHolidays={selectedStaffExportSummary.publicHolidays}
+                leaveEntries={selectedStaffExportSummary.leaveEntries}
+                holidayWorkEntries={selectedStaffExportSummary.holidayWorkEntries}
+              />
             </div>
           )}
         </div>
@@ -327,6 +518,14 @@ export default function MonthlyRoster({
         visible={isExportingImage}
         title="กำลังบันทึกรูปภาพ"
         subtitle="กำลังจัดตารางเวร..."
+      />
+
+      <LeaveDetailDialog
+        open={statDialog !== null}
+        title={statDialog?.title ?? ''}
+        entries={statDialog?.entries ?? []}
+        variant={statDialog?.variant ?? 'leave'}
+        onClose={() => setStatDialog(null)}
       />
     </div>
   );

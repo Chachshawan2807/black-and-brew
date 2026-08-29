@@ -111,6 +111,24 @@ describe('roster-export-capture', () => {
     expect(measureRosterExportContentHeight(root)).toBe(440);
   });
 
+  test('measureRosterExportContentHeight includes export summary below the grid', () => {
+    const root = document.createElement('div');
+    const grid = document.createElement('div');
+    grid.className = 'bb-roster-export-grid';
+    const summary = document.createElement('div');
+    summary.className = 'bb-roster-export-summary';
+    root.append(grid, summary);
+
+    root.getBoundingClientRect = () =>
+      ({ top: 80, bottom: 900, left: 0, right: 776, width: 776, height: 820, x: 0, y: 80, toJSON: () => {} }) as DOMRect;
+    grid.getBoundingClientRect = () =>
+      ({ top: 180, bottom: 520, left: 0, right: 776, width: 776, height: 340, x: 0, y: 180, toJSON: () => {} }) as DOMRect;
+    summary.getBoundingClientRect = () =>
+      ({ top: 544, bottom: 640, left: 0, right: 776, width: 776, height: 96, x: 0, y: 544, toJSON: () => {} }) as DOMRect;
+
+    expect(measureRosterExportContentHeight(root)).toBe(560);
+  });
+
   test('measureRosterExportContentHeight uses deterministic height when mobile layout is skinny', () => {
     const root = document.createElement('div');
     root.style.paddingTop = '32px';

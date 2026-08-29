@@ -1,4 +1,5 @@
 import { parseISO } from 'date-fns';
+import { cache } from 'react';
 import { fetchTodayShifts } from '@/app/actions/daily-report-actions';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import {
@@ -12,12 +13,7 @@ import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryReorderItem, SecretarySnapshot } from '@/lib/secretary/types';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
-export async function fetchSecretarySnapshot(opts?: {
-  dateIso?: string;
-  locale?: string;
-}): Promise<SecretarySnapshot> {
-  const dateIso = opts?.dateIso ?? todayIsoBkk();
-  const locale = opts?.locale ?? 'th';
+const fetchSecretarySnapshotCached = cache(async (dateIso: string, locale: string): Promise<SecretarySnapshot> => {
   const date = parseISO(dateIso);
 
   const admin = getSupabaseAdmin();
@@ -61,4 +57,13 @@ export async function fetchSecretarySnapshot(opts?: {
     branch2Remark: branch2.branch2Remark,
     headcountToday: shiftsBlock.headcount,
   };
+});
+
+export async function fetchSecretarySnapshot(opts?: {
+  dateIso?: string;
+  locale?: string;
+}): Promise<SecretarySnapshot> {
+  const dateIso = opts?.dateIso ?? todayIsoBkk();
+  const locale = opts?.locale ?? 'th';
+  return fetchSecretarySnapshotCached(dateIso, locale);
 }

@@ -23,6 +23,7 @@ export const ROSTER_EXPORT_BG = '#faf9f2';
 export const ROSTER_EXPORT_CAPTURING_CLASS = 'bb-roster-export-capturing';
 export const ROSTER_EXPORT_SURFACE_CLASS = 'bb-roster-export-surface';
 const ROSTER_EXPORT_GRID_SELECTOR = '.bb-roster-export-grid';
+const ROSTER_EXPORT_SUMMARY_SELECTOR = '.bb-roster-export-summary';
 const ROSTER_EXPORT_FULL_DAY_NAMES = ROSTER_INDIVIDUAL_DAY_LABELS_FULL;
 
 const EXPORT_SHADOW_CLASS_HINT =
@@ -173,6 +174,59 @@ export function applyRosterCaptureStyles(root: HTMLElement): () => void {
     applyRosterExportCalendarCells(grid, restores);
   }
 
+  const summary = root.querySelector<HTMLElement>(ROSTER_EXPORT_SUMMARY_SELECTOR);
+  if (summary) {
+    setInline(restores, summary, 'margin-top', '24px', true);
+    setInline(restores, summary, 'display', 'flex', true);
+    setInline(restores, summary, 'flex-direction', 'column', true);
+    setInline(restores, summary, 'align-items', 'flex-start', true);
+    setInline(restores, summary, 'gap', '16px', true);
+    setInline(restores, summary, 'width', ROSTER_EXPORT_GRID_WIDTH, true);
+    setInline(restores, summary, 'max-width', ROSTER_EXPORT_GRID_WIDTH, true);
+
+    summary.querySelectorAll<HTMLElement>('h4').forEach((heading) => {
+      setInline(restores, heading, 'font-size', '14px', true);
+      setInline(restores, heading, 'font-weight', '400', true);
+      setInline(restores, heading, 'color', '#111111', true);
+      setInline(restores, heading, 'margin-bottom', '8px', true);
+    });
+
+    const statCounts = summary.querySelector<HTMLElement>('.bb-roster-export-stat-counts');
+    if (statCounts) {
+      setInline(restores, statCounts, 'display', 'grid', true);
+      setInline(restores, statCounts, 'grid-template-columns', 'repeat(3, minmax(0, 1fr))', true);
+      setInline(restores, statCounts, 'gap', '12px', true);
+      setInline(restores, statCounts, 'width', '100%', true);
+      setInline(restores, statCounts, 'max-width', '420px', true);
+
+      statCounts.querySelectorAll<HTMLElement>(':scope > div').forEach((pill) => {
+        setInline(restores, pill, 'border-radius', '24px', true);
+        setInline(restores, pill, 'padding', '12px', true);
+        setInline(restores, pill, 'text-align', 'center', true);
+        setInline(restores, pill, 'color', '#000000', true);
+
+        pill.querySelectorAll<HTMLElement>('span').forEach((label, index) => {
+          if (index === 0) {
+            setInline(restores, label, 'font-size', '22px', true);
+            setInline(restores, label, 'line-height', '1.2', true);
+          } else {
+            setInline(restores, label, 'font-size', '12px', true);
+            setInline(restores, label, 'letter-spacing', '0.1em', true);
+            setInline(restores, label, 'text-transform', 'uppercase', true);
+          }
+        });
+      });
+    }
+
+    summary.querySelectorAll<HTMLElement>('li').forEach((row) => {
+      setInline(restores, row, 'border-radius', '16px', true);
+      setInline(restores, row, 'padding', '12px 16px', true);
+      setInline(restores, row, 'font-size', '14px', true);
+      setInline(restores, row, 'line-height', '1.5', true);
+      setInline(restores, row, 'color', '#000000', true);
+    });
+  }
+
   root.querySelectorAll<HTMLElement>('*').forEach((node) => {
     if (!nodeMayHaveExportShadow(node)) return;
     const computed = window.getComputedStyle(node);
@@ -227,10 +281,17 @@ function getRosterStaffHeader(root: HTMLElement): HTMLElement | null {
   return first;
 }
 
-/** Crop capture to header + calendar grid — excludes mobile safe-area padding below grid. */
+function getRosterExportBottomElement(root: HTMLElement): HTMLElement | null {
+  const summary = root.querySelector<HTMLElement>(ROSTER_EXPORT_SUMMARY_SELECTOR);
+  if (summary) return summary;
+  return root.querySelector<HTMLElement>(ROSTER_EXPORT_GRID_SELECTOR);
+}
+
+/** Crop capture to header + calendar grid (+ export summary when present). */
 export function measureRosterExportContentHeight(root: HTMLElement): number {
   const grid = root.querySelector<HTMLElement>(ROSTER_EXPORT_GRID_SELECTOR);
-  if (!grid) return root.scrollHeight;
+  const bottomElement = getRosterExportBottomElement(root);
+  if (!grid || !bottomElement) return root.scrollHeight;
 
   const paddingBottom = parseFloat(getComputedStyle(root).paddingBottom) || 0;
   const minGridWidth = parseInt(ROSTER_EXPORT_GRID_WIDTH, 10) - 4;
@@ -238,20 +299,22 @@ export function measureRosterExportContentHeight(root: HTMLElement): number {
 
   if (gridWidth >= minGridWidth) {
     const rootRect = root.getBoundingClientRect();
-    const gridRect = grid.getBoundingClientRect();
-    return Math.ceil(gridRect.bottom - rootRect.top + paddingBottom);
+    const bottomRect = bottomElement.getBoundingClientRect();
+    return Math.ceil(bottomRect.bottom - rootRect.top + paddingBottom);
   }
 
   const paddingTop = parseFloat(getComputedStyle(root).paddingTop) || parseInt(ROSTER_EXPORT_ROOT_PADDING, 10);
   const staffHeader = getRosterStaffHeader(root);
   const staffBlockHeight = staffHeader ? ROSTER_EXPORT_STAFF_BLOCK_HEIGHT : 0;
   const staffMarginBottom = staffHeader ? ROSTER_EXPORT_STAFF_MARGIN_BOTTOM : 0;
+  const summaryHeight = bottomElement === grid ? 0 : bottomElement.scrollHeight + 24;
 
   return Math.ceil(
     paddingTop +
       staffBlockHeight +
       staffMarginBottom +
       computeRosterExportGridHeight(grid) +
+      summaryHeight +
       paddingBottom,
   );
 }

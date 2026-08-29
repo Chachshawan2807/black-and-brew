@@ -34,6 +34,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { DASHBOARD_STAT_COLORS } from '@/lib/shift-colors';
 import { useReadOnly } from '@/components/providers/AuthProvider';
+import { collectLeaveEntries, collectPublicHolidayWorkEntries } from '@/lib/dashboard/leave-details';
+import type { LeaveDetailEntry } from '@/lib/dashboard/leave-details';
+import { LeaveDetailDialog } from './LeaveDetailDialog';
 import {
   persistDashboardWeeklyRange,
   readDashboardWeeklyRangeFromStorage,
@@ -44,6 +47,8 @@ interface PerformanceData {
   workDays: number;
   leaveDays: number;
   publicHolidays: number;
+  leaveEntries: LeaveDetailEntry[];
+  publicHolidayEntries: LeaveDetailEntry[];
 }
 
 // --- Sub-component: SortableEmployeeCard ---
@@ -52,9 +57,18 @@ interface SortableEmployeeCardProps {
   data: PerformanceData;
   isDragging?: boolean;
   isReadOnly?: boolean;
+  onLeaveClick?: () => void;
+  onHolidayClick?: () => void;
 }
 
-function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: SortableEmployeeCardProps) {
+function SortableEmployeeCard({
+  id,
+  data,
+  isDragging,
+  isReadOnly = false,
+  onLeaveClick,
+  onHolidayClick,
+}: SortableEmployeeCardProps) {
   const {
     attributes,
     listeners,
@@ -107,14 +121,26 @@ function SortableEmployeeCard({ id, data, isDragging, isReadOnly = false }: Sort
             <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
           </div>
-          <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95`}>
+          <button
+            type="button"
+            onClick={onLeaveClick}
+            disabled={data.leaveDays === 0}
+            className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
+            aria-label={`ดูรายละเอียดวันลา ${data.leaveDays} วัน`}
+          >
             <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ลา</span>
-          </div>
-          <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95`}>
+          </button>
+          <button
+            type="button"
+            onClick={onHolidayClick}
+            disabled={data.publicHolidays === 0}
+            className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
+            aria-label={`ดูรายละเอียดวันทำงานตรงวันนักขัตฯ ${data.publicHolidays} วัน`}
+          >
             <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
-          </div>
+          </button>
         </motion.div>
       </motion.div>
     </article>
@@ -146,6 +172,11 @@ export default function LiveShiftList({
   const [orderedProfileIds, setOrderedProfileIds] = useState<string[]>(initialProfiles.map(p => p.id));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [statDialog, setStatDialog] = useState<{
+    title: string;
+    entries: LeaveDetailEntry[];
+    variant: 'leave' | 'holiday';
+  } | null>(null);
 
   const refreshShiftsForRange = useCallback(async () => {
     const { data, error } = await supabase
@@ -222,6 +253,13 @@ export default function LiveShiftList({
     const data = profiles.map(profile => {
       const employeeShifts = scheduledByEmployee.get(profile.id) ?? [];
       const leaveDays = leaveCountByEmployee.get(profile.id) ?? 0;
+      const leaveEntries = collectLeaveEntries(shifts, profile.id, { startDate, endDate });
+      const publicHolidayEntries = collectPublicHolidayWorkEntries(
+        shifts,
+        profile.id,
+        holidays,
+        { startDate, endDate },
+      );
       let publicHolidaysCount = 0;
       for (const s of employeeShifts) {
         const shiftDate = s.start_time.split('T')[0];
@@ -230,7 +268,14 @@ export default function LiveShiftList({
       const normalWorkDays = employeeShifts.length - publicHolidaysCount;
       const workDays = normalWorkDays + publicHolidaysCount;
 
-      return { profile, workDays, leaveDays, publicHolidays: publicHolidaysCount };
+      return {
+        profile,
+        workDays,
+        leaveDays,
+        publicHolidays: publicHolidaysCount,
+        leaveEntries,
+        publicHolidayEntries,
+      };
     });
 
     if (orderedProfileIds.length > 0) {
@@ -244,7 +289,7 @@ export default function LiveShiftList({
       });
     }
     return data;
-  }, [profiles, shifts, orderedProfileIds, holidays]);
+  }, [profiles, shifts, orderedProfileIds, holidays, startDate, endDate]);
 
   const handleDragStart = (event: DragStartEvent) => {
     if (isReadOnly) return;
@@ -321,7 +366,28 @@ export default function LiveShiftList({
           <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 relative">
             <SortableContext items={orderedProfileIds} strategy={rectSortingStrategy}>
               {performanceData.map((data) => (
-                <SortableEmployeeCard key={data.profile.id} id={data.profile.id} data={data} isReadOnly={isReadOnly} />
+                <SortableEmployeeCard
+                  key={data.profile.id}
+                  id={data.profile.id}
+                  data={data}
+                  isReadOnly={isReadOnly}
+                  onLeaveClick={() => {
+                    if (data.leaveEntries.length === 0) return;
+                    setStatDialog({
+                      title: `รายละเอียดวันลา — ${data.profile.full_name}`,
+                      entries: data.leaveEntries,
+                      variant: 'leave',
+                    });
+                  }}
+                  onHolidayClick={() => {
+                    if (data.publicHolidayEntries.length === 0) return;
+                    setStatDialog({
+                      title: `รายละเอียดวันทำงานตรงวันนักขัตฯ — ${data.profile.full_name}`,
+                      entries: data.publicHolidayEntries,
+                      variant: 'holiday',
+                    });
+                  }}
+                />
               ))}
             </SortableContext>
           </div>
@@ -364,10 +430,39 @@ export default function LiveShiftList({
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 relative opacity-50">
           {performanceData.map((data) => (
-            <SortableEmployeeCard key={data.profile.id} id={data.profile.id} data={data} isReadOnly={isReadOnly} />
+            <SortableEmployeeCard
+              key={data.profile.id}
+              id={data.profile.id}
+              data={data}
+              isReadOnly={isReadOnly}
+              onLeaveClick={() => {
+                if (data.leaveEntries.length === 0) return;
+                setStatDialog({
+                  title: `รายละเอียดวันลา — ${data.profile.full_name}`,
+                  entries: data.leaveEntries,
+                  variant: 'leave',
+                });
+              }}
+              onHolidayClick={() => {
+                if (data.publicHolidayEntries.length === 0) return;
+                setStatDialog({
+                  title: `รายละเอียดวันทำงานตรงวันนักขัตฯ — ${data.profile.full_name}`,
+                  entries: data.publicHolidayEntries,
+                  variant: 'holiday',
+                });
+              }}
+            />
           ))}
         </div>
       )}
+
+      <LeaveDetailDialog
+        open={statDialog !== null}
+        title={statDialog?.title ?? ''}
+        entries={statDialog?.entries ?? []}
+        variant={statDialog?.variant ?? 'leave'}
+        onClose={() => setStatDialog(null)}
+      />
     </div>
   );
 }
