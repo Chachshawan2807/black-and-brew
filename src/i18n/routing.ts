@@ -4,7 +4,7 @@ import {createNavigation} from 'next-intl/navigation';
 export const routing = defineRouting({
   locales: ['th', 'en'],
   defaultLocale: 'th',
-  /** Thai staff ERP — do not auto-switch to /en from Accept-Language or locale cookie. */
+  /** Thai staff ERP do not auto-switch to /en from Accept-Language or locale cookie. */
   localeDetection: false,
 });
 

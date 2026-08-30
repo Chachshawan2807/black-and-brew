@@ -137,7 +137,7 @@ export function resolveActorLabel(
   return 'ระบบ';
 }
 
-/** Display label for notifications and history — supports legacy stored actor_label values. */
+/** Display label for notifications and history supports legacy stored actor_label values. */
 export function formatNotificationActorLabel(
   actorLabel: string,
   actorAccessLevel: ActorAccessLevel | null | undefined,

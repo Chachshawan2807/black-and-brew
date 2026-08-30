@@ -153,7 +153,7 @@ function resolveBeanOrderCreatedOsDisplay(headline, customerLine, itemsSummary) 
   };
 }
 
-/** Title + body on all platforms — iOS lock screen shows only the first title line when body is empty. */
+/** Title + body on all platforms iOS lock screen shows only the first title line when body is empty. */
 function resolveOsNotificationDisplay(payload) {
   const notification = payload.notification;
   const logicalTitle =
@@ -574,7 +574,7 @@ function isLocalDevHost(hostname) {
   );
 }
 
-/** Dev Turbopack chunks change on every HMR — never intercept them or module factories go stale. */
+/** Dev Turbopack chunks change on every HMR never intercept them or module factories go stale. */
 function shouldBypassSwFetchForDev(request) {
   const url = new URL(request.url);
   if (!isLocalDevHost(url.hostname)) return false;

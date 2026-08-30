@@ -11,7 +11,7 @@ function sampleInsight(overrides: Partial<Insight> = {}): Insight {
   return {
     ruleId: 'understaffed_low_stock',
     title: 'คนน้อย',
-    summary: 'สัปดาห์นี้วันที่คนน้อย: จ. 3 คน — ควรตรวจตารางงานค่ะ',
+    summary: 'สัปดาห์นี้วันที่คนน้อย: จ. 3 คน ควรตรวจตารางงานค่ะ',
     urlPath: '/schedule',
     priority: 'high',
     modules: ['schedule'],

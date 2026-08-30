@@ -102,8 +102,8 @@ export function PushSubscriptionManager() {
           <div className="min-w-0 flex-1">
             <p className="text-[13px] text-foreground leading-snug">
               {isTh
-                ? 'iPhone ต้องลงทะเบียนการแจ้งเตือนกับเซิร์ฟเวอร์ก่อน — กดปุ่มด้านล่าง'
-                : 'iPhone must register push with the server — tap the button below'}
+                ? 'iPhone ต้องลงทะเบียนการแจ้งเตือนกับเซิร์ฟเวอร์ก่อน กดปุ่มด้านล่าง'
+                : 'iPhone must register push with the server tap the button below'}
             </p>
             {bannerError ? (
               <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">{bannerError}</p>

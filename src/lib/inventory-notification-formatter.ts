@@ -161,7 +161,7 @@ const HIDDEN_NOTIFICATION_FIELDS = new Set([
 
   'client_session_id',
 
-  // Internal row ordering — never surface in user-facing notifications
+  // Internal row ordering never surface in user-facing notifications
   'sort_order',
 
   'schedule_order',

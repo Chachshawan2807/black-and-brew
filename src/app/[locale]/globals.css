@@ -245,7 +245,7 @@
     font-family: inherit;
   }
 
-  /* Faster tap response on touch devices — Baseline Widely available */
+  /* Faster tap response on touch devices Baseline Widely available */
   :where(a[href], button, [role='button'], label[for]) {
     touch-action: manipulation;
   }
@@ -325,7 +325,7 @@
     }
   }
 
-  /* Universal elevated surface — panels, sections, modals */
+  /* Universal elevated surface panels, sections, modals */
   .bb-surface {
     background-color: var(--card);
     border: 1px solid var(--border);
@@ -348,7 +348,7 @@
       background-color 220ms var(--bb-ease-out);
   }
 
-  /* List / table row — subtle depth on hover */
+  /* List / table row subtle depth on hover */
   .bb-row-interactive {
     position: relative;
     transition:
@@ -525,7 +525,7 @@
     }
   }
 
-  /* Layered elevation — ambient + key light (Material / HIG-style depth) */
+  /* Layered elevation ambient + key light (Material / HIG-style depth) */
   .bb-shadow-sm {
     box-shadow:
       inset 0 1px 0 var(--bb-surface-highlight),
@@ -625,7 +625,7 @@
     -webkit-backdrop-filter: blur(6px);
   }
 
-  /* Pastel cards keep light backgrounds in both themes — force readable dark text/icons */
+  /* Pastel cards keep light backgrounds in both themes force readable dark text/icons */
   .bb-pastel-surface {
     color: #000000;
   }
@@ -637,13 +637,13 @@
     max-width: 100%;
   }
 
-  /* Main landmark — container query root (size-aware-styling) */
+  /* Main landmark container query root (size-aware-styling) */
   .bb-main-container {
     container-type: inline-size;
     container-name: bb-main;
   }
 
-  /* Mobile nav drawer — popover + horizontal scroll-snap (navigation-drawer pattern) */
+  /* Mobile nav drawer popover + horizontal scroll-snap (navigation-drawer pattern) */
   .bb-mobile-nav-drawer {
     --drawer-width: min(17.5rem, 80dvw);
     --drawer-backdrop: 0;
@@ -753,7 +753,7 @@
   }
 
   /*
-   * Installed PWA shell — native feel without affecting browser-tab users.
+   * Installed PWA shell native feel without affecting browser-tab users.
    * Class is set synchronously via inline bootstrap + PwaShellSync.
    */
   html.bb-pwa-standalone,
@@ -796,7 +796,7 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* Image export progress — true viewport center on installed PWA (notch / home indicator). */
+  /* Image export progress true viewport center on installed PWA (notch / home indicator). */
   html.bb-pwa-standalone .bb-export-progress-overlay {
     min-height: 100dvh;
     min-height: 100svh;
@@ -846,7 +846,7 @@
     }
   }
 
-  /* Sidebar menu labels — smooth fade when collapsing */
+  /* Sidebar menu labels smooth fade when collapsing */
   .bb-sidebar-label {
     overflow: hidden;
     white-space: nowrap;
@@ -1089,7 +1089,7 @@
     --tw-animation-duration: 500ms;
   }
 
-  /* Pastel surfaces keep dark text in dark mode — must live in utilities to beat text-foreground */
+  /* Pastel surfaces keep dark text in dark mode must live in utilities to beat text-foreground */
   .bb-pastel-surface :where(h1, h2, h3, h4, h5, h6) {
     color: #000000;
   }
@@ -1114,7 +1114,7 @@
     color: rgb(0 0 0 / 0.45);
   }
 
-  /* Theme-aware inputs on pastel rows (e.g. bulk qty) — match search field in dark mode */
+  /* Theme-aware inputs on pastel rows (e.g. bulk qty) match search field in dark mode */
   .bb-pastel-surface input.bg-background,
   .bb-pastel-surface textarea.bg-background {
     color: var(--foreground);
@@ -1133,19 +1133,19 @@
     overscroll-behavior: contain;
   }
 
-  /* Nested / horizontal-only scrollers — let vertical pans reach the page or parent scroller */
+  /* Nested / horizontal-only scrollers let vertical pans reach the page or parent scroller */
   .bb-smooth-scroll-chain-y {
     overscroll-behavior-x: contain;
     overscroll-behavior-y: auto;
   }
 
-  /* Sticky row/column labels inside scroll containers — never block touch pan gestures */
+  /* Sticky row/column labels inside scroll containers never block touch pan gestures */
   .bb-sticky-scroll-cell {
     touch-action: pan-x pan-y;
   }
 
   /*
-   * Scrollable tables — opaque sticky header surfaces so row text does not bleed through.
+   * Scrollable tables opaque sticky header surfaces so row text does not bleed through.
    * --muted is intentionally translucent; headers must use solid --card.
    */
   .bb-smooth-scroll thead[class*='sticky'] {
@@ -1191,7 +1191,7 @@
   }
 
   /*
-   * iOS Safari / iPadOS WebKit — Android keeps the rules above unchanged.
+   * iOS Safari / iPadOS WebKit Android keeps the rules above unchanged.
    * Fixes: nested overflow scroll, backdrop-filter parents, sticky touch capture.
    */
   @supports (-webkit-touch-callout: none) {
@@ -1224,7 +1224,7 @@
 }
 
 /*
- * Schedule grid — unlayered so it beats `.dark` token defaults (layered utilities lose).
+ * Schedule grid unlayered so it beats `.dark` token defaults (layered utilities lose).
  * Keeps on-screen schedule readable in dark mode and supports PNG export.
  */
 .bb-schedule-export-surface,
@@ -1255,7 +1255,7 @@
   background-color: #f7f5e8 !important;
 }
 
-/* Token match only — substring bg-muted selectors falsely match hover:bg-muted utilities */
+/* Token match only substring bg-muted selectors falsely match hover:bg-muted utilities */
 .dark .bb-schedule-export-surface :where(.bg-muted, [class~='bg-muted/50'], [class~='bg-muted/80']),
 .bb-schedule-export-surface :where(.bg-muted, [class~='bg-muted/50'], [class~='bg-muted/80']) {
   background-color: rgb(0 0 0 / 0.04) !important;
@@ -1271,7 +1271,7 @@
   border-color: rgb(0 0 0 / 0.1) !important;
 }
 
-/* Schedule name column — full row dividers on sticky cells, no elevation */
+/* Schedule name column full row dividers on sticky cells, no elevation */
 .bb-schedule-export-surface .bb-schedule-name-cell {
   --schedule-grid-line: rgb(0 0 0 / 0.1);
   align-self: stretch;
@@ -1368,7 +1368,7 @@
 }
 
 /*
- * Android mobile — scale schedule to match iOS visual size (iOS unchanged).
+ * Android mobile scale schedule to match iOS visual size (iOS unchanged).
  * Chrome on Android inflates text/layout vs Safari; uniform zoom keeps parity.
  * PNG export resets zoom via .bb-schedule-export-capturing.
  */
@@ -1399,7 +1399,7 @@
   }
 }
 
-/* Schedule grid crosshair — inset rounded guides (match shift pill geometry) */
+/* Schedule grid crosshair inset rounded guides (match shift pill geometry) */
 .bb-schedule-export-surface {
   --bb-schedule-guide-inset: 4px;
   --bb-schedule-guide-radius: 0.5rem;
@@ -1465,7 +1465,7 @@
   border-bottom: 2px solid var(--bb-schedule-guide-accent);
 }
 
-/* Schedule PNG export — hide edit chrome and crosshair guides (desktop / iOS / Android) */
+/* Schedule PNG export hide edit chrome and crosshair guides (desktop / iOS / Android) */
 .bb-schedule-export-capturing .bb-schedule-drag-handle {
   display: none !important;
 }
@@ -1547,7 +1547,7 @@
   box-shadow: none !important;
 }
 
-/* Individual roster PNG export — fixed desktop layout (mobile viewport ignores md: breakpoints) */
+/* Individual roster PNG export fixed desktop layout (mobile viewport ignores md: breakpoints) */
 .bb-roster-export-capturing {
   width: 840px !important;
   max-width: 840px !important;
@@ -1615,7 +1615,7 @@
 }
 
 /*
- * Individual roster PNG — match on-screen bg-card (#faf9f2), not schedule export cream.
+ * Individual roster PNG match on-screen bg-card (#faf9f2), not schedule export cream.
  */
 .bb-roster-export-surface,
 .dark .bb-roster-export-surface {

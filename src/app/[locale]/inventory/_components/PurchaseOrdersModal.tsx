@@ -78,7 +78,7 @@ export default function PurchaseOrdersModal({
           : 'relative flex flex-col flex-1 min-h-0 overflow-hidden w-full bg-card'
       }
     >
-      {/* Header + channel filters — fixed above the single scroll region */}
+      {/* Header + channel filters fixed above the single scroll region */}
         <div className={cn(
           PASTEL_SURFACE,
           "bg-[#fff3dd] pt-4 pb-4 w-full shrink-0 box-border border-b border-black/5 bb-shadow-sm",
@@ -123,8 +123,7 @@ export default function PurchaseOrdersModal({
             <h2 className="text-xl font-normal flex items-center gap-2 antialiased whitespace-nowrap">
               <ShoppingCart className="w-5 h-5 opacity-60" /> รายการสั่งซื้อ
               {isExportMode && !selectedChannels.includes('all') && (
-                <span className="text-base opacity-50 font-normal">
-                  — {selectedChannels.join(', ')}
+                <span className="text-base opacity-50 font-normal"> {selectedChannels.join(', ')}
                 </span>
               )}
             </h2>
@@ -184,7 +183,7 @@ export default function PurchaseOrdersModal({
         )}
       </div>
 
-      {/* Table body — scroll (vertical + horizontal) only inside the table area */}
+      {/* Table body scroll (vertical + horizontal) only inside the table area */}
       <div
         className={
           isExportMode

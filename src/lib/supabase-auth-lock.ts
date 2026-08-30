@@ -2,7 +2,7 @@ type AuthLockTask<T> = () => Promise<T>;
 
 let authLockTail: Promise<void> = Promise.resolve();
 
-/** Serializes GoTrue storage operations — avoids Navigator Lock orphans in React Strict Mode. */
+/** Serializes GoTrue storage operations avoids Navigator Lock orphans in React Strict Mode. */
 export function runWithSupabaseAuthLock<T>(task: AuthLockTask<T>): Promise<T> {
   const run = authLockTail.then(task, task);
   authLockTail = run.then(

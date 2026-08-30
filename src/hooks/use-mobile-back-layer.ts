@@ -8,7 +8,7 @@ import {
 } from '@/lib/mobile-back-layer';
 
 export type UseMobileBackLayerOptions = {
-  /** Set true before deactivating the layer to navigate away — avoids history.back() from the new route. */
+  /** Set true before deactivating the layer to navigate away avoids history.back() from the new route. */
   closingForNavigationRef?: MutableRefObject<boolean>;
 };
 

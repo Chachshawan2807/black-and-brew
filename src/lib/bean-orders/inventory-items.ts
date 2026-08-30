@@ -1,4 +1,4 @@
-/** Roasted bean SKUs in inventory — only these appear in bean order line items. */
+/** Roasted bean SKUs in inventory only these appear in bean order line items. */
 export const BEAN_ORDER_INVENTORY_ITEM_NAMES = [
   'เมล็ดกาแฟคั่วเข้ม',
   'เมล็ดกาแฟคั่วกลาง',

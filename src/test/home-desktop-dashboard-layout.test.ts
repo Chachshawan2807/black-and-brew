@@ -8,7 +8,7 @@ function readFile(relativePath: string): string {
   return fs.readFileSync(path.resolve(ROOT, relativePath), 'utf-8');
 }
 
-describe('Home desktop dashboard layout — collapsed sidebar', () => {
+describe('Home desktop dashboard layout collapsed sidebar', () => {
   test('HomePageClient enables viewport-fit dashboard when sidebar is collapsed on desktop', () => {
     const client = readFile('app/[locale]/_components/HomePageClient.tsx');
     expect(client).toMatch(/useSidebarToggle/);

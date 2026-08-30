@@ -1,5 +1,5 @@
 /**
- * Sliding-window rate limiter — pure in-memory, no Redis dependency.
+ * Sliding-window rate limiter pure in-memory, no Redis dependency.
  *
  * Each call to `check(key)` atomically inspects + (if allowed) records a
  * timestamp.  Blocked calls do NOT consume a slot.

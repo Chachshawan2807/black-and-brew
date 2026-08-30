@@ -552,7 +552,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
         <h2 className="mb-2 text-xs text-muted-foreground">ประวัติ</h2>
         <ul className="divide-y divide-border text-sm">
           {order.statusHistory.length === 0 ? (
-            <li className="py-1 text-muted-foreground">—</li>
+            <li className="py-1 text-muted-foreground"> </li>
           ) : (
             order.statusHistory.map((entry, i) => (
               <li key={`${entry.at}-${i}`} className="py-2 first:pt-0 last:pb-0 text-muted-foreground">

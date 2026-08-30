@@ -156,8 +156,8 @@ export default function ScheduleToolbar({
             <HintTooltip
               tip={
                 syncWeekLabel
-                  ? `ส่งสัปดาห์ ${syncWeekLabel} ไป Google Sheet (กดปุ่มเท่านั้น — ไม่ซิงค์อัตโนมัติ)`
-                  : 'ส่งสัปดาห์ที่กำลังดูไป Google Sheet (กดปุ่มเท่านั้น — ไม่ซิงค์อัตโนมัติ)'
+                  ? `ส่งสัปดาห์ ${syncWeekLabel} ไป Google Sheet (กดปุ่มเท่านั้น ไม่ซิงค์อัตโนมัติ)`
+                  : 'ส่งสัปดาห์ที่กำลังดูไป Google Sheet (กดปุ่มเท่านั้น ไม่ซิงค์อัตโนมัติ)'
               }
             >
               <button

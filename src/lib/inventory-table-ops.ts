@@ -1,4 +1,4 @@
-/** Pure inventory table filter/sort ops — safe for Web Workers and unit tests. */
+/** Pure inventory table filter/sort ops safe for Web Workers and unit tests. */
 
 import { filterInventoryGridItems } from '@/lib/inventory-grid-search';
 

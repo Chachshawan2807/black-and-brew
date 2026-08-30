@@ -41,7 +41,7 @@ describe('parseBeanOrderCustomerText', () => {
   });
 
   test('normalizes placeholder phone values to empty string', () => {
-    const withEmDash = parseBeanOrderCustomerText(`ลูกค้า: คุณเอ\nเบอร์: —\nที่อยู่จัดส่ง: 123 ระยอง 21110`);
+    const withEmDash = parseBeanOrderCustomerText(`ลูกค้า: คุณเอ\nเบอร์: \nที่อยู่จัดส่ง: 123 ระยอง 21110`);
     expect(withEmDash.phone).toBe('');
 
     const withHyphen = parseBeanOrderCustomerText(`ลูกค้า: คุณเอ\nเบอร์: -\nที่อยู่จัดส่ง: 123 ระยอง 21110`);

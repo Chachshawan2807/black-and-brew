@@ -17,7 +17,7 @@ const LABELS: Record<
     }
   >
 > = {
-  // iPhone preference — still names Touch ID so fingerprint-only devices stay covered.
+  // iPhone preference still names Touch ID so fingerprint-only devices stay covered.
   face: {
     th: {
       login: 'ใช้ Face ID หรือ Touch ID',
@@ -28,17 +28,17 @@ const LABELS: Record<
       settingsBody: 'ใช้ Face ID หรือ Touch ID แทนการพิมพ์ PIN บนเครื่องที่ไว้ใจ',
       settingsEnabled: 'เปิดใช้ Face ID หรือ Touch ID บนเครื่องนี้แล้ว',
       settingsUnsupported:
-        'อุปกรณ์นี้ยังไม่รองรับ Face ID หรือ Touch ID — ใช้ PIN ได้ตามปกติ',
+        'อุปกรณ์นี้ยังไม่รองรับ Face ID หรือ Touch ID ใช้ PIN ได้ตามปกติ',
     },
     en: {
       login: 'Use Face ID or Touch ID',
       enrollAction: 'Enable Face ID or Touch ID',
-      enrollBody: 'Next time, sign in with Face ID or Touch ID — no PIN typing needed.',
+      enrollBody: 'Next time, sign in with Face ID or Touch ID no PIN typing needed.',
       settingsTitle: 'Face ID / Touch ID login',
       settingsBody: 'Use Face ID or Touch ID instead of a PIN on trusted devices',
       settingsEnabled: 'Face ID or Touch ID enabled on this device',
       settingsUnsupported:
-        'This device does not support Face ID or Touch ID — you can still use a PIN.',
+        'This device does not support Face ID or Touch ID you can still use a PIN.',
     },
   },
   // Fingerprint-only devices (e.g. Android with no front camera).
@@ -50,17 +50,17 @@ const LABELS: Record<
       settingsTitle: 'เข้าด้วยลายนิ้วมือ',
       settingsBody: 'ใช้ลายนิ้วมือแทนการพิมพ์ PIN บนเครื่องที่ไว้ใจ',
       settingsEnabled: 'เปิดใช้ลายนิ้วมือบนเครื่องนี้แล้ว',
-      settingsUnsupported: 'อุปกรณ์นี้ยังไม่รองรับลายนิ้วมือ — ใช้ PIN ได้ตามปกติ',
+      settingsUnsupported: 'อุปกรณ์นี้ยังไม่รองรับลายนิ้วมือ ใช้ PIN ได้ตามปกติ',
     },
     en: {
       login: 'Use fingerprint',
       enrollAction: 'Enable fingerprint',
-      enrollBody: 'Next time, sign in with fingerprint — no PIN typing needed.',
+      enrollBody: 'Next time, sign in with fingerprint no PIN typing needed.',
       settingsTitle: 'Fingerprint login',
       settingsBody: 'Use fingerprint instead of a PIN on trusted devices',
       settingsEnabled: 'Fingerprint enabled on this device',
       settingsUnsupported:
-        'This device does not support fingerprint — you can still use a PIN.',
+        'This device does not support fingerprint you can still use a PIN.',
     },
   },
   // Face-first with fingerprint fallback (Android with face unlock, iPad, desktop).
@@ -74,16 +74,16 @@ const LABELS: Record<
       settingsBody: 'ใช้ใบหน้าหรือลายนิ้วมือแทนการพิมพ์ PIN บนเครื่องที่ไว้ใจ',
       settingsEnabled: 'เปิดใช้งานแล้วบนเครื่องนี้',
       settingsUnsupported:
-        'อุปกรณ์นี้ยังไม่รองรับใบหน้าหรือลายนิ้วมือ — ใช้ PIN ได้ตามปกติ',
+        'อุปกรณ์นี้ยังไม่รองรับใบหน้าหรือลายนิ้วมือ ใช้ PIN ได้ตามปกติ',
     },
     en: {
       login: 'Use face or fingerprint',
       enrollAction: 'Enable face or fingerprint',
-      enrollBody: 'Next time, sign in with face or fingerprint — no PIN typing needed.',
+      enrollBody: 'Next time, sign in with face or fingerprint no PIN typing needed.',
       settingsTitle: 'Biometric login',
       settingsBody: 'Use face or fingerprint instead of a PIN on trusted devices',
       settingsEnabled: 'Enabled on this device',
-      settingsUnsupported: 'This device does not support biometrics — you can still use a PIN.',
+      settingsUnsupported: 'This device does not support biometrics you can still use a PIN.',
     },
   },
 };
@@ -95,7 +95,7 @@ function readUserAgent(userAgent?: string): string {
 /**
  * Sync preference only. Android defaults to face-first (`both`);
  * use `resolveBiometricKind` when camera probing is available.
- * Never restricts WebAuthn — the OS still chooses Face / fingerprint.
+ * Never restricts WebAuthn the OS still chooses Face / fingerprint.
  */
 export function detectBiometricKind(userAgent?: string): BiometricKind {
   const ua = readUserAgent(userAgent);
@@ -111,7 +111,7 @@ export async function androidLikelySupportsFaceUnlock(
   const ua = readUserAgent(userAgent);
   if (!/Android/i.test(ua)) return false;
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
-    // Prefer face-first when we cannot probe — OS falls back to fingerprint.
+    // Prefer face-first when we cannot probe OS falls back to fingerprint.
     return true;
   }
 
@@ -161,7 +161,7 @@ export function getBiometricLabels(
   return LABELS[kind][locale];
 }
 
-/** Visual preference — face icon unless fingerprint-only. */
+/** Visual preference face icon unless fingerprint-only. */
 export function usesFaceBiometricIcon(
   kindOrUserAgent?: BiometricKind | string
 ): boolean {

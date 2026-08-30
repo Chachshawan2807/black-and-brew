@@ -12,7 +12,7 @@ function sampleInsight(overrides: Partial<Insight> = {}): Insight {
   return {
     ruleId: 'leave_coverage_risk',
     title: 'ลา · สต็อกต่ำ',
-    summary: 'พนักงานลา 3 คน สต็อกต่ำ 8 รายการ — ควรตรวจสอบก่อนเปิดร้านค่ะ',
+    summary: 'พนักงานลา 3 คน สต็อกต่ำ 8 รายการ ควรตรวจสอบก่อนเปิดร้านค่ะ',
     urlPath: '/schedule',
     priority: 'high',
     modules: ['schedule', 'inventory'],
@@ -46,7 +46,7 @@ describe('insight-web-push', () => {
   test('buildInsightPushPayload keeps insight title and full summary in OS body', () => {
     const insight = sampleInsight({
       title: 'ลาหลายคน',
-      summary: 'สัปดาห์นี้มีพนักงานลารวม 2 คน — ควรตรวจตารางงานค่ะ',
+      summary: 'สัปดาห์นี้มีพนักงานลารวม 2 คน ควรตรวจตารางงานค่ะ',
     });
     const payload = buildInsightPushPayload(insight, '2026-07-24', 'th');
     expect(payload.title).toBe('ลาหลายคน');

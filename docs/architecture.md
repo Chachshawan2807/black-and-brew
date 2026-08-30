@@ -1,4 +1,4 @@
-# Architecture — BLACKANDBREW ERP
+# Architecture BLACKANDBREW ERP
 
 > Version: 9.4 | Last Updated: 2026-08-27 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
@@ -70,7 +70,7 @@ Returning device → getPasskeyLoginOptions()
 | Server Actions | `SUPABASE_SERVICE_ROLE_KEY` | Admin ops, AI tools, daily report |
 | Server Components | `getSupabaseAdmin()` (`src/lib/supabase-server.ts`) | Singleton admin client, `cache: 'no-store'` |
 
-RLS: `sql/fix_inventory_rls.sql` — authenticated-only policies; client must sign in anonymously after PIN.
+RLS: `sql/fix_inventory_rls.sql` authenticated-only policies; client must sign in anonymously after PIN.
 
 ```typescript
 export const supabase = createClient(url, anonKey, {
@@ -195,21 +195,21 @@ BeanOrdersClient / BeanOrderFormClient / BeanOrderDetailClient
 ### Shared select + navigation helpers (v9.3)
 
 ```text
-RoundedSelect / BB_SELECT_TRIGGER_CLASS — shared native <select> chrome (bean-orders, dashboard roster, maintenance listbox trigger)
-navigateWithViewTransition / navigateWithoutViewTransition — src/lib/view-transition.ts (date-filter navigations skip VT)
-warmRouteNavigation — src/lib/warm-route-navigation.ts (route chunk preload + router.prefetch before tap)
-route-chunk-preload — src/lib/route-chunk-preload.ts (NavPreloadLink, RoutePrefetchOnIdle, bean-orders list hover)
-ViewTransitionNavigation — src/components/shell/ViewTransitionNavigation.tsx (sidebar + in-app links)
-ClickableDatePicker / ClickableDateRangePicker — src/components/ui/ (full-width touch hitbox for date inputs)
-dropdown-menu — src/components/ui/dropdown-menu.tsx (Radix wrapper; focus-visible keyboard highlight)
+RoundedSelect / BB_SELECT_TRIGGER_CLASS shared native <select> chrome (bean-orders, dashboard roster, maintenance listbox trigger)
+navigateWithViewTransition / navigateWithoutViewTransition src/lib/view-transition.ts (date-filter navigations skip VT)
+warmRouteNavigation src/lib/warm-route-navigation.ts (route chunk preload + router.prefetch before tap)
+route-chunk-preload src/lib/route-chunk-preload.ts (NavPreloadLink, RoutePrefetchOnIdle, bean-orders list hover)
+ViewTransitionNavigation src/components/shell/ViewTransitionNavigation.tsx (sidebar + in-app links)
+ClickableDatePicker / ClickableDateRangePicker src/components/ui/ (full-width touch hitbox for date inputs)
+dropdown-menu src/components/ui/dropdown-menu.tsx (Radix wrapper; focus-visible keyboard highlight)
 ```
 
 ### Spreadsheet grid accessibility helpers (v9.3, in progress)
 
 ```text
-inventory-grid-cell-a11y.ts — inventory spreadsheet cell labels + roving tabindex
-schedule-grid-cell-a11y.ts — schedule grid cell keyboard/a11y metadata
-inventory-grid-cell-blur.ts — mobile blur/commit scheduling for inventory cells
+inventory-grid-cell-a11y.ts inventory spreadsheet cell labels + roving tabindex
+schedule-grid-cell-a11y.ts schedule grid cell keyboard/a11y metadata
+inventory-grid-cell-blur.ts mobile blur/commit scheduling for inventory cells
 ```
 
 ### Inventory Realtime Context (v8.6)
@@ -233,11 +233,11 @@ inventory_items.count_policy
 
 ```text
 InventoryQuickActionFAB → use-inventory-quick-action hook
-→ inventory-frequent-items.ts — localStorage cache + touch on save
-→ inventory-quick-action-draft.ts   — draft persistence
-→ inventory-quick-bulk.ts           — bulk entry batching
-→ inventory-quick-qty-step.ts         — qty stepper logic
-→ inventory-quick-search-filter.ts  — item search/filter
+→ inventory-frequent-items.ts localStorage cache + touch on save
+→ inventory-quick-action-draft.ts draft persistence
+→ inventory-quick-bulk.ts bulk entry batching
+→ inventory-quick-qty-step.ts qty stepper logic
+→ inventory-quick-search-filter.ts item search/filter
 → recordBulkInventoryTransactions() server action
 ```
 
@@ -317,7 +317,7 @@ Event-driven debounce: `scheduleProactiveInsightEvaluation()` after `saveShift` 
 
 ## 5b. AI Data Access Map (AI-GATEWAY-P3)
 
-Every read the AI layer performs funnels through `src/lib/ai-data-gateway.ts` — the single doorway between the LLM tools and Supabase. This keeps the Service Role client, the DEC-069 column presets, and the `SECURITY DEFINER` RPCs as the only ways the model can touch data.
+Every read the AI layer performs funnels through `src/lib/ai-data-gateway.ts` the single doorway between the LLM tools and Supabase. This keeps the Service Role client, the DEC-069 column presets, and the `SECURITY DEFINER` RPCs as the only ways the model can touch data.
 
 **Auth gate:** `/api/chat` requires a full (non–read-only) PIN session. Read-only kiosk accounts are rejected because AI tools run through the Service Role client (RLS bypass).
 
@@ -340,7 +340,7 @@ Hybrid Router (/api/chat)
               └─ other allowed tables ──────────▶ fetchTablePreset(…)
 ```
 
-### AI-readable tables (21 — public ERP tables)
+### AI-readable tables (21 public ERP tables)
 
 | Domain | Tables | Default row limit |
 | --- | --- | --- |
@@ -384,7 +384,7 @@ Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIM
 
 - DEC-069 preset lockdown: `fetchTablePreset` ignores any AI-supplied `columns`; it always selects the table preset. Arbitrary column selection (a data-exfiltration vector through the RLS-bypassing Service Role client) is impossible by construction.
 - RPC snapshot: `get_ai_store_status` (`sql/ai_agent_views.sql`) remains available via `fetchInventorySummary()` for store-status snapshots. LOW status uses `stock <= order_point AND target_stock > stock` (migration `20260615130000`). Do not delete `sql/ai_agent_views.sql`.
-- Single doorway: `database-tools.ts` routes and shapes only. Add new AI-readable tables to `ai-data-gateway.ts` — never open a second Supabase admin client in a tool.
+- Single doorway: `database-tools.ts` routes and shapes only. Add new AI-readable tables to `ai-data-gateway.ts` never open a second Supabase admin client in a tool.
 - New public tables: add to `AI_ALLOWED_TABLES`, define a column preset, set `TABLE_MAX_LIMITS`, and extend tests in `src/test/ai-data-gateway.test.ts`.
 - Bru Report Style: deterministic and LLM answers follow `src/lib/agents/report-response.ts` (female politeness, no bold/tables/UUIDs, DD-MM-YYYY).
 
@@ -413,7 +413,7 @@ Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIM
 | Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat (`@ai-sdk/google`) |
 | Tavily | `TAVILY_API_KEY` | AI web search |
 | Web Push (VAPID) | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | Cross-device inventory alerts via `web-push` |
-| Vercel | Git deployment | App hosting (no Vercel Cron — schedules on cron-job.org) |
+| Vercel | Git deployment | App hosting (no Vercel Cron schedules on cron-job.org) |
 
 ---
 
@@ -427,4 +427,4 @@ Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIM
 | Micro-interactions | `.bb-transition`, Button `duration-200` | Buttons, inputs, sidebar links |
 | CSS utilities | `globals.css` `@layer utilities` | `animate-in`, `fade-in`, `zoom-in-95`, `slide-*` |
 
-Constraint: Motion changes opacity/transform only — no layout position or dimension changes on desktop/mobile.
+Constraint: Motion changes opacity/transform only no layout position or dimension changes on desktop/mobile.

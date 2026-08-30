@@ -1,4 +1,4 @@
-/** Policy subject — who is asking (PIN or Supabase session). */
+/** Policy subject who is asking (PIN or Supabase session). */
 export type PolicySubject = {
   verified: boolean;
   readOnly: boolean;

@@ -57,6 +57,6 @@ for (const check of checks) {
 
 const ref = url.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] ?? 'unknown';
 console.log(`\nProject ref: ${ref}`);
-console.log(failed === 0 ? '\nAll checks passed.' : `\n${failed} check(s) failed — run pending migrations.`);
+console.log(failed === 0 ? '\nAll checks passed.' : `\n${failed} check(s) failed run pending migrations.`);
 
 process.exit(failed > 0 ? 1 : 0);

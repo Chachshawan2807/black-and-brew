@@ -46,7 +46,7 @@ export function useNotificationActions(): NotificationActions {
   return ctx;
 }
 
-/** Combined hook — prefer useNotificationState / useNotificationActions when possible. */
+/** Combined hook prefer useNotificationState / useNotificationActions when possible. */
 export function useNotifications(): NotificationContextValue {
   return { ...useNotificationState(), ...useNotificationActions() };
 }

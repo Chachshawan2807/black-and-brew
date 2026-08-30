@@ -38,28 +38,28 @@ export function getLastPushRegistrationError(): string | null {
 export function formatPushRegistrationError(code: string, isTh: boolean): string {
   const messages: Record<string, { th: string; en: string }> = {
     pin_session_required: {
-      th: 'เซสชันหมดอายุ — ออกจากระบบแล้วเข้าใหม่ด้วย PIN',
-      en: 'Session expired — sign out and sign in again with PIN',
+      th: 'เซสชันหมดอายุ ออกจากระบบแล้วเข้าใหม่ด้วย PIN',
+      en: 'Session expired sign out and sign in again with PIN',
     },
     supabase_session_missing: {
-      th: 'ไม่สามารถเชื่อมต่อเซสชันได้ — ลองออกเข้าใหม่',
-      en: 'Could not connect session — try signing out and back in',
+      th: 'ไม่สามารถเชื่อมต่อเซสชันได้ ลองออกเข้าใหม่',
+      en: 'Could not connect session try signing out and back in',
     },
     permission_denied: {
-      th: 'การแจ้งเตือนถูกปิด — เปิดได้ในการตั้งค่าอุปกรณ์',
-      en: 'Notifications blocked — enable them in device settings',
+      th: 'การแจ้งเตือนถูกปิด เปิดได้ในการตั้งค่าอุปกรณ์',
+      en: 'Notifications blocked enable them in device settings',
     },
     push_unavailable: {
-      th: 'บริการ Push ไม่พร้อม — เปิดแอปจากไอคอนหน้าจอโฮม (ไม่ใช่ Safari)',
-      en: 'Push unavailable — open the app from the home screen icon (not Safari)',
+      th: 'บริการ Push ไม่พร้อม เปิดแอปจากไอคอนหน้าจอโฮม (ไม่ใช่ Safari)',
+      en: 'Push unavailable open the app from the home screen icon (not Safari)',
     },
     gesture_required: {
       th: 'กดปุ่มลงทะเบียนการแจ้งเตือนด้านล่างเพื่อเปิดใช้บน iPhone/iPad',
       en: 'Tap Register notifications below to enable on iPhone/iPad',
     },
     server_not_registered: {
-      th: 'เครื่องนี้ยังไม่ได้ลงทะเบียนกับเซิร์ฟเวอร์ — กดปุ่มลงทะเบียนอีกครั้ง',
-      en: 'This device is not registered with the server — tap Register again',
+      th: 'เครื่องนี้ยังไม่ได้ลงทะเบียนกับเซิร์ฟเวอร์ กดปุ่มลงทะเบียนอีกครั้ง',
+      en: 'This device is not registered with the server tap Register again',
     },
   };
 
@@ -68,7 +68,7 @@ export function formatPushRegistrationError(code: string, isTh: boolean): string
   return isTh ? `ลงทะเบียนไม่สำเร็จ (${code})` : `Registration failed (${code})`;
 }
 
-/** Debounce window — merges resume / focus / pageshow bursts on mobile. */
+/** Debounce window merges resume / focus / pageshow bursts on mobile. */
 const MAINTENANCE_DEBOUNCE_MS = 400;
 /** Retry when Supabase session is not ready yet after PIN unlock. */
 const MAINTENANCE_RETRY_MS = [0, 800, 2_000] as const;
@@ -162,7 +162,7 @@ export function hasMatchingApplicationServerKey(
   vapidPublicKey: string,
 ): boolean {
   const existingKey = subscription.options?.applicationServerKey;
-  // Safari / iOS PWAs often omit applicationServerKey — do not treat as stale.
+  // Safari / iOS PWAs often omit applicationServerKey do not treat as stale.
   if (!existingKey) return true;
 
   const expected = urlBase64ToUint8Array(vapidPublicKey);
@@ -210,7 +210,7 @@ export type OsNotificationDeferContext = {
   appInForeground?: boolean;
 };
 
-/** True when the PWA tab is visible — OS banners should come from realtime, not deferred push. */
+/** True when the PWA tab is visible OS banners should come from realtime, not deferred push. */
 export function isAppInForeground(): boolean {
   if (typeof document === 'undefined') return false;
   return document.visibilityState === 'visible';
@@ -219,9 +219,9 @@ export function isAppInForeground(): boolean {
 /**
  * When Web Push is active and the app is in the background, the service worker owns
  * OS banners so foreground Supabase realtime does not duplicate alerts.
- * Foreground mobile PWAs must not defer — push often fails to surface banners while
+ * Foreground mobile PWAs must not defer push often fails to surface banners while
  * the app is open (LINE/TikTok-style heads-up still comes from the live session).
- * Only defer after the server has the endpoint — a local-only iOS subscription
+ * Only defer after the server has the endpoint a local-only iOS subscription
  * must not suppress realtime banners when delivery cannot work.
  */
 export function shouldDeferOsNotificationToPush(
@@ -395,7 +395,7 @@ export async function ensurePushSubscription(
   }
 }
 
-/** Call directly from a button/toggle click — required for first-time iOS Web Push. */
+/** Call directly from a button/toggle click required for first-time iOS Web Push. */
 export async function ensurePushSubscriptionFromUserGesture(locale: string): Promise<boolean> {
   return ensurePushSubscription(locale, { fromUserGesture: true });
 }

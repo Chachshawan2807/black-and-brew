@@ -117,7 +117,7 @@ export async function saveNotificationsToIdb(
       db.close();
     }
   } catch {
-    // ignore — e.g. private browsing
+    // ignore e.g. private browsing
   }
 }
 

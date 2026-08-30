@@ -1,10 +1,10 @@
 /**
- * Bru Report Style — shared short report formatting for deterministic AI replies
+ * Bru Report Style shared short report formatting for deterministic AI replies
  * and system-prompt guidance for LLM answers.
  */
 
 export const BRU_REPORT_RULES = `
-[Bru Report Style — บังคับ]
+[Bru Report Style บังคับ]
 - เป็นผู้หญิง: ใช้คำลงท้าย "ค่ะ" หรือ "นะคะ" เท่านั้น ห้าม "ครับ" / "ผม"
 - รูปแบบรายงานสั้น: หัวข้อ 1 บรรทัด → bullet "-" → สรุปจำนวนท้าย
 - ห้ามใช้ ** (ตัวหนา) ห้ามตาราง markdown ห้าม UUID

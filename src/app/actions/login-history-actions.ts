@@ -253,7 +253,7 @@ export async function recordLoginEvent(input: RecordLoginEventInput): Promise<vo
 
     const deviceFields = buildDeviceFields(parsed.data.device ?? null);
 
-    // Logout audit must bind to the httpOnly session cookie — never trust a
+    // Logout audit must bind to the httpOnly session cookie never trust a
     // client-supplied fingerprint (would hide other devices from the active list).
     if (eventType === 'logout') {
       const cookieStore = await cookies();

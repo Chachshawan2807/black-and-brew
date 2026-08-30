@@ -382,7 +382,7 @@ export function useInventoryQuickAction<T extends BulkStockItem>({
           setBulkQueue(restoredQueue);
         }
         alert(
-          `บันทึกสำเร็จ ${succeeded.length}/${resultCount} — ${failed
+          `บันทึกสำเร็จ ${succeeded.length}/${resultCount} ${failed
             .map((row) => {
               const name = items.find((item) => item.id === row.itemId)?.name ?? row.itemId;
               return `${name}: ${row.error ?? 'ล้มเหลว'}`;

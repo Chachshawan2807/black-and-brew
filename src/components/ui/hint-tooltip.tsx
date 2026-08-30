@@ -19,7 +19,7 @@ export type HintTooltipProps = {
 
 /**
  * Short styled hover/focus hint for icon buttons and compact controls.
- * Skips native `title` — pass copy via `tip` only.
+ * Skips native `title` pass copy via `tip` only.
  * On touch-first devices, renders children directly so Radix tooltip does not intercept taps.
  */
 export function HintTooltip({

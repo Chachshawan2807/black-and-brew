@@ -39,12 +39,12 @@ describe('task work sessions', () => {
       task({
         id: 'under',
         task_type: 'schedule_understaffed',
-        title: 'ตรวจตาราง — วันที่คนน้อย',
+        title: 'ตรวจตาราง วันที่คนน้อย',
       }),
       task({
         id: 'leave',
         task_type: 'schedule_leave_risk',
-        title: 'ตรวจตาราง — ลาหลายคน',
+        title: 'ตรวจตาราง ลาหลายคน',
         created_at: '2026-08-29T01:00:00.000Z',
       }),
     ]);
@@ -60,13 +60,13 @@ describe('task work sessions', () => {
     const steps = groupTasksIntoGuidanceSteps([
       task({
         task_type: 'schedule_understaffed',
-        title: 'ตรวจตาราง — วันที่คนน้อย',
+        title: 'ตรวจตาราง วันที่คนน้อย',
       }),
     ]);
 
     expect(steps).toHaveLength(1);
     expect(steps[0]?.kind).toBe('single');
-    expect(formatGuidanceStep(steps[0]!)).toBe('"ตรวจตาราง — วันที่คนน้อย"');
+    expect(formatGuidanceStep(steps[0]!)).toBe('"ตรวจตาราง วันที่คนน้อย"');
   });
 
   test('chains grouped schedule step before unrelated tasks', () => {
@@ -75,12 +75,12 @@ describe('task work sessions', () => {
         task({
           id: 'under',
           task_type: 'schedule_understaffed',
-          title: 'ตรวจตาราง — วันที่คนน้อย',
+          title: 'ตรวจตาราง วันที่คนน้อย',
         }),
         task({
           id: 'leave',
           task_type: 'schedule_leave_risk',
-          title: 'ตรวจตาราง — ลาหลายคน',
+          title: 'ตรวจตาราง ลาหลายคน',
         }),
         task({
           id: 'buy',
@@ -101,7 +101,7 @@ describe('task work sessions', () => {
       task({
         id: 'under',
         task_type: 'schedule_understaffed',
-        title: 'ตรวจตาราง — วันที่คนน้อย',
+        title: 'ตรวจตาราง วันที่คนน้อย',
       }),
       task({
         id: 'buy',
@@ -112,7 +112,7 @@ describe('task work sessions', () => {
       task({
         id: 'leave',
         task_type: 'schedule_leave_risk',
-        title: 'ตรวจตาราง — ลาหลายคน',
+        title: 'ตรวจตาราง ลาหลายคน',
       }),
     ]);
 

@@ -14,7 +14,7 @@ export interface ActiveLoginSession {
   isCurrentDevice: boolean;
 }
 
-/** Latest event per fingerprint — active when last event is login_success. */
+/** Latest event per fingerprint active when last event is login_success. */
 export function computeActiveLoginSessions(
   rows: LoginHistoryRow[],
   currentFingerprint?: string | null,

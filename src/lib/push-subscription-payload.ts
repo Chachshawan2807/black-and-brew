@@ -21,7 +21,7 @@ export function classifyPushEndpoint(endpoint: string): 'apple' | 'fcm' | 'other
 }
 
 /**
- * Safari / iOS PWAs may omit keys in toJSON() — fall back to getKey() + base64url.
+ * Safari / iOS PWAs may omit keys in toJSON() fall back to getKey() + base64url.
  */
 export function extractPushSubscriptionPayload(
   subscription: Pick<PushSubscription, 'endpoint' | 'toJSON' | 'getKey'>,

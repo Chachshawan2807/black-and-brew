@@ -1,4 +1,4 @@
-/** Resolve in-app navigation targets — block open redirects from service worker messages. */
+/** Resolve in-app navigation targets block open redirects from service worker messages. */
 
 export function resolveSameOriginNavigationUrl(
   rawUrl: string,

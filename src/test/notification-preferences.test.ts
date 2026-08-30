@@ -21,7 +21,7 @@ function prefs(overrides: Partial<NotificationPreferences> = {}): NotificationPr
 }
 
 describe('shouldNotifyForAction', () => {
-  it('uses only the inventory master switch — not per-action toggles', () => {
+  it('uses only the inventory master switch not per-action toggles', () => {
     // Legacy localStorage/server prefs may still carry per-action flags; ignore them.
     const enabled = {
       ...prefs({ enabled: true }),
@@ -239,7 +239,7 @@ describe('saveNotificationPreferences recursion guards', () => {
     const onPrefsChanged = () => {
       nestedDispatches += 1;
       if (nestedDispatches > 50) return;
-      // Force a *different* nested write during dispatch — must not re-enter dispatch.
+      // Force a *different* nested write during dispatch must not re-enter dispatch.
       saveNotificationPreferences(
         prefs({
           enabled: nestedDispatches === 1,
@@ -253,7 +253,7 @@ describe('saveNotificationPreferences recursion guards', () => {
     window.addEventListener('bb-notification-prefs-changed', onPrefsChanged);
 
     expect(() => saveNotificationPreferences(prefs({ enabled: false }))).not.toThrow();
-    // Outer event only — nested save must not fire another synchronous event.
+    // Outer event only nested save must not fire another synchronous event.
     expect(nestedDispatches).toBe(1);
 
     window.removeEventListener('bb-notification-prefs-changed', onPrefsChanged);

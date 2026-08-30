@@ -12,14 +12,14 @@ describe('Bru report response style', () => {
     const text = buildBruReport({
       header: '📦 สรุปรายการสินค้าที่ต้องสั่งเติม',
       bullets: [
-        'นมสด — สต็อก: 2 ลิตร | จุดสั่งซื้อ: 5 | แนะนำสั่ง: 10 ลิตร',
-        'เมล็ดอาราบิก้า — สต็อก: 1 กก. | จุดสั่งซื้อ: 3 | แนะนำสั่ง: 5 กก.',
+        'นมสด สต็อก: 2 ลิตร | จุดสั่งซื้อ: 5 | แนะนำสั่ง: 10 ลิตร',
+        'เมล็ดอาราบิก้า สต็อก: 1 กก. | จุดสั่งซื้อ: 3 | แนะนำสั่ง: 5 กก.',
       ],
       footerCount: { label: 'รายการที่ต้องเติมสต็อก', count: 2 },
     });
 
     expect(text).toContain('📦 สรุปรายการสินค้าที่ต้องสั่งเติม');
-    expect(text).toContain('- นมสด — สต็อก: 2 ลิตร');
+    expect(text).toContain('- นมสด สต็อก: 2 ลิตร');
     expect(text).toContain('รวม 2 รายการที่ต้องเติมสต็อกค่ะ');
     expect(text).not.toMatch(/ครับ|ผม/);
     expect(text.split('\n').length).toBeLessThanOrEqual(15);

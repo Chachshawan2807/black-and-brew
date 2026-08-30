@@ -15,7 +15,7 @@ describe('warmRouteNavigation', () => {
 
   test('skips prefetch when no prefetch function is provided', () => {
     warmRouteNavigation('/th/bean-orders/order-1');
-    // No throw — chunk preload is fire-and-forget.
+    // No throw chunk preload is fire-and-forget.
     expect(true).toBe(true);
   });
 });

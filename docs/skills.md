@@ -17,7 +17,7 @@
 - Inventory Truth Layer: `inventory-stock.ts`, `mergeInventoryRealtimeUpdate`, `computeItemsToOrder`, `updateInventoryStock`, RPC `set_inventory_stock`.
 - Supabase Session Bridge: `ensureSupabaseSession()` after PIN → anonymous `authenticated` RLS.
 - Web Push: `push-actions.ts`, `web-push.ts`, `push_subscriptions`, `PushSubscriptionManager` (inventory alerts + daily reports + proactive insights).
-- **Proactive cross-module insights:** `src/lib/proactive-insights/` + `GET /api/insight-alerts` — deterministic rules correlating schedule/inventory/maintenance/bean-orders/accuracy; Web Push + NotificationBell; prefs `proactiveInsights`.
+- **Proactive cross-module insights:** `src/lib/proactive-insights/` + `GET /api/insight-alerts` deterministic rules correlating schedule/inventory/maintenance/bean-orders/accuracy; Web Push + NotificationBell; prefs `proactiveInsights`.
 - Trusted-device Passkeys: `passkey-actions.ts`, `src/lib/passkey/`, `settings/_components/PasskeyDeviceSection.tsx`, `device_passkeys`.
 
 ### UI and Client Runtime
@@ -33,7 +33,7 @@
 - Passkey: server-side challenges, RP verify, counter updates, revocation checks.
 - Prompt/XSS sanitizers on chat; rate limits (chat 30/hr, Tavily 10/hr) via Upstash Redis when configured.
 - Edge protection: `config/vercel-firewall.json` + `npm run security:firewall:apply` (see `docs/security/waf-and-ddos.md`).
-- RLS audit: `docs/security/rls-audit.md` — migration `20260724170556_harden_rls_and_rpc_execute.sql`.
+- RLS audit: `docs/security/rls-audit.md` migration `20260724170556_harden_rls_and_rpc_execute.sql`.
 - `data_change_logs` for mutation diffs + inventory notifications.
 
 ## Active AI Tool Surface
@@ -50,9 +50,9 @@
 ## Schema Guardrails
 
 - `inventory_items` preset: `id, name, unit, source, order_point, target_stock, stock, order_qty, updated_at`.
-- `shifts`: use `metadata.location` / `shift_type` — not `start_time` as the shift label.
+- `shifts`: use `metadata.location` / `shift_type` not `start_time` as the shift label.
 - `profiles`: `schedule_order`, `dashboard_order`, `display_order`.
-- `bean_orders`: `order_no`, statuses, totals — no slip URLs / tracking_raw in presets.
+- `bean_orders`: `order_no`, statuses, totals no slip URLs / tracking_raw in presets.
 - `device_passkeys`: service-role credential storage by `credential_id` + `session_fingerprint`.
 
 ## Domain skill modules (when to apply)
@@ -94,7 +94,7 @@ Use with `AGENTS.md` + `docs/rules.md`.
 | Skill | When | How |
 | --- | --- | --- |
 | Thai token optimizer | Thai text into AI context | `thaiTokenOptimizer` |
-| Restricted selects | Supabase reads | Explicit columns — never `select('*')` on hot paths |
+| Restricted selects | Supabase reads | Explicit columns never `select('*')` on hot paths |
 | Numeric sanitization | Forms → DB | Empty → `0`; strip leading zeros |
 | Sliding chat memory | `/api/chat` | `MAX_MEMORY_MESSAGES = 8`, char cap 2000; multi-turn intent (last 3 user msgs) |
 | Output token cap | Gemini calls | `maxOutputTokens: 1600`; `maxSteps` up to 7 for multi-domain |
@@ -102,12 +102,12 @@ Use with `AGENTS.md` + `docs/rules.md`.
 | Inventory bundle split | Heavy modals/charts | `next/dynamic` + intent preload |
 | Row containment | Dense inventory grid | `.bb-inventory-row-containment` |
 
-### Design anti-slop (Hallmark — supplementary)
+### Design anti-slop (Hallmark supplementary)
 
 | Skill | When | How |
 | --- | --- | --- |
-| Hallmark audit | UI ดู generic / AI-generated | `hallmark audit <file>` — punch list only; read `.cursor/skills/hallmark-erp/SKILL.md` first |
-| Hallmark study | อยากดึง DNA จาก reference | `hallmark study <URL\|screenshot>` — diagnosis only; ไม่ rebuild ERP core |
-| ERP UI improvements | ปรับหน้า inventory/schedule/dashboard | ใช้ `web-design-guidelines` + `impeccable critique` — **ไม่ใช้** Hallmark default/redesign |
+| Hallmark audit | UI ดู generic / AI-generated | `hallmark audit <file>` punch list only; read `.cursor/skills/hallmark-erp/SKILL.md` first |
+| Hallmark study | อยากดึง DNA จาก reference | `hallmark study <URL\|screenshot>` diagnosis only; ไม่ rebuild ERP core |
+| ERP UI improvements | ปรับหน้า inventory/schedule/dashboard | ใช้ `web-design-guidelines` + `impeccable critique` **ไม่ใช้** Hallmark default/redesign |
 
 Off-limits for Hallmark build/redesign: `inventory/`, `schedule/`, `dashboard/`, `settings/`, spreadsheet grids, pastel shift cards. Update upstream: `npx skills add nutlope/hallmark -y`.

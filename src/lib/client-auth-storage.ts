@@ -1,4 +1,4 @@
-/** Client-side PIN session flags — aligned with server cookie max-age. */
+/** Client-side PIN session flags aligned with server cookie max-age. */
 
 import { AUTH_SESSION_MAX_AGE_SEC } from '@/lib/auth-constants';
 import {

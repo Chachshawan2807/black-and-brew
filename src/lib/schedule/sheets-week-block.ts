@@ -234,7 +234,7 @@ export function findWeekBlockInSheet(
   return null;
 }
 
-/** @deprecated Use findWeekBlockInSheet — kept for tests that only need day numbers. */
+/** @deprecated Use findWeekBlockInSheet kept for tests that only need day numbers. */
 export function findWeekBlockDateRow(
   branchDayColumnRows: string[][],
   expectedDayNumbers: number[],

@@ -29,14 +29,14 @@ export function buildSecretaryDigestSummary(
       guidanceText?.trim() ||
       'งานวันนี้เสร็จครบแล้ว';
     return {
-      title: 'เลขาส่วนตัว — ไม่มีงานค้าง',
+      title: 'เลขาส่วนตัว ไม่มีงานค้าง',
       summary: emptySummary,
       pendingCount: 0,
     };
   }
 
   const headline = snapshot.isBranch2Day
-    ? `วันไปสาขา 2 — งานค้าง ${pending.length} รายการ`
+    ? `วันไปสาขา 2 งานค้าง ${pending.length} รายการ`
     : `งานค้างวันนี้ ${pending.length} รายการ`;
 
   const summary =

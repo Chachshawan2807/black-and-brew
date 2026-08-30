@@ -43,7 +43,7 @@ export function resolveCarrierCodeForSave(
 }
 
 export function getCarrierLabel(code: string | null | undefined): string {
-  if (!code) return '—';
+  if (!code) return ' ';
   return BEAN_ORDER_CARRIERS.find((c) => c.code === code)?.label ?? code;
 }
 
@@ -53,7 +53,7 @@ export function formatBeanOrderCarrierChangeMessage(
 ): string {
   const nextLabel = getCarrierLabel(nextCarrierCode);
   const previousLabel = getCarrierLabel(previousCarrierCode);
-  if (!previousCarrierCode || previousLabel === '—') {
+  if (!previousCarrierCode || previousLabel === ' ') {
     return `บันทึกช่องทางจัดส่ง: ${nextLabel}`;
   }
   if (previousLabel === nextLabel) {

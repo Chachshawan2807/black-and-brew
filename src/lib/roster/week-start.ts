@@ -1,6 +1,6 @@
 import { getDay } from 'date-fns';
 
-/** Individual roster calendar — Monday-first week. */
+/** Individual roster calendar Monday-first week. */
 export const ROSTER_INDIVIDUAL_DAY_LABELS_SHORT = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'] as const;
 
 export const ROSTER_INDIVIDUAL_DAY_LABELS_FULL = [

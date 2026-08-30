@@ -1,4 +1,4 @@
-# Supabase RLS Audit — BLACKANDBREW ERP
+# Supabase RLS Audit BLACKANDBREW ERP
 
 > Audit date: 2026-07-25  
 > Project: `yghzklvtuykziqlexnzh` (BLACK-AND-BREW)
@@ -20,19 +20,19 @@ Anyone with the public anon key can call PostgREST directly. RLS is the last lin
 | Table | RLS | Client access | Status |
 | --- | --- | --- | --- |
 | `app_preferences` | ON | authenticated read | OK |
-| `audit_logs` | ON | **server only** | **Fixed** — removed public ALL |
+| `audit_logs` | ON | **server only** | **Fixed** removed public ALL |
 | `bean_*` (6 tables) | ON | authenticated SELECT | OK (writes via server actions) |
-| `data_change_logs` | ON | scoped anon SELECT (inventory + daily report) | OK — intentional realtime |
-| `device_passkeys` | ON | **deny all** (no policies) | OK — server only |
-| `holidays` | ON | authenticated | **Fixed** — removed public ALL |
+| `data_change_logs` | ON | scoped anon SELECT (inventory + daily report) | OK intentional realtime |
+| `device_passkeys` | ON | **deny all** (no policies) | OK server only |
+| `holidays` | ON | authenticated | **Fixed** removed public ALL |
 | `inventory_*` | ON | authenticated | OK after anon sign-in |
-| `login_history` | ON | **deny all** (no policies) | OK — server only |
-| `profiles` | ON | authenticated + legacy public read | **Partial** — see debt |
+| `login_history` | ON | **deny all** (no policies) | OK server only |
+| `profiles` | ON | authenticated + legacy public read | **Partial** see debt |
 | `push_subscriptions` | ON | `auth.uid()` scoped | OK |
-| `regular_holidays` | ON | authenticated | **Fixed** — removed public ALL |
-| `revoked_sessions` | ON | **deny all** (no policies) | OK — server only |
-| `service_records` | ON | authenticated | **Fixed** — removed public ALL |
-| `shifts` | ON | authenticated + legacy public read | **Partial** — see debt |
+| `regular_holidays` | ON | authenticated | **Fixed** removed public ALL |
+| `revoked_sessions` | ON | **deny all** (no policies) | OK server only |
+| `service_records` | ON | authenticated | **Fixed** removed public ALL |
+| `shifts` | ON | authenticated + legacy public read | **Partial** see debt |
 
 ## Migration applied
 
@@ -77,7 +77,7 @@ Supabase advisor flags `USING (true)` on inventory/shifts mutations. Acceptable 
 
 ### 3. `data_change_logs` anon SELECT
 
-Intentional for inventory realtime, daily report history, proactive insights, bean-order notifications, and PIN lockout alerts. Scoped by `module` / `entity_type` / `metadata.kind` — see `20260810160403_insight_notification_realtime.sql`. Keep monitored.
+Intentional for inventory realtime, daily report history, proactive insights, bean-order notifications, and PIN lockout alerts. Scoped by `module` / `entity_type` / `metadata.kind` see `20260810160403_insight_notification_realtime.sql`. Keep monitored.
 
 ### 4. Leaked password protection
 

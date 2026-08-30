@@ -2,7 +2,7 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
-## 2026-08-27 (Sales Report retirement — doc sync)
+## 2026-08-27 (Sales Report retirement doc sync)
 
 - Synced keepers to retired Sales Report module: no `src/app/[locale]/sales/`, no `sales-actions.ts`, no `getSalesSummary` / `fetchSalesSummary`; migration `20260826140000_drop_sales_report_tables.sql`.
 - AI-readable table count 24 → 21 (`AI_ALLOWED_TABLES` in `ai-data-gateway.ts`).
@@ -13,7 +13,7 @@
 ## 2026-08-25 (Codebase cleanup + doc sync)
 
 - Removed dead stub `src/app/actions/insight-actions.ts` (no production callers; panel catch-up reads cron-written logs only).
-- Removed duplicate `src/app/[locale]/dashboard/types.ts` — `LiveShiftList` imports `@/types`.
+- Removed duplicate `src/app/[locale]/dashboard/types.ts` `LiveShiftList` imports `@/types`.
 - Removed empty scaffold dirs: `src/components/ai/`, `src/components/icons/`, `src/lib/inventory/`, `src/lib/line/`, `src/lib/market-insights/`, `src/app/api/security/`.
 - Deleted unreferenced `docs/master_lint_prompt.txt`.
 - Trimmed stale migration file table from `sql/README.md` → pointer to `supabase/migrations/` + `npm run db:verify` (kept `sql/historical/` archive).
@@ -28,7 +28,7 @@
 - Deleted 10 merged `docs/superpowers/{specs,plans}/2026-07-*` artifacts per `docs/superpowers/README.md` (features shipped; history in `docs/changelog.md` + git).
 - Documented then-present `insight-actions.ts` (`refreshProactiveInsightDigest`) in `docs/api.md` and `PROJECT_MAP.md` (removed 2026-08-25 as unused stub).
 - Synced keepers for Command Center `HomePurchaseOrdersSection.tsx`, grid a11y libs (`*-grid-cell-a11y.ts`, `inventory-grid-cell-blur.ts`), shared `ClickableDatePicker` / `dropdown-menu`, and new Vitest suites.
-- `npm run docs:links`: 56 project-owned markdown files, 0 broken links. Orphan scan: 34 false positives (colocated `_components` relative imports) — no `src/` deletions.
+- `npm run docs:links`: 56 project-owned markdown files, 0 broken links. Orphan scan: 34 false positives (colocated `_components` relative imports) no `src/` deletions.
 - Bumped keeper stamps to 2026-08-18 (product v9.3 unchanged).
 
 ## 2026-08-11 (Doc sync + migration index + link validator)
@@ -36,8 +36,8 @@
 - Documented migrations `20260810160403_insight_notification_realtime.sql`, `20260811105704_inventory_transaction_at.sql`, and `20260811115400_reset_inventory_history_transaction_at.sql` in `docs/database.md` and `sql/README.md`.
 - Synced keeper migration filenames to on-disk `supabase/migrations/` timestamps (e.g. `20260722074607_bean_orders.sql`, `20260724170556_harden_rls_and_rpc_execute.sql`, `20260729034015_record_inventory_transaction_old_stock.sql`).
 - Synced keepers for `transaction_at` ledger column, `p_transaction_at` RPC param, and navigation prefetch helpers (`warm-route-navigation.ts`, `route-chunk-preload.ts`, `ViewTransitionNavigation.tsx`).
-- Added `scripts/validate-md-links.mjs` + `npm run docs:links` — validated 67 project-owned markdown files, 0 broken links.
-- Orphan scan (`scripts/scan-dead-imports.mjs`): 34 false positives from colocated `_components` relative imports — no `src/` deletions.
+- Added `scripts/validate-md-links.mjs` + `npm run docs:links` validated 67 project-owned markdown files, 0 broken links.
+- Orphan scan (`scripts/scan-dead-imports.mjs`): 34 false positives from colocated `_components` relative imports no `src/` deletions.
 - No `.db`/`.sqlite` artifacts in repo; no `graphify-out/` directory. Third-party `.agents/skills/` left unchanged.
 - Bumped keeper stamps to 2026-08-11 (product v9.3 unchanged).
 
@@ -68,7 +68,7 @@
 - Fixed broken test paths in `docs/superpowers/plans/2026-07-22-bean-orders.md`; updated `docs/performance-baseline.md` (`error.tsx` exists).
 - Recorded **DEC-086** (proactive insights) in `docs/memory.md`.
 
-## 2026-07-23 (Doc scan — bean orders + AI full coverage)
+## 2026-07-23 (Doc scan bean orders + AI full coverage)
 
 - Scanned project-owned `.md` keepers; synced to bean orders module, AI gateway expansion (24 tables), and TrackingMore API routes.
 - Added `bean-orders` routes, `bean-order-actions.ts`, and `/api/bean-orders/*` to `PROJECT_MAP.md`, `README.md`, `docs/architecture.md`, `docs/api.md`, `docs/prd.md`.
@@ -79,7 +79,7 @@
 - Removed orphaned empty route folder `src/app/[locale]/market-insights/` (Market Insights retired in migration `20260622143800`).
 - No `.db`/`.sqlite` files in repo (Supabase migrations only). Third-party `.agents/skills/` left unchanged.
 
-## 2026-07-19 (Doc scan — migration + offline mutation accuracy)
+## 2026-07-19 (Doc scan migration + offline mutation accuracy)
 
 - Scanned 335 `.md` files repo-wide; edited 7 project-owned keepers for factual drift.
 - Fixed stale machine-local path in `docs/context.md` (`C:\Projects\black-and-brew`).
@@ -88,20 +88,20 @@
 - Extended `PROJECT_MAP.md` test index with branch-withdraw and FAB/offline suites.
 - No graphify references outside `AGENTS.md` retirement notice; no broken links in project-owned docs; third-party `.agents/skills/` left unchanged.
 
-## 2026-07-13 (DEC-083 — offline mutation + policy gates)
+## 2026-07-13 (DEC-083 offline mutation + policy gates)
 
 - Recorded **DEC-083** in `docs/memory.md`: inventory offline mutation queue (IndexedDB + SW Background Sync), replay via `POST /api/inventory/offline-mutation`, session binding (`offline-auth-session.ts`), and centralized authz in `src/lib/policies/`.
 - Synced DEC-083 into codebase-memory-mcp ADR (`manage_adr`) so agents inherit the same rules across sessions.
-- Agents: new mutations must use `gateMutation()` / `requireMutationAccess()` — no ad-hoc read-only checks; inventory-only offline scope (schedule/sales unchanged).
+- Agents: new mutations must use `gateMutation()` / `requireMutationAccess()` no ad-hoc read-only checks; inventory-only offline scope (schedule/sales unchanged).
 
-## 2026-07-13 (Doc scan — offline mutation + version sync)
+## 2026-07-13 (Doc scan offline mutation + version sync)
 
 - Scanned all project-owned `.md` files; bumped `docs/rules.md` and `docs/design.md` version headers from 9.1 → 9.2 (date 2026-07-10 → 2026-07-12) to match current release.
 - Documented new offline mutation feature: `POST /api/inventory/offline-mutation`, `src/lib/offline-mutation-*`, `src/lib/offline-auth-session.ts`, `src/lib/offline-replay-retry.ts`, `public/offline-mutation-store.js` added to `docs/api.md`, `docs/architecture.md`, `PROJECT_MAP.md`, `README.md`.
 - Added `src/workers/` and `src/lib/policies/` to PROJECT_MAP structure.
 - No broken path references found; no graphify or weather API remnants.
 
-## 2026-07-12 (Doc scan — branch withdraw + notifications)
+## 2026-07-12 (Doc scan branch withdraw + notifications)
 
 - Scanned 337 `.md` files repo-wide; edited 12 project-owned keepers for factual drift.
 - Added Branch Withdraw (`/[locale]/inventory/branch-withdraw`), `branch-withdraw-actions.ts`, `inventory_branch_withdrawals`, and related migrations/RPC to README, PROJECT_MAP, architecture, api, database, PRD, blueprint, context.
@@ -115,7 +115,7 @@
 - Fixed broken / machine-local links (e.g. `AGENTS.md` → `docs/SOP.md`); removed weather leftovers from PRD; documented `data-change-log-actions.ts` in `docs/api.md`.
 - Tightened blueprint / skills / changelog noise; canonical protocols remain in `docs/rules.md`, skills in `docs/skills.md`, risk R0/R1/R2 in `AGENTS.md`.
 
-## 2026-07-10 (Supabase Advisors — views + search_path)
+## 2026-07-10 (Supabase Advisors views + search_path)
 
 - Applied `20260710162206_harden_security_definer_views_and_search_path.sql` on remote.
 - `view_today_shifts` / `view_inventory_summary` → `security_invoker = true`.

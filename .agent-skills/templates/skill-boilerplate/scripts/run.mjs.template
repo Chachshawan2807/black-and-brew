@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Template run script — copy to skills/<id>/scripts/run.mjs
+ * Template run script copy to skills/<id>/scripts/run.mjs
  */
 import { spawnSync } from 'node:child_process';
 
@@ -20,5 +20,5 @@ function run(cmd, args) {
 }
 
 // Example: run('npm', ['run', 'lint']);
-console.log('OK: my-skill-id — replace run.mjs with real commands');
+console.log('OK: my-skill-id replace run.mjs with real commands');
 process.exit(0);

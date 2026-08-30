@@ -25,7 +25,7 @@ export function loadGoogleServiceAccountFromEnv(): GoogleServiceAccount | null {
       return parseGoogleServiceAccountJson(json);
     } catch (error) {
       console.error(
-        'Invalid GOOGLE_SERVICE_ACCOUNT_JSON — falling back to split env vars:',
+        'Invalid GOOGLE_SERVICE_ACCOUNT_JSON falling back to split env vars:',
         error instanceof Error ? error.message : error,
       );
     }

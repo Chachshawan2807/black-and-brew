@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 type InventoryGridInputDataset = 'mobileColId' | 'colId';
 
 /**
- * Defers grid cell commit until focus settles — iOS/Android often skip blur
+ * Defers grid cell commit until focus settles iOS/Android often skip blur
  * or reorder blur vs. the next focus when moving between spreadsheet inputs.
  */
 export function scheduleInventoryGridCellBlur(params: {

@@ -15,7 +15,7 @@ export const BEAN_ORDER_DETAIL_LINES_CARD =
 export const BEAN_ORDER_DETAIL_FULFILLMENT_CARD =
   'flex h-full min-h-0 w-full flex-col';
 
-/** Wider shell for create/edit form — customer + line items side-by-side on desktop */
+/** Wider shell for create/edit form customer + line items side-by-side on desktop */
 export const BEAN_ORDER_FORM_PAGE =
   'mx-auto w-full max-w-6xl px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))]';
 
@@ -47,7 +47,7 @@ export const BEAN_ORDER_FORM_LINE_GRID =
 export const BEAN_ORDER_CARD =
   'rounded-2xl border border-border bg-card bb-shadow-md overflow-visible';
 
-/** List/table shell — flat border only (shadow stacks with border at the bottom edge). */
+/** List/table shell flat border only (shadow stacks with border at the bottom edge). */
 export const BEAN_ORDER_LIST_CARD =
   'rounded-2xl border border-border bg-card overflow-hidden';
 
@@ -80,15 +80,15 @@ export const BEAN_ORDER_ACTION_BTN_BASE =
 export const BEAN_ORDER_ACTION_BTN =
   `inline-flex h-11 shrink-0 items-center justify-center rounded-full px-5 text-sm bg-foreground text-background ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
-/** Light green pastel — confirm payment CTA */
+/** Light green pastel confirm payment CTA */
 export const BEAN_ORDER_ACTION_BTN_CONFIRM =
   `inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#c3e6cb] bg-[#d4edda] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
-/** Light blue pastel — mark delivery success CTA */
+/** Light blue pastel mark delivery success CTA */
 export const BEAN_ORDER_ACTION_BTN_INFO =
   `inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#b8daff] bg-[#cce5ff] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
-/** Grey non-action pill — reserved for future non-clickable status labels. */
+/** Grey non-action pill reserved for future non-clickable status labels. */
 export const BEAN_ORDER_ACTION_BADGE_MUTED =
   'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-border bg-muted px-5 text-sm text-muted-foreground';
 

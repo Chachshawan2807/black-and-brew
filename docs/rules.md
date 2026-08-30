@@ -1,4 +1,4 @@
-# Rules — BLACKANDBREW ERP
+# Rules BLACKANDBREW ERP
 
 > Version: 9.4 | Last Updated: 2026-08-25 | Enforcement: Mandatory
 
@@ -14,11 +14,11 @@
 | Snake_case columns | `inventory_item_id`, `order_qty`, `target_stock` | ~~`inventoryItemId`~~, ~~`orderQty`~~ |
 | UUID primary keys | `id UUID DEFAULT gen_random_uuid()` | ~~`id SERIAL`~~ |
 
-### Critical Column Names (VERIFIED — DO NOT CHANGE)
+### Critical Column Names (VERIFIED DO NOT CHANGE)
 
 | Table | Column | Notes |
 | --- | :--- | --- |
-| `inventory_transactions` | `inventory_item_id` | FK to `inventory_items.id` — renamed from `product_id` |
+| `inventory_transactions` | `inventory_item_id` | FK to `inventory_items.id` renamed from `product_id` |
 | `inventory_transactions` | `transaction_at` | Business date for IN/OUT ledger rows (separate from `created_at` audit timestamp) |
 | `inventory_items` | `stock`, `order_qty`, `order_point`, `target_stock` | NUMERIC type, sanitize empty → 0 |
 | `inventory_items` | `count_policy` | `exact_count` or `sufficiency_check`; controls count accuracy and manual PO quantity |
@@ -70,7 +70,7 @@
 
 - ✅ `rounded-3xl` for all buttons, cards, modals, inputs
 - ✅ **Theme tokens** for page/modal surfaces: `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`
-- ✅ **Pastel accent cards:** keep pastel hex backgrounds + mandatory `bb-pastel-surface` (or `PASTEL_SURFACE` from `shift-colors.ts`) — black text/icons in both themes
+- ✅ **Pastel accent cards:** keep pastel hex backgrounds + mandatory `bb-pastel-surface` (or `PASTEL_SURFACE` from `shift-colors.ts`) black text/icons in both themes
 - ❌ **FORBIDDEN on non-pastel surfaces:** hardcoded `bg-[#fdfcf0]`, `bg-white`, `text-black`, `text-[#000000]`, `border-black/5`
 - ✅ `#000000` text only inside `.bb-pastel-surface` or explicit pastel-active inputs (e.g. count cell on green card)
 - ✅ `transition-all duration-300` for hover effects
@@ -94,16 +94,16 @@
 - Optimistic UI: update local state immediately, sync DB in background
 - Rollback on failure: restore previous state if DB sync fails
 
-### Notification Panel — View-Only (IRON RULE)
+### Notification Panel View-Only (IRON RULE)
 
-หน้าต่างการแจ้งเตือนในแอป (`src/components/notifications/NotificationPanel.tsx`) เป็น inbox แบบดูอย่างเดียว — ห้ามนำทางออกจาก panel หรือเปิดหน้าต่างอื่นจากรายการ
+หน้าต่างการแจ้งเตือนในแอป (`src/components/notifications/NotificationPanel.tsx`) เป็น inbox แบบดูอย่างเดียว ห้ามนำทางออกจาก panel หรือเปิดหน้าต่างอื่นจากรายการ
 
 | Rule | Requirement |
 | --- | --- |
-| แถวรายการ | แสดง title, รายละเอียด, เวลา — ไม่มี onClick นำทาง |
+| แถวรายการ | แสดง title, รายละเอียด, เวลา ไม่มี onClick นำทาง |
 | ลิงก์ | ❌ ห้าม `<Link>`, `<a href>`, `router.push`, `window.open` บนแถว |
 | metadata.url | ❌ ห้ามใช้นำทางจาก in-app panel |
-| Web Push click | ✅ เปิด/โฟกัสแอป (`APP_SHELL_URL`) เท่านั้น — ❌ ห้าม deep link |
+| Web Push click | ✅ เปิด/โฟกัสแอป (`APP_SHELL_URL`) เท่านั้น ❌ ห้าม deep link |
 | Chrome panel | ✅ ปิด, อ่านทั้งหมด, ล้างประวัติ เท่านั้น |
 | Regression test | `src/test/notification-panel-view-only.test.ts` |
 
@@ -122,13 +122,13 @@
 - Quick Entry IN/OUT MUST go through `record_inventory_transaction` RPC
 - Absolute stock edits (warehouse cell, stock-taking) MUST go through `updateInventoryStock()` → `set_inventory_stock` RPC
 - `exact_count` items record accuracy rows; `sufficiency_check` items MUST skip accuracy scoring and use manual `order_qty`
-- Realtime handlers MUST use `mergeInventoryRealtimeUpdate()` — never replace full row with partial payload
+- Realtime handlers MUST use `mergeInventoryRealtimeUpdate()` never replace full row with partial payload
 - Transactions MUST NEVER use UI Undo/Redo stack
 - Undo/redo upsert MUST NOT overwrite live `stock` from DB (fetch current stock before sync)
 - Corrections via compensating transaction or explicit deletion in History
 - Transaction cancellation reverses stock manually + deletes record
 - Transaction history uses a **two-step fetch** (raw transactions + separate item-name lookup) to avoid FK join / RLS gaps; use `unstable_noStore()` for transaction reads
-- Explicit joins on `inventory_item_id` only — never `product_id` / singular table names
+- Explicit joins on `inventory_item_id` only never `product_id` / singular table names
 
 ### Table & Modal Layout (DEC-056–058)
 
@@ -154,7 +154,7 @@
 
 - Column widths / labels: `localStorage` first (no layout shift), then sync `inventory_config`
 - Dashboard date range: URL params > cookies (`SameSite=Lax`) > defaults
-- Rapid resize/save: functional `setState` only — never stale outer closures
+- Rapid resize/save: functional `setState` only never stale outer closures
 
 ### Performance Guardrails (v9.0)
 
@@ -166,7 +166,7 @@
 
 - ✅ Use shared presets from `src/lib/motion-presets.ts` for framer-motion modals
 - ✅ Use CSS classes `.bb-modal-backdrop`, `.bb-modal-panel`, `.bb-sheet-panel`, `.bb-transition` from `globals.css`
-- ✅ Route transitions via `<PageTransition>` in `SidebarLayout` only — do not wrap layout shell
+- ✅ Route transitions via `<PageTransition>` in `SidebarLayout` only do not wrap layout shell
 - ❌ Never animate width/height/margin in ways that shift desktop/mobile layout
 - ✅ Micro-interactions: `transition-all duration-200 ease-in-out` on buttons, links, inputs
 

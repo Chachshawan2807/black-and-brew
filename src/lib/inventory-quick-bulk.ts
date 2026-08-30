@@ -1,4 +1,4 @@
-/** Bulk IN/OUT queue for inventory quick action — search/add lines; qty per row. */
+/** Bulk IN/OUT queue for inventory quick action search/add lines; qty per row. */
 
 export type BulkStockItem = {
   id: string;
@@ -165,7 +165,7 @@ export function computeOptimisticStockAfterTransaction(
   return before - qty;
 }
 
-/** Display qty on bulk confirm dialog — empty IN/OUT defaults show as "1". */
+/** Display qty on bulk confirm dialog empty IN/OUT defaults show as "1". */
 export function formatBulkConfirmQty(qty: string, type: BulkQuickType = 'IN'): string {
   if (type === 'ADJUST') {
     const resolved = resolveAdjustQuantity(qty);

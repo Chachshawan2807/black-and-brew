@@ -1,4 +1,4 @@
-/** In-app notification badge (FAB / sidebar) — full counts like LINE; OS launcher stays capped separately. */
+/** In-app notification badge (FAB / sidebar) full counts like LINE; OS launcher stays capped separately. */
 
 export const IN_APP_BADGE_OVERFLOW = 9999;
 

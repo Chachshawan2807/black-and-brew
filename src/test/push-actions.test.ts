@@ -101,7 +101,7 @@ describe('registerPushSubscription', () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
-  test('rejects when Auth getUser fails — does not trust unsigned JWT payload', async () => {
+  test('rejects when Auth getUser fails does not trust unsigned JWT payload', async () => {
     const forgedPayload = Buffer.from(
       JSON.stringify({ sub: 'attacker-user-id', role: 'authenticated' })
     ).toString('base64url');

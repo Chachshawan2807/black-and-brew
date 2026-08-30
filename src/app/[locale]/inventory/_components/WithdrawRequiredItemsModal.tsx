@@ -176,7 +176,7 @@ export default function WithdrawRequiredItemsModal({
               รายการที่ต้องเบิก
             </h2>
             <p className="text-foreground/40 text-[13px] mt-1 font-normal">
-              {orderedItems.length} รายการ — ลากเพื่อเปลี่ยนลำดับ
+              {orderedItems.length} รายการ ลากเพื่อเปลี่ยนลำดับ
             </p>
           </div>
 

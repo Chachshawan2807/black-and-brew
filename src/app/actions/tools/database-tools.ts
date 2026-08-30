@@ -18,7 +18,7 @@ import {
 import { computeItemsToOrder, type InventoryStockFields } from '@/lib/inventory-stock';
 
 // NOTE (AI-GATEWAY-P3): column presets, aliases, limits, and the Service Role
-// client now live in `src/lib/ai-data-gateway.ts` — the single doorway for all
+// client now live in `src/lib/ai-data-gateway.ts` the single doorway for all
 // AI reads. readTableTool below only routes & shapes the response.
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -42,10 +42,10 @@ export const readTableTool = tool({
 - bean_orders: order_no, payment_status, fulfillment_status, total_baht, recipient_name
 - profiles: full_name, schedule_order, dashboard_order
 
-[สำคัญมาก — กฎการ Query]
+[สำคัญมาก กฎการ Query]
 1. readTable รองรับเฉพาะ equality filter (eq) เท่านั้น
 2. สำหรับ inventory สต็อกต่ำ: ให้ดึงทั้งตาราง (ไม่ต้องส่ง filters) แล้ว filter ใน memory
-3. เมื่อถามสรุปภาพรวม: ไม่ควรระบุ limit ต่ำ — ใช้ default ของตาราง
+3. เมื่อถามสรุปภาพรวม: ไม่ควรระบุ limit ต่ำ ใช้ default ของตาราง
 4. ตารางงานรายวัน (วันนี้/พรุ่งนี้): ใช้ getDailyShifts เป็นหลัก ไม่ใช่ readTable shifts
 5. ออเดอร์เมล็ด: ใช้ getBeanOrdersSummary เป็นหลัก
 `.trim(),
@@ -53,12 +53,12 @@ export const readTableTool = tool({
   inputSchema: z.object({
     tableName: z
       .enum(AI_ALLOWED_TABLES)
-      .describe(`ชื่อตาราง — อ่านได้ทั้งหมด: ${AI_ALLOWED_TABLES.join(', ')}`),
+      .describe(`ชื่อตาราง อ่านได้ทั้งหมด: ${AI_ALLOWED_TABLES.join(', ')}`),
     columns: z.string().optional().describe(
-      'คอลัมน์ที่ต้องการ เช่น "id, name, stock" — ถ้าไม่ระบุจะใช้ preset ของตารางนั้น'
+      'คอลัมน์ที่ต้องการ เช่น "id, name, stock" ถ้าไม่ระบุจะใช้ preset ของตารางนั้น'
     ),
     filters: z.record(z.string(), z.any()).optional().describe(
-      'เงื่อนไข equality filter เท่านั้น เช่น { "status": "active" } — ' +
+      'เงื่อนไข equality filter เท่านั้น เช่น { "status": "active" } ' +
       'สำหรับ inventory สต็อกต่ำ: ไม่ต้องส่ง filters เลย ให้ดึงทั้งหมดมา filter เอง'
     ),
 
@@ -234,7 +234,7 @@ export const readTableTool = tool({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getInventoryLedgerTool = tool({
   description:
-    'ดึงประวัติเคลื่อนไหวสต็อก (IN/OUT) พร้อมชื่อสินค้า — ใช้แทนการ join inventory_transactions เอง',
+    'ดึงประวัติเคลื่อนไหวสต็อก (IN/OUT) พร้อมชื่อสินค้า ใช้แทนการ join inventory_transactions เอง',
   inputSchema: z.object({
     itemName: z.string().optional().describe('กรองชื่อสินค้า (substring)'),
     days: z.number().min(1).max(90).optional().describe('ย้อนหลังกี่วัน (default 14)'),
@@ -282,7 +282,7 @@ export const getBeanOrdersSummaryTool = tool({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// getDailyShiftsTool — ไม่มีการเปลี่ยนแปลง logic หลัก
+// getDailyShiftsTool ไม่มีการเปลี่ยนแปลง logic หลัก
 // เพิ่มเพียง type safety และ error handling ที่ดีขึ้น
 // ─────────────────────────────────────────────────────────────────────────────
 export const getDailyShiftsTool = tool({

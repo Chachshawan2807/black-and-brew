@@ -1,4 +1,4 @@
-# PRD — BLACKANDBREW ERP System
+# PRD BLACKANDBREW ERP System
 
 > Version: 9.4 | Last Updated: 2026-08-27 | Owner: System Architect
 
@@ -6,7 +6,7 @@
 
 ## 1. Vision & Mission
 
-BLACKANDBREW ERP คือระบบจัดการทรัพยากรองค์กรสำหรับร้านกาแฟ BLACK AND BREW ออกแบบมาเพื่อ Revenue Stabilization — ลดการสูญเสียรายได้จากการจัดการที่ไม่เป็นระบบ
+BLACKANDBREW ERP คือระบบจัดการทรัพยากรองค์กรสำหรับร้านกาแฟ BLACK AND BREW ออกแบบมาเพื่อ Revenue Stabilization ลดการสูญเสียรายได้จากการจัดการที่ไม่เป็นระบบ
 
 ### Core Objective
 
@@ -23,7 +23,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 | --- | :--- | --- |
 | Owner / Manager | 1-2 คน | Full Access (APP_PIN) |
 | Staff | 9 คน | Dashboard, Schedule; Read-only PIN available |
-| Read-only | — | `APP_READ_ONLY_PIN` — ดูอย่างเดียว (dev fallback `111222`) |
+| Read-only | | `APP_READ_ONLY_PIN` ดูอย่างเดียว (dev fallback `111222`) |
 
 พนักงาน: นิต้า, ปิ่น, มุก, เม, มีนา, ชัช, หนูดี, ฟิว, ล่า
 
@@ -77,7 +77,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 ### 3.6 Bean Orders
 
 - Route: `/[locale]/bean-orders`, `/new`, `/[id]`, `/[id]/edit`
-- Purpose: จัดการออเดอร์เมล็ดกาแฟ — ลูกค้า, สลิปชำระเงิน, จัดส่ง, ติดตามพัสดุ
+- Purpose: จัดการออเดอร์เมล็ดกาแฟ ลูกค้า, สลิปชำระเงิน, จัดส่ง, ติดตามพัสดุ
 - Components: `BeanOrdersClient.tsx`, `BeanOrderFormClient.tsx`, `BeanOrderDetailClient.tsx`, `bean-orders/_components/*`
 - Features:
   - Dual-axis status (`payment_status` × `fulfillment_status`)
@@ -100,12 +100,12 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 
 ### 3.9 Daily Web Push Notification
 
-- Route: `/api/daily-report` (cron-job.org — 05:00 / 18:00 ICT)
+- Route: `/api/daily-report` (cron-job.org 05:00 / 18:00 ICT)
 - Purpose: แจ้งเตือนกะงานและวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
 
 ### 3.10 Proactive Cross-Module Insights
 
-- Route: `GET /api/insight-alerts` (cron-job.org — 07:00 / 17:00 ICT; also debounced after shift/stock mutations)
+- Route: `GET /api/insight-alerts` (cron-job.org 07:00 / 17:00 ICT; also debounced after shift/stock mutations)
 - Purpose: กฎ deterministic เชื่อม schedule / inventory / maintenance / bean-orders / accuracy → inbox + Web Push
 - Domain: `src/lib/proactive-insights/`; prefs key `proactiveInsights`; Command Center `HomeOpsPanels`
 - Auth: `CRON_SECRET` Bearer on cron; panel catch-up via `data_change_logs` only (no client re-evaluate stub)
@@ -135,7 +135,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 | Tech Stack | Next.js 16.2.4, React 19.2.4, Supabase, Tailwind CSS 4 |
 | Timezone | GMT+7 (Bangkok) |
 | Deployment | Vercel App Router on Vercel; runtime selected per route/API |
-| i18n | Thai (primary), English — `next-intl` |
+| i18n | Thai (primary), English `next-intl` |
 | Auth | PIN Gateway + read-only mode + trusted-device passkeys |
 | PWA | Manifest + Network-First Service Worker |
 | Target INP | < 200ms |

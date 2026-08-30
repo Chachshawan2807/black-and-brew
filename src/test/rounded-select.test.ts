@@ -8,7 +8,7 @@ function readFile(relativePath: string): string {
   return fs.readFileSync(path.resolve(ROOT, relativePath), 'utf-8');
 }
 
-describe('rounded select — shared date-picker-like trigger', () => {
+describe('rounded select shared date-picker-like trigger', () => {
   test('BB_SELECT_TRIGGER_CLASS matches ClickableDatePicker pill surface', async () => {
     const { BB_SELECT_TRIGGER_CLASS } = await import('@/components/ui/rounded-select');
 

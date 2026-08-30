@@ -26,7 +26,7 @@ function getAdminClient() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AI-READABLE TABLES — every public ERP table the chat layer may query.
+// AI-READABLE TABLES every public ERP table the chat layer may query.
 // Column presets (DEC-069) still block arbitrary selects and crypto secrets.
 // ─────────────────────────────────────────────────────────────────────────────
 export const AI_ALLOWED_TABLES = [
@@ -60,7 +60,7 @@ export function isAiReadableTable(tableName: string): tableName is AiReadableTab
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// COLUMN ALIASES — map AI-friendly names to real DB columns
+// COLUMN ALIASES map AI-friendly names to real DB columns
 // ─────────────────────────────────────────────────────────────────────────────
 const COLUMN_ALIASES: Record<string, Record<string, string>> = {
   inventory_items: {
@@ -92,7 +92,7 @@ const COLUMN_ALIASES: Record<string, Record<string, string>> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TABLE PRESETS (DEC-069) — the ONLY columns the AI may ever read per table.
+// TABLE PRESETS (DEC-069) the ONLY columns the AI may ever read per table.
 // Crypto secrets (Web Push keys, WebAuthn public_key) are excluded by design.
 // ─────────────────────────────────────────────────────────────────────────────
 export const TABLE_COLUMN_PRESETS: Record<AiReadableTable, string> = {
@@ -191,7 +191,7 @@ export interface TablePresetResult {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fetchInventorySummary — comprehensive store status via SECURITY DEFINER RPC.
+// fetchInventorySummary comprehensive store status via SECURITY DEFINER RPC.
 // Returns the shaped JSON from `get_ai_store_status` (sql/ai_agent_views.sql).
 // ─────────────────────────────────────────────────────────────────────────────
 export interface StoreStatus {
@@ -220,14 +220,14 @@ export async function fetchInventorySummary(): Promise<StoreStatus> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fetchShiftsByDate — reuse the canonical daily-shift formatter (DEC-068).
+// fetchShiftsByDate reuse the canonical daily-shift formatter (DEC-068).
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchShiftsByDate(date: string): Promise<FormattedDailyShifts> {
   return fetchDailyShiftsByDate(date);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fetchInventoryLedger — join inventory_transactions + item names for AI
+// fetchInventoryLedger join inventory_transactions + item names for AI
 // ─────────────────────────────────────────────────────────────────────────────
 function toNumber(value: unknown): number {
   const n = Number(value);
@@ -378,7 +378,7 @@ export async function fetchInventoryLedger(opts: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fetchInventoryItemDetails — single item via SECURITY DEFINER RPC
+// fetchInventoryItemDetails single item via SECURITY DEFINER RPC
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchInventoryItemDetails(itemId: string): Promise<{
   ok: boolean;
@@ -426,7 +426,7 @@ export async function fetchInventoryItemDetails(itemId: string): Promise<{
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fetchInventoryAccuracySummary — aggregate count verifications for AI
+// fetchInventoryAccuracySummary aggregate count verifications for AI
 // ─────────────────────────────────────────────────────────────────────────────
 export type InventoryAccuracySummary = {
   ok: boolean;
@@ -546,7 +546,7 @@ export async function fetchInventoryAccuracySummary(opts: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fetchBeanOrdersSummary — open bean orders (unpaid / pending ship)
+// fetchBeanOrdersSummary open bean orders (unpaid / pending ship)
 // ─────────────────────────────────────────────────────────────────────────────
 export interface BeanOrderSummaryRow {
   order_no: string;
@@ -668,7 +668,7 @@ export async function fetchBeanOrdersSummary(opts: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// fetchTablePreset — preset-locked generic read. Never selects outside preset.
+// fetchTablePreset preset-locked generic read. Never selects outside preset.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchTablePreset(
   tableName: string,

@@ -126,7 +126,7 @@ export async function syncDerivedSecretaryTasks(opts?: {
   locale?: string;
   scopes?: readonly Exclude<SecretarySyncScope, 'tasks'>[];
   baseSnapshot?: SecretarySnapshot;
-  /** Pre-fetched full snapshot — skips a second `fetchSecretarySnapshot` on full sync. */
+  /** Pre-fetched full snapshot skips a second `fetchSecretarySnapshot` on full sync. */
   snapshot?: SecretarySnapshot;
 }): Promise<{
   success: boolean;

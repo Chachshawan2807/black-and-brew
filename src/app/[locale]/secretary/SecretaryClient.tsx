@@ -197,7 +197,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
   return (
     <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-5">
       <header className="space-y-1">
-        <HintTooltip tip="รวมงานประจำวันจากทุกโมดูล — กดการ์ดเพื่อเปิดรายละเอียด">
+        <HintTooltip tip="รวมงานประจำวันจากทุกโมดูล กดการ์ดเพื่อเปิดรายละเอียด">
           <h1 className="text-xl text-foreground font-normal w-fit">เลขาส่วนตัว</h1>
         </HintTooltip>
         <p className="text-[13px] text-muted-foreground">

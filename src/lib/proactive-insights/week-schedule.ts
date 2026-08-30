@@ -2,7 +2,7 @@ import { addDays, format, parseISO, startOfWeek } from 'date-fns';
 import type { WeeklyDaySchedule } from '@/lib/proactive-insights/types';
 import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 
-/** Short Thai weekday labels — index 0 = Monday … 6 = Sunday. */
+/** Short Thai weekday labels index 0 = Monday … 6 = Sunday. */
 export const THAI_DAY_LABELS = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'] as const;
 
 export type WeeklyLeaveEntry = {
@@ -48,7 +48,7 @@ export function collectWeeklyLeaveEntries(days: WeeklyDaySchedule[]): WeeklyLeav
   return entries;
 }
 
-/** Keep leave entries on or after fromDateIso — past leave days are omitted from alerts. */
+/** Keep leave entries on or after fromDateIso past leave days are omitted from alerts. */
 export function filterUpcomingLeaveEntries(
   entries: WeeklyLeaveEntry[],
   fromDateIso: string,

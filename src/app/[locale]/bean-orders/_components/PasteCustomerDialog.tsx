@@ -37,8 +37,8 @@ export function PasteCustomerDialog({
   }, [open]);
 
   const addressPreview = data
-    ? formatThaiPostalAddressLine(data.address) || data.address.addressLine || '—'
-    : '—';
+    ? formatThaiPostalAddressLine(data.address) || data.address.addressLine || ' '
+    : ' ';
 
   return (
     <dialog
@@ -79,11 +79,11 @@ export function PasteCustomerDialog({
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">ชื่อ</dt>
-              <dd className="text-foreground">{data.name || '—'}</dd>
+              <dd className="text-foreground">{data.name || ' '}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">เบอร์</dt>
-              <dd className="tabular-nums text-foreground">{data.phone || '—'}</dd>
+              <dd className="tabular-nums text-foreground">{data.phone || ' '}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">ที่อยู่</dt>

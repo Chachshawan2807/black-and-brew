@@ -96,7 +96,7 @@ describe('client-cache', () => {
       expect(result).toEqual(serverData);
     });
 
-    it('server wins on conflict — returns server data', () => {
+    it('server wins on conflict returns server data', () => {
       const localData = { revenue: 100 };
       const serverData = { revenue: 999 };
       const result = mergeWithServer(localData, serverData);

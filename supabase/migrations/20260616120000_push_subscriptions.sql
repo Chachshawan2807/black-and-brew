@@ -31,4 +31,4 @@ CREATE POLICY "authenticated_manage_own_push_subscriptions"
   WITH CHECK (auth.uid() = user_id);
 
 COMMENT ON TABLE public.push_subscriptions IS
-  'Browser Web Push endpoints — one row per device; server broadcasts inventory alerts to all except origin session.';
+  'Browser Web Push endpoints one row per device; server broadcasts inventory alerts to all except origin session.';

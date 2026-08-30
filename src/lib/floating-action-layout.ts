@@ -41,16 +41,16 @@ export const FAB_BOTTOM_NOTIFICATION_CLASS =
 /** Desktop-only bottom anchor for the inventory quick-action FAB panel */
 export const FAB_PANEL_ABOVE_NOTIFICATION_CLASS = 'md:bottom-[11.25rem]';
 
-/** Mobile quick-action panel — flex center so height changes stay vertically balanced */
+/** Mobile quick-action panel flex center so height changes stay vertically balanced */
 export const FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS =
   'max-md:flex max-md:items-center max-md:justify-center max-md:pointer-events-none max-md:p-4';
 
-/** Cap FAB panel height on phone — literal string required for Tailwind JIT */
+/** Cap FAB panel height on phone literal string required for Tailwind JIT */
 export const FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS =
   'max-md:max-h-[min(75dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))]';
 
 /**
- * FAB bulk queue list scroll cap on phone — panel shrink-wraps to content; list scrolls when taller.
+ * FAB bulk queue list scroll cap on phone panel shrink-wraps to content; list scrolls when taller.
  * Literal string required for Tailwind JIT (no template interpolation).
  */
 export const FAB_MOBILE_BULK_QUEUE_LIST_MAX_HEIGHT_CLASS =
@@ -67,11 +67,11 @@ export const FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS =
 /** App modals that must cover the FAB stack (hide toggle z-199, buttons z-201). */
 export const APP_MODAL_ABOVE_FAB_Z_INDEX = 220;
 
-/** Inventory modals from quick action (inline bar or FAB) — above FAB panel (z-199) and FAB buttons (z-201). */
+/** Inventory modals from quick action (inline bar or FAB) above FAB panel (z-199) and FAB buttons (z-201). */
 export const INVENTORY_MODAL_Z_CLASS = 'z-[220]';
 
-/** Portaled RoundedSelect listbox — above modals, below tooltips and export overlay. */
+/** Portaled RoundedSelect listbox above modals, below tooltips and export overlay. */
 export const SELECT_LISTBOX_Z_CLASS = 'z-[245]';
 
-/** Image export / save progress — above every app overlay (modals, FAB, tooltips). */
+/** Image export / save progress above every app overlay (modals, FAB, tooltips). */
 export const EXPORT_PROGRESS_OVERLAY_Z_CLASS = 'z-[260]';

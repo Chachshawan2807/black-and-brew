@@ -73,7 +73,7 @@ type InventoryAuditOptions = {
   notificationContext?: 'inventory_count' | 'inventory';
   /** Tags audit logs with the UI origin that triggered the stock change. */
   notificationSource?: InventoryNotificationSource;
-  /** Client-known value before a field edit — avoids a pre-mutation SELECT on the critical path. */
+  /** Client-known value before a field edit avoids a pre-mutation SELECT on the critical path. */
   previousFieldValue?: string | number | null;
   /** Business date for IN/OUT ledger rows (ISO UTC). */
   transactionAt?: string;
@@ -921,7 +921,7 @@ export async function fetchInventoryInOutActivitySnapshot() {
 }
 
 // === FETCH FREQUENT ITEMS ===
-// Uses inventory_item_id — VERIFIED column name in actual DB
+// Uses inventory_item_id VERIFIED column name in actual DB
 export async function fetchFrequentItems() {
   const authError = await requireReadAccess();
   if (authError) {
@@ -1142,7 +1142,7 @@ const countVerificationSchema = z.object({
 });
 
 // === RECORD COUNT VERIFICATION ===
-/** Records accuracy only from the stock-taking count page — not manual warehouse overrides. */
+/** Records accuracy only from the stock-taking count page not manual warehouse overrides. */
 export async function recordCountVerification(itemId: string, countedQty: number) {
   try {
     const authError = await requireMutationAccess();
@@ -1332,8 +1332,7 @@ export async function recordInventoryCountAndUpdateStock(
       }
     }
 
-    // Audit + cache revalidation are not required for the count UI response —
-    // defer so Enter/next-row stays snappy while stock + verification stay durable above.
+    // Audit + cache revalidation are not required for the count UI response // defer so Enter/next-row stays snappy while stock + verification stay durable above.
     after(async () => {
       try {
         await recordDataChange({

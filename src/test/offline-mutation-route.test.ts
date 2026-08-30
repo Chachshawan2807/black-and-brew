@@ -46,7 +46,7 @@ const fieldMutation = {
   authSessionId: 'auth-a',
 };
 
-describe('POST /api/inventory/offline-mutation — auth gate', () => {
+describe('POST /api/inventory/offline-mutation auth gate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     replayOfflineMutationMock.mockResolvedValue({ success: true });

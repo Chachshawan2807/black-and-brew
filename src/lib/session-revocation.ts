@@ -59,7 +59,7 @@ export async function isSessionFingerprintRevoked(fingerprint: string): Promise<
     if (error) {
       if (isTransientSupabaseFetchError(error)) {
         console.warn(
-          '[isSessionFingerprintRevoked] Transient fetch error — treating session as not revoked:',
+          '[isSessionFingerprintRevoked] Transient fetch error treating session as not revoked:',
           error.message,
         );
         return false;
@@ -71,7 +71,7 @@ export async function isSessionFingerprintRevoked(fingerprint: string): Promise<
   } catch (error) {
     if (isTransientSupabaseFetchError(error)) {
       console.warn(
-        '[isSessionFingerprintRevoked] Transient exception — treating session as not revoked:',
+        '[isSessionFingerprintRevoked] Transient exception treating session as not revoked:',
         error,
       );
       return false;
@@ -83,7 +83,7 @@ export async function isSessionFingerprintRevoked(fingerprint: string): Promise<
 
 /**
  * Returns fingerprints present in revoked_sessions.
- * Fail-open (empty set) on query error — used for settings UI listing only.
+ * Fail-open (empty set) on query error used for settings UI listing only.
  * Auth gates must keep using isSessionFingerprintRevoked (fail-closed).
  */
 export async function getRevokedFingerprints(

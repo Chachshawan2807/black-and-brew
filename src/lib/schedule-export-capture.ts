@@ -34,7 +34,7 @@ function nodeMayHaveExportShadow(node: HTMLElement): boolean {
 
 let scheduleFontEmbedCssCache: string | null = null;
 
-/** @internal Test-only — clears embedded font CSS cache between vitest cases. */
+/** @internal Test-only clears embedded font CSS cache between vitest cases. */
 export function resetScheduleExportCaptureCache(): void {
   scheduleFontEmbedCssCache = null;
 }
@@ -61,7 +61,7 @@ async function ensureCaptureFontsReady(): Promise<void> {
   try {
     await document.fonts.ready;
   } catch {
-    // Non-fatal — html-to-image may still embed @font-face rules.
+    // Non-fatal html-to-image may still embed @font-face rules.
   }
 }
 
@@ -136,7 +136,7 @@ function finalizeScheduleExportHolidayLayout(
 }
 
 /**
- * Fixed equal column widths for PNG export — same layout with or without long holiday names.
+ * Fixed equal column widths for PNG export same layout with or without long holiday names.
  */
 export function buildScheduleExportGridTemplate(): string {
   return SCHEDULE_EXPORT_GRID_TEMPLATE;

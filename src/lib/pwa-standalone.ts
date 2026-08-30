@@ -42,7 +42,7 @@ export function resolveThemePreferenceFromStorage(
 }
 
 /**
- * Inline bootstrap — runs synchronously before first paint.
+ * Inline bootstrap runs synchronously before first paint.
  * Sets standalone shell class + theme-color to match bb-theme (no flash on notch devices).
  */
 export const PWA_SHELL_BOOTSTRAP_SCRIPT = `(function(){try{var ua=navigator.userAgent;var ios=/iPhone|iPad|iPod/i.test(ua);var android=/Android/i.test(ua);var s=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;if(s){document.documentElement.classList.add('${PWA_STANDALONE_CLASS}');if(ios)document.documentElement.classList.add('${PWA_IOS_CLASS}');}if(android)document.documentElement.classList.add('${PWA_ANDROID_CLASS}');var t=localStorage.getItem('${PWA_THEME_STORAGE_KEY}')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var c=d?'${PWA_THEME_COLORS.dark}':'${PWA_THEME_COLORS.light}';var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',c);else{m=document.createElement('meta');m.name='theme-color';m.content=c;document.head.appendChild(m);}}catch(e){}})();`;

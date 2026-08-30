@@ -1,5 +1,5 @@
 -- =============================================================================
--- Inventory RLS Hardening — v2026.2
+-- Inventory RLS Hardening v2026.2
 -- Removes duplicate public/anon open policies; authenticated-only access.
 -- Spec: update_rls_policies.sql + apply_rls_transactions.sql
 -- Requires: client signs in via supabase.auth.signInAnonymously() after PIN gate.

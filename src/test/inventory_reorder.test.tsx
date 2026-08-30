@@ -1,5 +1,5 @@
 /**
- * TDD: Phase 1 — Editable Sort Order & Insert Position
+ * TDD: Phase 1 Editable Sort Order & Insert Position
  *
  * RED phase: these tests fail before implementation.
  * GREEN phase: they pass after implementation.

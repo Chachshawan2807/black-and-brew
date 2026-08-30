@@ -3,7 +3,7 @@ import { INVENTORY_QUICK_ACTION_COLORS, PASTEL_SURFACE } from '@/lib/shift-color
 
 export type StockOperation = 'IN' | 'OUT' | 'ADJUST';
 
-/** Unicode prefixes for stock ops — mirrors quick-action / notification panel icons. */
+/** Unicode prefixes for stock ops mirrors quick-action / notification panel icons. */
 export const STOCK_OPERATION_SYMBOL: Record<StockOperation, string> = {
   IN: '+',
   OUT: '−',

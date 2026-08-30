@@ -5,7 +5,7 @@
 
 export const PWA_BRAND_ICON = '/images/notification-icon.png';
 export const PWA_BRAND_ICON_512 = '/images/notification-icon-512.png';
-/** Full-color brand mark on transparent canvas — Android/iOS Web Push body icon. */
+/** Full-color brand mark on transparent canvas Android/iOS Web Push body icon. */
 export const PWA_PUSH_NOTIFICATION_ICON = '/images/push-notification-icon.png';
 export const PWA_MASKABLE_ICON = '/images/maskable-icon-512.png';
 export const PWA_NOTIFICATION_BADGE = '/images/notification-badge.png';
@@ -17,14 +17,14 @@ export const PWA_MANIFEST_THEME = '#000000';
 
 export const PWA_NOTIFICATION_VIBRATE = [120, 60, 120] as const;
 
-/** @deprecated Use PWA_PUSH_NOTIFICATION_ICON — kept for existing imports. */
+/** @deprecated Use PWA_PUSH_NOTIFICATION_ICON kept for existing imports. */
 export const PWA_NOTIFICATION_ICON = PWA_PUSH_NOTIFICATION_ICON;
 
 /** Relative asset paths embedded in Web Push payloads; SW resolves to absolute URLs. */
 export interface PwaNotificationAssetPaths {
-  /** Large color icon — notification body (right side on Android). */
+  /** Large color icon notification body (right side on Android). */
   icon: string;
-  /** Monochrome alpha-mask badge — status bar / notification header. */
+  /** Monochrome alpha-mask badge status bar / notification header. */
   badge: string;
 }
 
@@ -96,7 +96,7 @@ export function buildIosSafeNotificationOptions<T extends OsNotificationOptions>
   return safe as T;
 }
 
-/** Shared notification options — Android badge uses a dedicated transparent mask. */
+/** Shared notification options Android badge uses a dedicated transparent mask. */
 export function buildOsNotificationOptions(input: {
   body: string;
   tag?: string;

@@ -23,7 +23,7 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
     const sourceRef = { rule: 'understaffed', dates: understaffed.map((d) => d.dateIso) };
     tasks.push({
       taskType: 'schedule_understaffed',
-      title: 'ตรวจตาราง — วันที่คนน้อย',
+      title: 'ตรวจตาราง วันที่คนน้อย',
       description: summary,
       priority: 'urgent',
       module: 'schedule',
@@ -43,7 +43,7 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
     const sourceRef = { rule: 'leave_risk', count: leaveEntries.length };
     tasks.push({
       taskType: 'schedule_leave_risk',
-      title: 'ตรวจตาราง — ลาหลายคน',
+      title: 'ตรวจตาราง ลาหลายคน',
       description: summary,
       priority: 'urgent',
       module: 'schedule',
@@ -58,7 +58,7 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
     const sourceRef = { dateIso: snapshot.dateIso, headcount: snapshot.headcountToday };
     tasks.push({
       taskType: 'staffing_gap_today',
-      title: 'ตรวจแดชบอร์ด — คนวันนี้น้อย',
+      title: 'ตรวจแดชบอร์ด คนวันนี้น้อย',
       description: `มี ${snapshot.headcountToday} คนในกะวันนี้`,
       priority: 'normal',
       module: 'dashboard',

@@ -1667,7 +1667,7 @@ export default function InventoryClient({
     try {
       const sanitizedItems = currentItems.map((item, index) => sanitizeInventoryItem({ ...item, sort_order: index + 1 }));
       if (sanitizedItems.length > 0) {
-        // Preserve live stock from DB — undo/redo must not clobber concurrent stock edits
+        // Preserve live stock from DB undo/redo must not clobber concurrent stock edits
         const { data: liveStocks } = await supabase
           .from('inventory_items')
           .select('id, stock, updated_at')

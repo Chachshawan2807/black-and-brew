@@ -6,7 +6,7 @@ import { requireServiceRoleKey } from '@/lib/security/server-auth';
 
 /**
  * Re-sequences sort_order for all inventory_items (1-based) using current DB order.
- * CSV dependency removed — stock is never overwritten from external files.
+ * CSV dependency removed stock is never overwritten from external files.
  */
 export async function runInventoryMigration() {
   const authError = await requireMutationAccess();

@@ -46,7 +46,7 @@ export function loadNotificationPreferences(): NotificationPreferences {
 export function saveNotificationPreferences(prefs: NotificationPreferences): void {
   if (typeof window === 'undefined') return;
 
-  // No-op when nothing changed — stops prefs-changed → save → prefs-changed loops.
+  // No-op when nothing changed stops prefs-changed → save → prefs-changed loops.
   if (notificationPreferencesEqual(loadNotificationPreferences(), prefs)) {
     return;
   }
@@ -74,7 +74,7 @@ export function shouldNotifyForAction(prefs: NotificationPreferences): boolean {
   return prefs.enabled;
 }
 
-/** Master switch — inventory, system push, daily schedule, and proactive insights. */
+/** Master switch inventory, system push, daily schedule, and proactive insights. */
 export function isNotificationMasterEnabled(prefs: NotificationPreferences): boolean {
   return (
     prefs.enabled &&
@@ -110,7 +110,7 @@ export function setNotificationUserOptOut(optedOut: boolean): void {
 /**
  * After PIN auth, enable every notification channel unless the user previously
  * opted out via the master switch in Settings.
- * Skips save/dispatch when prefs are already fully enabled — prevents a
+ * Skips save/dispatch when prefs are already fully enabled prevents a
  * synchronous prefs-changed → resume → ensureFull loop (stack overflow).
  */
 export function ensureFullNotificationPreferencesOnAuth(): NotificationPreferences {

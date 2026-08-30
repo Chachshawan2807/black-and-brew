@@ -45,7 +45,7 @@ export function AddressProfilePickerDialog({
       <div className="flex min-h-0 flex-col p-4 md:p-5">
         <h3 className="text-base text-foreground">{title}</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          ลูกค้ารายนี้มีที่อยู่มากกว่า 1 รายการ — เลือกที่อยู่ที่ต้องการใช้
+          ลูกค้ารายนี้มีที่อยู่มากกว่า 1 รายการ เลือกที่อยู่ที่ต้องการใช้
         </p>
 
         <ul className="mt-4 min-h-0 flex-1 divide-y overflow-y-auto rounded-xl border border-border bg-card">

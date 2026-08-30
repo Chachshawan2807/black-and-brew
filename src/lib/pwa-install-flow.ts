@@ -1,6 +1,6 @@
 export type PwaInstallMode = 'native' | 'ios-manual' | 'hidden';
 
-/** Install UX must not block on storage wipe — that breaks Chromium prompts and hangs on mobile. */
+/** Install UX must not block on storage wipe that breaks Chromium prompts and hangs on mobile. */
 export function shouldBlockInstallOnStorageReset(): boolean {
   return false;
 }

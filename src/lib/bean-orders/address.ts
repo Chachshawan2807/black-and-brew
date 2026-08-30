@@ -270,5 +270,5 @@ export function formatOrderDeliveryDestination(options: {
   const province = parsed.province || options.recipientProvince?.trim() || '';
   if (province) return `จ.${province}`;
 
-  return '—';
+  return ' ';
 }

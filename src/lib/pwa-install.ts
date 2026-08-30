@@ -1,6 +1,6 @@
 import { isInstalledPwa } from '@/lib/pwa-app-badge';
 
-/** Chromium `beforeinstallprompt` — not in all TS libs. */
+/** Chromium `beforeinstallprompt` not in all TS libs. */
 export type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;

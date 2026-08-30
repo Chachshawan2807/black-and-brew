@@ -1,4 +1,4 @@
-# Design Standards — BLACKANDBREW ERP
+# Design Standards BLACKANDBREW ERP
 
 > Version: 9.3 | Last Updated: 2026-08-11 | Standard: Dual Theme + Pastel Surfaces, High-Legibility
 
@@ -6,12 +6,12 @@
 
 ## 1. Design Philosophy
 
-**Minimalist Analog** — ดีไซน์ที่สื่อถึงความเรียบง่าย สะอาดตา และใช้งานง่าย เหมือนกระดาษที่ตัดมาวางบนโต๊ะ
+**Minimalist Analog** ดีไซน์ที่สื่อถึงความเรียบง่าย สะอาดตา และใช้งานง่าย เหมือนกระดาษที่ตัดมาวางบนโต๊ะ
 
-- ไม่มี Visual Clutter — ทุกพิกเซลมีหน้าที่
-- Black-on-Pastel — ตัวหนังสือดำบนพื้นหลัง pastel accent (ทั้ง light และ dark theme)
-- Dual Theme — หน้า/modal ใช้ CSS tokens; pastel cards คงสีเดิม + `.bb-pastel-surface`
-- High-Legibility — อ่านง่ายในทุกสภาพแสงและทั้งสองธีม
+- ไม่มี Visual Clutter ทุกพิกเซลมีหน้าที่
+- Black-on-Pastel ตัวหนังสือดำบนพื้นหลัง pastel accent (ทั้ง light และ dark theme)
+- Dual Theme หน้า/modal ใช้ CSS tokens; pastel cards คงสีเดิม + `.bb-pastel-surface`
+- High-Legibility อ่านง่ายในทุกสภาพแสงและทั้งสองธีม
 
 ---
 
@@ -19,7 +19,7 @@
 
 ### 2a. Theme Tokens (`globals.css`)
 
-Light (`:root`) และ dark (`.dark`) กำหนดผ่าน CSS variables — ใช้ Tailwind utilities:
+Light (`:root`) และ dark (`.dark`) กำหนดผ่าน CSS variables ใช้ Tailwind utilities:
 
 | Utility | CSS Variable | Light | Dark | Usage |
 | --- | --- | --- | --- | --- |
@@ -29,11 +29,11 @@ Light (`:root`) และ dark (`.dark`) กำหนดผ่าน CSS variabl
 | `text-muted-foreground` | `--muted-foreground` | muted | muted light | ข้อความรอง |
 | `border-border` | `--border` | subtle | subtle dark | เส้นขอบ |
 
-Theme persistence: `next-themes` + `storageKey="bb-theme"` — ตั้งค่าที่ `/[locale]/settings`.
+Theme persistence: `next-themes` + `storageKey="bb-theme"` ตั้งค่าที่ `/[locale]/settings`.
 
 ### 2b. Pastel Accent Surfaces (Both Themes)
 
-Pastel hex backgrounds (shift types, inventory quick actions) **ไม่เปลี่ยนตาม theme** — ต้องใช้ class `bb-pastel-surface` (หรือ `PASTEL_SURFACE` จาก `shift-colors.ts`) เพื่อบังคับ:
+Pastel hex backgrounds (shift types, inventory quick actions) **ไม่เปลี่ยนตาม theme** ต้องใช้ class `bb-pastel-surface` (หรือ `PASTEL_SURFACE` จาก `shift-colors.ts`) เพื่อบังคับ:
 
 - ข้อความและไอคอน = `#000000`
 - Override `.text-foreground`, `h1–h6`, และ muted classes ภายใน container
@@ -48,7 +48,7 @@ Pastel hex backgrounds (shift types, inventory quick actions) **ไม่เป�
 
 | Token | Light value | Usage |
 | --- | --- | --- |
-| Morning Latte Cream | `#fdfcf0` | Light `--background` only — ใช้ `bg-background` ไม่ hardcode |
+| Morning Latte Cream | `#fdfcf0` | Light `--background` only ใช้ `bg-background` ไม่ hardcode |
 | `--accent-save` | `emerald-500` | Sync/Save confirmation |
 | `--accent-delete` | `red-500` | Destructive actions |
 | `--accent-loading` | `purple-400` | Loading spinners |
@@ -69,8 +69,8 @@ Pastel hex backgrounds (shift types, inventory quick actions) **ไม่เป�
 font-family: 'Sarabun', 'Inter', system-ui, sans-serif;
 ```
 
-- **Sarabun** — Primary font สำหรับ Thai text metrics
-- **Inter** — Fallback สำหรับ Latin characters
+- **Sarabun** Primary font สำหรับ Thai text metrics
+- **Inter** Fallback สำหรับ Latin characters
 
 ### Sizes
 
@@ -153,7 +153,7 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 | --- | --- |
 | **Hover / Focus** | `transition-all duration-200 ease-in-out` (`.bb-transition`) |
 | **Active/Click** | `active:scale-[0.98]` (buttons) |
-| **Page Route Change** | `PageTransition` — opacity fade 300ms `ease-in-out` |
+| **Page Route Change** | `PageTransition` opacity fade 300ms `ease-in-out` |
 | **Modal Open** | `bb-modal-backdrop` fade 300ms + `bb-modal-panel` zoom-in-95 200ms |
 | **Bottom Sheet** | `bb-sheet-panel` slide-in-from-bottom 300ms |
 | **Toast / Alert** | slide-up + fade-in 300ms → auto fade-out 2.8–3s |
@@ -222,7 +222,7 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 ## 9. Responsive Strategy
 
 - **Desktop-First** for table/spreadsheet layouts
-- **Fluid Width** — `w-fit mx-auto` containers
+- **Fluid Width** `w-fit mx-auto` containers
 - Breakpoints: `md:` for tablet+ layouts
 - Mobile: Stack columns vertically, full-width inputs
 - **PWA Capabilities**: 100% App-like shell responsive with fluid scaling and offline capability on any mobile screen.
@@ -234,7 +234,7 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 
 | Component | Path | Purpose |
 | --- | --- | --- |
-| `AppTooltipProvider` | `src/components/providers/AppTooltipProvider.tsx` | Root `TooltipProvider` — `delayDuration={150}` |
+| `AppTooltipProvider` | `src/components/providers/AppTooltipProvider.tsx` | Root `TooltipProvider` `delayDuration={150}` |
 | `HintTooltip` | `src/components/ui/hint-tooltip.tsx` | Styled hover/focus hints for icon buttons; no native `title` |
 | `Tooltip` primitives | `src/components/ui/tooltip.tsx` | Radix-based tooltip building blocks |
 
@@ -266,7 +266,7 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 
 ### Rules
 
-- ใช้ **opacity และ transform เท่านั้น** — ห้ามเปลี่ยน width/height/margin ที่กระทบ layout
+- ใช้ **opacity และ transform เท่านั้น** ห้ามเปลี่ยน width/height/margin ที่กระทบ layout
 - Modal overlay: `bg-black/20 backdrop-blur-sm` + fade
 - Mobile drawer backdrop: sync 300ms กับ sidebar `transition-transform duration-300`
 - Zero-Bold Policy ยังบังคับใช้ในทุก animated element
@@ -290,7 +290,7 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 | --- | --- | --- |
 | Page / modal / spreadsheet | `bg-background` / `bg-card` | `text-foreground` / `text-muted-foreground` |
 | Pastel accent (shift, metrics, quick actions) | Pastel hex (unchanged) | `bb-pastel-surface` → always black |
-| Borders | `border-border` | — |
+| Borders | `border-border` | |
 | Inputs on pastel (active count cell) | `bg-white` + `text-black` when on pastel only | explicit black |
 
 ### Anti-patterns

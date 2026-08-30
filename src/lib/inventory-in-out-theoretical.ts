@@ -3,7 +3,7 @@ export type InOutLedgerRow = {
   quantity: number;
   created_at: string;
   transaction_at?: string | null;
-  /** Set on ADJUST rows — absolute stock after manual correction (warehouse edit / ปรับจำนวน). */
+  /** Set on ADJUST rows absolute stock after manual correction (warehouse edit / ปรับจำนวน). */
   balance_after?: number | null;
 };
 
@@ -27,7 +27,7 @@ function applyInOutDelta(stock: number, row: InOutLedgerRow): number {
  * - Latest ADJUST (warehouse edit / ปรับจำนวน) rebaselines to balance_after immediately.
  * - Only IN/OUT after that ADJUST are replayed on top.
  * - Without ADJUST: ADD baseline (or 0) + all IN/OUT.
- * ADJUST itself does not affect accuracy % — only count verifications do.
+ * ADJUST itself does not affect accuracy % only count verifications do.
  */
 export function computeInOutTheoreticalStock(rows: InOutLedgerRow[]): number {
   const sorted = sortLedgerRows(rows);

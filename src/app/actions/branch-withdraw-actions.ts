@@ -60,7 +60,7 @@ async function loadBranchWithdrawItemSnapshots(
       item.id as string,
       {
         id: item.id as string,
-        name: (item.name as string) ?? '—',
+        name: (item.name as string) ?? ' ',
         stock: Number(item.stock) || 0,
         order_point: item.order_point == null ? null : Number(item.order_point),
       },

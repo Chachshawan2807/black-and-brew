@@ -15,9 +15,9 @@ export function splitSecretaryCardTitle(title: string): string[] {
 }
 
 function splitHeadline(headline: string): string[] {
-  const dashMatch = /^(.+?)(\s+—\s+.+)$/u.exec(headline);
-  if (dashMatch) {
-    return [dashMatch[1].trim(), dashMatch[2].trim()];
+  const spaceMatch = /^(.+?)\s+(\S.+)$/u.exec(headline);
+  if (spaceMatch && !/^\d+$/u.test(spaceMatch[2].trim())) {
+    return [spaceMatch[1].trim(), spaceMatch[2].trim()];
   }
 
   const roMatch = /^(.+?)(รอ.+)$/u.exec(headline);

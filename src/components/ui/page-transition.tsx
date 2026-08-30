@@ -34,7 +34,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Mobile / reduced motion: no pathname key or opacity-0 enter — avoids blank flashes
+  // Mobile / reduced motion: no pathname key or opacity-0 enter avoids blank flashes
   // while App Router streams the next segment (e.g. bean-order detail drill-in).
   if (useLightTransition || isViewportUnknown) {
     return <div className="min-h-0">{children}</div>;

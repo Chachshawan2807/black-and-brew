@@ -1,5 +1,5 @@
 /**
- * ADR: SEC-SANIT-001 — Centralized XSS & Prompt-Injection Sanitization
+ * ADR: SEC-SANIT-001 Centralized XSS & Prompt-Injection Sanitization
  * Used by AI chat route, overlay UI, and localStorage hydration.
  */
 

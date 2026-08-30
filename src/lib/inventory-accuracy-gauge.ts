@@ -81,7 +81,7 @@ function gaugeArcPoints(
   return points;
 }
 
-/** Annular sector along the top semicircle — uses angle interpolation to avoid SVG sweep ambiguity. */
+/** Annular sector along the top semicircle uses angle interpolation to avoid SVG sweep ambiguity. */
 export function describeGaugeWedge(
   centerX: number,
   centerY: number,

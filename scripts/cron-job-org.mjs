@@ -131,7 +131,7 @@ async function getJobDetails(apiKey, jobId) {
 }
 
 function formatNextExecution(ts) {
-  if (!ts) return '—';
+  if (!ts) return ' ';
   return new Date(ts * 1000).toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' });
 }
 

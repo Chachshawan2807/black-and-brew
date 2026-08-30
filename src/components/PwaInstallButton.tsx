@@ -84,7 +84,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
       const outcome = await promptInstall();
       if (outcome === 'accepted' && shouldResetStorageAfterAcceptedInstall(mode)) {
         void prepareFreshPwaInstall().catch(() => {
-          // Non-fatal — install already succeeded
+          // Non-fatal install already succeeded
         });
       }
     } finally {

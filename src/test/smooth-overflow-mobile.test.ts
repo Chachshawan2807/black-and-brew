@@ -8,7 +8,7 @@ function readFile(relativePath: string): string {
   return fs.readFileSync(path.resolve(ROOT, relativePath), 'utf-8');
 }
 
-describe('bb-smooth-scroll — mobile overflow utility', () => {
+describe('bb-smooth-scroll mobile overflow utility', () => {
   test('globals.css defines touch momentum scrolling utility', () => {
     const css = readFile('app/[locale]/globals.css');
     expect(css).toMatch(/\.bb-smooth-scroll\s*\{/);

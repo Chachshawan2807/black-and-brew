@@ -20,7 +20,7 @@ export function isRealtimeInsightTrigger(trigger: InsightTrigger): boolean {
   return trigger === 'bean_order_update' || trigger === 'shift_update' || trigger === 'inventory_update';
 }
 
-/** Web Push / OS banners fire only from the scheduled daily cron — not realtime refreshes. */
+/** Web Push / OS banners fire only from the scheduled daily cron not realtime refreshes. */
 export function shouldPushInsightNotification(trigger: InsightTrigger): boolean {
   return trigger === 'cron';
 }

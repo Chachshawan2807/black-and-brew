@@ -32,7 +32,7 @@ export function formatBeanOrdersChatResponse(summary: BeanOrdersSummaryResult): 
       ]
         .filter(Boolean)
         .join('/');
-      return `${o.order_no} — ${o.recipient_name} | ${baht(o.total_baht)} บาท (${flags})`;
+      return `${o.order_no} ${o.recipient_name} | ${baht(o.total_baht)} บาท (${flags})`;
     }),
   ];
 

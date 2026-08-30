@@ -31,7 +31,7 @@ describe('buildDailyReportAltText()', () => {
 
     expect(lines[0]).toBe('ตารางงาน 13-06-2026 ส. (พรุ่งนี้) · เข้างาน 2 คน');
     expect(lines[1]).toBe('ปิ่น 6:30, มุก 7:00');
-    expect(lines[2]).toBe('งานอื่น: ล่า — ร้านซักผ้า');
+    expect(lines[2]).toBe('งานอื่น: ล่า ร้านซักผ้า');
     expect(lines[3]).toBe('ลา: มุก');
     expect(summary).not.toContain('มุก (ลา)');
     expect(summary).not.toContain('นิต้า');

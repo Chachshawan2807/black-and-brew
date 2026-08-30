@@ -311,8 +311,8 @@ export default function NotificationPreferencesSection({
       {permission === 'denied' && (
         <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2">
           {isTh
-            ? 'การแจ้งเตือนถูกปิดอยู่ — เปิดได้ในการตั้งค่าอุปกรณ์'
-            : 'Notifications are blocked — enable them in device settings'}
+            ? 'การแจ้งเตือนถูกปิดอยู่ เปิดได้ในการตั้งค่าอุปกรณ์'
+            : 'Notifications are blocked enable them in device settings'}
         </p>
       )}
       {wantsPush && permission === 'granted' && (
@@ -327,11 +327,11 @@ export default function NotificationPreferencesSection({
           {devicePushState === 'server'
             ? isTh
               ? 'ลงทะเบียนรับการแจ้งเตือนแล้ว'
-              : 'This device is registered with the server — alerts work when the app is closed'
+              : 'This device is registered with the server alerts work when the app is closed'
             : devicePushState === 'local_only'
               ? isTh
-                ? 'เครื่องนี้อนุญาตการแจ้งเตือนแล้ว แต่ยังไม่ได้ลงทะเบียนกับเซิร์ฟเวอร์ — กดปุ่มด้านล่าง'
-                : 'Notifications are allowed on this device but not registered with the server — tap below'
+                ? 'เครื่องนี้อนุญาตการแจ้งเตือนแล้ว แต่ยังไม่ได้ลงทะเบียนกับเซิร์ฟเวอร์ กดปุ่มด้านล่าง'
+                : 'Notifications are allowed on this device but not registered with the server tap below'
               : isTh
                 ? 'เครื่องนี้ยังไม่ได้ลงทะเบียนรับการแจ้งเตือน'
                 : 'This device is not registered for push alerts'}
@@ -443,8 +443,8 @@ export default function NotificationPreferencesSection({
             label={isTh ? 'แจ้งการแก้ไขของตัวเอง' : 'Notify my own edits'}
             description={
               isTh
-                ? 'แจ้งแม้คุณเป็นคนแก้ไขเอง — ปิดได้ถ้าทำงานคนเดียว'
-                : 'Notify even when you make the change — turn off if you work alone'
+                ? 'แจ้งแม้คุณเป็นคนแก้ไขเอง ปิดได้ถ้าทำงานคนเดียว'
+                : 'Notify even when you make the change turn off if you work alone'
             }
             checked={prefs.notifyOwnChanges}
             onChange={(v) => update({ notifyOwnChanges: v })}

@@ -26,12 +26,12 @@ export function buildSecretaryGuidanceFromOrderedTasks(
   snapshot: SecretarySnapshot,
 ): string {
   if (orderedActionable.length === 0) {
-    return finalizeSecretaryGuidanceText('วันนี้ไม่มีงานค้าง — พร้อมรับงานใหม่เมื่อมีนะคะ');
+    return finalizeSecretaryGuidanceText('วันนี้ไม่มีงานค้าง พร้อมรับงานใหม่เมื่อมีนะคะ');
   }
 
   const sequence = formatGuidanceTaskSequence(orderedActionable);
   if (snapshot.isBranch2Day) {
-    return finalizeSecretaryGuidanceText(`วันไปสาขา 2 — แนะนำทำตามลำดับนี้นะคะ: ${sequence}`);
+    return finalizeSecretaryGuidanceText(`วันไปสาขา 2 แนะนำทำตามลำดับนี้นะคะ: ${sequence}`);
   }
   return finalizeSecretaryGuidanceText(`แนะนำทำตามลำดับนี้นะคะ: ${sequence}`);
 }

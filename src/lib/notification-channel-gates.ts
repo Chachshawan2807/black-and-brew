@@ -29,7 +29,7 @@ export function isBeanOrderNotification(item: InventoryNotification): boolean {
   );
 }
 
-/** Per-channel OS banner gating — aligned with server Web Push prefs where possible. */
+/** Per-channel OS banner gating aligned with server Web Push prefs where possible. */
 export function shouldShowOsNotification(
   notification: InventoryNotification,
   prefs: NotificationPreferences,

@@ -25,7 +25,7 @@ const COLUMN_BOUNDS: Record<string, { min: number; max: number }> = {
   actions: { min: 96, max: 96 },
 };
 
-/** Remarks wrap inside the cell — cap width estimate so short text stays tight. */
+/** Remarks wrap inside the cell cap width estimate so short text stays tight. */
 const REMARK_WRAP_CHAR_CAP = 20;
 
 /** Approximate rendered width at 12–13px font (Thai/Latin mix). */

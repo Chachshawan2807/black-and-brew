@@ -28,7 +28,7 @@ export function formatHolidaysChatResponse(
   const bullets = upcoming.map((h) => {
     const days = daysUntil(h.date, currentIsoDate);
     const when = days === 0 ? 'วันนี้' : days === 1 ? 'พรุ่งนี้' : `อีก ${days} วัน`;
-    return `${h.name} — ${formatIsoDateDisplay(h.date)} (${when})`;
+    return `${h.name} ${formatIsoDateDisplay(h.date)} (${when})`;
   });
 
   return buildBruReport({

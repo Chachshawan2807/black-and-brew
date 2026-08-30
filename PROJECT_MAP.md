@@ -1,4 +1,4 @@
-# PROJECT_MAP — BLACK-AND-BREW ERP
+# PROJECT_MAP BLACK-AND-BREW ERP
 
 > Generated: 2026-08-27 (GMT+7) | Version: 9.4
 
@@ -56,7 +56,7 @@ Locales: `th`, `en`
 | `/api/inventory/offline-mutation` | `src/app/api/inventory/offline-mutation/route.ts` |
 | `/api/insight-alerts` | `src/app/api/insight-alerts/route.ts` |
 
-Cron schedules: **cron-job.org** (Asia/Bangkok) — not Vercel Cron. See `.env.example` § CRON.
+Cron schedules: **cron-job.org** (Asia/Bangkok) not Vercel Cron. See `.env.example` § CRON.
 
 ---
 

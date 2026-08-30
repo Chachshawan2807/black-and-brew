@@ -11,7 +11,7 @@ function readFile(relativePath: string): string {
 describe('schedule export theme (dark mode PNG)', () => {
   test('globals.css defines unlayered bb-schedule-export-surface with !important tokens', () => {
     const css = readFile('app/[locale]/globals.css');
-    expect(css).toMatch(/\/\*[\s\S]*Schedule grid — unlayered[\s\S]*\.bb-schedule-export-surface/);
+    expect(css).toMatch(/\/\*[\s\S]*Schedule grid unlayered[\s\S]*\.bb-schedule-export-surface/);
     expect(css).toMatch(/--foreground:\s*#000000\s*!important/);
     expect(css).toMatch(/\.dark\s+\.bb-schedule-export-surface[\s\S]*--foreground:\s*#000000\s*!important/);
   });

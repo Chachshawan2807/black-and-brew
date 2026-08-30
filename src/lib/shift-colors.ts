@@ -1,4 +1,4 @@
-/** Pastel shift colors — lookups use shift-type-config when available (client) */
+/** Pastel shift colors lookups use shift-type-config when available (client) */
 import {
   DEFAULT_SHIFT_TYPES,
   buildShiftDisplay,
@@ -7,7 +7,7 @@ import {
   type ShiftTypeEntry,
 } from '@/lib/shift-type-config';
 
-/** Compact notification palettes — hex pairs aligned with Tailwind classes below */
+/** Compact notification palettes hex pairs aligned with Tailwind classes below */
 export type ShiftFlexPalette = { backgroundColor: string; borderColor: string };
 
 const LEGACY_FLEX_PALETTES = {
@@ -44,18 +44,18 @@ export const DASHBOARD_STAT_COLORS = {
   holiday: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
 } as const;
 
-/** Inventory Quick Action — same muted pastels as schedule/dashboard, black text */
+/** Inventory Quick Action same muted pastels as schedule/dashboard, black text */
 export const INVENTORY_QUICK_ACTION_COLORS = {
   in: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
   out: `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`,
   adjust: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
-  /** สั่งซื้อ — cyan (procurement / branch duty palette) */
+  /** สั่งซื้อ cyan (procurement / branch duty palette) */
   order: `${PASTEL} bg-[#d1ecf1] border border-[#bee5eb]`,
-  /** เพิ่มสินค้า — green (create / receive) */
+  /** เพิ่มสินค้า green (create / receive) */
   addItem: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
-  /** ประวัติ — warm cream (neutral records) */
+  /** ประวัติ warm cream (neutral records) */
   history: `${PASTEL} bg-[#f7f5e8] border border-[#e3dfd0]`,
-  /** ปรับสต็อกด่วน FAB — yellow (adjust / quick stock) */
+  /** ปรับสต็อกด่วน FAB yellow (adjust / quick stock) */
   fab: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
   toggleTrack: 'bg-muted/80 border border-border',
   inactive: 'text-muted-foreground hover:text-foreground',
@@ -70,7 +70,7 @@ export const INVENTORY_QUICK_ACTION_HOVER = {
 
 export type InventoryQuickActionType = 'IN' | 'OUT' | 'ADJUST';
 
-/** Pastel surface for IN / OUT / ADJUST — matches quick-action type toggle when selected */
+/** Pastel surface for IN / OUT / ADJUST matches quick-action type toggle when selected */
 export function inventoryQuickActionTypeColors(type: InventoryQuickActionType): string {
   switch (type) {
     case 'OUT':
@@ -82,13 +82,13 @@ export function inventoryQuickActionTypeColors(type: InventoryQuickActionType): 
   }
 }
 
-/** วันหยุด — โทนเดียวกับกะลา */
+/** วันหยุด โทนเดียวกับกะลา */
 export const DAY_OFF_COLOR = `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`;
 
-/** Morning Latte Cream — primary surface (`--background`, design.md `--bg-primary`) */
+/** Morning Latte Cream primary surface (`--background`, design.md `--bg-primary`) */
 export const MORNING_LATTE_CREAM = 'bg-card border border-border';
 
-/** Sales dashboard — pastel section accents aligned with schedule/inventory palette */
+/** Sales dashboard pastel section accents aligned with schedule/inventory palette */
 export const SALES_SECTION_COLORS = {
   headerIcon: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
   upload: MORNING_LATTE_CREAM,
@@ -177,7 +177,7 @@ const FALLBACK_SHIFT_STYLE: ShiftColorStyle = {
   color: '#000000',
 };
 
-/** Inline pastel colors — same source as schedule table cells (buildShiftDisplay) */
+/** Inline pastel colors same source as schedule table cells (buildShiftDisplay) */
 export function getShiftColorStyle(location: string, status?: string): ShiftColorStyle {
   const loc = location.replace(/^เข้ากะ\s*/, '').trim();
   const types = resolveTypes();

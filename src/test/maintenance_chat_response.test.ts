@@ -146,7 +146,7 @@ describe('formatMaintenanceChatResponse', () => {
     expect(text).toContain('26-08-2026');
     expect(text).toContain('ซิงค์ล้างจานบาร์ชง');
     expect(text).toContain('ล้างทำความสะอาดด้วยโซดาไฟ');
-    expect(text).not.toMatch(/• .+ — แนะนำ: .+ \| ครบกำหนด:/);
+    expect(text).not.toMatch(/• .+ แนะนำ: .+ \| ครบกำหนด:/);
     expect(text).toContain('รวม');
   });
 

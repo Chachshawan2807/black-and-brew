@@ -11,7 +11,7 @@ export function filterInventoryGridItems<T extends { name: string }>(
   );
 }
 
-/** Real list position for display — never the filtered-result index. */
+/** Real list position for display never the filtered-result index. */
 export function getInventoryItemDisplayOrder(
   item: { sort_order?: number },
   fallbackIndex: number,

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * AgentSkillOS terminal skill runner — list, run, validate project runbooks.
+ * AgentSkillOS terminal skill runner list, run, validate project runbooks.
  * Usage: node .agent-skills/scripts/skill-runner.mjs <list|run|validate> [skillId] [-- ...args]
  */
 import { spawnSync } from 'node:child_process';

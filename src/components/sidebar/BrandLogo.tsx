@@ -8,7 +8,7 @@ const BRAND_LOGO_DARK =
   'dark:invert dark:brightness-0 dark:opacity-90';
 
 /**
- * Brand mark — intrinsic dimensions match the PNG so Next.js can preserve aspect ratio.
+ * Brand mark intrinsic dimensions match the PNG so Next.js can preserve aspect ratio.
  * Display size uses one explicit axis + `height: auto` to avoid the dev warning:
  * "width or height modified, but not the other".
  */

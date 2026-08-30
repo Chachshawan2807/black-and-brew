@@ -55,7 +55,7 @@ export async function ensureSupabaseSession(): Promise<boolean> {
 
 /**
  * Returns the browser Supabase access token after ensuring a session exists.
- * Reuses the cached token from ensureSupabaseSession() — avoids a second
+ * Reuses the cached token from ensureSupabaseSession() avoids a second
  * auth.getSession() call that can orphan the GoTrue storage lock.
  */
 export async function getSupabaseAccessToken(): Promise<string | null> {

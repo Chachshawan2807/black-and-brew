@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Mock health check — verifies AgentSkillOS skill runner end-to-end.
+ * Mock health check verifies AgentSkillOS skill runner end-to-end.
  */
 import { spawnSync } from 'node:child_process';
 

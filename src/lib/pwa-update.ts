@@ -1,4 +1,4 @@
-/** Service worker update lifecycle — keep client bundle in sync after skipWaiting(). */
+/** Service worker update lifecycle keep client bundle in sync after skipWaiting(). */
 
 import { PWA_SERVICE_WORKER_PATH } from '@/lib/pwa-config';
 import { canRegisterServiceWorker } from '@/lib/pwa-notification-bridge';
@@ -29,11 +29,11 @@ export async function checkForServiceWorkerUpdate(): Promise<void> {
     const registration = await navigator.serviceWorker.ready;
     await registration.update();
   } catch {
-    // Non-fatal — e.g. offline or dev without SW
+    // Non-fatal e.g. offline or dev without SW
   }
 }
 
-/** Remove production SW left over in dev — it caches stale Turbopack chunks. */
+/** Remove production SW left over in dev it caches stale Turbopack chunks. */
 /**
  * Ensures the push service worker is registered and active.
  * User-gesture push registration cannot wait on PwaRegister's idle deferral.

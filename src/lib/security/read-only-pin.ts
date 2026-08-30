@@ -1,5 +1,5 @@
 /**
- * Read-only PIN from env — never hardcode production credentials in source.
+ * Read-only PIN from env never hardcode production credentials in source.
  * Development falls back to 111222 when APP_READ_ONLY_PIN is unset.
  */
 export function resolveReadOnlyPin(): string | null {

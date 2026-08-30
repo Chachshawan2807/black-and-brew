@@ -55,9 +55,9 @@ describe('secretary digest notification', () => {
     const digest = buildSecretaryDigestSummary(
       [task({ status: 'done' })],
       snapshot,
-      'วันนี้ไม่มีงานค้าง — พร้อมรับงานใหม่เมื่อมี',
+      'วันนี้ไม่มีงานค้าง พร้อมรับงานใหม่เมื่อมี',
     );
-    expect(digest.summary).toBe('วันนี้ไม่มีงานค้าง — พร้อมรับงานใหม่เมื่อมี');
+    expect(digest.summary).toBe('วันนี้ไม่มีงานค้าง พร้อมรับงานใหม่เมื่อมี');
   });
 });
 

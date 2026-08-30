@@ -1,4 +1,4 @@
-/** Home-screen icon badge (iOS / Android / iPad PWA) — numeric red dot like Line/Facebook. */
+/** Home-screen icon badge (iOS / Android / iPad PWA) numeric red dot like Line/Facebook. */
 
 export const SW_SET_BADGE_MESSAGE = 'SET_BADGE';
 

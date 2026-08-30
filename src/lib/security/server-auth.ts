@@ -16,7 +16,7 @@ function clearPinAuthCookies(cookieStore: Awaited<ReturnType<typeof cookies>>): 
 }
 
 /**
- * ADR: SEC-AUTH-001 — Server-side session gate (PIN or Supabase getUser).
+ * ADR: SEC-AUTH-001 Server-side session gate (PIN or Supabase getUser).
  * Never trust client-only auth; always verify on the server.
  *
  * PIN sessions also check `revoked_sessions` via device fingerprint so
@@ -60,7 +60,7 @@ export async function ensureServerSession(): Promise<ServerAuthResult> {
   return { ok: true, userId: user.id, readOnly };
 }
 
-/** Require SUPABASE_SERVICE_ROLE_KEY — never fall back to anon key. */
+/** Require SUPABASE_SERVICE_ROLE_KEY never fall back to anon key. */
 export function requireServiceRoleKey(): string {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!key) {

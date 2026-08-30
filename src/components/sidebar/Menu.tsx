@@ -191,7 +191,7 @@ function SortableMenuItem({
         </Tooltip>
       </TooltipProvider>
 
-      {/* Drag handle — scoped listeners prevent scroll hijack */}
+      {/* Drag handle scoped listeners prevent scroll hijack */}
       <div
         className="flex-shrink-0 h-10 w-6 flex items-center justify-center opacity-0 group-hover/menuitem:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none"
         {...listeners}

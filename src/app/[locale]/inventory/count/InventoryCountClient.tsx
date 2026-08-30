@@ -58,7 +58,7 @@ interface InventoryItem {
 
 // ─── Undo state per item ──────────────────────────────────────────────────────
 type UndoEntry = {
-  prevStock: number; // The value before the last save — can be restored once
+  prevStock: number; // The value before the last save can be restored once
 };
 
 // ─── CountInput ───────────────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ const CountInput = memo(function CountInput({
     valueRef.current = '';
     setVal('');
     onActiveChange?.(null);
-    // Do not await the server round-trip — next-row focus must stay instant.
+    // Do not await the server round-trip next-row focus must stay instant.
     // Errors still surface via handleSaveStock (optimistic rollback + toast).
     void onSave(itemId, sanitized).finally(() => {
       isSavingRef.current = false;
@@ -670,7 +670,7 @@ const CountItemRow = memo(function CountItemRow({
           isActive={isActive}
           onActiveChange={onActiveChange}
         />
-        {/* 1-time undo button per item — shown after a save, while undoEntry exists */}
+        {/* 1-time undo button per item shown after a save, while undoEntry exists */}
         <AnimatePresence>
           {undoEntry && !isReadOnly && (
             <motion.button
@@ -972,7 +972,7 @@ export default function InventoryCountClient({
     const tracksAccuracy = currentItem?.count_policy !== 'sufficiency_check';
     setSaveErrorMessage(null);
 
-    // Optimistic update — show the new value immediately
+    // Optimistic update show the new value immediately
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, stock: value } : item)),
     );
@@ -1064,7 +1064,7 @@ export default function InventoryCountClient({
       if (isUndo) {
         // Accuracy + lastVerification already rolled back optimistically.
       } else if (skipped) {
-        // Sufficiency items must not affect accuracy — roll back any optimistic apply.
+        // Sufficiency items must not affect accuracy roll back any optimistic apply.
         if (optimisticDelta) {
           accuracyStatsRef.current = removeCountVerificationFromAccuracyStats(
             accuracyStatsRef.current,
@@ -1198,7 +1198,7 @@ export default function InventoryCountClient({
     }
   }, [fetchInventory, isReadOnly]);
 
-  // Undo the last save for a given item — restores previous stock and persists it
+  // Undo the last save for a given item restores previous stock and persists it
   const handleUndo = useCallback(async (id: string) => {
     const entry = undoMap[id];
     if (!entry) return;

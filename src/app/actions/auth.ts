@@ -243,12 +243,12 @@ export async function forceRevokeDeviceSession(
     return { success: false, error: 'ไม่พบข้อมูลอุปกรณ์' };
   }
 
-  // Cookie is authoritative — never trust client-supplied actorDevice fingerprint
+  // Cookie is authoritative never trust client-supplied actorDevice fingerprint
   const currentFp = await getCurrentSessionFingerprint();
   if (sessionFingerprint === currentFp) {
     return {
       success: false,
-      error: 'ใช้เมนูออกจากระบบสำหรับเครื่องนี้ — บังคับออกใช้กับอุปกรณ์อื่น',
+      error: 'ใช้เมนูออกจากระบบสำหรับเครื่องนี้ บังคับออกใช้กับอุปกรณ์อื่น',
     };
   }
 
@@ -275,7 +275,7 @@ export async function forceRevokeAllRemoteSessions(
   const gate = await assertMasterPin(pin);
   if (!gate.ok) return { success: false, error: gate.error };
 
-  // Cookie is authoritative — never trust client-supplied actorDevice fingerprint
+  // Cookie is authoritative never trust client-supplied actorDevice fingerprint
   const currentFp = await getCurrentSessionFingerprint();
   const targets = sessionFingerprints.filter((fp) => fp && fp !== currentFp);
 

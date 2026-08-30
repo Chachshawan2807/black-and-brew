@@ -417,7 +417,7 @@ function BulkQueuePanel({
       )}
     >
       <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2 border-b border-border/70">
-        <span className="text-[12px] text-muted-foreground">รายการในคิว — กรอกจำนวนแต่ละแถว</span>
+        <span className="text-[12px] text-muted-foreground">รายการในคิว กรอกจำนวนแต่ละแถว</span>
         {onClearBulkQueue && bulkPreviews.length > 0 && (
           <button
             type="button"
@@ -543,7 +543,7 @@ function BulkSubmitConfirmDialog({
               สรุปรายการ{typeLabel}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              {bulkPreviews.length} รายการ — ตรวจสอบก่อนยืนยันบันทึก
+              {bulkPreviews.length} รายการ ตรวจสอบก่อนยืนยันบันทึก
             </p>
           </div>
           <div className="mt-3 min-h-0 flex-1 overflow-y-auto bb-smooth-scroll rounded-xl border border-border bg-muted/15 divide-y divide-border/60">

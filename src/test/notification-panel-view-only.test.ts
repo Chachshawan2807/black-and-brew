@@ -34,7 +34,7 @@ describe('Notification panel view-only iron rule', () => {
 
   test('docs/rules.md documents the view-only notification panel standard', () => {
     const rules = readFile('../docs/rules.md');
-    expect(rules).toContain('Notification Panel — View-Only (IRON RULE)');
+    expect(rules).toContain('Notification Panel View-Only (IRON RULE)');
     expect(rules).toContain('notification-panel-view-only.test.ts');
   });
 

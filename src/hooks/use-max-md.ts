@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 const MAX_MD_MQ = '(max-width: 767px)';
 
-/** `null` until client mount — avoids SSR mismatch. */
+/** `null` until client mount avoids SSR mismatch. */
 export function useMaxMd(): boolean | null {
   const [isMaxMd, setIsMaxMd] = useState<boolean | null>(null);
 

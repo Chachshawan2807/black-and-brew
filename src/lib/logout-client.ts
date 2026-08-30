@@ -11,7 +11,7 @@ export async function teardownLocalAuthState(): Promise<void> {
   await clearSupabaseSession();
 }
 
-/** Clear server cookies, client storage, offline queue, and Supabase — then reload. */
+/** Clear server cookies, client storage, offline queue, and Supabase then reload. */
 export async function performClientLogout(): Promise<void> {
   await clearAuth(collectClientDeviceInfo());
   await teardownLocalAuthState();

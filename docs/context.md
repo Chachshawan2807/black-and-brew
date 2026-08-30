@@ -1,4 +1,4 @@
-# Context — BLACKANDBREW ERP
+# Context BLACKANDBREW ERP
 
 > Version: 9.4 | Last Updated: 2026-08-27
 
@@ -20,12 +20,12 @@
 
 BLACK AND BREW คือร้านกาแฟที่ดำเนินการโดยทีมพนักงาน 9 คน ระบบ ERP นี้ถูกสร้างขึ้นเพื่อจัดการ:
 
-1. ตารางงาน (Scheduling) — จัดกะงานพนักงานแบบ Drag-and-Drop พร้อมรองรับการสลับกะ
-2. คลังสินค้า (Inventory) — Single Source of Truth (`inventory_items.stock`), ตรวจนับ, สั่งซื้อตามช่องทาง
-3. ออเดอร์เมล็ด (Bean Orders) — รับออเดอร์ ชำระเงิน จัดส่งเมล็ดกาแฟ
-4. บำรุงรักษา (Maintenance) — บันทึกสถานะอุปกรณ์
-5. AI Assistant (บรู) — แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
-6. การตั้งค่า (Settings) — เลือกธีม, ประวัติการเข้าใช้, trusted-device passkeys, และการแจ้งเตือนคลังสินค้า
+1. ตารางงาน (Scheduling) จัดกะงานพนักงานแบบ Drag-and-Drop พร้อมรองรับการสลับกะ
+2. คลังสินค้า (Inventory) Single Source of Truth (`inventory_items.stock`), ตรวจนับ, สั่งซื้อตามช่องทาง
+3. ออเดอร์เมล็ด (Bean Orders) รับออเดอร์ ชำระเงิน จัดส่งเมล็ดกาแฟ
+4. บำรุงรักษา (Maintenance) บันทึกสถานะอุปกรณ์
+5. AI Assistant (บรู) แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
+6. การตั้งค่า (Settings) เลือกธีม, ประวัติการเข้าใช้, trusted-device passkeys, และการแจ้งเตือนคลังสินค้า
 
 ### Staff Roster (9 Persons)
 
@@ -58,7 +58,7 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 | `APP_READ_ONLY_PIN` | Read-only PIN; required in production; dev fallback `111222` | Server only |
 | `WEBAUTHN_RP_ID` | WebAuthn relying-party ID override for production passkeys | Server only |
 | `WEBAUTHN_ORIGIN` | WebAuthn origin override for production passkeys | Server only |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini — AI Chat (`@ai-sdk/google`) | Server only |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini AI Chat (`@ai-sdk/google`) | Server only |
 | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync (OPTION) | Server only |
 | `TAVILY_API_KEY` | AI web search | Server only |
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | Store coordinates | Public |
@@ -66,9 +66,9 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID public key | Public |
 | `VAPID_PRIVATE_KEY` | Web Push server signing key | Server only |
 | `VAPID_SUBJECT` | Push service contact URI | Server only |
-| `PUSH_WEBHOOK_SECRET` | OPTION — `POST /api/push/webhook` auth | Server only |
-| `UPSTASH_REDIS_REST_URL` | OPTION — distributed rate limiting (Upstash) | Server only |
-| `UPSTASH_REDIS_REST_TOKEN` | OPTION — distributed rate limiting (Upstash) | Server only |
+| `PUSH_WEBHOOK_SECRET` | OPTION `POST /api/push/webhook` auth | Server only |
+| `UPSTASH_REDIS_REST_URL` | OPTION distributed rate limiting (Upstash) | Server only |
+| `UPSTASH_REDIS_REST_TOKEN` | OPTION distributed rate limiting (Upstash) | Server only |
 
 Authoritative env list: [`.env.example`](../.env.example)
 
@@ -85,7 +85,7 @@ Authoritative env list: [`.env.example`](../.env.example)
 | Mode | PIN | Capabilities |
 | --- | --- | --- |
 | Full access | `APP_PIN` (env) | Read + write ทุกโมดูล |
-| Read-only | `APP_READ_ONLY_PIN` (env; dev fallback `111222`) | ดูอย่างเดียว — `assertWritableSession()` บล็อก writes |
+| Read-only | `APP_READ_ONLY_PIN` (env; dev fallback `111222`) | ดูอย่างเดียว `assertWritableSession()` บล็อก writes |
 
 - Client gate: `sessionStorage` + `PinGateway.tsx`
 - Server session: httpOnly cookies `bb_auth_pin_verified`, `bb_auth_read_only`
@@ -100,7 +100,7 @@ Authoritative env list: [`.env.example`](../.env.example)
 
 | Constraint | Value |
 | --- | --- |
-| Timezone | GMT+7 (Bangkok) — Strict Enforcement |
+| Timezone | GMT+7 (Bangkok) Strict Enforcement |
 | Language | Thai (primary), English (secondary) |
 | Deployment Target | Vercel App Router on Vercel; runtime selected per route/API |
 | Accessibility | WCAG 2.2 AA |
@@ -163,7 +163,7 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | --- | --- |
 | Count accuracy | `inventory_count_verifications` (`system_stock_qty`), `recordCountVerification()`, `src/lib/inventory-count-accuracy.ts`, `src/lib/inventory-accuracy-gauge.ts` |
 | Branch withdraw | `branch-withdraw-actions.ts`, `inventory-branch-withdraw-format.ts`, `record_branch_withdrawal_batch` RPC, sidebar link in `menu-list.ts` |
-| Inventory FAB layout | `floating-action-layout.ts` — shared FAB/modal z-index and safe-area classes for inventory + notification overlays |
+| Inventory FAB layout | `floating-action-layout.ts` shared FAB/modal z-index and safe-area classes for inventory + notification overlays |
 | Count policy | `inventory_items.count_policy`; `exact_count` scores accuracy, `sufficiency_check` skips scoring and uses manual `order_qty` |
 | Quick action bulk | `recordBulkInventoryTransactions()`, `inventory-quick-*` libs, `InventoryQuickActionFAB` |
 | Realtime context | `src/contexts/InventoryRealtimeContext.tsx` |
@@ -176,10 +176,10 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Dashboard optimized loading | `getDashboardShiftQueryPlan()`, `splitDashboardShiftsByRange()` |
 | Inventory route performance | Row containment, stable grid handlers, dynamic modal loading, hover/focus modal preload |
 | PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |
-| Sidebar menu order | `sidebar-menu-order.ts`, `app-preferences-actions.ts`, `app_preferences` table — cross-device sync |
+| Sidebar menu order | `sidebar-menu-order.ts`, `app-preferences-actions.ts`, `app_preferences` table cross-device sync |
 | Bean orders | `bean-order-actions.ts`, `lib/bean-orders/`, manual delivery confirm |
 | AI full coverage | 21 AI-readable tables; deterministic routes for schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy |
 | Proactive insights | `src/lib/proactive-insights/`, `GET /api/insight-alerts`, Web Push + NotificationBell; prefs `proactiveInsights` |
-| Navigation perf | `route-chunk-preload.ts`, `warm-route-navigation.ts`, `ViewTransitionNavigation.tsx` — idle/touch prefetch + view transitions |
+| Navigation perf | `route-chunk-preload.ts`, `warm-route-navigation.ts`, `ViewTransitionNavigation.tsx` idle/touch prefetch + view transitions |
 | Inventory ledger date | `inventory_transactions.transaction_at` + `p_transaction_at` on `record_inventory_transaction` RPC |
 | SQL blueprint | `sql/record_inventory_transaction.sql` |

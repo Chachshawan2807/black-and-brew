@@ -9,7 +9,7 @@ const SERVICE_RECORDS_HOME_SELECT =
 
 /**
  * Load home "due within 1 week" tasks using any Supabase client.
- * RSC home page must pass getSupabaseAdmin() — never a browser JWT
+ * RSC home page must pass getSupabaseAdmin() never a browser JWT
  * (module-cached anon tokens expire → "JWT expired" on the server).
  */
 export async function queryHomeMaintenanceTasks(
@@ -33,13 +33,13 @@ export async function queryHomeMaintenanceTasks(
   );
 }
 
-/** Client-side refresh path (realtime hook) — uses the browser session JWT. */
+/** Client-side refresh path (realtime hook) uses the browser session JWT. */
 export async function fetchHomeMaintenanceTasks(currentIsoDate: string) {
   const accessToken = await getSupabaseAccessToken();
   if (!accessToken) {
     throw new Error('Missing authenticated Supabase session');
   }
 
-  // Reuse the browser singleton — a second createClient() duplicates GoTrueClient storage.
+  // Reuse the browser singleton a second createClient() duplicates GoTrueClient storage.
   return queryHomeMaintenanceTasks(supabase, currentIsoDate);
 }

@@ -9,7 +9,7 @@ description: |
   animations, performance (LCP/INP/CLS), accessibility, images, navigation, touch UI.
 ---
 
-# Chrome Modern Web Guidance — Project Baseline
+# Chrome Modern Web Guidance Project Baseline
 
 > **Sources (do not deviate without verifying):**
 > [Modern Web Guidance](https://developer.chrome.com/docs/modern-web-guidance) ·
@@ -37,16 +37,16 @@ Per [Modern Web Guidance Baseline rules](https://developer.chrome.com/docs/moder
 
 | Level | Meaning |
 |-------|---------|
-| **Limited availability** | Not interoperable — requires fallback or progressive enhancement |
-| **Newly available** | Interoperable within last ~30 months — follow guide fallbacks |
-| **Widely available** | Interoperable 30+ months — safe default without fallback |
+| **Limited availability** | Not interoperable requires fallback or progressive enhancement |
+| **Newly available** | Interoperable within last ~30 months follow guide fallbacks |
+| **Widely available** | Interoperable 30+ months safe default without fallback |
 
-**Default for this project:** **Baseline Widely available** — defined in `AGENTS.md` (FRONTEND & MOBILE UI — UNIFIED STANDARD). Do not lower this target without explicit user approval.
+**Default for this project:** **Baseline Widely available** defined in `AGENTS.md` (FRONTEND & MOBILE UI UNIFIED STANDARD). Do not lower this target without explicit user approval.
 
 Rules:
 
-1. **Widely available** features — use directly, no polyfill required.
-2. **Newly / Limited** features — implement per guide fallbacks; load polyfills **conditionally** only when the guide requires it.
+1. **Widely available** features use directly, no polyfill required.
+2. **Newly / Limited** features implement per guide fallbacks; load polyfills **conditionally** only when the guide requires it.
 3. Prefer **progressive enhancement** (modern path + lightweight custom fallback &lt;50 LOC) over heavy legacy libraries.
 4. Never ship a feature that **only** works in one engine without documenting the trade-off.
 
@@ -62,7 +62,7 @@ npx -y modern-web-guidance@latest retrieve "<guide-id>"
 
 Example IDs: `html`, `accessibility`, `navigation-drawer`, `size-aware-styling`, `dark-mode`, `validate-input-after-interaction`, `break-up-long-tasks`, `animate-to-from-top-layer`, `declarative-dialog-popover-control`.
 
-**Do not hallucinate guide content** — if unsure, search + retrieve first.
+**Do not hallucinate guide content** if unsure, search + retrieve first.
 
 ---
 
@@ -101,7 +101,7 @@ Use this matrix. **Left column = avoid for new code.**
 | `loading="lazy"` on LCP/hero images | `fetchpriority="high"` + no lazy on above-fold | Always set `width` + `height` on `<img>` |
 | Overuse of `fetchpriority="high"` | Single LCP candidate high; demote carousels/trackers with `low` | |
 | Positive `tabindex` (1, 2, 3…) | DOM order; `tabindex="0"` or `-1` for programmatic focus | |
-| `user-scalable=no` / blocking zoom | Allow zoom — never disable | |
+| `user-scalable=no` / blocking zoom | Allow zoom never disable | |
 | Heavy scroll `addEventListener` for reveal FX | Scroll-driven animations, `scroll-timeline` | Gate with `@supports` |
 | Synchronous long loops blocking main thread | `scheduler.yield()` / task splitting | See `break-up-long-tasks` |
 | Custom backdrop `div` stacks | `::backdrop` on `<dialog>` / popover | |
@@ -133,7 +133,7 @@ From guide `html` ([retrieve](https://github.com/GoogleChrome/modern-web-guidanc
 - Redundant ARIA on native elements
 - `role="presentation"` / `aria-hidden="true"` on focusable nodes or ancestors
 - Nest interactive elements inside `<summary>`
-- Static design tokens as inline styles (colors, padding) — use stylesheets / CSS variables
+- Static design tokens as inline styles (colors, padding) use stylesheets / CSS variables
 
 ### Native overlay decision matrix
 
@@ -151,11 +151,11 @@ From guide `html` ([retrieve](https://github.com/GoogleChrome/modern-web-guidanc
 
 ### Viewport & units
 
-- Viewport meta: `width=device-width, initial-scale=1.0` — **never** disable zoom.
+- Viewport meta: `width=device-width, initial-scale=1.0` **never** disable zoom.
 - Prefer **dynamic viewport units** where mobile chrome affects layout:
-  - `svh` — small viewport (stable during iOS Safari chrome show/hide) — use for full-height sheets/drawers
-  - `dvh` / `lvh` — when semantics match design intent
-  - `dvw` — drawer width caps (e.g. `min(20em, 80dvw)`)
+  - `svh` small viewport (stable during iOS Safari chrome show/hide) use for full-height sheets/drawers
+  - `dvh` / `lvh` when semantics match design intent
+  - `dvw` drawer width caps (e.g. `min(20em, 80dvw)`)
 
 ### Component-level responsiveness
 
@@ -171,7 +171,7 @@ Official pattern: guide `navigation-drawer`. Summary:
 | Layer | `popover="manual"` (not `auto`/`hint` for swipe drawers) |
 | Motion | Horizontal **scroll-snap** (native swipe physics), not JS `transform` tweens |
 | Backdrop | `::backdrop` + `--drawer-backdrop` driven by scroll-driven animation |
-| State | `IntersectionObserver` on sheet — not raw scroll position alone |
+| State | `IntersectionObserver` on sheet not raw scroll position alone |
 | A11y | `aria-expanded`, `aria-controls`, `main[inert]` when open, focus into sheet |
 | Dismiss | Tap outside, Escape, swipe to closed snap |
 | Reduced motion | `scroll-behavior: smooth` only inside `@media (prefers-reduced-motion: no-preference)` |
@@ -205,20 +205,20 @@ Official pattern: guide `navigation-drawer`. Summary:
 - **Modern color:** `oklch()`, `light-dark()`, `color-scheme`; design tokens via CSS variables
 - **Typography:** `text-wrap: balance` / `pretty`; `text-box` for trimming
 - **`accent-color`** for native form controls (project: pair with theme tokens, not hardcoded surfaces)
-- **`prefers-color-scheme`** + `color-scheme` for dark mode (`dark-mode` guide) — complements project `next-themes` / `bb-theme`
+- **`prefers-color-scheme`** + `color-scheme` for dark mode (`dark-mode` guide) complements project `next-themes` / `bb-theme`
 - **`@starting-style` + `transition-behavior`** for entry/exit of top-layer UI
 - **View Transitions** for SPA route changes when appropriate
-- **Scroll-driven animations** — always behind `@supports (animation-timeline: scroll())`
+- **Scroll-driven animations** always behind `@supports (animation-timeline: scroll())`
 
 ### Chrome 149 CSS additions (progressive enhancement)
 
 From [Chrome 149 release notes](https://developer.chrome.com/release-notes/149):
 
-- **CSS gap decorations** — style grid/flex gaps (`column-rule-inset`, `row-rule-inset`, etc.); unsupported browsers show normal gaps (no decoration).
-- **`text-overflow: ellipsis`** — on user interaction, text temporarily switches to `clip` so hidden content is editable/navigable.
-- **`shape-outside`** — `path()`, `shape()`, `rect()`, `xywh()` support expanded.
-- **`image-rendering: crisp-edges`** — nearest-neighbor scaling (aligned with Firefox/Safari).
-- **Top-layer pseudo-classes** — `:hover`/`:active`/`:focus-within` on parents stop at first top-layer boundary.
+- **CSS gap decorations** style grid/flex gaps (`column-rule-inset`, `row-rule-inset`, etc.); unsupported browsers show normal gaps (no decoration).
+- **`text-overflow: ellipsis`** on user interaction, text temporarily switches to `clip` so hidden content is editable/navigable.
+- **`shape-outside`** `path()`, `shape()`, `rect()`, `xywh()` support expanded.
+- **`image-rendering: crisp-edges`** nearest-neighbor scaling (aligned with Firefox/Safari).
+- **Top-layer pseudo-classes** `:hover`/`:active`/`:focus-within` on parents stop at first top-layer boundary.
 
 Use gap decorations and new shape functions only as **enhancement**, not as sole layout mechanism.
 
@@ -228,7 +228,7 @@ Use gap decorations and new shape functions only as **enhancement**, not as sole
 
 From guides `forms`, `validate-input-after-interaction`, `required-field-feedback`:
 
-- Show validation **after interaction**, not on first paint — CSS `:user-invalid`, not bare `:invalid`.
+- Show validation **after interaction**, not on first paint CSS `:user-invalid`, not bare `:invalid`.
 - Sync `aria-invalid` with visual invalid state for screen readers (`accessible-error-announcement`).
 - `field-sizing: content` for auto-growing inputs where supported.
 - Correct `autocomplete` tokens per form type (sign-in, sign-up, address, payment guides).
@@ -253,13 +253,13 @@ Mandatory checks for interactive UI:
 
 ## Accessibility essentials
 
-From guide `accessibility` — minimum bar:
+From guide `accessibility` minimum bar:
 
 - Landmarks + heading outline + skip link to `<main tabindex="-1">`
 - Native naming: `<label for>`, `<caption>`, `<legend>`, `aria-labelledby` over `aria-label` when visible label exists
 - Icon-only buttons: accessible name via visible text or `.visually-hidden`
 - Focus: never trap users; restore focus on dialog close; `inert` on obscured content
-- Tables: `<caption>`, `scope` on `<th>` — not for layout
+- Tables: `<caption>`, `scope` on `<th>` not for layout
 - Test with keyboard + screen reader tree; patterns are use-case specific
 
 ---
@@ -279,10 +279,10 @@ Stable in Chrome 149 ([release notes](https://developer.chrome.com/release-notes
 
 | Feature | Implication for frontend |
 |---------|--------------------------|
-| **WebSocket + bfcache** | Connections close on bfcache entry — reconnect on `pageshow` / `persisted` if needed |
+| **WebSocket + bfcache** | Connections close on bfcache entry reconnect on `pageshow` / `persisted` if needed |
 | **Selective Clipboard read** | `clipboard.read()` returns types lazily via `getType()` |
 | **`autocorrect="off"`** | Honored on Windows touch keyboard |
-| **WebMCP** (origin trial) | Experimental agent-facing tools — not production default; Chrome 149+ flags required |
+| **WebMCP** (origin trial) | Experimental agent-facing tools not production default; Chrome 149+ flags required |
 
 Do not build production features solely on origin-trial APIs unless explicitly requested.
 
@@ -290,7 +290,7 @@ Do not build production features solely on origin-trial APIs unless explicitly r
 
 ## Integration with BLACKANDBREW ERP
 
-Canonical merged rules live in **`AGENTS.md` → FRONTEND & MOBILE UI — UNIFIED STANDARD**. Summary:
+Canonical merged rules live in **`AGENTS.md` → FRONTEND & MOBILE UI UNIFIED STANDARD**. Summary:
 
 | Area | Rule |
 |------|------|

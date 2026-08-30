@@ -1,4 +1,4 @@
-# Database Schema — BLACKANDBREW ERP
+# Database Schema BLACKANDBREW ERP
 
 > Version: 9.4 | Last Updated: 2026-08-27 | Engine: Supabase PostgreSQL
 
@@ -104,7 +104,7 @@ CREATE TABLE inventory_transactions (
 );
 ```
 
-> Column is `inventory_item_id` — renamed from `product_id` (historical). ADD/DELETE types added in `supabase/migrations/20260612140000_inventory_add_delete_history.sql`.
+> Column is `inventory_item_id` renamed from `product_id` (historical). ADD/DELETE types added in `supabase/migrations/20260612140000_inventory_add_delete_history.sql`.
 
 ### `inventory_count_verifications`
 
@@ -130,8 +130,8 @@ Immutable authentication event log with device fingerprinting. Written by `login
 
 Immutable append-only mutation log (actor, module, field-level diffs). Selective RLS read policies for in-app notifications:
 
-- `module = 'inventory'` — `20260612130000_inventory_notifications.sql`
-- `module = 'schedule'` + `entity_type = 'daily_report'` + `metadata.kind = 'daily_report'` — `20260713151502_schedule_daily_report_notifications.sql`
+- `module = 'inventory'` `20260612130000_inventory_notifications.sql`
+- `module = 'schedule'` + `entity_type = 'daily_report'` + `metadata.kind = 'daily_report'` `20260713151502_schedule_daily_report_notifications.sql`
 
 ### `revoked_sessions`
 
@@ -193,15 +193,15 @@ Stored and read only through service-role server actions in `passkey-actions.ts`
 ### Current Standard (post `fix_inventory_rls.sql`)
 
 - `inventory_items`, `inventory_config`: `authenticated` role → SELECT/INSERT/UPDATE
-- `inventory_transactions`: `authenticated` → SELECT/INSERT/DELETE (no UPDATE — ledger immutability)
+- `inventory_transactions`: `authenticated` → SELECT/INSERT/DELETE (no UPDATE ledger immutability)
 - `profiles`, `shifts`: `authenticated` → full CRUD
-- `data_change_logs`: `anon_read_inventory_change_logs` — SELECT where `module = 'inventory'`; `anon_read_schedule_daily_report_logs` — SELECT where `module = 'schedule'` and daily-report metadata (in-app notification panel)
+- `data_change_logs`: `anon_read_inventory_change_logs` SELECT where `module = 'inventory'`; `anon_read_schedule_daily_report_logs` SELECT where `module = 'schedule'` and daily-report metadata (in-app notification panel)
 - Client must call `supabase.auth.signInAnonymously()` after PIN gate
 
 ### Legacy (pre-hardening)
 
 ```sql
--- Deprecated open policies — removed by fix_inventory_rls.sql
+-- Deprecated open policies removed by fix_inventory_rls.sql
 CREATE POLICY "Public access for inventory_items" ON inventory_items FOR ALL USING (true);
 ```
 
@@ -244,7 +244,7 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 - Parameters: `p_item_id UUID`, `p_new_stock NUMERIC`, `p_note TEXT`, `p_record_history BOOLEAN DEFAULT TRUE`
 - Row lock → set absolute stock → optional ADJUST ledger entry on delta
 - Source: `sql/sync_inventory_stock.sql`
-- Used by: `updateInventoryStock()` — warehouse cell + stock count (`recordHistory: false` on count page)
+- Used by: `updateInventoryStock()` warehouse cell + stock count (`recordHistory: false` on count page)
 
 ### Trigger: `trg_sync_inventory_order_qty`
 
@@ -254,8 +254,8 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 
 ### Realtime: `REPLICA IDENTITY FULL`
 
-- Table: `inventory_items` — full row broadcast on UPDATE
-- Table: `data_change_logs` — added to `supabase_realtime` publication for inventory notifications
+- Table: `inventory_items` full row broadcast on UPDATE
+- Table: `data_change_logs` added to `supabase_realtime` publication for inventory notifications
 
 ---
 
@@ -278,12 +278,12 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260616120000_push_subscriptions.sql` | Web Push subscription storage + RLS (authenticated own rows) |
 | `20260617120000_device_passkeys.sql` | Trusted-device WebAuthn credentials for biometric login |
 | `20260618163100_inventory_count_policy.sql` | Adds `inventory_items.count_policy`; resets old accuracy rows for new scoring rules |
-| `20260618175951_local_events.sql` | Created `local_events` for Market Insights — superseded by drop migration |
+| `20260618175951_local_events.sql` | Created `local_events` for Market Insights superseded by drop migration |
 | `20260620221500_reset_accuracy_history.sql` | Reset count accuracy rows after policy recalculation rules changed |
 | `20260621120000_push_subscriptions_daily_report.sql` | Adds `profile_id` and `branch_id` to `push_subscriptions` for daily schedule Web Push broadcasts |
 | `20260622143800_drop_market_insights_tables.sql` | Drops retired Market Insights tables (`local_events`, `market_insight_runs`) |
 | `20260622144706_drop_retired_ai_inventory_views.sql` | Drops retired AI-prefixed inventory helper views |
-| `20260622162719_inventory_recommended_target_stock.sql` | Added then superseded — feature removed |
+| `20260622162719_inventory_recommended_target_stock.sql` | Added then superseded feature removed |
 | `20260708095637_reset_accuracy_history.sql` | Reset count accuracy ledger (inventory verification workflow) |
 | `20260708104230_remove_inventory_recommended_target_stock.sql` | Removes inventory recommended target stock (retired feature) |
 | `20260710162439_harden_security_definer_views_and_search_path.sql` | `security_invoker` on AI views + lock `search_path` on inventory/AI RPCs |
@@ -293,7 +293,7 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260713151502_schedule_daily_report_notifications.sql` | RLS read for schedule daily-report rows in `data_change_logs` (notification panel catch-up) |
 | `20260722074607_bean_orders.sql` | Bean order tables (`bean_*`), RLS, Storage bucket `bean-order-slips` |
 | `20260724120000_app_preferences_sidebar_menu.sql` | `app_preferences` table + Realtime for sidebar menu order sync |
-| `20260724170556_harden_rls_and_rpc_execute.sql` | RLS hardening (maintenance, holidays, sales server-only); RPC `EXECUTE` lockdown — see `docs/security/rls-audit.md` |
+| `20260724170556_harden_rls_and_rpc_execute.sql` | RLS hardening (maintenance, holidays, sales server-only); RPC `EXECUTE` lockdown see `docs/security/rls-audit.md` |
 | `20260726154007_drop_service_records_unused_columns.sql` | Drops unused `service_records` columns (`cost`, `person_in_charge`, `status`, `notes`); completion via `completion_date` |
 | `20260729034015_record_inventory_transaction_old_stock.sql` | `record_inventory_transaction` RPC returns `old_stock` in JSON for inventory notifications/audit |
 | `20260810160403_insight_notification_realtime.sql` | RLS read scopes on `data_change_logs` for proactive insights, bean-order, and PIN lockout notifications |
@@ -301,7 +301,7 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260811115400_reset_inventory_history_transaction_at.sql` | Reset IN/OUT ledger, count verifications, and branch withdrawals after `transaction_at` rollout |
 | `20260826140000_drop_sales_report_tables.sql` | Drops retired Sales Report tables (`sales_records`, `sales_uploads`, `product_categories`) |
 
-Retired: Sales Report module (`sales_uploads`, `sales_records`, `product_categories`) — dropped in `20260826140000_drop_sales_report_tables.sql`. Inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
+Retired: Sales Report module (`sales_uploads`, `sales_records`, `product_categories`) dropped in `20260826140000_drop_sales_report_tables.sql`. Inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 
 ### Historical (`sql/historical/`) + operational blueprints (`sql/`)
 
@@ -314,7 +314,7 @@ Retired: Sales Report module (`sales_uploads`, `sales_records`, `product_categor
 | `sql/record_inventory_transaction.sql` | Atomic IN/OUT RPC reference blueprint |
 | `sql/record_branch_withdrawal_batch.sql` | Atomic branch-withdrawal batch RPC reference blueprint |
 | `sql/sync_inventory_stock.sql` | `set_inventory_stock`, trigger, REPLICA IDENTITY |
-| `sql/fix_inventory_rls.sql` | RLS hardening — authenticated-only |
+| `sql/fix_inventory_rls.sql` | RLS hardening authenticated-only |
 | `sql/ai_agent_views.sql` | AI views/RPCs (`view_today_shifts`, `view_inventory_summary`, `get_ai_store_status`) |
 
-> Deprecated: `inventory-items.csv` — removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).
+> Deprecated: `inventory-items.csv` removed v6.8. Sort order via `migrate-inventory-sort-order.ts` (DB-only).

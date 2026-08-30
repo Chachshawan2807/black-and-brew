@@ -14,7 +14,7 @@ export function formatInventoryAccuracyChatResponse(
 
   const pct =
     summary.overall_accuracy_pct == null
-      ? '—'
+      ? ' '
       : summary.overall_accuracy_pct.toFixed(1);
 
   const bullets = [
@@ -22,7 +22,7 @@ export function formatInventoryAccuracyChatResponse(
     `คลาดเคลื่อน ${summary.mismatched_count} ครั้ง`,
     ...summary.high_discrepancy_items.slice(0, 3).map(
       (item) =>
-        `${item.item_name} — คลาดเคลื่อนรวม ${item.total_discrepancy_qty}` +
+        `${item.item_name} คลาดเคลื่อนรวม ${item.total_discrepancy_qty}` +
         (item.accuracy_pct == null ? '' : ` | แม่นยำ ${item.accuracy_pct.toFixed(1)}%`),
     ),
   ];

@@ -1,6 +1,6 @@
 import { isTrackingDeliveredStatus } from '@/lib/bean-orders/delivery-notification';
 
-/** Staff-facing shipment status — manual workflow only (no carrier API sync). */
+/** Staff-facing shipment status manual workflow only (no carrier API sync). */
 export function formatShipmentTrackingLabel(
   trackingStatus: string | null | undefined,
   options?: {

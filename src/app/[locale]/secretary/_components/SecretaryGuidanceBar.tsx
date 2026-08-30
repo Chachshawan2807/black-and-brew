@@ -28,7 +28,7 @@ export default function SecretaryGuidanceBar({ text, loading = false }: Secretar
           />
         ) : null}
         <div className="min-w-0 flex-1 space-y-1">
-          <HintTooltip tip="คำแนะนำจัดลำดับงาน — อัปเดตเมื่องานหรือข้อมูลที่เกี่ยวข้องเปลี่ยน">
+          <HintTooltip tip="คำแนะนำจัดลำดับงาน อัปเดตเมื่องานหรือข้อมูลที่เกี่ยวข้องเปลี่ยน">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground w-fit">
               คำแนะนำ
             </p>

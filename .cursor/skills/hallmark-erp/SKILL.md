@@ -1,14 +1,14 @@
 ---
 name: hallmark-erp
 description: |
-  BLACKANDBREW ERP overlay for Hallmark — supplementary anti-AI-slop review only.
+  BLACKANDBREW ERP overlay for Hallmark supplementary anti-AI-slop review only.
   Use when the user asks for hallmark audit, hallmark study, anti-slop review, or
   generic-design checks. NEVER use to build or redesign core ERP UI.
 
   MANDATORY: read this file before `.agents/skills/hallmark/SKILL.md` in this repo.
 ---
 
-# Hallmark — BLACKANDBREW ERP (supplementary only)
+# Hallmark BLACKANDBREW ERP (supplementary only)
 
 Hallmark is installed at `.agents/skills/hallmark/` but **does not drive ERP UI** in this project.
 
@@ -20,7 +20,7 @@ When Hallmark conflicts with anything in `AGENTS.md`, **ERP rules win**:
 2. `chrome-modern-web-guidance` + `modern-web-guidance`
 3. React & Next.js skills
 4. `web-design-guidelines`, `impeccable` (`critique` only), `ui-ux-pro-max`
-5. **Hallmark** — audit / study only (this overlay)
+5. **Hallmark** audit / study only (this overlay)
 
 Reject Hallmark output that suggests: modals for grid edits, decorative marketing layouts, non-pastel surfaces, new theme catalogs, hero/feature/CTA page rhythms, or replacing `shift-colors.ts` / CSS token surfaces.
 
@@ -28,8 +28,8 @@ Reject Hallmark output that suggests: modals for grid edits, decorative marketin
 
 | Verb | Use in this repo |
 | --- | --- |
-| `hallmark audit <target>` | **Yes** — score UI for AI-slop tells; punch list only, no edits |
-| `hallmark study <screenshot \| URL>` | **Yes** — extract design DNA for reference; stop at diagnosis unless user explicitly builds a **non-ERP** surface |
+| `hallmark audit <target>` | **Yes** score UI for AI-slop tells; punch list only, no edits |
+| `hallmark study <screenshot \| URL>` | **Yes** extract design DNA for reference; stop at diagnosis unless user explicitly builds a **non-ERP** surface |
 | `hallmark` (default build) | **No** on ERP routes (see below) |
 | `hallmark redesign <target>` | **No** on ERP routes; requires explicit user approval + must preserve spreadsheet/pastel/token rules |
 
@@ -37,10 +37,10 @@ Load upstream protocol from `.agents/skills/hallmark/SKILL.md` and `references/v
 
 ## Off-limits (Hallmark must not build or redesign)
 
-Core ERP surfaces — treat as immutable design system unless the user explicitly overrides ERP rules:
+Core ERP surfaces treat as immutable design system unless the user explicitly overrides ERP rules:
 
-- `src/app/[locale]/inventory/**` — spreadsheet grid, inline inputs, no edit modals
-- `src/app/[locale]/schedule/**` — DnD, pastel shift cards
+- `src/app/[locale]/inventory/**` spreadsheet grid, inline inputs, no edit modals
+- `src/app/[locale]/schedule/**` DnD, pastel shift cards
 - `src/app/[locale]/dashboard/**`
 - `src/app/[locale]/maintenance/**`
 - `src/app/[locale]/settings/**` (except isolated empty-state copy review via audit)
@@ -51,7 +51,7 @@ Core ERP surfaces — treat as immutable design system unless the user explicitl
 ## Allowed audit targets (supplementary polish)
 
 - `src/components/notifications/**`
-- `src/components/shell/DeferredOverlays.tsx` (layout/a11y slop only — not brand overhaul)
+- `src/components/shell/DeferredOverlays.tsx` (layout/a11y slop only not brand overhaul)
 - Pin / auth gateway shells
 - Empty states, toasts, onboarding one-offs
 - Future marketing or landing routes **outside** `[locale]` ERP shell
@@ -75,9 +75,9 @@ When auditing ERP UI, prioritize Hallmark gates that catch **generic AI tells** 
 
 Do **not** run Hallmark default/redesign. Use instead:
 
-1. `web-design-guidelines` — spacing, type, a11y
-2. `impeccable` — `critique` sub-command only (not `bolder` / `delight` / `overdrive`)
-3. `chrome-modern-web-guidance` — Baseline overlays, mobile, forms
+1. `web-design-guidelines` spacing, type, a11y
+2. `impeccable` `critique` sub-command only (not `bolder` / `delight` / `overdrive`)
+3. `chrome-modern-web-guidance` Baseline overlays, mobile, forms
 
 ## Update upstream skill
 

@@ -1,4 +1,4 @@
-# Memory Log — BLACKANDBREW ERP
+# Memory Log BLACKANDBREW ERP
 
 > Version: 9.4 | Last Updated: 2026-08-27 | Purpose: Recent architecture decisions agents must not undo
 
@@ -33,7 +33,7 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 ### DEC-086: Proactive Cross-Module Insights (v9.3)
 
 - Date: July 2026
-- Context: Staff need early warnings when schedule, inventory, maintenance, bean orders, and accuracy signals correlate — without opening every module.
+- Context: Staff need early warnings when schedule, inventory, maintenance, bean orders, and accuracy signals correlate without opening every module.
 - Decision:
   1. **Rules engine:** `src/lib/proactive-insights/` (`compile-operational-snapshot.ts`, `rules.ts`, `evaluate-and-dispatch.ts`, `schedule-evaluation.ts`).
   2. **Cron + debounce:** `GET /api/insight-alerts` (cron-job.org morning/evening) + `scheduleProactiveInsightEvaluation()` after shift/inventory mutations.
@@ -57,7 +57,7 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 ### DEC-084: Bean Orders Module (v9.2)
 
 - Date: July 2026
-- Context: Staff need a dedicated workflow for coffee bean orders with payment slips, shipping, and manual delivery confirm — separate from inventory stock deduction.
+- Context: Staff need a dedicated workflow for coffee bean orders with payment slips, shipping, and manual delivery confirm separate from inventory stock deduction.
 - Decision:
   1. Route: `src/app/[locale]/bean-orders/` with list, create, detail, edit pages.
   2. Tables: `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments` (`20260722074607_bean_orders.sql`).
@@ -73,12 +73,12 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 - Context: Staff on unstable Wi‑Fi must keep editing the inventory spreadsheet; mutations must not bypass PIN/read-only auth or replay under a different session after reconnect.
 - Decision:
   1. **Client queue:** IndexedDB store (`offline-mutation-queue.ts`) + SW mirror (`public/offline-mutation-store.js`); coalesce field edits per item/field; flush on `online` and Background Sync tag `bb-offline-mutations`.
-  2. **Replay API:** `POST /api/inventory/offline-mutation` validates Zod payloads (`inventory_field`, `inventory_stock`, `inventory_reorder`) and calls `replayOfflineMutation()` — same server paths as live edits.
+  2. **Replay API:** `POST /api/inventory/offline-mutation` validates Zod payloads (`inventory_field`, `inventory_stock`, `inventory_reorder`) and calls `replayOfflineMutation()` same server paths as live edits.
   3. **Session binding:** `offline-auth-session.ts` stamps `authSessionId` on enqueue; route rejects replay when cookie `OFFLINE_AUTH_SESSION_COOKIE` mismatches (logout clears queue via `logout-client.ts`).
-  4. **Policy gates:** `src/lib/policies/` — `evaluateAuthz()` in `authz.ts`; server entry points use `server-gate.ts` (`requireMutationAccess`, `gateMutation`, `requirePinMutationAccess`). Do not add ad-hoc read-only checks in actions/routes.
+  4. **Policy gates:** `src/lib/policies/` `evaluateAuthz()` in `authz.ts`; server entry points use `server-gate.ts` (`requireMutationAccess`, `gateMutation`, `requirePinMutationAccess`). Do not add ad-hoc read-only checks in actions/routes.
 - Impact:
   - Inventory blur/Enter saves may queue when offline; UI stays optimistic; SW replays when online.
-  - Server Actions and the offline route share one authz model — read-only PIN cannot mutate via either path.
+  - Server Actions and the offline route share one authz model read-only PIN cannot mutate via either path.
   - New inventory mutation surfaces must call `gateMutation()` / `requireMutationAccess()`, not duplicate `assertWritableSession` logic.
   - Documented in `docs/api.md`, `docs/architecture.md`, MCP ADR; graph indexed under offline-mutation + policies clusters.
 - Evidence: `offline-mutation-*.ts`, `public/sw.js`, `src/app/api/inventory/offline-mutation/route.ts`, `src/lib/policies/`, `offline-mutation-route.test.ts`, `policies-authz.test.ts`, `offline-mutation-sync.test.ts`
@@ -102,19 +102,19 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
   1. Feature-only UI → `src/app/[locale]/<feature>/_components/` (private folder, not a URL segment).
   2. Cross-feature UI stays in `src/components/` (auth, sidebar, ui, ai, notifications).
   3. Domain logic stays in `src/lib/` or `src/lib/<domain>/`; mutations in `src/app/actions/`.
-  4. No drive-by moves — colocate new code only; promote to shared when used by 2+ features.
+  4. No drive-by moves colocate new code only; promote to shared when used by 2+ features.
 - Impact: `AGENTS.md` is canonical for structure; `PROJECT_MAP.md` and README architecture reflect `_components` paths.
 - Evidence: `src/app/[locale]/dashboard/_components/`, `src/app/[locale]/inventory/_components/`, `src/app/[locale]/settings/_components/`
 
-### DEC-081: Retired Features — Do Not Reintroduce (v9.1)
+### DEC-081: Retired Features Do Not Reintroduce (v9.1)
 
 - Date: July 2026
 - Do not reintroduce:
-  1. Graphify (or any second knowledge-graph toolchain) — use **codebase-memory-mcp** only.
-  2. Inventory recommended target stock — dropped by `20260708104230_remove_inventory_recommended_target_stock.sql`.
+  1. Graphify (or any second knowledge-graph toolchain) use **codebase-memory-mcp** only.
+  2. Inventory recommended target stock dropped by `20260708104230_remove_inventory_recommended_target_stock.sql`.
   3. Dashboard widgets: WeatherWidget, InventorySummaryCard, CommandCenterGrid.
-  4. Weather forecasting (`/api/weather` / OpenWeatherMap) — AI external search is Tavily-only.
-  5. Market Insights module (`local_events`, `market_insight_runs`) — dropped by `20260622143800_drop_market_insights_tables.sql`.
+  4. Weather forecasting (`/api/weather` / OpenWeatherMap) AI external search is Tavily-only.
+  5. Market Insights module (`local_events`, `market_insight_runs`) dropped by `20260622143800_drop_market_insights_tables.sql`.
 - Impact: Keep docs and code free of these as active features.
 
 ### DEC-079: Phased Performance Refactor Guardrails (v9.0)
@@ -152,11 +152,11 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 
 ### DEC-068: Deterministic AI Daily Schedule Response (v8.1)
 
-- `/api/chat` short-circuits daily schedule queries via `src/lib/schedule/*` — no LLM guesswork.
+- `/api/chat` short-circuits daily schedule queries via `src/lib/schedule/*` no LLM guesswork.
 - Evidence: `schedule_chat_response.test.ts`, `format_daily_shifts.test.ts`
 
 ### DEC-062: Inventory Stock Single Source of Truth (v6.8)
 
 - All stock writes via `updateInventoryStock()` → RPC `set_inventory_stock`.
-- Realtime merge via `mergeInventoryRealtimeUpdate()` — never replace full row from partial payload.
+- Realtime merge via `mergeInventoryRealtimeUpdate()` never replace full row from partial payload.
 - Evidence: `inventory-stock.ts`, `inventory_stock_sync.test.ts`

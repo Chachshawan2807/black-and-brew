@@ -1,5 +1,5 @@
 /**
- * Tavily HTTP client — shared across all callers in this process.
+ * Tavily HTTP client shared across all callers in this process.
  *
  * Design decisions:
  *  - In-memory cache keyed by normalised query hash (TTL 3 600 s = 1 hour)
@@ -54,9 +54,9 @@ export async function fetchTavily(
   query: string,
   options?: {
     userId?: string;
-    /** Optional override — defaults to 'basic' to preserve existing callers. */
+    /** Optional override defaults to 'basic' to preserve existing callers. */
     searchDepth?: 'basic' | 'advanced';
-    /** Optional override — defaults to 3 to preserve existing callers. */
+    /** Optional override defaults to 3 to preserve existing callers. */
     maxResults?: number;
   }
 ): Promise<TavilyResult[]> {

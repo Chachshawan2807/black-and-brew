@@ -773,7 +773,7 @@ export async function createBeanOrder(
 
     const lineRows = orderInput.lines.map((line, index) => ({
       inventory_item_id: line.inventoryItemId,
-      item_name: namesById.get(line.inventoryItemId) ?? '—',
+      item_name: namesById.get(line.inventoryItemId) ?? ' ',
       weight_value: line.weightValue,
       weight_unit: line.weightUnit,
       unit_price_per_kg: line.unitPricePerKg,
@@ -1009,7 +1009,7 @@ export async function updateBeanOrder(
     const lineRows = orderInput.lines.map((line, index) => ({
       order_id: orderId,
       inventory_item_id: line.inventoryItemId,
-      item_name: namesById.get(line.inventoryItemId) ?? '—',
+      item_name: namesById.get(line.inventoryItemId) ?? ' ',
       weight_value: line.weightValue,
       weight_unit: line.weightUnit,
       unit_price_per_kg: line.unitPricePerKg,
@@ -2097,7 +2097,7 @@ const AI_CUSTOMER_PARSE_SYSTEM = `คุณคือผู้ช่วยแย�
 ให้อ่านข้อความอิสระ (เช่น จาก LINE หรือข้อความคัดลอกออเดอร์) แล้วแยกเป็น:
 - name: ชื่อลูกค้าหรือผู้รับ
 - phone: เบอร์โทรศัพท์ (ตัวเลขเท่านั้น ถ้าไม่มีให้เป็น "")
-- addressLine: เฉพาะบ้านเลขที่ หมู่ ซอย ถนน ชื่อร้าน สถานที่พิเศษ — ห้ามใส่ตำบล อำเภอ จังหวัด รหัสไปรษณีย์ซ้ำ
+- addressLine: เฉพาะบ้านเลขที่ หมู่ ซอย ถนน ชื่อร้าน สถานที่พิเศษ ห้ามใส่ตำบล อำเภอ จังหวัด รหัสไปรษณีย์ซ้ำ
 - subdistrict: ตำบล/แขวง (ถ้าแยกได้)
 - district: อำเภอ/เขต (ถ้าแยกได้)
 - province: จังหวัด (ถ้าแยกได้)
@@ -2110,7 +2110,7 @@ async function parseCustomerWithAi(
   rulesHint?: ParsedBeanOrderCustomer | null,
 ): Promise<ParsedBeanOrderCustomer> {
   const hintBlock = rulesHint
-    ? `\n\nผลแยกเบื้องต้นจากระบบ (อาจผิด — ใช้เป็น hint เท่านั้น):\n${JSON.stringify({
+    ? `\n\nผลแยกเบื้องต้นจากระบบ (อาจผิด ใช้เป็น hint เท่านั้น):\n${JSON.stringify({
         name: rulesHint.name,
         phone: rulesHint.phone,
         addressLine: rulesHint.address.addressLine,

@@ -17,7 +17,7 @@ export type ParsedBeanOrderCustomer = {
   missingFields: Array<'name' | 'phone' | 'address'>;
 };
 
-const PLACEHOLDER_VALUES = new Set(['', '-', '—', '–']);
+const PLACEHOLDER_VALUES = new Set(['', '-', ' ', '–']);
 const ERP_CUSTOMER_LABEL_PATTERN = /^(?:ลูกค้า|เบอร์|ที่อยู่จัดส่ง|ที่อยู่)\s*:/m;
 const ADDRESS_HINT_PATTERN =
   /(ถนน|ซอย|หมู่|ต\.|อ\.|จ\.|แขวง|เขต|ร้าน|สาขา|หน้า|ข้าง|ตรงข้าม|\d+\/\d+|\d{5}\s*$)/;
@@ -52,8 +52,8 @@ function extractThaiPhone(text: string): { phone: string; remainder: string } | 
 
   const remainder = text
     .replace(match[0], '')
-    .replace(/^[\s:：\-–—,]+/, '')
-    .replace(/[\s:：\-–—,]+$/, '')
+    .replace(/^[\s:：\-– ,]+/, '')
+    .replace(/[\s:：\-– ,]+$/, '')
     .trim();
 
   return { phone, remainder };
@@ -192,7 +192,7 @@ function finalizeParsedBeanOrderCustomer(result: ParsedBeanOrderCustomer): Parse
   };
 }
 
-/** ตรวจว่าบ้านเลขที่ยังมีข้อมูลซ้ำกับฟิลด์พื้นที่หรือไม่ — ใช้ตัดสินใจให้ AI ช่วย refine */
+/** ตรวจว่าบ้านเลขที่ยังมีข้อมูลซ้ำกับฟิลด์พื้นที่หรือไม่ ใช้ตัดสินใจให้ AI ช่วย refine */
 export function addressNeedsAiRefine(result: ParsedBeanOrderCustomer): boolean {
   const { address } = finalizeParsedBeanOrderCustomer(result);
   const line = address.addressLine;

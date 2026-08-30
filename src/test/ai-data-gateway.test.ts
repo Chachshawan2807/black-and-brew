@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 
 /**
- * AI-GATEWAY-P3 — src/lib/ai-data-gateway.ts is the single doorway for every
+ * AI-GATEWAY-P3 src/lib/ai-data-gateway.ts is the single doorway for every
  * AI read against Supabase. It must:
  *   1. only ever SELECT the table's preset columns (DEC-069),
  *   2. route store status through the get_ai_store_status RPC,

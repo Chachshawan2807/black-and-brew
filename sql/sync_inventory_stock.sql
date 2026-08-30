@@ -1,5 +1,5 @@
 -- =============================================================================
--- Inventory Stock Sync — Single Source of Truth
+-- Inventory Stock Sync Single Source of Truth
 -- Run this script in Supabase SQL Editor
 -- =============================================================================
 

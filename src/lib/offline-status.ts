@@ -44,11 +44,11 @@ export function resolveOfflineBannerView(
     const message =
       pendingCount > 0
         ? isTh
-          ? `ไม่มีการเชื่อมต่ออินเทอร์เน็ต — รอซิงก์ ${pluralChanges(pendingCount, locale)}`
-          : `Offline — ${pluralChanges(pendingCount, locale)} waiting to sync`
+          ? `ไม่มีการเชื่อมต่ออินเทอร์เน็ต รอซิงก์ ${pluralChanges(pendingCount, locale)}`
+          : `Offline ${pluralChanges(pendingCount, locale)} waiting to sync`
         : isTh
-          ? 'ไม่มีการเชื่อมต่ออินเทอร์เน็ต — การแก้ไขคลังสินค้าจะถูกเก็บไว้และซิงก์เมื่อกลับออนไลน์'
-          : 'No internet connection — inventory edits are saved and will sync when you are back online';
+          ? 'ไม่มีการเชื่อมต่ออินเทอร์เน็ต การแก้ไขคลังสินค้าจะถูกเก็บไว้และซิงก์เมื่อกลับออนไลน์'
+          : 'No internet connection inventory edits are saved and will sync when you are back online';
 
     return {
       visible: true,
@@ -75,8 +75,8 @@ export function resolveOfflineBannerView(
       variant: 'error',
       pendingCount,
       message: isTh
-        ? `ซิงก์ไม่สำเร็จ — รออยู่ ${pluralChanges(pendingCount, locale)}`
-        : `Sync failed — ${pluralChanges(pendingCount, locale)} remaining`,
+        ? `ซิงก์ไม่สำเร็จ รออยู่ ${pluralChanges(pendingCount, locale)}`
+        : `Sync failed ${pluralChanges(pendingCount, locale)} remaining`,
       actionLabel: retryLabel,
     };
   }
@@ -87,8 +87,8 @@ export function resolveOfflineBannerView(
       variant: 'pending',
       pendingCount,
       message: isTh
-        ? `รอซิงก์ ${pluralChanges(pendingCount, locale)} — แตะเพื่อลองอีกครั้ง`
-        : `${pluralChanges(pendingCount, locale)} waiting — tap to retry`,
+        ? `รอซิงก์ ${pluralChanges(pendingCount, locale)} แตะเพื่อลองอีกครั้ง`
+        : `${pluralChanges(pendingCount, locale)} waiting tap to retry`,
       actionLabel: retryLabel,
     };
   }

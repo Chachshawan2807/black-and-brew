@@ -56,7 +56,7 @@ describe('Inventory Page Mobile Layout & Dnd Fixes (Failing Test First)', () => 
   });
 });
 
-describe('Safe DnD Sensors — mobile long-press guard', () => {
+describe('Safe DnD Sensors mobile long-press guard', () => {
   test('dnd-sensors.ts should export useSafeDndSensors with TouchSensor delay >= 1000ms', () => {
     const sensorCode = readFileSync(resolve(__dirname, '../lib/dnd-sensors.ts'), 'utf-8');
 

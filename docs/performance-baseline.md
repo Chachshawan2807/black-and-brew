@@ -1,4 +1,4 @@
-# Performance Baseline — BLACKANDBREW ERP
+# Performance Baseline BLACKANDBREW ERP
 
 Recorded before loading-performance optimization work (2026-07-08). Updated 2026-08-27 for current loading coverage.
 

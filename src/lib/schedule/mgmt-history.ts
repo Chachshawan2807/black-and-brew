@@ -5,7 +5,7 @@ import type { Shift } from '@/types';
 export const MGMT_HISTORY_PAGE_SIZE = 80;
 export const MGMT_HISTORY_MAX_CHAINED_PAGES = 8;
 
-/** PostgREST OR filter — management rows, remark legacy rows, and leave-type legacy rows. */
+/** PostgREST OR filter management rows, remark legacy rows, and leave-type legacy rows. */
 export const MGMT_HISTORY_QUERY_OR =
   'metadata->is_management.eq.true,metadata->>remark.not.is.null,and(status.eq.on_leave,metadata->>location.eq.ลา)';
 

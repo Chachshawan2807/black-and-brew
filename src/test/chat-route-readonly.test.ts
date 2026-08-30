@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 
 /**
- * SEC-AUTH-001 / DEC-069 — read-only PIN sessions must NOT reach the AI chat,
+ * SEC-AUTH-001 / DEC-069 read-only PIN sessions must NOT reach the AI chat,
  * which uses the Service Role adminClient (bypasses RLS). A read-only kiosk
  * account should never be able to interrogate the full database via the agent.
  */
@@ -42,7 +42,7 @@ const userMessage = {
   messages: [{ role: 'user', parts: [{ type: 'text', text: 'สต็อกเหลือเท่าไหร่' }] }],
 };
 
-describe('POST /api/chat — server auth gate', () => {
+describe('POST /api/chat server auth gate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';

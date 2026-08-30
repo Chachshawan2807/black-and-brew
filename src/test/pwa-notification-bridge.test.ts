@@ -40,7 +40,7 @@ describe('pwa-notification-bridge', () => {
 
   test('buildInventoryOsNotification prefers fieldSummary for non-stock body', () => {
     const insightSummary =
-      'สัปดาห์นี้วันที่คนน้อย: ส. 4 คน, อา. 4 คน, จ. 3 คน — ควรตรวจตารางงานค่ะ';
+      'สัปดาห์นี้วันที่คนน้อย: ส. 4 คน, อา. 4 คน, จ. 3 คน ควรตรวจตารางงานค่ะ';
     const result = buildInventoryOsNotification('คนน้อย', 'สัปดาห์นี้วันที่คนน้อย…', 1, true, {
       fieldSummary: insightSummary,
     });
@@ -128,7 +128,7 @@ describe('pwa-notification-bridge', () => {
     const scheduleBody = [
       'ตารางงาน 09-08-2026 (วันนี้) · เข้างาน 5 คน',
       'ปิ่น 6:30, มุก 7:00, นิต้า 8:00, ล่า 6:30, โบ๊ท 7:00',
-      'งานอื่น: ล่า — ร้านซักผ้า',
+      'งานอื่น: ล่า ร้านซักผ้า',
     ].join('\n');
 
     const android = buildSplitOsNotification('ตารางงานวันนี้', scheduleBody);

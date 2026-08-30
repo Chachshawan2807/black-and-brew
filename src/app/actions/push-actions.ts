@@ -26,7 +26,7 @@ const subscriptionSchema = z.object({
       proactiveInsights: z.boolean().optional(),
       securityAlerts: z.boolean().optional(),
       notifyOwnChanges: z.boolean(),
-      // Legacy per-action flags — accepted then ignored (inventory master switch covers all)
+      // Legacy per-action flags accepted then ignored (inventory master switch covers all)
       notifyCreate: z.boolean().optional(),
       notifyUpdate: z.boolean().optional(),
       notifyDelete: z.boolean().optional(),
@@ -47,7 +47,7 @@ function getSupabaseAnonKey(): string {
   return key;
 }
 
-/** User-scoped client — satisfies push_subscriptions RLS (auth.uid() = user_id). */
+/** User-scoped client satisfies push_subscriptions RLS (auth.uid() = user_id). */
 function createUserScopedClient(accessToken: string) {
   return createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     global: {
@@ -73,7 +73,7 @@ async function resolveUserId(accessToken: string): Promise<string | null> {
   if (user?.id) return user.id;
 
   if (error) {
-    // Never decode JWT payload without signature verification — forged tokens
+    // Never decode JWT payload without signature verification forged tokens
     // could bind push subscriptions to an arbitrary user_id.
     console.error('[resolveUserId] Supabase Auth Error:', error.message, error.status);
   }

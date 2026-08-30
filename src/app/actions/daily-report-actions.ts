@@ -28,9 +28,9 @@ export interface StaffShiftEntry {
 export interface DailyReportData {
   schedule: DailyReportSchedule;
   dateStr: string;
-  /** Timed front-store shifts only (6:30, 7:00, 8:00, …) — counted in headcount */
+  /** Timed front-store shifts only (6:30, 7:00, 8:00, …) counted in headcount */
   activeStaff: StaffShiftEntry[];
-  /** Non-timed duties (ร้านซักผ้า, ไปสาขา 2) — shown under เข้างาน, not counted */
+  /** Non-timed duties (ร้านซักผ้า, ไปสาขา 2) shown under เข้างาน, not counted */
   otherDutyStaff: StaffShiftEntry[];
   offStaff: StaffShiftEntry[];
   headcount: number;
@@ -165,7 +165,7 @@ export function parseDailyReportScheduleParam(
 
 /**
  * Bangkok calendar date (yyyy-MM-dd) covered by the notification.
- * Independent of server timezone — safe on Vercel (UTC).
+ * Independent of server timezone safe on Vercel (UTC).
  */
 export function resolveDailyReportTargetIso(
   schedule: DailyReportSchedule,
@@ -227,8 +227,8 @@ export async function compileDailyReportDataForDate(
 /**
  * Compiles shift + holiday data for the daily report notification.
  *
- * - `today` (default): 05:00 ICT cron — ตารางงานของวันนั้น
- * - `tomorrow`: 18:00 ICT cron — ตารางงานของวันถัดไป
+ * - `today` (default): 05:00 ICT cron ตารางงานของวันนั้น
+ * - `tomorrow`: 18:00 ICT cron ตารางงานของวันถัดไป
  */
 export async function compileDailyReportData(
   schedule: DailyReportSchedule = 'today',

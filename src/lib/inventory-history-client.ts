@@ -12,7 +12,7 @@ type HistoryClientResult =
   | { success: true; data: InventoryHistoryDisplayRow[]; hasMore: boolean }
   | { success: false; error: string; data: InventoryHistoryDisplayRow[]; hasMore: false };
 
-/** Direct Supabase read — avoids Server Action + ensureServerSession round-trip on the client. */
+/** Direct Supabase read avoids Server Action + ensureServerSession round-trip on the client. */
 export async function fetchTransactionHistoryClient(
   options: FetchTransactionHistoryOptions,
 ): Promise<HistoryClientResult> {

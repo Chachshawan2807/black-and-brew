@@ -1,14 +1,14 @@
-/** Central shift-type definitions — synced with schedule UI and shift-colors lookups */
+/** Central shift-type definitions synced with schedule UI and shift-colors lookups */
 
 export const SHIFT_TYPES_STORAGE_KEY = 'blackandbrew-shift-types';
 export const SHIFT_TYPES_UPDATED_EVENT = 'bb-shift-types-updated';
 
 export interface ShiftTypeEntry {
-  /** Stable identifier — never changes when renaming */
+  /** Stable identifier never changes when renaming */
   id: string;
   /** Display name (also stored in shifts.metadata.location) */
   label: string;
-  /** DB value in metadata.location — kept in sync with label on save */
+  /** DB value in metadata.location kept in sync with label on save */
   value: string;
   bgColor: string;
   borderColor: string;

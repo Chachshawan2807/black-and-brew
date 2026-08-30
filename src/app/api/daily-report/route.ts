@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     const pushResult = await dispatchDailyReportWebPush(reportData);
 
     if (pushResult.error === 'vapid_not_configured') {
-      console.error('[CRON] Web Push not configured — set VAPID keys on Vercel');
+      console.error('[CRON] Web Push not configured set VAPID keys on Vercel');
       return NextResponse.json(
         { success: false, error: 'Web Push VAPID keys not configured' },
         { status: 503 },

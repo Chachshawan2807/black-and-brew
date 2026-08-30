@@ -46,7 +46,7 @@ export async function gateMutation(): Promise<
   return { success: true };
 }
 
-/** PIN-only page gate — matches legacy checkAuth (PinGateway session). */
+/** PIN-only page gate matches legacy checkAuth (PinGateway session). */
 export function requirePinReadAccess(session: {
   verified: boolean;
   readOnly: boolean;

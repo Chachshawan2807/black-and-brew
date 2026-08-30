@@ -1,4 +1,4 @@
-# Security Hardening — WAF / DDoS
+# Security Hardening WAF / DDoS
 
 BLACKANDBREW ERP uses **Vercel Firewall** as the primary edge protection layer. Cloudflare is optional if you terminate DNS elsewhere.
 
@@ -32,7 +32,7 @@ vercel firewall system-mitigations resume --yes
 
 ### Apply configuration
 
-1. Create/link an [Upstash Redis](https://upstash.com/) database (for app-level distributed rate limits — separate from firewall).
+1. Create/link an [Upstash Redis](https://upstash.com/) database (for app-level distributed rate limits separate from firewall).
 2. Ensure Vercel CLI is authenticated: `vercel login`
 3. Link the repo (`vercel link`) so `.vercel/project.json` supplies `projectId` and `orgId` (team), or pass `--project` / `--team`
 4. Apply:
@@ -101,9 +101,9 @@ Without these variables the app falls back to in-memory limits (per serverless i
 
 Protected surfaces:
 
-- PIN failures — 5 / 15 min per IP
-- AI chat — 30 / hour per user
-- Tavily search — 10 / hour per user
+- PIN failures 5 / 15 min per IP
+- AI chat 30 / hour per user
+- Tavily search 10 / hour per user
 
 ## Related docs
 

@@ -29,7 +29,7 @@ vi.mock('@supabase/supabase-js', () => ({
 
 import { runInventoryMigration } from '@/app/actions/migrate-inventory-sort-order';
 
-describe('Inventory Sorting Migration — unit', () => {
+describe('Inventory Sorting Migration unit', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';

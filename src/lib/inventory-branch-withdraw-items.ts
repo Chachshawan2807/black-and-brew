@@ -25,7 +25,7 @@ export function buildBranchWithdrawDisplayItems<T extends InventoryStockFields>(
     manualItems.push({
       ...item,
       id: item.id,
-      name: (item.name as string) ?? '—',
+      name: (item.name as string) ?? ' ',
       unit: (item.unit as string) ?? '',
       sort_order: (item.sort_order as number) ?? 0,
       computedOrderQty: 0,
@@ -36,7 +36,7 @@ export function buildBranchWithdrawDisplayItems<T extends InventoryStockFields>(
   const autoItems: BranchWithdrawDisplayItem[] = branchItems.map((item) => ({
     ...item,
     id: item.id,
-    name: (item.name as string) ?? '—',
+    name: (item.name as string) ?? ' ',
     unit: (item.unit as string) ?? '',
     sort_order: (item.sort_order as number) ?? 0,
     computedOrderQty: item.computedOrderQty,

@@ -10,7 +10,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 /**
  * Shared safe DnD sensors for mobile and desktop.
  *
- * - Desktop (mouse): requires 10px movement before drag activates — accidental
+ * - Desktop (mouse): requires 10px movement before drag activates accidental
  *   clicks are not treated as drags.
  * - Mobile (touch): requires a 1-second long-press before drag activates so that
  *   normal page-scroll gestures are never hijacked.

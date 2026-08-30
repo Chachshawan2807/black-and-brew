@@ -1,4 +1,4 @@
-/** Google Sheet cell mapping — branch 1 only (columns A–H). Column I+ is branch 2. */
+/** Google Sheet cell mapping branch 1 only (columns A–H). Column I+ is branch 2. */
 
 export const SHEETS_BRANCH1_LABEL_COLUMN = 'A' as const;
 

@@ -16,8 +16,8 @@ export const SECRETARY_WORK_SESSIONS: readonly SecretaryWorkSession[] = [
     label: 'ตรวจตารางงาน',
     module: 'schedule',
     taskTypes: ['schedule_understaffed', 'schedule_leave_risk'],
-    titlePrefix: 'ตรวจตาราง — ',
-    rationale: 'ข้อมูลวันที่คนน้อยและลาหลายคนอยู่ในหน้าตารางงาน — เปิดครั้งเดียวตรวจได้',
+    titlePrefix: 'ตรวจตาราง ',
+    rationale: 'ข้อมูลวันที่คนน้อยและลาหลายคนอยู่ในหน้าตารางงาน เปิดครั้งเดียวตรวจได้',
   },
 ] as const;
 

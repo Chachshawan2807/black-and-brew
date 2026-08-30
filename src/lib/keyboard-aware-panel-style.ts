@@ -96,7 +96,7 @@ export function getFabMobileBulkPanelMaxHeight(
   return Math.max(120, Math.min(dvh * 0.75, dvh - marginTop - marginBottom));
 }
 
-/** Scroll cap for the bulk queue list — shrinks with keyboard, never exceeds panel chrome budget. */
+/** Scroll cap for the bulk queue list shrinks with keyboard, never exceeds panel chrome budget. */
 export function getFabMobileBulkQueueListMaxHeight(
   insets: VisualViewportInsets,
   marginTop = 16,

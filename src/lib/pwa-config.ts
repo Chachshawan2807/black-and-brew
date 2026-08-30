@@ -20,7 +20,7 @@ export type PwaShortcut = {
   url: string;
 };
 
-/** Home-screen shortcuts — inventory, schedule, dashboard (primary ERP routes). */
+/** Home-screen shortcuts inventory, schedule, dashboard (primary ERP routes). */
 export const PWA_SHORTCUTS: readonly PwaShortcut[] = [
   { name: 'คลังสินค้า', short_name: 'คลัง', url: '/th/inventory' },
   { name: 'ตารางงาน', short_name: 'ตาราง', url: '/th/schedule' },

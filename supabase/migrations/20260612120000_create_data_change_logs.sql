@@ -1,4 +1,4 @@
--- Data change audit trail (ISO 27001 / SOC 2 aligned — separate from login_history)
+-- Data change audit trail (ISO 27001 / SOC 2 aligned separate from login_history)
 CREATE TABLE IF NOT EXISTS public.data_change_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),

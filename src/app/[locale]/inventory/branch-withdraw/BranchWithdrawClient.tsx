@@ -556,7 +556,7 @@ export default function BranchWithdrawClient({
             <h1 className="text-xl font-normal md:text-2xl">เบิกของสาขา 2</h1>
           )}
           <p className={embedded ? 'text-sm text-foreground/70' : 'mt-1 text-sm text-foreground/70'}>
-            แสดงรายการสั่งซื้อช่องทางสาขา 2 ที่ต้องเติมสต็อก — สามารถเพิ่มสินค้าจากคลังได้
+            แสดงรายการสั่งซื้อช่องทางสาขา 2 ที่ต้องเติมสต็อก สามารถเพิ่มสินค้าจากคลังได้
           </p>
           <button
             type="button"
@@ -578,7 +578,7 @@ export default function BranchWithdrawClient({
         <section className={embedded ? 'space-y-2' : 'space-y-2 pb-28'}>
           {displayItems.length === 0 ? (
             <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-foreground/70">
-              ไม่มีรายการสั่งซื้อจากสาขา 2 ที่ต้องเบิกในขณะนี้ — กดปุ่มด้านบนเพื่อเพิ่มสินค้าจากคลัง
+              ไม่มีรายการสั่งซื้อจากสาขา 2 ที่ต้องเบิกในขณะนี้ กดปุ่มด้านบนเพื่อเพิ่มสินค้าจากคลัง
             </div>
           ) : (
             <>
@@ -684,7 +684,7 @@ export default function BranchWithdrawClient({
         <div className="flex w-fit max-w-[92vw] flex-col p-4 md:p-5">
           <h3 className="text-base">สรุปรายการ (อัปเดตตามที่กรอก)</h3>
           <p className="mt-1 text-xs text-foreground/70">
-            แสดงเฉพาะรายการที่มีจำนวนสาขา 1 — ข้อความนี้จะเหมือนตอนกดบันทึก
+            แสดงเฉพาะรายการที่มีจำนวนสาขา 1 ข้อความนี้จะเหมือนตอนกดบันทึก
           </p>
           <div className="mt-3 max-h-[min(60dvh,32rem)] overflow-y-auto bb-smooth-scroll rounded-xl border border-border bg-background p-3">
             <pre className="w-max max-w-[calc(92vw-2.5rem)] whitespace-pre-wrap font-sans text-sm leading-relaxed">

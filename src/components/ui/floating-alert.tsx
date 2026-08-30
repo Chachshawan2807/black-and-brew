@@ -15,7 +15,7 @@ type FloatingAlertProps = {
   className?: string;
   style?: React.CSSProperties;
   icon?: React.ReactNode;
-  /** Viewport coordinates (e.g. click clientX/clientY) — positions alert above anchor, clamped to screen. */
+  /** Viewport coordinates (e.g. click clientX/clientY) positions alert above anchor, clamped to screen. */
   anchor?: { x: number; y: number };
 };
 

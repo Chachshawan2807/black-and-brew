@@ -36,7 +36,7 @@ export function shouldIncludeIncompleteBeanOrder(order: BeanOrderWorkflowStatusI
   return !isBeanOrderWorkflowComplete(order);
 }
 
-/** Labels for statuses that are not yet complete — inverse of OrderListStatusGroup badges. */
+/** Labels for statuses that are not yet complete inverse of OrderListStatusGroup badges. */
 export function formatBeanOrderIncompleteStatusLines(
   order: BeanOrderWorkflowStatusInput,
 ): string[] {

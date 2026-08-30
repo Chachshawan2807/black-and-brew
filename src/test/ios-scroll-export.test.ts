@@ -148,7 +148,7 @@ describe('iOS scroll & export fixes', () => {
     expect(css).toContain('bb-pwa-android');
     expect(css).toMatch(/html\.bb-pwa-android[\s\S]*#blackandbrew-schedule-table[\s\S]*zoom:\s*0\.72/);
     expect(css).toMatch(/bb-schedule-export-capturing#blackandbrew-schedule-table[\s\S]*zoom:\s*1/);
-    expect(css).toMatch(/Android mobile — scale schedule to match iOS visual size/);
+    expect(css).toMatch(/Android mobile scale schedule to match iOS visual size/);
   });
 
   test('ScheduleToolbar exposes compact Android toolbar hook class', () => {

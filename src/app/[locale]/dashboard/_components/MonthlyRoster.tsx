@@ -220,7 +220,7 @@ export default function MonthlyRoster({
     const entries = collectLeaveEntries(data.shifts, profileId, { singleDate: date });
     if (entries.length === 0) return;
     setStatDialog({
-      title: `รายละเอียดวันลา — ${profileName}`,
+      title: `รายละเอียดวันลา ${profileName}`,
       entries,
       variant: 'leave',
     });

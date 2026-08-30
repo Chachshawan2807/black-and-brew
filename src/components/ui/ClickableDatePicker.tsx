@@ -37,10 +37,10 @@ interface PopoverCoords {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const POPOVER_WIDTH = 288;   // px — ความกว้างของ calendar popover
-const POPOVER_HEIGHT = 370;  // px — ความสูงโดยประมาณ (ใช้สำหรับคำนวณพื้นที่ก่อน mount)
-const SCREEN_PADDING = 12;   // px — ระยะห่างขั้นต่ำจากขอบหน้าจอ
-const MOBILE_BREAKPOINT = 768; // px — md breakpoint ของ Tailwind
+const POPOVER_WIDTH = 288;   // px ความกว้างของ calendar popover
+const POPOVER_HEIGHT = 370;  // px ความสูงโดยประมาณ (ใช้สำหรับคำนวณพื้นที่ก่อน mount)
+const SCREEN_PADDING = 12;   // px ระยะห่างขั้นต่ำจากขอบหน้าจอ
+const MOBILE_BREAKPOINT = 768; // px md breakpoint ของ Tailwind
 
 export function ClickableDatePicker({
   containerClassName = '',
@@ -92,7 +92,7 @@ export function ClickableDatePicker({
   //   1. เปิดลง + ชิดซ้าย  (กรณีปกติ)
   //   2. เปิดลง + ชิดขวา  (เมื่อ popover จะเกินขอบขวา)
   //   3. เปิดขึ้น + ชิดซ้าย (เมื่อพื้นที่ด้านล่างไม่พอ)
-  //   4. เปิดขึ้น + ชิดขวา (worst case — ด้านล่างไม่พอ และจะเกินขอบขวา)
+  //   4. เปิดขึ้น + ชิดขวา (worst case ด้านล่างไม่พอ และจะเกินขอบขวา)
   const calculatePosition = useCallback(() => {
     if (!triggerRef.current) return;
 

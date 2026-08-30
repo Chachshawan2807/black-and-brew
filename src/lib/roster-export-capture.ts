@@ -68,7 +68,7 @@ function nodeMayHaveExportShadow(node: HTMLElement): boolean {
   return node.style.boxShadow !== '' || node.style.filter !== '';
 }
 
-/** Deterministic grid height — avoids mobile off-screen layout returning skinny columns. */
+/** Deterministic grid height avoids mobile off-screen layout returning skinny columns. */
 export function computeRosterExportGridHeight(grid: HTMLElement): number {
   const childCount = grid.children.length;
   const headerHeight = parseInt(ROSTER_EXPORT_HEADER_ROW_HEIGHT, 10);
@@ -296,7 +296,7 @@ async function ensureCaptureFontsReady(): Promise<void> {
   try {
     await document.fonts.ready;
   } catch {
-    // Non-fatal — html-to-image may still embed @font-face rules.
+    // Non-fatal html-to-image may still embed @font-face rules.
   }
 }
 

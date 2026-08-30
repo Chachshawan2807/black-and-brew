@@ -702,7 +702,7 @@ export default function BeanOrderFormClient({
         const paymentResult = await persistPayment(targetOrderId);
         if (paymentResult.error) {
           setSaving(false);
-          setError(`${paymentResult.error} — ออเดอร์ถูกบันทึกแล้ว`);
+          setError(`${paymentResult.error} ออเดอร์ถูกบันทึกแล้ว`);
           navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
           return;
         }
@@ -716,7 +716,7 @@ export default function BeanOrderFormClient({
         );
         if (shipmentResult.error) {
           setSaving(false);
-          setError(`${shipmentResult.error} — ออเดอร์ถูกบันทึกแล้ว`);
+          setError(`${shipmentResult.error} ออเดอร์ถูกบันทึกแล้ว`);
           navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
           return;
         }

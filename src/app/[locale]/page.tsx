@@ -64,7 +64,7 @@ export default async function IndexPage({ params }: { params: Promise<{ locale: 
     getSupabaseAdmin().from('inventory_items').select(INVENTORY_ITEM_SELECT).order('sort_order', { ascending: true }),
     (async () => {
       try {
-        // Use service-role admin — same as profiles/shifts/inventory.
+        // Use service-role admin same as profiles/shifts/inventory.
         // Browser session tokens expire under long-lived Node ("JWT expired").
         return {
           data: await queryHomeMaintenanceTasks(getSupabaseAdmin(), currentIsoDate),

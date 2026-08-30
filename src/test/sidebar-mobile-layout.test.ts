@@ -8,7 +8,7 @@ function readFile(relativePath: string): string {
   return fs.readFileSync(path.resolve(ROOT, relativePath), 'utf-8');
 }
 
-describe('Mobile sidebar layout — Modern Web Guidance alignment', () => {
+describe('Mobile sidebar layout Modern Web Guidance alignment', () => {
   test('viewport must not block pinch-zoom (no maximumScale lock)', () => {
     const code = readFile('app/[locale]/layout.tsx');
     expect(code).not.toMatch(/maximumScale:\s*1/);

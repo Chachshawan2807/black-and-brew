@@ -6,7 +6,7 @@ export type CaptureElementPngOptions = {
   filter?: (node: HTMLElement) => boolean;
   /** Skip remote @font-face / @import fetches (default true for generic captures). */
   skipFonts?: boolean;
-  /** Precomputed @font-face CSS from getFontEmbedCSS — embeds fonts in the PNG. */
+  /** Precomputed @font-face CSS from getFontEmbedCSS embeds fonts in the PNG. */
   fontEmbedCSS?: string;
   /** Prefer woff2 when embedding web fonts. */
   preferredFontFormat?: 'woff' | 'woff2' | 'truetype' | 'opentype' | 'embedded-opentype' | 'svg' | string;
@@ -179,7 +179,7 @@ export function downloadPngBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-/** @deprecated Prefer downloadPngBlob — base64 encoding is slower for large captures. */
+/** @deprecated Prefer downloadPngBlob base64 encoding is slower for large captures. */
 export function downloadDataUrl(dataUrl: string, filename: string): void {
   const link = document.createElement('a');
   link.download = filename;

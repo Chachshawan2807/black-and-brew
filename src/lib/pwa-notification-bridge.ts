@@ -75,7 +75,7 @@ export const OS_NOTIFICATION_BODY_MAX = 240;
 
 /**
  * Short headline in title, detail in body. iOS lock screen shows only the first title line
- * when body is empty — keep both fields populated on every platform.
+ * when body is empty keep both fields populated on every platform.
  */
 export function buildSplitOsNotification(
   headline: string,
@@ -216,7 +216,7 @@ export async function showSystemNotification(
       n.close();
     };
   } catch {
-    // ignore — e.g. iOS without PWA install
+    // ignore e.g. iOS without PWA install
   }
 }
 

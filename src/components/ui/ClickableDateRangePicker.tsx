@@ -255,15 +255,15 @@ export function ClickableDateRangePicker({
     const endLabel = formatDisplayDate(endValue);
 
     if (startLabel && endLabel) {
-      return `${startLabel} — ${endLabel}`;
+      return `${startLabel} ${endLabel}`;
     }
     if (startLabel) {
-      return `${startLabel} — ${endPlaceholder}`;
+      return `${startLabel} ${endPlaceholder}`;
     }
     if (endLabel) {
-      return `${startPlaceholder} — ${endLabel}`;
+      return `${startPlaceholder} ${endLabel}`;
     }
-    return `${startPlaceholder} — ${endPlaceholder}`;
+    return `${startPlaceholder} ${endPlaceholder}`;
   }, [startValue, endValue, startPlaceholder, endPlaceholder]);
 
   const monthStart = startOfMonth(viewDate);

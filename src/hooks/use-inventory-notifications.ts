@@ -90,10 +90,10 @@ import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { shouldReconnectRealtimeOnResume } from '@/lib/supabase-realtime-resume';
 import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
 
-/** Proactive insight panel updates are silent — scheduled cron Web Push handles OS banners. */
+/** Proactive insight panel updates are silent scheduled cron Web Push handles OS banners. */
 const skipInsightOsNotification = true;
 
-/** Secretary digest panel updates are silent — scheduled cron Web Push handles OS banners. */
+/** Secretary digest panel updates are silent scheduled cron Web Push handles OS banners. */
 const skipSecretaryOsNotification = true;
 
 function isDailyReportNotificationItem(notification: InventoryNotification): boolean {
@@ -158,7 +158,7 @@ function resolveDisplayUnreadCount(
   return display;
 }
 
-/** Unique topic per subscribe — deferred teardown can leave old channels registered by name. */
+/** Unique topic per subscribe deferred teardown can leave old channels registered by name. */
 let notificationRealtimeChannelSeq = 0;
 
 export function useInventoryNotifications() {
@@ -437,7 +437,7 @@ export function useInventoryNotifications() {
     [],
   );
 
-  /** Roster sync updates an existing cron log — refresh panel content only, no banner/badge. */
+  /** Roster sync updates an existing cron log refresh panel content only, no banner/badge. */
   const silentlyReplaceDailyReportFromRow = useCallback((row: DataChangeLogRow) => {
     const loc = localeRef.current;
     const notification = formatDailyReportNotification(row, loc);
@@ -678,7 +678,7 @@ export function useInventoryNotifications() {
           if (!warnedUnavailable) {
             warnedUnavailable = true;
             console.warn(
-              '[inventory notifications] Realtime unavailable — apply pending migrations from supabase/migrations/ via Supabase CLI or dashboard if not applied',
+              '[inventory notifications] Realtime unavailable apply pending migrations from supabase/migrations/ via Supabase CLI or dashboard if not applied',
               err?.message ?? status
             );
           }

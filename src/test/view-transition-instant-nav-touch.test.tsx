@@ -26,7 +26,7 @@ function renderInstantNavLink() {
   return render(
     <>
       <ViewTransitionNavigation />
-      {/* Instant nav intercepts native anchors via data-bb-nav — not Next Link */}
+      {/* Instant nav intercepts native anchors via data-bb-nav not Next Link */}
       {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional fixture for ViewTransitionNavigation */}
       <a href="/th/bean-orders/order-1" data-bb-nav="instant">
         Order detail

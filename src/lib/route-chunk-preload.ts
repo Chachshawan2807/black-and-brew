@@ -17,7 +17,7 @@ const ROUTE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   }),
 };
 
-/** Routes staff open most often — warmed on idle after first paint. */
+/** Routes staff open most often warmed on idle after first paint. */
 const COMMON_ROUTE_KEYS = ['inventory', 'schedule', 'dashboard'] as const;
 
 function routeKeyFromHref(href: string): string | null {

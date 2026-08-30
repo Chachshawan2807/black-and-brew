@@ -1,6 +1,6 @@
-/** Shared framer-motion presets — premium minimal, layout-neutral */
+/** Shared framer-motion presets premium minimal, layout-neutral */
 
-/** Smooth deceleration — snappy enter/exit without spring bounce */
+/** Smooth deceleration snappy enter/exit without spring bounce */
 export const MODAL_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export type MotionPreset = {
@@ -24,7 +24,7 @@ export const modalContent: MotionPreset = {
   transition: { duration: 0.22, ease: MODAL_EASE },
 };
 
-/** Centered notification panel — slightly longer travel for smooth open/close */
+/** Centered notification panel slightly longer travel for smooth open/close */
 export const notificationPanel: MotionPreset = {
   initial: { opacity: 0, scale: 0.94, y: 16 },
   animate: { opacity: 1, scale: 1, y: 0 },
@@ -67,7 +67,7 @@ export const toastSlide: MotionPreset = {
   transition: { duration: 0.18, ease: MODAL_EASE },
 };
 
-/** FAB stack triggers — soft fade + scale without bounce */
+/** FAB stack triggers soft fade + scale without bounce */
 export const fabTrigger: MotionPreset = {
   initial: { opacity: 0, scale: 0.82, y: 8 },
   animate: { opacity: 1, scale: 1, y: 0 },
@@ -91,7 +91,7 @@ export const uploadSuccessBanner: MotionPreset = {
   transition: { duration: 0.2, ease: MODAL_EASE },
 };
 
-/** Page section cards — use with staggerDelay for cascade */
+/** Page section cards use with staggerDelay for cascade */
 export const sectionReveal: MotionPreset = {
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
@@ -138,7 +138,7 @@ export const expandPanel: MotionPreset = {
   transition: { duration: 0.2, ease: MODAL_EASE },
 };
 
-/** FAB icon swap — open state */
+/** FAB icon swap open state */
 export const fabIconOpen: MotionPreset = {
   initial: { rotate: -90, opacity: 0 },
   animate: { rotate: 0, opacity: 1 },
@@ -146,7 +146,7 @@ export const fabIconOpen: MotionPreset = {
   transition: { duration: 0.2, ease: MODAL_EASE },
 };
 
-/** FAB icon swap — close state */
+/** FAB icon swap close state */
 export const fabIconClose: MotionPreset = {
   initial: { rotate: 90, opacity: 0 },
   animate: { rotate: 0, opacity: 1 },
@@ -206,7 +206,7 @@ export function applyMotionPreset(preset: MotionPreset) {
   };
 }
 
-/** Primary FAB / notification bell — hover & tap */
+/** Primary FAB / notification bell hover & tap */
 export const FAB_HOVER = { scale: 1.08 } as const;
 export const FAB_TAP = { scale: 0.94 } as const;
 
@@ -217,7 +217,7 @@ export const FAB_SUBTLE_HOVER = { scale: 1.06 } as const;
 export const BUTTON_HOVER = { scale: 1.02 } as const;
 export const BUTTON_TAP = { scale: 0.98 } as const;
 
-/** Dashboard stat cards — lift on hover */
+/** Dashboard stat cards lift on hover */
 export const CARD_LIFT_HOVER = {
   y: -4,
   scale: 1.02,
@@ -228,7 +228,7 @@ export const CARD_PRESS_TAP = { scale: 0.98 } as const;
 /** Compact icon buttons (chat send, etc.) */
 export const ICON_COMPACT_TAP = { scale: 0.9 } as const;
 
-/** Pin gateway — status line swap */
+/** Pin gateway status line swap */
 export const pinStatusText: MotionPreset = {
   initial: { opacity: 0, y: 5 },
   animate: { opacity: 1, y: 0 },

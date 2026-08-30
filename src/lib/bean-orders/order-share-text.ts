@@ -61,7 +61,7 @@ function formatRecipientAddress(order: BeanOrderShareInput): string {
 
 function hasShareTextValue(value: string | null | undefined): boolean {
   const trimmed = value?.trim() ?? '';
-  return trimmed.length > 0 && trimmed !== '—' && trimmed !== '-';
+  return trimmed.length > 0 && trimmed !== ' ' && trimmed !== '-';
 }
 
 function formatLineItem(line: BeanOrderShareLine, index: number): string {
@@ -78,7 +78,7 @@ export function formatBeanOrderShareText(order: BeanOrderShareInput): string {
   const lineItems =
     order.lines.length > 0
       ? order.lines.map((line, index) => formatLineItem(line, index))
-      : ['—'];
+      : [' '];
 
   const address = formatRecipientAddress(order);
   const lines = [

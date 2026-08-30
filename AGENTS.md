@@ -1,13 +1,13 @@
 <!-- markdownlint-disable MD025 -->
-# Agent Rules — BLACKANDBREW ERP
+# Agent Rules BLACKANDBREW ERP
 
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+This version has breaking changes APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 
-**Next.js skill:** `.agents/skills/next-best-practices/SKILL.md` — App Router file conventions, RSC boundaries, async APIs, metadata, route handlers. Pair with `vercel-react-best-practices` for performance.
+**Next.js skill:** `.agents/skills/next-best-practices/SKILL.md` App Router file conventions, RSC boundaries, async APIs, metadata, route handlers. Pair with `vercel-react-best-practices` for performance.
 
 **Caching vs ERP sync:** Supabase real-time / optimistic UI wins over aggressive route caching. Do not cache inventory, sales, or editable grid data in ways that delay post-mutation freshness unless explicitly invalidated on every write.
 <!-- END:nextjs-agent-rules -->
@@ -16,16 +16,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## PROJECT STRUCTURE (Next.js colocation)
 
-This is a **Next.js App Router** ERP — not a Vite/CRA SPA. Do **not** introduce top-level `features/` or `services/` folders or mass-move legacy files to match generic React tutorials. Map domain modules to `app/`, `lib/`, and `app/actions/` instead.
+This is a **Next.js App Router** ERP not a Vite/CRA SPA. Do **not** introduce top-level `features/` or `services/` folders or mass-move legacy files to match generic React tutorials. Map domain modules to `app/`, `lib/`, and `app/actions/` instead.
 
-**Skill:** `.agents/skills/next-best-practices/SKILL.md` — file conventions, RSC boundaries, private folders.
+**Skill:** `.agents/skills/next-best-practices/SKILL.md` file conventions, RSC boundaries, private folders.
 
 ### Folder roles
 
 | Concern | Location | Examples |
 | ------- | -------- | -------- |
 | Routes & page shells | `src/app/[locale]/<feature>/` | `inventory/page.tsx`, `schedule/ScheduleClient.tsx` |
-| Feature-only UI (new code) | `src/app/[locale]/<feature>/_components/` | Private folder — not a URL segment |
+| Feature-only UI (new code) | `src/app/[locale]/<feature>/_components/` | Private folder not a URL segment |
 | Shared UI (2+ features) | `src/components/` | `components/ui/`, `components/sidebar/`, `components/auth/` |
 | Domain logic (no UI) | `src/lib/` or `src/lib/<domain>/` | `lib/schedule/`, `lib/inventory-stock.ts`, `lib/shift-colors.ts` |
 | Server mutations | `src/app/actions/<domain>-actions.ts` | `inventory-actions.ts`, `shift-actions.ts` |
@@ -37,22 +37,22 @@ This is a **Next.js App Router** ERP — not a Vite/CRA SPA. Do **not** introduc
 
 ### Separation of concerns
 
-- **UI** (`*Client.tsx`, components) — render, local state, optimistic updates, event handlers. Prefer Server Actions for mutations; avoid direct Supabase writes from client when an action already exists.
-- **Domain logic** (`lib/`) — pure helpers, formatting, validation, query builders, undo/sync helpers. No React hooks unless the module is explicitly client-only.
-- **Data layer** — Server Actions + `lib/supabase-server.ts` on the server; `lib/supabase.ts` + session helpers on the client. Auth checks live **inside** each Server Action (see next-best-practices).
+- **UI** (`*Client.tsx`, components) render, local state, optimistic updates, event handlers. Prefer Server Actions for mutations; avoid direct Supabase writes from client when an action already exists.
+- **Domain logic** (`lib/`) pure helpers, formatting, validation, query builders, undo/sync helpers. No React hooks unless the module is explicitly client-only.
+- **Data layer** Server Actions + `lib/supabase-server.ts` on the server; `lib/supabase.ts` + session helpers on the client. Auth checks live **inside** each Server Action (see next-best-practices).
 - **Do not** duplicate the same mutation in both a client component and a Server Action.
 
 ### Colocation rules (new code)
 
-1. **Default:** colocate with the route — `page.tsx`, `*Client.tsx`, `loading.tsx`, feature-only components under `_components/`.
+1. **Default:** colocate with the route `page.tsx`, `*Client.tsx`, `loading.tsx`, feature-only components under `_components/`.
 2. **Promote to shared** only when used by **two or more** features (e.g. `ClickableDatePicker` → `components/ui/`).
-3. **No drive-by moves** — never rename/move unrelated files while fixing a bug or adding a feature.
+3. **No drive-by moves** never rename/move unrelated files while fixing a bug or adding a feature.
 
 ### Server vs client boundary
 
-- Keep **`'use client'`** as low in the tree as possible — spreadsheet grids, FABs, undo, realtime, DnD.
-- Server Components / `page.tsx` — initial fetch, metadata, pass serializable props only (minimize RSC payload).
-- Route-specific types — colocate as `types.ts` next to the feature (e.g. `dashboard/types.ts`, `inventory/types.ts`).
+- Keep **`'use client'`** as low in the tree as possible spreadsheet grids, FABs, undo, realtime, DnD.
+- Server Components / `page.tsx` initial fetch, metadata, pass serializable props only (minimize RSC payload).
+- Route-specific types colocate as `types.ts` next to the feature (e.g. `dashboard/types.ts`, `inventory/types.ts`).
 
 ### Feature examples in this repo
 
@@ -76,7 +76,7 @@ schedule/   → app/[locale]/schedule/ScheduleClient.tsx
 settings/   → app/[locale]/settings/page.tsx
               app/[locale]/settings/_components/*
 
-sales/      → (removed — retired Sales Report module)
+sales/      → (removed retired Sales Report module)
 ```
 
 ### Agent checklist (structure)
@@ -90,13 +90,13 @@ sales/      → (removed — retired Sales Report module)
 
 <!-- BEGIN:modern-web-baseline-standard -->
 
-## FRONTEND & MOBILE UI — UNIFIED STANDARD
+## FRONTEND & MOBILE UI UNIFIED STANDARD
 
 **This project's Baseline target is Baseline Widely available.**
 
 Use interoperable web platform features that major browsers have supported for at least ~30 months. Prioritize maximum stability for staff on phones and tablets across mixed device generations. Do not ship Baseline Newly or Limited features as the only code path without a documented fallback or progressive enhancement.
 
-**Authoritative skill:** `.cursor/skills/chrome-modern-web-guidance/SKILL.md` — read before any HTML/CSS/clientside JS UI work. For non-trivial features, retrieve full guides:
+**Authoritative skill:** `.cursor/skills/chrome-modern-web-guidance/SKILL.md` read before any HTML/CSS/clientside JS UI work. For non-trivial features, retrieve full guides:
 
 ```text
 npx -y modern-web-guidance@latest search "<use case>"
@@ -107,47 +107,47 @@ Sources: [Modern Web Guidance](https://developer.chrome.com/docs/modern-web-guid
 
 ### Rule priority (when guidance conflicts)
 
-Apply in order — higher wins:
+Apply in order higher wins:
 
-1. **ERP domain rules** — spreadsheet grids, pastel shift colors, Supabase sync, numeric/undo rules, data symmetry (sections in this file).
-2. **chrome-modern-web-guidance** — `.cursor/skills/chrome-modern-web-guidance/SKILL.md` + **modern-web-guidance** (`npx modern-web-guidance search/retrieve`) for Baseline Widely available, native overlays, mobile layout.
-3. **React & Next.js skills** — `next-best-practices`, `vercel-react-best-practices`, `shadcn`, `webapp-testing` in `.agents/skills/` for App Router conventions, performance, components, and testing — **never** override ERP spreadsheet/pastel rules or Supabase sync freshness.
-4. **Design review skills** — `web-design-guidelines`, `impeccable` (sub-command `critique` only), `ui-ux-pro-max` — review/polish on existing UI; must stay minimalist + time-based pastel. Do not use impeccable `bolder` / `delight` / `overdrive` when they conflict with ERP tone.
-5. **Hallmark (supplementary)** — `.cursor/skills/hallmark-erp/SKILL.md` + `.agents/skills/hallmark/` — **`hallmark audit` and `hallmark study` only** on this repo. Never use Hallmark default build or `redesign` on core ERP routes (inventory, schedule, dashboard, settings). Hallmark catches generic AI-slop; it does not replace pastel/spreadsheet/token rules.
+1. **ERP domain rules** spreadsheet grids, pastel shift colors, Supabase sync, numeric/undo rules, data symmetry (sections in this file).
+2. **chrome-modern-web-guidance** `.cursor/skills/chrome-modern-web-guidance/SKILL.md` + **modern-web-guidance** (`npx modern-web-guidance search/retrieve`) for Baseline Widely available, native overlays, mobile layout.
+3. **React & Next.js skills** `next-best-practices`, `vercel-react-best-practices`, `shadcn`, `webapp-testing` in `.agents/skills/` for App Router conventions, performance, components, and testing **never** override ERP spreadsheet/pastel rules or Supabase sync freshness.
+4. **Design review skills** `web-design-guidelines`, `impeccable` (sub-command `critique` only), `ui-ux-pro-max` review/polish on existing UI; must stay minimalist + time-based pastel. Do not use impeccable `bolder` / `delight` / `overdrive` when they conflict with ERP tone.
+5. **Hallmark (supplementary)** `.cursor/skills/hallmark-erp/SKILL.md` + `.agents/skills/hallmark/` **`hallmark audit` and `hallmark study` only** on this repo. Never use Hallmark default build or `redesign` on core ERP routes (inventory, schedule, dashboard, settings). Hallmark catches generic AI-slop; it does not replace pastel/spreadsheet/token rules.
 
 When React, Next.js, or design skills suggest modals for grid edits, aggressive caching of live ERP data, decorative UI, luxury/bold aesthetics, or non-pastel surfaces, **reject** and follow ERP + chrome-modern-web-guidance instead.
 
 ### Modern platform (no deprecated code)
 
 - Prefer native HTML/CSS/JS over libraries that duplicate browser behavior (custom modals, tooltip plugins, JS accordions).
-- Overlays: `<dialog>` + `.showModal()` for modals; `popover` for menus/tooltips; `<details>` for inline disclosure — see skill for matrix.
+- Overlays: `<dialog>` + `.showModal()` for modals; `popover` for menus/tooltips; `<details>` for inline disclosure see skill for matrix.
 - Layout: **container queries** for components; viewport `@media` for page-level only; mobile sheets use `svh` / `dvw`, not bare `100vh`.
-- Forms: `:user-invalid` / `:user-valid` after interaction; sync `aria-invalid`; correct `autocomplete` tokens — not `:invalid` on first paint.
-- Viewport: `<meta name="viewport" content="width=device-width, initial-scale=1.0">` — **never** disable zoom (`user-scalable=no`).
+- Forms: `:user-invalid` / `:user-valid` after interaction; sync `aria-invalid`; correct `autocomplete` tokens not `:invalid` on first paint.
+- Viewport: `<meta name="viewport" content="width=device-width, initial-scale=1.0">` **never** disable zoom (`user-scalable=no`).
 - Respect `prefers-reduced-motion`, `prefers-color-scheme`, `prefers-contrast`.
 - Performance: explicit `width`/`height` on images; `fetchpriority="high"` on LCP only; break up long tasks for INP; `loading="lazy"` off-screen only.
 
 ### Theme, pastel & visual identity (with dark mode)
 
-- **Theme provider:** `next-themes` — `storageKey="bb-theme"`, `attribute="class"`, `defaultTheme="system"` (`/[locale]/settings`).
-- **Non-pastel surfaces:** CSS tokens only — `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`. Never `bg-white`, `bg-[#fdfcf0]`, or `text-black` on standard surfaces.
+- **Theme provider:** `next-themes` `storageKey="bb-theme"`, `attribute="class"`, `defaultTheme="system"` (`/[locale]/settings`).
+- **Non-pastel surfaces:** CSS tokens only `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`. Never `bg-white`, `bg-[#fdfcf0]`, or `text-black` on standard surfaces.
 - **Pastel shift/time cards:** time-based pastel hex only (e.g. 6:30 = light green). Always append `bb-pastel-surface` / `PASTEL_SURFACE` (`shift-colors.ts`) so text/icons stay **black** on pastel in both themes.
-- **Headings on pastel:** pastel containers need `.bb-pastel-surface` — global `h1–h6` uses `var(--foreground)` (white in dark mode).
+- **Headings on pastel:** pastel containers need `.bb-pastel-surface` global `h1–h6` uses `var(--foreground)` (white in dark mode).
 - **Icons on dark headers:** `dark:invert` for dark SVGs (e.g. AI chat logo).
 - **UI tone:** Minimalist, outcome-first, data symmetry (see UI/UX PRO MAX below).
 
 ### Touch, mobile & clickable inputs
 
-- **Full hitbox:** date pickers and touch-critical inputs — entire container opens the control, not just the icon. Shared component or Tailwind utility pattern.
+- **Full hitbox:** date pickers and touch-critical inputs entire container opens the control, not just the icon. Shared component or Tailwind utility pattern.
 - **Safe areas:** `env(safe-area-inset-*)` on fixed FABs, bottom bars, notches.
 - **Navigation drawer / mobile menu:** follow `navigation-drawer` pattern in chrome-modern-web-guidance skill (`popover="manual"`, scroll-snap, `inert` on background).
-- **Semantic HTML + keyboard:** landmarks, skip link, `inert` when overlays open — Baseline Widely available patterns only.
+- **Semantic HTML + keyboard:** landmarks, skip link, `inert` when overlays open Baseline Widely available patterns only.
 
 ### Spreadsheet-style grids (inventory & editable tables)
 
-- Native `<input>` in `<td>` — no modals or Edit buttons for simple cell edits.
+- Native `<input>` in `<td>` no modals or Edit buttons for simple cell edits.
 - `onChange` for instant UI; `onBlur` / `Enter` for Supabase `.update()`.
-- No action/delete columns unless explicitly requested — maximize horizontal space on mobile.
+- No action/delete columns unless explicitly requested maximize horizontal space on mobile.
 - Numeric rules: sanitize empty → `0` for DB; display `0` as `""` in UI; undo capture on focus (see Error Handling).
 
 ### Frontend pre-ship checklist
@@ -165,7 +165,7 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 
 ## UI/UX PRO MAX STANDARDS
 
-- **Skill:** `.agents/skills/ui-ux-pro-max/SKILL.md` — design intelligence (lowest design tier; see rule priority)
+- **Skill:** `.agents/skills/ui-ux-pro-max/SKILL.md` design intelligence (lowest design tier; see rule priority)
 - **Design review:** `.agents/skills/web-design-guidelines/SKILL.md` (spacing, typography, interaction, a11y) · `.agents/skills/impeccable/SKILL.md` with **`critique`** sub-command for structured UI review before ship
 - **Constraint:** ทุกการสร้าง UI ใน BLACKANDBREW ERP ต้องเป็น Minimalist และใช้ Pastel Palette ตามเงื่อนไขเวลาเดิมเท่านั้น (เช่น 6:30 = light green)
 - **Design Logic:** เน้นผลลัพธ์ที่ถูกต้องเชิงระบบ (Outcome-First) และความสมมาตรของข้อมูล
@@ -175,8 +175,8 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 
 ## HALLMARK (SUPPLEMENTARY ANTI-SLOP)
 
-- **Overlay (read first):** `.cursor/skills/hallmark-erp/SKILL.md` — ERP constraints for this repo
-- **Upstream:** `.agents/skills/hallmark/SKILL.md` — anti-AI-slop rules, slop-test gates, `audit` / `study` protocols
+- **Overlay (read first):** `.cursor/skills/hallmark-erp/SKILL.md` ERP constraints for this repo
+- **Upstream:** `.agents/skills/hallmark/SKILL.md` anti-AI-slop rules, slop-test gates, `audit` / `study` protocols
 - **Allowed:** `hallmark audit <target>` (punch list, no edits) · `hallmark study <screenshot|URL>` (DNA diagnosis; no ERP rebuild unless user explicitly requests a non-ERP surface)
 - **Forbidden on ERP:** default Hallmark build · `hallmark redesign` on inventory/schedule/dashboard/settings · Hallmark themes/macrostructures replacing `shift-colors.ts` or CSS token surfaces
 - **Update:** `npx skills add nutlope/hallmark -y`
@@ -185,19 +185,19 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 
 ## DARK THEME & THEME TOKEN STANDARD
 
-> Merged context: **FRONTEND & MOBILE UI — UNIFIED STANDARD** (Baseline Widely available + theme/pastel rules).
+> Merged context: **FRONTEND & MOBILE UI UNIFIED STANDARD** (Baseline Widely available + theme/pastel rules).
 
-- **Theme Provider:** `next-themes` via `ThemeProvider` — `storageKey="bb-theme"`, `attribute="class"`, `defaultTheme="system"`. User selects light/dark/system on `/[locale]/settings`.
-- **Page/modal surfaces:** Use CSS variable tokens — `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`. Never hardcode `bg-[#fdfcf0]`, `bg-white`, or `text-black` on non-pastel surfaces.
+- **Theme Provider:** `next-themes` via `ThemeProvider` `storageKey="bb-theme"`, `attribute="class"`, `defaultTheme="system"`. User selects light/dark/system on `/[locale]/settings`.
+- **Page/modal surfaces:** Use CSS variable tokens `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`. Never hardcode `bg-[#fdfcf0]`, `bg-white`, or `text-black` on non-pastel surfaces.
 - **Pastel accent cards:** Keep shift/time pastel hex backgrounds (e.g. 6:30 = light green). Always append `bb-pastel-surface` (via `PASTEL_SURFACE` in `shift-colors.ts`) so text/icons stay **black** on pastel in both themes.
-- **Headings on pastel:** Global `h1–h6 { color: var(--foreground) }` makes headings white in dark mode — pastel containers must use `.bb-pastel-surface` to override back to black.
+- **Headings on pastel:** Global `h1–h6 { color: var(--foreground) }` makes headings white in dark mode pastel containers must use `.bb-pastel-surface` to override back to black.
 - **Logos/icons on dark:** Use `dark:invert` where a dark SVG must appear on dark headers (e.g. AI chat logo).
 <!-- END:dark-theme-standard -->
 <!-- BEGIN:clickable-input-rules -->
 
 ## GLOBAL UI INTERACTION RULES
 
-> Merged context: **FRONTEND & MOBILE UI — UNIFIED STANDARD** (touch/mobile + clickable inputs).
+> Merged context: **FRONTEND & MOBILE UI UNIFIED STANDARD** (touch/mobile + clickable inputs).
 
 - **Date Picker Accessibility:** สำหรับ Input ประเภทวันที่ (Date Picker) ทั้งหมดในโปรเจกต์ ต้องทำให้พื้นที่ทั้งหมดของ Input Container สามารถคลิกเพื่อเรียกปฏิทินขึ้นมาได้ (Full-width clickable area) ไม่จำกัดเฉพาะการคลิกที่ไอคอน
 - **Implementation Style:** ใช้สไตล์การเขียนแบบ Shared Component หรือ Tailwind Utility ที่ขยาย Hitbox ให้ครอบคลุมทั้งกรอบ Input เพื่อให้พนักงานใช้งานได้สะดวกบนทุกอุปกรณ์
@@ -205,16 +205,28 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 
 <!-- BEGIN:notification-panel-view-only-standard -->
 
-## NOTIFICATION PANEL — VIEW-ONLY (IRON RULE)
+## NOTIFICATION PANEL VIEW-ONLY (IRON RULE)
 
-หน้าต่างการแจ้งเตือนในแอป (`NotificationPanel` และแถวรายการภายใน) เป็น **inbox แบบดูอย่างเดียว** — แสดงข้อความ รายละเอียด และเวลาเท่านั้น
+หน้าต่างการแจ้งเตือนในแอป (`NotificationPanel` และแถวรายการภายใน) เป็น **inbox แบบดูอย่างเดียว** แสดงข้อความ รายละเอียด และเวลาเท่านั้น
 
-- ❌ **ห้ามเด็ดขาด:** ลิงก์ ปุ่มนำทาง หรือการคลิกแถวเพื่อไปหน้าอื่น — ไม่มี `<Link>`, `<a href>`, `router.push`, `useRouter`, `window.open`, `metadata.url` สำหรับนำทางจากแถว, `role="button"` / `cursor-pointer` บนแถว, หรือเปิด modal/หน้าต่างอื่นจากรายการ
+- ❌ **ห้ามเด็ดขาด:** ลิงก์ ปุ่มนำทาง หรือการคลิกแถวเพื่อไปหน้าอื่น ไม่มี `<Link>`, `<a href>`, `router.push`, `useRouter`, `window.open`, `metadata.url` สำหรับนำทางจากแถว, `role="button"` / `cursor-pointer` บนแถว, หรือเปิด modal/หน้าต่างอื่นจากรายการ
 - ✅ **อนุญาตเฉพาะ chrome ของ panel:** ปิด (backdrop / ปุ่ม X / mobile back), อ่านทั้งหมด, ล้างประวัติ
-- ✅ **ทดสอบบังคับ:** `src/test/notification-panel-view-only.test.ts` — ต้องผ่านก่อน merge ทุกครั้งที่แตะ `NotificationPanel` หรือแถวแจ้งเตือน
-- ℹ️ **ขอบเขต Web Push:** การแตะ OS notification เปิด/โฟกัสแอปเท่านั้น (`APP_SHELL_URL`) — ห้าม deep link ไปหน้าอื่น
+- ✅ **ทดสอบบังคับ:** `src/test/notification-panel-view-only.test.ts` ต้องผ่านก่อน merge ทุกครั้งที่แตะ `NotificationPanel` หรือแถวแจ้งเตือน
+- ℹ️ **ขอบเขต Web Push:** การแตะ OS notification เปิด/โฟกัสแอปเท่านั้น (`APP_SHELL_URL`) ห้าม deep link ไปหน้าอื่น
 
 <!-- END:notification-panel-view-only-standard -->
+
+<!-- BEGIN:typography-no-em-dash-standard -->
+
+## TYPOGRAPHY: NO EM DASH (IRON RULE)
+
+ห้ามใช้ em dash (U+2014) ในโปรเจกต์นี้ ใช้การเว้นวรรคแทน
+
+- ❌ **ห้ามเด็ดขาด:** อักขระ U+2014 ใน UI copy, comments, docs, commit messages, หรือ string literals
+- ✅ **ใช้แทน:** ช่องว่างธรรมดา เช่น `foo bar` แทน `foo` + em dash + `bar`
+- ℹ️ **ขอบเขต:** ใช้กับโค้ดและเอกสารของโปรเจกต์ (`src/`, `docs/`, `AGENTS.md`) ไม่บังคับกับ vendored skills หรือ `.venv`
+
+<!-- END:typography-no-em-dash-standard -->
 
 <!-- BEGIN:data-sync-standard -->
 
@@ -227,7 +239,7 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 
 ## SPREADSHEET-STYLE UI MAINTENANCE (Editable Grid)
 
-> Merged context: **FRONTEND & MOBILE UI — UNIFIED STANDARD** (spreadsheet grids on mobile/tablet).
+> Merged context: **FRONTEND & MOBILE UI UNIFIED STANDARD** (spreadsheet grids on mobile/tablet).
 
 - **Direct Cell Editing:** Do not use modals or "Edit" buttons for simple grids (e.g., Inventory). Use native `<input>` tags rendered directly in `<td>` elements.
 - **Auto-Save:** Inputs must use `onChange` for instant local state reflection and `onBlur`/`onKeyDown={Enter}` for firing background `.update()` calls to Supabase.
@@ -284,18 +296,18 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 | chrome-modern-web-guidance | `.cursor/skills/chrome-modern-web-guidance/SKILL.md` | Baseline frontend/mobile ของโปรเจกต์ (Baseline Widely available) |
 | modern-web-guidance | `.agents/skills/modern-web-guidance/SKILL.md` | ค้นหา/ดึง best practice เว็บสมัยใหม่จาก Google Chrome |
 | next-best-practices | `.agents/skills/next-best-practices/SKILL.md` | App Router, RSC boundaries, async APIs, metadata |
-| vercel-react-best-practices | `.agents/skills/vercel-react-best-practices/SKILL.md` | React/Next performance — waterfalls, bundle, re-renders |
-| shadcn | `.agents/skills/shadcn/SKILL.md` | shadcn/ui + Tailwind — ติดตั้ง, theme, compose components |
-| web-design-guidelines | `.agents/skills/web-design-guidelines/SKILL.md` | Vercel Web Interface Guidelines — spacing, type, a11y |
-| impeccable | `.agents/skills/impeccable/SKILL.md` | UI critique/review (`critique` sub-command) — ก่อน ship |
+| vercel-react-best-practices | `.agents/skills/vercel-react-best-practices/SKILL.md` | React/Next performance waterfalls, bundle, re-renders |
+| shadcn | `.agents/skills/shadcn/SKILL.md` | shadcn/ui + Tailwind ติดตั้ง, theme, compose components |
+| web-design-guidelines | `.agents/skills/web-design-guidelines/SKILL.md` | Vercel Web Interface Guidelines spacing, type, a11y |
+| impeccable | `.agents/skills/impeccable/SKILL.md` | UI critique/review (`critique` sub-command) ก่อน ship |
 | webapp-testing | `.agents/skills/webapp-testing/SKILL.md` | Unit/integration/E2E testing patterns (Vitest, Playwright) |
-| ui-ux-pro-max | `.agents/skills/ui-ux-pro-max/SKILL.md` | ออกแบบ/รีวิว UI·UX — ลำดับต่ำสุดในกลุ่ม design |
-| hallmark-erp | `.cursor/skills/hallmark-erp/SKILL.md` | Anti-AI-slop **audit/study เท่านั้น** — อ่านก่อน hallmark upstream |
-| hallmark | `.agents/skills/hallmark/SKILL.md` | Upstream Hallmark (nutlope/hallmark) — ใช้ผ่าน overlay เท่านั้นใน ERP |
+| ui-ux-pro-max | `.agents/skills/ui-ux-pro-max/SKILL.md` | ออกแบบ/รีวิว UI·UX ลำดับต่ำสุดในกลุ่ม design |
+| hallmark-erp | `.cursor/skills/hallmark-erp/SKILL.md` | Anti-AI-slop **audit/study เท่านั้น** อ่านก่อน hallmark upstream |
+| hallmark | `.agents/skills/hallmark/SKILL.md` | Upstream Hallmark (nutlope/hallmark) ใช้ผ่าน overlay เท่านั้นใน ERP |
 | security-review | `.agents/skills/security-review/SKILL.md` | รีวิวช่องโหว่ security ในโค้ด (OWASP) |
 | google-cloud-waf-security | `.agents/skills/google-cloud-waf-security/SKILL.md` | แนวทาง security บน Google Cloud |
 | gemini-api | `.agents/skills/gemini-api/SKILL.md` | ใช้ Gemini API / Vertex AI (SDK `@google/genai`) |
-| **AgentSkillOS runbooks** | `.agent-skills/skills/*/SKILL.md` | ทักษะรันซ้ำของโปรเจกต์ — `npm run skill:list` · `npm run skill:run <id>` |
+| **AgentSkillOS runbooks** | `.agent-skills/skills/*/SKILL.md` | ทักษะรันซ้ำของโปรเจกต์ `npm run skill:list` · `npm run skill:run <id>` |
 
 **AgentSkillOS Runbooks:** ทักษะโปรเจกต์ (clean cache, smoke check, db wrappers) อยู่ใน `.agent-skills/skills/` แยกจาก `.agents/skills/` (third-party). ลงทะเบียนใน `.agent-skills/registry.json` · blueprint ใน `.agent-skills/README.md`
 
@@ -312,5 +324,5 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 - **Setup:** See `.cursor/mcp.json.example`; install binary from [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp)
 - **Query first:** Use MCP tools (`search_graph`, `trace_path`, `query_graph`) before broad grep/file reads
 - **After code changes:** Re-index project via MCP ingest when structural navigation is needed
-- **Removed:** graphify is **not** used in this project — do not install, run, or regenerate `graphify-out/`
+- **Removed:** graphify is **not** used in this project do not install, run, or regenerate `graphify-out/`
 <!-- END:codebase-memory-mcp-standard -->

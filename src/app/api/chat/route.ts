@@ -123,7 +123,7 @@ function cleanToolOutput(output: unknown, depth = 0): unknown {
     for (const [key, value] of Object.entries(output as Record<string, unknown>)) {
       // ข้าม UUID fields ที่ไม่มีประโยชน์ต่อ AI reasoning
       if (JUNK_FIELDS.has(key)) continue;
-      // shifts: start_time/end_time เป็นวันที่ล้วน ไม่ใช่เวลาเข้างาน — ใช้ shift_type แทน
+      // shifts: start_time/end_time เป็นวันที่ล้วน ไม่ใช่เวลาเข้างาน ใช้ shift_type แทน
       if (key === 'start_time' || key === 'end_time') {
         if ('shift_type' in (output as Record<string, unknown>)) continue;
       }
@@ -235,7 +235,7 @@ function buildSystemPrompt(
 - คุณเป็นผู้หญิง: ต้องใช้คำลงท้ายว่า "ค่ะ" หรือ "นะคะ" เท่านั้น
 - กฎเหล็ก: ห้าม! ใช้คำว่า "ครับ" หรือแทนตัวเองว่า "ผม" อย่างเด็ดขาด
 - ผู้ใช้คือ "คุณ" ห้ามเรียกผู้ใช้ด้วยคำอื่น
-- คุณมีเครื่องมือ: getDailyShifts, readTable, getInventoryLedger, getStoreStatus, getBeanOrdersSummary, internetSearchTool — เรียกทันทีเมื่อสอบถาม ห้ามปฏิเสธว่าไม่มีเครื่องมือ
+- คุณมีเครื่องมือ: getDailyShifts, readTable, getInventoryLedger, getStoreStatus, getBeanOrdersSummary, internetSearchTool เรียกทันทีเมื่อสอบถาม ห้ามปฏิเสธว่าไม่มีเครื่องมือ
 - [CRITICAL] เมื่อเรียกเครื่องมือเสร็จและได้ผลลัพธ์แล้ว ต้องนำข้อมูลมาสรุปเป็นภาษาไทยสั้น กระชับ ตรงประเด็นทันที ห้ามส่งข้อความว่างเปล่า (Empty Response) เด็ดขาด
 
 ${BRU_REPORT_RULES}
@@ -277,7 +277,7 @@ ${BRU_REPORT_RULES}
 - ถ้า Tool ล้มเหลวหรือคืนค่าว่าง → รายงานตามนั้นตรงๆ อย่าเดา
 - วันที่ที่แสดงแก่ผู้ใช้ต้องเป็นรูปแบบ DD-MM-YYYY เสมอ
 
-[โครงสร้างข้อมูล inventory_items — สำคัญมาก]
+[โครงสร้างข้อมูล inventory_items สำคัญมาก]
 ตาราง inventory_items มีคอลัมน์ "source" ที่บอกช่องทางการสั่งซื้อ
 ค่าที่พบได้: "Makro", "Line", "สาขา 2", "สั่งพี่ต้า" (และอาจมีค่าอื่น)
 
@@ -312,7 +312,7 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
     sections.push(`
 [กฎการค้นหาข้อมูลพนักงานและกะงาน]
 1. หากถามถึงตารางงานรายวัน (เช่น วันนี้, พรุ่งนี้, หรือระบุวันที่) "ต้อง" ใช้ getDailyShifts ด้วยวันที่ YYYY-MM-DD เป็นหลัก ห้ามใช้ readTable shifts แทน
-2. กะงานที่มีในระบบมีเพียง: 6:30, 7:00, 8:00, วันหยุด, ลา, ไปสาขา 2, ร้านซักผ้า เท่านั้น — ห้ามสร้างเวลาอื่น (เช่น 9:00, 10:00, 11:00) เด็ดขาด
+2. กะงานที่มีในระบบมีเพียง: 6:30, 7:00, 8:00, วันหยุด, ลา, ไปสาขา 2, ร้านซักผ้า เท่านั้น ห้ามสร้างเวลาอื่น (เช่น 9:00, 10:00, 11:00) เด็ดขาด
 3. ห้ามใช้ start_time หรือ end_time เป็นเวลาเข้างาน (ค่าเหล่านั้นเป็นวันที่ล้วน ไม่ใช่กะ) ให้ใช้ฟิลด์ shift หรือ formatted_text จาก getDailyShifts เท่านั้น
 4. หาก getDailyShifts คืนค่า formatted_text ให้คัดลอกข้อความนั้นเป็นคำตอบทั้งหมดโดยไม่ย่อหรือสรุงเพิ่มเติม
 5. ห้ามตอบเพียงตัวเลข headcount หรือข้อความสั้นๆ เช่น "วันนี้ 0" เด็ดขาด ต้องแสดงรายชื่อครบทุกคนเสมอ
@@ -323,9 +323,9 @@ ${JSON.stringify(EXECUTIVE_RULES, null, 2)}
    - รูปแบบหัวข้อ: [ชื่อหมวดหมู่] (เพิ่ม "(รวม [จำนวน] คน)" เฉพาะหมวดหน้าร้าน)
    - รูปแบบรายชื่อ: [ชื่อ] - [เวลาหรือสถานะ]
    - การจัดกลุ่ม (ใช้ผลจาก getDailyShifts โดยตรง):
-     1. พนักงานปฏิบัติงานหน้าร้าน (รวม [จำนวน] คน) — จาก front_store เรียงตามเวลา 6:30 → 7:00 → 8:00
-     2. พนักงานปฏิบัติงานส่วนอื่น — จาก other_duty เรียงตาม row_order (schedule_order)
-     3. พนักงานที่หยุดพัก/ลา — จาก off_or_leave เรียงตาม row_order (schedule_order)
+     1. พนักงานปฏิบัติงานหน้าร้าน (รวม [จำนวน] คน) จาก front_store เรียงตามเวลา 6:30 → 7:00 → 8:00
+     2. พนักงานปฏิบัติงานส่วนอื่น จาก other_duty เรียงตาม row_order (schedule_order)
+     3. พนักงานที่หยุดพัก/ลา จาก off_or_leave เรียงตาม row_order (schedule_order)
 7. ห้ามแสดงรหัส UUID หรือคำว่า "พนักงานรหัส..." เด็ดขาด
 8. หากผู้ใช้สอบถามข้อมูลกะงานเชิงสถิติหรือช่วงเวลากว้าง ให้ใช้ readTable ดึง shifts + profiles มาคำนวณ โดยใช้ shift_type (ไม่ใช่ start_time) และห้ามเดาชื่อพนักงานหรือสร้างชื่อสมมติขึ้นมาเองโดยเด็ดขาด
 `.trim());
@@ -458,7 +458,7 @@ function selectTools(intents: IntentScores): {
 export async function POST(req: Request) {
   try {
     // --- SECTION: SERVER-SIDE AUTHENTICATION GATE ---
-    // ADR: SEC-AUTH-001 — Treat client code as untrusted; verify on the server.
+    // ADR: SEC-AUTH-001 Treat client code as untrusted; verify on the server.
     // DEC-069: read-only PIN sessions are denied here because AI tools run via
     // the Service Role adminClient (RLS bypass) and could otherwise be coaxed
     // into reading the entire database from a view-only kiosk account.

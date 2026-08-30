@@ -21,7 +21,7 @@ export function scheduleCrosshairColBandClass(
   return '';
 }
 
-/** Active cell intersection — row + column meet here. */
+/** Active cell intersection row + column meet here. */
 export function scheduleCrosshairCellClass(
   employeeId: string,
   date: string,

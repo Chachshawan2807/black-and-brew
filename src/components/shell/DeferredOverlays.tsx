@@ -18,7 +18,7 @@ const InventoryNotificationFAB = dynamic(
 
 /**
  * Defers heavy global overlays until after first paint / idle so route content can hydrate first.
- * Notification FAB mounts earlier than quick action — badge + panel sync are time-sensitive.
+ * Notification FAB mounts earlier than quick action badge + panel sync are time-sensitive.
  */
 export function DeferredOverlays() {
   const [notificationFabReady, setNotificationFabReady] = useState(false);

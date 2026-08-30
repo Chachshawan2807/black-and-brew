@@ -14,7 +14,7 @@ export type ChartAxisTickStyle = {
   fontWeight: number;
 };
 
-/** Recharts axis tick — same Prompt stack as the rest of the app */
+/** Recharts axis tick same Prompt stack as the rest of the app */
 export function getChartAxisTick(fill: string): ChartAxisTickStyle {
   return {
     fontSize: 11,

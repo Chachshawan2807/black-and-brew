@@ -88,7 +88,7 @@ function SortableEmployeeCard({
       ref={setNodeRef}
       style={style}
       className={isDragging ? "opacity-0 z-0" : "z-10 relative"}
-      aria-label={`สถิติสะสม: ${data.profile.full_name} — ทำงาน ${data.workDays} วัน, นักขัตฯ ${data.publicHolidays} วัน, ลา ${data.leaveDays} วัน`}
+      aria-label={`สถิติสะสม: ${data.profile.full_name} ทำงาน ${data.workDays} วัน, นักขัตฯ ${data.publicHolidays} วัน, ลา ${data.leaveDays} วัน`}
     >
       <motion.div
         initial={listRowSpring.initial}
@@ -374,7 +374,7 @@ export default function LiveShiftList({
                   onLeaveClick={() => {
                     if (data.leaveEntries.length === 0) return;
                     setStatDialog({
-                      title: `รายละเอียดวันลา — ${data.profile.full_name}`,
+                      title: `รายละเอียดวันลา ${data.profile.full_name}`,
                       entries: data.leaveEntries,
                       variant: 'leave',
                     });
@@ -382,7 +382,7 @@ export default function LiveShiftList({
                   onHolidayClick={() => {
                     if (data.publicHolidayEntries.length === 0) return;
                     setStatDialog({
-                      title: `รายละเอียดวันทำงานตรงวันนักขัตฯ — ${data.profile.full_name}`,
+                      title: `รายละเอียดวันทำงานตรงวันนักขัตฯ ${data.profile.full_name}`,
                       entries: data.publicHolidayEntries,
                       variant: 'holiday',
                     });
@@ -438,7 +438,7 @@ export default function LiveShiftList({
               onLeaveClick={() => {
                 if (data.leaveEntries.length === 0) return;
                 setStatDialog({
-                  title: `รายละเอียดวันลา — ${data.profile.full_name}`,
+                  title: `รายละเอียดวันลา ${data.profile.full_name}`,
                   entries: data.leaveEntries,
                   variant: 'leave',
                 });
@@ -446,7 +446,7 @@ export default function LiveShiftList({
               onHolidayClick={() => {
                 if (data.publicHolidayEntries.length === 0) return;
                 setStatDialog({
-                  title: `รายละเอียดวันทำงานตรงวันนักขัตฯ — ${data.profile.full_name}`,
+                  title: `รายละเอียดวันทำงานตรงวันนักขัตฯ ${data.profile.full_name}`,
                   entries: data.publicHolidayEntries,
                   variant: 'holiday',
                 });

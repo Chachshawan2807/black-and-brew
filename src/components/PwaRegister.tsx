@@ -60,7 +60,7 @@ export default function PwaRegister() {
         schedulePushSubscriptionMaintenance(locale);
       };
 
-      // Prefs-changed must NOT call ensureFull — that function saves prefs and
+      // Prefs-changed must NOT call ensureFull that function saves prefs and
       // re-dispatches this event (infinite recursion / Maximum call stack).
       onPrefsChanged = () => {
         syncBadgeFromStorage();

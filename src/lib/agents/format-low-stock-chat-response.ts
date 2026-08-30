@@ -30,7 +30,7 @@ export function formatLowStockChatResponse(items: LowStockItem[]): string {
 
   const bullets = sorted.slice(0, 5).map((item) => {
     const unit = item.unit ?? 'หน่วย';
-    return `${item.name ?? 'ไม่ระบุ'} — สต็อก: ${item.stock ?? 0} ${unit} | จุดสั่งซื้อ: ${item.order_point ?? 0} | แนะนำสั่ง: ${suggestedOrder(item)} ${unit}`;
+    return `${item.name ?? 'ไม่ระบุ'} สต็อก: ${item.stock ?? 0} ${unit} | จุดสั่งซื้อ: ${item.order_point ?? 0} | แนะนำสั่ง: ${suggestedOrder(item)} ${unit}`;
   });
 
   const breakdown = Object.entries(sourceBreakdown)

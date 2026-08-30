@@ -122,8 +122,8 @@ export default function ActiveRemoteSessionsPanel({
           </p>
           <p className="text-[12px] text-muted-foreground mt-0.5 leading-normal">
             {isTh
-              ? 'ออกจากระบบบนอุปกรณ์อื่น — ต้องใช้รหัสหลัก'
-              : 'Sign out other devices — master PIN required'}
+              ? 'ออกจากระบบบนอุปกรณ์อื่น ต้องใช้รหัสหลัก'
+              : 'Sign out other devices master PIN required'}
           </p>
         </div>
       </div>
@@ -254,8 +254,8 @@ export default function ActiveRemoteSessionsPanel({
       {sessions.some((s) => s.isCurrentDevice) && (
         <p className="text-[11px] text-muted-foreground">
           {isTh
-            ? 'เครื่องนี้ยังล็อกอินอยู่ — ใช้เมนูด้านข้างเพื่อออกจากระบบ'
-            : 'This device stays signed in — use the sidebar to sign out'}
+            ? 'เครื่องนี้ยังล็อกอินอยู่ ใช้เมนูด้านข้างเพื่อออกจากระบบ'
+            : 'This device stays signed in use the sidebar to sign out'}
         </p>
       )}
 

@@ -43,7 +43,7 @@ function parseArgs(argv) {
       args.projectId = linked.projectId ?? args.projectId;
       args.teamId = linked.orgId ?? args.teamId;
     } catch {
-      // ignore — caller must pass ids explicitly
+      // ignore caller must pass ids explicitly
     }
   }
 

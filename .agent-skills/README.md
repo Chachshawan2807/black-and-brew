@@ -1,6 +1,6 @@
-# AgentSkillOS — BLACKANDBREW ERP
+# AgentSkillOS BLACKANDBREW ERP
 
-Project-local skill lifecycle management. Runbooks live in `.agent-skills/skills/` and are executed via the terminal runner — isolated from Next.js dependencies and third-party `.agents/skills/`.
+Project-local skill lifecycle management. Runbooks live in `.agent-skills/skills/` and are executed via the terminal runner isolated from Next.js dependencies and third-party `.agents/skills/`.
 
 ## Quick commands
 
@@ -22,7 +22,7 @@ Project-local skill lifecycle management. Runbooks live in `.agent-skills/skills
 ├── scripts/          # skill-runner.mjs, asos-runner.mjs
 ├── asos/             # AgentSkillOS config (not gitignored config/)
 ├── patches/          # Vendor patch for black_and_brew skill group
-└── vendor/AgentSkillOS/  # Optional git submodule — run `npm run agent-skills:init` after clone
+└── vendor/AgentSkillOS/  # Optional git submodule run `npm run agent-skills:init` after clone
 ```
 
 ## Add a new skill (4 steps)
@@ -33,7 +33,7 @@ Project-local skill lifecycle management. Runbooks live in `.agent-skills/skills
    # Rename SKILL.md.template → SKILL.md, scripts/run.mjs.template → scripts/run.mjs
    ```
 
-2. **Register** — add an entry to `.agent-skills/registry.json`
+2. **Register** add an entry to `.agent-skills/registry.json`
 
 3. **Validate & test**
    ```powershell
@@ -41,7 +41,7 @@ Project-local skill lifecycle management. Runbooks live in `.agent-skills/skills
    npm run skill:run my-new-skill
    ```
 
-4. **Sync agent context** — add a row to `AGENTS.md` PROJECT SKILLS table; optional `npm run asos:build` if using AgentSkillOS retrieval
+4. **Sync agent context** add a row to `AGENTS.md` PROJECT SKILLS table; optional `npm run asos:build` if using AgentSkillOS retrieval
 
 ## Python / AgentSkillOS setup (one-time)
 
@@ -68,7 +68,7 @@ git apply .agent-skills/patches/constants-black-and-brew.patch
 |----------|---------|
 | `.agents/skills/` | Third-party curated skills (`npx skills add`) |
 | `.cursor/skills/` | Project Cursor skills (e.g. chrome-modern-web-guidance) |
-| `.agent-skills/skills/` | **This system** — project runbooks you or agents author |
+| `.agent-skills/skills/` | **This system** project runbooks you or agents author |
 | `docs/skills.md` | Domain/business + AI capability documentation |
 
 Terminal runner (`skill:run`) works without Claude Code or LLM keys. Web UI and tree build require copying `.agent-skills/asos/.env.example` to a local `.env` in that folder.

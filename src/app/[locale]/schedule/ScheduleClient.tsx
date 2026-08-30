@@ -1536,7 +1536,7 @@ export default function ScheduleClient({
 
     const weekLabel = formatScheduleWeekRangeLabel(weekStart, weekEnd);
     const confirmed = window.confirm(
-      `ซิงค์ Google Sheet สำหรับสัปดาห์ ${weekLabel} เท่านั้น\n(ซิงค์เมื่อกดปุ่มนี้เท่านั้น — ไม่มีการซิงค์อัตโนมัติ)`,
+      `ซิงค์ Google Sheet สำหรับสัปดาห์ ${weekLabel} เท่านั้น\n(ซิงค์เมื่อกดปุ่มนี้เท่านั้น ไม่มีการซิงค์อัตโนมัติ)`,
     );
     if (!confirmed) return;
 
@@ -2344,7 +2344,7 @@ export default function ScheduleClient({
                   </div>
                 </div>
 
-                {/* Summary overview — 3-column cards; fills remaining height on mobile */}
+                {/* Summary overview 3-column cards; fills remaining height on mobile */}
                 <div className="flex flex-1 w-full min-w-0 min-h-0 flex-col overflow-hidden border border-border rounded-3xl p-4 bg-card/50">
                   <h4 className="text-[14px] font-normal text-foreground mb-3 px-1 shrink-0">สรุปวันหยุดประจำของพนักงาน</h4>
                   <div

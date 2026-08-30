@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { PwaInstallButton } from '@/components/PwaInstallButton';
 
-/** Install affordance — shown only on the PIN entry screen (inside PinGateway). */
+/** Install affordance shown only on the PIN entry screen (inside PinGateway). */
 export function PwaInstallShell() {
   const params = useParams();
   const locale = params?.locale === 'en' ? 'en' : 'th';

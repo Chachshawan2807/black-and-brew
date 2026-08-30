@@ -36,7 +36,7 @@ export interface WebPushPayload {
   notification: InventoryNotification;
   /** Hint for SW badge when IDB is unavailable (accurate count computed on device). */
   unreadCount: number;
-  /** Explicit icon vs badge paths — SW maps icon → color, badge → silhouette. */
+  /** Explicit icon vs badge paths SW maps icon → color, badge → silhouette. */
   assets: PwaNotificationAssetPaths;
 }
 
@@ -58,7 +58,7 @@ export type WebPushDeliveryResult =
 const STALE_SUBSCRIPTION_STATUS_CODES = new Set([400, 403, 404, 410]);
 const RETRYABLE_PUSH_STATUS_CODES = new Set([0, 429, 500, 502, 503, 504]);
 
-/** Queue lifetime — mobile Doze / iOS offline can delay delivery for hours. */
+/** Queue lifetime mobile Doze / iOS offline can delay delivery for hours. */
 export const WEB_PUSH_DEFAULT_TTL_SECONDS = 12 * 60 * 60;
 export const WEB_PUSH_SCHEDULE_TTL_SECONDS = 12 * 60 * 60;
 

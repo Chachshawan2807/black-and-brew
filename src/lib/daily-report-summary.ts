@@ -7,7 +7,7 @@ export const HOLIDAY_SUMMARY_MAX_DAYS = 14;
 const LEAVE_SHIFT_TEXT = 'ลา';
 const DAY_OFF_SHIFT_TEXT = 'วันหยุด';
 
-/** Leave-only staff for schedule notifications — empty/day-off shifts are omitted. */
+/** Leave-only staff for schedule notifications empty/day-off shifts are omitted. */
 export function filterNotificationLeaveStaff(offStaff: StaffShiftEntry[]): StaffShiftEntry[] {
   return offStaff.filter((entry) => entry.shiftText === LEAVE_SHIFT_TEXT);
 }
@@ -43,7 +43,7 @@ export function buildDailyReportNotificationLines(data: DailyReportData): string
 
   if (data.otherDutyStaff.length > 0) {
     const otherDutySummary = data.otherDutyStaff
-      .map((s) => `${s.name} — ${s.shiftText}`)
+      .map((s) => `${s.name} ${s.shiftText}`)
       .join(', ');
     lines.push(`งานอื่น: ${otherDutySummary}`);
   }

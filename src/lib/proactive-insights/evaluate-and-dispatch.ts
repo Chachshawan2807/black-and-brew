@@ -136,7 +136,7 @@ export async function evaluateAndDispatchInsights(
     }
 
     // Realtime mutations may clear a stale digest when issues are resolved,
-    // but must never record or push — only the scheduled cron does that.
+    // but must never record or push only the scheduled cron does that.
     if (!digest && existingSummary !== null) {
       await clearDailyInsightDigestLog(dateIso);
     }

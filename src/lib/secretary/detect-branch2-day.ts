@@ -35,7 +35,7 @@ export function detectBranch2Day(shifts: Branch2ShiftLike[]): {
   };
 }
 
-/** วันไปสาขา 2 ตามกะของพนักงานที่เลขาติดตามเท่านั้น — ไม่ใช่ทุกคนในตาราง */
+/** วันไปสาขา 2 ตามกะของพนักงานที่เลขาติดตามเท่านั้น ไม่ใช่ทุกคนในตาราง */
 export function resolveSecretaryBranch2Day(
   otherDutyStaff: SecretaryStaffDutyEntry[],
   focusStaffName: string,

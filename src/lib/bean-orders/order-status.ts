@@ -51,7 +51,7 @@ export function canDeleteOrder(fulfillmentStatus: FulfillmentStatus): boolean {
   return fulfillmentStatus === 'pending';
 }
 
-/** @deprecated Prefer canDeleteOrder — same guard for hard delete. */
+/** @deprecated Prefer canDeleteOrder same guard for hard delete. */
 export function canCancelOrder(fulfillmentStatus: FulfillmentStatus): boolean {
   return canDeleteOrder(fulfillmentStatus);
 }
@@ -90,7 +90,7 @@ export function canShip(
   return canEditShipment(cancelledAt) && fulfillmentStatus === 'pending';
 }
 
-/** Manual จัดส่งสำเร็จ CTA — staff confirms delivery (with or without tracking number). */
+/** Manual จัดส่งสำเร็จ CTA staff confirms delivery (with or without tracking number). */
 export function shouldShowDeliveredButton(
   fulfillmentStatus: FulfillmentStatus,
   trackingStatus: string | null | undefined,
@@ -102,7 +102,7 @@ export function shouldShowDeliveredButton(
   return fulfillmentStatus === 'pending' || fulfillmentStatus === 'shipped';
 }
 
-/** Shipped orders not yet delivered — staff can mark จัดส่งสำเร็จ. */
+/** Shipped orders not yet delivered staff can mark จัดส่งสำเร็จ. */
 export function canConfirmDelivered(
   fulfillmentStatus: FulfillmentStatus,
   trackingStatus: string | null | undefined,

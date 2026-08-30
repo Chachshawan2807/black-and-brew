@@ -1,5 +1,5 @@
 -- =============================================================================
--- record_branch_withdrawal_batch — Atomic branch-2 withdrawal save RPC
+-- record_branch_withdrawal_batch Atomic branch-2 withdrawal save RPC
 -- =============================================================================
 --
 -- Purpose:
@@ -8,14 +8,14 @@
 --     2. For each line: row-lock inventory_items, IN stock, ledger row
 --
 -- Parameters:
---   p_line_message  TEXT   — full LINE copy text stored on the batch header
---   p_lines         JSONB  — array of { "item_id": uuid, "quantity": numeric }
+--   p_line_message  TEXT full LINE copy text stored on the batch header
+--   p_lines         JSONB array of { "item_id": uuid, "quantity": numeric }
 --                            quantity is สาขา 1 IN amount per line
 --
 -- Returns (JSON):
 --   { "success": true, "withdrawal_id": <uuid>, "line_message": <text> }
 --
--- Security: SECURITY DEFINER — runs with function owner privileges.
+-- Security: SECURITY DEFINER runs with function owner privileges.
 --
 -- Used by:
 --   src/app/actions/branch-withdraw-actions.ts (planned)

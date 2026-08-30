@@ -1,4 +1,4 @@
-/** Monthly Google Sheet tab titles — e.g. "ตารางงานเดือน ส.ค. 69" */
+/** Monthly Google Sheet tab titles e.g. "ตารางงานเดือน ส.ค. 69" */
 
 export const THAI_MONTH_TAB_ABBREV = [
   'ม.ค.',
@@ -49,7 +49,7 @@ export function resolveMonthlySheetTabTitle(
 }
 
 /**
- * Tab search order for locating a week block — viewed month first, then Monday month,
+ * Tab search order for locating a week block viewed month first, then Monday month,
  * then Sunday month when the week crosses months.
  */
 export function buildMonthlySheetTabSearchOrder(
@@ -84,7 +84,7 @@ export function listMonthlySheetTabTitles(availableTitles: string[]): string[] {
 }
 
 /**
- * Monthly tabs to scan when syncing a week — priority tabs first (viewed / Mon / Sun month),
+ * Monthly tabs to scan when syncing a week priority tabs first (viewed / Mon / Sun month),
  * then every other monthly tab so duplicated week blocks stay in sync.
  */
 export function buildMonthlySheetTabsForWeekSync(

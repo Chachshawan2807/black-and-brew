@@ -1,4 +1,4 @@
-# API Reference — BLACKANDBREW ERP
+# API Reference BLACKANDBREW ERP
 
 > Version: 9.4 | Last Updated: 2026-08-25
 
@@ -55,14 +55,14 @@ Requires `device_passkeys` migration and optional production env overrides `WEBA
 
 #### `recordBulkInventoryTransactions(entries, note?, auditOptions?)` (v8.6)
 
-- Bulk Quick Entry — sequential RPC calls per entry
+- Bulk Quick Entry sequential RPC calls per entry
 - `entries`: `{ itemId, type: 'IN'|'OUT', quantity }[]`
 - Returns `{ success, results: BulkInventoryTransactionResult[], error? }`
 
 #### `updateInventoryStock(itemId, stock, note?, options?)` (v6.8+)
 
 - Absolute stock set via `supabase.rpc('set_inventory_stock')`
-- `options.recordHistory` (default `true`) — when `false`, skips ADJUST ledger (stock-taking count page)
+- `options.recordHistory` (default `true`) when `false`, skips ADJUST ledger (stock-taking count page)
 - Fallback to direct UPDATE if RPC not deployed
 - Source: `sql/sync_inventory_stock.sql`
 
@@ -78,7 +78,7 @@ Requires `device_passkeys` migration and optional production env overrides `WEBA
 - Inserts into `inventory_count_verifications` with `system_stock_qty` and `matched` flag via `isCountMatch()` (`src/lib/inventory-count-accuracy.ts`)
 - `exact_count`: returns `{ success, matched, systemStockQty, countedQty }`
 - `sufficiency_check`: returns `{ success, skipped: true, ... }` and does not insert an accuracy row
-- Only invoked from stock-taking count page — not manual warehouse overrides
+- Only invoked from stock-taking count page not manual warehouse overrides
 
 #### `fetchCountAccuracyStats()` (v8.6)
 
@@ -98,7 +98,7 @@ Requires `device_passkeys` migration and optional production env overrides `WEBA
 #### `fetchTransactionHistory(itemId?, limit?)`
 
 - Two-Step Fetch: transactions → item names merge in-memory
-- Uses `unstable_noStore()` — no Next.js cache
+- Uses `unstable_noStore()` no Next.js cache
 
 #### `fetchFrequentItems()`
 
@@ -258,14 +258,14 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 
 - Streaming AI chat via `ToolLoopAgent` (`google('gemini-2.5-flash')`)
 - Tools: `getDailyShifts`, `getStoreStatus`, `getInventoryLedger`, `getBeanOrdersSummary`, `readTable`, `internetSearchTool`
-- Body: `{ messages, clientContext? }` — structured screen context + preferred tools by route
+- Body: `{ messages, clientContext? }` structured screen context + preferred tools by route
 - Deterministic SSE short-circuits: daily schedule, maintenance, low-stock, holidays, store status, bean orders, inventory accuracy (multi-turn aware)
 - Server-side auth gate: privileged PIN session required (401/403 otherwise; read-only kiosk denied)
 - Multi-turn weighted intent scoring + conditional executive rules; `maxSteps` up to 7; `maxOutputTokens: 1600`
 
 ### `GET /api/daily-report`
 
-- **cron-job.org** HTTP trigger — protected by `CRON_SECRET` (`Authorization: Bearer …`)
+- **cron-job.org** HTTP trigger protected by `CRON_SECRET` (`Authorization: Bearer …`)
 - Compiles daily schedule report data
 - Sends daily schedule Web Push broadcasts through `push_subscriptions.branch_id` / `profile_id`
 - Query: `?schedule=today` (05:00 ICT) or `?schedule=tomorrow` (18:00 ICT)
@@ -273,7 +273,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 
 ### `GET /api/insight-alerts`
 
-- **cron-job.org** HTTP trigger — protected by `CRON_SECRET` (`Authorization: Bearer …`)
+- **cron-job.org** HTTP trigger protected by `CRON_SECRET` (`Authorization: Bearer …`)
 - Compiles an operational snapshot across schedule, inventory, maintenance, and bean orders
 - Evaluates deterministic cross-module insight rules (`src/lib/proactive-insights/`)
 - Records `data_change_logs` (`module: insights`, `kind: proactive_insight`) with per-rule daily dedup
@@ -286,7 +286,7 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 
 - Optional Supabase Database Webhook target for inventory `data_change_logs` INSERTs
 - Protected by `PUSH_WEBHOOK_SECRET` (`Authorization: Bearer …`)
-- Dispatches `dispatchInventoryWebPush()` — backup when server-action hook is unavailable
+- Dispatches `dispatchInventoryWebPush()` backup when server-action hook is unavailable
 - Skips non-INSERT events and rows where `module !== 'inventory'` or `status !== 'success'`
 
 ---

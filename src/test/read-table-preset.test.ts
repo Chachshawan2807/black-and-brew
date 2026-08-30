@@ -1,12 +1,12 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 
 /**
- * DEC-069 — readTableTool must enforce TABLE_COLUMN_PRESETS and ignore any
+ * DEC-069 readTableTool must enforce TABLE_COLUMN_PRESETS and ignore any
  * AI-supplied `columns`. Because the tool runs through the Service Role
  * adminClient (RLS bypass), letting the model pick arbitrary columns is a
  * data-exfiltration vector (e.g. requesting sensitive columns on `profiles`).
  *
- * AI-GATEWAY-P3 — reads now flow through src/lib/ai-data-gateway.ts:
+ * AI-GATEWAY-P3 reads now flow through src/lib/ai-data-gateway.ts:
  *   - inventory_items + no filters → fetchTablePreset + computeItemsToOrder
  *   - everything else → fetchTablePreset (preset-locked select)
  */
@@ -67,7 +67,7 @@ async function runReadTable(input: Record<string, unknown>) {
   }).execute(input);
 }
 
-describe('readTableTool — preset column enforcement', () => {
+describe('readTableTool preset column enforcement', () => {
   beforeEach(() => {
     captured.select = '';
     captured.rpc = '';

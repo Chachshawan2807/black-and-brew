@@ -27,7 +27,7 @@ export async function removeSupabaseChannelByName(channelName: string): Promise<
   }
 }
 
-/** Joined or still subscribing — postgres_changes handlers must not be attached again. */
+/** Joined or still subscribing postgres_changes handlers must not be attached again. */
 export function isSupabaseChannelAttached(channel: RealtimeChannel): boolean {
   return channel.state === 'joined' || channel.state === 'joining';
 }

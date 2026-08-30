@@ -1,5 +1,5 @@
 /**
- * Integration tests — require live Supabase credentials in .env.local.
+ * Integration tests require live Supabase credentials in .env.local.
  * Run manually: npx vitest run src/test/migrate.integration.test.ts
  *
  * Skipped in CI/unit-test runs because they hit the real database.
@@ -21,7 +21,7 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-describe.skip('Inventory Migration — integration (requires live DB)', () => {
+describe.skip('Inventory Migration integration (requires live DB)', () => {
   it('re-sequences sort_order from real database without CSV', async () => {
     const { createClient } = await import('@supabase/supabase-js');
     const { runInventoryMigration } = await import(
