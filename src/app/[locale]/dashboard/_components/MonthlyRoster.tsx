@@ -46,6 +46,8 @@ import { LeaveDetailDialog } from './LeaveDetailDialog';
 import { RosterExportStatSummary } from './RosterExportStatSummary';
 
 const ROSTER_HOLIDAY_FRAME = 'ring-2 ring-inset ring-[#ffeeba]';
+const ROSTER_INDIVIDUAL_DAY_FRAME = 'border border-foreground/15';
+const ROSTER_INDIVIDUAL_PAD_FRAME = 'border border-border';
 
 interface Profile {
   id: string;
@@ -428,7 +430,7 @@ export default function MonthlyRoster({
                   </div>
                 ))}
                 {daysInInterval.length > 0 && Array.from({ length: mondayStartPadCount(daysInInterval[0]) }).map((_, i) => (
-                  <div key={`empty-${i}`} className="bg-card rounded-xl sm:rounded-3xl h-20 sm:h-28 md:h-36 border border-border" />
+                  <div key={`empty-${i}`} className={`bg-card rounded-xl sm:rounded-3xl h-20 sm:h-28 md:h-36 ${ROSTER_INDIVIDUAL_PAD_FRAME}`} />
                 ))}
                 {daysInInterval.map((day) => {
                   const dateKey = format(day, 'yyyy-MM-dd');
@@ -440,7 +442,7 @@ export default function MonthlyRoster({
                   const isHoliday = holidayDateLookup.has(dateKey);
                   const dayFrameClass = isHoliday
                     ? ROSTER_HOLIDAY_FRAME
-                    : 'border border-border';
+                    : ROSTER_INDIVIDUAL_DAY_FRAME;
 
                   if (isHoliday) {
                     return (

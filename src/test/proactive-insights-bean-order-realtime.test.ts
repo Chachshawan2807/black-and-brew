@@ -67,7 +67,7 @@ describe('proactive insight realtime refresh', () => {
       {
         ruleId: 'understaffed_low_stock',
         title: 'คนน้อย',
-        summary: 'จ. 20 3 คน',
+        summary: 'จ. ที่ 20 (3 คน)',
         urlPath: '/schedule',
         priority: 'high',
         modules: ['schedule'],
@@ -75,7 +75,7 @@ describe('proactive insight realtime refresh', () => {
     ]);
     buildDigestMock.mockReturnValue({
       ...beanDigest,
-      summary: 'คนน้อย: จ. 20 3 คน',
+      summary: 'คนน้อย: จ. ที่ 20 (3 คน)',
     });
     fetchSummaryMock.mockResolvedValue(null);
 
@@ -88,7 +88,7 @@ describe('proactive insight realtime refresh', () => {
     expect(recordMock).not.toHaveBeenCalled();
     expect(pushMock).not.toHaveBeenCalled();
     expect(result.recorded).toBeNull();
-    expect(result.digest?.summary).toBe('คนน้อย: จ. 20 3 คน');
+    expect(result.digest?.summary).toBe('คนน้อย: จ. ที่ 20 (3 คน)');
   });
 
   test('bean_order_update clears digest when issues resolved but does not record', async () => {

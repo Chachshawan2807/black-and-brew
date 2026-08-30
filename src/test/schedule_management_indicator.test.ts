@@ -24,6 +24,7 @@ describe('schedule management blue dot indicator', () => {
 
   test('management blue dot stays inset and outside hover scale transform', () => {
     expect(scheduleClientCode).toMatch(/pointer-events-none absolute top-2\.5 right-2\.5/);
+    expect(scheduleClientCode).toContain('bb-schedule-mgmt-indicator');
     expect(scheduleClientCode).toMatch(
       /<div className="relative z-\[1\] h-full w-full">[\s\S]*group-hover\/cell:scale-\[0\.97\][\s\S]*hasManagementIndicator\(shift\.metadata\)/,
     );

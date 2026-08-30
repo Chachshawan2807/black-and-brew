@@ -1,5 +1,8 @@
 import type { Insight, OperationalSnapshot } from '@/lib/proactive-insights/types';
-import { formatShortDayDate } from '@/lib/proactive-insights/format-short-day';
+import {
+  formatUnderstaffedDaySummary,
+  formatLeaveCoverageSummary,
+} from '@/lib/proactive-insights/format-short-day';
 import { formatPendingBeanOrdersSummary, countBeanOrderPendingStatuses } from '@/lib/proactive-insights/format-pending-bean-orders';
 import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 import {
@@ -13,10 +16,7 @@ function ruleUnderstaffedWeekly(snapshot: OperationalSnapshot): Insight | null {
   if (understaffed.length === 0) return null;
 
   const dayParts = understaffed
-    .map(
-      (day) =>
-        `${formatShortDayDate(day.dateIso, day.dayIndex)} ${day.headcount} คน`,
-    )
+    .map((day) => formatUnderstaffedDaySummary(day.dateIso, day.dayIndex, day.headcount))
     .join(', ');
 
   return {
@@ -36,12 +36,7 @@ function ruleLeaveCoverageRisk(snapshot: OperationalSnapshot): Insight | null {
   );
   if (leaveEntries.length < INSIGHT_THRESHOLDS.leaveCoverageMinLeave) return null;
 
-  const detail = leaveEntries
-    .map(
-      (entry) =>
-        `${entry.name} (${formatShortDayDate(entry.dateIso, entry.dayIndex)})`,
-    )
-    .join(', ');
+  const detail = formatLeaveCoverageSummary(leaveEntries);
 
   return {
     ruleId: 'leave_coverage_risk',

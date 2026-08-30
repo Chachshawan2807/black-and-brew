@@ -166,6 +166,11 @@ describe('schedule-export-capture', () => {
     dragHandle.style.display = 'flex';
     root.appendChild(dragHandle);
 
+    const mgmtIndicator = document.createElement('div');
+    mgmtIndicator.className = 'bb-schedule-mgmt-indicator';
+    mgmtIndicator.style.display = 'block';
+    root.appendChild(mgmtIndicator);
+
     const shiftPill = document.createElement('div');
     shiftPill.className = 'shadow-sm';
     shiftPill.style.boxShadow = '0 1px 2px 0 rgb(0 0 0 / 0.05)';
@@ -173,10 +178,12 @@ describe('schedule-export-capture', () => {
 
     const restore = applyScheduleTableCaptureStyles(root);
     expect(dragHandle.style.display).toBe('none');
+    expect(mgmtIndicator.style.display).toBe('none');
     expect(shiftPill.style.boxShadow).toBe('none');
 
     restore();
     expect(dragHandle.style.display).toBe('flex');
+    expect(mgmtIndicator.style.display).toBe('block');
     expect(shiftPill.style.boxShadow).toBe('0 1px 2px 0 rgb(0 0 0 / 0.05)');
   });
 

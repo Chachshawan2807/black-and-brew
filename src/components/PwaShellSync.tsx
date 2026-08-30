@@ -4,8 +4,10 @@ import { useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { isInstalledPwa } from '@/lib/pwa-app-badge';
 import {
+  PWA_ANDROID_CLASS,
   PWA_IOS_CLASS,
   PWA_STANDALONE_CLASS,
+  isAndroidWebKit,
   isIosWebKit,
   resolvePwaThemeColor,
 } from '@/lib/pwa-standalone';
@@ -19,6 +21,12 @@ export function PwaShellSync() {
     document.documentElement.classList.add(PWA_STANDALONE_CLASS);
     if (isIosWebKit()) {
       document.documentElement.classList.add(PWA_IOS_CLASS);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAndroidWebKit()) {
+      document.documentElement.classList.add(PWA_ANDROID_CLASS);
     }
   }, []);
 

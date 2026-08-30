@@ -39,7 +39,7 @@ export default function ScheduleToolbar({
   onShowShiftSettings,
 }: ScheduleToolbarProps) {
   return (
-    <header className="md:h-14 border-b border-border px-4 md:px-6 flex flex-col md:flex-row items-center justify-between bg-transparent shrink-0 z-20 shadow-sm py-2 md:py-0">
+    <header className="bb-schedule-toolbar md:h-14 border-b border-border px-4 md:px-6 flex flex-col md:flex-row items-center justify-between bg-transparent shrink-0 z-20 shadow-sm py-2 md:py-0">
       <div className="flex items-center justify-between w-full md:w-auto gap-6 mb-2 md:mb-0">
         <div className="flex items-center gap-2">
           <HintTooltip tip="เลิกทำ">
@@ -73,6 +73,16 @@ export default function ScheduleToolbar({
       </div>
 
       <div className="flex items-center gap-2 w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y whitespace-nowrap pb-2 scrollbar-none md:overflow-visible md:pb-0 md:justify-end">
+        <button
+          onClick={onExportScheduleImage}
+          onMouseEnter={preloadCaptureLibraries}
+          onFocus={preloadCaptureLibraries}
+          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
+        >
+          <Download className="w-4 h-4" />
+          บันทึกรูปภาพ
+        </button>
+
         <button
           onClick={onShowShiftSettings}
           className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 uppercase tracking-wide shadow-sm cursor-pointer"
@@ -115,16 +125,6 @@ export default function ScheduleToolbar({
             {isSyncingGoogleSheet ? 'กำลังซิงค์…' : 'ซิงค์ Google Sheet'}
           </button>
         </HintTooltip>
-
-        <button
-          onClick={onExportScheduleImage}
-          onMouseEnter={preloadCaptureLibraries}
-          onFocus={preloadCaptureLibraries}
-          className="flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 cursor-pointer uppercase tracking-wide shadow-sm"
-        >
-          <Download className="w-4 h-4" />
-          บันทึกรูปภาพ
-        </button>
 
         <button
           onClick={onShowAddEmployeeModal}

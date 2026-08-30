@@ -57,8 +57,8 @@ describe('evaluateInsightRules', () => {
     const hit = insights.find((i) => i.ruleId === 'understaffed_low_stock');
     expect(hit).toBeDefined();
     expect(hit!.title).toBe('คนน้อย');
-    expect(hit!.summary).toContain('จ. 20 3 คน');
-    expect(hit!.summary).toContain('ศ. 24 3 คน');
+    expect(hit!.summary).toContain('จ. ที่ 20 (3 คน)');
+    expect(hit!.summary).toContain('ศ. ที่ 24 (3 คน)');
   });
 
   test('understaffed_low_stock does not fire when all days are above limits', () => {
@@ -78,10 +78,10 @@ describe('evaluateInsightRules', () => {
     const hit = insights.find((i) => i.ruleId === 'understaffed_low_stock');
 
     expect(hit).toBeDefined();
-    expect(hit!.summary).toContain('พ. 22 4 คน');
+    expect(hit!.summary).toContain('พ. ที่ 22 (4 คน)');
   });
 
-  test('leave_coverage_risk lists each upcoming leave with short weekday date', () => {
+  test('leave_coverage_risk groups upcoming leave by date with names', () => {
     const leaveStaffByDay = Array(7).fill([]) as string[][];
     leaveStaffByDay[4] = ['เอ'];
     leaveStaffByDay[5] = ['บี'];
@@ -93,8 +93,22 @@ describe('evaluateInsightRules', () => {
     );
     const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toContain('เอ (ศ. 24)');
-    expect(hit!.summary).toContain('บี (ส. 25)');
+    expect(hit!.summary).toBe('ศ. ที่ 24 (เอ), ส. ที่ 25 (บี)');
+  });
+
+  test('leave_coverage_risk groups multiple names on the same day', () => {
+    const leaveStaffByDay = Array(7).fill([]) as string[][];
+    leaveStaffByDay[4] = ['เอ', 'บี'];
+    leaveStaffByDay[5] = ['ซี'];
+
+    const insights = evaluateInsightRules(
+      sampleSnapshot({
+        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 5, 5], leaveStaffByDay),
+      }),
+    );
+    const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
+    expect(hit).toBeDefined();
+    expect(hit!.summary).toBe('ศ. ที่ 24 (เอ, บี), ส. ที่ 25 (ซี)');
   });
 
   test('leave_coverage_risk excludes leave on past dates', () => {
@@ -126,8 +140,7 @@ describe('evaluateInsightRules', () => {
     );
     const hit = insights.find((i) => i.ruleId === 'leave_coverage_risk');
     expect(hit).toBeDefined();
-    expect(hit!.summary).toContain('บี (ศ. 24)');
-    expect(hit!.summary).toContain('ซี (ส. 25)');
+    expect(hit!.summary).toBe('ศ. ที่ 24 (บี), ส. ที่ 25 (ซี)');
     expect(hit!.summary).not.toContain('เอ');
   });
 

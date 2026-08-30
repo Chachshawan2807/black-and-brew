@@ -72,6 +72,7 @@ describe('iOS scroll & export fixes', () => {
   test('schedule export hides drag handles during capture', () => {
     const code = readFile('lib/schedule-export-capture.ts');
     expect(code).toContain('bb-schedule-drag-handle');
+    expect(code).toContain('bb-schedule-mgmt-indicator');
     expect(code).toContain('bb-schedule-export-capturing');
     expect(code).toContain("setInline(restores, node, 'display', 'none')");
   });
@@ -140,5 +141,29 @@ describe('iOS scroll & export fixes', () => {
   test('InventoryHistoryModal uses bidirectional iOS scroll class', () => {
     const code = readFile('app/[locale]/inventory/_components/InventoryHistoryModal.tsx');
     expect(code).toMatch(/bb-smooth-scroll bb-scroll-xy/);
+  });
+
+  test('globals.css scales schedule table on Android mobile to match iOS', () => {
+    const css = readFile('app/[locale]/globals.css');
+    expect(css).toContain('bb-pwa-android');
+    expect(css).toMatch(/html\.bb-pwa-android[\s\S]*#blackandbrew-schedule-table[\s\S]*zoom:\s*0\.72/);
+    expect(css).toMatch(/bb-schedule-export-capturing#blackandbrew-schedule-table[\s\S]*zoom:\s*1/);
+    expect(css).toMatch(/Android mobile — scale schedule to match iOS visual size/);
+  });
+
+  test('ScheduleToolbar exposes compact Android toolbar hook class', () => {
+    const toolbar = readFile('app/[locale]/schedule/_components/ScheduleToolbar.tsx');
+    expect(toolbar).toContain('bb-schedule-toolbar');
+    const css = readFile('app/[locale]/globals.css');
+    expect(css).toMatch(/html\.bb-pwa-android \.bb-schedule-toolbar button[\s\S]*height:\s*2\.25rem/);
+  });
+
+  test('ScheduleToolbar lists export image before settings in action row', () => {
+    const toolbar = readFile('app/[locale]/schedule/_components/ScheduleToolbar.tsx');
+    const exportIdx = toolbar.indexOf('บันทึกรูปภาพ');
+    const settingsIdx = toolbar.indexOf('ตั้งค่า');
+    expect(exportIdx).toBeGreaterThan(-1);
+    expect(settingsIdx).toBeGreaterThan(-1);
+    expect(exportIdx).toBeLessThan(settingsIdx);
   });
 });

@@ -4,7 +4,10 @@ import {
   findUnderstaffedDays,
 } from '@/lib/proactive-insights/week-schedule';
 import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
-import { formatShortDayDate } from '@/lib/proactive-insights/format-short-day';
+import {
+  formatUnderstaffedDaySummary,
+  formatLeaveCoverageSummary,
+} from '@/lib/proactive-insights/format-short-day';
 import { buildSourceRefHash } from '@/lib/secretary/source-ref-hash';
 import type { DerivedTaskDraft, SecretarySnapshot } from '@/lib/secretary/types';
 
@@ -15,7 +18,7 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
   const understaffed = findUnderstaffedDays(snapshot.operational.weeklyDays);
   if (understaffed.length > 0) {
     const summary = understaffed
-      .map((day) => `${formatShortDayDate(day.dateIso, day.dayIndex)} ${day.headcount} คน`)
+      .map((day) => formatUnderstaffedDaySummary(day.dateIso, day.dayIndex, day.headcount))
       .join(', ');
     const sourceRef = { rule: 'understaffed', dates: understaffed.map((d) => d.dateIso) };
     tasks.push({
@@ -36,9 +39,7 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
     snapshot.dateIso,
   );
   if (leaveEntries.length >= INSIGHT_THRESHOLDS.leaveCoverageMinLeave) {
-    const summary = leaveEntries
-      .map((entry) => `${entry.name} (${formatShortDayDate(entry.dateIso, entry.dayIndex)})`)
-      .join(', ');
+    const summary = formatLeaveCoverageSummary(leaveEntries);
     const sourceRef = { rule: 'leave_risk', count: leaveEntries.length };
     tasks.push({
       taskType: 'schedule_leave_risk',

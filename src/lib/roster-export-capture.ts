@@ -199,6 +199,24 @@ export function applyRosterCaptureStyles(root: HTMLElement): () => void {
       setInline(restores, heading, 'margin-bottom', '8px', true);
     });
 
+    const statDetails = summary.querySelector<HTMLElement>('.bb-roster-export-stat-details');
+    if (statDetails) {
+      setInline(restores, statDetails, 'display', 'flex', true);
+      setInline(restores, statDetails, 'flex-direction', 'row', true);
+      setInline(restores, statDetails, 'align-items', 'flex-start', true);
+      setInline(restores, statDetails, 'gap', '24px', true);
+      setInline(restores, statDetails, 'width', '100%', true);
+
+      statDetails.querySelectorAll<HTMLElement>(':scope > section').forEach((section) => {
+        setInline(restores, section, 'flex', '1 1 0', true);
+        setInline(restores, section, 'min-width', '0', true);
+        setInline(restores, section, 'max-width', 'calc(50% - 12px)', true);
+        if (section.dataset.exportAlign === 'right') {
+          setInline(restores, section, 'margin-left', 'auto', true);
+        }
+      });
+    }
+
     const statCounts = summary.querySelector<HTMLElement>('.bb-roster-export-stat-counts');
     if (statCounts) {
       setInline(restores, statCounts, 'display', 'grid', true);

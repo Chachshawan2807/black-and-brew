@@ -3,10 +3,12 @@ import { resolve } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import manifest from '@/app/manifest';
 import {
+  PWA_ANDROID_CLASS,
   PWA_IOS_CLASS,
   PWA_SHELL_BOOTSTRAP_SCRIPT,
   PWA_STANDALONE_CLASS,
   PWA_THEME_COLORS,
+  isAndroidWebKit,
   isIosWebKit,
   resolvePwaThemeColor,
   resolveThemePreferenceFromStorage,
@@ -30,6 +32,7 @@ describe('PWA native shell', () => {
   test('bootstrap script sets standalone class and theme-color before paint', () => {
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain(PWA_STANDALONE_CLASS);
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain(PWA_IOS_CLASS);
+    expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain(PWA_ANDROID_CLASS);
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('theme-color');
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('bb-theme');
     expect(PWA_SHELL_BOOTSTRAP_SCRIPT).toContain('display-mode: standalone');
@@ -40,6 +43,11 @@ describe('PWA native shell', () => {
     expect(isIosWebKit('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)')).toBe(true);
     expect(isIosWebKit('Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)')).toBe(true);
     expect(isIosWebKit('Mozilla/5.0 (Linux; Android 14)')).toBe(false);
+  });
+
+  test('isAndroidWebKit detects Android user agents', () => {
+    expect(isAndroidWebKit('Mozilla/5.0 (Linux; Android 14; Pixel 8)')).toBe(true);
+    expect(isAndroidWebKit('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)')).toBe(false);
   });
 
   test('mobile app shell avoids stacking header on full viewport main height', () => {
@@ -107,5 +115,7 @@ describe('PWA native shell', () => {
     expect(sync).toContain('resolvePwaThemeColor');
     expect(sync).toContain('PWA_IOS_CLASS');
     expect(sync).toContain('isIosWebKit');
+    expect(sync).toContain('PWA_ANDROID_CLASS');
+    expect(sync).toContain('isAndroidWebKit');
   });
 });

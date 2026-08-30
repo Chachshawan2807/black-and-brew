@@ -9,7 +9,7 @@ import {
 const highRule: Insight = {
   ruleId: 'understaffed_low_stock',
   title: 'คนน้อย',
-  summary: 'จ. 20 3 คน',
+  summary: 'จ. ที่ 20 (3 คน)',
   urlPath: '/schedule',
   priority: 'high',
   modules: ['schedule'],

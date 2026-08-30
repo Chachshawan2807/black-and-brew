@@ -174,6 +174,10 @@ export function applyScheduleTableCaptureStyles(root: HTMLElement): () => void {
     setInline(restores, node, 'display', 'none');
   });
 
+  root.querySelectorAll<HTMLElement>('.bb-schedule-mgmt-indicator').forEach((node) => {
+    setInline(restores, node, 'display', 'none');
+  });
+
   root.querySelectorAll<HTMLElement>('.bb-schedule-name-cell').forEach((node) => {
     setInline(restores, node, 'filter', 'none');
     setInline(restores, node, 'border-right', `1px solid ${SCHEDULE_EXPORT_GRID_LINE}`);

@@ -22,19 +22,19 @@ export function DashboardStatCountPills({
         </span>
       </div>
       <div
-        className={`${DASHBOARD_STAT_COLORS.leave} bb-pastel-surface flex flex-col items-center justify-center rounded-3xl p-3 text-center`}
-      >
-        <span className="text-[22px] font-normal text-[#000000]">{leaveDays}</span>
-        <span className="mt-0.5 text-[12px] font-normal uppercase tracking-widest text-[#000000]">
-          ลา
-        </span>
-      </div>
-      <div
         className={`${DASHBOARD_STAT_COLORS.holiday} bb-pastel-surface flex flex-col items-center justify-center rounded-3xl p-3 text-center`}
       >
         <span className="text-[22px] font-normal text-[#000000]">{publicHolidays}</span>
         <span className="mt-0.5 text-[12px] font-normal uppercase tracking-widest text-[#000000]">
           นักขัตฯ
+        </span>
+      </div>
+      <div
+        className={`${DASHBOARD_STAT_COLORS.leave} bb-pastel-surface flex flex-col items-center justify-center rounded-3xl p-3 text-center`}
+      >
+        <span className="text-[22px] font-normal text-[#000000]">{leaveDays}</span>
+        <span className="mt-0.5 text-[12px] font-normal uppercase tracking-widest text-[#000000]">
+          ลา
         </span>
       </div>
     </div>

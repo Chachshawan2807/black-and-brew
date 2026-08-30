@@ -447,7 +447,7 @@ const SortableEmployeeRow = React.memo(({
                 </div>
                 {hasManagementIndicator(shift.metadata) && (
                   <div
-                    className="pointer-events-none absolute top-2.5 right-2.5 z-10 h-1.5 w-1.5 rounded-full bg-blue-400/60"
+                    className="bb-schedule-mgmt-indicator pointer-events-none absolute top-2.5 right-2.5 z-10 h-1.5 w-1.5 rounded-full bg-blue-400/60"
                     aria-hidden
                   />
                 )}

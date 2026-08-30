@@ -88,7 +88,7 @@ function SortableEmployeeCard({
       ref={setNodeRef}
       style={style}
       className={isDragging ? "opacity-0 z-0" : "z-10 relative"}
-      aria-label={`สถิติสะสม: ${data.profile.full_name} — ทำงาน ${data.workDays} วัน, ลา ${data.leaveDays} วัน, นักขัตฯ ${data.publicHolidays} วัน`}
+      aria-label={`สถิติสะสม: ${data.profile.full_name} — ทำงาน ${data.workDays} วัน, นักขัตฯ ${data.publicHolidays} วัน, ลา ${data.leaveDays} วัน`}
     >
       <motion.div
         initial={listRowSpring.initial}
@@ -123,16 +123,6 @@ function SortableEmployeeCard({
           </div>
           <button
             type="button"
-            onClick={onLeaveClick}
-            disabled={data.leaveDays === 0}
-            className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
-            aria-label={`ดูรายละเอียดวันลา ${data.leaveDays} วัน`}
-          >
-            <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
-            <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ลา</span>
-          </button>
-          <button
-            type="button"
             onClick={onHolidayClick}
             disabled={data.publicHolidays === 0}
             className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
@@ -140,6 +130,16 @@ function SortableEmployeeCard({
           >
             <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
+          </button>
+          <button
+            type="button"
+            onClick={onLeaveClick}
+            disabled={data.leaveDays === 0}
+            className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
+            aria-label={`ดูรายละเอียดวันลา ${data.leaveDays} วัน`}
+          >
+            <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
+            <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ลา</span>
           </button>
         </motion.div>
       </motion.div>
@@ -414,13 +414,13 @@ export default function LiveShiftList({
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.workDays}</span>
                     <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
                   </div>
-                  <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
-                    <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.leaveDays}</span>
-                    <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ลา</span>
-                  </div>
                   <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.publicHolidays}</span>
                     <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
+                  </div>
+                  <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
+                    <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.leaveDays}</span>
+                    <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ลา</span>
                   </div>
                 </div>
               </div>

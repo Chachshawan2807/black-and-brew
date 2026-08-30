@@ -25,23 +25,30 @@ export function RosterExportStatSummary({
         className="w-full max-w-md"
       />
 
-      {leaveEntries.length > 0 ? (
-        <section className="w-full max-w-md">
-          <h4 className="mb-2 text-sm font-normal text-foreground">รายละเอียดวันลา</h4>
-          <DashboardStatDetailRows entries={leaveEntries} variant="leave" />
-        </section>
-      ) : null}
+      {hasDetailSections ? (
+        <div className="bb-roster-export-stat-details flex w-full flex-col gap-4 md:flex-row md:items-start md:gap-6">
+          {leaveEntries.length > 0 ? (
+            <section className="w-full md:min-w-0 md:max-w-[calc(50%-12px)]">
+              <h4 className="mb-2 text-sm font-normal text-foreground">วันลา</h4>
+              <DashboardStatDetailRows entries={leaveEntries} variant="leave" />
+            </section>
+          ) : null}
 
-      {holidayWorkEntries.length > 0 ? (
-        <section className="w-full max-w-md">
-          <h4 className="mb-2 text-sm font-normal text-foreground">
-            รายละเอียดวันทำงานตรงวันนักขัตฯ
-          </h4>
-          <DashboardStatDetailRows entries={holidayWorkEntries} variant="holiday" />
-        </section>
-      ) : null}
-
-      {!hasDetailSections ? <span className="sr-only">ไม่มีรายละเอียดวันลาหรือวันทำงานตรงวันนักขัตฯ</span> : null}
+          {holidayWorkEntries.length > 0 ? (
+            <section
+              className={`w-full md:min-w-0 md:max-w-[calc(50%-12px)] ${leaveEntries.length === 0 ? 'md:ml-auto' : ''}`}
+              data-export-align={leaveEntries.length === 0 ? 'right' : undefined}
+            >
+              <h4 className="mb-2 text-sm font-normal text-foreground">
+                วันทำงานที่ตรงวันนักขัตฯ
+              </h4>
+              <DashboardStatDetailRows entries={holidayWorkEntries} variant="holiday" />
+            </section>
+          ) : null}
+        </div>
+      ) : (
+        <span className="sr-only">ไม่มีวันลาหรือวันทำงานที่ตรงวันนักขัตฯ</span>
+      )}
     </div>
   );
 }
