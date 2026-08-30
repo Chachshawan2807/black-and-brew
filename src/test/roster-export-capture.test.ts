@@ -249,4 +249,33 @@ describe('roster-export-capture', () => {
     expect(grid.style.gridTemplateColumns).toBe('');
     expect(header.textContent).toBe('จ.จันทร์');
   });
+
+  test('applyRosterCaptureStyles styles leave shift buttons the same as regular shift divs', () => {
+    const root = document.createElement('div');
+    const grid = document.createElement('div');
+    grid.className = 'bb-roster-export-grid';
+
+    for (let i = 0; i < 7; i++) {
+      grid.appendChild(document.createElement('div'));
+    }
+
+    const dayCell = document.createElement('div');
+    const dateLabel = document.createElement('span');
+    dateLabel.textContent = '5';
+    const leavePill = document.createElement('button');
+    leavePill.type = 'button';
+    leavePill.textContent = 'ลา';
+    dayCell.append(dateLabel, leavePill);
+    grid.appendChild(dayCell);
+    root.appendChild(grid);
+
+    const restore = applyRosterCaptureStyles(root);
+
+    expect(leavePill.style.minHeight).toBe('50px');
+    expect(leavePill.style.padding).toBe('10px');
+    expect(leavePill.style.fontSize).toBe('13px');
+
+    restore();
+    expect(leavePill.style.minHeight).toBe('');
+  });
 });

@@ -12,6 +12,10 @@ type PendingOptionTouch = {
   element: HTMLElement;
 };
 
+function isImmediateSelectPointer(pointerType: string): boolean {
+  return pointerType === 'mouse' || pointerType === 'pen';
+}
+
 /** Apply to decorative children inside pointer-safe option buttons (iOS text hitbox). */
 export const POINTER_SAFE_OPTION_INNER_CLASS = 'pointer-events-none select-none';
 
@@ -47,7 +51,7 @@ export type PointerSafeOptionHandlers = {
 };
 
 /**
- * Select on pointerdown (mouse) or pointerup after a stationary touch tap.
+ * Select on pointerdown (mouse / pen) or pointerup after a stationary touch tap.
  * Activates click-through guard before onSelect so ghost clicks cannot reach controls below.
  */
 export function bindPointerSafeOptionSelect(
@@ -67,7 +71,7 @@ export function bindPointerSafeOptionSelect(
 
   return {
     onPointerDown(event) {
-      if (event.pointerType === 'mouse') {
+      if (isImmediateSelectPointer(event.pointerType)) {
         if (event.button !== 0) return;
         event.preventDefault();
         event.stopPropagation();
@@ -85,7 +89,7 @@ export function bindPointerSafeOptionSelect(
       }
     },
     onPointerUp(event) {
-      if (event.pointerType === 'mouse') {
+      if (isImmediateSelectPointer(event.pointerType)) {
         if (consumedPointerId === event.pointerId) {
           event.preventDefault();
           event.stopPropagation();

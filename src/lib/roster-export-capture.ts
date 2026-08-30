@@ -102,6 +102,19 @@ function applyRosterExportDayNameLabels(
   }
 }
 
+function applyRosterExportShiftPillStyles(
+  pill: HTMLElement,
+  restores: Map<HTMLElement, HtmlRestore>,
+) {
+  setInline(restores, pill, 'padding', '10px', true);
+  setInline(restores, pill, 'border-radius', '12px', true);
+  setInline(restores, pill, 'font-size', '13px', true);
+  setInline(restores, pill, 'line-height', '1.625', true);
+  setInline(restores, pill, 'min-height', '50px', true);
+  setInline(restores, pill, 'box-sizing', 'border-box', true);
+  setInline(restores, pill, 'width', '100%', true);
+}
+
 function applyRosterExportCalendarCells(
   grid: HTMLElement,
   restores: Map<HTMLElement, HtmlRestore>,
@@ -123,13 +136,8 @@ function applyRosterExportCalendarCells(
         setInline(restores, child, 'font-size', '18px', true);
         setInline(restores, child, 'line-height', '28px', true);
       }
-      if (child.tagName === 'DIV') {
-        setInline(restores, child, 'padding', '10px', true);
-        setInline(restores, child, 'border-radius', '12px', true);
-        setInline(restores, child, 'font-size', '13px', true);
-        setInline(restores, child, 'line-height', '1.625', true);
-        setInline(restores, child, 'min-height', '50px', true);
-        setInline(restores, child, 'box-sizing', 'border-box', true);
+      if (child.tagName === 'DIV' || child.tagName === 'BUTTON') {
+        applyRosterExportShiftPillStyles(child, restores);
       }
     }
   }

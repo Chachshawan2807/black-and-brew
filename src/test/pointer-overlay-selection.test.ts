@@ -90,6 +90,17 @@ describe('pointer-overlay-selection', () => {
     expect(isPointerClickThroughGuardActive()).toBe(true);
   });
 
+  test('bindPointerSafeOptionSelect selects immediately on pen pointerdown', () => {
+    const onSelect = vi.fn();
+    const handlers = bindPointerSafeOptionSelect(onSelect);
+
+    handlers.onPointerDown(
+      createPointerEvent('pointerdown', { pointerType: 'pen' }),
+    );
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(isPointerClickThroughGuardActive()).toBe(true);
+  });
+
   test('bindPointerSafeOptionSelect selects touch taps on pointerup', () => {
     const onSelect = vi.fn();
     const element = document.createElement('button');

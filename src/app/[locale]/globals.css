@@ -1474,12 +1474,13 @@
   line-height: 28px !important;
 }
 
-.bb-roster-export-capturing .bb-roster-export-grid > div:nth-child(n+8) > div {
+.bb-roster-export-capturing .bb-roster-export-grid > div:nth-child(n+8) > :is(div, button) {
   padding: 10px !important;
   border-radius: 12px !important;
   font-size: 13px !important;
   line-height: 1.625 !important;
   min-height: 50px !important;
+  width: 100% !important;
   box-sizing: border-box !important;
 }
 
