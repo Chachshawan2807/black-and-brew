@@ -77,6 +77,14 @@ export default function BranchWithdrawOverlay({
     };
   }, [hasRealtimeInventory]);
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   return (
     <ModalPortal>
       <FadeModalScaffold
@@ -84,11 +92,11 @@ export default function BranchWithdrawOverlay({
         onClose={onClose}
         zIndex={220}
         overlayClassName={cn('bg-black/20 backdrop-blur-md', INVENTORY_MODAL_Z_CLASS)}
-        layoutClassName="items-end justify-center p-0 md:items-center md:p-4"
-        panelClassName="w-full max-w-3xl md:max-h-[85svh]"
+        layoutClassName="items-end justify-center p-3 pt-12 md:items-center md:p-4"
+        panelClassName="flex w-full max-w-3xl min-h-0 max-md:h-[min(85svh,calc(100dvh-3.75rem))] flex-col overflow-hidden md:max-h-[85svh]"
         aria-label="เบิกของสาขา 2"
       >
-        <div className="flex h-[min(92svh,100%)] w-full flex-col overflow-hidden rounded-t-3xl border border-border bg-background md:h-full md:max-h-[85svh] md:rounded-3xl">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-background">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
             <h2 className="text-[15px] font-normal text-foreground">เบิกของสาขา 2</h2>
             <button

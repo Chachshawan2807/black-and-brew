@@ -207,7 +207,7 @@ export async function createManualSecretaryTask(
       .insert({
         task_type: 'custom',
         title: parsed.data.title,
-        description: parsed.data.description ?? null,
+        description: parsed.data.description?.trim() ? parsed.data.description.trim() : null,
         priority: parsed.data.priority,
         status: 'pending',
         module: 'custom',
@@ -217,6 +217,48 @@ export async function createManualSecretaryTask(
           ? { estimatedMinutes: parsed.data.estimatedMinutes }
           : null,
       })
+      .select(TASK_SELECT)
+      .single();
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/th/secretary');
+    revalidatePath('/en/secretary');
+    return { success: true, task: mapRow(data as Record<string, unknown>) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
+  }
+}
+
+const updateManualTaskSchema = z.object({
+  taskId: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  description: z.string().max(1000).optional(),
+});
+
+export async function updateManualSecretaryTask(
+  input: z.infer<typeof updateManualTaskSchema>,
+): Promise<{ success: boolean; task?: SecretaryTask; error?: string }> {
+  const gate = await gateMutation();
+  if (!gate.success) return gate;
+
+  const parsed = updateManualTaskSchema.safeParse(input);
+  if (!parsed.success) return { success: false, error: 'Invalid task payload' };
+
+  try {
+    const { data, error } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .update({
+        title: parsed.data.title,
+        description: parsed.data.description?.trim() ? parsed.data.description.trim() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', parsed.data.taskId)
+      .eq('source_kind', 'manual')
       .select(TASK_SELECT)
       .single();
 

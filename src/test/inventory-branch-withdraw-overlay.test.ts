@@ -39,8 +39,12 @@ describe('inventory branch withdraw overlay', () => {
     expect(overlay).toContain('seedItems');
     expect(overlay).toContain('mapSecretaryReorderItemsToInventoryRealtime');
     expect(overlay).not.toContain('dynamic(');
-    expect(overlay).toMatch(/flex h-\[min\(92svh,100%\)\][\s\S]*flex min-h-0 flex-1 flex-col overflow-hidden/);
-    expect(overlay).toContain('catalogLoading={catalogLoading}');
+    expect(overlay).toMatch(/layoutClassName="[^"]*p-3[^"]*"/);
+    expect(overlay).toContain('max-md:h-[min(85svh,calc(100dvh-3.75rem))]');
+    expect(overlay).toContain('flex-col overflow-hidden');
+    expect(overlay).toMatch(/flex min-h-0 flex-1 flex-col overflow-hidden[\s\S]*flex min-h-0 flex-1 flex-col overflow-hidden/);
+    expect(overlay).not.toMatch(/h-\[min\(92svh,100%\)\]/);
+    expect(overlay).toContain('document.body.style.overflow = \'hidden\'');
   });
 
   test('embedded branch withdraw uses scroll body with fixed footer actions', () => {
@@ -48,9 +52,9 @@ describe('inventory branch withdraw overlay', () => {
       path.resolve(ROOT, 'app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx'),
       'utf-8',
     );
-    expect(client).toMatch(/embedded \? \([\s\S]*?min-h-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll/);
+    expect(client).toContain('min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll');
     expect(client).toMatch(
-      /embedded\s*\?\s*'shrink-0 border-t border-border bg-background\/95 py-3 backdrop-blur/,
+      /embedded\s*\?\s*'shrink-0 border-t border-border bg-background py-3/,
     );
     expect(client).toMatch(
       /:\s*'sticky bottom-0 z-20 mt-2 border-t border-border bg-background\/95 py-4 backdrop-blur/,

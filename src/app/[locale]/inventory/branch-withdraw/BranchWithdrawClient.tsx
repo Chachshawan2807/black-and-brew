@@ -508,7 +508,7 @@ export default function BranchWithdrawClient({
     <div
       className={
         embedded
-          ? 'shrink-0 border-t border-border bg-background/95 py-3 backdrop-blur [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]'
+          ? 'shrink-0 border-t border-border bg-background py-3 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]'
           : 'sticky bottom-0 z-20 mt-2 border-t border-border bg-background/95 py-4 backdrop-blur [padding-bottom:max(1rem,env(safe-area-inset-bottom))]'
       }
     >
@@ -646,14 +646,14 @@ export default function BranchWithdrawClient({
     <div
       className={
         embedded
-          ? 'flex h-full min-h-0 flex-col bg-background text-foreground'
+          ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'
           : 'min-h-screen bg-background p-4 text-foreground md:p-8'
       }
     >
       <div
         className={
           embedded
-            ? 'flex min-h-0 flex-1 flex-col'
+            ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
             : 'mx-auto flex w-full max-w-3xl flex-col gap-6'
         }
       >
@@ -670,7 +670,7 @@ export default function BranchWithdrawClient({
         )}
 
         {embedded ? (
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
+          <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
             {mainSections}
           </div>
         ) : (

@@ -6,6 +6,7 @@ import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import SecretaryGuidanceBar from './_components/SecretaryGuidanceBar';
+import SecretaryManualTaskDialog from './_components/SecretaryManualTaskDialog';
 import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay';
 import {
   createManualSecretaryTask,
@@ -64,8 +65,9 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
   const [board, setBoard] = useState(initialBoard);
   const [workDateIso, setWorkDateIso] = useState(() => initialBoard.snapshot.dateIso || todayIsoBkk());
   const [moduleFilter, setModuleFilter] = useState<ModuleFilter>('all');
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
   const [isPending, startTransition] = useTransition();
   const [overlayTask, setOverlayTask] = useState<SecretaryTask | null>(null);
 
@@ -164,6 +166,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     startTransition(async () => {
       const result = await createManualSecretaryTask({
         title,
+        description: newDescription.trim() || undefined,
         scheduledDate: workDateIso,
         priority: 'normal',
       });
@@ -171,9 +174,25 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
       setBoard((prev) => ({ ...prev, tasks: [...prev.tasks, result.task!] }));
       setNewTitle('');
-      setShowAddForm(false);
+      setNewDescription('');
+      setShowCreateDialog(false);
     });
   };
+
+  const handleTaskUpdated = useCallback((task: SecretaryTask) => {
+    setBoard((prev) => ({
+      ...prev,
+      tasks: prev.tasks.map((entry) => (entry.id === task.id ? task : entry)),
+    }));
+  }, []);
+
+  const handleTaskDeleted = useCallback((taskId: string) => {
+    setBoard((prev) => ({
+      ...prev,
+      tasks: prev.tasks.filter((entry) => entry.id !== taskId),
+    }));
+    setOverlayTask((current) => (current?.id === taskId ? null : current));
+  }, []);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-5">
@@ -192,7 +211,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
         <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
           <button
             type="button"
-            onClick={() => setShowAddForm((value) => !value)}
+            onClick={() => setShowCreateDialog(true)}
             className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[13px] text-foreground"
           >
             <Plus size={14} />
@@ -201,31 +220,22 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
         </HintTooltip>
       </div>
 
-      {showAddForm ? (
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newTitle}
-            onChange={(event) => setNewTitle(event.target.value)}
-            placeholder="ชื่องาน"
-            title="ชื่องานที่ต้องการเพิ่ม"
-            className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-[14px] text-foreground"
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') handleAddTask();
-            }}
-          />
-          <HintTooltip tip="บันทึกงานใหม่ลงบอร์ดวันนี้">
-            <button
-              type="button"
-              onClick={handleAddTask}
-              disabled={isPending || !newTitle.trim()}
-              className="rounded-xl bg-foreground text-background px-4 py-2 text-[13px] disabled:opacity-60"
-            >
-              บันทึก
-            </button>
-          </HintTooltip>
-        </div>
-      ) : null}
+      <SecretaryManualTaskDialog
+        open={showCreateDialog}
+        mode="create"
+        title={newTitle}
+        description={newDescription}
+        isPending={isPending}
+        onTitleChange={setNewTitle}
+        onDescriptionChange={setNewDescription}
+        onClose={() => {
+          if (isPending) return;
+          setShowCreateDialog(false);
+          setNewTitle('');
+          setNewDescription('');
+        }}
+        onSave={handleAddTask}
+      />
 
       <div className="flex flex-wrap gap-2">
         <FilterChip
@@ -275,6 +285,9 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
         snapshot={board.snapshot}
         locale={locale}
         onClose={() => setOverlayTask(null)}
+        onTaskUpdated={handleTaskUpdated}
+        onTaskDeleted={handleTaskDeleted}
+        isPending={isPending}
       />
     </div>
   );
