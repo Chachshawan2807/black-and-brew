@@ -2,6 +2,16 @@ import type { MouseEvent, PointerEvent } from 'react';
 
 const DEFAULT_GUARD_MS = 450;
 
+/** Squared px movement above which a touch sequence is treated as scroll, not tap. */
+const OPTION_TOUCH_MOVE_THRESHOLD_SQ = 12 * 12;
+
+type PendingOptionTouch = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  element: HTMLElement;
+};
+
 /** Apply to decorative children inside pointer-safe option buttons (iOS text hitbox). */
 export const POINTER_SAFE_OPTION_INNER_CLASS = 'pointer-events-none select-none';
 
@@ -37,7 +47,7 @@ export type PointerSafeOptionHandlers = {
 };
 
 /**
- * Select on pointerdown for instant single-tap UX.
+ * Select on pointerdown (mouse) or pointerup after a stationary touch tap.
  * Activates click-through guard before onSelect so ghost clicks cannot reach controls below.
  */
 export function bindPointerSafeOptionSelect(
@@ -45,6 +55,7 @@ export function bindPointerSafeOptionSelect(
   options?: { onPointerDown?: () => void },
 ): PointerSafeOptionHandlers {
   let consumedPointerId: number | null = null;
+  let pendingTouch: PendingOptionTouch | null = null;
 
   const runSelect = (pointerId: number) => {
     if (consumedPointerId === pointerId) return;
@@ -56,19 +67,53 @@ export function bindPointerSafeOptionSelect(
 
   return {
     onPointerDown(event) {
-      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (event.pointerType === 'mouse') {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        runSelect(event.pointerId);
+        return;
+      }
+
+      if (event.pointerType === 'touch') {
+        pendingTouch = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          element: event.currentTarget,
+        };
+      }
+    },
+    onPointerUp(event) {
+      if (event.pointerType === 'mouse') {
+        if (consumedPointerId === event.pointerId) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
+
+      if (event.pointerType !== 'touch' || !pendingTouch) return;
+      if (pendingTouch.pointerId !== event.pointerId) return;
+
+      const { startX, startY, element } = pendingTouch;
+      pendingTouch = null;
+
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (dx * dx + dy * dy > OPTION_TOUCH_MOVE_THRESHOLD_SQ) return;
+
+      const target = event.target;
+      if (!(target instanceof Node) || !element.contains(target)) return;
+
       event.preventDefault();
       event.stopPropagation();
       runSelect(event.pointerId);
     },
-    onPointerUp(event) {
-      if (event.pointerType === 'mouse') return;
-      if (consumedPointerId === event.pointerId) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    },
     onPointerCancel(event) {
+      if (pendingTouch?.pointerId === event.pointerId) {
+        pendingTouch = null;
+      }
       if (consumedPointerId === event.pointerId) {
         consumedPointerId = null;
       }

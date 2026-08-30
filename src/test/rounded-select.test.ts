@@ -52,4 +52,12 @@ describe('rounded select — shared date-picker-like trigger', () => {
     expect(roundedSelect).toContain('bindPointerSafeOptionSelect');
     expect(roundedSelect).not.toMatch(/role="listbox"[\s\S]*?BB_SELECT_LIST_CLASS/);
   });
+
+  test('RoundedSelect listbox allows touch scrolling on mobile', () => {
+    const roundedSelect = readFile('components/ui/rounded-select.tsx');
+    expect(roundedSelect).toContain('bb-smooth-scroll');
+    expect(roundedSelect).not.toMatch(
+      /role="listbox"[\s\S]*?onPointerDown=\{\(e\) => e\.preventDefault\(\)\}/,
+    );
+  });
 });

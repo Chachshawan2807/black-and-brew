@@ -13,6 +13,7 @@ function createPointerEvent(
   type: 'pointerdown' | 'pointerup',
   overrides: Partial<PointerEvent> = {},
 ): PointerEvent {
+  const element = overrides.currentTarget as HTMLElement | undefined;
   return {
     pointerType: 'touch',
     pointerId: 1,
@@ -21,7 +22,9 @@ function createPointerEvent(
     stopPropagation: vi.fn(),
     currentTarget: {
       setPointerCapture: vi.fn(),
+      contains: vi.fn(() => true),
     },
+    target: element ?? null,
     ...overrides,
   } as unknown as PointerEvent;
 }
@@ -76,16 +79,67 @@ describe('pointer-overlay-selection', () => {
     cleanup();
   });
 
-  test('bindPointerSafeOptionSelect selects immediately on pointerdown', () => {
+  test('bindPointerSafeOptionSelect selects immediately on mouse pointerdown', () => {
     const onSelect = vi.fn();
     const handlers = bindPointerSafeOptionSelect(onSelect);
 
-    handlers.onPointerDown(createPointerEvent('pointerdown'));
+    handlers.onPointerDown(
+      createPointerEvent('pointerdown', { pointerType: 'mouse' }),
+    );
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(isPointerClickThroughGuardActive()).toBe(true);
+  });
 
-    handlers.onPointerUp(createPointerEvent('pointerup'));
+  test('bindPointerSafeOptionSelect selects touch taps on pointerup', () => {
+    const onSelect = vi.fn();
+    const element = document.createElement('button');
+    const handlers = bindPointerSafeOptionSelect(onSelect);
+
+    handlers.onPointerDown(
+      createPointerEvent('pointerdown', {
+        clientX: 40,
+        clientY: 40,
+        currentTarget: element,
+        target: element,
+      }),
+    );
+    expect(onSelect).not.toHaveBeenCalled();
+
+    handlers.onPointerUp(
+      createPointerEvent('pointerup', {
+        clientX: 40,
+        clientY: 40,
+        currentTarget: element,
+        target: element,
+      }),
+    );
     expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(isPointerClickThroughGuardActive()).toBe(true);
+  });
+
+  test('bindPointerSafeOptionSelect ignores scroll-like touch movement', () => {
+    const onSelect = vi.fn();
+    const element = document.createElement('button');
+    const handlers = bindPointerSafeOptionSelect(onSelect);
+
+    handlers.onPointerDown(
+      createPointerEvent('pointerdown', {
+        clientX: 40,
+        clientY: 40,
+        currentTarget: element,
+        target: element,
+      }),
+    );
+    handlers.onPointerUp(
+      createPointerEvent('pointerup', {
+        clientX: 40,
+        clientY: 72,
+        currentTarget: element,
+        target: element,
+      }),
+    );
+
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   test('bindPointerSafeOptionSelect ignores non-primary mouse buttons', () => {

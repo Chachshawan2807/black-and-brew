@@ -164,11 +164,10 @@ export function RoundedSelect({
       role="listbox"
       className={cn(
         BB_SELECT_LIST_BASE_CLASS,
-        'fixed min-w-[10rem]',
+        'fixed min-w-[10rem] bb-smooth-scroll overscroll-y-contain',
         SELECT_LISTBOX_Z_CLASS,
       )}
       style={listStyle}
-      onPointerDown={(e) => e.preventDefault()}
     >
       {options.map((opt) => {
         const isSelected = opt.value === currentValue;
