@@ -1,4 +1,5 @@
 import type { SecretaryWorkdayPhase } from '@/lib/secretary/task-order-time-context';
+import { resolveWorkSession } from '@/lib/secretary/task-work-sessions';
 import type { SecretaryTask } from '@/lib/secretary/types';
 
 const STATUS_RANK: Record<SecretaryTask['status'], number> = {
@@ -36,6 +37,18 @@ function taskOrderKindRank(task: SecretaryTask, phase: SecretaryWorkdayPhase): n
   return 80;
 }
 
+function compareWithinWorkSession(a: SecretaryTask, b: SecretaryTask): number | null {
+  const sessionA = resolveWorkSession(a);
+  const sessionB = resolveWorkSession(b);
+  if (!sessionA || !sessionB || sessionA.id !== sessionB.id) return null;
+
+  const typeOrderA = sessionA.taskTypes.indexOf(a.task_type);
+  const typeOrderB = sessionB.taskTypes.indexOf(b.task_type);
+  if (typeOrderA !== typeOrderB) return typeOrderA - typeOrderB;
+
+  return null;
+}
+
 export function compareSecretaryTaskOrder(
   a: SecretaryTask,
   b: SecretaryTask,
@@ -46,6 +59,9 @@ export function compareSecretaryTaskOrder(
 
   const kindDiff = taskOrderKindRank(a, phase) - taskOrderKindRank(b, phase);
   if (kindDiff !== 0) return kindDiff;
+
+  const withinSession = compareWithinWorkSession(a, b);
+  if (withinSession !== null) return withinSession;
 
   const priorityDiff = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
   if (priorityDiff !== 0) return priorityDiff;

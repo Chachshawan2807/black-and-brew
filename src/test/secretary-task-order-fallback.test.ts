@@ -77,4 +77,33 @@ describe('buildFallbackTaskOrder', () => {
 
     expect(ordered.map((item) => item.id)).toEqual(['purchase', 'maintenance']);
   });
+
+  test('keeps schedule review tasks adjacent with understaffed before leave', () => {
+    const ordered = buildFallbackTaskOrder([
+      task({
+        id: 'leave',
+        task_type: 'schedule_leave_risk',
+        module: 'schedule',
+        title: 'ตรวจตาราง — ลาหลายคน',
+        priority: 'urgent',
+        created_at: '2026-08-29T02:00:00.000Z',
+      }),
+      task({
+        id: 'under',
+        task_type: 'schedule_understaffed',
+        module: 'schedule',
+        title: 'ตรวจตาราง — วันที่คนน้อย',
+        priority: 'urgent',
+        created_at: '2026-08-29T01:00:00.000Z',
+      }),
+      task({
+        id: 'buy',
+        task_type: 'inventory_reorder',
+        module: 'inventory',
+        title: 'สั่งซื้อสินค้า (9 รายการ)',
+      }),
+    ]);
+
+    expect(ordered.map((item) => item.id)).toEqual(['under', 'leave', 'buy']);
+  });
 });

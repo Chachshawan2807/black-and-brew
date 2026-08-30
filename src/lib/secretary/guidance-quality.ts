@@ -1,6 +1,11 @@
 import { collectGuidanceTasks } from '@/lib/secretary/guidance-fingerprint';
 import { buildFallbackSecretaryGuidance } from '@/lib/secretary/guidance-fallback';
 import { finalizeSecretaryGuidanceText } from '@/lib/secretary/guidance-voice';
+import { buildFallbackTaskOrder } from '@/lib/secretary/task-order-fallback';
+import {
+  formatWorkSessionSubLabel,
+  groupTasksIntoGuidanceSteps,
+} from '@/lib/secretary/task-work-sessions';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 
 const DEFAULT_MAX_LENGTH = 1200;
@@ -10,6 +15,22 @@ export function normalizeGuidanceText(text: string, maxLength = DEFAULT_MAX_LENG
 }
 
 export function guidanceCoversAllTasks(text: string, tasks: SecretaryTask[]): boolean {
+  if (tasks.length === 0) return true;
+
+  const steps = groupTasksIntoGuidanceSteps(tasks);
+  return steps.every((step) => {
+    if (step.kind === 'single') {
+      return text.includes(step.tasks[0].title);
+    }
+
+    if (!text.includes(step.session.label)) return false;
+    return step.tasks.every((task) =>
+      text.includes(formatWorkSessionSubLabel(task, step.session)),
+    );
+  });
+}
+
+export function guidanceCoversAllTaskTitles(text: string, tasks: SecretaryTask[]): boolean {
   if (tasks.length === 0) return true;
   return tasks.every((task) => text.includes(task.title));
 }
@@ -56,9 +77,9 @@ export function resolveSecretaryGuidanceFromAi(
   snapshot: SecretarySnapshot,
   nowIso = new Date().toISOString(),
 ): string {
-  const actionable = collectGuidanceTasks(tasks, nowIso, {
+  const ordered = buildFallbackTaskOrder(tasks, nowIso, {
     isBranch2Day: snapshot.isBranch2Day,
   });
   const fallback = buildFallbackSecretaryGuidance(tasks, snapshot, nowIso);
-  return resolveGuidanceText(candidate, fallback, actionable.length, actionable);
+  return resolveGuidanceText(candidate, fallback, ordered.length, ordered);
 }

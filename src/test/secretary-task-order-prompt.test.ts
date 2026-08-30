@@ -74,5 +74,6 @@ describe('secretary task order prompt', () => {
     expect(prompt).toContain('id: t1');
     expect(prompt).toContain('id: t2');
     expect(prompt).toContain('เปิดร้านแล้ว');
+    expect(prompt).toContain('Work sessions');
   });
 });

@@ -2,6 +2,10 @@ import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import { collectGuidanceTasks } from '@/lib/secretary/guidance-fingerprint';
 import { SECRETARY_BRU_IDENTITY } from '@/lib/secretary/guidance-voice';
 import {
+  buildWorkSessionPromptLines,
+  resolveWorkSession,
+} from '@/lib/secretary/task-work-sessions';
+import {
   buildSecretaryTimeContext,
   WORKDAY_PHASE_LABELS,
   type SecretaryTimeContext,
@@ -42,6 +46,7 @@ export const SECRETARY_TASK_ORDER_PLAYBOOK = `
 - เปิดร้านแล้ว: ออเดอร์เมล็ดค้าง หลังสั่งซื้อสินค้า
 - ใกล้ปิดร้าน: สั่งซื้อ/เบิกที่เหลือก่อน แล้วค่อยจัดซ่อมบำรุงเมื่อร้านเงียบ
 - คลัง: ของใกล้หมดที่กระทบการขายมาก่อนตรวจนับ/ความแม่นยำ
+- งาน work session เดียวกัน (เช่น ตรวจตารางงาน) อยู่หน้าเดียวกัน — จัด id ให้ติดกัน ถือว่าทำครั้งเดียว
 `.trim();
 
 export const SECRETARY_TASK_ORDER_SYSTEM = `${SECRETARY_BRU_IDENTITY}
@@ -62,6 +67,7 @@ export function buildSecretaryTaskOrderPrompt(
   const inProgress = actionable.find((task) => task.status === 'in_progress');
 
   const lines = actionable.map((task, index) => {
+    const session = resolveWorkSession(task);
     const parts = [
       `id: ${task.id}`,
       `${index + 1}. ${task.title}`,
@@ -69,6 +75,7 @@ export function buildSecretaryTaskOrderPrompt(
       `ความสำคัญ: ${PRIORITY_LABELS[task.priority]}`,
       `สถานะ: ${STATUS_LABELS[task.status]}`,
     ];
+    if (session) parts.push(`work session: ${session.label}`);
     if (task.due_at) parts.push(`กำหนด: ${task.due_at}`);
     if (task.description) parts.push(`รายละเอียด: ${task.description}`);
     return parts.join(' | ');
@@ -94,6 +101,9 @@ export function buildSecretaryTaskOrderPrompt(
     inProgress
       ? `งานที่กำลังทำ (ต้องอยู่อันดับแรก): ${inProgress.title} (${inProgress.id})`
       : 'ไม่มีงานที่กำลังทำ',
+    '',
+    'Work sessions (งานที่ทำบนหน้าเดียวกัน — จัด id ให้ติดกัน):',
+    ...buildWorkSessionPromptLines().map((line) => `- ${line}`),
     '',
     'งานที่ต้องจัดลำดับ:',
     lines.length > 0 ? lines.join('\n') : '- ไม่มีงานค้าง',

@@ -1,14 +1,13 @@
-import { collectGuidanceTasks } from '@/lib/secretary/guidance-fingerprint';
 import { finalizeSecretaryGuidanceText } from '@/lib/secretary/guidance-voice';
+import { buildFallbackTaskOrder } from '@/lib/secretary/task-order-fallback';
+import {
+  formatGuidanceStepsSequence,
+  groupTasksIntoGuidanceSteps,
+} from '@/lib/secretary/task-work-sessions';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 
 export function formatGuidanceTaskSequence(tasks: SecretaryTask[]): string {
-  if (tasks.length === 0) return '';
-  if (tasks.length === 1) return `"${tasks[0].title}"`;
-
-  const quoted = tasks.map((task) => `"${task.title}"`);
-  const last = quoted.pop()!;
-  return `${quoted.join(' แล้วต่อด้วย ')} แล้วต่อด้วย ${last}`;
+  return formatGuidanceStepsSequence(groupTasksIntoGuidanceSteps(tasks));
 }
 
 export function buildFallbackSecretaryGuidance(
@@ -16,10 +15,10 @@ export function buildFallbackSecretaryGuidance(
   snapshot: SecretarySnapshot,
   nowIso = new Date().toISOString(),
 ): string {
-  const actionable = collectGuidanceTasks(tasks, nowIso, {
+  const ordered = buildFallbackTaskOrder(tasks, nowIso, {
     isBranch2Day: snapshot.isBranch2Day,
   });
-  return buildSecretaryGuidanceFromOrderedTasks(actionable, snapshot);
+  return buildSecretaryGuidanceFromOrderedTasks(ordered, snapshot);
 }
 
 export function buildSecretaryGuidanceFromOrderedTasks(
