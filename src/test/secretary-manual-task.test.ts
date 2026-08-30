@@ -87,17 +87,19 @@ describe('secretary manual task UI', () => {
       'utf-8',
     );
     expect(layout).toContain('items-center justify-center');
+    expect(layout).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
 
     for (const file of [
       'SecretaryListDialog.tsx',
       'SecretaryManualTaskDialog.tsx',
+      'ScheduleReviewDialog.tsx',
       'BranchWithdrawOverlay.tsx',
     ]) {
       const code = fs.readFileSync(
         path.resolve(ROOT, `app/[locale]/secretary/_components/${file}`),
         'utf-8',
       );
-      expect(code).toContain('SECRETARY_MODAL_LAYOUT_CLASS');
+      expect(code).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
       expect(code).not.toContain('items-end');
     }
   });

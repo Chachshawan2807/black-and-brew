@@ -8,7 +8,7 @@ import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
 import { parseScheduleReviewDescription } from '@/lib/secretary/parse-schedule-review-description';
 import { cn } from '@/lib/utils';
-import { SECRETARY_MODAL_LAYOUT_CLASS } from './secretary-modal-layout';
+import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
 
 type ScheduleReviewDialogProps = {
   open: boolean;
@@ -34,6 +34,7 @@ export default function ScheduleReviewDialog({
         open={open}
         onClose={onClose}
         zIndex={220}
+        {...SECRETARY_MODAL_SCAFFOLD_PROPS}
         overlayClassName={cn('bg-black/20 backdrop-blur-sm', INVENTORY_MODAL_Z_CLASS)}
         layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
         panelClassName="w-full max-w-md"
@@ -64,7 +65,7 @@ export default function ScheduleReviewDialog({
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 bb-smooth-scroll [scrollbar-width:thin]">
             {entries.length === 0 ? (
               <p className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-[13px] text-muted-foreground">
                 ไม่มีรายละเอียดเพิ่มเติม

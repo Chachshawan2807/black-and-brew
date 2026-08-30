@@ -10,6 +10,11 @@ import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import {
+  getModalBackdropKeyboardAwareStyle,
+  getModalContentKeyboardAwareStyle,
+} from '@/lib/keyboard-aware-panel-style';
 import { formatPurchaseOrderListCopyText } from '@/lib/inventory-purchase-order-copy-text';
 import type { PurchaseOrderCandidate } from '@/lib/inventory-stock';
 import { InventoryModalPortal } from './InventoryModalPortal';
@@ -49,6 +54,12 @@ export default function PurchaseOrdersModal({
   exportTableId = 'blackandbrew-po-table-export',
 }: PurchaseOrdersModalProps) {
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
+  const viewportInsets = useVisualViewportInsets(!isExportMode);
+  const modalBackdropStyle = getModalBackdropKeyboardAwareStyle({
+    insets: viewportInsets,
+    verticalAlign: 'center',
+  });
+  const modalContentStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
   const itemsToShow = displayedPoItems;
   const totalTabCount = allTabItemCount ?? itemsToOrder.length;
   const tableId = isExportMode ? exportTableId : 'blackandbrew-po-table';
@@ -331,21 +342,25 @@ export default function PurchaseOrdersModal({
         exit={fadeOverlay.exit}
         transition={fadeOverlay.transition}
         className={cn(
-          'fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-md p-4',
+          'fixed inset-0 overflow-y-auto overscroll-contain bb-smooth-scroll bg-black/20 backdrop-blur-md',
           INVENTORY_MODAL_Z_CLASS,
         )}
+        style={modalBackdropStyle}
         onClick={onClose}
       >
-        <motion.div
-          initial={modalContent.initial}
-          animate={modalContent.animate}
-          exit={modalContent.exit}
-          transition={modalContent.transition}
-          className="bg-card rounded-3xl bb-shadow-xl w-full max-w-4xl max-h-[85svh] overflow-hidden flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {tableContent}
-        </motion.div>
+        <div className="flex min-h-full min-w-0 items-center justify-center p-4">
+          <motion.div
+            initial={modalContent.initial}
+            animate={modalContent.animate}
+            exit={modalContent.exit}
+            transition={modalContent.transition}
+            className="my-auto flex min-h-0 w-full max-w-4xl max-h-[85svh] flex-col overflow-hidden rounded-3xl bg-card bb-shadow-xl"
+            style={modalContentStyle}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {tableContent}
+          </motion.div>
+        </div>
       </motion.div>
     </InventoryModalPortal>
   );

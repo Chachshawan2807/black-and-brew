@@ -15,7 +15,7 @@ import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { mapSecretaryReorderItemsToInventoryRealtime } from '@/lib/inventory-branch-withdraw-seed';
 import type { SecretaryReorderItem } from '@/lib/secretary/types';
 import { cn } from '@/lib/utils';
-import { SECRETARY_MODAL_LAYOUT_CLASS } from './secretary-modal-layout';
+import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
 
 type BranchWithdrawOverlayProps = {
   locale: string;
@@ -92,6 +92,7 @@ export default function BranchWithdrawOverlay({
         open
         onClose={onClose}
         zIndex={220}
+        {...SECRETARY_MODAL_SCAFFOLD_PROPS}
         overlayClassName={cn('bg-black/20 backdrop-blur-md', INVENTORY_MODAL_Z_CLASS)}
         layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
         panelClassName="flex w-full max-w-3xl min-h-0 max-h-[min(85svh,calc(100dvh-2rem))] flex-col overflow-hidden"

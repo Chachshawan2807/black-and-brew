@@ -5,7 +5,7 @@ import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { cn } from '@/lib/utils';
-import { SECRETARY_MODAL_LAYOUT_CLASS } from './secretary-modal-layout';
+import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
 
 export type SecretaryListDialogItem = {
   id: string;
@@ -34,6 +34,7 @@ export default function SecretaryListDialog({
         open={open}
         onClose={onClose}
         zIndex={220}
+        {...SECRETARY_MODAL_SCAFFOLD_PROPS}
         overlayClassName={cn('bg-black/20 backdrop-blur-sm', INVENTORY_MODAL_Z_CLASS)}
         layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
         panelClassName="w-full max-w-lg"
@@ -51,7 +52,7 @@ export default function SecretaryListDialog({
               <X size={16} />
             </button>
           </div>
-          <ul className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]">
+          <ul className="min-h-0 flex-1 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
             {items.length === 0 ? (
               <li className="px-4 py-8 text-center text-[13px] text-muted-foreground">{emptyMessage}</li>
             ) : (
