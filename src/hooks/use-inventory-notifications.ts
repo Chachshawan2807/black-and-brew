@@ -93,6 +93,9 @@ import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel
 /** Proactive insight panel updates are silent — scheduled cron Web Push handles OS banners. */
 const skipInsightOsNotification = true;
 
+/** Secretary digest panel updates are silent — scheduled cron Web Push handles OS banners. */
+const skipSecretaryOsNotification = true;
+
 function isDailyReportNotificationItem(notification: InventoryNotification): boolean {
   return notification.metadata?.kind === 'daily_report';
 }
@@ -477,13 +480,18 @@ export function useInventoryNotifications() {
           isEligibleBeanOrderPaymentNotification(row),
       );
       const allInsights = eligible.every(isEligibleInsightNotification);
+      const allSecretary = eligible.every(isEligibleSecretaryLogRow);
       const allSecurity = eligible.every(isEligibleSecurityNotification);
       const deferOsToPush = shouldDeferOsNotificationToPush(prefsRef.current);
-      if (allDailyReports || allBeanOrder || allInsights || allSecurity) {
+      if (allDailyReports || allBeanOrder || allInsights || allSecretary || allSecurity) {
         for (const row of eligible) {
           pushNotification(formatNotificationRow(row, loc), undefined, {
             skipSystemNotification:
-              allInsights ? skipInsightOsNotification : deferOsToPush,
+              allInsights
+                ? skipInsightOsNotification
+                : allSecretary
+                  ? skipSecretaryOsNotification
+                  : deferOsToPush,
           });
         }
         return;
@@ -556,7 +564,7 @@ export function useInventoryNotifications() {
 
     const attachChangeLogListener = (
       targetChannel: ReturnType<typeof supabase.channel>,
-      module: 'inventory' | 'schedule' | 'bean_orders' | 'insights' | 'security',
+      module: 'inventory' | 'schedule' | 'bean_orders' | 'insights' | 'security' | 'secretary',
       event: 'INSERT' | 'UPDATE' | 'DELETE' = 'INSERT',
     ) => {
       return targetChannel.on(
@@ -606,6 +614,7 @@ export function useInventoryNotifications() {
             return;
           }
           if (module === 'insights' && !isEligibleInsightNotification(row)) return;
+          if (module === 'secretary' && !isEligibleSecretaryLogRow(row)) return;
           if (module === 'security' && !isEligibleSecurityNotification(row)) return;
           processRows([row]);
         },
@@ -635,6 +644,7 @@ export function useInventoryNotifications() {
       attachChangeLogListener(nextChannel, 'insights', 'UPDATE');
       attachChangeLogListener(nextChannel, 'insights', 'DELETE');
       attachChangeLogListener(nextChannel, 'security');
+      attachChangeLogListener(nextChannel, 'secretary');
       if (cancelled) {
         stopChannel(nextChannel);
         return;
