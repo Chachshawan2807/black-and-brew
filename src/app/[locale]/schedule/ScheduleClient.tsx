@@ -1594,7 +1594,7 @@ export default function ScheduleClient({
   }, [todayStr]);
 
   return (
-    <div className="flex flex-col h-screen bg-transparent text-foreground overflow-hidden">
+    <div className="bb-schedule-page flex flex-col h-[100dvh] bg-background text-foreground overflow-hidden">
       <ScheduleToolbar
         isReadOnly={isReadOnly}
         undoStackLength={undoStack.length}
@@ -1613,14 +1613,19 @@ export default function ScheduleClient({
             ? formatScheduleWeekRangeLabel(weekDays[0], weekDays[6])
             : undefined
         }
+        weekRangeLabel={
+          weekDays[0] && weekDays[6]
+            ? formatScheduleWeekRangeLabel(weekDays[0], weekDays[6])
+            : undefined
+        }
         onShowAddEmployeeModal={() => setShowAddEmployeeModal(true)}
         onShowShiftSettings={() => setShowShiftSettingsModal(true)}
       />
 
-      <main className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col bg-transparent">
-        <div className="flex-1 flex flex-col bg-card/80 backdrop-blur-sm bb-ios-scroll-host border border-border rounded-3xl overflow-hidden shadow-sm">
+      <main className="bb-schedule-main flex-1 min-h-0 p-3 md:p-5 overflow-hidden flex flex-col">
+        <div className="bb-schedule-table-frame bb-ios-scroll-host flex-1 flex flex-col bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
           <div
-            className="flex-1 min-h-0 min-w-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-6"
+            className="flex-1 min-h-0 min-w-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-4 md:pb-6"
           >
             <div
               id="blackandbrew-schedule-table"
@@ -1630,11 +1635,11 @@ export default function ScheduleClient({
             >
               <div className="sticky top-0 z-[16] shrink-0 bg-card">
                 <div
-                  className="bb-schedule-grid grid border-b border-border dark:border-[#f5c6cb] bg-[#fdeaea] dark:bb-pastel-surface dark:bg-[#fdeaea]"
+                  className="bb-schedule-grid bb-schedule-holiday-band grid border-b border-border dark:bb-pastel-surface"
                   style={SCHEDULE_GRID_STYLE}
                 >
-                  <div className="bb-schedule-name-cell px-2 py-2 border-r border-b border-border dark:border-[#f5c6cb] flex items-center justify-center bg-[#fdeaea] sticky left-0 z-20 font-normal md:static md:bg-[#fdeaea] dark:bb-pastel-surface dark:bg-[#fdeaea] bb-sticky-scroll-cell">
-                    <span className="bb-schedule-nowrap text-[12px] text-[#991b1b] font-normal uppercase tracking-widest whitespace-nowrap">นักขัตฤกษ์</span>
+                  <div className="bb-schedule-name-cell bb-schedule-corner-label px-2 py-2 border-r border-b border-border flex items-center justify-center sticky left-0 z-20 font-normal md:static bb-sticky-scroll-cell">
+                    <span className="bb-schedule-nowrap whitespace-nowrap">นักขัตฤกษ์</span>
                   </div>
                   {weekDays.map(date => {
                     const holiday = holidayByDate.get(date);
@@ -1664,16 +1669,16 @@ export default function ScheduleClient({
                         }
                         onPointerEnter={() => handleCellFocus('', date)}
                         className={cn(
-                          'bb-schedule-holiday-cell p-1 border-r last:border-0 border-border dark:border-[#f5c6cb] flex items-center justify-center min-h-[38px] min-w-0 overflow-hidden transition-colors duration-150',
+                          'bb-schedule-holiday-cell p-1 border-r last:border-0 border-border flex items-center justify-center min-h-[38px] min-w-0 overflow-hidden transition-colors duration-150',
                           scheduleCrosshairColumnHeaderClass(date, gridFocus),
-                          isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50 dark:hover:bg-[#f5c6cb]/25',
+                          isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-red-50/80 dark:hover:bg-red-100/40',
                         )}
                       >
                         {editingHoliday === date ? (
                           <input
                             autoFocus
                             disabled={isReadOnly}
-                            className="w-full h-full bg-card border border-red-200 dark:border-[#f5c6cb] text-[14px] text-[#7f1d1d] font-normal text-center rounded outline-none focus-visible:outline-none ring-1 ring-red-400 dark:ring-[#f5c6cb] disabled:opacity-60 disabled:cursor-not-allowed dark:bb-pastel-surface dark:bg-white/90"
+                            className="w-full h-full bg-card border border-red-200 text-[14px] text-[#7f1d1d] font-normal text-center rounded outline-none focus-visible:outline-none ring-1 ring-red-400 disabled:opacity-60 disabled:cursor-not-allowed dark:bb-pastel-surface dark:bg-white/90"
                             value={holidayInput}
                             onChange={(e) => setHolidayInput(e.target.value)}
                             onBlur={() => handleSaveHoliday(date)}
@@ -1682,7 +1687,7 @@ export default function ScheduleClient({
                             name={getScheduleHolidayInputName(date)}
                           />
                         ) : (
-                          <span className="bb-schedule-holiday-label w-full min-w-0 text-[14px] font-normal text-[#7f1d1d] text-center leading-snug tracking-tight px-1 uppercase break-words">
+                          <span className="bb-schedule-holiday-label w-full min-w-0 text-[14px] font-normal text-center leading-snug tracking-tight px-1 uppercase break-words">
                             {holiday?.name || ''}
                           </span>
                         )}
@@ -1692,11 +1697,11 @@ export default function ScheduleClient({
                 </div>
 
                 <div
-                  className="bb-schedule-grid grid bg-card border-b border-border shrink-0"
+                  className="bb-schedule-grid bb-schedule-day-header grid bg-card border-b border-border shrink-0"
                   style={SCHEDULE_GRID_STYLE}
                 >
-                <div className="bb-schedule-name-cell px-2 py-2 border-r border-b border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
-                  <span className="bb-schedule-nowrap text-[13px] text-foreground font-normal uppercase tracking-widest whitespace-nowrap">พนักงาน</span>
+                <div className="bb-schedule-name-cell bb-schedule-corner-label px-2 py-2 border-r border-b border-border flex items-center justify-center bg-card sticky left-0 z-20 text-foreground font-normal bb-sticky-scroll-cell">
+                  <span className="bb-schedule-nowrap whitespace-nowrap">พนักงาน</span>
                 </div>
                 {weekDays.map((date) => {
                   const d = new Date(date);
@@ -1706,13 +1711,13 @@ export default function ScheduleClient({
                       key={date}
                       onPointerEnter={() => handleCellFocus('', date)}
                       className={cn(
-                        'p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-border transition-colors duration-150 min-h-[50px] bg-card relative',
+                        'bb-schedule-day-header-cell p-1.5 flex flex-col items-center justify-center text-center border-r last:border-0 border-border transition-colors duration-150 min-h-[50px] bg-card relative',
                         scheduleCrosshairColumnHeaderClass(date, gridFocus),
                       )}
                     >
                       <div className="relative z-[1] flex flex-col items-center">
-                        <div className="text-[12px] font-normal uppercase tracking-tighter mb-0 text-foreground">{dayLabels[d.getDay()]}</div>
-                        <div className={`text-xl font-normal w-8 h-8 flex items-center justify-center mt-0.5 rounded-full ${isToday ? 'bg-[#ffda66] text-black' : 'text-foreground'}`}>{d.getDate()}</div>
+                        <div className="bb-schedule-weekday">{dayLabels[d.getDay()]}</div>
+                        <div className={cn('bb-schedule-date-num', isToday && 'is-today')}>{d.getDate()}</div>
                       </div>
                     </div>
                   );
@@ -1786,7 +1791,7 @@ export default function ScheduleClient({
               )}
 
               <div
-                className="bb-schedule-grid grid border-t border-border bg-muted/50 sticky bottom-0 z-[15]"
+                className="bb-schedule-grid bb-schedule-foh-row grid border-t border-border bg-muted/50 sticky bottom-0 z-[15]"
                 style={SCHEDULE_GRID_STYLE}
               >
                 <div className="bb-schedule-name-cell px-2 py-1.5 border-r border-b border-border flex items-center justify-center bg-card/80 sticky left-0 z-20 bb-sticky-scroll-cell">
@@ -1808,14 +1813,14 @@ export default function ScheduleClient({
                       key={`foh-${date}`}
                       onPointerEnter={() => handleCellFocus('', date)}
                       className={cn(
-                        'p-1.5 border-r last:border-0 border-border flex items-center justify-center transition-colors duration-150',
+                        'bb-schedule-foh-cell p-1.5 border-r last:border-0 border-border flex items-center justify-center transition-colors duration-150',
                         scheduleCrosshairColumnHeaderClass(date, gridFocus),
-                        isToday ? 'bg-amber-400/15 ring-1 ring-inset ring-amber-400/30' : '',
+                        isToday && 'is-today',
                       )}
                     >
-                      <span className={`text-[15px] font-normal tabular-nums ${
-                        fohCount > 0 ? 'text-black' : 'text-muted-foreground'
-                      }`}>{fohCount}</span>
+                      <span className={cn('bb-schedule-foh-count tabular-nums', fohCount > 0 ? 'has-staff' : 'is-empty')}>
+                        {fohCount}
+                      </span>
                     </div>
                   );
                 })}
@@ -1833,7 +1838,7 @@ export default function ScheduleClient({
         >
           <div
             ref={dropdownRef}
-            className="absolute bg-card/95 backdrop-blur-md border border-border w-48 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+            className="absolute bg-card/95 backdrop-blur-md border border-border w-48 rounded-2xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`

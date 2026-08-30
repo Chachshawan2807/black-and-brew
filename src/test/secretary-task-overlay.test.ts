@@ -56,7 +56,7 @@ describe('resolveSecretaryTaskOverlayKind', () => {
 
   it('falls back to task info dialog for other task types', () => {
     expect(
-      resolveSecretaryTaskOverlayKind(task({ task_type: 'schedule_understaffed', module: 'schedule' })),
+      resolveSecretaryTaskOverlayKind(task({ task_type: 'staffing_gap_today', module: 'dashboard' })),
     ).toBe('task_info');
   });
 });

@@ -5,6 +5,7 @@ export type SecretaryTaskOverlayKind =
   | 'branch_withdraw_panel'
   | 'bean_orders_list'
   | 'maintenance_list'
+  | 'schedule_review'
   | 'task_info';
 
 export function resolveSecretaryTaskOverlayKind(task: SecretaryTask): SecretaryTaskOverlayKind {
@@ -21,6 +22,9 @@ export function resolveSecretaryTaskOverlayKind(task: SecretaryTask): SecretaryT
     case 'maintenance_due':
     case 'maintenance_overdue':
       return 'maintenance_list';
+    case 'schedule_understaffed':
+    case 'schedule_leave_risk':
+      return 'schedule_review';
     default:
       return 'task_info';
   }

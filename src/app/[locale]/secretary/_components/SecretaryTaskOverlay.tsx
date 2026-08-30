@@ -20,6 +20,7 @@ import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import BranchWithdrawOverlay from './BranchWithdrawOverlay';
+import ScheduleReviewDialog from './ScheduleReviewDialog';
 import SecretaryListDialog, { type SecretaryListDialogItem } from './SecretaryListDialog';
 import SecretaryManualTaskDialog from './SecretaryManualTaskDialog';
 
@@ -188,6 +189,18 @@ export default function SecretaryTaskOverlay({
         title={task.title}
         items={maintenanceListItems}
         emptyMessage="ไม่มีรายการซ่อมบำรุงในหมวดนี้"
+        onClose={onClose}
+      />
+    );
+  }
+
+  if (overlayKind === 'schedule_review') {
+    return (
+      <ScheduleReviewDialog
+        open
+        title={task.title}
+        description={task.description ?? ''}
+        actionHref={task.action_href ?? `/${locale}/schedule`}
         onClose={onClose}
       />
     );
