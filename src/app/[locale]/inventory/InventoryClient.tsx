@@ -68,6 +68,7 @@ import {
 } from '@/lib/inventory-grid-cell-a11y';
 import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -654,10 +655,6 @@ const WithdrawRequiredItemsModal = dynamic(
   () => import('./_components/WithdrawRequiredItemsModal'),
   { ssr: false },
 );
-
-const preloadPurchaseOrdersModal = () => {
-  void import('./_components/PurchaseOrdersModal');
-};
 
 const preloadWithdrawRequiredItemsModal = () => {
   void import('./_components/WithdrawRequiredItemsModal');

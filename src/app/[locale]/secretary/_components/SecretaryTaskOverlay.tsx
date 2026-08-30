@@ -17,7 +17,7 @@ import {
   updateManualSecretaryTask,
 } from '@/app/actions/secretary-actions';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
-import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
+import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import BranchWithdrawOverlay from './BranchWithdrawOverlay';
 import ScheduleReviewDialog from './ScheduleReviewDialog';
@@ -114,6 +114,12 @@ export default function SecretaryTaskOverlay({
       task && overlayKind === 'maintenance_list' ? filterMaintenanceForTask(task, snapshot) : [],
     [overlayKind, snapshot, task],
   );
+
+  useEffect(() => {
+    if (overlayKind === 'purchase_orders') {
+      preloadPurchaseOrdersModal();
+    }
+  }, [overlayKind]);
 
   if (!task || !overlayKind) return null;
 

@@ -24,6 +24,7 @@ import { useSecretaryBoardSync, type BoardSyncPayload } from '@/hooks/use-secret
 import { useSecretaryTaskOrder } from '@/hooks/use-secretary-task-order';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import type { NotificationPreferences } from '@/lib/notification-types';
+import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/secretary-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
@@ -131,6 +132,27 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     const filtered = filterVisibleSecretaryBoardTasks(board.tasks, moduleFilter, visibility);
     return taskOrder.sortTasks(filtered);
   }, [board.tasks, moduleFilter, workDateIso, board.snapshot.isBranch2Day, taskOrder.sortTasks]);
+
+  const hasPurchaseOrderTask = useMemo(
+    () => visibleTasks.some((task) => task.task_type === 'inventory_reorder'),
+    [visibleTasks],
+  );
+
+  useEffect(() => {
+    if (!hasPurchaseOrderTask) return;
+
+    const scheduleIdle =
+      typeof requestIdleCallback === 'function'
+        ? (callback: () => void) => requestIdleCallback(callback, { timeout: 2000 })
+        : (callback: () => void) => window.setTimeout(callback, 400);
+    const cancelIdle =
+      typeof cancelIdleCallback === 'function'
+        ? (id: number) => cancelIdleCallback(id)
+        : (id: number) => window.clearTimeout(id);
+
+    const id = scheduleIdle(() => preloadPurchaseOrdersModal());
+    return () => cancelIdle(id);
+  }, [hasPurchaseOrderTask]);
 
   const visibleTaskCount = useMemo(
     () => filterVisibleSecretaryBoardTasks(board.tasks, 'all', visibility).length,
@@ -272,6 +294,9 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
               isActive={task.status === 'in_progress' && Boolean(task.active_session_started_at)}
               isDone={task.status === 'done'}
               isPending={isPending}
+              onPreloadOpen={
+                task.task_type === 'inventory_reorder' ? preloadPurchaseOrdersModal : undefined
+              }
               onOpen={() => setOverlayTask(task)}
               onStart={() => handleStart(task.id)}
               onStop={() => handleStop(task.id)}
@@ -298,6 +323,7 @@ function TaskCard({
   isActive,
   isDone,
   isPending,
+  onPreloadOpen,
   onOpen,
   onStart,
   onStop,
@@ -306,6 +332,7 @@ function TaskCard({
   isActive: boolean;
   isDone: boolean;
   isPending: boolean;
+  onPreloadOpen?: () => void;
   onOpen: () => void;
   onStart: () => void;
   onStop: () => void;
@@ -401,6 +428,10 @@ function TaskCard({
     }
   };
 
+  const warmOverlayChunk = () => {
+    onPreloadOpen?.();
+  };
+
   return (
     <li className="min-h-0">
       <HintTooltip tip={openTip}>
@@ -409,6 +440,9 @@ function TaskCard({
           tabIndex={0}
           onClick={onOpen}
           onKeyDown={handleCardKeyDown}
+          onPointerEnter={warmOverlayChunk}
+          onFocus={warmOverlayChunk}
+          onPointerDown={warmOverlayChunk}
           aria-label={`เปิดรายละเอียดงาน ${task.title}`}
           className={cn(cardClassName, 'block size-full text-left')}
         >
