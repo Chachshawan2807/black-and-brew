@@ -27,7 +27,7 @@ import {
   getShiftDisplayText,
 } from '@/lib/shift-colors';
 import { createShiftDateLookup, getShiftForProfileDate } from '@/lib/schedule/shift-lookups';
-import { persistDashboardRosterRange } from '@/lib/dashboard-date-range';
+import { persistDashboardRosterRange, readDashboardRosterRangeFromStorage } from '@/lib/dashboard-date-range';
 import {
   ROSTER_INDIVIDUAL_DAY_LABELS_FULL,
   ROSTER_INDIVIDUAL_DAY_LABELS_SHORT,
@@ -144,8 +144,8 @@ export default function MonthlyRoster({
     };
   }, [selectedStaffId, data.shifts, holidays, startDate, endDate]);
 
-  // Track whether the initial server data has already been consumed
   const initialDataConsumedRef = useRef(false);
+  const restoredRosterRangeRef = useRef(false);
   const selectedStaffIdRef = useRef(selectedStaffId);
   const hasInitialDataRef = useRef(hasInitialData);
 
@@ -155,15 +155,30 @@ export default function MonthlyRoster({
   });
 
   useEffect(() => {
-    // Skip the first fetch when server-prefetched data was provided
-    if (hasInitialDataRef.current && !initialDataConsumedRef.current) {
-      initialDataConsumedRef.current = true;
-      return;
-    }
+    if (restoredRosterRangeRef.current) return;
+    restoredRosterRangeRef.current = true;
 
+    const saved = readDashboardRosterRangeFromStorage();
+    if (!saved) return;
+    if (saved.start === startDate && saved.end === endDate) return;
+
+    setStartDate(saved.start);
+    setEndDate(saved.end);
+    persistDashboardRosterRange(saved.start, saved.end);
+  }, [startDate, endDate]);
+
+  useEffect(() => {
     async function loadData() {
       if (!startDate || !endDate) return;
-      setLoading(true);
+
+      const isBackgroundRefresh =
+        hasInitialDataRef.current && !initialDataConsumedRef.current;
+      if (isBackgroundRefresh) {
+        initialDataConsumedRef.current = true;
+      } else {
+        setLoading(true);
+      }
+
       const res = await fetchRosterData(startDate, endDate);
       if (res.success) {
         setData({ profiles: res.profiles, shifts: res.shifts });
@@ -176,7 +191,9 @@ export default function MonthlyRoster({
           setSelectedStaffId(res.profiles[0].id);
         }
       }
-      setLoading(false);
+      if (!isBackgroundRefresh) {
+        setLoading(false);
+      }
     }
     void loadData();
   }, [startDate, endDate]);

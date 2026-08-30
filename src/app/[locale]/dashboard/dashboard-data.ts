@@ -1,8 +1,8 @@
 type ShiftRange = {
   startDate: string;
   endDate: string;
-  monthStart: string;
-  monthEnd: string;
+  rosterStart: string;
+  rosterEnd: string;
 };
 
 type ShiftLike = {
@@ -19,8 +19,8 @@ export type DashboardShiftQueryPlan =
       mode: 'separate';
       weeklyStart: string;
       weeklyEnd: string;
-      monthlyStart: string;
-      monthlyEnd: string;
+      rosterStart: string;
+      rosterEnd: string;
     };
 
 function dateMin(a: string, b: string) {
@@ -38,14 +38,14 @@ function rangesOverlap(startA: string, endA: string, startB: string, endB: strin
 export function getDashboardShiftQueryPlan({
   startDate,
   endDate,
-  monthStart,
-  monthEnd,
+  rosterStart,
+  rosterEnd,
 }: ShiftRange): DashboardShiftQueryPlan {
-  if (rangesOverlap(startDate, endDate, monthStart, monthEnd)) {
+  if (rangesOverlap(startDate, endDate, rosterStart, rosterEnd)) {
     return {
       mode: 'combined',
-      startDate: dateMin(startDate, monthStart),
-      endDate: dateMax(endDate, monthEnd),
+      startDate: dateMin(startDate, rosterStart),
+      endDate: dateMax(endDate, rosterEnd),
     };
   }
 
@@ -53,8 +53,8 @@ export function getDashboardShiftQueryPlan({
     mode: 'separate',
     weeklyStart: startDate,
     weeklyEnd: endDate,
-    monthlyStart: monthStart,
-    monthlyEnd: monthEnd,
+    rosterStart,
+    rosterEnd,
   };
 }
 
@@ -65,10 +65,10 @@ function isShiftInRange(shift: ShiftLike, startDate: string, endDate: string) {
 
 export function splitDashboardShiftsByRange<TShift extends ShiftLike>(
   shifts: TShift[],
-  { startDate, endDate, monthStart, monthEnd }: ShiftRange,
+  { startDate, endDate, rosterStart, rosterEnd }: ShiftRange,
 ) {
   return {
     weeklyShifts: shifts.filter((shift) => isShiftInRange(shift, startDate, endDate)),
-    monthlyShifts: shifts.filter((shift) => isShiftInRange(shift, monthStart, monthEnd)),
+    rosterShifts: shifts.filter((shift) => isShiftInRange(shift, rosterStart, rosterEnd)),
   };
 }

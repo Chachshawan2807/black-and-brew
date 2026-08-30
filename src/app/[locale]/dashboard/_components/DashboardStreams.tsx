@@ -46,8 +46,6 @@ async function resolveDashboardDates(searchParams: Promise<{ start?: string; end
     endDate: weeklyRange.end,
     rosterStartDate: rosterRange.start,
     rosterEndDate: rosterRange.end,
-    monthStart,
-    monthEnd,
   };
 }
 
@@ -56,12 +54,13 @@ async function DashboardWeeklySection({
 }: {
   searchParams: Promise<{ start?: string; end?: string }>;
 }) {
-  const { startDate, endDate, monthStart, monthEnd } = await resolveDashboardDates(searchParams);
+  const { startDate, endDate, rosterStartDate, rosterEndDate } =
+    await resolveDashboardDates(searchParams);
   const shiftQueryPlan = getDashboardShiftQueryPlan({
     startDate,
     endDate,
-    monthStart,
-    monthEnd,
+    rosterStart: rosterStartDate,
+    rosterEnd: rosterEndDate,
   });
   const supabaseAdmin = getSupabaseAdmin();
 
@@ -93,8 +92,8 @@ async function DashboardWeeklySection({
       ? splitDashboardShiftsByRange(shiftsResult.data || [], {
           startDate,
           endDate,
-          monthStart,
-          monthEnd,
+          rosterStart: rosterStartDate,
+          rosterEnd: rosterEndDate,
         }).weeklyShifts
       : shiftsResult.data || [];
 
@@ -114,13 +113,13 @@ async function DashboardMonthlySection({
 }: {
   searchParams: Promise<{ start?: string; end?: string }>;
 }) {
-  const { startDate, endDate, rosterStartDate, rosterEndDate, monthStart, monthEnd } =
+  const { startDate, endDate, rosterStartDate, rosterEndDate } =
     await resolveDashboardDates(searchParams);
   const shiftQueryPlan = getDashboardShiftQueryPlan({
     startDate,
     endDate,
-    monthStart,
-    monthEnd,
+    rosterStart: rosterStartDate,
+    rosterEnd: rosterEndDate,
   });
   const supabaseAdmin = getSupabaseAdmin();
 
@@ -138,8 +137,8 @@ async function DashboardMonthlySection({
       : supabaseAdmin
           .from('shifts')
           .select('id, employee_id, start_time, end_time, status, metadata')
-          .gte('start_time', shiftQueryPlan.monthlyStart + 'T00:00:00')
-          .lte('start_time', shiftQueryPlan.monthlyEnd + 'T23:59:59'),
+          .gte('start_time', shiftQueryPlan.rosterStart + 'T00:00:00')
+          .lte('start_time', shiftQueryPlan.rosterEnd + 'T23:59:59'),
     supabaseAdmin
       .from('holidays')
       .select('id, date, name')
@@ -152,9 +151,9 @@ async function DashboardMonthlySection({
       ? splitDashboardShiftsByRange(shiftsResult.data || [], {
           startDate,
           endDate,
-          monthStart,
-          monthEnd,
-        }).monthlyShifts
+          rosterStart: rosterStartDate,
+          rosterEnd: rosterEndDate,
+        }).rosterShifts
       : shiftsResult.data || [];
 
   return (
