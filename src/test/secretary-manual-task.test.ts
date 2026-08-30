@@ -80,4 +80,25 @@ describe('secretary manual task UI', () => {
     expect(overlay).toContain('updateManualSecretaryTask');
     expect(overlay).toContain('deleteManualSecretaryTask');
   });
+
+  test('secretary task overlays use centered modal layout by default', () => {
+    const layout = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/secretary-modal-layout.ts'),
+      'utf-8',
+    );
+    expect(layout).toContain('items-center justify-center');
+
+    for (const file of [
+      'SecretaryListDialog.tsx',
+      'SecretaryManualTaskDialog.tsx',
+      'BranchWithdrawOverlay.tsx',
+    ]) {
+      const code = fs.readFileSync(
+        path.resolve(ROOT, `app/[locale]/secretary/_components/${file}`),
+        'utf-8',
+      );
+      expect(code).toContain('SECRETARY_MODAL_LAYOUT_CLASS');
+      expect(code).not.toContain('items-end');
+    }
+  });
 });

@@ -15,6 +15,7 @@ import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { mapSecretaryReorderItemsToInventoryRealtime } from '@/lib/inventory-branch-withdraw-seed';
 import type { SecretaryReorderItem } from '@/lib/secretary/types';
 import { cn } from '@/lib/utils';
+import { SECRETARY_MODAL_LAYOUT_CLASS } from './secretary-modal-layout';
 
 type BranchWithdrawOverlayProps = {
   locale: string;
@@ -92,8 +93,8 @@ export default function BranchWithdrawOverlay({
         onClose={onClose}
         zIndex={220}
         overlayClassName={cn('bg-black/20 backdrop-blur-md', INVENTORY_MODAL_Z_CLASS)}
-        layoutClassName="items-end justify-center p-3 pt-12 md:items-center md:p-4"
-        panelClassName="flex w-full max-w-3xl min-h-0 max-md:h-[min(85svh,calc(100dvh-3.75rem))] flex-col overflow-hidden md:max-h-[85svh]"
+        layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
+        panelClassName="flex w-full max-w-3xl min-h-0 max-h-[min(85svh,calc(100dvh-2rem))] flex-col overflow-hidden"
         aria-label="เบิกของสาขา 2"
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-background">

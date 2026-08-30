@@ -6,6 +6,7 @@ import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { cn } from '@/lib/utils';
+import { SECRETARY_MODAL_LAYOUT_CLASS } from './secretary-modal-layout';
 
 type SecretaryManualTaskDialogProps = {
   open: boolean;
@@ -50,7 +51,7 @@ export default function SecretaryManualTaskDialog({
         onClose={onClose}
         zIndex={220}
         overlayClassName={cn('bg-black/20 backdrop-blur-sm', INVENTORY_MODAL_Z_CLASS)}
-        layoutClassName="items-end justify-center p-3 pt-12 md:items-center md:p-4"
+        layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
         panelClassName="w-full max-w-lg"
         aria-label={dialogTitle}
       >

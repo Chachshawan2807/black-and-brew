@@ -39,8 +39,8 @@ describe('inventory branch withdraw overlay', () => {
     expect(overlay).toContain('seedItems');
     expect(overlay).toContain('mapSecretaryReorderItemsToInventoryRealtime');
     expect(overlay).not.toContain('dynamic(');
-    expect(overlay).toMatch(/layoutClassName="[^"]*p-3[^"]*"/);
-    expect(overlay).toContain('max-md:h-[min(85svh,calc(100dvh-3.75rem))]');
+    expect(overlay).toMatch(/layoutClassName=\{SECRETARY_MODAL_LAYOUT_CLASS\}/);
+    expect(overlay).toContain('max-h-[min(85svh,calc(100dvh-2rem))]');
     expect(overlay).toContain('flex-col overflow-hidden');
     expect(overlay).toMatch(/flex min-h-0 flex-1 flex-col overflow-hidden[\s\S]*flex min-h-0 flex-1 flex-col overflow-hidden/);
     expect(overlay).not.toMatch(/h-\[min\(92svh,100%\)\]/);
