@@ -626,11 +626,7 @@ export function useInventoryNotifications() {
       if (cancelled) return;
 
       if (channel) {
-        const previousChannel = channel;
-        channel = null;
-        teardownCancel?.();
-        teardownCancel = null;
-        await supabase.removeChannel(previousChannel);
+        stopChannel(channel);
         if (cancelled) return;
       }
 

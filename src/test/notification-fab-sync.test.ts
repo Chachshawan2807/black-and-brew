@@ -110,6 +110,11 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toMatch(/inventory_change_notifications_\$\{channelId\}/);
   });
 
+  test('hook defers notification channel teardown instead of immediate removeChannel on resubscribe', () => {
+    expect(hookSource).not.toMatch(/await supabase\.removeChannel\(previousChannel\)/);
+    expect(hookSource).toMatch(/if \(channel\) \{\s*stopChannel\(channel\)/);
+  });
+
   test('hook does not warn that realtime is unavailable for normal CLOSED channel cleanup', () => {
     expect(hookSource).not.toMatch(
       /status !== 'CHANNEL_ERROR' && status !== 'TIMED_OUT' && status !== 'CLOSED'/,

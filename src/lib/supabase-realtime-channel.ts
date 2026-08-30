@@ -6,6 +6,37 @@ export const SUPABASE_REALTIME_TEARDOWN_DELAY_MS = 50;
 
 const CHANNEL_REMOVE_POLL_MS = 10;
 const CHANNEL_REMOVE_TIMEOUT_MS = 500;
+const REALTIME_CONNECT_POLL_MS = 10;
+const REALTIME_CONNECT_TIMEOUT_MS = 500;
+
+function isSupabaseRealtimeConnecting(): boolean {
+  return (
+    typeof supabase.realtime?.isConnecting === 'function' &&
+    supabase.realtime.isConnecting()
+  );
+}
+
+/** Wait until the shared Realtime socket leaves CONNECTING before removeChannel. */
+export async function waitUntilRealtimeNotConnecting(
+  timeoutMs = REALTIME_CONNECT_TIMEOUT_MS,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+
+  while (isSupabaseRealtimeConnecting()) {
+    if (Date.now() > deadline) return;
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, REALTIME_CONNECT_POLL_MS);
+    });
+  }
+}
+
+async function removeSupabaseChannelWhenReady(channel: RealtimeChannel): Promise<void> {
+  if (typeof supabase.removeChannel !== 'function') return;
+
+  await waitUntilRealtimeNotConnecting();
+  await supabase.removeChannel(channel);
+}
 
 export function supabaseRealtimeTopic(channelName: string): string {
   return `realtime:${channelName}`;
@@ -21,8 +52,8 @@ export function findSupabaseChannelByName(
 
 export async function removeSupabaseChannelByName(channelName: string): Promise<void> {
   const existing = findSupabaseChannelByName(channelName);
-  if (existing && typeof supabase.removeChannel === 'function') {
-    await supabase.removeChannel(existing);
+  if (existing) {
+    await removeSupabaseChannelWhenReady(existing);
     await waitUntilSupabaseChannelRemoved(channelName);
   }
 }
@@ -47,8 +78,8 @@ export async function waitUntilSupabaseChannelRemoved(channelName: string): Prom
   while (findSupabaseChannelByName(channelName)) {
     if (Date.now() > deadline) {
       const lingering = findSupabaseChannelByName(channelName);
-      if (lingering && typeof supabase.removeChannel === 'function') {
-        await supabase.removeChannel(lingering);
+      if (lingering) {
+        await removeSupabaseChannelWhenReady(lingering);
       }
       return;
     }
@@ -74,7 +105,7 @@ export async function prepareSupabaseChannelName(
   }
 
   if (typeof supabase.removeChannel === 'function') {
-    await supabase.removeChannel(existing);
+    await removeSupabaseChannelWhenReady(existing);
     await waitUntilSupabaseChannelRemoved(channelName);
   }
 
@@ -94,8 +125,14 @@ export function scheduleSupabaseChannelTeardown(
 ): () => void {
   const delayMs = options?.delayMs ?? SUPABASE_REALTIME_TEARDOWN_DELAY_MS;
   const timer = setTimeout(() => {
-    if (options?.shouldTeardown && !options.shouldTeardown()) return;
-    void supabase.removeChannel(channel);
+    void (async () => {
+      if (options?.shouldTeardown && !options.shouldTeardown()) return;
+      await waitUntilRealtimeNotConnecting();
+      if (options?.shouldTeardown && !options.shouldTeardown()) return;
+      if (typeof supabase.removeChannel === 'function') {
+        await supabase.removeChannel(channel);
+      }
+    })();
   }, delayMs);
 
   return () => {
