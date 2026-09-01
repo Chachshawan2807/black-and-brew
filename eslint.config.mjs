@@ -5,6 +5,17 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["src/app/actions/**/*.ts"],
+    rules: {
+      // Server actions: block-scoped redeclarations shadow outer bindings and fail `next build`.
+      "@typescript-eslint/no-shadow": "error",
+      "@typescript-eslint/no-use-before-define": [
+        "error",
+        { functions: false, classes: true, variables: true },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

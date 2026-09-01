@@ -514,7 +514,6 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       };
     }
 
-    const locale = opts?.locale ?? 'th';
     const dateIso = opts?.dateIso ?? todayIsoBkk();
     const [snapshot, tasksBeforeSync] = await Promise.all([
       fetchSecretarySnapshot({ dateIso, locale }),
