@@ -1,16 +1,16 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { CheckCircle2, Plus } from 'lucide-react';
+import { CheckCircle2, Loader2, Plus, Sparkles } from 'lucide-react';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import SecretaryGuidanceBar from './_components/SecretaryGuidanceBar';
-import SecretaryManualTaskDialog from './_components/SecretaryManualTaskDialog';
-import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay';
 import {
   completeSecretaryTasks,
   createManualSecretaryTask,
+  syncSecretaryAiSuggestions,
 } from '@/app/actions/secretary-actions';
 import { splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
 import {
@@ -20,7 +20,11 @@ import {
   type SecretaryBoardDisplayTask,
 } from '@/lib/secretary/consolidate-board-tasks';
 import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
-import { useSecretaryBoardSync, type BoardSyncPayload } from '@/hooks/use-secretary-board-sync';
+import {
+  requestSecretaryBoardFullSync,
+  useSecretaryBoardSync,
+  type BoardSyncPayload,
+} from '@/hooks/use-secretary-board-sync';
 import { useSecretaryTaskOrder } from '@/hooks/use-secretary-task-order';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import type { NotificationPreferences } from '@/lib/notification-types';
@@ -28,6 +32,16 @@ import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal'
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/secretary-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
+
+const SecretaryManualTaskDialog = dynamic(
+  () => import('./_components/SecretaryManualTaskDialog'),
+  { ssr: false },
+);
+
+const SecretaryTaskOverlay = dynamic(
+  () => import('./_components/SecretaryTaskOverlay'),
+  { ssr: false },
+);
 
 type SecretaryClientProps = {
   initialBoard: SecretaryBoard;
@@ -71,15 +85,20 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
   const [newDescription, setNewDescription] = useState('');
   const [isPending, startTransition] = useTransition();
   const [overlayTask, setOverlayTask] = useState<SecretaryTask | null>(null);
-
-  const [aiOrderingEnabled, setAiOrderingEnabled] = useState(
+  const [aiAssistActive, setAiAssistActive] = useState(false);
+  const [aiAssistLoading, setAiAssistLoading] = useState(false);
+  const [aiButtonAllowed, setAiButtonAllowed] = useState(
     () => loadNotificationPreferences().secretaryAiOrdering ?? true,
   );
 
   useEffect(() => {
     const onPrefsChanged = (event: Event) => {
       const detail = (event as CustomEvent<NotificationPreferences>).detail;
-      setAiOrderingEnabled(detail?.secretaryAiOrdering ?? true);
+      const allowed = detail?.secretaryAiOrdering ?? true;
+      setAiButtonAllowed(allowed);
+      if (!allowed) {
+        setAiAssistActive(false);
+      }
     };
     window.addEventListener('bb-notification-prefs-changed', onPrefsChanged);
     return () => window.removeEventListener('bb-notification-prefs-changed', onPrefsChanged);
@@ -123,10 +142,17 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     skipInitialFullSync: true,
   });
 
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      requestSecretaryBoardFullSync();
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
   const taskOrder = useSecretaryTaskOrder({
     tasks: board.tasks,
     snapshot: board.snapshot,
-    aiOrderingEnabled,
+    aiOrderingEnabled: aiAssistActive,
     lightGuidanceOnly,
   });
 
@@ -166,6 +192,27 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     () => countConsolidatedSecretaryBoardTasks(board.tasks, 'all', visibility),
     [board.tasks, workDateIso, board.snapshot.isBranch2Day],
   );
+
+  const handleInvokeAi = () => {
+    setAiAssistActive(true);
+    setLightGuidanceOnly(false);
+    setAiAssistLoading(true);
+
+    startTransition(async () => {
+      try {
+        const result = await syncSecretaryAiSuggestions({
+          dateIso: workDateIso,
+          locale,
+          snapshot: boardRef.current.snapshot,
+        });
+        if (result.success && result.tasks) {
+          applyBoardSync({ tasks: result.tasks, syncKind: 'full' });
+        }
+      } finally {
+        setAiAssistLoading(false);
+      }
+    });
+  };
 
   const handleComplete = (taskIds: string[]) => {
     startTransition(async () => {
@@ -222,13 +269,37 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
           <h1 className="text-xl text-foreground font-normal w-fit">เลขาส่วนตัว</h1>
         </HintTooltip>
         <p className="text-[13px] text-muted-foreground">
-          รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ
+          รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ · กดเรียกใช้ AI เมื่อต้องการคำแนะนำ
         </p>
       </header>
 
       <SecretaryGuidanceBar text={taskOrder.guidanceText} loading={taskOrder.loading} />
 
       <div className="flex flex-wrap gap-2 items-center">
+        {aiButtonAllowed ? (
+          <HintTooltip tip="ให้ AI จัดลำดับงาน สรุปคำแนะนำ และแนะนำงานเพิ่มจากข้อมูลปัจจุบัน">
+            <button
+              type="button"
+              onClick={handleInvokeAi}
+              disabled={aiAssistLoading || isPending}
+              aria-busy={aiAssistLoading}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] bb-transition',
+                aiAssistActive
+                  ? 'border-foreground/30 bg-muted/40 text-foreground'
+                  : 'border-border text-foreground hover:bg-muted/30',
+                (aiAssistLoading || isPending) && 'opacity-60',
+              )}
+            >
+              {aiAssistLoading ? (
+                <Loader2 size={14} className="animate-spin" aria-hidden />
+              ) : (
+                <Sparkles size={14} aria-hidden />
+              )}
+              {aiAssistActive ? 'เรียกใช้ AI อีกครั้ง' : 'เรียกใช้ AI'}
+            </button>
+          </HintTooltip>
+        ) : null}
         <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
           <button
             type="button"

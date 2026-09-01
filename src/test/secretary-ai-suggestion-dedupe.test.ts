@@ -140,4 +140,62 @@ describe('secretary ai suggestion dedupe', () => {
 
     expect(redundantIds).toEqual(['ai-1']);
   });
+
+  test('isDuplicateSuggestion when AI branch withdraw stock check overlaps branch_withdraw card', () => {
+    expect(
+      isDuplicateSuggestion(
+        suggestion({
+          module: 'inventory_accuracy',
+          title: 'ตรวจสอบความถูกต้องสต็อกสินค้าสำหรับเบิกสาขา 2',
+          rationale: 'ควรตรวจสต็อกก่อนเบิกไปสาขา 2',
+        }),
+        [
+          task({
+            task_type: 'branch_withdraw',
+            module: 'branch_withdraw',
+            title: 'เบิกของสาขา 2',
+          }),
+        ],
+      ),
+    ).toBe(true);
+  });
+
+  test('filterNonDuplicateSuggestions returns empty when all suggestions overlap existing cards', () => {
+    const filtered = filterNonDuplicateSuggestions(
+      [
+        suggestion({
+          module: 'inventory',
+          title: 'ตรวจสอบความถูกต้องสต็อกสินค้าสำหรับเบิกสาขา 2',
+        }),
+      ],
+      [
+        task({
+          task_type: 'branch_withdraw',
+          module: 'branch_withdraw',
+          title: 'เบิกของสาขา 2',
+        }),
+      ],
+    );
+
+    expect(filtered).toEqual([]);
+  });
+
+  test('isDuplicateSuggestion allows distinct inventory accuracy when branch withdraw card exists', () => {
+    expect(
+      isDuplicateSuggestion(
+        suggestion({
+          module: 'inventory_accuracy',
+          title: 'ตรวจความแม่นยำสต็อกคลังหลัก',
+          rationale: 'มี mismatch จากการตรวจนับเมื่อเช้า',
+        }),
+        [
+          task({
+            task_type: 'branch_withdraw',
+            module: 'branch_withdraw',
+            title: 'เบิกของสาขา 2',
+          }),
+        ],
+      ),
+    ).toBe(false);
+  });
 });

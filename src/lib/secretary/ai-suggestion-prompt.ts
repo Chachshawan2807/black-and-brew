@@ -20,10 +20,10 @@ export const SECRETARY_AI_SUGGESTION_SYSTEM = `${SECRETARY_BRU_IDENTITY}
 
 คุณเป็นผู้ช่วยวิเคราะห์งานเชิงรุกของ BLACKANDBREW ERP
 เสนอเฉพาะงานใหม่ที่ยังไม่มีในรายการงานปัจจุบัน และทำได้วันนี้
-ห้ามซ้ำกับงาน derived หรือ manual ที่มีอยู่
+ห้ามซ้ำหรือใกล้เคียงกับงาน derived manual หรือ AI ที่มีอยู่ (รวมงานคนละชื่อแต่เรื่องเดียวกัน เช่น มีการ์ดเบิกสาขา 2 แล้วห้ามเสนอตรวจสต็อกก่อนเบิกสาขา 2)
 ห้าม hallucinate ตัวเลขหรือรายการที่ไม่มีในบริบท
 ตอบเป็น JSON object เดียวเท่านั้น ห้าม markdown ห้ามข้อความนอก JSON
-ถ้าไม่มีงานใหม่ให้ตอบ {"suggestions":[]}`;
+ถ้าไม่มีงานใหม่ที่แตกต่างจริงๆ ให้ตอบ {"suggestions":[]}`;
 
 export function buildAiSuggestionPrompt(
   snapshot: SecretarySnapshot,
@@ -56,10 +56,11 @@ export function buildAiSuggestionPrompt(
     `- รายการเบิกสาขา 2: ${slice.branchWithdrawItems.length}`,
     `- ซ่อมบำรุงเลยกำหนด: ${maintenanceOverdue}`,
     '',
-    'งานที่มีอยู่แล้ว (ห้ามเสนอซ้ำ):',
+    'งานที่มีอยู่แล้ว (ห้ามเสนอซ้ำหรือใกล้เคียง รวมเรื่องเดียวกันคนละชื่อ):',
     existingLines.length > 0 ? existingLines.join('\n') : '- ไม่มี',
     '',
-    `เสนองานใหม่สูงสุด ${MAX_AI_SUGGESTIONS_PER_DAY} รายการ เน้น cross-module หรือความเสี่ยงที่ rule ยังไม่ครอบคลุม`,
+    `เสนองานใหม่สูงสุด ${MAX_AI_SUGGESTIONS_PER_DAY} รายการ เฉพาะที่แตกต่างจากงานด้านบนจริงๆ เน้น cross-module หรือความเสี่ยงที่ rule ยังไม่ครอบคลุม`,
+    'ถ้าไม่มีงานที่แตกต่างพอ ให้ตอบ {"suggestions":[]} แทนการเสนอซ้ำ',
     '',
     'รูปแบบ JSON ที่ต้องตอบ (คัดลอกโครงสร้างนี้เท่านั้น):',
     SECRETARY_AI_SUGGESTION_JSON_EXAMPLE,

@@ -398,11 +398,11 @@ export default function NotificationPreferencesSection({
             disabled={permission === 'unsupported'}
           />
           <ToggleRow
-            label={isTh ? 'จัดลำดับงานด้วย AI' : 'AI task ordering'}
+            label={isTh ? 'ปุ่มเรียกใช้ AI (เลขาส่วนตัว)' : 'Secretary AI button'}
             description={
               isTh
-                ? 'บรูจัดลำดับการ์ดและคำแนะนำบนเลขาส่วนตัวตามบริบทร้าน (ปิดแล้วใช้ลำดับมาตรฐาน)'
-                : 'Bru orders secretary cards and guidance by shop context (off uses standard order)'
+                ? 'อนุญาตปุ่มเรียกใช้ AI บนหน้าเลขาส่วนตัว (ปิดแล้วซ่อนปุ่ม AI)'
+                : 'Allow the Invoke AI button on the secretary page (off hides the AI button)'
             }
             checked={prefs.secretaryAiOrdering ?? true}
             onChange={(v) => update({ secretaryAiOrdering: v })}

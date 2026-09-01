@@ -11,6 +11,7 @@ const ROUTE_PRELOADERS: Record<string, () => Promise<unknown>> = {
   'bean-order-detail': () => import('@/app/[locale]/bean-orders/BeanOrderDetailClient'),
   maintenance: () => import('@/app/[locale]/maintenance/MaintenanceClient'),
   dashboard: () => import('@/app/[locale]/dashboard/_components/LiveShiftList'),
+  secretary: () => import('@/app/[locale]/secretary/SecretaryClient'),
   settings: () => import('@/lib/settings-chunk-preload').then((m) => {
     m.preloadSettingsSection('pageSections');
     m.preloadSettingsSection('notifications');

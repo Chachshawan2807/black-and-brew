@@ -1,5 +1,9 @@
 import { MODULE_DERIVED_TASK_TYPES } from '@/lib/secretary/ai-suggestion-types';
 import type { AiSuggestionRawItem } from '@/lib/secretary/ai-suggestion-types';
+import {
+  hasSuggestionTopicOverlap,
+  sharedCorePhrase,
+} from '@/lib/secretary/suggestion-topic-overlap';
 import { resolveWorkSession } from '@/lib/secretary/task-work-sessions';
 import type { SecretaryModule, SecretaryTask } from '@/lib/secretary/types';
 
@@ -67,6 +71,14 @@ export function isDuplicateSuggestion(
     if (!isActionableExistingTask(task, nowIso)) continue;
 
     if (normalizeSuggestionTitle(task.title) === normalizedTitle) {
+      return true;
+    }
+
+    if (sharedCorePhrase(suggestion.title, task.title)) {
+      return true;
+    }
+
+    if (hasSuggestionTopicOverlap(suggestion, task)) {
       return true;
     }
 

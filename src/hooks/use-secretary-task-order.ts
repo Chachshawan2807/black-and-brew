@@ -192,7 +192,7 @@ export function useSecretaryTaskOrder(options: {
 
     fallbackShownAtRef.current = Date.now();
 
-    if (lightGuidanceOnly) {
+    if (lightGuidanceOnly || !aiOrderingEnabled) {
       lastGuidanceKeyRef.current = guidanceKey;
       setGuidanceText(syncSummaryGuidanceRef.current);
       setGuidanceSource('fallback');
@@ -250,7 +250,7 @@ export function useSecretaryTaskOrder(options: {
       clearTimeout(debounceTimer);
       guidanceAbortRef.current?.abort();
     };
-  }, [fingerprint, lightGuidanceOnly, orderedTaskIdsKey]);
+  }, [aiOrderingEnabled, fingerprint, lightGuidanceOnly, orderedTaskIdsKey]);
 
   const sortTasks = useMemo(
     () => (items: SecretaryTask[]) => sortTasksByGlobalOrder(items, orderedTaskIds),

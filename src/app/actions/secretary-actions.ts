@@ -31,6 +31,7 @@ import type {
 } from '@/lib/secretary/types';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 
 const TASK_SELECT =
   'id, task_type, title, description, priority, status, module, due_at, scheduled_date, assignee_profile_id, source_kind, source_ref, source_ref_hash, action_href, metadata, completed_at, completed_by, snoozed_until, active_session_started_at, created_at, updated_at';
@@ -129,7 +130,7 @@ export async function countPendingSecretaryTasks(dateIso: string): Promise<numbe
 async function runAiSuggestedSyncAfterDerived(
   snapshot: SecretarySnapshot,
   derivedResult: { success: boolean; upserted?: number; autoSkipped?: number; error?: string },
-  opts?: { aiEnabled?: boolean },
+  opts?: { aiEnabled?: boolean; existingTasks?: SecretaryTask[] },
 ): Promise<{
   success: boolean;
   upserted?: number;
@@ -138,9 +139,11 @@ async function runAiSuggestedSyncAfterDerived(
 }> {
   if (!derivedResult.success) return derivedResult;
 
-  const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
-  const existingTasks =
-    tasksResult.success && tasksResult.tasks ? tasksResult.tasks : [];
+  let existingTasks = opts?.existingTasks;
+  if (!existingTasks) {
+    const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
+    existingTasks = tasksResult.success && tasksResult.tasks ? tasksResult.tasks : [];
+  }
 
   const aiResult = await syncAiSuggestedSecretaryTasks({
     snapshot,
@@ -150,10 +153,9 @@ async function runAiSuggestedSyncAfterDerived(
 
   if (!aiResult.success) return aiResult;
 
-  const afterAiTasksResult = await fetchSecretaryTasks(snapshot.dateIso);
   const tasksForPush =
-    afterAiTasksResult.success && afterAiTasksResult.tasks
-      ? afterAiTasksResult.tasks
+    (aiResult.upserted ?? 0) > 0 || (aiResult.autoSkipped ?? 0) > 0
+      ? ((await fetchSecretaryTasks(snapshot.dateIso)).tasks ?? existingTasks)
       : existingTasks;
 
   void maybeDispatchSecretaryUrgentPush({
@@ -182,6 +184,10 @@ export async function syncDerivedSecretaryTasks(opts?: {
   /** Pre-fetched full snapshot skips a second `fetchSecretarySnapshot` on full sync. */
   snapshot?: SecretarySnapshot;
   aiEnabled?: boolean;
+  /** Skip Gemini AI suggestions (derived sync only). Used for fast client refresh. */
+  skipAiSync?: boolean;
+  /** Tasks already loaded for the date; avoids an extra fetch before AI sync. */
+  existingTasks?: SecretaryTask[];
 }): Promise<{
   success: boolean;
   upserted?: number;
@@ -216,8 +222,12 @@ export async function syncDerivedSecretaryTasks(opts?: {
     const derivedResult = await applyDerivedTaskDrafts(drafts, snapshot.dateIso, {
       isBranch2Day: snapshot.isBranch2Day,
     });
+    if (opts?.skipAiSync) {
+      return derivedResult;
+    }
     return runAiSuggestedSyncAfterDerived(snapshot, derivedResult, {
       aiEnabled: opts?.aiEnabled,
+      existingTasks: opts?.existingTasks,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -446,6 +456,7 @@ export async function syncAndFetchSecretaryBoard(opts?: {
   locale?: string;
   plan?: SecretaryBoardSyncPlan;
   baseSnapshot?: SecretarySnapshot;
+  skipAiSync?: boolean;
 }): Promise<{
   success: boolean;
   tasks?: SecretaryTask[];
@@ -503,12 +514,27 @@ export async function syncAndFetchSecretaryBoard(opts?: {
       };
     }
 
-    const snapshot = await fetchSecretarySnapshot(opts);
-    const syncResult = await syncDerivedSecretaryTasks({ ...opts, snapshot });
+    const locale = opts?.locale ?? 'th';
+    const dateIso = opts?.dateIso ?? todayIsoBkk();
+    const [snapshot, tasksBeforeSync] = await Promise.all([
+      fetchSecretarySnapshot({ dateIso, locale }),
+      fetchSecretaryTasks(dateIso),
+    ]);
+    const syncResult = await syncDerivedSecretaryTasks({
+      ...opts,
+      snapshot,
+      skipAiSync: opts?.skipAiSync,
+      existingTasks:
+        tasksBeforeSync.success && tasksBeforeSync.tasks ? tasksBeforeSync.tasks : undefined,
+    });
     if (!syncResult.success) {
       return { success: false, error: syncResult.error };
     }
-    const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
+
+    const tasksResult =
+      (syncResult.upserted ?? 0) > 0 || (syncResult.autoSkipped ?? 0) > 0
+        ? await fetchSecretaryTasks(snapshot.dateIso)
+        : tasksBeforeSync;
 
     if (!tasksResult.success || !tasksResult.tasks) {
       return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
@@ -613,6 +639,69 @@ export type SecretaryBoard = {
   tasks: SecretaryTask[];
 };
 
+export async function syncSecretaryAiSuggestions(opts: {
+  dateIso: string;
+  locale?: string;
+  snapshot?: SecretarySnapshot;
+  aiEnabled?: boolean;
+}): Promise<{
+  success: boolean;
+  tasks?: SecretaryTask[];
+  upserted?: number;
+  autoSkipped?: number;
+  error?: string;
+}> {
+  const authError = await requireReadAccess();
+  if (authError) return { success: false, error: authError };
+
+  try {
+    const locale = opts.locale ?? 'th';
+    const snapshot =
+      opts.snapshot ?? (await fetchSecretarySnapshot({ dateIso: opts.dateIso, locale }));
+    const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
+    const existingTasks =
+      tasksResult.success && tasksResult.tasks ? tasksResult.tasks : [];
+
+    const aiResult = await syncAiSuggestedSecretaryTasks({
+      snapshot,
+      existingTasks,
+      aiEnabled: opts.aiEnabled,
+    });
+
+    if (!aiResult.success) {
+      return { success: false, error: aiResult.error };
+    }
+
+    const refreshed =
+      (aiResult.upserted ?? 0) > 0 || (aiResult.autoSkipped ?? 0) > 0
+        ? await fetchSecretaryTasks(snapshot.dateIso)
+        : tasksResult;
+
+    void maybeDispatchSecretaryUrgentPush({
+      snapshot,
+      tasks:
+        refreshed.success && refreshed.tasks ? refreshed.tasks : existingTasks,
+      locale: snapshot.locale,
+    }).catch((error) => {
+      console.error(
+        '[syncSecretaryAiSuggestions] urgent push failed:',
+        error instanceof Error ? error.message : error,
+      );
+    });
+
+    return {
+      success: true,
+      tasks: refreshed.success && refreshed.tasks ? refreshed.tasks : existingTasks,
+      upserted: aiResult.upserted,
+      autoSkipped: aiResult.autoSkipped,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[syncSecretaryAiSuggestions]', message);
+    return { success: false, error: message };
+  }
+}
+
 export async function loadSecretaryBoard(opts?: {
   dateIso?: string;
   locale?: string;
@@ -620,14 +709,15 @@ export async function loadSecretaryBoard(opts?: {
   const authError = await requireReadAccess();
   if (authError) return { success: false, error: authError };
 
-  try {
-    const snapshot = await fetchSecretarySnapshot(opts);
-    const syncResult = await syncDerivedSecretaryTasks({ ...opts, snapshot });
-    if (!syncResult.success) {
-      return { success: false, error: syncResult.error };
-    }
+  const locale = opts?.locale ?? 'th';
+  const dateIso = opts?.dateIso ?? todayIsoBkk();
 
-    const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
+  try {
+    const [snapshot, tasksResult] = await Promise.all([
+      fetchSecretarySnapshot({ dateIso, locale }),
+      fetchSecretaryTasks(dateIso),
+    ]);
+
     if (!tasksResult.success || !tasksResult.tasks) {
       return { success: false, error: tasksResult.error ?? 'Failed to load tasks' };
     }

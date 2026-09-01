@@ -77,7 +77,7 @@ describe('useSecretaryTaskOrder', () => {
     expect(result.current.guidanceText).not.toContain('แล้วต่อด้วย');
   });
 
-  test('skips task-order fetch when AI ordering is disabled but still fetches guidance', async () => {
+  test('skips AI guidance and task-order fetch when AI ordering is disabled', async () => {
     vi.useFakeTimers();
 
     renderHook(() =>
@@ -95,14 +95,7 @@ describe('useSecretaryTaskOrder', () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
-    expect(fetch).toHaveBeenCalledWith(
-      '/api/secretary/guidance',
-      expect.objectContaining({ method: 'POST' }),
-    );
-    expect(fetch).not.toHaveBeenCalledWith(
-      '/api/secretary/task-order',
-      expect.anything(),
-    );
+    expect(fetch).not.toHaveBeenCalled();
 
     vi.useRealTimers();
   });
