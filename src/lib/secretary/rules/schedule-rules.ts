@@ -15,11 +15,18 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
   const tasks: DerivedTaskDraft[] = [];
   const localePrefix = `/${snapshot.locale}`;
 
+  const upcomingHolidaySoon =
+    snapshot.operational.upcomingHoliday &&
+    snapshot.operational.upcomingHoliday.daysRemaining <= 3;
+
   const understaffed = findUnderstaffedDays(snapshot.operational.weeklyDays);
   if (understaffed.length > 0) {
-    const summary = understaffed
+    const daySummary = understaffed
       .map((day) => formatUnderstaffedDaySummary(day.dateIso, day.dayIndex, day.headcount))
       .join(', ');
+    const summary = upcomingHolidaySoon
+      ? `${daySummary} · ใกล้วันหยุด ${snapshot.operational.upcomingHoliday?.name}`
+      : daySummary;
     const sourceRef = { rule: 'understaffed', dates: understaffed.map((d) => d.dateIso) };
     tasks.push({
       taskType: 'schedule_understaffed',
@@ -66,38 +73,6 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
       sourceRefHash: buildSourceRefHash('staffing_gap_today', sourceRef),
       actionHref: `${localePrefix}/dashboard`,
       estimatedMinutes: 15,
-    });
-  }
-
-  const hasUnderstaffed = understaffed.length > 0;
-  const hasLeaveRisk = leaveEntries.length >= INSIGHT_THRESHOLDS.leaveCoverageMinLeave;
-  const upcomingHolidaySoon =
-    snapshot.operational.upcomingHoliday &&
-    snapshot.operational.upcomingHoliday.daysRemaining <= 3;
-
-  if ((hasUnderstaffed && hasLeaveRisk) || (upcomingHolidaySoon && hasUnderstaffed)) {
-    const sourceRef = {
-      rule: 'schedule_mgmt_review',
-      hasUnderstaffed,
-      hasLeaveRisk,
-      upcomingHoliday: snapshot.operational.upcomingHoliday?.name ?? null,
-    };
-    tasks.push({
-      taskType: 'schedule_mgmt_review',
-      title: 'ทบทวนตารางงานและการจัดคน',
-      description: [
-        hasUnderstaffed ? 'มีวันที่คนน้อย' : null,
-        hasLeaveRisk ? 'มีความเสี่ยงลาหลายคน' : null,
-        upcomingHolidaySoon ? `ใกล้วันหยุด ${snapshot.operational.upcomingHoliday?.name}` : null,
-      ]
-        .filter(Boolean)
-        .join(' · '),
-      priority: 'urgent',
-      module: 'schedule',
-      sourceRef,
-      sourceRefHash: buildSourceRefHash('schedule_mgmt_review', sourceRef),
-      actionHref: `${localePrefix}/schedule`,
-      estimatedMinutes: 20,
     });
   }
 

@@ -162,4 +162,13 @@ describe('compareSecretaryBoardTasks', () => {
 
     expect(ordered.map((entry) => entry.id)).toEqual(['urgent', 'normal']);
   });
+
+  test('orders ai suggested tasks before derived tasks', () => {
+    const ordered = [
+      task({ id: 'derived', status: 'pending', module: 'inventory', task_type: 'inventory_reorder', source_kind: 'derived' }),
+      task({ id: 'ai', status: 'pending', source_kind: 'ai_suggested', title: 'งานจาก AI' }),
+    ].toSorted(compareSecretaryBoardTasks);
+
+    expect(ordered.map((entry) => entry.id)).toEqual(['ai', 'derived']);
+  });
 });

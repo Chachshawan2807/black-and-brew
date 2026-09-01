@@ -6,7 +6,6 @@ import { CheckCircle2, Loader2, Plus, Sparkles } from 'lucide-react';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
-import SecretaryGuidanceBar from './_components/SecretaryGuidanceBar';
 import {
   completeSecretaryTasks,
   createManualSecretaryTask,
@@ -25,7 +24,6 @@ import {
   useSecretaryBoardSync,
   type BoardSyncPayload,
 } from '@/hooks/use-secretary-board-sync';
-import { useSecretaryTaskOrder } from '@/hooks/use-secretary-task-order';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import type { NotificationPreferences } from '@/lib/notification-types';
 import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
@@ -104,10 +102,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     return () => window.removeEventListener('bb-notification-prefs-changed', onPrefsChanged);
   }, []);
 
-  const [lightGuidanceOnly, setLightGuidanceOnly] = useState(false);
-
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
-    setLightGuidanceOnly(payload.syncKind === 'light' || payload.syncKind === 'scoped');
     setBoard((prev) => {
       const nextSnapshot = payload.snapshot
         ? payload.snapshot
@@ -149,23 +144,12 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     return () => cancelAnimationFrame(rafId);
   }, []);
 
-  const taskOrder = useSecretaryTaskOrder({
-    tasks: board.tasks,
-    snapshot: board.snapshot,
-    aiOrderingEnabled: aiAssistActive,
-    lightGuidanceOnly,
-  });
-
   const visibility = { workDateIso, isBranch2Day: board.snapshot.isBranch2Day };
 
-  const visibleTasks = useMemo(() => {
-    const consolidated = filterConsolidatedSecretaryBoardTasks(
-      board.tasks,
-      moduleFilter,
-      visibility,
-    );
-    return taskOrder.sortTasks(consolidated);
-  }, [board.tasks, moduleFilter, workDateIso, board.snapshot.isBranch2Day, taskOrder.sortTasks]);
+  const visibleTasks = useMemo(
+    () => filterConsolidatedSecretaryBoardTasks(board.tasks, moduleFilter, visibility),
+    [board.tasks, moduleFilter, workDateIso, board.snapshot.isBranch2Day],
+  );
 
   const hasPurchaseOrderTask = useMemo(
     () => visibleTasks.some((task) => task.task_type === 'inventory_reorder'),
@@ -195,7 +179,6 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
   const handleInvokeAi = () => {
     setAiAssistActive(true);
-    setLightGuidanceOnly(false);
     setAiAssistLoading(true);
 
     startTransition(async () => {
@@ -269,15 +252,13 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
           <h1 className="text-xl text-foreground font-normal w-fit">เลขาส่วนตัว</h1>
         </HintTooltip>
         <p className="text-[13px] text-muted-foreground">
-          รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ · กดเรียกใช้ AI เมื่อต้องการคำแนะนำ
+          รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ
         </p>
       </header>
 
-      <SecretaryGuidanceBar text={taskOrder.guidanceText} loading={taskOrder.loading} />
-
       <div className="flex flex-wrap gap-2 items-center">
         {aiButtonAllowed ? (
-          <HintTooltip tip="ให้ AI จัดลำดับงาน สรุปคำแนะนำ และแนะนำงานเพิ่มจากข้อมูลปัจจุบัน">
+          <HintTooltip tip="ให้ AI แนะนำงานเพิ่มจากข้อมูลปัจจุบัน (งาน AI จะอยู่ลำดับแรก)">
             <button
               type="button"
               onClick={handleInvokeAi}

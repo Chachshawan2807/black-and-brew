@@ -9,7 +9,20 @@ import {
   filterVisibleSecretaryBoardTasks,
   isSecretaryBoardTaskVisible,
 } from '@/lib/secretary/visible-board-tasks';
-import type { SecretaryTask } from '@/lib/secretary/types';
+import type { SecretaryTask, SecretaryTaskType } from '@/lib/secretary/types';
+
+const SCHEDULE_DETAIL_TASK_TYPES = new Set<SecretaryTaskType>([
+  'schedule_understaffed',
+  'schedule_leave_risk',
+]);
+
+function isRedundantScheduleOverlaySection(
+  task: SecretaryTask,
+  siblings: SecretaryTask[],
+): boolean {
+  if (task.task_type !== 'schedule_mgmt_review') return false;
+  return siblings.some((sibling) => SCHEDULE_DETAIL_TASK_TYPES.has(sibling.task_type));
+}
 
 export type SecretaryBoardDisplayTask = SecretaryTask & {
   consolidatedTaskIds: string[];
@@ -42,12 +55,15 @@ function buildConsolidatedDisplayTask(
   const session = resolveWorkSession(primary);
 
   if (session && sorted.length > 1) {
+    const overlayTasks = sorted.filter(
+      (task) => !isRedundantScheduleOverlaySection(task, sorted),
+    );
     return {
       ...primary,
       title: session.label,
       description: null,
       consolidatedTaskIds,
-      consolidatedSections: sorted.map((task) => ({
+      consolidatedSections: overlayTasks.map((task) => ({
         title: formatWorkSessionSubLabel(task, session),
         description: task.description,
       })),

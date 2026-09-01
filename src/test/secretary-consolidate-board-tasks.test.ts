@@ -90,7 +90,10 @@ describe('consolidateSecretaryBoardTasks', () => {
     expect(consolidated).toHaveLength(1);
     expect(consolidated[0]?.title).toBe('ตรวจตารางงาน');
     expect(consolidated[0]?.consolidatedTaskIds).toEqual(['under', 'leave', 'mgmt']);
-    expect(consolidated[0]?.consolidatedSections).toHaveLength(3);
+    expect(consolidated[0]?.consolidatedSections).toEqual([
+      { title: 'วันที่คนน้อย', description: 'พ. ที่ 2 (4 คน)' },
+      { title: 'ลาหลายคน', description: 'ศ. ที่ 24 (เอ, บี)' },
+    ]);
   });
 
   test('merges custom tasks with same normalized title and module', () => {

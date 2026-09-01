@@ -30,7 +30,7 @@ function task(overrides: Partial<SecretaryTask> = {}): SecretaryTask {
 }
 
 describe('compareSecretaryTaskOrder ai_suggested', () => {
-  test('ranks urgent ai suggestions after urgent schedule but before inventory reorder', () => {
+  test('ranks ai suggestions first among pending actionable tasks', () => {
     const scheduleUrgent = task({
       id: 'schedule',
       module: 'schedule',
@@ -39,10 +39,16 @@ describe('compareSecretaryTaskOrder ai_suggested', () => {
       source_kind: 'derived',
     });
     const aiUrgent = task({
-      id: 'ai',
+      id: 'ai-urgent',
       source_kind: 'ai_suggested',
       priority: 'urgent',
       title: 'ประสานคลังก่อนออกสาขา 2',
+    });
+    const aiNormal = task({
+      id: 'ai-normal',
+      source_kind: 'ai_suggested',
+      priority: 'normal',
+      title: 'ตรวจรายการก่อนปิดร้าน',
     });
     const inventory = task({
       id: 'inventory',
@@ -51,7 +57,8 @@ describe('compareSecretaryTaskOrder ai_suggested', () => {
       source_kind: 'derived',
     });
 
-    expect(compareSecretaryTaskOrder(scheduleUrgent, aiUrgent)).toBeLessThan(0);
-    expect(compareSecretaryTaskOrder(aiUrgent, inventory)).toBeLessThan(0);
+    expect(compareSecretaryTaskOrder(aiUrgent, scheduleUrgent)).toBeLessThan(0);
+    expect(compareSecretaryTaskOrder(aiNormal, scheduleUrgent)).toBeLessThan(0);
+    expect(compareSecretaryTaskOrder(aiNormal, inventory)).toBeLessThan(0);
   });
 });

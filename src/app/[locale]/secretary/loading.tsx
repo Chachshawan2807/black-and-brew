@@ -5,7 +5,6 @@ export default function Loading() {
         <div className="h-6 w-32 rounded-lg bb-shimmer" />
         <div className="h-4 w-48 rounded-lg bb-shimmer" />
       </div>
-      <div className="h-16 rounded-2xl border border-border bg-card bb-shimmer" />
       <div className="flex flex-wrap gap-2">
         <div className="h-8 w-24 rounded-full bb-shimmer" />
         <div className="h-8 w-28 rounded-full bb-shimmer" />

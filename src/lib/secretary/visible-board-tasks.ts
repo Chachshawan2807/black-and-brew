@@ -1,13 +1,7 @@
 import { getBangkokCalendarIso } from '@/lib/date-utils';
 import { isLegacyBeanOrderTaskType } from '@/lib/secretary/bean-order-task-consolidation';
+import { compareSecretaryTaskOrder } from '@/lib/secretary/task-order-compare';
 import type { SecretaryTask } from '@/lib/secretary/types';
-
-const BOARD_STATUS_RANK: Record<SecretaryTask['status'], number> = {
-  in_progress: 0,
-  pending: 1,
-  done: 2,
-  skipped: 3,
-};
 
 export type SecretaryBoardVisibilityOptions = {
   workDateIso: string;
@@ -58,14 +52,7 @@ export function isSecretaryBoardTaskVisible(
 }
 
 export function compareSecretaryBoardTasks(a: SecretaryTask, b: SecretaryTask): number {
-  const rankDiff = BOARD_STATUS_RANK[a.status] - BOARD_STATUS_RANK[b.status];
-  if (rankDiff !== 0) return rankDiff;
-
-  const priorityRank = { urgent: 0, normal: 1, low: 2 } as const;
-  const priorityDiff = priorityRank[a.priority] - priorityRank[b.priority];
-  if (priorityDiff !== 0) return priorityDiff;
-
-  return a.created_at.localeCompare(b.created_at);
+  return compareSecretaryTaskOrder(a, b);
 }
 
 export function filterVisibleSecretaryBoardTasks(
