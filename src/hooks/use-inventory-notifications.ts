@@ -93,9 +93,6 @@ import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel
 /** Proactive insight panel updates are silent scheduled cron Web Push handles OS banners. */
 const skipInsightOsNotification = true;
 
-/** Secretary digest panel updates are silent scheduled cron Web Push handles OS banners. */
-const skipSecretaryOsNotification = true;
-
 function isDailyReportNotificationItem(notification: InventoryNotification): boolean {
   return notification.metadata?.kind === 'daily_report';
 }
@@ -489,9 +486,7 @@ export function useInventoryNotifications() {
             skipSystemNotification:
               allInsights
                 ? skipInsightOsNotification
-                : allSecretary
-                  ? skipSecretaryOsNotification
-                  : deferOsToPush,
+                : deferOsToPush,
           });
         }
         return;
