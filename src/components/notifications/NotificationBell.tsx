@@ -60,7 +60,7 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
         <span
           aria-hidden
           className={cn(
-            'absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full font-semibold tabular-nums',
+            'absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full font-normal tabular-nums',
             'bg-red-500 text-white border border-red-600/80 bb-shadow-sm',
             getInAppBadgeClassName(unreadCount),
             pulse && 'animate-pulse ring-2 ring-red-400/60',

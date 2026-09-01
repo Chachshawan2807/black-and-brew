@@ -11,6 +11,7 @@ import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { History, Loader2, PackageMinus, PackagePlus, Plus, Search, ShoppingCart, SlidersHorizontal, Trash2, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
 
 import {
   getModalBackdropKeyboardAwareStyle,
@@ -85,6 +86,9 @@ const HISTORY_TYPE_FILTERS: { value: InventoryTransactionFilterType; label: stri
   { value: 'ADJUST', label: 'ปรับจำนวน' },
 ];
 
+const HISTORY_BADGE_LAYOUT =
+  'w-9 h-9 rounded-2xl inline-flex items-center justify-center bb-transition bb-shadow-sm border';
+
 function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] }) {
 
   if (type === 'ADJUST') {
@@ -94,7 +98,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
       <HintTooltip tip="ปรับจำนวน">
         <span
 
-          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center bb-transition bb-shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
+          className={cn(HISTORY_BADGE_LAYOUT, INVENTORY_QUICK_ACTION_COLORS.adjust)}
 
           aria-label="ปรับจำนวน"
 
@@ -113,7 +117,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
     return (
       <HintTooltip tip="เพิ่มรายการ">
         <span
-          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center bb-transition bb-shadow-sm border bb-pastel-surface bg-[#fff3cd] text-[#000000] border-[#ffeeba]"
+          className={cn(HISTORY_BADGE_LAYOUT, INVENTORY_QUICK_ACTION_COLORS.adjust)}
           aria-label="เพิ่มรายการ"
         >
           <Plus className="w-4.5 h-4.5" />
@@ -126,7 +130,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
     return (
       <HintTooltip tip="ลบรายการ">
         <span
-          className="w-9 h-9 rounded-2xl inline-flex items-center justify-center bb-transition bb-shadow-sm border bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]"
+          className={cn(HISTORY_BADGE_LAYOUT, INVENTORY_QUICK_ACTION_COLORS.out)}
           aria-label="ลบรายการ"
         >
           <Trash2 className="w-4.5 h-4.5" />
@@ -145,11 +149,8 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
       <span
 
         className={cn(
-
-          'w-9 h-9 rounded-2xl inline-flex items-center justify-center bb-transition bb-shadow-sm border',
-
-          isIn ? 'bb-pastel-surface bg-[#d4edda] text-[#000000] border-[#c3e6cb]' : 'bb-pastel-surface bg-[#f8d7da] text-[#000000] border-[#f5c6cb]',
-
+          HISTORY_BADGE_LAYOUT,
+          isIn ? INVENTORY_QUICK_ACTION_COLORS.in : INVENTORY_QUICK_ACTION_COLORS.out,
         )}
 
         aria-label={isIn ? 'รับเข้า' : 'นำออก'}

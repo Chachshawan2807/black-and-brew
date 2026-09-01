@@ -1,4 +1,5 @@
 import { Settings2 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 
 const SettingsPageSections = createLazyFeatureClient(
@@ -20,14 +21,16 @@ export default async function SettingsPage({
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
             <Settings2 size={18} strokeWidth={1.75} className="text-foreground/70" />
           </div>
-          <div>
-            <h1 className="text-lg md:text-xl font-normal text-foreground leading-snug">
-              {isTh ? 'ตั้งค่า' : 'Settings'}
-            </h1>
-            <p className="text-[13px] text-muted-foreground/90 font-normal mt-0.5 leading-normal">
-              {isTh ? 'การแจ้งเตือน ประวัติ และความปลอดภัย' : 'Notifications, history & security'}
-            </p>
-          </div>
+          <PageHeader
+            title={isTh ? 'ตั้งค่า' : 'Settings'}
+            subtitle={
+              isTh
+                ? 'การแจ้งเตือน ประวัติ และความปลอดภัย'
+                : 'Notifications, history & security'
+            }
+            size="compact"
+            titleClassName="leading-snug"
+          />
         </div>
       </header>
 

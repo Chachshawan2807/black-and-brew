@@ -89,6 +89,18 @@ export const DAY_OFF_COLOR = `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`;
 export const MORNING_LATTE_CREAM = 'bg-card border border-border';
 
 /** Sales dashboard pastel section accents aligned with schedule/inventory palette */
+/** Bean order status badges (payment / delivery) */
+export const BEAN_ORDER_BADGE_COLORS = {
+  payment: 'bg-[#e8f5e9]',
+  delivery: 'bg-[#e3f2fd]',
+} as const;
+
+/** Secretary task board done-state pastels */
+export const SECRETARY_TASK_COLORS = {
+  done: `${PASTEL} bg-[#d4f5d4] border-[#a8e6a8]`,
+  doneAction: 'border-[#a8e6a8] bg-[#eef9ee]',
+} as const;
+
 export const SALES_SECTION_COLORS = {
   headerIcon: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
   upload: MORNING_LATTE_CREAM,

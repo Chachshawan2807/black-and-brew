@@ -525,6 +525,98 @@
     }
   }
 
+  /* Shared page chrome: titles, labels, empty states, standard fields */
+  .bb-page-title {
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--foreground);
+    letter-spacing: -0.025em;
+    line-height: 1.5;
+  }
+
+  @media (min-width: 768px) {
+    .bb-page-title {
+      font-size: 1.5rem;
+    }
+  }
+
+  .bb-page-title-lg {
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--foreground);
+    letter-spacing: -0.025em;
+    line-height: 1.5;
+  }
+
+  .bb-page-title-compact {
+    font-size: 1.125rem;
+    font-weight: 400;
+    color: var(--foreground);
+    letter-spacing: -0.025em;
+    line-height: 1.5;
+  }
+
+  @media (min-width: 768px) {
+    .bb-page-title-compact {
+      font-size: 1.25rem;
+    }
+  }
+
+  .bb-page-subtitle {
+    margin-top: 0.125rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--muted-foreground);
+    line-height: 1.5;
+  }
+
+  .bb-label-caps {
+    font-size: 0.6875rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted-foreground);
+  }
+
+  .bb-empty-state {
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+    background-color: var(--card);
+    padding: 1.5rem;
+    text-align: center;
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+    line-height: 1.6;
+  }
+
+  .bb-field-input {
+    width: 100%;
+    background-color: var(--background);
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    color: var(--foreground);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border);
+    transition:
+      border-color 220ms var(--bb-ease-out),
+      box-shadow 220ms var(--bb-ease-out);
+
+    &::placeholder {
+      color: var(--muted-foreground);
+    }
+
+    &:focus-visible {
+      outline: none;
+      border-color: rgb(0 0 0 / 0.12);
+      box-shadow: 0 0 0 3px rgb(0 0 0 / 0.04);
+    }
+  }
+
+  .dark .bb-field-input:focus-visible {
+    border-color: rgb(255 255 255 / 0.16);
+    box-shadow: 0 0 0 3px rgb(255 255 255 / 0.06);
+  }
+
   /* Layered elevation ambient + key light (Material / HIG-style depth) */
   .bb-shadow-sm {
     box-shadow:

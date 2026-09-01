@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Plus } from 'lucide-react';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { BeanOrderListItem } from './_components/BeanOrderListItem';
+import { PageHeader } from '@/components/ui/page-header';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import {
   BEAN_ORDER_BTN_PRIMARY_LINK,
@@ -97,18 +98,20 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
 
   return (
     <div className={BEAN_ORDER_PAGE}>
-      <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-normal text-foreground">ออเดอร์เมล็ดกาแฟ</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">รับออเดอร์ / ตรวจสลิป / จัดส่ง</p>
-        </div>
-        <Link
-          href={`/${locale}/bean-orders/new`}
-          className={BEAN_ORDER_BTN_PRIMARY_LINK}
-        >
-          <Plus className="h-4 w-4" aria-hidden /> สร้างออเดอร์
-        </Link>
-      </div>
+      <PageHeader
+        className="mb-5 sm:mb-6"
+        title="ออเดอร์เมล็ดกาแฟ"
+        subtitle="รับออเดอร์ / ตรวจสลิป / จัดส่ง"
+        size="large"
+        actions={
+          <Link
+            href={`/${locale}/bean-orders/new`}
+            className={BEAN_ORDER_BTN_PRIMARY_LINK}
+          >
+            <Plus className="h-4 w-4" aria-hidden /> สร้างออเดอร์
+          </Link>
+        }
+      />
 
       {message && (
         <p className="mb-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground">

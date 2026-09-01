@@ -4,8 +4,10 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { CheckCircle2, Loader2, Plus, Sparkles } from 'lucide-react';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
-import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import { PASTEL_SURFACE, SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
 import {
   completeSecretaryTasks,
   createManualSecretaryTask,
@@ -247,14 +249,12 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
   return (
     <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-5">
-      <header className="space-y-1">
-        <HintTooltip tip="รวมงานประจำวันจากทุกโมดูล กดการ์ดเพื่อเปิดรายละเอียด">
-          <h1 className="text-xl text-foreground font-normal w-fit">เลขาส่วนตัว</h1>
-        </HintTooltip>
-        <p className="text-[13px] text-muted-foreground">
-          รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ
-        </p>
-      </header>
+      <PageHeader
+        title="เลขาส่วนตัว"
+        subtitle="รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ"
+        size="default"
+        titleClassName="w-fit"
+      />
 
       <div className="flex flex-wrap gap-2 items-center">
         {aiButtonAllowed ? (
@@ -336,8 +336,8 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
       <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
         {visibleTasks.length === 0 ? (
-          <li className="col-span-full rounded-xl border border-border bg-card px-4 py-6 text-center text-[13px] text-muted-foreground">
-            ไม่มีงานในตัวกรองนี้
+          <li className="col-span-full list-none">
+            <EmptyState>ไม่มีงานในตัวกรองนี้</EmptyState>
           </li>
         ) : (
           visibleTasks.map((task) => (
@@ -388,14 +388,17 @@ function TaskCard({
 
   const cardClassName = cn(
     'relative flex aspect-square min-h-0 rounded-lg border p-2.5 bb-transition',
-    isDone ? cn(PASTEL_SURFACE, 'bg-[#d4f5d4] border-[#a8e6a8]') : 'bg-card border-border',
+    isDone ? SECRETARY_TASK_COLORS.done : 'bg-card border-border',
     'hover:brightness-[0.98] cursor-pointer',
   );
 
   const actionButton = isDone ? (
     <HintTooltip tip="งานนี้เสร็จแล้ว">
       <span
-        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#a8e6a8] bg-[#eef9ee] text-black/70"
+        className={cn(
+          'inline-flex h-8 w-8 items-center justify-center rounded-md border text-black/70',
+          SECRETARY_TASK_COLORS.doneAction,
+        )}
         aria-hidden
       >
         <CheckCircle2 size={14} />
@@ -427,7 +430,7 @@ function TaskCard({
     <>
       <div className="flex h-full min-h-0 flex-col items-center justify-center gap-1 overflow-y-auto pb-8 [scrollbar-width:thin]">
         {isAiSuggested ? (
-          <span className="rounded-full border border-border bg-muted/40 px-1.5 py-px text-[9px] font-medium text-muted-foreground">
+          <span className="rounded-full border border-border bg-muted/40 px-1.5 py-px text-[9px] font-normal text-muted-foreground">
             AI แนะนำ
           </span>
         ) : null}

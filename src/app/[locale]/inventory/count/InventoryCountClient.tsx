@@ -1382,7 +1382,7 @@ export default function InventoryCountClient({
               <ClipboardList className="w-6 h-6" strokeWidth={1.5} />
             </div>
             <div className="min-w-0 text-left">
-              <h1 className="text-xl font-medium text-foreground">ตรวจนับคลังสินค้า</h1>
+              <h1 className="bb-page-title">ตรวจนับคลังสินค้า</h1>
               <p className="text-sm text-muted-foreground">
                 {pageMode === 'count'
                   ? 'กรอกจำนวนที่นับได้ แล้วกด Enter เพื่อบันทึก'

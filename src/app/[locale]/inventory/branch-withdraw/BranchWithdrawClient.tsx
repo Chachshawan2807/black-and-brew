@@ -1,7 +1,9 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import Link from 'next/link';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
 import { ChevronLeft, Copy, Eye, Loader2, Plus, Save, Search, X } from 'lucide-react';
 import {
   saveBranchWithdrawal,
@@ -599,7 +601,7 @@ export default function BranchWithdrawClient({
 
   const introSection = embedded ? null : (
     <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-      <h1 className="text-xl font-normal md:text-2xl">เบิกของสาขา 2</h1>
+      <PageHeader title="เบิกของสาขา 2" />
     </section>
   );
 
@@ -613,9 +615,9 @@ export default function BranchWithdrawClient({
 
         <section className={embedded ? 'space-y-2' : 'space-y-2 pb-28'}>
           {displayItems.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-foreground/70">
+            <EmptyState>
               ไม่มีรายการสั่งซื้อจากสาขา 2 ที่ต้องเบิกในขณะนี้ กดปุ่มด้านบนเพื่อเพิ่มสินค้าจากคลัง
-            </div>
+            </EmptyState>
           ) : (
             <>
               <div

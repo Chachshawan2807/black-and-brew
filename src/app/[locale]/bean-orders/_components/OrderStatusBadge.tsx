@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import { PASTEL_SURFACE, BEAN_ORDER_BADGE_COLORS } from '@/lib/shift-colors';
 import {
   ORDER_DELIVERY_BADGE_LABEL,
   ORDER_PAYMENT_BADGE_LABEL,
@@ -17,8 +17,8 @@ type OrderListStatusGroupProps = {
   className?: string;
 };
 
-const PAYMENT_BADGE_COLOR = 'bg-[#e8f5e9]';
-const DELIVERY_BADGE_COLOR = 'bg-[#e3f2fd]';
+const PAYMENT_BADGE_COLOR = BEAN_ORDER_BADGE_COLORS.payment;
+const DELIVERY_BADGE_COLOR = BEAN_ORDER_BADGE_COLORS.delivery;
 
 function StatusBadge({ label, colorClass }: { label: string; colorClass: string }) {
   return (

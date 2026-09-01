@@ -16,7 +16,7 @@ export function SidebarToggle({ isOpen, setIsOpen }: SidebarToggleProps) {
       <HintTooltip tip={isOpen === false ? "ขยายเมนูด้านข้าง" : "ย่อเมนูด้านข้าง"} side="right">
         <Button
           onClick={() => setIsOpen?.()}
-          className="rounded-full w-8 h-8 bg-white dark:bg-[#2e2e2c] border border-black/5 dark:border-white/15 bb-shadow-sm hover:bg-black/5 dark:hover:bg-white/10 bb-transition text-foreground"
+          className="rounded-full w-8 h-8 bg-card border border-border bb-shadow-sm hover:bg-muted dark:hover:bg-muted/80 bb-transition text-foreground"
           variant="ghost"
           size="icon"
           aria-label={isOpen === false ? "ขยายเมนูด้านข้าง" : "ย่อเมนูด้านข้าง"}
