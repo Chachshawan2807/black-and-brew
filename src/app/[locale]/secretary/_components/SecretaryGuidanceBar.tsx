@@ -34,7 +34,7 @@ export default function SecretaryGuidanceBar({ text, loading = false }: Secretar
             </p>
           </HintTooltip>
           <p
-            className="w-full whitespace-normal text-pretty text-[13px] leading-relaxed text-foreground [overflow-wrap:anywhere] [word-break:break-word]"
+            className="line-clamp-3 w-full whitespace-normal text-pretty text-[13px] leading-relaxed text-foreground [overflow-wrap:anywhere] [word-break:break-word]"
             title={text}
           >
             {text}

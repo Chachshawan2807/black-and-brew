@@ -3,7 +3,6 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 import { generateSecretaryTaskOrder } from '@/lib/secretary/generate-task-order';
-import { buildSecretaryGuidanceFromOrderedTasks } from '@/lib/secretary/guidance-fallback';
 import { requirePrivilegedSession } from '@/lib/policies/server-gate';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 
@@ -32,12 +31,10 @@ export async function POST(request: Request) {
 
     const { tasks, snapshot } = parsed.data;
     const result = await generateSecretaryTaskOrder({ tasks, snapshot });
-    const guidanceText = buildSecretaryGuidanceFromOrderedTasks(result.orderedTasks, snapshot);
 
     return NextResponse.json({
       success: true,
       orderedTaskIds: result.orderedTaskIds,
-      guidanceText,
       fingerprint: result.fingerprint,
       source: result.source,
     });

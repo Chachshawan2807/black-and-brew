@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'vitest';
-import { buildFallbackSecretaryGuidance } from '@/lib/secretary/guidance-fallback';
+import {
+  buildFallbackSecretaryGuidance,
+  buildSummaryGuidance,
+} from '@/lib/secretary/guidance-fallback';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 
 function task(overrides: Partial<SecretaryTask> = {}): SecretaryTask {
@@ -40,13 +43,20 @@ const snapshot: SecretarySnapshot = {
   headcountToday: 4,
 };
 
-describe('buildFallbackSecretaryGuidance', () => {
+describe('buildSummaryGuidance', () => {
   test('returns empty-board message when no actionable tasks', () => {
-    expect(buildFallbackSecretaryGuidance([], snapshot)).toContain('ไม่มีงานค้าง');
+    expect(buildSummaryGuidance([], snapshot)).toContain('ไม่มีงานค้าง');
   });
 
-  test('prioritizes in-progress work', () => {
-    const text = buildFallbackSecretaryGuidance(
+  test('single task mentions title only', () => {
+    const text = buildSummaryGuidance([task({ id: 'a', title: 'งาน A' })], snapshot);
+    expect(text).toContain('งาน A');
+    expect(text).not.toContain('แล้วต่อด้วย');
+    expect(text.length).toBeLessThan(120);
+  });
+
+  test('prioritizes in-progress work as top title', () => {
+    const text = buildSummaryGuidance(
       [
         task({ id: 'a', title: 'งาน A', status: 'in_progress', active_session_started_at: '2026-08-29T01:00:00.000Z' }),
         task({ id: 'b', title: 'งาน B' }),
@@ -54,21 +64,25 @@ describe('buildFallbackSecretaryGuidance', () => {
       snapshot,
     );
     expect(text).toContain('งาน A');
+    expect(text).not.toContain('แล้วต่อด้วย');
   });
 
-  test('mentions urgent task before normal task', () => {
-    const text = buildFallbackSecretaryGuidance(
+  test('mentions urgent count for multiple tasks', () => {
+    const text = buildSummaryGuidance(
       [
-        task({ id: 'normal', title: 'งานปกติ', priority: 'normal' }),
         task({ id: 'urgent', title: 'งานเร่งด่วน', priority: 'urgent' }),
+        task({ id: 'normal', title: 'งานปกติ', priority: 'normal' }),
       ],
       snapshot,
     );
-    expect(text.indexOf('งานเร่งด่วน')).toBeLessThan(text.indexOf('งานปกติ'));
+    expect(text).toContain('2 งาน');
+    expect(text).toContain('งานเร่งด่วน');
+    expect(text).toContain('เร่งด่วน');
+    expect(text).not.toContain('แล้วต่อด้วย');
   });
 
-  test('lists every actionable task in one sentence', () => {
-    const text = buildFallbackSecretaryGuidance(
+  test('does not list every task title when many tasks', () => {
+    const text = buildSummaryGuidance(
       [
         task({ id: 'a', title: 'เบิกของสาขา 2' }),
         task({ id: 'b', title: 'สั่งซื้อสินค้า (3 รายการ)' }),
@@ -76,32 +90,22 @@ describe('buildFallbackSecretaryGuidance', () => {
       ],
       snapshot,
     );
+    expect(text).toContain('3 งาน');
     expect(text).toContain('เบิกของสาขา 2');
-    expect(text).toContain('สั่งซื้อสินค้า (3 รายการ)');
-    expect(text).toContain('ซ่อมบำรุงเลยกำหนด (2)');
-    expect(text.split(/[.!?]/).filter(Boolean)).toHaveLength(1);
-  });
-
-  test('chains tasks with แล้วต่อด้วย in priority order', () => {
-    const text = buildFallbackSecretaryGuidance(
-      [
-        task({ id: 'a', title: 'งาน A', priority: 'normal', created_at: '2026-08-29T02:00:00.000Z' }),
-        task({ id: 'b', title: 'งาน B', priority: 'urgent', created_at: '2026-08-29T01:00:00.000Z' }),
-      ],
-      snapshot,
-    );
-    expect(text).toMatch(/งาน B.*แล้วต่อด้วย.*งาน A/);
+    expect(text).not.toContain('สั่งซื้อสินค้า');
+    expect(text).not.toContain('ซ่อมบำรุงเลยกำหนด');
+    expect(text.length).toBeLessThan(200);
   });
 
   test('uses branch2 prefix on branch2 days', () => {
-    const text = buildFallbackSecretaryGuidance(
+    const text = buildSummaryGuidance(
       [task({ id: 'a', title: 'เบิกของสาขา 2' })],
       { ...snapshot, isBranch2Day: true },
     );
     expect(text).toContain('วันไปสาขา 2');
   });
 
-  test('omits completed tasks from the ordered sentence', () => {
+  test('omits completed tasks', () => {
     const text = buildFallbackSecretaryGuidance(
       [
         task({ id: 'done', title: 'งานเสร็จแล้ว', status: 'done', completed_at: '2026-08-29T08:00:00.000Z' }),
@@ -114,46 +118,23 @@ describe('buildFallbackSecretaryGuidance', () => {
   });
 
   test('uses female assistant voice with นะคะ or ค่ะ', () => {
-    const withTasks = buildFallbackSecretaryGuidance([task({ id: 'a', title: 'งาน A' })], snapshot);
-    const empty = buildFallbackSecretaryGuidance([], snapshot);
+    const withTasks = buildSummaryGuidance([task({ id: 'a', title: 'งาน A' })], snapshot);
+    const empty = buildSummaryGuidance([], snapshot);
 
     expect(withTasks).toMatch(/(ค่ะ|นะคะ)/);
     expect(empty).toMatch(/(ค่ะ|นะคะ)/);
     expect(withTasks).not.toMatch(/ครับ|ผม/);
     expect(empty).not.toMatch(/ครับ|ผม/);
   });
+});
 
-  test('groups schedule review cards into one guidance step', () => {
+describe('buildFallbackSecretaryGuidance', () => {
+  test('delegates to summary guidance', () => {
     const text = buildFallbackSecretaryGuidance(
-      [
-        task({
-          id: 'under',
-          task_type: 'schedule_understaffed',
-          module: 'schedule',
-          title: 'ตรวจตาราง วันที่คนน้อย',
-          priority: 'urgent',
-        }),
-        task({
-          id: 'leave',
-          task_type: 'schedule_leave_risk',
-          module: 'schedule',
-          title: 'ตรวจตาราง ลาหลายคน',
-          priority: 'urgent',
-          created_at: '2026-08-29T01:00:00.000Z',
-        }),
-        task({
-          id: 'buy',
-          task_type: 'inventory_reorder',
-          module: 'inventory',
-          title: 'สั่งซื้อสินค้า (9 รายการ)',
-          priority: 'normal',
-        }),
-      ],
+      [task({ id: 'a', title: 'งาน A' }), task({ id: 'b', title: 'งาน B' })],
       snapshot,
     );
-
-    expect(text).toContain('"ตรวจตารางงาน" (วันที่คนน้อย และ ลาหลายคน)');
-    expect(text).toContain('แล้วต่อด้วย "สั่งซื้อสินค้า (9 รายการ)"');
-    expect(text).not.toMatch(/ตรวจตาราง วันที่คนน้อย.*แล้วต่อด้วย.*ตรวจตาราง ลาหลายคน/);
+    expect(text).toContain('2 งาน');
+    expect(text).not.toContain('แล้วต่อด้วย');
   });
 });

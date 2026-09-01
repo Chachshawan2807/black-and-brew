@@ -12,6 +12,7 @@ const bodySchema = z.object({
   tasks: z.array(z.custom<SecretaryTask>()),
   snapshot: z.custom<SecretarySnapshot>(),
   fingerprint: z.string().min(8).max(64).optional(),
+  orderedTaskIds: z.array(z.string().min(1)).optional(),
 });
 
 export async function POST(request: Request) {
@@ -29,8 +30,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 });
     }
 
-    const { tasks, snapshot } = parsed.data;
-    const result = await generateSecretaryGuidance({ tasks, snapshot });
+    const { tasks, snapshot, orderedTaskIds } = parsed.data;
+    const result = await generateSecretaryGuidance({ tasks, snapshot, orderedTaskIds });
 
     return NextResponse.json({
       success: true,

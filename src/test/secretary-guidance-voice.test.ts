@@ -12,9 +12,10 @@ describe('secretary guidance voice', () => {
     expect(SECRETARY_BRU_IDENTITY).toContain('ห้าม "ครับ"');
   });
 
-  test('system prompt includes Bru identity', () => {
+  test('system prompt requests short natural summary', () => {
     expect(SECRETARY_GUIDANCE_SYSTEM).toContain('บรู');
-    expect(SECRETARY_GUIDANCE_SYSTEM).toContain('นะคะ');
+    expect(SECRETARY_GUIDANCE_SYSTEM).toContain('200 ตัวอักษร');
+    expect(SECRETARY_GUIDANCE_SYSTEM).not.toContain('แล้วต่อด้วย');
   });
 
   test('finalizeSecretaryGuidanceText enforces female politeness', () => {

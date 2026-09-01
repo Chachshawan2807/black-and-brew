@@ -1,10 +1,12 @@
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
+import { orderedTasksFromIds } from '@/lib/secretary/apply-task-order';
+import { buildFallbackTaskOrder } from '@/lib/secretary/task-order-fallback';
 import {
   buildSecretaryGuidanceFingerprint,
   type SecretaryGuidanceSnapshotSlice,
 } from '@/lib/secretary/guidance-fingerprint';
-import { buildFallbackSecretaryGuidance } from '@/lib/secretary/guidance-fallback';
+import { buildSummaryGuidance } from '@/lib/secretary/guidance-fallback';
 import {
   buildSecretaryGuidancePrompt,
   SECRETARY_GUIDANCE_SYSTEM,
@@ -30,6 +32,24 @@ function writeCachedGuidance(fingerprint: string, text: string) {
   guidanceCache.set(fingerprint, { text, at: Date.now() });
 }
 
+function resolveOrderedTasks(
+  tasks: SecretaryTask[],
+  snapshot: SecretarySnapshot,
+  orderedTaskIds?: string[],
+  nowIso = new Date().toISOString(),
+): SecretaryTask[] {
+  const fallbackOrdered = buildFallbackTaskOrder(tasks, nowIso, {
+    isBranch2Day: snapshot.isBranch2Day,
+  });
+
+  if (!orderedTaskIds || orderedTaskIds.length === 0) {
+    return fallbackOrdered;
+  }
+
+  const ordered = orderedTasksFromIds(fallbackOrdered, orderedTaskIds);
+  return ordered.length > 0 ? ordered : fallbackOrdered;
+}
+
 export type SecretaryGuidanceResult = {
   text: string;
   fingerprint: string;
@@ -39,14 +59,21 @@ export type SecretaryGuidanceResult = {
 export async function generateSecretaryGuidance(input: {
   tasks: SecretaryTask[];
   snapshot: SecretarySnapshot;
+  orderedTaskIds?: string[];
 }): Promise<SecretaryGuidanceResult> {
   const fingerprint = buildSecretaryGuidanceFingerprint(input.tasks, input.snapshot);
+  const ordered = resolveOrderedTasks(
+    input.tasks,
+    input.snapshot,
+    input.orderedTaskIds,
+  );
+  const fallback = buildSummaryGuidance(ordered, input.snapshot);
+
   const cached = readCachedGuidance(fingerprint);
   if (cached) {
     return { text: cached, fingerprint, source: 'cache' };
   }
 
-  const fallback = buildFallbackSecretaryGuidance(input.tasks, input.snapshot);
   const apiKey =
     process.env.GEMINI_API_KEY ??
     process.env.GOOGLE_GENERATIVE_AI_API_KEY ??
@@ -61,11 +88,11 @@ export async function generateSecretaryGuidance(input: {
     const { text } = await generateText({
       model: google('gemini-2.5-flash'),
       system: SECRETARY_GUIDANCE_SYSTEM,
-      prompt: buildSecretaryGuidancePrompt(input.tasks, input.snapshot),
-      maxOutputTokens: 512,
+      prompt: buildSecretaryGuidancePrompt(input.tasks, input.snapshot, undefined, ordered),
+      maxOutputTokens: 128,
     });
 
-    const resolved = resolveSecretaryGuidanceFromAi(text, input.tasks, input.snapshot);
+    const resolved = resolveSecretaryGuidanceFromAi(text, ordered, input.snapshot);
     writeCachedGuidance(fingerprint, resolved);
     return {
       text: resolved,

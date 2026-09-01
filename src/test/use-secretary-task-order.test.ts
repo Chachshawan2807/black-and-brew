@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { useSecretaryTaskOrder } from '@/hooks/use-secretary-task-order';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 
@@ -43,28 +43,24 @@ const snapshot: SecretarySnapshot = {
 
 describe('useSecretaryTaskOrder', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          text: 'สรุปจาก AI เริ่มจากงาน A ก่อนนะคะ',
+          source: 'ai',
+        }),
+      }),
+    );
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  test('returns fallback immediately without fetch when only one actionable task', () => {
-    const { result } = renderHook(() =>
-      useSecretaryTaskOrder({
-        tasks: [task({ id: 'only', title: 'งานเดียว' })],
-        snapshot,
-        aiOrderingEnabled: true,
-      }),
-    );
-
-    expect(result.current.loading).toBe(false);
-    expect(result.current.source).toBe('fallback');
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  test('skips fetch when AI ordering is disabled', () => {
+  test('returns summary guidance immediately without listing every task', () => {
     const { result } = renderHook(() =>
       useSecretaryTaskOrder({
         tasks: [
@@ -76,8 +72,65 @@ describe('useSecretaryTaskOrder', () => {
       }),
     );
 
-    expect(result.current.loading).toBe(false);
-    expect(fetch).not.toHaveBeenCalled();
+    expect(result.current.guidanceText).toContain('2 งาน');
+    expect(result.current.guidanceText).not.toContain('แล้วต่อด้วย');
+  });
+
+  test('skips task-order fetch when AI ordering is disabled but still fetches guidance', async () => {
+    vi.useFakeTimers();
+
+    renderHook(() =>
+      useSecretaryTaskOrder({
+        tasks: [
+          task({ id: 'a', title: 'งาน A' }),
+          task({ id: 'b', title: 'งาน B' }),
+        ],
+        snapshot,
+        aiOrderingEnabled: false,
+      }),
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/secretary/guidance',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      '/api/secretary/task-order',
+      expect.anything(),
+    );
+
+    vi.useRealTimers();
+  });
+
+  test('does not fetch task-order when only one actionable task', async () => {
+    vi.useFakeTimers();
+
+    renderHook(() =>
+      useSecretaryTaskOrder({
+        tasks: [task({ id: 'only', title: 'งานเดียว' })],
+        snapshot,
+        aiOrderingEnabled: true,
+      }),
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/secretary/guidance',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      '/api/secretary/task-order',
+      expect.anything(),
+    );
+
+    vi.useRealTimers();
   });
 
   test('updates guidance when tasks change and AI ordering is off', () => {
@@ -101,7 +154,7 @@ describe('useSecretaryTaskOrder', () => {
       ],
     });
 
-    expect(result.current.guidanceText).not.toContain('งาน A');
+    expect(result.current.guidanceText).not.toContain('2 งาน');
     expect(result.current.guidanceText).toContain('งาน B');
   });
 });

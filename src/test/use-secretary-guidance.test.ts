@@ -42,7 +42,7 @@ const snapshot: SecretarySnapshot = {
 };
 
 describe('useSecretaryGuidance', () => {
-  test('returns ordered guidance synchronously without loading', () => {
+  test('returns summary guidance synchronously without loading', () => {
     const tasks = [
       task({ id: 'a', title: 'งาน A' }),
       task({ id: 'b', title: 'งาน B' }),
@@ -50,8 +50,9 @@ describe('useSecretaryGuidance', () => {
     const { result } = renderHook(() => useSecretaryGuidance({ tasks, snapshot }));
 
     expect(result.current.loading).toBe(false);
+    expect(result.current.text).toContain('2 งาน');
     expect(result.current.text).toContain('งาน A');
-    expect(result.current.text).toContain('งาน B');
+    expect(result.current.text).not.toContain('แล้วต่อด้วย');
   });
 
   test('updates guidance immediately when a task is completed', () => {
@@ -64,7 +65,7 @@ describe('useSecretaryGuidance', () => {
       { initialProps: { tasks: pending } },
     );
 
-    expect(result.current.text).toContain('งาน B');
+    expect(result.current.text).toContain('งาน A');
 
     rerender({
       tasks: [
@@ -73,7 +74,7 @@ describe('useSecretaryGuidance', () => {
       ],
     });
 
-    expect(result.current.text).not.toContain('งาน A');
+    expect(result.current.text).not.toContain('2 งาน');
     expect(result.current.text).toContain('งาน B');
   });
 });

@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { sortTasksByGlobalOrder } from '@/lib/secretary/apply-task-order';
-import { buildFallbackTaskOrder } from '@/lib/secretary/task-order-fallback';
-import { buildSecretaryGuidanceFromOrderedTasks } from '@/lib/secretary/guidance-fallback';
+import { buildSummaryGuidance } from '@/lib/secretary/guidance-fallback';
 import { buildSecretaryGuidanceFingerprint } from '@/lib/secretary/guidance-fingerprint';
+import { buildFallbackTaskOrder } from '@/lib/secretary/task-order-fallback';
 import {
   MIN_TASKS_FOR_AI_ORDER,
   SECRETARY_TASK_ORDER_DEBOUNCE_MS,
@@ -16,13 +16,11 @@ import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 const ORDER_DEBOUNCE_MS = SECRETARY_TASK_ORDER_DEBOUNCE_MS;
 const STABILITY_WINDOW_MS = SECRETARY_TASK_ORDER_STABILITY_MS;
 
-type TaskOrderState = {
-  orderedTaskIds: string[];
-  guidanceText: string;
-  fingerprint: string;
-  source: SecretaryTaskOrderSource;
-  loading: boolean;
-};
+type GuidanceSource = 'ai' | 'fallback' | 'cache';
+
+function idsKey(ids: string[]): string {
+  return ids.join(',');
+}
 
 export function useSecretaryTaskOrder(options: {
   tasks: SecretaryTask[];
@@ -45,79 +43,77 @@ export function useSecretaryTaskOrder(options: {
     () => fallbackOrdered.map((task) => task.id),
     [fallbackOrdered],
   );
+  const fallbackIdsKey = idsKey(fallbackIds);
 
-  const fallbackGuidance = useMemo(
-    () => buildSecretaryGuidanceFromOrderedTasks(fallbackOrdered, snapshot),
-    [fallbackOrdered, snapshot],
+  const [orderedTaskIds, setOrderedTaskIds] = useState<string[]>(fallbackIds);
+  const orderedTaskIdsKey = idsKey(orderedTaskIds);
+  const [orderSource, setOrderSource] = useState<SecretaryTaskOrderSource>('fallback');
+  const [orderLoading, setOrderLoading] = useState(false);
+
+  const orderedForGuidance = useMemo(() => {
+    const byId = new Map(fallbackOrdered.map((task) => [task.id, task]));
+    const ordered = orderedTaskIds
+      .map((id) => byId.get(id))
+      .filter((task): task is SecretaryTask => task !== undefined);
+    return ordered.length > 0 ? ordered : fallbackOrdered;
+  }, [fallbackOrdered, orderedTaskIdsKey]);
+
+  const syncSummaryGuidance = useMemo(
+    () => buildSummaryGuidance(orderedForGuidance, snapshot),
+    [orderedForGuidance, snapshot],
   );
 
-  const [state, setState] = useState<TaskOrderState>(() => ({
-    orderedTaskIds: fallbackIds,
-    guidanceText: fallbackGuidance,
-    fingerprint,
-    source: 'fallback',
-    loading: false,
-  }));
+  const [guidanceText, setGuidanceText] = useState(syncSummaryGuidance);
+  const [guidanceLoading, setGuidanceLoading] = useState(false);
+  const [guidanceSource, setGuidanceSource] = useState<GuidanceSource>('fallback');
 
-  const abortRef = useRef<AbortController | null>(null);
-  const lastFetchedFingerprintRef = useRef<string | null>(null);
+  const orderAbortRef = useRef<AbortController | null>(null);
+  const guidanceAbortRef = useRef<AbortController | null>(null);
+  const lastOrderFingerprintRef = useRef<string | null>(null);
+  const lastGuidanceKeyRef = useRef<string | null>(null);
   const fallbackShownAtRef = useRef<number>(Date.now());
   const stabilityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tasksRef = useRef(tasks);
   const snapshotRef = useRef(snapshot);
+  const orderedTaskIdsRef = useRef(orderedTaskIds);
+  const syncSummaryGuidanceRef = useRef(syncSummaryGuidance);
 
   tasksRef.current = tasks;
   snapshotRef.current = snapshot;
+  orderedTaskIdsRef.current = orderedTaskIds;
+  syncSummaryGuidanceRef.current = syncSummaryGuidance;
 
   useEffect(() => {
-    if (stabilityTimerRef.current) {
-      clearTimeout(stabilityTimerRef.current);
-      stabilityTimerRef.current = null;
-    }
-    abortRef.current?.abort();
+    setOrderedTaskIds((prev) => (idsKey(prev) === fallbackIdsKey ? prev : fallbackIds));
+    setOrderSource('fallback');
+  }, [fallbackIdsKey, fallbackIds]);
 
-    const shouldFetchAi =
+  useEffect(() => {
+    setGuidanceText(syncSummaryGuidance);
+    setGuidanceSource('fallback');
+    lastGuidanceKeyRef.current = null;
+  }, [syncSummaryGuidance]);
+
+  useEffect(() => {
+    const shouldFetchAiOrder =
       aiOrderingEnabled && fallbackOrdered.length >= MIN_TASKS_FOR_AI_ORDER;
 
-    if (!shouldFetchAi) {
-      lastFetchedFingerprintRef.current = null;
-      setState((prev) => {
-        if (
-          prev.fingerprint === fingerprint &&
-          prev.source === 'fallback' &&
-          !prev.loading &&
-          prev.orderedTaskIds.length === fallbackIds.length &&
-          prev.orderedTaskIds.every((id, index) => id === fallbackIds[index])
-        ) {
-          return prev;
-        }
-        return {
-          orderedTaskIds: fallbackIds,
-          guidanceText: fallbackGuidance,
-          fingerprint,
-          source: 'fallback',
-          loading: false,
-        };
-      });
+    orderAbortRef.current?.abort();
+
+    if (!shouldFetchAiOrder) {
+      lastOrderFingerprintRef.current = null;
+      setOrderLoading(false);
       return;
     }
 
-    if (fingerprint === lastFetchedFingerprintRef.current) {
+    if (fingerprint === lastOrderFingerprintRef.current) {
       return;
     }
 
-    fallbackShownAtRef.current = Date.now();
-    setState({
-      orderedTaskIds: fallbackIds,
-      guidanceText: fallbackGuidance,
-      fingerprint,
-      source: 'fallback',
-      loading: true,
-    });
-
+    setOrderLoading(true);
     const debounceTimer = setTimeout(() => {
       const controller = new AbortController();
-      abortRef.current = controller;
+      orderAbortRef.current = controller;
 
       void (async () => {
         try {
@@ -137,9 +133,7 @@ export function useSecretaryTaskOrder(options: {
           }
 
           const json = (await response.json()) as {
-            success?: boolean;
             orderedTaskIds?: string[];
-            guidanceText?: string;
             fingerprint?: string;
             source?: SecretaryTaskOrderSource;
           };
@@ -148,39 +142,30 @@ export function useSecretaryTaskOrder(options: {
 
           const nextFingerprint = json.fingerprint ?? fingerprint;
           const nextIds = json.orderedTaskIds ?? fallbackIds;
-          const nextGuidance = json.guidanceText?.trim() || fallbackGuidance;
           const nextSource = json.source ?? 'fallback';
 
-          const applyAiOrder = () => {
+          const applyOrder = () => {
             if (controller.signal.aborted) return;
-            lastFetchedFingerprintRef.current = nextFingerprint;
-            setState({
-              orderedTaskIds: nextIds,
-              guidanceText: nextGuidance,
-              fingerprint: nextFingerprint,
-              source: nextSource,
-              loading: false,
-            });
+            lastOrderFingerprintRef.current = nextFingerprint;
+            setOrderedTaskIds(nextIds);
+            setOrderSource(nextSource);
+            setOrderLoading(false);
           };
 
           if (nextSource === 'fallback') {
-            applyAiOrder();
+            applyOrder();
             return;
           }
 
           const elapsed = Date.now() - fallbackShownAtRef.current;
           const remaining = Math.max(0, STABILITY_WINDOW_MS - elapsed);
-          stabilityTimerRef.current = setTimeout(applyAiOrder, remaining);
-        } catch (error) {
+          stabilityTimerRef.current = setTimeout(applyOrder, remaining);
+        } catch {
           if (controller.signal.aborted) return;
-          lastFetchedFingerprintRef.current = fingerprint;
-          setState({
-            orderedTaskIds: fallbackIds,
-            guidanceText: fallbackGuidance,
-            fingerprint,
-            source: 'fallback',
-            loading: false,
-          });
+          lastOrderFingerprintRef.current = fingerprint;
+          setOrderedTaskIds(fallbackIds);
+          setOrderSource('fallback');
+          setOrderLoading(false);
         }
       })();
     }, ORDER_DEBOUNCE_MS);
@@ -191,26 +176,82 @@ export function useSecretaryTaskOrder(options: {
         clearTimeout(stabilityTimerRef.current);
         stabilityTimerRef.current = null;
       }
-      abortRef.current?.abort();
+      orderAbortRef.current?.abort();
     };
-  }, [
-    aiOrderingEnabled,
-    fallbackGuidance,
-    fallbackIds,
-    fallbackOrdered.length,
-    fingerprint,
-  ]);
+  }, [aiOrderingEnabled, fallbackIds, fallbackIdsKey, fallbackOrdered.length, fingerprint]);
+
+  useEffect(() => {
+    const guidanceKey = `${fingerprint}:${orderedTaskIdsKey}`;
+    guidanceAbortRef.current?.abort();
+
+    if (guidanceKey === lastGuidanceKeyRef.current) {
+      return;
+    }
+
+    fallbackShownAtRef.current = Date.now();
+    setGuidanceLoading(true);
+
+    const debounceTimer = setTimeout(() => {
+      const controller = new AbortController();
+      guidanceAbortRef.current = controller;
+
+      void (async () => {
+        try {
+          const response = await fetch('/api/secretary/guidance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tasks: tasksRef.current,
+              snapshot: snapshotRef.current,
+              fingerprint,
+              orderedTaskIds: orderedTaskIdsRef.current,
+            }),
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            throw new Error(`guidance ${response.status}`);
+          }
+
+          const json = (await response.json()) as {
+            text?: string;
+            fingerprint?: string;
+            source?: GuidanceSource;
+          };
+
+          if (controller.signal.aborted) return;
+
+          lastGuidanceKeyRef.current = guidanceKey;
+          setGuidanceText(json.text?.trim() || syncSummaryGuidanceRef.current);
+          setGuidanceSource(json.source ?? 'fallback');
+          setGuidanceLoading(false);
+        } catch {
+          if (controller.signal.aborted) return;
+          lastGuidanceKeyRef.current = guidanceKey;
+          setGuidanceText(syncSummaryGuidanceRef.current);
+          setGuidanceSource('fallback');
+          setGuidanceLoading(false);
+        }
+      })();
+    }, ORDER_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(debounceTimer);
+      guidanceAbortRef.current?.abort();
+    };
+  }, [fingerprint, orderedTaskIdsKey]);
 
   const sortTasks = useMemo(
-    () => (items: SecretaryTask[]) => sortTasksByGlobalOrder(items, state.orderedTaskIds),
-    [state.orderedTaskIds],
+    () => (items: SecretaryTask[]) => sortTasksByGlobalOrder(items, orderedTaskIds),
+    [orderedTaskIds],
   );
 
   return {
-    orderedTaskIds: state.orderedTaskIds,
-    guidanceText: state.guidanceText,
-    loading: state.loading,
-    source: state.source,
+    orderedTaskIds,
+    guidanceText,
+    loading: guidanceLoading || orderLoading,
+    source: orderSource,
+    guidanceSource,
     fingerprint,
     sortTasks,
   };
