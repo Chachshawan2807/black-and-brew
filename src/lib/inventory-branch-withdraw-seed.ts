@@ -1,5 +1,19 @@
 import type { InventoryRealtimeItem } from '@/contexts/InventoryRealtimeContext';
 import type { SecretaryReorderItem } from '@/lib/secretary/types';
+import type { InventoryStockFields } from '@/lib/inventory-stock';
+
+/** Maps raw inventory rows into secretary catalog shape for instant branch-withdraw pick lists. */
+export function mapInventoryRowsToCatalogSeed<
+  T extends InventoryStockFields & { id: string; name: string; source?: string | null },
+>(items: T[]): SecretaryReorderItem[] {
+  return items.map((item) => ({
+    ...item,
+    id: String(item.id),
+    name: String(item.name),
+    source: item.source ?? null,
+    computedOrderQty: 0,
+  }));
+}
 
 /** Maps secretary snapshot reorder rows into inventory realtime shape for instant overlay paint. */
 export function mapSecretaryReorderItemsToInventoryRealtime(

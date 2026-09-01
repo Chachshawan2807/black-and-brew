@@ -23,6 +23,14 @@ vi.mock('@/lib/secretary/generate-task-order', () => ({
   generateSecretaryTaskOrder: mocks.generateSecretaryTaskOrder,
 }));
 
+vi.mock('@/lib/secretary/generate-guidance', () => ({
+  generateSecretaryGuidance: vi.fn().mockResolvedValue({
+    text: 'วันนี้มี 1 งานค้าง เริ่มจาก "งาน A" ก่อน ดูลำดับเต็มได้ที่การ์ดด้านล่างนะคะ',
+    fingerprint: 'abc',
+    source: 'fallback',
+  }),
+}));
+
 vi.mock('@/lib/secretary/alerts/secretary-notification-log', () => ({
   recordSecretaryNotificationLog: mocks.recordSecretaryNotificationLog,
   markSecretaryMorningPushDispatched: mocks.markSecretaryMorningPushDispatched,
@@ -43,6 +51,7 @@ const snapshot = {
   operational: {},
   itemsToOrder: [],
   branchWithdrawItems: [],
+  inventoryCatalogItems: [],
   maintenanceTasks: [],
   isBranch2Day: false,
   headcountToday: 4,

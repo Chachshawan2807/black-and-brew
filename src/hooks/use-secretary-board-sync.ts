@@ -14,6 +14,7 @@ import {
   resolveSecretaryBoardSyncPlan,
   SECRETARY_BOARD_SYNC_DEBOUNCE_MS,
   SECRETARY_REALTIME_TABLES,
+  type SecretaryBoardSyncKind,
   type SecretaryRealtimeTable,
 } from '@/lib/secretary/board-sync-scope';
 import type { SecretarySnapshotPatch } from '@/lib/secretary/snapshot-patch';
@@ -24,6 +25,7 @@ export type BoardSyncPayload = {
   tasks: SecretaryTask[];
   snapshot?: SecretarySnapshot;
   snapshotPatch?: SecretarySnapshotPatch;
+  syncKind?: SecretaryBoardSyncKind;
 };
 
 type Listener = (payload: BoardSyncPayload) => void;
@@ -180,6 +182,7 @@ async function runAllBoardSyncs() {
           tasks: result.tasks,
           snapshot: result.snapshot,
           snapshotPatch: result.snapshotPatch,
+          syncKind: plan.kind,
         });
       }),
     );

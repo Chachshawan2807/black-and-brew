@@ -20,24 +20,33 @@ import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './
 type BranchWithdrawOverlayProps = {
   locale: string;
   seedItems: SecretaryReorderItem[];
+  catalogSeedItems: SecretaryReorderItem[];
   onClose: () => void;
 };
 
 export default function BranchWithdrawOverlay({
   locale,
   seedItems,
+  catalogSeedItems,
   onClose,
 }: BranchWithdrawOverlayProps) {
   const { items: realtimeItems, hasLoaded: hasRealtimeInventory } = useInventoryRealtime();
-  const seedInventory = useMemo(
+  const displaySeed = useMemo(
     () => mapSecretaryReorderItemsToInventoryRealtime(seedItems),
     [seedItems],
   );
+  const catalogSeed = useMemo(
+    () => mapSecretaryReorderItemsToInventoryRealtime(catalogSeedItems),
+    [catalogSeedItems],
+  );
+  const hasCatalogSeed = catalogSeedItems.length > 0;
 
-  const [fetchedItems, setFetchedItems] = useState<typeof seedInventory | null>(null);
+  const [fetchedItems, setFetchedItems] = useState<typeof displaySeed | null>(null);
   const [history, setHistory] = useState<BranchWithdrawHistoryRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [catalogLoading, setCatalogLoading] = useState(!hasRealtimeInventory);
+  const [catalogLoading, setCatalogLoading] = useState(
+    () => !hasRealtimeInventory && !hasCatalogSeed,
+  );
 
   const initialItems = useMemo(() => {
     if (hasRealtimeInventory && realtimeItems.length > 0) {
@@ -46,25 +55,30 @@ export default function BranchWithdrawOverlay({
     if (fetchedItems && fetchedItems.length > 0) {
       return fetchedItems;
     }
-    return seedInventory;
-  }, [fetchedItems, hasRealtimeInventory, realtimeItems, seedInventory]);
+    if (catalogSeed.length > 0) {
+      return catalogSeed;
+    }
+    return displaySeed;
+  }, [catalogSeed, displaySeed, fetchedItems, hasRealtimeInventory, realtimeItems]);
 
   useEffect(() => {
     let cancelled = false;
 
     void (async () => {
       const historyPromise = fetchBranchWithdrawalHistory(30);
+      const needsCatalogFetch = !hasRealtimeInventory && !hasCatalogSeed;
 
-      if (!hasRealtimeInventory) {
+      if (needsCatalogFetch) {
         const itemsResult = await fetchBranchWithdrawInventoryItems();
         if (cancelled) return;
         if (!itemsResult.success) {
           setLoadError(itemsResult.error ?? 'ไม่สามารถโหลดรายการคลังได้');
         } else {
-          setFetchedItems(itemsResult.data as typeof seedInventory);
+          setFetchedItems(itemsResult.data as typeof displaySeed);
         }
-        setCatalogLoading(false);
-      } else {
+      }
+
+      if (!cancelled) {
         setCatalogLoading(false);
       }
 
@@ -76,7 +90,7 @@ export default function BranchWithdrawOverlay({
     return () => {
       cancelled = true;
     };
-  }, [hasRealtimeInventory]);
+  }, [hasCatalogSeed, hasRealtimeInventory]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;

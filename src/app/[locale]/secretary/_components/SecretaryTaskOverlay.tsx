@@ -172,6 +172,7 @@ export default function SecretaryTaskOverlay({
       <BranchWithdrawOverlay
         locale={locale}
         seedItems={snapshot.branchWithdrawItems}
+        catalogSeedItems={snapshot.inventoryCatalogItems}
         onClose={onClose}
       />
     );

@@ -52,6 +52,9 @@ export function buildSecretaryGuidancePrompt(
       `ความสำคัญ: ${PRIORITY_LABELS[task.priority]}`,
       `สถานะ: ${STATUS_LABELS[task.status]}`,
     ];
+    if (task.source_kind === 'ai_suggested') {
+      parts.push('แหล่ง: AI แนะนำ');
+    }
     if (session) parts.push(`work session: ${session.label}`);
     if (task.due_at) parts.push(`กำหนด: ${task.due_at}`);
     return parts.join(' | ');

@@ -35,6 +35,7 @@ const snapshot: SecretarySnapshot = {
   operational: {} as SecretarySnapshot['operational'],
   itemsToOrder: [],
   branchWithdrawItems: [],
+  inventoryCatalogItems: [],
   maintenanceTasks: [],
   isBranch2Day: false,
   headcountToday: 4,

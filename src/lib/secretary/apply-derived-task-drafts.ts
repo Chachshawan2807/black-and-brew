@@ -5,6 +5,10 @@ import {
   LEGACY_BEAN_ORDER_TASK_TYPES,
 } from '@/lib/secretary/bean-order-task-consolidation';
 import { resolveDerivedTaskUpsert, resolveStaleDerivedHashes } from '@/lib/secretary/derive-tasks';
+import {
+  isRowEligibleForStaleSkip,
+  skipStaleSecretaryTaskIds,
+} from '@/lib/secretary/retire-stale-tasks';
 import type { DerivedTaskDraft, SecretaryModule } from '@/lib/secretary/types';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 
@@ -55,51 +59,18 @@ async function findExistingDerivedTaskRow(
   return null;
 }
 
-async function autoCompleteDerivedTaskIds(taskIds: string[]): Promise<number> {
-  if (taskIds.length === 0) return 0;
-
-  const now = new Date().toISOString();
-  const { error } = await getSupabaseAdmin()
-    .from('operational_tasks')
-    .update({
-      status: 'done',
-      completed_at: now,
-      updated_at: now,
-      metadata: { autoCompleted: true },
-    })
-    .in('id', taskIds);
-
-  if (error) {
-    console.error('Supabase Error:', error.message, error.details);
-    throw error;
-  }
-
-  return taskIds.length;
-}
-
-async function autoCompleteInactiveBranch2DerivedTasks(dateIso: string): Promise<number> {
-  const { data, error } = await getSupabaseAdmin()
-    .from('operational_tasks')
-    .select('id')
-    .eq('scheduled_date', dateIso)
-    .eq('source_kind', 'derived')
-    .eq('module', 'branch2')
-    .in('status', ['pending', 'in_progress']);
-
-  if (error) {
-    console.error('Supabase Error:', error.message, error.details);
-    throw error;
-  }
-
-  const taskIds = (data ?? []).map((row) => String(row.id));
-  return autoCompleteDerivedTaskIds(taskIds);
+async function skipInactiveDerivedTaskIds(
+  taskIds: string[],
+  reason: 'legacy_bean_orders' | 'branch2_inactive' | 'stale_derived',
+): Promise<number> {
+  return skipStaleSecretaryTaskIds(taskIds, reason);
 }
 
 export async function applyDerivedTaskDrafts(
   drafts: DerivedTaskDraft[],
   dateIso: string,
   options?: { limitModules?: SecretaryModule[]; isBranch2Day?: boolean },
-): Promise<{ success: boolean; upserted?: number; autoCompleted?: number; error?: string }> {
+): Promise<{ success: boolean; upserted?: number; autoSkipped?: number; error?: string }> {
   const activeHashes = new Set(drafts.map((draft) => draft.sourceRefHash));
   const limitModules = options?.limitModules?.length ? new Set(options.limitModules) : null;
 
@@ -157,7 +128,7 @@ export async function applyDerivedTaskDrafts(
 
   let existingQuery = getSupabaseAdmin()
     .from('operational_tasks')
-    .select('id, source_ref_hash, status, module, task_type')
+    .select('id, source_ref_hash, status, module, task_type, metadata')
     .eq('scheduled_date', dateIso)
     .eq('source_kind', 'derived')
     .in('status', ['pending', 'in_progress']);
@@ -181,15 +152,23 @@ export async function applyDerivedTaskDrafts(
       .filter((hash): hash is string => typeof hash === 'string'),
   );
 
-  let autoCompleted = 0;
+  let autoSkipped = 0;
   if (staleIds.length > 0) {
     const staleTaskIds = scopedRows
-      .filter((row) => row.source_ref_hash && staleIds.includes(String(row.source_ref_hash)))
+      .filter(
+        (row) =>
+          row.source_ref_hash &&
+          staleIds.includes(String(row.source_ref_hash)) &&
+          isRowEligibleForStaleSkip({
+            status: String(row.status),
+            metadata: (row.metadata as Record<string, unknown> | null) ?? null,
+          }),
+      )
       .map((row) => String(row.id));
 
     if (staleTaskIds.length > 0) {
       try {
-        autoCompleted += await autoCompleteDerivedTaskIds(staleTaskIds);
+        autoSkipped += await skipInactiveDerivedTaskIds(staleTaskIds, 'stale_derived');
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         return { success: false, error: message };
@@ -211,13 +190,20 @@ export async function applyDerivedTaskDrafts(
         (row) =>
           row.module === 'bean_orders' &&
           isLegacyBeanOrderTaskType(String(row.task_type)) &&
-          !unifiedTaskIds.has(String(row.id)),
+          !unifiedTaskIds.has(String(row.id)) &&
+          isRowEligibleForStaleSkip({
+            status: String(row.status),
+            metadata: (row.metadata as Record<string, unknown> | null) ?? null,
+          }),
       )
       .map((row) => String(row.id));
 
     if (legacyBeanOrderTaskIds.length > 0) {
       try {
-        autoCompleted += await autoCompleteDerivedTaskIds(legacyBeanOrderTaskIds);
+        autoSkipped += await skipInactiveDerivedTaskIds(
+          legacyBeanOrderTaskIds,
+          'legacy_bean_orders',
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         return { success: false, error: message };
@@ -227,12 +213,38 @@ export async function applyDerivedTaskDrafts(
 
   if (options?.isBranch2Day === false) {
     try {
-      autoCompleted += await autoCompleteInactiveBranch2DerivedTasks(dateIso);
+      autoSkipped += await skipInactiveBranch2DerivedTasks(dateIso);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       return { success: false, error: message };
     }
   }
 
-  return { success: true, upserted, autoCompleted };
+  return { success: true, upserted, autoSkipped };
+}
+
+async function skipInactiveBranch2DerivedTasks(dateIso: string): Promise<number> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('operational_tasks')
+    .select('id, status, metadata')
+    .eq('scheduled_date', dateIso)
+    .eq('source_kind', 'derived')
+    .eq('module', 'branch2')
+    .in('status', ['pending', 'in_progress', 'done']);
+
+  if (error) {
+    console.error('Supabase Error:', error.message, error.details);
+    throw error;
+  }
+
+  const taskIds = (data ?? [])
+    .filter((row) =>
+      isRowEligibleForStaleSkip({
+        status: String(row.status),
+        metadata: (row.metadata as Record<string, unknown> | null) ?? null,
+      }),
+    )
+    .map((row) => String(row.id));
+
+  return skipInactiveDerivedTaskIds(taskIds, 'branch2_inactive');
 }

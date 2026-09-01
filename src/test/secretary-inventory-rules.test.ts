@@ -23,6 +23,7 @@ function snapshot(
     },
     itemsToOrder,
     branchWithdrawItems,
+    inventoryCatalogItems: [],
     maintenanceTasks: [],
     isBranch2Day: false,
     headcountToday: 0,
@@ -72,5 +73,21 @@ describe('deriveInventoryTasks', () => {
 
     expect(purchaseTask?.title).toBe('สั่งซื้อสินค้า (1 รายการ)');
     expect(withdrawTask?.title).toBe('เบิกของสาขา 2 (1 รายการ)');
+  });
+
+  test('creates inventory_count_due when exact-count items remain', () => {
+    const tasks = deriveInventoryTasks({
+      ...snapshot([], []),
+      countSession: {
+        totalExactCountItems: 8,
+        countedTodayCount: 3,
+        mismatchCount: 0,
+        isFullyCountedToday: false,
+      },
+    });
+
+    const countTask = tasks.find((task) => task.taskType === 'inventory_count_due');
+    expect(countTask?.title).toBe('ตรวจนับสต็อกวันนี้ (เหลือ 5 รายการ)');
+    expect(countTask?.module).toBe('inventory_count');
   });
 });

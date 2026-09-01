@@ -85,7 +85,10 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     return () => window.removeEventListener('bb-notification-prefs-changed', onPrefsChanged);
   }, []);
 
+  const [lightGuidanceOnly, setLightGuidanceOnly] = useState(false);
+
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
+    setLightGuidanceOnly(payload.syncKind === 'light' || payload.syncKind === 'scoped');
     setBoard((prev) => {
       const nextSnapshot = payload.snapshot
         ? payload.snapshot
@@ -124,6 +127,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     tasks: board.tasks,
     snapshot: board.snapshot,
     aiOrderingEnabled,
+    lightGuidanceOnly,
   });
 
   const visibility = { workDateIso, isBranch2Day: board.snapshot.isBranch2Day };
@@ -281,7 +285,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
         })}
       </div>
 
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
         {visibleTasks.length === 0 ? (
           <li className="col-span-full rounded-xl border border-border bg-card px-4 py-6 text-center text-[13px] text-muted-foreground">
             ไม่มีงานในตัวกรองนี้
@@ -341,7 +345,7 @@ function TaskCard({
   const durationLabel = formatTaskActualDurationLabel(task.metadata);
 
   const cardClassName = cn(
-    'relative flex aspect-square min-h-0 rounded-xl border p-4 bb-transition',
+    'relative flex aspect-square min-h-0 rounded-lg border p-2.5 bb-transition',
     isDone
       ? cn(PASTEL_SURFACE, 'bg-[#d4f5d4] border-[#a8e6a8]')
       : 'bg-card',
@@ -352,10 +356,10 @@ function TaskCard({
   const actionButton = isDone ? (
     <HintTooltip tip="งานนี้เสร็จแล้ว">
       <span
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#a8e6a8] bg-[#eef9ee] text-black/70"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#a8e6a8] bg-[#eef9ee] text-black/70"
         aria-hidden
       >
-        <CheckCircle2 size={16} />
+        <CheckCircle2 size={14} />
       </span>
     </HintTooltip>
   ) : task.status === 'in_progress' ? (
@@ -369,9 +373,9 @@ function TaskCard({
           onStop();
         }}
         disabled={isPending}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted/50 disabled:opacity-60"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-muted/50 disabled:opacity-60"
       >
-        <Square size={14} />
+        <Square size={12} />
       </button>
     </HintTooltip>
   ) : (
@@ -385,9 +389,9 @@ function TaskCard({
           onStart();
         }}
         disabled={isPending}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted/50 disabled:opacity-60"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-muted/50 disabled:opacity-60"
       >
-        <Play size={16} />
+        <Play size={14} />
       </button>
     </HintTooltip>
   );
@@ -398,12 +402,23 @@ function TaskCard({
       ? 'เปิดรายละเอียดงานที่กำลังทำ'
       : 'เปิดรายละเอียดงาน';
 
+  const isAiSuggested = task.source_kind === 'ai_suggested';
+  const aiRationale =
+    isAiSuggested && task.metadata && typeof task.metadata.rationale === 'string'
+      ? task.metadata.rationale
+      : null;
+
   const body = (
     <>
-      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-2 overflow-y-auto pb-11 [scrollbar-width:thin]">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-1 overflow-y-auto pb-8 [scrollbar-width:thin]">
+        {isAiSuggested ? (
+          <span className="rounded-full border border-border bg-muted/40 px-1.5 py-px text-[9px] font-medium text-muted-foreground">
+            AI แนะนำ
+          </span>
+        ) : null}
         <p
           className={cn(
-            'flex w-full flex-col items-center gap-1 text-center text-[clamp(15px,4.2vw,18px)] leading-[1.45] tracking-[0.01em] [line-break:strict] [overflow-wrap:normal] [word-break:keep-all]',
+            'flex w-full flex-col items-center gap-0.5 text-center text-[clamp(12px,3.2vw,14px)] leading-[1.35] tracking-[0.01em] [line-break:strict] [overflow-wrap:normal] [word-break:keep-all]',
             isDone ? 'text-black' : 'text-foreground',
           )}
         >
@@ -414,10 +429,15 @@ function TaskCard({
           ))}
         </p>
         {isDone && durationLabel ? (
-          <p className="text-[11px] leading-snug text-black/75 tabular-nums">{durationLabel}</p>
+          <p className="text-[10px] leading-snug text-black/75 tabular-nums">{durationLabel}</p>
+        ) : null}
+        {!isDone && aiRationale ? (
+          <p className="line-clamp-2 px-0.5 text-center text-[9px] leading-snug text-muted-foreground">
+            {aiRationale}
+          </p>
         ) : null}
       </div>
-      <div className="absolute bottom-3 right-3 z-10">{actionButton}</div>
+      <div className="absolute bottom-2 right-2 z-10">{actionButton}</div>
     </>
   );
 

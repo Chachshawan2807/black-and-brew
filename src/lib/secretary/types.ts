@@ -43,16 +43,33 @@ export type SecretaryReorderItem = InventoryStockFields & {
   computedOrderQty: number;
 };
 
+export type SecretaryCountSessionSlice = {
+  totalExactCountItems: number;
+  countedTodayCount: number;
+  mismatchCount: number;
+  isFullyCountedToday: boolean;
+};
+
+export const EMPTY_SECRETARY_COUNT_SESSION: SecretaryCountSessionSlice = {
+  totalExactCountItems: 0,
+  countedTodayCount: 0,
+  mismatchCount: 0,
+  isFullyCountedToday: true,
+};
+
 export type SecretarySnapshot = {
   dateIso: string;
   locale: string;
   operational: OperationalSnapshot;
   itemsToOrder: SecretaryReorderItem[];
   branchWithdrawItems: SecretaryReorderItem[];
+  /** Full inventory catalog for branch-withdraw overlay pick list (same fetch as snapshot build). */
+  inventoryCatalogItems: SecretaryReorderItem[];
   maintenanceTasks: UpcomingMaintenanceTask[];
   isBranch2Day: boolean;
   branch2Remark?: string;
   headcountToday: number;
+  countSession?: SecretaryCountSessionSlice;
 };
 
 export type DerivedTaskDraft = {

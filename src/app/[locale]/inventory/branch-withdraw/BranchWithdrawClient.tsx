@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Copy, Eye, Loader2, Plus, Save, Search, X } from 'lucide-react';
 import {
@@ -71,9 +71,17 @@ const BRANCH_WITHDRAW_DIALOG_BASE_CLASS =
 const BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-fit max-w-[92vw]`;
 const BRANCH_WITHDRAW_DIALOG_WIDE_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(780px,92vw)]`;
 const BRANCH_WITHDRAW_DIALOG_HISTORY_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[92vw] md:w-[min(560px,92vw)]`;
-const BRANCH_WITHDRAW_DIALOG_NARROW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(640px,92vw)]`;
+const BRANCH_WITHDRAW_DIALOG_NARROW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(480px,92vw)]`;
 const STICKY_ACTION_BUTTON_CLASS =
   'flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 text-sm disabled:cursor-not-allowed disabled:opacity-50';
+const ADD_FROM_CATALOG_BUTTON_CLASS =
+  'inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground/15 bg-background px-3 py-2 text-sm transition-colors hover:border-foreground/25 hover:bg-card disabled:cursor-not-allowed disabled:opacity-50 md:w-auto';
+const DIALOG_CLOSE_BUTTON_CLASS =
+  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted/50';
+const EMBEDDED_ADD_FROM_CATALOG_BAR_CLASS =
+  'shrink-0 border-b border-border bg-background pb-3';
+const STANDALONE_ADD_FROM_CATALOG_BAR_CLASS =
+  'sticky top-0 z-10 border-b border-border bg-background/95 py-3 backdrop-blur';
 const COPY_ICON_BUTTON_CLASS =
   'inline-flex items-center justify-center rounded-xl border border-border bg-background p-2 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -445,6 +453,27 @@ export default function BranchWithdrawClient({
     }
   }, [inventorySource, isReadOnly, refresh, rows, displayItems]);
 
+  const closeAddItemDialog = useCallback(() => {
+    closeDialog(addItemDialogRef.current);
+    setAddItemQuery('');
+  }, []);
+
+  const handleAddItemDialogClick = useCallback((event: MouseEvent<HTMLDialogElement>) => {
+    const dialog = addItemDialogRef.current;
+    if (!dialog) return;
+
+    const rect = dialog.getBoundingClientRect();
+    const clickedInDialogPanel =
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+
+    if (!clickedInDialogPanel) {
+      closeAddItemDialog();
+    }
+  }, [closeAddItemDialog]);
+
   const openAddItemDialog = useCallback(() => {
     setAddItemQuery('');
     openDialog(addItemDialogRef.current);
@@ -452,9 +481,8 @@ export default function BranchWithdrawClient({
 
   const handleAddItem = useCallback((itemId: string) => {
     setExtraItemIds((prev) => (prev.includes(itemId) ? prev : [...prev, itemId]));
-    closeDialog(addItemDialogRef.current);
-    setAddItemQuery('');
-  }, []);
+    closeAddItemDialog();
+  }, [closeAddItemDialog]);
 
   const handleRemoveManualItem = useCallback((itemId: string) => {
     setExtraItemIds((prev) => prev.filter((id) => id !== itemId));
@@ -549,26 +577,34 @@ export default function BranchWithdrawClient({
     </div>
   );
 
-  const mainSections = (
-    <>
-        <section className={embedded ? 'space-y-4' : 'rounded-2xl border border-border bg-card p-4 md:p-6'}>
-          {embedded ? null : (
-            <h1 className="text-xl font-normal md:text-2xl">เบิกของสาขา 2</h1>
-          )}
-          <p className={embedded ? 'text-sm text-foreground/70' : 'mt-1 text-sm text-foreground/70'}>
-            แสดงรายการสั่งซื้อช่องทางสาขา 2 ที่ต้องเติมสต็อก สามารถเพิ่มสินค้าจากคลังได้
-          </p>
-          <button
-            type="button"
-            onClick={openAddItemDialog}
-            disabled={catalogLoading || availablePickItems.length === 0}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-sm transition-colors hover:bg-card disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" />
-            <span>{catalogLoading ? 'กำลังโหลดรายการคลัง...' : 'เพิ่มรายการจากคลังสินค้า'}</span>
-          </button>
-        </section>
+  const addFromCatalogButton = (
+    <button
+      type="button"
+      onClick={openAddItemDialog}
+      disabled={catalogLoading || availablePickItems.length === 0}
+      className={ADD_FROM_CATALOG_BUTTON_CLASS}
+    >
+      <Plus className="h-4 w-4" />
+      <span>เพิ่มรายการจากคลังสินค้า</span>
+    </button>
+  );
 
+  const addFromCatalogBar = (
+    <div
+      className={embedded ? EMBEDDED_ADD_FROM_CATALOG_BAR_CLASS : STANDALONE_ADD_FROM_CATALOG_BAR_CLASS}
+    >
+      {addFromCatalogButton}
+    </div>
+  );
+
+  const introSection = embedded ? null : (
+    <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
+      <h1 className="text-xl font-normal md:text-2xl">เบิกของสาขา 2</h1>
+    </section>
+  );
+
+  const scrollableSections = (
+    <>
         {saveError && (
           <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm">
             {saveError}
@@ -670,11 +706,19 @@ export default function BranchWithdrawClient({
         )}
 
         {embedded ? (
-          <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
-            {mainSections}
-          </div>
+          <>
+            {addFromCatalogBar}
+            <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
+              {introSection}
+              {scrollableSections}
+            </div>
+          </>
         ) : (
-          mainSections
+          <>
+            {introSection}
+            {addFromCatalogBar}
+            {scrollableSections}
+          </>
         )}
 
         {actionBar}
@@ -719,12 +763,27 @@ export default function BranchWithdrawClient({
         </div>
       </dialog>
 
-      <dialog ref={addItemDialogRef} className={BRANCH_WITHDRAW_DIALOG_NARROW_CLASS}>
+      <dialog
+        ref={addItemDialogRef}
+        className={BRANCH_WITHDRAW_DIALOG_NARROW_CLASS}
+        onClick={handleAddItemDialogClick}
+        onCancel={(event) => {
+          event.preventDefault();
+          closeAddItemDialog();
+        }}
+      >
         <div className="p-4 md:p-5">
-          <h3 className="text-base">เพิ่มรายการจากคลังสินค้า</h3>
-          <p className="mt-1 text-xs text-foreground/70">
-            เลือกสินค้าที่ต้องการเบิกแต่ยังไม่อยู่ในรายการสั่งซื้อสาขา 2
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="min-w-0 text-base">เพิ่มรายการจากคลังสินค้า</h3>
+            <button
+              type="button"
+              onClick={closeAddItemDialog}
+              className={DIALOG_CLOSE_BUTTON_CLASS}
+              aria-label="ปิด"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
           <label className="relative mt-3 block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/50" />
             <input
@@ -758,15 +817,6 @@ export default function BranchWithdrawClient({
                 </button>
               ))
             )}
-          </div>
-          <div className="mt-4 flex justify-end">
-            <button
-              type="button"
-              onClick={() => closeDialog(addItemDialogRef.current)}
-              className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
-            >
-              ปิด
-            </button>
           </div>
         </div>
       </dialog>

@@ -26,8 +26,10 @@ export function useSecretaryTaskOrder(options: {
   tasks: SecretaryTask[];
   snapshot: SecretarySnapshot;
   aiOrderingEnabled: boolean;
+  /** Realtime light/scoped sync: use fallback guidance only, skip Gemini. */
+  lightGuidanceOnly?: boolean;
 }) {
-  const { tasks, snapshot, aiOrderingEnabled } = options;
+  const { tasks, snapshot, aiOrderingEnabled, lightGuidanceOnly = false } = options;
 
   const fingerprint = useMemo(
     () => buildSecretaryGuidanceFingerprint(tasks, snapshot),
@@ -189,6 +191,15 @@ export function useSecretaryTaskOrder(options: {
     }
 
     fallbackShownAtRef.current = Date.now();
+
+    if (lightGuidanceOnly) {
+      lastGuidanceKeyRef.current = guidanceKey;
+      setGuidanceText(syncSummaryGuidanceRef.current);
+      setGuidanceSource('fallback');
+      setGuidanceLoading(false);
+      return;
+    }
+
     setGuidanceLoading(true);
 
     const debounceTimer = setTimeout(() => {
@@ -239,7 +250,7 @@ export function useSecretaryTaskOrder(options: {
       clearTimeout(debounceTimer);
       guidanceAbortRef.current?.abort();
     };
-  }, [fingerprint, orderedTaskIdsKey]);
+  }, [fingerprint, lightGuidanceOnly, orderedTaskIdsKey]);
 
   const sortTasks = useMemo(
     () => (items: SecretaryTask[]) => sortTasksByGlobalOrder(items, orderedTaskIds),

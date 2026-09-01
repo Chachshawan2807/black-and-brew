@@ -5,6 +5,7 @@ export type SecretarySnapshotPatch = Partial<
     SecretarySnapshot,
     | 'itemsToOrder'
     | 'branchWithdrawItems'
+    | 'inventoryCatalogItems'
     | 'maintenanceTasks'
     | 'operational'
     | 'isBranch2Day'

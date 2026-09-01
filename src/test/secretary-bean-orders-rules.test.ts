@@ -21,6 +21,7 @@ function snapshot(
     },
     itemsToOrder: [],
     branchWithdrawItems: [],
+    inventoryCatalogItems: [],
     maintenanceTasks: [],
     isBranch2Day: false,
     headcountToday: 0,

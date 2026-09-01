@@ -25,4 +25,13 @@ describe('branch withdraw dialogs', () => {
     expect(branchWithdrawClient).toMatch(/ref=\{saveResultDialogRef\} className=\{BRANCH_WITHDRAW_DIALOG_WIDE_CLASS\}/);
     expect(branchWithdrawClient).toMatch(/ref=\{previewDialogRef\} className=\{BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS\}/);
   });
+
+  test('add-item catalog dialog supports backdrop dismiss and top-right close', () => {
+    expect(branchWithdrawClient).toContain('ref={addItemDialogRef}');
+    expect(branchWithdrawClient).toContain('handleAddItemDialogClick');
+    expect(branchWithdrawClient).toContain('closeAddItemDialog');
+    expect(branchWithdrawClient).toMatch(/onClick=\{handleAddItemDialogClick\}/);
+    expect(branchWithdrawClient).toMatch(/onCancel=\{\(event\) => \{[\s\S]*closeAddItemDialog\(\)/);
+    expect(branchWithdrawClient).toMatch(/aria-label="ปิด"[\s\S]*<X className="h-4 w-4"/);
+  });
 });

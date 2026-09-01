@@ -1,4 +1,5 @@
 import type { DerivedTaskDraft } from '@/lib/secretary/types';
+import { isSystemRetiredMetadata } from '@/lib/secretary/retire-stale-tasks';
 
 export type DerivedTaskExistingRow = {
   id: string;
@@ -69,7 +70,7 @@ export function resolveDerivedTaskUpsert(
       };
     }
 
-    if (existing.metadata?.autoCompleted === true) {
+    if (isSystemRetiredMetadata(existing.metadata)) {
       return {
         action: 'update',
         id: existing.id,

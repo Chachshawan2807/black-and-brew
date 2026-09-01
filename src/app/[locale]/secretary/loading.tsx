@@ -11,11 +11,11 @@ export default function Loading() {
         <div className="h-8 w-28 rounded-full bb-shimmer" />
         <div className="h-8 w-20 rounded-full bb-shimmer" />
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {Array.from({ length: 6 }, (_, index) => (
+      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+        {Array.from({ length: 8 }, (_, index) => (
           <div
             key={index}
-            className="aspect-square rounded-xl border border-border bg-card bb-shimmer"
+            className="aspect-square rounded-lg border border-border bg-card bb-shimmer"
           />
         ))}
       </div>

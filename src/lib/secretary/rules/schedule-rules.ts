@@ -69,5 +69,37 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
     });
   }
 
+  const hasUnderstaffed = understaffed.length > 0;
+  const hasLeaveRisk = leaveEntries.length >= INSIGHT_THRESHOLDS.leaveCoverageMinLeave;
+  const upcomingHolidaySoon =
+    snapshot.operational.upcomingHoliday &&
+    snapshot.operational.upcomingHoliday.daysRemaining <= 3;
+
+  if ((hasUnderstaffed && hasLeaveRisk) || (upcomingHolidaySoon && hasUnderstaffed)) {
+    const sourceRef = {
+      rule: 'schedule_mgmt_review',
+      hasUnderstaffed,
+      hasLeaveRisk,
+      upcomingHoliday: snapshot.operational.upcomingHoliday?.name ?? null,
+    };
+    tasks.push({
+      taskType: 'schedule_mgmt_review',
+      title: 'ทบทวนตารางงานและการจัดคน',
+      description: [
+        hasUnderstaffed ? 'มีวันที่คนน้อย' : null,
+        hasLeaveRisk ? 'มีความเสี่ยงลาหลายคน' : null,
+        upcomingHolidaySoon ? `ใกล้วันหยุด ${snapshot.operational.upcomingHoliday?.name}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      priority: 'urgent',
+      module: 'schedule',
+      sourceRef,
+      sourceRefHash: buildSourceRefHash('schedule_mgmt_review', sourceRef),
+      actionHref: `${localePrefix}/schedule`,
+      estimatedMinutes: 20,
+    });
+  }
+
   return tasks;
 }

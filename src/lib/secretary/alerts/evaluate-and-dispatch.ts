@@ -8,8 +8,8 @@ import {
   buildSecretaryPushPayload,
   shouldSendSecretaryToSubscription,
 } from '@/lib/secretary/alerts/secretary-notification';
+import { generateSecretaryGuidance } from '@/lib/secretary/generate-guidance';
 import { generateSecretaryTaskOrder } from '@/lib/secretary/generate-task-order';
-import { buildSummaryGuidance } from '@/lib/secretary/guidance-fallback';
 import type { SecretaryTask } from '@/lib/secretary/types';
 import {
   deliverWebPushPayload,
@@ -92,8 +92,13 @@ export async function evaluateSecretaryAlerts(opts?: {
   const tasks = tasksResult.success && tasksResult.tasks ? tasksResult.tasks : [];
 
   const order = await generateSecretaryTaskOrder({ tasks, snapshot });
-  const guidanceText = buildSummaryGuidance(order.orderedTasks, snapshot);
-  const guidanceSource = order.source;
+  const guidance = await generateSecretaryGuidance({
+    tasks,
+    snapshot,
+    orderedTaskIds: order.orderedTaskIds,
+  });
+  const guidanceText = guidance.text;
+  const guidanceSource = guidance.source;
 
   const recorded = await recordSecretaryNotificationLog({
     tasks,

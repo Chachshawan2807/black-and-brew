@@ -7,6 +7,7 @@ import {
   computeItemsToOrder,
 } from '@/lib/inventory-stock';
 import { queryHomeMaintenanceTasks } from '@/lib/maintenance/fetch-home-maintenance';
+import { mapInventoryRowsToCatalogSeed } from '@/lib/inventory-branch-withdraw-seed';
 import { resolveSecretaryBranch2Day } from '@/lib/secretary/detect-branch2-day';
 import { SECRETARY_FOCUS_STAFF_NAME } from '@/lib/secretary/manager-day-config';
 import type { SecretarySyncScope } from '@/lib/secretary/board-sync-scope';
@@ -27,11 +28,12 @@ function mapInventoryItems(items: SecretaryReorderItem[]) {
     id: String(item.id),
     name: String(item.name),
   }));
-  return { itemsToOrder, branchWithdrawItems };
+  const inventoryCatalogItems = mapInventoryRowsToCatalogSeed(items);
+  return { itemsToOrder, branchWithdrawItems, inventoryCatalogItems };
 }
 
 export async function fetchInventorySnapshotSlice(): Promise<
-  Pick<SecretarySnapshot, 'itemsToOrder' | 'branchWithdrawItems'>
+  Pick<SecretarySnapshot, 'itemsToOrder' | 'branchWithdrawItems' | 'inventoryCatalogItems'>
 > {
   const admin = getSupabaseAdmin();
   const inventoryResult = await admin.from('inventory_items').select(INVENTORY_ITEM_SELECT);
@@ -141,6 +143,7 @@ export function buildSnapshotForDerive(
     operational,
     itemsToOrder: patch.itemsToOrder ?? [],
     branchWithdrawItems: patch.branchWithdrawItems ?? [],
+    inventoryCatalogItems: patch.inventoryCatalogItems ?? [],
     maintenanceTasks: patch.maintenanceTasks ?? [],
     isBranch2Day: patch.isBranch2Day ?? false,
     branch2Remark: patch.branch2Remark,

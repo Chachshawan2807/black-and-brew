@@ -22,6 +22,7 @@ const snapshot: SecretarySnapshot = {
   },
   itemsToOrder: [],
   branchWithdrawItems: [],
+  inventoryCatalogItems: [],
   maintenanceTasks: [],
   isBranch2Day: true,
   headcountToday: 4,

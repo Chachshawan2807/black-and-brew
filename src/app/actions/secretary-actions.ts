@@ -10,6 +10,12 @@ import {
 } from '@/lib/secretary/adapters/snapshot-slices';
 import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
 import { applyDerivedTaskDrafts } from '@/lib/secretary/apply-derived-task-drafts';
+import { syncAiSuggestedSecretaryTasks } from '@/lib/secretary/generate-ai-suggestions';
+import { maybeDispatchSecretaryUrgentPush } from '@/lib/secretary/alerts/urgent-push-dispatch';
+import {
+  buildAiAcceptanceMetadata,
+  shouldRecordAiAcceptance,
+} from '@/lib/secretary/ai-acceptance';
 import {
   modulesForSyncScopes,
   type SecretaryBoardSyncPlan,
@@ -121,6 +127,54 @@ export async function countPendingSecretaryTasks(dateIso: string): Promise<numbe
   }
 }
 
+async function runAiSuggestedSyncAfterDerived(
+  snapshot: SecretarySnapshot,
+  derivedResult: { success: boolean; upserted?: number; autoSkipped?: number; error?: string },
+  opts?: { aiEnabled?: boolean },
+): Promise<{
+  success: boolean;
+  upserted?: number;
+  autoSkipped?: number;
+  error?: string;
+}> {
+  if (!derivedResult.success) return derivedResult;
+
+  const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
+  const existingTasks =
+    tasksResult.success && tasksResult.tasks ? tasksResult.tasks : [];
+
+  const aiResult = await syncAiSuggestedSecretaryTasks({
+    snapshot,
+    existingTasks,
+    aiEnabled: opts?.aiEnabled,
+  });
+
+  if (!aiResult.success) return aiResult;
+
+  const afterAiTasksResult = await fetchSecretaryTasks(snapshot.dateIso);
+  const tasksForPush =
+    afterAiTasksResult.success && afterAiTasksResult.tasks
+      ? afterAiTasksResult.tasks
+      : existingTasks;
+
+  void maybeDispatchSecretaryUrgentPush({
+    snapshot,
+    tasks: tasksForPush,
+    locale: snapshot.locale,
+  }).catch((error) => {
+    console.error(
+      '[runAiSuggestedSyncAfterDerived] urgent push failed:',
+      error instanceof Error ? error.message : error,
+    );
+  });
+
+  return {
+    success: true,
+    upserted: (derivedResult.upserted ?? 0) + (aiResult.upserted ?? 0),
+    autoSkipped: (derivedResult.autoSkipped ?? 0) + (aiResult.autoSkipped ?? 0),
+  };
+}
+
 export async function syncDerivedSecretaryTasks(opts?: {
   dateIso?: string;
   locale?: string;
@@ -128,10 +182,11 @@ export async function syncDerivedSecretaryTasks(opts?: {
   baseSnapshot?: SecretarySnapshot;
   /** Pre-fetched full snapshot skips a second `fetchSecretarySnapshot` on full sync. */
   snapshot?: SecretarySnapshot;
+  aiEnabled?: boolean;
 }): Promise<{
   success: boolean;
   upserted?: number;
-  autoCompleted?: number;
+  autoSkipped?: number;
   snapshotPatch?: SecretarySnapshotPatch;
   error?: string;
 }> {
@@ -159,8 +214,11 @@ export async function syncDerivedSecretaryTasks(opts?: {
 
     const snapshot = opts?.snapshot ?? (await fetchSecretarySnapshot(opts));
     drafts = deriveTasksFromSnapshot(snapshot);
-    return applyDerivedTaskDrafts(drafts, snapshot.dateIso, {
+    const derivedResult = await applyDerivedTaskDrafts(drafts, snapshot.dateIso, {
       isBranch2Day: snapshot.isBranch2Day,
+    });
+    return runAiSuggestedSyncAfterDerived(snapshot, derivedResult, {
+      aiEnabled: opts?.aiEnabled,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -172,7 +230,7 @@ export async function syncDerivedSecretaryTasks(opts?: {
 export async function refreshDerivedSecretaryTasks(opts?: {
   dateIso?: string;
   locale?: string;
-}): Promise<{ success: boolean; upserted?: number; autoCompleted?: number; error?: string }> {
+}): Promise<{ success: boolean; upserted?: number; autoSkipped?: number; error?: string }> {
   const gate = await gateMutation();
   if (!gate.success) return gate;
 
@@ -439,12 +497,19 @@ export async function stopSecretaryTask(
         completed_at: endedAt,
         active_session_started_at: null,
         updated_at: endedAt,
-        metadata: {
-          ...(task.metadata ?? {}),
-          lastActualMinutes: duration.durationMinutes,
-          lastActualSeconds: duration.durationSeconds,
-          totalActualSeconds,
-        },
+        metadata: shouldRecordAiAcceptance(task)
+          ? {
+              ...buildAiAcceptanceMetadata(task, 'accepted'),
+              lastActualMinutes: duration.durationMinutes,
+              lastActualSeconds: duration.durationSeconds,
+              totalActualSeconds,
+            }
+          : {
+              ...(task.metadata ?? {}),
+              lastActualMinutes: duration.durationMinutes,
+              lastActualSeconds: duration.durationSeconds,
+              totalActualSeconds,
+            },
       })
       .eq('id', taskId)
       .select(TASK_SELECT)
@@ -527,7 +592,10 @@ export async function syncAndFetchSecretaryBoard(opts?: {
     }
 
     const snapshot = await fetchSecretarySnapshot(opts);
-    await syncDerivedSecretaryTasks({ ...opts, snapshot });
+    const syncResult = await syncDerivedSecretaryTasks({ ...opts, snapshot });
+    if (!syncResult.success) {
+      return { success: false, error: syncResult.error };
+    }
     const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
 
     if (!tasksResult.success || !tasksResult.tasks) {
@@ -553,6 +621,17 @@ export async function updateSecretaryTaskStatus(
   if (!gate.success) return gate;
 
   try {
+    const { data: existingRow, error: fetchError } = await getSupabaseAdmin()
+      .from('operational_tasks')
+      .select(TASK_SELECT)
+      .eq('id', taskId)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('Supabase Error:', fetchError.message, fetchError.details);
+      return { success: false, error: fetchError.message };
+    }
+
     const patch: Record<string, unknown> = {
       status,
       updated_at: new Date().toISOString(),
@@ -560,6 +639,12 @@ export async function updateSecretaryTaskStatus(
 
     if (status === 'done' || status === 'skipped') {
       patch.completed_at = new Date().toISOString();
+      if (existingRow && shouldRecordAiAcceptance(mapRow(existingRow as Record<string, unknown>))) {
+        patch.metadata = buildAiAcceptanceMetadata(
+          mapRow(existingRow as Record<string, unknown>),
+          status === 'done' ? 'accepted' : 'rejected',
+        );
+      }
     } else {
       patch.completed_at = null;
       patch.completed_by = null;

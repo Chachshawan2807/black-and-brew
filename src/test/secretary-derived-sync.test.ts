@@ -86,6 +86,20 @@ describe('resolveDerivedTaskUpsert', () => {
     expect(decision.action).toBe('skip');
   });
 
+  test('reopens auto-skipped task on the same day when condition persists', () => {
+    const decision = resolveDerivedTaskUpsert(draft(), '2026-08-29', {
+      id: 'task-1',
+      status: 'skipped',
+      scheduled_date: '2026-08-29',
+      metadata: { autoSkipped: true },
+    });
+    expect(decision.action).toBe('update');
+    if (decision.action === 'update') {
+      expect(decision.patch.status).toBe('pending');
+      expect(decision.patch.completed_at).toBeNull();
+    }
+  });
+
   test('reopens auto-completed task on the same day when condition persists', () => {
     const decision = resolveDerivedTaskUpsert(draft(), '2026-08-29', {
       id: 'task-1',
