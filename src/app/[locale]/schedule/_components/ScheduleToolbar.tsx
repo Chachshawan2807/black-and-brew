@@ -69,7 +69,9 @@ export default function ScheduleToolbar({
               <div className="min-w-0">
                 <h1 className="text-[15px] font-normal text-foreground">ตารางงาน</h1>
                 {weekRangeLabel ? (
-                  <p className="truncate text-[12px] text-muted-foreground">{weekRangeLabel}</p>
+                  <p className="hidden truncate text-[12px] text-muted-foreground md:block">
+                    {weekRangeLabel}
+                  </p>
                 ) : null}
               </div>
             </div>
