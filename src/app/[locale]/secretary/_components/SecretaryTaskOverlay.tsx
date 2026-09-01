@@ -18,6 +18,8 @@ import {
 } from '@/app/actions/secretary-actions';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
+import type { SecretaryBoardDisplayTask } from '@/lib/secretary/consolidate-board-tasks';
+import { resolveSecretaryTaskDetailText } from '@/lib/secretary/resolve-task-detail-text';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import BranchWithdrawOverlay from './BranchWithdrawOverlay';
@@ -125,6 +127,7 @@ export default function SecretaryTaskOverlay({
   if (!task || !overlayKind) return null;
 
   const pending = isPending || parentPending;
+  const taskDetailText = resolveSecretaryTaskDetailText(task);
 
   const handleSaveManualTask = () => {
     const title = editTitle.trim();
@@ -203,11 +206,28 @@ export default function SecretaryTaskOverlay({
   }
 
   if (overlayKind === 'schedule_review') {
+    const sections = (task as SecretaryBoardDisplayTask).consolidatedSections;
+    if (sections && sections.length > 1) {
+      return (
+        <SecretaryListDialog
+          open
+          title={task.title}
+          items={sections.map((section, index) => ({
+            id: String(index),
+            primary: section.title,
+            secondary: section.description ?? undefined,
+          }))}
+          emptyMessage="ไม่มีรายละเอียดเพิ่มเติม"
+          onClose={onClose}
+        />
+      );
+    }
+
     return (
       <ScheduleReviewDialog
         open
         title={task.title}
-        description={task.description ?? ''}
+        description={taskDetailText ?? task.description ?? ''}
         actionHref={task.action_href ?? `/${locale}/schedule`}
         onClose={onClose}
       />
@@ -236,8 +256,8 @@ export default function SecretaryTaskOverlay({
       open
       title={task.title}
       items={
-        task.description
-          ? [{ id: 'description', primary: task.description }]
+        taskDetailText
+          ? [{ id: 'description', primary: taskDetailText }]
           : []
       }
       emptyMessage="ไม่มีรายละเอียดเพิ่มเติม"

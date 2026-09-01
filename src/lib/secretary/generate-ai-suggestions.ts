@@ -109,7 +109,9 @@ export async function syncAiSuggestedSecretaryTasks(opts: {
   });
 
   if (generated.drafts.length === 0) {
-    const cleanup = await applyAiSuggestedDrafts([], opts.snapshot.dateIso);
+    const cleanup = await applyAiSuggestedDrafts([], opts.snapshot.dateIso, {
+      boardTasks: existingTasks,
+    });
     return {
       success: cleanup.success,
       upserted: 0,
@@ -119,7 +121,9 @@ export async function syncAiSuggestedSecretaryTasks(opts: {
     };
   }
 
-  const applied = await applyAiSuggestedDrafts(generated.drafts, opts.snapshot.dateIso);
+  const applied = await applyAiSuggestedDrafts(generated.drafts, opts.snapshot.dateIso, {
+    boardTasks: existingTasks,
+  });
   return {
     ...applied,
     source: generated.source,

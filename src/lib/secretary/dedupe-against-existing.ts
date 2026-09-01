@@ -1,8 +1,15 @@
 import { MODULE_DERIVED_TASK_TYPES } from '@/lib/secretary/ai-suggestion-types';
 import type { AiSuggestionRawItem } from '@/lib/secretary/ai-suggestion-types';
-import type { SecretaryTask } from '@/lib/secretary/types';
+import { resolveWorkSession } from '@/lib/secretary/task-work-sessions';
+import type { SecretaryModule, SecretaryTask } from '@/lib/secretary/types';
 
 const MARKDOWN_PATTERN = /```|#{1,6}\s|(^|\n)\s*[-*•]\s/;
+
+const SCHEDULE_REVIEW_TASK_TYPES = new Set([
+  'schedule_understaffed',
+  'schedule_leave_risk',
+  'schedule_mgmt_review',
+]);
 
 export function normalizeSuggestionTitle(title: string): string {
   return title
@@ -18,7 +25,7 @@ function isActionableExistingTask(task: SecretaryTask, nowIso: string): boolean 
 }
 
 function moduleCoveredByDerivedTask(
-  suggestion: AiSuggestionRawItem,
+  suggestion: Pick<AiSuggestionRawItem, 'module'>,
   task: SecretaryTask,
 ): boolean {
   if (task.source_kind !== 'derived') return false;
@@ -27,6 +34,26 @@ function moduleCoveredByDerivedTask(
   if (!coveredTypes) return false;
 
   return coveredTypes.includes(task.task_type);
+}
+
+function isScheduleDomainSuggestion(suggestion: Pick<AiSuggestionRawItem, 'module'>): boolean {
+  return suggestion.module === 'schedule' || suggestion.module === 'dashboard';
+}
+
+function isScheduleDomainTask(task: SecretaryTask): boolean {
+  if (resolveWorkSession(task)) return true;
+  if (task.module === 'schedule') return true;
+  if (task.module === 'dashboard' && SCHEDULE_REVIEW_TASK_TYPES.has(task.task_type)) {
+    return true;
+  }
+  return false;
+}
+
+function isSameDomainDerivedTask(
+  suggestion: Pick<AiSuggestionRawItem, 'module'>,
+  task: SecretaryTask,
+): boolean {
+  return task.source_kind === 'derived' && task.module === suggestion.module;
 }
 
 export function isDuplicateSuggestion(
@@ -43,7 +70,15 @@ export function isDuplicateSuggestion(
       return true;
     }
 
+    if (isSameDomainDerivedTask(suggestion, task)) {
+      return true;
+    }
+
     if (moduleCoveredByDerivedTask(suggestion, task)) {
+      return true;
+    }
+
+    if (isScheduleDomainSuggestion(suggestion) && isScheduleDomainTask(task)) {
       return true;
     }
 
@@ -84,6 +119,45 @@ export function filterNonDuplicateSuggestions(
   return accepted;
 }
 
+function aiTaskToSuggestion(task: SecretaryTask): AiSuggestionRawItem | null {
+  if (task.source_kind !== 'ai_suggested') return null;
+
+  const suggestionKey =
+    task.source_ref && typeof task.source_ref.suggestionKey === 'string'
+      ? task.source_ref.suggestionKey
+      : task.id;
+
+  const rationale =
+    task.metadata && typeof task.metadata.rationale === 'string' ? task.metadata.rationale : '';
+
+  return {
+    suggestionKey,
+    title: task.title,
+    description: task.description ?? undefined,
+    module: task.module,
+    priority: task.priority,
+    rationale,
+  };
+}
+
+/** Pending AI rows that repeat an existing derived/manual card should be retired. */
+export function findRedundantAiSuggestedTaskIds(
+  tasks: SecretaryTask[],
+  nowIso = new Date().toISOString(),
+): string[] {
+  const actionable = tasks.filter((task) => isActionableExistingTask(task, nowIso));
+  const nonAi = actionable.filter((task) => task.source_kind !== 'ai_suggested');
+
+  return actionable
+    .filter((task) => task.source_kind === 'ai_suggested')
+    .filter((task) => {
+      const suggestion = aiTaskToSuggestion(task);
+      if (!suggestion) return false;
+      return isDuplicateSuggestion(suggestion, nonAi, nowIso);
+    })
+    .map((task) => task.id);
+}
+
 function toPseudoTask(suggestion: AiSuggestionRawItem): SecretaryTask {
   return {
     id: suggestion.suggestionKey,
@@ -92,7 +166,7 @@ function toPseudoTask(suggestion: AiSuggestionRawItem): SecretaryTask {
     description: null,
     priority: suggestion.priority,
     status: 'pending',
-    module: suggestion.module,
+    module: suggestion.module as SecretaryModule,
     due_at: null,
     scheduled_date: '1970-01-01',
     assignee_profile_id: null,

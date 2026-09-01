@@ -24,6 +24,7 @@ export function resolveSecretaryTaskOverlayKind(task: SecretaryTask): SecretaryT
       return 'maintenance_list';
     case 'schedule_understaffed':
     case 'schedule_leave_risk':
+    case 'schedule_mgmt_review':
       return 'schedule_review';
     default:
       return 'task_info';

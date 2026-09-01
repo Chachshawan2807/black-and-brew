@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   filterNonDuplicateSuggestions,
+  findRedundantAiSuggestedTaskIds,
   isDuplicateSuggestion,
   normalizeSuggestionTitle,
 } from '@/lib/secretary/dedupe-against-existing';
@@ -80,5 +81,63 @@ describe('secretary ai suggestion dedupe', () => {
 
     expect(filtered).toHaveLength(2);
     expect(filtered.map((item) => item.suggestionKey)).toEqual(['a', 'b']);
+  });
+
+  test('isDuplicateSuggestion when inventory_accuracy_review derived task exists', () => {
+    expect(
+      isDuplicateSuggestion(
+        suggestion({
+          module: 'inventory_accuracy',
+          title: 'ตรวจความแม่นยำสต็อกอีกครั้ง',
+        }),
+        [
+          task({
+            task_type: 'inventory_accuracy_review',
+            module: 'inventory_accuracy',
+            title: 'ตรวจความแม่นยำสต็อก',
+          }),
+        ],
+      ),
+    ).toBe(true);
+  });
+
+  test('isDuplicateSuggestion when schedule review session card already exists', () => {
+    expect(
+      isDuplicateSuggestion(
+        suggestion({
+          module: 'schedule',
+          title: 'ตรวจตารางงานวันนี้',
+        }),
+        [
+          task({
+            task_type: 'schedule_understaffed',
+            module: 'schedule',
+            title: 'ตรวจตารางงาน',
+          }),
+        ],
+      ),
+    ).toBe(true);
+  });
+
+  test('findRedundantAiSuggestedTaskIds returns AI rows that repeat derived cards', () => {
+    const redundantIds = findRedundantAiSuggestedTaskIds([
+      task({
+        id: 'derived-1',
+        task_type: 'inventory_accuracy_review',
+        module: 'inventory_accuracy',
+        source_kind: 'derived',
+      }),
+      task({
+        id: 'ai-1',
+        task_type: 'custom',
+        module: 'inventory_accuracy',
+        source_kind: 'ai_suggested',
+        title: 'ตรวจสต็อกซ้ำ',
+        source_ref: { suggestionKey: 'dup-check', rationale: 'ซ้ำกับงาน derived' },
+        metadata: { aiSuggested: true, rationale: 'ซ้ำกับงาน derived' },
+      }),
+    ]);
+
+    expect(redundantIds).toEqual(['ai-1']);
   });
 });

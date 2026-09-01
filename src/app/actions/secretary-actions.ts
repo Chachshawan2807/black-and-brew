@@ -23,7 +23,6 @@ import {
 } from '@/lib/secretary/board-sync-scope';
 import { nextScheduledDateIso } from '@/lib/secretary/defer-tasks';
 import { deriveTasksFromSnapshot, deriveTasksFromSnapshotByScopes } from '@/lib/secretary/module-registry';
-import { computeSessionTiming } from '@/lib/secretary/task-duration';
 import type {
   SecretarySnapshot,
   SecretaryTask,
@@ -375,154 +374,67 @@ export async function deferSecretaryTasksToNextDay(
   }
 }
 
-export async function startSecretaryTask(
-  taskId: string,
-): Promise<{ success: boolean; task?: SecretaryTask; error?: string }> {
+export async function completeSecretaryTasks(
+  taskIds: string[],
+): Promise<{ success: boolean; tasks?: SecretaryTask[]; error?: string }> {
   const gate = await gateMutation();
   if (!gate.success) return gate;
 
+  const uniqueIds = [...new Set(taskIds.filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    return { success: true, tasks: [] };
+  }
+
   const now = new Date().toISOString();
+  const completedTasks: SecretaryTask[] = [];
 
   try {
-    const { data: existing, error: fetchError } = await getSupabaseAdmin()
-      .from('operational_tasks')
-      .select('id, scheduled_date, status')
-      .eq('id', taskId)
-      .maybeSingle();
-
-    if (fetchError || !existing) {
-      console.error('Supabase Error:', fetchError?.message, fetchError?.details);
-      return { success: false, error: fetchError?.message ?? 'Task not found' };
-    }
-
-    if (existing.status === 'done' || existing.status === 'skipped') {
-      return { success: false, error: 'Task already completed' };
-    }
-
-    if (existing.status === 'in_progress') {
-      const { data: current, error: currentError } = await getSupabaseAdmin()
+    for (const taskId of uniqueIds) {
+      const { data: taskRow, error: fetchError } = await getSupabaseAdmin()
         .from('operational_tasks')
         .select(TASK_SELECT)
         .eq('id', taskId)
-        .single();
+        .maybeSingle();
 
-      if (currentError || !current) {
-        console.error('Supabase Error:', currentError?.message, currentError?.details);
-        return { success: false, error: currentError?.message ?? 'Task not found' };
+      if (fetchError) {
+        console.error('Supabase Error:', fetchError.message, fetchError.details);
+        return { success: false, error: fetchError.message };
       }
 
-      return { success: true, task: mapRow(current as Record<string, unknown>) };
-    }
+      if (!taskRow) continue;
 
-    const { data, error } = await getSupabaseAdmin()
-      .from('operational_tasks')
-      .update({
-        status: 'in_progress',
-        active_session_started_at: now,
-        updated_at: now,
-      })
-      .eq('id', taskId)
-      .select(TASK_SELECT)
-      .single();
+      const task = mapRow(taskRow as Record<string, unknown>);
+      if (task.status === 'done' || task.status === 'skipped') {
+        completedTasks.push(task);
+        continue;
+      }
 
-    if (error) {
-      console.error('Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
-    }
+      const { data, error } = await getSupabaseAdmin()
+        .from('operational_tasks')
+        .update({
+          status: 'done',
+          completed_at: now,
+          active_session_started_at: null,
+          updated_at: now,
+          metadata: shouldRecordAiAcceptance(task)
+            ? buildAiAcceptanceMetadata(task, 'accepted')
+            : task.metadata,
+        })
+        .eq('id', taskId)
+        .select(TASK_SELECT)
+        .single();
 
-    revalidatePath('/th/secretary');
-    revalidatePath('/en/secretary');
-    return { success: true, task: mapRow(data as Record<string, unknown>) };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: message };
-  }
-}
+      if (error) {
+        console.error('Supabase Error:', error.message, error.details);
+        return { success: false, error: error.message };
+      }
 
-export async function stopSecretaryTask(
-  taskId: string,
-): Promise<{ success: boolean; task?: SecretaryTask; error?: string }> {
-  const gate = await gateMutation();
-  if (!gate.success) return gate;
-
-  const endedAt = new Date().toISOString();
-
-  try {
-    const { data: taskRow, error: fetchError } = await getSupabaseAdmin()
-      .from('operational_tasks')
-      .select(TASK_SELECT)
-      .eq('id', taskId)
-      .maybeSingle();
-
-    if (fetchError || !taskRow) {
-      console.error('Supabase Error:', fetchError?.message, fetchError?.details);
-      return { success: false, error: fetchError?.message ?? 'Task not found' };
-    }
-
-    const task = mapRow(taskRow as Record<string, unknown>);
-    if (task.status !== 'in_progress' || !task.active_session_started_at) {
-      return { success: false, error: 'Task is not in progress' };
-    }
-
-    const duration = computeSessionTiming(task.active_session_started_at, endedAt);
-
-    const { data: priorSessions } = await getSupabaseAdmin()
-      .from('operational_task_sessions')
-      .select('duration_seconds')
-      .eq('task_id', taskId);
-
-    const priorSeconds = (priorSessions ?? []).reduce(
-      (sum, row) => sum + Number(row.duration_seconds ?? 0),
-      0,
-    );
-    const totalActualSeconds = priorSeconds + duration.durationSeconds;
-
-    const { error: sessionError } = await getSupabaseAdmin().from('operational_task_sessions').insert({
-      task_id: taskId,
-      task_type: task.task_type,
-      started_at: task.active_session_started_at,
-      ended_at: endedAt,
-      duration_seconds: duration.durationSeconds,
-    });
-
-    if (sessionError) {
-      console.error('Supabase Error:', sessionError.message, sessionError.details);
-      return { success: false, error: sessionError.message };
-    }
-
-    const { data, error } = await getSupabaseAdmin()
-      .from('operational_tasks')
-      .update({
-        status: 'done',
-        completed_at: endedAt,
-        active_session_started_at: null,
-        updated_at: endedAt,
-        metadata: shouldRecordAiAcceptance(task)
-          ? {
-              ...buildAiAcceptanceMetadata(task, 'accepted'),
-              lastActualMinutes: duration.durationMinutes,
-              lastActualSeconds: duration.durationSeconds,
-              totalActualSeconds,
-            }
-          : {
-              ...(task.metadata ?? {}),
-              lastActualMinutes: duration.durationMinutes,
-              lastActualSeconds: duration.durationSeconds,
-              totalActualSeconds,
-            },
-      })
-      .eq('id', taskId)
-      .select(TASK_SELECT)
-      .single();
-
-    if (error) {
-      console.error('Supabase Error:', error.message, error.details);
-      return { success: false, error: error.message };
+      completedTasks.push(mapRow(data as Record<string, unknown>));
     }
 
     revalidatePath('/th/secretary');
     revalidatePath('/en/secretary');
-    return { success: true, task: mapRow(data as Record<string, unknown>) };
+    return { success: true, tasks: completedTasks };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return { success: false, error: message };

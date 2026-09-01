@@ -2,7 +2,6 @@ import type { SecretaryModule } from '@/lib/secretary/types';
 
 export const SECRETARY_REALTIME_TABLES = [
   'operational_tasks',
-  'operational_task_sessions',
   'shifts',
   'inventory_items',
   'inventory_branch_withdrawals',
@@ -32,7 +31,6 @@ export const SECRETARY_BOARD_SYNC_DEBOUNCE_MS = 3_000;
 
 const TABLE_TO_SCOPES: Record<SecretaryRealtimeTable, SecretarySyncScope[]> = {
   operational_tasks: ['tasks'],
-  operational_task_sessions: ['tasks'],
   shifts: ['schedule'],
   inventory_items: ['inventory'],
   inventory_branch_withdrawals: ['inventory'],

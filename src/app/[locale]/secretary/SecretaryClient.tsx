@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { CheckCircle2, Play, Plus, Square } from 'lucide-react';
+import { CheckCircle2, Plus } from 'lucide-react';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
@@ -9,17 +9,17 @@ import SecretaryGuidanceBar from './_components/SecretaryGuidanceBar';
 import SecretaryManualTaskDialog from './_components/SecretaryManualTaskDialog';
 import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay';
 import {
+  completeSecretaryTasks,
   createManualSecretaryTask,
-  startSecretaryTask,
-  stopSecretaryTask,
 } from '@/app/actions/secretary-actions';
 import { splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
-import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
-import { formatTaskActualDurationLabel } from '@/lib/secretary/task-duration';
 import {
-  countSecretaryBoardTasksByModule,
-  filterVisibleSecretaryBoardTasks,
-} from '@/lib/secretary/visible-board-tasks';
+  countConsolidatedSecretaryBoardTasks,
+  countConsolidatedSecretaryBoardTasksByModule,
+  filterConsolidatedSecretaryBoardTasks,
+  type SecretaryBoardDisplayTask,
+} from '@/lib/secretary/consolidate-board-tasks';
+import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
 import { useSecretaryBoardSync, type BoardSyncPayload } from '@/hooks/use-secretary-board-sync';
 import { useSecretaryTaskOrder } from '@/hooks/use-secretary-task-order';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
@@ -133,8 +133,12 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
   const visibility = { workDateIso, isBranch2Day: board.snapshot.isBranch2Day };
 
   const visibleTasks = useMemo(() => {
-    const filtered = filterVisibleSecretaryBoardTasks(board.tasks, moduleFilter, visibility);
-    return taskOrder.sortTasks(filtered);
+    const consolidated = filterConsolidatedSecretaryBoardTasks(
+      board.tasks,
+      moduleFilter,
+      visibility,
+    );
+    return taskOrder.sortTasks(consolidated);
   }, [board.tasks, moduleFilter, workDateIso, board.snapshot.isBranch2Day, taskOrder.sortTasks]);
 
   const hasPurchaseOrderTask = useMemo(
@@ -159,28 +163,19 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
   }, [hasPurchaseOrderTask]);
 
   const visibleTaskCount = useMemo(
-    () => filterVisibleSecretaryBoardTasks(board.tasks, 'all', visibility).length,
+    () => countConsolidatedSecretaryBoardTasks(board.tasks, 'all', visibility),
     [board.tasks, workDateIso, board.snapshot.isBranch2Day],
   );
 
-  const handleStart = (taskId: string) => {
+  const handleComplete = (taskIds: string[]) => {
     startTransition(async () => {
-      const result = await startSecretaryTask(taskId);
-      if (!result.success || !result.task) return;
-      setBoard((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map((task) => (task.id === taskId ? result.task! : task)),
-      }));
-    });
-  };
+      const result = await completeSecretaryTasks(taskIds);
+      if (!result.success || !result.tasks) return;
 
-  const handleStop = (taskId: string) => {
-    startTransition(async () => {
-      const result = await stopSecretaryTask(taskId);
-      if (!result.success || !result.task) return;
+      const completedById = new Map(result.tasks.map((task) => [task.id, task]));
       setBoard((prev) => ({
         ...prev,
-        tasks: prev.tasks.map((task) => (task.id === taskId ? result.task! : task)),
+        tasks: prev.tasks.map((task) => completedById.get(task.id) ?? task),
       }));
     });
   };
@@ -271,7 +266,9 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
           tip="แสดงงานทุกโมดูล รวมงานที่เสร็จแล้ว"
         />
         {(Object.keys(MODULE_LABELS) as SecretaryTask['module'][]).map((module) => {
-          const count = countSecretaryBoardTasksByModule(board.tasks, module, { workDateIso });
+          const count = countConsolidatedSecretaryBoardTasksByModule(board.tasks, module, {
+            workDateIso,
+          });
           if (count === 0) return null;
           return (
             <FilterChip
@@ -295,15 +292,13 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
             <TaskCard
               key={task.id}
               task={task}
-              isActive={task.status === 'in_progress' && Boolean(task.active_session_started_at)}
               isDone={task.status === 'done'}
               isPending={isPending}
               onPreloadOpen={
                 task.task_type === 'inventory_reorder' ? preloadPurchaseOrdersModal : undefined
               }
               onOpen={() => setOverlayTask(task)}
-              onStart={() => handleStart(task.id)}
-              onStop={() => handleStop(task.id)}
+              onComplete={() => handleComplete(task.consolidatedTaskIds)}
             />
           ))
         )}
@@ -324,32 +319,24 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
 function TaskCard({
   task,
-  isActive,
   isDone,
   isPending,
   onPreloadOpen,
   onOpen,
-  onStart,
-  onStop,
+  onComplete,
 }: {
-  task: SecretaryTask;
-  isActive: boolean;
+  task: SecretaryBoardDisplayTask;
   isDone: boolean;
   isPending: boolean;
   onPreloadOpen?: () => void;
   onOpen: () => void;
-  onStart: () => void;
-  onStop: () => void;
+  onComplete: () => void;
 }) {
   const titleLines = splitSecretaryCardTitle(task.title);
-  const durationLabel = formatTaskActualDurationLabel(task.metadata);
 
   const cardClassName = cn(
     'relative flex aspect-square min-h-0 rounded-lg border p-2.5 bb-transition',
-    isDone
-      ? cn(PASTEL_SURFACE, 'bg-[#d4f5d4] border-[#a8e6a8]')
-      : 'bg-card',
-    !isDone && isActive ? 'border-foreground/50 ring-1 ring-foreground/20' : !isDone ? 'border-border' : '',
+    isDone ? cn(PASTEL_SURFACE, 'bg-[#d4f5d4] border-[#a8e6a8]') : 'bg-card border-border',
     'hover:brightness-[0.98] cursor-pointer',
   );
 
@@ -362,51 +349,27 @@ function TaskCard({
         <CheckCircle2 size={14} />
       </span>
     </HintTooltip>
-  ) : task.status === 'in_progress' ? (
-    <HintTooltip tip="บันทึกเวลาและทำเครื่องหมายว่าเสร็จงาน">
-      <button
-        type="button"
-        aria-label={`เสร็จงาน ${task.title}`}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onStop();
-        }}
-        disabled={isPending}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-muted/50 disabled:opacity-60"
-      >
-        <Square size={12} />
-      </button>
-    </HintTooltip>
   ) : (
-    <HintTooltip tip="เริ่มจับเวลาทำงานนี้">
+    <HintTooltip tip="ยืนยันเสร็จสิ้น">
       <button
         type="button"
-        aria-label={`เริ่มงาน ${task.title}`}
+        aria-label={`ยืนยันเสร็จสิ้น ${task.title}`}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          onStart();
+          onComplete();
         }}
         disabled={isPending}
         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-muted/50 disabled:opacity-60"
       >
-        <Play size={14} />
+        <CheckCircle2 size={14} />
       </button>
     </HintTooltip>
   );
 
-  const openTip = isDone
-    ? 'เปิดรายละเอียดงานที่เสร็จแล้ว'
-    : isActive
-      ? 'เปิดรายละเอียดงานที่กำลังทำ'
-      : 'เปิดรายละเอียดงาน';
+  const openTip = isDone ? 'เปิดรายละเอียดงานที่เสร็จแล้ว' : 'เปิดรายละเอียดงาน';
 
   const isAiSuggested = task.source_kind === 'ai_suggested';
-  const aiRationale =
-    isAiSuggested && task.metadata && typeof task.metadata.rationale === 'string'
-      ? task.metadata.rationale
-      : null;
 
   const body = (
     <>
@@ -428,14 +391,6 @@ function TaskCard({
             </span>
           ))}
         </p>
-        {isDone && durationLabel ? (
-          <p className="text-[10px] leading-snug text-black/75 tabular-nums">{durationLabel}</p>
-        ) : null}
-        {!isDone && aiRationale ? (
-          <p className="line-clamp-2 px-0.5 text-center text-[9px] leading-snug text-muted-foreground">
-            {aiRationale}
-          </p>
-        ) : null}
       </div>
       <div className="absolute bottom-2 right-2 z-10">{actionButton}</div>
     </>

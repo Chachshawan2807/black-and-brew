@@ -1,3 +1,4 @@
+import { findRedundantAiSuggestedTaskIds } from '@/lib/secretary/dedupe-against-existing';
 import { resolveDerivedTaskUpsert, resolveStaleDerivedHashes } from '@/lib/secretary/derive-tasks';
 import type { AiSuggestedTaskDraft } from '@/lib/secretary/ai-suggestion-types';
 import {
@@ -5,6 +6,7 @@ import {
   skipStaleSecretaryTaskIds,
 } from '@/lib/secretary/retire-stale-tasks';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import type { SecretaryTask } from '@/lib/secretary/types';
 
 const AI_SUGGESTED_LOOKUP_SELECT = 'id, status, scheduled_date, metadata, task_type';
 
@@ -57,6 +59,7 @@ function draftToInsertRow(draft: AiSuggestedTaskDraft, dateIso: string): Record<
 export async function applyAiSuggestedDrafts(
   drafts: AiSuggestedTaskDraft[],
   dateIso: string,
+  options?: { boardTasks?: SecretaryTask[] },
 ): Promise<{ success: boolean; upserted?: number; autoSkipped?: number; error?: string }> {
   const activeHashes = new Set(drafts.map((draft) => draft.sourceRefHash));
   let upserted = 0;
@@ -164,6 +167,27 @@ export async function applyAiSuggestedDrafts(
     if (staleTaskIds.length > 0) {
       try {
         autoSkipped += await skipStaleSecretaryTaskIds(staleTaskIds, 'stale_ai');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: message };
+      }
+    }
+  }
+
+  if (options?.boardTasks?.length) {
+    const redundantFromBoard = findRedundantAiSuggestedTaskIds(options.boardTasks);
+    const redundantTaskIds = redundantFromBoard.filter((id) => {
+      const row = (existingAiSuggested ?? []).find((candidate) => String(candidate.id) === id);
+      if (!row) return false;
+      return isRowEligibleForStaleSkip({
+        status: String(row.status),
+        metadata: (row.metadata as Record<string, unknown> | null) ?? null,
+      });
+    });
+
+    if (redundantTaskIds.length > 0) {
+      try {
+        autoSkipped += await skipStaleSecretaryTaskIds(redundantTaskIds, 'stale_ai');
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         return { success: false, error: message };
