@@ -30,6 +30,7 @@ import type {
   SecretaryTaskStatus,
 } from '@/lib/secretary/types';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
+import { shouldSkipSecretaryAiSync } from '@/lib/dev-runtime';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 
@@ -219,7 +220,7 @@ export async function syncDerivedSecretaryTasks(opts?: {
     const snapshot = opts?.snapshot ?? (await fetchSecretarySnapshot(opts));
     drafts = deriveTasksFromSnapshot(snapshot);
     const derivedResult = await applyDerivedTaskDrafts(drafts, snapshot.dateIso);
-    if (opts?.skipAiSync) {
+    if (shouldSkipSecretaryAiSync(opts?.skipAiSync)) {
       return derivedResult;
     }
     return runAiSuggestedSyncAfterDerived(snapshot, derivedResult, {

@@ -86,6 +86,7 @@ import {
 } from '@/lib/pwa-notification-bridge';
 import { shouldDeferOsNotificationToPush, refreshLocalPushSubscriptionState, wantsPushRegistration } from '@/lib/push-subscription-client';
 import { isScheduleNotification, isSecurityNotification } from '@/lib/notification-display-icon';
+import { getNotificationCatchUpLimit } from '@/lib/dev-runtime';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { shouldReconnectRealtimeOnResume } from '@/lib/supabase-realtime-resume';
 import { scheduleSupabaseChannelTeardown } from '@/lib/supabase-realtime-channel';
@@ -500,7 +501,7 @@ export function useInventoryNotifications() {
   );
 
   const syncNotificationCatchUp = useCallback(async () => {
-    const result = await fetchNotificationCatchUpLogs({ limit: 150 });
+    const result = await fetchNotificationCatchUpLogs({ limit: getNotificationCatchUpLimit() });
     if (!result.success) return;
 
     const eligible = filterEligibleRows(result.rows);

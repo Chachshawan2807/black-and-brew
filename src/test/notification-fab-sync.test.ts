@@ -320,7 +320,8 @@ describe('notification fab cross-platform sync', () => {
     );
     expect(actionsSource).toContain('fetchNotificationCatchUpLogs');
     expect(actionsSource).toContain('NOTIFICATION_CATCH_UP_MODULES');
-    expect(hookSource).toMatch(/fetchNotificationCatchUpLogs\(\{ limit: 150 \}\)/);
+    expect(hookSource).toContain('getNotificationCatchUpLimit');
+    expect(hookSource).toMatch(/fetchNotificationCatchUpLogs\(\{ limit: getNotificationCatchUpLimit\(\) \}\)/);
   });
 
   test('server catch-up and realtime include secretary digest module', () => {
