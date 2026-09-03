@@ -119,7 +119,7 @@ export default function ScheduleToolbar({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y whitespace-nowrap pb-0.5 scrollbar-none md:flex-wrap md:overflow-visible md:whitespace-normal">
+        <div className="flex items-center gap-2 overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y whitespace-nowrap pb-0.5 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:whitespace-normal">
           <div className="flex items-center gap-2">
             <button
               onClick={onExportScheduleImage}
