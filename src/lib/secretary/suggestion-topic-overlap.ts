@@ -85,9 +85,6 @@ export function collectTaskTopics(task: SecretaryTask): Set<SuggestionTopic> {
   if (task.task_type === 'branch_withdraw') {
     addTopic(topics, 'branch_withdraw');
   }
-  if (task.task_type === 'roast_carry') {
-    addTopic(topics, 'branch2_day');
-  }
   if (task.task_type === 'inventory_reorder') {
     addTopic(topics, 'inventory_reorder');
   }

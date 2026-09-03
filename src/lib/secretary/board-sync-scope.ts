@@ -42,7 +42,7 @@ const TABLE_TO_SCOPES: Record<SecretaryRealtimeTable, SecretarySyncScope[]> = {
 
 export const SCOPE_MODULES: Record<Exclude<SecretarySyncScope, 'tasks'>, SecretaryModule[]> =
   {
-    inventory: ['inventory', 'branch_withdraw', 'branch2'],
+    inventory: ['inventory', 'branch_withdraw'],
     bean_orders: ['bean_orders'],
     maintenance: ['maintenance'],
     schedule: ['schedule', 'dashboard'],

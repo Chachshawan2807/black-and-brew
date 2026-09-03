@@ -61,9 +61,7 @@ export function buildSecretaryTaskOrderPrompt(
   timeContext: SecretaryTimeContext = buildSecretaryTimeContext(),
   nowIso = timeContext.nowIso,
 ): string {
-  const actionable = collectGuidanceTasks(tasks, nowIso, {
-    isBranch2Day: snapshot.isBranch2Day,
-  });
+  const actionable = collectGuidanceTasks(tasks, nowIso);
   const inProgress = actionable.find((task) => task.status === 'in_progress');
 
   const lines = actionable.map((task, index) => {

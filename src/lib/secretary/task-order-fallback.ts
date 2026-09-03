@@ -6,9 +6,8 @@ import type { SecretaryTask } from '@/lib/secretary/types';
 export function buildFallbackTaskOrder(
   tasks: SecretaryTask[],
   nowIso = new Date().toISOString(),
-  options?: { isBranch2Day?: boolean },
 ): SecretaryTask[] {
   const phase = resolveSecretaryWorkdayPhase(new Date(nowIso));
-  const actionable = collectGuidanceTasks(tasks, nowIso, options);
+  const actionable = collectGuidanceTasks(tasks, nowIso);
   return [...actionable].toSorted((a, b) => compareSecretaryTaskOrder(a, b, phase));
 }

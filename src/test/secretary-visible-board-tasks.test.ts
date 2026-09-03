@@ -115,26 +115,7 @@ describe('filterVisibleSecretaryBoardTasks', () => {
     expect(visible.map((entry) => entry.id)).toEqual(['unified']);
   });
 
-  test('hides branch2 roast tasks when focus staff is not on branch 2 today', () => {
-    const roastTask = task({
-      id: 'roast',
-      status: 'done',
-      module: 'branch2',
-      task_type: 'roast_carry',
-      title: 'คั่วกาแฟ',
-      completed_at: '2026-08-29T10:00:00.000Z',
-    });
-
-    const visible = filterVisibleSecretaryBoardTasks(
-      [roastTask, task({ id: 'inventory', status: 'pending', module: 'inventory' })],
-      'all',
-      { ...visibility, isBranch2Day: false },
-    );
-
-    expect(visible.map((entry) => entry.id)).toEqual(['inventory']);
-  });
-
-  test('shows branch2 roast tasks only on branch 2 days', () => {
+  test('always hides retired branch2 roast tasks from the board', () => {
     const roastTask = task({
       id: 'roast',
       status: 'pending',
@@ -144,12 +125,12 @@ describe('filterVisibleSecretaryBoardTasks', () => {
     });
 
     const visible = filterVisibleSecretaryBoardTasks(
-      [roastTask],
+      [roastTask, task({ id: 'inventory', status: 'pending', module: 'inventory' })],
       'all',
-      { ...visibility, isBranch2Day: true },
+      visibility,
     );
 
-    expect(visible.map((entry) => entry.id)).toEqual(['roast']);
+    expect(visible.map((entry) => entry.id)).toEqual(['inventory']);
   });
 });
 

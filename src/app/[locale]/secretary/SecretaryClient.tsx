@@ -146,11 +146,11 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     return () => cancelAnimationFrame(rafId);
   }, []);
 
-  const visibility = { workDateIso, isBranch2Day: board.snapshot.isBranch2Day };
+  const visibility = { workDateIso };
 
   const visibleTasks = useMemo(
     () => filterConsolidatedSecretaryBoardTasks(board.tasks, moduleFilter, visibility),
-    [board.tasks, moduleFilter, workDateIso, board.snapshot.isBranch2Day],
+    [board.tasks, moduleFilter, workDateIso],
   );
 
   const hasPurchaseOrderTask = useMemo(
@@ -176,7 +176,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
   const visibleTaskCount = useMemo(
     () => countConsolidatedSecretaryBoardTasks(board.tasks, 'all', visibility),
-    [board.tasks, workDateIso, board.snapshot.isBranch2Day],
+    [board.tasks, workDateIso],
   );
 
   const handleInvokeAi = () => {

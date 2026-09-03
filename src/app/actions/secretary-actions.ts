@@ -204,7 +204,7 @@ export async function syncDerivedSecretaryTasks(opts?: {
     const locale = opts?.locale ?? opts?.snapshot?.locale ?? opts?.baseSnapshot?.locale ?? 'th';
 
     let drafts;
-    if (opts?.scopes?.length) {
+    if (options?.limitModules?.length) {
       const patch = await fetchSecretarySnapshotSlices({ dateIso, locale }, opts.scopes);
       const snapshot = opts.baseSnapshot
         ? mergeSecretarySnapshot(opts.baseSnapshot, patch)
@@ -212,16 +212,13 @@ export async function syncDerivedSecretaryTasks(opts?: {
       drafts = deriveTasksFromSnapshotByScopes(snapshot, opts.scopes);
       const result = await applyDerivedTaskDrafts(drafts, dateIso, {
         limitModules: modulesForSyncScopes(opts.scopes),
-        isBranch2Day: snapshot.isBranch2Day,
       });
       return { ...result, snapshotPatch: patch };
     }
 
     const snapshot = opts?.snapshot ?? (await fetchSecretarySnapshot(opts));
     drafts = deriveTasksFromSnapshot(snapshot);
-    const derivedResult = await applyDerivedTaskDrafts(drafts, snapshot.dateIso, {
-      isBranch2Day: snapshot.isBranch2Day,
-    });
+    const derivedResult = await applyDerivedTaskDrafts(drafts, snapshot.dateIso);
     if (opts?.skipAiSync) {
       return derivedResult;
     }

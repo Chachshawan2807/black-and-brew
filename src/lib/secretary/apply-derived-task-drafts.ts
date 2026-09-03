@@ -69,7 +69,7 @@ async function skipInactiveDerivedTaskIds(
 export async function applyDerivedTaskDrafts(
   drafts: DerivedTaskDraft[],
   dateIso: string,
-  options?: { limitModules?: SecretaryModule[]; isBranch2Day?: boolean },
+  options?: { limitModules?: SecretaryModule[] },
 ): Promise<{ success: boolean; upserted?: number; autoSkipped?: number; error?: string }> {
   const activeHashes = new Set(drafts.map((draft) => draft.sourceRefHash));
   const limitModules = options?.limitModules?.length ? new Set(options.limitModules) : null;
@@ -211,13 +211,11 @@ export async function applyDerivedTaskDrafts(
     }
   }
 
-  if (options?.isBranch2Day === false) {
-    try {
-      autoSkipped += await skipInactiveBranch2DerivedTasks(dateIso);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      return { success: false, error: message };
-    }
+  try {
+    autoSkipped += await skipInactiveBranch2DerivedTasks(dateIso);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
   }
 
   return { success: true, upserted, autoSkipped };

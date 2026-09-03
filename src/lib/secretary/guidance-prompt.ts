@@ -40,9 +40,7 @@ export function buildSecretaryGuidancePrompt(
 ): string {
   const actionable =
     orderedTasks ??
-    collectGuidanceTasks(tasks, nowIso, {
-      isBranch2Day: snapshot.isBranch2Day,
-    });
+    collectGuidanceTasks(tasks, nowIso);
 
   const lines = actionable.map((task, index) => {
     const session = resolveWorkSession(task);

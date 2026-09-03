@@ -37,8 +37,8 @@ export function useSecretaryTaskOrder(options: {
   );
 
   const fallbackOrdered = useMemo(
-    () => buildFallbackTaskOrder(tasks, undefined, { isBranch2Day: snapshot.isBranch2Day }),
-    [tasks, snapshot.isBranch2Day],
+    () => buildFallbackTaskOrder(tasks),
+    [tasks],
   );
 
   const fallbackIds = useMemo(

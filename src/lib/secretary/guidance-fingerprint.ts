@@ -2,8 +2,7 @@ import { createHash } from 'node:crypto';
 import { isLegacyBeanOrderTaskType } from '@/lib/secretary/bean-order-task-consolidation';
 import {
   compareSecretaryBoardTasks,
-  isBranch2ScheduleTask,
-  isBranch2ScheduleTaskVisible,
+  isRetiredBranch2RoastTask,
 } from '@/lib/secretary/visible-board-tasks';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 
@@ -22,14 +21,10 @@ function isActionableGuidanceTask(task: SecretaryTask, nowIso: string): boolean 
 export function collectGuidanceTasks(
   tasks: SecretaryTask[],
   nowIso = new Date().toISOString(),
-  options?: { isBranch2Day?: boolean },
 ): SecretaryTask[] {
   return tasks
     .filter((task) => isActionableGuidanceTask(task, nowIso))
-    .filter(
-      (task) =>
-        !isBranch2ScheduleTask(task) || isBranch2ScheduleTaskVisible(options?.isBranch2Day),
-    )
+    .filter((task) => !isRetiredBranch2RoastTask(task))
     .toSorted(compareSecretaryBoardTasks);
 }
 
@@ -38,9 +33,7 @@ export function buildSecretaryGuidanceFingerprint(
   snapshot: SecretaryGuidanceSnapshotSlice,
   nowIso = new Date().toISOString(),
 ): string {
-  const actionable = collectGuidanceTasks(tasks, nowIso, {
-    isBranch2Day: snapshot.isBranch2Day,
-  }).map((task) => ({
+  const actionable = collectGuidanceTasks(tasks, nowIso).map((task) => ({
     id: task.id,
     status: task.status,
     priority: task.priority,

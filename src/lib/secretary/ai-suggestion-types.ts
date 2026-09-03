@@ -46,5 +46,4 @@ export const MODULE_DERIVED_TASK_TYPES: Partial<Record<SecretaryModule, Secretar
     'bean_tracking_check',
   ],
   maintenance: ['maintenance_due', 'maintenance_overdue'],
-  branch2: ['roast_carry'],
 };

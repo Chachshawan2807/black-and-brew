@@ -1,5 +1,4 @@
 import { deriveBeanOrderTasks } from '@/lib/secretary/rules/bean-orders-rules';
-import { deriveBranch2Tasks } from '@/lib/secretary/rules/branch2-rules';
 import { deriveInsightBridgeTasks } from '@/lib/secretary/rules/insight-rules';
 import { deriveInventoryTasks } from '@/lib/secretary/rules/inventory-rules';
 import { deriveMaintenanceTasks } from '@/lib/secretary/rules/maintenance-rules';
@@ -12,7 +11,6 @@ const RULE_MODULES = [
   deriveInventoryTasks,
   deriveBeanOrderTasks,
   deriveMaintenanceTasks,
-  deriveBranch2Tasks,
   deriveInsightBridgeTasks,
 ] as const;
 
@@ -21,7 +19,7 @@ const SCOPED_RULE_MODULES: Record<
   (snapshot: SecretarySnapshot) => DerivedTaskDraft[]
 > = {
   schedule: deriveScheduleTasks,
-  inventory: (snapshot) => [...deriveInventoryTasks(snapshot), ...deriveBranch2Tasks(snapshot)],
+  inventory: deriveInventoryTasks,
   bean_orders: deriveBeanOrderTasks,
   maintenance: deriveMaintenanceTasks,
 };

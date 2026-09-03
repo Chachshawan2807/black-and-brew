@@ -6,16 +6,10 @@ import type { SecretaryTask } from '@/lib/secretary/types';
 export type SecretaryBoardVisibilityOptions = {
   workDateIso: string;
   nowIso?: string;
-  /** งานสาขา 2 (คั่วกาแฟ) แสดงเฉพาะวันที่ชัชมีกะไปสาขา 2 */
-  isBranch2Day?: boolean;
 };
 
-export function isBranch2ScheduleTask(task: SecretaryTask): boolean {
+export function isRetiredBranch2RoastTask(task: SecretaryTask): boolean {
   return task.module === 'branch2' || task.task_type === 'roast_carry';
-}
-
-export function isBranch2ScheduleTaskVisible(isBranch2Day?: boolean): boolean {
-  return isBranch2Day === true;
 }
 
 export function isSecretaryBoardTaskVisible(
@@ -29,7 +23,7 @@ export function isSecretaryBoardTaskVisible(
   if (isLegacyBeanOrderTaskType(task.task_type)) {
     return false;
   }
-  if (isBranch2ScheduleTask(task) && !isBranch2ScheduleTaskVisible(options.isBranch2Day)) {
+  if (isRetiredBranch2RoastTask(task)) {
     return false;
   }
   if (task.status !== 'pending' && task.status !== 'in_progress' && task.status !== 'done') {
