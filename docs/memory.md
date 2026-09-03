@@ -8,6 +8,19 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 
 ## Active Decisions
 
+### DEC-091: Final AI chat/tools legacy removal (v9.4)
+
+- Date: September 2026
+- Context: DEC-089 retired in-app AI chat, but keepers still claimed `src/app/actions/tools/` and `read-table-preset.test.ts` existed for Vitest. On disk the full stack is gone: `actions/tools/`, `ai-data-gateway.ts`, `agents/`, `POST /api/chat`, and related Vitest suites.
+- Decision:
+  1. Do not restore `actions/tools/`, `ai-data-gateway.ts`, or chat route/tests.
+  2. Maintenance upcoming-due logic: `src/lib/maintenance/compute-upcoming-maintenance.ts` (direct Supabase, no AI gateway).
+  3. Proactive insights: inline limits in `compile-operational-snapshot.ts` (e.g. `BEAN_ORDERS_QUERY_LIMIT = 500`).
+  4. Only Gemini surface: `bean-order-actions.ts` customer share-text parse via `@ai-sdk/google`.
+  5. Keepers must not reference Vitest-only legacy paths under `actions/tools/`.
+- Impact: `docs/architecture.md`, `docs/skills.md`, `docs/changelog.md`, `docs/MASTER_BLUEPRINT.md`.
+- Evidence: no `src/app/actions/tools/` on disk; `npx tsc --noEmit` clean.
+
 ### DEC-090: Secretary operational task board (v9.4)
 
 - Date: August 2026
@@ -57,7 +70,7 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 ### DEC-089: AI Chat Module Retirement (2026-09)
 
 - Context: `POST /api/chat` and the Bru hybrid router (Gemini + external search + deterministic short-circuits) are no longer used.
-- Decision: Remove `src/app/api/chat/`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, chat UI, external search client, and chat-specific tests/assets. Legacy `src/app/actions/tools/` retained for Vitest `read-table-preset.test.ts` only.
+- Decision: Remove `src/app/api/chat/`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, chat UI, external search client, and chat-specific tests/assets (including `read-table-preset.test.ts`). **Finalized in DEC-091** (no Vitest-only remnants on disk).
 - Remaining Gemini: `bean-order-actions.ts` customer share-text parse only.
 - Evidence: `docs/changelog.md` (2026-09-03), `npm run build`
 

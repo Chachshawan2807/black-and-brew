@@ -34,7 +34,7 @@
 
 ### Retired (2026-09)
 
-- `POST /api/chat`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, chat UI, external web search, and `@ai-sdk/react` transport. Legacy `src/app/actions/tools/` files remain for Vitest only.
+- `POST /api/chat`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, chat UI, external web search, and `@ai-sdk/react` transport. Gemini remains for bean-order customer parse only (`bean-order-actions.ts`).
 
 ## Schema Guardrails
 

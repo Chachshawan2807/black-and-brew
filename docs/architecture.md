@@ -311,7 +311,7 @@ SecretaryPage → loadSecretaryBoard() → operational_tasks for scheduled_date
 → POST /api/secretary/refresh (privileged session) for manual derived-task refresh
 ```
 
-> **Retired (2026-09):** `POST /api/chat` and the in-app AI chat stack (`src/lib/agents/`, `src/lib/ai-data-gateway.ts`, chat UI) were removed. Shell overlays (`DeferredOverlays`) remain notification FAB + inventory quick action only. Legacy `src/app/actions/tools/` files remain for Vitest `read-table-preset.test.ts` only, not production routes.
+> **Retired (2026-09):** `POST /api/chat` and the in-app AI chat stack (`src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, chat UI) were removed. Shell overlays (`DeferredOverlays`) remain notification FAB + inventory quick action only. See **DEC-089** / **DEC-091** in `docs/memory.md`.
 
 ---
 
