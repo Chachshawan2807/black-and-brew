@@ -28,19 +28,6 @@ describe('promiseWithTimeout', () => {
 });
 
 describe('schedule overlay fetch UX', () => {
-  test('ScheduleOverlay uses timeout helper, skeleton, and retry', () => {
-    const overlay = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/ScheduleOverlay.tsx'),
-      'utf-8',
-    );
-
-    expect(overlay).toContain('fetchScheduleOverlayWithTimeout');
-    expect(overlay).toContain('retryScheduleOverlayFetch');
-    expect(overlay).toContain('SecretaryOverlayLoadingSkeleton');
-    expect(overlay).toContain('SecretaryOverlayErrorState');
-    expect(overlay).toContain('onRetry={handleRetry}');
-  });
-
   test('schedule overlay timeout is 20 seconds', () => {
     expect(SCHEDULE_OVERLAY_FETCH_TIMEOUT_MS).toBe(20_000);
   });

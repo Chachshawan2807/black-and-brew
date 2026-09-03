@@ -45,7 +45,6 @@ const nextConfig: NextConfig = {
       'date-fns',
       'date-fns-tz',
       'framer-motion',
-      'recharts',
       '@dnd-kit/core',
       '@dnd-kit/sortable',
       '@dnd-kit/utilities',

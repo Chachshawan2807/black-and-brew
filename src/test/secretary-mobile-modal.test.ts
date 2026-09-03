@@ -9,7 +9,6 @@ const SECRETARY_SUBWINDOW_FILES = [
   'SecretaryManualTaskDialog.tsx',
   'BeanOrdersOverlay.tsx',
   'SecretaryTaskListOverlay.tsx',
-  'ScheduleOverlay.tsx',
   'SecretaryTaskInfoOverlay.tsx',
 ];
 

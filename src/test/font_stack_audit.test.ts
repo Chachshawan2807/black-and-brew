@@ -83,14 +83,4 @@ describe('font stack audit', () => {
 
     expect(offenders).toEqual([]);
   });
-
-  test('Recharts axis ticks use getChartAxisTick with app font family', () => {
-    const chartTheme = fs.readFileSync(
-      path.resolve(__dirname, '../lib/chart-theme.ts'),
-      'utf-8'
-    );
-
-    expect(chartTheme).toContain('APP_FONT_FAMILY_CSS');
-    expect(chartTheme).toContain('getChartAxisTick');
-  });
 });
