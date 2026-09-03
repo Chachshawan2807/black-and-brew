@@ -106,15 +106,18 @@ describe('inventory history loading reliability', () => {
       path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
       'utf-8',
     );
+    const helperCode = fs.readFileSync(
+      path.resolve(__dirname, '../lib/preload-inventory-history-modal.ts'),
+      'utf-8',
+    );
     expect(clientCode).not.toContain("import { InventoryHistoryModal }");
     expect(clientCode).toMatch(
       /dynamic\([\s\S]*import\('\.\/_components\/InventoryHistoryModal'\)/,
     );
-    expect(clientCode).toMatch(
-      /preloadInventoryHistoryModal[\s\S]*import\('\.\/_components\/InventoryHistoryModal'\)/,
-    );
-    expect(clientCode).toMatch(
-      /preloadInventoryHistoryModal[\s\S]*prefetchInventoryHistoryFirstPage/,
-    );
+    expect(clientCode).toContain('preloadInventoryHistoryModal');
+    expect(clientCode).toContain("from '@/lib/preload-inventory-history-modal'");
+    expect(helperCode).toContain("import('@/app/[locale]/inventory/_components/InventoryHistoryModal')");
+    expect(helperCode).toContain('prefetchInventoryHistoryFirstPage');
+    expect(helperCode).toContain('warmInventoryHistoryFilterPages');
   });
 });

@@ -14,9 +14,7 @@ describe('bean order form dialog preload', () => {
     expect(helper).toContain("import('@/app/[locale]/bean-orders/_components/PasteCustomerDialog')");
     expect(helper).toContain("import('@/app/[locale]/bean-orders/_components/ClearCustomerConfirmDialog')");
     expect(helper).toContain("import('@/app/[locale]/bean-orders/_components/AddressProfilePickerDialog')");
-    expect(helper).toContain('pasteDialogPreloaded');
-    expect(helper).toContain('clearConfirmPreloaded');
-    expect(helper).toContain('addressPickerPreloaded');
+    expect(helper).toContain('createPreloadOnce');
   });
 
   test('BeanOrderFormClient defers dialogs behind dynamic imports and intent preload', () => {
@@ -48,7 +46,7 @@ describe('dashboard leave detail dialog preload', () => {
     );
 
     expect(helper).toContain("import('@/app/[locale]/dashboard/_components/LeaveDetailDialog')");
-    expect(helper).toContain('preloaded');
+    expect(helper).toContain('createPreloadOnce');
   });
 
   test('LiveShiftList defers leave detail dialog and preloads on idle and stat intent', () => {

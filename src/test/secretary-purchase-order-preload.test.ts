@@ -11,7 +11,7 @@ describe('secretary purchase order modal preload', () => {
       'utf-8',
     );
     expect(helper).toContain("import('@/app/[locale]/inventory/_components/PurchaseOrdersModal')");
-    expect(helper).toContain('preloaded');
+    expect(helper).toContain('createPreloadOnce');
   });
 
   test('SecretaryClient preloads purchase orders through shared overlay preload', () => {

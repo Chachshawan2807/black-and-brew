@@ -1,31 +1,36 @@
-let pasteDialogPreloaded = false;
-let clearConfirmPreloaded = false;
-let addressPickerPreloaded = false;
+import { createPreloadOnce } from '@/lib/create-preload-once';
+
+const {
+  preload: preloadPasteCustomerDialog,
+  resetForTests: resetPasteCustomerDialogPreloadForTests,
+} = createPreloadOnce(() => import('@/app/[locale]/bean-orders/_components/PasteCustomerDialog'));
+
+const {
+  preload: preloadClearCustomerConfirmDialog,
+  resetForTests: resetClearCustomerConfirmDialogPreloadForTests,
+} = createPreloadOnce(() =>
+  import('@/app/[locale]/bean-orders/_components/ClearCustomerConfirmDialog'),
+);
+
+const {
+  preload: preloadAddressProfilePickerDialog,
+  resetForTests: resetAddressProfilePickerDialogPreloadForTests,
+} = createPreloadOnce(() =>
+  import('@/app/[locale]/bean-orders/_components/AddressProfilePickerDialog'),
+);
 
 /** Warm the paste-customer dialog chunk before the user opens it. */
-export function preloadPasteCustomerDialog(): void {
-  if (typeof window === 'undefined' || pasteDialogPreloaded) return;
-  pasteDialogPreloaded = true;
-  void import('@/app/[locale]/bean-orders/_components/PasteCustomerDialog');
-}
+export { preloadPasteCustomerDialog };
 
 /** Warm the clear-customer confirm dialog chunk before the user opens it. */
-export function preloadClearCustomerConfirmDialog(): void {
-  if (typeof window === 'undefined' || clearConfirmPreloaded) return;
-  clearConfirmPreloaded = true;
-  void import('@/app/[locale]/bean-orders/_components/ClearCustomerConfirmDialog');
-}
+export { preloadClearCustomerConfirmDialog };
 
 /** Warm the address profile picker dialog chunk before the user opens it. */
-export function preloadAddressProfilePickerDialog(): void {
-  if (typeof window === 'undefined' || addressPickerPreloaded) return;
-  addressPickerPreloaded = true;
-  void import('@/app/[locale]/bean-orders/_components/AddressProfilePickerDialog');
-}
+export { preloadAddressProfilePickerDialog };
 
 /** @internal Vitest only */
 export function resetBeanOrderFormDialogPreloadForTests(): void {
-  pasteDialogPreloaded = false;
-  clearConfirmPreloaded = false;
-  addressPickerPreloaded = false;
+  resetPasteCustomerDialogPreloadForTests();
+  resetClearCustomerConfirmDialogPreloadForTests();
+  resetAddressProfilePickerDialogPreloadForTests();
 }

@@ -35,6 +35,7 @@ import {
   preloadSecretaryOverlayForTask,
   preloadSecretaryTaskOverlayShell,
 } from '@/lib/secretary/preload-secretary-overlay';
+import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/secretary-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
@@ -44,10 +45,6 @@ const SecretaryManualTaskDialog = dynamic(
   () => import('./_components/SecretaryManualTaskDialog'),
   { ssr: false },
 );
-
-const preloadManualTaskDialog = () => {
-  void import('./_components/SecretaryManualTaskDialog');
-};
 
 type SecretaryClientProps = {
   initialBoard: SecretaryBoard;
@@ -288,8 +285,8 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
           <button
             type="button"
             onClick={() => setShowCreateDialog(true)}
-            onPointerEnter={preloadManualTaskDialog}
-            onFocus={preloadManualTaskDialog}
+            onPointerEnter={preloadSecretaryManualTaskDialog}
+            onFocus={preloadSecretaryManualTaskDialog}
             className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[13px] text-foreground"
           >
             <Plus size={14} />

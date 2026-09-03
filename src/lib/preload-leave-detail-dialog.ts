@@ -1,13 +1,10 @@
-let preloaded = false;
+import { createPreloadOnce } from '@/lib/create-preload-once';
+
+const { preload: preloadLeaveDetailDialog, resetForTests: resetLeaveDetailDialogPreloadForTests } =
+  createPreloadOnce(() => import('@/app/[locale]/dashboard/_components/LeaveDetailDialog'));
 
 /** Warm the dashboard leave/holiday detail dialog chunk before the user opens it. */
-export function preloadLeaveDetailDialog(): void {
-  if (typeof window === 'undefined' || preloaded) return;
-  preloaded = true;
-  void import('@/app/[locale]/dashboard/_components/LeaveDetailDialog');
-}
+export { preloadLeaveDetailDialog };
 
 /** @internal Vitest only */
-export function resetLeaveDetailDialogPreloadForTests(): void {
-  preloaded = false;
-}
+export { resetLeaveDetailDialogPreloadForTests };

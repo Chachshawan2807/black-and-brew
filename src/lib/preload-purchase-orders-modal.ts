@@ -1,13 +1,10 @@
-let preloaded = false;
+import { createPreloadOnce } from '@/lib/create-preload-once';
+
+const { preload: preloadPurchaseOrdersModal, resetForTests: resetPurchaseOrdersModalPreloadForTests } =
+  createPreloadOnce(() => import('@/app/[locale]/inventory/_components/PurchaseOrdersModal'));
 
 /** Warm the purchase-order modal chunk before the user opens it. */
-export function preloadPurchaseOrdersModal(): void {
-  if (typeof window === 'undefined' || preloaded) return;
-  preloaded = true;
-  void import('@/app/[locale]/inventory/_components/PurchaseOrdersModal');
-}
+export { preloadPurchaseOrdersModal };
 
 /** @internal Vitest only */
-export function resetPurchaseOrdersModalPreloadForTests(): void {
-  preloaded = false;
-}
+export { resetPurchaseOrdersModalPreloadForTests };

@@ -16,8 +16,7 @@ describe('secretary overlay preload', () => {
     expect(client).toContain('scheduleIdleWork');
     expect(client).toContain('onPointerDown={canOpenDetail ? warmOverlayChunk : undefined}');
     expect(client).toContain("import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay'");
-    expect(client).toContain("import('./_components/SecretaryManualTaskDialog')");
-    expect(client).toContain('preloadManualTaskDialog');
+    expect(client).toContain('preloadSecretaryManualTaskDialog');
   });
 
   test('overlay data cache deduplicates server fetches', () => {
@@ -46,7 +45,7 @@ describe('secretary overlay preload', () => {
     expect(preload).toContain('ScheduleOverlay');
     expect(preload).toContain('SecretaryTaskListOverlay');
     expect(preload).toContain('SecretaryTaskInfoOverlay');
-    expect(preload).toContain('SecretaryManualTaskDialog');
+    expect(preload).toContain('preloadSecretaryManualTaskDialog');
     expect(preload).toContain('isManualSecretaryTask');
     expect(preload).not.toContain('inventory_count_panel');
   });

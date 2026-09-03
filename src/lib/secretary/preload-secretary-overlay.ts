@@ -1,4 +1,5 @@
 import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
+import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual-task-dialog';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import {
   prefetchBeanOrdersForOverlay,
@@ -59,7 +60,7 @@ export function preloadSecretaryOverlayForTask(
   if (task.source_kind === 'ai_suggested') return;
 
   if (isManualSecretaryTask(task as SecretaryTask)) {
-    void import('@/app/[locale]/secretary/_components/SecretaryManualTaskDialog');
+    preloadSecretaryManualTaskDialog();
     return;
   }
 
