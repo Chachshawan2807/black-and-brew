@@ -9,18 +9,15 @@ import { z } from 'zod';
 import { requireMutationAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import {
-  clearGoogleSheetRanges,
+  batchReadGoogleSheetValues,
+  createGoogleSheetsClient,
   getConfiguredSheetTabNameOverride,
   isGoogleSheetsSyncConfigured,
   listGoogleSheetTabTitles,
   quoteSheetRange,
-  readGoogleSheetValues,
   writeGoogleSheetUpdates,
 } from '@/lib/google/sheets-api';
-import {
-  buildScheduleSheetClearRanges,
-  buildScheduleSheetsUpdates,
-} from '@/lib/schedule/sheets-week-layout';
+import { buildScheduleSheetsDenseUpdates } from '@/lib/schedule/sheets-week-layout';
 import { buildMonthlySheetTabsForWeekSync, parseMonthlySheetTabMonthYear } from '@/lib/schedule/sheets-month-tab';
 import {
   buildWeekDayIsoStrings,
@@ -69,6 +66,7 @@ export async function syncScheduleToGoogleSheet(
   }
 
   try {
+    const sheetsClient = await createGoogleSheetsClient();
     const supabaseAdmin = getSupabaseAdmin();
     const [profilesRes, shiftsRes] = await Promise.all([
       supabaseAdmin
@@ -99,7 +97,7 @@ export async function syncScheduleToGoogleSheet(
     const viewedIso = parsedViewed?.success ? parsedViewed.data : mondayStr;
     const tabOverride = getConfiguredSheetTabNameOverride();
 
-    const tabTitles = tabOverride ? [] : await listGoogleSheetTabTitles();
+    const tabTitles = tabOverride ? [] : await listGoogleSheetTabTitles(sheetsClient);
     const tabCandidates = tabOverride
       ? [tabOverride]
       : buildMonthlySheetTabsForWeekSync(tabTitles, mondayStr, sundayStr, viewedIso);
@@ -111,9 +109,23 @@ export async function syncScheduleToGoogleSheet(
       };
     }
 
-    const syncedTabs: Array<{ tabName: string; dateRow: number; cellUpdates: number }> = [];
+    const scanRanges = tabCandidates.map((candidate) =>
+      quoteSheetRange(candidate, `B1:H${SHEETS_WEEK_BLOCK_SCAN_MAX_ROW}`),
+    );
+    const branchDayRowsByTab = await batchReadGoogleSheetValues(scanRanges, sheetsClient);
 
-    for (const candidate of tabCandidates) {
+    const profiles = profilesRes.data ?? [];
+    const shifts = shiftsRes.data ?? [];
+
+    const tabsToSync: Array<{
+      tabName: string;
+      dateRow: number;
+      cellUpdates: number;
+      updates: ReturnType<typeof buildScheduleSheetsDenseUpdates>;
+    }> = [];
+
+    for (let tabIndex = 0; tabIndex < tabCandidates.length; tabIndex += 1) {
+      const candidate = tabCandidates[tabIndex];
       const parsedTabMonth = parseMonthlySheetTabMonthYear(candidate);
       const viewedDate = parseISO(viewedIso);
       const tabMonthYear = parsedTabMonth ?? {
@@ -121,13 +133,8 @@ export async function syncScheduleToGoogleSheet(
         year: viewedDate.getFullYear(),
       };
 
-      const scanRange = quoteSheetRange(
-        candidate,
-        `B1:H${SHEETS_WEEK_BLOCK_SCAN_MAX_ROW}`,
-      );
-      const branchDayRows = await readGoogleSheetValues(scanRange);
       const match = findWeekBlockInSheet(
-        branchDayRows,
+        branchDayRowsByTab[tabIndex] ?? [],
         weekDays,
         tabMonthYear.month,
         tabMonthYear.year,
@@ -140,26 +147,23 @@ export async function syncScheduleToGoogleSheet(
         match.sheetDayLabels,
       );
 
-      const clearRanges = buildScheduleSheetClearRanges(candidate, blockLayout);
-      const updates = buildScheduleSheetsUpdates(
+      const updates = buildScheduleSheetsDenseUpdates(
         mondayStr,
-        profilesRes.data ?? [],
-        shiftsRes.data ?? [],
+        profiles,
+        shifts,
         candidate,
         blockLayout,
       );
 
-      await clearGoogleSheetRanges(clearRanges);
-      await writeGoogleSheetUpdates(updates);
-
-      syncedTabs.push({
+      tabsToSync.push({
         tabName: candidate,
         dateRow: match.dateRow,
         cellUpdates: updates.length,
+        updates,
       });
     }
 
-    if (syncedTabs.length === 0) {
+    if (tabsToSync.length === 0) {
       const daySummary = weekDays
         .map((iso) => `${new Date(iso).getDate()}/${new Date(iso).getMonth() + 1}`)
         .join(', ');
@@ -169,13 +173,17 @@ export async function syncScheduleToGoogleSheet(
       };
     }
 
+    await Promise.all(
+      tabsToSync.map((tab) => writeGoogleSheetUpdates(tab.updates, sheetsClient)),
+    );
+
     return {
       success: true as const,
       weekStart: mondayStr,
-      sheetTabs: syncedTabs.map((tab) => tab.tabName),
-      sheetTab: syncedTabs[0].tabName,
-      dateRow: syncedTabs[0].dateRow,
-      cellUpdates: syncedTabs.reduce((sum, tab) => sum + tab.cellUpdates, 0),
+      sheetTabs: tabsToSync.map((tab) => tab.tabName),
+      sheetTab: tabsToSync[0].tabName,
+      dateRow: tabsToSync[0].dateRow,
+      cellUpdates: tabsToSync.reduce((sum, tab) => sum + tab.cellUpdates, 0),
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

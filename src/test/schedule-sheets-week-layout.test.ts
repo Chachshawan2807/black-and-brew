@@ -7,6 +7,7 @@ import {
 } from '@/lib/schedule/sheets-week-block';
 import {
   buildScheduleSheetClearRanges,
+  buildScheduleSheetsDenseUpdates,
   buildScheduleSheetsUpdates,
   buildFrontStoreShiftSubRows,
   buildFohCountFormulaRow,
@@ -239,5 +240,91 @@ describe('buildScheduleSheetsUpdates', () => {
       expect(range).not.toMatch(/!A\d/);
       expect(range).not.toMatch(/!B32:H33/);
     }
+  });
+
+  test('dense updates cover the same name cells as sparse updates', () => {
+    const weekStart = '2026-07-27';
+    const shifts = [
+      {
+        employee_id: 'p2',
+        start_time: '2026-07-27T00:00:00',
+        status: 'scheduled',
+        metadata: { location: '6:30' },
+      },
+      {
+        employee_id: 'p6',
+        start_time: '2026-07-27T00:00:00',
+        status: 'scheduled',
+        metadata: { location: '6:30' },
+      },
+      {
+        employee_id: 'p1',
+        start_time: '2026-07-27T00:00:00',
+        status: 'scheduled',
+        metadata: { location: '7:00' },
+      },
+      {
+        employee_id: 'p4',
+        start_time: '2026-07-27T00:00:00',
+        status: 'scheduled',
+        metadata: { location: '8:00' },
+      },
+      {
+        employee_id: 'p9',
+        start_time: '2026-07-29T00:00:00',
+        status: 'scheduled',
+        metadata: { location: 'ไปสาขา 2', remark: 'คั่วกาแฟ', is_management: true },
+      },
+      {
+        employee_id: 'p5',
+        start_time: '2026-07-27T00:00:00',
+        status: 'scheduled',
+        metadata: { location: 'ร้านซักผ้า' },
+      },
+    ];
+
+    const blockLayout = deriveWeekBlockLayout(32, [0, 1, 2, 3, 4, 5, 6], [
+      'จ.',
+      'อ.',
+      'พ.',
+      'พฤ.',
+      'ศ.',
+      'ส.',
+      'อา.',
+    ]);
+    const tabName = 'ตารางงานเดือน ก.ค. 69';
+
+    const denseByRange = new Map(
+      buildScheduleSheetsDenseUpdates(weekStart, profiles, shifts, tabName, blockLayout).map(
+        (entry) => [entry.range, entry.values],
+      ),
+    );
+
+    expect(denseByRange.get("'ตารางงานเดือน ก.ค. 69'!B34:H42")).toEqual([
+      ['ปิ่น', '', '', '', '', '', ''],
+      ['นิต้า', '', '', '', '', '', ''],
+      ['มุก', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', ''],
+      ['ฟิว', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', ''],
+    ]);
+    expect(denseByRange.get("'ตารางงานเดือน ก.ค. 69'!B45:H45")).toEqual([['ล่า', '', '', '', '', '', '']]);
+    expect(denseByRange.get("'ตารางงานเดือน ก.ค. 69'!B46:H46")).toEqual([
+      ['', '', 'ชัช', '', '', '', ''],
+    ]);
+    expect(denseByRange.get("'ตารางงานเดือน ก.ค. 69'!B43:H43")).toEqual([
+      [
+        '=counta(B34:B42)',
+        '=counta(C34:C42)',
+        '=counta(D34:D42)',
+        '=counta(E34:E42)',
+        '=counta(F34:F42)',
+        '=counta(G34:G42)',
+        '=counta(H34:H42)',
+      ],
+    ]);
   });
 });

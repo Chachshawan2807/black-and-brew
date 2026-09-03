@@ -260,3 +260,71 @@ export function buildScheduleSheetsUpdates(
 
   return updates;
 }
+
+/**
+ * Dense row writes for the full front-store / laundry / branch-2 bands.
+ * Replaces clear + sparse cell updates: empty strings overwrite removed names.
+ */
+export function buildScheduleSheetsDenseUpdates(
+  weekStartMonday: string,
+  profiles: SheetsWeekProfile[],
+  shifts: SheetsWeekShift[],
+  tabName: string,
+  blockLayout: SheetsWeekBlockLayout,
+): SheetsValueUpdate[] {
+  const weekDays = buildWeekDayIsoStrings(weekStartMonday);
+  const columnMap = blockLayout.columnMap;
+  const updates: SheetsValueUpdate[] = [];
+
+  const frontStoreRows: string[][] = [];
+  for (const shiftKey of SHEETS_FRONT_STORE_SHIFT_KEYS) {
+    const slotRows = blockLayout.frontStoreShiftSlotRows[shiftKey];
+    const subRows = buildFrontStoreShiftSubRows(
+      weekDays,
+      profiles,
+      shifts,
+      shiftKey,
+      slotRows,
+    );
+    for (const row of subRows) {
+      frontStoreRows.push(mapWeekValuesToSheetColumns(row, columnMap));
+    }
+  }
+
+  updates.push({
+    range: branch1DayColumnRange(
+      tabName,
+      blockLayout.frontStoreShiftRows['6:30'],
+      frontStoreEndRow(blockLayout),
+    ),
+    values: frontStoreRows,
+  });
+
+  updates.push({
+    range: branch1DayColumnRange(tabName, blockLayout.laundryRow),
+    values: [
+      mapWeekValuesToSheetColumns(
+        buildSingleNameRowValues(weekDays, profiles, shifts, 'ร้านซักผ้า'),
+        columnMap,
+      ),
+    ],
+  });
+
+  updates.push({
+    range: branch1DayColumnRange(tabName, blockLayout.branch2Row),
+    values: [
+      mapWeekValuesToSheetColumns(
+        buildSingleNameRowValues(weekDays, profiles, shifts, 'ไปสาขา 2'),
+        columnMap,
+      ),
+    ],
+  });
+
+  updates.push({
+    range: branch1DayColumnRange(tabName, blockLayout.fohCountRow),
+    values: [buildFohCountFormulaRow(blockLayout)],
+    inputOption: 'USER_ENTERED',
+  });
+
+  return updates;
+}
