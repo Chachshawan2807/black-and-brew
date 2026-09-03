@@ -56,8 +56,8 @@ export default function SecretaryTaskSubwindow({
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-background">
           <div
             className={cn(
-              'flex shrink-0 items-center gap-3 border-b border-border px-4 py-3',
-              showTitle ? 'justify-between' : 'justify-end',
+              'flex shrink-0 items-center gap-3 px-4 py-3',
+              showTitle ? 'justify-between border-b border-border' : 'justify-end',
             )}
           >
             {showTitle ? (

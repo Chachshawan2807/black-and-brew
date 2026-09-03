@@ -52,7 +52,8 @@ describe('inventory branch withdraw overlay', () => {
     );
     expect(client).toContain('BRANCH_WITHDRAW_SCROLL_BODY_CLASS');
     expect(client).toContain('ADD_FROM_CATALOG_BAR_CLASS');
-    expect(client).toContain('shrink-0 border-b border-border bg-background pb-3');
+    expect(client).toContain('const ADD_FROM_CATALOG_BAR_CLASS = \'shrink-0 bg-background pb-3\'');
+    expect(client).not.toContain('ADD_FROM_CATALOG_BAR_CLASS =\n  \'shrink-0 border-b border-border');
     expect(client).toContain('BRANCH_WITHDRAW_ACTION_BAR_CLASS');
     expect(client).toContain('h-[100dvh] flex-col overflow-hidden');
     expect(client).not.toContain('STANDALONE_ADD_FROM_CATALOG_BAR_CLASS');

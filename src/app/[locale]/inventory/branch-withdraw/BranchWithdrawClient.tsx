@@ -79,8 +79,7 @@ const ADD_FROM_CATALOG_BUTTON_CLASS =
   'inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground/15 bg-background px-3 py-2 text-sm transition-colors hover:border-foreground/25 hover:bg-card disabled:cursor-not-allowed disabled:opacity-50 md:w-auto';
 const DIALOG_CLOSE_BUTTON_CLASS =
   'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted/50';
-const ADD_FROM_CATALOG_BAR_CLASS =
-  'shrink-0 border-b border-border bg-background pb-3';
+const ADD_FROM_CATALOG_BAR_CLASS = 'shrink-0 bg-background pb-3';
 const BRANCH_WITHDRAW_SCROLL_BODY_CLASS =
   'min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]';
 const BRANCH_WITHDRAW_ACTION_BAR_CLASS =
@@ -683,7 +682,7 @@ export default function BranchWithdrawClient({
         }
       >
         {embedded ? null : (
-          <header className="flex shrink-0 items-center justify-between border-b border-border pb-4">
+          <header className="flex shrink-0 items-center justify-between pb-4">
             <Link
               href={`/${locale}/inventory`}
               className="flex items-center gap-1.5 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
