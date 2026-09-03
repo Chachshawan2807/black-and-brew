@@ -52,8 +52,6 @@ function preloadOverlayChunks(kind: SecretaryTaskOverlayKind): void {
 export function preloadSecretaryOverlayForTask(
   task: Pick<SecretaryTask, 'task_type' | 'source_kind'>,
 ): void {
-  if (task.source_kind === 'ai_suggested') return;
-
   if (isManualSecretaryTask(task as SecretaryTask)) {
     preloadSecretaryManualTaskDialog();
     return;

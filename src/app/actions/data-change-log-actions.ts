@@ -98,7 +98,6 @@ const NOTIFICATION_CATCH_UP_MODULES = [
   'bean_orders',
   'insights',
   'security',
-  'secretary',
 ] as const;
 
 const DATA_CHANGE_LOG_SELECT =

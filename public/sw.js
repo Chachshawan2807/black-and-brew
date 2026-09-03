@@ -378,10 +378,9 @@ self.addEventListener('push', (event) => {
       const isBeanCreated = payload.kind === 'bean_order_created';
       const isBeanOrder = isBeanDelivered || isBeanShipped || isBeanPayment || isBeanCreated;
       const isInsight = payload.kind === 'proactive_insight';
-      const isSecretary = payload.kind === 'secretary_digest';
       const isSecurity = payload.kind === 'security_alert';
 
-      if (isDailyReport || isBeanOrder || isInsight || isSecretary || isSecurity) {
+      if (isDailyReport || isBeanOrder || isInsight || isSecurity) {
         const unreadCount = await safeResolveUnreadCount(payload);
         const appVisible = await hasVisibleWindowClient();
 
@@ -389,9 +388,7 @@ self.addEventListener('push', (event) => {
           ? 'bb-security'
           : isInsight
             ? 'bb-insight'
-            : isSecretary
-              ? 'bb-secretary'
-              : isBeanCreated
+            : isBeanCreated
               ? 'bb-bean-created'
               : isBeanPayment
                 ? 'bb-bean-paid'
@@ -405,8 +402,6 @@ self.addEventListener('push', (event) => {
           ? `/${locale}/settings`
           : isInsight
             ? `/${locale}`
-            : isSecretary
-              ? `/${locale}/secretary`
             : isBeanOrder
               ? `/${locale}/bean-orders`
               : `/${locale}/schedule`;

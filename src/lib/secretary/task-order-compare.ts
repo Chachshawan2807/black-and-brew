@@ -16,10 +16,6 @@ const PRIORITY_RANK: Record<SecretaryTask['priority'], number> = {
 };
 
 function taskOrderKindRank(task: SecretaryTask, phase: SecretaryWorkdayPhase): number {
-  if (task.source_kind === 'ai_suggested') {
-    return task.priority === 'urgent' ? 0 : 1;
-  }
-
   if (
     (task.module === 'schedule' || task.module === 'dashboard') &&
     task.priority === 'urgent'

@@ -11,8 +11,6 @@ export type SecretaryTaskOverlayKind =
 export function resolveSecretaryTaskOverlayKind(
   task: SecretaryTask,
 ): SecretaryTaskOverlayKind | null {
-  if (task.source_kind === 'ai_suggested') return null;
-
   switch (task.task_type) {
     case 'inventory_reorder':
       return 'purchase_orders';

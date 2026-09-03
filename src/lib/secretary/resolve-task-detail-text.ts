@@ -5,14 +5,5 @@ export function resolveSecretaryTaskDetailText(task: SecretaryTask): string | nu
   const description = task.description?.trim();
   if (description) return description;
 
-  if (
-    task.source_kind === 'ai_suggested' &&
-    task.metadata &&
-    typeof task.metadata.rationale === 'string'
-  ) {
-    const rationale = task.metadata.rationale.trim();
-    return rationale || null;
-  }
-
   return null;
 }

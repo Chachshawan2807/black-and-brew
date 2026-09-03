@@ -175,7 +175,6 @@ async function runAllBoardSyncs() {
           locale,
           plan,
           baseSnapshot: registration.getBaseSnapshot(),
-          skipAiSync: true,
         });
         if (!result.success || !result.tasks) return;
 

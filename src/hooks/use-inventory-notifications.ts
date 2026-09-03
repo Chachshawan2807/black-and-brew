@@ -36,10 +36,6 @@ import {
   isEligibleInsightNotification,
 } from '@/lib/insight-notification';
 import {
-  isEligibleSecretaryLogRow,
-} from '@/lib/secretary/alerts/secretary-notification-gates';
-import { formatSecretaryLogNotification } from '@/lib/secretary/alerts/secretary-notification-log';
-import {
   formatSecurityNotification,
   isEligibleSecurityNotification,
 } from '@/lib/security-notification';
@@ -370,7 +366,6 @@ export function useInventoryNotifications() {
       const isBeanShipped = isEligibleBeanOrderShippedNotification(row);
       const isBeanPayment = isEligibleBeanOrderPaymentNotification(row);
       const isInsight = isEligibleInsightNotification(row);
-      const isSecretary = isEligibleSecretaryLogRow(row);
       const isSecurity = isEligibleSecurityNotification(row);
       if (
         !isDailyReport &&
@@ -380,14 +375,12 @@ export function useInventoryNotifications() {
         !isBeanShipped &&
         !isBeanPayment &&
         !isInsight &&
-        !isSecretary &&
         !isSecurity
       ) {
         return false;
       }
       if (isDailyReport && !currentPrefs.dailyScheduleReports) return false;
       if (isInsight && !currentPrefs.proactiveInsights) return false;
-      if (isSecretary && !currentPrefs.secretaryAlerts) return false;
       if (isSecurity && !currentPrefs.securityAlerts) return false;
       if (isInventory && !currentPrefs.enabled) return false;
       if (
@@ -423,9 +416,6 @@ export function useInventoryNotifications() {
       }
       if (isEligibleInsightNotification(row)) {
         return formatInsightNotification(row, locale);
-      }
-      if (isEligibleSecretaryLogRow(row)) {
-        return formatSecretaryLogNotification(row, locale);
       }
       if (isEligibleSecurityNotification(row)) {
         return formatSecurityNotification(row, locale);
@@ -478,10 +468,9 @@ export function useInventoryNotifications() {
           isEligibleBeanOrderPaymentNotification(row),
       );
       const allInsights = eligible.every(isEligibleInsightNotification);
-      const allSecretary = eligible.every(isEligibleSecretaryLogRow);
       const allSecurity = eligible.every(isEligibleSecurityNotification);
       const deferOsToPush = shouldDeferOsNotificationToPush(prefsRef.current);
-      if (allDailyReports || allBeanOrder || allInsights || allSecretary || allSecurity) {
+      if (allDailyReports || allBeanOrder || allInsights || allSecurity) {
         for (const row of eligible) {
           pushNotification(formatNotificationRow(row, loc), undefined, {
             skipSystemNotification:
@@ -560,7 +549,7 @@ export function useInventoryNotifications() {
 
     const attachChangeLogListener = (
       targetChannel: ReturnType<typeof supabase.channel>,
-      module: 'inventory' | 'schedule' | 'bean_orders' | 'insights' | 'security' | 'secretary',
+      module: 'inventory' | 'schedule' | 'bean_orders' | 'insights' | 'security',
       event: 'INSERT' | 'UPDATE' | 'DELETE' = 'INSERT',
     ) => {
       return targetChannel.on(
@@ -610,7 +599,6 @@ export function useInventoryNotifications() {
             return;
           }
           if (module === 'insights' && !isEligibleInsightNotification(row)) return;
-          if (module === 'secretary' && !isEligibleSecretaryLogRow(row)) return;
           if (module === 'security' && !isEligibleSecurityNotification(row)) return;
           processRows([row]);
         },
@@ -636,7 +624,6 @@ export function useInventoryNotifications() {
       attachChangeLogListener(nextChannel, 'insights', 'UPDATE');
       attachChangeLogListener(nextChannel, 'insights', 'DELETE');
       attachChangeLogListener(nextChannel, 'security');
-      attachChangeLogListener(nextChannel, 'secretary');
       if (cancelled) {
         stopChannel(nextChannel);
         return;

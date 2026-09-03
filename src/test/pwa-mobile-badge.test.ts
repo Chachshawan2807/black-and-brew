@@ -43,11 +43,6 @@ describe('mobile home-screen badge (sw.js)', () => {
     expect(sw).toMatch(/if \(!appVisible \|\| shouldAlwaysShowOsBanner\(payload\)\)/);
   });
 
-  test('secretary digest push uses digest branch with secretary route fallback', () => {
-    expect(sw).toContain("payload.kind === 'secretary_digest'");
-    expect(sw).toMatch(/isSecretary[\s\S]*\/\$\{locale\}\/secretary/);
-  });
-
   test('warms notification icon assets into cache before showNotification', () => {
     expect(sw).toContain('function ensureNotificationAssetCached');
     expect(sw).toContain('function warmNotificationAssets');

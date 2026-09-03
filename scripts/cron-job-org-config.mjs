@@ -30,12 +30,6 @@ export const JOB_DEFINITIONS = [
     hour: 17,
     minute: 0,
   },
-  {
-    title: `${JOB_TITLE_PREFIX} Secretary Alerts (morning)`,
-    path: '/api/secretary/alerts?locale=th',
-    hour: 8,
-    minute: 0,
-  },
 ];
 
 /**

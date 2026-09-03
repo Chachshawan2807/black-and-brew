@@ -1,4 +1,4 @@
-import { normalizeSuggestionTitle } from '@/lib/secretary/dedupe-against-existing';
+import { normalizeSuggestionTitle } from '@/lib/secretary/normalize-suggestion-title';
 import {
   formatWorkSessionSubLabel,
   resolveWorkSession,

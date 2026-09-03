@@ -14,7 +14,7 @@ function task(overrides: Partial<SecretaryTask> = {}): SecretaryTask {
     due_at: null,
     scheduled_date: '2026-08-29',
     assignee_profile_id: null,
-    source_kind: 'ai_suggested',
+    source_kind: 'derived',
     source_ref: null,
     source_ref_hash: null,
     action_href: null,
@@ -40,9 +40,7 @@ describe('resolveSecretaryTaskDetailText', () => {
     ).toBe('รายละเอียดจาก description');
   });
 
-  test('falls back to ai rationale for ai_suggested tasks', () => {
-    expect(resolveSecretaryTaskDetailText(task())).toBe(
-      'ควรวิเคราะห์หาสาเหตุหลักของความคลาดเคลื่อนของสต็อก เพื่อป้องกันซ้ำ',
-    );
+  test('returns null when description is empty', () => {
+    expect(resolveSecretaryTaskDetailText(task())).toBeNull();
   });
 });

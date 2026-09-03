@@ -14,6 +14,7 @@ import {
 } from '@/app/actions/secretary-actions';
 import type { SecretaryBoardDisplayTask } from '@/lib/secretary/consolidate-board-tasks';
 import { buildScheduleReviewListItems } from '@/lib/secretary/build-schedule-review-list-items';
+import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import { preloadSecretaryOverlayForTask } from '@/lib/secretary/preload-secretary-overlay';
 import { resolveSecretaryTaskDetailText } from '@/lib/secretary/resolve-task-detail-text';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';

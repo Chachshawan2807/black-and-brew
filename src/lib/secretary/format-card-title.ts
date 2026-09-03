@@ -16,15 +16,11 @@ export function splitSecretaryCardTitle(title: string): string[] {
   return lines.slice(0, CARD_TITLE_MAX_LINES);
 }
 
-export function resolveSecretaryCardTitleFontClass(
-  lineCount: number,
-  hasAiBadge = false,
-): string {
-  const visualWeight = lineCount + (hasAiBadge ? 0.75 : 0);
-  if (visualWeight <= 2) {
+export function resolveSecretaryCardTitleFontClass(lineCount: number): string {
+  if (lineCount <= 2) {
     return 'text-[clamp(12px,3.2vw,14px)] leading-[1.35]';
   }
-  if (visualWeight <= 3.5) {
+  if (lineCount <= 3.5) {
     return 'text-[clamp(11px,2.9vw,12px)] leading-[1.3]';
   }
   return 'text-[clamp(10px,2.5vw,11px)] leading-[1.25]';

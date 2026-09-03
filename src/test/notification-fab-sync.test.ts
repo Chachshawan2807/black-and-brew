@@ -324,24 +324,6 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toMatch(/fetchNotificationCatchUpLogs\(\{ limit: getNotificationCatchUpLimit\(\) \}\)/);
   });
 
-  test('server catch-up and realtime include secretary digest module', () => {
-    const actionsSource = readFileSync(
-      resolve(__dirname, '../app/actions/data-change-log-actions.ts'),
-      'utf8',
-    );
-    expect(actionsSource).toMatch(/NOTIFICATION_CATCH_UP_MODULES\s*=\s*\[[\s\S]*'secretary'/);
-    expect(hookSource).toContain("attachChangeLogListener(nextChannel, 'secretary')");
-    expect(hookSource).toContain('isEligibleSecretaryLogRow');
-    expect(hookSource).toMatch(/module === 'secretary'[\s\S]*isEligibleSecretaryLogRow/);
-  });
-
-  test('secretary digest defers OS banners to push only in background like daily reports', () => {
-    expect(hookSource).not.toContain('skipSecretaryOsNotification');
-    expect(hookSource).toMatch(
-      /allSecretary[\s\S]*skipSystemNotification:[\s\S]*deferOsToPush/,
-    );
-  });
-
   test('notification FAB and panel use generic notification copy', () => {
     expect(panelSource).toContain("'การแจ้งเตือน'");
     expect(panelSource).not.toContain('แจ้งเตือนคลังสินค้า');

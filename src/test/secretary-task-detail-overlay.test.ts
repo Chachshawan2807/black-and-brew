@@ -37,10 +37,6 @@ function task(partial: Partial<SecretaryTask> = {}): SecretaryTask {
 }
 
 describe('canOpenSecretaryTaskDetail', () => {
-  test('blocks AI suggested cards because they are advice only', () => {
-    expect(canOpenSecretaryTaskDetail(task({ source_kind: 'ai_suggested' }))).toBe(false);
-  });
-
   test('allows derived and manual work cards', () => {
     expect(canOpenSecretaryTaskDetail(task({ source_kind: 'derived' }))).toBe(true);
     expect(canOpenSecretaryTaskDetail(task({ source_kind: 'manual' }))).toBe(true);
@@ -48,16 +44,16 @@ describe('canOpenSecretaryTaskDetail', () => {
 });
 
 describe('resolveSecretaryTaskOverlayKind', () => {
-  test('does not open a detail overlay for AI suggested cards', () => {
+  test('maps inventory reorder to purchase orders overlay', () => {
     expect(
       resolveSecretaryTaskOverlayKind(
         task({
-          source_kind: 'ai_suggested',
+          source_kind: 'derived',
           task_type: 'inventory_reorder',
           module: 'inventory',
         }),
       ),
-    ).toBeNull();
+    ).toBe('purchase_orders');
   });
 
   test('retired inventory count tasks fall back to task info', () => {
@@ -108,14 +104,13 @@ describe('secretary task detail overlay UI', () => {
     expect(overlay).toContain('canOpenSecretaryTaskDetail');
   });
 
-  test('task cards do not open a detail window for AI suggested work', () => {
-    const client = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/SecretaryClient.tsx'),
+  test('fetch layer excludes legacy AI suggested rows', () => {
+    const actions = fs.readFileSync(
+      path.resolve(ROOT, 'app/actions/secretary-actions.ts'),
       'utf-8',
     );
 
-    expect(client).toContain('canOpenSecretaryTaskDetail');
-    expect(client).toContain('งานนี้เป็นคำแนะนำ');
+    expect(actions).toContain("String(row.source_kind) !== 'ai_suggested'");
   });
 
   test('maintenance list overlay is read-only without navigation', () => {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import dynamic from 'next/dynamic';
-import { CheckCircle2, Loader2, Plus, Sparkles } from 'lucide-react';
+import { CheckCircle2, Plus } from 'lucide-react';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,6 @@ import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay'
 import {
   completeSecretaryTasks,
   createManualSecretaryTask,
-  syncSecretaryAiSuggestions,
 } from '@/app/actions/secretary-actions';
 import { resolveSecretaryCardTitleFontClass, splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
 import {
@@ -26,8 +25,6 @@ import {
   useSecretaryBoardSync,
   type BoardSyncPayload,
 } from '@/hooks/use-secretary-board-sync';
-import { loadNotificationPreferences } from '@/lib/notification-preferences';
-import type { NotificationPreferences } from '@/lib/notification-types';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
 import {
@@ -87,24 +84,6 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
   const [newDescription, setNewDescription] = useState('');
   const [isPending, startTransition] = useTransition();
   const [overlayTask, setOverlayTask] = useState<SecretaryBoardDisplayTask | null>(null);
-  const [aiAssistActive, setAiAssistActive] = useState(false);
-  const [aiAssistLoading, setAiAssistLoading] = useState(false);
-  const [aiButtonAllowed, setAiButtonAllowed] = useState(
-    () => loadNotificationPreferences().secretaryAiOrdering ?? true,
-  );
-
-  useEffect(() => {
-    const onPrefsChanged = (event: Event) => {
-      const detail = (event as CustomEvent<NotificationPreferences>).detail;
-      const allowed = detail?.secretaryAiOrdering ?? true;
-      setAiButtonAllowed(allowed);
-      if (!allowed) {
-        setAiAssistActive(false);
-      }
-    };
-    window.addEventListener('bb-notification-prefs-changed', onPrefsChanged);
-    return () => window.removeEventListener('bb-notification-prefs-changed', onPrefsChanged);
-  }, []);
 
   const applyBoardSync = useCallback((payload: BoardSyncPayload) => {
     setBoard((prev) => {
@@ -182,26 +161,6 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     [board.tasks, workDateIso],
   );
 
-  const handleInvokeAi = () => {
-    setAiAssistActive(true);
-    setAiAssistLoading(true);
-
-    startTransition(async () => {
-      try {
-        const result = await syncSecretaryAiSuggestions({
-          dateIso: workDateIso,
-          locale,
-          snapshot: boardRef.current.snapshot,
-        });
-        if (result.success && result.tasks) {
-          applyBoardSync({ tasks: result.tasks, syncKind: 'full' });
-        }
-      } finally {
-        setAiAssistLoading(false);
-      }
-    });
-  };
-
   const handleComplete = (taskIds: string[]) => {
     startTransition(async () => {
       const result = await completeSecretaryTasks(taskIds);
@@ -255,30 +214,6 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
       <p className="bb-page-subtitle">รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ</p>
 
       <div className="flex flex-wrap gap-2 items-center">
-        {aiButtonAllowed ? (
-          <HintTooltip tip="ให้ AI แนะนำงานเพิ่มจากข้อมูลปัจจุบัน (งาน AI จะอยู่ลำดับแรก)">
-            <button
-              type="button"
-              onClick={handleInvokeAi}
-              disabled={aiAssistLoading || isPending}
-              aria-busy={aiAssistLoading}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] bb-transition',
-                aiAssistActive
-                  ? 'border-foreground/30 bg-muted/40 text-foreground'
-                  : 'border-border text-foreground hover:bg-muted/30',
-                (aiAssistLoading || isPending) && 'opacity-60',
-              )}
-            >
-              {aiAssistLoading ? (
-                <Loader2 size={14} className="animate-spin" aria-hidden />
-              ) : (
-                <Sparkles size={14} aria-hidden />
-              )}
-              {aiAssistActive ? 'เรียกใช้ AI อีกครั้ง' : 'เรียกใช้ AI'}
-            </button>
-          </HintTooltip>
-        ) : null}
         <HintTooltip tip="เพิ่มงานที่ไม่ได้มาจากระบบอัตโนมัติ">
           <button
             type="button"
@@ -387,8 +322,7 @@ function TaskCard({
   onComplete: () => void;
 }) {
   const titleLines = splitSecretaryCardTitle(task.title);
-  const isAiSuggested = task.source_kind === 'ai_suggested';
-  const titleFontClass = resolveSecretaryCardTitleFontClass(titleLines.length, isAiSuggested);
+  const titleFontClass = resolveSecretaryCardTitleFontClass(titleLines.length);
   const canOpenDetail = canOpenSecretaryTaskDetail(task);
   const cardClassName = cn(
     'relative flex aspect-square min-h-0 rounded-lg border p-2.5 bb-transition',
@@ -427,7 +361,7 @@ function TaskCard({
   );
 
   const openTip = !canOpenDetail
-    ? 'งานนี้เป็นคำแนะนำ งานจริงอยู่ในการ์ดอื่น'
+    ? 'งานนี้ไม่มีรายละเอียดเพิ่มเติม'
     : isDone
       ? 'เปิดรายละเอียดงานที่เสร็จแล้ว'
       : 'เปิดรายละเอียดงาน';
@@ -436,11 +370,6 @@ function TaskCard({
     <>
       <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain bb-smooth-scroll px-0.5 pb-8 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="my-auto flex w-full flex-col items-center gap-1">
-          {isAiSuggested ? (
-            <span className="shrink-0 rounded-full border border-border bg-muted/40 px-1.5 py-px text-[9px] font-normal text-muted-foreground">
-              AI แนะนำ
-            </span>
-          ) : null}
           <p
             className={cn(
               'flex w-full flex-col items-center gap-0.5 text-center tracking-[0.01em] [line-break:strict] [overflow-wrap:normal] [word-break:keep-all]',

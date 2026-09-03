@@ -34,7 +34,7 @@ export type SecretaryTaskType =
 
 export type SecretaryTaskPriority = 'urgent' | 'normal' | 'low';
 export type SecretaryTaskStatus = 'pending' | 'in_progress' | 'done' | 'skipped';
-export type SecretaryTaskSourceKind = 'derived' | 'manual' | 'ai_suggested';
+export type SecretaryTaskSourceKind = 'derived' | 'manual';
 
 export type SecretaryReorderItem = InventoryStockFields & {
   id: string;

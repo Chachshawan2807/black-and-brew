@@ -27,7 +27,7 @@ describe('splitSecretaryCardTitle', () => {
     ]);
   });
 
-  test('wraps long mixed-language AI titles for mobile cards', () => {
+  test('wraps long mixed-language titles for mobile cards', () => {
     const title = 'ตรวจ bean orders และสต็อกคลังที่เกี่ยวข้อง';
     const lines = splitSecretaryCardTitle(title);
     expect(lines.length).toBeGreaterThanOrEqual(3);
@@ -47,6 +47,6 @@ describe('resolveSecretaryCardTitleFontClass', () => {
   });
 
   test('shrinks font for longer wrapped titles', () => {
-    expect(resolveSecretaryCardTitleFontClass(4, true)).toContain('11px');
+    expect(resolveSecretaryCardTitleFontClass(4)).toContain('11px');
   });
 });

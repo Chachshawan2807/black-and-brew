@@ -12,7 +12,7 @@ export type SecretaryAttentionListItem = {
 };
 
 export function canOpenSecretaryTaskDetail(
-  task: Pick<SecretaryTask, 'source_kind'>,
+  _task: Pick<SecretaryTask, 'source_kind'>,
 ): boolean {
-  return task.source_kind !== 'ai_suggested';
+  return true;
 }

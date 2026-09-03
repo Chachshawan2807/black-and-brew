@@ -22,8 +22,6 @@ export function notificationPreferencesEqual(
     a.systemNotifications === b.systemNotifications &&
     a.dailyScheduleReports === b.dailyScheduleReports &&
     a.proactiveInsights === b.proactiveInsights &&
-    a.secretaryAlerts === b.secretaryAlerts &&
-    (a.secretaryAiOrdering ?? true) === (b.secretaryAiOrdering ?? true) &&
     a.securityAlerts === b.securityAlerts &&
     (a.notifyOwnChanges ?? true) === (b.notifyOwnChanges ?? true)
   );
@@ -147,15 +145,13 @@ export function notificationMasterPatch(
 ): Pick<
   NotificationPreferences,
   'enabled' | 'systemNotifications' | 'dailyScheduleReports' | 'proactiveInsights' | 'securityAlerts'
-> &
-  Partial<Pick<NotificationPreferences, 'secretaryAlerts'>> {
+> {
   if (!enabled) {
     return {
       enabled: false,
       systemNotifications: false,
       dailyScheduleReports: false,
       proactiveInsights: false,
-      secretaryAlerts: false,
       securityAlerts: false,
     };
   }

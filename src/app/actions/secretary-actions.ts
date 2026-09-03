@@ -10,12 +10,6 @@ import {
 } from '@/lib/secretary/adapters/snapshot-slices';
 import { mergeSecretarySnapshot } from '@/lib/secretary/snapshot-patch';
 import { applyDerivedTaskDrafts } from '@/lib/secretary/apply-derived-task-drafts';
-import { syncAiSuggestedSecretaryTasks } from '@/lib/secretary/generate-ai-suggestions';
-import { maybeDispatchSecretaryUrgentPush } from '@/lib/secretary/alerts/urgent-push-dispatch';
-import {
-  buildAiAcceptanceMetadata,
-  shouldRecordAiAcceptance,
-} from '@/lib/secretary/ai-acceptance';
 import {
   modulesForSyncScopes,
   type SecretaryBoardSyncPlan,
@@ -30,7 +24,6 @@ import type {
   SecretaryTaskStatus,
 } from '@/lib/secretary/types';
 import { gateMutation, requireReadAccess } from '@/lib/policies/server-gate';
-import { shouldSkipSecretaryAiSync } from '@/lib/dev-runtime';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 
@@ -95,7 +88,7 @@ export async function fetchSecretaryTasks(dateIso: string): Promise<{
       return { success: false, error: error.message };
     }
 
-    return { success: true, tasks: (data ?? []).map(mapRow) };
+    return { success: true, tasks: (data ?? []).filter((row) => String(row.source_kind) !== 'ai_suggested').map(mapRow) };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[fetchSecretaryTasks]', message);
@@ -128,55 +121,6 @@ export async function countPendingSecretaryTasks(dateIso: string): Promise<numbe
   }
 }
 
-async function runAiSuggestedSyncAfterDerived(
-  snapshot: SecretarySnapshot,
-  derivedResult: { success: boolean; upserted?: number; autoSkipped?: number; error?: string },
-  opts?: { aiEnabled?: boolean; existingTasks?: SecretaryTask[] },
-): Promise<{
-  success: boolean;
-  upserted?: number;
-  autoSkipped?: number;
-  error?: string;
-}> {
-  if (!derivedResult.success) return derivedResult;
-
-  let existingTasks = opts?.existingTasks;
-  if (!existingTasks) {
-    const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
-    existingTasks = tasksResult.success && tasksResult.tasks ? tasksResult.tasks : [];
-  }
-
-  const aiResult = await syncAiSuggestedSecretaryTasks({
-    snapshot,
-    existingTasks,
-    aiEnabled: opts?.aiEnabled,
-  });
-
-  if (!aiResult.success) return aiResult;
-
-  const tasksForPush =
-    (aiResult.upserted ?? 0) > 0 || (aiResult.autoSkipped ?? 0) > 0
-      ? ((await fetchSecretaryTasks(snapshot.dateIso)).tasks ?? existingTasks)
-      : existingTasks;
-
-  void maybeDispatchSecretaryUrgentPush({
-    snapshot,
-    tasks: tasksForPush,
-    locale: snapshot.locale,
-  }).catch((error) => {
-    console.error(
-      '[runAiSuggestedSyncAfterDerived] urgent push failed:',
-      error instanceof Error ? error.message : error,
-    );
-  });
-
-  return {
-    success: true,
-    upserted: (derivedResult.upserted ?? 0) + (aiResult.upserted ?? 0),
-    autoSkipped: (derivedResult.autoSkipped ?? 0) + (aiResult.autoSkipped ?? 0),
-  };
-}
-
 export async function syncDerivedSecretaryTasks(opts?: {
   dateIso?: string;
   locale?: string;
@@ -184,11 +128,6 @@ export async function syncDerivedSecretaryTasks(opts?: {
   baseSnapshot?: SecretarySnapshot;
   /** Pre-fetched full snapshot skips a second `fetchSecretarySnapshot` on full sync. */
   snapshot?: SecretarySnapshot;
-  aiEnabled?: boolean;
-  /** Skip Gemini AI suggestions (derived sync only). Used for fast client refresh. */
-  skipAiSync?: boolean;
-  /** Tasks already loaded for the date; avoids an extra fetch before AI sync. */
-  existingTasks?: SecretaryTask[];
 }): Promise<{
   success: boolean;
   upserted?: number;
@@ -220,13 +159,7 @@ export async function syncDerivedSecretaryTasks(opts?: {
     const snapshot = opts?.snapshot ?? (await fetchSecretarySnapshot(opts));
     drafts = deriveTasksFromSnapshot(snapshot);
     const derivedResult = await applyDerivedTaskDrafts(drafts, snapshot.dateIso);
-    if (shouldSkipSecretaryAiSync(opts?.skipAiSync)) {
-      return derivedResult;
-    }
-    return runAiSuggestedSyncAfterDerived(snapshot, derivedResult, {
-      aiEnabled: opts?.aiEnabled,
-      existingTasks: opts?.existingTasks,
-    });
+    return derivedResult;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[syncDerivedSecretaryTasks]', message);
@@ -424,9 +357,6 @@ export async function completeSecretaryTasks(
           completed_at: now,
           active_session_started_at: null,
           updated_at: now,
-          metadata: shouldRecordAiAcceptance(task)
-            ? buildAiAcceptanceMetadata(task, 'accepted')
-            : task.metadata,
         })
         .eq('id', taskId)
         .select(TASK_SELECT)
@@ -454,7 +384,6 @@ export async function syncAndFetchSecretaryBoard(opts?: {
   locale?: string;
   plan?: SecretaryBoardSyncPlan;
   baseSnapshot?: SecretarySnapshot;
-  skipAiSync?: boolean;
 }): Promise<{
   success: boolean;
   tasks?: SecretaryTask[];
@@ -520,9 +449,6 @@ export async function syncAndFetchSecretaryBoard(opts?: {
     const syncResult = await syncDerivedSecretaryTasks({
       ...opts,
       snapshot,
-      skipAiSync: opts?.skipAiSync,
-      existingTasks:
-        tasksBeforeSync.success && tasksBeforeSync.tasks ? tasksBeforeSync.tasks : undefined,
     });
     if (!syncResult.success) {
       return { success: false, error: syncResult.error };
@@ -574,12 +500,6 @@ export async function updateSecretaryTaskStatus(
 
     if (status === 'done' || status === 'skipped') {
       patch.completed_at = new Date().toISOString();
-      if (existingRow && shouldRecordAiAcceptance(mapRow(existingRow as Record<string, unknown>))) {
-        patch.metadata = buildAiAcceptanceMetadata(
-          mapRow(existingRow as Record<string, unknown>),
-          status === 'done' ? 'accepted' : 'rejected',
-        );
-      }
     } else {
       patch.completed_at = null;
       patch.completed_by = null;
@@ -635,69 +555,6 @@ export type SecretaryBoard = {
   snapshot: SecretarySnapshot;
   tasks: SecretaryTask[];
 };
-
-export async function syncSecretaryAiSuggestions(opts: {
-  dateIso: string;
-  locale?: string;
-  snapshot?: SecretarySnapshot;
-  aiEnabled?: boolean;
-}): Promise<{
-  success: boolean;
-  tasks?: SecretaryTask[];
-  upserted?: number;
-  autoSkipped?: number;
-  error?: string;
-}> {
-  const authError = await requireReadAccess();
-  if (authError) return { success: false, error: authError };
-
-  try {
-    const locale = opts.locale ?? 'th';
-    const snapshot =
-      opts.snapshot ?? (await fetchSecretarySnapshot({ dateIso: opts.dateIso, locale }));
-    const tasksResult = await fetchSecretaryTasks(snapshot.dateIso);
-    const existingTasks =
-      tasksResult.success && tasksResult.tasks ? tasksResult.tasks : [];
-
-    const aiResult = await syncAiSuggestedSecretaryTasks({
-      snapshot,
-      existingTasks,
-      aiEnabled: opts.aiEnabled,
-    });
-
-    if (!aiResult.success) {
-      return { success: false, error: aiResult.error };
-    }
-
-    const refreshed =
-      (aiResult.upserted ?? 0) > 0 || (aiResult.autoSkipped ?? 0) > 0
-        ? await fetchSecretaryTasks(snapshot.dateIso)
-        : tasksResult;
-
-    void maybeDispatchSecretaryUrgentPush({
-      snapshot,
-      tasks:
-        refreshed.success && refreshed.tasks ? refreshed.tasks : existingTasks,
-      locale: snapshot.locale,
-    }).catch((error) => {
-      console.error(
-        '[syncSecretaryAiSuggestions] urgent push failed:',
-        error instanceof Error ? error.message : error,
-      );
-    });
-
-    return {
-      success: true,
-      tasks: refreshed.success && refreshed.tasks ? refreshed.tasks : existingTasks,
-      upserted: aiResult.upserted,
-      autoSkipped: aiResult.autoSkipped,
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[syncSecretaryAiSuggestions]', message);
-    return { success: false, error: message };
-  }
-}
 
 export async function loadSecretaryBoard(opts?: {
   dateIso?: string;
