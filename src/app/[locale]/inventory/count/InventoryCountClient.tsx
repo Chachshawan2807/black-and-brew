@@ -1,8 +1,10 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
+import { PageLoadingState } from '@/components/ui/page-loading-state';
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCw, Undo2, Clock3, SlidersHorizontal } from '@/lib/icons';
+import { ChevronLeft, CheckCircle2, ClipboardList, AlertCircle, RefreshCw, Undo2, Clock3, SlidersHorizontal } from '@/lib/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { microFadeDown, microPopIn, staggerListItem } from '@/lib/motion-presets';
 import Link from 'next/link';
@@ -1302,13 +1304,13 @@ export default function InventoryCountClient({
 
   if (loading) {
     return (
-      <div className={cn(
-        'flex flex-col items-center justify-center bg-background text-foreground font-normal',
-        embedded ? 'min-h-[12rem]' : 'min-h-screen',
-      )}>
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-foreground" strokeWidth={1.5} />
-        <span className="text-sm uppercase tracking-widest text-muted-foreground font-normal">กำลังซิงค์ข้อมูลสต็อกสินค้าอยู่ค่ะ...</span>
-      </div>
+      <PageLoadingState
+        label="กำลังซิงค์ข้อมูลสต็อกสินค้าอยู่ค่ะ..."
+        className={cn(
+          'bg-background font-normal',
+          embedded ? 'min-h-[12rem]' : 'min-h-screen',
+        )}
+      />
     );
   }
 
@@ -1385,7 +1387,7 @@ export default function InventoryCountClient({
           <div className="flex items-center gap-2 text-xs font-normal">
             {savingState === 'saving' && (
               <span className="flex items-center gap-1 text-muted-foreground">
-                <Loader2 className="w-3 h-3 animate-spin" />
+                <LoadingIcon size="xs" />
                 <span>กำลังบันทึกข้อมูลอยู่นะคะ</span>
               </span>
             )}

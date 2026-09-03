@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useState, useEffect, useTransition, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,7 +19,6 @@ import {
   Wrench,
   Pencil,
   Trash2,
-  Loader2,
 } from '@/lib/icons';
 import { format } from 'date-fns';
 import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
@@ -352,7 +352,7 @@ export default function MaintenanceClient({
         <main className={embedded ? 'pb-2' : 'pb-20'}>
           {loading && records.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 text-foreground/20">
-              <Loader2 className="w-12 h-12 animate-spin mb-6" strokeWidth={1} />
+              <LoadingIcon size="2xl" className="mb-6" />
               <span className="text-sm tracking-[0.3em] uppercase font-normal">กำลังโหลดบันทึก...</span>
             </div>
           ) : records.length === 0 ? (

@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { preloadCaptureLibraries } from '@/lib/capture-element-png';
 import { motion } from 'framer-motion';
-import { AlertCircle, CheckCircle2, Copy, ImageDown, ShoppingCart, X } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
+import { AlertCircle, CheckCircle2, Copy, ImageDown, ShoppingCart } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
@@ -125,7 +126,7 @@ export default function PurchaseOrdersModal({
                   className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
                   aria-label="ปิดรายการสั่งซื้อ"
                 >
-                  <X className="w-5 h-5" aria-hidden />
+                  <CloseIcon />
                 </button>
               </HintTooltip>
             </div>

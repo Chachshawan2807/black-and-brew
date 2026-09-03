@@ -1,7 +1,7 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useEffect, useRef } from 'react';
-import { Loader2 } from '@/lib/icons';
 import type { ParsedBeanOrderCustomer } from '@/lib/bean-orders/parse-share-text';
 import { formatThaiPostalAddressLine } from '@/lib/bean-orders/thai-postal-lookup';
 
@@ -25,8 +25,7 @@ export function PasteCustomerDialog({
   error = null,
   data = null,
   onConfirm,
-  onCancel,
-}: Props) {
+  onCancel }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -58,7 +57,7 @@ export function PasteCustomerDialog({
 
         {loading ? (
           <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            <LoadingIcon size="md" className="aria-hidden" />
             กำลังแยกข้อมูล...
           </div>
         ) : null}

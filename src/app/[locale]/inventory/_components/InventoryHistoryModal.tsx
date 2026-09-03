@@ -1,14 +1,11 @@
 'use client';
 
-
-
+import { LoadingIcon } from '@/components/ui/loading-icon';
+import { CloseIcon } from '@/components/ui/close-icon';
 import { useEffect, useState } from 'react';
-
 import { motion } from 'framer-motion';
-
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
-
-import { History, Loader2, PackageMinus, PackagePlus, Plus, Search, ShoppingCart, SlidersHorizontal, Trash2, X } from '@/lib/icons';
+import { History, PackageMinus, PackagePlus, Plus, Search, ShoppingCart, SlidersHorizontal, Trash2 } from '@/lib/icons';
 
 import { cn } from '@/lib/utils';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
@@ -255,7 +252,7 @@ export function InventoryHistoryModal({
 
           >
 
-            <X className="w-6 h-6" />
+            <CloseIcon size="lg" />
 
           </button>
         </HintTooltip>
@@ -336,7 +333,7 @@ export function InventoryHistoryModal({
                     aria-label="ล้างการค้นหา"
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <CloseIcon size="md" />
                   </button>
                 ) : null}
               </div>
@@ -352,7 +349,7 @@ export function InventoryHistoryModal({
 
           {isInitialLoading ? (
             <div className="flex flex-col items-center justify-center gap-3 py-20 text-foreground/40">
-              <Loader2 className="w-8 h-8 animate-spin" />
+              <LoadingIcon size="xl" />
               <span className="text-[14px] font-normal">กำลังโหลดประวัติ...</span>
             </div>
           ) : (
@@ -527,7 +524,7 @@ export function InventoryHistoryModal({
 
           <span className="inline-flex items-center gap-2">
             แสดง {transactionHistory.length} รายการ
-            {isHistoryRefreshing ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : null}
+            {isHistoryRefreshing ? <LoadingIcon size="sm" className="aria-hidden" /> : null}
           </span>
 
           {hasMoreHistory ? (
@@ -539,7 +536,7 @@ export function InventoryHistoryModal({
             >
               {isHistoryLoading ? (
                 <span className="inline-flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <LoadingIcon size="md" />
                   กำลังโหลดประวัติ...
                 </span>
               ) : (

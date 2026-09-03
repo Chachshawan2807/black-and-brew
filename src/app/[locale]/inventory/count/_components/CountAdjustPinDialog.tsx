@@ -1,8 +1,9 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { Loader2, Lock } from '@/lib/icons';
+import { Lock } from '@/lib/icons';
 import { verifyPin } from '@/app/actions/auth';
 import { setClientAuthSession } from '@/lib/client-auth-storage';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
@@ -112,7 +113,7 @@ export function CountAdjustPinDialog({
         <div className="p-5 flex flex-col items-center gap-5 text-center">
           <div className="w-14 h-14 bg-foreground text-background rounded-2xl flex items-center justify-center bb-shadow-md">
             {isVerifying ? (
-              <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+              <LoadingIcon size="lg" className="aria-hidden" />
             ) : (
               <Lock className="h-6 w-6" strokeWidth={1.5} aria-hidden />
             )}

@@ -1,8 +1,10 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Bell, Loader2, X } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
+import { Bell, X } from '@/lib/icons';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import { getNotificationPermissionState } from '@/lib/pwa-notification-bridge';
 import {
@@ -114,7 +116,7 @@ export function PushSubscriptionManager() {
               onClick={() => void registerFromBanner()}
               className="mt-2 inline-flex items-center gap-2 rounded-xl bg-foreground px-3 py-1.5 text-[12px] text-background disabled:opacity-60"
             >
-              {registering ? <Loader2 size={14} className="animate-spin" /> : null}
+              {registering ? <LoadingIcon size={14} className="animate-spin" /> : null}
               {isTh ? 'ลงทะเบียนการแจ้งเตือน' : 'Register notifications'}
             </button>
           </div>
@@ -124,7 +126,7 @@ export function PushSubscriptionManager() {
             onClick={dismissBanner}
             className="shrink-0 rounded-full p-1 text-muted-foreground"
           >
-            <X size={16} strokeWidth={1.75} />
+            <CloseIcon size="sm" />
           </button>
         </div>
       </div>

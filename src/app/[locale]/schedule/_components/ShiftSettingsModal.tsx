@@ -1,7 +1,10 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
+import { PageLoadingState } from '@/components/ui/page-loading-state';
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Settings, RotateCcw, Loader2, Trash2 } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
+import { Settings, RotateCcw, Trash2 } from '@/lib/icons';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { cn } from '@/lib/utils';
 import {
@@ -243,7 +246,7 @@ export default function ShiftSettingsModal({
               className="p-2 -mr-1 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors disabled:opacity-50"
               aria-label="ปิดตั้งค่ากะ"
             >
-              <X className="w-5 h-5" />
+              <CloseIcon />
             </button>
           </HintTooltip>
         </div>
@@ -368,7 +371,7 @@ export default function ShiftSettingsModal({
               disabled={isSaving || isCreating}
               className="flex-1 h-11 px-4 text-[13px] text-[#ffffff] bg-[#000000] hover:bg-[#000000]/85 rounded-3xl bb-transition disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
             >
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {isSaving ? <LoadingIcon size="md" /> : null}
               บันทึก
             </button>
           </div>

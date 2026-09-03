@@ -32,6 +32,6 @@ describe('branch withdraw dialogs', () => {
     expect(branchWithdrawClient).toContain('closeAddItemDialog');
     expect(branchWithdrawClient).toMatch(/onClick=\{handleAddItemDialogClick\}/);
     expect(branchWithdrawClient).toMatch(/onCancel=\{\(event\) => \{[\s\S]*closeAddItemDialog\(\)/);
-    expect(branchWithdrawClient).toMatch(/aria-label="ปิด"[\s\S]*<X className="h-4 w-4"/);
+    expect(branchWithdrawClient).toMatch(/aria-label="ปิด"[\s\S]*<CloseIcon size="md"/);
   });
 });

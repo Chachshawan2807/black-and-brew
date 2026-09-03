@@ -1,10 +1,11 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, UserCog, Loader2, X, Calendar, CalendarDays, Pencil, Check, GripVertical } from '@/lib/icons';
+import { Plus, Trash2, UserCog, X, Calendar, CalendarDays, Pencil, Check, GripVertical } from '@/lib/icons';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { format } from 'date-fns';
 
@@ -2043,7 +2044,7 @@ export default function ScheduleClient({
               >
                 {mgmtHistoryLoading && mgmtHistory.length === 0 ? (
                   <div className="min-h-[12rem] flex flex-col items-center justify-center text-foreground/30 space-y-2">
-                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <LoadingIcon size="lg" />
                     <p className="text-sm font-normal uppercase tracking-widest">กำลังโหลดประวัติ...</p>
                   </div>
                 ) : mgmtHistory.length === 0 ? (
@@ -2127,7 +2128,7 @@ export default function ScheduleClient({
                                     className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg bb-transition flex items-center justify-center disabled:opacity-50"
                                     aria-label="ลบประวัติการจัดการ"
                                   >
-                                    {confirmDeleteId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                    {confirmDeleteId === item.id ? <LoadingIcon size="md" /> : <Trash2 className="w-4 h-4" />}
                                   </button>
                                 </HintTooltip>
                               </div>
@@ -2139,7 +2140,7 @@ export default function ScheduleClient({
                             <td colSpan={5} className="p-3 text-center text-muted-foreground text-[12px] bg-transparent">
                               {mgmtHistoryLoading ? (
                                 <span className="inline-flex items-center gap-2">
-                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <LoadingIcon size="md" />
                                   กำลังโหลดประวัติเพิ่มเติม...
                                 </span>
                               ) : (
@@ -2219,7 +2220,7 @@ export default function ScheduleClient({
                   disabled={loading || !newEmployeeName.trim()}
                   className="flex-1 h-11 md:h-auto md:py-3 bg-[#000000] text-[#ffffff] font-normal rounded-xl hover:bg-[#000000]/80 bb-transition shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  {loading ? <LoadingIcon size="md" /> : <Plus className="w-4 h-4" />}
                   ยืนยัน
                 </button>
               </div>

@@ -1,8 +1,10 @@
 'use client';
 
+import { PageLoadingState } from '@/components/ui/page-loading-state';
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ClipboardList, Loader2, Undo2, Redo2, Trash2, X } from '@/lib/icons';
+import { CheckCircle2, ClipboardList, ICON_STROKE, Undo2, Redo2, Trash2, X } from '@/lib/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeOverlay, modalContent, pageHeadingSpring } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';
@@ -1763,12 +1765,7 @@ export default function InventoryClient({
   }
 
   if (loading) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center bg-transparent text-foreground">
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-foreground" strokeWidth={1.5} />
-        <span className="font-normal text-sm uppercase tracking-widest text-foreground">กำลังซิงค์ข้อมูล...</span>
-      </div>
-    );
+    return <PageLoadingState label="กำลังซิงค์ข้อมูล..." />;
   }
 
   return (
@@ -1792,12 +1789,15 @@ export default function InventoryClient({
             <div className="flex items-center gap-1.5 text-sm font-normal min-w-[70px]">
               {savingState === 'saving' && (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-foreground" />
+                  <LoadingIcon size="sm" className="text-foreground" />
                   <span className="text-foreground">กำลังซิงค์ข้อมูลอยู่ค่ะ</span>
                 </>
               )}
               {savingState === 'synced' && (
-                <span className="text-emerald-500">✓ ซิงค์ข้อมูลแล้วค่ะ</span>
+                <span className="inline-flex items-center gap-1 text-emerald-500">
+                  <CheckCircle2 size={14} strokeWidth={ICON_STROKE} aria-hidden />
+                  ซิงค์ข้อมูลแล้วค่ะ
+                </span>
               )}
               {savingState === 'queued' && (
                 <span className="text-amber-600 dark:text-amber-400">รอส่งข้อมูลเมื่อออนไลน์</span>

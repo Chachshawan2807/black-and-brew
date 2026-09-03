@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { EXPORT_PROGRESS_OVERLAY_Z_CLASS } from '@/lib/floating-action-layout';
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { ImageDown } from '@/lib/icons';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { cn } from '@/lib/utils';
@@ -64,7 +65,8 @@ export function ExportProgressOverlay({
                   animate={{ y: [0, -1, 0] }}
                   transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: 0.08 }}
                 >
-                  <ImageDown className="h-5 w-5" strokeWidth={1.75} />
+                  <LoadingIcon size="md" className="text-background" />
+                  <ImageDown className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-card p-0.5 text-foreground" strokeWidth={1.75} />
                 </motion.div>
               </div>
 

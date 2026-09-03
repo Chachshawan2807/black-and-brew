@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useEffect, useState } from 'react';
 import {
   DndContext,
@@ -14,7 +15,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
-import { ClipboardList, Loader2, X } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
+import { ClipboardList } from '@/lib/icons';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { cn } from '@/lib/utils';
 import {
@@ -163,7 +165,7 @@ export default function WithdrawRequiredItemsModal({
               className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full bb-transition active:scale-95 z-10"
               aria-label="ปิดรายการที่ต้องเบิก"
             >
-              <X className="w-6 h-6" />
+              <CloseIcon size="lg" />
             </button>
           </HintTooltip>
 
@@ -205,7 +207,7 @@ export default function WithdrawRequiredItemsModal({
 
           {isSaving && (
             <div className="shrink-0 border-t border-border px-4 py-2 text-[12px] text-muted-foreground flex items-center gap-2 justify-center">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />
+              <LoadingIcon size="sm" className="aria-hidden" />
               กำลังบันทึกลำดับ...
             </div>
           )}

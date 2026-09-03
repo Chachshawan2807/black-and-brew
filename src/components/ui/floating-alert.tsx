@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, AlertCircle } from '@/lib/icons';
+import { AlertCircle, CheckCircle2, ICON_SIZE, ICON_STROKE } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { toastSlide, alertSlideIn } from '@/lib/motion-presets';
 import { getAnchoredFloatingPosition } from '@/lib/floating-position';
@@ -143,7 +143,11 @@ export function FloatingToast({
             className
           )}
         >
-          {type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
+          {type === 'success' ? (
+            <CheckCircle2 size={ICON_SIZE.lg} strokeWidth={ICON_STROKE} className="shrink-0" />
+          ) : (
+            <AlertCircle size={ICON_SIZE.lg} strokeWidth={ICON_STROKE} className="shrink-0" />
+          )}
           <span>{message}</span>
         </motion.div>
       )}

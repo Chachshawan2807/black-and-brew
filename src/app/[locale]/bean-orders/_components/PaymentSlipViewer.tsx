@@ -1,7 +1,9 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, X, ZoomIn } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
+import { ZoomIn } from '@/lib/icons';
 import { getBeanOrderSlipSignedUrl } from '@/app/actions/bean-order-actions';
 import {
   BEAN_ORDER_ACTION_BTN_OUTLINE,
@@ -136,7 +138,7 @@ export function PaymentSlipViewer({
                   : 'flex min-h-24 min-w-[7rem] items-center justify-center px-3 py-4 text-sm text-muted-foreground'
               }
             >
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              <LoadingIcon size="md" className="mr-2" />
               กำลังโหลด...
             </div>
           ) : resolvedPreviewUrl ? (
@@ -200,7 +202,7 @@ export function PaymentSlipViewer({
               className={`h-9 w-9 text-muted-foreground ${BEAN_ORDER_BTN_ICON}`}
               aria-label="ปิด"
             >
-              <X className="h-4 w-4" aria-hidden />
+              <CloseIcon size="md" />
             </button>
           </div>
           <div
@@ -213,7 +215,7 @@ export function PaymentSlipViewer({
                 className="flex items-center gap-2 text-sm text-muted-foreground"
                 onClick={(event) => event.stopPropagation()}
               >
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                <LoadingIcon size="md" />
                 กำลังโหลดสลิป...
               </div>
             ) : error ? (

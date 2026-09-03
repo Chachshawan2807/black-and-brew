@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
-import { X } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
 import {
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
@@ -152,7 +152,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
             className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors z-10"
             aria-label="ปิด"
           >
-            <X className="w-5 h-5" />
+            <CloseIcon />
           </button>
         </HintTooltip>
         <div className="px-6 h-14 border-b border-border flex items-center justify-between shrink-0 pr-14">

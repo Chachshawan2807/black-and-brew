@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -13,7 +14,7 @@ import {
   PIN_VERIFYING_LOCK_ANIMATE,
   pinVerifyingLockTransition,
 } from '@/lib/motion-presets';
-import { Lock, ShieldAlert, Loader2, Fingerprint, ScanFace } from '@/lib/icons';
+import { Lock, ShieldAlert, Fingerprint, ScanFace } from '@/lib/icons';
 import { getAuthSessionInfo, verifyPin } from '@/app/actions/auth';
 import {
   clearClientAuthSession,
@@ -562,7 +563,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground text-background px-4 py-3 text-sm font-normal disabled:opacity-60"
             >
               {passkeyBusy ? (
-                <Loader2 size={18} className="animate-spin" />
+                <LoadingIcon size={18} className="animate-spin" />
               ) : (
                 <BiometricIcon size={18} strokeWidth={1.5} />
               )}
@@ -686,7 +687,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
                 className="flex h-16 w-16 items-center justify-center rounded-[24px] border border-border bg-card bb-shadow-sm"
                 aria-hidden="true"
               >
-                <Loader2 className="h-7 w-7 animate-spin text-foreground" strokeWidth={1.5} />
+                <LoadingIcon size="lg" className="text-foreground" />
               </motion.div>
             ) : (
               <motion.div
@@ -801,7 +802,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-normal text-foreground disabled:opacity-60"
             >
               {passkeyBusy ? (
-                <Loader2 size={18} className="animate-spin" strokeWidth={1.5} />
+                <LoadingIcon size={18} className="animate-spin" strokeWidth={1.5} />
               ) : (
                 <BiometricIcon size={18} strokeWidth={1.5} />
               )}

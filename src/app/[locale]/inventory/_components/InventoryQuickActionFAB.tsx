@@ -1,29 +1,26 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Package, X, Loader2 } from '@/lib/icons';
+import { Package, X } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent, fabIconOpen, fabIconClose, FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
 import {
   computePurchaseOrderDerivedState,
   getStockColorClass,
-  type InventoryStockFields,
-} from '@/lib/inventory-stock';
+  type InventoryStockFields } from '@/lib/inventory-stock';
 import {
   useInventoryRealtime,
-  type InventoryRealtimeItem,
-} from '@/contexts/InventoryRealtimeContext';
+  type InventoryRealtimeItem } from '@/contexts/InventoryRealtimeContext';
 import {
-  fetchFrequentItems,
-} from '@/app/actions/inventory-actions';
+  fetchFrequentItems } from '@/app/actions/inventory-actions';
 import {
   loadFrequentItemsCache,
   saveFrequentItemsCache,
   shouldRefreshFrequentItems,
-  touchFrequentItemInCache,
-} from '@/lib/inventory-frequent-items';
+  touchFrequentItemInCache } from '@/lib/inventory-frequent-items';
 import { useInventoryQuickAction } from '@/hooks/use-inventory-quick-action';
 import { useInventoryHistory } from '@/hooks/use-inventory-history';
 import { prefetchInventoryHistoryFirstPage } from '@/lib/inventory-history-prefetch';
@@ -33,19 +30,16 @@ import {
   FAB_BOTTOM_QUICK_ACTION_CLASS,
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
   FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
-  FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
-} from '@/lib/floating-action-layout';
+  FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS } from '@/lib/floating-action-layout';
 import {
   INVENTORY_QUICK_ACTION_HOVER,
-  inventoryQuickActionTypeColors,
-} from '@/lib/shift-colors';
+  inventoryQuickActionTypeColors } from '@/lib/shift-colors';
 import { blurActiveElement } from '@/lib/blur-active-element';
 import {
   getFabPanelKeyboardAwareStyle,
   getFabMobileBulkPanelStyle,
   getModalBackdropKeyboardAwareStyle,
-  getModalContentKeyboardAwareStyle,
-} from '@/lib/keyboard-aware-panel-style';
+  getModalContentKeyboardAwareStyle } from '@/lib/keyboard-aware-panel-style';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { useMaxMd } from '@/hooks/use-max-md';
 import { FabFadePresence } from '@/components/floating/FabFadePresence';
@@ -70,8 +64,7 @@ export default function InventoryQuickActionFAB() {
     setItems,
     refresh,
     isLoading: isLoadingItems,
-    hasLoaded: hasLoadedItems,
-  } = useInventoryRealtime();
+    hasLoaded: hasLoadedItems } = useInventoryRealtime();
 
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -94,8 +87,7 @@ export default function InventoryQuickActionFAB() {
     isHistoryLoading,
     isHistoryRefreshing,
     historySearchQuery,
-    handleHistorySearchQueryChange,
-  } = history;
+    handleHistorySearchQueryChange } = history;
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [isExportingPO, setIsExportingPO] = useState(false);
 
@@ -106,8 +98,7 @@ export default function InventoryQuickActionFAB() {
   const mobileBackdropStyle = isMobile
     ? getModalBackdropKeyboardAwareStyle({
         insets: viewportInsets,
-        verticalAlign: 'center',
-      })
+        verticalAlign: 'center' })
     : undefined;
   const mobilePanelStyle = isMobile
     ? getModalContentKeyboardAwareStyle({ insets: viewportInsets })
@@ -138,8 +129,7 @@ export default function InventoryQuickActionFAB() {
         setFrequentItems(touchFrequentItemInCache({ id: saved.id, name: saved.name }));
       }
       setIsOpen(false);
-    },
-  });
+    } });
 
   const fabMobileBulkQueueActive =
     isMobile && quickAction.bulkMode && quickAction.bulkQueue.length > 0;
@@ -283,8 +273,7 @@ export default function InventoryQuickActionFAB() {
       const blob = await captureElementAsPng(element, {
         backgroundColor: '#fff3dd',
         preserveOverflow: true,
-        filter: (node) => (node as HTMLElement)?.id !== 'po-action-buttons',
-      });
+        filter: (node) => (node as HTMLElement)?.id !== 'po-action-buttons' });
       const channelSuffix = selectedChannels.includes('all') ? 'All' : selectedChannels.join('-');
       downloadPngBlob(
         blob,
@@ -385,12 +374,11 @@ export default function InventoryQuickActionFAB() {
                 )}
                 style={{
                   ...desktopPanelStyle,
-                  ...(fabMobileBulkQueueActive ? fabMobileBulkPanelStyle : mobilePanelStyle),
-                }}
+                  ...(fabMobileBulkQueueActive ? fabMobileBulkPanelStyle : mobilePanelStyle) }}
               >
               {isLoadingItems && !hasLoadedItems ? (
                 <div className="bg-card rounded-3xl border border-border bb-shadow-xl p-8 flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="w-6 h-6 animate-spin text-foreground" strokeWidth={1.5} />
+                  <LoadingIcon size="lg" className="text-foreground" />
                   <span className="text-sm font-normal text-muted-foreground">กำลังโหลดข้อมูลคลังสินค้า...</span>
                 </div>
               ) : (

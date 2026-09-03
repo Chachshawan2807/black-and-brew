@@ -1,12 +1,13 @@
 'use client';
 
+import { LoadingIcon } from '@/components/ui/loading-icon';
+import { CloseIcon } from '@/components/ui/close-icon';
 import { useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ClipboardList,
-  Loader2,
+  Save,
   Trash2,
-  X,
+  ICON_STROKE,
 } from '@/lib/icons';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { RoundedSelect } from '@/components/ui/rounded-select';
@@ -155,7 +156,7 @@ export default function MaintenanceModals({
                   className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
                   aria-label="ปิด"
                 >
-                  <X className="w-5 h-5" strokeWidth={2} />
+                  <CloseIcon />
                 </button>
               </HintTooltip>
               <div className="p-5 border-b border-border flex items-center justify-between shrink-0 pr-14">
@@ -353,7 +354,7 @@ export default function MaintenanceModals({
                   disabled={loading || isReadOnly}
                   className="flex-[2] h-11 md:h-auto md:py-3 bg-foreground text-background font-normal rounded-2xl hover:opacity-90 bb-transition bb-shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" strokeWidth={2} />}
+                  {loading ? <LoadingIcon size="md" /> : <Save className="w-4 h-4" strokeWidth={ICON_STROKE} />}
                   ยืนยันบันทึก
                 </button>
               </div>
@@ -378,7 +379,7 @@ export default function MaintenanceModals({
                 className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
                 aria-label="ปิด"
               >
-                <X className="w-5 h-5" strokeWidth={2} />
+                <CloseIcon />
               </button>
             </HintTooltip>
             <div className="w-20 h-20 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">

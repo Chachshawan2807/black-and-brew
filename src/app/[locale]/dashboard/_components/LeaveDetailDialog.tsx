@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { X } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
 import type { LeaveDetailEntry } from '@/lib/dashboard/leave-details';
 import { DashboardStatDetailRows } from './DashboardStatDetailRows';
 
@@ -68,7 +68,7 @@ export function LeaveDetailDialog({
             className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="ปิด"
           >
-            <X className="h-4 w-4" aria-hidden />
+            <CloseIcon size="md" />
           </button>
         </div>
 

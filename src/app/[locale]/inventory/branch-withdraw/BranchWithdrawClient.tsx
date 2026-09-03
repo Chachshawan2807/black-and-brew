@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ChevronLeft, Copy, Eye, Loader2, Plus, Save, Search, X } from '@/lib/icons';
+import { LoadingIcon } from '@/components/ui/loading-icon';
+import { ChevronLeft, Copy, Eye, Plus, Save, Search } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
 import {
   saveBranchWithdrawal,
   type BranchWithdrawHistoryRow,
@@ -213,7 +215,7 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-foreground/70 transition-colors hover:bg-card"
                 aria-label={`ลบ ${item.name} ออกจากรายการ`}
               >
-                <X className="h-3 w-3" />
+                <CloseIcon size="xs" />
                 <span>ลบ</span>
               </button>
             ) : null}
@@ -559,7 +561,7 @@ export default function BranchWithdrawClient({
         >
           {isSaving ? (
             <>
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+              <LoadingIcon size="md" className="shrink-0" />
               <span className="truncate">กำลังบันทึก...</span>
             </>
           ) : (
@@ -757,7 +759,7 @@ export default function BranchWithdrawClient({
               className={DIALOG_CLOSE_BUTTON_CLASS}
               aria-label="ปิด"
             >
-              <X className="h-4 w-4" aria-hidden />
+              <CloseIcon size="md" />
             </button>
           </div>
           <label className="relative mt-3 block">

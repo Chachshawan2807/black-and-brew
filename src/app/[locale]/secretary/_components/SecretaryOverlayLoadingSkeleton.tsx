@@ -1,3 +1,5 @@
+import { LoadingIcon } from '@/components/ui/loading-icon';
+
 export type SecretaryOverlaySkeletonVariant = 'embed' | 'list' | 'form' | 'purchase';
 
 type SecretaryOverlayLoadingSkeletonProps = {
@@ -74,6 +76,9 @@ export function SecretaryOverlayLoadingSkeleton({
 }: SecretaryOverlayLoadingSkeletonProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col" role="status" aria-live="polite" aria-busy="true">
+      <div className="flex justify-center py-2">
+        <LoadingIcon size="md" className="text-muted-foreground" />
+      </div>
       {variant === 'embed' ? <EmbedSkeleton /> : null}
       {variant === 'list' ? <ListSkeleton /> : null}
       {variant === 'form' ? <FormSkeleton /> : null}

@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Download, Loader2, Share, SquarePlus, X } from '@/lib/icons';
+import { Download, Share, SquarePlus } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
 import { prepareFreshPwaInstall } from '@/lib/pwa-install-reset';
 import {
@@ -106,7 +108,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
           aria-label={showPreparing ? t.preparing : t.install}
         >
           {showPreparing ? (
-            <Loader2 size={14} strokeWidth={1.5} className="animate-spin" aria-hidden />
+            <LoadingIcon size="sm" strokeWidth={1.5} />
           ) : (
             <Download size={14} strokeWidth={1.5} aria-hidden />
           )}
@@ -132,7 +134,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
               className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label={t.close}
             >
-              <X size={16} strokeWidth={1.5} />
+              <CloseIcon size="sm" strokeWidth={1.5} />
             </button>
           </div>
 

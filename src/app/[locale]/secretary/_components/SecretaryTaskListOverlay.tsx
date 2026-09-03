@@ -1,6 +1,6 @@
 'use client';
 
-import { X } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
@@ -64,7 +64,7 @@ export default function SecretaryTaskListOverlay({
               aria-label="ปิด"
               className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted/50"
             >
-              <X size={16} />
+              <CloseIcon size="sm" />
             </button>
           </div>
           <ul className="min-h-0 flex-1 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
