@@ -7,6 +7,13 @@
       "script": "scripts/health-check.mjs",
       "description": "Verify lint + test smoke for AgentSkillOS runner",
       "tags": ["verification", "ci"]
+    },
+    {
+      "id": "notification-smoke",
+      "path": "skills/notification-smoke",
+      "script": "scripts/notification-smoke.mjs",
+      "description": "Notification hub regression bundle (FAB, panel, badge, PWA push)",
+      "tags": ["verification", "notifications"]
     }
   ]
 }

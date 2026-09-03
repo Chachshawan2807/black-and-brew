@@ -203,6 +203,72 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 - **Implementation Style:** ใช้สไตล์การเขียนแบบ Shared Component หรือ Tailwind Utility ที่ขยาย Hitbox ให้ครอบคลุมทั้งกรอบ Input เพื่อให้พนักงานใช้งานได้สะดวกบนทุกอุปกรณ์
 <!-- END:clickable-input-rules -->
 
+<!-- BEGIN:notification-hub-standard -->
+
+## NOTIFICATION HUB (IRON RULE)
+
+ทุกงานที่แตะการแจ้งเตือน (in-app panel, FAB bell, unread badge, iOS/Android/desktop OS banner, Web Push, cross-tab sync) ต้องเริ่มที่ **hub** ก่อนเสมอ ห้ามแก้ UI หรือ formatter โดยตรงจนกว่าจะอ่านและเข้าใจ hub แล้ว
+
+### Hub (ศูนย์กลาง state + sync)
+
+| ชั้น | ไฟล์ | หน้าที่ |
+| ---- | ---- | -------- |
+| **Hub หลัก** | `src/hooks/use-inventory-notifications.ts` | Realtime, push, storage hydrate, unread counter, OS banner, `pushNotification` |
+| Context | `src/components/notifications/NotificationProvider.tsx` | React context + mount `NotificationPanel` |
+| Persistence | `src/lib/notification-sync.ts`, `notification-storage.ts`, `notification-idb.ts`, `notification-unread-counter.ts` | list merge, localStorage, IDB, counter reconcile |
+| Cross-tab | `src/lib/notification-cross-tab.ts` | sync ข้ามแท็บเครื่องเดียวกัน |
+| OS / PWA | `src/lib/pwa-notification-bridge.ts`, `src/components/PwaRegister.tsx` | system notification, app badge, SW message bridge |
+| Channel gates | `src/lib/notification-channel-gates.ts`, `notification-preferences.ts` | in-app vs OS ต่อ channel |
+| Push | `src/lib/push-subscription-client.ts`, `src/components/notifications/PushSubscriptionManager.tsx`, `public/sw.js` | Web Push background, iOS user gesture |
+| Types | `src/lib/notification-types.ts` | `InventoryNotification`, prefs keys |
+
+### UI (บาง layer สุดท้าย ห้ามใส่ logic sync ใหม่)
+
+| ส่วน | ไฟล์ |
+| ---- | ---- |
+| Panel (view-only) | `src/components/notifications/NotificationPanel.tsx` |
+| Bell (FAB + shared) | `src/components/notifications/NotificationBell.tsx` |
+| FAB wrapper | `src/components/notifications/InventoryNotificationFAB.tsx` |
+| FAB mount | `src/components/shell/DeferredOverlays.tsx` |
+| FAB stack / z-index | `src/lib/floating-action-layout.ts`, `src/components/floating/FloatingOverlayContext.tsx` |
+
+### Sync matrix (อ้างอิง `src/test/notification-fab-sync.test.ts`)
+
+| สถานการณ์ | กลไก |
+| --------- | ---- |
+| Foreground (desktop + mobile browser) | Supabase Realtime → `pushNotification` ใน hub |
+| หลายแท็บเครื่องเดียวกัน | `localStorage` + `subscribeNotificationSync` |
+| Background PWA (iOS / Android) | Web Push → `public/sw.js` → `SW_INVENTORY_PUSH_RECEIVED` → hub |
+| กลับมาเปิดแอป | `visibilitychange` / `focus` / `pageshow` → `syncFromStorageAndServer` |
+
+### ลำดับแก้ไข (บังคับ)
+
+1. อ่าน `use-inventory-notifications.ts` (`pushNotification`, `persist`, `syncFromStorage*`)
+2. ถ้า badge/counter/list ไม่ตรง → `notification-sync.ts` + storage/idb/counter
+3. ถ้า OS banner / home-screen badge → `pwa-notification-bridge.ts` + `PwaRegister.tsx` + `sw.js`
+4. ถ้า channel หาย/โผล่ผิด → `notification-channel-gates.ts` + prefs
+5. แก้ UI (`NotificationPanel`, `NotificationBell`, FAB layout) **ทีหลังสุด** เท่านั้น
+
+### ห้าม
+
+- ❌ แก้ `NotificationBell` / `NotificationPanel` / `*-notification.ts` formatter โดยไม่อ่าน hub ก่อน
+- ❌ duplicate state หรือ counter ใน component แยกจาก hub
+- ❌ เริ่มค้นหาด้วย grep ไล่ UI ก่อน hub (ใช้ `search_graph` / `trace_path` ที่ hub ก่อน ตาม `.cursorrules`)
+
+### ทดสอบบังคับก่อนจบงาน
+
+รัน `npm run test:notifications` (หรือ `npm run skill:run notification-smoke`) เมื่อแตะไฟล์ใดไฟล์หนึ่งใน hub, UI, หรือ `public/sw.js`:
+
+| เงื่อนไข | เทสเพิ่ม |
+| -------- | -------- |
+| ทุกครั้ง | `notification-fab-sync`, `notification-panel-view-only`, `notification-sync`, `notification-sync-counter`, `notification-cross-tab`, `pwa-notification-bridge`, `notification-channel-gates`, `notification-badge` |
+| แตะ mobile layout / FAB position | `notification-panel-mobile-layout`, `pwa-mobile-badge` |
+| แตะ iOS / PWA push | `ios-notification-parity` |
+
+Domain formatters (`src/lib/*-notification.ts`, `inventory-notification-filter.ts`) แก้ได้ แต่ต้องตรวจว่า hub เรียกผ่าน `formatNotificationRow` / `filterEligibleRows` ไม่ bypass hub
+
+<!-- END:notification-hub-standard -->
+
 <!-- BEGIN:notification-panel-view-only-standard -->
 
 ## NOTIFICATION PANEL VIEW-ONLY (IRON RULE)

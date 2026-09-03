@@ -15,6 +15,7 @@
     "docs:links": "node scripts/validate-md-links.mjs",
     "scan:orphans": "node scripts/scan-dead-imports.mjs",
     "test": "vitest run",
+    "test:notifications": "vitest run notification-fab-sync notification-panel-view-only notification-sync notification-sync-counter notification-cross-tab pwa-notification-bridge notification-channel-gates notification-badge ios-notification-parity notification-panel-mobile-layout pwa-mobile-badge",
     "test:coverage": "vitest run --coverage",
     "analyze": "cross-env ANALYZE=true next build",
     "db:verify": "node scripts/verify-supabase-migrations.mjs",

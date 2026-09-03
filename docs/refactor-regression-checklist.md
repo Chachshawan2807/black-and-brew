@@ -12,12 +12,15 @@ Quick reference for smoke testing after each refactor PR.
 | Dashboard | LiveShiftList, MonthlyRoster, LiveStatusTracker |
 | Bean orders | create/edit, payment slip, ship, manual delivery confirm |
 | Proactive insights | cron/manual `/api/insight-alerts`, NotificationBell digest, HomeOpsPanels |
-| Notification FAB | unread badge, panel view-only, cross-tab + visibility hydrate (`notification-fab-sync`) |
+| Notification hub | start at `use-inventory-notifications.ts`; FAB/panel/badge/OS push share one state; see `AGENTS.md` notification-hub-standard |
+| Notification FAB | unread badge, panel view-only, cross-tab + visibility hydrate; FAB stack via `FloatingOverlayContext` + `floating-action-layout.ts` |
 | Auth | PIN, logout, session revocation |
-| Notifications | bell count (unread counter), panel, cross-tab sync, inventory alerts |
+| Notifications | bell count (unread counter reconcile), panel, cross-tab sync, iOS/Android Web Push resume; automated: `npm run test:notifications` |
 | Settings | theme, notification prefs, data change history |
 | Tooltips | HintTooltip on FAB/toolbar icons (hover + keyboard focus) |
 
 **Automated:** `npm run lint && npm run test && npm run build`
 
 **Targeted (v8.6):** `npm test -- inventory-count-accuracy inventory-in-out-theoretical inventory-quick-bulk inventory-quick-action-draft`
+
+**Targeted (notifications):** `npm run test:notifications` or `npm run skill:run notification-smoke`

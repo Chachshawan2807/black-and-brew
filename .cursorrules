@@ -22,6 +22,16 @@ This project uses **codebase-memory-mcp** as the primary backend knowledge graph
 4. **Re-index after structural change:** เมื่อแก้โครงสร้าง (เพิ่ม/ย้าย/ลบ function/route) ให้ re-index ผ่าน MCP (`index_repository`) เพื่อให้ศูนย์กลางความรู้ไม่เก่า
 5. **Fallback:** ใช้ grep/glob ได้เฉพาะกรณี knowledge graph ไม่มีผล (เช่น string literal, config, ไฟล์ที่ยังไม่ index) เท่านั้น
 
+### Notification domain hub (ตัวอย่าง hub-first)
+
+งานแจ้งเตือน (FAB bell, panel, badge, iOS/Android/desktop OS banner, Web Push) ห้ามเริ่มจาก `NotificationBell`, `NotificationPanel`, หรือ `*-notification.ts` formatter
+
+1. **Hub:** `src/hooks/use-inventory-notifications.ts` → `search_graph` / `trace_path` จาก `pushNotification`, `syncFromStorageAndServer`
+2. **Persistence / counter:** `notification-sync.ts`, `notification-storage.ts`, `notification-idb.ts`, `notification-unread-counter.ts`
+3. **OS / PWA:** `pwa-notification-bridge.ts`, `PwaRegister.tsx`, `public/sw.js`
+4. **UI สุดท้าย:** `NotificationProvider`, `InventoryNotificationFAB`, `floating-action-layout.ts`
+5. **ก่อนจบงาน:** `npm run test:notifications` (ดู `AGENTS.md` notification-hub-standard)
+
 ## Auto-sync knowledge graph + ADR (IRON RULE)
 
 เมื่องานมีการเปลี่ยนแปลงสถาปัตย์ ให้ดำเนินการอัตโนมัติ **ก่อนจบงาน** โดยไม่ต้องรอผู้ใช้สั่ง:
