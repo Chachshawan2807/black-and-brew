@@ -115,6 +115,24 @@ describe('filterVisibleSecretaryBoardTasks', () => {
     expect(visible.map((entry) => entry.id)).toEqual(['unified']);
   });
 
+  test('always hides retired inventory count tasks from the board', () => {
+    const countTask = task({
+      id: 'count',
+      status: 'pending',
+      module: 'inventory_count',
+      task_type: 'inventory_count_due',
+      title: 'ตรวจนับสต็อกวันนี้',
+    });
+
+    const visible = filterVisibleSecretaryBoardTasks(
+      [countTask, task({ id: 'inventory', status: 'pending', module: 'inventory' })],
+      'all',
+      visibility,
+    );
+
+    expect(visible.map((entry) => entry.id)).toEqual(['inventory']);
+  });
+
   test('always hides retired branch2 roast tasks from the board', () => {
     const roastTask = task({
       id: 'roast',

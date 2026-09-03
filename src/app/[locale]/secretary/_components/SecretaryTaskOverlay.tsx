@@ -13,7 +13,7 @@ import {
   updateManualSecretaryTask,
 } from '@/app/actions/secretary-actions';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
-import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
+import { preloadSecretaryOverlayForTask } from '@/lib/secretary/preload-secretary-overlay';
 import { resolveSecretaryTaskDetailText } from '@/lib/secretary/resolve-task-detail-text';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
 import {
@@ -23,7 +23,6 @@ import {
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import BeanOrdersOverlay from './BeanOrdersOverlay';
 import BranchWithdrawOverlay from './BranchWithdrawOverlay';
-import InventoryCountOverlay from './InventoryCountOverlay';
 import ScheduleOverlay from './ScheduleOverlay';
 import SecretaryManualTaskDialog from './SecretaryManualTaskDialog';
 import SecretaryTaskInfoOverlay from './SecretaryTaskInfoOverlay';
@@ -112,10 +111,10 @@ export default function SecretaryTaskOverlay({
   );
 
   useEffect(() => {
-    if (overlayKind === 'purchase_orders') {
-      preloadPurchaseOrdersModal();
+    if (overlayKind) {
+      preloadSecretaryOverlayForTask(task);
     }
-  }, [overlayKind]);
+  }, [overlayKind, task]);
 
   if (!task || !overlayKind) return null;
 
@@ -192,10 +191,6 @@ export default function SecretaryTaskOverlay({
 
   if (overlayKind === 'schedule_panel') {
     return <ScheduleOverlay task={task} locale={locale} onClose={onClose} />;
-  }
-
-  if (overlayKind === 'inventory_count_panel') {
-    return <InventoryCountOverlay task={task} locale={locale} onClose={onClose} />;
   }
 
   if (isManualSecretaryTask(task)) {

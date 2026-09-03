@@ -213,6 +213,7 @@ export async function applyDerivedTaskDrafts(
 
   try {
     autoSkipped += await skipInactiveBranch2DerivedTasks(dateIso);
+    autoSkipped += await skipInactiveInventoryCountDerivedTasks(dateIso);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return { success: false, error: message };
@@ -245,4 +246,36 @@ async function skipInactiveBranch2DerivedTasks(dateIso: string): Promise<number>
     .map((row) => String(row.id));
 
   return skipInactiveDerivedTaskIds(taskIds, 'branch2_inactive');
+}
+
+async function skipInactiveInventoryCountDerivedTasks(dateIso: string): Promise<number> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('operational_tasks')
+    .select('id, status, metadata, task_type, module')
+    .eq('scheduled_date', dateIso)
+    .in('status', ['pending', 'in_progress', 'done']);
+
+  if (error) {
+    console.error('Supabase Error:', error.message, error.details);
+    throw error;
+  }
+
+  const taskIds = (data ?? [])
+    .filter((row) => {
+      const taskType = String(row.task_type);
+      const module = String(row.module);
+      const isCountTask =
+        module === 'inventory_count' ||
+        module === 'inventory_accuracy' ||
+        taskType === 'inventory_count_due' ||
+        taskType === 'inventory_accuracy_review';
+      if (!isCountTask) return false;
+      return isRowEligibleForStaleSkip({
+        status: String(row.status),
+        metadata: (row.metadata as Record<string, unknown> | null) ?? null,
+      });
+    })
+    .map((row) => String(row.id));
+
+  return skipInactiveDerivedTaskIds(taskIds, 'inventory_count_retired');
 }

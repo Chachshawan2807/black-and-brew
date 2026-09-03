@@ -6,7 +6,6 @@ export type SecretaryTaskOverlayKind =
   | 'bean_orders_panel'
   | 'maintenance_list'
   | 'schedule_panel'
-  | 'inventory_count_panel'
   | 'task_info';
 
 export function resolveSecretaryTaskOverlayKind(
@@ -31,9 +30,6 @@ export function resolveSecretaryTaskOverlayKind(
     case 'schedule_leave_risk':
     case 'schedule_mgmt_review':
       return 'schedule_panel';
-    case 'inventory_count_due':
-    case 'inventory_accuracy_review':
-      return 'inventory_count_panel';
     default:
       return 'task_info';
   }

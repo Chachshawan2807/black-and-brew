@@ -62,17 +62,12 @@ describe('resolveSecretaryTaskOverlayKind', () => {
     ).toBeNull();
   });
 
-  test('maps inventory count tasks to embedded count panel', () => {
+  test('retired inventory count tasks fall back to task info', () => {
     expect(
       resolveSecretaryTaskOverlayKind(
         task({ task_type: 'inventory_count_due', module: 'inventory_count' }),
       ),
-    ).toBe('inventory_count_panel');
-    expect(
-      resolveSecretaryTaskOverlayKind(
-        task({ task_type: 'inventory_accuracy_review', module: 'inventory_accuracy' }),
-      ),
-    ).toBe('inventory_count_panel');
+    ).toBe('task_info');
   });
 });
 
@@ -110,7 +105,7 @@ describe('secretary task detail overlay UI', () => {
     expect(overlay).not.toContain('actionHref');
     expect(overlay).toContain('BeanOrdersOverlay');
     expect(overlay).toContain('ScheduleOverlay');
-    expect(overlay).toContain('InventoryCountOverlay');
+    expect(overlay).not.toContain('InventoryCountOverlay');
     expect(overlay).toContain('SecretaryTaskListOverlay');
     expect(overlay).not.toContain('MaintenanceOverlay');
     expect(subwindow).toContain('onClose={onClose}');

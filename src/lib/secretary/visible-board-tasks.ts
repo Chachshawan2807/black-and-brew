@@ -12,6 +12,15 @@ export function isRetiredBranch2RoastTask(task: SecretaryTask): boolean {
   return task.module === 'branch2' || task.task_type === 'roast_carry';
 }
 
+export function isRetiredInventoryCountTask(task: SecretaryTask): boolean {
+  return (
+    task.module === 'inventory_count' ||
+    task.module === 'inventory_accuracy' ||
+    task.task_type === 'inventory_count_due' ||
+    task.task_type === 'inventory_accuracy_review'
+  );
+}
+
 export function isSecretaryBoardTaskVisible(
   task: SecretaryTask,
   moduleFilter: 'all' | SecretaryTask['module'],
@@ -24,6 +33,9 @@ export function isSecretaryBoardTaskVisible(
     return false;
   }
   if (isRetiredBranch2RoastTask(task)) {
+    return false;
+  }
+  if (isRetiredInventoryCountTask(task)) {
     return false;
   }
   if (task.status !== 'pending' && task.status !== 'in_progress' && task.status !== 'done') {

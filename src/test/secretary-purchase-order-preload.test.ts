@@ -14,15 +14,14 @@ describe('secretary purchase order modal preload', () => {
     expect(helper).toContain('preloaded');
   });
 
-  test('SecretaryClient preloads on idle when reorder task is visible', () => {
+  test('SecretaryClient preloads purchase orders through shared overlay preload', () => {
     const client = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/secretary/SecretaryClient.tsx'),
       'utf-8',
     );
-    expect(client).toContain('hasPurchaseOrderTask');
-    expect(client).toContain('requestIdleCallback');
-    expect(client).toContain('task.task_type === \'inventory_reorder\' ? preloadPurchaseOrdersModal');
-    expect(client).toContain('onPointerDown={warmOverlayChunk}');
+    expect(client).toContain('preloadSecretaryOverlayForTask');
+    expect(client).toContain('scheduleIdleWork');
+    expect(client).toContain('onPointerDown={canOpenDetail ? warmOverlayChunk : undefined}');
   });
 
   test('inventory client reuses shared preload helper', () => {

@@ -75,19 +75,18 @@ describe('deriveInventoryTasks', () => {
     expect(withdrawTask?.title).toBe('เบิกของสาขา 2 (1 รายการ)');
   });
 
-  test('creates inventory_count_due when exact-count items remain', () => {
+  test('does not create inventory count tasks', () => {
     const tasks = deriveInventoryTasks({
       ...snapshot([], []),
       countSession: {
         totalExactCountItems: 8,
         countedTodayCount: 3,
-        mismatchCount: 0,
+        mismatchCount: 2,
         isFullyCountedToday: false,
       },
     });
 
-    const countTask = tasks.find((task) => task.taskType === 'inventory_count_due');
-    expect(countTask?.title).toBe('ตรวจนับสต็อกวันนี้ (เหลือ 5 รายการ)');
-    expect(countTask?.module).toBe('inventory_count');
+    expect(tasks.some((task) => task.taskType === 'inventory_count_due')).toBe(false);
+    expect(tasks.some((task) => task.taskType === 'inventory_accuracy_review')).toBe(false);
   });
 });

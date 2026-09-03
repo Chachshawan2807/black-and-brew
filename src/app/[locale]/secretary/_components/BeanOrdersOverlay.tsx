@@ -2,7 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
-import { fetchBeanOrderDetail, fetchBeanOrders } from '@/app/actions/bean-order-actions';
+import {
+  peekBeanOrdersForOverlay,
+  prefetchBeanOrdersForOverlay,
+} from '@/lib/secretary/overlay-data-cache';
+import { fetchBeanOrderDetail } from '@/app/actions/bean-order-actions';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
 import SecretaryTaskSubwindow from './SecretaryTaskSubwindow';
@@ -40,7 +44,7 @@ function resolveBeanOrderFilters(task: SecretaryTask): {
 
 export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersOverlayProps) {
   const filters = useMemo(() => resolveBeanOrderFilters(task), [task]);
-  const [orders, setOrders] = useState<BeanOrderListRow[] | null>(null);
+  const [orders, setOrders] = useState<BeanOrderListRow[] | null>(() => peekBeanOrdersForOverlay());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Awaited<
@@ -51,8 +55,7 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
   useEffect(() => {
     let cancelled = false;
 
-    void (async () => {
-      const result = await fetchBeanOrders();
+    void prefetchBeanOrdersForOverlay().then((result) => {
       if (cancelled) return;
       if (!result.success) {
         setLoadError(result.error ?? 'ไม่สามารถโหลดออเดอร์ได้');
@@ -60,7 +63,7 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
         return;
       }
       setOrders(result.data ?? []);
-    })();
+    });
 
     return () => {
       cancelled = true;

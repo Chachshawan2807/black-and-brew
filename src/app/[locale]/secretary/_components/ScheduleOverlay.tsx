@@ -2,7 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
-import { fetchScheduleOverlayData } from '@/app/actions/secretary-overlay-actions';
+import {
+  peekScheduleOverlayData,
+  prefetchScheduleOverlayData,
+} from '@/lib/secretary/overlay-data-cache';
+import type { ScheduleOverlayData } from '@/app/actions/secretary-overlay-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
 import SecretaryTaskSubwindow from './SecretaryTaskSubwindow';
 
@@ -17,16 +21,13 @@ type ScheduleOverlayProps = {
 };
 
 export default function ScheduleOverlay({ task, locale, onClose }: ScheduleOverlayProps) {
-  const [payload, setPayload] = useState<Awaited<
-    ReturnType<typeof fetchScheduleOverlayData>
-  >['data'] | null>(null);
+  const [payload, setPayload] = useState<ScheduleOverlayData | null>(() => peekScheduleOverlayData());
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    void (async () => {
-      const result = await fetchScheduleOverlayData();
+    void prefetchScheduleOverlayData().then((result) => {
       if (cancelled) return;
       if (!result.success || !result.data) {
         setLoadError(result.error ?? 'ไม่สามารถโหลดตารางงานได้');
@@ -34,7 +35,7 @@ export default function ScheduleOverlay({ task, locale, onClose }: ScheduleOverl
         return;
       }
       setPayload(result.data);
-    })();
+    });
 
     return () => {
       cancelled = true;

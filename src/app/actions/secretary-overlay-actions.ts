@@ -1,19 +1,10 @@
 'use server';
 
 import { addDays, format, startOfWeek } from 'date-fns';
-import { fetchCountAccuracyStats, fetchTodayInventoryCountStatus } from '@/app/actions/inventory-actions';
-import { INVENTORY_COUNT_SELECT } from '@/lib/inventory-queries';
 import { groupRegularHolidayRows } from '@/lib/regular-holidays';
 import { requireReadAccess } from '@/lib/policies/server-gate';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import type { CountAccuracyStatsResult, TodayCountSessionStatus } from '@/app/actions/inventory-actions';
 import type { Profile, Shift } from '@/types';
-
-export type InventoryCountOverlayData = {
-  items: Array<Record<string, unknown>>;
-  initialAccuracyStats: CountAccuracyStatsResult | null;
-  initialTodayStatus: TodayCountSessionStatus | null;
-};
 
 export type ScheduleOverlayData = {
   initialProfiles: Profile[];
@@ -22,40 +13,6 @@ export type ScheduleOverlayData = {
   initialRegularHolidays: ReturnType<typeof groupRegularHolidayRows>;
   initialDateStr: string;
 };
-
-export async function fetchInventoryCountOverlayData(): Promise<{
-  success: boolean;
-  data?: InventoryCountOverlayData;
-  error?: string;
-}> {
-  const authError = await requireReadAccess();
-  if (authError) return { success: false, error: authError };
-
-  const [itemsResult, accuracyResult, todayStatusResult] = await Promise.all([
-    getSupabaseAdmin()
-      .from('inventory_items')
-      .select(INVENTORY_COUNT_SELECT)
-      .order('sort_order', { ascending: true }),
-    fetchCountAccuracyStats(),
-    fetchTodayInventoryCountStatus(),
-  ]);
-
-  if (itemsResult.error) {
-    console.error('Supabase Error (Count Fetch):', itemsResult.error.message, itemsResult.error.details);
-    return { success: false, error: itemsResult.error.message };
-  }
-
-  return {
-    success: true,
-    data: {
-      items: itemsResult.data ?? [],
-      initialAccuracyStats:
-        accuracyResult.success && accuracyResult.data ? accuracyResult.data : null,
-      initialTodayStatus:
-        todayStatusResult.success && todayStatusResult.data ? todayStatusResult.data : null,
-    },
-  };
-}
 
 export async function fetchScheduleOverlayData(weekParam?: string): Promise<{
   success: boolean;

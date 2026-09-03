@@ -1,6 +1,5 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { CheckCircle2, Loader2, Plus, Sparkles } from 'lucide-react';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
@@ -29,20 +28,17 @@ import {
 } from '@/hooks/use-secretary-board-sync';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import type { NotificationPreferences } from '@/lib/notification-types';
-import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
+import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
+import {
+  preloadSecretaryOverlayForTask,
+  preloadSecretaryTaskOverlayShell,
+} from '@/lib/secretary/preload-secretary-overlay';
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/secretary-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
-
-const SecretaryManualTaskDialog = dynamic(
-  () => import('./_components/SecretaryManualTaskDialog'),
-  { ssr: false },
-);
-
-const SecretaryTaskOverlay = dynamic(
-  () => import('./_components/SecretaryTaskOverlay'),
-  { ssr: false },
-);
+import SecretaryManualTaskDialog from './_components/SecretaryManualTaskDialog';
+import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay';
 
 type SecretaryClientProps = {
   initialBoard: SecretaryBoard;
@@ -55,8 +51,6 @@ const MODULE_LABELS: Record<SecretaryTask['module'], string> = {
   schedule: 'ตารางงาน',
   dashboard: 'แดชบอร์ด',
   inventory: 'คลัง',
-  inventory_count: 'ตรวจนับ',
-  inventory_accuracy: 'ความแม่นยำ',
   branch_withdraw: 'เบิกสาขา 2',
   bean_orders: 'ออเดอร์เมล็ดกาแฟ',
   maintenance: 'ซ่อมบำรุง',
@@ -68,8 +62,6 @@ const MODULE_FILTER_TIPS: Record<SecretaryTask['module'], string> = {
   schedule: 'งานจากตารางกะและการจัดคน',
   dashboard: 'งานจากแดชบอร์ดภาพรวม',
   inventory: 'งานสั่งซื้อและคลังสินค้า',
-  inventory_count: 'งานตรวจนับสต็อก',
-  inventory_accuracy: 'งานตรวจความแม่นยำคลัง',
   branch_withdraw: 'งานเบิกของไปสาขา 2',
   bean_orders: 'งานออเดอร์เมล็ดกาแฟ',
   maintenance: 'งานซ่อมบำรุงอุปกรณ์',
@@ -154,26 +146,27 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
     [board.tasks, moduleFilter, workDateIso],
   );
 
-  const hasPurchaseOrderTask = useMemo(
-    () => visibleTasks.some((task) => task.task_type === 'inventory_reorder'),
-    [visibleTasks],
-  );
+  const openableOverlayKinds = useMemo(() => {
+    const kinds = new Set<NonNullable<ReturnType<typeof resolveSecretaryTaskOverlayKind>>>();
+    for (const task of visibleTasks) {
+      if (!canOpenSecretaryTaskDetail(task)) continue;
+      const kind = resolveSecretaryTaskOverlayKind(task);
+      if (kind) kinds.add(kind);
+    }
+    return kinds;
+  }, [visibleTasks]);
 
   useEffect(() => {
-    if (!hasPurchaseOrderTask) return;
+    if (openableOverlayKinds.size === 0) return;
 
-    const scheduleIdle =
-      typeof requestIdleCallback === 'function'
-        ? (callback: () => void) => requestIdleCallback(callback, { timeout: 2000 })
-        : (callback: () => void) => window.setTimeout(callback, 400);
-    const cancelIdle =
-      typeof cancelIdleCallback === 'function'
-        ? (id: number) => cancelIdleCallback(id)
-        : (id: number) => window.clearTimeout(id);
-
-    const id = scheduleIdle(() => preloadPurchaseOrdersModal());
-    return () => cancelIdle(id);
-  }, [hasPurchaseOrderTask]);
+    return scheduleIdleWork(() => {
+      preloadSecretaryTaskOverlayShell();
+      for (const task of visibleTasks) {
+        if (!canOpenSecretaryTaskDetail(task)) continue;
+        preloadSecretaryOverlayForTask(task);
+      }
+    }, { timeout: 2000 });
+  }, [openableOverlayKinds, visibleTasks]);
 
   const visibleTaskCount = useMemo(
     () => countConsolidatedSecretaryBoardTasks(board.tasks, 'all', visibility),
@@ -348,7 +341,9 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
               isDone={task.status === 'done'}
               isPending={isPending}
               onPreloadOpen={
-                task.task_type === 'inventory_reorder' ? preloadPurchaseOrdersModal : undefined
+                canOpenSecretaryTaskDetail(task)
+                  ? () => preloadSecretaryOverlayForTask(task)
+                  : undefined
               }
               onOpen={() => setOverlayTask(task)}
               onComplete={() => handleComplete(task.consolidatedTaskIds)}

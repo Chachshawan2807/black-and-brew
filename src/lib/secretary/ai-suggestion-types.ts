@@ -28,9 +28,7 @@ export type AiSuggestedTaskDraft = {
 
 /** Derived task types that fully cover a secretary module for dedupe. */
 export const MODULE_DERIVED_TASK_TYPES: Partial<Record<SecretaryModule, SecretaryTaskType[]>> = {
-  inventory: ['inventory_reorder', 'inventory_count_due', 'inventory_accuracy_review'],
-  inventory_count: ['inventory_count_due'],
-  inventory_accuracy: ['inventory_accuracy_review'],
+  inventory: ['inventory_reorder'],
   branch_withdraw: ['branch_withdraw'],
   schedule: [
     'schedule_understaffed',

@@ -60,15 +60,12 @@ describe('resolveSecretaryTaskOverlayKind', () => {
     ).toBe('schedule_panel');
   });
 
-  it('maps inventory count tasks to embedded count panel', () => {
-    expect(
-      resolveSecretaryTaskOverlayKind(task({ task_type: 'inventory_count_due', module: 'inventory_count' })),
-    ).toBe('inventory_count_panel');
-  });
-
   it('falls back to task info dialog for other task types', () => {
     expect(
       resolveSecretaryTaskOverlayKind(task({ task_type: 'staffing_gap_today', module: 'dashboard' })),
+    ).toBe('task_info');
+    expect(
+      resolveSecretaryTaskOverlayKind(task({ task_type: 'inventory_count_due', module: 'inventory_count' })),
     ).toBe('task_info');
   });
 });

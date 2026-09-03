@@ -34,18 +34,18 @@ function task(partial: Partial<SecretaryTask> & Pick<SecretaryTask, 'id'>): Secr
 describe('consolidateSecretaryBoardTasks', () => {
   test('merges duplicate task_type into one card', () => {
     const consolidated = consolidateSecretaryBoardTasks([
-      task({ id: 'a', task_type: 'inventory_count_due', title: 'ตรวจนับสต็อกวันนี้' }),
+      task({ id: 'a', task_type: 'inventory_reorder', title: 'สั่งซื้อสินค้า' }),
       task({
         id: 'b',
-        task_type: 'inventory_count_due',
-        title: 'ตรวจนับสต็อกวันนี้',
+        task_type: 'inventory_reorder',
+        title: 'สั่งซื้อสินค้า',
         created_at: '2026-08-29T01:00:00.000Z',
       }),
     ]);
 
     expect(consolidated).toHaveLength(1);
     expect(consolidated[0]?.consolidatedTaskIds).toEqual(['a', 'b']);
-    expect(consolidated[0]?.title).toBe('ตรวจนับสต็อกวันนี้ (2)');
+    expect(consolidated[0]?.title).toBe('สั่งซื้อสินค้า (2)');
   });
 
   test('keeps different task types separate', () => {
