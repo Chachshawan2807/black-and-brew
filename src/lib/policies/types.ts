@@ -9,7 +9,7 @@ export type PolicySubject = {
 export type PolicyAction =
   | 'read'        // view data (read-only PIN allowed)
   | 'mutate'      // create/update/delete via Server Actions
-  | 'privileged'; // service-role bypass paths (e.g. AI chat)
+  | 'privileged'; // service-role bypass paths (e.g. secretary AI)
 
 export type AuthzDecision =
   | { allow: true }

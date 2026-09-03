@@ -21,7 +21,6 @@ BLACKANDBREW ERP uses **Vercel Firewall** as the primary edge protection layer. 
 | AI bot blocking | deny |
 | Vercel managed ruleset | deny |
 | Suspicious traffic sources | deny |
-| `POST /api/chat` edge rate limit | 30 req / 60s |
 | Empty user-agent on `/api/*` | deny |
 
 System DDoS mitigations are on by default on Vercel. Do **not** pause them unless debugging a false positive:
@@ -82,9 +81,8 @@ Minimum recommended settings:
 1. **SSL/TLS** → Full (strict)
 2. **Security** → Bot Fight Mode ON
 3. **WAF** → OWASP ruleset ON
-4. **Rate limiting rule** → `POST /api/chat` → 30 requests / minute / IP
-5. **Rate limiting rule** → `POST /api/*` auth-sensitive routes → stricter thresholds
-6. **DDoS** → sensitivity High
+4. **Rate limiting rule** → `POST /api/*` auth-sensitive routes → stricter thresholds
+5. **DDoS** → sensitivity High
 
 Do not double-proxy Vercel + Cloudflare on the same hostname unless you understand cache and header implications.
 
@@ -102,8 +100,6 @@ Without these variables the app falls back to in-memory limits (per serverless i
 Protected surfaces:
 
 - PIN failures 5 / 15 min per IP
-- AI chat 30 / hour per user
-- Tavily search 10 / hour per user
 
 ## Related docs
 

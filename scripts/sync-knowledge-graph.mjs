@@ -33,7 +33,7 @@ const STATIC = {
 - Spreadsheet-style inventory: native <input> ใน <td>, onChange (local) + onBlur/Enter (Supabase update), ไม่มี modal/action column
 - Optimistic UI + functional setState; realtime ผ่าน InventoryRealtimeContext + supabase-realtime-channel/resume
 - Offline-first: offline-mutation-queue -> sync -> replay-retry; notification เก็บใน IndexedDB (notification-idb)
-- Proactive AI: lib/proactive-insights + lib/agents (intent detect + chat formatters)
+- Proactive insights: lib/proactive-insights (operational snapshot, digest alerts)
 - Pastel time-based shift colors (lib/shift-colors.ts) + CSS token surfaces, dark mode via next-themes`,
   tradeoffs: `- เลือก realtime/optimistic freshness เหนือ aggressive route caching: ห้าม cache inventory/sales/editable grid จน stale หลัง mutation
 - Server Actions รวมศูนย์ mutation = กันโค้ดซ้ำ แต่ต้องระวังห้าม duplicate mutation ทั้ง client และ action

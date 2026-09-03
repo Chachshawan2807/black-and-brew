@@ -6,7 +6,6 @@ import {
   fetchTodayShifts,
   type StaffShiftEntry,
 } from '@/app/actions/daily-report-actions';
-import { TABLE_MAX_LIMITS } from '@/lib/ai-data-gateway';
 import type {
   OperationalSnapshot,
   PendingBeanOrderInsight,
@@ -16,6 +15,9 @@ import { getWeekDateIsos } from '@/lib/proactive-insights/week-schedule';
 import { shouldIncludeBeanOrderInPendingInsights } from '@/lib/proactive-insights/pending-bean-order-eligibility';
 import { resolveBeanOrderSlipUploadedAt } from '@/lib/proactive-insights/resolve-bean-order-slip';
 import { bangkokIsoToThaiDisplay } from '@/lib/date-utils';
+
+/** Max bean orders scanned for pending-insight eligibility (was ai-data-gateway preset). */
+const BEAN_ORDERS_QUERY_LIMIT = 500;
 
 export type ShiftSnapshotBlock = {
   activeStaff: StaffShiftEntry[];
@@ -63,7 +65,7 @@ async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[
     )
     .gte('created_at', since.toISOString())
     .is('cancelled_at', null)
-    .limit(TABLE_MAX_LIMITS.bean_orders);
+    .limit(BEAN_ORDERS_QUERY_LIMIT);
 
   if (error) {
     console.error('[proactive-insights] bean_orders:', error.message, error.details);

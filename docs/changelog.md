@@ -2,6 +2,13 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-09-03 (AI Chat module retirement)
+
+- Removed `POST /api/chat` and the full chat AI stack: `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, Tavily client, chat formatters, and related Vitest suites.
+- Removed `@ai-sdk/react` dependency; Gemini (`@ai-sdk/google`) remains for bean-order customer parse only.
+- Updated keepers: `docs/api.md`, `docs/architecture.md`, `docs/prd.md`, `docs/context.md`, `docs/skills.md`, `docs/MASTER_BLUEPRINT.md`, `docs/security/waf-and-ddos.md`, `PROJECT_MAP.md`, `AGENTS.md`.
+- WAF docs: dropped `POST /api/chat` edge rate-limit guidance (no matching rule in `config/vercel-firewall.json`).
+
 ## 2026-08-27 (Sales Report retirement doc sync)
 
 - Synced keepers to retired Sales Report module: no `src/app/[locale]/sales/`, no `sales-actions.ts`, no `getSalesSummary` / `fetchSalesSummary`; migration `20260826140000_drop_sales_report_tables.sql`.
@@ -17,7 +24,7 @@
 - Removed empty scaffold dirs: `src/components/ai/`, `src/components/icons/`, `src/lib/inventory/`, `src/lib/line/`, `src/lib/market-insights/`, `src/app/api/security/`.
 - Deleted unreferenced `docs/master_lint_prompt.txt`.
 - Trimmed stale migration file table from `sql/README.md` → pointer to `supabase/migrations/` + `npm run db:verify` (kept `sql/historical/` archive).
-- Synced keepers to fact: no in-app AI chat overlay (`DeferredOverlays` = notification FAB + quick action); `POST /api/chat` remains; no `/api/bean-orders/*` routes on disk.
+- Synced keepers to fact: no in-app AI chat overlay (`DeferredOverlays` = notification FAB + quick action); no `/api/bean-orders/*` routes on disk.
 - Documented proactive insights in `docs/prd.md` + `docs/MASTER_BLUEPRINT.md`; fixed `CRON_SECRET` scope; performance-baseline loading.tsx count → 13.
 - Added `npm run scan:orphans` for `scripts/scan-dead-imports.mjs`.
 - Corrected historical changelog migration id `20260729100000` → `20260729034015` (see 2026-08-09 entry).

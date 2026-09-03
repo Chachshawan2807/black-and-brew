@@ -29,19 +29,11 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 - Zero-Display: UI shows `""` for numeric 0; empty input sanitizes to `0` in DB.
 - Count policy: `exact_count` scores accuracy; `sufficiency_check` skips scoring and uses manual `order_qty`.
 
-### 4. AI Agent: บรู (Vercel AI SDK v6)
+### 4. Gemini (bean orders only)
 
 - Model: `gemini-2.5-flash` via `@ai-sdk/google`.
-- Transport: `DefaultChatTransport` → `POST /api/chat`.
-- Architecture: ToolLoopAgent (`stopWhen: stepCountIs(maxSteps)`).
-- Token budget: `MAX_MEMORY_MESSAGES = 8`, char cap 2000, `maxOutputTokens: 1600`, `maxSteps` up to 7.
-- Tools: `getDailyShifts`, `getStoreStatus`, `getInventoryLedger`, `getBeanOrdersSummary`, `readTable`, `internetSearchTool` (Tavily) in `/api/chat`.
-- Deterministic short-circuits: daily schedule (DEC-068), upcoming maintenance, low-stock PO summary, holidays, store status, bean orders, inventory accuracy (multi-turn query text).
-- Live screen context: client sends `clientContext` with route-preferred tools; route sanitizes and injects into the system prompt.
-- Shift labels come from `shifts.metadata.location` never treat `start_time` as the shift name.
-- Security: Service Role read-only tools; full PIN session required (read-only kiosk rejected).
-- Hydration: `isMounted` on `PinGateway` and clickable date inputs; `DeferredOverlays` uses `next/dynamic` with `ssr: false` for notification FAB + inventory quick action.
-- Branding: `/ai-agent-logo.svg` available for AI surfaces (`dark:invert` on dark headers when needed).
+- Scope: optional customer-detail parse in `bean-order-actions.ts` (`generateText`).
+- **Retired (2026-09):** `POST /api/chat`, ToolLoopAgent, Tavily search, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, and `src/app/actions/tools/` were removed.
 
 ### 5. Persistent UI & Session States
 
@@ -91,7 +83,6 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 | Maintenance | `/[locale]/maintenance` | Active |
 | Bean Orders | `/[locale]/bean-orders` | Active customers, slips, shipping, manual delivery confirm |
 | Settings | `/[locale]/settings` | Active |
-| AI Assistant (บรู) | `POST /api/chat` | Active Gemini + Tavily (API; no in-app overlay) |
 | Proactive Insights | `GET /api/insight-alerts` | Active cron 07:00/17:00 ICT + mutation debounce; Web Push + NotificationBell |
 | PIN Auth | PinGateway | Active full + read-only |
 | Trusted-device Passkeys | Settings | Active |
@@ -121,8 +112,7 @@ Authoritative list: [`.env.example`](../.env.example). Keys read in `src/`:
 | `WEBAUTHN_RP_ID` | SECRET | OPTION production WebAuthn RP ID |
 | `WEBAUTHN_ORIGIN` | SECRET | OPTION production WebAuthn origin |
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | PUBLIC | Store coordinates |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini (`@ai-sdk/google`) |
-| `TAVILY_API_KEY` | SECRET | `internetSearchTool` |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | SECRET | Gemini (`@ai-sdk/google`) bean-order parse |
 | `GOOGLE_CALENDAR_API_KEY` | SECRET | OPTION holiday sync |
 | `CRON_SECRET` | SECRET | Protects `GET /api/daily-report` and `GET /api/insight-alerts` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | PUBLIC | Web Push VAPID public key |

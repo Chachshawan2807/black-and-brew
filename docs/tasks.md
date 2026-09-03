@@ -6,7 +6,7 @@
 
 ## Completed (summary)
 
-Core ERP modules are shipped: Command Center, Dashboard, Schedule (DnD), Inventory (spreadsheet + count + accuracy), Maintenance, Bean Orders, Settings, AI Chat, PWA, PIN auth + passkeys, Web Push (inventory + daily report).
+Core ERP modules are shipped: Command Center, Dashboard, Schedule (DnD), Inventory (spreadsheet + count + accuracy), Maintenance, Bean Orders, Settings, PWA, PIN auth + passkeys, Web Push (inventory + daily report).
 
 Notable completed work:
 

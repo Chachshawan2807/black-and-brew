@@ -275,7 +275,6 @@ const urlsToCache = [
   '/notification-store.js',
   '/offline-mutation-store.js',
   '/pwa-badge.js',
-  '/ai-agent-logo.svg',
   BRAND_ICON,
   BRAND_ICON_512,
   PUSH_NOTIFICATION_ICON,
@@ -593,8 +592,7 @@ self.addEventListener('fetch', (event) => {
     requestUrl.includes('/images/') ||
     requestUrl.endsWith('.woff2') ||
     requestUrl.includes('/pwa-') ||
-    requestUrl.includes('/notification-') ||
-    requestUrl.includes('/ai-agent-logo.svg');
+    requestUrl.includes('/notification-');
 
   if (!isNavigation && isImmutableAsset) {
     event.respondWith(staleWhileRevalidate(event.request));

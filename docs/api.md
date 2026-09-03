@@ -254,15 +254,6 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 - Replay logic: `src/lib/offline-mutation-sync.ts`; client queue: `src/lib/offline-mutation-queue.ts`; retry: `src/lib/offline-replay-retry.ts`.
 - `maxDuration: 30` (Vercel serverless).
 
-### `POST /api/chat`
-
-- Streaming AI chat via `ToolLoopAgent` (`google('gemini-2.5-flash')`)
-- Tools: `getDailyShifts`, `getStoreStatus`, `getInventoryLedger`, `getBeanOrdersSummary`, `readTable`, `internetSearchTool`
-- Body: `{ messages, clientContext? }` structured screen context + preferred tools by route
-- Deterministic SSE short-circuits: daily schedule, maintenance, low-stock, holidays, store status, bean orders, inventory accuracy (multi-turn aware)
-- Server-side auth gate: privileged PIN session required (401/403 otherwise; read-only kiosk denied)
-- Multi-turn weighted intent scoring + conditional executive rules; `maxSteps` up to 7; `maxOutputTokens: 1600`
-
 ### `GET /api/daily-report`
 
 - **cron-job.org** HTTP trigger protected by `CRON_SECRET` (`Authorization: Bearer …`)

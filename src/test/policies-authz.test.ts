@@ -43,7 +43,7 @@ describe('evaluateAuthz', () => {
     });
   });
 
-  test('denies read-only session for privileged (AI chat)', () => {
+  test('denies read-only session for privileged routes', () => {
     expect(evaluateAuthz({ verified: true, readOnly: true }, 'privileged')).toEqual({
       allow: false,
       reason: READ_ONLY_DENY_MSG,

@@ -29,7 +29,7 @@ This is a **Next.js App Router** ERP not a Vite/CRA SPA. Do **not** introduce to
 | Shared UI (2+ features) | `src/components/` | `components/ui/`, `components/sidebar/`, `components/auth/` |
 | Domain logic (no UI) | `src/lib/` or `src/lib/<domain>/` | `lib/schedule/`, `lib/inventory-stock.ts`, `lib/shift-colors.ts` |
 | Server mutations | `src/app/actions/<domain>-actions.ts` | `inventory-actions.ts`, `shift-actions.ts` |
-| HTTP API | `src/app/api/` | `api/chat/route.ts`, `api/daily-report/route.ts` |
+| HTTP API | `src/app/api/` | `api/daily-report/route.ts`, `api/insight-alerts/route.ts` |
 | Cross-feature hooks | `src/hooks/` | `useScheduleUndo.ts`, `use-inventory-notifications.ts` |
 | Feature-scoped React context | `src/contexts/` | `InventoryRealtimeContext.tsx` |
 | Shared types | `src/types/` | `types/index.ts` |

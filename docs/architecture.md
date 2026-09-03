@@ -189,7 +189,6 @@ BeanOrdersClient / BeanOrderFormClient / BeanOrderDetailClient
 → shipBeanOrder returns immediately; shipped push runs in `after()`
 → bean_* tables + Storage bucket bean-order-slips
 → recordDataChange(module=bean_orders) for audit
-→ AI: fetchBeanOrdersSummary() + deterministic Bru report short-circuit
 ```
 
 ### Shared select + navigation helpers (v9.3)
@@ -277,22 +276,6 @@ Inventory edit (offline) → offline-mutation-queue.ts → IndexedDB queue
 
 Client-side state: `src/lib/offline-mutation-client.ts`; auth session bridge: `src/lib/offline-auth-session.ts`; mutation store: `public/offline-mutation-store.js`.
 
-### AI Chat (API)
-
-```text
-POST /api/chat → intent classify → Hybrid Router
-→ Hot path (no LLM): schedule, maintenance, holidays, low-stock,
-  store status, bean orders, inventory accuracy → Bru report SSE
-→ Warm/Cold: ToolLoopAgent (Gemini 2.5 Flash)
-→ tools (subset by intent): getDailyShifts, getStoreStatus,
-  getInventoryLedger, getBeanOrdersSummary, readTable, internetSearchTool
-→ streaming response → XSS sanitization on display
-```
-
-> No in-app chat overlay UI. Tools live in `src/app/actions/tools/`; orchestration in `src/app/api/chat/route.ts`.
-> Intent: `src/lib/agents/intent/classify-intent.ts`. Report style: `src/lib/agents/report-response.ts`.
-> Shell overlays (`DeferredOverlays`): notification FAB + inventory quick action only.
-
 ### Daily Web Push Report
 
 ```text
@@ -313,80 +296,13 @@ cron-job.org (07:00 / 17:00 ICT) or debounced mutation hook
 
 Event-driven debounce: `scheduleProactiveInsightEvaluation()` after `saveShift` and inventory stock mutations (`schedule-evaluation.ts`). Rules live in `src/lib/proactive-insights/rules.ts`; thresholds in `thresholds.ts`.
 
+> **Retired (2026-09):** `POST /api/chat` and the AI chat stack (`src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`) were removed. Shell overlays (`DeferredOverlays`) remain notification FAB + inventory quick action only.
+
 ---
 
-## 5b. AI Data Access Map (AI-GATEWAY-P3)
+## 5b. Legacy AI SQL views
 
-Every read the AI layer performs funnels through `src/lib/ai-data-gateway.ts` the single doorway between the LLM tools and Supabase. This keeps the Service Role client, the DEC-069 column presets, and the `SECURITY DEFINER` RPCs as the only ways the model can touch data.
-
-**Auth gate:** `/api/chat` requires a full (non–read-only) PIN session. Read-only kiosk accounts are rejected because AI tools run through the Service Role client (RLS bypass).
-
-```text
-Hybrid Router (/api/chat)
-  │
-  ├─ Deterministic short-circuits (Bru report formatters)
-  │     schedule | maintenance | holidays | low-stock
-  │     store status | bean orders | inventory accuracy
-  │
-  └─ ToolLoopAgent (Gemini)
-        ├─ getDailyShifts(date) ──────────▶ fetchDailyShiftsByDate() (DEC-068)
-        ├─ getInventoryLedger ────────────▶ fetchInventoryLedger()
-        ├─ getStoreStatus ────────────────▶ fetchInventorySummary() / RPC
-        ├─ getBeanOrdersSummary ──────────▶ fetchBeanOrdersSummary()
-        ├─ internetSearchTool ────────────▶ Tavily
-        └─ readTable(tableName, …)
-              ├─ inventory_items, no filters ──▶ fetchTablePreset + computeItemsToOrder()
-              ├─ shifts + YYYY-MM-DD filter ─────▶ fetchShiftsByDate(date)
-              └─ other allowed tables ──────────▶ fetchTablePreset(…)
-```
-
-### AI-readable tables (21 public ERP tables)
-
-| Domain | Tables | Default row limit |
-| --- | --- | --- |
-| Schedule | `profiles`, `shifts`, `holidays`, `regular_holidays` | 200–500 |
-| Inventory | `inventory_items`, `inventory_config`, `inventory_transactions`, `inventory_count_verifications` | 50–1000 |
-| Maintenance | `service_records` | 1000 |
-| Bean orders | `bean_customers`, `bean_customer_addresses`, `bean_orders`, `bean_order_lines`, `bean_order_payments`, `bean_order_shipments` | 500–1000 |
-| System / audit | `audit_logs`, `login_history`, `data_change_logs`, `revoked_sessions`, `push_subscriptions`, `device_passkeys` | 50–2000 |
-
-Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIMITS` in `src/lib/ai-data-gateway.ts`.
-
-### Gateway surface
-
-| Function | Backing source | Returns | Notes |
-| --- | :--- | --- | :--- |
-| `fetchInventorySummary()` | `rpc('get_ai_store_status')` | `{ inventory_summary, low_stock_items, shifts, timestamp }` | Store-status snapshot |
-| `fetchShiftsByDate(date)` | `fetchDailyShiftsByDate` | `FormattedDailyShifts` | Canonical grouped roster |
-| `fetchInventoryLedger(...)` | transactions + item names | ledger entries | Prefer over join-in-LLM |
-| `fetchBeanOrdersSummary(...)` | `bean_orders` | unpaid / pending ship | Open orders only |
-| `fetchInventoryAccuracySummary()` | `inventory_count_verifications` | accuracy % + discrepancy | Count report |
-| `fetchTablePreset(table, filters?, limit?)` | `admin.from(table).select(PRESET)` | `{ ok, rows, effectiveLimit }` | Preset-locked |
-
-### Query rules
-
-- **Filters:** equality (`eq`) only at the DB layer; date-only `shifts.start_time` expands to a full-day range.
-- **Columns:** AI-supplied `columns` are ignored; presets are enforced (DEC-069).
-- **Limits:** per-table defaults in `TABLE_MAX_LIMITS`; optional `limit` capped at 1000 in the tool schema.
-- **Completeness:** responses include `is_complete_dataset` when row count equals the effective limit (data may be truncated).
-- **Bean PII:** presets omit `slip_url`, full street addresses on customers, and `tracking_raw` blobs.
-
-### Excluded columns (by preset, not readable by AI)
-
-| Table | Excluded | Reason |
-| --- | --- | --- |
-| `push_subscriptions` | `endpoint`, `p256dh`, `auth` | Web Push encryption secrets |
-| `device_passkeys` | `public_key` | WebAuthn credential secret |
-| `bean_order_payments` | `slip_url` | Payment slip storage path |
-| `bean_order_shipments` | `tracking_raw` | Large vendor payload |
-
-### Invariants
-
-- DEC-069 preset lockdown: `fetchTablePreset` ignores any AI-supplied `columns`; it always selects the table preset. Arbitrary column selection (a data-exfiltration vector through the RLS-bypassing Service Role client) is impossible by construction.
-- RPC snapshot: `get_ai_store_status` (`sql/ai_agent_views.sql`) remains available via `fetchInventorySummary()` for store-status snapshots. LOW status uses `stock <= order_point AND target_stock > stock` (migration `20260615130000`). Do not delete `sql/ai_agent_views.sql`.
-- Single doorway: `database-tools.ts` routes and shapes only. Add new AI-readable tables to `ai-data-gateway.ts` never open a second Supabase admin client in a tool.
-- New public tables: add to `AI_ALLOWED_TABLES`, define a column preset, set `TABLE_MAX_LIMITS`, and extend tests in `src/test/ai-data-gateway.test.ts`.
-- Bru Report Style: deterministic and LLM answers follow `src/lib/agents/report-response.ts` (female politeness, no bold/tables/UUIDs, DD/MM/YYYY).
+`sql/ai_agent_views.sql` (e.g. `get_ai_store_status`) remains in the database for historical migrations. No application route calls it after chat retirement. Do not delete the SQL file without a dedicated migration.
 
 ---
 
@@ -410,8 +326,7 @@ Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIM
 | --- | :--- | --- |
 | Supabase | Anon + Service Role | DB, Auth, Real-time |
 | Google Calendar API | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync |
-| Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | AI Chat (`@ai-sdk/google`) |
-| Tavily | `TAVILY_API_KEY` | AI web search |
+| Google Gemini | `GOOGLE_GENERATIVE_AI_API_KEY` | Bean-order customer parse (`bean-order-actions.ts`) |
 | Web Push (VAPID) | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | Cross-device inventory alerts via `web-push` |
 | Vercel | Git deployment | App hosting (no Vercel Cron schedules on cron-job.org) |
 

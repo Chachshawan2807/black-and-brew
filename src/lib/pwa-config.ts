@@ -46,5 +46,4 @@ export const PWA_PRECACHE_URLS = [
   '/notification-store.js',
   '/offline-mutation-store.js',
   '/pwa-badge.js',
-  '/ai-agent-logo.svg',
 ] as const;

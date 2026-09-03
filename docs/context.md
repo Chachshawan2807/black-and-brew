@@ -24,8 +24,7 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 2. คลังสินค้า (Inventory) Single Source of Truth (`inventory_items.stock`), ตรวจนับ, สั่งซื้อตามช่องทาง
 3. ออเดอร์เมล็ด (Bean Orders) รับออเดอร์ ชำระเงิน จัดส่งเมล็ดกาแฟ
 4. บำรุงรักษา (Maintenance) บันทึกสถานะอุปกรณ์
-5. AI Assistant (บรู) แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน
-6. การตั้งค่า (Settings) เลือกธีม, ประวัติการเข้าใช้, trusted-device passkeys, และการแจ้งเตือนคลังสินค้า
+5. การตั้งค่า (Settings) เลือกธีม, ประวัติการเข้าใช้, trusted-device passkeys, และการแจ้งเตือนคลังสินค้า
 
 ### Staff Roster (9 Persons)
 
@@ -58,9 +57,8 @@ BLACK AND BREW คือร้านกาแฟที่ดำเนินก�
 | `APP_READ_ONLY_PIN` | Read-only PIN; required in production; dev fallback `111222` | Server only |
 | `WEBAUTHN_RP_ID` | WebAuthn relying-party ID override for production passkeys | Server only |
 | `WEBAUTHN_ORIGIN` | WebAuthn origin override for production passkeys | Server only |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini AI Chat (`@ai-sdk/google`) | Server only |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini (`@ai-sdk/google`) for bean-order customer parse | Server only |
 | `GOOGLE_CALENDAR_API_KEY` | Thai holiday sync (OPTION) | Server only |
-| `TAVILY_API_KEY` | AI web search | Server only |
 | `NEXT_PUBLIC_STORE_LAT` / `NEXT_PUBLIC_STORE_LON` | Store coordinates | Public |
 | `CRON_SECRET` | cron-job.org → `/api/daily-report`, `/api/insight-alerts` (`Authorization: Bearer …`) | Server only |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID public key | Public |
@@ -117,7 +115,6 @@ Authoritative env list: [`.env.example`](../.env.example)
 ```json
 {
   "@ai-sdk/google": "^3.0.79",
-  "@ai-sdk/react": "^3.0.192",
   "@dnd-kit/core": "^6.3.1",
   "@supabase/supabase-js": "^2.105.1",
   "ai": "^6.0.190",
@@ -148,11 +145,9 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | Bean Orders | `src/app/[locale]/bean-orders/`, `src/lib/bean-orders/`, `bean-order-actions.ts` |
 | Settings | `src/app/[locale]/settings/page.tsx`, `_components/` |
 | Auth | `src/components/auth/PinGateway.tsx`, `src/app/actions/auth.ts` |
-| AI Chat | `src/app/api/chat/route.ts` (API only; no in-app overlay) |
 | Shell overlays | `src/components/shell/DeferredOverlays.tsx` (notification FAB + inventory quick action) |
 | i18n Middleware | `src/proxy.ts` |
 | Server Actions | `src/app/actions/` |
-| Agent tools | `src/app/actions/tools/` |
 | Knowledge graph | codebase-memory-mcp (`.cursor/mcp.json.example` → `.cursor/mcp.json`) |
 
 ---
@@ -178,7 +173,6 @@ Colocation: feature UI in `src/app/[locale]/<feature>/_components/`; shared UI i
 | PWA icons | `/images/notification-icon*.png`, manifest theme `#000000` / background `#ffffff` |
 | Sidebar menu order | `sidebar-menu-order.ts`, `app-preferences-actions.ts`, `app_preferences` table cross-device sync |
 | Bean orders | `bean-order-actions.ts`, `lib/bean-orders/`, manual delivery confirm |
-| AI full coverage | 21 AI-readable tables; deterministic routes for schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy |
 | Proactive insights | `src/lib/proactive-insights/`, `GET /api/insight-alerts`, Web Push + NotificationBell; prefs `proactiveInsights` |
 | Navigation perf | `route-chunk-preload.ts`, `warm-route-navigation.ts`, `ViewTransitionNavigation.tsx` idle/touch prefetch + view transitions |
 | Inventory ledger date | `inventory_transactions.transaction_at` + `p_transaction_at` on `record_inventory_transaction` RPC |

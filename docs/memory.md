@@ -42,7 +42,14 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 - Impact: Documented in `docs/api.md`, `docs/skills.md`, `docs/security/rls-audit.md`; schedules on cron-job.org (Asia/Bangkok).
 - Evidence: `proactive-insights-*.test.ts`, `insight-alerts-route.test.ts`, `insight-web-push.test.ts`
 
-### DEC-085: AI Bru Full Coverage + Bean Order Gateway (v9.2)
+### DEC-089: AI Chat Module Retirement (2026-09)
+
+- Context: `POST /api/chat` and the Bru hybrid router (Gemini + Tavily + deterministic short-circuits) are no longer used.
+- Decision: Remove `src/app/api/chat/`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, Tavily client, and chat-specific tests/assets.
+- Remaining Gemini: `bean-order-actions.ts` customer share-text parse only.
+- Evidence: `docs/changelog.md` (2026-09-03), `npm run build`
+
+### DEC-085: AI Bru Full Coverage + Bean Order Gateway (v9.2) [retired 2026-09]
 
 - Date: July 2026
 - Context: บรูต้องตอบคำถามออเดอร์เมล็ดกาแฟและความแม่นยำคลังได้แบบ deterministic โดยไม่พึ่ง LLM เดา; ขยาย AI-readable tables (bean orders; sales tables later retired in DEC-088)
@@ -51,8 +58,8 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
   2. **Deterministic routes:** `detect-bean-orders-query.ts`, `detect-inventory-accuracy-query.ts` → Bru report SSE (no LLM).
   3. **Tool surface:** `getBeanOrdersSummary` in `database-tools.ts`; removed stale `getInventoryItemDetails` from chat tools.
   4. **Intent classifier:** weighted scores route to tool subset + deterministic short-circuits.
-- Impact: `/api/chat` hot-path covers schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy.
-- Evidence: `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-bean-orders-gateway.test.ts`, `format-bean-orders-chat-response.ts`, `format-inventory-accuracy-chat-response.ts`
+- Impact (historical): `/api/chat` hot-path covered schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy. **Superseded by DEC-089 (chat removed).**
+- Evidence (removed with chat): `ai-data-gateway.test.ts`, `ai-deterministic-routes.test.ts`, `ai-bean-orders-gateway.test.ts`, chat formatters under `src/lib/agents/`
 
 ### DEC-084: Bean Orders Module (v9.2)
 
@@ -150,10 +157,10 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 - Theme tokens on standard surfaces; `bb-pastel-surface` on time-based pastel cards.
 - Evidence: `globals.css`, `shift-colors.ts`, `docs/design.md`
 
-### DEC-068: Deterministic AI Daily Schedule Response (v8.1)
+### DEC-068: Deterministic AI Daily Schedule Response (v8.1) [retired 2026-09]
 
-- `/api/chat` short-circuits daily schedule queries via `src/lib/schedule/*` no LLM guesswork.
-- Evidence: `schedule_chat_response.test.ts`, `format_daily_shifts.test.ts`
+- Was: `/api/chat` short-circuited daily schedule queries via `src/lib/schedule/*`.
+- Schedule formatting helpers removed with chat retirement; roster data still via `fetchDailyShiftsByDate()` in daily report / dashboard paths.
 
 ### DEC-062: Inventory Stock Single Source of Truth (v6.8)
 

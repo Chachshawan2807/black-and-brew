@@ -1,6 +1,6 @@
 # BLACKANDBREW ERP Capability Inventory
 
-> Last Updated: 2026-08-27
+> Last Updated: 2026-09-03
 >
 > Companion: agent rules → [`AGENTS.md`](../AGENTS.md) · hard protocols → [`docs/rules.md`](rules.md)
 
@@ -8,17 +8,12 @@
 
 ### Data and Integration
 
-- AI Data Gateway: `src/lib/ai-data-gateway.ts` is the single AI read doorway (presets, limits, service-role, schedule lookup, `get_ai_store_status`, `fetchInventoryLedger`, `fetchBeanOrdersSummary`, `fetchInventoryAccuracySummary`).
-- Universal DB Reader: `readTableTool` routes through the gateway (21 AI-readable tables including bean orders).
-- Hybrid Router: deterministic short-circuits for schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy → Bru report SSE (no LLM).
-- Intent classifier: `src/lib/agents/intent/classify-intent.ts` (weighted scores + tool subset selection).
-- Bru Report Style: `src/lib/agents/report-response.ts` (female politeness, hyper-concise bullets).
-- External Intel: `internetSearchTool` + `tavily-client.ts` (Tavily; structured `{ ok:false, reason }` on error).
+- **Proactive cross-module insights:** `src/lib/proactive-insights/` + `GET /api/insight-alerts` deterministic rules correlating schedule/inventory/maintenance/bean-orders/accuracy; Web Push + NotificationBell; prefs `proactiveInsights`.
 - Inventory Truth Layer: `inventory-stock.ts`, `mergeInventoryRealtimeUpdate`, `computeItemsToOrder`, `updateInventoryStock`, RPC `set_inventory_stock`.
 - Supabase Session Bridge: `ensureSupabaseSession()` after PIN → anonymous `authenticated` RLS.
 - Web Push: `push-actions.ts`, `web-push.ts`, `push_subscriptions`, `PushSubscriptionManager` (inventory alerts + daily reports + proactive insights).
-- **Proactive cross-module insights:** `src/lib/proactive-insights/` + `GET /api/insight-alerts` deterministic rules correlating schedule/inventory/maintenance/bean-orders/accuracy; Web Push + NotificationBell; prefs `proactiveInsights`.
 - Trusted-device Passkeys: `passkey-actions.ts`, `src/lib/passkey/`, `settings/_components/PasskeyDeviceSection.tsx`, `device_passkeys`.
+- Bean orders: `bean-order-actions.ts` optional Gemini parse for customer share text (`@ai-sdk/google`).
 
 ### UI and Client Runtime
 
@@ -31,21 +26,14 @@
 
 - PIN auth + `assertWritableSession`; session audit via `login_history` / `revoked_sessions`.
 - Passkey: server-side challenges, RP verify, counter updates, revocation checks.
-- Prompt/XSS sanitizers on chat; rate limits (chat 30/hr, Tavily 10/hr) via Upstash Redis when configured.
+- Prompt/XSS sanitizers for user text; PIN rate limits via Upstash Redis when configured.
 - Edge protection: `config/vercel-firewall.json` + `npm run security:firewall:apply` (see `docs/security/waf-and-ddos.md`).
 - RLS audit: `docs/security/rls-audit.md` migration `20260724170556_harden_rls_and_rpc_execute.sql`.
 - `data_change_logs` for mutation diffs + inventory notifications.
 
-## Active AI Tool Surface
+### Retired (2026-09)
 
-| Tool | Source | Scope |
-| --- | --- | --- |
-| `getDailyShifts` | `src/app/actions/tools/database-tools.ts` | Daily roster (names + groups) |
-| `getStoreStatus` | `src/app/actions/tools/database-tools.ts` | One-shot today shifts + inventory via `get_ai_store_status` |
-| `getInventoryLedger` | `src/app/actions/tools/database-tools.ts` | Transactions joined with item names |
-| `getBeanOrdersSummary` | `src/app/actions/tools/database-tools.ts` | Open bean orders (unpaid / pending ship) |
-| `readTable` | `src/app/actions/tools/database-tools.ts` | Preset-locked table reads via gateway |
-| `internetSearchTool` | `src/app/actions/tools/search-tools.ts` | Tavily web search (`{ ok, results }` envelope) |
+- `POST /api/chat`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, Tavily search, and `@ai-sdk/react` chat UI transport.
 
 ## Schema Guardrails
 
@@ -68,19 +56,11 @@ Use with `AGENTS.md` + `docs/rules.md`.
 | Resizable tables | Maintenance column widths | SSR default → `localStorage` → mouse resize |
 | Sticky modal tables | Long tables in modals | `sticky top-0` header; `max-h` + overflow body |
 
-### Hybrid AI context
-
-| Skill | When | How |
-| --- | --- | --- |
-| Live screen extraction | AI needs open-modal context | Structured `{ pathname, openModalHint, screenText }` → `clientContext` (wired into system prompt) |
-| DnD coordinate tracking | Schedule / inventory drag | Sensors + spring physics; DOM separation |
-| Context bootstrapping | New agent session | codebase-memory-mcp (`search_graph`, `trace_path`) |
-
 ### Security & inventory integrity
 
 | Skill | When | How |
 | --- | --- | --- |
-| Prompt / input sanitization | User text → AI or DB | Sanitize; block injection |
+| Prompt / input sanitization | User text → DB | Sanitize; block injection |
 | Zod validation | API / Server Action inputs | Schema-enforce types |
 | Service-role writes | Cross-RLS mutations | Server Actions only; auth first |
 | Zero-cache stock/ledger | Stock + transaction truth | `unstable_noStore()`; row locks |
@@ -89,15 +69,12 @@ Use with `AGENTS.md` + `docs/rules.md`.
 | Count policy | Accuracy + PO qty | `exact_count` scores; `sufficiency_check` manual `order_qty` |
 | Motion | Modals / routes / toasts | `motion-presets.ts` + `.bb-modal-*`; opacity/transform only |
 
-### Performance & AI token economy
+### Performance
 
 | Skill | When | How |
 | --- | --- | --- |
-| Thai token optimizer | Thai text into AI context | `thaiTokenOptimizer` |
 | Restricted selects | Supabase reads | Explicit columns never `select('*')` on hot paths |
 | Numeric sanitization | Forms → DB | Empty → `0`; strip leading zeros |
-| Sliding chat memory | `/api/chat` | `MAX_MEMORY_MESSAGES = 8`, char cap 2000; multi-turn intent (last 3 user msgs) |
-| Output token cap | Gemini calls | `maxOutputTokens: 1600`; `maxSteps` up to 7 for multi-domain |
 | Dashboard query plan | Week + month overlap | `getDashboardShiftQueryPlan()` + `splitDashboardShiftsByRange()` |
 | Inventory bundle split | Heavy modals/charts | `next/dynamic` + intent preload |
 | Row containment | Dense inventory grid | `.bb-inventory-row-containment` |

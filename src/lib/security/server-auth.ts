@@ -23,8 +23,7 @@ function clearPinAuthCookies(cookieStore: Awaited<ReturnType<typeof cookies>>): 
  * force-revoke takes effect immediately on the server, not only after
  * client polling. See DEC-069.
  *
- * Returns `readOnly` so privileged endpoints (e.g. the RLS-bypassing AI chat)
- * can deny read-only PIN sessions.
+ * Returns `readOnly` so privileged endpoints can deny read-only PIN sessions.
  */
 export async function ensureServerSession(): Promise<ServerAuthResult> {
   const cookieStore = await cookies();

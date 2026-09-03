@@ -13,7 +13,6 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - ลดเวลาในการจัดตารางงานผ่าน Drag-to-Shift UI
 - ป้องกันสินค้าขาดสต็อกผ่าน Computed Auto-Ordering สำหรับสินค้านับจริง และ manual `order_qty` สำหรับรายการเช็คว่าพอใช้
 - เพิ่มความโปร่งใสด้วย Real-time Sync และ Transaction Ledger
-- ช่วยตอบคำถามด้วย AI Assistant จากข้อมูลร้านจริง
 
 ---
 
@@ -84,26 +83,19 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
   - Slip upload to Storage (`bean-order-slips`)
   - Manual delivery confirmation (staff marks จัดส่งสำเร็จ)
   - No automatic inventory stock deduction
-  - AI summary via `fetchBeanOrdersSummary()` and deterministic Bru report
 
-### 3.7 AI Assistant (บรู)
-
-- Route: `POST /api/chat` (no in-app overlay UI)
-- Purpose: แชท AI พร้อมเครื่องมือดึงข้อมูลร้าน (API streaming)
-- Stack: ToolLoopAgent + Gemini 2.5 Flash; Tavily for external search
-
-### 3.8 Settings
+### 3.7 Settings
 
 - Route: `/[locale]/settings`
 - Purpose: การตั้งค่าระบบสำหรับพนักงาน
 - Features: Theme picker; login history; trusted-device passkeys; notification preferences; data change history (`settings/_components/`)
 
-### 3.9 Daily Web Push Notification
+### 3.8 Daily Web Push Notification
 
 - Route: `/api/daily-report` (cron-job.org 05:00 / 18:00 ICT)
 - Purpose: แจ้งเตือนกะงานและวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
 
-### 3.10 Proactive Cross-Module Insights
+### 3.9 Proactive Cross-Module Insights
 
 - Route: `GET /api/insight-alerts` (cron-job.org 07:00 / 17:00 ICT; also debounced after shift/stock mutations)
 - Purpose: กฎ deterministic เชื่อม schedule / inventory / maintenance / bean-orders / accuracy → inbox + Web Push
