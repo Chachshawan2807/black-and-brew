@@ -5,37 +5,37 @@
       "source": "google/skills",
       "sourceType": "github",
       "skillPath": "skills/cloud/gemini-api/SKILL.md",
-      "computedHash": "6ec6fdff105385453cae0c45e184aeb8b9ef8d2d79d18daaedd25bd1c031501d"
+      "computedHash": "cd379cd57639ff5dab90574e4a89e62182f55cf764592b1d37ec70e1585d6920"
     },
     "google-cloud-waf-security": {
       "source": "google/skills",
       "sourceType": "github",
       "skillPath": "skills/cloud/google-cloud-waf-security/SKILL.md",
-      "computedHash": "b49e3f41dd7758c3392cde1ff10fbed769d7e089cd8c4a8bf0c914749f1276e3"
+      "computedHash": "52d0eea40ae43cb37a50011e3938713e725328d21d764b04c5add37c8cee806f"
     },
     "hallmark": {
       "source": "nutlope/hallmark",
       "sourceType": "github",
       "skillPath": "skills/hallmark/SKILL.md",
-      "computedHash": "c25595fa30b123e0cf6f8bb4e2c584bd592c9ada9a4b5b4a1d161d97ff8105e3"
+      "computedHash": "6dbe721417b58a5c980f3385f3f56e71ecad0b22257e39ca310ed2508dc5aedf"
     },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "skillPath": ".agents/skills/impeccable/SKILL.md",
-      "computedHash": "9df43834add0b6ab975e311bc766475b5210ba526f6b072b865beac2c63837ca"
+      "computedHash": "0933e3d72def7e7ee759bd744b953a60cf68c71076fad462d9aa03eba09ddc5b"
     },
     "modern-web-guidance": {
       "source": "GoogleChrome/modern-web-guidance",
       "sourceType": "github",
       "skillPath": "skills/modern-web-guidance/SKILL.md",
-      "computedHash": "5c2b2de2ea807159b2b213471ecf78ac16a2c0b44381f3cf22204c2c9869c166"
+      "computedHash": "f018e13bfbb74fb3bfe377045d3e86fbd50c3e61f7fb0b35d4821630da37c2fd"
     },
     "next-best-practices": {
-      "source": "vercel-labs/next-skills",
+      "source": "pedronauck/skills",
       "sourceType": "github",
-      "skillPath": "skills/next-best-practices/SKILL.md",
-      "computedHash": "f4678aef4ffc10a5ea64a91e57abe5a5081af813b06d58d565caf3e8ef56e26c"
+      "skillPath": "skills/curated/next-best-practices/SKILL.md",
+      "computedHash": "c31ddd68ba5798a79a516c619b1e1fc4408cc4876ad600fefa4f5add4425719d"
     },
     "security-review": {
       "source": "getsentry/skills",
@@ -47,7 +47,7 @@
       "source": "shadcn/ui",
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "a9ac6b4cfdefcd4b52361bf13a953a8448d2ba4c2d71e80367fabda03dda9d9e"
+      "computedHash": "d523a2a08bb6b2ce753468ee1ff7c97aeb022921f684c4bddc6bcb85727d1be4"
     },
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",

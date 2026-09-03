@@ -56,11 +56,11 @@ This file is a **baseline summary**. For any non-trivial feature, retrieve the f
 
 ```powershell
 # Windows: prefer npx.cmd if npx hangs in MCP/IDE context
-npx -y modern-web-guidance@latest search "<what you want to build>"
+npx -y modern-web-guidance@latest search "<what you want to build>" --skill-version 2026_08_31-6ba3cecd
 npx -y modern-web-guidance@latest retrieve "<guide-id>"
 ```
 
-Example IDs: `html`, `accessibility`, `navigation-drawer`, `size-aware-styling`, `dark-mode`, `validate-input-after-interaction`, `break-up-long-tasks`, `animate-to-from-top-layer`, `declarative-dialog-popover-control`.
+Example IDs: `html`, `accessibility`, `navigation-drawer` (ui-components), `size-aware-styling`, `dark-mode`, `validate-input-after-interaction`, `break-up-long-tasks`, `animate-to-from-top-layer`, `declarative-dialog-popover-control`.
 
 **Do not hallucinate guide content** if unsure, search + retrieve first.
 
@@ -330,3 +330,13 @@ When Modern Web Guidance conflicts with ERP-specific UX (e.g. spreadsheet modals
 - GitHub skills + 128 use cases: https://github.com/GoogleChrome/modern-web-guidance
 - Baseline feature explorer: https://web-platform-dx.github.io/web-features-explorer/
 - Install full skill pack: `npx modern-web-guidance@latest install`
+
+## Update upstream skill
+
+Upstream search/retrieve lives at `.agents/skills/modern-web-guidance/` ([GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance)). Install **only** that skill (not the whole repo bundle):
+
+```powershell
+npx skills add GoogleChrome/modern-web-guidance@modern-web-guidance -y
+```
+
+Re-read this ERP overlay after upstream updates; `AGENTS.md` Baseline and spreadsheet/pastel rules still win on conflicts.

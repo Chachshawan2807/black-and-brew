@@ -388,7 +388,7 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 | ------- | ------ | -------- |
 | chrome-modern-web-guidance | `.cursor/skills/chrome-modern-web-guidance/SKILL.md` | Baseline frontend/mobile ของโปรเจกต์ (Baseline Widely available) |
 | modern-web-guidance | `.agents/skills/modern-web-guidance/SKILL.md` | ค้นหา/ดึง best practice เว็บสมัยใหม่จาก Google Chrome |
-| next-best-practices | `.agents/skills/next-best-practices/SKILL.md` | App Router, RSC boundaries, async APIs, metadata |
+| next-best-practices | `.agents/skills/next-best-practices/SKILL.md` | App Router, RSC boundaries, async APIs, metadata (source: `pedronauck/skills`) |
 | vercel-react-best-practices | `.agents/skills/vercel-react-best-practices/SKILL.md` | React/Next performance waterfalls, bundle, re-renders |
 | shadcn | `.agents/skills/shadcn/SKILL.md` | shadcn/ui + Tailwind ติดตั้ง, theme, compose components |
 | web-design-guidelines | `.agents/skills/web-design-guidelines/SKILL.md` | Vercel Web Interface Guidelines spacing, type, a11y |
@@ -407,7 +407,7 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 
 **ลำดับความสำคัญเมื่อขัดกัน:** ERP domain rules → chrome-modern-web-guidance → React & Next.js skills → design review skills (`web-design-guidelines`, `impeccable` critique) → ui-ux-pro-max (via `ui-ux-pro-max-erp` overlay) → hallmark (`audit` / `study` via `hallmark-erp` overlay เท่านั้น)
 
-**อัปเดต skills:** `npx skills add <owner/repo@skill> -y` (เช่น `vercel-labs/agent-skills@web-design-guidelines`, `pbakaus/impeccable@impeccable`, `nutlope/hallmark`)
+**อัปเดต skills:** `npx skills add <owner/repo@skill> -y` (เช่น `pedronauck/skills@next-best-practices`, `GoogleChrome/modern-web-guidance@modern-web-guidance`, `nutlope/hallmark@hallmark`, `vercel-labs/agent-skills@web-design-guidelines`, `pbakaus/impeccable@impeccable`). ห้ามใช้ `vercel-labs/next-skills` (repo ถูกลบแล้ว). Overlay ที่ดูแลเอง: `.cursor/skills/chrome-modern-web-guidance/`, `.cursor/skills/hallmark-erp/` (อ่านหลังอัปเดต upstream ทุกครั้ง)
 
 <!-- END:skills-registry -->
 <!-- BEGIN:codebase-memory-mcp-standard -->

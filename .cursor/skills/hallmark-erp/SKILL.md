@@ -10,7 +10,7 @@ description: |
 
 # Hallmark BLACKANDBREW ERP (supplementary only)
 
-Hallmark is installed at `.agents/skills/hallmark/` but **does not drive ERP UI** in this project.
+Hallmark is installed at `.agents/skills/hallmark/` (upstream [Nutlope/hallmark](https://github.com/Nutlope/hallmark), v1.1.0) but **does not drive ERP UI** in this project.
 
 ## Rule priority
 
@@ -34,7 +34,7 @@ Reject Hallmark output that suggests: modals for grid edits, decorative marketin
 | `hallmark` (default build) | **No** on ERP routes (see below) |
 | `hallmark redesign <target>` | **No** on ERP routes; requires explicit user approval + must preserve spreadsheet/pastel/token rules |
 
-Load upstream protocol from `.agents/skills/hallmark/SKILL.md` and `references/verbs/audit.md` or `references/study.md` **only** for allowed verbs.
+Load upstream protocol from `.agents/skills/hallmark/SKILL.md` and `references/verbs/audit.md` or `references/study.md` **only** for allowed verbs. Upstream catalog: **21 themes**, **57 slop-test gates** (audit only; never apply build/redesign verbs on ERP routes).
 
 ## Off-limits (Hallmark must not build or redesign)
 
@@ -82,8 +82,8 @@ Do **not** run Hallmark default/redesign. Use instead:
 
 ## Update upstream skill
 
-```bash
-npx skills add nutlope/hallmark -y
+```powershell
+npx skills add nutlope/hallmark@hallmark -y
 ```
 
 Re-read this overlay after updates; upstream `SKILL.md` changes do not relax ERP constraints.
