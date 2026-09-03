@@ -13,7 +13,7 @@ import {
   createManualSecretaryTask,
   syncSecretaryAiSuggestions,
 } from '@/app/actions/secretary-actions';
-import { splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
+import { resolveSecretaryCardTitleFontClass, splitSecretaryCardTitle } from '@/lib/secretary/format-card-title';
 import {
   countConsolidatedSecretaryBoardTasks,
   countConsolidatedSecretaryBoardTasksByModule,
@@ -381,7 +381,8 @@ function TaskCard({
   onComplete: () => void;
 }) {
   const titleLines = splitSecretaryCardTitle(task.title);
-
+  const isAiSuggested = task.source_kind === 'ai_suggested';
+  const titleFontClass = resolveSecretaryCardTitleFontClass(titleLines.length, isAiSuggested);
   const canOpenDetail = canOpenSecretaryTaskDetail(task);
   const cardClassName = cn(
     'relative flex aspect-square min-h-0 rounded-lg border p-2.5 bb-transition',
@@ -425,30 +426,33 @@ function TaskCard({
       ? 'เปิดรายละเอียดงานที่เสร็จแล้ว'
       : 'เปิดรายละเอียดงาน';
 
-  const isAiSuggested = task.source_kind === 'ai_suggested';
-
   const body = (
     <>
-      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-1 overflow-y-auto pb-8 [scrollbar-width:thin]">
-        {isAiSuggested ? (
-          <span className="rounded-full border border-border bg-muted/40 px-1.5 py-px text-[9px] font-normal text-muted-foreground">
-            AI แนะนำ
-          </span>
-        ) : null}
-        <p
-          className={cn(
-            'flex w-full flex-col items-center gap-0.5 text-center text-[clamp(12px,3.2vw,14px)] leading-[1.35] tracking-[0.01em] [line-break:strict] [overflow-wrap:normal] [word-break:keep-all]',
-            isDone ? 'text-black' : 'text-foreground',
-          )}
-        >
-          {titleLines.map((line, index) => (
-            <span key={`${task.id}-${index}`} className="block">
-              {line}
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain bb-smooth-scroll px-0.5 pb-8 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="my-auto flex w-full flex-col items-center gap-1">
+          {isAiSuggested ? (
+            <span className="shrink-0 rounded-full border border-border bg-muted/40 px-1.5 py-px text-[9px] font-normal text-muted-foreground">
+              AI แนะนำ
             </span>
-          ))}
-        </p>
+          ) : null}
+          <p
+            className={cn(
+              'flex w-full flex-col items-center gap-0.5 text-center tracking-[0.01em] [line-break:strict] [overflow-wrap:normal] [word-break:keep-all]',
+              titleFontClass,
+              isDone ? 'text-black' : 'text-foreground',
+            )}
+          >
+            {titleLines.map((line, index) => (
+              <span key={`${task.id}-${index}`} className="block max-w-full">
+                {line}
+              </span>
+            ))}
+          </p>
+        </div>
       </div>
-      <div className="absolute bottom-2 right-2 z-10">{actionButton}</div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-end p-2">
+        <div className="pointer-events-auto">{actionButton}</div>
+      </div>
     </>
   );
 

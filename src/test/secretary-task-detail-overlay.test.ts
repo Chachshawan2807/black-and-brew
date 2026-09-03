@@ -3,10 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   canOpenSecretaryTaskDetail,
-  markSecretaryAttentionItem,
 } from '@/lib/secretary/task-detail-overlay';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
-import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
 import type { SecretaryTask } from '@/lib/secretary/types';
 
 const ROOT = path.resolve(__dirname, '..');
@@ -71,20 +69,6 @@ describe('resolveSecretaryTaskOverlayKind', () => {
   });
 });
 
-describe('markSecretaryAttentionItem', () => {
-  test('flags a work item for light-red highlight', () => {
-    const item = markSecretaryAttentionItem({
-      id: 'order-1',
-      primary: 'ลูกค้า A',
-      secondary: 'ชำระเงิน: ค้างชำระ',
-    });
-
-    expect(item.needsAttention).toBe(true);
-    expect(SECRETARY_TASK_COLORS.attention).toContain('bb-pastel-surface');
-    expect(SECRETARY_TASK_COLORS.attention).toContain('bg-[#fde8e8]');
-  });
-});
-
 describe('secretary task detail overlay UI', () => {
   test('sub-window baseline avoids route navigation from secretary overlays', () => {
     const overlay = fs.readFileSync(
@@ -121,7 +105,6 @@ describe('secretary task detail overlay UI', () => {
     );
 
     expect(overlay).toContain('canOpenSecretaryTaskDetail');
-    expect(overlay).toContain('markSecretaryAttentionItem');
   });
 
   test('task cards do not open a detail window for AI suggested work', () => {
@@ -134,14 +117,14 @@ describe('secretary task detail overlay UI', () => {
     expect(client).toContain('งานนี้เป็นคำแนะนำ');
   });
 
-  test('maintenance list overlay highlights attention items without navigation', () => {
+  test('maintenance list overlay is read-only without navigation', () => {
     const listOverlay = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskListOverlay.tsx'),
       'utf-8',
     );
 
-    expect(listOverlay).toContain('needsAttention');
-    expect(listOverlay).toContain('SECRETARY_TASK_COLORS.attention');
+    expect(listOverlay).not.toContain('SECRETARY_TASK_COLORS.attention');
+    expect(listOverlay).not.toContain('needsAttention');
     expect(listOverlay).not.toContain('<Link');
     expect(listOverlay).not.toContain('href=');
   });

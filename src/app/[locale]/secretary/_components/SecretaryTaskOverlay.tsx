@@ -16,10 +16,7 @@ import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import { preloadSecretaryOverlayForTask } from '@/lib/secretary/preload-secretary-overlay';
 import { resolveSecretaryTaskDetailText } from '@/lib/secretary/resolve-task-detail-text';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
-import {
-  canOpenSecretaryTaskDetail,
-  markSecretaryAttentionItem,
-} from '@/lib/secretary/task-detail-overlay';
+import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import BeanOrdersOverlay from './BeanOrdersOverlay';
 import BranchWithdrawOverlay from './BranchWithdrawOverlay';
@@ -55,18 +52,16 @@ function filterMaintenanceForTask(
           (entry) => entry.urgency === 'within_7_days' || entry.urgency === 'within_30_days',
         );
 
-  return tasks.map((entry) =>
-    markSecretaryAttentionItem({
-      id: entry.id,
-      primary: entry.equipment,
-      secondary: [
-        formatDueDateWithDaysRemaining(entry.dueDate, snapshot.dateIso),
-        entry.advice,
-      ]
-        .filter(Boolean)
-        .join(' · '),
-    }),
-  );
+  return tasks.map((entry) => ({
+    id: entry.id,
+    primary: entry.equipment,
+    secondary: [
+      formatDueDateWithDaysRemaining(entry.dueDate, snapshot.dateIso),
+      entry.advice,
+    ]
+      .filter(Boolean)
+      .join(' · '),
+  }));
 }
 
 export default function SecretaryTaskOverlay({
@@ -151,7 +146,6 @@ export default function SecretaryTaskOverlay({
     return (
       <PurchaseOrdersModal
         onClose={onClose}
-        highlightAttention
         selectedChannels={selectedChannels}
         setSelectedChannels={setSelectedChannels}
         itemsToOrder={purchaseState.itemsToOrder}
@@ -211,12 +205,7 @@ export default function SecretaryTaskOverlay({
   }
 
   const infoItems = taskDetailText
-    ? [
-        markSecretaryAttentionItem({
-          id: 'description',
-          primary: taskDetailText,
-        }),
-      ]
+    ? [{ id: 'description', primary: taskDetailText }]
     : [];
 
   return (

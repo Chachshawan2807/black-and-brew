@@ -1,7 +1,5 @@
 'use client';
 
-import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
-import { cn } from '@/lib/utils';
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
 import SecretaryTaskSubwindow from './SecretaryTaskSubwindow';
 
@@ -15,18 +13,9 @@ type SecretaryTaskInfoOverlayProps = {
 function ListItemBody({ item }: { item: SecretaryAttentionListItem }) {
   return (
     <>
-      <p className={cn('text-[14px]', item.needsAttention ? 'text-black' : 'text-foreground')}>
-        {item.primary}
-      </p>
+      <p className="text-[14px] text-foreground">{item.primary}</p>
       {item.secondary ? (
-        <p
-          className={cn(
-            'mt-0.5 text-[12px]',
-            item.needsAttention ? 'text-black/70' : 'text-muted-foreground',
-          )}
-        >
-          {item.secondary}
-        </p>
+        <p className="mt-0.5 text-[12px] text-muted-foreground">{item.secondary}</p>
       ) : null}
     </>
   );
@@ -48,12 +37,7 @@ export default function SecretaryTaskInfoOverlay({
           items.map((item) => (
             <li
               key={item.id}
-              className={cn(
-                'mb-2 rounded-2xl border px-4 py-3 last:mb-0',
-                item.needsAttention
-                  ? cn('border-[#f5c6cb]', SECRETARY_TASK_COLORS.attention)
-                  : 'border-border bg-card',
-              )}
+              className="mb-2 rounded-2xl border border-border bg-card px-4 py-3 last:mb-0"
             >
               <ListItemBody item={item} />
             </li>

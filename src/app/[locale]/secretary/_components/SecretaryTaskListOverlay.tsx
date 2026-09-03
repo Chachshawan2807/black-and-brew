@@ -5,7 +5,6 @@ import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
-import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
 import { cn } from '@/lib/utils';
 import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
 
@@ -19,18 +18,9 @@ type SecretaryTaskListOverlayProps = {
 function ListItemBody({ item }: { item: SecretaryAttentionListItem }) {
   return (
     <>
-      <p className={cn('text-[14px]', item.needsAttention ? 'text-black' : 'text-foreground')}>
-        {item.primary}
-      </p>
+      <p className="text-[14px] text-foreground">{item.primary}</p>
       {item.secondary ? (
-        <p
-          className={cn(
-            'mt-0.5 text-[12px]',
-            item.needsAttention ? 'text-black/70' : 'text-muted-foreground',
-          )}
-        >
-          {item.secondary}
-        </p>
+        <p className="mt-0.5 text-[12px] text-muted-foreground">{item.secondary}</p>
       ) : null}
     </>
   );
@@ -72,15 +62,7 @@ export default function SecretaryTaskListOverlay({
               <li className="px-4 py-8 text-center text-[13px] text-muted-foreground">{emptyMessage}</li>
             ) : (
               items.map((item) => (
-                <li
-                  key={item.id}
-                  className={cn(
-                    'border-b px-4 py-3 last:border-b-0',
-                    item.needsAttention
-                      ? cn('border-[#f5c6cb]', SECRETARY_TASK_COLORS.attention)
-                      : 'border-border',
-                  )}
-                >
+                <li key={item.id} className="border-b border-border px-4 py-3 last:border-b-0">
                   <ListItemBody item={item} />
                 </li>
               ))

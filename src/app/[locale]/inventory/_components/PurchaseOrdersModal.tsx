@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Copy, ImageDown, ShoppingCart, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
-import { PASTEL_SURFACE, SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
+import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
@@ -38,7 +38,6 @@ type PurchaseOrdersModalProps = {
   allTabItemCount?: number;
   isExportMode?: boolean;
   exportTableId?: string;
-  highlightAttention?: boolean;
 };
 
 export default function PurchaseOrdersModal({
@@ -53,7 +52,6 @@ export default function PurchaseOrdersModal({
   allTabItemCount,
   isExportMode = false,
   exportTableId = 'blackandbrew-po-table-export',
-  highlightAttention = false,
 }: PurchaseOrdersModalProps) {
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
   const viewportInsets = useVisualViewportInsets(!isExportMode);
@@ -270,9 +268,7 @@ export default function PurchaseOrdersModal({
                       "border-b last:border-0 transition-colors",
                       isExportMode
                         ? "border-black/5 hover:bg-[#000000]/5"
-                        : highlightAttention
-                          ? cn(SECRETARY_TASK_COLORS.attention, "border-[#f5c6cb]")
-                          : "border-border hover:bg-muted/50",
+                        : "border-border hover:bg-muted/50",
                     )}
                   >
                     <td className={cn(
