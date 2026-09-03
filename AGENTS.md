@@ -323,6 +323,6 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 - **Primary graph:** MCP server codebase-memory-mcp (local SQLite knowledge graph)
 - **Setup:** See `.cursor/mcp.json.example`; install binary from [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp)
 - **Query first:** Use MCP tools (`search_graph`, `trace_path`, `query_graph`) before broad grep/file reads
-- **After code changes:** Re-index project via MCP ingest when structural navigation is needed
+- **After architecture changes:** Auto-sync before ending the task: `index_repository` (full) → `get_architecture` (all) → `manage_adr(mode='store')`. Triggers: new/moved domain under `src/lib/`, feature under `src/app/[locale]/`, `src/app/actions/`, `src/app/api/`, `supabase/migrations/`, or structural `src/types/index.ts`. Local script: `npm run graph:sync` (add `--if-changed` for commit hooks). Agents must use MCP tools directly, not CLI.
 - **Removed:** graphify is **not** used in this project do not install, run, or regenerate `graphify-out/`
 <!-- END:codebase-memory-mcp-standard -->

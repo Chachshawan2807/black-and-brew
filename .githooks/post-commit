@@ -1,0 +1,4 @@
+#!/bin/sh
+# Opt-in: git config core.hooksPath .githooks
+# Re-index knowledge graph + refresh ADR when architecture paths change.
+npm run graph:sync -- --if-changed

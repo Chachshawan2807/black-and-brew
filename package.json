@@ -32,7 +32,8 @@
     "cron:list": "node scripts/cron-job-org.mjs list",
     "cron:status": "node scripts/cron-job-org.mjs status",
     "cron:sync": "node scripts/cron-job-org.mjs sync",
-    "cron:sync:dry-run": "node scripts/cron-job-org.mjs sync --dry-run"
+    "cron:sync:dry-run": "node scripts/cron-job-org.mjs sync --dry-run",
+    "graph:sync": "node scripts/sync-knowledge-graph.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.79",

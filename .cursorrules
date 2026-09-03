@@ -6,3 +6,37 @@ This project uses **codebase-memory-mcp** as the primary backend knowledge graph
 - After code changes: re-index via MCP (`ingest` / agent-triggered refresh per tool docs)
 - Prefer `search_graph`, `trace_path`, `query_graph` over reading entire files for architecture questions
 - Typography iron rule: never use em dash (U+2014); use spaces instead (see `AGENTS.md` typography-no-em-dash-standard)
+
+## Centralized fix workflow (hub-first, IRON RULE)
+
+ทุกคำสั่ง "แก้/เพิ่ม/ลบ" โค้ด ให้พุ่งเข้าศูนย์กลางก่อนเสมอ ห้ามเริ่มด้วย grep/glob ไล่หาแบบสุ่ม
+
+1. **Locate at the hub:** เริ่มด้วย `search_graph` (หา qualified_name ของจุดที่จะแก้) แทน grep/glob เป็นสเต็ปแรก
+2. **Expand impact:** ใช้ `trace_path` (callers/callees) และ/หรือ `detect_changes` เพื่อหา "ส่วนที่เกี่ยวข้อง" ก่อนแตะโค้ด ห้ามแก้ก่อนรู้ผลกระทบ
+3. **Edit through central layers only** (ตาม `AGENTS.md`):
+   - Mutations → `src/app/actions/<domain>-actions.ts` (ห้าม mutation ตรงจาก client ถ้ามี action อยู่แล้ว)
+   - Domain logic → `src/lib/` หรือ `src/lib/<domain>/`
+   - Types กลาง → `src/types/index.ts`
+   - Data layer → `src/lib/supabase-server.ts` (server) / `src/lib/supabase.ts` (client)
+   - ห้าม duplicate mutation เดียวกันทั้งฝั่ง client และ Server Action
+4. **Re-index after structural change:** เมื่อแก้โครงสร้าง (เพิ่ม/ย้าย/ลบ function/route) ให้ re-index ผ่าน MCP (`index_repository`) เพื่อให้ศูนย์กลางความรู้ไม่เก่า
+5. **Fallback:** ใช้ grep/glob ได้เฉพาะกรณี knowledge graph ไม่มีผล (เช่น string literal, config, ไฟล์ที่ยังไม่ index) เท่านั้น
+
+## Auto-sync knowledge graph + ADR (IRON RULE)
+
+เมื่องานมีการเปลี่ยนแปลงสถาปัตย์ ให้ดำเนินการอัตโนมัติ **ก่อนจบงาน** โดยไม่ต้องรอผู้ใช้สั่ง:
+
+1. `index_repository` (mode `full`, project `C-Projects-black-and-brew`)
+2. `get_architecture` (aspects `all`)
+3. `manage_adr(mode='store')` ทับ ADR จาก architecture ล่าสุด
+
+**สำคัญ:** ใช้ MCP tools โดยตรง (ไม่ใช่ CLI `codebase-memory-mcp cli`) เพราะ CLI อาจมี schema mismatch บางเครื่อง
+
+**Triggers (เปลี่ยนแปลงสถาปัตย์):**
+- เพิ่ม/ลบ/ย้าย domain ใต้ `src/lib/<domain>/` หรือ feature ใต้ `src/app/[locale]/<feature>/`
+- เพิ่ม/ลบ Server Action ใน `src/app/actions/`
+- เพิ่ม/ลบ API route ใน `src/app/api/`
+- migration ใหม่ใน `supabase/migrations/`
+- เปลี่ยนโครงสร้าง `src/types/index.ts` อย่างมีนัยสำคัญ
+
+**ทางเลือก local (script):** `npm run graph:sync` หรือ `npm run graph:sync -- --if-changed` (ใช้ใน `.githooks/post-commit` ได้หลัง `git config core.hooksPath .githooks`)
