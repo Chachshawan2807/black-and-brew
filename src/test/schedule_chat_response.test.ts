@@ -33,7 +33,7 @@ describe('detect-schedule-query', () => {
   test('resolves short Thai numeric dates as day/month in the current year', () => {
     expect(resolveScheduleTargetDate('ตารางงานวันที่ 12/6', '2026-06-08')).toBe('2026-06-12');
     expect(resolveScheduleTargetDate('ตารางงานวันที่ 3/6', '2026-06-08')).toBe('2026-06-03');
-    expect(resolveScheduleTargetDate('ตารางงานวันที่ 12-06-2026', '2026-06-08')).toBe('2026-06-12');
+    expect(resolveScheduleTargetDate('ตารางงานวันที่ 12/06/2026', '2026-06-08')).toBe('2026-06-12');
     expect(resolveScheduleTargetDate('ตารางงาน 2026-06-12', '2026-06-08')).toBe('2026-06-12');
   });
 
@@ -64,7 +64,7 @@ describe('formatScheduleChatResponse', () => {
 
     const text = formatScheduleChatResponse('2026-06-07', shifts);
 
-    expect(text).toContain('07-06-2026 อา.');
+    expect(text).toContain('07/06/2026 อา.');
     expect(text).toContain('พนักงานปฏิบัติงานหน้าร้าน (รวม 2 คน)');
     expect(text).toContain('ปิ่น - 6:30');
     expect(text).toContain('ล่า - ร้านซักผ้า');

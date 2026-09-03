@@ -116,17 +116,17 @@ describe('pwa-notification-bridge', () => {
   test('buildInventoryOsNotification keeps non-stock title and body separate', () => {
     const daily = buildInventoryOsNotification(
       'ตารางงานพรุ่งนี้',
-      '21-06-2026 · นิต้า 6:30',
+      '21/06/2026 · นิต้า 6:30',
       1,
       true,
     );
     expect(daily.title).toBe('ตารางงานพรุ่งนี้');
-    expect(daily.body).toBe('21-06-2026 · นิต้า 6:30');
+    expect(daily.body).toBe('21/06/2026 · นิต้า 6:30');
   });
 
   test('buildSplitOsNotification keeps headline and schedule detail separate on Android', () => {
     const scheduleBody = [
-      'ตารางงาน 09-08-2026 (วันนี้) · เข้างาน 5 คน',
+      'ตารางงาน 09/08/2026 (วันนี้) · เข้างาน 5 คน',
       'ปิ่น 6:30, มุก 7:00, นิต้า 8:00, ล่า 6:30, โบ๊ท 7:00',
       'งานอื่น: ล่า ร้านซักผ้า',
     ].join('\n');
@@ -139,7 +139,7 @@ describe('pwa-notification-bridge', () => {
   });
 
   test('buildSplitOsNotification keeps schedule headline and detail separate on iOS', () => {
-    const scheduleBody = 'ตารางงาน 09-08-2026 (วันนี้) · เข้างาน 2 คน\nปิ่น 6:30, มุก 7:00';
+    const scheduleBody = 'ตารางงาน 09/08/2026 (วันนี้) · เข้างาน 2 คน\nปิ่น 6:30, มุก 7:00';
     const ios = buildSplitOsNotification('ตารางงานวันนี้', scheduleBody);
     expect(ios.title).toBe('ตารางงานวันนี้');
     expect(ios.body).toBe(scheduleBody);

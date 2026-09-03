@@ -34,7 +34,7 @@ vi.mock('@/app/actions/daily-report-actions', async (importOriginal) => {
         const [y, m, d] = reportDateIso.split('-');
         return {
           schedule,
-          dateStr: `${d}-${m}-${y}`,
+          dateStr: `${d}/${m}/${y}`,
           activeStaff: [{ name: 'ปิ่น', shiftText: '6:30' }],
           otherDutyStaff: [],
           offStaff: [],
@@ -128,7 +128,7 @@ describe('/api/daily-report (cron-job.org)', () => {
     vi.setSystemTime(new Date('2026-08-25T11:00:00.000Z')); // 18:00 ICT Aug 25
 
     recordLogMock.mockImplementation(async (data) => {
-      expect(data.dateStr).toBe('26-08-2026');
+      expect(data.dateStr).toBe('26/08/2026');
       return { success: true };
     });
 
@@ -144,7 +144,7 @@ describe('/api/daily-report (cron-job.org)', () => {
     expect(body.schedule).toBe('tomorrow');
     expect(body.bangkokTodayIso).toBe('2026-08-25');
     expect(body.reportDateIso).toBe('2026-08-26');
-    expect(body.dateStr).toBe('26-08-2026');
+    expect(body.dateStr).toBe('26/08/2026');
     expect(evaluateInsightsMock).toHaveBeenCalled();
   });
 });

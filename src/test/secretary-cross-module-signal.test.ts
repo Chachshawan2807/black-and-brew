@@ -9,7 +9,7 @@ function baseSnapshot(overrides: Partial<SecretarySnapshot> = {}): SecretarySnap
     locale: 'th',
     operational: {
       dateIso: '2026-08-29',
-      dateDisplay: '29-08-2026',
+      dateDisplay: '29/08/2026',
       locale: 'th',
       headcount: 2,
       leaveCount: 0,

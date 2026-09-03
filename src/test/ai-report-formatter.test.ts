@@ -44,13 +44,13 @@ describe('Bru report response style', () => {
     expect(ensureFemalePoliteness('สรุปเรียบร้อยครับ')).toBe('สรุปเรียบร้อยค่ะ');
   });
 
-  test('formats ISO dates as DD-MM-YYYY', () => {
-    expect(formatIsoDateDisplay('2026-07-23')).toBe('23-07-2026');
+  test('formats ISO dates as DD/MM/YYYY', () => {
+    expect(formatIsoDateDisplay('2026-07-23')).toBe('23/07/2026');
   });
 
   test('exports shared rule constants for system prompt', () => {
     expect(BRU_REPORT_RULES).toContain('ค่ะ');
     expect(BRU_REPORT_RULES).toContain('ห้ามใช้ **');
-    expect(BRU_REPORT_RULES).toContain('DD-MM-YYYY');
+    expect(BRU_REPORT_RULES).toContain('DD/MM/YYYY');
   });
 });

@@ -11,7 +11,7 @@ import type { PushSubscriptionRow } from '@/lib/web-push';
 function sampleReport(overrides: Partial<DailyReportData> = {}): DailyReportData {
   return {
     schedule: 'today',
-    dateStr: '21-06-2026',
+    dateStr: '21/06/2026',
     activeStaff: [{ name: 'นิต้า', shiftText: '6:30' }],
     otherDutyStaff: [],
     offStaff: [{ name: 'ชัช', shiftText: 'วันหยุด' }],
@@ -58,7 +58,7 @@ describe('daily-report-web-push', () => {
     expect(payload.kind).toBe('daily_report');
     expect(payload.schedule).toBe('today');
     expect(payload.title).toBe('ตารางงานวันนี้');
-    expect(payload.body).toContain('ตารางงาน 21-06-2026 อา. (วันนี้)');
+    expect(payload.body).toContain('ตารางงาน 21/06/2026 อา. (วันนี้)');
     expect(payload.body).toContain('พนักงาน1');
     expect(payload.body.length).toBeGreaterThan(80);
     expect(payload.url).toBe('/th/schedule');

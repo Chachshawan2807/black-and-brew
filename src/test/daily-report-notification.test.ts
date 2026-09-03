@@ -10,7 +10,7 @@ import {
 function sampleDailyReportRow(
   overrides: Partial<DataChangeLogRow> = {},
 ): DataChangeLogRow {
-  const logId = dailyReportNotificationLogId('today', '13-07-2026');
+  const logId = dailyReportNotificationLogId('today', '13/07/2026');
   return {
     id: 'db-uuid-1',
     occurred_at: '2026-07-13T05:00:00.000Z',
@@ -21,7 +21,7 @@ function sampleDailyReportRow(
     module: 'schedule',
     entity_type: 'daily_report',
     entity_id: logId,
-    entity_label: '13-07-2026',
+    entity_label: '13/07/2026',
     field_changes: [],
     old_value: null,
     new_value: null,
@@ -36,8 +36,8 @@ function sampleDailyReportRow(
       url: '/th/schedule',
       notificationLogId: logId,
       title: 'ตารางงานวันนี้',
-      summary: '13-07-2026 · เข้างาน 1 คน',
-      fieldSummary: '13-07-2026\nเข้างาน 1 คน\nนิต้า 6:30',
+      summary: '13/07/2026 · เข้างาน 1 คน',
+      fieldSummary: '13/07/2026\nเข้างาน 1 คน\nนิต้า 6:30',
       locale: 'th',
     },
     ...overrides,
@@ -46,8 +46,8 @@ function sampleDailyReportRow(
 
 describe('daily-report-notification', () => {
   test('dailyReportNotificationLogId matches web push tag', () => {
-    expect(dailyReportNotificationLogId('tomorrow', '13-07-2026')).toBe(
-      'bb-daily-report-tomorrow-13-07-2026',
+    expect(dailyReportNotificationLogId('tomorrow', '13/07/2026')).toBe(
+      'bb-daily-report-tomorrow-13/07/2026',
     );
   });
 
@@ -72,7 +72,7 @@ describe('daily-report-notification', () => {
 
   test('formatDailyReportNotification uses stable logId for panel dedupe', () => {
     const formatted = formatDailyReportNotification(sampleDailyReportRow(), 'th');
-    expect(formatted.logId).toBe('bb-daily-report-today-13-07-2026');
+    expect(formatted.logId).toBe('bb-daily-report-today-13/07/2026');
     expect(formatted.id).toBe(formatted.logId);
     expect(formatted.title).toContain('ตารางงาน');
     expect(formatted.fieldSummary).toContain('นิต้า 6:30');
@@ -82,7 +82,7 @@ describe('daily-report-notification', () => {
   test('daily report data type is compatible with notification log metadata', () => {
     const data: DailyReportData = {
       schedule: 'today',
-      dateStr: '13-07-2026',
+      dateStr: '13/07/2026',
       activeStaff: [{ name: 'นิต้า', shiftText: '6:30' }],
       otherDutyStaff: [],
       offStaff: [],
@@ -133,7 +133,7 @@ describe('daily report notification sync', () => {
     const { updateDailyReportNotificationLog } = await import('@/lib/daily-report-notification');
     const data: DailyReportData = {
       schedule: 'today',
-      dateStr: '13-07-2026',
+      dateStr: '13/07/2026',
       activeStaff: [{ name: 'นิต้า', shiftText: '7:00' }],
       otherDutyStaff: [],
       offStaff: [{ name: 'ปิ่น', shiftText: 'วันหยุด' }],

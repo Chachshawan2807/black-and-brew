@@ -386,7 +386,7 @@ Source of truth: `AI_ALLOWED_TABLES`, `TABLE_COLUMN_PRESETS`, and `TABLE_MAX_LIM
 - RPC snapshot: `get_ai_store_status` (`sql/ai_agent_views.sql`) remains available via `fetchInventorySummary()` for store-status snapshots. LOW status uses `stock <= order_point AND target_stock > stock` (migration `20260615130000`). Do not delete `sql/ai_agent_views.sql`.
 - Single doorway: `database-tools.ts` routes and shapes only. Add new AI-readable tables to `ai-data-gateway.ts` never open a second Supabase admin client in a tool.
 - New public tables: add to `AI_ALLOWED_TABLES`, define a column preset, set `TABLE_MAX_LIMITS`, and extend tests in `src/test/ai-data-gateway.test.ts`.
-- Bru Report Style: deterministic and LLM answers follow `src/lib/agents/report-response.ts` (female politeness, no bold/tables/UUIDs, DD-MM-YYYY).
+- Bru Report Style: deterministic and LLM answers follow `src/lib/agents/report-response.ts` (female politeness, no bold/tables/UUIDs, DD/MM/YYYY).
 
 ---
 

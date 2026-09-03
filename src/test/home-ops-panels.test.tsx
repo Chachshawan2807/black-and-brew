@@ -141,6 +141,6 @@ describe('HomeMaintenanceDueSection', () => {
     );
 
     expect(screen.queryByRole('columnheader', { name: 'ความเร่งด่วน' })).not.toBeInTheDocument();
-    expect(screen.getAllByText('26-10-2026 (55 วัน)').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('26/10/2026 (55 วัน)').length).toBeGreaterThanOrEqual(1);
   });
 });

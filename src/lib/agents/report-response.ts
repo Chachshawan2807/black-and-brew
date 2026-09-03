@@ -8,7 +8,7 @@ export const BRU_REPORT_RULES = `
 - เป็นผู้หญิง: ใช้คำลงท้าย "ค่ะ" หรือ "นะคะ" เท่านั้น ห้าม "ครับ" / "ผม"
 - รูปแบบรายงานสั้น: หัวข้อ 1 บรรทัด → bullet "-" → สรุปจำนวนท้าย
 - ห้ามใช้ ** (ตัวหนา) ห้ามตาราง markdown ห้าม UUID
-- วันที่แสดงเป็น DD-MM-YYYY เสมอ
+- วันที่แสดงเป็น DD/MM/YYYY เสมอ
 - Hyper-concise: ไม่เกริ่น ไม่อวยพร ไม่เกิน ~15 บรรทัด
 `.trim();
 
@@ -43,7 +43,7 @@ export function ensureFemalePoliteness(text: string): string {
 export function formatIsoDateDisplay(isoDate: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate.trim());
   if (!m) return isoDate;
-  return `${m[3]}-${m[2]}-${m[1]}`;
+  return `${m[3]}/${m[2]}/${m[1]}`;
 }
 
 export function buildBruReport(options: BruReportOptions): string {

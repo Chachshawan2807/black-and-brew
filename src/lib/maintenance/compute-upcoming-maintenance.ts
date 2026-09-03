@@ -1,5 +1,6 @@
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
 import {
   addFrequencyInterval,
   parseRecommendedFrequency,
@@ -25,7 +26,7 @@ function toIsoDate(date: Date): string {
 function toDisplayDate(isoDate: string): string {
   const parsed = parseIsoDate(isoDate);
   if (!parsed) return isoDate;
-  return format(parsed, 'dd-MM-yyyy');
+  return format(parsed, THAI_DISPLAY_DATE_FORMAT);
 }
 
 export function formatDueDateWithDaysRemaining(

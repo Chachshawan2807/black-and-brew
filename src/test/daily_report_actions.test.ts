@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { toZonedTime } from 'date-fns-tz';
 import { format } from 'date-fns';
+import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
 
 
 // Define mutable mock data variables
@@ -228,7 +229,7 @@ describe('Daily report protocol actions', () => {
   });
 
   describe('compileDailyReportData() staff formatting', () => {
-    it('should use DD-MM-YYYY date and normalize day-off staff labels', async () => {
+    it('should use DD/MM/YYYY date and normalize day-off staff labels', async () => {
       mockProfilesData = [
         { id: 'p1', full_name: 'ปิ่น', schedule_order: 1 },
         { id: 'p2', full_name: 'หนูดี', schedule_order: 2 },
@@ -248,7 +249,7 @@ describe('Daily report protocol actions', () => {
 
       const data = await compileDailyReportData();
       const today = toZonedTime(new Date(), 'Asia/Bangkok');
-      const expectedDate = format(today, 'dd-MM-yyyy');
+      const expectedDate = format(today, THAI_DISPLAY_DATE_FORMAT);
       const altText = buildDailyReportAltText(data);
 
       expect(data.dateStr).toBe(expectedDate);
@@ -277,9 +278,9 @@ describe('Daily report protocol actions', () => {
       const data = await compileDailyReportData('tomorrow');
       const altText = buildDailyReportAltText(data);
 
-      expect(data.dateStr).toBe('27-05-2026');
+      expect(data.dateStr).toBe('27/05/2026');
       expect(data.schedule).toBe('tomorrow');
-      expect(altText).toContain('27-05-2026 พ.');
+      expect(altText).toContain('27/05/2026 พ.');
     });
 
     it('tomorrow at 18:01 ICT shows Bangkok next day on UTC servers (Vercel)', async () => {
@@ -295,8 +296,8 @@ describe('Daily report protocol actions', () => {
         const data = await compileDailyReportData('tomorrow');
         const altText = buildDailyReportAltText(data);
 
-        expect(data.dateStr).toBe('26-08-2026');
-        expect(altText).toContain('26-08-2026 พ.');
+        expect(data.dateStr).toBe('26/08/2026');
+        expect(altText).toContain('26/08/2026 พ.');
         expect(altText).toContain('(พรุ่งนี้)');
       } finally {
         if (previousTz === undefined) delete process.env.TZ;

@@ -11,7 +11,7 @@ const snapshot: SecretarySnapshot = {
   locale: 'th',
   operational: {
     dateIso: '2026-08-29',
-    dateDisplay: '29-08-2026',
+    dateDisplay: '29/08/2026',
     locale: 'th',
     headcount: 4,
     leaveCount: 1,

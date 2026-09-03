@@ -11,6 +11,7 @@ import {
   getDay, isToday,
 } from 'date-fns';
 import { th } from 'date-fns/locale';
+import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -231,7 +232,7 @@ export function ClickableDatePicker({
   // ─── Display value ────────────────────────────────────────────────────────
   const displayValue = React.useMemo(() => {
     if (value) {
-      try { return format(parseISO(value), 'dd/MM/yyyy'); } catch { return value; }
+      try { return format(parseISO(value), THAI_DISPLAY_DATE_FORMAT); } catch { return value; }
     }
     return placeholder || 'เลือกวันที่';
   }, [value, placeholder]);

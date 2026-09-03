@@ -4,7 +4,7 @@ import { THAI_TIMEZONE } from '@/lib/timezone';
 import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import type { DailyReportData, DailyReportSchedule } from '@/app/actions/daily-report-actions';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
-import { formatScheduleNotificationDateDisplay } from '@/lib/date-utils';
+import { formatScheduleNotificationDateDisplay, THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
 import { sanitizeJsonValue } from '@/lib/data-change-log';
 import type { InventoryNotification } from '@/lib/notification-types';
 
@@ -183,7 +183,7 @@ export async function refreshDailyReportNotificationsForDate(
   targetDate: Date,
   locale = 'th',
 ): Promise<void> {
-  const dateStr = formatInTimeZone(targetDate, THAI_TIMEZONE, 'dd-MM-yyyy');
+  const dateStr = formatInTimeZone(targetDate, THAI_TIMEZONE, THAI_DISPLAY_DATE_FORMAT);
   const schedules: DailyReportSchedule[] = ['today', 'tomorrow'];
   const { compileDailyReportDataForDate } = await import('@/app/actions/daily-report-actions');
 

@@ -10,7 +10,7 @@ import {
 
 const sampleData: DailyReportData = {
   schedule: 'tomorrow',
-  dateStr: '13-06-2026',
+  dateStr: '13/06/2026',
   headcount: 2,
   activeStaff: [
     { name: 'ปิ่น', shiftText: '6:30' },
@@ -29,7 +29,7 @@ describe('buildDailyReportAltText()', () => {
     const summary = buildDailyReportAltText(sampleData);
     const lines = summary.split('\n');
 
-    expect(lines[0]).toBe('ตารางงาน 13-06-2026 ส. (พรุ่งนี้) · เข้างาน 2 คน');
+    expect(lines[0]).toBe('ตารางงาน 13/06/2026 ส. (พรุ่งนี้) · เข้างาน 2 คน');
     expect(lines[1]).toBe('ปิ่น 6:30, มุก 7:00');
     expect(lines[2]).toBe('งานอื่น: ล่า ร้านซักผ้า');
     expect(lines[3]).toBe('ลา: มุก');

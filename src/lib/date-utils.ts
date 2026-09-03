@@ -4,17 +4,29 @@ import { THAI_TIMEZONE } from './timezone';
 
 const THAI_DAY_ABBREVS = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'] as const;
 
+/** Thai user-facing calendar date format (DD/MM/YYYY). */
+export const THAI_DISPLAY_DATE_FORMAT = 'dd/MM/yyyy';
+
 type CalendarParts = { y: number; m: number; d: number };
 
 function parseCalendarParts(input: Date | string): CalendarParts | null {
   if (typeof input === 'string') {
     const trimmed = input.trim();
-    const ddMmYyyy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
-    if (ddMmYyyy) {
+    const ddMmYyyySlash = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmed);
+    if (ddMmYyyySlash) {
       return {
-        d: Number(ddMmYyyy[1]),
-        m: Number(ddMmYyyy[2]),
-        y: Number(ddMmYyyy[3]),
+        d: Number(ddMmYyyySlash[1]),
+        m: Number(ddMmYyyySlash[2]),
+        y: Number(ddMmYyyySlash[3]),
+      };
+    }
+
+    const ddMmYyyyDash = /^(\d{2})-(\d{2})-(\d{4})$/.exec(trimmed);
+    if (ddMmYyyyDash) {
+      return {
+        d: Number(ddMmYyyyDash[1]),
+        m: Number(ddMmYyyyDash[2]),
+        y: Number(ddMmYyyyDash[3]),
       };
     }
 
@@ -24,6 +36,15 @@ function parseCalendarParts(input: Date | string): CalendarParts | null {
         y: Number(isoMatch[1]),
         m: Number(isoMatch[2]),
         d: Number(isoMatch[3]),
+      };
+    }
+
+    const parsedSlash = parse(trimmed, THAI_DISPLAY_DATE_FORMAT, new Date());
+    if (!Number.isNaN(parsedSlash.getTime())) {
+      return {
+        y: parsedSlash.getFullYear(),
+        m: parsedSlash.getMonth() + 1,
+        d: parsedSlash.getDate(),
       };
     }
 
@@ -44,7 +65,7 @@ function parseCalendarParts(input: Date | string): CalendarParts | null {
 }
 
 function formatCalendarPartsThai({ y, m, d }: CalendarParts): string {
-  const datePart = `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
+  const datePart = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
   const dayAbbrev = THAI_DAY_ABBREVS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   return `${datePart} ${dayAbbrev}`;
 }
@@ -69,10 +90,10 @@ export function bangkokCalendarIsoToDate(isoDate: string): Date {
 
 export function bangkokIsoToThaiDisplay(isoDate: string): string {
   const [y, m, d] = isoDate.split('-');
-  return `${d}-${m}-${y}`;
+  return `${d}/${m}/${y}`;
 }
 
-/** DD-MM-YYYY with abbreviated Thai weekday (e.g. "21-08-2026 ศ."). */
+/** DD/MM/YYYY with abbreviated Thai weekday (e.g. "21/08/2026 ศ."). */
 export function formatScheduleNotificationDateDisplay(input: Date | string): string {
   const parts = parseCalendarParts(input);
   if (!parts) return typeof input === 'string' ? input.trim() : '';

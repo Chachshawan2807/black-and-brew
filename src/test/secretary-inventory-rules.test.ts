@@ -12,7 +12,7 @@ function snapshot(
     locale: 'th',
     operational: {
       dateIso: '2026-08-29',
-      dateDisplay: '29-08-2026',
+      dateDisplay: '29/08/2026',
       locale: 'th',
       headcount: 0,
       leaveCount: 0,

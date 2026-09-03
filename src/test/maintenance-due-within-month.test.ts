@@ -84,15 +84,15 @@ describe('formatDueDateWithDaysRemaining', () => {
   test('formats upcoming due date with remaining days', () => {
     expect(
       formatDueDateWithDaysRemaining('2026-10-26', REAL_SERVICE_RECORD_REFERENCE_DATE),
-    ).toBe('26-10-2026 (55 วัน)');
+    ).toBe('26/10/2026 (55 วัน)');
   });
 
   test('formats due today and overdue days', () => {
     expect(
       formatDueDateWithDaysRemaining('2026-09-01', REAL_SERVICE_RECORD_REFERENCE_DATE),
-    ).toBe('01-09-2026 (วันนี้)');
+    ).toBe('01/09/2026 (วันนี้)');
     expect(
       formatDueDateWithDaysRemaining('2026-08-26', REAL_SERVICE_RECORD_REFERENCE_DATE),
-    ).toBe('26-08-2026 (เลย 6 วัน)');
+    ).toBe('26/08/2026 (เลย 6 วัน)');
   });
 });

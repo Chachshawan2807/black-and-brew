@@ -143,7 +143,7 @@ describe('formatMaintenanceChatResponse', () => {
 
     expect(text).toContain('🔧 งานซ่อมบำรุงที่ควรทำในอนาคตอันใกล้');
     expect(text).toContain('เลยกำหนดแล้ว');
-    expect(text).toContain('26-08-2026');
+    expect(text).toContain('26/08/2026');
     expect(text).toContain('ซิงค์ล้างจานบาร์ชง');
     expect(text).toContain('ล้างทำความสะอาดด้วยโซดาไฟ');
     expect(text).not.toMatch(/• .+ แนะนำ: .+ \| ครบกำหนด:/);

@@ -6,6 +6,7 @@ import {
   addBangkokCalendarDays,
   bangkokCalendarIsoToDate,
   getBangkokCalendarIso,
+  THAI_DISPLAY_DATE_FORMAT,
 } from '@/lib/date-utils';
 import { formatDailyShifts } from '@/lib/schedule/format-daily-shifts';
 import { THAI_TIMEZONE } from '@/lib/timezone';
@@ -48,7 +49,7 @@ function getErrorDetails(error: unknown): unknown {
 }
 
 /** Thai display format for report header (DD/MM/YYYY). */
-const THAI_REPORT_DATE_FORMAT = 'dd-MM-yyyy';
+const THAI_REPORT_DATE_FORMAT = THAI_DISPLAY_DATE_FORMAT;
 
 /**
  * SPEC: Staff Shift Chronological Sorting

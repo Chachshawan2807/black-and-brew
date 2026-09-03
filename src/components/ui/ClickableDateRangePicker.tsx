@@ -21,6 +21,7 @@ import {
   isWithinInterval,
 } from 'date-fns';
 import { th } from 'date-fns/locale';
+import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface ClickableDateRangePickerProps {
@@ -59,7 +60,7 @@ function parseDate(value?: string): Date | null {
 
 function formatDisplayDate(value?: string): string | null {
   const parsed = parseDate(value);
-  return parsed ? format(parsed, 'dd/MM/yyyy') : null;
+  return parsed ? format(parsed, THAI_DISPLAY_DATE_FORMAT) : null;
 }
 
 export function ClickableDateRangePicker({

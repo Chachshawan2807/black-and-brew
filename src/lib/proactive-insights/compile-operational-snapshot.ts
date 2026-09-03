@@ -15,6 +15,7 @@ import type {
 import { getWeekDateIsos } from '@/lib/proactive-insights/week-schedule';
 import { shouldIncludeBeanOrderInPendingInsights } from '@/lib/proactive-insights/pending-bean-order-eligibility';
 import { resolveBeanOrderSlipUploadedAt } from '@/lib/proactive-insights/resolve-bean-order-slip';
+import { bangkokIsoToThaiDisplay } from '@/lib/date-utils';
 
 export type ShiftSnapshotBlock = {
   activeStaff: StaffShiftEntry[];
@@ -46,9 +47,7 @@ export function countLeaveStaff(offStaff: StaffShiftEntry[]): number {
 }
 
 export function dateIsoToDisplay(dateIso: string): string {
-  const parsed = parseISO(dateIso);
-  if (Number.isNaN(parsed.getTime())) return dateIso;
-  return format(parsed, 'dd-MM-yyyy');
+  return bangkokIsoToThaiDisplay(dateIso);
 }
 
 async function defaultFetchPendingBeanOrders(): Promise<PendingBeanOrderInsight[]> {

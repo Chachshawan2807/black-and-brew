@@ -35,7 +35,7 @@ function sampleSnapshot(overrides: Partial<OperationalSnapshot> = {}): Operation
 
   return {
     dateIso: '2026-07-24',
-    dateDisplay: '24-07-2026',
+    dateDisplay: '24/07/2026',
     locale: 'th',
     headcount: today?.headcount ?? 5,
     leaveCount: today?.leaveCount ?? 0,

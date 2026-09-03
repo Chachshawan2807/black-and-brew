@@ -43,7 +43,7 @@ describe('compileOperationalSnapshot', () => {
     );
 
     expect(snapshot.dateIso).toBe('2026-07-24');
-    expect(snapshot.dateDisplay).toBe('24-07-2026');
+    expect(snapshot.dateDisplay).toBe('24/07/2026');
     expect(snapshot.headcount).toBe(1);
     expect(snapshot.leaveCount).toBe(1);
     expect(snapshot.offCount).toBe(2);
