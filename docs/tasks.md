@@ -29,7 +29,7 @@ Notable completed work:
 - [x] Inventory frequent-items localStorage cache
 - [x] `shipBeanOrder` deferred shipped push via `after()` (no external tracking sync)
 - [x] `inventory_transactions.transaction_at` business date + ledger reset migration (`20260811105704`, `20260811115400`)
-- [x] Retired: inventory recommended target stock; weather API; Market Insights module; obsolete root protocol/skill stubs; `daily-report-notification-actions.ts`
+- [x] Retired: inventory recommended target stock; Market Insights module; obsolete root protocol/skill stubs; `daily-report-notification-actions.ts`
 - [x] Retired: Sales Report module (`/sales`, `sales_*` tables migration `20260826140000_drop_sales_report_tables.sql`)
 
 See `docs/changelog.md` and git history for dated entries.

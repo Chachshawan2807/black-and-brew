@@ -119,8 +119,8 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 - Do not reintroduce:
   1. Graphify (or any second knowledge-graph toolchain) use **codebase-memory-mcp** only.
   2. Inventory recommended target stock dropped by `20260708104230_remove_inventory_recommended_target_stock.sql`.
-  3. Dashboard widgets: WeatherWidget, InventorySummaryCard, CommandCenterGrid.
-  4. Weather forecasting (`/api/weather` / OpenWeatherMap) and AI external web search (retired with chat module).
+  3. Retired dashboard widgets: InventorySummaryCard, CommandCenterGrid.
+  4. AI external web search (retired with chat module).
   5. Market Insights module (`local_events`, `market_insight_runs`) dropped by `20260622143800_drop_market_insights_tables.sql`.
 - Impact: Keep docs and code free of these as active features.
 
