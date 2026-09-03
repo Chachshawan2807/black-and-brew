@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, X, ZoomIn } from 'lucide-react';
+import { Loader2, X, ZoomIn } from '@/lib/icons';
 import { getBeanOrderSlipSignedUrl } from '@/app/actions/bean-order-actions';
 import {
   BEAN_ORDER_ACTION_BTN_OUTLINE,

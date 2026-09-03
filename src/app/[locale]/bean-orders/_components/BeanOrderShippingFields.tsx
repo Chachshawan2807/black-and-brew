@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown } from '@/lib/icons';
 import {
   BEAN_ORDER_CARRIERS,
   OTHER_CARRIER_CODE,

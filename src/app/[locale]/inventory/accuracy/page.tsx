@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { AlertTriangle, BarChart3, ChevronLeft, ClipboardCheck } from 'lucide-react';
+import { AlertTriangle, ChartColumn, ChevronLeft, ClipboardCheck } from '@/lib/icons';
 import { checkAuth } from '@/app/actions/auth';
 import { fetchInventoryAccuracyReport } from '@/app/actions/inventory-actions';
 import { AccuracyGauge } from '@/app/[locale]/inventory/accuracy/_components/AccuracyGauge';
@@ -42,7 +42,7 @@ export default async function InventoryAccuracyPage({
           </Link>
           <div className="flex items-start gap-3">
             <div className="rounded-2xl bg-[#dbeafe] p-3 text-black bb-shadow-sm bb-pastel-surface">
-              <BarChart3 className="h-6 w-6" strokeWidth={1.6} />
+              <ChartColumn className="h-6 w-6" strokeWidth={1.6} />
             </div>
             <div>
               <PageTitle className="text-2xl font-normal tracking-[0.16em] text-foreground uppercase">

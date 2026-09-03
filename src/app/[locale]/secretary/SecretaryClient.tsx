@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import dynamic from 'next/dynamic';
-import { CheckCircle2, Plus } from 'lucide-react';
+import { CheckCircle2, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from '@/lib/icons';
 
 /**
  * Genuine "order does not exist" boundary. Transient DB/auth/network failures do

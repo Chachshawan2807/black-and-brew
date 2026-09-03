@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { HelpCircle, LogIn, LogOut, ShieldAlert, ShieldX } from "lucide-react";
+import { HelpCircle, LogIn, LogOut, ShieldAlert, ShieldX } from '@/lib/icons';
 import { cn } from "@/lib/utils";
 import {
   fetchLoginHistoryBundle,

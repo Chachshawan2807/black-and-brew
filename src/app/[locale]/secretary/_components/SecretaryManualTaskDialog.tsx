@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X } from '@/lib/icons';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';

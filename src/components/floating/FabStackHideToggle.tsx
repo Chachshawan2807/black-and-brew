@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FAB_SUBTLE_HOVER, FAB_TAP } from '@/lib/motion-presets';
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Plus } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
   FAB_BOTTOM_HIDE_TOGGLE_CLASS,

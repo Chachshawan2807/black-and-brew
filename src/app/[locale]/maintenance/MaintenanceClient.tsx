@@ -16,10 +16,10 @@ import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProv
 import {
   Plus,
   Wrench,
-  Edit2,
+  Pencil,
   Trash2,
   Loader2,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { format } from 'date-fns';
 import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
 import { cn } from '@/lib/utils';
@@ -473,7 +473,7 @@ export default function MaintenanceClient({
                                 className="p-2 hover:bg-muted/30 text-muted-foreground hover:text-foreground rounded-xl bb-transition active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                                 aria-label="แก้ไขบันทึก"
                               >
-                                <Edit2 className="w-4 h-4" strokeWidth={1.5} />
+                                <Pencil className="w-4 h-4" strokeWidth={1.5} />
                               </button>
                             </HintTooltip>
                             <HintTooltip tip="ลบบันทึก">

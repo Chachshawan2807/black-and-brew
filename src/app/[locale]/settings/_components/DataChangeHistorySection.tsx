@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Layers } from "lucide-react";
+import { Plus, Pencil, Trash2, Layers } from '@/lib/icons';
 import { cn } from "@/lib/utils";
 import {
   fetchDataChangeLogs,

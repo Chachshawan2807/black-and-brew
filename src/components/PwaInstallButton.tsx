@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Download, Loader2, Share, SquarePlus, X } from 'lucide-react';
+import { Download, Loader2, Share, SquarePlus, X } from '@/lib/icons';
 import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
 import { prepareFreshPwaInstall } from '@/lib/pwa-install-reset';
 import {

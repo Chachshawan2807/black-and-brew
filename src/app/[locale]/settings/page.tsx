@@ -1,4 +1,4 @@
-import { Settings2 } from 'lucide-react';
+import { Settings2 } from '@/lib/icons';
 import { PageHeader } from '@/components/ui/page-header';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
 

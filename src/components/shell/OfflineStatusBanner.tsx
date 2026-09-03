@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { CloudOff, Loader2, RefreshCw, WifiOff } from 'lucide-react';
+import { CloudOff, Loader2, RefreshCw, WifiOff } from '@/lib/icons';
 import { requestOfflineSyncRetry, useOfflineStatus } from '@/hooks/use-offline-status';
 import { resolveOfflineBannerView } from '@/lib/offline-status';
 import { cn } from '@/lib/utils';

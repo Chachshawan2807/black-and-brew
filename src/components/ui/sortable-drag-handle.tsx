@@ -1,7 +1,7 @@
 'use client';
 
 import type { DraggableAttributes } from '@dnd-kit/core';
-import { GripVertical } from 'lucide-react';
+import { GripVertical } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { useCoarsePointer } from '@/hooks/use-coarse-pointer';
 import { cn } from '@/lib/utils';

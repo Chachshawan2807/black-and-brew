@@ -9,7 +9,7 @@ import {
   Download,
   Settings,
   RefreshCw,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';

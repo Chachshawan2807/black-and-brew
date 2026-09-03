@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Check } from "lucide-react";
+import { Sun, Moon, Check } from '@/lib/icons';
 import { cn } from "@/lib/utils";
 import {
   Tooltip,

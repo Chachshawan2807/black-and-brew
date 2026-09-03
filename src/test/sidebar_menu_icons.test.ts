@@ -8,7 +8,8 @@ describe('sidebar menu icons', () => {
     const byId = new Map(menus.map((menu) => [menu.id, menu]));
 
     expect(byId.get('bean-orders')?.icon.displayName).toBe('Coffee');
-    expect(byId.get('inventory-accuracy')?.icon.displayName).toBe('Gauge');
+    expect(byId.get('inventory-accuracy')?.icon.displayName).toBe('ChartColumn');
+    expect(byId.get('dashboard')?.icon.displayName).toBe('Users');
 
     const icons = [
       byId.get('bean-orders')?.icon,

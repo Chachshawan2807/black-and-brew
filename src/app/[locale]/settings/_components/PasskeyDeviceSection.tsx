@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Fingerprint, Loader2, ScanFace } from 'lucide-react';
+import { Fingerprint, Loader2, ScanFace } from '@/lib/icons';
 import {
   getCurrentDevicePasskeyStatus,
   removePasskeyForCurrentDevice,

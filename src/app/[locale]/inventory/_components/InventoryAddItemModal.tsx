@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
-import { X } from 'lucide-react';
+import { X } from '@/lib/icons';
 import {
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,

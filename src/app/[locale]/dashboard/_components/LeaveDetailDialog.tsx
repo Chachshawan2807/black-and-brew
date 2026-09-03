@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { X } from '@/lib/icons';
 import type { LeaveDetailEntry } from '@/lib/dashboard/leave-details';
 import { DashboardStatDetailRows } from './DashboardStatDetailRows';
 

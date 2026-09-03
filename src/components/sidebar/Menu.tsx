@@ -3,7 +3,7 @@
 import { usePathname, useParams, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
-import { GripVertical, LogOut, Settings2 } from 'lucide-react';
+import { GripVertical, LogOut, Settings2 } from '@/lib/icons';
 
 import { cn } from '@/lib/utils';
 import { sidebarLabelClass } from '@/lib/sidebar-label-classes';

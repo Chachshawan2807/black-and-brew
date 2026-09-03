@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Dot, type LucideIcon } from "lucide-react";
+import { ChevronDown, Dot, type LucideIcon } from '@/lib/icons';
 import { DropdownMenuArrow } from "@radix-ui/react-dropdown-menu";
 
 import { cn } from "@/lib/utils";

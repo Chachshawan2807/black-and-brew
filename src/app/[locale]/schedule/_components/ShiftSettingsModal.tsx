@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Settings, RotateCcw, Loader2, Trash2 } from 'lucide-react';
+import { X, Settings, RotateCcw, Loader2, Trash2 } from '@/lib/icons';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { cn } from '@/lib/utils';
 import {

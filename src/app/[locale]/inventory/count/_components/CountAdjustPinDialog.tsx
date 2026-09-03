@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock } from '@/lib/icons';
 import { verifyPin } from '@/app/actions/auth';
 import { setClientAuthSession } from '@/lib/client-auth-storage';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';

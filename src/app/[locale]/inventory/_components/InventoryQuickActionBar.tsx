@@ -18,7 +18,7 @@ import {
   List,
   Layers,
   X,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import type { QuickBadgeStyles } from '@/lib/inventory-stock';
 import {

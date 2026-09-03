@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Clipboard, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, Clipboard, Plus, Trash2 } from '@/lib/icons';
 import {
   createBeanCustomer,
   createBeanOrder,

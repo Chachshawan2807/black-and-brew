@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ClipboardList, Loader2, Undo2, Redo2, Trash2, X } from 'lucide-react';
+import { ClipboardList, Loader2, Undo2, Redo2, Trash2, X } from '@/lib/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeOverlay, modalContent, pageHeadingSpring } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';

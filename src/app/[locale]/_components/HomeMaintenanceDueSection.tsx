@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { ArrowUpRight, Wrench } from 'lucide-react';
+import { ArrowUpRight, Wrench } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { formatDueDateWithDaysRemaining } from '@/lib/maintenance/compute-upcoming-maintenance';
 import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';

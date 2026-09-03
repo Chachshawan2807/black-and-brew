@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronLeft, Pencil } from 'lucide-react';
+import { ChevronLeft, Pencil } from '@/lib/icons';
 import {
   deleteBeanOrder,
   confirmBeanOrderDelivered,

@@ -7,7 +7,7 @@ import { useDebouncedShiftRefresh } from '@/hooks/useDebouncedShiftRefresh';
 import { fetchShiftsForBkkDayFromClient } from '@/lib/schedule/client-shift-queries';
 import { toZonedTime } from 'date-fns-tz';
 import { parseISO, addDays } from 'date-fns';
-import { CalendarDays, CalendarOff, CalendarX, CalendarClock, CalendarRange, Sun, type LucideIcon } from 'lucide-react';
+import { CalendarDays, CalendarOff, CalendarX, CalendarClock, CalendarRange, Sun, type LucideIcon } from '@/lib/icons';
 import {
   getShiftColorClass,
   getShiftColorStyle,

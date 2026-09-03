@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Bell, Loader2, X } from 'lucide-react';
+import { Bell, Loader2, X } from '@/lib/icons';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import { getNotificationPermissionState } from '@/lib/pwa-notification-bridge';
 import {

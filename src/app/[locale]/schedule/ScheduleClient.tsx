@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, UserCog, Loader2, X, Calendar, CalendarDays, Pencil, Check } from 'lucide-react';
+import { Plus, Trash2, UserCog, Loader2, X, Calendar, CalendarDays, Pencil, Check, GripVertical } from '@/lib/icons';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { format } from 'date-fns';
 
@@ -80,7 +80,6 @@ import {
 } from '@dnd-kit/sortable';
 import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import {

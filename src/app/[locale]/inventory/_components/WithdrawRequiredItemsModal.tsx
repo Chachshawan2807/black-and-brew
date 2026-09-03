@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
-import { ClipboardList, Loader2, X } from 'lucide-react';
+import { ClipboardList, Loader2, X } from '@/lib/icons';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { cn } from '@/lib/utils';
 import {

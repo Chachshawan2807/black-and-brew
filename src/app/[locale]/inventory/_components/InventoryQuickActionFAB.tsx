@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Package, X, Loader2 } from 'lucide-react';
+import { Package, X, Loader2 } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { fadeOverlay, modalContent, fabIconOpen, fabIconClose, FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
 import {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Bell } from 'lucide-react';
+import { Bell } from '@/lib/icons';
 import { motion } from 'framer-motion';
 import { FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
 import { cn } from '@/lib/utils';

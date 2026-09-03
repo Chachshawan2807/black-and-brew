@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCcw, Undo2, Clock3, SlidersHorizontal } from 'lucide-react';
+import { ChevronLeft, Loader2, CheckCircle2, ClipboardList, AlertCircle, RefreshCw, Undo2, Clock3, SlidersHorizontal } from '@/lib/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { microFadeDown, microPopIn, staggerListItem } from '@/lib/motion-presets';
 import Link from 'next/link';
@@ -1342,7 +1342,7 @@ export default function InventoryCountClient({
                     onClick={() => void fetchInventory()}
                     className="inline-flex h-11 items-center gap-2 rounded-2xl bg-black px-4 text-sm text-white transition-colors hover:bg-black/85"
                   >
-                    <RefreshCcw className="w-4 h-4" />
+                    <RefreshCw className="w-4 h-4" />
                     <span>ลองเปิดใหม่</span>
                   </button>
                   {!embedded ? (

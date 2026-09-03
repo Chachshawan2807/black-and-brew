@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LogOut, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { LogOut, Monitor, Smartphone, Tablet } from '@/lib/icons';
 import type { ActiveLoginSession } from '@/lib/login-session-status';
 import {
   forceRevokeAllRemoteSessions,

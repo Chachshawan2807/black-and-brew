@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState, type ReactNode } from 'react';
-import { ChevronDown, Fingerprint, History, Shield, type LucideIcon } from 'lucide-react';
+import { ChevronDown, Fingerprint, History, Shield, type LucideIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 
 const ICONS = {

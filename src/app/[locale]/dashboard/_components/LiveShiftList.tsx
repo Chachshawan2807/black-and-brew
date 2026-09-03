@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { listRowSpring, SNAPPY_SPRING, CARD_LIFT_HOVER, CARD_PRESS_TAP } from '@/lib/motion-presets';
 import type { Shift, Profile } from '@/types';
-import { CalendarDays, Users, GripVertical } from 'lucide-react';
+import { CalendarDays, Users, GripVertical } from '@/lib/icons';
 import { supabase } from '@/lib/supabase';
 import { useShiftRealtime } from '@/hooks/use-shift-realtime';
 import { updateDashboardOrder } from '@/app/actions/shift-actions';

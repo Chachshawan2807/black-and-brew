@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ShoppingCart, ArrowUpRight, Package } from 'lucide-react';
+import { ShoppingCart, ArrowUpRight, Package } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
   computePurchaseOrderDerivedState,

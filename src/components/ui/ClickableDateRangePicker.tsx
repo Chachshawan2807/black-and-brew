@@ -22,7 +22,7 @@ import {
 } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 
 export interface ClickableDateRangePickerProps {
   containerClassName?: string;

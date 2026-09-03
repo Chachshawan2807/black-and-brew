@@ -7,7 +7,7 @@ import {
   Loader2,
   Trash2,
   X,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { AlertCircle, CheckCircle2, Copy } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy } from '@/lib/icons';
 import { FloatingAlert } from '@/components/ui/floating-alert';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { formatOrderDeliveryDestination } from '@/lib/bean-orders/address';

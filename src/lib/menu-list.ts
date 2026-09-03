@@ -1,16 +1,16 @@
 import {
-  LayoutGrid,
+  ChartColumn,
   CalendarRange,
-  Wrench,
+  ClipboardCheck,
+  ClipboardList,
+  Coffee,
   Home,
   Package,
   Truck,
-  Gauge,
-  ClipboardList,
-  Coffee,
-  ClipboardCheck,
-  type LucideIcon
-} from 'lucide-react';
+  Users,
+  Wrench,
+  type LucideIcon,
+} from '@/lib/icons';
 
 export type Submenu = {
   href: string;
@@ -62,7 +62,7 @@ export function getMenuList(pathname: string, locale: string = 'th', opts?: { se
           href: `${prefix}/dashboard`,
           label: "แดชบอร์ดพนักงาน",
           active: pathname.includes("/dashboard"),
-          icon: LayoutGrid,
+          icon: Users,
           submenus: []
         }
       ]
@@ -107,7 +107,7 @@ export function getMenuList(pathname: string, locale: string = 'th', opts?: { se
           href: `${prefix}/inventory/accuracy`,
           label: "รายงานความแม่นยำ",
           active: pathname.includes("/inventory/accuracy"),
-          icon: Gauge,
+          icon: ChartColumn,
           submenus: []
         },
         {

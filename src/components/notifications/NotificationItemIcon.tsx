@@ -5,6 +5,8 @@ import {
   Banknote,
   CalendarRange,
   Coffee,
+  ICON_SIZE,
+  ICON_STROKE,
   Layers,
   PackageMinus,
   PackagePlus,
@@ -14,7 +16,7 @@ import {
   SlidersHorizontal,
   Trash2,
   Truck,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import type { InventoryNotification } from '@/lib/notification-types';
 import { resolveNotificationDisplayIcon } from '@/lib/notification-display-icon';
@@ -29,8 +31,8 @@ type NotificationItemIconProps = {
 
 export function NotificationItemIcon({
   item,
-  size = 14,
-  strokeWidth = 1.75,
+  size = ICON_SIZE.sm,
+  strokeWidth = ICON_STROKE,
   className,
   highPriorityFallbackClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
 }: NotificationItemIconProps) {

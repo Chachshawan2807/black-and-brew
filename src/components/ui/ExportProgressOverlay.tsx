@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { EXPORT_PROGRESS_OVERLAY_Z_CLASS } from '@/lib/floating-action-layout';
-import { ImageDown } from 'lucide-react';
+import { ImageDown } from '@/lib/icons';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { cn } from '@/lib/utils';
 

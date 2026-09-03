@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu } from 'lucide-react';
+import { Menu } from '@/lib/icons';
 import { BrandLogo } from '@/components/sidebar/BrandLogo';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';

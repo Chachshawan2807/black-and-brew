@@ -13,7 +13,7 @@ import {
   PIN_VERIFYING_LOCK_ANIMATE,
   pinVerifyingLockTransition,
 } from '@/lib/motion-presets';
-import { Lock, ShieldAlert, Loader2, Fingerprint, ScanFace } from 'lucide-react';
+import { Lock, ShieldAlert, Loader2, Fingerprint, ScanFace } from '@/lib/icons';
 import { getAuthSessionInfo, verifyPin } from '@/app/actions/auth';
 import {
   clearClientAuthSession,

@@ -15,7 +15,7 @@ import {
   Users, 
   Calendar as CalendarIcon,
   ImageDown,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ExportProgressOverlay } from '@/components/ui/ExportProgressOverlay';
 import { preloadCaptureLibraries } from '@/lib/capture-element-png';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from '@/lib/icons';
 import type { ParsedBeanOrderCustomer } from '@/lib/bean-orders/parse-share-text';
 import { formatThaiPostalAddressLine } from '@/lib/bean-orders/thai-postal-lookup';
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowDown, ArrowUp } from '@/lib/icons';
 import {
   latestCountDiscrepancyQty,
   sortHighDiscrepancyItems,

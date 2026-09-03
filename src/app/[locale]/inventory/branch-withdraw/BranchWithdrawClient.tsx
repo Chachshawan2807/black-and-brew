@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ChevronLeft, Copy, Eye, Loader2, Plus, Save, Search, X } from 'lucide-react';
+import { ChevronLeft, Copy, Eye, Loader2, Plus, Save, Search, X } from '@/lib/icons';
 import {
   saveBranchWithdrawal,
   type BranchWithdrawHistoryRow,

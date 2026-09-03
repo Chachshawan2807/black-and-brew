@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell } from '@/lib/icons';
 import {
   detectBiometricKind,
   getBiometricLabels,

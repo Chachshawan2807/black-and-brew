@@ -4,7 +4,7 @@
 
 import { useParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, CalendarRange, CheckCheck, Trash2 } from 'lucide-react';
+import { X, CalendarRange, CheckCheck, Trash2 } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { notificationOverlay, notificationPanel, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';

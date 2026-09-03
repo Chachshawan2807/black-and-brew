@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { toastSlide, alertSlideIn } from '@/lib/motion-presets';
 import { getAnchoredFloatingPosition } from '@/lib/floating-position';

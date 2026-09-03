@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 
-import { History, Loader2, PackageMinus, PackagePlus, Plus, Search, ShoppingCart, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { History, Loader2, PackageMinus, PackagePlus, Plus, Search, ShoppingCart, SlidersHorizontal, Trash2, X } from '@/lib/icons';
 
 import { cn } from '@/lib/utils';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
