@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { X } from 'lucide-react';
 import {
   fetchBranchWithdrawInventoryItems,
   fetchBranchWithdrawalHistory,
@@ -9,13 +8,9 @@ import {
 } from '@/app/actions/branch-withdraw-actions';
 import BranchWithdrawClient from '@/app/[locale]/inventory/branch-withdraw/BranchWithdrawClient';
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
-import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
-import { ModalPortal } from '@/components/ui/modal-portal';
-import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { mapSecretaryReorderItemsToInventoryRealtime } from '@/lib/inventory-branch-withdraw-seed';
 import type { SecretaryReorderItem } from '@/lib/secretary/types';
-import { cn } from '@/lib/utils';
-import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
+import SecretaryTaskSubwindow from './SecretaryTaskSubwindow';
 
 type BranchWithdrawOverlayProps = {
   locale: string;
@@ -92,52 +87,18 @@ export default function BranchWithdrawOverlay({
     };
   }, [hasCatalogSeed, hasRealtimeInventory]);
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
   return (
-    <ModalPortal>
-      <FadeModalScaffold
-        open
-        onClose={onClose}
-        zIndex={220}
-        {...SECRETARY_MODAL_SCAFFOLD_PROPS}
-        overlayClassName={cn('bg-black/20 backdrop-blur-md', INVENTORY_MODAL_Z_CLASS)}
-        layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
-        panelClassName="flex w-full max-w-3xl min-h-0 max-h-[min(85svh,calc(100dvh-2rem))] flex-col overflow-hidden"
-        aria-label="เบิกของสาขา 2"
-      >
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-background">
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <h2 className="text-[15px] font-normal text-foreground">เบิกของสาขา 2</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="ปิด"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted/50"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            {loadError ? (
-              <p className="mb-2 text-center text-[13px] text-muted-foreground">{loadError}</p>
-            ) : null}
-            <BranchWithdrawClient
-              embedded
-              initialItems={initialItems}
-              initialHistory={history}
-              locale={locale}
-              catalogLoading={catalogLoading}
-            />
-          </div>
-        </div>
-      </FadeModalScaffold>
-    </ModalPortal>
+    <SecretaryTaskSubwindow title="เบิกของสาขา 2" onClose={onClose}>
+      {loadError ? (
+        <p className="mb-2 text-center text-[13px] text-muted-foreground">{loadError}</p>
+      ) : null}
+      <BranchWithdrawClient
+        embedded
+        initialItems={initialItems}
+        initialHistory={history}
+        locale={locale}
+        catalogLoading={catalogLoading}
+      />
+    </SecretaryTaskSubwindow>
   );
 }

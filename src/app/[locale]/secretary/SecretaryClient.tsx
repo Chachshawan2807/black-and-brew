@@ -7,7 +7,8 @@ import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
-import { PASTEL_SURFACE, SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
+import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
+import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import {
   completeSecretaryTasks,
   createManualSecretaryTask,
@@ -386,10 +387,11 @@ function TaskCard({
 }) {
   const titleLines = splitSecretaryCardTitle(task.title);
 
+  const canOpenDetail = canOpenSecretaryTaskDetail(task);
   const cardClassName = cn(
     'relative flex aspect-square min-h-0 rounded-lg border p-2.5 bb-transition',
-    isDone ? SECRETARY_TASK_COLORS.done : 'bg-card border-border',
-    'hover:brightness-[0.98] cursor-pointer',
+    isDone ? SECRETARY_TASK_COLORS.done : SECRETARY_TASK_COLORS.card,
+    canOpenDetail ? 'hover:brightness-[0.98] cursor-pointer' : 'cursor-default',
   );
 
   const actionButton = isDone ? (
@@ -422,7 +424,11 @@ function TaskCard({
     </HintTooltip>
   );
 
-  const openTip = isDone ? 'เปิดรายละเอียดงานที่เสร็จแล้ว' : 'เปิดรายละเอียดงาน';
+  const openTip = !canOpenDetail
+    ? 'งานนี้เป็นคำแนะนำ งานจริงอยู่ในการ์ดอื่น'
+    : isDone
+      ? 'เปิดรายละเอียดงานที่เสร็จแล้ว'
+      : 'เปิดรายละเอียดงาน';
 
   const isAiSuggested = task.source_kind === 'ai_suggested';
 
@@ -452,6 +458,7 @@ function TaskCard({
   );
 
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!canOpenDetail) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       onOpen();
@@ -466,14 +473,14 @@ function TaskCard({
     <li className="min-h-0">
       <HintTooltip tip={openTip}>
         <div
-          role="button"
-          tabIndex={0}
-          onClick={onOpen}
-          onKeyDown={handleCardKeyDown}
-          onPointerEnter={warmOverlayChunk}
-          onFocus={warmOverlayChunk}
-          onPointerDown={warmOverlayChunk}
-          aria-label={`เปิดรายละเอียดงาน ${task.title}`}
+          role={canOpenDetail ? 'button' : undefined}
+          tabIndex={canOpenDetail ? 0 : undefined}
+          onClick={canOpenDetail ? onOpen : undefined}
+          onKeyDown={canOpenDetail ? handleCardKeyDown : undefined}
+          onPointerEnter={canOpenDetail ? warmOverlayChunk : undefined}
+          onFocus={canOpenDetail ? warmOverlayChunk : undefined}
+          onPointerDown={canOpenDetail ? warmOverlayChunk : undefined}
+          aria-label={canOpenDetail ? `เปิดรายละเอียดงาน ${task.title}` : undefined}
           className={cn(cardClassName, 'block size-full text-left')}
         >
           {body}

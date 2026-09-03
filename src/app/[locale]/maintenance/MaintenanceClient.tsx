@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
+import { useState, useEffect, useTransition, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { slideInLeft, staggerListItem, staggerDelay, BUTTON_HOVER, BUTTON_TAP } from '@/lib/motion-presets';
@@ -21,7 +21,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import React from 'react';
+import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
+import { cn } from '@/lib/utils';
 import { FloatingToast } from '@/components/ui/floating-alert';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 
@@ -47,9 +48,15 @@ export interface ServiceRecord {
 
 interface MaintenanceClientProps {
   initialRecords: ServiceRecord[];
+  embedded?: boolean;
+  highlightRecordIds?: string[];
 }
 
-export default function MaintenanceClient({ initialRecords }: MaintenanceClientProps) {
+export default function MaintenanceClient({
+  initialRecords,
+  embedded = false,
+  highlightRecordIds,
+}: MaintenanceClientProps) {
   const isReadOnly = useReadOnly();
   const [records, setRecords] = useState<ServiceRecord[]>(initialRecords);
   const [loading, setLoading] = useState(false);
@@ -82,7 +89,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
   };
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_WIDTHS);
-  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     return () => {
@@ -283,27 +290,46 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
     setIsModalOpen(true);
   }
 
+  const highlightIds = useMemo(
+    () => new Set(highlightRecordIds ?? []),
+    [highlightRecordIds],
+  );
+
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-10 text-foreground relative font-normal" style={{ lineHeight: '1.6' }}>
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div
+      className={cn(
+        'bg-transparent text-foreground relative font-normal',
+        embedded ? 'min-h-0 p-0' : 'min-h-screen p-4 md:p-10',
+      )}
+      style={{ lineHeight: '1.6' }}
+    >
+      <div className={cn('mx-auto space-y-8', embedded ? 'max-w-none' : 'max-w-7xl')}>
 
         {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border">
+        <header className={cn(
+          'flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border',
+          embedded && 'gap-4 pb-4',
+        )}>
           <div className="space-y-1.5">
             <motion.h1
               initial={slideInLeft.initial}
               animate={slideInLeft.animate}
               transition={slideInLeft.transition}
-              className="text-2xl md:text-3xl font-normal tracking-tight text-foreground flex items-center gap-3"
+              className={cn(
+                'font-normal tracking-tight text-foreground flex items-center gap-3',
+                embedded ? 'text-lg' : 'text-2xl md:text-3xl',
+              )}
             >
               <div className="p-2 bg-black text-white rounded-xl">
                 <Wrench className="w-5 h-5" strokeWidth={1.5} />
               </div>
               ประวัติการซ่อมบำรุง
             </motion.h1>
-            <p className="text-foreground/50 text-[13px] font-normal uppercase tracking-[0.3em] px-1">บันทึกการดูแลรักษาอุปกรณ์และเครื่องใช้</p>
+            {!embedded ? (
+              <p className="text-foreground/50 text-[13px] font-normal uppercase tracking-[0.3em] px-1">บันทึกการดูแลรักษาอุปกรณ์และเครื่องใช้</p>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-4">
@@ -323,7 +349,7 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
 
 
         {/* Records List */}
-        <main className="pb-20">
+        <main className={embedded ? 'pb-2' : 'pb-20'}>
           {loading && records.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 text-foreground/20">
               <Loader2 className="w-12 h-12 animate-spin mb-6" strokeWidth={1} />
@@ -416,7 +442,10 @@ export default function MaintenanceClient({ initialRecords }: MaintenanceClientP
                         initial={staggerListItem.initial}
                         animate={staggerListItem.animate}
                         transition={{ ...staggerListItem.transition, delay: staggerDelay(index) }}
-                        className="group border-b border-border/60 odd:bg-muted/10 even:bg-card hover:bg-muted/25 bb-transition"
+                        className={cn(
+                          'group border-b border-border/60 odd:bg-muted/10 even:bg-card hover:bg-muted/25 bb-transition',
+                          record.id && highlightIds.has(record.id) && SECRETARY_TASK_COLORS.attention,
+                        )}
                       >
                         <td className="py-3.5 px-5 text-sm font-normal text-muted-foreground antialiased tabular-nums border-r border-border/40">
                           {format(new Date(record.start_date), 'dd/MM/yyyy')}

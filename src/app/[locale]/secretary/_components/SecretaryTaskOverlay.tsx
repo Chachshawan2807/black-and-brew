@@ -4,13 +4,9 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { formatDueDateWithDaysRemaining } from '@/lib/maintenance/compute-upcoming-maintenance';
 import {
-  formatBeanOrderIncompleteStatusSummary,
-  shouldIncludeIncompleteBeanOrder,
-} from '@/lib/bean-orders/workflow-status';
-import {
-  BRANCH_WITHDRAW_ORDER_SOURCE,
   computePurchaseOrderDerivedState,
   getStockColorClass,
+  BRANCH_WITHDRAW_ORDER_SOURCE,
 } from '@/lib/inventory-stock';
 import {
   deleteManualSecretaryTask,
@@ -18,14 +14,21 @@ import {
 } from '@/app/actions/secretary-actions';
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
-import type { SecretaryBoardDisplayTask } from '@/lib/secretary/consolidate-board-tasks';
 import { resolveSecretaryTaskDetailText } from '@/lib/secretary/resolve-task-detail-text';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
+import {
+  canOpenSecretaryTaskDetail,
+  markSecretaryAttentionItem,
+} from '@/lib/secretary/task-detail-overlay';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
+import BeanOrdersOverlay from './BeanOrdersOverlay';
 import BranchWithdrawOverlay from './BranchWithdrawOverlay';
-import ScheduleReviewDialog from './ScheduleReviewDialog';
-import SecretaryListDialog, { type SecretaryListDialogItem } from './SecretaryListDialog';
+import InventoryCountOverlay from './InventoryCountOverlay';
+import ScheduleOverlay from './ScheduleOverlay';
 import SecretaryManualTaskDialog from './SecretaryManualTaskDialog';
+import SecretaryTaskInfoOverlay from './SecretaryTaskInfoOverlay';
+import SecretaryTaskListOverlay from './SecretaryTaskListOverlay';
+import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
 
 const PurchaseOrdersModal = dynamic(
   () => import('@/app/[locale]/inventory/_components/PurchaseOrdersModal'),
@@ -42,20 +45,10 @@ type SecretaryTaskOverlayProps = {
   isPending?: boolean;
 };
 
-function filterBeanOrdersForTask(snapshot: SecretarySnapshot): SecretaryListDialogItem[] {
-  return snapshot.operational.pendingBeanOrders
-    .filter((order) => shouldIncludeIncompleteBeanOrder(order))
-    .map((order, index) => ({
-      id: `${order.customerName}-${index}`,
-      primary: order.customerName,
-      secondary: formatBeanOrderIncompleteStatusSummary(order),
-    }));
-}
-
 function filterMaintenanceForTask(
   task: SecretaryTask,
   snapshot: SecretarySnapshot,
-): SecretaryListDialogItem[] {
+): SecretaryAttentionListItem[] {
   const tasks =
     task.task_type === 'maintenance_overdue'
       ? snapshot.maintenanceTasks.filter((entry) => entry.urgency === 'overdue')
@@ -63,16 +56,18 @@ function filterMaintenanceForTask(
           (entry) => entry.urgency === 'within_7_days' || entry.urgency === 'within_30_days',
         );
 
-  return tasks.map((entry) => ({
-    id: entry.id,
-    primary: entry.equipment,
-    secondary: [
-      formatDueDateWithDaysRemaining(entry.dueDate, snapshot.dateIso),
-      entry.advice,
-    ]
-      .filter(Boolean)
-      .join(' · '),
-  }));
+  return tasks.map((entry) =>
+    markSecretaryAttentionItem({
+      id: entry.id,
+      primary: entry.equipment,
+      secondary: [
+        formatDueDateWithDaysRemaining(entry.dueDate, snapshot.dateIso),
+        entry.advice,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    }),
+  );
 }
 
 export default function SecretaryTaskOverlay({
@@ -84,7 +79,8 @@ export default function SecretaryTaskOverlay({
   onTaskDeleted,
   isPending: parentPending = false,
 }: SecretaryTaskOverlayProps) {
-  const overlayKind = task ? resolveSecretaryTaskOverlayKind(task) : null;
+  const overlayKind =
+    task && canOpenSecretaryTaskDetail(task) ? resolveSecretaryTaskOverlayKind(task) : null;
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -107,14 +103,11 @@ export default function SecretaryTaskOverlay({
     });
   }, [overlayKind, selectedChannels, snapshot.itemsToOrder, task]);
 
-  const beanListItems = useMemo(
-    () => (task && overlayKind === 'bean_orders_list' ? filterBeanOrdersForTask(snapshot) : []),
-    [overlayKind, snapshot, task],
-  );
-
   const maintenanceListItems = useMemo(
     () =>
-      task && overlayKind === 'maintenance_list' ? filterMaintenanceForTask(task, snapshot) : [],
+      task && overlayKind === 'maintenance_list'
+        ? filterMaintenanceForTask(task, snapshot)
+        : [],
     [overlayKind, snapshot, task],
   );
 
@@ -159,6 +152,7 @@ export default function SecretaryTaskOverlay({
     return (
       <PurchaseOrdersModal
         onClose={onClose}
+        highlightAttention
         selectedChannels={selectedChannels}
         setSelectedChannels={setSelectedChannels}
         itemsToOrder={purchaseState.itemsToOrder}
@@ -181,22 +175,13 @@ export default function SecretaryTaskOverlay({
     );
   }
 
-  if (overlayKind === 'bean_orders_list') {
-    return (
-      <SecretaryListDialog
-        open
-        title={task.title}
-        items={beanListItems}
-        emptyMessage="ไม่มีออเดอร์ในหมวดนี้"
-        onClose={onClose}
-      />
-    );
+  if (overlayKind === 'bean_orders_panel') {
+    return <BeanOrdersOverlay task={task} locale={locale} onClose={onClose} />;
   }
 
   if (overlayKind === 'maintenance_list') {
     return (
-      <SecretaryListDialog
-        open
+      <SecretaryTaskListOverlay
         title={task.title}
         items={maintenanceListItems}
         emptyMessage="ไม่มีรายการซ่อมบำรุงในหมวดนี้"
@@ -205,33 +190,12 @@ export default function SecretaryTaskOverlay({
     );
   }
 
-  if (overlayKind === 'schedule_review') {
-    const sections = (task as SecretaryBoardDisplayTask).consolidatedSections;
-    if (sections && sections.length > 1) {
-      return (
-        <SecretaryListDialog
-          open
-          title={task.title}
-          items={sections.map((section, index) => ({
-            id: String(index),
-            primary: section.title,
-            secondary: section.description ?? undefined,
-          }))}
-          emptyMessage="ไม่มีรายละเอียดเพิ่มเติม"
-          onClose={onClose}
-        />
-      );
-    }
+  if (overlayKind === 'schedule_panel') {
+    return <ScheduleOverlay task={task} locale={locale} onClose={onClose} />;
+  }
 
-    return (
-      <ScheduleReviewDialog
-        open
-        title={task.title}
-        description={taskDetailText ?? task.description ?? ''}
-        actionHref={task.action_href ?? `/${locale}/schedule`}
-        onClose={onClose}
-      />
-    );
+  if (overlayKind === 'inventory_count_panel') {
+    return <InventoryCountOverlay task={task} locale={locale} onClose={onClose} />;
   }
 
   if (isManualSecretaryTask(task)) {
@@ -251,16 +215,19 @@ export default function SecretaryTaskOverlay({
     );
   }
 
+  const infoItems = taskDetailText
+    ? [
+        markSecretaryAttentionItem({
+          id: 'description',
+          primary: taskDetailText,
+        }),
+      ]
+    : [];
+
   return (
-    <SecretaryListDialog
-      open
+    <SecretaryTaskInfoOverlay
       title={task.title}
-      items={
-        taskDetailText
-          ? [{ id: 'description', primary: taskDetailText }]
-          : []
-      }
-      emptyMessage="ไม่มีรายละเอียดเพิ่มเติม"
+      items={infoItems}
       onClose={onClose}
     />
   );

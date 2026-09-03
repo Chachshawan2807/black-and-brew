@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils';
 type Props = {
   order: BeanOrderListRow;
   locale: string;
+  embedded?: boolean;
+  onOpenOrder?: (orderId: string) => void;
 };
 
 function formatBaht(value: number): string {
@@ -60,7 +62,7 @@ const DETAIL_LINK_PROPS = {
   'data-bb-nav': 'instant',
 } as const;
 
-export function BeanOrderListItem({ order, locale }: Props) {
+export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder }: Props) {
   const router = useRouter();
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
   const customerLabel = formatCustomerLabel(order);
@@ -86,6 +88,87 @@ export function BeanOrderListItem({ order, locale }: Props) {
     }
   }
 
+  const rowContent = (
+    <>
+      <div className="lg:hidden">
+        <p className="min-w-0 truncate text-sm text-foreground/90" title={customerLabel}>
+          {customerLabel}
+        </p>
+
+        <div className="mt-1 min-w-0">
+          <p className="truncate text-sm text-foreground">{order.orderNo}</p>
+          <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
+        </div>
+
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{destinationLine}</p>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{shippingChannel}</p>
+
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="tabular-nums text-sm text-foreground">{formatBaht(order.totalBaht)}</p>
+          <OrderListStatusGroup
+            slipUploadedAt={order.slipUploadedAt}
+            paymentStatus={order.paymentStatus}
+            trackingStatus={order.trackingStatus}
+            cancelledAt={order.cancelledAt}
+          />
+        </div>
+      </div>
+
+      <p
+        className={cn('hidden min-w-0 truncate text-sm text-foreground/90 lg:col-start-2 lg:block', BEAN_ORDER_LIST_CELL)}
+        title={customerLabel}
+      >
+        {customerLabel}
+      </p>
+
+      <div className={cn('hidden min-w-0 lg:col-start-3 lg:block', BEAN_ORDER_LIST_CELL)}>
+        <p className="truncate text-sm text-foreground">{order.orderNo}</p>
+        <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
+      </div>
+
+      <p
+        className={cn(
+          'hidden min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-4 lg:block',
+          BEAN_ORDER_LIST_CELL,
+        )}
+        title={destinationLine}
+      >
+        {destinationLine}
+      </p>
+
+      <p
+        className={cn(
+          'hidden min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-5 lg:block',
+          BEAN_ORDER_LIST_CELL,
+        )}
+        title={shippingChannel}
+      >
+        {shippingChannel}
+      </p>
+
+      <p
+        className={cn(
+          'hidden whitespace-nowrap text-right tabular-nums text-sm text-foreground lg:col-start-6 lg:block',
+          BEAN_ORDER_LIST_CELL,
+        )}
+      >
+        {formatBaht(order.totalBaht)}
+      </p>
+
+      <div className={cn('hidden min-w-0 justify-end lg:col-start-7 lg:flex', BEAN_ORDER_LIST_CELL)}>
+        <OrderListStatusGroup
+          slipUploadedAt={order.slipUploadedAt}
+          paymentStatus={order.paymentStatus}
+          trackingStatus={order.trackingStatus}
+          cancelledAt={order.cancelledAt}
+        />
+      </div>
+    </>
+  );
+
+  const rowClassName =
+    'min-w-0 flex-1 touch-manipulation rounded-xl py-3 pr-3 bb-transition hover:bg-muted/25 active:bg-muted/35 lg:contents lg:p-0';
+
   return (
     <li
       className={cn(
@@ -108,93 +191,31 @@ export function BeanOrderListItem({ order, locale }: Props) {
         <Copy className="h-4 w-4" aria-hidden />
       </button>
 
-      <Link
-        href={detailHref}
-        {...DETAIL_LINK_PROPS}
-        onPointerDown={(event) => {
-          if (event.button === 0) {
-            warmDetailRoute();
-          }
-        }}
-        onTouchStart={warmDetailRoute}
-        onMouseEnter={warmDetailRoute}
-        onFocus={warmDetailRoute}
-        className="min-w-0 flex-1 touch-manipulation rounded-xl py-3 pr-3 bb-transition hover:bg-muted/25 active:bg-muted/35 lg:contents lg:p-0"
-      >
-        <div className="lg:hidden">
-          <p className="min-w-0 truncate text-sm text-foreground/90" title={customerLabel}>
-            {customerLabel}
-          </p>
-
-          <div className="mt-1 min-w-0">
-            <p className="truncate text-sm text-foreground">{order.orderNo}</p>
-            <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
-          </div>
-
-          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{destinationLine}</p>
-          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{shippingChannel}</p>
-
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="tabular-nums text-sm text-foreground">{formatBaht(order.totalBaht)}</p>
-            <OrderListStatusGroup
-              slipUploadedAt={order.slipUploadedAt}
-              paymentStatus={order.paymentStatus}
-              trackingStatus={order.trackingStatus}
-              cancelledAt={order.cancelledAt}
-            />
-          </div>
-        </div>
-
-        <p
-          className={cn('hidden min-w-0 truncate text-sm text-foreground/90 lg:col-start-2 lg:block', BEAN_ORDER_LIST_CELL)}
-          title={customerLabel}
+      {embedded && onOpenOrder ? (
+        <button
+          type="button"
+          onClick={() => onOpenOrder(order.id)}
+          className={cn(rowClassName, 'text-left')}
         >
-          {customerLabel}
-        </p>
-
-        <div className={cn('hidden min-w-0 lg:col-start-3 lg:block', BEAN_ORDER_LIST_CELL)}>
-          <p className="truncate text-sm text-foreground">{order.orderNo}</p>
-          <p className="truncate text-xs tabular-nums text-muted-foreground">{formatListDate(order.createdAt)}</p>
-        </div>
-
-        <p
-          className={cn(
-            'hidden min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-4 lg:block',
-            BEAN_ORDER_LIST_CELL,
-          )}
-          title={destinationLine}
+          {rowContent}
+        </button>
+      ) : (
+        <Link
+          href={detailHref}
+          {...DETAIL_LINK_PROPS}
+          onPointerDown={(event) => {
+            if (event.button === 0) {
+              warmDetailRoute();
+            }
+          }}
+          onTouchStart={warmDetailRoute}
+          onMouseEnter={warmDetailRoute}
+          onFocus={warmDetailRoute}
+          className={rowClassName}
         >
-          {destinationLine}
-        </p>
-
-        <p
-          className={cn(
-            'hidden min-w-0 truncate text-xs leading-snug text-muted-foreground lg:col-start-5 lg:block',
-            BEAN_ORDER_LIST_CELL,
-          )}
-          title={shippingChannel}
-        >
-          {shippingChannel}
-        </p>
-
-        <p
-          className={cn(
-            'hidden whitespace-nowrap text-right tabular-nums text-sm text-foreground lg:col-start-6 lg:block',
-            BEAN_ORDER_LIST_CELL,
-          )}
-        >
-          {formatBaht(order.totalBaht)}
-        </p>
-
-        <div className={cn('hidden min-w-0 justify-end lg:col-start-7 lg:flex', BEAN_ORDER_LIST_CELL)}>
-          <OrderListStatusGroup
-            slipUploadedAt={order.slipUploadedAt}
-            paymentStatus={order.paymentStatus}
-            trackingStatus={order.trackingStatus}
-            cancelledAt={order.cancelledAt}
-          />
-        </div>
-      </Link>
+          {rowContent}
+        </Link>
+      )}
 
       {copyToast ? (
         <FloatingAlert

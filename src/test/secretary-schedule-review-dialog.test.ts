@@ -49,16 +49,16 @@ describe('parseScheduleReviewDescription', () => {
 });
 
 describe('resolveSecretaryTaskOverlayKind schedule review', () => {
-  test('maps schedule tasks to schedule review dialog', () => {
+  test('maps schedule tasks to embedded schedule panel', () => {
     expect(
       resolveSecretaryTaskOverlayKind(
         task({ task_type: 'schedule_understaffed', module: 'schedule' }),
       ),
-    ).toBe('schedule_review');
+    ).toBe('schedule_panel');
     expect(
       resolveSecretaryTaskOverlayKind(
         task({ task_type: 'schedule_leave_risk', module: 'schedule' }),
       ),
-    ).toBe('schedule_review');
+    ).toBe('schedule_panel');
   });
 });

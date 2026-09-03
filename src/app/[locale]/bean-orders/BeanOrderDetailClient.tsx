@@ -51,13 +51,20 @@ import { cn } from '@/lib/utils';
 type Props = {
   order: BeanOrderDetail;
   locale: string;
+  embedded?: boolean;
+  onBack?: () => void;
 };
 
 function formatBaht(value: number): string {
   return value.toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-export default function BeanOrderDetailClient({ order: initialOrder, locale }: Props) {
+export default function BeanOrderDetailClient({
+  order: initialOrder,
+  locale,
+  embedded = false,
+  onBack,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const isReadOnly = useReadOnly();
@@ -276,16 +283,33 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
     const result = await deleteBeanOrder(order.id, locale);
     setBusy(false);
     if (!result.success) { setError(result.error ?? 'ลบไม่สำเร็จ'); return; }
+    if (embedded && onBack) {
+      onBack();
+      return;
+    }
     navigateWithViewTransition(router.push, `/${locale}/bean-orders`);
   }
 
   const inputClass = BEAN_ORDER_INPUT;
 
-  return (
-    <div className={BEAN_ORDER_DETAIL_PAGE}>
+  const backControl =
+    embedded && onBack ? (
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden /> กลับรายการ
+      </button>
+    ) : (
       <Link href={`/${locale}/bean-orders`} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground">
         <ChevronLeft className="h-4 w-4" aria-hidden /> กลับรายการ
       </Link>
+    );
+
+  return (
+    <div className={embedded ? 'pb-4' : BEAN_ORDER_DETAIL_PAGE}>
+      {backControl}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -297,7 +321,7 @@ export default function BeanOrderDetailClient({ order: initialOrder, locale }: P
             cancelledAt={order.cancelledAt}
           />
         </div>
-        {editable && !isReadOnly ? (
+        {editable && !isReadOnly && !embedded ? (
           <Link
             href={`/${locale}/bean-orders/${order.id}/edit`}
             className={BEAN_ORDER_ACTION_BTN_OUTLINE}

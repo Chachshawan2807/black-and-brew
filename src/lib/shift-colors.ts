@@ -95,10 +95,12 @@ export const BEAN_ORDER_BADGE_COLORS = {
   delivery: 'bg-[#e3f2fd]',
 } as const;
 
-/** Secretary task board done-state pastels */
+/** Secretary task board card surfaces */
 export const SECRETARY_TASK_COLORS = {
-  done: `${PASTEL} bg-[#d4f5d4] border-[#a8e6a8]`,
-  doneAction: 'border-[#a8e6a8] bg-[#eef9ee]',
+  card: 'bg-card border-foreground/20',
+  done: `${PASTEL} bg-[#d4f5d4] border-[#8fd48f]`,
+  doneAction: 'border-[#8fd48f] bg-[#eef9ee]',
+  attention: `${PASTEL} bg-[#fde8e8] border-[#f5c6cb]`,
 } as const;
 
 export const SALES_SECTION_COLORS = {

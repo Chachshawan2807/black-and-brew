@@ -42,16 +42,28 @@ describe('resolveSecretaryTaskOverlayKind', () => {
     ).toBe('branch_withdraw_panel');
   });
 
-  it('maps bean order tasks to bean list dialog', () => {
+  it('maps bean order tasks to embedded bean orders panel', () => {
     expect(
       resolveSecretaryTaskOverlayKind(task({ task_type: 'bean_payment_pending', module: 'bean_orders' })),
-    ).toBe('bean_orders_list');
+    ).toBe('bean_orders_panel');
   });
 
-  it('maps maintenance tasks to maintenance list dialog', () => {
+  it('maps maintenance tasks to detail list overlay', () => {
     expect(
       resolveSecretaryTaskOverlayKind(task({ task_type: 'maintenance_overdue', module: 'maintenance' })),
     ).toBe('maintenance_list');
+  });
+
+  it('maps schedule tasks to embedded schedule panel', () => {
+    expect(
+      resolveSecretaryTaskOverlayKind(task({ task_type: 'schedule_understaffed', module: 'schedule' })),
+    ).toBe('schedule_panel');
+  });
+
+  it('maps inventory count tasks to embedded count panel', () => {
+    expect(
+      resolveSecretaryTaskOverlayKind(task({ task_type: 'inventory_count_due', module: 'inventory_count' })),
+    ).toBe('inventory_count_panel');
   });
 
   it('falls back to task info dialog for other task types', () => {

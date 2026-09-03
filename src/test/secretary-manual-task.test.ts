@@ -90,16 +90,20 @@ describe('secretary manual task UI', () => {
     expect(layout).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
 
     for (const file of [
-      'SecretaryListDialog.tsx',
+      'SecretaryTaskSubwindow.tsx',
       'SecretaryManualTaskDialog.tsx',
-      'ScheduleReviewDialog.tsx',
+      'BeanOrdersOverlay.tsx',
       'BranchWithdrawOverlay.tsx',
     ]) {
       const code = fs.readFileSync(
         path.resolve(ROOT, `app/[locale]/secretary/_components/${file}`),
         'utf-8',
       );
-      expect(code).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
+      if (file === 'SecretaryTaskSubwindow.tsx' || file === 'SecretaryManualTaskDialog.tsx') {
+        expect(code).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
+      } else {
+        expect(code).toContain('SecretaryTaskSubwindow');
+      }
       expect(code).not.toContain('items-end');
     }
   });

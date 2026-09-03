@@ -27,16 +27,29 @@ import {
 type Props = {
   initialOrders: BeanOrderListRow[];
   locale: string;
+  embedded?: boolean;
+  defaultPaymentFilter?: 'all' | 'unpaid' | 'paid';
+  defaultFulfillmentFilter?: 'all' | 'pending' | 'shipped';
+  onOpenOrder?: (orderId: string) => void;
 };
 
-export default function BeanOrdersClient({ initialOrders, locale }: Props) {
+export default function BeanOrdersClient({
+  initialOrders,
+  locale,
+  embedded = false,
+  defaultPaymentFilter = 'all',
+  defaultFulfillmentFilter = 'all',
+  onOpenOrder,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [orders, setOrders] = useState(initialOrders);
   const [prevOrdersSync, setPrevOrdersSync] = useState({ initialOrders, pathname });
   const [search, setSearch] = useState('');
-  const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
-  const [fulfillmentFilter, setFulfillmentFilter] = useState<'all' | 'pending' | 'shipped'>('all');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'paid'>(defaultPaymentFilter);
+  const [fulfillmentFilter, setFulfillmentFilter] = useState<'all' | 'pending' | 'shipped'>(
+    defaultFulfillmentFilter,
+  );
   const [message, setMessage] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     const flash = sessionStorage.getItem('bb-bean-order-flash');
@@ -66,6 +79,8 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
   }
 
   useEffect(() => {
+    if (embedded) return;
+
     let cancelled = false;
     warmRouteNavigation(`/${locale}/bean-orders/warm-detail`, router.prefetch);
 
@@ -80,7 +95,7 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
       cancelled = true;
       cancelIdle();
     };
-  }, [locale, orders, router]);
+  }, [embedded, locale, orders, router]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -97,21 +112,28 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
   }, [orders, search, paymentFilter, fulfillmentFilter]);
 
   return (
-    <div className={BEAN_ORDER_PAGE}>
-      <PageHeader
-        className="mb-5 sm:mb-6"
-        title="ออเดอร์เมล็ดกาแฟ"
-        subtitle="รับออเดอร์ / ตรวจสลิป / จัดส่ง"
-        size="large"
-        actions={
-          <Link
-            href={`/${locale}/bean-orders/new`}
-            className={BEAN_ORDER_BTN_PRIMARY_LINK}
-          >
-            <Plus className="h-4 w-4" aria-hidden /> สร้างออเดอร์
-          </Link>
-        }
-      />
+    <div className={embedded ? 'min-h-0 space-y-4' : BEAN_ORDER_PAGE}>
+      {embedded ? (
+        <div className="space-y-1">
+          <h3 className="text-[15px] font-normal text-foreground">ออเดอร์เมล็ดกาแฟ</h3>
+          <p className="text-[12px] text-muted-foreground">รับออเดอร์ / ตรวจสลิป / จัดส่ง</p>
+        </div>
+      ) : (
+        <PageHeader
+          className="mb-5 sm:mb-6"
+          title="ออเดอร์เมล็ดกาแฟ"
+          subtitle="รับออเดอร์ / ตรวจสลิป / จัดส่ง"
+          size="large"
+          actions={
+            <Link
+              href={`/${locale}/bean-orders/new`}
+              className={BEAN_ORDER_BTN_PRIMARY_LINK}
+            >
+              <Plus className="h-4 w-4" aria-hidden /> สร้างออเดอร์
+            </Link>
+          }
+        />
+      )}
 
       {message && (
         <p className="mb-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground">
@@ -169,7 +191,13 @@ export default function BeanOrdersClient({ initialOrders, locale }: Props) {
               <span className={`whitespace-nowrap text-right ${BEAN_ORDER_LIST_CELL}`}>สถานะ</span>
             </li>
             {filtered.map((order) => (
-              <BeanOrderListItem key={order.id} order={order} locale={locale} />
+              <BeanOrderListItem
+                key={order.id}
+                order={order}
+                locale={locale}
+                embedded={embedded}
+                onOpenOrder={onOpenOrder}
+              />
             ))}
           </ul>
         )}

@@ -4,34 +4,49 @@ import { X } from 'lucide-react';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
+import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
 import { cn } from '@/lib/utils';
 import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
 
-export type SecretaryListDialogItem = {
-  id: string;
-  primary: string;
-  secondary?: string;
-};
-
-type SecretaryListDialogProps = {
-  open: boolean;
+type SecretaryTaskListOverlayProps = {
   title: string;
-  items: SecretaryListDialogItem[];
+  items: SecretaryAttentionListItem[];
   emptyMessage?: string;
   onClose: () => void;
 };
 
-export default function SecretaryListDialog({
-  open,
+function ListItemBody({ item }: { item: SecretaryAttentionListItem }) {
+  return (
+    <>
+      <p className={cn('text-[14px]', item.needsAttention ? 'text-black' : 'text-foreground')}>
+        {item.primary}
+      </p>
+      {item.secondary ? (
+        <p
+          className={cn(
+            'mt-0.5 text-[12px]',
+            item.needsAttention ? 'text-black/70' : 'text-muted-foreground',
+          )}
+        >
+          {item.secondary}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+/** Read-only task detail list (maintenance and similar). No route navigation. */
+export default function SecretaryTaskListOverlay({
   title,
   items,
   emptyMessage = 'ไม่มีรายการ',
   onClose,
-}: SecretaryListDialogProps) {
+}: SecretaryTaskListOverlayProps) {
   return (
     <ModalPortal>
       <FadeModalScaffold
-        open={open}
+        open
         onClose={onClose}
         zIndex={220}
         {...SECRETARY_MODAL_SCAFFOLD_PROPS}
@@ -59,12 +74,14 @@ export default function SecretaryListDialog({
               items.map((item) => (
                 <li
                   key={item.id}
-                  className="border-b border-border px-4 py-3 last:border-b-0"
+                  className={cn(
+                    'border-b px-4 py-3 last:border-b-0',
+                    item.needsAttention
+                      ? cn('border-[#f5c6cb]', SECRETARY_TASK_COLORS.attention)
+                      : 'border-border',
+                  )}
                 >
-                  <p className="text-[14px] text-foreground">{item.primary}</p>
-                  {item.secondary ? (
-                    <p className="mt-0.5 text-[12px] text-muted-foreground">{item.secondary}</p>
-                  ) : null}
+                  <ListItemBody item={item} />
                 </li>
               ))
             )}

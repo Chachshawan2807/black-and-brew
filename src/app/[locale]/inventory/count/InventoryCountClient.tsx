@@ -837,6 +837,8 @@ interface InventoryCountClientProps {
   initialAccuracyStats?: CountAccuracyStatsResult | null;
   initialTodayStatus?: TodayCountSessionStatus | null;
   locale: string;
+  embedded?: boolean;
+  initialPageMode?: CountPageMode;
 }
 
 export default function InventoryCountClient({
@@ -844,11 +846,19 @@ export default function InventoryCountClient({
   initialAccuracyStats = null,
   initialTodayStatus = null,
   locale,
+  embedded = false,
+  initialPageMode = 'count',
 }: InventoryCountClientProps) {
   const isReadOnly = useReadOnly();
   const { subscribe } = useInventoryRealtime();
   const [adjustUnlocked, setAdjustUnlocked] = useState(() => isCountAdjustUnlocked());
   const [adjustPinOpen, setAdjustPinOpen] = useState(false);
+
+  useEffect(() => {
+    if (embedded && initialPageMode === 'adjust' && !adjustUnlocked) {
+      setAdjustPinOpen(true);
+    }
+  }, [adjustUnlocked, embedded, initialPageMode]);
 
   const [items, setItems] = useState<InventoryItem[]>(initialItems);
   const itemsRef = useRef(items);
@@ -860,7 +870,7 @@ export default function InventoryCountClient({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  const [pageMode, setPageMode] = useState<CountPageMode>('count');
+  const [pageMode, setPageMode] = useState<CountPageMode>(initialPageMode);
   const accuracyStatsRef = useRef<CountAccuracyStatsResult | null>(initialAccuracyStats);
   const accuracyTouchedRef = useRef(false);
   const [todayStatus, setTodayStatus] = useState<TodayCountSessionStatus>(
@@ -1291,7 +1301,10 @@ export default function InventoryCountClient({
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background text-foreground font-normal">
+      <div className={cn(
+        'flex flex-col items-center justify-center bg-background text-foreground font-normal',
+        embedded ? 'min-h-[12rem]' : 'min-h-screen',
+      )}>
         <Loader2 className="w-8 h-8 animate-spin mb-4 text-foreground" strokeWidth={1.5} />
         <span className="text-sm uppercase tracking-widest text-muted-foreground font-normal">กำลังซิงค์ข้อมูลสต็อกสินค้าอยู่ค่ะ...</span>
       </div>
@@ -1300,17 +1313,19 @@ export default function InventoryCountClient({
 
   if (errorMessage) {
     return (
-      <div className="min-h-screen bg-background text-foreground font-normal p-4 md:p-8">
-        <div className="max-w-xl mx-auto flex flex-col items-stretch gap-6">
-          <header className="flex items-center justify-between border-b border-border pb-4">
-            <Link
-              href={`/${locale}/inventory`}
-              className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors py-2 font-normal text-sm"
-            >
-              <ChevronLeft className="w-4.5 h-4.5" />
-              <span>กลับไปคลังสินค้า</span>
-            </Link>
-          </header>
+      <div className={cn('bg-background text-foreground font-normal', embedded ? 'p-0' : 'min-h-screen p-4 md:p-8')}>
+        <div className={cn('mx-auto flex flex-col items-stretch gap-6', embedded ? 'max-w-none' : 'max-w-xl')}>
+          {!embedded ? (
+            <header className="flex items-center justify-between border-b border-border pb-4">
+              <Link
+                href={`/${locale}/inventory`}
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors py-2 font-normal text-sm"
+              >
+                <ChevronLeft className="w-4.5 h-4.5" />
+                <span>กลับไปคลังสินค้า</span>
+              </Link>
+            </header>
+          ) : null}
 
           <div className="bg-card border border-red-100 dark:border-red-500/20 rounded-3xl p-6 bb-shadow-sm">
             <div className="flex items-start gap-3">
@@ -1329,12 +1344,14 @@ export default function InventoryCountClient({
                     <RefreshCcw className="w-4 h-4" />
                     <span>ลองเปิดใหม่</span>
                   </button>
-                  <Link
-                    href={`/${locale}/inventory`}
-                    className="inline-flex h-11 items-center rounded-2xl border border-border px-4 text-sm text-muted-foreground transition-colors hover:bg-muted"
-                  >
-                    กลับหน้าคลังสินค้า
-                  </Link>
+                  {!embedded ? (
+                    <Link
+                      href={`/${locale}/inventory`}
+                      className="inline-flex h-11 items-center rounded-2xl border border-border px-4 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                    >
+                      กลับหน้าคลังสินค้า
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1345,17 +1362,24 @@ export default function InventoryCountClient({
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-normal p-4 md:p-8">
-      <div className="max-w-xl mx-auto flex flex-col items-stretch">
+    <div className={cn('bg-background text-foreground font-normal', embedded ? 'p-0' : 'min-h-screen p-4 md:p-8')}>
+      <div className={cn('mx-auto flex flex-col items-stretch', embedded ? 'max-w-none' : 'max-w-xl')}>
 
-        <header className="flex items-center justify-between border-b border-border pb-4 mb-6">
-          <Link
-            href={`/${locale}/inventory`}
-            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors py-2 font-normal text-sm"
-          >
-            <ChevronLeft className="w-4.5 h-4.5" />
-            <span>กลับไปคลังสินค้า</span>
-          </Link>
+        <header className={cn(
+          'flex items-center justify-between border-b border-border pb-4 mb-6',
+          embedded && 'mb-4 pb-3',
+        )}>
+          {!embedded ? (
+            <Link
+              href={`/${locale}/inventory`}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors py-2 font-normal text-sm"
+            >
+              <ChevronLeft className="w-4.5 h-4.5" />
+              <span>กลับไปคลังสินค้า</span>
+            </Link>
+          ) : (
+            <span className="text-sm font-normal text-foreground">ตรวจนับคลังสินค้า</span>
+          )}
 
           <div className="flex items-center gap-2 text-xs font-normal">
             {savingState === 'saving' && (

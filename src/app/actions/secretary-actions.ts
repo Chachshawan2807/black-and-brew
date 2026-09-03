@@ -204,7 +204,7 @@ export async function syncDerivedSecretaryTasks(opts?: {
     const locale = opts?.locale ?? opts?.snapshot?.locale ?? opts?.baseSnapshot?.locale ?? 'th';
 
     let drafts;
-    if (options?.limitModules?.length) {
+    if (opts?.scopes?.length) {
       const patch = await fetchSecretarySnapshotSlices({ dateIso, locale }, opts.scopes);
       const snapshot = opts.baseSnapshot
         ? mergeSecretarySnapshot(opts.baseSnapshot, patch)

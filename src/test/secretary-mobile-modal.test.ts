@@ -4,11 +4,14 @@ import path from 'node:path';
 
 const ROOT = path.resolve(__dirname, '..');
 
-const SECRETARY_OVERLAY_FILES = [
-  'SecretaryListDialog.tsx',
+const SECRETARY_SUBWINDOW_FILES = [
+  'SecretaryTaskSubwindow.tsx',
   'SecretaryManualTaskDialog.tsx',
-  'ScheduleReviewDialog.tsx',
-  'BranchWithdrawOverlay.tsx',
+  'BeanOrdersOverlay.tsx',
+  'SecretaryTaskListOverlay.tsx',
+  'ScheduleOverlay.tsx',
+  'InventoryCountOverlay.tsx',
+  'SecretaryTaskInfoOverlay.tsx',
 ];
 
 describe('secretary mobile task overlays', () => {
@@ -34,14 +37,22 @@ describe('secretary mobile task overlays', () => {
     expect(scaffold).toContain('verticalAlign: \'center\'');
   });
 
-  test.each(SECRETARY_OVERLAY_FILES)('%s uses shared mobile-safe scaffold props', (file) => {
+  test('SecretaryTaskSubwindow uses shared mobile-safe scaffold props', () => {
     const code = fs.readFileSync(
-      path.resolve(ROOT, `app/[locale]/secretary/_components/${file}`),
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskSubwindow.tsx'),
       'utf-8',
     );
     expect(code).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
     expect(code).toContain('SECRETARY_MODAL_LAYOUT_CLASS');
     expect(code).not.toContain('items-end');
+  });
+
+  test.each(SECRETARY_SUBWINDOW_FILES)('%s keeps internal scroll regions', (file) => {
+    const code = fs.readFileSync(
+      path.resolve(ROOT, `app/[locale]/secretary/_components/${file}`),
+      'utf-8',
+    );
+    expect(code).toMatch(/overflow-y-auto bb-smooth-scroll|FadeModalScaffold/);
   });
 
   test('purchase orders modal from secretary uses scrollable centered shell', () => {
@@ -55,17 +66,11 @@ describe('secretary mobile task overlays', () => {
     expect(modal).toContain('verticalAlign: \'center\'');
   });
 
-  test('list and review dialogs keep internal scroll regions', () => {
-    const listDialog = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryListDialog.tsx'),
+  test('branch withdraw overlay delegates to shared sub-window shell', () => {
+    const overlay = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/BranchWithdrawOverlay.tsx'),
       'utf-8',
     );
-    expect(listDialog).toMatch(/min-h-0 flex-1 overflow-y-auto bb-smooth-scroll/);
-
-    const reviewDialog = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/ScheduleReviewDialog.tsx'),
-      'utf-8',
-    );
-    expect(reviewDialog).toMatch(/min-h-0 flex-1 overflow-y-auto[\s\S]*bb-smooth-scroll/);
+    expect(overlay).toContain('SecretaryTaskSubwindow');
   });
 });

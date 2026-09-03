@@ -478,6 +478,7 @@ interface ScheduleClientProps {
   initialRegularHolidays: RegularHolidayMap;
   initialDateStr: string;
   locale: string;
+  embedded?: boolean;
 }
 
 export default function ScheduleClient({
@@ -486,6 +487,7 @@ export default function ScheduleClient({
   initialHolidays,
   initialRegularHolidays,
   initialDateStr,
+  embedded = false,
 }: ScheduleClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1594,7 +1596,9 @@ export default function ScheduleClient({
   }, [todayStr]);
 
   return (
-    <div className="bb-schedule-page flex flex-col h-[100dvh] bg-background text-foreground overflow-hidden">
+    <div className={embedded
+      ? 'bb-schedule-page flex min-h-[min(70svh,40rem)] flex-col overflow-hidden bg-background text-foreground'
+      : 'bb-schedule-page flex flex-col h-[100dvh] bg-background text-foreground overflow-hidden'}>
       <ScheduleToolbar
         isReadOnly={isReadOnly}
         undoStackLength={undoStack.length}
