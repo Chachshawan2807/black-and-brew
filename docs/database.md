@@ -1,6 +1,6 @@
 # Database Schema BLACKANDBREW ERP
 
-> Version: 9.4 | Last Updated: 2026-08-27 | Engine: Supabase PostgreSQL
+> Version: 9.4 | Last Updated: 2026-09-04 | Engine: Supabase PostgreSQL
 
 ---
 
@@ -31,6 +31,8 @@
 | `bean_order_payments` | สลิปชำระเงิน | ✓ authenticated read | `supabase/migrations/20260722074607_bean_orders.sql` |
 | `bean_order_shipments` | การจัดส่ง + tracking | ✓ authenticated read | `supabase/migrations/20260722074607_bean_orders.sql` |
 | `app_preferences` | UI prefs ต่อสาขา (sidebar menu order sync) | ✓ authenticated read | `supabase/migrations/20260724120000_app_preferences_sidebar_menu.sql` |
+| `operational_tasks` | Secretary board tasks (derived + manual) per scheduled date | ✓ authenticated CRUD (manual delete scoped) | `supabase/migrations/20260828120000_operational_tasks.sql` |
+| `operational_task_sessions` | Active work sessions per secretary task | ✓ authenticated | `supabase/migrations/20260828130000_operational_task_sessions.sql` |
 
 > Types: Generated types in `src/lib/database.types.ts`
 
@@ -300,6 +302,12 @@ CREATE INDEX idx_inventory_items_count_policy ON inventory_items(count_policy);
 | `20260811105704_inventory_transaction_at.sql` | `inventory_transactions.transaction_at` business date + `p_transaction_at` on `record_inventory_transaction` RPC |
 | `20260811115400_reset_inventory_history_transaction_at.sql` | Reset IN/OUT ledger, count verifications, and branch withdrawals after `transaction_at` rollout |
 | `20260826140000_drop_sales_report_tables.sql` | Drops retired Sales Report tables (`sales_records`, `sales_uploads`, `product_categories`) |
+| `20260828120000_operational_tasks.sql` | Secretary `operational_tasks` table + RLS |
+| `20260828130000_operational_task_sessions.sql` | Work session rows + `active_session_started_at` on tasks |
+| `20260829120000_secretary_realtime_tables.sql` | Realtime publication for secretary board domain tables |
+| `20260829140000_bean_order_no_unpadded_sequence.sql` | Bean order number sequence formatting |
+| `20260829150000_drop_operational_task_duration_stats.sql` | Drops unused duration stats artifact |
+| `20260903120000_data_change_log_retention.sql` | `purge_data_change_logs_batch` RPC for cron retention |
 
 Retired: Sales Report module (`sales_uploads`, `sales_records`, `product_categories`) dropped in `20260826140000_drop_sales_report_tables.sql`. Inventory recommended target stock columns/UI (see `20260708104230_remove_inventory_recommended_target_stock.sql`). Do not reintroduce them.
 

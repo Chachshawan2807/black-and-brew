@@ -12,6 +12,7 @@ Quick reference for smoke testing after each refactor PR.
 | Dashboard | LiveShiftList, MonthlyRoster, LiveStatusTracker |
 | Bean orders | create/edit, payment slip, ship, manual delivery confirm |
 | Proactive insights | cron/manual `/api/insight-alerts`, NotificationBell digest, HomeOpsPanels |
+| Secretary | board load, derived sync, manual task create/complete/defer, sidebar badge |
 | Notification hub | start at `use-inventory-notifications.ts`; FAB/panel/badge/OS push share one state; see `AGENTS.md` notification-hub-standard |
 | Notification FAB | unread badge, panel view-only, cross-tab + visibility hydrate; FAB stack via `FloatingOverlayContext` + `floating-action-layout.ts` |
 | Auth | PIN, logout, session revocation |

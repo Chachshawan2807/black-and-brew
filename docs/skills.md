@@ -1,6 +1,6 @@
 # BLACKANDBREW ERP Capability Inventory
 
-> Last Updated: 2026-09-03
+> Last Updated: 2026-09-04
 >
 > Companion: agent rules → [`AGENTS.md`](../AGENTS.md) · hard protocols → [`docs/rules.md`](rules.md)
 
@@ -8,6 +8,7 @@
 
 ### Data and Integration
 
+- **Secretary task board:** `src/lib/secretary/` + `secretary-actions.ts` + `operational_tasks`; derived tasks from schedule/inventory/maintenance/bean orders; sidebar badge via `countPendingSecretaryTasks()`.
 - **Proactive cross-module insights:** `src/lib/proactive-insights/` + `GET /api/insight-alerts` deterministic rules correlating schedule/inventory/maintenance/bean-orders/accuracy; Web Push + NotificationBell; prefs `proactiveInsights`.
 - Inventory Truth Layer: `inventory-stock.ts`, `mergeInventoryRealtimeUpdate`, `computeItemsToOrder`, `updateInventoryStock`, RPC `set_inventory_stock`.
 - Supabase Session Bridge: `ensureSupabaseSession()` after PIN → anonymous `authenticated` RLS.
@@ -33,7 +34,7 @@
 
 ### Retired (2026-09)
 
-- `POST /api/chat`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, external web search, and `@ai-sdk/react` chat UI transport.
+- `POST /api/chat`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, chat UI, external web search, and `@ai-sdk/react` transport. Legacy `src/app/actions/tools/` files remain for Vitest only.
 
 ## Schema Guardrails
 

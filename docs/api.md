@@ -1,6 +1,6 @@
 # API Reference BLACKANDBREW ERP
 
-> Version: 9.4 | Last Updated: 2026-08-25
+> Version: 9.4 | Last Updated: 2026-09-04
 
 ---
 
@@ -243,6 +243,29 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 
 ---
 
+### 1.15 Secretary (`secretary-actions.ts`)
+
+| Function | Purpose |
+| --- | --- |
+| `loadSecretaryBoard(opts?)` | Load board payload for `/[locale]/secretary` (tasks + metadata for date/locale) |
+| `syncAndFetchSecretaryBoard(opts?)` | Sync derived tasks then return board |
+| `fetchSecretaryTasks(dateIso)` | Read `operational_tasks` for a scheduled date |
+| `countPendingSecretaryTasks(dateIso)` | Pending count for sidebar badge |
+| `syncDerivedSecretaryTasks(opts?)` | Derive tasks from module snapshots without full board rebuild |
+| `refreshDerivedSecretaryTasks(opts?)` | Force refresh derived tasks (also used by `POST /api/secretary/refresh`) |
+| `createManualSecretaryTask(input)` | Insert manual task row |
+| `updateManualSecretaryTask(id, input)` | Update manual task |
+| `deleteManualSecretaryTask(id)` | Delete manual task |
+| `updateSecretaryTaskStatus(id, status)` | Status transitions (pending, in_progress, completed, …) |
+| `completeSecretaryTasks(ids)` | Batch complete |
+| `deferSecretaryTasksToNextDay(ids)` | Move tasks to next calendar day |
+
+- Overlay context: `secretary-overlay-actions.ts` → `fetchScheduleOverlayData()`
+- Domain: `src/lib/secretary/` (`module-registry.ts`, `adapters/`, `visible-board-tasks.ts`, …)
+- Tables: `operational_tasks`, `operational_task_sessions`
+
+---
+
 ## 2. API Routes
 
 ### `POST /api/inventory/offline-mutation`
@@ -272,6 +295,19 @@ Requires PIN session + Supabase anonymous `accessToken` so RLS policies apply. `
 - Query: `?window=morning` (default) or `?window=evening`; `?force=1` for manual re-run
 - cron-job.org (Asia/Bangkok): **07:00** morning, **17:00** evening
 - Event-driven: `scheduleProactiveInsightEvaluation()` debounces 5 minutes after `saveShift` / inventory stock mutations
+
+### `GET /api/data-change-log-retention`
+
+- **cron-job.org** HTTP trigger protected by `CRON_SECRET` (`Authorization: Bearer …`)
+- Purges aged rows from `data_change_logs` via `purge_data_change_logs_batch` RPC
+- Query: `retentionDays`, `batchSize`, `maxBatches` (positive integers; defaults from `src/lib/data-change-log-retention.ts`)
+- Migration: `supabase/migrations/20260903120000_data_change_log_retention.sql`
+
+### `POST /api/secretary/refresh`
+
+- Privileged PIN session via `requirePrivilegedSession()` (not cron)
+- Body: optional `{ dateIso?, locale? }`
+- Calls `refreshDerivedSecretaryTasks()` to rebuild derived operational tasks
 
 ### `POST /api/push/webhook`
 

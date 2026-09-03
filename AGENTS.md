@@ -60,6 +60,11 @@ This is a **Next.js App Router** ERP not a Vite/CRA SPA. Do **not** introduce to
 home/       → app/[locale]/page.tsx
               app/[locale]/_components/LiveStatusTracker.tsx
 
+secretary/  → app/[locale]/secretary/SecretaryClient.tsx
+              app/[locale]/secretary/_components/*
+              app/actions/secretary-actions.ts
+              lib/secretary/*
+
 inventory/  → app/[locale]/inventory/InventoryClient.tsx
               app/[locale]/inventory/_components/* (FAB, modals, quick action bar)
               app/actions/inventory-actions.ts

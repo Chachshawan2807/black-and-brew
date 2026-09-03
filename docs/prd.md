@@ -1,6 +1,6 @@
 # PRD BLACKANDBREW ERP System
 
-> Version: 9.4 | Last Updated: 2026-08-27 | Owner: System Architect
+> Version: 9.4 | Last Updated: 2026-09-04 | Owner: System Architect
 
 ---
 
@@ -36,21 +36,28 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 - Purpose: ภาพรวมกะงานวันนี้/พรุ่งนี้แบบเรียลไทม์ + ops panels (PO / maintenance due / insights)
 - Components: `HomePageClient.tsx`, `LiveStatusTracker.tsx`, `HomeOpsPanels.tsx`, `HomePurchaseOrdersSection.tsx`, `HomeMaintenanceDueSection.tsx`
 
-### 3.2 Staff Dashboard
+### 3.2 Secretary (งาน)
+
+- Route: `/[locale]/secretary`
+- Purpose: บอร์ดงานประจำวัน รวมงานที่ derive จาก schedule, inventory, maintenance, bean orders และงาน manual
+- Components: `SecretaryClient.tsx`, `secretary/_components/*` (task board, overlays, manual task dialog)
+- Features: derived task sync, manual tasks, defer/complete, schedule overlay context, sidebar pending badge
+
+### 3.3 Staff Dashboard
 
 - Route: `/[locale]/dashboard`
 - Purpose: ลงเวลา รายชื่อกะ ตารางรายเดือน
 - Components: `dashboard/_components/LiveShiftList.tsx`, `MonthlyRoster.tsx`
 - Performance: รวม query กะรายสัปดาห์/รายเดือนเมื่อช่วงวันที่ซ้อนกัน แล้ว split กลับเป็น payload เดิม
 
-### 3.3 Schedule
+### 3.4 Schedule
 
 - Route: `/[locale]/schedule`
 - Purpose: จัดตารางงาน Drag-and-Drop, สลับกะ, วันหยุด
 - Components: `ScheduleClient.tsx`, `schedule/_components/ScheduleToolbar.tsx`, `ShiftSettingsModal.tsx`
 - Features: DnD shift assignment, Thai holidays (Google Calendar), regular holidays, PNG export
 
-### 3.4 Inventory
+### 3.5 Inventory
 
 - Route: `/[locale]/inventory`, `/[locale]/inventory/count`, `/[locale]/inventory/accuracy`, `/[locale]/inventory/branch-withdraw`
 - Purpose: คลังสินค้า + ตรวจนับสต็อก
@@ -67,13 +74,13 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
   - Branch 2 withdrawal batch (`record_branch_withdrawal_batch` RPC) with LINE-formatted history
   - Long-grid responsiveness via row containment and dynamic modal loading
 
-### 3.5 Maintenance
+### 3.6 Maintenance
 
 - Route: `/[locale]/maintenance`
 - Purpose: บันทึกการซ่อมบำรุงอุปกรณ์
 - Table: `service_records`
 
-### 3.6 Bean Orders
+### 3.7 Bean Orders
 
 - Route: `/[locale]/bean-orders`, `/new`, `/[id]`, `/[id]/edit`
 - Purpose: จัดการออเดอร์เมล็ดกาแฟ ลูกค้า, สลิปชำระเงิน, จัดส่ง, ติดตามพัสดุ
@@ -84,18 +91,18 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
   - Manual delivery confirmation (staff marks จัดส่งสำเร็จ)
   - No automatic inventory stock deduction
 
-### 3.7 Settings
+### 3.8 Settings
 
 - Route: `/[locale]/settings`
 - Purpose: การตั้งค่าระบบสำหรับพนักงาน
 - Features: Theme picker; login history; trusted-device passkeys; notification preferences; data change history (`settings/_components/`)
 
-### 3.8 Daily Web Push Notification
+### 3.9 Daily Web Push Notification
 
 - Route: `/api/daily-report` (cron-job.org 05:00 / 18:00 ICT)
 - Purpose: แจ้งเตือนกะงานและวันหยุดผ่าน Web Push ตาม `push_subscriptions.branch_id` / `profile_id`
 
-### 3.9 Proactive Cross-Module Insights
+### 3.10 Proactive Cross-Module Insights
 
 - Route: `GET /api/insight-alerts` (cron-job.org 07:00 / 17:00 ICT; also debounced after shift/stock mutations)
 - Purpose: กฎ deterministic เชื่อม schedule / inventory / maintenance / bean-orders / accuracy → inbox + Web Push
@@ -113,6 +120,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 | Shift Scheduling | จัดพนักงานให้เหมาะสม | Schedule |
 | Holiday Sync | วางแผนล่วงหน้าตามวันหยุดราชการ | Schedule |
 | Bean Order Fulfillment | จัดการออเดอร์เมล็ดกาแฟและติดตามพัสดุ | Bean Orders |
+| Secretary task board | ลดงานตกหล่นข้ามโมดูลด้วย derived + manual tasks | Secretary |
 | Real-time Sync | ข้อมูลอัปเดตทันทีข้ามเครื่อง | All |
 | Daily Web Push | แจ้งเตือนตารางงานผ่าน endpoint เดียวกับ inventory alerts | Schedule/Notifications |
 | Proactive Insights | แจ้งเตือนข้ามโมดูลเมื่อสต็อก/กะ/ซ่อม/ออเดอร์เมล็ดสัมพันธ์กัน | Notifications/Command Center |
@@ -137,7 +145,7 @@ BLACKANDBREW ERP คือระบบจัดการทรัพยากร
 ## 6. Non-Functional Requirements
 
 - Accessibility: WCAG 2.2 AA; full-width clickable date pickers
-- Security: RLS + PIN auth + WebAuthn passkeys; Service Role Key server-only; XSS sanitization in AI chat
+- Security: RLS + PIN auth + WebAuthn passkeys; Service Role Key server-only; XSS sanitization on user text inputs
 - Performance: Hybrid PPR; explicit field selection in Supabase queries; dynamic route/modal chunks for heavy client-only UI
 - Reliability: Optimistic UI with rollback; atomic RPC transactions
 - Design: Zero-Bold Policy; `rounded-3xl`; theme-token page/modal surfaces; pastel accent cards use `bb-pastel-surface`

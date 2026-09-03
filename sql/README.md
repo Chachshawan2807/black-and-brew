@@ -14,7 +14,7 @@ Supabase Auth: Enable Anonymous Sign-ins in Dashboard → Authentication → Pro
 
 | Location | Purpose |
 | --- | --- |
-| `supabase/migrations/` | Versioned migrations (login_history, data_change_logs, revoked_sessions, push_subscriptions, daily-report push fields, device_passkeys, inventory ADD/DELETE, count verifications, count policy, retired feature cleanup) |
+| `supabase/migrations/` | Versioned migrations (login_history, data_change_logs, revoked_sessions, push_subscriptions, operational_tasks, device_passkeys, inventory ADD/DELETE, count verifications, count policy, retired feature cleanup) |
 | `sql/` | Operational scripts and RPC reference blueprints |
 | `sql/historical/` | Historical one-shot schemas (`DB_SCHEMA.sql`, `sales_schema.sql`, etc.) applied historically |
 

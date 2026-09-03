@@ -1,12 +1,24 @@
 # Memory Log BLACKANDBREW ERP
 
-> Version: 9.4 | Last Updated: 2026-08-27 | Purpose: Recent architecture decisions agents must not undo
+> Version: 9.4 | Last Updated: 2026-09-04 | Purpose: Recent architecture decisions agents must not undo
 
 Older decisions live in git history and `docs/changelog.md` (trimmed). Query **codebase-memory-mcp** (`search_graph`, `trace_path`) before broad file reads.
 
 ---
 
 ## Active Decisions
+
+### DEC-090: Secretary operational task board (v9.4)
+
+- Date: August 2026
+- Context: Staff need a single daily task board that derives actionable items from schedule, inventory, maintenance, and bean orders without opening every module.
+- Decision:
+  1. Route: `src/app/[locale]/secretary/` with `SecretaryClient.tsx` and overlay components.
+  2. Persistence: `operational_tasks` + `operational_task_sessions` (`20260828120000`, `20260828130000`); Realtime on domain tables (`20260829120000`).
+  3. Domain hub: `src/lib/secretary/` + `secretary-actions.ts`; sidebar badge via `countPendingSecretaryTasks()`.
+  4. Refresh: privileged `POST /api/secretary/refresh` calls `refreshDerivedSecretaryTasks()`.
+- Impact: Document in README, `PROJECT_MAP.md`, architecture, PRD, API, database keepers.
+- Evidence: `secretary-*.test.ts`, `use-secretary-task-order.test.ts`, migration `20260828120000_operational_tasks.sql`
 
 ### DEC-088: Retire Sales Report module (v9.4)
 
@@ -45,7 +57,7 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 ### DEC-089: AI Chat Module Retirement (2026-09)
 
 - Context: `POST /api/chat` and the Bru hybrid router (Gemini + external search + deterministic short-circuits) are no longer used.
-- Decision: Remove `src/app/api/chat/`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, external search client, and chat-specific tests/assets.
+- Decision: Remove `src/app/api/chat/`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, chat UI, external search client, and chat-specific tests/assets. Legacy `src/app/actions/tools/` retained for Vitest `read-table-preset.test.ts` only.
 - Remaining Gemini: `bean-order-actions.ts` customer share-text parse only.
 - Evidence: `docs/changelog.md` (2026-09-03), `npm run build`
 

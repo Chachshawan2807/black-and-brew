@@ -1,6 +1,6 @@
 # Architecture BLACKANDBREW ERP
 
-> Version: 9.4 | Last Updated: 2026-08-27 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
+> Version: 9.4 | Last Updated: 2026-09-04 | Stack: Next.js 16.2.4 + React 19.2.4 + Supabase
 
 ---
 
@@ -101,19 +101,22 @@ src/app/
 │   ├── push-actions.ts                # Web Push subscription register/sync/unregister
 │   ├── app-preferences-actions.ts     # Branch-scoped UI prefs (sidebar menu order)
 │   ├── schedule-sheets-sync-actions.ts # Schedule → Google Sheets sync
+│   ├── secretary-actions.ts           # Operational task board (derive, sync, complete)
+│   ├── secretary-overlay-actions.ts   # Schedule overlay fetch for task context
 │   ├── data-change-log-actions.ts     # Mutation audit + dispatchInventoryWebPush hook
-│   ├── migrate-inventory-sort-order.ts # One-shot inventory sort-order helper
-│   └── tools/                         # AI agent tools
+│   └── migrate-inventory-sort-order.ts # One-shot inventory sort-order helper
 ├── api/
-│   ├── chat/route.ts            # Streaming AI (ToolLoopAgent)
-│   ├── daily-report/route.ts    # cron-job.org → schedule Web Push
-│   ├── insight-alerts/route.ts  # cron-job.org → proactive insights
-│   ├── push/webhook/route.ts    # Optional Supabase DB webhook → Web Push dispatch
+│   ├── daily-report/route.ts            # cron-job.org → schedule Web Push
+│   ├── insight-alerts/route.ts          # cron-job.org → proactive insights
+│   ├── data-change-log-retention/route.ts # cron-job.org → purge old data_change_logs
+│   ├── push/webhook/route.ts            # Optional Supabase DB webhook → Web Push dispatch
+│   ├── secretary/refresh/route.ts       # Privileged refresh of derived secretary tasks
 │   └── inventory/offline-mutation/route.ts  # Service worker background sync replay
 └── [locale]/
     ├── layout.tsx               # PinGateway, sidebar, DeferredOverlays, PWA
     ├── page.tsx                 # Command Center
     ├── _components/             # HomePageClient, LiveStatusTracker, HomeOpsPanels, …
+    ├── secretary/               # SecretaryClient + _components/ (task board, overlays)
     ├── dashboard/               # page.tsx + _components/ (LiveShiftList, MonthlyRoster)
     ├── schedule/                # ScheduleClient + _components/
     ├── inventory/               # InventoryClient + _components/ (FAB, modals)
@@ -296,7 +299,19 @@ cron-job.org (07:00 / 17:00 ICT) or debounced mutation hook
 
 Event-driven debounce: `scheduleProactiveInsightEvaluation()` after `saveShift` and inventory stock mutations (`schedule-evaluation.ts`). Rules live in `src/lib/proactive-insights/rules.ts`; thresholds in `thresholds.ts`.
 
-> **Retired (2026-09):** `POST /api/chat` and the AI chat stack (`src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`) were removed. Shell overlays (`DeferredOverlays`) remain notification FAB + inventory quick action only.
+### Secretary operational task board (v9.4+)
+
+```text
+SecretaryPage → loadSecretaryBoard() → operational_tasks for scheduled_date
+→ syncDerivedSecretaryTasks() merges module snapshots (schedule, inventory, maintenance, bean orders)
+→ deriveTasksFromSnapshot() in src/lib/secretary/module-registry.ts
+→ SecretaryClient board + task overlays (schedule/inventory context via secretary-overlay-actions.ts)
+→ Realtime: operational_tasks + operational_task_sessions + domain tables (migration 20260829120000)
+→ Sidebar badge: countPendingSecretaryTasks() via menu-list.ts
+→ POST /api/secretary/refresh (privileged session) for manual derived-task refresh
+```
+
+> **Retired (2026-09):** `POST /api/chat` and the in-app AI chat stack (`src/lib/agents/`, `src/lib/ai-data-gateway.ts`, chat UI) were removed. Shell overlays (`DeferredOverlays`) remain notification FAB + inventory quick action only. Legacy `src/app/actions/tools/` files remain for Vitest `read-table-preset.test.ts` only, not production routes.
 
 ---
 

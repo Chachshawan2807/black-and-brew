@@ -1,12 +1,12 @@
 # Tasks BLACKANDBREW ERP
 
-> Version: 9.4 | Last Updated: 2026-08-27
+> Version: 9.4 | Last Updated: 2026-09-04
 
 ---
 
 ## Completed (summary)
 
-Core ERP modules are shipped: Command Center, Dashboard, Schedule (DnD), Inventory (spreadsheet + count + accuracy), Maintenance, Bean Orders, Settings, PWA, PIN auth + passkeys, Web Push (inventory + daily report).
+Core ERP modules are shipped: Command Center, Secretary (งาน), Dashboard, Schedule (DnD), Inventory (spreadsheet + count + accuracy), Maintenance, Bean Orders, Settings, PWA, PIN auth + passkeys, Web Push (inventory + daily report).
 
 Notable completed work:
 
@@ -20,7 +20,8 @@ Notable completed work:
 - [x] Notification unread badge counter (IDB + cross-tab sync)
 - [x] Inventory accuracy gauge on `/inventory/accuracy`
 - [x] Bean orders module (`/bean-orders`, `bean_*` tables, manual delivery confirm, slip upload)
-- [x] AI full coverage: 21 AI-readable tables; deterministic schedule, maintenance, holidays, low-stock, store status, bean orders, inventory accuracy routes
+- [x] Secretary task board (`/secretary`, `operational_tasks`, derived + manual tasks, sidebar badge)
+- [x] Retired: in-app AI chat (`POST /api/chat`, agents stack); Gemini remains for bean-order customer parse only
 - [x] Sidebar menu drag-reorder (`sidebar-menu-order.ts`) + cross-device sync (`app_preferences`)
 - [x] Proactive cross-module insights (`/api/insight-alerts`, Web Push, Command Center ops panels)
 - [x] RLS hardening migration (`20260724170556`) + WAF config (`config/vercel-firewall.json`)

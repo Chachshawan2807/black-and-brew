@@ -1,6 +1,6 @@
 # Black-and-Brew ERP: MASTER BLUEPRINT [R1]
 
-> Version: 9.4 | Last Updated: 2026-08-27 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
+> Version: 9.4 | Last Updated: 2026-09-04 | Canonical blueprint (root `MASTER_BLUEPRINT.md` is a redirect stub only)
 
 ## Architectural Core
 
@@ -33,7 +33,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 
 - Model: `gemini-2.5-flash` via `@ai-sdk/google`.
 - Scope: optional customer-detail parse in `bean-order-actions.ts` (`generateText`).
-- **Retired (2026-09):** `POST /api/chat`, ToolLoopAgent, external web search, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, and `src/app/actions/tools/` were removed.
+- **Retired (2026-09):** `POST /api/chat`, ToolLoopAgent, external web search, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, and chat UI were removed. Legacy `src/app/actions/tools/` remains for Vitest only.
 
 ### 5. Persistent UI & Session States
 
@@ -74,6 +74,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 | Module | Route | Status |
 | --- | --- | --- |
 | Command Center | `/[locale]` | Active |
+| Secretary (งาน) | `/[locale]/secretary` | Active derived + manual operational tasks |
 | Inventory | `/[locale]/inventory` | Active DnD + Stock RPC + count policy |
 | Stock Count | `/[locale]/inventory/count` | Active |
 | Inventory Accuracy | `/[locale]/inventory/accuracy` | Active exact-count only + gauge |

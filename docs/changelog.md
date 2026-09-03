@@ -2,6 +2,15 @@
 
 > Trimmed for agent use. Full history: `git log -- docs/`.
 
+## 2026-09-04 (Project doc sync: Secretary + API keepers)
+
+- Documented Secretary module (`/[locale]/secretary`, `secretary-actions.ts`, `src/lib/secretary/`, `operational_tasks`) across README, `PROJECT_MAP.md`, architecture, PRD, API, context, tasks, blueprint.
+- Added cron route `GET /api/data-change-log-retention` and privileged `POST /api/secretary/refresh` to API/PROJECT_MAP keepers.
+- Corrected stale deps in `docs/context.md` (removed `recharts`, `xlsx`; aligned to `package.json`).
+- Updated `docs/performance-baseline.md`: 13 `loading.tsx` files (includes `secretary/`); `optimizePackageImports` list matches `next.config.ts`.
+- Clarified AI chat retirement: production chat route removed; legacy `actions/tools/` retained for Vitest `read-table-preset.test.ts` only.
+- Bumped keeper stamps to 2026-09-04 (product v9.4 unchanged).
+
 ## 2026-09-03 (Weather / OpenWeather doc cleanup)
 
 - Confirmed no runtime code, API routes, env vars, or tests remain for OpenWeatherMap or weather forecasting.
@@ -9,7 +18,7 @@
 
 ## 2026-09-03 (AI Chat module retirement)
 
-- Removed `POST /api/chat` and the full chat AI stack: `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, external search client, chat formatters, and related Vitest suites.
+- Removed `POST /api/chat` and the full chat AI stack: `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, chat UI, external search client, chat formatters, and related Vitest suites. Legacy `src/app/actions/tools/` files remain for Vitest `read-table-preset.test.ts` only.
 - Removed `@ai-sdk/react` dependency; Gemini (`@ai-sdk/google`) remains for bean-order customer parse only.
 - Updated keepers: `docs/api.md`, `docs/architecture.md`, `docs/prd.md`, `docs/context.md`, `docs/skills.md`, `docs/MASTER_BLUEPRINT.md`, `docs/security/waf-and-ddos.md`, `PROJECT_MAP.md`, `AGENTS.md`.
 - WAF docs: dropped `POST /api/chat` edge rate-limit guidance (no matching rule in `config/vercel-firewall.json`).

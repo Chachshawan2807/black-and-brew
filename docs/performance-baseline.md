@@ -1,6 +1,6 @@
 # Performance Baseline BLACKANDBREW ERP
 
-Recorded before loading-performance optimization work (2026-07-08). Updated 2026-08-27 for current loading coverage.
+Recorded before loading-performance optimization work (2026-07-08). Updated 2026-09-04 for current loading coverage.
 
 ## How to reproduce
 
@@ -24,11 +24,11 @@ DevTools → Network → filter RSC/flight for payload size.
 | Loading UX | Few routes had `loading.tsx`; locale error boundary at `src/app/[locale]/error.tsx` |
 | Realtime | Inventory notifications subscribe on every route at mount |
 
-## Current loading coverage (2026-08-27)
+## Current loading coverage (2026-09-04)
 
-**11** `loading.tsx` files under `src/app/[locale]/`:
+**13** `loading.tsx` files under `src/app/[locale]/`:
 
-- locale root, dashboard, schedule, maintenance, settings, bean-orders (+ `[id]`)
+- locale root, dashboard, schedule, maintenance, settings, secretary, bean-orders (+ `[id]`)
 - inventory (+ count, accuracy, branch-withdraw)
 
 ## Post-optimization (2026-07-18 → ongoing)
@@ -40,7 +40,7 @@ DevTools → Network → filter RSC/flight for payload size.
 | Nav `onTouchStart` + `prefetch` on links | Mobile PWA navigation feels instant |
 | `DeferredOverlays` (notification FAB + quick action) | Less main-thread work during first paint |
 | Trimmed Google Font weights | Smaller font payload |
-| `optimizePackageImports` for recharts + radix | Smaller route bundles |
+| `optimizePackageImports` for lucide, date-fns, framer-motion, radix, dnd-kit | Smaller route bundles |
 | Layout Suspense uses `RouteLoadingSkeleton` | No blank shell during RSC streaming |
 | Settings lazy sections | History/login/passkey chunks load only when expanded |
 | View Transitions API | Native cross-fade on in-app navigation (Chrome/Safari 18+) |
