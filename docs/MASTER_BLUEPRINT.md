@@ -33,7 +33,7 @@ The system is built on Next.js 16.2.4 (Turbopack) and Supabase, prioritizing vis
 
 - Model: `gemini-2.5-flash` via `@ai-sdk/google`.
 - Scope: optional customer-detail parse in `bean-order-actions.ts` (`generateText`).
-- **Retired (2026-09):** `POST /api/chat`, ToolLoopAgent, Tavily search, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, and `src/app/actions/tools/` were removed.
+- **Retired (2026-09):** `POST /api/chat`, ToolLoopAgent, external web search, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, and `src/app/actions/tools/` were removed.
 
 ### 5. Persistent UI & Session States
 

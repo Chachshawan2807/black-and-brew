@@ -33,7 +33,7 @@
 
 ### Retired (2026-09)
 
-- `POST /api/chat`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, Tavily search, and `@ai-sdk/react` chat UI transport.
+- `POST /api/chat`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, external web search, and `@ai-sdk/react` chat UI transport.
 
 ## Schema Guardrails
 

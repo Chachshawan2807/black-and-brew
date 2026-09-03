@@ -44,8 +44,8 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
 
 ### DEC-089: AI Chat Module Retirement (2026-09)
 
-- Context: `POST /api/chat` and the Bru hybrid router (Gemini + Tavily + deterministic short-circuits) are no longer used.
-- Decision: Remove `src/app/api/chat/`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, Tavily client, and chat-specific tests/assets.
+- Context: `POST /api/chat` and the Bru hybrid router (Gemini + external search + deterministic short-circuits) are no longer used.
+- Decision: Remove `src/app/api/chat/`, `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, external search client, and chat-specific tests/assets.
 - Remaining Gemini: `bean-order-actions.ts` customer share-text parse only.
 - Evidence: `docs/changelog.md` (2026-09-03), `npm run build`
 
@@ -120,7 +120,7 @@ Older decisions live in git history and `docs/changelog.md` (trimmed). Query **c
   1. Graphify (or any second knowledge-graph toolchain) use **codebase-memory-mcp** only.
   2. Inventory recommended target stock dropped by `20260708104230_remove_inventory_recommended_target_stock.sql`.
   3. Dashboard widgets: WeatherWidget, InventorySummaryCard, CommandCenterGrid.
-  4. Weather forecasting (`/api/weather` / OpenWeatherMap) AI external search is Tavily-only.
+  4. Weather forecasting (`/api/weather` / OpenWeatherMap) and AI external web search (retired with chat module).
   5. Market Insights module (`local_events`, `market_insight_runs`) dropped by `20260622143800_drop_market_insights_tables.sql`.
 - Impact: Keep docs and code free of these as active features.
 

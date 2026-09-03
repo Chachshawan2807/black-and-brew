@@ -4,7 +4,7 @@
 
 ## 2026-09-03 (AI Chat module retirement)
 
-- Removed `POST /api/chat` and the full chat AI stack: `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, Tavily client, chat formatters, and related Vitest suites.
+- Removed `POST /api/chat` and the full chat AI stack: `src/lib/agents/`, `src/lib/ai-data-gateway.ts`, `src/app/actions/tools/`, external search client, chat formatters, and related Vitest suites.
 - Removed `@ai-sdk/react` dependency; Gemini (`@ai-sdk/google`) remains for bean-order customer parse only.
 - Updated keepers: `docs/api.md`, `docs/architecture.md`, `docs/prd.md`, `docs/context.md`, `docs/skills.md`, `docs/MASTER_BLUEPRINT.md`, `docs/security/waf-and-ddos.md`, `PROJECT_MAP.md`, `AGENTS.md`.
 - WAF docs: dropped `POST /api/chat` edge rate-limit guidance (no matching rule in `config/vercel-firewall.json`).
@@ -118,7 +118,7 @@
 ## 2026-07-10 (Markdown docs hygiene)
 
 - Scanned project-owned `.md` files; no Graphify docs remained to delete (already retired).
-- Synced keepers to current App Router + Supabase layout: API routes (`chat`, `daily-report`, `push/webhook`), SQL under `sql/` + `supabase/migrations/`, Tavily-only AI search.
+- Synced keepers to current App Router + Supabase layout: API routes (`chat`, `daily-report`, `push/webhook`), SQL under `sql/` + `supabase/migrations/`, external AI search tooling.
 - Fixed broken / machine-local links (e.g. `AGENTS.md` → `docs/SOP.md`); removed weather leftovers from PRD; documented `data-change-log-actions.ts` in `docs/api.md`.
 - Tightened blueprint / skills / changelog noise; canonical protocols remain in `docs/rules.md`, skills in `docs/skills.md`, risk R0/R1/R2 in `AGENTS.md`.
 
@@ -131,7 +131,7 @@
 ## 2026-07-10 (Doc merge + weather removal)
 
 - Merged former root skill/protocol stubs into `docs/skills.md`, `docs/rules.md`, and `AGENTS.md`; historical SQL → `sql/historical/`.
-- Removed OpenWeatherMap `/api/weather` and related AI weather intent; AI search is Tavily-only.
+- Removed OpenWeatherMap `/api/weather` and related AI weather intent; external AI search retired with chat module.
 
 ## 2026-07-08 (Structure sync v9.1)
 
