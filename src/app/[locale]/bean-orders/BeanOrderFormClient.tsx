@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Clipboard, Plus, Trash2 } from 'lucide-react';
@@ -20,13 +21,16 @@ import {
   type BeanCustomerRow,
   type BeanOrderDetail,
 } from '@/app/actions/bean-order-actions';
-import { AddressProfilePickerDialog } from '@/app/[locale]/bean-orders/_components/AddressProfilePickerDialog';
+import {
+  preloadAddressProfilePickerDialog,
+  preloadClearCustomerConfirmDialog,
+  preloadPasteCustomerDialog,
+} from '@/lib/preload-bean-order-form-dialogs';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { AutocompleteTextField } from '@/app/[locale]/bean-orders/_components/AutocompleteTextField';
 import { BeanOrderSelect } from '@/app/[locale]/bean-orders/_components/BeanOrderSelect';
 import { BeanOrderPaymentFields } from '@/app/[locale]/bean-orders/_components/BeanOrderPaymentFields';
 import { BeanOrderShippingFields } from '@/app/[locale]/bean-orders/_components/BeanOrderShippingFields';
-import { PasteCustomerDialog } from '@/app/[locale]/bean-orders/_components/PasteCustomerDialog';
-import { ClearCustomerConfirmDialog } from '@/app/[locale]/bean-orders/_components/ClearCustomerConfirmDialog';
 import {
   ThaiPostalAddressSection,
 } from '@/app/[locale]/bean-orders/_components/ThaiPostalAddressSection';
@@ -89,6 +93,28 @@ import {
   BEAN_ORDER_INPUT,
 } from './_components/bean-order-layout';
 import { cn } from '@/lib/utils';
+
+const PasteCustomerDialog = dynamic(
+  () =>
+    import('@/app/[locale]/bean-orders/_components/PasteCustomerDialog').then((m) => ({
+      default: m.PasteCustomerDialog,
+    })),
+  { ssr: false },
+);
+const ClearCustomerConfirmDialog = dynamic(
+  () =>
+    import('@/app/[locale]/bean-orders/_components/ClearCustomerConfirmDialog').then((m) => ({
+      default: m.ClearCustomerConfirmDialog,
+    })),
+  { ssr: false },
+);
+const AddressProfilePickerDialog = dynamic(
+  () =>
+    import('@/app/[locale]/bean-orders/_components/AddressProfilePickerDialog').then((m) => ({
+      default: m.AddressProfilePickerDialog,
+    })),
+  { ssr: false },
+);
 
 type InventoryItem = { id: string; name: string };
 
@@ -247,6 +273,14 @@ export default function BeanOrderFormClient({
     if (!pendingSlipPreview) return;
     return () => URL.revokeObjectURL(pendingSlipPreview);
   }, [pendingSlipPreview]);
+
+  useEffect(() => {
+    return scheduleIdleWork(() => {
+      preloadPasteCustomerDialog();
+      preloadClearCustomerConfirmDialog();
+      preloadAddressProfilePickerDialog();
+    }, { timeout: 2500 });
+  }, []);
 
   const customerNameSuggestions = useMemo(() => {
     const fromCustomers = customerResults.map((customer) => customer.name);
@@ -768,6 +802,8 @@ export default function BeanOrderFormClient({
             <button
               type="button"
               onClick={() => void handlePasteCustomer()}
+              onPointerEnter={preloadPasteCustomerDialog}
+              onFocus={preloadPasteCustomerDialog}
               disabled={isReadOnly || pasteLoading}
               className={BEAN_ORDER_BTN_SM_OUTLINE}
             >
@@ -777,6 +813,8 @@ export default function BeanOrderFormClient({
             <button
               type="button"
               onClick={openClearCustomerConfirm}
+              onPointerEnter={preloadClearCustomerConfirmDialog}
+              onFocus={preloadClearCustomerConfirmDialog}
               disabled={isReadOnly}
               className={BEAN_ORDER_BTN_SM_DANGER}
             >
@@ -792,6 +830,7 @@ export default function BeanOrderFormClient({
           suggestions={customerNameSuggestions}
           inputClass={inputClass}
           placeholder="ชื่อลูกค้า (ไม่บังคับที่อยู่)"
+          onFocus={preloadAddressProfilePickerDialog}
         />
         {!selectedCustomer && customerQuery.trim() && (
           <button
@@ -1035,19 +1074,23 @@ export default function BeanOrderFormClient({
         {saving ? 'กำลังบันทึก...' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึกออเดอร์'}
       </button>
 
-      <PasteCustomerDialog
-        open={pasteOpen}
-        loading={pasteLoading}
-        error={pasteError}
-        data={pasteData}
-        onConfirm={applyPastedCustomer}
-        onCancel={closePasteDialog}
-      />
-      <ClearCustomerConfirmDialog
-        open={clearConfirmOpen}
-        onConfirm={handleClearCustomer}
-        onCancel={closeClearCustomerConfirm}
-      />
+      {pasteOpen ? (
+        <PasteCustomerDialog
+          open
+          loading={pasteLoading}
+          error={pasteError}
+          data={pasteData}
+          onConfirm={applyPastedCustomer}
+          onCancel={closePasteDialog}
+        />
+      ) : null}
+      {clearConfirmOpen ? (
+        <ClearCustomerConfirmDialog
+          open
+          onConfirm={handleClearCustomer}
+          onCancel={closeClearCustomerConfirm}
+        />
+      ) : null}
     </form>
   );
 }

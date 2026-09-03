@@ -19,6 +19,7 @@ type Props = {
   autoComplete?: string;
   maxLength?: number;
   multiline?: boolean;
+  onFocus?: () => void;
 };
 
 export function AutocompleteTextField({
@@ -35,6 +36,7 @@ export function AutocompleteTextField({
   autoComplete,
   maxLength,
   multiline = false,
+  onFocus,
 }: Props) {
   const listId = useId();
   const autoId = useId();
@@ -57,7 +59,10 @@ export function AutocompleteTextField({
       onChange(e.target.value);
       setOpen(true);
     },
-    onFocus: () => setOpen(true),
+    onFocus: () => {
+      onFocus?.();
+      setOpen(true);
+    },
     onBlur: () => {
       window.setTimeout(() => setOpen(false), 120);
     },

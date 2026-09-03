@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { 
   format, 
   eachDayOfInterval, 
@@ -42,8 +43,17 @@ import {
   isLeaveShift,
 } from '@/lib/dashboard/leave-details';
 import type { HolidayLike, LeaveDetailEntry } from '@/lib/dashboard/leave-details';
-import { LeaveDetailDialog } from './LeaveDetailDialog';
+import { preloadLeaveDetailDialog } from '@/lib/preload-leave-detail-dialog';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { RosterExportStatSummary } from './RosterExportStatSummary';
+
+const LeaveDetailDialog = dynamic(
+  () =>
+    import('./LeaveDetailDialog').then((m) => ({
+      default: m.LeaveDetailDialog,
+    })),
+  { ssr: false },
+);
 
 const ROSTER_HOLIDAY_FRAME = 'ring-2 ring-inset ring-[#ffeeba]';
 const ROSTER_INDIVIDUAL_DAY_FRAME = 'border border-foreground/15';
@@ -200,6 +210,12 @@ export default function MonthlyRoster({
     void loadData();
   }, [startDate, endDate]);
 
+  useEffect(() => {
+    return scheduleIdleWork(() => {
+      preloadLeaveDetailDialog();
+    }, { timeout: 2000 });
+  }, []);
+
   const handleRangeChange = ({ start, end }: { start: string; end: string }) => {
     setStartDate(start);
     setEndDate(end);
@@ -217,6 +233,7 @@ export default function MonthlyRoster({
   };
 
   const openLeaveDialog = (profileId: string, profileName: string, date: string) => {
+    preloadLeaveDetailDialog();
     const entries = collectLeaveEntries(data.shifts, profileId, { singleDate: date });
     if (entries.length === 0) return;
     setStatDialog({
@@ -227,6 +244,7 @@ export default function MonthlyRoster({
   };
 
   const openHolidayDialog = (date: string) => {
+    preloadLeaveDetailDialog();
     const entry = getPublicHolidayEntry(date, holidays);
     if (!entry) return;
     setStatDialog({
@@ -539,13 +557,15 @@ export default function MonthlyRoster({
         subtitle="กำลังจัดตารางเวร..."
       />
 
-      <LeaveDetailDialog
-        open={statDialog !== null}
-        title={statDialog?.title ?? ''}
-        entries={statDialog?.entries ?? []}
-        variant={statDialog?.variant ?? 'leave'}
-        onClose={() => setStatDialog(null)}
-      />
+      {statDialog ? (
+        <LeaveDetailDialog
+          open
+          title={statDialog.title}
+          entries={statDialog.entries}
+          variant={statDialog.variant}
+          onClose={() => setStatDialog(null)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { listRowSpring, SNAPPY_SPRING, CARD_LIFT_HOVER, CARD_PRESS_TAP } from '@/lib/motion-presets';
 import type { Shift, Profile } from '@/types';
@@ -36,11 +37,20 @@ import { DASHBOARD_STAT_COLORS } from '@/lib/shift-colors';
 import { useReadOnly } from '@/components/providers/AuthProvider';
 import { collectLeaveEntries, collectPublicHolidayWorkEntries } from '@/lib/dashboard/leave-details';
 import type { LeaveDetailEntry } from '@/lib/dashboard/leave-details';
-import { LeaveDetailDialog } from './LeaveDetailDialog';
+import { preloadLeaveDetailDialog } from '@/lib/preload-leave-detail-dialog';
+import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import {
   persistDashboardWeeklyRange,
   readDashboardWeeklyRangeFromStorage,
 } from '@/lib/dashboard-date-range';
+
+const LeaveDetailDialog = dynamic(
+  () =>
+    import('./LeaveDetailDialog').then((m) => ({
+      default: m.LeaveDetailDialog,
+    })),
+  { ssr: false },
+);
 
 interface PerformanceData {
   profile: Profile;
@@ -59,6 +69,7 @@ interface SortableEmployeeCardProps {
   isReadOnly?: boolean;
   onLeaveClick?: () => void;
   onHolidayClick?: () => void;
+  onPreloadStatDialog?: () => void;
 }
 
 function SortableEmployeeCard({
@@ -68,6 +79,7 @@ function SortableEmployeeCard({
   isReadOnly = false,
   onLeaveClick,
   onHolidayClick,
+  onPreloadStatDialog,
 }: SortableEmployeeCardProps) {
   const {
     attributes,
@@ -124,6 +136,8 @@ function SortableEmployeeCard({
           <button
             type="button"
             onClick={onHolidayClick}
+            onPointerEnter={onPreloadStatDialog}
+            onFocus={onPreloadStatDialog}
             disabled={data.publicHolidays === 0}
             className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
             aria-label={`ดูรายละเอียดวันทำงานตรงวันนักขัตฯ ${data.publicHolidays} วัน`}
@@ -134,6 +148,8 @@ function SortableEmployeeCard({
           <button
             type="button"
             onClick={onLeaveClick}
+            onPointerEnter={onPreloadStatDialog}
+            onFocus={onPreloadStatDialog}
             disabled={data.leaveDays === 0}
             className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
             aria-label={`ดูรายละเอียดวันลา ${data.leaveDays} วัน`}
@@ -200,6 +216,12 @@ export default function LiveShiftList({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only mount gate for date-dependent UI
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    return scheduleIdleWork(() => {
+      preloadLeaveDetailDialog();
+    }, { timeout: 2000 });
   }, []);
 
   useEffect(() => {
@@ -372,6 +394,7 @@ export default function LiveShiftList({
                   data={data}
                   isReadOnly={isReadOnly}
                   onLeaveClick={() => {
+                    preloadLeaveDetailDialog();
                     if (data.leaveEntries.length === 0) return;
                     setStatDialog({
                       title: `รายละเอียดวันลา ${data.profile.full_name}`,
@@ -380,6 +403,7 @@ export default function LiveShiftList({
                     });
                   }}
                   onHolidayClick={() => {
+                    preloadLeaveDetailDialog();
                     if (data.publicHolidayEntries.length === 0) return;
                     setStatDialog({
                       title: `รายละเอียดวันทำงานตรงวันนักขัตฯ ${data.profile.full_name}`,
@@ -387,6 +411,7 @@ export default function LiveShiftList({
                       variant: 'holiday',
                     });
                   }}
+                  onPreloadStatDialog={preloadLeaveDetailDialog}
                 />
               ))}
             </SortableContext>
@@ -436,6 +461,7 @@ export default function LiveShiftList({
               data={data}
               isReadOnly={isReadOnly}
               onLeaveClick={() => {
+                preloadLeaveDetailDialog();
                 if (data.leaveEntries.length === 0) return;
                 setStatDialog({
                   title: `รายละเอียดวันลา ${data.profile.full_name}`,
@@ -444,6 +470,7 @@ export default function LiveShiftList({
                 });
               }}
               onHolidayClick={() => {
+                preloadLeaveDetailDialog();
                 if (data.publicHolidayEntries.length === 0) return;
                 setStatDialog({
                   title: `รายละเอียดวันทำงานตรงวันนักขัตฯ ${data.profile.full_name}`,
@@ -451,18 +478,21 @@ export default function LiveShiftList({
                   variant: 'holiday',
                 });
               }}
+              onPreloadStatDialog={preloadLeaveDetailDialog}
             />
           ))}
         </div>
       )}
 
-      <LeaveDetailDialog
-        open={statDialog !== null}
-        title={statDialog?.title ?? ''}
-        entries={statDialog?.entries ?? []}
-        variant={statDialog?.variant ?? 'leave'}
-        onClose={() => setStatDialog(null)}
-      />
+      {statDialog ? (
+        <LeaveDetailDialog
+          open
+          title={statDialog.title}
+          entries={statDialog.entries}
+          variant={statDialog.variant}
+          onClose={() => setStatDialog(null)}
+        />
+      ) : null}
     </div>
   );
 }
