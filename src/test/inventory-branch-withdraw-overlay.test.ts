@@ -45,18 +45,17 @@ describe('inventory branch withdraw overlay', () => {
     expect(overlay).toContain('embedded');
   });
 
-  test('embedded branch withdraw uses scroll body with fixed footer actions', () => {
+  test('branch withdraw uses scroll body with fixed add bar and footer actions', () => {
     const client = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx'),
       'utf-8',
     );
-    expect(client).toContain('min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll');
+    expect(client).toContain('BRANCH_WITHDRAW_SCROLL_BODY_CLASS');
+    expect(client).toContain('ADD_FROM_CATALOG_BAR_CLASS');
     expect(client).toContain('shrink-0 border-b border-border bg-background pb-3');
-    expect(client).toMatch(
-      /embedded\s*\?\s*'shrink-0 border-t border-border bg-background py-3/,
-    );
-    expect(client).toMatch(
-      /:\s*'sticky bottom-0 z-20 mt-2 border-t border-border bg-background\/95 py-4 backdrop-blur/,
-    );
+    expect(client).toContain('BRANCH_WITHDRAW_ACTION_BAR_CLASS');
+    expect(client).toContain('h-[100dvh] flex-col overflow-hidden');
+    expect(client).not.toContain('STANDALONE_ADD_FROM_CATALOG_BAR_CLASS');
+    expect(client).not.toMatch(/sticky top-0 z-10 border-b border-border bg-background\/95/);
   });
 });

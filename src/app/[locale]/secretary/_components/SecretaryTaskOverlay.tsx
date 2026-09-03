@@ -12,7 +12,8 @@ import {
   deleteManualSecretaryTask,
   updateManualSecretaryTask,
 } from '@/app/actions/secretary-actions';
-import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
+import type { SecretaryBoardDisplayTask } from '@/lib/secretary/consolidate-board-tasks';
+import { buildScheduleReviewListItems } from '@/lib/secretary/build-schedule-review-list-items';
 import { preloadSecretaryOverlayForTask } from '@/lib/secretary/preload-secretary-overlay';
 import { resolveSecretaryTaskDetailText } from '@/lib/secretary/resolve-task-detail-text';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
@@ -27,7 +28,6 @@ const PurchaseOrdersModal = dynamic(
 );
 const BeanOrdersOverlay = dynamic(() => import('./BeanOrdersOverlay'), { ssr: false });
 const BranchWithdrawOverlay = dynamic(() => import('./BranchWithdrawOverlay'), { ssr: false });
-const ScheduleOverlay = dynamic(() => import('./ScheduleOverlay'), { ssr: false });
 const SecretaryManualTaskDialog = dynamic(() => import('./SecretaryManualTaskDialog'), {
   ssr: false,
 });
@@ -39,7 +39,7 @@ const SecretaryTaskListOverlay = dynamic(() => import('./SecretaryTaskListOverla
 });
 
 type SecretaryTaskOverlayProps = {
-  task: SecretaryTask | null;
+  task: SecretaryBoardDisplayTask | null;
   snapshot: SecretarySnapshot;
   locale: string;
   onClose: () => void;
@@ -110,6 +110,14 @@ export default function SecretaryTaskOverlay({
         ? filterMaintenanceForTask(task, snapshot)
         : [],
     [overlayKind, snapshot, task],
+  );
+
+  const scheduleReviewListItems = useMemo(
+    () =>
+      task && overlayKind === 'schedule_review_list'
+        ? buildScheduleReviewListItems(task)
+        : [],
+    [overlayKind, task],
   );
 
   useEffect(() => {
@@ -239,20 +247,25 @@ export default function SecretaryTaskOverlay({
     );
   }
 
-  if (overlayKind === 'schedule_panel') {
+  if (overlayKind === 'schedule_review_list') {
     return (
       <Suspense
         fallback={
           <SecretaryOverlaySuspenseShell
             title={task.title}
             onClose={onClose}
-            maxWidthClass="max-w-6xl"
-            variant="embed"
-            label="กำลังเปิดตารางงาน..."
+            maxWidthClass="max-w-lg"
+            variant="list"
+            label="กำลังเปิดรายละเอียดตารางงาน..."
           />
         }
       >
-        <ScheduleOverlay task={task} locale={locale} onClose={onClose} />
+        <SecretaryTaskListOverlay
+          title={task.title}
+          items={scheduleReviewListItems}
+          emptyMessage="ไม่มีรายละเอียดวันที่ต้องตรวจ"
+          onClose={onClose}
+        />
       </Suspense>
     );
   }

@@ -88,7 +88,8 @@ describe('secretary task detail overlay UI', () => {
     expect(overlay).not.toContain('ScheduleReviewDialog');
     expect(overlay).not.toContain('actionHref');
     expect(overlay).toContain('BeanOrdersOverlay');
-    expect(overlay).toContain('ScheduleOverlay');
+    expect(overlay).not.toContain('ScheduleOverlay');
+    expect(overlay).toContain('buildScheduleReviewListItems');
     expect(overlay).not.toContain('InventoryCountOverlay');
     expect(overlay).toContain('SecretaryTaskListOverlay');
     expect(overlay).not.toContain('MaintenanceOverlay');

@@ -41,6 +41,7 @@ import {
 import { CountAdjustPinDialog } from '@/app/[locale]/inventory/count/_components/CountAdjustPinDialog';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
+import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import { getInventoryCountInputName } from '@/lib/inventory-grid-cell-a11y';
 
@@ -1378,7 +1379,7 @@ export default function InventoryCountClient({
               <span>กลับไปคลังสินค้า</span>
             </Link>
           ) : (
-            <span className="text-sm font-normal text-foreground">ตรวจนับคลังสินค้า</span>
+            <span className="sr-only">ตรวจนับคลังสินค้า</span>
           )}
 
           <div className="flex items-center gap-2 text-xs font-normal">
@@ -1406,7 +1407,9 @@ export default function InventoryCountClient({
               <ClipboardList className="w-6 h-6" strokeWidth={1.5} />
             </div>
             <div className="min-w-0 text-left">
-              <h1 className="bb-page-title">ตรวจนับคลังสินค้า</h1>
+              {shouldShowPageTitle('ตรวจนับคลังสินค้า') ? (
+                <h1 className="bb-page-title">ตรวจนับคลังสินค้า</h1>
+              ) : null}
               <p className="text-sm text-muted-foreground">
                 {pageMode === 'count'
                   ? 'กรอกจำนวนที่นับได้ แล้วกด Enter เพื่อบันทึก'

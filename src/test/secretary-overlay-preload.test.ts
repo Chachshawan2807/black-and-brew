@@ -38,11 +38,11 @@ describe('secretary overlay preload', () => {
     );
 
     expect(preload).toContain('bean_orders_panel');
-    expect(preload).toContain('schedule_panel');
+    expect(preload).toContain('schedule_review_list');
     expect(preload).toContain('preloadPurchaseOrdersModal');
     expect(preload).toContain('BeanOrdersOverlay');
     expect(preload).toContain('BranchWithdrawOverlay');
-    expect(preload).toContain('ScheduleOverlay');
+    expect(preload).not.toContain('ScheduleOverlay');
     expect(preload).toContain('SecretaryTaskListOverlay');
     expect(preload).toContain('SecretaryTaskInfoOverlay');
     expect(preload).toContain('preloadSecretaryManualTaskDialog');
@@ -58,8 +58,8 @@ describe('secretary overlay preload', () => {
 
     expect(overlay).toMatch(/dynamic\(\(\) => import\('\.\/BeanOrdersOverlay'\)/);
     expect(overlay).toMatch(/dynamic\(\(\) => import\('\.\/BranchWithdrawOverlay'\)/);
-    expect(overlay).toMatch(/dynamic\(\(\) => import\('\.\/ScheduleOverlay'\)/);
     expect(overlay).toMatch(/dynamic\(\(\) => import\('\.\/SecretaryManualTaskDialog'\)/);
+    expect(overlay).not.toMatch(/dynamic\(\(\) => import\('\.\/ScheduleOverlay'\)/);
     expect(overlay).not.toMatch(/^import BeanOrdersOverlay from/m);
     expect(overlay).not.toMatch(/^import BranchWithdrawOverlay from/m);
   });

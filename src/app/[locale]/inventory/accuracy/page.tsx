@@ -7,6 +7,7 @@ import { AccuracyGauge } from '@/app/[locale]/inventory/accuracy/_components/Acc
 import { HighDiscrepancyList } from '@/app/[locale]/inventory/accuracy/_components/HighDiscrepancyList';
 import { getAccuracyGaugeZone } from '@/lib/inventory-accuracy-gauge';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
+import { PageTitle } from '@/components/ui/page-title';
 
 function formatQty(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -44,9 +45,9 @@ export default async function InventoryAccuracyPage({
               <BarChart3 className="h-6 w-6" strokeWidth={1.6} />
             </div>
             <div>
-              <h1 className="text-2xl font-normal tracking-[0.16em] text-foreground uppercase">
+              <PageTitle className="text-2xl font-normal tracking-[0.16em] text-foreground uppercase">
                 รายงานความแม่นยำ
-              </h1>
+              </PageTitle>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                 ความแม่นยำ เฉพาะรายการที่ตั้งค่าเป็นต้องเบิก รายการไม่ต้องเบิกจะไม่ถูกนำมาปนกับคะแนน
               </p>

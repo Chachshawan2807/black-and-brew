@@ -13,6 +13,7 @@ import {
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
+import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
 
 interface ScheduleToolbarProps {
   isReadOnly: boolean;
@@ -67,7 +68,9 @@ export default function ScheduleToolbar({
                 <CalendarDays className="h-4 w-4" aria-hidden />
               </div>
               <div className="min-w-0">
-                <h1 className="text-[15px] font-normal text-foreground">ตารางงาน</h1>
+                {shouldShowPageTitle('ตารางงาน') ? (
+                  <h1 className="text-[15px] font-normal text-foreground">ตารางงาน</h1>
+                ) : null}
                 {weekRangeLabel ? (
                   <p className="hidden truncate text-[12px] text-muted-foreground md:block">
                     {weekRangeLabel}

@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
+import { isSidebarMenuLabel } from '@/lib/sidebar-menu-labels';
 import { cn } from '@/lib/utils';
 import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
 
@@ -27,6 +28,8 @@ export default function SecretaryTaskSubwindow({
   maxWidthClass = 'max-w-3xl',
   zIndex = 220,
 }: SecretaryTaskSubwindowProps) {
+  const showTitle = !isSidebarMenuLabel(title);
+
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -51,8 +54,15 @@ export default function SecretaryTaskSubwindow({
         aria-label={ariaLabel ?? title}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-background">
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <h2 className="min-w-0 truncate text-[15px] font-normal text-foreground">{title}</h2>
+          <div
+            className={cn(
+              'flex shrink-0 items-center gap-3 border-b border-border px-4 py-3',
+              showTitle ? 'justify-between' : 'justify-end',
+            )}
+          >
+            {showTitle ? (
+              <h2 className="min-w-0 truncate text-[15px] font-normal text-foreground">{title}</h2>
+            ) : null}
             <button
               type="button"
               onClick={onClose}

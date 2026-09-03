@@ -114,10 +114,7 @@ export default function BeanOrdersClient({
   return (
     <div className={embedded ? 'min-h-0 space-y-4' : BEAN_ORDER_PAGE}>
       {embedded ? (
-        <div className="space-y-1">
-          <h3 className="text-[15px] font-normal text-foreground">ออเดอร์เมล็ดกาแฟ</h3>
-          <p className="text-[12px] text-muted-foreground">รับออเดอร์ / ตรวจสลิป / จัดส่ง</p>
-        </div>
+        <p className="text-[12px] text-muted-foreground">รับออเดอร์ / ตรวจสลิป / จัดส่ง</p>
       ) : (
         <PageHeader
           className="mb-5 sm:mb-6"

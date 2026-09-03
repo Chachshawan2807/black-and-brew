@@ -54,10 +54,10 @@ describe('resolveSecretaryTaskOverlayKind', () => {
     ).toBe('maintenance_list');
   });
 
-  it('maps schedule tasks to embedded schedule panel', () => {
+  it('maps schedule tasks to read-only day detail list', () => {
     expect(
       resolveSecretaryTaskOverlayKind(task({ task_type: 'schedule_understaffed', module: 'schedule' })),
-    ).toBe('schedule_panel');
+    ).toBe('schedule_review_list');
   });
 
   it('falls back to task info dialog for other task types', () => {

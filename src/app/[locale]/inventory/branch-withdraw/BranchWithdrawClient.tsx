@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
-import { PageHeader } from '@/components/ui/page-header';
 import { ChevronLeft, Copy, Eye, Loader2, Plus, Save, Search, X } from 'lucide-react';
 import {
   saveBranchWithdrawal,
@@ -80,10 +79,12 @@ const ADD_FROM_CATALOG_BUTTON_CLASS =
   'inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground/15 bg-background px-3 py-2 text-sm transition-colors hover:border-foreground/25 hover:bg-card disabled:cursor-not-allowed disabled:opacity-50 md:w-auto';
 const DIALOG_CLOSE_BUTTON_CLASS =
   'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted/50';
-const EMBEDDED_ADD_FROM_CATALOG_BAR_CLASS =
+const ADD_FROM_CATALOG_BAR_CLASS =
   'shrink-0 border-b border-border bg-background pb-3';
-const STANDALONE_ADD_FROM_CATALOG_BAR_CLASS =
-  'sticky top-0 z-10 border-b border-border bg-background/95 py-3 backdrop-blur';
+const BRANCH_WITHDRAW_SCROLL_BODY_CLASS =
+  'min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]';
+const BRANCH_WITHDRAW_ACTION_BAR_CLASS =
+  'shrink-0 border-t border-border bg-background py-3 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]';
 const COPY_ICON_BUTTON_CLASS =
   'inline-flex items-center justify-center rounded-xl border border-border bg-background p-2 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -535,13 +536,7 @@ export default function BranchWithdrawClient({
   }, []);
 
   const actionBar = (
-    <div
-      className={
-        embedded
-          ? 'shrink-0 border-t border-border bg-background py-3 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]'
-          : 'sticky bottom-0 z-20 mt-2 border-t border-border bg-background/95 py-4 backdrop-blur [padding-bottom:max(1rem,env(safe-area-inset-bottom))]'
-      }
-    >
+    <div className={BRANCH_WITHDRAW_ACTION_BAR_CLASS}>
       <div className="flex flex-row gap-2">
         <button
           type="button"
@@ -592,17 +587,9 @@ export default function BranchWithdrawClient({
   );
 
   const addFromCatalogBar = (
-    <div
-      className={embedded ? EMBEDDED_ADD_FROM_CATALOG_BAR_CLASS : STANDALONE_ADD_FROM_CATALOG_BAR_CLASS}
-    >
+    <div className={ADD_FROM_CATALOG_BAR_CLASS}>
       {addFromCatalogButton}
     </div>
-  );
-
-  const introSection = embedded ? null : (
-    <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-      <PageHeader title="เบิกของสาขา 2" />
-    </section>
   );
 
   const scrollableSections = (
@@ -613,7 +600,7 @@ export default function BranchWithdrawClient({
           </div>
         )}
 
-        <section className={embedded ? 'space-y-2' : 'space-y-2 pb-28'}>
+        <section className="space-y-2">
           {displayItems.length === 0 ? (
             <EmptyState>
               ไม่มีรายการสั่งซื้อจากสาขา 2 ที่ต้องเบิกในขณะนี้ กดปุ่มด้านบนเพื่อเพิ่มสินค้าจากคลัง
@@ -685,18 +672,18 @@ export default function BranchWithdrawClient({
       className={
         embedded
           ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'
-          : 'min-h-screen bg-background p-4 text-foreground md:p-8'
+          : 'flex h-[100dvh] flex-col overflow-hidden bg-background p-4 text-foreground md:p-8'
       }
     >
       <div
         className={
           embedded
             ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
-            : 'mx-auto flex w-full max-w-3xl flex-col gap-6'
+            : 'mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col overflow-hidden'
         }
       >
         {embedded ? null : (
-          <header className="flex items-center justify-between border-b border-border pb-4">
+          <header className="flex shrink-0 items-center justify-between border-b border-border pb-4">
             <Link
               href={`/${locale}/inventory`}
               className="flex items-center gap-1.5 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
@@ -707,22 +694,10 @@ export default function BranchWithdrawClient({
           </header>
         )}
 
-        {embedded ? (
-          <>
-            {addFromCatalogBar}
-            <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
-              {introSection}
-              {scrollableSections}
-            </div>
-          </>
-        ) : (
-          <>
-            {introSection}
-            {addFromCatalogBar}
-            {scrollableSections}
-          </>
-        )}
-
+        {addFromCatalogBar}
+        <div className={BRANCH_WITHDRAW_SCROLL_BODY_CLASS}>
+          {scrollableSections}
+        </div>
         {actionBar}
       </div>
 

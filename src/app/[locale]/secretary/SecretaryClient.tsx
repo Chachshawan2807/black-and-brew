@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import dynamic from 'next/dynamic';
 import { CheckCircle2, Loader2, Plus, Sparkles } from 'lucide-react';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
-import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
@@ -87,7 +86,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [isPending, startTransition] = useTransition();
-  const [overlayTask, setOverlayTask] = useState<SecretaryTask | null>(null);
+  const [overlayTask, setOverlayTask] = useState<SecretaryBoardDisplayTask | null>(null);
   const [aiAssistActive, setAiAssistActive] = useState(false);
   const [aiAssistLoading, setAiAssistLoading] = useState(false);
   const [aiButtonAllowed, setAiButtonAllowed] = useState(
@@ -253,12 +252,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
 
   return (
     <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-5">
-      <PageHeader
-        title="เลขาส่วนตัว"
-        subtitle="รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ"
-        size="default"
-        titleClassName="w-fit"
-      />
+      <p className="bb-page-subtitle">รวมงานจากทุกโมดูล · อัปเดตอัตโนมัติ</p>
 
       <div className="flex flex-wrap gap-2 items-center">
         {aiButtonAllowed ? (

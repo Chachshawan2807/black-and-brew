@@ -58,6 +58,7 @@ import {
 import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
+import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
 import { blurActiveElement } from '@/lib/blur-active-element';
 import { scheduleInventoryGridCellBlur } from '@/lib/inventory-grid-cell-blur';
 import {
@@ -1774,16 +1775,18 @@ export default function InventoryClient({
     <>
       <div className="flex-1 w-full max-w-full bg-transparent text-foreground font-normal antialiased bb-transition duration-300 flex flex-col items-center md:items-start p-4 md:p-8 overflow-x-hidden">
         <div className="w-full max-w-7xl mx-auto flex flex-col items-stretch md:items-stretch">
-          <div className="w-full flex flex-col items-center mb-8 text-center">
-            <motion.h1
-              initial={pageHeadingSpring.initial}
-              animate={pageHeadingSpring.animate}
-              transition={pageHeadingSpring.transition}
-              className="text-3xl font-normal tracking-[0.2em] text-foreground uppercase"
-            >
-              คลังสินค้า
-            </motion.h1>
-          </div>
+          {shouldShowPageTitle('คลังสินค้า') ? (
+            <div className="w-full flex flex-col items-center mb-8 text-center">
+              <motion.h1
+                initial={pageHeadingSpring.initial}
+                animate={pageHeadingSpring.animate}
+                transition={pageHeadingSpring.transition}
+                className="text-3xl font-normal tracking-[0.2em] text-foreground uppercase"
+              >
+                คลังสินค้า
+              </motion.h1>
+            </div>
+          ) : null}
 
           <div className="w-full flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 md:px-2">
             <div className="flex items-center gap-1.5 text-sm font-normal min-w-[70px]">

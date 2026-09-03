@@ -40,6 +40,7 @@ import {
   type ThaiPostalAddressValue,
 } from '@/lib/bean-orders/address';
 import { navigateWithViewTransition } from '@/lib/view-transition';
+import { PageTitle } from '@/components/ui/page-title';
 import { mergeCustomerAddressProfiles } from '@/lib/bean-orders/customer-address-persist';
 import { DEFAULT_SHOP_SENDER } from '@/lib/bean-orders/defaults';
 import {
@@ -793,7 +794,9 @@ export default function BeanOrderFormClient({
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       <div className={BEAN_ORDER_FORM_SECTION}>
-        <h2 className="text-sm font-normal text-muted-foreground">ออเดอร์เมล็ดกาแฟ</h2>
+        <PageTitle as="h2" className="text-sm font-normal text-muted-foreground">
+          ออเดอร์เมล็ดกาแฟ
+        </PageTitle>
         <div className={BEAN_ORDER_FORM_MAIN_GRID}>
       <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_PANEL, 'space-y-3')}>
         <div className="flex items-center justify-between gap-2">

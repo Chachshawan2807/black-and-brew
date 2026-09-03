@@ -3,7 +3,6 @@ import { preloadSecretaryManualTaskDialog } from '@/lib/preload-secretary-manual
 import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import {
   prefetchBeanOrdersForOverlay,
-  prefetchScheduleOverlayData,
 } from '@/lib/secretary/overlay-data-cache';
 import {
   resolveSecretaryTaskOverlayKind,
@@ -35,12 +34,8 @@ function preloadOverlayChunks(kind: SecretaryTaskOverlayKind): void {
         import('@/app/[locale]/inventory/branch-withdraw/BranchWithdrawClient'),
       ]);
       break;
-    case 'schedule_panel':
-      void Promise.all([
-        import('@/app/[locale]/secretary/_components/ScheduleOverlay'),
-        import('@/app/[locale]/schedule/ScheduleClient'),
-      ]);
-      prefetchScheduleOverlayData();
+    case 'schedule_review_list':
+      void import('@/app/[locale]/secretary/_components/SecretaryTaskListOverlay');
       break;
     case 'maintenance_list':
       void import('@/app/[locale]/secretary/_components/SecretaryTaskListOverlay');

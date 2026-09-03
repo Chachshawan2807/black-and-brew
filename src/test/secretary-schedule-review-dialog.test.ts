@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { buildScheduleReviewListItems } from '@/lib/secretary/build-schedule-review-list-items';
 import { parseScheduleReviewDescription } from '@/lib/secretary/parse-schedule-review-description';
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
 import type { SecretaryTask } from '@/lib/secretary/types';
@@ -48,17 +49,55 @@ describe('parseScheduleReviewDescription', () => {
   });
 });
 
+describe('buildScheduleReviewListItems', () => {
+  test('maps single schedule task days into list rows', () => {
+    expect(
+      buildScheduleReviewListItems({
+        id: 'under',
+        description: 'พ. ที่ 2 (4 คน), อา. ที่ 6 (4 คน)',
+      }),
+    ).toEqual([
+      { id: 'under-day-0', primary: 'พ. ที่ 2', secondary: '4 คน' },
+      { id: 'under-day-1', primary: 'อา. ที่ 6', secondary: '4 คน' },
+    ]);
+  });
+
+  test('maps consolidated schedule sections into grouped summaries', () => {
+    expect(
+      buildScheduleReviewListItems({
+        id: 'session',
+        description: null,
+        consolidatedSections: [
+          { title: 'วันที่คนน้อย', description: 'พ. ที่ 2 (4 คน)' },
+          { title: 'ลาหลายคน', description: 'ศ. ที่ 24 (เอ, บี)' },
+        ],
+      }),
+    ).toEqual([
+      {
+        id: 'section-0',
+        primary: 'วันที่คนน้อย',
+        secondary: 'พ. ที่ 2 · 4 คน',
+      },
+      {
+        id: 'section-1',
+        primary: 'ลาหลายคน',
+        secondary: 'ศ. ที่ 24 · เอ, บี',
+      },
+    ]);
+  });
+});
+
 describe('resolveSecretaryTaskOverlayKind schedule review', () => {
-  test('maps schedule tasks to embedded schedule panel', () => {
+  test('maps schedule tasks to read-only day detail list', () => {
     expect(
       resolveSecretaryTaskOverlayKind(
         task({ task_type: 'schedule_understaffed', module: 'schedule' }),
       ),
-    ).toBe('schedule_panel');
+    ).toBe('schedule_review_list');
     expect(
       resolveSecretaryTaskOverlayKind(
         task({ task_type: 'schedule_leave_risk', module: 'schedule' }),
       ),
-    ).toBe('schedule_panel');
+    ).toBe('schedule_review_list');
   });
 });

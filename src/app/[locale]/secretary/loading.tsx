@@ -2,7 +2,6 @@ export default function Loading() {
   return (
     <div className="mx-auto w-full max-w-3xl px-[clamp(1rem,5vw,2rem)] py-[clamp(1.5rem,5vw,2.5rem)] space-y-5 bb-enter-fade-up">
       <div className="space-y-2">
-        <div className="h-6 w-32 rounded-lg bb-shimmer" />
         <div className="h-4 w-48 rounded-lg bb-shimmer" />
       </div>
       <div className="flex flex-wrap gap-2">

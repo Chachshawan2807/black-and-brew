@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
 import { cn } from '@/lib/utils';
 
 type PageHeaderSize = 'compact' | 'default' | 'large';
@@ -26,6 +27,8 @@ export function PageHeader({
   titleClassName,
   actions,
 }: PageHeaderProps) {
+  const showTitle = shouldShowPageTitle(title);
+
   return (
     <div
       className={cn(
@@ -36,7 +39,9 @@ export function PageHeader({
       )}
     >
       <div>
-        <h1 className={cn(TITLE_SIZE_CLASS[size], titleClassName)}>{title}</h1>
+        {showTitle ? (
+          <h1 className={cn(TITLE_SIZE_CLASS[size], titleClassName)}>{title}</h1>
+        ) : null}
         {subtitle ? <p className="bb-page-subtitle">{subtitle}</p> : null}
       </div>
       {actions}
