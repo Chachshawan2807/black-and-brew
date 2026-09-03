@@ -57,6 +57,11 @@ export function peekScheduleOverlayData(): ScheduleOverlayData | null {
   return settled?.success && settled.data ? settled.data : null;
 }
 
+/** Drop cached schedule fetch so the next prefetch starts fresh (retry after timeout). */
+export function invalidateScheduleOverlayCache(): void {
+  scheduleEntry = null;
+}
+
 /** @internal Vitest only */
 export function resetSecretaryOverlayDataCacheForTests(): void {
   beanOrdersEntry = null;

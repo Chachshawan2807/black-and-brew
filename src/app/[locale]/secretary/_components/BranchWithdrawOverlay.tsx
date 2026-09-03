@@ -10,6 +10,8 @@ import BranchWithdrawClient from '@/app/[locale]/inventory/branch-withdraw/Branc
 import { useInventoryRealtime } from '@/contexts/InventoryRealtimeContext';
 import { mapSecretaryReorderItemsToInventoryRealtime } from '@/lib/inventory-branch-withdraw-seed';
 import type { SecretaryReorderItem } from '@/lib/secretary/types';
+import { SecretaryOverlayErrorState } from './SecretaryOverlayErrorState';
+import { SecretaryOverlayLoadingSkeleton } from './SecretaryOverlayLoadingSkeleton';
 import SecretaryTaskSubwindow from './SecretaryTaskSubwindow';
 
 type BranchWithdrawOverlayProps = {
@@ -89,16 +91,18 @@ export default function BranchWithdrawOverlay({
 
   return (
     <SecretaryTaskSubwindow title="เบิกของสาขา 2" onClose={onClose}>
-      {loadError ? (
-        <p className="mb-2 text-center text-[13px] text-muted-foreground">{loadError}</p>
-      ) : null}
-      <BranchWithdrawClient
-        embedded
-        initialItems={initialItems}
-        initialHistory={history}
-        locale={locale}
-        catalogLoading={catalogLoading}
-      />
+      {loadError ? <SecretaryOverlayErrorState message={loadError} /> : null}
+      {catalogLoading ? (
+        <SecretaryOverlayLoadingSkeleton variant="embed" label="กำลังโหลดรายการเบิกของ..." />
+      ) : (
+        <BranchWithdrawClient
+          embedded
+          initialItems={initialItems}
+          initialHistory={history}
+          locale={locale}
+          catalogLoading={false}
+        />
+      )}
     </SecretaryTaskSubwindow>
   );
 }

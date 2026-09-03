@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { Suspense, useEffect, useMemo, useState, useTransition } from 'react';
 import { formatDueDateWithDaysRemaining } from '@/lib/maintenance/compute-upcoming-maintenance';
 import {
   computePurchaseOrderDerivedState,
@@ -19,6 +19,7 @@ import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-ov
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
+import { SecretaryOverlaySuspenseShell } from './SecretaryOverlaySuspenseShell';
 
 const PurchaseOrdersModal = dynamic(
   () => import('@/app/[locale]/inventory/_components/PurchaseOrdersModal'),
@@ -112,7 +113,7 @@ export default function SecretaryTaskOverlay({
   );
 
   useEffect(() => {
-    if (overlayKind) {
+    if (overlayKind && task) {
       preloadSecretaryOverlayForTask(task);
     }
   }, [overlayKind, task]);
@@ -150,63 +151,138 @@ export default function SecretaryTaskOverlay({
   if (overlayKind === 'purchase_orders') {
     if (!purchaseState) return null;
     return (
-      <PurchaseOrdersModal
-        onClose={onClose}
-        selectedChannels={selectedChannels}
-        setSelectedChannels={setSelectedChannels}
-        itemsToOrder={purchaseState.itemsToOrder}
-        poSources={purchaseState.poSources}
-        displayedPoItems={purchaseState.displayedPoItems}
-        allTabItemCount={purchaseState.allTabItemCount}
-        getStockColorClass={getStockColorClass}
-      />
+      <Suspense
+        fallback={
+          <SecretaryOverlaySuspenseShell
+            title={task.title}
+            onClose={onClose}
+            maxWidthClass="max-w-4xl"
+            variant="purchase"
+            label="กำลังเปิดรายการสั่งซื้อ..."
+          />
+        }
+      >
+        <PurchaseOrdersModal
+          onClose={onClose}
+          selectedChannels={selectedChannels}
+          setSelectedChannels={setSelectedChannels}
+          itemsToOrder={purchaseState.itemsToOrder}
+          poSources={purchaseState.poSources}
+          displayedPoItems={purchaseState.displayedPoItems}
+          allTabItemCount={purchaseState.allTabItemCount}
+          getStockColorClass={getStockColorClass}
+        />
+      </Suspense>
     );
   }
 
   if (overlayKind === 'branch_withdraw_panel') {
     return (
-      <BranchWithdrawOverlay
-        locale={locale}
-        seedItems={snapshot.branchWithdrawItems}
-        catalogSeedItems={snapshot.inventoryCatalogItems}
-        onClose={onClose}
-      />
+      <Suspense
+        fallback={
+          <SecretaryOverlaySuspenseShell
+            title="เบิกของสาขา 2"
+            onClose={onClose}
+            variant="embed"
+            label="กำลังเปิดหน้าเบิกของ..."
+          />
+        }
+      >
+        <BranchWithdrawOverlay
+          locale={locale}
+          seedItems={snapshot.branchWithdrawItems}
+          catalogSeedItems={snapshot.inventoryCatalogItems}
+          onClose={onClose}
+        />
+      </Suspense>
     );
   }
 
   if (overlayKind === 'bean_orders_panel') {
-    return <BeanOrdersOverlay task={task} locale={locale} onClose={onClose} />;
+    return (
+      <Suspense
+        fallback={
+          <SecretaryOverlaySuspenseShell
+            title={task.title}
+            onClose={onClose}
+            maxWidthClass="max-w-4xl"
+            variant="embed"
+            label="กำลังเปิดออเดอร์เมล็ดกาแฟ..."
+          />
+        }
+      >
+        <BeanOrdersOverlay task={task} locale={locale} onClose={onClose} />
+      </Suspense>
+    );
   }
 
   if (overlayKind === 'maintenance_list') {
     return (
-      <SecretaryTaskListOverlay
-        title={task.title}
-        items={maintenanceListItems}
-        emptyMessage="ไม่มีรายการซ่อมบำรุงในหมวดนี้"
-        onClose={onClose}
-      />
+      <Suspense
+        fallback={
+          <SecretaryOverlaySuspenseShell
+            title={task.title}
+            onClose={onClose}
+            maxWidthClass="max-w-lg"
+            variant="list"
+            label="กำลังเปิดรายการซ่อมบำรุง..."
+          />
+        }
+      >
+        <SecretaryTaskListOverlay
+          title={task.title}
+          items={maintenanceListItems}
+          emptyMessage="ไม่มีรายการซ่อมบำรุงในหมวดนี้"
+          onClose={onClose}
+        />
+      </Suspense>
     );
   }
 
   if (overlayKind === 'schedule_panel') {
-    return <ScheduleOverlay task={task} locale={locale} onClose={onClose} />;
+    return (
+      <Suspense
+        fallback={
+          <SecretaryOverlaySuspenseShell
+            title={task.title}
+            onClose={onClose}
+            maxWidthClass="max-w-6xl"
+            variant="embed"
+            label="กำลังเปิดตารางงาน..."
+          />
+        }
+      >
+        <ScheduleOverlay task={task} locale={locale} onClose={onClose} />
+      </Suspense>
+    );
   }
 
   if (isManualSecretaryTask(task)) {
     return (
-      <SecretaryManualTaskDialog
-        open
-        mode="edit"
-        title={editTitle}
-        description={editDescription}
-        isPending={pending}
-        onTitleChange={setEditTitle}
-        onDescriptionChange={setEditDescription}
-        onClose={onClose}
-        onSave={handleSaveManualTask}
-        onDelete={handleDeleteManualTask}
-      />
+      <Suspense
+        fallback={
+          <SecretaryOverlaySuspenseShell
+            title="แก้ไขงาน"
+            onClose={onClose}
+            maxWidthClass="max-w-lg"
+            variant="form"
+            label="กำลังเปิดฟอร์มงาน..."
+          />
+        }
+      >
+        <SecretaryManualTaskDialog
+          open
+          mode="edit"
+          title={editTitle}
+          description={editDescription}
+          isPending={pending}
+          onTitleChange={setEditTitle}
+          onDescriptionChange={setEditDescription}
+          onClose={onClose}
+          onSave={handleSaveManualTask}
+          onDelete={handleDeleteManualTask}
+        />
+      </Suspense>
     );
   }
 
@@ -215,10 +291,22 @@ export default function SecretaryTaskOverlay({
     : [];
 
   return (
-    <SecretaryTaskInfoOverlay
-      title={task.title}
-      items={infoItems}
-      onClose={onClose}
-    />
+    <Suspense
+      fallback={
+        <SecretaryOverlaySuspenseShell
+          title={task.title}
+          onClose={onClose}
+          maxWidthClass="max-w-lg"
+          variant="list"
+          label="กำลังเปิดรายละเอียดงาน..."
+        />
+      }
+    >
+      <SecretaryTaskInfoOverlay
+        title={task.title}
+        items={infoItems}
+        onClose={onClose}
+      />
+    </Suspense>
   );
 }

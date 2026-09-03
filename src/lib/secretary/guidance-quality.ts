@@ -93,8 +93,6 @@ export function resolveSecretaryGuidanceFromTasks(
   snapshot: SecretarySnapshot,
   nowIso = new Date().toISOString(),
 ): string {
-  const ordered = buildFallbackTaskOrder(tasks, nowIso, {
-    isBranch2Day: snapshot.isBranch2Day,
-  });
+  const ordered = buildFallbackTaskOrder(tasks, nowIso);
   return resolveSecretaryGuidanceFromAi(candidate, ordered, snapshot);
 }

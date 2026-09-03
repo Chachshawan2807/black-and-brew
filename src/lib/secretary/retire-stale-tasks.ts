@@ -4,7 +4,8 @@ export type StaleSkipReason =
   | 'stale_derived'
   | 'stale_ai'
   | 'legacy_bean_orders'
-  | 'branch2_inactive';
+  | 'branch2_inactive'
+  | 'inventory_count_retired';
 
 export function buildAutoSkippedMetadata(
   prior: Record<string, unknown> | null | undefined,

@@ -61,7 +61,7 @@ async function findExistingDerivedTaskRow(
 
 async function skipInactiveDerivedTaskIds(
   taskIds: string[],
-  reason: 'legacy_bean_orders' | 'branch2_inactive' | 'stale_derived',
+  reason: 'legacy_bean_orders' | 'branch2_inactive' | 'stale_derived' | 'inventory_count_retired',
 ): Promise<number> {
   return skipStaleSecretaryTaskIds(taskIds, reason);
 }

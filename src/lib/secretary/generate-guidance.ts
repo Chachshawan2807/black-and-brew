@@ -38,9 +38,7 @@ function resolveOrderedTasks(
   orderedTaskIds?: string[],
   nowIso = new Date().toISOString(),
 ): SecretaryTask[] {
-  const fallbackOrdered = buildFallbackTaskOrder(tasks, nowIso, {
-    isBranch2Day: snapshot.isBranch2Day,
-  });
+  const fallbackOrdered = buildFallbackTaskOrder(tasks, nowIso);
 
   if (!orderedTaskIds || orderedTaskIds.length === 0) {
     return fallbackOrdered;

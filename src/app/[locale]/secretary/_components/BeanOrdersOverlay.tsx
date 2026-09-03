@@ -9,6 +9,8 @@ import {
 import { fetchBeanOrderDetail } from '@/app/actions/bean-order-actions';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
+import { SecretaryOverlayErrorState } from './SecretaryOverlayErrorState';
+import { SecretaryOverlayLoadingSkeleton } from './SecretaryOverlayLoadingSkeleton';
 import SecretaryTaskSubwindow from './SecretaryTaskSubwindow';
 
 const BeanOrdersClient = dynamic(() => import('@/app/[locale]/bean-orders/BeanOrdersClient'), {
@@ -100,11 +102,12 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
 
   return (
     <SecretaryTaskSubwindow title={title} onClose={onClose} maxWidthClass="max-w-4xl">
-      {loadError ? (
-        <p className="py-4 text-center text-[13px] text-muted-foreground">{loadError}</p>
-      ) : null}
+      {loadError ? <SecretaryOverlayErrorState message={loadError} /> : null}
       {orders === null || (selectedOrderId && detailLoading && !selectedOrder) ? (
-        <p className="py-8 text-center text-[13px] text-muted-foreground">กำลังโหลด...</p>
+        <SecretaryOverlayLoadingSkeleton
+          variant="embed"
+          label={selectedOrderId ? 'กำลังโหลดรายละเอียดออเดอร์...' : 'กำลังโหลดออเดอร์เมล็ดกาแฟ...'}
+        />
       ) : selectedOrder ? (
         <div className="min-h-0 flex-1 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
           <BeanOrderDetailClient
