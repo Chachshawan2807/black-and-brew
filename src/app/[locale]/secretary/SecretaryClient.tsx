@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import { CheckCircle2, Loader2, Plus, Sparkles } from 'lucide-react';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { PageHeader } from '@/components/ui/page-header';
@@ -37,8 +38,16 @@ import {
 import { todayIsoBkk } from '@/lib/secretary/today-iso-bkk';
 import type { SecretaryBoard } from '@/app/actions/secretary-actions';
 import type { SecretaryTask } from '@/lib/secretary/types';
-import SecretaryManualTaskDialog from './_components/SecretaryManualTaskDialog';
 import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay';
+
+const SecretaryManualTaskDialog = dynamic(
+  () => import('./_components/SecretaryManualTaskDialog'),
+  { ssr: false },
+);
+
+const preloadManualTaskDialog = () => {
+  void import('./_components/SecretaryManualTaskDialog');
+};
 
 type SecretaryClientProps = {
   initialBoard: SecretaryBoard;
@@ -279,6 +288,8 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
           <button
             type="button"
             onClick={() => setShowCreateDialog(true)}
+            onPointerEnter={preloadManualTaskDialog}
+            onFocus={preloadManualTaskDialog}
             className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[13px] text-foreground"
           >
             <Plus size={14} />

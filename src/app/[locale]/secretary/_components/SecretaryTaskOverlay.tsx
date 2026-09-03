@@ -18,18 +18,24 @@ import { resolveSecretaryTaskDetailText } from '@/lib/secretary/resolve-task-det
 import { resolveSecretaryTaskOverlayKind } from '@/lib/secretary/resolve-task-overlay';
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import type { SecretarySnapshot, SecretaryTask } from '@/lib/secretary/types';
-import BeanOrdersOverlay from './BeanOrdersOverlay';
-import BranchWithdrawOverlay from './BranchWithdrawOverlay';
-import ScheduleOverlay from './ScheduleOverlay';
-import SecretaryManualTaskDialog from './SecretaryManualTaskDialog';
-import SecretaryTaskInfoOverlay from './SecretaryTaskInfoOverlay';
-import SecretaryTaskListOverlay from './SecretaryTaskListOverlay';
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
 
 const PurchaseOrdersModal = dynamic(
   () => import('@/app/[locale]/inventory/_components/PurchaseOrdersModal'),
   { ssr: false },
 );
+const BeanOrdersOverlay = dynamic(() => import('./BeanOrdersOverlay'), { ssr: false });
+const BranchWithdrawOverlay = dynamic(() => import('./BranchWithdrawOverlay'), { ssr: false });
+const ScheduleOverlay = dynamic(() => import('./ScheduleOverlay'), { ssr: false });
+const SecretaryManualTaskDialog = dynamic(() => import('./SecretaryManualTaskDialog'), {
+  ssr: false,
+});
+const SecretaryTaskInfoOverlay = dynamic(() => import('./SecretaryTaskInfoOverlay'), {
+  ssr: false,
+});
+const SecretaryTaskListOverlay = dynamic(() => import('./SecretaryTaskListOverlay'), {
+  ssr: false,
+});
 
 type SecretaryTaskOverlayProps = {
   task: SecretaryTask | null;

@@ -89,7 +89,6 @@ import {
   readInventoryField,
 } from './types';
 import type { TransactionHistoryRow } from './_components/InventoryHistoryModal';
-import { InventoryHistoryModal } from './_components/InventoryHistoryModal';
 
 interface InventoryClientProps {
   initialItems: InventoryItem[];
@@ -651,6 +650,14 @@ MobileSortableRow.displayName = 'MobileSortableRow';
 
 const PurchaseOrdersModal = dynamic(() => import('./_components/PurchaseOrdersModal'), { ssr: false });
 
+const InventoryHistoryModal = dynamic(
+  () =>
+    import('./_components/InventoryHistoryModal').then((m) => ({
+      default: m.InventoryHistoryModal,
+    })),
+  { ssr: false },
+);
+
 const WithdrawRequiredItemsModal = dynamic(
   () => import('./_components/WithdrawRequiredItemsModal'),
   { ssr: false },
@@ -661,6 +668,7 @@ const preloadWithdrawRequiredItemsModal = () => {
 };
 
 const preloadInventoryHistoryModal = () => {
+  void import('./_components/InventoryHistoryModal');
   void prefetchInventoryHistoryFirstPage();
   warmInventoryHistoryFilterPages();
 };

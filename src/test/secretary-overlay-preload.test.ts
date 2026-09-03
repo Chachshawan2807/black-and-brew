@@ -15,7 +15,9 @@ describe('secretary overlay preload', () => {
     expect(client).toContain('preloadSecretaryTaskOverlayShell');
     expect(client).toContain('scheduleIdleWork');
     expect(client).toContain('onPointerDown={canOpenDetail ? warmOverlayChunk : undefined}');
-    expect(client).not.toContain('dynamic(');
+    expect(client).toContain("import SecretaryTaskOverlay from './_components/SecretaryTaskOverlay'");
+    expect(client).toContain("import('./_components/SecretaryManualTaskDialog')");
+    expect(client).toContain('preloadManualTaskDialog');
   });
 
   test('overlay data cache deduplicates server fetches', () => {
@@ -39,6 +41,27 @@ describe('secretary overlay preload', () => {
     expect(preload).toContain('bean_orders_panel');
     expect(preload).toContain('schedule_panel');
     expect(preload).toContain('preloadPurchaseOrdersModal');
+    expect(preload).toContain('BeanOrdersOverlay');
+    expect(preload).toContain('BranchWithdrawOverlay');
+    expect(preload).toContain('ScheduleOverlay');
+    expect(preload).toContain('SecretaryTaskListOverlay');
+    expect(preload).toContain('SecretaryTaskInfoOverlay');
+    expect(preload).toContain('SecretaryManualTaskDialog');
+    expect(preload).toContain('isManualSecretaryTask');
     expect(preload).not.toContain('inventory_count_panel');
+  });
+
+  test('SecretaryTaskOverlay defers overlay variants behind dynamic imports', () => {
+    const overlay = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskOverlay.tsx'),
+      'utf-8',
+    );
+
+    expect(overlay).toMatch(/dynamic\(\(\) => import\('\.\/BeanOrdersOverlay'\)/);
+    expect(overlay).toMatch(/dynamic\(\(\) => import\('\.\/BranchWithdrawOverlay'\)/);
+    expect(overlay).toMatch(/dynamic\(\(\) => import\('\.\/ScheduleOverlay'\)/);
+    expect(overlay).toMatch(/dynamic\(\(\) => import\('\.\/SecretaryManualTaskDialog'\)/);
+    expect(overlay).not.toMatch(/^import BeanOrdersOverlay from/m);
+    expect(overlay).not.toMatch(/^import BranchWithdrawOverlay from/m);
   });
 });

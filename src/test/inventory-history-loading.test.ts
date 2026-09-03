@@ -101,14 +101,20 @@ describe('inventory history loading reliability', () => {
     expect(prefetchCode).not.toContain("from '@/app/actions/inventory-actions'");
   });
 
-  test('inventory client imports history modal statically for instant open', () => {
+  test('inventory client defers history modal chunk and preloads data on intent', () => {
     const clientCode = fs.readFileSync(
       path.resolve(__dirname, '../app/[locale]/inventory/InventoryClient.tsx'),
       'utf-8',
     );
-    expect(clientCode).toContain("import { InventoryHistoryModal }");
-    expect(clientCode).not.toMatch(
-      /const InventoryHistoryModal = dynamic\([\s\S]*InventoryHistoryModal/,
+    expect(clientCode).not.toContain("import { InventoryHistoryModal }");
+    expect(clientCode).toMatch(
+      /dynamic\([\s\S]*import\('\.\/_components\/InventoryHistoryModal'\)/,
+    );
+    expect(clientCode).toMatch(
+      /preloadInventoryHistoryModal[\s\S]*import\('\.\/_components\/InventoryHistoryModal'\)/,
+    );
+    expect(clientCode).toMatch(
+      /preloadInventoryHistoryModal[\s\S]*prefetchInventoryHistoryFirstPage/,
     );
   });
 });

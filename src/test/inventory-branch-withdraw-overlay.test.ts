@@ -31,7 +31,7 @@ describe('inventory branch withdraw overlay', () => {
     });
   });
 
-  test('overlay renders client immediately with snapshot seed and flex mobile shell', () => {
+  test('overlay renders client immediately with snapshot seed and delegates mobile shell', () => {
     const overlay = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/secretary/_components/BranchWithdrawOverlay.tsx'),
       'utf-8',
@@ -41,12 +41,8 @@ describe('inventory branch withdraw overlay', () => {
     expect(overlay).toContain('hasCatalogSeed');
     expect(overlay).toContain('mapSecretaryReorderItemsToInventoryRealtime');
     expect(overlay).not.toContain('dynamic(');
-    expect(overlay).toMatch(/layoutClassName=\{SECRETARY_MODAL_LAYOUT_CLASS\}/);
-    expect(overlay).toContain('max-h-[min(85svh,calc(100dvh-2rem))]');
-    expect(overlay).toContain('flex-col overflow-hidden');
-    expect(overlay).toMatch(/flex min-h-0 flex-1 flex-col overflow-hidden[\s\S]*flex min-h-0 flex-1 flex-col overflow-hidden/);
-    expect(overlay).not.toMatch(/h-\[min\(92svh,100%\)\]/);
-    expect(overlay).toContain('document.body.style.overflow = \'hidden\'');
+    expect(overlay).toContain('SecretaryTaskSubwindow');
+    expect(overlay).toContain('embedded');
   });
 
   test('embedded branch withdraw uses scroll body with fixed footer actions', () => {

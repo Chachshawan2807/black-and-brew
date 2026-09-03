@@ -1,4 +1,5 @@
 import { preloadPurchaseOrdersModal } from '@/lib/preload-purchase-orders-modal';
+import { isManualSecretaryTask } from '@/lib/secretary/is-manual-task';
 import {
   prefetchBeanOrdersForOverlay,
   prefetchScheduleOverlayData,
@@ -21,20 +22,30 @@ function preloadOverlayChunks(kind: SecretaryTaskOverlayKind): void {
       break;
     case 'bean_orders_panel':
       void Promise.all([
+        import('@/app/[locale]/secretary/_components/BeanOrdersOverlay'),
         import('@/app/[locale]/bean-orders/BeanOrdersClient'),
         import('@/app/[locale]/bean-orders/BeanOrderDetailClient'),
       ]);
       prefetchBeanOrdersForOverlay();
       break;
     case 'branch_withdraw_panel':
-      void import('@/app/[locale]/inventory/branch-withdraw/BranchWithdrawClient');
+      void Promise.all([
+        import('@/app/[locale]/secretary/_components/BranchWithdrawOverlay'),
+        import('@/app/[locale]/inventory/branch-withdraw/BranchWithdrawClient'),
+      ]);
       break;
     case 'schedule_panel':
-      void import('@/app/[locale]/schedule/ScheduleClient');
+      void Promise.all([
+        import('@/app/[locale]/secretary/_components/ScheduleOverlay'),
+        import('@/app/[locale]/schedule/ScheduleClient'),
+      ]);
       prefetchScheduleOverlayData();
       break;
     case 'maintenance_list':
+      void import('@/app/[locale]/secretary/_components/SecretaryTaskListOverlay');
+      break;
     case 'task_info':
+      void import('@/app/[locale]/secretary/_components/SecretaryTaskInfoOverlay');
       break;
     default:
       break;
@@ -46,6 +57,11 @@ export function preloadSecretaryOverlayForTask(
   task: Pick<SecretaryTask, 'task_type' | 'source_kind'>,
 ): void {
   if (task.source_kind === 'ai_suggested') return;
+
+  if (isManualSecretaryTask(task as SecretaryTask)) {
+    void import('@/app/[locale]/secretary/_components/SecretaryManualTaskDialog');
+    return;
+  }
 
   const kind = resolveSecretaryTaskOverlayKind(task as SecretaryTask);
   if (!kind) return;
