@@ -19,8 +19,9 @@ When Hallmark conflicts with anything in `AGENTS.md`, **ERP rules win**:
 1. ERP domain rules (spreadsheet grids, pastel shift colors, theme tokens, data symmetry)
 2. `chrome-modern-web-guidance` + `modern-web-guidance`
 3. React & Next.js skills
-4. `web-design-guidelines`, `impeccable` (`critique` only), `ui-ux-pro-max`
-5. **Hallmark** audit / study only (this overlay)
+4. `web-design-guidelines`, `impeccable` (`critique` only)
+5. `ui-ux-pro-max` review/checklist via `ui-ux-pro-max-erp` overlay
+6. **Hallmark** audit / study only (this overlay)
 
 Reject Hallmark output that suggests: modals for grid edits, decorative marketing layouts, non-pastel surfaces, new theme catalogs, hero/feature/CTA page rhythms, or replacing `shift-colors.ts` / CSS token surfaces.
 

@@ -52,8 +52,8 @@
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
-      "skillPath": "ui-ux-pro-max/SKILL.md",
-      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "14d391ffdd7367526a80ddd73177294cd1808a74249cdd1b9e9a258b86fa2e6a"
     },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",

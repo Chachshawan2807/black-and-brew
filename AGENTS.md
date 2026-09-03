@@ -112,7 +112,7 @@ Apply in order higher wins:
 1. **ERP domain rules** spreadsheet grids, pastel shift colors, Supabase sync, numeric/undo rules, data symmetry (sections in this file).
 2. **chrome-modern-web-guidance** `.cursor/skills/chrome-modern-web-guidance/SKILL.md` + **modern-web-guidance** (`npx modern-web-guidance search/retrieve`) for Baseline Widely available, native overlays, mobile layout.
 3. **React & Next.js skills** `next-best-practices`, `vercel-react-best-practices`, `shadcn`, `webapp-testing` in `.agents/skills/` for App Router conventions, performance, components, and testing **never** override ERP spreadsheet/pastel rules or Supabase sync freshness.
-4. **Design review skills** `web-design-guidelines`, `impeccable` (sub-command `critique` only), `ui-ux-pro-max` review/polish on existing UI; must stay minimalist + time-based pastel. Do not use impeccable `bolder` / `delight` / `overdrive` when they conflict with ERP tone.
+4. **Design review skills** `web-design-guidelines`, `impeccable` (`critique` only), then `ui-ux-pro-max` review/checklist via `ui-ux-pro-max-erp` overlay; must stay minimalist + time-based pastel. Do not use impeccable `bolder` / `delight` / `overdrive` when they conflict with ERP tone.
 5. **Hallmark (supplementary)** `.cursor/skills/hallmark-erp/SKILL.md` + `.agents/skills/hallmark/` **`hallmark audit` and `hallmark study` only** on this repo. Never use Hallmark default build or `redesign` on core ERP routes (inventory, schedule, dashboard, settings). Hallmark catches generic AI-slop; it does not replace pastel/spreadsheet/token rules.
 
 When React, Next.js, or design skills suggest modals for grid edits, aggressive caching of live ERP data, decorative UI, luxury/bold aesthetics, or non-pastel surfaces, **reject** and follow ERP + chrome-modern-web-guidance instead.
@@ -163,13 +163,40 @@ When React, Next.js, or design skills suggest modals for grid edits, aggressive 
 
 <!-- BEGIN:ui-ux-pro-max-skill -->
 
-## UI/UX PRO MAX STANDARDS
+## UI/UX PRO MAX STANDARDS (REVIEW ONLY)
 
-- **Skill:** `.agents/skills/ui-ux-pro-max/SKILL.md` design intelligence (lowest design tier; see rule priority)
-- **Design review:** `.agents/skills/web-design-guidelines/SKILL.md` (spacing, typography, interaction, a11y) · `.agents/skills/impeccable/SKILL.md` with **`critique`** sub-command for structured UI review before ship
+- **Overlay (read first):** `.cursor/skills/ui-ux-pro-max-erp/SKILL.md` ERP constraints for this repo
+- **Upstream:** `.agents/skills/ui-ux-pro-max/SKILL.md` v2.15+ searchable UX/stack data (119 UX guidelines, 22 stacks)
+- **Design review order:** `web-design-guidelines` → `impeccable` **`critique` only** → UI/UX Pro Max gap fill → hallmark `audit`/`study`
 - **Constraint:** ทุกการสร้าง UI ใน BLACKANDBREW ERP ต้องเป็น Minimalist และใช้ Pastel Palette ตามเงื่อนไขเวลาเดิมเท่านั้น (เช่น 6:30 = light green)
 - **Design Logic:** เน้นผลลัพธ์ที่ถูกต้องเชิงระบบ (Outcome-First) และความสมมาตรของข้อมูล
-- **Update:** `npx skills add nextlevelbuilder/ui-ux-pro-max-skill@ui-ux-pro-max -y`
+
+### Allowed (ERP)
+
+- `--domain ux` for accessibility, touch, loading, form feedback, mobile layout checklists
+- `--stack nextjs` or `--stack shadcn` for implementation patterns on existing components
+- Read `references/quick-reference.md` §1–3 (accessibility, touch, performance) as checklist
+
+Search from project root:
+
+```powershell
+py -3 .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain ux
+py -3 .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack nextjs
+py -3 .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --stack shadcn
+```
+
+### Forbidden (ERP)
+
+- ❌ `--design-system`, `--persist`, `--force` (generates palettes/styles that override ERP tokens)
+- ❌ `--domain style`, `color`, `typography`, `product`, `landing`, `gsap` (conflicts with pastel/spreadsheet/minimalist ERP)
+- ❌ Applying search output to `shift-colors.ts`, global CSS tokens, or replacing time-based pastel hex
+- ❌ Modals for spreadsheet grid edits; decorative SaaS/marketing layouts; hardcoded `bg-white` / non-token surfaces
+
+### Hard filters (always)
+
+กรองคำแนะนำจาก skill ที่ขัดกับ: spreadsheet inline inputs, `shift-colors.ts` + `bb-pastel-surface`, theme tokens (`bg-background`, `bg-card`, …), native `<dialog>` overlays, no em dash (U+2014).
+
+- **Update:** `npx skills add nextlevelbuilder/ui-ux-pro-max-skill@ui-ux-pro-max -y` then re-read overlay
 <!-- END:ui-ux-pro-max-skill -->
 <!-- BEGIN:hallmark-skill -->
 
@@ -367,7 +394,8 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 | web-design-guidelines | `.agents/skills/web-design-guidelines/SKILL.md` | Vercel Web Interface Guidelines spacing, type, a11y |
 | impeccable | `.agents/skills/impeccable/SKILL.md` | UI critique/review (`critique` sub-command) ก่อน ship |
 | webapp-testing | `.agents/skills/webapp-testing/SKILL.md` | Unit/integration/E2E testing patterns (Vitest, Playwright) |
-| ui-ux-pro-max | `.agents/skills/ui-ux-pro-max/SKILL.md` | ออกแบบ/รีวิว UI·UX ลำดับต่ำสุดในกลุ่ม design |
+| ui-ux-pro-max-erp | `.cursor/skills/ui-ux-pro-max-erp/SKILL.md` | ERP overlay: review/checklist เท่านั้น อ่านก่อน upstream |
+| ui-ux-pro-max | `.agents/skills/ui-ux-pro-max/SKILL.md` | Upstream UX/stack search ใช้ผ่าน overlay เท่านั้นใน ERP |
 | hallmark-erp | `.cursor/skills/hallmark-erp/SKILL.md` | Anti-AI-slop **audit/study เท่านั้น** อ่านก่อน hallmark upstream |
 | hallmark | `.agents/skills/hallmark/SKILL.md` | Upstream Hallmark (nutlope/hallmark) ใช้ผ่าน overlay เท่านั้นใน ERP |
 | security-review | `.agents/skills/security-review/SKILL.md` | รีวิวช่องโหว่ security ในโค้ด (OWASP) |
@@ -377,7 +405,7 @@ Domain capability triggers (mobile UX, AI context, inventory integrity, token ec
 
 **AgentSkillOS Runbooks:** ทักษะโปรเจกต์ (clean cache, smoke check, db wrappers) อยู่ใน `.agent-skills/skills/` แยกจาก `.agents/skills/` (third-party). ลงทะเบียนใน `.agent-skills/registry.json` · blueprint ใน `.agent-skills/README.md`
 
-**ลำดับความสำคัญเมื่อขัดกัน:** ERP domain rules → chrome-modern-web-guidance → React & Next.js skills → design review skills (`web-design-guidelines`, `impeccable` critique) → ui-ux-pro-max → hallmark (`audit` / `study` via `hallmark-erp` overlay เท่านั้น)
+**ลำดับความสำคัญเมื่อขัดกัน:** ERP domain rules → chrome-modern-web-guidance → React & Next.js skills → design review skills (`web-design-guidelines`, `impeccable` critique) → ui-ux-pro-max (via `ui-ux-pro-max-erp` overlay) → hallmark (`audit` / `study` via `hallmark-erp` overlay เท่านั้น)
 
 **อัปเดต skills:** `npx skills add <owner/repo@skill> -y` (เช่น `vercel-labs/agent-skills@web-design-guidelines`, `pbakaus/impeccable@impeccable`, `nutlope/hallmark`)
 
