@@ -1,4 +1,4 @@
-/** @typedef {{ title: string; path: string; hour: number; minute?: number }} JobDefinition */
+/** @typedef {{ title: string; path: string; hour: number; minute?: number; wdays?: number[] }} JobDefinition */
 
 export const CRON_JOB_ORG_API = 'https://api.cron-job.org';
 export const CRON_TIMEZONE = 'Asia/Bangkok';
@@ -30,13 +30,21 @@ export const JOB_DEFINITIONS = [
     hour: 17,
     minute: 0,
   },
+  {
+    title: `${JOB_TITLE_PREFIX} Data Change Log Retention`,
+    path: '/api/data-change-log-retention',
+    hour: 3,
+    minute: 0,
+    wdays: [0],
+  },
 ];
 
 /**
  * @param {number} hour 0–23 in Asia/Bangkok
  * @param {number} [minute=0]
+ * @param {number[]} [wdays=[-1]] cron-job.org weekday list (-1 = every day, 0 = Sunday)
  */
-export function dailyScheduleAt(hour, minute = 0) {
+export function dailyScheduleAt(hour, minute = 0, wdays = [-1]) {
   return {
     timezone: CRON_TIMEZONE,
     expiresAt: 0,
@@ -44,7 +52,7 @@ export function dailyScheduleAt(hour, minute = 0) {
     mdays: [-1],
     minutes: [minute],
     months: [-1],
-    wdays: [-1],
+    wdays,
   };
 }
 
@@ -60,7 +68,7 @@ export function buildDesiredJobs(baseUrl, cronSecret) {
   return JOB_DEFINITIONS.map((def) => ({
     ...def,
     url: `${normalizedBase}${def.path}`,
-    schedule: dailyScheduleAt(def.hour, def.minute ?? 0),
+    schedule: dailyScheduleAt(def.hour, def.minute ?? 0, def.wdays ?? [-1]),
     extendedData: {
       headers: {
         Authorization: authValue,

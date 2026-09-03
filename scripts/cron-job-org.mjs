@@ -243,7 +243,7 @@ function printHelp() {
 
 Environment:
   CRON_JOB_ORG_API_KEY   cron-job.org Console → Settings
-  CRON_SECRET            Bearer token sent to /api/daily-report and /api/insight-alerts
+  CRON_SECRET            Bearer token sent to cron-protected /api/* routes
   NEXT_PUBLIC_SITE_URL   Production origin (or CRON_JOB_BASE_URL override)
 `);
 }

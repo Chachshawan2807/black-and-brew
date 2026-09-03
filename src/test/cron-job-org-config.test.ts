@@ -9,13 +9,14 @@ import {
 } from '../../scripts/cron-job-org-config.mjs';
 
 describe('cron-job-org-config', () => {
-  it('defines four Bangkok-scheduled ERP jobs', () => {
-    expect(JOB_DEFINITIONS).toHaveLength(4);
+  it('defines five Bangkok-scheduled ERP jobs', () => {
+    expect(JOB_DEFINITIONS).toHaveLength(5);
     expect(JOB_DEFINITIONS.map((job) => job.path)).toEqual([
       '/api/daily-report?schedule=today',
       '/api/daily-report?schedule=tomorrow',
       '/api/insight-alerts?window=morning',
       '/api/insight-alerts?window=evening',
+      '/api/data-change-log-retention',
     ]);
   });
 
@@ -28,15 +29,19 @@ describe('cron-job-org-config', () => {
     expect(jobs[1].schedule).toEqual(dailyScheduleAt(18, 0));
   });
 
-  it('dailyScheduleAt uses Asia/Bangkok timezone', () => {
-    expect(dailyScheduleAt(5, 0)).toEqual({
+  it('retention job runs weekly on Sunday at 03:00 ICT', () => {
+    const retention = JOB_DEFINITIONS.find(
+      (job) => job.path === '/api/data-change-log-retention',
+    );
+    expect(retention?.wdays).toEqual([0]);
+    expect(dailyScheduleAt(3, 0, [0])).toEqual({
       timezone: 'Asia/Bangkok',
       expiresAt: 0,
-      hours: [5],
+      hours: [3],
       mdays: [-1],
       minutes: [0],
       months: [-1],
-      wdays: [-1],
+      wdays: [0],
     });
   });
 
