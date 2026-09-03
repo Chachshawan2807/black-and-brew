@@ -29,7 +29,11 @@ export default async function EditBeanOrderPage({
   if (!authed) redirect(`/${locale}`);
 
   const orderResult = await fetchBeanOrderDetail(id);
-  if (!orderResult.success || !orderResult.data) notFound();
+  // Genuine miss -> 404; transient failure -> retryable error boundary (not blank).
+  if (orderResult.notFound) notFound();
+  if (!orderResult.success || !orderResult.data) {
+    throw new Error(orderResult.error ?? 'โหลดรายละเอียดออเดอร์ไม่สำเร็จ');
+  }
   if (!canEditOrderLines(orderResult.data.cancelledAt)) notFound();
 
   const [itemsResult, suggestionsResult] = await Promise.all([

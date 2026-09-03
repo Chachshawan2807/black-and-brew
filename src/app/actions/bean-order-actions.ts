@@ -602,9 +602,9 @@ export async function fetchBeanOrders(filters?: {
 
 export async function fetchBeanOrderDetail(
   orderId: string,
-): Promise<{ success: boolean; data?: BeanOrderDetail; error?: string }> {
+): Promise<{ success: boolean; data?: BeanOrderDetail; error?: string; notFound?: boolean }> {
   const readError = await requireReadAccess();
-  if (readError) return { success: false, error: readError };
+  if (readError) return { success: false, notFound: false, error: readError };
 
   try {
     const supabase = getSupabaseAdmin();
@@ -635,23 +635,23 @@ export async function fetchBeanOrderDetail(
 
     if (orderResult.error) {
       console.error('Supabase Error (fetchBeanOrderDetail):', orderResult.error.message, orderResult.error.details);
-      return { success: false, error: orderResult.error.message };
+      return { success: false, notFound: false, error: orderResult.error.message };
     }
-    if (!orderResult.data) return { success: false, error: 'ไม่พบออเดอร์' };
+    if (!orderResult.data) return { success: false, notFound: true, error: 'ไม่พบออเดอร์' };
 
     if (linesResult.error) {
       console.error('Supabase Error (fetchBeanOrderDetail lines):', linesResult.error.message, linesResult.error.details);
-      return { success: false, error: linesResult.error.message };
+      return { success: false, notFound: false, error: linesResult.error.message };
     }
 
     if (paymentResult.error) {
       console.error('Supabase Error (fetchBeanOrderDetail payment):', paymentResult.error.message, paymentResult.error.details);
-      return { success: false, error: paymentResult.error.message };
+      return { success: false, notFound: false, error: paymentResult.error.message };
     }
 
     if (shipmentResult.error) {
       console.error('Supabase Error (fetchBeanOrderDetail shipment):', shipmentResult.error.message, shipmentResult.error.details);
-      return { success: false, error: shipmentResult.error.message };
+      return { success: false, notFound: false, error: shipmentResult.error.message };
     }
 
     const order = orderResult.data;
@@ -722,7 +722,7 @@ export async function fetchBeanOrderDetail(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'โหลดรายละเอียดออเดอร์ไม่สำเร็จ';
-    return { success: false, error: message };
+    return { success: false, notFound: false, error: message };
   }
 }
 

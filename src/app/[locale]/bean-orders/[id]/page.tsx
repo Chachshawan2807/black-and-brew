@@ -20,7 +20,12 @@ export default async function BeanOrderDetailPage({
   if (!authed) redirect(`/${locale}`);
 
   const result = await fetchBeanOrderDetail(id);
-  if (!result.success || !result.data) notFound();
+  // Only a genuinely missing order is a 404. Transient DB/auth/network failures
+  // must surface a retryable error boundary instead of a blank not-found page.
+  if (result.notFound) notFound();
+  if (!result.success || !result.data) {
+    throw new Error(result.error ?? 'โหลดรายละเอียดออเดอร์ไม่สำเร็จ');
+  }
 
   return <BeanOrderDetailClient key={id} order={result.data} locale={locale} />;
 }
