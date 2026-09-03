@@ -378,10 +378,10 @@ describe('formatDataChangeLogDisplay', () => {
     expect(display.detail).toContain('ค่าใช้จ่าย: 500 → 1200');
   });
 
-  test('shows sales category change from-to', () => {
+  test('shows bean order category change from-to', () => {
     const display = formatDataChangeLogDisplay(
       makeRow({
-        module: 'sales',
+        module: 'bean_orders',
         entity_label: 'ลาเต้',
         field_changes: [{ field: 'category', old_value: 'กาแฟร้อน', new_value: 'กาแฟเย็น' }],
       }),

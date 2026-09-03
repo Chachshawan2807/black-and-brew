@@ -20,7 +20,6 @@ const dataChangeLogInputSchema = z.object({
   module: z.enum([
     'inventory',
     'schedule',
-    'sales',
     'maintenance',
     'holiday',
     'dashboard',

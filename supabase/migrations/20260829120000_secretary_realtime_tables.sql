@@ -12,8 +12,7 @@ BEGIN
     'bean_order_payments',
     'bean_order_shipments',
     'service_records',
-    'operational_task_sessions',
-    'operational_task_duration_stats'
+    'operational_task_sessions'
   ]
   LOOP
     IF NOT EXISTS (

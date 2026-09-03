@@ -9,19 +9,19 @@ import {
 
 describe('sidebar menu order', () => {
   test('parses legacy localStorage array format', () => {
-    const raw = JSON.stringify(['sales', 'home', 'inventory']);
-    expect(parseSidebarMenuOrder(raw)).toEqual(['sales', 'home', 'inventory']);
+    const raw = JSON.stringify(['bean-orders', 'home', 'inventory']);
+    expect(parseSidebarMenuOrder(raw)).toEqual(['bean-orders', 'home', 'inventory']);
   });
 
   test('applies saved order and appends new menu items', () => {
     const menus = [
       { id: 'home' },
       { id: 'dashboard' },
-      { id: 'sales' },
+      { id: 'bean-orders' },
     ] as const;
 
-    const ordered = applySidebarMenuOrder(menus, ['sales', 'home']);
-    expect(ordered.map((menu) => menu.id)).toEqual(['sales', 'home', 'dashboard']);
+    const ordered = applySidebarMenuOrder(menus, ['bean-orders', 'home']);
+    expect(ordered.map((menu) => menu.id)).toEqual(['bean-orders', 'home', 'dashboard']);
   });
 
   test('Menu uses shared sidebar menu order store', () => {

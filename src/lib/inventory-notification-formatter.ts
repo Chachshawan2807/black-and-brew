@@ -949,8 +949,6 @@ const GENERIC_MODULE_LABELS: Record<string, { th: string; en: string }> = {
 
   schedule: { th: 'ตารางงาน', en: 'Schedule' },
 
-  sales: { th: 'รายงานการขาย', en: 'Sales Report' },
-
   maintenance: { th: 'ซ่อมบำรุง', en: 'Maintenance' },
 
   holiday: { th: 'วันหยุด', en: 'Holidays' },

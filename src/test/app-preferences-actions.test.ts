@@ -22,7 +22,7 @@ describe('app preferences actions', () => {
 
   test('getSidebarMenuOrder returns parsed order from app_preferences', async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
-      data: { sidebar_menu_order: ['sales', 'home'], updated_at: '2026-07-24T00:00:00.000Z' },
+      data: { sidebar_menu_order: ['bean-orders', 'home'], updated_at: '2026-07-24T00:00:00.000Z' },
       error: null,
     });
     const eq = vi.fn(() => ({ maybeSingle }));
@@ -34,7 +34,7 @@ describe('app preferences actions', () => {
 
     expect(result).toEqual({
       success: true,
-      orderIds: ['sales', 'home'],
+      orderIds: ['bean-orders', 'home'],
       updatedAt: '2026-07-24T00:00:00.000Z',
     });
     expect(mockFrom).toHaveBeenCalledWith('app_preferences');

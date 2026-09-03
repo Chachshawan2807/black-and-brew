@@ -11,7 +11,6 @@ export type DataChangeAction =
 export type DataChangeModule =
   | 'inventory'
   | 'schedule'
-  | 'sales'
   | 'maintenance'
   | 'holiday'
   | 'dashboard'

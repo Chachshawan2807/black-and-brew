@@ -21,7 +21,6 @@ const PREVIEW_COUNT = 3;
 const MODULE_LABELS: Record<string, { th: string; en: string }> = {
   inventory: { th: "คลังสินค้า", en: "Inventory" },
   schedule: { th: "ตารางงาน", en: "Schedule" },
-  sales: { th: "รายงานการขาย", en: "Sales Report" },
   maintenance: { th: "ซ่อมบำรุง", en: "Maintenance" },
   holiday: { th: "วันหยุด", en: "Holidays" },
   dashboard: { th: "แดชบอร์ด", en: "Dashboard" },
