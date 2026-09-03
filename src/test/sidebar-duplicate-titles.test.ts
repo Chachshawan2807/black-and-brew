@@ -12,7 +12,7 @@ const ROOT = path.resolve(__dirname, '..');
 describe('sidebar duplicate page titles', () => {
   test('matches exact sidebar labels', () => {
     expect(isSidebarMenuLabel('เบิกของสาขา 2')).toBe(true);
-    expect(isSidebarMenuLabel('เลขาส่วนตัว')).toBe(true);
+    expect(isSidebarMenuLabel('งาน')).toBe(true);
     expect(isSidebarMenuLabel('ออเดอร์เมล็ดกาแฟ')).toBe(true);
     expect(shouldShowPageTitle('คลังสินค้า')).toBe(false);
   });
@@ -68,7 +68,7 @@ describe('sidebar duplicate page titles', () => {
     expect(count).toContain('shouldShowPageTitle');
     expect(accuracy).toContain('PageTitle');
     expect(beanForm).toContain('PageTitle');
-    expect(secretary).not.toContain('title="เลขาส่วนตัว"');
+    expect(secretary).not.toContain('title="งาน"');
   });
 
   test('secretary overlays hide duplicate sidebar titles', () => {

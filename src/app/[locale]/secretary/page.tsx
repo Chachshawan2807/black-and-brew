@@ -17,7 +17,7 @@ export default async function SecretaryPage({
   if (!boardResult.success || !boardResult.board) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 text-[14px] text-muted-foreground">
-        ไม่สามารถโหลดเลขาส่วนตัวได้{boardResult.error ? `: ${boardResult.error}` : ''}
+        ไม่สามารถโหลดงานได้{boardResult.error ? `: ${boardResult.error}` : ''}
       </div>
     );
   }

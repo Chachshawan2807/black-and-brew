@@ -6,9 +6,6 @@
     "vercel": {
       "enabled": true
     },
-    "tavily": {
-      "enabled": true
-    },
     "superpowers": {
       "enabled": false
     }

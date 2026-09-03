@@ -51,7 +51,7 @@ export function getMenuList(pathname: string, locale: string = 'th', opts?: { se
         {
           id: 'secretary',
           href: `${prefix}/secretary`,
-          label: "เลขาส่วนตัว",
+          label: "งาน",
           active: pathname.includes('/secretary'),
           icon: ClipboardCheck,
           submenus: [],

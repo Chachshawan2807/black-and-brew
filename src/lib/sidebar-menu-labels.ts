@@ -1,7 +1,7 @@
 /** Sidebar menu labels from `getMenuList` (keep in sync when adding routes). */
 export const SIDEBAR_MENU_LABELS = [
   'หน้าหลัก',
-  'เลขาส่วนตัว',
+  'งาน',
   'แดชบอร์ดพนักงาน',
   'ตารางงาน',
   'บันทึกการซ่อม',
