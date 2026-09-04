@@ -1,10 +1,15 @@
-import HomePageClient from './_components/HomePageClient';
+import dynamic from 'next/dynamic';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { startOfDay, endOfDay, addDays, format } from 'date-fns';
 import { connection } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { queryHomeMaintenanceTasks } from '@/lib/maintenance/fetch-home-maintenance';
+import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
+
+const HomePageClient = dynamic(() => import('./_components/HomePageClient'), {
+  loading: () => <RouteLoadingSkeleton label="กำลังโหลดหน้าแรก..." />,
+});
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;

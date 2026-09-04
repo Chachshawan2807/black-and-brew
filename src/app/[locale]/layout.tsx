@@ -1,22 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
-import SidebarLayout from '@/components/sidebar/SidebarLayout';
+import { setRequestLocale } from 'next-intl/server';
+import { AppShellLoader } from '@/components/shell/AppShellLoader';
 import I18nProvider from '@/components/providers/I18nProvider';
-import { FabStackHideToggle } from '@/components/floating/FabStackHideToggle';
-import { DeferredOverlays } from '@/components/shell/DeferredOverlays';
-import { RoutePrefetchOnIdle } from '@/components/shell/RoutePrefetchOnIdle';
-import { ViewTransitionNavigation } from '@/components/shell/ViewTransitionNavigation';
-import { PointerClickThroughGuard } from '@/components/shell/PointerClickThroughGuard';
-import PwaRegister from '@/components/PwaRegister';
-import { PwaShellSync } from '@/components/PwaShellSync';
-import PinGateway from '@/components/auth/PinGateway';
-import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
-import { NotificationProvider } from '@/components/notifications/NotificationProvider';
-import { PushSubscriptionManager } from '@/components/notifications/PushSubscriptionManager';
-import { FloatingOverlayProvider } from '@/components/floating/FloatingOverlayContext';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
-import { AppTooltipProvider } from '@/components/providers/AppTooltipProvider';
+import { RouteLoadingSkeleton } from '@/components/ui/route-loading-skeleton';
 import { PWA_APPLE_TOUCH_ICON, PWA_FAVICON } from '@/lib/pwa-assets';
 import { PWA_DISPLAY_NAME } from '@/lib/pwa-config';
 import { PWA_SHELL_BOOTSTRAP_SCRIPT, PWA_THEME_COLORS } from '@/lib/pwa-standalone';
@@ -76,29 +64,11 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: PWA_SHELL_BOOTSTRAP_SCRIPT }}
         />
         <ThemeProvider>
-        <PwaShellSync />
-        <AppTooltipProvider>
-        <PwaRegister />
-        <RoutePrefetchOnIdle />
-        <ViewTransitionNavigation />
-        <PointerClickThroughGuard />
-        <PinGateway>
-          <PushSubscriptionManager />
-          <NotificationProvider>
-          <FloatingOverlayProvider>
-          <SidebarLayout>
+          <AppShellLoader>
             <Suspense fallback={<RouteLoadingSkeleton label="กำลังโหลด..." />}>
-              <I18nProvider locale={locale}>
-                {children}
-              </I18nProvider>
+              <I18nProvider locale={locale}>{children}</I18nProvider>
             </Suspense>
-          </SidebarLayout>
-          <DeferredOverlays />
-          <FabStackHideToggle />
-          </FloatingOverlayProvider>
-          </NotificationProvider>
-        </PinGateway>
-        </AppTooltipProvider>
+          </AppShellLoader>
         </ThemeProvider>
       </body>
     </html>

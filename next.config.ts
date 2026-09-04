@@ -37,24 +37,32 @@ const securityHeaders = [
   },
 ];
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  experimental: {
-    optimizePackageImports: [
-      'lucide-react',
-      'date-fns',
-      'date-fns-tz',
-      'framer-motion',
-      '@dnd-kit/core',
-      '@dnd-kit/sortable',
-      '@dnd-kit/utilities',
-      '@dnd-kit/modifiers',
-      '@radix-ui/react-collapsible',
-      '@radix-ui/react-dropdown-menu',
-      '@radix-ui/react-tooltip',
-      '@radix-ui/react-slot',
-    ],
-  },
+  // PPR + optimizePackageImports can stall Turbopack's first /[locale] dev compile (120s+ hang).
+  // Keep both for production bundle size and PPR; skip in dev for responsive local iteration.
+  cacheComponents: isProduction,
+  ...(isProduction
+    ? {
+        experimental: {
+          optimizePackageImports: [
+            'lucide-react',
+            'date-fns',
+            'date-fns-tz',
+            'framer-motion',
+            '@dnd-kit/core',
+            '@dnd-kit/sortable',
+            '@dnd-kit/utilities',
+            '@dnd-kit/modifiers',
+            '@radix-ui/react-collapsible',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-slot',
+          ],
+        },
+      }
+    : {}),
   async headers() {
     return [
       {
