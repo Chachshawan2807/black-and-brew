@@ -624,7 +624,7 @@ export default function BranchWithdrawClient({
           className={STICKY_ACTION_BUTTON_CLASS}
         >
           <Eye className="h-4 w-4 shrink-0" />
-          <span className="truncate">สรุปรายการ</span>
+          <span className="truncate">สรุป</span>
           {previewLineCount > 0 ? (
             <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs tabular-nums">
               {previewLineCount}
@@ -744,7 +744,7 @@ export default function BranchWithdrawClient({
                     onClick={() => openHistoryLineDialog(entry)}
                     className="rounded-xl border border-border bg-card px-3 py-2 text-xs transition-colors hover:bg-background"
                   >
-                    สรุปรายการ
+                    สรุป
                   </button>
                 </article>
               ))}

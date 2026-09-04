@@ -4,7 +4,7 @@ import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useState, useEffect, useTransition, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { slideInLeft, staggerListItem, staggerDelay, BUTTON_HOVER, BUTTON_TAP } from '@/lib/motion-presets';
+import { staggerListItem, staggerDelay, BUTTON_HOVER, BUTTON_TAP } from '@/lib/motion-presets';
 import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { saveServiceRecord, deleteServiceRecord } from '@/app/actions/maintenance-actions';
@@ -309,41 +309,19 @@ export default function MaintenanceClient({
 
         {/* Header */}
         <header className={cn(
-          'flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border',
-          embedded && 'gap-4 pb-4',
+          'flex items-center justify-end pb-4 border-b border-border',
+          embedded && 'pb-3',
         )}>
-          <div className="space-y-1.5">
-            <motion.h1
-              initial={slideInLeft.initial}
-              animate={slideInLeft.animate}
-              transition={slideInLeft.transition}
-              className={cn(
-                'font-normal tracking-tight text-foreground flex items-center gap-3',
-                embedded ? 'text-lg' : 'text-2xl md:text-3xl',
-              )}
-            >
-              <div className="p-2 bg-black text-white rounded-xl">
-                <Wrench className="w-5 h-5" strokeWidth={1.5} />
-              </div>
-              ประวัติการซ่อมบำรุง
-            </motion.h1>
-            {!embedded ? (
-              <p className="text-foreground/50 text-[13px] font-normal uppercase tracking-[0.3em] px-1">บันทึกการดูแลรักษาอุปกรณ์และเครื่องใช้</p>
-            ) : null}
-          </div>
-
-          <div className="flex items-center gap-4">
-            <motion.button
-              whileHover={isReadOnly ? undefined : BUTTON_HOVER}
-              whileTap={isReadOnly ? undefined : BUTTON_TAP}
-              onClick={() => { resetForm(); setIsModalOpen(true); }}
-              disabled={isReadOnly}
-              className="group flex items-center gap-2.5 bg-foreground hover:opacity-90 text-background px-7 py-3.5 rounded-3xl bb-transition bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <Plus className="w-4.5 h-4.5" />
-              <span className="font-normal text-sm tracking-wide">เพิ่มบันทึกใหม่</span>
-            </motion.button>
-          </div>
+          <motion.button
+            whileHover={isReadOnly ? undefined : BUTTON_HOVER}
+            whileTap={isReadOnly ? undefined : BUTTON_TAP}
+            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            disabled={isReadOnly}
+            className="group flex items-center gap-2.5 bg-foreground hover:opacity-90 text-background px-7 py-3.5 rounded-3xl bb-transition bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-4.5 h-4.5" />
+            <span className="font-normal text-sm tracking-wide">เพิ่มบันทึกใหม่</span>
+          </motion.button>
         </header>
 
 
