@@ -50,6 +50,7 @@ const LOGO_BACKDROP_LUMINANCE_MAX = 8;
 const LOGO_MARK_OPAQUE_LUMINANCE = 34;
 /** PWA splash / home-screen balanced mark size (not a full-bleed block). */
 const PWA_ICON_PADDING_RATIO = 0.14;
+/** In-app header/sidebar only. PWA launch icons keep trimmed mark + PWA_ICON_PADDING_RATIO above. */
 /** Supersample factor before downscale: higher = sharper text on high-DPI splash screens. */
 const PWA_ICON_SUPER_SAMPLE = 4;
 /** Sidebar/mobile header max CSS width is 240px; 3× gives crisp marks on high-DPI screens. */
@@ -231,6 +232,7 @@ async function writeNotificationBadge(trimmed) {
 /**
  * Header/sidebar brand mark: pure-black silhouette on transparent canvas.
  * Keep original logo.png padding (no trim) so CSS width matches pre-sharpness visual scale.
+ * Do not use for PWA splash; launch icons use trimmed mark + PWA_ICON_PADDING_RATIO.
  * Supersample + lanczos3 downscale keeps letterforms sharp at 200–240px CSS width.
  */
 async function renderHeaderLogo(fullMark) {
