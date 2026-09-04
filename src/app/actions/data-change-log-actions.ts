@@ -13,6 +13,7 @@ import {
   type ActorAccessLevel,
 } from '@/lib/data-change-log';
 import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
+import { resolveOptionalClientIp } from '@/lib/security/request-ip';
 import { dispatchInventoryWebPush, rowToDataChangeLogRow } from '@/lib/web-push';
 
 const dataChangeLogInputSchema = z.object({
@@ -107,15 +108,6 @@ async function ensureAuthenticated(): Promise<boolean> {
   return auth.ok;
 }
 
-async function resolveClientIp(): Promise<string | null> {
-  const headerStore = await headers();
-  const forwarded = headerStore.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0]?.trim() ?? null;
-  }
-  return headerStore.get('x-real-ip') ?? headerStore.get('cf-connecting-ip') ?? null;
-}
-
 async function resolveActorContext(userAgent?: string | null): Promise<{
   actorId: string | null;
   actorLabel: string;
@@ -170,7 +162,7 @@ export async function recordDataChange(
     const headerStore = await headers();
     const userAgent = headerStore.get('user-agent');
     const actor = await resolveActorContext(userAgent);
-    const ip = await resolveClientIp();
+    const ip = await resolveOptionalClientIp();
     const safe = parsed.data;
 
     const resolvedFieldChanges =

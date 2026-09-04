@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 
 import { z } from 'zod';
 
@@ -15,6 +15,7 @@ import { SESSION_FP_COOKIE } from '@/lib/auth-constants';
 import { computeActiveLoginSessions, type ActiveLoginSession } from '@/lib/login-session-status';
 
 import { ensureServerSession, requireServiceRoleKey } from '@/lib/security/server-auth';
+import { resolveOptionalClientIp } from '@/lib/security/request-ip';
 import { getRevokedFingerprints } from '@/lib/session-revocation';
 
 const clientDeviceSchema = z
@@ -128,22 +129,6 @@ async function ensureAuthenticated(): Promise<boolean> {
   const auth = await ensureServerSession();
 
   return auth.ok;
-
-}
-
-async function resolveClientIp(): Promise<string | null> {
-
-  const headerStore = await headers();
-
-  const forwarded = headerStore.get('x-forwarded-for');
-
-  if (forwarded) {
-
-    return forwarded.split(',')[0]?.trim() ?? null;
-
-  }
-
-  return headerStore.get('x-real-ip') ?? headerStore.get('cf-connecting-ip') ?? null;
 
 }
 
@@ -261,7 +246,7 @@ export async function recordLoginEvent(input: RecordLoginEventInput): Promise<vo
         cookieStore.get(SESSION_FP_COOKIE)?.value ?? null;
     }
 
-    const ip = await resolveClientIp();
+    const ip = await resolveOptionalClientIp();
 
     const { error } = await supabase.from('login_history').insert({
 

@@ -8,9 +8,9 @@ const XSS_PATTERNS: RegExp[] = [
   /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
   /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi,
   /<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi,
-  /on\w+="[^"]*"/gi,
-  /on\w+='[^']*'/gi,
-  /javascript:/gi,
+  /<svg\b[^>]*>/gi,
+  /on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,
+  /javascript\s*:/gi,
 ];
 
 const PROMPT_INJECTION_PATTERNS: RegExp[] = [

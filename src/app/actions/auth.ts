@@ -34,6 +34,7 @@ import {
 } from '@/lib/security/pin-rate-limit';
 import { resolveClientIp } from '@/lib/security/request-ip';
 import { resolveReadOnlyPin } from '@/lib/security/read-only-pin';
+import { timingSafeEqualText } from '@/lib/security/timing-safe';
 import { ensureServerSession } from '@/lib/security/server-auth';
 import { recordPinLockoutSecurityAlert } from '@/lib/security-notification-server';
 import { createOfflineAuthSessionId } from '@/lib/offline-auth-session';
@@ -52,7 +53,7 @@ async function assertMasterPin(
     console.error('[AUTH_ACTION] APP_PIN environment variable is not defined.');
     return { ok: false, error: 'System configuration error' };
   }
-  if (pin !== systemPin) {
+  if (!timingSafeEqualText(pin, systemPin)) {
     const failure = await recordPinFailure(clientIp);
     if (!failure.allowed) {
       after(() => {
@@ -118,7 +119,7 @@ export async function verifyPin(
   const readOnlyPin = resolveReadOnlyPin();
   const cookieStore = await cookies();
 
-  if (readOnlyPin && pin === readOnlyPin) {
+  if (readOnlyPin && timingSafeEqualText(pin, readOnlyPin)) {
     await clearPinAttempts(clientIp);
     if (device?.sessionFingerprint) {
       await clearSessionRevocation(device.sessionFingerprint);
@@ -133,7 +134,7 @@ export async function verifyPin(
     return { success: true, isReadOnly: true, offlineAuthSessionId };
   }
 
-  if (pin === systemPin) {
+  if (timingSafeEqualText(pin, systemPin)) {
     await clearPinAttempts(clientIp);
     if (device?.sessionFingerprint) {
       await clearSessionRevocation(device.sessionFingerprint);

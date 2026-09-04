@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { headers } from 'next/headers';
+import { resolveOptionalClientIp } from '@/lib/security/request-ip';
 
 /**
  * Server-only audit writes (not a Server Action).
@@ -17,13 +17,7 @@ export async function insertRemoteLogoutAudits(fingerprints: string[]): Promise<
     return;
   }
 
-  const headerStore = await headers();
-  const forwarded = headerStore.get('x-forwarded-for');
-  const ip =
-    forwarded?.split(',')[0]?.trim() ??
-    headerStore.get('x-real-ip') ??
-    headerStore.get('cf-connecting-ip') ??
-    null;
+  const ip = await resolveOptionalClientIp();
 
   const supabase = createClient(supabaseUrl, serviceKey);
   const occurredAt = new Date().toISOString();

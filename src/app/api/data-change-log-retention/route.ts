@@ -8,6 +8,7 @@ import {
   purgeDataChangeLogs,
 } from '@/lib/data-change-log-retention';
 import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
+import { toPublicErrorMessage } from '@/lib/security/public-error';
 
 export const maxDuration = 60;
 
@@ -73,6 +74,9 @@ export async function GET(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';
     console.error('[CRON] data-change-log-retention failed:', message);
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: toPublicErrorMessage(error) },
+      { status: 500 },
+    );
   }
 }
