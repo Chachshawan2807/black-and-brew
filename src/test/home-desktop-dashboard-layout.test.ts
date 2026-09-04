@@ -51,14 +51,18 @@ describe('Home desktop dashboard layout collapsed sidebar', () => {
 
   test('HomePurchaseOrdersSection grows with internal scroll in dashboard mode', () => {
     const section = readFile('app/[locale]/_components/HomePurchaseOrdersSection.tsx');
+    const primitives = readFile('app/[locale]/_components/home-panel-primitives.tsx');
     expect(section).toMatch(/layout\?:/);
     expect(section).toMatch(/dashboard/);
-    expect(section).toMatch(/md:flex-1/);
-    expect(section).toMatch(/md:min-h-0/);
+    expect(section).toMatch(/HomePanelTableShell/);
+    expect(primitives).toMatch(/md:flex-1/);
+    expect(primitives).toMatch(/md:min-h-0/);
   });
 
   test('mobile purchase order cards keep existing scroll container', () => {
     const section = readFile('app/[locale]/_components/HomePurchaseOrdersSection.tsx');
-    expect(section).toMatch(/md:hidden max-h-\[min\(60svh,28rem\)\]/);
+    const primitives = readFile('app/[locale]/_components/home-panel-primitives.tsx');
+    expect(section).toMatch(/HomePanelMobileScroll/);
+    expect(primitives).toMatch(/md:hidden max-h-\[min\(60svh,28rem\)\]/);
   });
 });

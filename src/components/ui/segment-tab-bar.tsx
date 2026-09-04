@@ -85,7 +85,7 @@ export function SegmentTabBar({
       onKeyDown={handleKeyDown}
       className={cn(
         isScroll
-          ? 'flex flex-nowrap gap-1.5 min-w-min'
+          ? 'flex flex-nowrap gap-2 min-w-min'
           : 'flex gap-1 rounded-2xl border border-border bg-muted/35 p-1 bb-shadow-sm',
         className,
       )}
@@ -103,19 +103,19 @@ export function SegmentTabBar({
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(tab.id)}
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 bb-transition duration-200 font-normal whitespace-nowrap',
+              'inline-flex items-center justify-center gap-1.5 bb-transition duration-200 font-normal whitespace-nowrap touch-manipulation',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               isScroll
                 ? cn(
-                    'shrink-0 rounded-full border px-3.5 py-1.5 text-[13px]',
+                    'shrink-0 min-h-10 rounded-full border px-3.5 py-2 text-[13px]',
                     isActive
                       ? 'border-foreground bg-foreground text-background bb-shadow-sm'
                       : 'border-border bg-background/80 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
                   )
                 : cn(
-                    'flex-1 rounded-xl px-3 py-2 text-[13px]',
+                    'flex-1 min-h-11 rounded-xl px-3 py-2.5 text-[13px]',
                     isActive
-                      ? 'bg-card text-foreground bb-shadow-sm border border-border/60'
+                      ? 'bg-card text-foreground bb-shadow-sm border border-border/60 ring-1 ring-border/40'
                       : 'border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40',
                   ),
             )}
@@ -172,7 +172,7 @@ export function FilterChipBar({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={cn('flex flex-nowrap gap-1.5 min-w-min', className)}
+      className={cn('flex flex-nowrap gap-2 min-w-min', className)}
     >
       {chips.map((chip) => {
         const isActive =
@@ -187,7 +187,7 @@ export function FilterChipBar({
             onClick={() => onToggle(chip.id)}
             title={typeof chip.label === 'string' ? chip.label : undefined}
             className={cn(
-              'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-normal whitespace-nowrap bb-transition duration-200',
+              'inline-flex shrink-0 items-center justify-center gap-1.5 min-h-10 rounded-full border px-3.5 py-2 text-[13px] font-normal whitespace-nowrap bb-transition duration-200 touch-manipulation',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               chip.id !== allId && 'max-w-[12rem] truncate',
               isActive

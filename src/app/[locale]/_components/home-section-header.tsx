@@ -32,7 +32,7 @@ export function HomeSectionHeader({
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div
           className={cn(
-            'flex shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-muted/50 bb-shadow-sm',
+            'flex shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-muted/40 bb-shadow-sm',
             compact ? 'h-9 w-9' : 'h-10 w-10',
           )}
         >
@@ -51,7 +51,7 @@ export function HomeSectionHeader({
               {title}
             </h2>
             {meta ? (
-              <span className="text-[0.6875rem] font-normal text-muted-foreground/75 uppercase tracking-[0.16em] shrink-0">
+              <span className="text-[0.6875rem] font-normal text-muted-foreground/80 uppercase tracking-[0.14em] shrink-0 tabular-nums">
                 {meta}
               </span>
             ) : null}
@@ -114,7 +114,7 @@ export function HomeSectionBadge({
 
 export function homeSectionLinkClassName(className?: string) {
   return cn(
-    'inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1.5 text-[12px] text-foreground bb-transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+    'inline-flex items-center gap-1 min-h-9 rounded-full border border-border bg-background px-3 py-1.5 text-[12px] text-foreground bb-transition touch-manipulation hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
     className,
   );
 }

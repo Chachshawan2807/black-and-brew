@@ -1,5 +1,6 @@
 'use client';
 
+import { SegmentTabBar } from '@/components/ui/segment-tab-bar';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { PageLoadingState } from '@/components/ui/page-loading-state';
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
@@ -700,41 +701,25 @@ function CountPageTabSwitcher({
   mode: CountPageMode;
   onChange: (mode: CountPageMode) => void;
 }) {
-  const tabButtonClass = (tab: CountPageMode) =>
-    cn(
-      'flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[13px] rounded-full border bb-transition duration-200 font-normal whitespace-nowrap',
-      mode === tab
-        ? 'bg-foreground border-foreground text-background bb-shadow-sm'
-        : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
-    );
-
   return (
-    <div
-      role="tablist"
-      aria-label="สลับระหว่างตรวจนับและปรับจำนวน"
-      className="mb-5 flex gap-2"
-    >
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === 'count'}
-        onClick={() => onChange('count')}
-        className={tabButtonClass('count')}
-      >
-        <ClipboardList className="h-4 w-4 shrink-0" aria-hidden />
-        <span>ตรวจนับ</span>
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={mode === 'adjust'}
-        onClick={() => onChange('adjust')}
-        className={tabButtonClass('adjust')}
-      >
-        <SlidersHorizontal className="h-4 w-4 shrink-0" aria-hidden />
-        <span>ปรับจำนวน</span>
-      </button>
-    </div>
+    <SegmentTabBar
+      tabs={[
+        {
+          id: 'count',
+          label: 'ตรวจนับ',
+          icon: <ClipboardList className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.5} aria-hidden />,
+        },
+        {
+          id: 'adjust',
+          label: 'ปรับจำนวน',
+          icon: <SlidersHorizontal className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.5} aria-hidden />,
+        },
+      ]}
+      value={mode}
+      onChange={(id) => onChange(id as CountPageMode)}
+      ariaLabel="สลับระหว่างตรวจนับและปรับจำนวน"
+      className="mb-5"
+    />
   );
 }
 

@@ -13,7 +13,7 @@ describe('inventory count adjust tab', () => {
     const countPage = read('src/app/[locale]/inventory/count/InventoryCountClient.tsx');
 
     expect(countPage).toContain("type CountPageMode = 'count' | 'adjust'");
-    expect(countPage).toContain('role="tablist"');
+    expect(countPage).toContain('SegmentTabBar');
     expect(countPage).toContain('ตรวจนับ');
     expect(countPage).toContain('ปรับจำนวน');
     expect(countPage).toContain('SlidersHorizontal');

@@ -13,6 +13,15 @@ import {
   HomeSectionHeader,
   homeSectionLinkClassName,
 } from './home-section-header';
+import {
+  HomePanelEmptyState,
+  HomePanelMobileScroll,
+  HomePanelTableHead,
+  HomePanelTableShell,
+  HOME_PANEL_TABLE_HEAD_CELL,
+  HOME_PANEL_TABLE_ROW,
+  homePanelSectionClassName,
+} from './home-panel-primitives';
 import type { HomeSectionLayout } from './home-layout';
 
 type HomeMaintenanceDueSectionProps = {
@@ -42,7 +51,7 @@ function MaintenanceTaskRow({
 }) {
   if (compact) {
     return (
-      <tr className="bb-grid-row-offscreen border-b border-border/80 last:border-0 hover:bg-muted/35 transition-colors">
+      <tr className={HOME_PANEL_TABLE_ROW}>
         <td className="py-3 px-3 text-center text-[13px] text-muted-foreground tabular-nums w-10">
           {index + 1}
         </td>
@@ -100,12 +109,7 @@ export default function HomeMaintenanceDueSection({
   return (
     <section
       aria-label="รายการซ่อมบำรุงที่ต้องทำ"
-      className={cn(
-        'rounded-3xl border border-border bg-card bb-shadow-sm',
-        isDashboard
-          ? 'md:flex-1 md:min-h-0 md:flex md:flex-col p-5 md:p-5 h-full'
-          : 'p-5 md:p-7',
-      )}
+      className={homePanelSectionClassName(isDashboard)}
     >
       <HomeSectionHeader
         compact={isDashboard}
@@ -128,23 +132,15 @@ export default function HomeMaintenanceDueSection({
       />
 
       {tasks.length === 0 ? (
-        <div
-          className={cn(
-            'flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 px-4 text-center',
-            isDashboard ? 'md:flex-1 py-8' : 'py-12',
-          )}
-        >
-          <Wrench className="h-10 w-10 text-muted-foreground/25 mb-3" aria-hidden />
-          <p className="text-[15px] text-muted-foreground font-normal">
-            ไม่มีรายการซ่อมบำรุงที่ต้องทำ
-          </p>
-          <p className="mt-1 text-[13px] text-muted-foreground/70">
-            งานซ่อมบำรุงทุกรายการอยู่ในกำหนดที่เหมาะสม
-          </p>
-        </div>
+        <HomePanelEmptyState
+          dashboard={isDashboard}
+          icon={<Wrench className="h-5 w-5" aria-hidden />}
+          title="ไม่มีรายการซ่อมบำรุงที่ต้องทำ"
+          subtitle="งานซ่อมบำรุงทุกรายการอยู่ในกำหนดที่เหมาะสม"
+        />
       ) : (
         <>
-          <div className="md:hidden max-h-[min(60svh,28rem)] overflow-y-auto bb-smooth-scroll -mx-1 px-1">
+          <HomePanelMobileScroll>
             <div className="space-y-2.5">
               {tasks.map((task, idx) => (
                 <MaintenanceTaskRow
@@ -155,51 +151,31 @@ export default function HomeMaintenanceDueSection({
                 />
               ))}
             </div>
-          </div>
+          </HomePanelMobileScroll>
 
-          <div
-            className={cn(
-              'hidden md:block rounded-2xl border border-border overflow-hidden bb-shadow-sm',
-              isDashboard && 'md:flex-1 md:min-h-0 md:flex md:flex-col',
-            )}
-          >
-            <div
-              className={cn(
-                'overflow-y-auto bb-smooth-scroll',
-                isDashboard ? 'md:flex-1 md:min-h-0' : 'max-h-[min(55vh,24rem)]',
-              )}
-            >
-              <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm">
-                  <tr className="border-b border-border">
-                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-10 uppercase tracking-[0.12em]">
-                      #
-                    </th>
-                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground uppercase tracking-[0.12em]">
-                      อุปกรณ์
-                    </th>
-                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-40 uppercase tracking-[0.12em]">
-                      ครบกำหนด
-                    </th>
-                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground uppercase tracking-[0.12em]">
-                      คำแนะนำ
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasks.map((task, idx) => (
-                    <MaintenanceTaskRow
-                      key={task.id}
-                      task={task}
-                      index={idx}
-                      dueLabel={formatDueDateWithDaysRemaining(task.dueDate, todayIso)}
-                      compact
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <HomePanelTableShell dashboard={isDashboard}>
+            <table className="w-full text-left border-collapse">
+              <HomePanelTableHead>
+                <tr className="border-b border-border">
+                  <th className={cn(HOME_PANEL_TABLE_HEAD_CELL, 'text-center w-10')}>#</th>
+                  <th className={HOME_PANEL_TABLE_HEAD_CELL}>อุปกรณ์</th>
+                  <th className={cn(HOME_PANEL_TABLE_HEAD_CELL, 'text-center w-40')}>ครบกำหนด</th>
+                  <th className={HOME_PANEL_TABLE_HEAD_CELL}>คำแนะนำ</th>
+                </tr>
+              </HomePanelTableHead>
+              <tbody>
+                {tasks.map((task, idx) => (
+                  <MaintenanceTaskRow
+                    key={task.id}
+                    task={task}
+                    index={idx}
+                    dueLabel={formatDueDateWithDaysRemaining(task.dueDate, todayIso)}
+                    compact
+                  />
+                ))}
+              </tbody>
+            </table>
+          </HomePanelTableShell>
         </>
       )}
     </section>

@@ -20,6 +20,15 @@ import {
   HomeSectionHeader,
   homeSectionLinkClassName,
 } from './home-section-header';
+import {
+  HomePanelEmptyState,
+  HomePanelMobileScroll,
+  HomePanelTableHead,
+  HomePanelTableShell,
+  HOME_PANEL_TABLE_HEAD_CELL,
+  HOME_PANEL_TABLE_ROW,
+  homePanelSectionClassName,
+} from './home-panel-primitives';
 import type { HomeSectionLayout } from './home-layout';
 
 type HomePurchaseOrdersSectionProps = {
@@ -46,7 +55,7 @@ function PurchaseOrderRow({
 
   if (compact) {
     return (
-      <tr className="bb-grid-row-offscreen border-b border-border/80 last:border-0 hover:bg-muted/35 transition-colors">
+      <tr className={HOME_PANEL_TABLE_ROW}>
         <td className="py-3 px-3 text-center text-[13px] text-muted-foreground tabular-nums w-10">
           {index + 1}
         </td>
@@ -164,12 +173,7 @@ export default function HomePurchaseOrdersSection({
   return (
     <section
       aria-label="รายการที่ต้องสั่งซื้อจากคลังสินค้า"
-      className={cn(
-        'rounded-3xl border border-border bg-card bb-shadow-sm',
-        isDashboard
-          ? 'md:flex-1 md:min-h-0 md:flex md:flex-col p-5 md:p-5 h-full'
-          : 'p-5 md:p-7',
-      )}
+      className={homePanelSectionClassName(isDashboard)}
     >
       <HomeSectionHeader
         compact={isDashboard}
@@ -210,75 +214,47 @@ export default function HomePurchaseOrdersSection({
       ) : null}
 
       {itemsToOrder.length === 0 ? (
-        <div
-          className={cn(
-            'flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 px-4 text-center',
-            isDashboard ? 'md:flex-1 py-8' : 'py-12',
-          )}
-        >
-          <ShoppingCart className="h-10 w-10 text-muted-foreground/25 mb-3" aria-hidden />
-          <p className="text-[15px] text-muted-foreground font-normal">ไม่มีรายการที่ต้องสั่งซื้อ</p>
-          <p className="mt-1 text-[13px] text-muted-foreground/70">สต็อกทุกรายการอยู่ในระดับที่กำหนด</p>
-        </div>
+        <HomePanelEmptyState
+          dashboard={isDashboard}
+          icon={<ShoppingCart className="h-5 w-5" aria-hidden />}
+          title="ไม่มีรายการที่ต้องสั่งซื้อ"
+          subtitle="สต็อกทุกรายการอยู่ในระดับที่กำหนด"
+        />
       ) : displayedPoItems.length === 0 ? (
-        <div
-          className={cn(
-            'flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 px-4 text-center',
-            isDashboard ? 'md:flex-1 py-8' : 'py-10',
-          )}
-        >
-          <p className="text-[14px] text-muted-foreground">ไม่มีรายการในแหล่งที่เลือก</p>
-        </div>
+        <HomePanelEmptyState
+          dashboard={isDashboard}
+          compact
+          icon={<ShoppingCart className="h-5 w-5" aria-hidden />}
+          title="ไม่มีรายการในแหล่งที่เลือก"
+        />
       ) : (
         <>
-          <div className="md:hidden max-h-[min(60svh,28rem)] overflow-y-auto bb-smooth-scroll -mx-1 px-1">
+          <HomePanelMobileScroll>
             <div className="space-y-2.5">
               {displayedPoItems.map((item, idx) => (
                 <PurchaseOrderRow key={item.id} item={item} index={idx} />
               ))}
             </div>
-          </div>
+          </HomePanelMobileScroll>
 
-          <div
-            className={cn(
-              'hidden md:block rounded-2xl border border-border overflow-hidden bb-shadow-sm',
-              isDashboard && 'md:flex-1 md:min-h-0 md:flex md:flex-col',
-            )}
-          >
-            <div
-              className={cn(
-                'overflow-y-auto bb-smooth-scroll',
-                isDashboard ? 'md:flex-1 md:min-h-0' : 'max-h-[min(55vh,24rem)]',
-              )}
-            >
-              <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm">
-                  <tr className="border-b border-border">
-                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-10 uppercase tracking-[0.12em]">
-                      #
-                    </th>
-                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground uppercase tracking-[0.12em]">
-                      ชื่อรายการ
-                    </th>
-                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-24 uppercase tracking-[0.12em]">
-                      จำนวนสั่ง
-                    </th>
-                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-20 uppercase tracking-[0.12em]">
-                      คงเหลือ
-                    </th>
-                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-16 uppercase tracking-[0.12em]">
-                      หน่วย
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayedPoItems.map((item, idx) => (
-                    <PurchaseOrderRow key={item.id} item={item} index={idx} compact />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <HomePanelTableShell dashboard={isDashboard}>
+            <table className="w-full text-left border-collapse">
+              <HomePanelTableHead>
+                <tr className="border-b border-border">
+                  <th className={cn(HOME_PANEL_TABLE_HEAD_CELL, 'text-center w-10')}>#</th>
+                  <th className={HOME_PANEL_TABLE_HEAD_CELL}>ชื่อรายการ</th>
+                  <th className={cn(HOME_PANEL_TABLE_HEAD_CELL, 'text-center w-24')}>จำนวนสั่ง</th>
+                  <th className={cn(HOME_PANEL_TABLE_HEAD_CELL, 'text-center w-20')}>คงเหลือ</th>
+                  <th className={cn(HOME_PANEL_TABLE_HEAD_CELL, 'text-center w-16')}>หน่วย</th>
+                </tr>
+              </HomePanelTableHead>
+              <tbody>
+                {displayedPoItems.map((item, idx) => (
+                  <PurchaseOrderRow key={item.id} item={item} index={idx} compact />
+                ))}
+              </tbody>
+            </table>
+          </HomePanelTableShell>
         </>
       )}
     </section>

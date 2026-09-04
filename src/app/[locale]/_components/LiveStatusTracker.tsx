@@ -167,11 +167,11 @@ function StatusGrid({
             aria-label={`พนักงาน: ${profile.full_name}, วันที่: ${dateLabel}, กะงาน: ${displayText}`}
             className={cn(
               colorClass,
-              'group relative overflow-hidden rounded-2xl flex flex-col justify-between bb-transition bb-shadow-hover-md hover:-translate-y-0.5',
+              'group relative overflow-hidden rounded-2xl flex flex-col justify-between bb-transition bb-shadow-hover-md hover:-translate-y-0.5 touch-manipulation',
               dashboard
                 ? 'w-full h-full min-h-[5.75rem] p-4 gap-2.5'
                 : 'w-[7.25rem] shrink-0 p-3 min-h-[4.75rem] gap-2',
-              'bb-shadow-sm',
+              'bb-shadow-sm ring-1 ring-black/5',
             )}
             style={colorStyle}
           >
@@ -185,7 +185,7 @@ function StatusGrid({
             </span>
             <span
               className={cn(
-                'inline-flex items-center justify-center gap-1.5 self-center max-w-full rounded-full border border-black/10 bg-black/[0.06] font-normal text-black/80 tracking-wide',
+                'inline-flex items-center justify-center gap-1.5 self-center max-w-full rounded-full border border-black/10 bg-black/[0.06] font-normal text-black/80 tracking-wide tabular-nums',
                 dashboard ? 'px-2.5 py-1 text-[0.75rem]' : 'px-2 py-0.5 text-[0.6875rem]',
               )}
             >
@@ -229,7 +229,7 @@ function StatusSection({
       aria-label={title}
       className={cn(
         'rounded-3xl border border-border bg-card bb-shadow-sm',
-        dashboard ? 'md:h-full md:min-h-0 md:flex md:flex-col p-5 md:p-5' : 'p-5 md:p-7',
+        dashboard ? 'md:h-full md:min-h-0 md:flex md:flex-col p-5' : 'p-5 md:p-7',
       )}
     >
       <HomeSectionHeader
