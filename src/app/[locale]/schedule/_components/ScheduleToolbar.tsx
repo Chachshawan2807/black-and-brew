@@ -14,6 +14,10 @@ import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
 import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
+import {
+  SCHEDULE_TOOLBAR_BUTTON,
+  SCHEDULE_TOOLBAR_HISTORY_BUTTON,
+} from './schedule-ui-primitives';
 
 interface ScheduleToolbarProps {
   isReadOnly: boolean;
@@ -34,12 +38,6 @@ interface ScheduleToolbarProps {
   onShowShiftSettings: () => void;
 }
 
-const TOOLBAR_BUTTON_CLASS =
-  'flex items-center gap-1.5 h-11 px-4 text-xs font-normal text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition duration-200 active:scale-95 uppercase tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer';
-
-const HISTORY_BUTTON_CLASS =
-  'h-11 px-3 rounded-3xl bb-transition duration-200 active:scale-95 flex items-center justify-center';
-
 export default function ScheduleToolbar({
   isReadOnly,
   undoStackLength,
@@ -58,21 +56,26 @@ export default function ScheduleToolbar({
   onShowAddEmployeeModal,
   onShowShiftSettings,
 }: ScheduleToolbarProps) {
+  const canUndo = !isReadOnly && undoStackLength > 0;
+  const canRedo = !isReadOnly && redoStackLength > 0;
+
   return (
-    <header className="bb-schedule-toolbar shrink-0 border-b border-border bg-card/70 backdrop-blur-sm px-3 py-3 md:px-5 md:py-3">
+    <header className="bb-schedule-toolbar shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-3 py-3 md:px-5 md:py-3">
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-border bg-background/80 text-foreground">
+            <div className="flex items-center gap-2.5">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/80 bg-background/90 text-foreground shadow-sm">
                 <CalendarDays className="h-4 w-4" aria-hidden />
               </div>
               <div className="min-w-0">
                 {shouldShowPageTitle('ตารางงาน') ? (
-                  <h1 className="text-[15px] font-normal text-foreground">ตารางงาน</h1>
+                  <h1 className="text-[15px] font-normal text-foreground tracking-tight">
+                    ตารางงาน
+                  </h1>
                 ) : null}
                 {weekRangeLabel ? (
-                  <p className="hidden truncate text-[12px] text-muted-foreground md:block">
+                  <p className="truncate text-[12px] text-muted-foreground md:max-w-[20rem]">
                     {weekRangeLabel}
                   </p>
                 ) : null}
@@ -80,37 +83,46 @@ export default function ScheduleToolbar({
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
-            <HintTooltip tip="เลิกทำ">
-              <button
-                onClick={onUndo}
-                disabled={isReadOnly || undoStackLength === 0}
-                className={cn(
-                  HISTORY_BUTTON_CLASS,
-                  !isReadOnly && undoStackLength > 0
-                    ? 'hover:bg-muted/30 text-foreground cursor-pointer'
-                    : 'text-foreground/30 cursor-not-allowed',
-                )}
-                aria-label="เลิกทำ"
-              >
-                <Undo2 className="w-4 h-4" strokeWidth={1.5} />
-              </button>
-            </HintTooltip>
-            <HintTooltip tip="ทำซ้ำ">
-              <button
-                onClick={onRedo}
-                disabled={isReadOnly || redoStackLength === 0}
-                className={cn(
-                  HISTORY_BUTTON_CLASS,
-                  !isReadOnly && redoStackLength > 0
-                    ? 'hover:bg-muted/30 text-foreground cursor-pointer'
-                    : 'text-foreground/30 cursor-not-allowed',
-                )}
-                aria-label="ทำซ้ำ"
-              >
-                <Redo2 className="w-4 h-4" strokeWidth={1.5} />
-              </button>
-            </HintTooltip>
+          <div className="flex shrink-0 items-center gap-2">
+            <div
+              className="inline-flex items-center gap-1 rounded-2xl border border-border/70 bg-background/60 p-0.5"
+              role="group"
+              aria-label="ประวัติการแก้ไข"
+            >
+              <HintTooltip tip="เลิกทำ">
+                <button
+                  onClick={onUndo}
+                  disabled={isReadOnly || undoStackLength === 0}
+                  className={cn(
+                    SCHEDULE_TOOLBAR_HISTORY_BUTTON,
+                    'border-0 bg-transparent shadow-none',
+                    canUndo
+                      ? 'hover:bg-muted/40 text-foreground cursor-pointer'
+                      : 'text-foreground/30 cursor-not-allowed',
+                  )}
+                  aria-label="เลิกทำ"
+                >
+                  <Undo2 className="w-4 h-4" strokeWidth={1.5} />
+                </button>
+              </HintTooltip>
+              <span className="h-5 w-px bg-border/80" aria-hidden />
+              <HintTooltip tip="ทำซ้ำ">
+                <button
+                  onClick={onRedo}
+                  disabled={isReadOnly || redoStackLength === 0}
+                  className={cn(
+                    SCHEDULE_TOOLBAR_HISTORY_BUTTON,
+                    'border-0 bg-transparent shadow-none',
+                    canRedo
+                      ? 'hover:bg-muted/40 text-foreground cursor-pointer'
+                      : 'text-foreground/30 cursor-not-allowed',
+                  )}
+                  aria-label="ทำซ้ำ"
+                >
+                  <Redo2 className="w-4 h-4" strokeWidth={1.5} />
+                </button>
+              </HintTooltip>
+            </div>
             <ClickableDatePicker
               value={initialDateStr}
               onChange={onDateChange}
@@ -125,25 +137,25 @@ export default function ScheduleToolbar({
               onClick={onExportScheduleImage}
               onMouseEnter={preloadCaptureLibraries}
               onFocus={preloadCaptureLibraries}
-              className={TOOLBAR_BUTTON_CLASS}
+              className={SCHEDULE_TOOLBAR_BUTTON}
             >
               <Download className="w-4 h-4" />
               บันทึกรูปภาพ
             </button>
 
-            <button onClick={onShowShiftSettings} className={TOOLBAR_BUTTON_CLASS}>
+            <button onClick={onShowShiftSettings} className={SCHEDULE_TOOLBAR_BUTTON}>
               <Settings className="w-4 h-4" />
               ตั้งค่า
             </button>
           </div>
 
-          <span className="hidden h-6 w-px shrink-0 bg-border md:block" aria-hidden />
+          <span className="hidden h-6 w-px shrink-0 bg-border/80 md:block" aria-hidden />
 
           <div className="flex items-center gap-2">
             <button
               onClick={onShowRegularHolidayModal}
               disabled={isReadOnly}
-              className={TOOLBAR_BUTTON_CLASS}
+              className={SCHEDULE_TOOLBAR_BUTTON}
             >
               <Calendar className="w-4 h-4" />
               วันหยุดประจำ
@@ -152,7 +164,7 @@ export default function ScheduleToolbar({
             <button
               onClick={onShowManagementModal}
               disabled={isReadOnly}
-              className={TOOLBAR_BUTTON_CLASS}
+              className={SCHEDULE_TOOLBAR_BUTTON}
             >
               <UserCog className="w-4 h-4" />
               การลา/เปลี่ยนกะ
@@ -168,7 +180,7 @@ export default function ScheduleToolbar({
               <button
                 onClick={onSyncGoogleSheet}
                 disabled={isReadOnly || isSyncingGoogleSheet}
-                className={TOOLBAR_BUTTON_CLASS}
+                className={SCHEDULE_TOOLBAR_BUTTON}
               >
                 <RefreshCw
                   className={cn('w-4 h-4', isSyncingGoogleSheet && 'animate-spin')}
@@ -181,7 +193,7 @@ export default function ScheduleToolbar({
             <button
               onClick={onShowAddEmployeeModal}
               disabled={isReadOnly}
-              className={TOOLBAR_BUTTON_CLASS}
+              className={SCHEDULE_TOOLBAR_BUTTON}
             >
               <Plus className="w-4 h-4" />
               เพิ่มพนักงาน

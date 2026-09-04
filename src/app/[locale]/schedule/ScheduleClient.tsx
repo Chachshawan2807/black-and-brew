@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, UserCog, X, Calendar, CalendarDays, Pencil, Check, GripVertical } from '@/lib/icons';
+import { Plus, Trash2, UserCog, Calendar, CalendarDays, Pencil, GripVertical } from '@/lib/icons';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { format } from 'date-fns';
 
@@ -53,6 +53,27 @@ import {
 } from '@/lib/schedule/shift-lookups';
 import { useScheduleUndo } from '@/hooks/useScheduleUndo';
 import ScheduleToolbar from './_components/ScheduleToolbar';
+import {
+  SCHEDULE_BTN_GHOST,
+  SCHEDULE_BTN_PRIMARY,
+  SCHEDULE_BTN_SECONDARY,
+  SCHEDULE_DAY_TOGGLE,
+  SCHEDULE_DAY_TOGGLE_IDLE,
+  SCHEDULE_DAY_TOGGLE_SELECTED,
+  SCHEDULE_FIELD_INPUT,
+  SCHEDULE_FORM_LABEL,
+  SCHEDULE_MODAL_FOOTER,
+  SCHEDULE_MODAL_HEADER,
+  SCHEDULE_MODAL_OVERLAY,
+  SCHEDULE_MODAL_PANEL,
+  SCHEDULE_MODAL_PANEL_SHEET,
+  SCHEDULE_TEXTAREA,
+  ScheduleEmptyState,
+  ScheduleModalCloseButton,
+  ScheduleModalHeader,
+  ScheduleModalSectionHeader,
+  ScheduleSuccessBanner,
+} from './_components/schedule-ui-primitives';
 
 const ShiftSettingsModal = dynamic(() => import('./_components/ShiftSettingsModal'), {
   ssr: false,
@@ -138,12 +159,6 @@ const defaultHistoryColumns: ColumnDef[] = [
   { id: 'remark', label: 'หมายเหตุ', width: '120px' },
   { id: 'actions', label: 'จัดการ', width: '96px' }
 ];
-
-const MGMT_MODAL_FOOTER_CLASS =
-  'p-4 bg-card border-t border-border flex gap-3 shrink-0';
-
-const MGMT_MODAL_HEADER_CLASS =
-  'min-h-[76px] px-5 py-4 border-b border-border flex items-center bg-card shrink-0';
 
 // ฟังก์ชันคำนวณตำแหน่ง Dropdown ไม่ให้ทะลุขอบจอ
 function getDropdownPosition(
@@ -1837,30 +1852,39 @@ export default function ScheduleClient({
       {/* สลับไปใช้งาน Portal และเชื่อม State ตำแหน่งที่คำนวณไว้ */}
       {selectedCell && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[99999] overflow-hidden"
+          className="fixed inset-0 z-[99999] overflow-hidden bg-black/10 backdrop-blur-[1px]"
           onClick={() => setSelectedCell(null)}
+          aria-hidden={false}
         >
           <div
             ref={dropdownRef}
-            className="absolute bg-card/95 backdrop-blur-md border border-border w-48 rounded-2xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+            role="dialog"
+            aria-label="เลือกกะ"
+            className="bb-schedule-shift-picker absolute w-[min(12rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2 duration-200"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-2.5 border-b border-border bg-[#000000]/5">
-              <h2 className="text-[13px] font-normal text-foreground truncate">
+            <div className="border-b border-border bg-muted/20 px-3 py-2.5">
+              <p className="text-[10px] font-normal uppercase tracking-[0.12em] text-muted-foreground">
+                เลือกกะ
+              </p>
+              <h2 className="truncate text-[13px] font-normal text-foreground">
                 {profileById.get(selectedCell.employeeId)?.full_name}
               </h2>
             </div>
-            <div className="p-1.5 grid gap-1">
+            <div className="grid gap-1 p-2">
               {shiftTypes.map(type => (
                 <button
                   key={type.value}
                   onClick={() => handleSave(type.value)}
                   disabled={isReadOnly}
-                  className={`h-11 md:h-auto py-1.5 px-3 rounded-lg border text-base md:text-[12px] font-normal shadow-sm w-full text-left bb-transition duration-200 hover:brightness-95 hover:shadow-md active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${type.className}`}
+                  className={cn(
+                    'h-11 w-full cursor-pointer rounded-xl border px-3 text-left text-[13px] font-normal shadow-sm bb-transition duration-200 hover:brightness-95 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 md:h-auto md:py-2',
+                    type.className,
+                  )}
                   style={type.style}
                 >
                   {type.label}
@@ -1868,13 +1892,13 @@ export default function ScheduleClient({
               ))}
             </div>
             {selectedCell.shift && (
-              <div className="p-1.5 bg-card border-t border-border">
+              <div className="border-t border-border bg-card p-2">
                 <button
                   onClick={handleClear}
                   disabled={isReadOnly}
-                  className="w-full h-11 md:h-auto py-1.5 rounded-lg bg-red-50 text-[#ff0000] text-base md:text-[11px] font-normal border border-red-100 hover:bg-[#ff0000] hover:text-[#ffffff] bb-transition duration-200 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer active:scale-[0.97]"
+                  className="h-11 w-full cursor-pointer rounded-xl border border-red-200/80 bg-red-50/80 text-[13px] font-normal text-red-600 bb-transition duration-200 hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] md:h-auto md:py-2"
                 >
-                  Clear Entry
+                  ล้างกะ
                 </button>
               </div>
             )}
@@ -1907,43 +1931,34 @@ export default function ScheduleClient({
         open={showManagementModal}
         onClose={() => setShowManagementModal(false)}
         zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
-        overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
-        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90dvh] max-md:h-[90dvh] min-h-0 overflow-hidden bg-card shadow-2xl md:w-fit md:max-w-[calc(100vw-2rem)] text-foreground flex flex-col pb-[env(safe-area-inset-bottom)]"
+        overlayClassName={SCHEDULE_MODAL_OVERLAY}
+        panelClassName={cn(
+          SCHEDULE_MODAL_PANEL,
+          'max-h-[90dvh] max-md:h-[90dvh] min-h-0 overflow-hidden md:w-fit md:max-w-[calc(100vw-2rem)] pb-[env(safe-area-inset-bottom)]',
+        )}
         panelOnClick={(e) => e.stopPropagation()}
         aria-label="จัดการพนักงานและกะ"
       >
-            <HintTooltip tip="ปิด">
-              <button onClick={() => setShowManagementModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-50" aria-label="ปิด">
-                <X className="w-5 h-5" />
-              </button>
-            </HintTooltip>
+            <ScheduleModalCloseButton onClose={() => setShowManagementModal(false)} />
 
             <div
               ref={mgmtModalScrollRef}
               className="flex flex-1 min-h-0 min-w-0 overflow-y-auto md:overflow-hidden flex-col md:flex-row md:items-stretch bb-smooth-scroll overscroll-y-contain"
             >
             <div className="w-full md:w-[340px] flex flex-col border-b md:border-b-0 md:border-r border-border shrink-0 md:min-h-0 md:self-stretch">
-              <div className={cn(MGMT_MODAL_HEADER_CLASS, 'management-form-container')}>
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-emerald-50 rounded-3xl shrink-0">
-                    <UserCog className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <h3 className="text-lg font-normal text-foreground tracking-tight">การลา / เปลี่ยนกะ</h3>
-                </div>
-              </div>
+              <ScheduleModalSectionHeader
+                icon={<UserCog className="w-5 h-5" strokeWidth={1.5} />}
+                title="การลา / เปลี่ยนกะ"
+                className="management-form-container"
+              />
 
-              <div className="p-6 space-y-6 md:flex-1 md:min-h-0 md:overflow-y-auto md:bb-smooth-scroll">
+              <div className="p-5 space-y-5 md:flex-1 md:min-h-0 md:overflow-y-auto md:bb-smooth-scroll">
                 {saveSuccess && (
-                  <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-                      <Check className="w-4 h-4 text-[#ffffff]" strokeWidth={3} aria-hidden />
-                    </div>
-                    <p className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลเรียบร้อยแล้วค่ะ</p>
-                  </div>
+                  <ScheduleSuccessBanner message="บันทึกข้อมูลเรียบร้อยแล้วค่ะ" />
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">พนักงาน</label>
+                  <label className={SCHEDULE_FORM_LABEL}>พนักงาน</label>
                   <RoundedSelect
                     value={managementForm.employeeId}
                     onChange={(e) => setManagementForm(prev => ({ ...prev, employeeId: e.target.value }))}
@@ -1957,7 +1972,7 @@ export default function ScheduleClient({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">กะงาน / ประเภทการลา</label>
+                  <label className={SCHEDULE_FORM_LABEL}>กะงาน / ประเภทการลา</label>
                   <div className="grid grid-cols-3 gap-2">
                     {shiftTypes.map(t => (
                       <button
@@ -1965,9 +1980,9 @@ export default function ScheduleClient({
                         type="button"
                         onClick={() => setManagementForm(prev => ({ ...prev, shiftType: t.value }))}
                         className={cn(
-                          'h-9 w-full px-2 rounded-full border text-[13px] font-normal shadow-sm bb-transition active:scale-[0.97] cursor-pointer text-center truncate',
+                          'h-10 w-full cursor-pointer truncate rounded-full border px-2 text-center text-[13px] font-normal shadow-sm bb-transition active:scale-[0.97]',
                           t.className,
-                          managementForm.shiftType === t.value && 'ring-2 ring-emerald-500/40 ring-offset-1 ring-offset-card'
+                          managementForm.shiftType === t.value && 'ring-2 ring-foreground/15 ring-offset-1 ring-offset-card',
                         )}
                         style={t.style}
                       >
@@ -1978,7 +1993,7 @@ export default function ScheduleClient({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">ระบุช่วงวันที่</label>
+                  <label className={SCHEDULE_FORM_LABEL}>ระบุช่วงวันที่</label>
                   <ClickableDateRangePicker
                     startValue={managementForm.startDate}
                     endValue={managementForm.endDate}
@@ -1987,47 +2002,46 @@ export default function ScheduleClient({
                   />
                 </div>
 
-                <div className="space-y-1.5 pt-2">
-                  <label className="text-[13px] font-normal text-foreground uppercase tracking-widest px-1">หมายเหตุ</label>
+                <div className="space-y-1.5 pt-1">
+                  <label className={SCHEDULE_FORM_LABEL}>หมายเหตุ</label>
                   <textarea
                     name="schedule-management-remark"
                     placeholder="รายละเอียดเพิ่มเติม..."
-                    className="w-full h-20 p-4 rounded-3xl border border-border bg-card outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus:border-emerald-500 bb-transition resize-none text-base md:text-[13px] leading-relaxed font-normal text-foreground placeholder:text-muted-foreground"
+                    className={SCHEDULE_TEXTAREA}
                     value={managementForm.remark}
                     onChange={(e) => setManagementForm(prev => ({ ...prev, remark: e.target.value }))}
                   />
                 </div>
               </div>
 
-              <div className={MGMT_MODAL_FOOTER_CLASS}>
+              <div className={SCHEDULE_MODAL_FOOTER}>
                 <button
                   onClick={editingHistoryId ? cancelEditHistory : () => setShowManagementModal(false)}
-                  className="flex-1 h-11 md:h-auto md:py-3 rounded-3xl bg-transparent border border-border text-foreground text-base md:text-[12px] font-normal hover:bg-muted/30 bb-transition active:scale-95 shadow-sm cursor-pointer antialiased"
+                  className={cn(SCHEDULE_BTN_SECONDARY, 'flex-1')}
                 >
                   {editingHistoryId ? 'ยกเลิกการแก้ไข' : 'ปิดหน้าต่าง'}
                 </button>
                 <button
                   onClick={handleSaveManagement}
-                  className={`flex-1 h-11 md:h-auto md:py-3 rounded-3xl font-normal text-base md:text-[12px] shadow-lg bb-transition active:scale-95 cursor-pointer antialiased ${
-                    editingHistoryId ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 text-[#ffffff]' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 text-[#ffffff]'
-                  }`}
+                  className={cn(
+                    SCHEDULE_BTN_PRIMARY,
+                    'flex-1',
+                    editingHistoryId && 'bg-blue-600 hover:opacity-100 hover:bg-blue-700',
+                  )}
                 >
                   {editingHistoryId ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล'}
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-col min-w-0 w-full shrink-0 md:flex-1 md:min-h-0 md:overflow-hidden md:w-fit md:max-w-full md:self-stretch bg-card/30">
-              <div className={cn(MGMT_MODAL_HEADER_CLASS, 'pr-14')}>
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-muted/30 rounded-3xl shrink-0">
-                    <CalendarDays className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-normal text-foreground tracking-tight">ประวัติ</h3>
-                </div>
-              </div>
+            <div className="flex flex-col min-w-0 w-full shrink-0 md:flex-1 md:min-h-0 md:overflow-hidden md:w-fit md:max-w-full md:self-stretch bg-muted/10">
+              <ScheduleModalSectionHeader
+                icon={<CalendarDays className="w-5 h-5" strokeWidth={1.5} />}
+                title="ประวัติ"
+                className="pr-14"
+              />
 
-              <div className="p-4 border-b border-border bg-card shrink-0">
+              <div className="p-4 border-b border-border bg-card/80 shrink-0">
                   <ClickableDateRangePicker
                     startValue={historyFilter.start}
                     endValue={historyFilter.end}
@@ -2043,15 +2057,15 @@ export default function ScheduleClient({
                 className="max-md:shrink-0 md:flex-1 md:min-h-0 md:overflow-y-auto md:overscroll-y-contain bb-smooth-scroll px-5 pt-5 pb-5"
               >
                 {mgmtHistoryLoading && mgmtHistory.length === 0 ? (
-                  <div className="min-h-[12rem] flex flex-col items-center justify-center text-foreground/30 space-y-2">
-                    <LoadingIcon size="lg" />
-                    <p className="text-sm font-normal uppercase tracking-widest">กำลังโหลดประวัติ...</p>
-                  </div>
+                  <ScheduleEmptyState
+                    icon={<LoadingIcon size="lg" />}
+                    message="กำลังโหลดประวัติ..."
+                  />
                 ) : mgmtHistory.length === 0 ? (
-                  <div className="min-h-[12rem] flex flex-col items-center justify-center text-foreground/20 space-y-2">
-                    <CalendarDays className="w-8 h-8" />
-                    <p className="text-sm font-normal uppercase tracking-widest">ไม่พบประวัติการจัดการ</p>
-                  </div>
+                  <ScheduleEmptyState
+                    icon={<CalendarDays className="w-8 h-8" />}
+                    message="ไม่พบประวัติการจัดการ"
+                  />
                 ) : (
                   <div className="w-fit max-w-full overflow-x-auto bb-smooth-scroll-chain-y bb-smooth-scroll scrollbar-thin border border-border rounded-3xl">
                     <table
@@ -2168,7 +2182,7 @@ export default function ScheduleClient({
                 )}
               </div>
 
-              <div className={cn(MGMT_MODAL_FOOTER_CLASS, 'hidden md:flex pointer-events-none')} aria-hidden="true">
+              <div className={cn(SCHEDULE_MODAL_FOOTER, 'hidden md:flex pointer-events-none')} aria-hidden="true">
                 <div className="flex-1 h-11 md:py-3" />
                 <div className="flex-1 h-11 md:py-3" />
               </div>
@@ -2182,20 +2196,19 @@ export default function ScheduleClient({
         open={showAddEmployeeModal}
         onClose={() => setShowAddEmployeeModal(false)}
         zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
-        overlayClassName="bg-[#000000]/10 backdrop-blur-sm"
-        panelClassName="fixed bottom-0 left-0 right-0 rounded-t-[32px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 p-6 max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-foreground border border-border"
+        overlayClassName={SCHEDULE_MODAL_OVERLAY}
+        panelClassName={cn(SCHEDULE_MODAL_PANEL_SHEET, 'p-0 text-foreground')}
         aria-label="เพิ่มพนักงานใหม่"
       >
-            <HintTooltip tip="ปิด">
-              <button onClick={() => setShowAddEmployeeModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
-                <X className="w-5 h-5" />
-              </button>
-            </HintTooltip>
-            <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
-            <h3 className="text-xl font-normal text-foreground mb-4 uppercase tracking-tight pr-10">เพิ่มพนักงานใหม่</h3>
-            <div className="space-y-4">
+            <ScheduleModalHeader
+              icon={<Plus className="h-5 w-5" strokeWidth={1.5} />}
+              title="เพิ่มพนักงานใหม่"
+              subtitle="กรอกชื่อพนักงานเพื่อเพิ่มในแถวตารางงาน"
+              onClose={() => setShowAddEmployeeModal(false)}
+            />
+            <div className="space-y-4 px-5 pb-5 max-md:pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
               <div className="space-y-1.5">
-                <label htmlFor="schedule-new-employee-name" className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">ชื่อ</label>
+                <label htmlFor="schedule-new-employee-name" className={SCHEDULE_FORM_LABEL}>ชื่อ</label>
                 <input
                   id="schedule-new-employee-name"
                   name="schedule-new-employee-name"
@@ -2205,20 +2218,20 @@ export default function ScheduleClient({
                   onChange={e => setNewEmployeeName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddEmployee()}
                   placeholder="กรอกชื่อพนักงาน"
-                  className="w-full h-11 bg-card border border-border rounded-xl px-4 py-3 text-base md:text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus:border-blue-500/50 bb-transition"
+                  className={SCHEDULE_FIELD_INPUT}
                 />
               </div>
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-1">
                 <button
                   onClick={() => setShowAddEmployeeModal(false)}
-                  className="flex-1 h-11 md:h-auto md:py-3 text-foreground/60 font-normal hover:bg-muted/30 rounded-xl bb-transition text-base md:text-sm cursor-pointer"
+                  className={cn(SCHEDULE_BTN_GHOST, 'flex-1')}
                 >
                   ยกเลิก
                 </button>
                 <button
                   onClick={handleAddEmployee}
                   disabled={loading || !newEmployeeName.trim()}
-                  className="flex-1 h-11 md:h-auto md:py-3 bg-[#000000] text-[#ffffff] font-normal rounded-xl hover:bg-[#000000]/80 bb-transition shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className={cn(SCHEDULE_BTN_PRIMARY, 'flex-1')}
                 >
                   {loading ? <LoadingIcon size="md" /> : <Plus className="w-4 h-4" />}
                   ยืนยัน
@@ -2233,26 +2246,23 @@ export default function ScheduleClient({
         open={showRegularHolidayModal}
         onClose={() => setShowRegularHolidayModal(false)}
         zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
-        overlayClassName="bg-[#000000]/10 backdrop-blur-sm"
-        panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full max-h-[90dvh] max-md:h-[90dvh] min-h-0 overflow-hidden flex flex-col bg-card shadow-2xl md:max-w-3xl md:max-h-[90vh] text-foreground border border-border pb-[env(safe-area-inset-bottom,0px)]"
+        overlayClassName={SCHEDULE_MODAL_OVERLAY}
+        panelClassName={cn(
+          SCHEDULE_MODAL_PANEL,
+          'max-h-[90dvh] max-md:h-[90dvh] min-h-0 md:max-w-3xl md:max-h-[90vh] pb-[env(safe-area-inset-bottom,0px)]',
+        )}
         aria-label="จัดการวันหยุดประจำ"
       >
-            <div className="shrink-0 px-6 pt-6">
-              <HintTooltip tip="ปิด">
-                <button onClick={() => setShowRegularHolidayModal(false)} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors z-10" aria-label="ปิด">
-                  <X className="w-5 h-5" />
-                </button>
-              </HintTooltip>
-              <div className="w-12 h-1.5 bg-[#000000]/10 rounded-full mx-auto mb-6 md:hidden" />
-              <h3 className="text-xl font-normal text-foreground mb-4 uppercase tracking-tight flex items-center gap-2 pr-10">
-                <Calendar className="w-5 h-5 text-foreground/40" />
-                จัดการวันหยุดประจำ
-              </h3>
-            </div>
+            <ScheduleModalHeader
+              icon={<Calendar className="h-5 w-5" strokeWidth={1.5} />}
+              title="จัดการวันหยุดประจำ"
+              subtitle="กำหนดวันหยุดประจำสัปดาห์ของแต่ละพนักงาน"
+              onClose={() => setShowRegularHolidayModal(false)}
+            />
 
             <div
               data-testid="regular-holiday-modal-scroll"
-              className="flex flex-1 min-h-0 min-w-0 flex-col px-6 max-md:overflow-hidden md:overflow-y-auto md:bb-smooth-scroll md:bb-scroll-xy md:overscroll-y-contain md:pb-6"
+              className="flex flex-1 min-h-0 min-w-0 flex-col px-5 max-md:overflow-hidden md:overflow-y-auto md:bb-smooth-scroll md:bb-scroll-xy md:overscroll-y-contain md:pb-6"
             >
               <div
                 data-testid="regular-holiday-modal-layout"
@@ -2262,7 +2272,7 @@ export default function ScheduleClient({
                 <div className="flex flex-col w-full md:w-[260px] shrink-0">
                   <div className="flex flex-col space-y-6">
                     <div className="space-y-1.5">
-                      <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">พนักงาน</label>
+                      <label className={SCHEDULE_FORM_LABEL}>พนักงาน</label>
                       <RoundedSelect
                         value={holidayFormEmployee}
                         onChange={(e) => {
@@ -2281,7 +2291,7 @@ export default function ScheduleClient({
                     
                     {holidayFormEmployee && (
                       <div className="space-y-2.5">
-                        <label className="text-[13px] font-normal uppercase tracking-wider text-foreground/70 ml-1">เลือกวันหยุดประจำสัปดาห์</label>
+                        <label className={SCHEDULE_FORM_LABEL}>เลือกวันหยุดประจำสัปดาห์</label>
                         <div
                           data-testid="regular-holiday-day-picker"
                           className="grid grid-cols-4 gap-2"
@@ -2306,11 +2316,10 @@ export default function ScheduleClient({
                                   );
                                   setHolidaySaveSuccess(false);
                                 }}
-                                className={`h-11 md:h-auto py-2 rounded-xl text-base md:text-[13px] font-normal bb-transition cursor-pointer ${
-                                  isSelected 
-                                    ? 'bg-[#000000] text-[#ffffff] shadow-md' 
-                                    : 'bg-card border border-border text-foreground hover:bg-muted/30'
-                                }`}
+                                className={cn(
+                                  SCHEDULE_DAY_TOGGLE,
+                                  isSelected ? SCHEDULE_DAY_TOGGLE_SELECTED : SCHEDULE_DAY_TOGGLE_IDLE,
+                                )}
                               >
                                 {day.label}
                               </button>
@@ -2323,16 +2332,13 @@ export default function ScheduleClient({
 
                   <div className="hidden md:block pt-4 border-t border-border mt-6 space-y-3">
                     {holidaySaveSuccess && (
-                      <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 flex items-center justify-center gap-2 animate-in fade-in duration-300">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                        <span className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลสำเร็จนะคะ</span>
-                      </div>
+                      <ScheduleSuccessBanner message="บันทึกข้อมูลสำเร็จนะคะ" />
                     )}
                     <div className="flex gap-3">
                       <button
                         type="button"
                         onClick={() => setShowRegularHolidayModal(false)}
-                        className="flex-1 h-11 md:h-auto md:py-3 text-foreground/60 font-normal hover:bg-muted/30 rounded-xl bb-transition text-base md:text-sm cursor-pointer"
+                        className={cn(SCHEDULE_BTN_GHOST, 'flex-1')}
                       >
                         ปิดหน้าต่าง
                       </button>
@@ -2340,7 +2346,7 @@ export default function ScheduleClient({
                         type="button"
                         onClick={handleSaveRegularHolidays}
                         disabled={!holidayFormEmployee}
-                        className="flex-1 h-11 md:h-auto md:py-3 bg-[#000000] text-[#ffffff] font-normal rounded-xl hover:bg-[#000000]/80 bb-transition shadow-lg active:scale-[0.98] disabled:opacity-50 text-base md:text-sm cursor-pointer"
+                        className={cn(SCHEDULE_BTN_PRIMARY, 'flex-1')}
                       >
                         บันทึกข้อมูล
                       </button>
@@ -2349,8 +2355,10 @@ export default function ScheduleClient({
                 </div>
 
                 {/* Summary overview 3-column cards; fills remaining height on mobile */}
-                <div className="flex flex-1 w-full min-w-0 min-h-0 flex-col overflow-hidden border border-border rounded-3xl p-4 bg-card/50">
-                  <h4 className="text-[14px] font-normal text-foreground mb-3 px-1 shrink-0">สรุปวันหยุดประจำของพนักงาน</h4>
+                <div className="flex flex-1 w-full min-w-0 min-h-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-muted/10 p-4">
+                  <h4 className="mb-3 shrink-0 px-0.5 text-[13px] font-normal uppercase tracking-[0.08em] text-muted-foreground">
+                    สรุปวันหยุดประจำของพนักงาน
+                  </h4>
                   <div
                     data-testid="regular-holiday-summary-scroll"
                     className="flex-1 min-h-0 overflow-y-auto bb-smooth-scroll bb-scroll-xy overscroll-y-contain -mx-1 px-1"
@@ -2368,7 +2376,7 @@ export default function ScheduleClient({
                         return (
                           <li
                             key={p.id}
-                            className="min-w-0 flex flex-col gap-1 py-2.5 px-2.5 rounded-2xl border border-border bg-card"
+                            className="flex min-w-0 flex-col gap-1 rounded-2xl border border-border/80 bg-card px-2.5 py-2.5 shadow-sm"
                           >
                             <span className="text-[13px] font-normal text-foreground truncate">{p.full_name}</span>
                             <span className="text-[12px] font-normal text-foreground/70 leading-snug break-words">
@@ -2388,19 +2396,16 @@ export default function ScheduleClient({
 
             <div
               data-testid="regular-holiday-modal-footer"
-              className="md:hidden shrink-0 border-t border-border px-6 py-4 space-y-3 bg-card"
+              className="md:hidden shrink-0 border-t border-border px-5 py-4 space-y-3 bg-card"
             >
               {holidaySaveSuccess && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2 flex items-center justify-center gap-2 animate-in fade-in duration-300">
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                  <span className="text-[13px] text-emerald-700 font-normal">บันทึกข้อมูลสำเร็จนะคะ</span>
-                </div>
+                <ScheduleSuccessBanner message="บันทึกข้อมูลสำเร็จนะคะ" />
               )}
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setShowRegularHolidayModal(false)}
-                  className="flex-1 h-11 text-foreground/60 font-normal hover:bg-muted/30 rounded-xl bb-transition text-base cursor-pointer"
+                  className={cn(SCHEDULE_BTN_GHOST, 'flex-1')}
                 >
                   ปิดหน้าต่าง
                 </button>
@@ -2408,7 +2413,7 @@ export default function ScheduleClient({
                   type="button"
                   onClick={handleSaveRegularHolidays}
                   disabled={!holidayFormEmployee}
-                  className="flex-1 h-11 bg-[#000000] text-[#ffffff] font-normal rounded-xl hover:bg-[#000000]/80 bb-transition shadow-lg active:scale-[0.98] disabled:opacity-50 text-base cursor-pointer"
+                  className={cn(SCHEDULE_BTN_PRIMARY, 'flex-1')}
                 >
                   บันทึกข้อมูล
                 </button>

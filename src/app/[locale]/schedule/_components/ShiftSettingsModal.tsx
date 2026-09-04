@@ -1,9 +1,7 @@
 'use client';
 
 import { LoadingIcon } from '@/components/ui/loading-icon';
-import { PageLoadingState } from '@/components/ui/page-loading-state';
 import React, { useEffect, useMemo, useState } from 'react';
-import { CloseIcon } from '@/components/ui/close-icon';
 import { Settings, RotateCcw, Trash2 } from '@/lib/icons';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { cn } from '@/lib/utils';
@@ -18,6 +16,16 @@ import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { APP_MODAL_ABOVE_FAB_Z_INDEX } from '@/lib/floating-action-layout';
+import {
+  SCHEDULE_BTN_GHOST,
+  SCHEDULE_BTN_PRIMARY,
+  SCHEDULE_BTN_SECONDARY,
+  SCHEDULE_FIELD_INPUT,
+  SCHEDULE_FORM_LABEL,
+  SCHEDULE_MODAL_OVERLAY,
+  SCHEDULE_MODAL_PANEL,
+  ScheduleModalHeader,
+} from './schedule-ui-primitives';
 
 const SELECT_NEW_CUSTOM = '__new_custom__';
 
@@ -39,7 +47,7 @@ function ColorPickerButton({
   onToggle: () => void;
 }) {
   const activePreset = PASTEL_COLOR_PRESETS.find(
-    (p) => p.bg === entry.bgColor && p.border === entry.borderColor
+    (p) => p.bg === entry.bgColor && p.border === entry.borderColor,
   );
 
   const colorLabel = activePreset?.name ?? 'สีพาสเทล';
@@ -50,10 +58,10 @@ function ColorPickerButton({
         type="button"
         onClick={onToggle}
         className={cn(
-          'flex items-center justify-center h-11 w-11 rounded-xl border bb-transition cursor-pointer',
+          'flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl border bb-transition cursor-pointer',
           open
-            ? 'border-emerald-500/30 bg-emerald-50/20'
-            : 'border-border bg-background hover:bg-muted/30'
+            ? 'border-foreground/20 bg-muted/40'
+            : 'border-border bg-background hover:bg-muted/30',
         )}
         aria-expanded={open}
         aria-label={colorLabel}
@@ -75,10 +83,8 @@ function ColorPickerPanel({
   onChange: (bg: string, border: string) => void;
 }) {
   return (
-    <div className="p-3 rounded-xl border border-border bg-muted/15 animate-in fade-in slide-in-from-top-1 duration-200">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2.5 px-0.5">
-        เลือกสีพาสเทล
-      </p>
+    <div className="rounded-2xl border border-border bg-muted/15 p-3 animate-in fade-in slide-in-from-top-1 duration-200">
+      <p className={cn(SCHEDULE_FORM_LABEL, 'mb-2.5')}>เลือกสีพาสเทล</p>
       <div className="grid grid-cols-4 gap-2.5">
         {PASTEL_COLOR_PRESETS.map((preset) => {
           const selected = entry.bgColor === preset.bg && entry.borderColor === preset.border;
@@ -88,10 +94,10 @@ function ColorPickerPanel({
                 type="button"
                 onClick={() => onChange(preset.bg, preset.border)}
                 className={cn(
-                  'flex flex-col items-center gap-1.5 p-2 rounded-xl border bb-transition active:scale-95 cursor-pointer',
+                  'flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl border p-2 bb-transition active:scale-95',
                   selected
-                    ? 'border-emerald-500/50 bg-card shadow-sm ring-1 ring-emerald-500/20'
-                    : 'border-transparent hover:border-border hover:bg-card/80'
+                    ? 'border-foreground/25 bg-card shadow-sm ring-1 ring-foreground/10'
+                    : 'border-transparent hover:border-border hover:bg-card/80',
                 )}
                 aria-label={preset.name}
               >
@@ -99,7 +105,7 @@ function ColorPickerPanel({
                   className="h-8 w-8 rounded-full border-2"
                   style={{ backgroundColor: preset.bg, borderColor: preset.border }}
                 />
-                <span className="text-[10px] text-muted-foreground leading-none">{preset.name}</span>
+                <span className="text-[10px] leading-none text-muted-foreground">{preset.name}</span>
               </button>
             </HintTooltip>
           );
@@ -117,7 +123,7 @@ export default function ShiftSettingsModal({
   onSave,
 }: ShiftSettingsModalProps) {
   const [draft, setDraft] = useState<ShiftTypeEntry[]>(() =>
-    shiftTypes.map((t) => ({ ...t }))
+    shiftTypes.map((t) => ({ ...t })),
   );
   const [selectedId, setSelectedId] = useState<string>(() => draft[0]?.id ?? '');
   const [selectValue, setSelectValue] = useState<string>(() => draft[0]?.id ?? '');
@@ -126,7 +132,7 @@ export default function ShiftSettingsModal({
 
   const selectedEntry = useMemo(
     () => draft.find((t) => t.id === selectedId) ?? draft[0],
-    [draft, selectedId]
+    [draft, selectedId],
   );
 
   const preview = selectedEntry ? buildShiftDisplay(selectedEntry) : null;
@@ -217,49 +223,33 @@ export default function ShiftSettingsModal({
 
   return (
     <ModalPortal>
-    <FadeModalScaffold
-      open={open}
-      onClose={() => {
-        if (!isSaving) onClose();
-      }}
-      zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
-      overlayClassName="bg-[#000000]/30 backdrop-blur-sm"
-      panelClassName="relative rounded-t-[32px] md:rounded-3xl w-full md:w-fit md:max-w-[22rem] max-w-[calc(100vw-2rem)] max-h-[90vh] overflow-hidden bg-card shadow-2xl flex flex-col"
-      aria-label="ตั้งค่ากะการทำงาน"
-    >
-        {/* Header */}
-        <div className="px-4 pt-5 pb-4 flex items-start gap-3 shrink-0">
-          <div className="p-2 bg-muted/50 rounded-2xl mt-0.5">
-            <Settings className="w-5 h-5 text-foreground" strokeWidth={1.5} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-normal text-foreground tracking-tight">ตั้งค่ากะการทำงาน</h3>
-            <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed text-balance">
-              เลือกกะ ปรับสีพาสเทล หรือกำหนดกะใหม่
-            </p>
-          </div>
-          <HintTooltip tip="ปิดตั้งค่ากะ">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSaving}
-              className="p-2 -mr-1 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-full transition-colors disabled:opacity-50"
-              aria-label="ปิดตั้งค่ากะ"
-            >
-              <CloseIcon />
-            </button>
-          </HintTooltip>
-        </div>
+      <FadeModalScaffold
+        open={open}
+        onClose={() => {
+          if (!isSaving) onClose();
+        }}
+        zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
+        overlayClassName={SCHEDULE_MODAL_OVERLAY}
+        panelClassName={cn(
+          SCHEDULE_MODAL_PANEL,
+          'md:w-fit md:max-w-[22rem] max-w-[calc(100vw-2rem)] max-h-[90vh]',
+        )}
+        aria-label="ตั้งค่ากะการทำงาน"
+      >
+        <ScheduleModalHeader
+          icon={<Settings className="h-5 w-5" strokeWidth={1.5} />}
+          title="ตั้งค่ากะการทำงาน"
+          subtitle="เลือกกะ ปรับสีพาสเทล หรือกำหนดกะใหม่"
+          onClose={onClose}
+          closeDisabled={isSaving}
+          closeLabel="ปิดตั้งค่ากะ"
+        />
 
-        {/* Main editor */}
-        <div className="px-4 pb-5 space-y-3 shrink-0 flex-1 min-h-0 overflow-y-auto bb-smooth-scroll">
-          {/* Row: เลือกกะ + preview + เลือกสี + ลบ */}
+        <div className="min-h-0 flex-1 shrink-0 space-y-3 overflow-y-auto px-5 pb-5 bb-smooth-scroll">
           <div className="space-y-2">
             <div className="flex items-end gap-2.5">
-              <div className="shrink-0 w-[124px]">
-                <label className="text-[10px] text-muted-foreground uppercase tracking-widest px-0.5 mb-1 block">
-                  เลือกกะ
-                </label>
+              <div className="w-[124px] shrink-0">
+                <label className={cn(SCHEDULE_FORM_LABEL, 'mb-1')}>เลือกกะ</label>
                 <RoundedSelect
                   value={selectValue}
                   onChange={(e) => handleSelectChange(e.target.value)}
@@ -274,54 +264,53 @@ export default function ShiftSettingsModal({
                 </RoundedSelect>
               </div>
 
-              {preview && selectedEntry && !isCreating && (
+              {preview && selectedEntry && !isCreating ? (
                 <div
                   className={cn(
-                    'h-11 w-[76px] shrink-0 rounded-xl border flex items-center justify-center text-[13px] font-normal truncate px-1.5',
-                    preview.className
+                    'flex h-11 w-[76px] shrink-0 items-center justify-center truncate rounded-2xl border px-1.5 text-[13px] font-normal',
+                    preview.className,
                   )}
                   style={preview.style}
                 >
                   {selectedEntry.label}
                 </div>
-              )}
+              ) : null}
 
-              {selectedEntry && !isCreating && (
+              {selectedEntry && !isCreating ? (
                 <ColorPickerButton
                   entry={selectedEntry}
                   open={colorOpen}
                   onToggle={() => setColorOpen((v) => !v)}
                 />
-              )}
+              ) : null}
 
-              {canDelete && (
+              {canDelete ? (
                 <HintTooltip tip="ลบกะนี้">
                   <button
                     type="button"
                     onClick={() => handleRemoveShift(selectedEntry!.id)}
                     disabled={isSaving}
-                    className="shrink-0 flex items-center justify-center h-11 w-11 text-red-500/80 hover:text-red-600 hover:bg-red-50 rounded-xl border border-border bb-transition disabled:opacity-50 cursor-pointer"
+                    className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-border text-red-500/80 bb-transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                     aria-label="ลบกะนี้"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </HintTooltip>
-              )}
+              ) : null}
             </div>
 
-            {colorOpen && selectedEntry && !isCreating && (
+            {colorOpen && selectedEntry && !isCreating ? (
               <ColorPickerPanel
                 entry={selectedEntry}
                 onChange={(bg, border) =>
                   updateEntry({ ...selectedEntry, bgColor: bg, borderColor: border })
                 }
               />
-            )}
+            ) : null}
           </div>
 
-          {/* Custom name input when กำหนดเอง */}
-          {isCreating && (
-            <div className="flex gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+          {isCreating ? (
+            <div className="flex animate-in fade-in slide-in-from-top-1 gap-2 duration-200">
               <input
                 type="text"
                 name="shift-custom-name"
@@ -329,31 +318,29 @@ export default function ShiftSettingsModal({
                 value={customName}
                 onChange={(e) => setCustomName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCustomNameSubmit()}
-                className="flex-1 h-11 px-3 rounded-xl border border-border bg-background text-[14px] text-foreground outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus:border-emerald-500"
+                className={cn(SCHEDULE_FIELD_INPUT, 'flex-1')}
                 placeholder="พิมพ์ชื่อกะใหม่"
               />
               <button
                 type="button"
                 onClick={handleCustomNameSubmit}
                 disabled={!customName.trim()}
-                className="h-11 px-4 text-[13px] text-[#ffffff] bg-[#000000] hover:bg-[#000000]/85 rounded-xl bb-transition disabled:opacity-40 cursor-pointer shrink-0"
+                className={cn(SCHEDULE_BTN_PRIMARY, 'shrink-0')}
               >
                 เพิ่ม
               </button>
             </div>
-          )}
-
+          ) : null}
         </div>
 
-        {/* Footer */}
-        <div className="px-4 py-4 border-t border-border flex flex-col gap-2 shrink-0 w-full max-md:pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className="shrink-0 border-t border-border px-5 py-4 max-md:pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={handleReset}
             disabled={isSaving}
-            className="flex items-center justify-center gap-1.5 h-10 text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
+            className={cn(SCHEDULE_BTN_GHOST, 'mb-2 h-10 w-full')}
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="h-3.5 w-3.5" />
             คืนค่าเริ่มต้น
           </button>
           <div className="flex gap-2">
@@ -361,7 +348,7 @@ export default function ShiftSettingsModal({
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="flex-1 h-11 px-4 text-[13px] text-foreground bg-card hover:bg-muted/30 rounded-3xl border border-border bb-transition disabled:opacity-50 cursor-pointer"
+              className={cn(SCHEDULE_BTN_SECONDARY, 'flex-1')}
             >
               ยกเลิก
             </button>
@@ -369,14 +356,14 @@ export default function ShiftSettingsModal({
               type="button"
               onClick={handleSave}
               disabled={isSaving || isCreating}
-              className="flex-1 h-11 px-4 text-[13px] text-[#ffffff] bg-[#000000] hover:bg-[#000000]/85 rounded-3xl bb-transition disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
+              className={cn(SCHEDULE_BTN_PRIMARY, 'flex-1')}
             >
               {isSaving ? <LoadingIcon size="md" /> : null}
               บันทึก
             </button>
           </div>
         </div>
-    </FadeModalScaffold>
+      </FadeModalScaffold>
     </ModalPortal>
   );
 }
