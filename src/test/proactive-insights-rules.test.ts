@@ -48,7 +48,7 @@ function sampleSnapshot(overrides: Partial<OperationalSnapshot> = {}): Operation
 }
 
 describe('evaluateInsightRules', () => {
-  test('understaffed_low_stock lists short weekday dates with headcount', () => {
+  test('understaffed_low_stock lists only future short weekday dates with headcount', () => {
     const insights = evaluateInsightRules(
       sampleSnapshot({
         weeklyDays: makeWeekDays([3, 5, 4, 5, 3, 4, 5]),
@@ -57,8 +57,18 @@ describe('evaluateInsightRules', () => {
     const hit = insights.find((i) => i.ruleId === 'understaffed_low_stock');
     expect(hit).toBeDefined();
     expect(hit!.title).toBe('คนน้อย');
-    expect(hit!.summary).toContain('จ. ที่ 20 (3 คน)');
-    expect(hit!.summary).toContain('ศ. ที่ 24 (3 คน)');
+    expect(hit!.summary).toContain('ส. ที่ 25 (4 คน)');
+    expect(hit!.summary).not.toContain('จ. ที่ 20');
+    expect(hit!.summary).not.toContain('ศ. ที่ 24');
+  });
+
+  test('understaffed_low_stock excludes past and today even when understaffed', () => {
+    const insights = evaluateInsightRules(
+      sampleSnapshot({
+        weeklyDays: makeWeekDays([2, 2, 2, 2, 2, 5, 5]),
+      }),
+    );
+    expect(insights.find((i) => i.ruleId === 'understaffed_low_stock')).toBeUndefined();
   });
 
   test('understaffed_low_stock does not fire when all days are above limits', () => {
@@ -70,15 +80,15 @@ describe('evaluateInsightRules', () => {
     expect(insights.find((i) => i.ruleId === 'understaffed_low_stock')).toBeUndefined();
   });
 
-  test('understaffed_low_stock fires on public holidays when headcount is at or below 4', () => {
+  test('understaffed_low_stock fires on future public holidays when headcount is at or below 4', () => {
     const weeklyDays = makeWeekDays([5, 5, 5, 5, 5, 5, 5]);
-    weeklyDays[2] = { ...weeklyDays[2], headcount: 4, isPublicHoliday: true };
+    weeklyDays[5] = { ...weeklyDays[5], headcount: 4, isPublicHoliday: true };
 
     const insights = evaluateInsightRules(sampleSnapshot({ weeklyDays }));
     const hit = insights.find((i) => i.ruleId === 'understaffed_low_stock');
 
     expect(hit).toBeDefined();
-    expect(hit!.summary).toContain('พ. ที่ 22 (4 คน)');
+    expect(hit!.summary).toContain('ส. ที่ 25 (4 คน)');
   });
 
   test('leave_coverage_risk groups upcoming leave by date with names', () => {
@@ -186,7 +196,7 @@ describe('evaluateInsightRules', () => {
 
     const insights = evaluateInsightRules(
       sampleSnapshot({
-        weeklyDays: makeWeekDays([2, 5, 5, 5, 5, 5, 5], leaveStaffByDay),
+        weeklyDays: makeWeekDays([5, 5, 5, 5, 5, 2, 5], leaveStaffByDay),
         pendingBeanOrders: [
           { customerName: 'คุณซี', paymentStatus: 'unpaid', fulfillmentStatus: 'pending' },
         ],

@@ -6,7 +6,6 @@ import { Trash2 } from '@/lib/icons';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
-import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
 import { cn } from '@/lib/utils';
 import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
 
@@ -72,14 +71,14 @@ export default function SecretaryManualTaskDialog({
           </div>
 
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 bb-smooth-scroll [scrollbar-width:thin]">
-            <label className={cn('block space-y-1.5 rounded-2xl border px-3 py-3', SECRETARY_TASK_COLORS.attention)}>
-              <span className="text-[13px] text-black/70">ชื่องาน</span>
+            <label className="block space-y-1.5 rounded-2xl border border-border bg-card px-3 py-3">
+              <span className="text-[13px] text-muted-foreground">ชื่องาน</span>
               <input
                 type="text"
                 value={title}
                 onChange={(event) => onTitleChange(event.target.value)}
                 placeholder="เช่น ตรวจสต็อกเคาน์เตอร์"
-                className="w-full rounded-xl border border-[#f5c6cb] bg-white px-3 py-2 text-[14px] text-black"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-[14px] text-foreground"
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
@@ -89,14 +88,14 @@ export default function SecretaryManualTaskDialog({
               />
             </label>
 
-            <label className={cn('block space-y-1.5 rounded-2xl border px-3 py-3', SECRETARY_TASK_COLORS.attention)}>
-              <span className="text-[13px] text-black/70">รายละเอียด</span>
+            <label className="block space-y-1.5 rounded-2xl border border-border bg-card px-3 py-3">
+              <span className="text-[13px] text-muted-foreground">รายละเอียด</span>
               <textarea
                 value={description}
                 onChange={(event) => onDescriptionChange(event.target.value)}
                 placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"
                 rows={5}
-                className="w-full resize-y rounded-xl border border-[#f5c6cb] bg-white px-3 py-2 text-[14px] leading-relaxed text-black"
+                className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-[14px] leading-relaxed text-foreground"
               />
             </label>
           </div>

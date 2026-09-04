@@ -61,6 +61,8 @@ describe('secretary manual task UI', () => {
     expect(dialog).toContain('onSave');
     expect(dialog).toContain('onDelete');
     expect(dialog).toContain('textarea');
+    expect(dialog).not.toContain('SECRETARY_TASK_COLORS.attention');
+    expect(dialog).not.toContain('border-[#f5c6cb]');
   });
 
   test('SecretaryClient opens manual task dialog for create with description', () => {

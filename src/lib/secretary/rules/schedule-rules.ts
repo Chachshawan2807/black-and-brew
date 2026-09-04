@@ -1,7 +1,7 @@
 import {
   collectWeeklyLeaveEntries,
+  filterFutureUnderstaffedDays,
   filterUpcomingLeaveEntries,
-  findUnderstaffedDays,
 } from '@/lib/proactive-insights/week-schedule';
 import { INSIGHT_THRESHOLDS } from '@/lib/proactive-insights/thresholds';
 import {
@@ -19,7 +19,10 @@ export function deriveScheduleTasks(snapshot: SecretarySnapshot): DerivedTaskDra
     snapshot.operational.upcomingHoliday &&
     snapshot.operational.upcomingHoliday.daysRemaining <= 3;
 
-  const understaffed = findUnderstaffedDays(snapshot.operational.weeklyDays);
+  const understaffed = filterFutureUnderstaffedDays(
+    snapshot.operational.weeklyDays,
+    snapshot.dateIso,
+  );
   if (understaffed.length > 0) {
     const daySummary = understaffed
       .map((day) => formatUnderstaffedDaySummary(day.dateIso, day.dayIndex, day.headcount))

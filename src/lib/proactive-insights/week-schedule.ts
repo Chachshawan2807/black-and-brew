@@ -30,6 +30,14 @@ export function findUnderstaffedDays(days: WeeklyDaySchedule[]): WeeklyDaySchedu
   return days.filter((day) => isDayUnderstaffed(day));
 }
 
+/** Keep understaffed days strictly after fromDateIso; today and past days are omitted from alerts. */
+export function filterFutureUnderstaffedDays(
+  days: WeeklyDaySchedule[],
+  fromDateIso: string,
+): WeeklyDaySchedule[] {
+  return findUnderstaffedDays(days).filter((day) => day.dateIso > fromDateIso);
+}
+
 export function sumWeeklyLeave(days: WeeklyDaySchedule[]): number {
   return days.reduce((sum, day) => sum + day.leaveCount, 0);
 }

@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import type { WeeklyDaySchedule } from '@/lib/proactive-insights/types';
-import { findUnderstaffedDays, isDayUnderstaffed } from '@/lib/proactive-insights/week-schedule';
+import {
+  filterFutureUnderstaffedDays,
+  findUnderstaffedDays,
+  isDayUnderstaffed,
+} from '@/lib/proactive-insights/week-schedule';
 
 function day(
   overrides: Partial<WeeklyDaySchedule> & Pick<WeeklyDaySchedule, 'dayIndex' | 'headcount'>,
@@ -38,5 +42,20 @@ describe('findUnderstaffedDays', () => {
 
     expect(understaffed).toHaveLength(1);
     expect(understaffed[0]?.dayIndex).toBe(3);
+  });
+});
+
+describe('filterFutureUnderstaffedDays', () => {
+  test('keeps only understaffed days strictly after fromDateIso', () => {
+    const days = [
+      day({ dayIndex: 0, headcount: 2 }),
+      day({ dayIndex: 4, headcount: 2 }),
+      day({ dayIndex: 5, headcount: 3 }),
+    ];
+
+    const future = filterFutureUnderstaffedDays(days, '2026-07-24');
+
+    expect(future).toHaveLength(1);
+    expect(future[0]?.dateIso).toBe('2026-07-25');
   });
 });
