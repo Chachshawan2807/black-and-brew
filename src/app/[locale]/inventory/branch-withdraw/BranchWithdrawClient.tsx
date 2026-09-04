@@ -83,26 +83,47 @@ const BRANCH2_UNIT_LABEL = 'หน่วยสาขา 2';
 const BRANCH_WITHDRAW_HISTORY_INITIAL_COUNT = 3;
 const DESKTOP_GRID_COLS =
   'md:grid-cols-[minmax(0,1fr)_4.25rem_4.25rem_minmax(6.75rem,8.5rem)]';
-const INPUT_LABEL_CLASS = 'text-center text-[10px] leading-tight text-foreground/70 md:text-xs';
-const INPUT_FIELD_CLASS =
-  'h-8 w-full min-w-0 rounded-xl border border-border bg-background px-1 text-center text-xs outline-none tabular-nums md:h-9 md:px-2 md:text-sm';
-const UNIT_INPUT_FIELD_CLASS = `${INPUT_FIELD_CLASS} placeholder:text-[10px] placeholder:leading-tight md:placeholder:text-xs`;
-const MOBILE_INPUT_GRID_CLASS = 'grid grid-cols-3 gap-1 md:contents';
+const INPUT_LABEL_CLASS =
+  'text-center text-[10px] font-normal leading-tight text-muted-foreground md:text-xs';
+const INPUT_FOCUS_CLASS =
+  'outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 focus:bg-card bb-transition';
+const INPUT_FIELD_CLASS = cn(
+  'h-10 w-full min-w-0 rounded-xl border border-border bg-background px-1 text-center text-sm tabular-nums md:h-9 md:px-2',
+  INPUT_FOCUS_CLASS,
+);
+const UNIT_INPUT_FIELD_CLASS = cn(
+  INPUT_FIELD_CLASS,
+  'placeholder:text-[10px] placeholder:leading-tight md:placeholder:text-xs',
+);
+const MOBILE_INPUT_GRID_CLASS = 'grid grid-cols-3 gap-1.5 md:contents';
 const BRANCH_WITHDRAW_DIALOG_BASE_CLASS =
-  'm-auto max-h-[min(85dvh,100%)] rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40';
+  'm-auto max-h-[min(85dvh,100%)] overscroll-contain rounded-2xl border border-border bg-card p-0 text-foreground backdrop:bg-black/40 open:animate-in open:fade-in-0 open:zoom-in-95 motion-reduce:open:animate-none';
 const BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-fit max-w-[92vw]`;
 const BRANCH_WITHDRAW_DIALOG_WIDE_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(780px,92vw)]`;
 const BRANCH_WITHDRAW_DIALOG_HISTORY_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[92vw] md:w-[min(560px,92vw)]`;
 const BRANCH_WITHDRAW_DIALOG_NARROW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(480px,92vw)]`;
+const DIALOG_TITLE_CLASS = 'min-w-0 text-base font-normal text-balance text-foreground';
+const DIALOG_SUBTITLE_CLASS = 'mt-1 text-xs leading-relaxed text-muted-foreground';
+const DIALOG_FOOTER_CLASS = 'mt-4 flex flex-wrap items-center justify-end gap-2';
 const STICKY_ACTION_BUTTON_CLASS =
-  'flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 text-xs disabled:cursor-not-allowed disabled:opacity-50 md:gap-2 md:px-4 md:text-sm';
+  'flex h-11 min-h-[44px] min-w-0 flex-1 touch-manipulation items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-2 text-xs transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:cursor-not-allowed disabled:opacity-50 md:gap-2 md:px-4 md:text-sm';
+const STICKY_ACTION_PRIMARY_CLASS = cn(
+  STICKY_ACTION_BUTTON_CLASS,
+  'border-foreground bg-foreground text-background hover:bg-foreground/90 hover:opacity-95',
+);
 const ADD_FROM_CATALOG_BUTTON_CLASS =
-  'inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground/15 bg-background px-3 py-2 text-sm transition-colors hover:border-foreground/25 hover:bg-card disabled:cursor-not-allowed disabled:opacity-50 md:w-auto';
+  'inline-flex w-full min-h-[44px] touch-manipulation items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2.5 text-sm transition-colors hover:border-foreground/20 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto';
 const DIALOG_CLOSE_BUTTON_CLASS =
-  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted/50';
+  'inline-flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-xl border border-border text-foreground transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15';
+const DIALOG_SECONDARY_BUTTON_CLASS =
+  'inline-flex min-h-[44px] touch-manipulation items-center justify-center rounded-xl border border-border bg-background px-4 py-2 text-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15';
 const ADD_FROM_CATALOG_BAR_CLASS = 'shrink-0 bg-background pb-3';
 const COPY_ICON_BUTTON_CLASS =
-  'inline-flex items-center justify-center rounded-xl border border-border bg-background p-2 text-sm disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-xl border border-border bg-background p-2 text-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:cursor-not-allowed disabled:opacity-50';
+const ITEM_ROW_BADGE_CLASS =
+  'inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground md:text-xs';
+const DESKTOP_COLUMN_HEADER_CLASS =
+  'sticky top-0 z-10 hidden gap-x-2 rounded-xl border border-transparent bg-background/95 px-4 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm md:grid';
 
 function WithdrawRowInputs({
   itemId,
@@ -211,23 +232,21 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
   );
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-4">
+    <article className="rounded-2xl border border-border bg-card p-3.5 transition-colors md:p-4">
       <div className={`flex flex-col gap-3 md:grid md:items-end md:gap-x-2 ${DESKTOP_GRID_COLS}`}>
         <div className="min-w-0">
-          <div className="mb-1 flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-xs">
+          <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+            <div className={ITEM_ROW_BADGE_CLASS}>
               {String(item.sort_order ?? 0).padStart(2, '0')}
             </div>
             {item.isManual ? (
-              <span className="inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-foreground/70">
-                เพิ่มจากคลัง
-              </span>
+              <span className={ITEM_ROW_BADGE_CLASS}>เพิ่มจากคลัง</span>
             ) : null}
             {item.isManual ? (
               <button
                 type="button"
                 onClick={handleRemove}
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-foreground/70 transition-colors hover:bg-card"
+                className="inline-flex min-h-[32px] touch-manipulation items-center gap-1 rounded-md border border-border bg-background px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 md:text-xs"
                 aria-label={`ลบ ${item.name} ออกจากรายการ`}
               >
                 <CloseIcon size="xs" />
@@ -235,13 +254,15 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
               </button>
             ) : null}
           </div>
-          <p className="text-base leading-snug">{item.name}</p>
-          <p className="text-xs text-foreground/70">หน่วย (สาขา 1): {item.unit || '-'}</p>
-          <p className="mt-1 text-xs text-foreground/70">
+          <p className="text-[15px] leading-snug text-foreground md:text-base">{item.name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            หน่วย (สาขา 1): {item.unit || '-'}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {item.isManual ? (
               <>
                 ไม่อยู่ในรายการสั่งซื้อสาขา 2
-                <span className="mx-1.5 text-foreground/40">·</span>
+                <span className="mx-1.5 text-foreground/30">·</span>
               </>
             ) : (
               <>
@@ -249,7 +270,7 @@ const BranchWithdrawItemRow = memo(function BranchWithdrawItemRow({
                 <span className="tabular-nums text-foreground">
                   {formatInventoryNumericDisplay(item.computedOrderQty)}
                 </span>
-                <span className="mx-1.5 text-foreground/40">·</span>
+                <span className="mx-1.5 text-foreground/30">·</span>
               </>
             )}
             คงเหลือในสต็อก:{' '}
@@ -623,7 +644,7 @@ export default function BranchWithdrawClient({
           disabled={previewLineCount === 0}
           className={STICKY_ACTION_BUTTON_CLASS}
         >
-          <Eye className="h-4 w-4 shrink-0" />
+          <Eye className="h-4 w-4 shrink-0" aria-hidden />
           <span className="truncate">สรุป</span>
           {previewLineCount > 0 ? (
             <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs tabular-nums">
@@ -637,23 +658,23 @@ export default function BranchWithdrawClient({
           disabled={isReadOnly || previewLineCount === 0}
           className={STICKY_ACTION_BUTTON_CLASS}
         >
-          <Save className="h-4 w-4 shrink-0" />
+          <Save className="h-4 w-4 shrink-0" aria-hidden />
           <span className="truncate">บันทึก</span>
         </button>
         <button
           type="button"
           onClick={() => void handleReceive()}
           disabled={isReadOnly || isReceiving || previewLineCount === 0}
-          className={STICKY_ACTION_BUTTON_CLASS}
+          className={STICKY_ACTION_PRIMARY_CLASS}
         >
           {isReceiving ? (
             <>
               <LoadingIcon size="md" className="shrink-0" />
-              <span className="truncate">กำลังรับเข้า...</span>
+              <span className="truncate">กำลังรับเข้า…</span>
             </>
           ) : (
             <>
-              <PackagePlus className="h-4 w-4 shrink-0" />
+              <PackagePlus className="h-4 w-4 shrink-0" aria-hidden />
               <span className="truncate">รับเข้า</span>
             </>
           )}
@@ -682,14 +703,17 @@ export default function BranchWithdrawClient({
 
   const scrollableSections = (
     <>
-        {saveError && (
-          <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm">
+        {saveError ? (
+          <div
+            className="rounded-2xl border border-red-500/15 bg-red-500/[0.04] px-4 py-3 text-sm text-foreground dark:border-red-900/40 dark:bg-red-950/30"
+            role="alert"
+          >
             {saveError}
           </div>
-        )}
+        ) : null}
 
         {draftSaveStatus ? (
-          <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground/80">
+          <div className="rounded-2xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
             {draftSaveStatus}
           </div>
         ) : null}
@@ -701,9 +725,7 @@ export default function BranchWithdrawClient({
             </EmptyState>
           ) : (
             <>
-              <div
-                className={`hidden gap-x-2 px-4 text-xs text-foreground/60 md:grid ${DESKTOP_GRID_COLS}`}
-              >
+              <div className={`${DESKTOP_COLUMN_HEADER_CLASS} ${DESKTOP_GRID_COLS}`}>
                 <span>รายการ</span>
                 <span className="text-center">สาขา 1</span>
                 <span className="text-center">สาขา 2</span>
@@ -724,26 +746,38 @@ export default function BranchWithdrawClient({
 
         {actionBar}
 
-        <section className="space-y-3 rounded-2xl border border-border bg-card p-4 md:p-6">
-          <h2 className="text-lg font-normal">ประวัติการเบิก</h2>
+        <section className="space-y-3 rounded-2xl border border-border bg-card p-4 md:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-base font-normal text-balance text-foreground md:text-lg">
+              ประวัติการเบิก
+            </h2>
+            {history.length > 0 ? (
+              <span className="shrink-0 rounded-full border border-border bg-background px-2.5 py-0.5 text-xs tabular-nums text-muted-foreground">
+                {history.length} รายการ
+              </span>
+            ) : null}
+          </div>
           {history.length === 0 ? (
-            <p className="text-sm text-foreground/70">ยังไม่มีประวัติการเบิกสาขา 2</p>
+            <p className="text-sm text-muted-foreground">ยังไม่มีประวัติการเบิกสาขา 2</p>
           ) : (
             <div className="space-y-2">
               {visibleHistory.map((entry) => (
                 <article
                   key={entry.id}
-                  className="flex flex-col gap-3 rounded-xl border border-border bg-background p-3 md:flex-row md:items-center md:justify-between"
+                  className="flex flex-col gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:bg-muted/20 md:flex-row md:items-center md:justify-between"
                 >
-                  <div>
-                    <p className="text-sm">{formatHistoryDate(entry.created_at)}</p>
-                    <p className="text-xs text-foreground/70">จำนวนรายการ: {entry.line_count}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm text-foreground">{formatHistoryDate(entry.created_at)}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      จำนวนรายการ: {entry.line_count}
+                    </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => openHistoryLineDialog(entry)}
-                    className="rounded-xl border border-border bg-card px-3 py-2 text-xs transition-colors hover:bg-background"
+                    className="inline-flex min-h-[44px] touch-manipulation items-center justify-center gap-1.5 self-start rounded-xl border border-border bg-card px-3 py-2 text-xs transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 md:self-auto"
                   >
+                    <Eye className="h-3.5 w-3.5 shrink-0" aria-hidden />
                     สรุป
                   </button>
                 </article>
@@ -752,7 +786,7 @@ export default function BranchWithdrawClient({
                 <button
                   type="button"
                   onClick={() => setHistoryExpanded(true)}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/50"
+                  className="w-full min-h-[44px] touch-manipulation rounded-xl border border-border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
                 >
                   ดูเพิ่มเติม
                 </button>
@@ -783,13 +817,20 @@ export default function BranchWithdrawClient({
             : 'mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col overflow-hidden'
         }
       >
-        {embedded ? null : (
+        {embedded ? (
+          <header className="shrink-0 pb-2 pr-12 pt-0.5">
+            <h2 className="text-base font-normal text-balance text-foreground">เบิกของสาขา 2</h2>
+            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              กรอกจำนวนเบิก แล้วกดรับเข้าเพื่ออัปเดตคลัง
+            </p>
+          </header>
+        ) : (
           <header className="flex shrink-0 items-center justify-between pb-3 max-md:pb-2 max-md:pt-1 md:pb-4">
             <Link
               href={`/${locale}/inventory`}
-              className="flex items-center gap-1.5 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
+              className="inline-flex min-h-[44px] touch-manipulation items-center gap-1.5 rounded-xl px-1 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
               <span>กลับไปคลังสินค้า</span>
             </Link>
           </header>
@@ -803,22 +844,38 @@ export default function BranchWithdrawClient({
 
       <dialog ref={previewDialogRef} className={BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS}>
         <div className="flex w-fit max-w-[92vw] flex-col p-4 md:p-5">
-          <h3 className="text-base">สรุปรายการ (อัปเดตตามที่กรอก)</h3>
-          <p className="mt-1 text-xs text-foreground/70">
-            แสดงเฉพาะรายการที่มีจำนวนสาขา 1 ข้อความนี้จะเหมือนตอนกดบันทึก
-          </p>
-          <div className="mt-3 max-h-[min(60dvh,32rem)] overflow-y-auto bb-smooth-scroll rounded-xl border border-border bg-background p-3">
-            <pre className="w-max max-w-[calc(92vw-2.5rem)] whitespace-pre-wrap font-sans text-sm leading-relaxed">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className={DIALOG_TITLE_CLASS}>สรุปรายการ (อัปเดตตามที่กรอก)</h3>
+              <p className={DIALOG_SUBTITLE_CLASS}>
+                แสดงเฉพาะรายการที่มีจำนวนสาขา 1 ข้อความนี้จะเหมือนตอนกดบันทึก
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => closeDialog(previewDialogRef.current)}
+              className={DIALOG_CLOSE_BUTTON_CLASS}
+              aria-label="ปิด"
+            >
+              <CloseIcon size="md" />
+            </button>
+          </div>
+          <div className="mt-3 max-h-[min(60dvh,32rem)] overflow-y-auto overscroll-contain bb-smooth-scroll rounded-xl border border-border bg-background p-3">
+            <pre className="w-max max-w-[calc(92vw-2.5rem)] whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
               {previewLineMessage}
             </pre>
           </div>
           {previewLineCount === 0 ? (
-            <p className="mt-2 text-xs text-foreground/70">กรอกจำนวนสาขา 1 อย่างน้อย 1 รายการเพื่อดูสรุป</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              กรอกจำนวนสาขา 1 อย่างน้อย 1 รายการเพื่อดูสรุป
+            </p>
           ) : null}
           {previewCopyStatus ? (
-            <p className="mt-2 text-xs text-foreground/70">{previewCopyStatus}</p>
+            <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+              {previewCopyStatus}
+            </p>
           ) : null}
-          <div className="mt-4 flex justify-end gap-2">
+          <div className={DIALOG_FOOTER_CLASS}>
             <button
               type="button"
               onClick={() => void handleCopyPreview()}
@@ -832,7 +889,7 @@ export default function BranchWithdrawClient({
             <button
               type="button"
               onClick={() => closeDialog(previewDialogRef.current)}
-              className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+              className={DIALOG_SECONDARY_BUTTON_CLASS}
             >
               ปิด
             </button>
@@ -851,7 +908,7 @@ export default function BranchWithdrawClient({
       >
         <div className="p-4 md:p-5">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="min-w-0 text-base">เพิ่มรายการจากคลังสินค้า</h3>
+            <h3 className={DIALOG_TITLE_CLASS}>เพิ่มรายการจากคลังสินค้า</h3>
             <button
               type="button"
               onClick={closeAddItemDialog}
@@ -862,21 +919,26 @@ export default function BranchWithdrawClient({
             </button>
           </div>
           <label className="relative mt-3 block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/50" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
             <input
               type="search"
               id="branch-withdraw-add-item-search"
               name="branch-withdraw-add-item-search"
               value={addItemQuery}
               onChange={(event) => setAddItemQuery(event.target.value)}
-              placeholder="ค้นหาชื่อสินค้า"
-              className="h-10 w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none"
+              placeholder="ค้นหาชื่อสินค้า…"
+              autoComplete="off"
+              spellCheck={false}
+              className={cn(
+                'h-11 w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm',
+                INPUT_FOCUS_CLASS,
+              )}
               autoFocus
             />
           </label>
-          <div className="mt-3 max-h-[min(50dvh,24rem)] space-y-1 overflow-y-auto bb-smooth-scroll rounded-xl border border-border bg-background p-2">
+          <div className="mt-3 max-h-[min(50dvh,24rem)] space-y-1 overflow-y-auto overscroll-contain bb-smooth-scroll rounded-xl border border-border bg-background p-2">
             {filteredPickItems.length === 0 ? (
-              <p className="px-2 py-3 text-sm text-foreground/70">
+              <p className="px-2 py-3 text-sm text-muted-foreground">
                 {availablePickItems.length === 0
                   ? 'เพิ่มรายการจากคลังครบแล้ว'
                   : 'ไม่พบสินค้าที่ค้นหา'}
@@ -887,10 +949,10 @@ export default function BranchWithdrawClient({
                   key={item.id}
                   type="button"
                   onClick={() => handleAddItem(item.id)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-transparent px-3 py-2 text-left text-sm transition-colors hover:border-border hover:bg-card"
+                  className="flex w-full min-h-[44px] touch-manipulation items-center justify-between gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm transition-colors hover:border-border hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15"
                 >
                   <span className="min-w-0 truncate">{item.name}</span>
-                  <span className="shrink-0 text-xs text-foreground/70">{item.unit || '-'}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{item.unit || '-'}</span>
                 </button>
               ))
             )}
@@ -900,16 +962,35 @@ export default function BranchWithdrawClient({
 
       <dialog ref={saveResultDialogRef} className={BRANCH_WITHDRAW_DIALOG_WIDE_CLASS}>
         <div className="p-4 md:p-5">
-          <h3 className="text-base">รับเข้าคลังสำเร็จ</h3>
-          <p className="mt-1 text-xs text-foreground/70">ข้อความ LINE สำหรับส่ง</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className={DIALOG_TITLE_CLASS}>รับเข้าคลังสำเร็จ</h3>
+              <p className={DIALOG_SUBTITLE_CLASS}>ข้อความ LINE สำหรับส่ง</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => closeDialog(saveResultDialogRef.current)}
+              className={DIALOG_CLOSE_BUTTON_CLASS}
+              aria-label="ปิด"
+            >
+              <CloseIcon size="md" />
+            </button>
+          </div>
           <textarea
             readOnly
             name="branch-withdraw-save-line-message"
             value={saveLineMessage}
-            className="mt-3 min-h-56 w-full rounded-xl border border-border bg-background p-3 text-sm outline-none"
+            className={cn(
+              'mt-3 min-h-56 w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground',
+              INPUT_FOCUS_CLASS,
+            )}
           />
-          {copyStatus && <p className="mt-2 text-xs text-foreground/70">{copyStatus}</p>}
-          <div className="mt-4 flex justify-end gap-2">
+          {copyStatus ? (
+            <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+              {copyStatus}
+            </p>
+          ) : null}
+          <div className={DIALOG_FOOTER_CLASS}>
             <button
               type="button"
               onClick={() => void handleCopyLineMessage()}
@@ -923,7 +1004,7 @@ export default function BranchWithdrawClient({
             <button
               type="button"
               onClick={() => closeDialog(saveResultDialogRef.current)}
-              className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+              className={DIALOG_SECONDARY_BUTTON_CLASS}
             >
               ปิด
             </button>
@@ -942,7 +1023,7 @@ export default function BranchWithdrawClient({
       >
         <div className="p-4 md:p-5">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="min-w-0 text-base">{lineMessageDialog?.title ?? 'สรุปรายการ'}</h3>
+            <h3 className={DIALOG_TITLE_CLASS}>{lineMessageDialog?.title ?? 'สรุปรายการ'}</h3>
             <button
               type="button"
               onClick={closeHistoryLineDialog}
@@ -956,12 +1037,17 @@ export default function BranchWithdrawClient({
             readOnly
             name="branch-withdraw-history-line-message"
             value={lineMessageDialog?.message ?? ''}
-            className="mt-3 min-h-56 w-full rounded-xl border border-border bg-background p-3 text-sm outline-none md:min-h-48"
+            className={cn(
+              'mt-3 min-h-56 w-full rounded-xl border border-border bg-background p-3 text-sm text-foreground md:min-h-48',
+              INPUT_FOCUS_CLASS,
+            )}
           />
           {historyCopyStatus ? (
-            <p className="mt-2 text-xs text-foreground/70">{historyCopyStatus}</p>
+            <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
+              {historyCopyStatus}
+            </p>
           ) : null}
-          <div className="mt-4 flex justify-end">
+          <div className={DIALOG_FOOTER_CLASS}>
             <button
               type="button"
               onClick={() => void handleCopyHistoryLine()}

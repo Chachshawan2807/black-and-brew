@@ -14,4 +14,4 @@ export const BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS =
   'md:relative md:h-full md:min-h-0 md:max-h-full';
 
 export const BRANCH_WITHDRAW_ACTION_BAR_CLASS =
-  'border-t border-border bg-background pt-4';
+  'rounded-2xl border border-border bg-card p-3 shadow-sm';
