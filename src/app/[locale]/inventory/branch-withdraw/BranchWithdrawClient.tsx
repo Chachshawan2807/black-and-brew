@@ -1,7 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { ChevronLeft, Copy, Eye, Plus, Save, Search } from '@/lib/icons';
@@ -33,7 +42,11 @@ import {
   formatBranchWithdrawLineMessage,
 } from '@/lib/inventory-branch-withdraw-format';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
+import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { getClientSessionId } from '@/lib/client-session';
+import { useMaxMd } from '@/hooks/use-max-md';
+import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import { cn } from '@/lib/utils';
 
 type Item = BranchWithdrawDisplayItem;
 type Props = {
@@ -86,6 +99,12 @@ const BRANCH_WITHDRAW_SCROLL_BODY_CLASS =
   'min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]';
 const BRANCH_WITHDRAW_ACTION_BAR_CLASS =
   'shrink-0 border-t border-border bg-background py-3 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]';
+const MOBILE_NAV_HEADER_HEIGHT_PX = 72;
+const BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS =
+  'max-md:fixed max-md:inset-x-0 max-md:z-0 max-md:top-[72px] max-md:bottom-[calc(11rem+env(safe-area-inset-bottom,0px))]';
+const BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_FAB_HIDDEN_CLASS =
+  'max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))]';
+const BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS = 'md:static md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)]';
 const COPY_ICON_BUTTON_CLASS =
   'inline-flex items-center justify-center rounded-xl border border-border bg-background p-2 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -266,7 +285,19 @@ export default function BranchWithdrawClient({
   catalogLoading = false,
 }: Props) {
   const isReadOnly = useReadOnly();
+  const isMaxMd = useMaxMd();
+  const { fabStackHidden } = useFloatingOverlay();
+  const viewportInsets = useVisualViewportInsets(!embedded);
   const { items: realtimeItems, hasLoaded, refresh } = useInventoryRealtime();
+
+  const standaloneMobileShellStyle = useMemo((): CSSProperties | undefined => {
+    if (embedded || isMaxMd !== true || !viewportInsets.isKeyboardOpen) return undefined;
+
+    return {
+      top: MOBILE_NAV_HEADER_HEIGHT_PX + viewportInsets.offsetTop,
+      bottom: Math.max(0, viewportInsets.bottomInset),
+    };
+  }, [embedded, isMaxMd, viewportInsets.bottomInset, viewportInsets.isKeyboardOpen, viewportInsets.offsetTop]);
 
   const inventorySource = hasLoaded ? realtimeItems : initialItems;
 
@@ -673,8 +704,14 @@ export default function BranchWithdrawClient({
       className={
         embedded
           ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'
-          : 'flex h-[100dvh] flex-col overflow-hidden bg-background p-4 text-foreground md:p-8'
+          : cn(
+              'flex min-h-0 flex-col overflow-hidden bg-background p-4 text-foreground md:p-8',
+              BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS,
+              fabStackHidden ? BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_FAB_HIDDEN_CLASS : null,
+              BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS,
+            )
       }
+      style={standaloneMobileShellStyle}
     >
       <div
         className={
