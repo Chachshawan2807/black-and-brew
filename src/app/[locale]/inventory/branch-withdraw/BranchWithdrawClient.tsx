@@ -8,7 +8,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type MouseEvent,
 } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -43,17 +42,16 @@ import {
   formatBranchWithdrawLineMessage,
 } from '@/lib/inventory-branch-withdraw-format';
 import { READ_ONLY_DENY_MSG, useReadOnly } from '@/components/providers/AuthProvider';
-import { useFloatingOverlay } from '@/components/floating/FloatingOverlayContext';
 import { getClientSessionId } from '@/lib/client-session';
 import { useMaxMd } from '@/hooks/use-max-md';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
+import { buildBranchWithdrawStandaloneMobileShellStyle } from '@/lib/branch-withdraw-mobile-shell';
 import { cn } from '@/lib/utils';
 import {
   BRANCH_WITHDRAW_ACTION_BAR_CLASS,
   BRANCH_WITHDRAW_SCROLL_BODY_CLASS,
   BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS,
   BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS,
-  BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_FAB_HIDDEN_CLASS,
 } from './branch-withdraw-layout';
 
 type Item = BranchWithdrawDisplayItem;
@@ -103,7 +101,6 @@ const ADD_FROM_CATALOG_BUTTON_CLASS =
 const DIALOG_CLOSE_BUTTON_CLASS =
   'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted/50';
 const ADD_FROM_CATALOG_BAR_CLASS = 'shrink-0 bg-background pb-3';
-const MOBILE_NAV_HEADER_HEIGHT_PX = 72;
 const COPY_ICON_BUTTON_CLASS =
   'inline-flex items-center justify-center rounded-xl border border-border bg-background p-2 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -285,18 +282,18 @@ export default function BranchWithdrawClient({
 }: Props) {
   const isReadOnly = useReadOnly();
   const isMaxMd = useMaxMd();
-  const { fabStackHidden } = useFloatingOverlay();
   const viewportInsets = useVisualViewportInsets(!embedded);
   const { items: realtimeItems, hasLoaded, refresh } = useInventoryRealtime();
 
-  const standaloneMobileShellStyle = useMemo((): CSSProperties | undefined => {
-    if (embedded || isMaxMd !== true || !viewportInsets.isKeyboardOpen) return undefined;
-
-    return {
-      top: MOBILE_NAV_HEADER_HEIGHT_PX + viewportInsets.offsetTop,
-      bottom: Math.max(0, viewportInsets.bottomInset),
-    };
-  }, [embedded, isMaxMd, viewportInsets.bottomInset, viewportInsets.isKeyboardOpen, viewportInsets.offsetTop]);
+  const standaloneMobileShellStyle = useMemo(
+    () =>
+      buildBranchWithdrawStandaloneMobileShellStyle({
+        embedded,
+        isMaxMd,
+        viewportInsets,
+      }),
+    [embedded, isMaxMd, viewportInsets],
+  );
 
   const inventorySource = hasLoaded ? realtimeItems : initialItems;
 
@@ -705,6 +702,8 @@ export default function BranchWithdrawClient({
           )}
         </section>
 
+        {actionBar}
+
         <section className="space-y-3 rounded-2xl border border-border bg-card p-4 md:p-6">
           <h2 className="text-lg font-normal">ประวัติการเบิก</h2>
           {history.length === 0 ? (
@@ -752,7 +751,6 @@ export default function BranchWithdrawClient({
           : cn(
               'flex min-h-0 flex-col overflow-hidden bg-background p-4 text-foreground md:p-8',
               BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS,
-              fabStackHidden ? BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_FAB_HIDDEN_CLASS : null,
               BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS,
             )
       }
@@ -781,7 +779,6 @@ export default function BranchWithdrawClient({
         <div className={BRANCH_WITHDRAW_SCROLL_BODY_CLASS}>
           {scrollableSections}
         </div>
-        {actionBar}
       </div>
 
       <dialog ref={previewDialogRef} className={BRANCH_WITHDRAW_DIALOG_PREVIEW_CLASS}>

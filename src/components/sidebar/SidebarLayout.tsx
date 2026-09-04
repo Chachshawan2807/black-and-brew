@@ -7,11 +7,6 @@ import { MobileNavHeader } from "@/components/sidebar/MobileNavHeader";
 import { useSidebarToggle, useSidebarHydrated } from "@/hooks/use-sidebar-toggle";
 import { useMobileNavDrawerInert } from "@/hooks/use-mobile-nav-drawer-inert";
 import { useMaxMd } from "@/hooks/use-max-md";
-import {
-  FAB_PAGE_BOTTOM_PADDING_CLASS,
-  FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS,
-} from "@/lib/floating-action-layout";
-import { useFloatingOverlay } from "@/components/floating/FloatingOverlayContext";
 import { PageTransition } from "@/components/ui/page-transition";
 import { SidebarMenuOrderSync } from "@/components/sidebar/SidebarMenuOrderSync";
 import { OfflineStatusBanner } from "@/components/shell/OfflineStatusBanner";
@@ -23,7 +18,6 @@ export default function SidebarLayout({
 }) {
   const hydrated = useSidebarHydrated();
   const isOpen = useSidebarToggle((state) => state.isOpen);
-  const { fabStackHidden } = useFloatingOverlay();
   const sidebarOpen = hydrated ? isOpen : true;
   const mobileDrawerInert = useMobileNavDrawerInert();
   const isMaxMd = useMaxMd();
@@ -41,7 +35,6 @@ export default function SidebarLayout({
         inert={mobileDrawerInert ? true : undefined}
         className={cn(
           "bb-main-container flex-1 min-h-0 bg-transparent transition-[margin-left] ease-in-out duration-300 motion-reduce:transition-none [contain:layout_style]",
-          fabStackHidden ? FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS : FAB_PAGE_BOTTOM_PADDING_CLASS,
           sidebarOpen === false ? "md:ml-20" : "md:ml-[280px]"
         )}
       >

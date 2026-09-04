@@ -45,7 +45,7 @@ describe('inventory branch withdraw overlay', () => {
     expect(overlay).toContain('embedded');
   });
 
-  test('branch withdraw uses scroll body with fixed add bar and pinned footer actions', () => {
+  test('branch withdraw uses scroll body with fixed add bar and in-scroll action bar', () => {
     const client = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx'),
       'utf-8',
@@ -59,12 +59,13 @@ describe('inventory branch withdraw overlay', () => {
     expect(client).not.toMatch(/sticky top-0 z-10 border-b border-border bg-background\/95/);
   });
 
-  test('summary and save action bar stays outside scroll region as a pinned footer sibling', () => {
+  test('summary and save action bar sits above withdrawal history in scroll region', () => {
     const client = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx'),
       'utf-8',
     );
-    expect(client).toMatch(
+    expect(client).toMatch(/\{actionBar\}[\s\S]*ประวัติการเบิก/);
+    expect(client).not.toMatch(
       /<div className=\{BRANCH_WITHDRAW_SCROLL_BODY_CLASS\}>[\s\S]*?<\/div>\s*\{actionBar\}/,
     );
   });

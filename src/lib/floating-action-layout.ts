@@ -56,13 +56,10 @@ export const FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS =
 export const FAB_MOBILE_BULK_QUEUE_LIST_MAX_HEIGHT_CLASS =
   'max-h-[min(50dvh,calc(75dvh-14rem))]';
 
-/** Page/content bottom inset to clear the two-button stack + hide toggle */
-export const FAB_PAGE_BOTTOM_PADDING_CLASS =
-  'max-md:pb-[calc(11rem+env(safe-area-inset-bottom,0px))]';
-
-/** Page/content bottom inset when only the hide toggle is visible */
-export const FAB_PAGE_BOTTOM_PADDING_HIDDEN_CLASS =
-  'max-md:pb-[calc(4rem+env(safe-area-inset-bottom,0px))]';
+/**
+ * FAB buttons use fixed positioning and overlay page content.
+ * Page layouts must not shift when the hide toggle shows or hides the stack.
+ */
 
 /** App modals that must cover the FAB stack (hide toggle z-199, buttons z-201). */
 export const APP_MODAL_ABOVE_FAB_Z_INDEX = 220;
