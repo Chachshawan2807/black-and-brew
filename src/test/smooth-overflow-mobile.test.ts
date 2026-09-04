@@ -66,8 +66,8 @@ describe('bb-smooth-scroll mobile overflow utility', () => {
       pattern: /flex-1[\s\S]*overflow-auto[\s\S]*bb-smooth-scroll bb-smooth-scroll-chain-y/,
     },
     {
-      file: 'app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx',
-      pattern: /overflow-y-auto bb-smooth-scroll/,
+      file: 'app/[locale]/inventory/branch-withdraw/branch-withdraw-layout.ts',
+      pattern: /min-h-0 min-w-0 flex-1[\s\S]*overflow-y-auto overscroll-contain bb-smooth-scroll/,
     },
   ];
 

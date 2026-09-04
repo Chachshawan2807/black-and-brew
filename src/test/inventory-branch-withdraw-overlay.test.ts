@@ -51,10 +51,7 @@ describe('inventory branch withdraw overlay', () => {
       'utf-8',
     );
     expect(client).toContain('BRANCH_WITHDRAW_SCROLL_BODY_CLASS');
-    expect(client).toContain('ADD_FROM_CATALOG_BAR_CLASS');
-    expect(client).toContain('const ADD_FROM_CATALOG_BAR_CLASS = \'shrink-0 bg-background pb-3\'');
-    expect(client).not.toContain('ADD_FROM_CATALOG_BAR_CLASS =\n  \'shrink-0 border-b border-border');
-    expect(client).toContain('BRANCH_WITHDRAW_ACTION_BAR_CLASS');
+    expect(client).toContain('branch-withdraw-layout');
     expect(client).toContain('BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS');
     expect(client).toContain('useVisualViewportInsets');
     expect(client).not.toContain('h-[100dvh] flex-col overflow-hidden');
@@ -70,5 +67,20 @@ describe('inventory branch withdraw overlay', () => {
     expect(client).toMatch(
       /<div className=\{BRANCH_WITHDRAW_SCROLL_BODY_CLASS\}>[\s\S]*?<\/div>\s*\{actionBar\}/,
     );
+  });
+
+  test('save draft is local checkpoint and receive posts to server', () => {
+    const client = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx'),
+      'utf-8',
+    );
+    expect(client).toContain('handleSaveDraft');
+    expect(client).toContain('handleReceive');
+    expect(client).toContain('saveBranchWithdrawDraftCheckpoint');
+    expect(client).toContain('PackagePlus');
+    expect(client).toContain('รับเข้า');
+    expect(client).toContain('writeBranchWithdrawDraft(window.localStorage');
+    expect(client).not.toMatch(/onClick=\{\(\) => void handleSave\(\)\}/);
+    expect(client).toContain('saveBranchWithdrawal');
   });
 });

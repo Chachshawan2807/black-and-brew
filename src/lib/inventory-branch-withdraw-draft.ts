@@ -9,6 +9,8 @@ export type BranchWithdrawDraftRow = {
 export type BranchWithdrawDraft = {
   rows: Record<string, BranchWithdrawDraftRow>;
   extraItemIds?: string[];
+  /** ISO timestamp set when the user explicitly saves a temporary checkpoint. */
+  savedAt?: string;
 };
 
 type DraftStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -44,9 +46,13 @@ export function parseBranchWithdrawDraft(raw: string): BranchWithdrawDraft | nul
     if (parsed.extraItemIds !== undefined && !isExtraItemIds(parsed.extraItemIds)) {
       return null;
     }
+    if (parsed.savedAt !== undefined && typeof parsed.savedAt !== 'string') {
+      return null;
+    }
     return {
       rows: parsed.rows as Record<string, BranchWithdrawDraftRow>,
       extraItemIds: parsed.extraItemIds as string[] | undefined,
+      savedAt: parsed.savedAt as string | undefined,
     };
   } catch {
     return null;
@@ -65,6 +71,48 @@ export function writeBranchWithdrawDraft(storage: DraftStorage, draft: BranchWit
 
 export function clearBranchWithdrawDraft(storage: DraftStorage): void {
   storage.removeItem(BRANCH_WITHDRAW_DRAFT_KEY);
+}
+
+/** Preferred storage for branch-withdraw drafts (survives tab close). */
+export function getBranchWithdrawDraftStorage(): DraftStorage | null {
+  if (typeof window === 'undefined') return null;
+  return window.localStorage;
+}
+
+/** Copy a session draft into localStorage once when no local checkpoint exists. */
+export function migrateBranchWithdrawDraftStorage(
+  session: DraftStorage,
+  local: DraftStorage,
+): void {
+  if (readBranchWithdrawDraft(local)) return;
+  const sessionDraft = readBranchWithdrawDraft(session);
+  if (!sessionDraft) return;
+  writeBranchWithdrawDraft(local, sessionDraft);
+  clearBranchWithdrawDraft(session);
+}
+
+/** Read draft from localStorage, migrating legacy sessionStorage when needed. */
+export function readBranchWithdrawDraftFromBrowser(): BranchWithdrawDraft | null {
+  if (typeof window === 'undefined') return null;
+  migrateBranchWithdrawDraftStorage(window.sessionStorage, window.localStorage);
+  return readBranchWithdrawDraft(window.localStorage);
+}
+
+/** Persist an explicit temporary checkpoint the user can return to later. */
+export function saveBranchWithdrawDraftCheckpoint(
+  storage: DraftStorage,
+  draft: BranchWithdrawDraft,
+): BranchWithdrawDraft {
+  const checkpoint: BranchWithdrawDraft = {
+    ...draft,
+    savedAt: new Date().toISOString(),
+  };
+  writeBranchWithdrawDraft(storage, checkpoint);
+  return checkpoint;
+}
+
+export function hasBranchWithdrawDraftQuantities(draft: BranchWithdrawDraft): boolean {
+  return Object.values(draft.rows).some((row) => row.qtyBranch1.trim() !== '');
 }
 
 export function emptyDraftRow(): BranchWithdrawDraftRow {

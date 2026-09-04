@@ -4,9 +4,12 @@ import {
   buildBranchWithdrawDraftLines,
   clearBranchWithdrawDraft,
   emptyDraftRow,
+  hasBranchWithdrawDraftQuantities,
   mergeRowsWithDisplayItemIds,
+  migrateBranchWithdrawDraftStorage,
   parseBranchWithdrawDraft,
   readBranchWithdrawDraft,
+  saveBranchWithdrawDraftCheckpoint,
   serializeBranchWithdrawDraft,
   writeBranchWithdrawDraft,
   type BranchWithdrawDraft,
@@ -31,13 +34,14 @@ describe('branch withdraw draft', () => {
     expect(BRANCH_WITHDRAW_DRAFT_KEY).toBe('inventory-branch-withdraw-draft:v1');
   });
 
-  test('round-trips draft rows with extra item ids', () => {
+  test('round-trips draft rows with extra item ids and savedAt', () => {
     const draft: BranchWithdrawDraft = {
       rows: {
         'item-1': { qtyBranch1: '3', qtyBranch2: '', branch2Unit: '' },
         'item-2': { qtyBranch1: '24', qtyBranch2: '1', branch2Unit: 'ลัง' },
       },
       extraItemIds: ['item-3', 'item-4'],
+      savedAt: '2026-09-04T07:00:00.000Z',
     };
     const parsed = parseBranchWithdrawDraft(serializeBranchWithdrawDraft(draft));
     expect(parsed).toEqual(draft);
@@ -82,6 +86,41 @@ describe('branch withdraw draft', () => {
       { itemId: 'a', name: 'นม', qtyBranch1: '2', qtyBranch2: '', branch2Unit: '' },
       { itemId: 'b', name: 'ชา', qtyBranch1: '', qtyBranch2: '', branch2Unit: '' },
     ]);
+  });
+
+  test('saveBranchWithdrawDraftCheckpoint stamps savedAt', () => {
+    const storage = createMockStorage();
+    const checkpoint = saveBranchWithdrawDraftCheckpoint(storage, {
+      rows: { 'item-1': { qtyBranch1: '2', qtyBranch2: '', branch2Unit: '' } },
+    });
+    expect(checkpoint.savedAt).toBeTruthy();
+    expect(readBranchWithdrawDraft(storage)?.savedAt).toBe(checkpoint.savedAt);
+  });
+
+  test('migrateBranchWithdrawDraftStorage copies session draft once', () => {
+    const session = createMockStorage();
+    const local = createMockStorage();
+    writeBranchWithdrawDraft(session, {
+      rows: { a: { qtyBranch1: '1', qtyBranch2: '', branch2Unit: '' } },
+    });
+
+    migrateBranchWithdrawDraftStorage(session, local);
+    expect(readBranchWithdrawDraft(local)?.rows.a.qtyBranch1).toBe('1');
+    expect(readBranchWithdrawDraft(session)).toBeNull();
+    expect(migrateBranchWithdrawDraftStorage(session, local)).toBeUndefined();
+  });
+
+  test('hasBranchWithdrawDraftQuantities detects filled branch-1 qty', () => {
+    expect(
+      hasBranchWithdrawDraftQuantities({
+        rows: { a: emptyDraftRow(), b: { qtyBranch1: '3', qtyBranch2: '', branch2Unit: '' } },
+      }),
+    ).toBe(true);
+    expect(
+      hasBranchWithdrawDraftQuantities({
+        rows: { a: emptyDraftRow() },
+      }),
+    ).toBe(false);
   });
 
   test('mergeRowsWithDisplayItemIds preserves reference when ids unchanged', () => {

@@ -109,9 +109,10 @@ describe('inventory save performance', () => {
     expect(critical).not.toMatch(/\.from\(['"]inventory_items['"]\)[\s\S]*\.select\(/);
   });
 
-  test('branch withdraw client shows success before background refresh', () => {
+  test('branch withdraw client shows receive success before background refresh', () => {
     expect(branchWithdrawClient).toMatch(/openDialog\(saveResultDialogRef\.current\)/);
     expect(branchWithdrawClient).toMatch(/void[\s\S]*refresh\(\{ soft: true \}\)/);
+    expect(branchWithdrawClient).toMatch(/handleReceive/);
     expect(branchWithdrawClient).not.toMatch(
       /await refresh\([\s\S]*openDialog\(saveResultDialogRef\.current\)/,
     );

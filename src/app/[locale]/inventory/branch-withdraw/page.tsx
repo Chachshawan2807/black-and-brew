@@ -4,6 +4,7 @@ import { fetchBranchWithdrawalHistory } from '@/app/actions/branch-withdraw-acti
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { INVENTORY_ITEM_SELECT } from '@/lib/inventory-queries';
 import { createLazyFeatureClient } from '@/lib/lazy-feature-client';
+import { BRANCH_WITHDRAW_PAGE_SHELL_CLASS } from './branch-withdraw-layout';
 
 const BranchWithdrawClient = createLazyFeatureClient(
   () => import('./BranchWithdrawClient'),
@@ -30,10 +31,12 @@ export default async function BranchWithdrawPage({
   }
 
   return (
-    <BranchWithdrawClient
-      initialItems={itemsResult.data ?? []}
-      initialHistory={historyResult.success ? historyResult.data : []}
-      locale={locale}
-    />
+    <div className={BRANCH_WITHDRAW_PAGE_SHELL_CLASS}>
+      <BranchWithdrawClient
+        initialItems={itemsResult.data ?? []}
+        initialHistory={historyResult.success ? historyResult.data : []}
+        locale={locale}
+      />
+    </div>
   );
 }

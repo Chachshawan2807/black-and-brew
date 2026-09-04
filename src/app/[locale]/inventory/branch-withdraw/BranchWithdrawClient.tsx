@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingIcon } from '@/components/ui/loading-icon';
-import { ChevronLeft, Copy, Eye, Plus, Save, Search } from '@/lib/icons';
+import { ChevronLeft, Copy, Eye, PackagePlus, Plus, Save, Search } from '@/lib/icons';
 import { CloseIcon } from '@/components/ui/close-icon';
 import {
   saveBranchWithdrawal,
@@ -24,7 +24,8 @@ import {
   clearBranchWithdrawDraft,
   emptyDraftRow,
   mergeRowsWithDisplayItemIds,
-  readBranchWithdrawDraft,
+  readBranchWithdrawDraftFromBrowser,
+  saveBranchWithdrawDraftCheckpoint,
   serializeBranchWithdrawDraft,
   writeBranchWithdrawDraft,
   type BranchWithdrawDraftRow,
@@ -47,6 +48,13 @@ import { getClientSessionId } from '@/lib/client-session';
 import { useMaxMd } from '@/hooks/use-max-md';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import { cn } from '@/lib/utils';
+import {
+  BRANCH_WITHDRAW_ACTION_BAR_CLASS,
+  BRANCH_WITHDRAW_SCROLL_BODY_CLASS,
+  BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS,
+  BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS,
+  BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_FAB_HIDDEN_CLASS,
+} from './branch-withdraw-layout';
 
 type Item = BranchWithdrawDisplayItem;
 type Props = {
@@ -89,22 +97,13 @@ const BRANCH_WITHDRAW_DIALOG_WIDE_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} 
 const BRANCH_WITHDRAW_DIALOG_HISTORY_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[92vw] md:w-[min(560px,92vw)]`;
 const BRANCH_WITHDRAW_DIALOG_NARROW_CLASS = `${BRANCH_WITHDRAW_DIALOG_BASE_CLASS} w-[min(480px,92vw)]`;
 const STICKY_ACTION_BUTTON_CLASS =
-  'flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 text-sm disabled:cursor-not-allowed disabled:opacity-50';
+  'flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 text-xs disabled:cursor-not-allowed disabled:opacity-50 md:gap-2 md:px-4 md:text-sm';
 const ADD_FROM_CATALOG_BUTTON_CLASS =
   'inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground/15 bg-background px-3 py-2 text-sm transition-colors hover:border-foreground/25 hover:bg-card disabled:cursor-not-allowed disabled:opacity-50 md:w-auto';
 const DIALOG_CLOSE_BUTTON_CLASS =
   'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted/50';
 const ADD_FROM_CATALOG_BAR_CLASS = 'shrink-0 bg-background pb-3';
-const BRANCH_WITHDRAW_SCROLL_BODY_CLASS =
-  'min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]';
-const BRANCH_WITHDRAW_ACTION_BAR_CLASS =
-  'shrink-0 border-t border-border bg-background py-3 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]';
 const MOBILE_NAV_HEADER_HEIGHT_PX = 72;
-const BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS =
-  'max-md:fixed max-md:inset-x-0 max-md:z-0 max-md:top-[72px] max-md:bottom-[calc(11rem+env(safe-area-inset-bottom,0px))]';
-const BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_FAB_HIDDEN_CLASS =
-  'max-md:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))]';
-const BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS = 'md:static md:h-[calc(100dvh-4rem)] md:max-h-[calc(100dvh-4rem)]';
 const COPY_ICON_BUTTON_CLASS =
   'inline-flex items-center justify-center rounded-xl border border-border bg-background p-2 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -302,8 +301,7 @@ export default function BranchWithdrawClient({
   const inventorySource = hasLoaded ? realtimeItems : initialItems;
 
   const [extraItemIds, setExtraItemIds] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
-    const draft = readBranchWithdrawDraft(window.sessionStorage);
+    const draft = readBranchWithdrawDraftFromBrowser();
     return draft?.extraItemIds ?? [];
   });
 
@@ -317,11 +315,16 @@ export default function BranchWithdrawClient({
     if (typeof window === 'undefined') {
       return mergeRowsWithDisplayItemIds(itemIds, {});
     }
-    const draft = readBranchWithdrawDraft(window.sessionStorage);
+    const draft = readBranchWithdrawDraftFromBrowser();
     return mergeRowsWithDisplayItemIds(itemIds, draft?.rows ?? {});
   });
-  const [isSaving, setIsSaving] = useState(false);
+  const [isReceiving, setIsReceiving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [draftSaveStatus, setDraftSaveStatus] = useState<string | null>(() => {
+    const draft = readBranchWithdrawDraftFromBrowser();
+    if (!draft?.savedAt) return null;
+    return `บันทึกชั่วคราวล่าสุด ${formatHistoryDate(draft.savedAt)}`;
+  });
   const [history, setHistory] = useState(initialHistory);
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [prevInitialHistory, setPrevInitialHistory] = useState(initialHistory);
@@ -374,7 +377,7 @@ export default function BranchWithdrawClient({
     const serialized = serializeBranchWithdrawDraft({ rows, extraItemIds });
     if (draftPersistSignatureRef.current === serialized) return;
     draftPersistSignatureRef.current = serialized;
-    writeBranchWithdrawDraft(window.sessionStorage, { rows, extraItemIds });
+    writeBranchWithdrawDraft(window.localStorage, { rows, extraItemIds });
   }, [extraItemIds, rows]);
 
   const displayedItemIds = useMemo(() => new Set(displayItemIdKey.split('\0').filter(Boolean)), [displayItemIdKey]);
@@ -427,13 +430,38 @@ export default function BranchWithdrawClient({
     }
   };
 
-  const handleSave = useCallback(async () => {
+  const handleSaveDraft = useCallback(() => {
     if (isReadOnly) {
       setSaveError(READ_ONLY_DENY_MSG);
       return;
     }
 
-    setIsSaving(true);
+    const savedLines = filterBranchWithdrawSaveLines(
+      buildBranchWithdrawDraftLines(displayItems, rows),
+    );
+    if (savedLines.length === 0) {
+      setSaveError('ไม่มีรายการที่มีจำนวนสาขา 1');
+      return;
+    }
+
+    if (typeof window === 'undefined') return;
+
+    setSaveError(null);
+    const checkpoint = saveBranchWithdrawDraftCheckpoint(window.localStorage, {
+      rows,
+      extraItemIds,
+    });
+    draftPersistSignatureRef.current = serializeBranchWithdrawDraft(checkpoint);
+    setDraftSaveStatus(`บันทึกชั่วคราวแล้ว ${formatHistoryDate(checkpoint.savedAt ?? new Date().toISOString())}`);
+  }, [displayItems, extraItemIds, isReadOnly, rows]);
+
+  const handleReceive = useCallback(async () => {
+    if (isReadOnly) {
+      setSaveError(READ_ONLY_DENY_MSG);
+      return;
+    }
+
+    setIsReceiving(true);
     setSaveError(null);
     setCopyStatus(null);
 
@@ -452,15 +480,17 @@ export default function BranchWithdrawClient({
         clientSessionId: getClientSessionId(),
       });
       if (!result.success) {
-        setSaveError(result.error || 'บันทึกไม่สำเร็จ');
+        setSaveError(result.error || 'รับเข้าไม่สำเร็จ');
         return;
       }
 
       if (typeof window !== 'undefined') {
+        clearBranchWithdrawDraft(window.localStorage);
         clearBranchWithdrawDraft(window.sessionStorage);
         draftPersistSignatureRef.current = null;
       }
       setExtraItemIds([]);
+      setDraftSaveStatus(null);
       const resetItemIds = buildBranchWithdrawDisplayItems(inventorySource, []).map((item) => item.id);
       setRows(mergeRowsWithDisplayItemIds(resetItemIds, {}));
 
@@ -481,10 +511,10 @@ export default function BranchWithdrawClient({
 
       void refresh({ soft: true });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+      const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการรับเข้าคลัง';
       setSaveError(message);
     } finally {
-      setIsSaving(false);
+      setIsReceiving(false);
     }
   }, [inventorySource, isReadOnly, refresh, rows, displayItems]);
 
@@ -586,19 +616,28 @@ export default function BranchWithdrawClient({
         </button>
         <button
           type="button"
-          onClick={() => void handleSave()}
-          disabled={isReadOnly || isSaving || previewLineCount === 0}
+          onClick={handleSaveDraft}
+          disabled={isReadOnly || previewLineCount === 0}
           className={STICKY_ACTION_BUTTON_CLASS}
         >
-          {isSaving ? (
+          <Save className="h-4 w-4 shrink-0" />
+          <span className="truncate">บันทึก</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleReceive()}
+          disabled={isReadOnly || isReceiving || previewLineCount === 0}
+          className={STICKY_ACTION_BUTTON_CLASS}
+        >
+          {isReceiving ? (
             <>
               <LoadingIcon size="md" className="shrink-0" />
-              <span className="truncate">กำลังบันทึก...</span>
+              <span className="truncate">กำลังรับเข้า...</span>
             </>
           ) : (
             <>
-              <Save className="h-4 w-4 shrink-0" />
-              <span className="truncate">บันทึก</span>
+              <PackagePlus className="h-4 w-4 shrink-0" />
+              <span className="truncate">รับเข้า</span>
             </>
           )}
         </button>
@@ -631,6 +670,12 @@ export default function BranchWithdrawClient({
             {saveError}
           </div>
         )}
+
+        {draftSaveStatus ? (
+          <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground/80">
+            {draftSaveStatus}
+          </div>
+        ) : null}
 
         <section className="space-y-2">
           {displayItems.length === 0 ? (
@@ -838,7 +883,8 @@ export default function BranchWithdrawClient({
 
       <dialog ref={saveResultDialogRef} className={BRANCH_WITHDRAW_DIALOG_WIDE_CLASS}>
         <div className="p-4 md:p-5">
-          <h3 className="text-base">ข้อความ LINE สำหรับส่ง</h3>
+          <h3 className="text-base">รับเข้าคลังสำเร็จ</h3>
+          <p className="mt-1 text-xs text-foreground/70">ข้อความ LINE สำหรับส่ง</p>
           <textarea
             readOnly
             name="branch-withdraw-save-line-message"
