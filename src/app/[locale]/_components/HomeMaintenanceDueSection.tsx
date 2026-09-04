@@ -8,6 +8,11 @@ import { formatDueDateWithDaysRemaining } from '@/lib/maintenance/compute-upcomi
 import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';
 import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import {
+  HomeSectionBadge,
+  HomeSectionHeader,
+  homeSectionLinkClassName,
+} from './home-section-header';
 import type { HomeSectionLayout } from './home-layout';
 
 type HomeMaintenanceDueSectionProps = {
@@ -37,7 +42,7 @@ function MaintenanceTaskRow({
 }) {
   if (compact) {
     return (
-      <tr className="bb-grid-row-offscreen border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
+      <tr className="bb-grid-row-offscreen border-b border-border/80 last:border-0 hover:bg-muted/35 transition-colors">
         <td className="py-3 px-3 text-center text-[13px] text-muted-foreground tabular-nums w-10">
           {index + 1}
         </td>
@@ -63,13 +68,15 @@ function MaintenanceTaskRow({
     >
       <div className="flex items-start justify-between gap-2 min-w-0">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] text-black/45 tabular-nums">#{index + 1}</p>
+          <p className="text-[11px] text-black/45 tabular-nums tracking-wide uppercase">
+            #{index + 1}
+          </p>
           <h3 className="text-[15px] font-normal text-black leading-snug line-clamp-2 mt-0.5">
             {task.equipment}
           </h3>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-[11px] text-black/45">ครบกำหนด</p>
+          <p className="text-[11px] text-black/45 tracking-wide">ครบกำหนด</p>
           <p className="text-[14px] tabular-nums font-normal text-black leading-snug">
             {dueLabel}
           </p>
@@ -92,7 +99,7 @@ export default function HomeMaintenanceDueSection({
 
   return (
     <section
-      aria-label="รายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์"
+      aria-label="รายการซ่อมบำรุงที่ต้องทำ"
       className={cn(
         'rounded-3xl border border-border bg-card bb-shadow-sm',
         isDashboard
@@ -100,47 +107,25 @@ export default function HomeMaintenanceDueSection({
           : 'p-5 md:p-7',
       )}
     >
-      <header
-        className={cn(
-          'flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between shrink-0',
-          isDashboard ? 'mb-3 md:mb-2.5' : 'mb-5',
-        )}
-      >
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
-            <Wrench className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-[clamp(1rem,2.5vw,1.25rem)] font-normal text-foreground tracking-tight leading-snug">
-              รายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์
-            </h2>
-            <p className="mt-1 text-[0.8rem] font-normal text-muted-foreground/90 tracking-wide">
-              บันทึกการซ่อม · รวมงานค้างและงานที่ครบกำหนดภายใน 7 วัน
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
-          <span
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] tabular-nums font-normal',
-              tasks.length > 0
-                ? 'border-amber-200/80 bg-amber-50/70 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200'
-                : 'border-border bg-muted/50 text-muted-foreground',
-            )}
-          >
-            <Wrench className="h-3.5 w-3.5 opacity-70" aria-hidden />
-            {tasks.length} รายการ
-          </span>
-          <NavPreloadLink
-            href={maintenanceHref}
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1.5 text-[12px] text-foreground transition-colors hover:bg-muted/60"
-          >
-            บันทึกการซ่อม
-            <ArrowUpRight className="h-3.5 w-3.5 opacity-60" aria-hidden />
-          </NavPreloadLink>
-        </div>
-      </header>
+      <HomeSectionHeader
+        compact={isDashboard}
+        icon={<Wrench className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} aria-hidden />}
+        title="รายการซ่อมบำรุงที่ต้องทำ"
+        actions={
+          <>
+            <HomeSectionBadge
+              tone={tasks.length > 0 ? 'warning' : 'neutral'}
+              icon={<Wrench className="h-3.5 w-3.5 opacity-70" aria-hidden />}
+            >
+              {tasks.length} รายการ
+            </HomeSectionBadge>
+            <NavPreloadLink href={maintenanceHref} className={homeSectionLinkClassName()}>
+              บันทึกการซ่อม
+              <ArrowUpRight className="h-3.5 w-3.5 opacity-60" aria-hidden />
+            </NavPreloadLink>
+          </>
+        }
+      />
 
       {tasks.length === 0 ? (
         <div
@@ -151,7 +136,7 @@ export default function HomeMaintenanceDueSection({
         >
           <Wrench className="h-10 w-10 text-muted-foreground/25 mb-3" aria-hidden />
           <p className="text-[15px] text-muted-foreground font-normal">
-            ไม่มีรายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์
+            ไม่มีรายการซ่อมบำรุงที่ต้องทำ
           </p>
           <p className="mt-1 text-[13px] text-muted-foreground/70">
             งานซ่อมบำรุงทุกรายการอยู่ในกำหนดที่เหมาะสม
@@ -185,18 +170,18 @@ export default function HomeMaintenanceDueSection({
               )}
             >
               <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-card">
-                  <tr className="border-b border-border bg-card">
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-10">
+                <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm">
+                  <tr className="border-b border-border">
+                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-10 uppercase tracking-[0.12em]">
                       #
                     </th>
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground">
+                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground uppercase tracking-[0.12em]">
                       อุปกรณ์
                     </th>
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-40">
+                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-40 uppercase tracking-[0.12em]">
                       ครบกำหนด
                     </th>
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground">
+                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground uppercase tracking-[0.12em]">
                       คำแนะนำ
                     </th>
                   </tr>

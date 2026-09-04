@@ -30,7 +30,7 @@ describe('Home desktop dashboard layout collapsed sidebar', () => {
     const panels = readFile('app/[locale]/_components/HomeOpsPanels.tsx');
     expect(panels).toMatch(/isDashboard\s*\?\s*'md:grid-cols-2/);
     expect(panels).toMatch(/:\s*'md:grid-cols-1'/);
-    expect(panels).toMatch(/role="tablist"/);
+    expect(panels).toMatch(/SegmentTabBar/);
     expect(panels).toMatch(/md:flex-\[9\]/);
   });
 

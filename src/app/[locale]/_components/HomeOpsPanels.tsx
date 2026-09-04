@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ShoppingCart, Wrench } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { SegmentTabBar } from '@/components/ui/segment-tab-bar';
 import { computePurchaseOrderDerivedState } from '@/lib/inventory-stock';
 import {
   useInventoryRealtime,
@@ -47,13 +49,25 @@ export default function HomeOpsPanels({
   const purchaseCount = itemsToOrder.length;
   const maintenanceCount = liveMaintenanceTasks.length;
 
-  const tabButtonClass = (tab: HomeOpsTab) =>
-    cn(
-      'flex-1 px-3.5 py-2 text-[13px] rounded-full border bb-transition duration-200 font-normal whitespace-nowrap',
-      activeTab === tab
-        ? 'bg-foreground border-foreground text-background bb-shadow-sm'
-        : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
-    );
+  const opsTabs = useMemo(
+    () => [
+      {
+        id: 'purchase' as const,
+        label: 'สั่งซื้อ',
+        count: purchaseCount,
+        icon: (
+          <ShoppingCart className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.5} aria-hidden />
+        ),
+      },
+      {
+        id: 'maintenance' as const,
+        label: 'ซ่อมบำรุง',
+        count: maintenanceCount,
+        icon: <Wrench className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.5} aria-hidden />,
+      },
+    ],
+    [maintenanceCount, purchaseCount],
+  );
 
   return (
     <div
@@ -61,47 +75,34 @@ export default function HomeOpsPanels({
         isDashboard && 'md:flex-[9] md:min-h-0 md:flex md:flex-col md:gap-3',
       )}
     >
-      <div
-        role="tablist"
-        aria-label="สลับระหว่างรายการสั่งซื้อและซ่อมบำรุง"
-        className="md:hidden flex gap-2 shrink-0 mb-3"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'purchase'}
-          onClick={() => setActiveTab('purchase')}
-          className={tabButtonClass('purchase')}
-        >
-          สั่งซื้อ
-          <span className="ml-1 text-[11px] tabular-nums opacity-70">({purchaseCount})</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'maintenance'}
-          onClick={() => setActiveTab('maintenance')}
-          className={tabButtonClass('maintenance')}
-        >
-          ซ่อมบำรุง
-          <span className="ml-1 text-[11px] tabular-nums opacity-70">({maintenanceCount})</span>
-        </button>
-      </div>
+      <SegmentTabBar
+        tabs={opsTabs}
+        value={activeTab}
+        onChange={setActiveTab}
+        ariaLabel="สลับระหว่างรายการสั่งซื้อและซ่อมบำรุง"
+        className="md:hidden shrink-0 mb-3"
+      />
 
       <div className="md:hidden">
-        {activeTab === 'purchase' ? (
-          <HomePurchaseOrdersSection
-            initialItems={initialItems}
-            locale={locale}
-            layout={layout}
-          />
-        ) : (
-          <HomeMaintenanceDueSection
-            tasks={liveMaintenanceTasks}
-            locale={locale}
-            layout={layout}
-          />
-        )}
+        <div
+          role="tabpanel"
+          id={`segment-panel-${activeTab}`}
+          aria-labelledby={`segment-tab-${activeTab}`}
+        >
+          {activeTab === 'purchase' ? (
+            <HomePurchaseOrdersSection
+              initialItems={initialItems}
+              locale={locale}
+              layout={layout}
+            />
+          ) : (
+            <HomeMaintenanceDueSection
+              tasks={liveMaintenanceTasks}
+              locale={locale}
+              layout={layout}
+            />
+          )}
+        </div>
       </div>
 
       <div

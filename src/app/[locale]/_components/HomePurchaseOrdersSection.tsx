@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ShoppingCart, ArrowUpRight, Package } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { FilterChipBar } from '@/components/ui/segment-tab-bar';
 import {
   computePurchaseOrderDerivedState,
   getStockColorClass,
@@ -14,6 +15,11 @@ import {
 } from '@/contexts/InventoryRealtimeContext';
 import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import {
+  HomeSectionBadge,
+  HomeSectionHeader,
+  homeSectionLinkClassName,
+} from './home-section-header';
 import type { HomeSectionLayout } from './home-layout';
 
 type HomePurchaseOrdersSectionProps = {
@@ -40,9 +46,7 @@ function PurchaseOrderRow({
 
   if (compact) {
     return (
-      <tr
-        className="bb-grid-row-offscreen border-b border-border last:border-0 hover:bg-muted/40 transition-colors"
-      >
+      <tr className="bb-grid-row-offscreen border-b border-border/80 last:border-0 hover:bg-muted/35 transition-colors">
         <td className="py-3 px-3 text-center text-[13px] text-muted-foreground tabular-nums w-10">
           {index + 1}
         </td>
@@ -76,13 +80,15 @@ function PurchaseOrderRow({
     >
       <div className="flex items-start justify-between gap-2 min-w-0">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] text-black/45 tabular-nums">#{index + 1}</p>
+          <p className="text-[11px] text-black/45 tabular-nums tracking-wide uppercase">
+            #{index + 1}
+          </p>
           <h3 className="text-[15px] font-normal text-black leading-snug line-clamp-2 mt-0.5">
             {item.name}
           </h3>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-[11px] text-black/45">สั่ง</p>
+          <p className="text-[11px] text-black/45 tracking-wide">สั่ง</p>
           <p className="text-[17px] tabular-nums font-normal text-black leading-none">
             {formatQty(item.computedOrderQty)}
           </p>
@@ -125,6 +131,36 @@ export default function HomePurchaseOrdersSection({
 
   const inventoryHref = `/${locale}/inventory`;
 
+  const sourceChips = useMemo(() => {
+    const chips = [
+      { id: 'all', label: 'ทั้งหมด', count: itemsToOrder.length },
+      ...poSources.map((source) => ({
+        id: source,
+        label: source,
+        count: itemsToOrder.filter(
+          (i) => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === source,
+        ).length,
+      })),
+    ];
+    return chips;
+  }, [itemsToOrder, poSources]);
+
+  const handleSourceToggle = (id: string) => {
+    if (id === 'all') {
+      setSelectedChannels(['all']);
+      return;
+    }
+    setSelectedChannels((prev) => {
+      let next = prev.filter((c) => c !== 'all');
+      if (next.includes(id)) {
+        next = next.filter((c) => c !== id);
+      } else {
+        next = [...next, id];
+      }
+      return next.length === 0 ? ['all'] : next;
+    });
+  };
+
   return (
     <section
       aria-label="รายการที่ต้องสั่งซื้อจากคลังสินค้า"
@@ -135,102 +171,43 @@ export default function HomePurchaseOrdersSection({
           : 'p-5 md:p-7',
       )}
     >
-      <header
-        className={cn(
-          'flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between shrink-0',
-          isDashboard ? 'mb-3 md:mb-2.5' : 'mb-5',
-        )}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
-            <ShoppingCart className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-[clamp(1rem,2.5vw,1.25rem)] font-normal text-foreground tracking-tight leading-snug">
-              รายการที่ต้องสั่งซื้อ
-            </h2>
-          </div>
-        </div>
+      <HomeSectionHeader
+        compact={isDashboard}
+        icon={
+          <ShoppingCart className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+        }
+        title="รายการที่ต้องสั่งซื้อ"
+        actions={
+          <>
+            <HomeSectionBadge
+              tone={itemsToOrder.length > 0 ? 'alert' : 'neutral'}
+              icon={<Package className="h-3.5 w-3.5 opacity-70" aria-hidden />}
+            >
+              {itemsToOrder.length} รายการ
+            </HomeSectionBadge>
+            <NavPreloadLink href={inventoryHref} className={homeSectionLinkClassName()}>
+              คลังสินค้า
+              <ArrowUpRight className="h-3.5 w-3.5 opacity-60" aria-hidden />
+            </NavPreloadLink>
+          </>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end shrink-0">
-          <span
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] tabular-nums font-normal',
-              itemsToOrder.length > 0
-                ? 'border-red-200/80 bg-red-50/70 text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300'
-                : 'border-border bg-muted/50 text-muted-foreground',
-            )}
-          >
-            <Package className="h-3.5 w-3.5 opacity-70" aria-hidden />
-            {itemsToOrder.length} รายการ
-          </span>
-          <NavPreloadLink
-            href={inventoryHref}
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-3 py-1.5 text-[12px] text-foreground transition-colors hover:bg-muted/60"
-          >
-            คลังสินค้า
-            <ArrowUpRight className="h-3.5 w-3.5 opacity-60" aria-hidden />
-          </NavPreloadLink>
-        </div>
-      </header>
-
-      {itemsToOrder.length > 0 && poSources.length > 0 && (
+      {itemsToOrder.length > 0 && poSources.length > 0 ? (
         <div
           className={cn(
             'mb-4 -mx-1 px-1 overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y shrink-0 pb-3 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
             isDashboard && 'md:mb-2.5',
           )}
         >
-          <div className="flex flex-nowrap gap-2 min-w-min">
-            <button
-              type="button"
-              onClick={() => setSelectedChannels(['all'])}
-              className={cn(
-                'px-3.5 py-1.5 text-[13px] rounded-full border bb-transition duration-200 font-normal whitespace-nowrap shrink-0',
-                selectedChannels.includes('all')
-                  ? 'bg-foreground border-foreground text-background bb-shadow-sm'
-                  : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
-              )}
-            >
-              ทั้งหมด
-              <span className="ml-1 text-[11px] tabular-nums opacity-70">({itemsToOrder.length})</span>
-            </button>
-            {poSources.map((source) => {
-              const count = itemsToOrder.filter(
-                (i) => (i.source || 'ไม่ได้ระบุแหล่งที่มา') === source,
-              ).length;
-              const isActive = selectedChannels.includes(source) && !selectedChannels.includes('all');
-              return (
-                <button
-                  key={source}
-                  type="button"
-                  onClick={() => {
-                    setSelectedChannels((prev) => {
-                      let next = prev.filter((c) => c !== 'all');
-                      if (next.includes(source)) {
-                        next = next.filter((c) => c !== source);
-                      } else {
-                        next = [...next, source];
-                      }
-                      return next.length === 0 ? ['all'] : next;
-                    });
-                  }}
-                  className={cn(
-                    'px-3.5 py-1.5 text-[13px] rounded-full border bb-transition duration-200 font-normal whitespace-nowrap shrink-0 max-w-[12rem] truncate',
-                    isActive
-                      ? 'bg-foreground border-foreground text-background bb-shadow-sm'
-                      : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                  )}
-                  title={source}
-                >
-                  {source}
-                  <span className="ml-1 text-[11px] tabular-nums opacity-70">({count})</span>
-                </button>
-              );
-            })}
-          </div>
+          <FilterChipBar
+            chips={sourceChips}
+            selected={selectedChannels}
+            onToggle={handleSourceToggle}
+            ariaLabel="กรองตามแหล่งที่มาสินค้า"
+          />
         </div>
-      )}
+      ) : null}
 
       {itemsToOrder.length === 0 ? (
         <div
@@ -254,7 +231,6 @@ export default function HomePurchaseOrdersSection({
         </div>
       ) : (
         <>
-          {/* Mobile: card stack */}
           <div className="md:hidden max-h-[min(60svh,28rem)] overflow-y-auto bb-smooth-scroll -mx-1 px-1">
             <div className="space-y-2.5">
               {displayedPoItems.map((item, idx) => (
@@ -263,7 +239,6 @@ export default function HomePurchaseOrdersSection({
             </div>
           </div>
 
-          {/* Desktop: compact table */}
           <div
             className={cn(
               'hidden md:block rounded-2xl border border-border overflow-hidden bb-shadow-sm',
@@ -277,21 +252,21 @@ export default function HomePurchaseOrdersSection({
               )}
             >
               <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 z-10 bg-card">
-                  <tr className="border-b border-border bg-card">
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-10">
+                <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm">
+                  <tr className="border-b border-border">
+                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-10 uppercase tracking-[0.12em]">
                       #
                     </th>
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground">
+                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground uppercase tracking-[0.12em]">
                       ชื่อรายการ
                     </th>
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-24">
+                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-24 uppercase tracking-[0.12em]">
                       จำนวนสั่ง
                     </th>
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-20">
+                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-20 uppercase tracking-[0.12em]">
                       คงเหลือ
                     </th>
-                    <th className="py-3 px-3 text-[12px] font-normal text-muted-foreground text-center w-16">
+                    <th className="py-2.5 px-3 text-[11px] font-normal text-muted-foreground text-center w-16 uppercase tracking-[0.12em]">
                       หน่วย
                     </th>
                   </tr>

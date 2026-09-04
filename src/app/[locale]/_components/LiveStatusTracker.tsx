@@ -18,6 +18,7 @@ import {
 import { countFohCoffeeStaff } from '@/lib/foh-coffee-staff-count';
 import { getClientShiftTypes } from '@/lib/shift-type-config';
 import { cn } from '@/lib/utils';
+import { HomeSectionHeader } from './home-section-header';
 import type { HomeSectionLayout } from './home-layout';
 
 interface Profile {
@@ -184,7 +185,7 @@ function StatusGrid({
             </span>
             <span
               className={cn(
-                'inline-flex items-center justify-center gap-1.5 self-center max-w-full rounded-full bg-black/[0.06] font-normal text-black/80 tracking-wide',
+                'inline-flex items-center justify-center gap-1.5 self-center max-w-full rounded-full border border-black/10 bg-black/[0.06] font-normal text-black/80 tracking-wide',
                 dashboard ? 'px-2.5 py-1 text-[0.75rem]' : 'px-2 py-0.5 text-[0.6875rem]',
               )}
             >
@@ -231,41 +232,14 @@ function StatusSection({
         dashboard ? 'md:h-full md:min-h-0 md:flex md:flex-col p-5 md:p-5' : 'p-5 md:p-7',
       )}
     >
-      <header
-        className={cn(
-          'flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 shrink-0',
-          dashboard ? 'mb-4' : 'mb-6',
-        )}
-      >
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
-            {icon}
-          </div>
-          <div className="min-w-0">
-            <h2
-              className={cn(
-                'font-normal text-foreground tracking-tight leading-snug',
-                dashboard
-                  ? 'text-[1.05rem]'
-                  : 'text-[clamp(1rem,2.5vw,1.25rem)]',
-              )}
-            >
-              {title}
-            </h2>
-            <p
-              className={cn(
-                'font-normal text-muted-foreground/90 tracking-wide line-clamp-2',
-                dashboard ? 'mt-1 text-[0.8rem]' : 'mt-1 text-[0.8rem]',
-              )}
-            >
-              {subtitle}
-            </p>
-          </div>
-        </div>
-        <span className="text-[0.7rem] font-normal text-muted-foreground/70 uppercase tracking-[0.2em] shrink-0">
-          {coffeeShopStaffCount} พนักงาน
-        </span>
-      </header>
+      <HomeSectionHeader
+        compact={dashboard}
+        icon={icon}
+        title={title}
+        subtitle={subtitle}
+        meta={`${coffeeShopStaffCount} พนักงาน`}
+        className={dashboard ? 'mb-4' : 'mb-6'}
+      />
       <div
         className={cn(
           dashboard &&

@@ -98,7 +98,7 @@ describe('HomeOpsPanels', () => {
     fireEvent.click(screen.getByRole('tab', { name: /ซ่อมบำรุง/ }));
 
     expect(
-      screen.getAllByRole('heading', { name: 'รายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์' }).length,
+      screen.getAllByRole('heading', { name: 'รายการซ่อมบำรุงที่ต้องทำ' }).length,
     ).toBeGreaterThanOrEqual(1);
   });
 
@@ -119,7 +119,7 @@ describe('HomeMaintenanceDueSection', () => {
     );
 
     expect(
-      screen.getByText('ไม่มีรายการซ่อมบำรุงที่ต้องทำภายใน 1 สัปดาห์'),
+      screen.getByText('ไม่มีรายการซ่อมบำรุงที่ต้องทำ'),
     ).toBeInTheDocument();
   });
 
