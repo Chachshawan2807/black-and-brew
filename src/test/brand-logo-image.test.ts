@@ -30,8 +30,10 @@ describe('Brand logo Next/Image sizing', () => {
     expect(source).toContain('BRAND_LOGO_SRC');
     expect(source).toContain('BRAND_LOGO_INTRINSIC.width');
     expect(source).toContain('BRAND_LOGO_INTRINSIC.height');
-    expect(source).toMatch(/height:\s*['"]auto['"]/);
-    expect(source).not.toMatch(/height:\s*['"][0-9]+px['"]/);
+    expect(source).toContain('bb-brand-logo-box');
+    expect(source).toContain('max-h-full');
+    expect(source).toContain('max-w-full');
+    expect(source).toContain('object-contain');
     expect(source).toContain('unoptimized');
     expect(source).toContain('quality={100}');
     expect(source).toContain('bb-brand-logo');

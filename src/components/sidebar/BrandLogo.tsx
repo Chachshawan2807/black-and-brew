@@ -48,23 +48,32 @@ export function BrandLogo({
   const layout = SIZE_STYLES[size];
 
   return (
-    <Image
-      src={BRAND_LOGO_SRC}
-      alt={alt}
-      width={BRAND_LOGO_INTRINSIC.width}
-      height={BRAND_LOGO_INTRINSIC.height}
-      sizes={layout.sizes}
-      quality={100}
-      unoptimized
-      className={cn('bb-brand-logo', BRAND_LOGO_DARK, className)}
+    <div
+      className={cn('bb-brand-logo-box flex shrink-0 items-center', className)}
       style={{
         width: layout.width,
-        height: 'auto',
+        maxWidth: layout.width,
+        height: layout.maxHeight,
         maxHeight: layout.maxHeight,
-        objectFit: 'contain',
-        objectPosition: layout.objectPosition ?? 'center',
       }}
-      priority={priority}
-    />
+    >
+      <Image
+        src={BRAND_LOGO_SRC}
+        alt={alt}
+        width={BRAND_LOGO_INTRINSIC.width}
+        height={BRAND_LOGO_INTRINSIC.height}
+        sizes={layout.sizes}
+        quality={100}
+        unoptimized
+        className={cn(
+          'bb-brand-logo h-auto max-h-full w-auto max-w-full object-contain',
+          BRAND_LOGO_DARK,
+        )}
+        style={{
+          objectPosition: layout.objectPosition ?? 'center',
+        }}
+        priority={priority}
+      />
+    </div>
   );
 }

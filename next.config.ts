@@ -40,6 +40,10 @@ const securityHeaders = [
 const isProduction = process.env.NODE_ENV === 'production';
 
 const nextConfig: NextConfig = {
+  // BrandLogo uses quality={100}; Next.js 16 requires explicit qualities allowlist.
+  images: {
+    qualities: [100, 75],
+  },
   // PPR + optimizePackageImports can stall Turbopack's first /[locale] dev compile (120s+ hang).
   // Keep both for production bundle size and PPR; skip in dev for responsive local iteration.
   cacheComponents: isProduction,

@@ -230,17 +230,18 @@ async function writeNotificationBadge(trimmed) {
 
 /**
  * Header/sidebar brand mark: pure-black silhouette on transparent canvas.
+ * Keep original logo.png padding (no trim) so CSS width matches pre-sharpness visual scale.
  * Supersample + lanczos3 downscale keeps letterforms sharp at 200–240px CSS width.
  */
-async function renderHeaderLogo(trimmed) {
+async function renderHeaderLogo(fullMark) {
   const targetWidth = HEADER_LOGO_CSS_MAX_WIDTH * HEADER_LOGO_DEVICE_PIXEL_RATIO;
   const renderWidth = targetWidth * HEADER_LOGO_SUPER_SAMPLE;
 
-  const meta = await trimmed.metadata();
+  const meta = await fullMark.metadata();
   const aspect = meta.width / meta.height;
   const renderHeight = Math.max(1, Math.round(renderWidth / aspect));
 
-  const large = await trimmed
+  const large = await fullMark
     .clone()
     .resize(renderWidth, renderHeight, {
       fit: 'inside',
@@ -258,8 +259,9 @@ async function renderHeaderLogo(trimmed) {
     .png({ compressionLevel: 9, adaptiveFiltering: true });
 }
 
-async function writeHeaderLogo(trimmed) {
-  const image = await renderHeaderLogo(trimmed);
+async function writeHeaderLogo() {
+  const fullMark = await extractLogoMark(sharp(source));
+  const image = await renderHeaderLogo(fullMark);
   await image.toFile(path.join(outDir, 'logo-header.png'));
 }
 
@@ -288,7 +290,7 @@ async function main() {
   await writeSquareIcon(trimmed, 512, 'maskable-icon-512.png', PWA_MASKABLE_PADDING_RATIO);
   await writeSquareIcon(trimmed, 512, 'favicon.png', PWA_ICON_PADDING_RATIO);
   await writeSquareIcon(trimmed, 180, 'apple-touch-icon.png', PWA_ICON_PADDING_RATIO);
-  await writeHeaderLogo(trimmed);
+  await writeHeaderLogo();
   await writeNextAppIcons(trimmed);
   const cacheVersion = readExistingCacheVersion() + 1;
   const pwaAssets = buildPwaAssets(cacheVersion);

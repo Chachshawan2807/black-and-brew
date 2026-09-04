@@ -13,5 +13,5 @@ self.PWA_ASSETS = {
     60,
     120
   ],
-  "CACHE_VERSION": 29
+  "CACHE_VERSION": 30
 };
