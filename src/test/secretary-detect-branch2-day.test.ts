@@ -4,7 +4,6 @@ import {
   isBranch2Shift,
   resolveSecretaryBranch2Day,
 } from '@/lib/secretary/detect-branch2-day';
-import { SECRETARY_FOCUS_STAFF_NAME } from '@/lib/secretary/manager-day-config';
 
 describe('detectBranch2Day', () => {
   test('returns true for ไปสาขา 2 shift', () => {
@@ -28,28 +27,22 @@ describe('detectBranch2Day', () => {
 });
 
 describe('resolveSecretaryBranch2Day', () => {
-  test('uses only the focus staff shift, not other employees on branch 2', () => {
-    const result = resolveSecretaryBranch2Day(
-      [
-        { name: 'ล่า', shiftText: 'ไปสาขา 2', remark: 'คั่วกาแฟ' },
-        { name: SECRETARY_FOCUS_STAFF_NAME, shiftText: 'ร้านซักผ้า' },
-      ],
-      SECRETARY_FOCUS_STAFF_NAME,
-    );
-
-    expect(result.isBranch2Day).toBe(false);
-  });
-
-  test('detects branch 2 when focus staff is assigned ไปสาขา 2', () => {
-    const result = resolveSecretaryBranch2Day(
-      [
-        { name: 'ล่า', shiftText: 'ไปสาขา 2' },
-        { name: SECRETARY_FOCUS_STAFF_NAME, shiftText: 'ไปสาขา 2', remark: 'คั่วกาแฟ' },
-      ],
-      SECRETARY_FOCUS_STAFF_NAME,
-    );
+  test('detects branch 2 when any employee is assigned ไปสาขา 2', () => {
+    const result = resolveSecretaryBranch2Day([
+      { name: 'ล่า', shiftText: 'ไปสาขา 2', remark: 'คั่วกาแฟ' },
+      { name: 'ชัช', shiftText: 'ร้านซักผ้า' },
+    ]);
 
     expect(result.isBranch2Day).toBe(true);
     expect(result.branch2Remark).toBe('คั่วกาแฟ');
+  });
+
+  test('returns false when no employee is on branch 2', () => {
+    const result = resolveSecretaryBranch2Day([
+      { name: 'ล่า', shiftText: 'ร้านซักผ้า' },
+      { name: 'ชัช', shiftText: '8:00' },
+    ]);
+
+    expect(result.isBranch2Day).toBe(false);
   });
 });
