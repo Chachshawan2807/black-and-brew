@@ -122,8 +122,6 @@ const COPY_ICON_BUTTON_CLASS =
   'inline-flex min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-xl border border-border bg-background p-2 text-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 disabled:cursor-not-allowed disabled:opacity-50';
 const ITEM_ROW_BADGE_CLASS =
   'inline-flex rounded-md border border-border bg-background px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground md:text-xs';
-const DESKTOP_COLUMN_HEADER_CLASS =
-  'sticky top-0 z-10 hidden gap-x-2 rounded-xl border border-transparent bg-background/95 px-4 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm md:grid';
 
 function WithdrawRowInputs({
   itemId,
@@ -725,12 +723,6 @@ export default function BranchWithdrawClient({
             </EmptyState>
           ) : (
             <>
-              <div className={`${DESKTOP_COLUMN_HEADER_CLASS} ${DESKTOP_GRID_COLS}`}>
-                <span>รายการ</span>
-                <span className="text-center">สาขา 1</span>
-                <span className="text-center">สาขา 2</span>
-                <span className="text-center leading-tight">{BRANCH2_UNIT_LABEL}</span>
-              </div>
               {displayItems.map((item) => (
                 <BranchWithdrawItemRow
                   key={item.id}

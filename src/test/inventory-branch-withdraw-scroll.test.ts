@@ -20,9 +20,9 @@ describe('branch withdraw scroll layout', () => {
     expect(BRANCH_WITHDRAW_SCROLL_BODY_CLASS).toContain('bb-smooth-scroll');
   });
 
-  test('mobile standalone shell is fixed between header and viewport bottom', () => {
+  test('mobile standalone shell is fixed within main landmark (top-0, not double header offset)', () => {
     expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:fixed');
-    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:top-[72px]');
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:top-0');
     expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:bottom-0');
   });
 
@@ -38,7 +38,7 @@ describe('branch withdraw scroll layout', () => {
   });
 
   test('action bar sits above withdrawal history inside scroll region', () => {
-    expect(BRANCH_WITHDRAW_ACTION_BAR_CLASS).toContain('border-t');
+    expect(BRANCH_WITHDRAW_ACTION_BAR_CLASS).toContain('rounded-2xl');
     const client = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/inventory/branch-withdraw/BranchWithdrawClient.tsx'),
       'utf-8',

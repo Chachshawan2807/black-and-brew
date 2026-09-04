@@ -7,9 +7,9 @@ import { buildBranchWithdrawStandaloneMobileShellStyle } from '@/lib/branch-with
 const ROOT = path.resolve(__dirname, '..');
 
 describe('branch withdraw FAB overlay (no layout shift)', () => {
-  test('mobile shell fills viewport below header without FAB clearance', () => {
+  test('mobile shell fills main landmark below header without FAB clearance', () => {
     expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:fixed');
-    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:top-[72px]');
+    expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:top-0');
     expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).toContain('max-md:bottom-0');
     expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).not.toContain('11rem');
     expect(BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS).not.toContain('4rem');
@@ -43,7 +43,7 @@ describe('branch withdraw FAB overlay (no layout shift)', () => {
       },
     });
 
-    expect(keyboardStyle?.top).toBe(72);
+    expect(keyboardStyle?.top).toBe(0);
     expect(keyboardStyle?.bottom).toBe(280);
   });
 
