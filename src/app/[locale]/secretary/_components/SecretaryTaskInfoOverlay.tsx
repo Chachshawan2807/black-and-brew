@@ -1,7 +1,7 @@
 'use client';
 
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
-import SecretaryTaskSubwindow from './SecretaryTaskSubwindow';
+import SecretaryTaskPanelShell, { SecretaryTaskDetailRow } from './SecretaryTaskPanelShell';
 
 type SecretaryTaskInfoOverlayProps = {
   title: string;
@@ -9,17 +9,6 @@ type SecretaryTaskInfoOverlayProps = {
   emptyMessage?: string;
   onClose: () => void;
 };
-
-function ListItemBody({ item }: { item: SecretaryAttentionListItem }) {
-  return (
-    <>
-      <p className="text-[14px] text-foreground">{item.primary}</p>
-      {item.secondary ? (
-        <p className="mt-0.5 text-[12px] text-muted-foreground">{item.secondary}</p>
-      ) : null}
-    </>
-  );
-}
 
 /** Read-only secretary task detail without route navigation. */
 export default function SecretaryTaskInfoOverlay({
@@ -29,21 +18,23 @@ export default function SecretaryTaskInfoOverlay({
   onClose,
 }: SecretaryTaskInfoOverlayProps) {
   return (
-    <SecretaryTaskSubwindow title={title} onClose={onClose} maxWidthClass="max-w-lg">
-      <ul className="min-h-0 flex-1 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
+    <SecretaryTaskPanelShell title={title} onClose={onClose} maxWidthClass="max-w-lg">
+      <ul className="space-y-2 pb-1">
         {items.length === 0 ? (
-          <li className="px-1 py-8 text-center text-[13px] text-muted-foreground">{emptyMessage}</li>
+          <li className="px-1 py-10 text-center text-[13px] text-muted-foreground">
+            {emptyMessage}
+          </li>
         ) : (
           items.map((item) => (
             <li
               key={item.id}
-              className="mb-2 rounded-2xl border border-border bg-card px-4 py-3 last:mb-0"
+              className="rounded-2xl border border-border bg-background px-4 py-3"
             >
-              <ListItemBody item={item} />
+              <SecretaryTaskDetailRow item={item} />
             </li>
           ))
         )}
       </ul>
-    </SecretaryTaskSubwindow>
+    </SecretaryTaskPanelShell>
   );
 }

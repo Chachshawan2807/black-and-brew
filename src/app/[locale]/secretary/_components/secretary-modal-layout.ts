@@ -6,3 +6,9 @@ export const SECRETARY_MODAL_SCAFFOLD_PROPS = {
   centerScrollable: true,
   keyboardAware: true,
 } as const;
+
+/** Consistent backdrop blur for all secretary task overlays. */
+export const SECRETARY_MODAL_OVERLAY_CLASS = 'bg-black/20 backdrop-blur-md';
+
+/** Max height for secretary panel chrome (svh + keyboard-safe dvh). */
+export const SECRETARY_PANEL_MAX_HEIGHT = 'max-h-[min(85svh,calc(100dvh-2rem))]';

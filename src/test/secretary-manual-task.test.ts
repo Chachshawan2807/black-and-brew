@@ -61,6 +61,9 @@ describe('secretary manual task UI', () => {
     expect(dialog).toContain('onSave');
     expect(dialog).toContain('onDelete');
     expect(dialog).toContain('textarea');
+    expect(dialog).toContain('htmlFor');
+    expect(dialog).toContain('กำลังบันทึก...');
+    expect(dialog).toContain('SecretaryTaskPanelShell');
     expect(dialog).not.toContain('SECRETARY_TASK_COLORS.attention');
     expect(dialog).not.toContain('border-[#f5c6cb]');
   });
@@ -88,8 +91,13 @@ describe('secretary manual task UI', () => {
       path.resolve(ROOT, 'app/[locale]/secretary/_components/secretary-modal-layout.ts'),
       'utf-8',
     );
+    const shell = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskPanelShell.tsx'),
+      'utf-8',
+    );
     expect(layout).toContain('items-center justify-center');
     expect(layout).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
+    expect(shell).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
 
     for (const file of [
       'SecretaryTaskSubwindow.tsx',
@@ -102,7 +110,7 @@ describe('secretary manual task UI', () => {
         'utf-8',
       );
       if (file === 'SecretaryTaskSubwindow.tsx' || file === 'SecretaryManualTaskDialog.tsx') {
-        expect(code).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
+        expect(code).toContain('SecretaryTaskPanelShell');
       } else {
         expect(code).toContain('SecretaryTaskSubwindow');
       }

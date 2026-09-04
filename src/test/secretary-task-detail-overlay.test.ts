@@ -75,6 +75,10 @@ describe('secretary task detail overlay UI', () => {
       path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskSubwindow.tsx'),
       'utf-8',
     );
+    const panelShell = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskPanelShell.tsx'),
+      'utf-8',
+    );
     const infoOverlay = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskInfoOverlay.tsx'),
       'utf-8',
@@ -90,7 +94,9 @@ describe('secretary task detail overlay UI', () => {
     expect(overlay).toContain('SecretaryTaskListOverlay');
     expect(overlay).not.toContain('MaintenanceOverlay');
     expect(subwindow).toContain('onClose={onClose}');
-    expect(subwindow).toContain('FadeModalScaffold');
+    expect(subwindow).toContain('SecretaryTaskPanelShell');
+    expect(panelShell).toContain('FadeModalScaffold');
+    expect(infoOverlay).toContain('SecretaryTaskPanelShell');
     expect(infoOverlay).not.toContain('<Link');
     expect(infoOverlay).not.toContain('href=');
   });

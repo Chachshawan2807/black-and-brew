@@ -1,13 +1,7 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
-import { CloseIcon } from '@/components/ui/close-icon';
-import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
-import { ModalPortal } from '@/components/ui/modal-portal';
-import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
-import { isSidebarMenuLabel } from '@/lib/sidebar-menu-labels';
-import { cn } from '@/lib/utils';
-import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
+import type { ReactNode } from 'react';
+import SecretaryTaskPanelShell from './SecretaryTaskPanelShell';
 
 type SecretaryTaskSubwindowProps = {
   title: string;
@@ -19,7 +13,7 @@ type SecretaryTaskSubwindowProps = {
   zIndex?: number;
 };
 
-/** Shared secretary task sub-window: backdrop + top-right close, compact real-page embed. */
+/** Shared secretary task sub-window: delegates chrome to SecretaryTaskPanelShell. */
 export default function SecretaryTaskSubwindow({
   title,
   ariaLabel,
@@ -28,55 +22,16 @@ export default function SecretaryTaskSubwindow({
   maxWidthClass = 'max-w-3xl',
   zIndex = 220,
 }: SecretaryTaskSubwindowProps) {
-  const showTitle = !isSidebarMenuLabel(title);
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
   return (
-    <ModalPortal>
-      <FadeModalScaffold
-        open
-        onClose={onClose}
-        zIndex={zIndex}
-        {...SECRETARY_MODAL_SCAFFOLD_PROPS}
-        overlayClassName={cn('bg-black/20 backdrop-blur-md', INVENTORY_MODAL_Z_CLASS)}
-        layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
-        panelClassName={cn(
-          'flex w-full min-h-0 max-h-[min(85svh,calc(100dvh-2rem))] flex-col overflow-hidden',
-          maxWidthClass,
-        )}
-        aria-label={ariaLabel ?? title}
-      >
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-background">
-          <div
-            className={cn(
-              'flex shrink-0 items-center gap-3 px-4 py-3',
-              showTitle ? 'justify-between border-b border-border' : 'justify-end',
-            )}
-          >
-            {showTitle ? (
-              <h2 className="min-w-0 truncate text-[15px] font-normal text-foreground">{title}</h2>
-            ) : null}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="ปิด"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted/50"
-            >
-              <CloseIcon size="sm" />
-            </button>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            {children}
-          </div>
-        </div>
-      </FadeModalScaffold>
-    </ModalPortal>
+    <SecretaryTaskPanelShell
+      title={title}
+      ariaLabel={ariaLabel}
+      onClose={onClose}
+      maxWidthClass={maxWidthClass}
+      zIndex={zIndex}
+      bodyScroll={false}
+    >
+      {children}
+    </SecretaryTaskPanelShell>
   );
 }

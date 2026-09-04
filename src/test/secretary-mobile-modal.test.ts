@@ -4,10 +4,9 @@ import path from 'node:path';
 
 const ROOT = path.resolve(__dirname, '..');
 
-const SECRETARY_SUBWINDOW_FILES = [
+const SECRETARY_SHELL_CONSUMERS = [
   'SecretaryTaskSubwindow.tsx',
   'SecretaryManualTaskDialog.tsx',
-  'BeanOrdersOverlay.tsx',
   'SecretaryTaskListOverlay.tsx',
   'SecretaryTaskInfoOverlay.tsx',
 ];
@@ -21,6 +20,8 @@ describe('secretary mobile task overlays', () => {
     expect(layout).toContain('items-center justify-center');
     expect(layout).toContain('centerScrollable: true');
     expect(layout).toContain('keyboardAware: true');
+    expect(layout).toContain('SECRETARY_MODAL_OVERLAY_CLASS');
+    expect(layout).toContain('SECRETARY_PANEL_MAX_HEIGHT');
   });
 
   test('FadeModalScaffold supports scrollable centered mobile layout', () => {
@@ -32,25 +33,37 @@ describe('secretary mobile task overlays', () => {
     expect(scaffold).toContain('keyboardAware');
     expect(scaffold).toContain('overflow-y-auto overscroll-contain bb-smooth-scroll');
     expect(scaffold).toContain('flex min-h-full');
-    expect(scaffold).toContain('verticalAlign: \'center\'');
+    expect(scaffold).toContain("verticalAlign: 'center'");
   });
 
-  test('SecretaryTaskSubwindow uses shared mobile-safe scaffold props', () => {
+  test('SecretaryTaskPanelShell owns mobile-safe scaffold props and scroll body', () => {
     const code = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskSubwindow.tsx'),
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskPanelShell.tsx'),
       'utf-8',
     );
     expect(code).toContain('SECRETARY_MODAL_SCAFFOLD_PROPS');
     expect(code).toContain('SECRETARY_MODAL_LAYOUT_CLASS');
+    expect(code).toContain('SECRETARY_MODAL_OVERLAY_CLASS');
+    expect(code).toContain('overflow-y-auto overscroll-contain bb-smooth-scroll');
     expect(code).not.toContain('items-end');
   });
 
-  test.each(SECRETARY_SUBWINDOW_FILES)('%s keeps internal scroll regions', (file) => {
+  test.each(SECRETARY_SHELL_CONSUMERS)('%s delegates chrome to SecretaryTaskPanelShell', (file) => {
     const code = fs.readFileSync(
       path.resolve(ROOT, `app/[locale]/secretary/_components/${file}`),
       'utf-8',
     );
-    expect(code).toMatch(/overflow-y-auto bb-smooth-scroll|FadeModalScaffold/);
+    expect(code).toContain('SecretaryTaskPanelShell');
+    expect(code).not.toContain('items-end');
+  });
+
+  test('BeanOrdersOverlay keeps sub-window scroll path', () => {
+    const code = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/BeanOrdersOverlay.tsx'),
+      'utf-8',
+    );
+    expect(code).toContain('SecretaryTaskSubwindow');
+    expect(code).toMatch(/overflow-y-auto bb-smooth-scroll|FadeModalScaffold|SecretaryTaskSubwindow/);
   });
 
   test('purchase orders modal from secretary uses scrollable centered shell', () => {
@@ -61,7 +74,7 @@ describe('secretary mobile task overlays', () => {
     expect(modal).toContain('overflow-y-auto overscroll-contain bb-smooth-scroll');
     expect(modal).toContain('flex min-h-full min-w-0 items-center justify-center');
     expect(modal).toContain('getModalBackdropKeyboardAwareStyle');
-    expect(modal).toContain('verticalAlign: \'center\'');
+    expect(modal).toContain("verticalAlign: 'center'");
   });
 
   test('branch withdraw overlay delegates to shared sub-window shell', () => {

@@ -72,8 +72,8 @@ describe('sidebar duplicate page titles', () => {
   });
 
   test('secretary overlays hide duplicate sidebar titles', () => {
-    const subwindow = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskSubwindow.tsx'),
+    const panelShell = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/secretary/_components/SecretaryTaskPanelShell.tsx'),
       'utf-8',
     );
     const listOverlay = fs.readFileSync(
@@ -81,7 +81,7 @@ describe('sidebar duplicate page titles', () => {
       'utf-8',
     );
 
-    expect(subwindow).toContain('isSidebarMenuLabel');
-    expect(listOverlay).toContain('isSidebarMenuLabel');
+    expect(panelShell).toContain('isSidebarMenuLabel');
+    expect(listOverlay).toContain('SecretaryTaskPanelShell');
   });
 });

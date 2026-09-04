@@ -1,13 +1,7 @@
 'use client';
 
-import { CloseIcon } from '@/components/ui/close-icon';
-import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
-import { ModalPortal } from '@/components/ui/modal-portal';
-import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
-import { isSidebarMenuLabel } from '@/lib/sidebar-menu-labels';
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
-import { cn } from '@/lib/utils';
-import { SECRETARY_MODAL_LAYOUT_CLASS, SECRETARY_MODAL_SCAFFOLD_PROPS } from './secretary-modal-layout';
+import SecretaryTaskPanelShell, { SecretaryTaskDetailRow } from './SecretaryTaskPanelShell';
 
 type SecretaryTaskListOverlayProps = {
   title: string;
@@ -16,17 +10,6 @@ type SecretaryTaskListOverlayProps = {
   onClose: () => void;
 };
 
-function ListItemBody({ item }: { item: SecretaryAttentionListItem }) {
-  return (
-    <>
-      <p className="text-[14px] text-foreground">{item.primary}</p>
-      {item.secondary ? (
-        <p className="mt-0.5 text-[12px] text-muted-foreground">{item.secondary}</p>
-      ) : null}
-    </>
-  );
-}
-
 /** Read-only task detail list (maintenance and similar). No route navigation. */
 export default function SecretaryTaskListOverlay({
   title,
@@ -34,52 +17,24 @@ export default function SecretaryTaskListOverlay({
   emptyMessage = 'ไม่มีรายการ',
   onClose,
 }: SecretaryTaskListOverlayProps) {
-  const showTitle = !isSidebarMenuLabel(title);
-
   return (
-    <ModalPortal>
-      <FadeModalScaffold
-        open
-        onClose={onClose}
-        zIndex={220}
-        {...SECRETARY_MODAL_SCAFFOLD_PROPS}
-        overlayClassName={cn('bg-black/20 backdrop-blur-sm', INVENTORY_MODAL_Z_CLASS)}
-        layoutClassName={SECRETARY_MODAL_LAYOUT_CLASS}
-        panelClassName="w-full max-w-lg"
-        aria-label={title}
-      >
-        <div className="flex max-h-[min(80svh,32rem)] w-full flex-col overflow-hidden rounded-3xl border border-border bg-card">
-          <div
-            className={cn(
-              'flex shrink-0 items-center gap-3 border-b border-border px-4 py-3',
-              showTitle ? 'justify-between' : 'justify-end',
-            )}
-          >
-            {showTitle ? (
-              <h2 className="text-[15px] font-normal text-foreground">{title}</h2>
-            ) : null}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="ปิด"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted/50"
+    <SecretaryTaskPanelShell title={title} onClose={onClose} maxWidthClass="max-w-lg">
+      <ul className="space-y-2 pb-1">
+        {items.length === 0 ? (
+          <li className="px-1 py-10 text-center text-[13px] text-muted-foreground">
+            {emptyMessage}
+          </li>
+        ) : (
+          items.map((item) => (
+            <li
+              key={item.id}
+              className="rounded-2xl border border-border bg-background px-4 py-3"
             >
-              <CloseIcon size="sm" />
-            </button>
-          </div>
-          <ul className="min-h-0 flex-1 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
-            {items.length === 0 ? (
-              <li className="px-4 py-8 text-center text-[13px] text-muted-foreground">{emptyMessage}</li>
-            ) : (
-              items.map((item) => (
-                <li key={item.id} className="border-b border-border px-4 py-3 last:border-b-0">
-                  <ListItemBody item={item} />
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      </FadeModalScaffold>
-    </ModalPortal>
+              <SecretaryTaskDetailRow item={item} />
+            </li>
+          ))
+        )}
+      </ul>
+    </SecretaryTaskPanelShell>
   );
 }
