@@ -59,6 +59,12 @@ const HEADER_LOGO_DEVICE_PIXEL_RATIO = 3;
 const HEADER_LOGO_SUPER_SAMPLE = 4;
 /** Android maskable safe zone (~80% center circle). */
 const PWA_MASKABLE_PADDING_RATIO = 0.2;
+/** Legacy square launch icon mark height (keeps PWA splash scale with icon-only sources). */
+const LEGACY_PWA_SQUARE_MARK_HEIGHT_RATIO = 0.465;
+/** Legacy header canvas from original wordmark logo.png (keeps in-app visual scale). */
+const LEGACY_HEADER_ASPECT = 1783 / 1484;
+const LEGACY_MARK_WIDTH_RATIO = 1037 / 1783;
+const LEGACY_MARK_HEIGHT_RATIO = 670 / 1484;
 /** Android badge: smaller mark + extra padding avoids a solid white blob in the status bar. */
 const BADGE_SIZE = 96;
 const BADGE_PADDING_RATIO = 0.14;
@@ -66,26 +72,40 @@ const BADGE_PADDING_RATIO = 0.14;
 const BADGE_MAX_FILL_RATIO = 0.72;
 
 /**
- * logo.png is a dark-gray mark on an opaque black canvas.
- * Map luminance → alpha (soft edges), then black RGB so splash composites smoothly
- * onto manifest background_color instead of a jagged hard silhouette.
+ * Normalise logo.png to a pure-black silhouette on transparent canvas.
+ * Supports legacy near-black-on-black sources and modern transparent PNG exports.
  */
 async function extractLogoMark(image) {
   const { data, info } = await image.clone().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const ramp = LOGO_MARK_OPAQUE_LUMINANCE - LOGO_BACKDROP_LUMINANCE_MAX;
+  const cornerAlphas = [
+    data[3],
+    data[(info.width - 1) * 4 + 3],
+    data[((info.height - 1) * info.width) * 4 + 3],
+    data[((info.height - 1) * info.width + info.width - 1) * 4 + 3],
+  ];
+  const usesSourceAlpha = cornerAlphas.every((alpha) => alpha < 16);
 
   for (let i = 0; i < data.length; i += 4) {
-    const luminance = Math.max(data[i], data[i + 1], data[i + 2]);
     let alpha = 0;
-    if (luminance > LOGO_BACKDROP_LUMINANCE_MAX) {
-      if (luminance >= LOGO_MARK_OPAQUE_LUMINANCE) {
-        alpha = 255;
-      } else {
-        alpha = Math.round(((luminance - LOGO_BACKDROP_LUMINANCE_MAX) / ramp) * 255);
-        // Pull mid-alpha toward opaque so letterforms stay crisp after downscale.
-        alpha = Math.min(255, Math.round(255 * Math.pow(alpha / 255, 0.72)));
+
+    if (usesSourceAlpha) {
+      const sourceAlpha = data[i + 3];
+      if (sourceAlpha >= 16) {
+        alpha = Math.min(255, Math.round(255 * Math.pow(sourceAlpha / 255, 0.85)));
+      }
+    } else {
+      const luminance = Math.max(data[i], data[i + 1], data[i + 2]);
+      if (luminance > LOGO_BACKDROP_LUMINANCE_MAX) {
+        if (luminance >= LOGO_MARK_OPAQUE_LUMINANCE) {
+          alpha = 255;
+        } else {
+          alpha = Math.round(((luminance - LOGO_BACKDROP_LUMINANCE_MAX) / ramp) * 255);
+          alpha = Math.min(255, Math.round(255 * Math.pow(alpha / 255, 0.72)));
+        }
       }
     }
+
     data[i] = 0;
     data[i + 1] = 0;
     data[i + 2] = 0;
@@ -103,20 +123,29 @@ async function extractLogoMark(image) {
 
 async function trimmedLogoMark() {
   const mark = await extractLogoMark(sharp(source));
-  return mark.trim({ threshold: 1 });
+  const trimmed = await mark.trim({ threshold: 1 }).png().toBuffer();
+  return sharp(trimmed);
 }
 
 async function renderSquareIcon(trimmed, size, paddingRatio = 0.08, background = PWA_SPLASH_BACKGROUND) {
-  // 4× supersample + lanczos3 downscale keeps logo text sharp on Android splash (no post-blur).
   const renderSize = size * PWA_ICON_SUPER_SAMPLE;
   const inner = Math.max(1, Math.round(renderSize * (1 - paddingRatio * 2)));
+  const legacyMarkH = Math.max(
+    1,
+    Math.round(size * LEGACY_PWA_SQUARE_MARK_HEIGHT_RATIO * PWA_ICON_SUPER_SAMPLE),
+  );
+  const tmeta = await trimmed.metadata();
+  const scale = Math.min(legacyMarkH / tmeta.height, inner / tmeta.width, inner / tmeta.height);
   const resized = await trimmed
     .clone()
-    .resize(inner, inner, {
-      fit: 'inside',
-      kernel: sharp.kernel.lanczos3,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
+    .resize(
+      Math.max(1, Math.round(tmeta.width * scale)),
+      Math.max(1, Math.round(tmeta.height * scale)),
+      {
+        kernel: sharp.kernel.lanczos3,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    )
     .png()
     .toBuffer();
 
@@ -134,7 +163,6 @@ async function renderSquareIcon(trimmed, size, paddingRatio = 0.08, background =
 
   return sharp(large)
     .resize(size, size, { kernel: sharp.kernel.lanczos3 })
-    .sharpen({ sigma: 0.6, m1: 0.5, m2: 0.25 })
     .png({ compressionLevel: 9, adaptiveFiltering: true });
 }
 
@@ -231,40 +259,51 @@ async function writeNotificationBadge(trimmed) {
 
 /**
  * Header/sidebar brand mark: pure-black silhouette on transparent canvas.
- * Keep original logo.png padding (no trim) so CSS width matches pre-sharpness visual scale.
+ * Re-centre trimmed mark on the legacy header canvas so CSS boxes keep the same visual scale.
  * Do not use for PWA splash; launch icons use trimmed mark + PWA_ICON_PADDING_RATIO.
- * Supersample + lanczos3 downscale keeps letterforms sharp at 200–240px CSS width.
  */
-async function renderHeaderLogo(fullMark) {
-  const targetWidth = HEADER_LOGO_CSS_MAX_WIDTH * HEADER_LOGO_DEVICE_PIXEL_RATIO;
-  const renderWidth = targetWidth * HEADER_LOGO_SUPER_SAMPLE;
-
-  const meta = await fullMark.metadata();
-  const aspect = meta.width / meta.height;
-  const renderHeight = Math.max(1, Math.round(renderWidth / aspect));
-
-  const large = await fullMark
+async function buildLegacyHeaderCanvas(trimmed, canvasWidth, canvasHeight) {
+  const markTargetW = Math.max(1, Math.round(canvasWidth * LEGACY_MARK_WIDTH_RATIO));
+  const markTargetH = Math.max(1, Math.round(canvasHeight * LEGACY_MARK_HEIGHT_RATIO));
+  const tmeta = await trimmed.metadata();
+  const scale = Math.min(markTargetW / tmeta.width, markTargetH / tmeta.height);
+  const resized = await trimmed
     .clone()
-    .resize(renderWidth, renderHeight, {
-      fit: 'inside',
+    .resize(Math.max(1, Math.round(tmeta.width * scale)), Math.max(1, Math.round(tmeta.height * scale)), {
       kernel: sharp.kernel.lanczos3,
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
     .png()
     .toBuffer();
 
-  return sharp(large)
-    .resize(targetWidth, Math.max(1, Math.round(targetWidth / aspect)), {
-      kernel: sharp.kernel.lanczos3,
-    })
-    .sharpen({ sigma: 0.55, m1: 0.5, m2: 0.25 })
-    .png({ compressionLevel: 9, adaptiveFiltering: true });
+  return sharp({
+    create: {
+      width: canvasWidth,
+      height: canvasHeight,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  }).composite([{ input: resized, gravity: 'center' }]);
 }
 
 async function writeHeaderLogo() {
-  const fullMark = await extractLogoMark(sharp(source));
-  const image = await renderHeaderLogo(fullMark);
-  await image.toFile(path.join(outDir, 'logo-header.png'));
+  const trimmed = await trimmedLogoMark();
+  const targetWidth = HEADER_LOGO_CSS_MAX_WIDTH * HEADER_LOGO_DEVICE_PIXEL_RATIO;
+  const targetHeight = Math.round(targetWidth / LEGACY_HEADER_ASPECT);
+  const renderWidth = targetWidth * HEADER_LOGO_SUPER_SAMPLE;
+  const renderHeight = Math.round(renderWidth / LEGACY_HEADER_ASPECT);
+
+  const largeBuffer = await (
+    await buildLegacyHeaderCanvas(trimmed, renderWidth, renderHeight)
+  )
+    .png()
+    .toBuffer();
+
+  await sharp(largeBuffer)
+    .resize(targetWidth, targetHeight, { kernel: sharp.kernel.lanczos3 })
+    .sharpen({ sigma: 0.55, m1: 0.5, m2: 0.25 })
+    .png({ compressionLevel: 9, adaptiveFiltering: true })
+    .toFile(path.join(outDir, 'logo-header.png'));
 }
 
 async function writeNextAppIcons(trimmed) {

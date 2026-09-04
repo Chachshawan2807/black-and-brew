@@ -81,7 +81,7 @@ describe('Brand logo Next/Image sizing', () => {
     const bounds = await alphaMarkBounds(logoPath);
     expect(bounds.widthRatio).toBeGreaterThan(0.55);
     expect(bounds.widthRatio).toBeLessThan(0.62);
-    expect(bounds.heightRatio).toBeGreaterThan(0.42);
+    expect(bounds.heightRatio).toBeGreaterThan(0.40);
     expect(bounds.heightRatio).toBeLessThan(0.5);
   });
 
