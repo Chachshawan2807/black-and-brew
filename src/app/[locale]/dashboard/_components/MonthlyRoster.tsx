@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { 
   format, 
@@ -46,6 +47,7 @@ import type { HolidayLike, LeaveDetailEntry } from '@/lib/dashboard/leave-detail
 import { preloadLeaveDetailDialog } from '@/lib/preload-leave-detail-dialog';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { RosterExportStatSummary } from './RosterExportStatSummary';
+import { RosterExportDialog } from './RosterExportDialog';
 
 const LeaveDetailDialog = dynamic(
   () =>
@@ -108,6 +110,10 @@ export default function MonthlyRoster({
   const [holidays, setHolidays] = useState<HolidayLike[]>(initialHolidays ?? []);
   const [loading, setLoading] = useState(!hasInitialData);
   const [isExportingImage, setIsExportingImage] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(
+    null,
+  );
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [statDialog, setStatDialog] = useState<{
     title: string;
     entries: LeaveDetailEntry[];
@@ -254,33 +260,70 @@ export default function MonthlyRoster({
     });
   };
 
-  const exportRosterImage = async () => {
-    if (activeTab !== 'individual') return;
+  const exportRosterImagesForStaff = async (staffIds: string[]) => {
+    if (activeTab !== 'individual' || staffIds.length === 0) return;
 
     const element = document.getElementById('blackandbrew-roster-export');
     if (!element) return;
 
+    const previousStaffId = selectedStaffId;
+
     try {
       setIsExportingImage(true);
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve());
-      });
+      setExportProgress({ current: 0, total: staffIds.length });
 
       const { captureRosterAsPng, downloadPngBlob } = await import('@/lib/roster-export-capture');
-      const blob = await captureRosterAsPng(element, {
-        filter: (node: HTMLElement) => node?.id !== 'roster-action-buttons',
-      });
+      const { buildRosterIndividualExportFilename } = await import('@/lib/roster-export-filename');
 
-      downloadPngBlob(
-        blob,
-        `Roster-Individual-${startDate}-${endDate}.png`,
-      );
+      for (let index = 0; index < staffIds.length; index++) {
+        const staffId = staffIds[index];
+        const profile = data.profiles.find((entry) => entry.id === staffId);
+        if (!profile) continue;
+
+        setExportProgress({ current: index + 1, total: staffIds.length });
+
+        flushSync(() => {
+          setSelectedStaffId(staffId);
+        });
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+
+        const blob = await captureRosterAsPng(element, {
+          filter: (node: HTMLElement) => node?.id !== 'roster-action-buttons',
+        });
+
+        downloadPngBlob(
+          blob,
+          buildRosterIndividualExportFilename(profile.full_name, startDate, endDate),
+        );
+
+        if (index < staffIds.length - 1) {
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, 300);
+          });
+        }
+      }
     } catch (err) {
       console.error('Failed to export roster image:', err);
       alert('เกิดข้อผิดพลาดในการบันทึกตารางเวรเป็นรูปภาพค่ะ');
     } finally {
+      flushSync(() => {
+        if (previousStaffId) setSelectedStaffId(previousStaffId);
+      });
       setIsExportingImage(false);
+      setExportProgress(null);
     }
+  };
+
+  const handleExportSelectedStaff = (staffIds: string[]) => {
+    setExportDialogOpen(false);
+    void exportRosterImagesForStaff(staffIds);
+  };
+
+  const handleExportAllStaff = () => {
+    setExportDialogOpen(false);
+    void exportRosterImagesForStaff(data.profiles.map((profile) => profile.id));
   };
 
   return (
@@ -300,7 +343,7 @@ export default function MonthlyRoster({
               <HintTooltip tip="บันทึกเป็นรูปภาพ">
                 <button
                   type="button"
-                  onClick={() => void exportRosterImage()}
+                  onClick={() => setExportDialogOpen(true)}
                   onMouseEnter={preloadCaptureLibraries}
                   onFocus={preloadCaptureLibraries}
                   disabled={loading || isExportingImage}
@@ -554,7 +597,20 @@ export default function MonthlyRoster({
       <ExportProgressOverlay
         visible={isExportingImage}
         title="กำลังบันทึกรูปภาพ"
-        subtitle="กำลังจัดตารางเวร..."
+        subtitle={
+          exportProgress
+            ? `กำลังบันทึก ${exportProgress.current}/${exportProgress.total}...`
+            : 'กำลังจัดตารางเวร...'
+        }
+      />
+
+      <RosterExportDialog
+        open={exportDialogOpen}
+        profiles={data.profiles}
+        initialSelectedId={selectedStaffId}
+        onClose={() => setExportDialogOpen(false)}
+        onExportSelected={handleExportSelectedStaff}
+        onExportAll={handleExportAllStaff}
       />
 
       {statDialog ? (

@@ -115,9 +115,20 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toContain('blackandbrew-roster-export');
     expect(code).not.toContain('bb-schedule-export-surface');
     expect(code).toContain('captureRosterAsPng');
+    expect(code).toContain('RosterExportDialog');
+    expect(code).toContain('buildRosterIndividualExportFilename');
+    expect(code).toContain('exportRosterImagesForStaff');
     expect(code).toContain('พนักงาน:');
-    expect(code).toContain('bg-card h-20');
+    expect(code).toContain('rounded-xl sm:rounded-3xl h-20');
     expect(code).not.toContain('bg-muted/30 rounded-xl sm:rounded-3xl');
+  });
+
+  test('MonthlyRoster export dialog lets staff pick export targets', () => {
+    const dialog = readFile('app/[locale]/dashboard/_components/RosterExportDialog.tsx');
+    expect(dialog).toContain('เลือกทั้งหมด');
+    expect(dialog).toContain('ดาวน์โหลดที่เลือก');
+    expect(dialog).toContain('ดาวน์โหลดทุกคน (แยกไฟล์)');
+    expect(dialog).toContain('type="checkbox"');
   });
 
   test('MonthlyRoster table keeps name column compact', () => {
