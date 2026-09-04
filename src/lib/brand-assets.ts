@@ -1,7 +1,8 @@
-/** Intrinsic pixel size of `public/images/logo.png`. Update if the asset changes. */
+/** Intrinsic pixel size of `public/images/logo-header.png` (3× supersampled header mark). Update via `npm run icons:generate`. */
 export const BRAND_LOGO_INTRINSIC = {
-  width: 1783,
-  height: 1484,
+  width: 720,
+  height: 599,
 } as const;
 
-export const BRAND_LOGO_SRC = '/images/logo.png';
+/** Crisp header/sidebar mark derived from `logo.png` via icons:generate. */
+export const BRAND_LOGO_SRC = '/images/logo-header.png';

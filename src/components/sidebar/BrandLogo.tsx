@@ -4,8 +4,7 @@ import { BRAND_LOGO_INTRINSIC, BRAND_LOGO_SRC } from '@/lib/brand-assets';
 
 export type BrandLogoSize = 'sidebar-expanded' | 'sidebar-icon' | 'mobile';
 
-const BRAND_LOGO_DARK =
-  'dark:invert dark:brightness-0 dark:opacity-90';
+const BRAND_LOGO_DARK = 'dark:invert';
 
 /**
  * Brand mark intrinsic dimensions match the PNG so Next.js can preserve aspect ratio.
@@ -14,20 +13,23 @@ const BRAND_LOGO_DARK =
  */
 const SIZE_STYLES: Record<
   BrandLogoSize,
-  { width: string; maxHeight: string; objectPosition?: string }
+  { width: string; maxHeight: string; sizes: string; objectPosition?: string }
 > = {
   'sidebar-expanded': {
     width: '240px',
     maxHeight: '90px',
+    sizes: '240px',
     objectPosition: 'left center',
   },
   'sidebar-icon': {
     width: '56px',
     maxHeight: '56px',
+    sizes: '56px',
   },
   mobile: {
     width: '200px',
     maxHeight: '68px',
+    sizes: '200px',
     objectPosition: 'left center',
   },
 };
@@ -51,7 +53,10 @@ export function BrandLogo({
       alt={alt}
       width={BRAND_LOGO_INTRINSIC.width}
       height={BRAND_LOGO_INTRINSIC.height}
-      className={cn(BRAND_LOGO_DARK, className)}
+      sizes={layout.sizes}
+      quality={100}
+      unoptimized
+      className={cn('bb-brand-logo', BRAND_LOGO_DARK, className)}
       style={{
         width: layout.width,
         height: 'auto',

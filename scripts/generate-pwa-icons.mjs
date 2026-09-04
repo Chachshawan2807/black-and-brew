@@ -52,6 +52,10 @@ const LOGO_MARK_OPAQUE_LUMINANCE = 34;
 const PWA_ICON_PADDING_RATIO = 0.14;
 /** Supersample factor before downscale: higher = sharper text on high-DPI splash screens. */
 const PWA_ICON_SUPER_SAMPLE = 4;
+/** Sidebar/mobile header max CSS width is 240px; 3× gives crisp marks on high-DPI screens. */
+const HEADER_LOGO_CSS_MAX_WIDTH = 240;
+const HEADER_LOGO_DEVICE_PIXEL_RATIO = 3;
+const HEADER_LOGO_SUPER_SAMPLE = 4;
 /** Android maskable safe zone (~80% center circle). */
 const PWA_MASKABLE_PADDING_RATIO = 0.2;
 /** Android badge: smaller mark + extra padding avoids a solid white blob in the status bar. */
@@ -224,6 +228,41 @@ async function writeNotificationBadge(trimmed) {
   await validateNotificationBadge(outputPath);
 }
 
+/**
+ * Header/sidebar brand mark: pure-black silhouette on transparent canvas.
+ * Supersample + lanczos3 downscale keeps letterforms sharp at 200–240px CSS width.
+ */
+async function renderHeaderLogo(trimmed) {
+  const targetWidth = HEADER_LOGO_CSS_MAX_WIDTH * HEADER_LOGO_DEVICE_PIXEL_RATIO;
+  const renderWidth = targetWidth * HEADER_LOGO_SUPER_SAMPLE;
+
+  const meta = await trimmed.metadata();
+  const aspect = meta.width / meta.height;
+  const renderHeight = Math.max(1, Math.round(renderWidth / aspect));
+
+  const large = await trimmed
+    .clone()
+    .resize(renderWidth, renderHeight, {
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+
+  return sharp(large)
+    .resize(targetWidth, Math.max(1, Math.round(targetWidth / aspect)), {
+      kernel: sharp.kernel.lanczos3,
+    })
+    .sharpen({ sigma: 0.55, m1: 0.5, m2: 0.25 })
+    .png({ compressionLevel: 9, adaptiveFiltering: true });
+}
+
+async function writeHeaderLogo(trimmed) {
+  const image = await renderHeaderLogo(trimmed);
+  await image.toFile(path.join(outDir, 'logo-header.png'));
+}
+
 async function writeNextAppIcons(trimmed) {
   const appDir = path.join(root, 'src/app');
   await (await renderSquareIcon(trimmed, 512, PWA_ICON_PADDING_RATIO)).toFile(path.join(appDir, 'icon.png'));
@@ -249,6 +288,7 @@ async function main() {
   await writeSquareIcon(trimmed, 512, 'maskable-icon-512.png', PWA_MASKABLE_PADDING_RATIO);
   await writeSquareIcon(trimmed, 512, 'favicon.png', PWA_ICON_PADDING_RATIO);
   await writeSquareIcon(trimmed, 180, 'apple-touch-icon.png', PWA_ICON_PADDING_RATIO);
+  await writeHeaderLogo(trimmed);
   await writeNextAppIcons(trimmed);
   const cacheVersion = readExistingCacheVersion() + 1;
   const pwaAssets = buildPwaAssets(cacheVersion);

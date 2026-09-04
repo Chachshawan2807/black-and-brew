@@ -16,8 +16,8 @@ const SIDEBAR_LOGO_CONSUMERS = [
 ] as const;
 
 describe('Brand logo Next/Image sizing', () => {
-  test('intrinsic dimensions match public/images/logo.png', () => {
-    const logoPath = path.resolve(ROOT, '../public/images/logo.png');
+  test('intrinsic dimensions match public/images/logo-header.png', () => {
+    const logoPath = path.resolve(ROOT, '../public/images/logo-header.png');
     const buffer = fs.readFileSync(logoPath);
     const width = buffer.readUInt32BE(16);
     const height = buffer.readUInt32BE(20);
@@ -32,6 +32,9 @@ describe('Brand logo Next/Image sizing', () => {
     expect(source).toContain('BRAND_LOGO_INTRINSIC.height');
     expect(source).toMatch(/height:\s*['"]auto['"]/);
     expect(source).not.toMatch(/height:\s*['"][0-9]+px['"]/);
+    expect(source).toContain('unoptimized');
+    expect(source).toContain('quality={100}');
+    expect(source).toContain('bb-brand-logo');
   });
 
   test('sidebar surfaces use BrandLogo instead of inline logo.png Image', () => {

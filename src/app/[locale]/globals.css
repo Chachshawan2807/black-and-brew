@@ -938,6 +938,11 @@
     }
   }
 
+  /* Header/sidebar brand mark: pre-rendered 3× PNG; WebKit contrast hint on downscale */
+  .bb-brand-logo {
+    image-rendering: -webkit-optimize-contrast;
+  }
+
   /* Sidebar menu labels smooth fade when collapsing */
   .bb-sidebar-label {
     overflow: hidden;
