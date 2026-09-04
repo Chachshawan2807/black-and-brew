@@ -716,7 +716,7 @@ function CountPageTabSwitcher({
         },
       ]}
       value={mode}
-      onChange={(id) => onChange(id as CountPageMode)}
+      onChange={onChange}
       ariaLabel="สลับระหว่างตรวจนับและปรับจำนวน"
       className="mb-5"
     />

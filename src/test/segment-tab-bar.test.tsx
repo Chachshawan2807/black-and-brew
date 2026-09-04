@@ -30,6 +30,25 @@ describe('SegmentTabBar', () => {
     expect(screen.getByRole('tab', { name: /Beta/i })).toHaveAttribute('aria-selected', 'true');
   });
 
+  test('onChange accepts narrow tab id union from tab definitions', () => {
+    type OpsTab = 'purchase' | 'maintenance';
+    const tabs = [
+      { id: 'purchase' as const, label: 'สั่งซื้อ', count: 2 },
+      { id: 'maintenance' as const, label: 'ซ่อมบำรุง', count: 1 },
+    ];
+    let active: OpsTab = 'purchase';
+    const setActive = (id: OpsTab) => {
+      active = id;
+    };
+
+    render(
+      <SegmentTabBar tabs={tabs} value={active} onChange={setActive} ariaLabel="Ops tabs" />,
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: /ซ่อมบำรุง/i }));
+    expect(active).toBe('maintenance');
+  });
+
   test('renders count badges without affecting tab label', () => {
     render(
       <SegmentTabBar

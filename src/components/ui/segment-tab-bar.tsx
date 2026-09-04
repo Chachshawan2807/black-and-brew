@@ -3,8 +3,8 @@
 import { useCallback, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-export type SegmentTabItem = {
-  id: string;
+export type SegmentTabItem<T extends string = string> = {
+  id: T;
   label: ReactNode;
   /** Optional count shown as a subtle badge */
   count?: number;
@@ -12,10 +12,10 @@ export type SegmentTabItem = {
   icon?: ReactNode;
 };
 
-type SegmentTabBarProps = {
-  tabs: SegmentTabItem[];
-  value: string;
-  onChange: (id: string) => void;
+type SegmentTabBarProps<T extends string> = {
+  tabs: readonly SegmentTabItem<T>[];
+  value: T;
+  onChange: (id: T) => void;
   /** Accessible name for the tablist */
   ariaLabel: string;
   className?: string;
@@ -29,14 +29,14 @@ function focusTabAtIndex(container: HTMLElement, index: number) {
   if (target) target.focus();
 }
 
-export function SegmentTabBar({
+export function SegmentTabBar<T extends string>({
   tabs,
   value,
   onChange,
   ariaLabel,
   className,
   layout = 'segment',
-}: SegmentTabBarProps) {
+}: SegmentTabBarProps<T>) {
   const listRef = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = useCallback(
