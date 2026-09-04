@@ -43,7 +43,6 @@ import {
 import { CountAdjustPinDialog } from '@/app/[locale]/inventory/count/_components/CountAdjustPinDialog';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
-import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import { getInventoryCountInputName } from '@/lib/inventory-grid-cell-a11y';
 
@@ -1402,24 +1401,6 @@ export default function InventoryCountClient({
             )}
           </div>
         </header>
-
-        <div className="mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-foreground text-background rounded-2xl shrink-0 bb-shadow-md">
-              <ClipboardList className="w-6 h-6" strokeWidth={1.5} />
-            </div>
-            <div className="min-w-0 text-left">
-              {shouldShowPageTitle('ตรวจนับคลังสินค้า') ? (
-                <h1 className="bb-page-title">ตรวจนับคลังสินค้า</h1>
-              ) : null}
-              <p className="text-sm text-muted-foreground">
-                {pageMode === 'count'
-                  ? 'กรอกจำนวนที่นับได้ แล้วกด Enter เพื่อบันทึก'
-                  : 'กรอกจำนวนคงเหลือใหม่ แล้วกด Enter เพื่อปรับ'}
-              </p>
-            </div>
-          </div>
-        </div>
 
         <CountPageTabSwitcher mode={pageMode} onChange={handlePageModeChange} />
 

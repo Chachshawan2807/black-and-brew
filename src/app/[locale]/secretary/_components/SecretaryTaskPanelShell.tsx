@@ -46,6 +46,7 @@ export default function SecretaryTaskPanelShell({
   children,
 }: SecretaryTaskPanelShellProps) {
   const showTitle = !isSidebarMenuLabel(title);
+  const hasVisibleHeader = showTitle || Boolean(subtitle);
 
   useEffect(() => {
     if (!open) return;
@@ -72,14 +73,9 @@ export default function SecretaryTaskPanelShell({
         )}
         aria-label={ariaLabel ?? title}
       >
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
-          <div
-            className={cn(
-              'flex shrink-0 items-start gap-3 px-4 py-3.5',
-              showTitle || subtitle ? 'justify-between border-b border-border' : 'justify-end',
-            )}
-          >
-            {showTitle || subtitle ? (
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
+          {hasVisibleHeader ? (
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3.5">
               <div className="min-w-0 flex-1 pt-0.5">
                 {showTitle ? (
                   <h2 className="truncate text-base font-normal tracking-tight text-foreground">
@@ -92,21 +88,32 @@ export default function SecretaryTaskPanelShell({
                   </p>
                 ) : null}
               </div>
-            ) : null}
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={closeDisabled}
+                aria-label="ปิด"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-50"
+              >
+                <CloseIcon size="sm" />
+              </button>
+            </div>
+          ) : (
             <button
               type="button"
               onClick={onClose}
               disabled={closeDisabled}
               aria-label="ปิด"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-50"
+              className="absolute right-3 top-3 z-10 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-50"
             >
               <CloseIcon size="sm" />
             </button>
-          </div>
+          )}
 
           <div
             className={cn(
-              'flex min-h-0 flex-1 flex-col px-4 pt-3',
+              'flex min-h-0 flex-1 flex-col px-4',
+              hasVisibleHeader ? 'pt-3' : 'pt-0',
               footer
                 ? 'pb-3'
                 : 'pb-[max(0.75rem,env(safe-area-inset-bottom))]',

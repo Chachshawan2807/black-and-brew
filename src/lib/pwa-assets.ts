@@ -5,6 +5,8 @@
 
 export const PWA_BRAND_ICON = '/images/notification-icon.png';
 export const PWA_BRAND_ICON_512 = '/images/notification-icon-512.png';
+/** Largest launch icon Android splash picks the biggest `purpose: any` entry. */
+export const PWA_BRAND_ICON_1024 = '/images/notification-icon-1024.png';
 /** Full-color brand mark on transparent canvas Android/iOS Web Push body icon. */
 export const PWA_PUSH_NOTIFICATION_ICON = '/images/push-notification-icon.png';
 export const PWA_MASKABLE_ICON = '/images/maskable-icon-512.png';

@@ -3,6 +3,7 @@ import {
   PWA_APPLE_TOUCH_ICON,
   PWA_BRAND_ICON,
   PWA_BRAND_ICON_512,
+  PWA_BRAND_ICON_1024,
   PWA_MANIFEST_BACKGROUND,
   PWA_MANIFEST_THEME,
   PWA_MASKABLE_ICON,
@@ -57,6 +58,12 @@ export default function manifest(): AppManifest {
       {
         src: PWA_BRAND_ICON_512,
         sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any',
+      },
+      {
+        src: PWA_BRAND_ICON_1024,
+        sizes: '1024x1024',
         type: 'image/png',
         purpose: 'any',
       },

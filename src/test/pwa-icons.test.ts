@@ -7,6 +7,7 @@ import {
   PWA_APPLE_TOUCH_ICON,
   PWA_BRAND_ICON,
   PWA_BRAND_ICON_512,
+  PWA_BRAND_ICON_1024,
   PWA_FAVICON,
   PWA_MASKABLE_ICON,
   PWA_NOTIFICATION_BADGE,
@@ -30,6 +31,7 @@ const PWA_SPLASH_BACKGROUND_RGB = { r: 247, g: 245, b: 232 };
 const PWA_LAUNCH_ICON_PATHS = [
   'public/images/notification-icon.png',
   'public/images/notification-icon-512.png',
+  'public/images/notification-icon-1024.png',
   'public/images/maskable-icon-512.png',
   'public/images/favicon.png',
   'public/images/apple-touch-icon.png',
@@ -40,6 +42,7 @@ const PWA_LAUNCH_ICON_PATHS = [
 const BLACK_NOTIFICATION_ICON_PATHS = [
   'public/images/notification-icon.png',
   'public/images/notification-icon-512.png',
+  'public/images/notification-icon-1024.png',
 ] as const;
 
 async function cornerPixels(filePath: string) {
@@ -156,7 +159,7 @@ async function hardSplashEdgeTransitions(filePath: string) {
       if ((isDark(a) && isLight(b)) || (isLight(a) && isDark(b))) hard += 1;
     }
   }
-  return hard;
+  return hard / (width * height);
 }
 
 describe('PWA notification icons', () => {
@@ -200,18 +203,24 @@ describe('PWA notification icons', () => {
 
   test('PWA splash icons use soft anti-aliased edges (no hard black↔cream stair-steps)', async () => {
     // Regression: binary logo threshold stripped edge ramps → jagged Android splash.
+    // Density-normalized so 512/1024 icons share the same bar after supersample sharpen.
     for (const rel of [
       'public/images/notification-icon-512.png',
+      'public/images/notification-icon-1024.png',
       'public/images/maskable-icon-512.png',
       'public/images/favicon.png',
     ] as const) {
-      const hard = await hardSplashEdgeTransitions(path.join(ROOT, rel));
-      expect(hard, rel).toBeLessThan(120);
+      const hardRatio = await hardSplashEdgeTransitions(path.join(ROOT, rel));
+      expect(hardRatio, rel).toBeLessThan(0.0012);
     }
   });
 
   test('PWA launch icons keep the full brand mark centered without cover cropping', async () => {
-    for (const rel of ['public/images/notification-icon.png', 'public/images/notification-icon-512.png'] as const) {
+    for (const rel of [
+      'public/images/notification-icon.png',
+      'public/images/notification-icon-512.png',
+      'public/images/notification-icon-1024.png',
+    ] as const) {
       const bounds = await visiblePixelBounds(path.join(ROOT, rel));
       expect(bounds.centerX, rel).toBeGreaterThan(0.47);
       expect(bounds.centerX, rel).toBeLessThan(0.53);
@@ -255,6 +264,7 @@ describe('PWA cross-platform asset consistency', () => {
     const iconSrcs = m.icons?.map((icon) => icon.src) ?? [];
     expect(iconSrcs).toContain(PWA_BRAND_ICON);
     expect(iconSrcs).toContain(PWA_BRAND_ICON_512);
+    expect(iconSrcs).toContain(PWA_BRAND_ICON_1024);
     expect(iconSrcs).toContain(PWA_MASKABLE_ICON);
     expect(iconSrcs).toContain(PWA_APPLE_TOUCH_ICON);
     expect(PWA_FAVICON).toBe('/images/favicon.png');

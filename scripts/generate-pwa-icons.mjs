@@ -17,6 +17,7 @@ const source = fs.existsSync(path.join(outDir, 'logo.png'))
 const PWA_ASSETS_STATIC = {
   BRAND_ICON: '/images/notification-icon.png',
   BRAND_ICON_512: '/images/notification-icon-512.png',
+  BRAND_ICON_1024: '/images/notification-icon-1024.png',
   PUSH_NOTIFICATION_ICON: '/images/push-notification-icon.png',
   NOTIFICATION_BADGE: '/images/notification-badge.png',
   APPLE_TOUCH_ICON: '/images/apple-touch-icon.png',
@@ -49,6 +50,8 @@ const LOGO_BACKDROP_LUMINANCE_MAX = 8;
 const LOGO_MARK_OPAQUE_LUMINANCE = 34;
 /** PWA splash / home-screen balanced mark size (not a full-bleed block). */
 const PWA_ICON_PADDING_RATIO = 0.14;
+/** Supersample factor before downscale: higher = sharper text on high-DPI splash screens. */
+const PWA_ICON_SUPER_SAMPLE = 4;
 /** Android maskable safe zone (~80% center circle). */
 const PWA_MASKABLE_PADDING_RATIO = 0.2;
 /** Android badge: smaller mark + extra padding avoids a solid white blob in the status bar. */
@@ -74,6 +77,8 @@ async function extractLogoMark(image) {
         alpha = 255;
       } else {
         alpha = Math.round(((luminance - LOGO_BACKDROP_LUMINANCE_MAX) / ramp) * 255);
+        // Pull mid-alpha toward opaque so letterforms stay crisp after downscale.
+        alpha = Math.min(255, Math.round(255 * Math.pow(alpha / 255, 0.72)));
       }
     }
     data[i] = 0;
@@ -97,8 +102,8 @@ async function trimmedLogoMark() {
 }
 
 async function renderSquareIcon(trimmed, size, paddingRatio = 0.08, background = PWA_SPLASH_BACKGROUND) {
-  // Supersample 2× then downscale soft alpha alone still leaves stair-steps after resize.
-  const renderSize = size * 2;
+  // 4× supersample + lanczos3 downscale keeps logo text sharp on Android splash (no post-blur).
+  const renderSize = size * PWA_ICON_SUPER_SAMPLE;
   const inner = Math.max(1, Math.round(renderSize * (1 - paddingRatio * 2)));
   const resized = await trimmed
     .clone()
@@ -107,8 +112,6 @@ async function renderSquareIcon(trimmed, size, paddingRatio = 0.08, background =
       kernel: sharp.kernel.lanczos3,
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
-    // Tiny blur after supersample resize softens residual stair-steps on curves.
-    .blur(0.6)
     .png()
     .toBuffer();
 
@@ -126,6 +129,7 @@ async function renderSquareIcon(trimmed, size, paddingRatio = 0.08, background =
 
   return sharp(large)
     .resize(size, size, { kernel: sharp.kernel.lanczos3 })
+    .sharpen({ sigma: 0.6, m1: 0.5, m2: 0.25 })
     .png({ compressionLevel: 9, adaptiveFiltering: true });
 }
 
@@ -241,6 +245,7 @@ async function main() {
   await writeTransparentSquareIcon(trimmed, 192, 'push-notification-icon.png', PWA_ICON_PADDING_RATIO);
   await writeNotificationBadge(trimmed);
   await writeSquareIcon(trimmed, 512, 'notification-icon-512.png', PWA_ICON_PADDING_RATIO);
+  await writeSquareIcon(trimmed, 1024, 'notification-icon-1024.png', PWA_ICON_PADDING_RATIO);
   await writeSquareIcon(trimmed, 512, 'maskable-icon-512.png', PWA_MASKABLE_PADDING_RATIO);
   await writeSquareIcon(trimmed, 512, 'favicon.png', PWA_ICON_PADDING_RATIO);
   await writeSquareIcon(trimmed, 180, 'apple-touch-icon.png', PWA_ICON_PADDING_RATIO);

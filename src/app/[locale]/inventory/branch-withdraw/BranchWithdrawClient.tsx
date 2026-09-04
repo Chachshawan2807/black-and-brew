@@ -594,6 +594,26 @@ export default function BranchWithdrawClient({
     openDialog(historyLineDialogRef.current);
   }, []);
 
+  const closeHistoryLineDialog = useCallback(() => {
+    closeDialog(historyLineDialogRef.current);
+  }, []);
+
+  const handleHistoryLineDialogClick = useCallback((event: MouseEvent<HTMLDialogElement>) => {
+    const dialog = historyLineDialogRef.current;
+    if (!dialog) return;
+
+    const rect = dialog.getBoundingClientRect();
+    const clickedInDialogPanel =
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+
+    if (!clickedInDialogPanel) {
+      closeHistoryLineDialog();
+    }
+  }, [closeHistoryLineDialog]);
+
   const actionBar = (
     <div className={BRANCH_WITHDRAW_ACTION_BAR_CLASS}>
       <div className="flex flex-row gap-2">
@@ -655,7 +675,7 @@ export default function BranchWithdrawClient({
   );
 
   const addFromCatalogBar = (
-    <div className={ADD_FROM_CATALOG_BAR_CLASS}>
+    <div className={cn(ADD_FROM_CATALOG_BAR_CLASS, embedded && 'pr-12 pt-1')}>
       {addFromCatalogButton}
     </div>
   );
@@ -749,7 +769,7 @@ export default function BranchWithdrawClient({
         embedded
           ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground'
           : cn(
-              'flex min-h-0 flex-col overflow-hidden bg-background p-4 text-foreground md:p-8',
+              'flex min-h-0 flex-col overflow-hidden bg-background px-4 pb-4 text-foreground max-md:pt-0 md:p-8',
               BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS,
               BRANCH_WITHDRAW_STANDALONE_DESKTOP_SHELL_CLASS,
             )
@@ -764,7 +784,7 @@ export default function BranchWithdrawClient({
         }
       >
         {embedded ? null : (
-          <header className="flex shrink-0 items-center justify-between pb-4">
+          <header className="flex shrink-0 items-center justify-between pb-3 max-md:pb-2 max-md:pt-1 md:pb-4">
             <Link
               href={`/${locale}/inventory`}
               className="flex items-center gap-1.5 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
@@ -911,9 +931,27 @@ export default function BranchWithdrawClient({
         </div>
       </dialog>
 
-      <dialog ref={historyLineDialogRef} className={BRANCH_WITHDRAW_DIALOG_HISTORY_CLASS}>
+      <dialog
+        ref={historyLineDialogRef}
+        className={BRANCH_WITHDRAW_DIALOG_HISTORY_CLASS}
+        onClick={handleHistoryLineDialogClick}
+        onCancel={(event) => {
+          event.preventDefault();
+          closeHistoryLineDialog();
+        }}
+      >
         <div className="p-4 md:p-5">
-          <h3 className="text-base">{lineMessageDialog?.title ?? 'สรุปรายการ'}</h3>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="min-w-0 text-base">{lineMessageDialog?.title ?? 'สรุปรายการ'}</h3>
+            <button
+              type="button"
+              onClick={closeHistoryLineDialog}
+              className={DIALOG_CLOSE_BUTTON_CLASS}
+              aria-label="ปิด"
+            >
+              <CloseIcon size="md" />
+            </button>
+          </div>
           <textarea
             readOnly
             name="branch-withdraw-history-line-message"
@@ -923,7 +961,7 @@ export default function BranchWithdrawClient({
           {historyCopyStatus ? (
             <p className="mt-2 text-xs text-foreground/70">{historyCopyStatus}</p>
           ) : null}
-          <div className="mt-4 flex justify-end gap-2">
+          <div className="mt-4 flex justify-end">
             <button
               type="button"
               onClick={() => void handleCopyHistoryLine()}
@@ -933,13 +971,6 @@ export default function BranchWithdrawClient({
               title="คัดลอก"
             >
               <Copy className="h-4 w-4" aria-hidden />
-            </button>
-            <button
-              type="button"
-              onClick={() => closeDialog(historyLineDialogRef.current)}
-              className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
-            >
-              ปิด
             </button>
           </div>
         </div>

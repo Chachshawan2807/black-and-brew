@@ -46,10 +46,6 @@ describe('sidebar duplicate page titles', () => {
       path.resolve(ROOT, 'app/[locale]/schedule/_components/ScheduleToolbar.tsx'),
       'utf-8',
     );
-    const count = fs.readFileSync(
-      path.resolve(ROOT, 'app/[locale]/inventory/count/InventoryCountClient.tsx'),
-      'utf-8',
-    );
     const accuracy = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/inventory/accuracy/page.tsx'),
       'utf-8',
@@ -65,7 +61,6 @@ describe('sidebar duplicate page titles', () => {
 
     expect(inventory).toContain('shouldShowPageTitle');
     expect(schedule).toContain('shouldShowPageTitle');
-    expect(count).toContain('shouldShowPageTitle');
     expect(accuracy).toContain('PageTitle');
     expect(beanForm).toContain('PageTitle');
     expect(secretary).not.toContain('title="งาน"');
@@ -82,6 +77,8 @@ describe('sidebar duplicate page titles', () => {
     );
 
     expect(panelShell).toContain('isSidebarMenuLabel');
+    expect(panelShell).toContain('hasVisibleHeader');
+    expect(panelShell).toMatch(/hasVisibleHeader[\s\S]*absolute right-3 top-3/);
     expect(listOverlay).toContain('SecretaryTaskPanelShell');
   });
 });

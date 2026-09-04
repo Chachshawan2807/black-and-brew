@@ -52,6 +52,7 @@ describe('inventory branch withdraw overlay', () => {
     );
     expect(client).toContain('BRANCH_WITHDRAW_SCROLL_BODY_CLASS');
     expect(client).toContain('branch-withdraw-layout');
+    expect(client).toContain('embedded && \'pr-12 pt-1\'');
     expect(client).toContain('BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS');
     expect(client).toContain('useVisualViewportInsets');
     expect(client).not.toContain('h-[100dvh] flex-col overflow-hidden');
