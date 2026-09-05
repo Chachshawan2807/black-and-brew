@@ -1632,11 +1632,6 @@ export default function ScheduleClient({
             ? formatScheduleWeekRangeLabel(weekDays[0], weekDays[6])
             : undefined
         }
-        weekRangeLabel={
-          weekDays[0] && weekDays[6]
-            ? formatScheduleWeekRangeLabel(weekDays[0], weekDays[6])
-            : undefined
-        }
         onShowAddEmployeeModal={() => setShowAddEmployeeModal(true)}
         onShowShiftSettings={() => setShowShiftSettingsModal(true)}
       />

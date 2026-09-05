@@ -60,7 +60,7 @@ describe('sidebar duplicate page titles', () => {
     );
 
     expect(inventory).toContain('shouldShowPageTitle');
-    expect(schedule).toContain('shouldShowPageTitle');
+    expect(schedule).not.toContain('>ตารางงาน</h1>');
     expect(accuracy).toContain('PageTitle');
     expect(beanForm).toContain('PageTitle');
     expect(secretary).not.toContain('title="งาน"');

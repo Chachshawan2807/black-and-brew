@@ -5,7 +5,6 @@ import {
   Redo2,
   UserCog,
   Calendar,
-  CalendarDays,
   Download,
   Settings,
   RefreshCw,
@@ -13,7 +12,6 @@ import {
 import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
-import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
 import {
   SCHEDULE_TOOLBAR_HISTORY_BUTTON,
   ScheduleToolbarButton,
@@ -33,7 +31,6 @@ interface ScheduleToolbarProps {
   onSyncGoogleSheet: () => void;
   isSyncingGoogleSheet: boolean;
   syncWeekLabel?: string;
-  weekRangeLabel?: string;
   onShowAddEmployeeModal: () => void;
   onShowShiftSettings: () => void;
 }
@@ -52,7 +49,6 @@ export default function ScheduleToolbar({
   onSyncGoogleSheet,
   isSyncingGoogleSheet,
   syncWeekLabel,
-  weekRangeLabel,
   onShowAddEmployeeModal,
   onShowShiftSettings,
 }: ScheduleToolbarProps) {
@@ -62,27 +58,7 @@ export default function ScheduleToolbar({
   return (
     <header className="bb-schedule-toolbar shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-3 py-3 md:px-5 md:py-3">
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/80 bg-background/90 text-foreground shadow-sm">
-                <CalendarDays className="h-4 w-4" aria-hidden strokeWidth={1.5} />
-              </div>
-              <div className="min-w-0">
-                {shouldShowPageTitle('ตารางงาน') ? (
-                  <h1 className="text-[15px] font-normal text-foreground tracking-tight">
-                    ตารางงาน
-                  </h1>
-                ) : null}
-                {weekRangeLabel ? (
-                  <p className="truncate text-[12px] text-muted-foreground md:max-w-[20rem]">
-                    {weekRangeLabel}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
+        <div className="flex items-start justify-end gap-3">
           <div className="flex shrink-0 items-center gap-2">
             <div
               className="inline-flex items-center gap-1 rounded-2xl border border-border/70 bg-background/60 p-0.5"
