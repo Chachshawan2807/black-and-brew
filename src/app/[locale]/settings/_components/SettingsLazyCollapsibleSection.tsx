@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ComponentType } from 'react';
 import SettingsCollapsibleSection from './SettingsCollapsibleSection';
+import { SETTINGS_BTN_GHOST } from './settings-ui-primitives';
 
 interface SettingsLazyCollapsibleSectionProps {
   icon: 'history' | 'shield' | 'fingerprint';
@@ -86,7 +87,7 @@ export default function SettingsLazyCollapsibleSection({
           <button
             type="button"
             onClick={mountSection}
-            className="text-[12px] text-foreground underline-offset-2 hover:underline"
+            className={SETTINGS_BTN_GHOST}
           >
             {locale === 'th' ? 'ลองใหม่' : 'Try again'}
           </button>

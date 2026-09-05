@@ -12,6 +12,13 @@ import { ExpandableLines } from "@/components/ui/expandable-lines";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
 import ActiveRemoteSessionsPanel from './ActiveRemoteSessionsPanel';
 import {
+  SETTINGS_BTN_GHOST,
+  SETTINGS_ENTRY,
+  SETTINGS_ENTRY_DANGER,
+  SETTINGS_EXPAND_BTN,
+  SettingsIconBadge,
+} from './settings-ui-primitives';
+import {
   formatLoginDeviceLabel,
   formatLoginDeviceMetadata,
 } from "@/lib/format-login-device";
@@ -137,20 +144,13 @@ function LoginEntry({ row, locale }: { row: LoginHistoryRow; locale: string }) {
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-2xl border px-3.5 py-3 bb-transition",
-        isFailure
-          ? "border-red-500/15 bg-red-500/[0.04]"
-          : "border-black/5 dark:border-white/10 bg-card"
+        'flex items-start gap-3',
+        isFailure ? SETTINGS_ENTRY_DANGER : SETTINGS_ENTRY,
       )}
     >
-      <div
-        className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
-          isFailure ? "bg-red-500/10 text-red-500" : "bg-muted text-foreground/70"
-        )}
-      >
+      <SettingsIconBadge size="md" tone={isFailure ? 'danger' : 'neutral'}>
         <EventIcon type={row.event_type} size={14} strokeWidth={1.75} />
-      </div>
+      </SettingsIconBadge>
       <ExpandableLines
         lines={lines}
         isTh={isTh}
@@ -221,7 +221,7 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
           <button
             type="button"
             onClick={() => void load()}
-            className="text-[12px] text-foreground underline-offset-2 hover:underline"
+            className={SETTINGS_BTN_GHOST}
           >
             {isTh ? "ลองใหม่" : "Try again"}
           </button>
@@ -242,7 +242,7 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
               isTh={isTh}
               moreLabel={isTh ? "ดูรายละเอียด" : "View details"}
               lessLabel={isTh ? "ย่อรายการ" : "Show less"}
-              className="mt-1"
+              className={SETTINGS_EXPAND_BTN}
             />
           )}
         </div>

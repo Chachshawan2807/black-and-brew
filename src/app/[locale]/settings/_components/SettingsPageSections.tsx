@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell } from '@/lib/icons';
+import { cn } from '@/lib/utils';
 import {
   detectBiometricKind,
   getBiometricLabels,
@@ -11,6 +12,7 @@ import {
 import { preloadSettingsSectionsOnIdle } from '@/lib/settings-chunk-preload';
 import NotificationPreferencesSection from './NotificationPreferencesSection';
 import SettingsLazyCollapsibleSection from './SettingsLazyCollapsibleSection';
+import { SETTINGS_SECTION, SETTINGS_SECTION_BODY } from './settings-ui-primitives';
 
 interface SettingsPageSectionsProps {
   locale: string;
@@ -41,7 +43,7 @@ export default function SettingsPageSections({ locale, isTh }: SettingsPageSecti
 
   return (
     <div className="space-y-3">
-      <section className="bb-card p-4 md:p-5">
+      <section className={cn(SETTINGS_SECTION, SETTINGS_SECTION_BODY)}>
         <div className="mb-1">
           <div className="flex items-center gap-2">
             <Bell size={14} strokeWidth={1.75} className="text-muted-foreground" />

@@ -10,7 +10,14 @@ import {
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { formatLoginDeviceLabel } from '@/lib/format-login-device';
 import { cn } from '@/lib/utils';
-import { BB_BTN_CLOSE, BB_BTN_OUTLINE_DANGER, BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
+import {
+  SETTINGS_BTN_DANGER,
+  SETTINGS_BTN_GHOST,
+  SETTINGS_FIELD,
+  SETTINGS_LIST_ITEM,
+  SETTINGS_PANEL_DANGER,
+  SettingsIconBadge,
+} from './settings-ui-primitives';
 
 const PIN_LENGTH = 6;
 
@@ -112,11 +119,11 @@ export default function ActiveRemoteSessionsPanel({
   };
 
   return (
-    <div className="rounded-2xl border border-red-500/15 bg-red-500/[0.03] px-3.5 py-3 space-y-3">
+    <div className={SETTINGS_PANEL_DANGER}>
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-500">
+        <SettingsIconBadge size="md" tone="danger">
           <LogOut size={14} strokeWidth={1.75} />
-        </div>
+        </SettingsIconBadge>
         <div className="min-w-0 flex-1">
           <p className="text-[13px] text-foreground leading-snug">
             {isTh ? 'บังคับออกจากระบบ' : 'Force sign out'}
@@ -146,11 +153,7 @@ export default function ActiveRemoteSessionsPanel({
           disabled={bulkLoading || Boolean(busyFp)}
           aria-label={isTh ? 'รหัสหลัก 6 หลัก' : 'Master PIN'}
           placeholder={isTh ? 'รหัสหลัก 6 หลัก' : 'Master PIN'}
-          className={cn(
-            'h-9 w-full sm:max-w-[160px] rounded-xl border border-border bg-background px-3',
-            'text-[13px] text-foreground placeholder:text-muted-foreground',
-            'outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/10'
-          )}
+          className={cn(SETTINGS_FIELD, 'h-9 sm:max-w-[160px] text-[13px]')}
         />
         {remoteSessions.length > 1 && (
           <button
@@ -158,9 +161,8 @@ export default function ActiveRemoteSessionsPanel({
             onClick={() => void handleRevokeAll()}
             disabled={bulkLoading || pin.length < PIN_LENGTH || Boolean(busyFp)}
             className={cn(
-              'h-9 shrink-0 rounded-xl px-3 text-[12px] bb-transition border border-red-500/30',
-              'text-red-600 hover:bg-red-500/10',
-              'disabled:opacity-40 disabled:cursor-not-allowed'
+              SETTINGS_BTN_DANGER,
+              'h-9 min-h-[44px] shrink-0 px-3 text-[12px]',
             )}
           >
             {bulkLoading
@@ -184,7 +186,7 @@ export default function ActiveRemoteSessionsPanel({
           <button
             type="button"
             onClick={() => void onReload()}
-            className="text-[12px] text-foreground underline-offset-2 hover:underline"
+            className={SETTINGS_BTN_GHOST}
           >
             {isTh ? 'ลองใหม่' : 'Try again'}
           </button>
@@ -200,11 +202,11 @@ export default function ActiveRemoteSessionsPanel({
             return (
               <li
                 key={session.sessionFingerprint}
-                className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5"
+                className={cn(SETTINGS_LIST_ITEM, 'flex items-center gap-3')}
               >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground/70">
+                <SettingsIconBadge size="sm" tone="neutral">
                   <Icon size={13} strokeWidth={1.75} />
-                </div>
+                </SettingsIconBadge>
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] text-foreground leading-snug truncate">
                     {formatLoginDeviceLabel(
@@ -235,9 +237,8 @@ export default function ActiveRemoteSessionsPanel({
                   onClick={() => void handleRevokeOne(session.sessionFingerprint)}
                   disabled={busyFp === session.sessionFingerprint || pin.length < PIN_LENGTH}
                   className={cn(
-                    BB_BTN_OUTLINE_DANGER,
-                    'shrink-0 px-2.5 py-1.5 text-[11px]',
-                    'disabled:opacity-40 disabled:cursor-not-allowed',
+                    SETTINGS_BTN_DANGER,
+                    'shrink-0 px-2.5 py-1.5 h-auto min-h-[44px] text-[11px]',
                   )}
                 >
                   {busyFp === session.sessionFingerprint

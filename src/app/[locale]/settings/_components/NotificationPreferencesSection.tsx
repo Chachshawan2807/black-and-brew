@@ -26,6 +26,11 @@ import {
   wantsPushRegistration } from '@/lib/push-subscription-client';
 import type { NotificationPreferences } from '@/lib/notification-types';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
+import {
+  SETTINGS_BTN_PRIMARY,
+  settingsSwitchThumb,
+  settingsSwitchTrack,
+} from './settings-ui-primitives';
 
 interface NotificationPreferencesSectionProps {
   locale: string;
@@ -63,18 +68,9 @@ function ToggleRow({
         aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={cn(
-          'relative h-7 w-12 shrink-0 rounded-full bb-transition',
-          checked ? 'bg-foreground/80' : 'bg-muted',
-          disabled && 'cursor-not-allowed'
-        )}
+        className={settingsSwitchTrack(checked, disabled)}
       >
-        <span
-          className={cn(
-            'absolute top-0.5 h-6 w-6 rounded-full bg-background bb-shadow-sm bb-transition',
-            checked ? 'left-[22px]' : 'left-0.5'
-          )}
-        />
+        <span className={settingsSwitchThumb(checked)} />
       </button>
     </div>
   );
@@ -317,7 +313,7 @@ export default function NotificationPreferencesSection({
           type="button"
           disabled={registering}
           onClick={() => void registerThisDevice()}
-          className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-[13px] text-foreground disabled:opacity-60"
+          className={cn(SETTINGS_BTN_PRIMARY, 'mb-2 w-full text-[13px] py-2.5 h-auto min-h-[44px]')}
         >
           {registering ? <LoadingIcon size={16} className="animate-spin" /> : <Bell size={16} strokeWidth={1.75} />}
           {isTh ? 'ลงทะเบียนการแจ้งเตือนบนเครื่องนี้' : 'Register notifications on this device'}

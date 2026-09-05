@@ -3,6 +3,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import { ChevronDown, Fingerprint, History, Shield, type LucideIcon } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { SETTINGS_SECTION, SettingsIconBadge } from './settings-ui-primitives';
 
 const ICONS = {
   history: History,
@@ -35,7 +36,7 @@ export default function SettingsCollapsibleSection({
   const Icon: LucideIcon = ICONS[icon];
 
   return (
-    <section className="bb-card overflow-hidden">
+    <section className={SETTINGS_SECTION}>
       <button
         type="button"
         onClick={() => {
@@ -62,9 +63,9 @@ export default function SettingsCollapsibleSection({
           open && 'border-b border-border'
         )}
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-muted bb-shadow-sm">
-          <Icon size={18} strokeWidth={1.75} className="text-foreground/70" />
-        </div>
+        <SettingsIconBadge className="shrink-0">
+          <Icon size={18} strokeWidth={1.75} />
+        </SettingsIconBadge>
         <span className="flex-1 min-w-0">
           <span className="block text-[14px] text-foreground leading-snug">{title}</span>
           {description ? (

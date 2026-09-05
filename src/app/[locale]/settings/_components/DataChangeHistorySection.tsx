@@ -11,6 +11,15 @@ import {
   formatDataChangeLogDisplay,
 } from "@/lib/inventory-notification-formatter";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
+import {
+  SETTINGS_BTN_GHOST,
+  SETTINGS_CHIP_IDLE,
+  SETTINGS_CHIP_SELECTED,
+  SETTINGS_ENTRY,
+  SETTINGS_ENTRY_DANGER,
+  SETTINGS_EXPAND_BTN,
+  SettingsIconBadge,
+} from "./settings-ui-primitives";
 
 interface DataChangeHistorySectionProps {
   locale: string;
@@ -96,20 +105,13 @@ function LogEntry({ row, locale }: { row: DataChangeLogRow; locale: string }) {
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-2xl border px-3.5 py-3 bb-transition",
-        isFailed
-          ? "border-red-500/15 bg-red-500/[0.04]"
-          : "border-black/5 dark:border-white/10 bg-card"
+        'flex items-start gap-3',
+        isFailed ? SETTINGS_ENTRY_DANGER : SETTINGS_ENTRY,
       )}
     >
-      <div
-        className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
-          isFailed ? "bg-red-500/10 text-red-500" : "bg-muted text-foreground/70"
-        )}
-      >
+      <SettingsIconBadge size="md" tone={isFailed ? 'danger' : 'neutral'}>
         <ActionIcon action={row.action} size={14} strokeWidth={1.75} />
-      </div>
+      </SettingsIconBadge>
       <div className="min-w-0 flex-1">
         {lines.map((line, i) => (
           <p
@@ -184,10 +186,7 @@ export default function DataChangeHistorySection({
               setShowAll(false);
             }}
             className={cn(
-              "rounded-2xl px-3 py-1 text-[12px] bb-transition border",
-              moduleFilter === opt.value
-                ? "bg-card text-foreground border-foreground ring-1 ring-foreground/10"
-                : "bg-transparent text-muted-foreground border-border hover:text-foreground"
+              moduleFilter === opt.value ? SETTINGS_CHIP_SELECTED : SETTINGS_CHIP_IDLE,
             )}
           >
             {opt.label}
@@ -209,7 +208,7 @@ export default function DataChangeHistorySection({
           <button
             type="button"
             onClick={() => void load()}
-            className="text-[12px] text-foreground underline-offset-2 hover:underline"
+            className={SETTINGS_BTN_GHOST}
           >
             {isTh ? "ลองใหม่" : "Try again"}
           </button>
@@ -232,7 +231,7 @@ export default function DataChangeHistorySection({
               isTh={isTh}
               moreLabel={isTh ? "ดูรายละเอียด" : "View details"}
               lessLabel={isTh ? "ย่อรายการ" : "Show less"}
-              className="mt-1"
+              className={SETTINGS_EXPAND_BTN}
             />
           )}
         </>

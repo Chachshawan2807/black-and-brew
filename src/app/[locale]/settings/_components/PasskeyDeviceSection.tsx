@@ -3,6 +3,7 @@
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useCallback, useEffect, useState } from 'react';
 import { Fingerprint, ScanFace } from '@/lib/icons';
+import { cn } from '@/lib/utils';
 import {
   getCurrentDevicePasskeyStatus,
   removePasskeyForCurrentDevice,
@@ -19,6 +20,11 @@ import {
   type BiometricKind,
 } from '@/lib/passkey/biometric-copy';
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
+import {
+  SETTINGS_BTN,
+  SETTINGS_BTN_DANGER,
+  SETTINGS_STATUS_CARD,
+} from './settings-ui-primitives';
 
 interface PasskeyDeviceSectionProps {
   locale: string;
@@ -189,7 +195,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
       </p>
 
       {enrolled ? (
-        <div className="rounded-2xl border border-border bg-card px-4 py-3 flex items-start gap-3">
+        <div className={cn(SETTINGS_STATUS_CARD, 'flex items-start gap-3')}>
           <BiometricIcon size={18} strokeWidth={1.5} className="text-foreground mt-0.5 shrink-0" />
           <div className="min-w-0">
             <p className="text-[13px] text-foreground font-normal">
@@ -213,7 +219,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
             type="button"
             onClick={() => void handleRegister()}
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 text-[13px] text-foreground font-normal disabled:opacity-60"
+            className={cn(SETTINGS_BTN, 'text-[13px] py-2.5 h-auto min-h-[44px]')}
           >
             {busy ? <LoadingIcon size={16} className="animate-spin" /> : <BiometricIcon size={16} />}
             {isTh ? 'บันทึกเครื่องนี้' : 'Save this device'}
@@ -223,7 +229,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
             type="button"
             onClick={() => void handleRemove()}
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-2xl border border-border px-4 py-2.5 text-[13px] text-muted-foreground font-normal disabled:opacity-60"
+            className={cn(SETTINGS_BTN_DANGER, 'text-[13px] py-2.5 h-auto min-h-[44px]')}
           >
             {busy ? <LoadingIcon size={16} className="animate-spin" /> : null}
             {isTh ? 'ลบการเข้าด้วยยืนยันตัวตนแบบไบโอเมตริก' : 'Remove biometric login'}
