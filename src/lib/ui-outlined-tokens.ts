@@ -69,7 +69,7 @@ export const BB_CHIP_IDLE =
 
 /** FAB outlined shell (pastel fill + border applied separately) */
 export const BB_FAB_SHELL =
-  'flex items-center justify-center rounded-full border bb-shadow-lg bb-transition';
+  'flex items-center justify-center rounded-2xl border-2 border-foreground/80 bb-shadow-lg bb-transition';
 
 /** Ghost text action (minimal border on hover) */
 export const BB_BTN_GHOST =

@@ -29,6 +29,7 @@ import { INVENTORY_NOTIFICATION_SOURCES } from '@/lib/inventory-notification-fil
 import {
   FAB_SIZE_CLASS,
   FAB_BOTTOM_QUICK_ACTION_CLASS,
+  FAB_OUTLINED_SHELL,
   FAB_PANEL_ABOVE_NOTIFICATION_CLASS,
   FAB_PANEL_CENTERED_MOBILE_WRAPPER_CLASS,
   FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS } from '@/lib/floating-action-layout';
@@ -302,10 +303,11 @@ export default function InventoryQuickActionFAB() {
             type="button"
             onClick={toggleQuickPanel}
             className={cn(
-              'flex items-center justify-center rounded-full shadow-lg',
+              'flex items-center justify-center',
               FAB_SIZE_CLASS,
               inventoryQuickActionTypeColors(quickAction.quickType),
               INVENTORY_QUICK_ACTION_HOVER.fab,
+              FAB_OUTLINED_SHELL,
             )}
             whileHover={FAB_HOVER}
             whileTap={FAB_TAP}

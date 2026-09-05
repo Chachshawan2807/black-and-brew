@@ -325,7 +325,7 @@ function TaskCard({
   const titleFontClass = resolveSecretaryCardTitleFontClass(titleLines.length);
   const canOpenDetail = canOpenSecretaryTaskDetail(task);
   const cardClassName = cn(
-    'relative flex aspect-square min-h-0 rounded-lg border p-2.5 bb-transition',
+    'relative flex aspect-square min-h-0 rounded-2xl border p-2.5 bb-transition',
     isDone ? SECRETARY_TASK_COLORS.done : SECRETARY_TASK_COLORS.card,
     canOpenDetail ? 'hover:brightness-[0.98] cursor-pointer' : 'cursor-default',
   );
@@ -334,7 +334,7 @@ function TaskCard({
     <HintTooltip tip="งานนี้เสร็จแล้ว">
       <span
         className={cn(
-          'inline-flex h-8 w-8 items-center justify-center rounded-md border text-black/70',
+          'inline-flex h-8 w-8 items-center justify-center rounded-xl border-2 border-foreground/30 text-black/70',
           SECRETARY_TASK_COLORS.doneAction,
         )}
         aria-hidden
@@ -353,7 +353,7 @@ function TaskCard({
           onComplete();
         }}
         disabled={isPending}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-muted/50 disabled:opacity-60"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border/80 bg-card text-foreground hover:bg-muted/50 disabled:opacity-60"
       >
         <CheckCircle2 size={14} />
       </button>

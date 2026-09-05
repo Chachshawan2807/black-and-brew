@@ -20,10 +20,10 @@ type SecretaryManualTaskDialogProps = {
 };
 
 const FIELD_CLASS =
-  'w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-1 focus-visible:ring-offset-card';
+  'w-full rounded-2xl border border-border bg-background px-3 py-2.5 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-1 focus-visible:ring-offset-card';
 
 const BUTTON_SECONDARY_CLASS =
-  'flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-[13px] text-foreground transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-60';
+  'flex-1 rounded-2xl border border-border bg-background px-3 py-2.5 text-[13px] text-foreground transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-60';
 
 const BUTTON_PRIMARY_CLASS = cn(BB_BTN_OUTLINE_PRIMARY, 'flex-1 py-2.5 text-[13px]');
 
@@ -72,7 +72,7 @@ export default function SecretaryManualTaskDialog({
               type="button"
               onClick={onDelete}
               disabled={isPending}
-              className="flex-1 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-[13px] text-red-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 disabled:opacity-60 dark:text-red-300"
+              className="flex-1 rounded-2xl border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-[13px] text-red-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 disabled:opacity-60 dark:text-red-300"
             >
               ยืนยันลบ
             </button>
@@ -82,7 +82,7 @@ export default function SecretaryManualTaskDialog({
             type="button"
             onClick={() => setConfirmDelete(true)}
             disabled={isPending}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-border px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-60"
           >
             <Trash2 size={14} />
             ลบงาน

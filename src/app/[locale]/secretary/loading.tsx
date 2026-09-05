@@ -5,15 +5,15 @@ export default function Loading() {
         <div className="h-4 w-48 rounded-lg bb-shimmer" />
       </div>
       <div className="flex flex-wrap gap-2">
-        <div className="h-8 w-24 rounded-full bb-shimmer" />
-        <div className="h-8 w-28 rounded-full bb-shimmer" />
-        <div className="h-8 w-20 rounded-full bb-shimmer" />
+        <div className="h-8 w-24 rounded-2xl bb-shimmer" />
+        <div className="h-8 w-28 rounded-2xl bb-shimmer" />
+        <div className="h-8 w-20 rounded-2xl bb-shimmer" />
       </div>
       <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
         {Array.from({ length: 8 }, (_, index) => (
           <div
             key={index}
-            className="aspect-square rounded-lg border border-border bg-card bb-shimmer"
+            className="aspect-square rounded-2xl border border-border bg-card bb-shimmer"
           />
         ))}
       </div>

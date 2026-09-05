@@ -14,18 +14,28 @@ export const FAB_SIZE_CLASS = 'w-11 h-11';
 
 export const FAB_HIDE_TOGGLE_SIZE_CLASS = 'w-8 h-8';
 
+/** Soft-corner outlined shell shared by FAB triggers (pastel fill applied separately). */
+export const FAB_OUTLINED_SHELL =
+  'rounded-2xl border-2 border-foreground/80 bb-shadow-lg';
+
+/** Outlined shell for the FAB stack hide/show toggle (compact). */
+export const FAB_HIDE_TOGGLE_SHELL =
+  'rounded-2xl border border-border/80 bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground bb-shadow-sm';
+
 export const FAB_RIGHT_CLASS =
   'max-md:right-[calc(1.25rem+env(safe-area-inset-right,0px))] md:right-6';
 
 export const FAB_BASE_CLASS = cn(
-  'fixed rounded-full border border-foreground/80 bg-card text-foreground flex items-center justify-center bb-shadow-lg',
+  'fixed flex items-center justify-center text-foreground',
+  FAB_OUTLINED_SHELL,
   FAB_SIZE_CLASS,
   FAB_RIGHT_CLASS,
 );
 
 /** Inner trigger styling when wrapped by FabFadePresence (position on parent) */
 export const FAB_STACK_INNER_CLASS = cn(
-  'rounded-full border border-foreground/80 bg-card text-foreground flex items-center justify-center bb-shadow-lg',
+  'flex items-center justify-center text-foreground',
+  FAB_OUTLINED_SHELL,
   FAB_SIZE_CLASS,
 );
 

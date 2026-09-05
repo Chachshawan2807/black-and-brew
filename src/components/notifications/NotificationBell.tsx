@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
 import { cn } from '@/lib/utils';
 import { formatInAppBadgeLabel, getInAppBadgeClassName } from '@/lib/notification-badge';
-import { FAB_SIZE_CLASS, FAB_RIGHT_CLASS } from '@/lib/floating-action-layout';
+import { FAB_SIZE_CLASS, FAB_RIGHT_CLASS, FAB_STACK_INNER_CLASS } from '@/lib/floating-action-layout';
 import { INVENTORY_QUICK_ACTION_COLORS, INVENTORY_QUICK_ACTION_HOVER } from '@/lib/shift-colors';
 import { INVENTORY_NOTIFICATION_EVENT } from '@/lib/pwa-notification-bridge';
 import { useNotificationState, useNotificationActions } from '@/components/notifications/NotificationProvider';
@@ -97,8 +97,7 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
           whileTap={FAB_TAP}
           className={cn(
             'relative bb-transition',
-            'flex items-center justify-center rounded-full bb-shadow-lg',
-            FAB_SIZE_CLASS,
+            FAB_STACK_INNER_CLASS,
             INVENTORY_QUICK_ACTION_COLORS.fab,
             INVENTORY_QUICK_ACTION_HOVER.fab,
             panelOpen && 'ring-2 ring-amber-600/35 ring-offset-2 ring-offset-background',

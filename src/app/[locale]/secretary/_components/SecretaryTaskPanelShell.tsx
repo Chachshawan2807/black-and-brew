@@ -8,6 +8,7 @@ import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { isSidebarMenuLabel } from '@/lib/sidebar-menu-labels';
 import type { SecretaryAttentionListItem } from '@/lib/secretary/task-detail-overlay';
 import { cn } from '@/lib/utils';
+import { BB_BTN_CLOSE } from '@/lib/ui-outlined-tokens';
 import {
   SECRETARY_MODAL_LAYOUT_CLASS,
   SECRETARY_MODAL_OVERLAY_CLASS,
@@ -93,7 +94,7 @@ export default function SecretaryTaskPanelShell({
                 onClick={onClose}
                 disabled={closeDisabled}
                 aria-label="ปิด"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-50"
+                className={BB_BTN_CLOSE}
               >
                 <CloseIcon size="sm" />
               </button>
@@ -104,7 +105,7 @@ export default function SecretaryTaskPanelShell({
               onClick={onClose}
               disabled={closeDisabled}
               aria-label="ปิด"
-              className="absolute right-3 top-3 z-10 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-50"
+              className={cn(BB_BTN_CLOSE, 'absolute right-3 top-3 z-10 shrink-0')}
             >
               <CloseIcon size="sm" />
             </button>

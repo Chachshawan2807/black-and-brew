@@ -7,6 +7,7 @@ import { Minus, Plus } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
   FAB_BOTTOM_HIDE_TOGGLE_CLASS,
+  FAB_HIDE_TOGGLE_SHELL,
   FAB_HIDE_TOGGLE_SIZE_CLASS,
   FAB_RIGHT_CLASS,
 } from '@/lib/floating-action-layout';
@@ -37,15 +38,11 @@ export function FabStackHideToggle() {
         aria-label={fabStackHidden ? 'แสดงปุ่มลัด' : 'ซ่อนปุ่มลัด'}
         aria-pressed={fabStackHidden}
         className={cn(
-          'fixed z-[199] flex items-center justify-center rounded-full bb-transition',
+          'fixed z-[199] flex items-center justify-center bb-transition',
           FAB_HIDE_TOGGLE_SIZE_CLASS,
           FAB_RIGHT_CLASS,
           FAB_BOTTOM_HIDE_TOGGLE_CLASS,
-          'bg-white/10 dark:bg-white/8',
-          'backdrop-blur-sm',
-          'border border-white/25 dark:border-white/20',
-          'ring-1 ring-black/10 dark:ring-white/15',
-          'bb-shadow-sm',
+          FAB_HIDE_TOGGLE_SHELL,
         )}
       >
         {fabStackHidden ? (
@@ -53,14 +50,14 @@ export function FabStackHideToggle() {
             size={15}
             strokeWidth={2.5}
             aria-hidden
-            className="text-white drop-shadow-[0_0_2px_rgba(0,0,0,0.95),0_1px_4px_rgba(0,0,0,0.75)]"
+            className="text-foreground"
           />
         ) : (
           <Minus
             size={15}
             strokeWidth={2.5}
             aria-hidden
-            className="text-white drop-shadow-[0_0_2px_rgba(0,0,0,0.95),0_1px_4px_rgba(0,0,0,0.75)]"
+            className="text-foreground"
           />
         )}
       </motion.button>

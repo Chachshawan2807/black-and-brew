@@ -131,9 +131,10 @@ describe('Inventory Quick Action FAB', () => {
     );
 
     expect(hideCode).toContain('FAB_HIDE_TOGGLE_SIZE_CLASS');
+    expect(hideCode).toContain('FAB_HIDE_TOGGLE_SHELL');
     expect(hideCode).toContain('Minus');
-    expect(hideCode).toContain('text-white');
-    expect(hideCode).toContain('bg-white/10');
+    expect(hideCode).toContain('text-foreground');
+    expect(hideCode).not.toContain('bg-white/10');
     expect(layoutCode).toContain('FAB_BOTTOM_HIDE_TOGGLE_CLASS');
     expect(layoutCode).toMatch(/Hide toggle[\s\S]*Quick Action/);
     expect(contextCode).toContain('fabStackHidden');
