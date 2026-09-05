@@ -82,7 +82,7 @@ export default function MaintenanceClient({
   const DEFAULT_WIDTHS = {
     date: 120,
     equipment: 185,
-    issue: 280,
+    issue: 140,
     frequency: 140,
     taskType: 120,
     manage: 110,
@@ -146,7 +146,14 @@ export default function MaintenanceClient({
               safeWidths[key] = val;
             }
           });
-          setColWidths(safeWidths);
+          const merged = { ...DEFAULT_WIDTHS, ...safeWidths };
+          if (safeWidths.issue === undefined || safeWidths.issue === 280) {
+            merged.issue = DEFAULT_WIDTHS.issue;
+          }
+          setColWidths(merged);
+          if (safeWidths.issue === undefined || safeWidths.issue === 280) {
+            localStorage.setItem('bb-maintenance-col-widths', JSON.stringify(merged));
+          }
         }
       } catch (e) {
         console.error(e);
@@ -347,7 +354,7 @@ export default function MaintenanceClient({
             </div>
           ) : (
             <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin pb-6 box-border bb-table-wrapper">
-              <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '780px' }}>
+              <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '700px' }}>
                 <thead>
                   <tr className="border-b border-border bg-card bb-shadow-sm">
                     <th 
