@@ -11,7 +11,7 @@ import {
 import {
   BeanOrderDialogShell,
   BeanOrderInlineLoading,
-  BeanOrderModalHeader,
+  BeanOrderModalCloseButton,
 } from './bean-order-ui-primitives';
 
 type Props = {
@@ -21,10 +21,28 @@ type Props = {
   previewUrl?: string | null;
   uploadedAt?: string | null;
   variant?: 'compact' | 'panel';
+  /** Detail page: show slip near full size, centered on screen */
+  largeModal?: boolean;
 };
 
 const SLIP_IMAGE_CLASS =
   'max-h-[min(58dvh,420px)] w-auto max-w-[min(86vw,320px)] object-contain sm:max-h-[min(62dvh,460px)] sm:max-w-[340px] md:max-h-[440px] md:max-w-[320px]';
+
+export const SLIP_MODAL_PANEL_CLASS =
+  'w-fit max-w-[min(92vw,360px)] sm:max-w-[380px]';
+
+export const SLIP_MODAL_PANEL_CLASS_LARGE =
+  'w-fit max-w-[min(calc(100vw-2rem),520px)] max-h-[calc(100dvh-2rem)]';
+
+export const SLIP_MODAL_BODY_CLASS_LARGE =
+  'flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden p-0';
+
+export const SLIP_MODAL_LAYOUT_CLASS_LARGE =
+  'items-center justify-center p-3 sm:p-4';
+
+/** Fits within viewport padding and close button without scrolling */
+export const SLIP_IMAGE_CLASS_LARGE =
+  'block h-auto w-auto max-h-[calc(100dvh-4rem)] max-w-[min(calc(100vw-2rem),520px)] object-contain';
 
 const PANEL_PREVIEW_IMAGE_CLASS =
   'max-h-[6.5rem] max-w-full w-auto object-contain transition group-hover:opacity-90';
@@ -35,6 +53,7 @@ export function PaymentSlipViewer({
   previewUrl,
   uploadedAt,
   variant = 'compact',
+  largeModal = false,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [slipUrl, setSlipUrl] = useState(initialSlipUrl ?? null);
@@ -177,18 +196,19 @@ export function PaymentSlipViewer({
       <BeanOrderDialogShell
         open={expanded}
         onClose={handleClose}
-        panelClassName="w-fit max-w-[min(92vw,360px)] sm:max-w-[380px]"
+        panelClassName={largeModal ? SLIP_MODAL_PANEL_CLASS_LARGE : SLIP_MODAL_PANEL_CLASS}
+        centerScrollable={!largeModal}
+        layoutClassName={largeModal ? SLIP_MODAL_LAYOUT_CLASS_LARGE : undefined}
         aria-label="สลิปชำระเงิน"
       >
-        <BeanOrderModalHeader
-          icon={<ZoomIn className="h-5 w-5" aria-hidden />}
-          title="สลิปชำระเงิน"
-          tone="payment"
-          onClose={handleClose}
-          sheet={false}
-          className="pr-14"
-        />
-        <div className="flex min-h-0 flex-col items-center justify-center overflow-auto p-4">
+        <BeanOrderModalCloseButton onClose={handleClose} />
+        <div
+          className={
+            largeModal
+              ? SLIP_MODAL_BODY_CLASS_LARGE
+              : 'flex min-h-0 flex-col items-center justify-center overflow-auto p-4'
+          }
+        >
           {modalLoading ? (
             <BeanOrderInlineLoading label="กำลังโหลดสลิป..." />
           ) : error ? (
@@ -209,7 +229,7 @@ export function PaymentSlipViewer({
             <img
               src={modalImageUrl}
               alt="สลิปชำระเงิน"
-              className={SLIP_IMAGE_CLASS}
+              className={largeModal ? SLIP_IMAGE_CLASS_LARGE : SLIP_IMAGE_CLASS}
               onError={() => {
                 if (!previewUrl && orderId) {
                   void loadSlipUrl('modal');

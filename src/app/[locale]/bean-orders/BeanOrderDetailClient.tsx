@@ -511,6 +511,7 @@ export default function BeanOrderDetailClient({
                         previewUrl={pendingSlipPreview}
                         uploadedAt={order.payment?.uploadedAt}
                         variant="panel"
+                        largeModal
                       />
                     ) : (
                       <div className="flex h-full min-h-[9rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/10 px-2 text-center text-xs text-muted-foreground">

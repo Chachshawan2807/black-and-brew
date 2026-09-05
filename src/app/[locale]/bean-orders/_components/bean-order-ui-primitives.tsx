@@ -402,6 +402,8 @@ type BeanOrderDialogShellProps = {
   panelClassName?: string;
   panelVariant?: 'center' | 'sheet';
   keyboardAware?: boolean;
+  centerScrollable?: boolean;
+  layoutClassName?: string;
   'aria-label'?: string;
 };
 
@@ -412,6 +414,8 @@ export function BeanOrderDialogShell({
   panelClassName,
   panelVariant = 'center',
   keyboardAware = true,
+  centerScrollable = true,
+  layoutClassName,
   'aria-label': ariaLabel,
 }: BeanOrderDialogShellProps) {
   return (
@@ -426,7 +430,8 @@ export function BeanOrderDialogShell({
       )}
       panelVariant={panelVariant}
       keyboardAware={keyboardAware}
-      centerScrollable
+      centerScrollable={centerScrollable}
+      layoutClassName={layoutClassName}
       aria-label={ariaLabel}
     >
       {children}
