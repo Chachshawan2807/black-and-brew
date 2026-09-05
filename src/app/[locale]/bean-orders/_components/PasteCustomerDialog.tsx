@@ -1,11 +1,14 @@
 'use client';
 
-import { LoadingIcon } from '@/components/ui/loading-icon';
-import { useEffect, useRef } from 'react';
+import { Clipboard } from '@/lib/icons';
 import type { ParsedBeanOrderCustomer } from '@/lib/bean-orders/parse-share-text';
 import { formatThaiPostalAddressLine } from '@/lib/bean-orders/thai-postal-lookup';
-
 import { BEAN_ORDER_BTN_DIALOG, BEAN_ORDER_BTN_DIALOG_PRIMARY } from './bean-order-layout';
+import {
+  BeanOrderDialogShell,
+  BeanOrderInlineLoading,
+  BeanOrderModalHeader,
+} from './bean-order-ui-primitives';
 
 type Props = {
   open: boolean;
@@ -16,54 +19,38 @@ type Props = {
   onCancel: () => void;
 };
 
-const DIALOG_CLASS =
-  'fixed left-1/2 top-1/2 z-50 w-[min(420px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg open:flex open:flex-col backdrop:bg-black/40';
-
 export function PasteCustomerDialog({
   open,
   loading = false,
   error = null,
   data = null,
   onConfirm,
-  onCancel }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
+  onCancel,
+}: Props) {
   const addressPreview = data
     ? formatThaiPostalAddressLine(data.address) || data.address.addressLine || ' '
     : ' ';
 
   return (
-    <dialog
-      ref={dialogRef}
-      className={DIALOG_CLASS}
-      onClose={onCancel}
-      onCancel={(event) => {
-        event.preventDefault();
-        onCancel();
-      }}
-    >
-      <div className="p-4 md:p-5">
-        <h3 className="text-base text-foreground">วางข้อมูลลูกค้า</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          ตรวจชื่อ / เบอร์ / ที่อยู่ก่อนนำไปใส่ในฟอร์ม
-        </p>
+    <BeanOrderDialogShell open={open} onClose={onCancel} aria-label="วางข้อมูลลูกค้า">
+      <BeanOrderModalHeader
+        icon={<Clipboard className="h-5 w-5" aria-hidden />}
+        title="วางข้อมูลลูกค้า"
+        subtitle="ตรวจชื่อ / เบอร์ / ที่อยู่ก่อนนำไปใส่ในฟอร์ม"
+        tone="coffee"
+        onClose={onCancel}
+        sheet={false}
+      />
 
+      <div className="p-4 md:p-5">
         {loading ? (
-          <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <LoadingIcon size="md" className="aria-hidden" />
-            กำลังแยกข้อมูล...
+          <div className="mt-2 flex justify-center py-6">
+            <BeanOrderInlineLoading label="กำลังแยกข้อมูล..." />
           </div>
         ) : null}
 
         {!loading && error ? (
-          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
             {error}
           </p>
         ) : null}
@@ -92,11 +79,7 @@ export function PasteCustomerDialog({
         ) : null}
 
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className={BEAN_ORDER_BTN_DIALOG}
-          >
+          <button type="button" onClick={onCancel} className={BEAN_ORDER_BTN_DIALOG}>
             ยกเลิก
           </button>
           <button
@@ -109,6 +92,6 @@ export function PasteCustomerDialog({
           </button>
         </div>
       </div>
-    </dialog>
+    </BeanOrderDialogShell>
   );
 }

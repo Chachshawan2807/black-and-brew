@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Clipboard, Plus, Trash2 } from '@/lib/icons';
+import { motion } from 'framer-motion';
+import { Banknote, Clipboard, Coffee, Package, Plus, Trash2, Truck } from '@/lib/icons';
 import {
   createBeanCustomer,
   createBeanOrder,
@@ -93,6 +93,14 @@ import {
   BEAN_ORDER_FORM_SECTION,
   BEAN_ORDER_INPUT,
 } from './_components/bean-order-layout';
+import {
+  BeanOrderBackLink,
+  BeanOrderIconBadge,
+  BeanOrderPageShell,
+  BeanOrderStatusBanner,
+  useBeanOrderMotion,
+} from './_components/bean-order-ui-primitives';
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { cn } from '@/lib/utils';
 
 const PasteCustomerDialog = dynamic(
@@ -778,20 +786,25 @@ export default function BeanOrderFormClient({
   }
 
   const inputClass = BEAN_ORDER_INPUT;
+  const { heading } = useBeanOrderMotion();
 
   return (
+    <BeanOrderPageShell>
     <form onSubmit={handleSubmit} className={BEAN_ORDER_FORM_PAGE}>
-      <Link
+      <BeanOrderBackLink
         href={isEdit && orderId ? `/${locale}/bean-orders/${orderId}` : `/${locale}/bean-orders`}
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground"
+        label={isEdit ? 'กลับรายละเอียด' : 'กลับรายการ'}
+      />
+      <motion.h1
+        className="text-2xl font-normal mb-6"
+        initial={heading.initial}
+        animate={heading.animate}
+        transition={heading.transition}
       >
-        <ChevronLeft className="h-4 w-4" /> {isEdit ? 'กลับรายละเอียด' : 'กลับรายการ'}
-      </Link>
-      <h1 className="text-2xl font-normal mb-6">
         {isEdit ? `แก้ไขออเดอร์ ${initialOrder?.orderNo ?? ''}` : 'สร้างออเดอร์เมล็ดกาแฟ'}
-      </h1>
+      </motion.h1>
 
-      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error ? <BeanOrderStatusBanner message={error} variant="error" className="mb-4" /> : null}
 
       <div className={BEAN_ORDER_FORM_SECTION}>
         <PageTitle as="h2" className="text-sm font-normal text-muted-foreground">
@@ -799,9 +812,14 @@ export default function BeanOrderFormClient({
         </PageTitle>
         <div className={BEAN_ORDER_FORM_MAIN_GRID}>
       <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_PANEL, 'space-y-3')}>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-normal text-muted-foreground">ลูกค้า</h2>
-          <div className="flex items-center gap-2">
+        <div className="space-y-2">
+          <h2 className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
+            <BeanOrderIconBadge tone="coffee" size="sm">
+              <Coffee className="h-3.5 w-3.5" aria-hidden />
+            </BeanOrderIconBadge>
+            ลูกค้า
+          </h2>
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => void handlePasteCustomer()}
@@ -809,9 +827,10 @@ export default function BeanOrderFormClient({
               onFocus={preloadPasteCustomerDialog}
               disabled={isReadOnly || pasteLoading}
               className={BEAN_ORDER_BTN_SM_OUTLINE}
+              aria-label="วางข้อมูลลูกค้า"
             >
-              <Clipboard className="h-3.5 w-3.5" aria-hidden />
-              วางข้อมูลลูกค้า
+              <Clipboard className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span>วางข้อมูล</span>
             </button>
             <button
               type="button"
@@ -820,9 +839,10 @@ export default function BeanOrderFormClient({
               onFocus={preloadClearCustomerConfirmDialog}
               disabled={isReadOnly}
               className={BEAN_ORDER_BTN_SM_DANGER}
+              aria-label="ล้างข้อมูลลูกค้า"
             >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden />
-              ล้างข้อมูล
+              <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span>ล้างข้อมูล</span>
             </button>
           </div>
         </div>
@@ -872,7 +892,12 @@ export default function BeanOrderFormClient({
       </section>
 
       <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_PANEL)}>
-        <h2 className="mb-3 text-xs text-muted-foreground">รายการสินค้า</h2>
+        <h2 className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <BeanOrderIconBadge tone="coffee" size="sm">
+            <Package className="h-3.5 w-3.5" aria-hidden />
+          </BeanOrderIconBadge>
+          รายการสินค้า
+        </h2>
         <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex-1 space-y-3">
         {lines.map((line, index) => {
@@ -1030,7 +1055,12 @@ export default function BeanOrderFormClient({
 
       <div className={BEAN_ORDER_FORM_FULFILLMENT_GRID}>
         <div className={BEAN_ORDER_FORM_FULFILLMENT_COLUMN}>
-          <h2 className="text-sm font-normal text-muted-foreground">ข้อมูลการชำระเงิน</h2>
+          <h2 className="text-sm font-normal text-muted-foreground flex items-center gap-2">
+            <BeanOrderIconBadge tone="payment" size="sm">
+              <Banknote className="h-3.5 w-3.5" aria-hidden />
+            </BeanOrderIconBadge>
+            ข้อมูลการชำระเงิน
+          </h2>
           <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_FULFILLMENT_CARD)}>
             <BeanOrderPaymentFields
               orderId={orderId}
@@ -1051,7 +1081,12 @@ export default function BeanOrderFormClient({
         </div>
 
         <div className={BEAN_ORDER_FORM_FULFILLMENT_COLUMN}>
-          <h2 className="text-sm font-normal text-muted-foreground">ข้อมูลการจัดส่ง</h2>
+          <h2 className="text-sm font-normal text-muted-foreground flex items-center gap-2">
+            <BeanOrderIconBadge tone="shipping" size="sm">
+              <Truck className="h-3.5 w-3.5" aria-hidden />
+            </BeanOrderIconBadge>
+            ข้อมูลการจัดส่ง
+          </h2>
           <section className={cn(BEAN_ORDER_CARD, BEAN_ORDER_FORM_FULFILLMENT_CARD)}>
             <div className={BEAN_ORDER_FORM_FULFILLMENT_CARD_BODY}>
               <BeanOrderShippingFields
@@ -1074,7 +1109,16 @@ export default function BeanOrderFormClient({
         disabled={saving || isReadOnly}
         className={BEAN_ORDER_BTN_PRIMARY_FULL}
       >
-        {saving ? 'กำลังบันทึก...' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึกออเดอร์'}
+        {saving ? (
+          <span className="inline-flex items-center justify-center gap-2">
+            <LoadingIcon size="sm" className="text-background" />
+            กำลังบันทึก...
+          </span>
+        ) : isEdit ? (
+          'บันทึกการแก้ไข'
+        ) : (
+          'บันทึกออเดอร์'
+        )}
       </button>
 
       {pasteOpen ? (
@@ -1095,5 +1139,6 @@ export default function BeanOrderFormClient({
         />
       ) : null}
     </form>
+    </BeanOrderPageShell>
   );
 }

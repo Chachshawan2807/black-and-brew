@@ -1,9 +1,13 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { MapPin } from '@/lib/icons';
 import { formatAddressProfileLabel } from '@/lib/bean-orders/address';
 import type { ThaiPostalAddressValue } from '@/lib/bean-orders/address';
 import { BEAN_ORDER_BTN_DIALOG, BEAN_ORDER_BTN_LIST } from './bean-order-layout';
+import {
+  BeanOrderDialogShell,
+  BeanOrderModalHeader,
+} from './bean-order-ui-primitives';
 
 type Props = {
   open: boolean;
@@ -13,9 +17,6 @@ type Props = {
   onCancel: () => void;
 };
 
-const DIALOG_CLASS =
-  'fixed left-1/2 top-1/2 z-50 w-[min(480px,92vw)] max-h-[min(80svh,640px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg open:flex open:flex-col backdrop:bg-black/40';
-
 export function AddressProfilePickerDialog({
   open,
   title,
@@ -23,32 +24,23 @@ export function AddressProfilePickerDialog({
   onSelect,
   onCancel,
 }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
   return (
-    <dialog
-      ref={dialogRef}
-      className={DIALOG_CLASS}
+    <BeanOrderDialogShell
+      open={open}
       onClose={onCancel}
-      onCancel={(event) => {
-        event.preventDefault();
-        onCancel();
-      }}
+      panelClassName="max-w-[min(480px,92vw)] max-h-[min(80svh,640px)]"
+      aria-label={title}
     >
-      <div className="flex min-h-0 flex-col p-4 md:p-5">
-        <h3 className="text-base text-foreground">{title}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          ลูกค้ารายนี้มีที่อยู่มากกว่า 1 รายการ เลือกที่อยู่ที่ต้องการใช้
-        </p>
+      <BeanOrderModalHeader
+        icon={<MapPin className="h-5 w-5" aria-hidden />}
+        title={title}
+        subtitle="ลูกค้ารายนี้มีที่อยู่มากกว่า 1 รายการ เลือกที่อยู่ที่ต้องการใช้"
+        tone="shipping"
+        onClose={onCancel}
+      />
 
-        <ul className="mt-4 min-h-0 flex-1 divide-y overflow-y-auto rounded-xl border border-border bg-card">
+      <div className="flex min-h-0 flex-1 flex-col p-4 md:p-5 pt-0">
+        <ul className="min-h-0 flex-1 divide-y overflow-y-auto rounded-xl border border-border bg-card">
           {profiles.map((profile) => (
             <li key={`${profile.name}-${formatAddressProfileLabel(profile)}`}>
               <button
@@ -69,6 +61,6 @@ export function AddressProfilePickerDialog({
           </button>
         </div>
       </div>
-    </dialog>
+    </BeanOrderDialogShell>
   );
 }

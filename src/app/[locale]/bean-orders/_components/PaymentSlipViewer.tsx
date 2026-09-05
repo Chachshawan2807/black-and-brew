@@ -1,16 +1,18 @@
 'use client';
 
-import { LoadingIcon } from '@/components/ui/loading-icon';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { CloseIcon } from '@/components/ui/close-icon';
+import { useCallback, useEffect, useState } from 'react';
 import { ZoomIn } from '@/lib/icons';
 import { getBeanOrderSlipSignedUrl } from '@/app/actions/bean-order-actions';
 import {
   BEAN_ORDER_ACTION_BTN_OUTLINE,
-  BEAN_ORDER_BTN_ICON,
   BEAN_ORDER_BTN_SLIP,
   BEAN_ORDER_BTN_SLIP_PANEL,
 } from './bean-order-layout';
+import {
+  BeanOrderDialogShell,
+  BeanOrderInlineLoading,
+  BeanOrderModalHeader,
+} from './bean-order-ui-primitives';
 
 type Props = {
   orderId?: string;
@@ -20,9 +22,6 @@ type Props = {
   uploadedAt?: string | null;
   variant?: 'compact' | 'panel';
 };
-
-const DIALOG_CLASS =
-  'fixed left-1/2 top-1/2 z-50 m-0 flex w-fit max-w-[min(92vw,360px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-black/50 sm:max-w-[380px]';
 
 const SLIP_IMAGE_CLASS =
   'max-h-[min(58dvh,420px)] w-auto max-w-[min(86vw,320px)] object-contain sm:max-h-[min(62dvh,460px)] sm:max-w-[340px] md:max-h-[440px] md:max-w-[320px]';
@@ -37,7 +36,6 @@ export function PaymentSlipViewer({
   uploadedAt,
   variant = 'compact',
 }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [slipUrl, setSlipUrl] = useState(initialSlipUrl ?? null);
   const [prevInitialSlipUrl, setPrevInitialSlipUrl] = useState(initialSlipUrl);
@@ -79,12 +77,6 @@ export function PaymentSlipViewer({
       void loadSlipUrl('preview');
     });
   }, [orderId, uploadedAt, slipUrl, previewUrl, loadSlipUrl]);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog || !expanded) return;
-    if (!dialog.open) dialog.showModal();
-  }, [expanded]);
 
   async function handleExpand() {
     setExpanded(true);
@@ -134,12 +126,11 @@ export function PaymentSlipViewer({
             <div
               className={
                 isPanel
-                  ? 'flex min-h-0 flex-1 items-center justify-center px-3 py-4 text-sm text-muted-foreground'
-                  : 'flex min-h-24 min-w-[7rem] items-center justify-center px-3 py-4 text-sm text-muted-foreground'
+                  ? 'flex min-h-0 flex-1 items-center justify-center px-3 py-4'
+                  : 'flex min-h-24 min-w-[7rem] items-center justify-center px-3 py-4'
               }
             >
-              <LoadingIcon size="md" className="mr-2" />
-              กำลังโหลด...
+              <BeanOrderInlineLoading label="กำลังโหลด..." />
             </div>
           ) : resolvedPreviewUrl ? (
             <div
@@ -183,81 +174,53 @@ export function PaymentSlipViewer({
         </div>
       </button>
 
-      {expanded ? (
-        <dialog
-          ref={dialogRef}
-          className={DIALOG_CLASS}
-          closedby="any"
+      <BeanOrderDialogShell
+        open={expanded}
+        onClose={handleClose}
+        panelClassName="w-fit max-w-[min(92vw,360px)] sm:max-w-[380px]"
+        aria-label="สลิปชำระเงิน"
+      >
+        <BeanOrderModalHeader
+          icon={<ZoomIn className="h-5 w-5" aria-hidden />}
+          title="สลิปชำระเงิน"
+          tone="payment"
           onClose={handleClose}
-          onCancel={handleClose}
-        >
-          <div
-            className="flex items-center justify-between gap-3 border-b border-border px-4 py-3"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 className="text-sm text-foreground">สลิปชำระเงิน</h3>
-            <button
-              type="button"
-              onClick={handleClose}
-              className={`h-9 w-9 text-muted-foreground ${BEAN_ORDER_BTN_ICON}`}
-              aria-label="ปิด"
-            >
-              <CloseIcon size="md" />
-            </button>
-          </div>
-          <div
-            className="flex min-h-0 flex-col items-center justify-center overflow-auto p-4"
-            onClick={handleClose}
-            role="presentation"
-          >
-            {modalLoading ? (
-              <div
-                className="flex items-center gap-2 text-sm text-muted-foreground"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <LoadingIcon size="md" />
-                กำลังโหลดสลิป...
-              </div>
-            ) : error ? (
-              <div
-                className="space-y-3 text-center"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <p className="text-sm text-red-600">{error}</p>
-                {orderId ? (
-                  <button
-                    type="button"
-                    onClick={() => void loadSlipUrl('modal')}
-                    className={BEAN_ORDER_ACTION_BTN_OUTLINE}
-                  >
-                    ลองใหม่
-                  </button>
-                ) : null}
-              </div>
-            ) : modalImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={modalImageUrl}
-                alt="สลิปชำระเงิน"
-                className={SLIP_IMAGE_CLASS}
-                onClick={(event) => event.stopPropagation()}
-                onError={() => {
-                  if (!previewUrl && orderId) {
-                    void loadSlipUrl('modal');
-                  }
-                }}
-              />
-            ) : (
-              <p
-                className="text-sm text-muted-foreground"
-                onClick={(event) => event.stopPropagation()}
-              >
-                ไม่พบไฟล์สลิป
-              </p>
-            )}
-          </div>
-        </dialog>
-      ) : null}
+          sheet={false}
+          className="pr-14"
+        />
+        <div className="flex min-h-0 flex-col items-center justify-center overflow-auto p-4">
+          {modalLoading ? (
+            <BeanOrderInlineLoading label="กำลังโหลดสลิป..." />
+          ) : error ? (
+            <div className="space-y-3 text-center">
+              <p className="text-sm text-red-600">{error}</p>
+              {orderId ? (
+                <button
+                  type="button"
+                  onClick={() => void loadSlipUrl('modal')}
+                  className={BEAN_ORDER_ACTION_BTN_OUTLINE}
+                >
+                  ลองใหม่
+                </button>
+              ) : null}
+            </div>
+          ) : modalImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={modalImageUrl}
+              alt="สลิปชำระเงิน"
+              className={SLIP_IMAGE_CLASS}
+              onError={() => {
+                if (!previewUrl && orderId) {
+                  void loadSlipUrl('modal');
+                }
+              }}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">ไม่พบไฟล์สลิป</p>
+          )}
+        </div>
+      </BeanOrderDialogShell>
     </>
   );
 }

@@ -112,6 +112,7 @@ export {
   ClipboardList,
   Coffee,
   GripVertical,
+  MapPin,
   Minus,
   Monitor,
   Settings,

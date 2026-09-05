@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { Plus } from '@/lib/icons';
+import { AnimatePresence } from 'framer-motion';
+import { Plus, Search } from '@/lib/icons';
 import type { BeanOrderListRow } from '@/app/actions/bean-order-actions';
 import { BeanOrderListItem } from './_components/BeanOrderListItem';
 import { PageHeader } from '@/components/ui/page-header';
@@ -17,8 +18,14 @@ import {
   BEAN_ORDER_LIST_CELL,
   BEAN_ORDER_PAGE,
 } from './_components/bean-order-layout';
+import {
+  BeanOrderEmptyState,
+  BeanOrderPageShell,
+  BeanOrderStatusBanner,
+} from './_components/bean-order-ui-primitives';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { warmRouteNavigation } from '@/lib/warm-route-navigation';
+import { cn } from '@/lib/utils';
 import {
   applyBeanOrderDeliveredPatch,
   consumeBeanOrderDeliveredPatch,
@@ -112,7 +119,7 @@ export default function BeanOrdersClient({
   }, [orders, search, paymentFilter, fulfillmentFilter]);
 
   return (
-    <div className={embedded ? 'min-h-0 space-y-4' : BEAN_ORDER_PAGE}>
+    <BeanOrderPageShell className={embedded ? 'min-h-0 space-y-4' : BEAN_ORDER_PAGE}>
       {embedded ? (
         <p className="text-[12px] text-muted-foreground">รับออเดอร์ / ตรวจสลิป / จัดส่ง</p>
       ) : (
@@ -132,22 +139,28 @@ export default function BeanOrdersClient({
         />
       )}
 
-      {message && (
-        <p className="mb-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground">
-          {message}
-        </p>
-      )}
+      <AnimatePresence mode="sync">
+        {message ? (
+          <BeanOrderStatusBanner key="flash" message={message} variant="success" />
+        ) : null}
+      </AnimatePresence>
 
       <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-        <input
-          type="search"
-          id="bean-orders-search"
-          name="bean-orders-search"
-          value={search}
-          onChange={(e) => startTransition(() => setSearch(e.target.value))}
-          placeholder="ค้นหาเลขออเดอร์ / ชื่อลูกค้า"
-          className={BEAN_ORDER_INPUT}
-        />
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <input
+            type="search"
+            id="bean-orders-search"
+            name="bean-orders-search"
+            value={search}
+            onChange={(e) => startTransition(() => setSearch(e.target.value))}
+            placeholder="ค้นหาเลขออเดอร์ / ชื่อลูกค้า"
+            className={cn(BEAN_ORDER_INPUT, 'pl-10')}
+          />
+        </div>
         <RoundedSelect
           name="bean-orders-payment-filter"
           value={paymentFilter}
@@ -170,7 +183,7 @@ export default function BeanOrdersClient({
 
       <div className={BEAN_ORDER_LIST_CARD}>
         {filtered.length === 0 ? (
-          <p className="p-8 text-center text-sm text-muted-foreground">ไม่พบออเดอร์</p>
+          <BeanOrderEmptyState message="ไม่พบออเดอร์" />
         ) : (
           <ul
             className={`w-full p-2 lg:p-0 lg:grid lg:[&>li:not(:last-child)]:border-b lg:[&>li:not(:last-child)]:border-border/60 ${BEAN_ORDER_LIST_GRID} lg:gap-x-0`}
@@ -187,18 +200,19 @@ export default function BeanOrdersClient({
               <span className={`whitespace-nowrap text-right ${BEAN_ORDER_LIST_CELL}`}>ยอด</span>
               <span className={`whitespace-nowrap text-right ${BEAN_ORDER_LIST_CELL}`}>สถานะ</span>
             </li>
-            {filtered.map((order) => (
+            {filtered.map((order, index) => (
               <BeanOrderListItem
                 key={order.id}
                 order={order}
                 locale={locale}
                 embedded={embedded}
                 onOpenOrder={onOpenOrder}
+                index={index}
               />
             ))}
           </ul>
         )}
       </div>
-    </div>
+    </BeanOrderPageShell>
   );
 }

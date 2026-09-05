@@ -136,10 +136,10 @@ export const BEAN_ORDER_ACTION_BTN_DANGER =
   `${BEAN_ORDER_ACTION_BTN_BASE} border border-red-500 bg-background text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20`;
 
 export const BEAN_ORDER_BTN_SM_OUTLINE =
-  `inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-xs text-foreground disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35 hover:bb-shadow-sm`;
+  `inline-flex h-9 min-h-[44px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-3.5 text-xs text-foreground disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35 hover:bb-shadow-sm`;
 
 export const BEAN_ORDER_BTN_SM_DANGER =
-  `inline-flex h-9 items-center gap-1.5 rounded-full border border-red-500 bg-background px-3 text-xs text-red-600 disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:bg-red-50 dark:hover:bg-red-950/20`;
+  `inline-flex h-9 min-h-[44px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-red-500 bg-background px-3.5 text-xs text-red-600 disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:bg-red-50 dark:hover:bg-red-950/20`;
 
 export const BEAN_ORDER_BTN_GHOST =
   `inline-flex items-center gap-1 rounded-full px-3 text-sm ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35 active:bg-muted/45`;

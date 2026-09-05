@@ -1,4 +1,5 @@
 import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_PAGE } from '../_components/bean-order-layout';
+import { BeanOrderInlineLoading } from '../_components/bean-order-ui-primitives';
 
 export default function BeanOrderDetailLoading() {
   return (
@@ -16,9 +17,9 @@ export default function BeanOrderDetailLoading() {
         <div className="h-4 w-full rounded bb-shimmer" />
         <div className="h-4 w-2/3 rounded bb-shimmer" />
       </div>
-      <p className="text-center text-sm text-muted-foreground" role="status">
-        กำลังโหลดออเดอร์...
-      </p>
+      <div className="flex justify-center pt-2">
+        <BeanOrderInlineLoading label="กำลังโหลดออเดอร์..." />
+      </div>
     </div>
   );
 }

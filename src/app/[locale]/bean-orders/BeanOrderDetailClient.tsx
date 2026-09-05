@@ -3,7 +3,8 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronLeft, Pencil } from '@/lib/icons';
+import { motion } from 'framer-motion';
+import { Banknote, History, ImageDown, Package, Pencil, Truck, User } from '@/lib/icons';
 import {
   deleteBeanOrder,
   confirmBeanOrderDelivered,
@@ -46,6 +47,15 @@ import {
 } from '@/lib/bean-orders/delivered-notify-snapshot';
 import { OrderListStatusGroup } from './_components/OrderStatusBadge';
 import { BEAN_ORDER_CARD, BEAN_ORDER_DETAIL_BODY_GRID, BEAN_ORDER_DETAIL_FULFILLMENT_CARD, BEAN_ORDER_DETAIL_LINES_CARD, BEAN_ORDER_DETAIL_PAGE, BEAN_ORDER_DETAIL_PAYMENT_BODY, BEAN_ORDER_DETAIL_PAYMENT_COLUMN, BEAN_ORDER_DETAIL_PAYMENT_SHIPPING_GRID, BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT, BEAN_ORDER_DETAIL_SHIPPING_COLUMN, BEAN_ORDER_INPUT, BEAN_ORDER_ACTION_BTN, BEAN_ORDER_ACTION_BTN_CONFIRM, BEAN_ORDER_ACTION_BTN_INFO, BEAN_ORDER_ACTION_BTN_DANGER, BEAN_ORDER_ACTION_BTN_OUTLINE, BEAN_ORDER_PAYMENT_ACTIONS } from './_components/bean-order-layout';
+import {
+  BeanOrderBackLink,
+  BeanOrderIconBadge,
+  BeanOrderPageShell,
+  BeanOrderSectionReveal,
+  BeanOrderStatusMessages,
+  useBeanOrderMotion,
+} from './_components/bean-order-ui-primitives';
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -291,27 +301,22 @@ export default function BeanOrderDetailClient({
   }
 
   const inputClass = BEAN_ORDER_INPUT;
-
-  const backControl =
-    embedded && onBack ? (
-      <button
-        type="button"
-        onClick={onBack}
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground"
-      >
-        <ChevronLeft className="h-4 w-4" aria-hidden /> กลับรายการ
-      </button>
-    ) : (
-      <Link href={`/${locale}/bean-orders`} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground">
-        <ChevronLeft className="h-4 w-4" aria-hidden /> กลับรายการ
-      </Link>
-    );
+  const { heading } = useBeanOrderMotion();
 
   return (
-    <div className={embedded ? 'pb-4' : BEAN_ORDER_DETAIL_PAGE}>
-      {backControl}
+    <BeanOrderPageShell className={embedded ? 'pb-4' : BEAN_ORDER_DETAIL_PAGE}>
+      {embedded && onBack ? (
+        <BeanOrderBackLink onClick={onBack} label="กลับรายการ" />
+      ) : (
+        <BeanOrderBackLink href={`/${locale}/bean-orders`} label="กลับรายการ" />
+      )}
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <motion.div
+        className="mb-4 flex flex-wrap items-center justify-between gap-3"
+        initial={heading.initial}
+        animate={heading.animate}
+        transition={heading.transition}
+      >
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <h1 className="text-2xl font-normal">{order.orderNo}</h1>
           <OrderListStatusGroup
@@ -330,18 +335,17 @@ export default function BeanOrderDetailClient({
             แก้ไขออเดอร์
           </Link>
         ) : null}
-      </div>
+      </motion.div>
 
-      {message && (
-        <p className="mb-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground">{message}</p>
-      )}
-      {error && (
-        <p className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>
-      )}
+      <BeanOrderStatusMessages message={message} error={error} />
 
-      <section className={`${BEAN_ORDER_CARD} mb-4 p-4`}>
-        <div className="min-w-0 space-y-1 text-sm">
-          <p className="text-xs text-muted-foreground">ลูกค้า</p>
+      <BeanOrderSectionReveal className={`${BEAN_ORDER_CARD} mb-4 p-4`} delay={0.04}>
+        <div className="flex items-start gap-3">
+          <BeanOrderIconBadge tone="coffee" size="sm">
+            <User className="h-3.5 w-3.5" aria-hidden />
+          </BeanOrderIconBadge>
+          <div className="min-w-0 flex-1 space-y-1 text-sm">
+            <p className="text-xs text-muted-foreground">ลูกค้า</p>
           <p className="text-foreground">
             {getBeanOrderCustomerDisplayName(order)}
             {order.recipientPhone ? <span className="text-muted-foreground"> / {order.recipientPhone}</span> : null}
@@ -353,7 +357,8 @@ export default function BeanOrderDetailClient({
               : ''}
           </p>
         </div>
-      </section>
+        </div>
+      </BeanOrderSectionReveal>
 
       <div
         className={cn(
@@ -369,7 +374,12 @@ export default function BeanOrderDetailClient({
             cancelled && 'lg:w-full',
           )}
         >
-          <h2 className="mb-2 shrink-0 text-sm text-muted-foreground">รายการ</h2>
+          <h2 className="mb-2 flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
+            <BeanOrderIconBadge tone="coffee" size="sm">
+              <Package className="h-3.5 w-3.5" aria-hidden />
+            </BeanOrderIconBadge>
+            รายการ
+          </h2>
           <ul className="min-h-0 flex-1 divide-y divide-border text-sm">
             {order.lines.map((line) => (
               <li key={line.id} className="flex justify-between gap-4 py-2 first:pt-0 last:pb-0">
@@ -415,7 +425,12 @@ export default function BeanOrderDetailClient({
               )}
             >
               <div className={BEAN_ORDER_DETAIL_PAYMENT_COLUMN}>
-                <h2 className="text-sm text-muted-foreground">ชำระเงิน</h2>
+                <h2 className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <BeanOrderIconBadge tone="payment" size="sm">
+                    <Banknote className="h-3.5 w-3.5" aria-hidden />
+                  </BeanOrderIconBadge>
+                  ชำระเงิน
+                </h2>
                 {order.payment?.confirmedAt ? (
                   <p className="text-xs text-muted-foreground">
                     ยืนยันชำระแล้ว
@@ -463,7 +478,14 @@ export default function BeanOrderDetailClient({
                               : 'inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-border bg-muted px-5 text-sm text-muted-foreground opacity-70',
                           )}
                         >
-                          ยืนยันชำระแล้ว
+                          {busy ? (
+                            <span className="inline-flex items-center justify-center gap-1.5">
+                              <LoadingIcon size="sm" />
+                              กำลังยืนยัน...
+                            </span>
+                          ) : (
+                            'ยืนยันชำระแล้ว'
+                          )}
                         </button>
                       ) : null}
                       {canRevert ? (
@@ -491,7 +513,8 @@ export default function BeanOrderDetailClient({
                         variant="panel"
                       />
                     ) : (
-                      <div className="flex h-full min-h-[9rem] items-center justify-center rounded-xl border border-dashed border-border bg-muted/10 px-2 text-center text-xs text-muted-foreground">
+                      <div className="flex h-full min-h-[9rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/10 px-2 text-center text-xs text-muted-foreground">
+                        <ImageDown className="h-4 w-4 opacity-40" aria-hidden />
                         ยังไม่มีสลิป
                       </div>
                     )}
@@ -501,7 +524,12 @@ export default function BeanOrderDetailClient({
 
               {canEditShipping && !isReadOnly ? (
                 <div className={BEAN_ORDER_DETAIL_SHIPPING_COLUMN}>
-                  <h2 className="text-sm text-muted-foreground">จัดส่ง</h2>
+                  <h2 className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <BeanOrderIconBadge tone="shipping" size="sm">
+                      <Truck className="h-3.5 w-3.5" aria-hidden />
+                    </BeanOrderIconBadge>
+                    จัดส่ง
+                  </h2>
                   <div className="space-y-2">
                     <BeanOrderShippingFields
                       carrierCode={carrierCode}
@@ -531,7 +559,16 @@ export default function BeanOrderDetailClient({
                         onClick={() => void handleShip()}
                         className={BEAN_ORDER_ACTION_BTN}
                       >
-                        {order.fulfillmentStatus === 'shipped' ? 'อัปเดตการจัดส่ง' : 'บันทึกการจัดส่ง'}
+                        {busy ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <LoadingIcon size="sm" className="text-background" />
+                            กำลังบันทึก...
+                          </span>
+                        ) : order.fulfillmentStatus === 'shipped' ? (
+                          'อัปเดตการจัดส่ง'
+                        ) : (
+                          'บันทึกการจัดส่ง'
+                        )}
                       </button>
                     </div>
                   </div>
@@ -556,8 +593,13 @@ export default function BeanOrderDetailClient({
       ) : null}
 
       {order.shipment ? (
-        <section className={`${BEAN_ORDER_CARD} mb-4 p-4`}>
-          <h2 className="mb-2 text-xs text-muted-foreground">การจัดส่ง</h2>
+        <BeanOrderSectionReveal className={`${BEAN_ORDER_CARD} mb-4 p-4`} delay={0.1}>
+          <h2 className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <BeanOrderIconBadge tone="shipping" size="sm">
+              <Truck className="h-3.5 w-3.5" aria-hidden />
+            </BeanOrderIconBadge>
+            การจัดส่ง
+          </h2>
           <div className="space-y-1 text-sm">
             <p className="text-foreground">{getCarrierLabel(order.shipment.carrierCode)}</p>
             {order.shipment.trackingNumber ? (
@@ -569,11 +611,16 @@ export default function BeanOrderDetailClient({
               <p className="text-muted-foreground">{shipmentTrackingLabel}</p>
             ) : null}
           </div>
-        </section>
+        </BeanOrderSectionReveal>
       ) : null}
 
-      <section className={`${BEAN_ORDER_CARD} p-4`}>
-        <h2 className="mb-2 text-xs text-muted-foreground">ประวัติ</h2>
+      <BeanOrderSectionReveal className={`${BEAN_ORDER_CARD} p-4`} delay={0.12}>
+        <h2 className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <BeanOrderIconBadge tone="neutral" size="sm">
+            <History className="h-3.5 w-3.5" aria-hidden />
+          </BeanOrderIconBadge>
+          ประวัติ
+        </h2>
         <ul className="divide-y divide-border text-sm">
           {order.statusHistory.length === 0 ? (
             <li className="py-1 text-muted-foreground"> </li>
@@ -596,7 +643,7 @@ export default function BeanOrderDetailClient({
             ))
           )}
         </ul>
-      </section>
-    </div>
+      </BeanOrderSectionReveal>
+    </BeanOrderPageShell>
   );
 }

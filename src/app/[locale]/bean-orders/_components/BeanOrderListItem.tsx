@@ -12,7 +12,8 @@ import { getCarrierLabel } from '@/lib/bean-orders/carriers';
 import { formatBeanOrderShareText } from '@/lib/bean-orders/order-share-text';
 import { warmRouteNavigation } from '@/lib/warm-route-navigation';
 import { OrderListStatusGroup } from './OrderStatusBadge';
-import { BEAN_ORDER_BTN_ICON, BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
+import { BEAN_ORDER_LIST_CELL, BEAN_ORDER_LIST_ROW } from './bean-order-layout';
+import { BeanOrderIconButton, BeanOrderListRowMotion } from './bean-order-ui-primitives';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -20,6 +21,7 @@ type Props = {
   locale: string;
   embedded?: boolean;
   onOpenOrder?: (orderId: string) => void;
+  index?: number;
 };
 
 function formatBaht(value: number): string {
@@ -62,7 +64,7 @@ const DETAIL_LINK_PROPS = {
   'data-bb-nav': 'instant',
 } as const;
 
-export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder }: Props) {
+export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder, index = 0 }: Props) {
   const router = useRouter();
   const [copyToast, setCopyToast] = useState<CopyToast | null>(null);
   const customerLabel = formatCustomerLabel(order);
@@ -170,26 +172,24 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
     'min-w-0 flex-1 touch-manipulation rounded-xl py-3 pr-3 bb-transition hover:bg-muted/25 active:bg-muted/35 lg:contents lg:p-0';
 
   return (
-    <li
+    <BeanOrderListRowMotion
+      index={index}
       className={cn(
         'bb-row-interactive relative flex items-start gap-1 lg:grid lg:grid-cols-subgrid lg:col-span-full lg:items-center lg:gap-x-0',
         BEAN_ORDER_LIST_ROW,
       )}
     >
-      <button
-        type="button"
+      <BeanOrderIconButton
         onClick={(event) => void handleCopy(event)}
+        label="คัดลอกรายละเอียดออเดอร์"
         className={cn(
           'mt-3 ml-1 h-11 w-11 shrink-0 text-muted-foreground lg:col-start-1 lg:mt-0 lg:ml-0 lg:h-9 lg:w-9',
-          BEAN_ORDER_BTN_ICON,
           BEAN_ORDER_LIST_CELL,
           'lg:flex lg:items-center lg:justify-center lg:!px-0',
         )}
-        aria-label="คัดลอกรายละเอียดออเดอร์"
-        title="คัดลอกรายละเอียด"
       >
         <Copy className="h-4 w-4" aria-hidden />
-      </button>
+      </BeanOrderIconButton>
 
       {embedded && onOpenOrder ? (
         <button
@@ -231,6 +231,6 @@ export function BeanOrderListItem({ order, locale, embedded = false, onOpenOrder
           onDismiss={() => setCopyToast(null)}
         />
       ) : null}
-    </li>
+    </BeanOrderListRowMotion>
   );
 }

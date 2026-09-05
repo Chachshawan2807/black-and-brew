@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import { ImageDown } from '@/lib/icons';
 import {
   BEAN_ORDER_ACTION_BTN_CONFIRM,
   BEAN_ORDER_ACTION_BTN_OUTLINE,
@@ -141,7 +142,8 @@ export function BeanOrderPaymentFields({
               variant="panel"
             />
           ) : (
-            <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-muted/10 px-4 text-sm text-muted-foreground">
+            <div className="flex h-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/10 px-4 text-sm text-muted-foreground">
+              <ImageDown className="h-5 w-5 opacity-40" aria-hidden />
               ยังไม่มีสลิป
             </div>
           )}
