@@ -1,6 +1,6 @@
 /** Central shift-type definitions synced with schedule UI and shift-colors lookups */
 
-import { BB_PASTEL_BORDER, BB_PASTEL_BORDER_COLOR, BB_PASTEL_SURFACE } from '@/lib/ui-outlined-tokens';
+import { BB_PASTEL_SURFACE } from '@/lib/ui-outlined-tokens';
 
 export const SHIFT_TYPES_STORAGE_KEY = 'blackandbrew-shift-types';
 export const SHIFT_TYPES_UPDATED_EVENT = 'bb-shift-types-updated';
@@ -119,10 +119,10 @@ const DEFAULT_BY_ID = new Map(DEFAULT_SHIFT_TYPES.map((t) => [t.id, t]));
 export function buildShiftDisplay(entry: ShiftTypeEntry): ShiftTypeDisplay {
   return {
     ...entry,
-    className: `${BB_PASTEL_SURFACE} border ${BB_PASTEL_BORDER}`,
+    className: `${BB_PASTEL_SURFACE} border text-[#000000]`,
     style: {
       backgroundColor: entry.bgColor,
-      borderColor: BB_PASTEL_BORDER_COLOR,
+      borderColor: entry.borderColor,
       color: '#000000',
     },
   };

@@ -4,7 +4,6 @@ import {
   BB_ICON_BADGE_FILL,
   BB_ICON_BADGE_OUTLINE,
   BB_ICON_FRAME,
-  BB_PASTEL_BORDER,
   bbPastelClass,
 } from '@/lib/ui-outlined-tokens';
 
@@ -12,8 +11,8 @@ describe('ui-outlined icon badge tokens', () => {
   it('uses black stroke glyphs and black borders on icon frames', () => {
     expect(BB_ICON_BADGE_OUTLINE).toContain('border-black');
     expect(BB_ICON_BADGE_OUTLINE).toContain('text-black');
-    expect(BB_ICON_FRAME).toContain(BB_PASTEL_BORDER);
-    expect(BB_ICON_BADGE_BASE).toContain(BB_PASTEL_BORDER);
+    expect(BB_ICON_FRAME).toContain(BB_ICON_BADGE_OUTLINE);
+    expect(BB_ICON_BADGE_BASE).toContain(BB_ICON_BADGE_OUTLINE);
   });
 
   it('keeps pastel fills separate from outline styling', () => {
@@ -23,10 +22,7 @@ describe('ui-outlined icon badge tokens', () => {
     expect(BB_ICON_BADGE_FILL.shipping).not.toContain('text-[#1a5276]');
   });
 
-  it('composes pastel buttons with black borders via bbPastelClass', () => {
-    const buttonClass = bbPastelClass('bg-[#d4edda]');
-    expect(buttonClass).toContain('bg-[#d4edda]');
-    expect(buttonClass).toContain('border-black');
-    expect(buttonClass).toContain('text-black');
+  it('bbPastelClass does not force black borders on shift surfaces', () => {
+    expect(bbPastelClass('bg-[#d4edda]')).not.toContain('border-black');
   });
 });

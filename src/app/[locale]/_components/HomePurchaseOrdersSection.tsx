@@ -185,7 +185,7 @@ export default function HomePurchaseOrdersSection({
           <>
             <HomeSectionBadge
               tone={itemsToOrder.length > 0 ? 'alert' : 'neutral'}
-              icon={<Package className="h-3.5 w-3.5 opacity-70" aria-hidden />}
+              icon={<Package className="h-3.5 w-3.5" aria-hidden />}
             >
               {itemsToOrder.length} รายการ
             </HomeSectionBadge>

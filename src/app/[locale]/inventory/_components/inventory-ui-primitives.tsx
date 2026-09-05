@@ -29,7 +29,6 @@ import {
   BB_BTN_OUTLINE_PRIMARY,
   BB_ICON_BADGE_BASE,
   BB_ICON_BADGE_FILL,
-  BB_PASTEL_BORDER,
   BB_RADIUS_SOFT,
 } from '@/lib/ui-outlined-tokens';
 
@@ -54,7 +53,7 @@ export const INVENTORY_SECONDARY_ACTION =
   `flex w-full items-center justify-center gap-1.5 h-11 ${BB_RADIUS_SOFT} text-base md:text-sm font-normal antialiased border border-border/80 bg-card hover:bg-muted/40 bb-transition duration-200 hover:bb-shadow-hover-md active:scale-[0.98] motion-reduce:active:scale-100`;
 
 export const INVENTORY_PASTEL_ACTION =
-  `bb-pastel-surface shrink-0 inline-flex h-[3.25rem] sm:h-auto sm:min-h-[3.25rem] w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border ${BB_PASTEL_BORDER} px-4 text-sm font-normal text-black bb-shadow-sm bb-transition duration-200 hover:brightness-[0.98] active:scale-[0.99] motion-reduce:active:scale-100`;
+  'bb-pastel-surface shrink-0 inline-flex h-[3.25rem] sm:h-auto sm:min-h-[3.25rem] w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-normal text-black bb-shadow-sm bb-transition duration-200 hover:brightness-[0.98] active:scale-[0.99] motion-reduce:active:scale-100';
 
 export const INVENTORY_FORM_LABEL =
   'text-[12px] font-normal text-muted-foreground ml-1 uppercase tracking-wider';

@@ -119,7 +119,7 @@ export default function HomeMaintenanceDueSection({
           <>
             <HomeSectionBadge
               tone={tasks.length > 0 ? 'warning' : 'neutral'}
-              icon={<Wrench className="h-3.5 w-3.5 opacity-70" aria-hidden />}
+              icon={<Wrench className="h-3.5 w-3.5" aria-hidden />}
             >
               {tasks.length} รายการ
             </HomeSectionBadge>

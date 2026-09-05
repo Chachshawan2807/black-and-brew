@@ -35,23 +35,9 @@ export const BB_BTN_ICON =
 
 export const BB_BTN_ICON_ACTIVE = 'text-foreground bg-muted/35 border-border';
 
-/** Black outline on pastel surfaces (buttons, badges, chips, stat pills) */
-export const BB_PASTEL_BORDER = 'border-black/75 dark:border-black/80';
-
-/** Inline style border for pastel surfaces (schedule cells, live status, etc.) */
-export const BB_PASTEL_BORDER_COLOR = 'rgba(0, 0, 0, 0.75)';
-
-/** Pastel surface text + icon stroke baseline */
-export const BB_PASTEL_SURFACE = 'bb-pastel-surface text-black';
-
-/** Compose pastel background + black outline (keeps fill color, unifies border) */
-export function bbPastelClass(backgroundClass: string): string {
-  return `${BB_PASTEL_SURFACE} ${backgroundClass} border ${BB_PASTEL_BORDER}`;
-}
-
 /** Black outline + stroke glyph for icon badges and nested icon frames */
 export const BB_ICON_BADGE_OUTLINE =
-  `border ${BB_PASTEL_BORDER} text-black [&_svg]:text-black dark:text-black dark:[&_svg]:text-black`;
+  'border-black/75 text-black [&_svg]:text-black dark:border-black/80 dark:text-black dark:[&_svg]:text-black';
 
 /** Icon frame nested inside labeled buttons (toolbar pattern) */
 export const BB_ICON_FRAME =
@@ -107,10 +93,18 @@ export const BB_CHIP_SELECTED =
 export const BB_CHIP_IDLE =
   'border-border/80 bg-background/80 text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:border-border';
 
-/** FAB outlined shell (pastel fill + black border applied separately) */
+/** FAB outlined shell (pastel fill + border applied separately) */
 export const BB_FAB_SHELL =
-  `flex items-center justify-center rounded-2xl border-2 ${BB_PASTEL_BORDER} bb-shadow-lg bb-transition`;
+  'flex items-center justify-center rounded-2xl border-2 border-foreground/80 bb-shadow-lg bb-transition';
 
 /** Ghost text action (minimal border on hover) */
 export const BB_BTN_GHOST =
   `inline-flex items-center gap-1.5 ${BB_RADIUS_SOFT} border border-transparent px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/35 hover:border-border/60 ${BB_BTN_MOTION}`;
+
+/** Pastel surface: keeps text/icons black in both themes (pair with hex bg fills) */
+export const BB_PASTEL_SURFACE = 'bb-pastel-surface';
+
+/** Combine pastel surface + background fill (shift cards use per-tone borders via inline style) */
+export function bbPastelClass(bgClass: string): string {
+  return `${BB_PASTEL_SURFACE} ${bgClass}`;
+}
