@@ -5,6 +5,8 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase';
 import { ClipboardList, ICON_STROKE, Undo2, Redo2, Trash2, X, Package } from '@/lib/icons';
 import {
+  INVENTORY_BTN_PRIMARY,
+  INVENTORY_BTN_SECONDARY,
   INVENTORY_PASTEL_ACTION,
   InventoryEmptyState,
   InventoryIconButton,
@@ -1866,7 +1868,7 @@ export default function InventoryClient({
                 type="button"
                 onClick={() => setIsQuickActionBarOpen(true)}
                 aria-expanded={false}
-                className="group w-full rounded-3xl border border-border bg-card px-4 py-3 text-sm text-foreground bb-shadow-sm bb-transition duration-200 hover:bg-muted/50 active:scale-[0.99] motion-reduce:active:scale-100 inline-flex items-center justify-center gap-2"
+                className="group w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground bb-shadow-sm bb-transition duration-200 hover:bg-muted/50 active:scale-[0.99] motion-reduce:active:scale-100 inline-flex items-center justify-center gap-2"
               >
                 <Package className="w-4 h-4 text-muted-foreground bb-transition group-hover:text-foreground" strokeWidth={ICON_STROKE} aria-hidden />
                 เปิด Quick Action
@@ -2146,10 +2148,10 @@ export default function InventoryClient({
                   </div>
                 </div>
                 <div className="mt-8 flex gap-3">
-                  <button type="button" onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="flex-1 py-3 px-4 bg-muted hover:bg-muted/80 border border-border rounded-3xl text-[14px] font-normal text-foreground transition-colors">
+                  <button type="button" onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 py-3')}>
                     ยกเลิก
                   </button>
-                  <button type="submit" className="flex-1 py-3 px-4 bg-foreground hover:opacity-90 rounded-3xl text-[14px] font-normal text-background transition-colors bb-shadow-sm">
+                  <button type="submit" className={cn(INVENTORY_BTN_PRIMARY, 'flex-1 py-3 bb-shadow-sm')}>
                     บันทึกข้อมูล
                   </button>
                 </div>

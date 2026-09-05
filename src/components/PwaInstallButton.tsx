@@ -11,6 +11,8 @@ import {
   shouldShowPreparingState,
 } from '@/lib/pwa-install-flow';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
+import { cn } from '@/lib/utils';
+import { BB_BTN_CLOSE, BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
 
 const COPY = {
   th: {
@@ -103,7 +105,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
           type="button"
           onClick={() => void handleInstall()}
           disabled={showPreparing}
-          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card/80 px-3.5 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm transition-colors hover:border-foreground/20 hover:text-foreground disabled:opacity-70"
+          className="pointer-events-auto inline-flex items-center gap-1.5 rounded-2xl border border-border/80 bg-card/80 px-3.5 py-2 text-xs font-normal text-muted-foreground backdrop-blur-sm transition-colors hover:border-foreground/20 hover:text-foreground disabled:opacity-70"
           aria-busy={showPreparing}
           aria-label={showPreparing ? t.preparing : t.install}
         >
@@ -131,7 +133,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
             <button
               type="button"
               onClick={closeIosGuide}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              className={cn(BB_BTN_CLOSE, 'inline-flex h-8 w-8 shrink-0')}
               aria-label={t.close}
             >
               <CloseIcon size="sm" strokeWidth={1.5} />
@@ -177,7 +179,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
           <button
             type="button"
             onClick={closeIosGuide}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-foreground px-4 py-2.5 text-sm font-normal text-background"
+            className={cn(BB_BTN_OUTLINE_PRIMARY, 'w-full py-2.5 text-sm font-normal')}
           >
             {t.close}
           </button>

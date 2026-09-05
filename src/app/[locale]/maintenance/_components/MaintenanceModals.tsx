@@ -13,6 +13,7 @@ import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
+import { BB_BTN_OUTLINE_DANGER } from '@/lib/ui-outlined-tokens';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
@@ -391,7 +392,7 @@ export default function MaintenanceModals({
               <button
                 onClick={handleDelete}
                 disabled={loading || isReadOnly}
-                className="w-full h-11 md:h-auto md:py-4 bg-red-500 text-white font-normal rounded-3xl hover:bg-red-600 bb-transition bb-shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-sm uppercase tracking-widest"
+                className={cn(BB_BTN_OUTLINE_DANGER, 'w-full md:py-4 text-base md:text-sm uppercase tracking-widest')}
               >
                 {loading ? 'กำลังดำเนินการ...' : 'ยืนยันการลบ'}
               </button>

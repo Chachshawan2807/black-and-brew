@@ -2,7 +2,7 @@ import { Children, isValidElement, type ReactNode } from 'react';
 
 /** Native select trigger aligned with ClickableDatePicker pill surface. */
 export const BB_SELECT_TRIGGER_CLASS =
-  'relative h-11 w-full appearance-none rounded-3xl border border-border bg-card px-4 pr-10 text-sm font-normal text-foreground bb-shadow-sm transition-all duration-200 hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:cursor-not-allowed disabled:opacity-60';
+  'relative h-11 w-full appearance-none rounded-2xl border border-border bg-card px-4 pr-10 text-sm font-normal text-foreground bb-shadow-sm transition-all duration-200 hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:cursor-not-allowed disabled:opacity-60';
 
 /** Open listbox panel theme tokens so dark mode stays readable. */
 export const BB_SELECT_LIST_BASE_CLASS =

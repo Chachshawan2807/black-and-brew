@@ -10,6 +10,7 @@ import {
 import { collectClientDeviceInfo } from '@/lib/client-device-info';
 import { formatLoginDeviceLabel } from '@/lib/format-login-device';
 import { cn } from '@/lib/utils';
+import { BB_BTN_CLOSE, BB_BTN_OUTLINE_DANGER, BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
 
 const PIN_LENGTH = 6;
 
@@ -234,9 +235,9 @@ export default function ActiveRemoteSessionsPanel({
                   onClick={() => void handleRevokeOne(session.sessionFingerprint)}
                   disabled={busyFp === session.sessionFingerprint || pin.length < PIN_LENGTH}
                   className={cn(
-                    'shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] bb-transition',
-                    'bg-red-500 text-white hover:bg-red-600',
-                    'disabled:opacity-40 disabled:cursor-not-allowed'
+                    BB_BTN_OUTLINE_DANGER,
+                    'shrink-0 px-2.5 py-1.5 text-[11px]',
+                    'disabled:opacity-40 disabled:cursor-not-allowed',
                   )}
                 >
                   {busyFp === session.sessionFingerprint

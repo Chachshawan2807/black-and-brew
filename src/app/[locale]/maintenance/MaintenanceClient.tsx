@@ -317,7 +317,7 @@ export default function MaintenanceClient({
             whileTap={isReadOnly ? undefined : BUTTON_TAP}
             onClick={() => { resetForm(); setIsModalOpen(true); }}
             disabled={isReadOnly}
-            className="group flex items-center gap-2.5 bg-foreground hover:opacity-90 text-background px-7 py-3.5 rounded-3xl bb-transition bb-shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            className="group flex items-center gap-2.5 border-2 border-foreground/85 bg-card text-foreground px-7 py-3.5 rounded-2xl bb-transition bb-shadow-sm hover:bg-muted/35 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Plus className="w-4.5 h-4.5" />
             <span className="font-normal text-sm tracking-wide">เพิ่มบันทึกใหม่</span>

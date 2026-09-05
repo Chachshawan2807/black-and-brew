@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CloseIcon } from '@/components/ui/close-icon';
+import { cn } from '@/lib/utils';
+import { BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
 
 type RosterExportProfile = {
   id: string;
@@ -170,7 +172,7 @@ export function RosterExportDialog({
             type="button"
             onClick={() => onExportSelected([...selectedIds])}
             disabled={selectedIds.size === 0}
-            className="rounded-2xl bg-foreground px-4 py-2.5 text-sm text-background transition-opacity hover:opacity-90 disabled:opacity-40"
+            className={cn(BB_BTN_OUTLINE_PRIMARY, 'disabled:opacity-40')}
           >
             ดาวน์โหลดที่เลือก
           </button>

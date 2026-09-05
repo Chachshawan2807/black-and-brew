@@ -4,6 +4,8 @@ import { LoadingIcon } from '@/components/ui/loading-icon';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { CloseIcon } from '@/components/ui/close-icon';
+import { cn } from '@/lib/utils';
+import { BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
 import { Bell, X } from '@/lib/icons';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import { getNotificationPermissionState } from '@/lib/pwa-notification-bridge';
@@ -114,7 +116,7 @@ export function PushSubscriptionManager() {
               type="button"
               disabled={registering}
               onClick={() => void registerFromBanner()}
-              className="mt-2 inline-flex items-center gap-2 rounded-xl bg-foreground px-3 py-1.5 text-[12px] text-background disabled:opacity-60"
+              className={cn(BB_BTN_OUTLINE_PRIMARY, 'mt-2 text-[12px] px-3 py-1.5 disabled:opacity-60')}
             >
               {registering ? <LoadingIcon size={14} className="animate-spin" /> : null}
               {isTh ? 'ลงทะเบียนการแจ้งเตือน' : 'Register notifications'}

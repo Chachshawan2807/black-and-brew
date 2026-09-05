@@ -475,7 +475,7 @@ export default function BeanOrderDetailClient({
                             'h-auto min-h-11 w-full px-3 py-2 text-center text-xs leading-snug sm:text-sm',
                             confirmEnabled
                               ? BEAN_ORDER_ACTION_BTN_CONFIRM
-                              : 'inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-border bg-muted px-5 text-sm text-muted-foreground opacity-70',
+                              : 'inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-2xl border border-border bg-muted px-5 text-sm text-muted-foreground opacity-70',
                           )}
                         >
                           {busy ? (

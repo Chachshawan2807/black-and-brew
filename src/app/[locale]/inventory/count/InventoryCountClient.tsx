@@ -621,7 +621,7 @@ const CountItemRow = memo(function CountItemRow({
           className={cn(
             'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 bb-transition duration-200',
             isActive
-              ? 'bg-black text-white'
+              ? 'border border-foreground/70 bg-card text-foreground ring-1 ring-foreground/10'
               : 'bg-white/60 text-black/55'
           )}
         >
@@ -778,7 +778,7 @@ const AdjustItemRow = memo(function AdjustItemRow({
           className={cn(
             'text-[12px] font-normal tabular-nums shrink-0 rounded-lg px-2 py-0.5 bb-transition duration-200',
             isActive
-              ? 'bg-black text-white'
+              ? 'border border-foreground/70 bg-card text-foreground ring-1 ring-foreground/10'
               : 'bg-white/60 text-black/55',
           )}
         >

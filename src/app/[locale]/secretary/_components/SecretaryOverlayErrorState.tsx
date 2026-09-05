@@ -20,7 +20,7 @@ export function SecretaryOverlayErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-1.5 text-[13px] text-foreground hover:bg-muted/40"
+          className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-1.5 text-[13px] text-foreground hover:bg-muted/40"
         >
           <RefreshCw size={14} strokeWidth={1.75} aria-hidden />
           {retryLabel}

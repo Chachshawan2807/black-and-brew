@@ -510,7 +510,7 @@ export function InventoryHistoryModal({
               type="button"
               onClick={onLoadMore}
               disabled={isHistoryLoading}
-              className="min-h-11 rounded-full border border-border bg-background px-4 py-2 text-[13px] font-normal text-foreground bb-transition hover:border-foreground/30 hover:bg-muted disabled:opacity-50"
+              className="min-h-11 rounded-2xl border border-border bg-background px-4 py-2 text-[13px] font-normal text-foreground bb-transition hover:border-foreground/30 hover:bg-muted disabled:opacity-50"
             >
               {isHistoryLoading ? (
                 <span className="inline-flex items-center gap-2">

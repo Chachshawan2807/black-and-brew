@@ -1896,7 +1896,7 @@ export default function ScheduleClient({
                 <button
                   onClick={handleClear}
                   disabled={isReadOnly}
-                  className="h-11 w-full cursor-pointer rounded-xl border border-red-200/80 bg-red-50/80 text-[13px] font-normal text-red-600 bb-transition duration-200 hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] md:h-auto md:py-2"
+                  className="h-11 w-full cursor-pointer rounded-2xl border border-red-500/80 bg-card text-[13px] font-normal text-red-600 bb-transition duration-200 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98] md:h-auto md:py-2"
                 >
                   ล้างกะ
                 </button>

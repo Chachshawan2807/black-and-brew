@@ -279,7 +279,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
             </div>
           </div>
           <div className="mt-8 flex gap-3">
-            <button type="button" onClick={onClose} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 rounded-3xl py-3')}>
+            <button type="button" onClick={onClose} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 py-3')}>
               ยกเลิก
             </button>
             <button

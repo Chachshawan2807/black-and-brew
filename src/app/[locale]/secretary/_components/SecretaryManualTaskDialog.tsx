@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from 'react';
 import { Trash2 } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
 import SecretaryTaskPanelShell from './SecretaryTaskPanelShell';
 
 type SecretaryManualTaskDialogProps = {
@@ -24,8 +25,7 @@ const FIELD_CLASS =
 const BUTTON_SECONDARY_CLASS =
   'flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-[13px] text-foreground transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 disabled:opacity-60';
 
-const BUTTON_PRIMARY_CLASS =
-  'flex-1 rounded-xl bg-foreground px-3 py-2.5 text-[13px] text-background transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20 focus-visible:ring-offset-1 focus-visible:ring-offset-card disabled:opacity-60';
+const BUTTON_PRIMARY_CLASS = cn(BB_BTN_OUTLINE_PRIMARY, 'flex-1 py-2.5 text-[13px]');
 
 export default function SecretaryManualTaskDialog({
   open,

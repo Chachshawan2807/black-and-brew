@@ -109,7 +109,7 @@ export function BeanOrderPaymentFields({
                         BEAN_ORDER_ACTION_BTN_CONFIRM,
                         confirmPaymentOnSave && 'ring-2 ring-foreground/20',
                       )
-                    : 'inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-border bg-muted px-5 text-sm text-muted-foreground opacity-70',
+                    : 'inline-flex shrink-0 cursor-not-allowed items-center justify-center rounded-2xl border border-border bg-muted px-5 text-sm text-muted-foreground opacity-70',
                 )}
               >
                 {confirmPaymentOnSave && confirmEnabled

@@ -1233,7 +1233,7 @@ export function InventoryQuickActionBar({
                 }
                 setQuickSearch(fi.name);
               }}
-              className="flex min-h-[44px] items-center justify-center whitespace-nowrap rounded-full border border-border bg-muted px-3 py-1.5 text-base text-foreground/70 bb-transition hover:bg-muted/80 md:min-h-0 md:text-[13px]"
+              className="flex min-h-[44px] items-center justify-center whitespace-nowrap rounded-2xl border border-border bg-muted px-3 py-1.5 text-base text-foreground/70 bb-transition hover:bg-muted/80 md:min-h-0 md:text-[13px]"
             >
               {fi.name}
             </button>
