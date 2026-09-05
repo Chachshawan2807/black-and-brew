@@ -25,7 +25,7 @@ import {
   withReducedMotion,
 } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
-import { BB_BTN_CLOSE, BB_ICON_BADGE_BASE, BB_RADIUS_SOFT } from '@/lib/ui-outlined-tokens';
+import { BB_BTN_CLOSE, BB_ICON_BADGE_BASE, BB_ICON_BADGE_FILL, BB_RADIUS_SOFT } from '@/lib/ui-outlined-tokens';
 import { BEAN_ORDER_BTN_ICON } from './bean-order-layout';
 
 export const BEAN_ORDER_MOTION_SAFE =
@@ -48,12 +48,12 @@ export type BeanOrderIconTone =
   | 'warn';
 
 const BEAN_ORDER_ICON_TONE_CLASS: Record<BeanOrderIconTone, string> = {
-  neutral: 'border-border/70 bg-muted/25 text-foreground/70',
-  coffee: 'border-[#d4c4a8]/60 bg-[#f5efe6]/80 text-foreground/80 dark:bg-muted/30 dark:text-foreground/70',
-  payment: 'border-emerald-500/20 bg-emerald-50/70 text-emerald-700 dark:bg-emerald-950/35 dark:text-emerald-300',
-  shipping: 'border-[#b8daff]/60 bg-[#e8f4ff]/80 text-[#1a5276] dark:bg-blue-950/30 dark:text-blue-300',
-  success: 'border-emerald-500/20 bg-emerald-50/70 text-emerald-700 dark:bg-emerald-950/35 dark:text-emerald-300',
-  warn: 'border-amber-500/25 bg-amber-50/70 text-amber-700 dark:bg-amber-950/35 dark:text-amber-300',
+  neutral: BB_ICON_BADGE_FILL.neutral,
+  coffee: BB_ICON_BADGE_FILL.coffee,
+  payment: BB_ICON_BADGE_FILL.payment,
+  shipping: BB_ICON_BADGE_FILL.shipping,
+  success: BB_ICON_BADGE_FILL.success,
+  warn: BB_ICON_BADGE_FILL.warn,
 };
 
 export function useBeanOrderMotion() {

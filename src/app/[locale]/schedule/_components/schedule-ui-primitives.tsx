@@ -13,6 +13,7 @@ import {
   BB_BTN_OUTLINE,
   BB_BTN_OUTLINE_PRIMARY,
   BB_ICON_BADGE_BASE,
+  BB_ICON_BADGE_FILL,
   BB_ICON_FRAME,
 } from '@/lib/ui-outlined-tokens';
 
@@ -72,12 +73,12 @@ export type ScheduleIconTone =
   | 'sync';
 
 const SCHEDULE_ICON_TONE_CLASS: Record<ScheduleIconTone, string> = {
-  neutral: 'border-border/70 bg-muted/25 text-foreground',
-  accent: 'border-emerald-500/20 bg-emerald-50/60 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300',
-  calendar: 'bb-pastel-surface border-[#e8d88a]/80 bg-[#ffda66] text-[#000000]',
-  settings: 'border-border/70 bg-muted/35 text-foreground',
-  export: 'border-border/70 bg-muted/30 text-foreground',
-  sync: 'border-border/70 bg-muted/30 text-foreground',
+  neutral: BB_ICON_BADGE_FILL.neutral,
+  accent: BB_ICON_BADGE_FILL.accent,
+  calendar: BB_ICON_BADGE_FILL.calendar,
+  settings: BB_ICON_BADGE_FILL.mutedPanel,
+  export: BB_ICON_BADGE_FILL.mutedStrong,
+  sync: BB_ICON_BADGE_FILL.mutedStrong,
 };
 
 type ScheduleToolbarButtonProps = {

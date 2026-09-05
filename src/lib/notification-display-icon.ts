@@ -1,5 +1,5 @@
 import type { InventoryNotification } from '@/lib/notification-types';
-import { INVENTORY_QUICK_ACTION_COLORS, PASTEL_SURFACE } from '@/lib/shift-colors';
+import { BB_ICON_BADGE_FILL } from '@/lib/ui-outlined-tokens';
 
 export type StockOperation = 'IN' | 'OUT' | 'ADJUST';
 
@@ -43,18 +43,18 @@ export type NotificationDisplayIconKind =
   | 'bulk-update'
   | 'update';
 
-const SCHEDULE_SURFACE = `${PASTEL_SURFACE} bg-[#e6f0ff] text-black border border-[#c2d6ff]`;
+const SCHEDULE_SURFACE = BB_ICON_BADGE_FILL.schedule;
 /** Deeper orange pastel than 8:00 / stock-adjust (#fff3cd) for at-a-glance distinction. */
-const INSIGHT_SURFACE = `${PASTEL_SURFACE} bg-[#ffe0a8] text-black border border-[#f0b866]`;
-const SECURITY_SURFACE = `${PASTEL_SURFACE} bg-[#ffe4e6] text-black border border-[#fecdd3]`;
-const BEAN_CREATED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.order} text-black`;
-const BEAN_DELIVERED_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`;
-const BEAN_PAYMENT_SURFACE = `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`;
+const INSIGHT_SURFACE = BB_ICON_BADGE_FILL.insight;
+const SECURITY_SURFACE = BB_ICON_BADGE_FILL.security;
+const BEAN_CREATED_SURFACE = BB_ICON_BADGE_FILL.order;
+const BEAN_DELIVERED_SURFACE = BB_ICON_BADGE_FILL.stockIn;
+const BEAN_PAYMENT_SURFACE = BB_ICON_BADGE_FILL.stockIn;
 
 const STOCK_SURFACES: Record<StockOperation, string> = {
-  IN: `${INVENTORY_QUICK_ACTION_COLORS.in} text-black`,
-  OUT: `${INVENTORY_QUICK_ACTION_COLORS.out} text-black`,
-  ADJUST: `${INVENTORY_QUICK_ACTION_COLORS.adjust} text-black`,
+  IN: BB_ICON_BADGE_FILL.stockIn,
+  OUT: BB_ICON_BADGE_FILL.stockOut,
+  ADJUST: BB_ICON_BADGE_FILL.stockAdjust,
 };
 
 export function detectStockOperationFromMetadata(
@@ -187,13 +187,13 @@ export function resolveNotificationDisplayIcon(item: InventoryNotification): {
 
   switch (item.action) {
     case 'CREATE':
-      return { kind: 'create', containerClass: 'bg-muted text-foreground/70' };
+      return { kind: 'create', containerClass: 'bg-muted' };
     case 'DELETE':
     case 'BULK_DELETE':
-      return { kind: 'delete', containerClass: 'bg-muted text-foreground/70' };
+      return { kind: 'delete', containerClass: 'bg-muted' };
     case 'BULK_UPDATE':
-      return { kind: 'bulk-update', containerClass: 'bg-muted text-foreground/70' };
+      return { kind: 'bulk-update', containerClass: 'bg-muted' };
     default:
-      return { kind: 'update', containerClass: 'bg-muted text-foreground/70' };
+      return { kind: 'update', containerClass: 'bg-muted' };
   }
 }

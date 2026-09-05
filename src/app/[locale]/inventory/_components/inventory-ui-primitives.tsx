@@ -28,6 +28,7 @@ import {
   BB_BTN_OUTLINE_DANGER,
   BB_BTN_OUTLINE_PRIMARY,
   BB_ICON_BADGE_BASE,
+  BB_ICON_BADGE_FILL,
   BB_RADIUS_SOFT,
 } from '@/lib/ui-outlined-tokens';
 
@@ -64,10 +65,10 @@ export const INVENTORY_BTN_SECONDARY = BB_BTN_OUTLINE;
 export type InventoryIconTone = 'neutral' | 'accent' | 'warn' | 'inventory';
 
 const INVENTORY_ICON_TONE_CLASS: Record<InventoryIconTone, string> = {
-  neutral: 'border-border/70 bg-muted/25 text-foreground/70',
-  accent: 'border-emerald-500/20 bg-emerald-50/70 text-emerald-700 dark:bg-emerald-950/35 dark:text-emerald-300',
-  warn: 'border-amber-500/25 bg-amber-50/70 text-amber-700 dark:bg-amber-950/35 dark:text-amber-300',
-  inventory: 'border-border/60 bg-muted/20 text-foreground/45',
+  neutral: BB_ICON_BADGE_FILL.neutral,
+  accent: BB_ICON_BADGE_FILL.accent,
+  warn: BB_ICON_BADGE_FILL.warn,
+  inventory: BB_ICON_BADGE_FILL.muted,
 };
 
 export type InventorySavingState = 'idle' | 'saving' | 'synced' | 'queued';
@@ -370,7 +371,7 @@ export function DeleteConfirmDialog({ onCancel, onConfirm }: DeleteConfirmDialog
         aria-describedby="inventory-delete-desc"
       >
         <InventoryModalCloseButton onClose={onCancel} label="ปิด" />
-        <InventoryIconBadge tone="warn" size="lg" className="mx-auto mb-4 mt-2 border-red-200/80 bg-red-50/80 text-red-600 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+        <InventoryIconBadge tone="warn" size="lg" className="mx-auto mb-4 mt-2">
           <Trash2 className="w-5 h-5" strokeWidth={ICON_STROKE} />
         </InventoryIconBadge>
         <h3 id="inventory-delete-title" className="text-lg font-normal text-foreground mb-2">

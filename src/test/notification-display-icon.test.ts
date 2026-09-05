@@ -176,6 +176,6 @@ describe('notification display icons', () => {
       path.join(root, 'lib/notification-display-icon.ts'),
       'utf-8',
     );
-    expect(displayIcon).toContain('INVENTORY_QUICK_ACTION_COLORS');
+    expect(displayIcon).toContain('BB_ICON_BADGE_FILL');
   });
 });

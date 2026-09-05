@@ -35,13 +35,39 @@ export const BB_BTN_ICON =
 
 export const BB_BTN_ICON_ACTIVE = 'text-foreground bg-muted/35 border-border';
 
+/** Black outline + stroke glyph for icon badges and nested icon frames */
+export const BB_ICON_BADGE_OUTLINE =
+  'border-black/75 text-black [&_svg]:text-black dark:border-black/80 dark:text-black dark:[&_svg]:text-black';
+
 /** Icon frame nested inside labeled buttons (toolbar pattern) */
 export const BB_ICON_FRAME =
-  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted/25 text-foreground bb-transition group-hover:bg-muted/40 group-hover:border-border/80 group-disabled:opacity-60';
+  `inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border bg-muted/25 bb-transition group-hover:bg-muted/40 group-disabled:opacity-60 ${BB_ICON_BADGE_OUTLINE}`;
 
 /** Modal / panel header icon badge */
 export const BB_ICON_BADGE_BASE =
-  `inline-flex shrink-0 items-center justify-center border ${BB_RADIUS_SOFT} bb-transition duration-200`;
+  `inline-flex shrink-0 items-center justify-center border ${BB_RADIUS_SOFT} bb-transition duration-200 ${BB_ICON_BADGE_OUTLINE}`;
+
+/** Pastel fills for icon badges (pair with BB_ICON_BADGE_BASE; border + glyph come from base) */
+export const BB_ICON_BADGE_FILL = {
+  neutral: 'bg-muted/25',
+  muted: 'bg-muted/20',
+  mutedStrong: 'bg-muted/30',
+  mutedPanel: 'bg-muted/35',
+  coffee: 'bg-[#f5efe6]/80 dark:bg-muted/30',
+  payment: 'bg-emerald-50/70 dark:bg-emerald-950/35',
+  shipping: 'bg-[#e8f4ff]/80 dark:bg-blue-950/30',
+  success: 'bg-emerald-50/70 dark:bg-emerald-950/35',
+  warn: 'bg-amber-50/70 dark:bg-amber-950/35',
+  accent: 'bg-emerald-50/60 dark:bg-emerald-950/30',
+  calendar: 'bb-pastel-surface bg-[#ffda66]',
+  schedule: 'bb-pastel-surface bg-[#e6f0ff]',
+  insight: 'bb-pastel-surface bg-[#ffe0a8]',
+  security: 'bb-pastel-surface bg-[#ffe4e6]',
+  stockIn: 'bb-pastel-surface bg-[#d4edda]',
+  stockOut: 'bb-pastel-surface bg-[#f8d7da]',
+  stockAdjust: 'bb-pastel-surface bg-[#fff3cd]',
+  order: 'bb-pastel-surface bg-[#d1ecf1]',
+} as const;
 
 /** Modal close control */
 export const BB_BTN_CLOSE =
