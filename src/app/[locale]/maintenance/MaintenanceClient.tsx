@@ -82,10 +82,10 @@ export default function MaintenanceClient({
   const DEFAULT_WIDTHS = {
     date: 120,
     equipment: 185,
-    issue: 140,
+    issue: 100,
     frequency: 140,
     taskType: 120,
-    manage: 110,
+    manage: 88,
   };
 
   const [colWidths, setColWidths] = useState<Record<string, number>>(DEFAULT_WIDTHS);
@@ -147,11 +147,20 @@ export default function MaintenanceClient({
             }
           });
           const merged = { ...DEFAULT_WIDTHS, ...safeWidths };
-          if (safeWidths.issue === undefined || safeWidths.issue === 280) {
+          if (safeWidths.issue === undefined || safeWidths.issue === 280 || safeWidths.issue === 140) {
             merged.issue = DEFAULT_WIDTHS.issue;
           }
+          if (safeWidths.manage === undefined || safeWidths.manage === 110) {
+            merged.manage = DEFAULT_WIDTHS.manage;
+          }
           setColWidths(merged);
-          if (safeWidths.issue === undefined || safeWidths.issue === 280) {
+          if (
+            safeWidths.issue === undefined ||
+            safeWidths.issue === 280 ||
+            safeWidths.issue === 140 ||
+            safeWidths.manage === undefined ||
+            safeWidths.manage === 110
+          ) {
             localStorage.setItem('bb-maintenance-col-widths', JSON.stringify(merged));
           }
         }
@@ -354,7 +363,7 @@ export default function MaintenanceClient({
             </div>
           ) : (
             <div className="w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin pb-6 box-border bb-table-wrapper">
-              <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '700px' }}>
+              <table className="w-full text-left border-collapse border-spacing-0 table-fixed" style={{ minWidth: '660px' }}>
                 <thead>
                   <tr className="border-b border-border bg-card bb-shadow-sm">
                     <th 
@@ -409,7 +418,7 @@ export default function MaintenanceClient({
                     </th>
                     <th 
                       style={{ width: `${colWidths.manage}px` }} 
-                      className="py-3.5 px-5 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
+                      className="py-3.5 px-2 text-[13px] font-normal text-muted-foreground uppercase tracking-wider antialiased text-center relative group select-none"
                     >
                       จัดการ
                       <div
@@ -449,8 +458,8 @@ export default function MaintenanceClient({
                             {record.task_type}
                           </span>
                         </td>
-                        <td className="py-3.5 px-5 text-center">
-                          <div className="flex items-center justify-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <td className="py-3.5 px-2 text-center">
+                          <div className="flex items-center justify-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             <HintTooltip tip="แก้ไขบันทึก">
                               <button
                                 onClick={() => handleEdit(record)}
