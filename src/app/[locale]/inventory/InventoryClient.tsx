@@ -1,10 +1,16 @@
 'use client';
 
 import { PageLoadingState } from '@/components/ui/page-loading-state';
-import { LoadingIcon } from '@/components/ui/loading-icon';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, ClipboardList, ICON_STROKE, Undo2, Redo2, Trash2, X } from '@/lib/icons';
+import { ClipboardList, ICON_STROKE, Undo2, Redo2, Trash2, X, Package } from '@/lib/icons';
+import {
+  INVENTORY_PASTEL_ACTION,
+  InventoryEmptyState,
+  InventoryIconButton,
+  InventorySyncStatus,
+  DeleteConfirmDialog,
+} from './_components/inventory-ui-primitives';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeOverlay, modalContent, pageHeadingSpring } from '@/lib/motion-presets';
 import dynamic from 'next/dynamic';
@@ -1786,55 +1792,25 @@ export default function InventoryClient({
           ) : null}
 
           <div className="w-full flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 md:px-2">
-            <div className="flex items-center gap-1.5 text-sm font-normal min-w-[70px]">
-              {savingState === 'saving' && (
-                <>
-                  <LoadingIcon size="sm" className="text-foreground" />
-                  <span className="text-foreground">กำลังซิงค์ข้อมูลอยู่ค่ะ</span>
-                </>
-              )}
-              {savingState === 'synced' && (
-                <span className="inline-flex items-center gap-1 text-emerald-500">
-                  <CheckCircle2 size={14} strokeWidth={ICON_STROKE} aria-hidden />
-                  ซิงค์ข้อมูลแล้วค่ะ
-                </span>
-              )}
-              {savingState === 'queued' && (
-                <span className="text-amber-600 dark:text-amber-400">รอส่งข้อมูลเมื่อออนไลน์</span>
-              )}
-            </div>
+            <InventorySyncStatus state={savingState} />
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1 border-r border-slate-200 pr-4 mr-2">
-                <HintTooltip tip="ย้อนกลับ">
-                  <button
-                    onClick={handleUndo}
-                    disabled={isReadOnly || undoStack.length === 0 || isSyncing}
-                    className={`p-2.5 rounded-3xl bb-transition ${undoStack.length === 0 || isSyncing
-                      ? 'text-[#94a3b8] cursor-default'
-                      : 'text-foreground hover:bg-black/5'
-                      }`}
-                    aria-label="ย้อนกลับ"
-                  >
-                    <Undo2 className="w-4 h-4" />
-                  </button>
-                </HintTooltip>
-                <HintTooltip tip="ทำซ้ำ">
-                  <button
-                    onClick={handleRedo}
-                    disabled={isReadOnly || redoStack.length === 0 || isSyncing}
-                    className={`p-2.5 rounded-3xl bb-transition ${redoStack.length === 0 || isSyncing
-                      ? 'text-[#94a3b8] cursor-default'
-                      : 'text-foreground hover:bg-black/5'
-                      }`}
-                    aria-label="ทำซ้ำ"
-                  >
-                    <Redo2 className="w-4 h-4" />
-                  </button>
-                </HintTooltip>
-              </div>
-
-
+            <div className="flex items-center gap-2 border border-border/60 rounded-2xl bg-card/50 p-1">
+              <InventoryIconButton
+                onClick={handleUndo}
+                disabled={isReadOnly || undoStack.length === 0 || isSyncing}
+                active={undoStack.length > 0 && !isSyncing}
+                label="ย้อนกลับ"
+              >
+                <Undo2 className="w-4 h-4" strokeWidth={ICON_STROKE} />
+              </InventoryIconButton>
+              <InventoryIconButton
+                onClick={handleRedo}
+                disabled={isReadOnly || redoStack.length === 0 || isSyncing}
+                active={redoStack.length > 0 && !isSyncing}
+                label="ทำซ้ำ"
+              >
+                <Redo2 className="w-4 h-4" strokeWidth={ICON_STROKE} />
+              </InventoryIconButton>
             </div>
           </div>
 
@@ -1890,8 +1866,9 @@ export default function InventoryClient({
                 type="button"
                 onClick={() => setIsQuickActionBarOpen(true)}
                 aria-expanded={false}
-                className="w-full rounded-3xl border border-border bg-card px-4 py-3 text-sm text-foreground bb-shadow-sm transition-colors hover:bg-muted/50"
+                className="group w-full rounded-3xl border border-border bg-card px-4 py-3 text-sm text-foreground bb-shadow-sm bb-transition duration-200 hover:bg-muted/50 active:scale-[0.99] motion-reduce:active:scale-100 inline-flex items-center justify-center gap-2"
               >
+                <Package className="w-4 h-4 text-muted-foreground bb-transition group-hover:text-foreground" strokeWidth={ICON_STROKE} aria-hidden />
                 เปิด Quick Action
               </button>
             ) : null}
@@ -1913,7 +1890,8 @@ export default function InventoryClient({
                   onFocus={preloadWithdrawRequiredItemsModal}
                   aria-haspopup="dialog"
                   className={cn(
-                    'bb-pastel-surface shrink-0 inline-flex h-[3.25rem] sm:h-auto sm:min-h-[3.25rem] w-full sm:w-auto items-center justify-center gap-2 rounded-3xl border border-[#bfdbfe] bg-[#dbeafe] px-4 text-sm font-normal text-black bb-shadow-sm bb-transition hover:brightness-[0.98] active:scale-[0.99]',
+                    INVENTORY_PASTEL_ACTION,
+                    'border-[#bfdbfe] bg-[#dbeafe]',
                   )}
                 >
                   <ClipboardList className="w-4 h-4 shrink-0" strokeWidth={1.5} aria-hidden />
@@ -1936,13 +1914,15 @@ export default function InventoryClient({
             {isDesktopLayout ? (
             <div className="w-full pb-6">
               {items.length === 0 ? (
-                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
-                  ไม่มีข้อมูลสินค้าในระบบ กรุณากด &quot;เพิ่มสินค้า&quot; นะคะ
-                </div>
+                <InventoryEmptyState
+                  icon={<Package className="w-8 h-8" strokeWidth={ICON_STROKE} />}
+                  message='ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ'
+                />
               ) : visibleItems.length === 0 ? (
-                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
-                  ไม่พบรายการที่ตรงกับ &quot;{gridSearchQuery.trim()}&quot;
-                </div>
+                <InventoryEmptyState
+                  icon={<Package className="w-8 h-8" strokeWidth={ICON_STROKE} />}
+                  message={`ไม่พบรายการที่ตรงกับ "${gridSearchQuery.trim()}"`}
+                />
               ) : (
                 <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
@@ -1967,13 +1947,15 @@ export default function InventoryClient({
             ) : (
             <div className="w-full space-y-4 mb-8">
               {items.length === 0 ? (
-                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
-                  ไม่มีข้อมูลสินค้าในระบบ กรุณากด &quot;เพิ่มสินค้า&quot; นะคะ
-                </div>
+                <InventoryEmptyState
+                  icon={<Package className="w-8 h-8" strokeWidth={ICON_STROKE} />}
+                  message='ไม่มีข้อมูลสินค้าในระบบ กรุณากด "เพิ่มสินค้า" นะคะ'
+                />
               ) : visibleItems.length === 0 ? (
-                <div className="p-8 text-center text-base font-normal text-foreground/40 bg-card border border-border rounded-3xl">
-                  ไม่พบรายการที่ตรงกับ &quot;{gridSearchQuery.trim()}&quot;
-                </div>
+                <InventoryEmptyState
+                  icon={<Package className="w-8 h-8" strokeWidth={ICON_STROKE} />}
+                  message={`ไม่พบรายการที่ตรงกับ "${gridSearchQuery.trim()}"`}
+                />
               ) : (
                 <SortableContext items={sortableItemIds} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
@@ -2181,28 +2163,7 @@ export default function InventoryClient({
       {/* Delete Confirm Alert */}
       <AnimatePresence>
         {deleteId && (
-          <motion.div initial={fadeOverlay.initial} animate={fadeOverlay.animate} exit={fadeOverlay.exit} transition={fadeOverlay.transition} className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
-            <motion.div initial={modalContent.initial} animate={modalContent.animate} exit={modalContent.exit} transition={modalContent.transition} className="relative bg-card rounded-3xl bb-shadow-xl w-full max-w-sm p-6 text-center">
-              <HintTooltip tip="ปิด">
-                <button onClick={() => setDeleteId(null)} className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full transition-colors z-10" aria-label="ปิด">
-                  <X className="w-5 h-5" />
-                </button>
-              </HintTooltip>
-              <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                <Trash2 className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-normal text-foreground mb-2">ต้องการลบรายการนี้ใช่หรือไม่?</h3>
-              <p className="text-sm font-normal text-foreground mb-6">ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</p>
-              <div className="flex gap-3">
-                <button onClick={() => setDeleteId(null)} className="flex-1 py-3 px-4 bg-muted hover:bg-muted/80 border border-border rounded-3xl text-[14px] font-normal text-foreground transition-colors">
-                  ยกเลิก
-                </button>
-                <button onClick={executeDelete} className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-3xl text-[14px] font-normal text-white transition-colors bb-shadow-sm">
-                  ลบรายการ
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+          <DeleteConfirmDialog deleteId={deleteId} onCancel={() => setDeleteId(null)} onConfirm={executeDelete} />
         )}
       </AnimatePresence>
 

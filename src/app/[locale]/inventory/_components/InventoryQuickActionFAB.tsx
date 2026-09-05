@@ -6,7 +6,8 @@ import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Package, X } from '@/lib/icons';
 import { cn } from '@/lib/utils';
-import { fadeOverlay, modalContent, fabIconOpen, fabIconClose, FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
+import { FAB_HOVER, FAB_TAP } from '@/lib/motion-presets';
+import { useInventoryMotion } from './inventory-ui-primitives';
 import {
   computePurchaseOrderDerivedState,
   getStockColorClass,
@@ -94,6 +95,7 @@ export default function InventoryQuickActionFAB() {
   const maxMd = useMaxMd();
   const isMobile = maxMd === true;
   const isDesktop = maxMd === false;
+  const motionPresets = useInventoryMotion();
   const viewportInsets = useVisualViewportInsets(isMounted && isPanelRendered);
   const mobileBackdropStyle = isMobile
     ? getModalBackdropKeyboardAwareStyle({
@@ -314,16 +316,20 @@ export default function InventoryQuickActionFAB() {
             {isPanelRendered ? (
               <motion.span
                 key="close"
-                {...fabIconClose}
-                transition={fabIconClose.transition}
+                initial={motionPresets.fabClose.initial}
+                animate={motionPresets.fabClose.animate}
+                exit={motionPresets.fabClose.exit}
+                transition={motionPresets.fabClose.transition}
               >
                 <X size={18} strokeWidth={1.5} />
               </motion.span>
             ) : (
               <motion.span
                 key="open"
-                {...fabIconOpen}
-                transition={fabIconOpen.transition}
+                initial={motionPresets.fabOpen.initial}
+                animate={motionPresets.fabOpen.animate}
+                exit={motionPresets.fabOpen.exit}
+                transition={motionPresets.fabOpen.transition}
               >
                 <Package size={18} strokeWidth={1.5} />
               </motion.span>
@@ -337,10 +343,10 @@ export default function InventoryQuickActionFAB() {
         {isOpen && (
           <motion.div
             key="quick-action-overlay"
-            initial={fadeOverlay.initial}
-            animate={fadeOverlay.animate}
-            exit={fadeOverlay.exit}
-            transition={fadeOverlay.transition}
+            initial={motionPresets.overlay.initial}
+            animate={motionPresets.overlay.animate}
+            exit={motionPresets.overlay.exit}
+            transition={motionPresets.overlay.transition}
             className="fixed inset-0 z-[198]"
           >
             <div
@@ -357,10 +363,10 @@ export default function InventoryQuickActionFAB() {
               style={mobileBackdropStyle}
             >
               <motion.div
-                initial={modalContent.initial}
-                animate={modalContent.animate}
-                exit={modalContent.exit}
-                transition={modalContent.transition}
+                initial={motionPresets.panel.initial}
+                animate={motionPresets.panel.animate}
+                exit={motionPresets.panel.exit}
+                transition={motionPresets.panel.transition}
                 className={cn(
                   'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate border border-border overflow-hidden',
                   'max-md:relative max-md:w-full',

@@ -23,6 +23,17 @@ import {
 import { th } from 'date-fns/locale';
 import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
+import { cn } from '@/lib/utils';
+import {
+  DATE_PICKER_DAY_BASE,
+  DATE_PICKER_ICON_WRAP,
+  DATE_PICKER_MONTH_LABEL,
+  DATE_PICKER_NAV_BTN,
+  DATE_PICKER_TRIGGER_BASE,
+  DATE_PICKER_TRIGGER_OPEN,
+  DATE_PICKER_WEEKDAY,
+  DatePickerPopoverShell,
+} from '@/components/ui/date-picker-primitives';
 
 export interface ClickableDateRangePickerProps {
   containerClassName?: string;
@@ -276,49 +287,35 @@ export function ClickableDateRangePicker({
   const rangeEnd = draftEnd;
 
   const calendarContent = (
-    <div
-      ref={popoverRef}
-      role="dialog"
-      aria-label="เลือกช่วงวันที่"
-      aria-modal="true"
-      style={
-        coords
-          ? { position: 'fixed', top: coords.top, left: coords.left, width: coords.width, zIndex: 9999 }
-          : {}
-      }
-      className={`
-        bg-card rounded-3xl border border-border bb-shadow-xl p-5
-        animate-in fade-in zoom-in-95 duration-200
-        ${!coords
-          ? 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-xs z-[9999]'
-          : ''
-        }
-      `}
-      onMouseDown={e => e.stopPropagation()}
+    <DatePickerPopoverShell
+      key="date-range-picker-popover"
+      popoverRef={popoverRef}
+      ariaLabel="เลือกช่วงวันที่"
+      coords={coords}
     >
       <div className="flex items-center justify-between mb-3">
         <button
           type="button"
           onClick={handlePrevMonth}
-          className="p-1.5 hover:bg-muted rounded-full text-foreground transition-colors cursor-pointer flex items-center justify-center"
+          className={DATE_PICKER_NAV_BTN}
           aria-label="เดือนก่อนหน้า"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-[13px] font-normal text-foreground uppercase tracking-wider select-none">
+        <span className={DATE_PICKER_MONTH_LABEL}>
           {format(viewDate, 'MMMM yyyy', { locale: th })}
         </span>
         <button
           type="button"
           onClick={handleNextMonth}
-          className="p-1.5 hover:bg-muted rounded-full text-foreground transition-colors cursor-pointer flex items-center justify-center"
+          className={DATE_PICKER_NAV_BTN}
           aria-label="เดือนถัดไป"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
-      <p className="text-[11px] text-muted-foreground text-center mb-3 select-none">
+      <p className="text-[11px] text-muted-foreground text-center mb-3 select-none uppercase tracking-[0.08em]">
         {!rangeStart || rangeEnd ? 'เลือกวันเริ่มต้น' : 'เลือกวันสิ้นสุด'}
       </p>
 
@@ -326,7 +323,7 @@ export function ClickableDateRangePicker({
         {dayLabels.map((lbl, idx) => (
           <span
             key={idx}
-            className={`text-[10px] font-normal tracking-wider select-none ${
+            className={`${DATE_PICKER_WEEKDAY} ${
               idx === 0 ? 'text-red-500' : 'text-muted-foreground'
             }`}
           >
@@ -358,30 +355,24 @@ export function ClickableDateRangePicker({
               aria-label={format(day, 'dd MMMM yyyy', { locale: th })}
               aria-pressed={isEndpoint}
               onClick={e => handleSelectDay(day, e)}
-              className={`
-                aspect-square rounded-xl text-[12px] font-normal
-                flex items-center justify-center bb-transition
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20
-                ${isDisabled
-                  ? 'text-muted-foreground/40 cursor-not-allowed'
-                  : 'cursor-pointer'
-                }
-                ${isEndpoint
-                  ? 'bg-foreground text-background bb-shadow-md'
+              className={cn(
+                DATE_PICKER_DAY_BASE,
+                isDisabled ? 'text-muted-foreground/40 cursor-not-allowed' : 'cursor-pointer',
+                isEndpoint
+                  ? 'bg-foreground text-background bb-shadow-md scale-[1.04]'
                   : inRange
                   ? 'bg-muted text-foreground'
                   : isCurrent
                   ? 'bb-pastel-surface bg-[#ffda66] text-[#000000]'
-                  : 'hover:bg-muted text-foreground'
-                }
-              `}
+                  : 'hover:bg-muted text-foreground',
+              )}
             >
               {day.getDate()}
             </button>
           );
         })}
       </div>
-    </div>
+    </DatePickerPopoverShell>
   );
 
   return (
@@ -393,14 +384,15 @@ export function ClickableDateRangePicker({
         onClick={() => (isOpen ? closeCalendar() : openCalendar())}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
-        className={`flex items-center justify-center gap-1.5 h-11 px-4 text-xs font-normal
-          text-foreground bg-card hover:bg-muted/50 rounded-3xl border border-border
-          bb-transition duration-200 active:scale-95 uppercase
-          tracking-wide bb-shadow-sm w-full min-w-0
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20
-          ${disabled ? 'opacity-60 cursor-not-allowed hover:bg-card' : 'cursor-pointer'}`}
+        className={cn(
+          DATE_PICKER_TRIGGER_BASE,
+          isOpen && DATE_PICKER_TRIGGER_OPEN,
+          disabled ? 'opacity-60 cursor-not-allowed hover:bg-card' : 'cursor-pointer',
+        )}
       >
-        {icon || <CalendarIcon className="w-4 h-4 text-foreground shrink-0" />}
+        <span className={DATE_PICKER_ICON_WRAP} aria-hidden>
+          {icon || <CalendarIcon className="w-4 h-4 text-foreground shrink-0" strokeWidth={1.5} />}
+        </span>
         <span className="truncate">{displayValue}</span>
       </button>
 

@@ -1,11 +1,17 @@
 'use client';
 
 import { LoadingIcon } from '@/components/ui/loading-icon';
-import { CloseIcon } from '@/components/ui/close-icon';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { fadeOverlay, modalContent } from '@/lib/motion-presets';
-import { History, PackageMinus, PackagePlus, Plus, Search, ShoppingCart, SlidersHorizontal, Trash2 } from '@/lib/icons';
+import { History, PackageMinus, PackagePlus, Plus, Search, SlidersHorizontal, Trash2, X, ICON_STROKE } from '@/lib/icons';
+import {
+  INVENTORY_MODAL_OVERLAY,
+  INVENTORY_MODAL_PANEL,
+  INVENTORY_MODAL_PANEL_SHEET,
+  InventoryEmptyState,
+  InventoryModalHeader,
+  useInventoryMotion,
+} from './inventory-ui-primitives';
 
 import { cn } from '@/lib/utils';
 import { INVENTORY_QUICK_ACTION_COLORS } from '@/lib/shift-colors';
@@ -101,7 +107,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
         >
 
-          <SlidersHorizontal className="w-4.5 h-4.5" />
+          <SlidersHorizontal className="w-4 h-4" strokeWidth={ICON_STROKE} />
 
         </span>
       </HintTooltip>
@@ -117,7 +123,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
           className={cn(HISTORY_BADGE_LAYOUT, INVENTORY_QUICK_ACTION_COLORS.adjust)}
           aria-label="เพิ่มรายการ"
         >
-          <Plus className="w-4.5 h-4.5" />
+          <Plus className="w-4 h-4" strokeWidth={ICON_STROKE} />
         </span>
       </HintTooltip>
     );
@@ -130,7 +136,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
           className={cn(HISTORY_BADGE_LAYOUT, INVENTORY_QUICK_ACTION_COLORS.out)}
           aria-label="ลบรายการ"
         >
-          <Trash2 className="w-4.5 h-4.5" />
+          <Trash2 className="w-4 h-4" strokeWidth={ICON_STROKE} />
         </span>
       </HintTooltip>
     );
@@ -154,7 +160,7 @@ function TransactionTypeBadge({ type }: { type: TransactionHistoryRow['type'] })
 
       >
 
-        {isIn ? <PackagePlus className="w-4.5 h-4.5" /> : <PackageMinus className="w-4.5 h-4.5" />}
+        {isIn ? <PackagePlus className="w-4 h-4" strokeWidth={ICON_STROKE} /> : <PackageMinus className="w-4 h-4" strokeWidth={ICON_STROKE} />}
 
       </span>
     </HintTooltip>
@@ -188,6 +194,8 @@ export function InventoryHistoryModal({
 
   const modalContentStyle = getModalContentKeyboardAwareStyle({ insets: viewportInsets });
 
+  const { overlay, sheet } = useInventoryMotion();
+
 
 
   useEffect(() => {
@@ -202,16 +210,17 @@ export function InventoryHistoryModal({
     <InventoryModalPortal>
     <motion.div
 
-      initial={fadeOverlay.initial}
+      initial={overlay.initial}
 
-      animate={fadeOverlay.animate}
+      animate={overlay.animate}
 
-      exit={fadeOverlay.exit}
+      exit={overlay.exit}
 
-      transition={fadeOverlay.transition}
+      transition={overlay.transition}
 
       className={cn(
-        'fixed inset-0 flex items-end md:items-center justify-center bg-black/20 backdrop-blur-md p-0 md:p-4 transition-[padding,height] duration-200',
+        'fixed inset-0 flex items-end md:items-center justify-center p-0 md:p-4 transition-[padding,height] duration-200',
+        INVENTORY_MODAL_OVERLAY,
         INVENTORY_MODAL_Z_CLASS,
       )}
 
@@ -223,64 +232,37 @@ export function InventoryHistoryModal({
 
       <motion.div
 
-        initial={modalContent.initial}
+        initial={sheet.initial}
 
-        animate={modalContent.animate}
+        animate={sheet.animate}
 
-        exit={modalContent.exit}
+        exit={sheet.exit}
 
-        transition={modalContent.transition}
+        transition={sheet.transition}
 
-        className="relative bg-card rounded-t-3xl md:rounded-3xl bb-shadow-xl w-full md:w-fit md:max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-hidden flex flex-col border border-border min-h-0 pb-[env(safe-area-inset-bottom)] transition-[max-height] duration-200"
+        className={cn(INVENTORY_MODAL_PANEL, INVENTORY_MODAL_PANEL_SHEET, 'md:w-fit md:max-w-[calc(100vw-2rem)] transition-[max-height] duration-200')}
 
         style={modalContentStyle}
 
         onClick={(e) => e.stopPropagation()}
 
+        role="dialog"
+
+        aria-modal="true"
+
+        aria-labelledby="inventory-history-title"
+
       >
 
-        <HintTooltip tip="ปิดประวัติ">
-          <button
+        <InventoryModalHeader
+          icon={<History className="w-5 h-5" strokeWidth={ICON_STROKE} />}
+          title="ประวัติ"
+          subtitle="ตรวจสอบรายการรับเข้า นำออก ปรับจำนวน เพิ่ม และลบรายการย้อนหลัง"
+          onClose={onClose}
+          closeLabel="ปิดประวัติ"
+        />
 
-            type="button"
-
-            onClick={onClose}
-
-            className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-foreground hover:bg-black/5 rounded-full bb-transition active:scale-95 z-10"
-
-            aria-label="ปิดประวัติ"
-
-          >
-
-            <CloseIcon size="lg" />
-
-          </button>
-        </HintTooltip>
-
-
-
-        <div className="px-4 md:px-6 py-4 md:py-5 border-b border-border bg-card/80 backdrop-blur-sm shrink-0 pr-14">
-
-          <div className="flex flex-col gap-4">
-
-            <div>
-
-            <h2 className="text-xl md:text-2xl font-normal text-foreground flex items-center gap-3">
-
-              <History className="w-6 h-6 text-foreground/40" />
-
-              ประวัติ
-
-            </h2>
-
-            <p className="text-foreground/40 text-[13px] mt-1 font-normal max-w-[32rem]">
-
-              ตรวจสอบรายการรับเข้า นำออก ปรับจำนวน เพิ่ม และลบรายการย้อนหลัง
-
-            </p>
-
-            </div>
-
+        <div className="px-4 md:px-6 pb-4 border-b border-border bg-card shrink-0 space-y-4">
             <div className="space-y-1.5 min-w-0">
               <label
                 htmlFor="history-type-filter"
@@ -333,13 +315,11 @@ export function InventoryHistoryModal({
                     aria-label="ล้างการค้นหา"
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   >
-                    <CloseIcon size="md" />
+                    <X className="w-4 h-4" strokeWidth={ICON_STROKE} />
                   </button>
                 ) : null}
               </div>
             </div>
-
-          </div>
 
         </div>
 
@@ -406,18 +386,16 @@ export function InventoryHistoryModal({
 
                   <tr>
 
-                    <td colSpan={5} className="py-20 text-center text-foreground/30 text-[15px] font-normal italic">
-
-                      <div className="flex flex-col items-center gap-3">
-
-                        <ShoppingCart className="w-10 h-10 opacity-10" />
-
-                        {isSearchActive
-                          ? `ไม่พบประวัติที่ตรงกับ "${historySearchQuery.trim()}"`
-                          : 'ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้'}
-
-                      </div>
-
+                    <td colSpan={5} className="py-12">
+                      <InventoryEmptyState
+                        icon={<History className="w-8 h-8" strokeWidth={ICON_STROKE} />}
+                        message={
+                          isSearchActive
+                            ? `ไม่พบประวัติที่ตรงกับ "${historySearchQuery.trim()}"`
+                            : 'ยังไม่มีประวัติการเคลื่อนไหวในขณะนี้'
+                        }
+                        className="border-0 bg-transparent shadow-none"
+                      />
                     </td>
 
                   </tr>

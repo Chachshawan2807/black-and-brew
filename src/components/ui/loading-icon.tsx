@@ -31,7 +31,7 @@ export function LoadingIcon({
     <Loader2
       size={pixelSize}
       strokeWidth={strokeWidth}
-      className={cn('shrink-0 animate-spin', className)}
+      className={cn('shrink-0 animate-spin motion-reduce:animate-none', className)}
       aria-hidden
       {...props}
     />

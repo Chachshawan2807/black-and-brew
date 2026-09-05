@@ -15,8 +15,8 @@ import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { cn } from '@/lib/utils';
 import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
 import {
-  SCHEDULE_TOOLBAR_BUTTON,
   SCHEDULE_TOOLBAR_HISTORY_BUTTON,
+  ScheduleToolbarButton,
 } from './schedule-ui-primitives';
 
 interface ScheduleToolbarProps {
@@ -66,7 +66,7 @@ export default function ScheduleToolbar({
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/80 bg-background/90 text-foreground shadow-sm">
-                <CalendarDays className="h-4 w-4" aria-hidden />
+                <CalendarDays className="h-4 w-4" aria-hidden strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
                 {shouldShowPageTitle('ตารางงาน') ? (
@@ -133,42 +133,41 @@ export default function ScheduleToolbar({
 
         <div className="flex items-center gap-2 overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y whitespace-nowrap pb-0.5 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible md:whitespace-normal">
           <div className="flex items-center gap-2">
-            <button
+            <ScheduleToolbarButton
               onClick={onExportScheduleImage}
               onMouseEnter={preloadCaptureLibraries}
               onFocus={preloadCaptureLibraries}
-              className={SCHEDULE_TOOLBAR_BUTTON}
+              icon={<Download className="w-4 h-4" strokeWidth={1.5} />}
             >
-              <Download className="w-4 h-4" />
               บันทึกรูปภาพ
-            </button>
+            </ScheduleToolbarButton>
 
-            <button onClick={onShowShiftSettings} className={SCHEDULE_TOOLBAR_BUTTON}>
-              <Settings className="w-4 h-4" />
+            <ScheduleToolbarButton
+              onClick={onShowShiftSettings}
+              icon={<Settings className="w-4 h-4" strokeWidth={1.5} />}
+            >
               ตั้งค่า
-            </button>
+            </ScheduleToolbarButton>
           </div>
 
           <span className="hidden h-6 w-px shrink-0 bg-border/80 md:block" aria-hidden />
 
           <div className="flex items-center gap-2">
-            <button
+            <ScheduleToolbarButton
               onClick={onShowRegularHolidayModal}
               disabled={isReadOnly}
-              className={SCHEDULE_TOOLBAR_BUTTON}
+              icon={<Calendar className="w-4 h-4" strokeWidth={1.5} />}
             >
-              <Calendar className="w-4 h-4" />
               วันหยุดประจำ
-            </button>
+            </ScheduleToolbarButton>
 
-            <button
+            <ScheduleToolbarButton
               onClick={onShowManagementModal}
               disabled={isReadOnly}
-              className={SCHEDULE_TOOLBAR_BUTTON}
+              icon={<UserCog className="w-4 h-4" strokeWidth={1.5} />}
             >
-              <UserCog className="w-4 h-4" />
               การลา/เปลี่ยนกะ
-            </button>
+            </ScheduleToolbarButton>
 
             <HintTooltip
               tip={
@@ -177,27 +176,27 @@ export default function ScheduleToolbar({
                   : 'ส่งสัปดาห์ที่กำลังดูไป Google Sheet (กดปุ่มเท่านั้น ไม่ซิงค์อัตโนมัติ)'
               }
             >
-              <button
+              <ScheduleToolbarButton
                 onClick={onSyncGoogleSheet}
                 disabled={isReadOnly || isSyncingGoogleSheet}
-                className={SCHEDULE_TOOLBAR_BUTTON}
+                icon={
+                  <RefreshCw
+                    className={cn('w-4 h-4', isSyncingGoogleSheet && 'animate-spin')}
+                    strokeWidth={1.5}
+                  />
+                }
               >
-                <RefreshCw
-                  className={cn('w-4 h-4', isSyncingGoogleSheet && 'animate-spin')}
-                  strokeWidth={1.5}
-                />
                 {isSyncingGoogleSheet ? 'กำลังซิงค์…' : 'ซิงค์ Google Sheet'}
-              </button>
+              </ScheduleToolbarButton>
             </HintTooltip>
 
-            <button
+            <ScheduleToolbarButton
               onClick={onShowAddEmployeeModal}
               disabled={isReadOnly}
-              className={SCHEDULE_TOOLBAR_BUTTON}
+              icon={<Plus className="w-4 h-4" strokeWidth={1.5} />}
             >
-              <Plus className="w-4 h-4" />
               เพิ่มพนักงาน
-            </button>
+            </ScheduleToolbarButton>
           </div>
         </div>
       </div>

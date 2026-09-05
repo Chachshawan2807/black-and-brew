@@ -240,6 +240,7 @@ export default function ShiftSettingsModal({
           icon={<Settings className="h-5 w-5" strokeWidth={1.5} />}
           title="ตั้งค่ากะการทำงาน"
           subtitle="เลือกกะ ปรับสีพาสเทล หรือกำหนดกะใหม่"
+          tone="settings"
           onClose={onClose}
           closeDisabled={isSaving}
           closeLabel="ปิดตั้งค่ากะ"

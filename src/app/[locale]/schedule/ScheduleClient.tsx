@@ -1949,6 +1949,7 @@ export default function ScheduleClient({
               <ScheduleModalSectionHeader
                 icon={<UserCog className="w-5 h-5" strokeWidth={1.5} />}
                 title="การลา / เปลี่ยนกะ"
+                tone="accent"
                 className="management-form-container"
               />
 
@@ -2038,6 +2039,7 @@ export default function ScheduleClient({
               <ScheduleModalSectionHeader
                 icon={<CalendarDays className="w-5 h-5" strokeWidth={1.5} />}
                 title="ประวัติ"
+                tone="calendar"
                 className="pr-14"
               />
 
@@ -2198,12 +2200,14 @@ export default function ScheduleClient({
         zIndex={APP_MODAL_ABOVE_FAB_Z_INDEX}
         overlayClassName={SCHEDULE_MODAL_OVERLAY}
         panelClassName={cn(SCHEDULE_MODAL_PANEL_SHEET, 'p-0 text-foreground')}
+        panelVariant="sheet"
         aria-label="เพิ่มพนักงานใหม่"
       >
             <ScheduleModalHeader
               icon={<Plus className="h-5 w-5" strokeWidth={1.5} />}
               title="เพิ่มพนักงานใหม่"
               subtitle="กรอกชื่อพนักงานเพื่อเพิ่มในแถวตารางงาน"
+              tone="accent"
               onClose={() => setShowAddEmployeeModal(false)}
             />
             <div className="space-y-4 px-5 pb-5 max-md:pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
@@ -2257,6 +2261,7 @@ export default function ScheduleClient({
               icon={<Calendar className="h-5 w-5" strokeWidth={1.5} />}
               title="จัดการวันหยุดประจำ"
               subtitle="กำหนดวันหยุดประจำสัปดาห์ของแต่ละพนักงาน"
+              tone="calendar"
               onClose={() => setShowRegularHolidayModal(false)}
             />
 

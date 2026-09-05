@@ -3,7 +3,7 @@
 import type { CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { fadeOverlay, modalContent, withReducedMotion } from '@/lib/motion-presets';
+import { fadeOverlay, modalContent, modalSheetBottom, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { useVisualViewportInsets } from '@/hooks/use-visual-viewport-insets';
 import {
@@ -26,6 +26,8 @@ type FadeModalScaffoldProps = {
   /** Reposition into the visible viewport when the software keyboard opens (mobile). */
   keyboardAware?: boolean;
   panelOnClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
+  /** Center fade/scale (default) or bottom sheet slide on mobile-friendly panels */
+  panelVariant?: 'center' | 'sheet';
   'aria-label'?: string;
 };
 
@@ -42,11 +44,13 @@ export function FadeModalScaffold({
   centerScrollable = false,
   keyboardAware = false,
   panelOnClick,
+  panelVariant = 'center',
   'aria-label': ariaLabel,
 }: FadeModalScaffoldProps) {
   const reduced = usePrefersReducedMotion();
   const overlay = withReducedMotion(fadeOverlay, reduced);
-  const panel = withReducedMotion(modalContent, reduced);
+  const panelPreset = panelVariant === 'sheet' ? modalSheetBottom : modalContent;
+  const panel = withReducedMotion(panelPreset, reduced);
   const viewportInsets = useVisualViewportInsets(open && keyboardAware);
   const keyboardLayoutStyle = keyboardAware
     ? getModalBackdropKeyboardAwareStyle({

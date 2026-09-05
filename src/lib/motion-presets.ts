@@ -24,6 +24,22 @@ export const modalContent: MotionPreset = {
   transition: { duration: 0.22, ease: MODAL_EASE },
 };
 
+/** Bottom sheet modals on mobile (schedule add employee, etc.) */
+export const modalSheetBottom: MotionPreset = {
+  initial: { opacity: 0, y: '100%' },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: '100%' },
+  transition: { duration: 0.28, ease: MODAL_EASE },
+};
+
+/** Date picker / calendar popover */
+export const calendarPopover: MotionPreset = {
+  initial: { opacity: 0, scale: 0.92, y: 8 },
+  animate: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.94, y: 4 },
+  transition: { duration: 0.2, ease: MODAL_EASE },
+};
+
 /** Centered notification panel slightly longer travel for smooth open/close */
 export const notificationPanel: MotionPreset = {
   initial: { opacity: 0, scale: 0.94, y: 16 },

@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { fadeOverlay, modalContent } from '@/lib/motion-presets';
-import { CloseIcon } from '@/components/ui/close-icon';
+import {
+  INVENTORY_BTN_PRIMARY,
+  INVENTORY_BTN_SECONDARY,
+  INVENTORY_FORM_LABEL,
+  INVENTORY_MODAL_OVERLAY,
+  INVENTORY_MODAL_PANEL,
+  InventoryModalHeader,
+  useInventoryMotion,
+} from './inventory-ui-primitives';
+import { PlusCircle } from '@/lib/icons';
+import { ICON_STROKE } from '@/lib/icons';
 import {
   getModalBackdropKeyboardAwareStyle,
   getModalContentKeyboardAwareStyle,
@@ -13,7 +22,6 @@ import { supabase } from '@/lib/supabase';
 import { ensureSupabaseSession } from '@/lib/supabase-session';
 import { logClientDataChange } from '@/lib/client-data-change-log';
 import { recordItemAddHistory } from '@/app/actions/inventory-actions';
-import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
 import { cn } from '@/lib/utils';
 import { InventoryModalPortal } from './InventoryModalPortal';
@@ -40,6 +48,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
   const [insertPosition, setInsertPosition] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const { overlay, panel } = useInventoryMotion();
 
   const viewportInsets = useVisualViewportInsets(isMounted);
   const modalBackdropStyle = getModalBackdropKeyboardAwareStyle({ insets: viewportInsets });
@@ -125,43 +134,41 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
   return (
     <InventoryModalPortal>
     <motion.div
-      initial={fadeOverlay.initial}
-      animate={fadeOverlay.animate}
-      exit={fadeOverlay.exit}
-      transition={fadeOverlay.transition}
+      initial={overlay.initial}
+      animate={overlay.animate}
+      exit={overlay.exit}
+      transition={overlay.transition}
       className={cn(
-        'fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 transition-[padding,height] duration-200',
+        'fixed inset-0 flex items-center justify-center p-4 transition-[padding,height] duration-200',
+        INVENTORY_MODAL_OVERLAY,
         INVENTORY_MODAL_Z_CLASS,
       )}
       style={modalBackdropStyle}
       onClick={onClose}
     >
       <motion.div
-        initial={modalContent.initial}
-        animate={modalContent.animate}
-        exit={modalContent.exit}
-        transition={modalContent.transition}
-        className="relative bg-card border border-border rounded-3xl bb-shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden transition-[max-height] duration-200"
+        initial={panel.initial}
+        animate={panel.animate}
+        exit={panel.exit}
+        transition={panel.transition}
+        className={cn(INVENTORY_MODAL_PANEL, 'rounded-3xl w-full max-w-xl max-h-[90vh] transition-[max-height] duration-200')}
         style={modalContentStyle}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="inventory-add-item-title"
       >
-        <HintTooltip tip="ปิด">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors z-10"
-            aria-label="ปิด"
-          >
-            <CloseIcon />
-          </button>
-        </HintTooltip>
-        <div className="px-6 h-14 border-b border-border flex items-center justify-between shrink-0 pr-14">
-          <h2 className="text-lg font-normal text-foreground">เพิ่มรายการใหม่</h2>
-        </div>
+        <InventoryModalHeader
+          icon={<PlusCircle className="h-5 w-5" strokeWidth={ICON_STROKE} />}
+          title="เพิ่มรายการใหม่"
+          onClose={onClose}
+          sheet={false}
+          className="px-6 py-4 bg-card"
+        />
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto bb-smooth-scroll flex-1 min-h-0">
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <div className="col-span-2 flex flex-col gap-1.5">
-              <label className="text-[12px] font-normal text-muted-foreground ml-1 uppercase tracking-wider">ชื่อรายการ</label>
+              <label className={INVENTORY_FORM_LABEL}>ชื่อรายการ</label>
               <input
                 required
                 name="new-item-name"
@@ -272,17 +279,13 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
             </div>
           </div>
           <div className="mt-8 flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3 px-4 bg-muted hover:bg-muted/80 border border-border rounded-3xl text-[14px] font-normal text-foreground transition-colors"
-            >
+            <button type="button" onClick={onClose} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 rounded-3xl py-3')}>
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 px-4 bg-foreground hover:opacity-90 rounded-3xl text-[14px] font-normal text-background transition-colors bb-shadow-sm disabled:opacity-50"
+              className={cn(INVENTORY_BTN_PRIMARY, 'flex-1 rounded-3xl py-3 bb-shadow-sm')}
             >
               บันทึกข้อมูล
             </button>

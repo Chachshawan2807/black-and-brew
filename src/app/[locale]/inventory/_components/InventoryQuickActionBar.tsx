@@ -20,7 +20,12 @@ import {
   Layers,
   X,
 } from '@/lib/icons';
-import { CloseIcon } from '@/components/ui/close-icon';
+import {
+  INVENTORY_MOTION_SAFE,
+  INVENTORY_SECONDARY_ACTION,
+  InventoryModalHeader,
+} from './inventory-ui-primitives';
+import { ICON_STROKE } from '@/lib/icons';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { cn } from '@/lib/utils';
 import type { QuickBadgeStyles } from '@/lib/inventory-stock';
@@ -129,27 +134,15 @@ const QUICK_TYPE_LABELS = {
 
 function QuickActionPanelHeader({ onClose }: { onClose?: () => void }) {
   return (
-    <div className="relative shrink-0 border-b border-border px-4 pb-3 pt-4 md:px-5 md:pt-5">
-      {onClose && (
-        <HintTooltip tip="ปิด">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="ปิดปรับสต็อกด่วน"
-            className="absolute right-3 top-3 z-10 rounded-full p-2 text-foreground/40 bb-transition hover:bg-muted hover:text-foreground active:scale-95 md:right-4 md:top-4"
-          >
-            <CloseIcon size="lg" />
-          </button>
-        </HintTooltip>
-      )}
-      <h2 className="flex items-center gap-2.5 pr-12 text-lg font-normal text-foreground md:text-xl">
-        <Package className="h-5 w-5 shrink-0 text-foreground/40 md:h-6 md:w-6" strokeWidth={1.5} />
-        ปรับสต็อกด่วน
-      </h2>
-      <p className="mt-1 max-w-[28rem] pr-12 text-[12px] font-normal text-muted-foreground md:text-[13px]">
-        ค้นหาสินค้า แล้วรับเข้า นำออก หรือตั้งจำนวนคงเหลือใหม่
-      </p>
-    </div>
+    <InventoryModalHeader
+      icon={<Package className="h-5 w-5 md:h-6 md:w-6" strokeWidth={ICON_STROKE} />}
+      title="ปรับสต็อกด่วน"
+      subtitle="ค้นหาสินค้า แล้วรับเข้า นำออก หรือตั้งจำนวนคงเหลือใหม่"
+      onClose={onClose}
+      closeLabel="ปิดปรับสต็อกด่วน"
+      sheet={false}
+      className="border-b border-border px-4 pb-3 pt-4 md:px-5 md:pt-5 bg-card"
+    />
   );
 }
 
@@ -460,10 +453,12 @@ function BulkQueuePanel({
 
   return (
     <div
-      className={cn(
-        'w-full min-h-0 rounded-2xl border border-border bg-muted/15 overflow-hidden flex flex-col animate-in fade-in duration-200',
-        !fabMobileBulkShell && 'slide-in-from-top-1',
-      )}
+        className={cn(
+          'w-full min-h-0 rounded-2xl border border-border bg-muted/15 overflow-hidden flex flex-col',
+          INVENTORY_MOTION_SAFE,
+          'animate-in fade-in duration-200',
+          !fabMobileBulkShell && 'slide-in-from-top-1',
+        )}
     >
       <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-2 border-b border-border/70">
         <span className="text-[12px] text-muted-foreground">รายการในคิว กรอกจำนวนแต่ละแถว</span>
@@ -661,7 +656,7 @@ function SecondaryQuickActionButtons({
         onMouseEnter={onPreloadPurchaseOrder}
         onFocus={onPreloadPurchaseOrder}
         className={cn(
-          'flex w-full items-center justify-center gap-1 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased bb-transition hover:bb-shadow-hover-md',
+          INVENTORY_SECONDARY_ACTION,
           INVENTORY_QUICK_ACTION_COLORS.order,
           INVENTORY_QUICK_ACTION_HOVER.order,
         )}
@@ -678,7 +673,7 @@ function SecondaryQuickActionButtons({
         type="button"
         onClick={onOpenAddItem}
         className={cn(
-          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased bb-transition hover:bb-shadow-hover-md',
+          INVENTORY_SECONDARY_ACTION,
           INVENTORY_QUICK_ACTION_COLORS.addItem,
           INVENTORY_QUICK_ACTION_HOVER.addItem,
         )}
@@ -692,7 +687,7 @@ function SecondaryQuickActionButtons({
         onMouseEnter={onPreloadHistory}
         onFocus={onPreloadHistory}
         className={cn(
-          'flex w-full items-center justify-center gap-1.5 px-1 h-11 rounded-3xl text-base md:text-sm font-normal antialiased bb-transition hover:bb-shadow-hover-md',
+          INVENTORY_SECONDARY_ACTION,
           INVENTORY_QUICK_ACTION_COLORS.history,
           INVENTORY_QUICK_ACTION_HOVER.history,
         )}
@@ -918,7 +913,9 @@ export function InventoryQuickActionBar({
     }
   };
   const suggestionsListClassName = cn(
-    'bg-card border border-border rounded-xl bb-shadow-md overflow-hidden animate-in fade-in duration-200',
+    'bg-card border border-border rounded-xl bb-shadow-md overflow-hidden',
+    INVENTORY_MOTION_SAFE,
+    'animate-in fade-in duration-200',
     !portalSuggestions && 'slide-in-from-top-2',
   );
 
@@ -1083,7 +1080,9 @@ export function InventoryQuickActionBar({
             {!bulkMode && selectedQuickItem && (
               <div
                 className={cn(
-                  'flex h-10 shrink-0 items-center gap-1 px-2 rounded-xl text-[12px] border bb-transition duration-200 animate-in fade-in zoom-in-95 whitespace-nowrap max-w-[40%] sm:max-w-none',
+                  'flex h-10 shrink-0 items-center gap-1 px-2 rounded-xl text-[12px] border bb-transition duration-200 whitespace-nowrap max-w-[40%] sm:max-w-none',
+                  INVENTORY_MOTION_SAFE,
+                  'animate-in fade-in zoom-in-95',
                   quickBadgeStyles.bg,
                 )}
               >
