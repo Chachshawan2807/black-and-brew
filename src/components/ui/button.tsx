@@ -29,6 +29,7 @@ const buttonVariants = cva(
         lg: "h-11 min-h-[44px] rounded-2xl px-8",
         icon: "h-10 w-10 min-h-[44px] min-w-[44px] border border-border/80 bg-card hover:bg-muted/40",
       },
+    },
     defaultVariants: {
       variant: "outline",
       size: "default",
