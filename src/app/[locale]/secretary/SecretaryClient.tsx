@@ -6,6 +6,11 @@ import { CheckCircle2, Plus } from '@/lib/icons';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
+import {
+  BB_BTN_OUTLINE_SM,
+  BB_CHIP_IDLE,
+  BB_CHIP_SELECTED,
+} from '@/lib/ui-outlined-tokens';
 import { SECRETARY_TASK_COLORS } from '@/lib/shift-colors';
 import { canOpenSecretaryTaskDetail } from '@/lib/secretary/task-detail-overlay';
 import {
@@ -220,7 +225,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
             onClick={() => setShowCreateDialog(true)}
             onPointerEnter={preloadSecretaryManualTaskDialog}
             onFocus={preloadSecretaryManualTaskDialog}
-            className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-card px-3 py-1.5 text-[13px] text-foreground hover:bg-muted/40 bb-transition"
+            className={BB_BTN_OUTLINE_SM}
           >
             <Plus size={14} />
             เพิ่มงาน
@@ -441,10 +446,9 @@ function FilterChip({
         type="button"
         onClick={onClick}
         className={cn(
-          'rounded-2xl border px-3 py-1 text-[12px] bb-transition',
-          active
-            ? 'border-foreground bg-card text-foreground ring-1 ring-foreground/10'
-            : 'border-border text-muted-foreground hover:text-foreground',
+          'inline-flex shrink-0 items-center justify-center min-h-10 rounded-2xl border px-3.5 py-2 text-[13px] font-normal whitespace-nowrap bb-transition duration-200 touch-manipulation',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          active ? BB_CHIP_SELECTED : BB_CHIP_IDLE,
         )}
       >
         {label}
