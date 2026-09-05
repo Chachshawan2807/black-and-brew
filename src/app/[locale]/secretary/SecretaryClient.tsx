@@ -443,7 +443,7 @@ function FilterChip({
         className={cn(
           'rounded-full border px-3 py-1 text-[12px] bb-transition',
           active
-            ? 'border-foreground bg-foreground text-background'
+            ? 'border-foreground bg-card text-foreground ring-1 ring-foreground/10'
             : 'border-border text-muted-foreground hover:text-foreground',
         )}
       >

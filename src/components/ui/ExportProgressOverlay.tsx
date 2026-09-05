@@ -72,7 +72,7 @@ export function ExportProgressOverlay({
                   <div className="absolute h-[56px] w-[56px] rounded-[18px] border border-border bg-card bb-shadow-sm" />
                 )}
                 <motion.div
-                  className="relative flex h-[44px] w-[44px] items-center justify-center rounded-2xl bg-foreground text-background bb-shadow-md"
+                  className="relative flex h-[44px] w-[44px] items-center justify-center rounded-2xl border-2 border-foreground/85 bg-card text-foreground bb-shadow-md"
                   animate={reduced ? undefined : { y: [0, -1, 0] }}
                   transition={{ duration: 2.2, repeat: reduced ? 0 : Infinity, ease: 'easeInOut', delay: 0.08 }}
                 >

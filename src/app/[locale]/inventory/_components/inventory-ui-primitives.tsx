@@ -19,6 +19,17 @@ import {
   withReducedMotion,
 } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import {
+  BB_BTN_CLOSE,
+  BB_BTN_ICON,
+  BB_BTN_ICON_ACTIVE,
+  BB_BTN_MOTION,
+  BB_BTN_OUTLINE,
+  BB_BTN_OUTLINE_DANGER,
+  BB_BTN_OUTLINE_PRIMARY,
+  BB_ICON_BADGE_BASE,
+  BB_RADIUS_SOFT,
+} from '@/lib/ui-outlined-tokens';
 
 /** Respect reduced motion on Tailwind enter/exit utilities. */
 export const INVENTORY_MOTION_SAFE =
@@ -33,14 +44,12 @@ export const INVENTORY_MODAL_PANEL =
 export const INVENTORY_MODAL_PANEL_SHEET =
   'rounded-t-[28px] md:rounded-3xl w-full max-h-[85dvh] pb-[env(safe-area-inset-bottom)]';
 
-export const INVENTORY_ICON_BUTTON =
-  'inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl border border-transparent text-muted-foreground bb-transition duration-200 hover:text-foreground hover:bg-muted/35 hover:border-border/60 active:scale-[0.96] motion-reduce:active:scale-100 disabled:opacity-40 disabled:pointer-events-none disabled:cursor-default';
+export const INVENTORY_ICON_BUTTON = BB_BTN_ICON;
 
-export const INVENTORY_ICON_BUTTON_ACTIVE =
-  'text-foreground hover:bg-muted/40';
+export const INVENTORY_ICON_BUTTON_ACTIVE = BB_BTN_ICON_ACTIVE;
 
 export const INVENTORY_SECONDARY_ACTION =
-  'flex w-full items-center justify-center gap-1.5 h-11 rounded-3xl text-base md:text-sm font-normal antialiased bb-transition duration-200 hover:bb-shadow-hover-md active:scale-[0.98] motion-reduce:active:scale-100';
+  `flex w-full items-center justify-center gap-1.5 h-11 ${BB_RADIUS_SOFT} text-base md:text-sm font-normal antialiased border border-border/80 bg-card hover:bg-muted/40 bb-transition duration-200 hover:bb-shadow-hover-md active:scale-[0.98] motion-reduce:active:scale-100`;
 
 export const INVENTORY_PASTEL_ACTION =
   'bb-pastel-surface shrink-0 inline-flex h-[3.25rem] sm:h-auto sm:min-h-[3.25rem] w-full sm:w-auto items-center justify-center gap-2 rounded-3xl border px-4 text-sm font-normal text-black bb-shadow-sm bb-transition duration-200 hover:brightness-[0.98] active:scale-[0.99] motion-reduce:active:scale-100';
@@ -48,11 +57,9 @@ export const INVENTORY_PASTEL_ACTION =
 export const INVENTORY_FORM_LABEL =
   'text-[12px] font-normal text-muted-foreground ml-1 uppercase tracking-wider';
 
-export const INVENTORY_BTN_PRIMARY =
-  'inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-sm font-normal bg-foreground text-background rounded-2xl hover:opacity-90 bb-transition duration-200 active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed';
+export const INVENTORY_BTN_PRIMARY = BB_BTN_OUTLINE_PRIMARY;
 
-export const INVENTORY_BTN_SECONDARY =
-  'inline-flex items-center justify-center gap-2 h-11 min-h-[44px] px-4 text-sm font-normal text-foreground bg-muted hover:bg-muted/80 border border-border rounded-2xl bb-transition duration-200 active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-50';
+export const INVENTORY_BTN_SECONDARY = BB_BTN_OUTLINE;
 
 export type InventoryIconTone = 'neutral' | 'accent' | 'warn' | 'inventory';
 
@@ -96,7 +103,7 @@ export function InventoryIconBadge({
   return (
     <div
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-2xl border bb-transition duration-200',
+        BB_ICON_BADGE_BASE,
         size === 'lg' ? 'h-11 w-11' : 'h-9 w-9',
         INVENTORY_ICON_TONE_CLASS[tone],
         className,
@@ -127,10 +134,7 @@ export function InventoryModalCloseButton({
         type="button"
         onClick={onClose}
         disabled={disabled}
-        className={cn(
-          'absolute top-4 right-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/35 hover:border-border/60 bb-transition duration-200 active:scale-95 motion-reduce:active:scale-100 disabled:opacity-50',
-          className,
-        )}
+        className={cn(BB_BTN_CLOSE, 'absolute top-4 right-4 z-10', className)}
         aria-label={label}
       >
         <CloseIcon />
@@ -314,7 +318,8 @@ export function InventoryEmptyState({ icon, message, className }: InventoryEmpty
   return (
     <div
       className={cn(
-        'p-8 text-center text-base font-normal text-muted-foreground bg-card border border-border rounded-3xl',
+        'p-8 text-center text-base font-normal text-muted-foreground bg-card border border-border',
+        BB_RADIUS_SOFT,
         className,
       )}
     >
@@ -358,7 +363,7 @@ export function DeleteConfirmDialog({ onCancel, onConfirm }: DeleteConfirmDialog
         animate={panel.animate}
         exit={panel.exit}
         transition={panel.transition}
-        className={cn(INVENTORY_MODAL_PANEL, 'rounded-3xl w-full max-w-sm p-6 text-center')}
+        className={cn(INVENTORY_MODAL_PANEL, `${BB_RADIUS_SOFT} w-full max-w-sm p-6 text-center`)}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="inventory-delete-title"
@@ -375,13 +380,13 @@ export function DeleteConfirmDialog({ onCancel, onConfirm }: DeleteConfirmDialog
           ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้
         </p>
         <div className="flex gap-3">
-          <button type="button" onClick={onCancel} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 rounded-3xl py-3')}>
+          <button type="button" onClick={onCancel} className={cn(INVENTORY_BTN_SECONDARY, 'flex-1 py-3')}>
             ยกเลิก
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 rounded-3xl text-sm font-normal text-white bb-transition duration-200 active:scale-[0.98] motion-reduce:active:scale-100 bb-shadow-sm"
+            className={cn(BB_BTN_OUTLINE_DANGER, 'flex-1 py-3')}
           >
             ลบรายการ
           </button>

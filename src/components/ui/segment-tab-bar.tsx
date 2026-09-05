@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { BB_CHIP_IDLE, BB_CHIP_SELECTED } from '@/lib/ui-outlined-tokens';
 
 export type SegmentTabItem<T extends string = string> = {
   id: T;
@@ -107,10 +108,8 @@ export function SegmentTabBar<T extends string>({
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               isScroll
                 ? cn(
-                    'shrink-0 min-h-10 rounded-full border px-3.5 py-2 text-[13px]',
-                    isActive
-                      ? 'border-foreground bg-foreground text-background bb-shadow-sm'
-                      : 'border-border bg-background/80 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                    'shrink-0 min-h-10 rounded-2xl border px-3.5 py-2 text-[13px]',
+                    isActive ? BB_CHIP_SELECTED : BB_CHIP_IDLE,
                   )
                 : cn(
                     'flex-1 min-h-11 rounded-xl px-3 py-2.5 text-[13px]',
@@ -187,12 +186,10 @@ export function FilterChipBar({
             onClick={() => onToggle(chip.id)}
             title={typeof chip.label === 'string' ? chip.label : undefined}
             className={cn(
-              'inline-flex shrink-0 items-center justify-center gap-1.5 min-h-10 rounded-full border px-3.5 py-2 text-[13px] font-normal whitespace-nowrap bb-transition duration-200 touch-manipulation',
+              'inline-flex shrink-0 items-center justify-center gap-1.5 min-h-10 rounded-2xl border px-3.5 py-2 text-[13px] font-normal whitespace-nowrap bb-transition duration-200 touch-manipulation',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               chip.id !== allId && 'max-w-[12rem] truncate',
-              isActive
-                ? 'border-foreground bg-foreground text-background bb-shadow-sm'
-                : 'border-border bg-background/80 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+              isActive ? BB_CHIP_SELECTED : BB_CHIP_IDLE,
             )}
           >
             <span className="truncate">{chip.label}</span>

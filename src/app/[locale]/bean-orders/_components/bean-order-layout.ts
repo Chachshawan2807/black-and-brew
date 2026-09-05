@@ -1,4 +1,17 @@
 /** Shared layout tokens for bean-orders pages */
+import {
+  BB_BTN_GHOST,
+  BB_BTN_ICON,
+  BB_BTN_MOTION,
+  BB_BTN_OUTLINE,
+  BB_BTN_OUTLINE_DANGER,
+  BB_BTN_OUTLINE_PRIMARY,
+  BB_BTN_OUTLINE_SM,
+  BB_DATA_CARD,
+  BB_DATA_LIST,
+  BB_RADIUS_SOFT,
+} from '@/lib/ui-outlined-tokens';
+
 export const BEAN_ORDER_PAGE =
   'mx-auto w-full max-w-6xl px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]';
 
@@ -44,12 +57,10 @@ export const BEAN_ORDER_FORM_PANEL =
 export const BEAN_ORDER_FORM_LINE_GRID =
   'grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_minmax(6.5rem,0.85fr)_auto] sm:items-start';
 
-export const BEAN_ORDER_CARD =
-  'rounded-2xl border border-border bg-card bb-shadow-md overflow-visible';
+export const BEAN_ORDER_CARD = BB_DATA_CARD;
 
 /** List/table shell flat border only (shadow stacks with border at the bottom edge). */
-export const BEAN_ORDER_LIST_CARD =
-  'rounded-2xl border border-border bg-card overflow-hidden';
+export const BEAN_ORDER_LIST_CARD = BB_DATA_LIST;
 
 export const BEAN_ORDER_LIST_HEADER =
   'bg-muted/50 text-xs font-normal text-muted-foreground';
@@ -62,35 +73,33 @@ export const BEAN_ORDER_LIST_CELL =
   'lg:border-r lg:border-border/45 lg:px-4 lg:py-3 lg:last:border-r-0';
 
 export const BEAN_ORDER_INPUT =
-  'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-foreground/10';
+  `h-11 w-full ${BB_RADIUS_SOFT} border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-foreground/10`;
 
 export { BB_SELECT_TRIGGER_CLASS as BEAN_ORDER_SELECT } from '@/components/ui/select-trigger-styles';
 
 /** Hover/press motion shared by bean-orders buttons and button-like links */
-export const BEAN_ORDER_BTN_MOTION =
-  'bb-transition cursor-pointer hover:brightness-[0.98] active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100 disabled:pointer-events-none';
+export const BEAN_ORDER_BTN_MOTION = BB_BTN_MOTION;
 
 /** Stronger motion for solid primary CTAs (confirm payment, save shipping, etc.) */
 export const BEAN_ORDER_BTN_PRIMARY_MOTION =
   'bb-transition cursor-pointer shadow-sm hover:scale-[1.02] hover:bb-shadow-md active:scale-[0.96] active:brightness-95 disabled:opacity-50 disabled:shadow-none disabled:hover:scale-100 disabled:active:scale-100 disabled:cursor-not-allowed disabled:pointer-events-none';
 
 export const BEAN_ORDER_ACTION_BTN_BASE =
-  `inline-flex h-11 shrink-0 items-center justify-center rounded-full px-5 text-sm disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION}`;
+  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} px-5 text-sm ${BEAN_ORDER_BTN_MOTION}`;
 
-export const BEAN_ORDER_ACTION_BTN =
-  `inline-flex h-11 shrink-0 items-center justify-center rounded-full px-5 text-sm bg-foreground text-background ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
+export const BEAN_ORDER_ACTION_BTN = BB_BTN_OUTLINE_PRIMARY;
 
 /** Light green pastel confirm payment CTA */
 export const BEAN_ORDER_ACTION_BTN_CONFIRM =
-  `inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#c3e6cb] bg-[#d4edda] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
+  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} border border-[#c3e6cb] bg-[#d4edda] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
 /** Light blue pastel mark delivery success CTA */
 export const BEAN_ORDER_ACTION_BTN_INFO =
-  `inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#b8daff] bg-[#cce5ff] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
+  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} border border-[#b8daff] bg-[#cce5ff] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
 /** Grey non-action pill reserved for future non-clickable status labels. */
 export const BEAN_ORDER_ACTION_BADGE_MUTED =
-  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-border bg-muted px-5 text-sm text-muted-foreground';
+  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} border border-border bg-muted px-5 text-sm text-muted-foreground`;
 
 export const BEAN_ORDER_PAYMENT_SHIPPING_GRID =
   'grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-8';
@@ -129,56 +138,50 @@ export const BEAN_ORDER_PAYMENT_SLIP_SLOT =
 export const BEAN_ORDER_DETAIL_PAYMENT_SLIP_SLOT =
   `h-[9rem] min-h-[9rem] ${BEAN_ORDER_PAYMENT_ACTIONS_WIDTH} overflow-hidden`;
 
-export const BEAN_ORDER_ACTION_BTN_OUTLINE =
-  `${BEAN_ORDER_ACTION_BTN_BASE} border border-border bg-background text-foreground hover:bg-muted/35 hover:bb-shadow-sm`;
+export const BEAN_ORDER_ACTION_BTN_OUTLINE = BB_BTN_OUTLINE;
 
-export const BEAN_ORDER_ACTION_BTN_DANGER =
-  `${BEAN_ORDER_ACTION_BTN_BASE} border border-red-500 bg-background text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20`;
+export const BEAN_ORDER_ACTION_BTN_DANGER = BB_BTN_OUTLINE_DANGER;
 
-export const BEAN_ORDER_BTN_SM_OUTLINE =
-  `inline-flex h-9 min-h-[44px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background px-3.5 text-xs text-foreground disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35 hover:bb-shadow-sm`;
+export const BEAN_ORDER_BTN_SM_OUTLINE = BB_BTN_OUTLINE_SM;
 
 export const BEAN_ORDER_BTN_SM_DANGER =
-  `inline-flex h-9 min-h-[44px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-red-500 bg-background px-3.5 text-xs text-red-600 disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:bg-red-50 dark:hover:bg-red-950/20`;
+  `inline-flex h-9 min-h-[44px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap ${BB_RADIUS_SOFT} border border-red-500/80 bg-card px-3.5 text-xs text-red-600 disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:bg-red-50 dark:hover:bg-red-950/20`;
 
-export const BEAN_ORDER_BTN_GHOST =
-  `inline-flex items-center gap-1 rounded-full px-3 text-sm ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35 active:bg-muted/45`;
+export const BEAN_ORDER_BTN_GHOST = BB_BTN_GHOST;
 
 export const BEAN_ORDER_BTN_LIST =
   `w-full px-3 py-2 text-left text-sm ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35 active:bg-muted/45`;
 
 export const BEAN_ORDER_BTN_PRIMARY_FULL =
-  `h-12 w-full rounded-full bg-foreground text-background text-sm ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
+  `inline-flex h-12 w-full items-center justify-center gap-2 ${BB_RADIUS_SOFT} border-2 border-foreground/85 bg-card text-sm text-foreground hover:bg-muted/35 bb-shadow-sm ${BB_BTN_MOTION}`;
 
-export const BEAN_ORDER_BTN_PRIMARY_LINK =
-  `inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-foreground px-5 text-sm text-background ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
+export const BEAN_ORDER_BTN_PRIMARY_LINK = BB_BTN_OUTLINE_PRIMARY;
 
 export const BEAN_ORDER_BTN_PASTEL_FULL =
-  `bb-pastel-surface flex h-12 w-full items-center justify-center gap-2 rounded-full border border-[#bee5eb] bg-[#d1ecf1] text-sm text-black disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:brightness-[0.97]`;
+  `bb-pastel-surface flex h-12 w-full items-center justify-center gap-2 ${BB_RADIUS_SOFT} border border-[#bee5eb] bg-[#d1ecf1] text-sm text-black disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:brightness-[0.97]`;
 
-export const BEAN_ORDER_BTN_ICON =
-  `inline-flex items-center justify-center rounded-full ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/50 hover:text-foreground hover:bb-shadow-sm active:bg-muted/60`;
+export const BEAN_ORDER_BTN_ICON = `${BB_BTN_ICON} h-11 w-11 min-h-[44px] min-w-[44px]`;
 
 export const BEAN_ORDER_BTN_DIALOG =
-  `rounded-xl border border-border bg-background px-3 py-2 text-sm ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35`;
+  `inline-flex items-center justify-center ${BB_RADIUS_SOFT} border border-border/80 bg-card px-3 py-2 text-sm ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35`;
 
 export const BEAN_ORDER_BTN_DIALOG_PRIMARY =
-  `rounded-xl bg-foreground px-3 py-2 text-sm text-background ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
+  `inline-flex items-center justify-center ${BB_RADIUS_SOFT} border-2 border-foreground/85 bg-card px-3 py-2 text-sm ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
 export const BEAN_ORDER_BTN_DIALOG_DANGER =
-  `rounded-xl border border-red-500 bg-background px-3 py-2 text-sm text-red-600 ${BEAN_ORDER_BTN_MOTION} hover:bg-red-50 dark:hover:bg-red-950/20`;
+  `inline-flex items-center justify-center ${BB_RADIUS_SOFT} border border-red-500/80 bg-card px-3 py-2 text-sm text-red-600 ${BEAN_ORDER_BTN_MOTION} hover:bg-red-50 dark:hover:bg-red-950/20`;
 
 export const BEAN_ORDER_BTN_TOGGLE =
-  `h-11 shrink-0 rounded-full border px-4 text-sm ${BEAN_ORDER_BTN_MOTION}`;
+  `h-11 shrink-0 ${BB_RADIUS_SOFT} border border-border/80 bg-card px-4 text-sm ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/35`;
 
 export const BEAN_ORDER_BTN_DANGER_GHOST =
-  `inline-flex h-11 items-center justify-center gap-1 self-center rounded-full px-2 text-sm text-red-600 ${BEAN_ORDER_BTN_MOTION} hover:bg-red-50 active:bg-red-100/80 dark:hover:bg-red-950/20`;
+  `inline-flex h-11 items-center justify-center gap-1 self-center ${BB_RADIUS_SOFT} border border-transparent px-2 text-sm text-red-600 ${BEAN_ORDER_BTN_MOTION} hover:border-red-500/40 hover:bg-red-50 dark:hover:bg-red-950/20`;
 
 export const BEAN_ORDER_BTN_SLIP =
-  `group mr-auto inline-flex flex-col items-stretch overflow-hidden rounded-xl border border-border bg-muted/20 text-left ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/30 active:scale-[0.99]`;
+  `group mr-auto inline-flex flex-col items-stretch overflow-hidden ${BB_RADIUS_SOFT} border border-border bg-muted/20 text-left ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/30 active:scale-[0.99]`;
 
 export const BEAN_ORDER_BTN_SLIP_PANEL =
-  `group flex h-full w-full flex-col overflow-hidden rounded-xl border border-border bg-muted/20 text-left ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/30 active:scale-[0.99]`;
+  `group flex h-full w-full flex-col overflow-hidden ${BB_RADIUS_SOFT} border border-border bg-muted/20 text-left ${BEAN_ORDER_BTN_MOTION} hover:bg-muted/30 active:scale-[0.99]`;
 
 /** Desktop list/table columns: copy | customer | order no | destination | carrier | amount | status */
 export const BEAN_ORDER_LIST_GRID =

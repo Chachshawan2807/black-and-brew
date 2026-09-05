@@ -308,7 +308,7 @@
   .bb-card {
     background-color: var(--card);
     border: 1px solid var(--border);
-    border-radius: 1.5rem;
+    border-radius: 1rem;
     box-shadow:
       inset 0 1px 0 var(--bb-surface-highlight),
       0 1px 2px rgb(0 0 0 / 0.04),
@@ -437,6 +437,61 @@
     .bb-card {
       transition: box-shadow 220ms var(--bb-ease-out), transform 220ms var(--bb-ease-out);
     }
+  }
+
+  /* Outlined control utilities (soft corners + visible borders) */
+  .bb-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding-inline: 1rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--foreground);
+    background-color: var(--card);
+    border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+    border-radius: 1rem;
+    box-shadow:
+      inset 0 1px 0 var(--bb-surface-highlight),
+      0 1px 2px rgb(0 0 0 / 0.04);
+    transition:
+      color 220ms var(--bb-ease-out),
+      background-color 220ms var(--bb-ease-out),
+      border-color 220ms var(--bb-ease-out),
+      box-shadow 220ms var(--bb-ease-out),
+      transform 220ms var(--bb-ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bb-btn-outline:hover {
+      background-color: color-mix(in srgb, var(--muted) 55%, transparent);
+      border-color: var(--border);
+    }
+  }
+
+  .bb-btn-outline:active {
+    transform: scale(0.98);
+  }
+
+  .bb-btn-outline:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .bb-btn-icon-frame {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+    border-radius: 0.75rem;
+    background-color: color-mix(in srgb, var(--muted) 45%, transparent);
+    color: var(--foreground);
+    transition: background-color 220ms var(--bb-ease-out), border-color 220ms var(--bb-ease-out);
   }
 
   .bb-table-wrapper {

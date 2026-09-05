@@ -186,7 +186,7 @@ export default function DataChangeHistorySection({
             className={cn(
               "rounded-full px-3 py-1 text-[12px] bb-transition border",
               moduleFilter === opt.value
-                ? "bg-foreground text-background border-foreground"
+                ? "bg-card text-foreground border-foreground ring-1 ring-foreground/10"
                 : "bg-transparent text-muted-foreground border-border hover:text-foreground"
             )}
           >

@@ -25,6 +25,7 @@ import {
   withReducedMotion,
 } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import { BB_BTN_CLOSE, BB_ICON_BADGE_BASE, BB_RADIUS_SOFT } from '@/lib/ui-outlined-tokens';
 import { BEAN_ORDER_BTN_ICON } from './bean-order-layout';
 
 export const BEAN_ORDER_MOTION_SAFE =
@@ -87,7 +88,7 @@ export function BeanOrderIconBadge({
   return (
     <div
       className={cn(
-        'inline-flex shrink-0 items-center justify-center border bb-transition duration-200',
+        BB_ICON_BADGE_BASE,
         sizeClass,
         BEAN_ORDER_ICON_TONE_CLASS[tone],
         className,
@@ -118,10 +119,7 @@ export function BeanOrderModalCloseButton({
       onClick={onClose}
       disabled={disabled}
       title={label}
-      className={cn(
-        'absolute top-4 right-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/35 hover:border-border/60 bb-transition duration-200 active:scale-95 motion-reduce:active:scale-100 disabled:opacity-50',
-        className,
-      )}
+      className={cn(BB_BTN_CLOSE, 'absolute top-4 right-4 z-10', className)}
       aria-label={label}
     >
       <CloseIcon />

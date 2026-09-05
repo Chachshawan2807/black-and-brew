@@ -320,7 +320,7 @@ export function ClickableDatePicker({
                 DATE_PICKER_DAY_BASE,
                 'cursor-pointer',
                 isSelected
-                  ? 'bg-foreground text-background bb-shadow-md scale-[1.04]'
+                  ? 'border-2 border-foreground/85 bg-card text-foreground bb-shadow-md scale-[1.04]'
                   : isCurrent
                   ? 'bb-pastel-surface bg-[#ffda66] text-[#000000]'
                   : 'hover:bg-muted text-foreground',

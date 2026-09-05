@@ -95,7 +95,7 @@ function StaticMenuItem({
                   {label}
                 </p>
                 {menu.badgeCount ? (
-                  <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-foreground px-1.5 py-0.5 text-[10px] tabular-nums text-background">
+                  <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full border border-foreground/80 bg-card px-1.5 py-0.5 text-[10px] tabular-nums text-foreground">
                     {menu.badgeCount > 99 ? '99+' : menu.badgeCount}
                   </span>
                 ) : null}
@@ -181,7 +181,7 @@ function SortableMenuItem({
                   {label}
                 </p>
                 {menu.badgeCount ? (
-                  <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-foreground px-1.5 py-0.5 text-[10px] tabular-nums text-background">
+                  <span className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full border border-foreground/80 bg-card px-1.5 py-0.5 text-[10px] tabular-nums text-foreground">
                     {menu.badgeCount > 99 ? '99+' : menu.badgeCount}
                   </span>
                 ) : null}

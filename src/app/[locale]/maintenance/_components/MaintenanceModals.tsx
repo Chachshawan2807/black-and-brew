@@ -352,7 +352,7 @@ export default function MaintenanceModals({
                 <button
                   onClick={handleSubmit}
                   disabled={loading || isReadOnly}
-                  className="flex-[2] h-11 md:h-auto md:py-3 bg-foreground text-background font-normal rounded-2xl hover:opacity-90 bb-transition bb-shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
+                  className="flex-[2] h-11 md:h-auto md:py-3 border-2 border-foreground/85 bg-card text-foreground font-normal rounded-2xl hover:bg-muted/35 bb-transition bb-shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base md:text-[12px] uppercase tracking-widest"
                 >
                   {loading ? <LoadingIcon size="md" /> : <Save className="w-4 h-4" strokeWidth={ICON_STROKE} />}
                   ยืนยันบันทึก

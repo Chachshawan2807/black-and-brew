@@ -359,7 +359,7 @@ export function ClickableDateRangePicker({
                 DATE_PICKER_DAY_BASE,
                 isDisabled ? 'text-muted-foreground/40 cursor-not-allowed' : 'cursor-pointer',
                 isEndpoint
-                  ? 'bg-foreground text-background bb-shadow-md scale-[1.04]'
+                  ? 'border-2 border-foreground/85 bg-card text-foreground bb-shadow-md scale-[1.04]'
                   : inRange
                   ? 'bg-muted text-foreground'
                   : isCurrent

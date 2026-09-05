@@ -538,7 +538,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
           transition={modalContent.transition}
           className="w-full max-w-sm flex flex-col items-center gap-6 text-center"
         >
-          <div className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center bb-shadow-lg">
+          <div className="w-16 h-16 border-2 border-foreground/85 bg-card text-foreground rounded-2xl flex items-center justify-center bb-shadow-lg">
             <BiometricIcon size={32} strokeWidth={1.5} />
           </div>
 
@@ -560,7 +560,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
               type="button"
               onClick={() => void handleEnrollment()}
               disabled={passkeyBusy}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground text-background px-4 py-3 text-sm font-normal disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-foreground/85 bg-card text-foreground px-4 py-3 text-sm font-normal hover:bg-muted/35 disabled:opacity-60"
             >
               {passkeyBusy ? (
                 <LoadingIcon size={18} className="animate-spin" />
@@ -639,7 +639,7 @@ export default function PinGateway({ children }: { children: React.ReactNode }) 
         <motion.div
           animate={isVerifying ? PIN_VERIFYING_LOCK_ANIMATE.active : PIN_VERIFYING_LOCK_ANIMATE.idle}
           transition={pinVerifyingLockTransition(isVerifying)}
-          className="w-16 h-16 bg-foreground text-background rounded-[24px] flex items-center justify-center bb-shadow-lg"
+          className="w-16 h-16 border-2 border-foreground/85 bg-card text-foreground rounded-2xl flex items-center justify-center bb-shadow-lg"
         >
           <Lock size={32} strokeWidth={1.5} />
         </motion.div>

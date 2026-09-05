@@ -18,14 +18,14 @@ export const FAB_RIGHT_CLASS =
   'max-md:right-[calc(1.25rem+env(safe-area-inset-right,0px))] md:right-6';
 
 export const FAB_BASE_CLASS = cn(
-  'fixed rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg',
+  'fixed rounded-full border border-foreground/80 bg-card text-foreground flex items-center justify-center bb-shadow-lg',
   FAB_SIZE_CLASS,
   FAB_RIGHT_CLASS,
 );
 
 /** Inner trigger styling when wrapped by FabFadePresence (position on parent) */
 export const FAB_STACK_INNER_CLASS = cn(
-  'rounded-full bg-[#000000] text-white flex items-center justify-center shadow-lg',
+  'rounded-full border border-foreground/80 bg-card text-foreground flex items-center justify-center bb-shadow-lg',
   FAB_SIZE_CLASS,
 );
 

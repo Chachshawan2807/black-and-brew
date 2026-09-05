@@ -285,7 +285,7 @@ export function InventoryAddItemModal({ itemsCount, onClose, onSuccess }: Invent
             <button
               type="submit"
               disabled={isSubmitting}
-              className={cn(INVENTORY_BTN_PRIMARY, 'flex-1 rounded-3xl py-3 bb-shadow-sm')}
+              className={cn(INVENTORY_BTN_PRIMARY, 'flex-1 py-3 bb-shadow-sm')}
             >
               บันทึกข้อมูล
             </button>

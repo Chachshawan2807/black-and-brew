@@ -111,7 +111,7 @@ export function CountAdjustPinDialog({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="p-5 flex flex-col items-center gap-5 text-center">
-          <div className="w-14 h-14 bg-foreground text-background rounded-2xl flex items-center justify-center bb-shadow-md">
+          <div className="w-14 h-14 border-2 border-foreground/85 bg-card text-foreground rounded-2xl flex items-center justify-center bb-shadow-md">
             {isVerifying ? (
               <LoadingIcon size="lg" className="aria-hidden" />
             ) : (
