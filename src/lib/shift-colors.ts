@@ -6,57 +6,62 @@ import {
   getClientShiftTypes,
   type ShiftTypeEntry,
 } from '@/lib/shift-type-config';
+import {
+  BB_PASTEL_BORDER_COLOR,
+  BB_PASTEL_SURFACE,
+  bbPastelClass,
+} from '@/lib/ui-outlined-tokens';
 
 /** Compact notification palettes hex pairs aligned with Tailwind classes below */
 export type ShiftFlexPalette = { backgroundColor: string; borderColor: string };
 
 const LEGACY_FLEX_PALETTES = {
-  '6:30': { backgroundColor: '#d4edda', borderColor: '#c3e6cb' },
-  '06:30': { backgroundColor: '#d4edda', borderColor: '#c3e6cb' },
-  '7:00': { backgroundColor: '#ffffff', borderColor: '#d1d5db' },
-  '07:00': { backgroundColor: '#ffffff', borderColor: '#d1d5db' },
-  '8:00': { backgroundColor: '#fff3cd', borderColor: '#ffeeba' },
-  '08:00': { backgroundColor: '#fff3cd', borderColor: '#ffeeba' },
-  'ร้านซักผ้า': { backgroundColor: '#d1ecf1', borderColor: '#bee5eb' },
-  'ไปสาขา 2': { backgroundColor: '#d1ecf1', borderColor: '#bee5eb' },
-  'ลา': { backgroundColor: '#f8d7da', borderColor: '#f5c6cb' },
-  'วันหยุด': { backgroundColor: '#f8d7da', borderColor: '#f5c6cb' },
+  '6:30': { backgroundColor: '#d4edda', borderColor: BB_PASTEL_BORDER_COLOR },
+  '06:30': { backgroundColor: '#d4edda', borderColor: BB_PASTEL_BORDER_COLOR },
+  '7:00': { backgroundColor: '#ffffff', borderColor: BB_PASTEL_BORDER_COLOR },
+  '07:00': { backgroundColor: '#ffffff', borderColor: BB_PASTEL_BORDER_COLOR },
+  '8:00': { backgroundColor: '#fff3cd', borderColor: BB_PASTEL_BORDER_COLOR },
+  '08:00': { backgroundColor: '#fff3cd', borderColor: BB_PASTEL_BORDER_COLOR },
+  'ร้านซักผ้า': { backgroundColor: '#d1ecf1', borderColor: BB_PASTEL_BORDER_COLOR },
+  'ไปสาขา 2': { backgroundColor: '#d1ecf1', borderColor: BB_PASTEL_BORDER_COLOR },
+  'ลา': { backgroundColor: '#f8d7da', borderColor: BB_PASTEL_BORDER_COLOR },
+  'วันหยุด': { backgroundColor: '#f8d7da', borderColor: BB_PASTEL_BORDER_COLOR },
 } as const satisfies Record<string, ShiftFlexPalette>;
 
 export const FLEX_HEADER_PALETTE: ShiftFlexPalette = {
   backgroundColor: '#f7f5e8',
-  borderColor: '#e3dfd0',
+  borderColor: BB_PASTEL_BORDER_COLOR,
 };
 
 export const FLEX_HOLIDAY_PALETTE: ShiftFlexPalette = {
   backgroundColor: '#fff3cd',
-  borderColor: '#ffeeba',
+  borderColor: BB_PASTEL_BORDER_COLOR,
 };
 
 export const FLEX_MUTED_TEXT = '#6b7280';
 export const FLEX_BODY_TEXT = '#111111';
 
-const PASTEL = 'bb-pastel-surface text-[#000000]';
+const PASTEL = BB_PASTEL_SURFACE;
 
 export const DASHBOARD_STAT_COLORS = {
-  work: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
-  leave: `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`,
-  holiday: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
+  work: bbPastelClass('bg-[#d4edda]'),
+  leave: bbPastelClass('bg-[#f8d7da]'),
+  holiday: bbPastelClass('bg-[#fff3cd]'),
 } as const;
 
 /** Inventory Quick Action same muted pastels as schedule/dashboard, black text */
 export const INVENTORY_QUICK_ACTION_COLORS = {
-  in: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
-  out: `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`,
-  adjust: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
+  in: bbPastelClass('bg-[#d4edda]'),
+  out: bbPastelClass('bg-[#f8d7da]'),
+  adjust: bbPastelClass('bg-[#fff3cd]'),
   /** สั่งซื้อ cyan (procurement / branch duty palette) */
-  order: `${PASTEL} bg-[#d1ecf1] border border-[#bee5eb]`,
+  order: bbPastelClass('bg-[#d1ecf1]'),
   /** เพิ่มสินค้า green (create / receive) */
-  addItem: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
+  addItem: bbPastelClass('bg-[#d4edda]'),
   /** ประวัติ warm cream (neutral records) */
-  history: `${PASTEL} bg-[#f7f5e8] border border-[#e3dfd0]`,
+  history: bbPastelClass('bg-[#f7f5e8]'),
   /** ปรับสต็อกด่วน FAB yellow (adjust / quick stock) */
-  fab: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
+  fab: bbPastelClass('bg-[#fff3cd]'),
   toggleTrack: 'bg-muted/80 border border-border',
   inactive: 'text-muted-foreground hover:text-foreground',
 } as const;
@@ -83,7 +88,7 @@ export function inventoryQuickActionTypeColors(type: InventoryQuickActionType): 
 }
 
 /** วันหยุด โทนเดียวกับกะลา */
-export const DAY_OFF_COLOR = `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`;
+export const DAY_OFF_COLOR = bbPastelClass('bg-[#f8d7da]');
 
 /** Morning Latte Cream primary surface (`--background`, design.md `--bg-primary`) */
 export const MORNING_LATTE_CREAM = 'bg-card border border-border';
@@ -98,31 +103,31 @@ export const BEAN_ORDER_BADGE_COLORS = {
 /** Secretary task board card surfaces */
 export const SECRETARY_TASK_COLORS = {
   card: 'bg-card border-foreground/20',
-  done: `${PASTEL} bg-[#d4f5d4] border-[#8fd48f]`,
-  doneAction: 'border-[#8fd48f] bg-[#eef9ee]',
-  attention: `${PASTEL} bg-[#fde8e8] border-[#f5c6cb]`,
+  done: bbPastelClass('bg-[#d4f5d4]'),
+  doneAction: bbPastelClass('bg-[#eef9ee]'),
+  attention: bbPastelClass('bg-[#fde8e8]'),
 } as const;
 
 export const SALES_SECTION_COLORS = {
-  headerIcon: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
+  headerIcon: bbPastelClass('bg-[#d4edda]'),
   upload: MORNING_LATTE_CREAM,
-  revenue: `${PASTEL} bg-[#d4edda] border border-[#c3e6cb]`,
-  quantity: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
-  menuItems: `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`,
+  revenue: bbPastelClass('bg-[#d4edda]'),
+  quantity: bbPastelClass('bg-[#fff3cd]'),
+  menuItems: bbPastelClass('bg-[#f8d7da]'),
   categories: MORNING_LATTE_CREAM,
   chart: MORNING_LATTE_CREAM,
   topProducts: MORNING_LATTE_CREAM,
   table: 'bg-card border border-border',
-  empty: `${PASTEL} bg-[#fff3cd] border border-[#ffeeba]`,
+  empty: bbPastelClass('bg-[#fff3cd]'),
 } as const;
 
 export const SALES_CATEGORY_CARD_COLORS = [
-  `${PASTEL} bg-[#d4edda] border-[#c3e6cb]`,
-  `${PASTEL} bg-[#d1ecf1] border-[#bee5eb]`,
-  `${PASTEL} bg-[#fff3cd] border-[#ffeeba]`,
-  `${PASTEL} bg-[#f8d7da] border-[#f5c6cb]`,
-  `${PASTEL} bg-[#e6f0ff] border-[#c2d6ff]`,
-  `${PASTEL} bg-[#f3e8ff] border-[#d8b4fe]`,
+  bbPastelClass('bg-[#d4edda]'),
+  bbPastelClass('bg-[#d1ecf1]'),
+  bbPastelClass('bg-[#fff3cd]'),
+  bbPastelClass('bg-[#f8d7da]'),
+  bbPastelClass('bg-[#e6f0ff]'),
+  bbPastelClass('bg-[#f3e8ff]'),
 ] as const;
 
 export { PASTEL as PASTEL_SURFACE };
@@ -135,7 +140,7 @@ function resolveTypes(): ShiftTypeEntry[] {
 }
 
 function entryToFlexPalette(entry: ShiftTypeEntry): ShiftFlexPalette {
-  return { backgroundColor: entry.bgColor, borderColor: entry.borderColor };
+  return { backgroundColor: entry.bgColor, borderColor: BB_PASTEL_BORDER_COLOR };
 }
 
 export function getShiftFlexPalette(location: string, status?: string): ShiftFlexPalette {
@@ -168,15 +173,15 @@ export function getShiftColorClass(location: string, status?: string): string {
   if (status === 'on_leave' || loc === 'ลา') {
     const leave = findShiftTypeByLocation('ลา', types);
     if (leave) return buildShiftDisplay(leave).className;
-    return `${PASTEL} bg-[#f8d7da] border border-[#f5c6cb]`;
+    return bbPastelClass('bg-[#f8d7da]');
   }
 
   const matched = findShiftTypeByLocation(loc, types);
   if (matched) return buildShiftDisplay(matched).className;
 
-  if (!loc) return `${PASTEL} bg-[#ffffff] border border-gray-300`;
+  if (!loc) return bbPastelClass('bg-[#ffffff]');
 
-  return `${PASTEL} bg-[#d1ecf1] border border-[#bee5eb]`;
+  return bbPastelClass('bg-[#d1ecf1]');
 }
 
 export type ShiftColorStyle = {
@@ -187,7 +192,7 @@ export type ShiftColorStyle = {
 
 const FALLBACK_SHIFT_STYLE: ShiftColorStyle = {
   backgroundColor: '#d1ecf1',
-  borderColor: '#bee5eb',
+  borderColor: BB_PASTEL_BORDER_COLOR,
   color: '#000000',
 };
 
@@ -199,14 +204,14 @@ export function getShiftColorStyle(location: string, status?: string): ShiftColo
   if (status === 'on_leave' || loc === 'ลา') {
     const leave = findShiftTypeByLocation('ลา', types);
     if (leave) return buildShiftDisplay(leave).style;
-    return { backgroundColor: '#f8d7da', borderColor: '#f5c6cb', color: '#000000' };
+    return { backgroundColor: '#f8d7da', borderColor: BB_PASTEL_BORDER_COLOR, color: '#000000' };
   }
 
   const matched = findShiftTypeByLocation(loc, types);
   if (matched) return buildShiftDisplay(matched).style;
 
   if (!loc) {
-    return { backgroundColor: '#ffffff', borderColor: '#d1d5db', color: '#000000' };
+    return { backgroundColor: '#ffffff', borderColor: BB_PASTEL_BORDER_COLOR, color: '#000000' };
   }
 
   return FALLBACK_SHIFT_STYLE;

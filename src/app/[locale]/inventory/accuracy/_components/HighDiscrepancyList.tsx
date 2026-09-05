@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp } from '@/lib/icons';
+import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import {
   latestCountDiscrepancyQty,
   sortHighDiscrepancyItems,
@@ -88,14 +89,14 @@ export function HighDiscrepancyList({ items }: HighDiscrepancyListProps) {
           active={sortBy === 'discrepancy'}
           sortOrder={sortOrder}
           onClick={() => handleSortBy('discrepancy')}
-          activeClassName="border-[#ffeeba] bg-[#fff3cd] text-black"
+          activeClassName={bbPastelClass('bg-[#fff3cd]')}
         />
         <SortButton
           label="ความแม่นยำ"
           active={sortBy === 'accuracy'}
           sortOrder={sortOrder}
           onClick={() => handleSortBy('accuracy')}
-          activeClassName="border-[#c3e6cb] bg-[#d4edda] text-black"
+          activeClassName={bbPastelClass('bg-[#d4edda]')}
         />
       </div>
 

@@ -69,6 +69,7 @@ import {
 import { useSafeDndSensors } from '@/lib/dnd-sensors';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
+import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import { shouldShowPageTitle } from '@/lib/sidebar-menu-labels';
 import { blurActiveElement } from '@/lib/blur-active-element';
 import { scheduleInventoryGridCellBlur } from '@/lib/inventory-grid-cell-blur';
@@ -168,10 +169,10 @@ function CountPolicyToggle({
       aria-label="สลับวิธีตรวจนับ"
       onClick={savePolicy}
       className={cn(
-        'bb-pastel-surface inline-flex h-8 shrink-0 items-center rounded-full border px-2.5 text-[12px] text-black bb-shadow-sm bb-transition hover:scale-[1.02] active:scale-95',
+        'inline-flex h-8 shrink-0 items-center rounded-full px-2.5 text-[12px] bb-shadow-sm bb-transition hover:scale-[1.02] active:scale-95',
         policy === 'exact_count'
-          ? 'border-[#bfdbfe] bg-[#dbeafe]'
-          : 'border-[#f5c6cb] bg-[#f8d7da]',
+          ? bbPastelClass('bg-[#dbeafe]')
+          : bbPastelClass('bg-[#f8d7da]'),
       )}
     >
       <span className="mr-1.5 h-2 w-2 rounded-full bg-black/55" aria-hidden="true" />
@@ -366,7 +367,7 @@ const SortableRow = React.memo(({ item, index: rowIndex, columnById, handleUpdat
               requestDelete={requestDelete}
               handleFocus={handleFocus}
               cardMode
-              className={manualOrderQty ? 'bb-pastel-surface border-[#f5c6cb] bg-[#f8d7da] text-black' : undefined}
+              className={manualOrderQty ? bbPastelClass('bg-[#f8d7da]') : undefined}
             />
           )}
         </div>
@@ -583,7 +584,7 @@ const MobileSortableRow = React.memo(({
               className={cn(
                 "w-full h-8 px-1 rounded-lg border text-[13px] font-normal text-center outline-none focus-visible:outline-none focus-visible:ring-1 bb-transition tabular-nums truncate",
                 manualOrderQty
-                  ? 'bb-pastel-surface border-[#f5c6cb] bg-[#f8d7da] text-black focus:bg-[#f8d7da]'
+                  ? bbPastelClass('bg-[#f8d7da] focus:bg-[#f8d7da]')
                   : 'border-border bg-muted text-muted-foreground focus:bg-card focus-visible:ring-foreground/10 cursor-not-allowed'
               )}
             />
@@ -1894,12 +1895,12 @@ export default function InventoryClient({
                   aria-haspopup="dialog"
                   className={cn(
                     INVENTORY_PASTEL_ACTION,
-                    'border-[#bfdbfe] bg-[#dbeafe]',
+                    bbPastelClass('bg-[#dbeafe]'),
                   )}
                 >
                   <ClipboardList className="w-4 h-4 shrink-0" strokeWidth={1.5} aria-hidden />
                   <span className="whitespace-nowrap">รายการที่ต้องเบิก</span>
-                  <span className="bb-pastel-surface shrink-0 rounded-full border border-[#bfdbfe] bg-[#bfdbfe]/60 px-2 py-0.5 text-[11px] tabular-nums">
+                  <span className={cn(bbPastelClass('bg-[#bfdbfe]/60'), 'shrink-0 rounded-full px-2 py-0.5 text-[11px] tabular-nums')}>
                     {withdrawRequiredItems.length}
                   </span>
                 </button>
@@ -2103,8 +2104,8 @@ export default function InventoryClient({
                               'flex min-h-12 cursor-pointer flex-col justify-center rounded-2xl border px-3 py-2 text-sm transition-colors',
                               currentPolicy === option.value
                                 ? option.value === 'exact_count'
-                                  ? 'bb-pastel-surface border-[#bfdbfe] bg-[#dbeafe] text-black'
-                                  : 'bb-pastel-surface border-[#f5c6cb] bg-[#f8d7da] text-black'
+                                  ? bbPastelClass('bg-[#dbeafe]')
+                                  : bbPastelClass('bg-[#f8d7da]')
                                 : 'border-border bg-muted text-foreground hover:bg-card',
                             )}
                           >

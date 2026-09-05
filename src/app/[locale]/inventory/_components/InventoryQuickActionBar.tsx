@@ -28,6 +28,7 @@ import {
 import { ICON_STROKE } from '@/lib/icons';
 import { LoadingIcon } from '@/components/ui/loading-icon';
 import { cn } from '@/lib/utils';
+import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import type { QuickBadgeStyles } from '@/lib/inventory-stock';
 import {
   INVENTORY_QUICK_ACTION_COLORS,
@@ -283,7 +284,7 @@ function QuickActionQtyInput({
           aria-label="เพิ่มจำนวน"
           className={cn(
             'absolute right-0 top-0 flex items-center justify-center rounded-xl border border-border bg-card text-muted-foreground bb-shadow-sm',
-            'hover:bg-[#d4edda]/50 hover:border-[#c3e6cb] hover:text-foreground active:scale-95 bb-transition',
+            'hover:bg-[#d4edda]/50 hover:border-black/75 hover:text-foreground active:scale-95 bb-transition',
             stepBtnSize,
           )}
         >
@@ -298,7 +299,7 @@ function QuickActionQtyInput({
           aria-label="ลดจำนวน"
           className={cn(
             'absolute right-0 bottom-0 flex items-center justify-center rounded-xl border border-border bg-card text-muted-foreground bb-shadow-sm',
-            'hover:bg-[#f8d7da]/45 hover:border-[#f5c6cb] hover:text-foreground active:scale-95 bb-transition',
+            'hover:bg-[#f8d7da]/45 hover:border-black/75 hover:text-foreground active:scale-95 bb-transition',
             stepBtnSize,
           )}
         >
@@ -375,7 +376,7 @@ function BackfillModeToggle({
         className={cn(
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bb-transition',
           backfillMode
-            ? 'bb-pastel-surface bg-[#ffda66] border-[#f5cc4d] text-[#000000]'
+            ? bbPastelClass('bg-[#ffda66]')
             : 'bg-background border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
         )}
       >
@@ -402,7 +403,7 @@ function BulkModeToggle({
         className={cn(
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bb-transition',
           bulkMode
-            ? 'bb-pastel-surface bg-[#d1ecf1] border-[#bee5eb] text-[#000000]'
+            ? bbPastelClass('bg-[#d1ecf1]')
             : 'bg-background border-border text-muted-foreground hover:text-foreground hover:border-foreground/20',
         )}
       >
@@ -664,7 +665,7 @@ function SecondaryQuickActionButtons({
         <ShoppingCart className="w-4 h-4 shrink-0" strokeWidth={1.5} />
         <span className="truncate">สั่งซื้อ</span>
         {itemsToOrderCount > 0 && (
-          <span className="bb-pastel-surface bg-[#bee5eb] text-[10px] px-1.5 py-0.5 rounded-full font-normal shrink-0 border border-[#a8dce3]">
+          <span className={cn(bbPastelClass('bg-[#bee5eb]'), 'text-[10px] px-1.5 py-0.5 rounded-full font-normal shrink-0')}>
             {itemsToOrderCount}
           </span>
         )}

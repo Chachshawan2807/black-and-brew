@@ -45,7 +45,7 @@ import { CountAdjustPinDialog } from '@/app/[locale]/inventory/count/_components
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
 import { BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
-import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import { getInventoryCountInputName } from '@/lib/inventory-grid-cell-a11y';
 
 type CountPageMode = 'count' | 'adjust';
@@ -551,10 +551,8 @@ function formatCountMatchLabel(
 
 function getCountMatchBadgeClass(matched: boolean): string {
   return cn(
-    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] text-black bb-pastel-surface',
-    matched
-      ? 'bg-[#d4edda] border border-[#c3e6cb]'
-      : 'bg-[#fff3cd] border border-[#ffeeba]',
+    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]',
+    matched ? bbPastelClass('bg-[#d4edda]') : bbPastelClass('bg-[#fff3cd]'),
   );
 }
 
@@ -590,8 +588,8 @@ const CountItemRow = memo(function CountItemRow({
 }: CountItemRowProps) {
   const isSufficiencyCheck = item.count_policy === 'sufficiency_check';
   const rowToneClass = isSufficiencyCheck
-    ? `${PASTEL_SURFACE} bg-[#f8d7da] border border-[#f5c6cb]`
-    : `${PASTEL_SURFACE} bg-[#dbeafe] border border-[#bfdbfe]`;
+    ? bbPastelClass('bg-[#f8d7da]')
+    : bbPastelClass('bg-[#dbeafe]');
 
   return (
     <motion.div
@@ -747,8 +745,8 @@ const AdjustItemRow = memo(function AdjustItemRow({
 }: AdjustItemRowProps) {
   const isSufficiencyCheck = item.count_policy === 'sufficiency_check';
   const rowToneClass = isSufficiencyCheck
-    ? `${PASTEL_SURFACE} bg-[#f8d7da] border border-[#f5c6cb]`
-    : `${PASTEL_SURFACE} bg-[#dbeafe] border border-[#bfdbfe]`;
+    ? bbPastelClass('bg-[#f8d7da]')
+    : bbPastelClass('bg-[#dbeafe]');
 
   return (
     <motion.div

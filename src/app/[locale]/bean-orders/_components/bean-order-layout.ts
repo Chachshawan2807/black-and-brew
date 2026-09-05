@@ -10,6 +10,7 @@ import {
   BB_DATA_CARD,
   BB_DATA_LIST,
   BB_RADIUS_SOFT,
+  bbPastelClass,
 } from '@/lib/ui-outlined-tokens';
 
 export const BEAN_ORDER_PAGE =
@@ -91,11 +92,11 @@ export const BEAN_ORDER_ACTION_BTN = BB_BTN_OUTLINE_PRIMARY;
 
 /** Light green pastel confirm payment CTA */
 export const BEAN_ORDER_ACTION_BTN_CONFIRM =
-  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} border border-[#c3e6cb] bg-[#d4edda] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
+  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} px-5 text-sm ${bbPastelClass('bg-[#d4edda]')} ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
 /** Light blue pastel mark delivery success CTA */
 export const BEAN_ORDER_ACTION_BTN_INFO =
-  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} border border-[#b8daff] bg-[#cce5ff] px-5 text-sm bb-pastel-surface text-black ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
+  `inline-flex h-11 shrink-0 items-center justify-center ${BB_RADIUS_SOFT} px-5 text-sm ${bbPastelClass('bg-[#cce5ff]')} ${BEAN_ORDER_BTN_PRIMARY_MOTION}`;
 
 /** Grey non-action pill reserved for future non-clickable status labels. */
 export const BEAN_ORDER_ACTION_BADGE_MUTED =
@@ -158,7 +159,7 @@ export const BEAN_ORDER_BTN_PRIMARY_FULL =
 export const BEAN_ORDER_BTN_PRIMARY_LINK = BB_BTN_OUTLINE_PRIMARY;
 
 export const BEAN_ORDER_BTN_PASTEL_FULL =
-  `bb-pastel-surface flex h-12 w-full items-center justify-center gap-2 ${BB_RADIUS_SOFT} border border-[#bee5eb] bg-[#d1ecf1] text-sm text-black disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:brightness-[0.97]`;
+  `${bbPastelClass('bg-[#d1ecf1]')} flex h-12 w-full items-center justify-center gap-2 ${BB_RADIUS_SOFT} text-sm disabled:opacity-50 ${BEAN_ORDER_BTN_MOTION} hover:brightness-[0.97]`;
 
 export const BEAN_ORDER_BTN_ICON = `${BB_BTN_ICON} h-11 w-11 min-h-[44px] min-w-[44px]`;
 

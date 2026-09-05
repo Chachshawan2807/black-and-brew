@@ -1,8 +1,10 @@
 import type { LeaveDetailEntry } from '@/lib/dashboard/leave-details';
 
+import { DASHBOARD_STAT_COLORS } from '@/lib/shift-colors';
+
 const ROW_STYLES = {
-  leave: 'border-[#f5c6cb] bg-[#f8d7da]',
-  holiday: 'border-[#ffeeba] bg-[#fff3cd]',
+  leave: DASHBOARD_STAT_COLORS.leave,
+  holiday: DASHBOARD_STAT_COLORS.holiday,
 } as const;
 
 type Props = {
@@ -19,7 +21,7 @@ export function DashboardStatDetailRows({ entries, variant, className = '' }: Pr
       {entries.map((entry) => (
         <li
           key={entry.date}
-          className={`rounded-2xl border px-4 py-3 bb-pastel-surface ${ROW_STYLES[variant]}`}
+          className={`rounded-2xl px-4 py-3 ${ROW_STYLES[variant]}`}
         >
           <p className="text-sm font-normal leading-snug text-[#000000]">
             <span>{entry.dateLabel}</span>

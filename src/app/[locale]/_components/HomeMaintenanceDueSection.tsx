@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { formatDueDateWithDaysRemaining } from '@/lib/maintenance/compute-upcoming-maintenance';
 import type { UpcomingMaintenanceTask } from '@/lib/maintenance/types';
 import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
-import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import {
   HomeSectionBadge,
   HomeSectionHeader,
@@ -71,8 +71,8 @@ function MaintenanceTaskRow({
   return (
     <article
       className={cn(
-        PASTEL_SURFACE,
-        'bb-grid-row-offscreen rounded-2xl border border-black/8 bg-[#f3f8ff] p-3.5 bb-shadow-sm flex flex-col gap-2.5',
+        'bb-grid-row-offscreen rounded-2xl p-3.5 bb-shadow-sm flex flex-col gap-2.5',
+        bbPastelClass('bg-[#f3f8ff]'),
       )}
     >
       <div className="flex items-start justify-between gap-2 min-w-0">

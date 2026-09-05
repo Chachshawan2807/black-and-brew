@@ -14,7 +14,7 @@ import {
   type InventoryRealtimeItem,
 } from '@/contexts/InventoryRealtimeContext';
 import { NavPreloadLink } from '@/components/sidebar/NavPreloadLink';
-import { PASTEL_SURFACE } from '@/lib/shift-colors';
+import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import {
   HomeSectionBadge,
   HomeSectionHeader,
@@ -83,8 +83,8 @@ function PurchaseOrderRow({
   return (
     <article
       className={cn(
-        PASTEL_SURFACE,
-        'bb-grid-row-offscreen rounded-2xl border border-black/8 bg-[#fff8ee] p-3.5 bb-shadow-sm flex flex-col gap-2.5',
+        'bb-grid-row-offscreen rounded-2xl p-3.5 bb-shadow-sm flex flex-col gap-2.5',
+        bbPastelClass('bg-[#fff8ee]'),
       )}
     >
       <div className="flex items-start justify-between gap-2 min-w-0">

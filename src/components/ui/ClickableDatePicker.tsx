@@ -12,6 +12,7 @@ import {
 } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { bbPastelClass } from '@/lib/ui-outlined-tokens';
 import { THAI_DISPLAY_DATE_FORMAT } from '@/lib/date-utils';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from '@/lib/icons';
 import {
@@ -322,7 +323,7 @@ export function ClickableDatePicker({
                 isSelected
                   ? 'border-2 border-foreground/85 bg-card text-foreground bb-shadow-md scale-[1.04]'
                   : isCurrent
-                  ? 'bb-pastel-surface bg-[#ffda66] text-[#000000]'
+                  ? bbPastelClass('bg-[#ffda66]')
                   : 'hover:bg-muted text-foreground',
               )}
             >

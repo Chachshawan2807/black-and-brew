@@ -40,7 +40,9 @@ describe('shift-type-config', () => {
   test('buildShiftDisplay produces pastel surface class and inline colors', () => {
     const display = buildShiftDisplay(DEFAULT_SHIFT_TYPES[0]);
     expect(display.className).toContain('bb-pastel-surface');
+    expect(display.className).toContain('border-black');
     expect(display.style.backgroundColor).toBe('#d4edda');
+    expect(display.style.borderColor).toBe('rgba(0, 0, 0, 0.75)');
     expect(display.style.color).toBe('#000000');
   });
 
