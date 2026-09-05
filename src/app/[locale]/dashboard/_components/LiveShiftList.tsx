@@ -107,7 +107,7 @@ function SortableEmployeeCard({
         animate={listRowSpring.animate}
         whileHover={isReadOnly ? undefined : CARD_LIFT_HOVER}
         transition={listRowSpring.transition}
-        className={`p-6 flex flex-col gap-5 bg-card select-none border border-border bb-shadow-sm bb-transition rounded-3xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:bg-muted/30 bb-shadow-hover-md'}`}
+        className={`p-6 flex flex-col gap-5 bg-card select-none border border-border bb-shadow-sm bb-transition rounded-2xl ${isReadOnly ? 'opacity-60 pointer-events-none' : 'hover:bg-muted/30 bb-shadow-hover-md'}`}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1 py-1">
@@ -129,7 +129,7 @@ function SortableEmployeeCard({
           transition={SNAPPY_SPRING}
           className="grid grid-cols-3 gap-3"
         >
-          <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95`}>
+          <div className={`${DASHBOARD_STAT_COLORS.work} rounded-2xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95`}>
             <span className="text-[22px] font-normal text-[#000000]">{data.workDays}</span>
             <span className="text-[12px] text-[#000000] uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
           </div>
@@ -139,7 +139,7 @@ function SortableEmployeeCard({
             onPointerEnter={onPreloadStatDialog}
             onFocus={onPreloadStatDialog}
             disabled={data.publicHolidays === 0}
-            className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
+            className={`${DASHBOARD_STAT_COLORS.holiday} rounded-2xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
             aria-label={`ดูรายละเอียดวันทำงานตรงวันนักขัตฯ ${data.publicHolidays} วัน`}
           >
             <span className="text-[22px] font-normal text-[#000000]">{data.publicHolidays}</span>
@@ -151,7 +151,7 @@ function SortableEmployeeCard({
             onPointerEnter={onPreloadStatDialog}
             onFocus={onPreloadStatDialog}
             disabled={data.leaveDays === 0}
-            className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
+            className={`${DASHBOARD_STAT_COLORS.leave} rounded-2xl p-3 flex flex-col items-center justify-center text-center bb-transition hover:brightness-95 disabled:cursor-default disabled:opacity-60 touch-manipulation`}
             aria-label={`ดูรายละเอียดวันลา ${data.leaveDays} วัน`}
           >
             <span className="text-[22px] font-normal text-[#000000]">{data.leaveDays}</span>
@@ -349,7 +349,7 @@ export default function LiveShiftList({
 
   return (
     <div className="space-y-4 p-4 md:p-8">
-      <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 md:p-5 bg-card border border-border rounded-3xl bb-shadow-sm mb-6">
+      <div className="relative z-30 flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 md:p-5 bg-card border border-border rounded-2xl bb-shadow-sm mb-6">
         
         {/* แผงควบคุมฝั่งซ้าย: ไอคอน และ Double Capsule Date Picker */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto">
@@ -423,7 +423,7 @@ export default function LiveShiftList({
             sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }),
           }}>
             {activeId && activeProfileData ? (
-              <div className="p-6 flex flex-col gap-5 bg-card bb-shadow-lg border border-border scale-105 opacity-100 ring-2 ring-border rounded-3xl pointer-events-none">
+              <div className="p-6 flex flex-col gap-5 bg-card bb-shadow-lg border border-border scale-105 opacity-100 ring-2 ring-border rounded-2xl pointer-events-none">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 py-1">
                     <h3 className="text-[19px] font-normal tracking-tight text-foreground leading-[1.6]">
@@ -435,15 +435,15 @@ export default function LiveShiftList({
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className={`${DASHBOARD_STAT_COLORS.work} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
+                  <div className={`${DASHBOARD_STAT_COLORS.work} rounded-2xl p-3 flex flex-col items-center justify-center text-center`}>
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.workDays}</span>
                     <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ทำงาน</span>
                   </div>
-                  <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
+                  <div className={`${DASHBOARD_STAT_COLORS.holiday} rounded-2xl p-3 flex flex-col items-center justify-center text-center`}>
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.publicHolidays}</span>
                     <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">นักขัตฯ</span>
                   </div>
-                  <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-3xl p-3 flex flex-col items-center justify-center text-center`}>
+                  <div className={`${DASHBOARD_STAT_COLORS.leave} rounded-2xl p-3 flex flex-col items-center justify-center text-center`}>
                     <span className="text-[22px] font-normal text-[#000000]">{activeProfileData.leaveDays}</span>
                     <span className="text-[12px] text-[#000000]/80 uppercase tracking-widest font-normal mt-0.5">ลา</span>
                   </div>

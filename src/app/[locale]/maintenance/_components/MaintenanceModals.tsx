@@ -13,7 +13,7 @@ import { ClickableDatePicker } from '@/components/ui/ClickableDatePicker';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { fadeOverlay, modalContent } from '@/lib/motion-presets';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
-import { BB_BTN_OUTLINE_DANGER } from '@/lib/ui-outlined-tokens';
+import { BB_BTN_CLOSE, BB_BTN_OUTLINE, BB_BTN_OUTLINE_DANGER, BB_BTN_ICON } from '@/lib/ui-outlined-tokens';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { INVENTORY_MODAL_Z_CLASS } from '@/lib/floating-action-layout';
@@ -149,12 +149,12 @@ export default function MaintenanceModals({
                 animate={modalContent.animate}
                 exit={modalContent.exit}
                 transition={modalContent.transition}
-                className="relative bg-card w-full max-w-xl max-h-[90vh] flex flex-col rounded-3xl bb-shadow-xl overflow-hidden border border-border"
+                className="relative bg-card w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl bb-shadow-xl overflow-hidden border border-border"
               >
               <HintTooltip tip="ปิด">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
+                  className={cn(BB_BTN_CLOSE, 'absolute top-4 right-4 z-10')}
                   aria-label="ปิด"
                 >
                   <CloseIcon />
@@ -371,19 +371,19 @@ export default function MaintenanceModals({
           onClose={() => setIsDeleteConfirmOpen(false)}
           zIndex={220}
           overlayClassName="bg-black/5 backdrop-blur-md"
-          panelClassName="relative bg-card w-full max-w-sm rounded-3xl bb-shadow-xl overflow-hidden border border-border p-10 text-center"
+          panelClassName="relative bg-card w-full max-w-sm rounded-2xl bb-shadow-xl overflow-hidden border border-border p-10 text-center"
           aria-label="ลบบันทึก?"
         >
             <HintTooltip tip="ปิด">
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
-                className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-2xl transition-colors text-foreground/40 z-10"
+                className={cn(BB_BTN_CLOSE, 'absolute top-4 right-4 z-10')}
                 aria-label="ปิด"
               >
                 <CloseIcon />
               </button>
             </HintTooltip>
-            <div className="w-20 h-20 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 border border-red-500/25 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <Trash2 className="w-10 h-10" strokeWidth={1} />
             </div>
             <h3 className="text-2xl font-normal text-foreground tracking-tighter mb-2 uppercase">ลบบันทึก?</h3>
@@ -398,7 +398,7 @@ export default function MaintenanceModals({
               </button>
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
-                className="w-full h-11 md:h-auto md:py-4 text-foreground/40 font-normal hover:text-foreground bb-transition text-base md:text-sm uppercase tracking-widest"
+                className={cn(BB_BTN_OUTLINE, 'w-full md:py-4 text-base md:text-sm uppercase tracking-widest text-muted-foreground')}
               >
                 ยกเลิก
               </button>

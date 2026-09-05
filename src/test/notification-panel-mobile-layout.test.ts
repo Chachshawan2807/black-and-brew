@@ -16,7 +16,7 @@ describe('NotificationPanel mobile layout', () => {
     expect(code).toContain('withReducedMotion');
     expect(code).toContain('usePrefersReducedMotion');
     expect(code).toMatch(/items-center justify-center/);
-    expect(code).toMatch(/rounded-3xl/);
+    expect(code).toMatch(/rounded-2xl/);
     expect(code).not.toContain('FAB_PANEL_ABOVE_NOTIFICATION_CLASS');
   });
 

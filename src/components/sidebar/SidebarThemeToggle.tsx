@@ -81,13 +81,13 @@ export default function SidebarThemeToggle({
                 "flex h-10 w-10 items-center justify-center rounded-xl border",
                 isActive
                   ? "border-foreground/20 bg-muted"
-                  : "border-transparent hover:bg-muted/60",
+                  : "border-border/60 hover:bg-muted/60",
               )
             : cn(
                 "flex flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-2 min-h-[64px]",
                 isActive
                   ? "border-black/15 bg-black/[0.06] dark:border-white/20 dark:bg-white/10"
-                  : "border-black/5 bg-transparent hover:bg-black/[0.04] dark:border-white/10 dark:hover:bg-white/5",
+                  : "border-border/60 bg-card hover:bg-black/[0.04] dark:border-white/10 dark:hover:bg-white/5",
               ),
         )}
       >

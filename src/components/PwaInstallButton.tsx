@@ -120,7 +120,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
 
       <dialog
         ref={dialogRef}
-        className="m-auto w-[min(100%-2rem,22rem)] max-w-sm rounded-3xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-foreground/20 open:animate-in open:fade-in-0"
+        className="m-auto w-[min(100%-2rem,22rem)] max-w-sm rounded-2xl border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-foreground/20 open:animate-in open:fade-in-0"
         aria-labelledby="pwa-ios-install-title"
       >
         <div className="flex flex-col gap-5 p-5">
@@ -142,7 +142,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
 
           <ol className="space-y-3 text-sm font-normal">
             <li className="flex gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs tabular-nums">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-xs tabular-nums">
                 1
               </span>
               <span className="pt-0.5">
@@ -154,7 +154,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs tabular-nums">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-xs tabular-nums">
                 2
               </span>
               <span className="pt-0.5">
@@ -166,7 +166,7 @@ export function PwaInstallButton({ locale = 'th', className = '' }: PwaInstallBu
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs tabular-nums">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-xs tabular-nums">
                 3
               </span>
               <span className="pt-0.5">

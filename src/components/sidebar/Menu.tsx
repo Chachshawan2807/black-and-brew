@@ -377,9 +377,9 @@ export default function Menu({ isOpen }: MenuProps) {
             <TooltipTrigger asChild>
               <Button
                 onClick={() => void performClientLogout()}
-                variant="ghost"
+                variant="outline"
                 className={cn(
-                  'h-10 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 font-normal antialiased w-full',
+                  'h-10 rounded-2xl border border-red-500/30 bg-card text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 font-normal antialiased w-full',
                   isOpen === false ? 'justify-center px-0' : 'justify-start'
                 )}
               >

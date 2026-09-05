@@ -340,7 +340,7 @@ const SortableEmployeeRow = React.memo(({
       }}
       className={cn(
         "bb-schedule-grid grid border-b border-border bb-transition duration-300 relative bg-transparent",
-        isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-card ring-1 ring-border rounded-3xl cursor-grabbing"
+        isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-card ring-1 ring-border rounded-2xl cursor-grabbing"
       )}
     >
       <div
@@ -374,7 +374,7 @@ const SortableEmployeeRow = React.memo(({
               <input
                 autoFocus
                 disabled={isReadOnly}
-                className="w-full h-11 bg-card border border-blue-400 text-base font-normal text-foreground px-3 rounded-3xl outline-none disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                className="w-full h-11 bg-card border border-blue-400 text-base font-normal text-foreground px-3 rounded-2xl outline-none disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
                 onBlur={() => onSaveName(id)}
@@ -1642,7 +1642,7 @@ export default function ScheduleClient({
       />
 
       <main className="bb-schedule-main flex-1 min-h-0 p-3 md:p-5 overflow-hidden flex flex-col">
-        <div className="bb-schedule-table-frame bb-ios-scroll-host flex-1 flex flex-col bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
+        <div className="bb-schedule-table-frame bb-ios-scroll-host flex-1 flex flex-col bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
           <div
             className="flex-1 min-h-0 min-w-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-4 md:pb-6"
           >
@@ -1981,7 +1981,7 @@ export default function ScheduleClient({
                         type="button"
                         onClick={() => setManagementForm(prev => ({ ...prev, shiftType: t.value }))}
                         className={cn(
-                          'h-10 w-full cursor-pointer truncate rounded-full border px-2 text-center text-[13px] font-normal shadow-sm bb-transition active:scale-[0.97]',
+                          'h-10 w-full cursor-pointer truncate rounded-2xl border px-2 text-center text-[13px] font-normal shadow-sm bb-transition active:scale-[0.97]',
                           t.className,
                           managementForm.shiftType === t.value && 'ring-2 ring-foreground/15 ring-offset-1 ring-offset-card',
                         )}
@@ -2069,7 +2069,7 @@ export default function ScheduleClient({
                     message="ไม่พบประวัติการจัดการ"
                   />
                 ) : (
-                  <div className="w-fit max-w-full overflow-x-auto bb-smooth-scroll-chain-y bb-smooth-scroll scrollbar-thin border border-border rounded-3xl">
+                  <div className="w-fit max-w-full overflow-x-auto bb-smooth-scroll-chain-y bb-smooth-scroll scrollbar-thin border border-border rounded-2xl">
                     <table
                       className="text-left border-collapse"
                       style={{ tableLayout: 'fixed', width: mgmtTableWidth }}

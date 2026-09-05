@@ -10,6 +10,7 @@ import {
   INVENTORY_PASTEL_ACTION,
   InventoryEmptyState,
   InventoryIconButton,
+  InventoryModalCloseButton,
   InventorySyncStatus,
   DeleteConfirmDialog,
 } from './_components/inventory-ui-primitives';
@@ -2000,13 +2001,11 @@ export default function InventoryClient({
           >
           <motion.div
             initial={modalContent.initial} animate={modalContent.animate} exit={modalContent.exit} transition={modalContent.transition}
-            className="relative bg-card border border-border rounded-3xl bb-shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="relative bg-card border border-border rounded-2xl bb-shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <HintTooltip tip="ปิด">
-              <button onClick={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors z-10" aria-label="ปิด">
-                <X className="w-5 h-5" />
-              </button>
+              <InventoryModalCloseButton onClose={() => { setShowAddModal(false); setNewItemInsertPosition(''); }} label="ปิด" />
             </HintTooltip>
             <div className="px-6 h-14 border-b border-border flex items-center justify-between shrink-0 pr-14">
               <h2 className="text-lg font-normal text-foreground">เพิ่มรายการใหม่</h2>
@@ -2020,7 +2019,7 @@ export default function InventoryClient({
                       name="new-item-name"
                       value={newItemData.name || ''}
                       onChange={e => setNewItemData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full h-11 px-4 bg-background border border-border focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className="w-full h-11 px-4 bg-background border border-border focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -2036,7 +2035,7 @@ export default function InventoryClient({
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, stock: val }));
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -2046,7 +2045,7 @@ export default function InventoryClient({
                       name="new-item-unit"
                       value={newItemData.unit === null || newItemData.unit === undefined ? '' : newItemData.unit}
                       onChange={e => setNewItemData(prev => ({ ...prev, unit: e.target.value }))}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -2062,7 +2061,7 @@ export default function InventoryClient({
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, order_point: val }));
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -2078,7 +2077,7 @@ export default function InventoryClient({
                         if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) val = val.replace(/^0+/, '');
                         setNewItemData(prev => ({ ...prev, target_stock: val }));
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -2088,7 +2087,7 @@ export default function InventoryClient({
                       name="new-item-source"
                       value={newItemData.source === null || newItemData.source === undefined ? '' : newItemData.source}
                       onChange={e => setNewItemData(prev => ({ ...prev, source: e.target.value }))}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
 
@@ -2143,7 +2142,7 @@ export default function InventoryClient({
                         v = v.replace(/^0+(?=\d)/, '');
                         setNewItemInsertPosition(v);
                       }}
-                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-3xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
+                      className="w-full h-11 px-4 bg-muted border border-border focus:border-foreground/20 rounded-2xl text-base md:text-sm font-normal text-foreground outline-none bb-transition"
                     />
                   </div>
                 </div>

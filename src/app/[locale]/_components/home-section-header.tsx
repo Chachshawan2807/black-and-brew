@@ -101,7 +101,7 @@ export function HomeSectionBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] tabular-nums font-normal',
+        'inline-flex items-center gap-1.5 rounded-2xl border px-3 py-1 text-[12px] tabular-nums font-normal',
         BADGE_TONE_CLASS[tone],
         className,
       )}

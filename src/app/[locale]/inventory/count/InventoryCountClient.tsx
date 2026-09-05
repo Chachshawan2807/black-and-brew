@@ -44,6 +44,7 @@ import {
 import { CountAdjustPinDialog } from '@/app/[locale]/inventory/count/_components/CountAdjustPinDialog';
 import { useReadOnly, READ_ONLY_DENY_MSG } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
+import { BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
 import { PASTEL_SURFACE } from '@/lib/shift-colors';
 import { getInventoryCountInputName } from '@/lib/inventory-grid-cell-a11y';
 
@@ -480,7 +481,7 @@ function TodayCountSessionBanner({ status }: { status: TodayCountSessionStatus }
   return (
     <section
       aria-label="สถานะการนับสต็อกวันนี้"
-      className="mb-5 rounded-3xl border border-border bg-card p-4 bb-shadow-sm"
+      className="mb-5 rounded-2xl border border-border bg-card p-4 bb-shadow-sm"
     >
       <div className="flex items-start gap-3">
         <div
@@ -1314,7 +1315,7 @@ export default function InventoryCountClient({
             </header>
           ) : null}
 
-          <div className="bg-card border border-red-100 dark:border-red-500/20 rounded-3xl p-6 bb-shadow-sm">
+          <div className="bg-card border border-red-100 dark:border-red-500/20 rounded-2xl p-6 bb-shadow-sm">
             <div className="flex items-start gap-3">
               <div className="shrink-0 rounded-2xl bg-red-50 dark:bg-red-500/10 p-2.5 text-red-500">
                 <AlertCircle className="w-5 h-5" />
@@ -1326,7 +1327,7 @@ export default function InventoryCountClient({
                   <button
                     type="button"
                     onClick={() => void fetchInventory()}
-                    className="inline-flex h-11 items-center gap-2 rounded-2xl bg-black px-4 text-sm text-white transition-colors hover:bg-black/85"
+                    className={cn(BB_BTN_OUTLINE_PRIMARY, 'px-4')}
                   >
                     <RefreshCw className="w-4 h-4" />
                     <span>ลองเปิดใหม่</span>
@@ -1405,7 +1406,7 @@ export default function InventoryCountClient({
 
         <div className="space-y-2.5 pb-20 bb-smooth-scroll">
           {items.length === 0 ? (
-            <div className="p-8 text-center text-base font-normal text-muted-foreground bg-card border border-border rounded-3xl">
+            <div className="p-8 text-center text-base font-normal text-muted-foreground bg-card border border-border rounded-2xl">
               ไม่มีข้อมูลสินค้าในระบบ กรุณาเพิ่มข้อมูลในหน้าคลังสินค้าหลักก่อนนะคะ
             </div>
           ) : pageMode === 'count' ? (

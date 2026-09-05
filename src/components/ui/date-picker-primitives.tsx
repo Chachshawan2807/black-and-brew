@@ -15,10 +15,10 @@ export const DATE_PICKER_ICON_WRAP =
   'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted/30 text-foreground bb-transition group-hover:bg-muted/45 group-hover:border-border';
 
 export const DATE_PICKER_NAV_BTN =
-  'inline-flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-foreground hover:bg-muted/50 bb-transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 active:scale-95';
+  'inline-flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl border border-border/80 bg-card text-foreground hover:bg-muted/40 bb-transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/15 active:scale-95';
 
 export const DATE_PICKER_POPOVER_SHELL =
-  'bg-card rounded-3xl border border-border bb-shadow-xl p-5';
+  'bg-card rounded-2xl border border-border bb-shadow-xl p-5';
 
 export const DATE_PICKER_MONTH_LABEL =
   'text-[13px] font-normal text-foreground uppercase tracking-[0.12em] select-none';

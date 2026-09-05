@@ -159,7 +159,7 @@ function QuickActionTypeToggle({
   return (
     <div
       className={cn(
-        'flex h-11 w-full items-center rounded-full p-0.5',
+        'flex h-11 w-full items-center rounded-2xl p-0.5',
         INVENTORY_QUICK_ACTION_COLORS.toggleTrack,
         className,
       )}
@@ -173,7 +173,7 @@ function QuickActionTypeToggle({
           aria-label="รับเข้า"
           aria-pressed={quickType === 'IN'}
           className={cn(
-            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full bb-transition duration-150',
+            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bb-transition duration-150',
             quickType === 'IN' ? INVENTORY_QUICK_ACTION_COLORS.in : INVENTORY_QUICK_ACTION_COLORS.inactive,
             quickType === 'IN' && 'bb-shadow-sm',
           )}
@@ -189,7 +189,7 @@ function QuickActionTypeToggle({
           aria-label="นำออก"
           aria-pressed={quickType === 'OUT'}
           className={cn(
-            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full bb-transition duration-150',
+            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bb-transition duration-150',
             quickType === 'OUT' ? INVENTORY_QUICK_ACTION_COLORS.out : INVENTORY_QUICK_ACTION_COLORS.inactive,
             quickType === 'OUT' && 'bb-shadow-sm',
           )}
@@ -205,7 +205,7 @@ function QuickActionTypeToggle({
           aria-label="ปรับจำนวน"
           aria-pressed={quickType === 'ADJUST'}
           className={cn(
-            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full bb-transition duration-150',
+            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bb-transition duration-150',
             quickType === 'ADJUST' ? INVENTORY_QUICK_ACTION_COLORS.adjust : INVENTORY_QUICK_ACTION_COLORS.inactive,
             quickType === 'ADJUST' && 'bb-shadow-sm',
           )}
@@ -269,7 +269,7 @@ function QuickActionQtyInput({
         step="any"
         aria-label={quickType === 'ADJUST' ? 'จำนวนคงเหลือใหม่' : 'จำนวน'}
         className={cn(
-          'w-full text-base md:text-sm font-normal pl-1.5 pr-8 text-center rounded-3xl bg-background border border-border placeholder:text-muted-foreground text-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased',
+          'w-full text-base md:text-sm font-normal pl-1.5 pr-8 text-center rounded-2xl bg-background border border-border placeholder:text-muted-foreground text-foreground outline-none focus:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 bb-transition antialiased',
           '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
           compact ? 'h-9 rounded-xl' : 'h-11',
           className,
@@ -343,7 +343,7 @@ function QuickActionSaveButton({
         }, 0);
       }}
       className={cn(
-        'flex h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-3xl text-sm font-normal bb-pastel-surface text-[#000000] bb-transition bb-shadow-sm hover:brightness-95 antialiased disabled:opacity-50',
+        'flex h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl text-sm font-normal bb-pastel-surface text-[#000000] bb-transition bb-shadow-sm hover:brightness-95 antialiased disabled:opacity-50',
         inventoryQuickActionTypeColors(quickType),
         className,
       )}
@@ -422,7 +422,7 @@ function BulkQueueSummaryCell({
   return (
     <div
       className={cn(
-        'flex w-full items-center justify-center gap-1 rounded-3xl border border-border bg-muted/30 text-foreground antialiased',
+        'flex w-full items-center justify-center gap-1 rounded-2xl border border-border bg-muted/30 text-foreground antialiased',
         compact ? 'h-9 rounded-xl px-1.5 text-xs' : 'h-11 px-2 text-sm',
       )}
     >
@@ -985,7 +985,7 @@ export function InventoryQuickActionBar({
         'flex w-full flex-col bg-card',
         isFabPanel
           ? 'min-h-0'
-          : 'rounded-3xl border border-border p-4 bb-shadow-sm',
+          : 'rounded-2xl border border-border p-4 bb-shadow-sm',
         className,
       )}
     >

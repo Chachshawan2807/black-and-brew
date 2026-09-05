@@ -28,10 +28,10 @@ export const SCHEDULE_TOOLBAR_HISTORY_BUTTON =
 export const SCHEDULE_MODAL_OVERLAY = 'bg-black/30 backdrop-blur-[6px]';
 
 export const SCHEDULE_MODAL_PANEL =
-  'relative rounded-t-[28px] md:rounded-3xl w-full overflow-hidden bg-card shadow-2xl border border-border text-foreground flex flex-col';
+  'relative rounded-t-[28px] md:rounded-2xl w-full overflow-hidden bg-card shadow-2xl border border-border text-foreground flex flex-col';
 
 export const SCHEDULE_MODAL_PANEL_SHEET =
-  'fixed bottom-0 left-0 right-0 rounded-t-[28px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-3xl md:max-w-sm md:max-h-none md:translate-y-0 border border-border';
+  'fixed bottom-0 left-0 right-0 rounded-t-[28px] w-full max-h-[85vh] overflow-y-auto bb-smooth-scroll bg-card shadow-2xl md:relative md:rounded-2xl md:max-w-sm md:max-h-none md:translate-y-0 border border-border';
 
 export const SCHEDULE_FORM_LABEL =
   'text-[11px] font-normal text-muted-foreground uppercase tracking-[0.12em] px-0.5 block';

@@ -368,7 +368,7 @@ export default function InventoryQuickActionFAB() {
                 exit={motionPresets.panel.exit}
                 transition={motionPresets.panel.transition}
                 className={cn(
-                  'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate border border-border overflow-hidden',
+                  'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-2xl isolate border border-border overflow-hidden',
                   'max-md:relative max-md:w-full',
                   FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
                   fabMobileBulkQueueActive
@@ -383,7 +383,7 @@ export default function InventoryQuickActionFAB() {
                   ...(fabMobileBulkQueueActive ? fabMobileBulkPanelStyle : mobilePanelStyle) }}
               >
               {isLoadingItems && !hasLoadedItems ? (
-                <div className="bg-card rounded-3xl border border-border bb-shadow-xl p-8 flex flex-col items-center justify-center gap-3">
+                <div className="bg-card rounded-2xl border border-border bb-shadow-xl p-8 flex flex-col items-center justify-center gap-3">
                   <LoadingIcon size="lg" className="text-foreground" />
                   <span className="text-sm font-normal text-muted-foreground">กำลังโหลดข้อมูลคลังสินค้า...</span>
                 </div>

@@ -232,7 +232,7 @@ describe('Inventory Quick Action FAB', () => {
     expect(barCode).toContain('BulkSubmitConfirmDialog');
     expect(barCode).toContain('z-[220]');
     expect(barCode).not.toMatch(/BulkSubmitConfirmDialog[\s\S]*<dialog/);
-    expect(fabCode).toContain('bg-card rounded-3xl');
+    expect(fabCode).toContain('bg-card rounded-2xl');
     expect(fabCode).toContain('isolate');
   });
 

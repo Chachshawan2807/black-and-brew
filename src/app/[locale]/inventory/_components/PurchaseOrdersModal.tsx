@@ -19,6 +19,7 @@ import {
 import { formatPurchaseOrderListCopyText } from '@/lib/inventory-purchase-order-copy-text';
 import type { PurchaseOrderCandidate } from '@/lib/inventory-stock';
 import { InventoryModalPortal } from './InventoryModalPortal';
+import { BB_BTN_ICON, BB_CHIP_IDLE, BB_CHIP_SELECTED } from '@/lib/ui-outlined-tokens';
 
 type CopyToast = {
   message: string;
@@ -86,7 +87,7 @@ export default function PurchaseOrdersModal({
       id={tableId}
       className={
         isExportMode
-          ? "relative flex flex-col w-full bg-[#fff3dd] rounded-3xl overflow-hidden"
+          ? "relative flex flex-col w-full bg-[#fff3dd] rounded-2xl overflow-hidden"
           : 'relative flex flex-col flex-1 min-h-0 overflow-hidden w-full bg-card'
       }
     >
@@ -101,7 +102,7 @@ export default function PurchaseOrdersModal({
                 <button
                   type="button"
                   onClick={(event) => void handleCopyList(event)}
-                  className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                  className={cn(BB_BTN_ICON, 'text-black/40 hover:text-black')}
                   aria-label="คัดลอกรายการ"
                 >
                   <Copy className="w-4 h-4" aria-hidden />
@@ -113,7 +114,7 @@ export default function PurchaseOrdersModal({
                   onClick={exportPOImage}
                   onMouseEnter={preloadCaptureLibraries}
                   onFocus={preloadCaptureLibraries}
-                  className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                  className={cn(BB_BTN_ICON, 'text-black/40 hover:text-black')}
                   aria-label="บันทึกเป็นรูปภาพ"
                 >
                   <ImageDown className="w-5 h-5" strokeWidth={1.75} aria-hidden />
@@ -123,7 +124,7 @@ export default function PurchaseOrdersModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-2 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-colors"
+                  className={cn(BB_BTN_ICON, 'text-black/40 hover:text-black')}
                   aria-label="ปิดรายการสั่งซื้อ"
                 >
                   <CloseIcon />
@@ -148,14 +149,14 @@ export default function PurchaseOrdersModal({
               <button
                 onClick={() => setSelectedChannels(['all'])}
                 className={cn(
-                  'px-4 py-2 text-[14px] rounded-full border bb-transition duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
+                  'px-4 py-2 text-[14px] rounded-2xl border bb-transition duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
                   selectedChannels.includes('all')
-                    ? 'border-foreground/85 bg-card text-foreground bb-shadow-sm ring-1 ring-foreground/10'
-                    : 'border-black/15 bg-transparent text-black/85 hover:bg-black/5',
+                    ? BB_CHIP_SELECTED
+                    : BB_CHIP_IDLE,
                 )}
               >
                 ทั้งหมด{' '}
-                <span className={selectedChannels.includes('all') ? 'text-white/60 text-[12px] ml-1 tabular-nums font-normal' : 'text-black/50 text-[12px] ml-1 tabular-nums font-normal'}>
+                <span className={selectedChannels.includes('all') ? 'text-muted-foreground text-[12px] ml-1 tabular-nums font-normal' : 'text-muted-foreground text-[12px] ml-1 tabular-nums font-normal'}>
                   ({totalTabCount})
                 </span>
               </button>
@@ -177,14 +178,14 @@ export default function PurchaseOrdersModal({
                       });
                     }}
                     className={cn(
-                      'px-4 py-2 text-[14px] rounded-full border bb-transition duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
+                      'px-4 py-2 text-[14px] rounded-2xl border bb-transition duration-200 antialiased cursor-pointer font-normal whitespace-nowrap',
                       isActive
-                        ? 'border-foreground/85 bg-card text-foreground bb-shadow-sm ring-1 ring-foreground/10'
-                        : 'border-black/15 bg-transparent text-black/85 hover:bg-black/5',
+                        ? BB_CHIP_SELECTED
+                        : BB_CHIP_IDLE,
                     )}
                   >
                     {source}{' '}
-                    <span className={isActive ? 'text-white/60 text-[12px] ml-1 tabular-nums font-normal' : 'text-black/50 text-[12px] ml-1 tabular-nums font-normal'}>
+                    <span className={isActive ? 'text-muted-foreground text-[12px] ml-1 tabular-nums font-normal' : 'text-muted-foreground text-[12px] ml-1 tabular-nums font-normal'}>
                       ({count})
                     </span>
                   </button>
@@ -205,7 +206,7 @@ export default function PurchaseOrdersModal({
       >
         {itemsToShow.length === 0 ? (
           <div className={cn(
-            "py-16 flex flex-col items-center justify-center rounded-3xl border bb-shadow-sm",
+            "py-16 flex flex-col items-center justify-center rounded-2xl border bb-shadow-sm",
             isExportMode
               ? "text-black/40 bg-white border-black/5"
               : "text-muted-foreground bg-card border-border",
@@ -215,7 +216,7 @@ export default function PurchaseOrdersModal({
           </div>
         ) : (
           <div className={cn(
-            "rounded-3xl bb-shadow-sm border min-h-0",
+            "rounded-2xl bb-shadow-sm border min-h-0",
             isExportMode
               ? "bg-white border-black/5 overflow-hidden"
               : "flex-1 bg-card border-border overflow-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin",
@@ -355,7 +356,7 @@ export default function PurchaseOrdersModal({
             animate={modalContent.animate}
             exit={modalContent.exit}
             transition={modalContent.transition}
-            className="my-auto flex min-h-0 w-full max-w-4xl max-h-[85svh] flex-col overflow-hidden rounded-3xl bg-card bb-shadow-xl"
+            className="my-auto flex min-h-0 w-full max-w-4xl max-h-[85svh] flex-col overflow-hidden rounded-2xl bg-card bb-shadow-xl"
             style={modalContentStyle}
             onClick={(e) => e.stopPropagation()}
           >

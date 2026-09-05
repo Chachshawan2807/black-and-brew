@@ -9,8 +9,8 @@ describe('inventory modals dark theme readability', () => {
       'utf-8',
     );
 
-    expect(code).toContain('text-black/85');
-    expect(code).not.toMatch(/inactive[\s\S]*text-foreground hover:bg-muted/);
+    expect(code).toContain('BB_CHIP_IDLE');
+    expect(code).toContain('BB_CHIP_SELECTED');
   });
 
   it('purchase order export image keeps header on one line and clips rounded corners', () => {
@@ -20,7 +20,7 @@ describe('inventory modals dark theme readability', () => {
     );
 
     expect(code).toMatch(/<h2 className="[^"]*whitespace-nowrap[^"]*"/);
-    expect(code).toContain('relative flex flex-col w-full bg-[#fff3dd] rounded-3xl overflow-hidden');
+    expect(code).toContain('relative flex flex-col w-full bg-[#fff3dd] rounded-2xl overflow-hidden');
   });
 
   it('purchase order detail table clips its header background to rounded top corners', () => {
@@ -29,7 +29,7 @@ describe('inventory modals dark theme readability', () => {
       'utf-8',
     );
 
-    expect(code).toContain('rounded-3xl bb-shadow-sm border min-h-0');
+    expect(code).toContain('rounded-2xl bb-shadow-sm border min-h-0');
     expect(code).toContain('bg-white border-black/5 overflow-hidden');
   });
 

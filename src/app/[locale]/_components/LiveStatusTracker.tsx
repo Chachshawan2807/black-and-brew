@@ -185,7 +185,7 @@ function StatusGrid({
             </span>
             <span
               className={cn(
-                'inline-flex items-center justify-center gap-1.5 self-center max-w-full rounded-full border border-black/10 bg-black/[0.06] font-normal text-black/80 tracking-wide tabular-nums',
+                'inline-flex items-center justify-center gap-1.5 self-center max-w-full rounded-2xl border border-border/80 bg-muted/30 font-normal text-foreground tracking-wide tabular-nums',
                 dashboard ? 'px-2.5 py-1 text-[0.75rem]' : 'px-2 py-0.5 text-[0.6875rem]',
               )}
             >
@@ -228,7 +228,7 @@ function StatusSection({
     <section
       aria-label={title}
       className={cn(
-        'rounded-3xl border border-border bg-card bb-shadow-sm',
+        'rounded-2xl border border-border bg-card bb-shadow-sm',
         dashboard ? 'md:h-full md:min-h-0 md:flex md:flex-col p-5' : 'p-5 md:p-7',
       )}
     >

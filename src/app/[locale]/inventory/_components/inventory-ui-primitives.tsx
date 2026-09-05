@@ -42,7 +42,7 @@ export const INVENTORY_MODAL_PANEL =
   'relative bg-card border border-border text-foreground flex flex-col overflow-hidden bb-shadow-xl';
 
 export const INVENTORY_MODAL_PANEL_SHEET =
-  'rounded-t-[28px] md:rounded-3xl w-full max-h-[85dvh] pb-[env(safe-area-inset-bottom)]';
+  'rounded-t-[28px] md:rounded-2xl w-full max-h-[85dvh] pb-[env(safe-area-inset-bottom)]';
 
 export const INVENTORY_ICON_BUTTON = BB_BTN_ICON;
 

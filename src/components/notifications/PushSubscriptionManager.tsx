@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { CloseIcon } from '@/components/ui/close-icon';
 import { cn } from '@/lib/utils';
-import { BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
+import { BB_BTN_CLOSE } from '@/lib/ui-outlined-tokens';
 import { Bell, X } from '@/lib/icons';
 import { loadNotificationPreferences } from '@/lib/notification-preferences';
 import { getNotificationPermissionState } from '@/lib/pwa-notification-bridge';
@@ -126,7 +126,7 @@ export function PushSubscriptionManager() {
             type="button"
             aria-label={isTh ? 'ปิด' : 'Dismiss'}
             onClick={dismissBanner}
-            className="shrink-0 rounded-full p-1 text-muted-foreground"
+            className={cn(BB_BTN_CLOSE, 'shrink-0 h-8 w-8 min-h-0 min-w-0')}
           >
             <CloseIcon size="sm" />
           </button>

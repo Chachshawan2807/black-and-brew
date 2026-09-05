@@ -13,7 +13,7 @@ describe('rounded select shared date-picker-like trigger', () => {
     const { BB_SELECT_TRIGGER_CLASS } = await import('@/components/ui/rounded-select');
 
     expect(BB_SELECT_TRIGGER_CLASS).toMatch(/\bh-11\b/);
-    expect(BB_SELECT_TRIGGER_CLASS).toMatch(/\brounded-3xl\b/);
+    expect(BB_SELECT_TRIGGER_CLASS).toMatch(/\brounded-2xl\b/);
     expect(BB_SELECT_TRIGGER_CLASS).toMatch(/\bbg-card\b/);
     expect(BB_SELECT_TRIGGER_CLASS).toMatch(/\bbb-shadow-sm\b/);
     expect(BB_SELECT_TRIGGER_CLASS).toMatch(/\bappearance-none\b/);

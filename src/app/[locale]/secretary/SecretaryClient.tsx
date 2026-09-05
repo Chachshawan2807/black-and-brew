@@ -220,7 +220,7 @@ export default function SecretaryClient({ initialBoard, locale }: SecretaryClien
             onClick={() => setShowCreateDialog(true)}
             onPointerEnter={preloadSecretaryManualTaskDialog}
             onFocus={preloadSecretaryManualTaskDialog}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[13px] text-foreground"
+            className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-card px-3 py-1.5 text-[13px] text-foreground hover:bg-muted/40 bb-transition"
           >
             <Plus size={14} />
             เพิ่มงาน

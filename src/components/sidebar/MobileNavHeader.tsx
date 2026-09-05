@@ -3,6 +3,8 @@
 import { Menu } from '@/lib/icons';
 import { BrandLogo } from '@/components/sidebar/BrandLogo';
 import { HintTooltip } from '@/components/ui/hint-tooltip';
+import { BB_BTN_ICON } from '@/lib/ui-outlined-tokens';
+import { cn } from '@/lib/utils';
 import { useMobileNavDrawer } from '@/hooks/use-mobile-nav-drawer';
 
 export function MobileNavHeader() {
@@ -19,7 +21,7 @@ export function MobileNavHeader() {
           <button
             type="button"
             onClick={() => openDrawer()}
-            className="h-10 w-10 flex items-center justify-center rounded-full touch-manipulation bb-transition hover:bg-black/5 dark:hover:bg-white/10 active:bg-black/10 dark:active:bg-white/15"
+            className={cn(BB_BTN_ICON, 'touch-manipulation')}
             aria-label="เปิดเมนูนำทาง"
             aria-expanded={isOpen}
             aria-controls="bb-nav-drawer"

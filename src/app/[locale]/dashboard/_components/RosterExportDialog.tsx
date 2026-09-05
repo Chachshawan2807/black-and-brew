@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CloseIcon } from '@/components/ui/close-icon';
 import { cn } from '@/lib/utils';
-import { BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
+import { BB_BTN_CLOSE, BB_BTN_OUTLINE_PRIMARY } from '@/lib/ui-outlined-tokens';
 
 type RosterExportProfile = {
   id: string;
@@ -111,7 +111,7 @@ export function RosterExportDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className={cn(BB_BTN_CLOSE, 'shrink-0')}
             aria-label="ปิด"
           >
             <CloseIcon size="md" />

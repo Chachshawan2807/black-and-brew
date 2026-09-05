@@ -173,7 +173,7 @@ export function NotificationPanel() {
               style={panelStyle}
               className={cn(
                 'pointer-events-auto box-border flex flex-col overflow-hidden w-full max-w-md',
-                'bg-background border border-border rounded-3xl bb-shadow-lg',
+                'bg-background border border-border rounded-2xl bb-shadow-lg',
                 'max-h-[min(75vh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-8rem))]',
                 'max-md:max-h-[min(80dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-6rem))]',
               )}

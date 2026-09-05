@@ -334,7 +334,7 @@ export default function MaintenanceClient({
               <span className="text-sm tracking-[0.3em] uppercase font-normal">กำลังโหลดบันทึก...</span>
             </div>
           ) : records.length === 0 ? (
-            <div className="bg-card/50 border border-dashed border-border rounded-3xl py-32 flex flex-col items-center justify-center text-muted-foreground">
+            <div className="bg-card/50 border border-dashed border-border rounded-2xl py-32 flex flex-col items-center justify-center text-muted-foreground">
               <Wrench className="w-20 h-20 mb-8 opacity-10" strokeWidth={0.5} />
               <p className="text-xl font-normal tracking-wide italic">ยังไม่มีบันทึกการซ่อมบำรุง</p>
               <button
@@ -458,7 +458,7 @@ export default function MaintenanceClient({
                               <button
                                 onClick={() => { setRecordToDelete(record.id!); setIsDeleteConfirmOpen(true); }}
                                 disabled={isReadOnly}
-                                className="p-2 hover:bg-red-50 dark:hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-xl bb-transition active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="rounded-2xl border border-border/80 p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 bb-transition active:scale-90 disabled:opacity-60 disabled:cursor-not-allowed"
                                 aria-label="ลบบันทึก"
                               >
                                 <Trash2 className="w-4 h-4" strokeWidth={1.5} />

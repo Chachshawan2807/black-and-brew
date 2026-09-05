@@ -13,7 +13,7 @@ function formatQty(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-const METRIC_CARD_BASE = 'rounded-3xl p-5 bb-shadow-sm';
+const METRIC_CARD_BASE = 'rounded-2xl p-5 bb-shadow-sm';
 const METRIC_LABEL_CLASS = 'text-[11px] uppercase tracking-[0.18em] text-black/60';
 
 export default async function InventoryAccuracyPage({
@@ -56,7 +56,7 @@ export default async function InventoryAccuracyPage({
         </header>
 
         {!report ? (
-          <section className="rounded-3xl border border-red-100 bg-card p-5 text-sm text-muted-foreground dark:border-red-500/20">
+          <section className="rounded-2xl border border-red-100 bg-card p-5 text-sm text-muted-foreground dark:border-red-500/20">
             ไม่สามารถโหลดรายงานความแม่นยำได้ในขณะนี้
           </section>
         ) : (
@@ -114,7 +114,7 @@ export default async function InventoryAccuracyPage({
               </div>
             </section>
 
-            <section className="rounded-3xl border border-border bg-card p-5 bb-shadow-sm">
+            <section className="rounded-2xl border border-border bg-card p-5 bb-shadow-sm">
               <div className="mb-4 flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
                 <h2 className="text-lg font-normal text-foreground">รายการที่คลาดเคลื่อนสูง</h2>
@@ -122,7 +122,7 @@ export default async function InventoryAccuracyPage({
               <HighDiscrepancyList items={report.highDiscrepancyItems} />
             </section>
 
-            <section className="rounded-3xl border border-border bg-card p-5 bb-shadow-sm">
+            <section className="rounded-2xl border border-border bg-card p-5 bb-shadow-sm">
               <div className="flex items-start gap-3">
                 <ClipboardCheck className="mt-0.5 h-5 w-5 text-foreground/40" />
                 <p className="text-sm leading-6 text-muted-foreground">

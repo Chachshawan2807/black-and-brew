@@ -28,7 +28,7 @@ export function InventoryGridSearchBar({
   };
 
   return (
-    <div className="rounded-3xl border border-border bg-card px-3 py-2.5 bb-shadow-sm bb-transition duration-200 focus-within:border-foreground/20 focus-within:bb-shadow-md">
+    <div className="rounded-2xl border border-border bg-card px-3 py-2.5 bb-shadow-sm bb-transition duration-200 focus-within:border-foreground/20 focus-within:bb-shadow-md">
       <div className="flex items-center gap-2 min-w-0">
         <div className="relative min-w-0 flex-1">
           <Search
