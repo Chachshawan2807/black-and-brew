@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   PlusCircle,
   History,
+  Package,
   PackagePlus,
   PackageMinus,
   SlidersHorizontal,
@@ -19,6 +20,8 @@ import {
   Layers,
   X,
 } from '@/lib/icons';
+import { CloseIcon } from '@/components/ui/close-icon';
+import { LoadingIcon } from '@/components/ui/loading-icon';
 import { cn } from '@/lib/utils';
 import type { QuickBadgeStyles } from '@/lib/inventory-stock';
 import {
@@ -111,9 +114,44 @@ export type InventoryQuickActionBarProps = {
   onCancelTransactionDate?: () => void;
   /** FAB mobile bulk: queue scrolls inside a fixed-height centered shell */
   fabMobileBulkShell?: boolean;
+  /** FAB overlay: panel header + close; inline: compact card without header */
+  panelVariant?: 'fab' | 'inline';
+  onClose?: () => void;
 };
 
 const ACTION_CELL_CLASS = 'min-w-0 w-full';
+
+const QUICK_TYPE_LABELS = {
+  IN: 'IN',
+  OUT: 'OUT',
+  ADJUST: 'SET',
+} as const;
+
+function QuickActionPanelHeader({ onClose }: { onClose?: () => void }) {
+  return (
+    <div className="relative shrink-0 border-b border-border px-4 pb-3 pt-4 md:px-5 md:pt-5">
+      {onClose && (
+        <HintTooltip tip="ปิด">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="ปิดปรับสต็อกด่วน"
+            className="absolute right-3 top-3 z-10 rounded-full p-2 text-foreground/40 bb-transition hover:bg-muted hover:text-foreground active:scale-95 md:right-4 md:top-4"
+          >
+            <CloseIcon size="lg" />
+          </button>
+        </HintTooltip>
+      )}
+      <h2 className="flex items-center gap-2.5 pr-12 text-lg font-normal text-foreground md:text-xl">
+        <Package className="h-5 w-5 shrink-0 text-foreground/40 md:h-6 md:w-6" strokeWidth={1.5} />
+        ปรับสต็อกด่วน
+      </h2>
+      <p className="mt-1 max-w-[28rem] pr-12 text-[12px] font-normal text-muted-foreground md:text-[13px]">
+        ค้นหาสินค้า แล้วรับเข้า นำออก หรือตั้งจำนวนคงเหลือใหม่
+      </p>
+    </div>
+  );
+}
 
 function QuickActionTypeToggle({
   quickType,
@@ -128,53 +166,59 @@ function QuickActionTypeToggle({
   return (
     <div
       className={cn(
-        'flex w-full items-center p-0.5 rounded-full h-11',
+        'flex h-11 w-full items-center rounded-full p-0.5',
         INVENTORY_QUICK_ACTION_COLORS.toggleTrack,
         className,
       )}
       role="group"
       aria-label="ประเภทการปรับสต็อก"
     >
-      <HintTooltip tip="รับเข้า">
+      <HintTooltip tip="รับเข้า (IN)">
         <button
           type="button"
           onClick={guardPointerClickThrough(() => setQuickType('IN'))}
           aria-label="รับเข้า"
           aria-pressed={quickType === 'IN'}
           className={cn(
-            'flex-1 flex items-center justify-center h-full rounded-full bb-transition duration-150',
+            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full bb-transition duration-150',
             quickType === 'IN' ? INVENTORY_QUICK_ACTION_COLORS.in : INVENTORY_QUICK_ACTION_COLORS.inactive,
+            quickType === 'IN' && 'bb-shadow-sm',
           )}
         >
-          <PackagePlus className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+          <PackagePlus className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <span className="text-[10px] font-medium leading-none tracking-wide">{QUICK_TYPE_LABELS.IN}</span>
         </button>
       </HintTooltip>
-      <HintTooltip tip="นำออก">
+      <HintTooltip tip="นำออก (OUT)">
         <button
           type="button"
           onClick={guardPointerClickThrough(() => setQuickType('OUT'))}
           aria-label="นำออก"
           aria-pressed={quickType === 'OUT'}
           className={cn(
-            'flex-1 flex items-center justify-center h-full rounded-full bb-transition duration-150',
+            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full bb-transition duration-150',
             quickType === 'OUT' ? INVENTORY_QUICK_ACTION_COLORS.out : INVENTORY_QUICK_ACTION_COLORS.inactive,
+            quickType === 'OUT' && 'bb-shadow-sm',
           )}
         >
-          <PackageMinus className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+          <PackageMinus className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <span className="text-[10px] font-medium leading-none tracking-wide">{QUICK_TYPE_LABELS.OUT}</span>
         </button>
       </HintTooltip>
-      <HintTooltip tip="ปรับจำนวน">
+      <HintTooltip tip="ตั้งจำนวน (SET)">
         <button
           type="button"
           onClick={guardPointerClickThrough(() => setQuickType('ADJUST'))}
           aria-label="ปรับจำนวน"
           aria-pressed={quickType === 'ADJUST'}
           className={cn(
-            'flex-1 flex items-center justify-center h-full rounded-full bb-transition duration-150',
+            'flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full bb-transition duration-150',
             quickType === 'ADJUST' ? INVENTORY_QUICK_ACTION_COLORS.adjust : INVENTORY_QUICK_ACTION_COLORS.inactive,
+            quickType === 'ADJUST' && 'bb-shadow-sm',
           )}
         >
-          <SlidersHorizontal className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+          <SlidersHorizontal className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <span className="text-[10px] font-medium leading-none tracking-wide">{QUICK_TYPE_LABELS.ADJUST}</span>
         </button>
       </HintTooltip>
     </div>
@@ -297,6 +341,7 @@ function QuickActionSaveButton({
     <button
       type="button"
       disabled={disabled}
+      aria-busy={isQuickPending}
       onClick={(e) => {
         if (disabled) return;
         blurActiveElement();
@@ -305,13 +350,17 @@ function QuickActionSaveButton({
         }, 0);
       }}
       className={cn(
-        'h-11 w-full bb-pastel-surface hover:brightness-95 text-[#000000] rounded-3xl text-sm font-normal bb-transition bb-shadow-sm flex items-center justify-center gap-1 whitespace-nowrap antialiased disabled:opacity-50',
+        'flex h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-3xl text-sm font-normal bb-pastel-surface text-[#000000] bb-transition bb-shadow-sm hover:brightness-95 antialiased disabled:opacity-50',
         inventoryQuickActionTypeColors(quickType),
         className,
       )}
     >
-      <CloudUpload className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-      <span>{bulkMode ? `บันทึก (${bulkCount})` : 'บันทึก'}</span>
+      {isQuickPending ? (
+        <LoadingIcon size="sm" className="text-[#000000]" />
+      ) : (
+        <CloudUpload className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+      )}
+      <span>{isQuickPending ? 'กำลังบันทึก...' : bulkMode ? `บันทึก (${bulkCount})` : 'บันทึก'}</span>
     </button>
   );
 }
@@ -701,7 +750,10 @@ export function InventoryQuickActionBar({
   onConfirmTransactionDate,
   onCancelTransactionDate,
   fabMobileBulkShell = false,
+  panelVariant = 'inline',
+  onClose,
 }: InventoryQuickActionBarProps) {
+  const isFabPanel = panelVariant === 'fab';
   const searchRootRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -931,8 +983,23 @@ export function InventoryQuickActionBar({
 
   return (
     <>
-    <div className={cn('w-full flex flex-col bg-card p-4 rounded-3xl border border-border bb-shadow-sm', className)}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-2.5 w-full">
+    <div
+      className={cn(
+        'flex w-full flex-col bg-card',
+        isFabPanel
+          ? 'min-h-0'
+          : 'rounded-3xl border border-border p-4 bb-shadow-sm',
+        className,
+      )}
+    >
+      {isFabPanel && <QuickActionPanelHeader onClose={onClose} />}
+      <form
+        onSubmit={onSubmit}
+        className={cn(
+          'flex w-full flex-col gap-2.5',
+          isFabPanel ? 'px-4 pb-4 pt-3 md:px-5 md:pb-5' : '',
+        )}
+      >
         <div
           className={cn(
             'flex flex-row flex-wrap sm:flex-nowrap items-center gap-2 w-full min-w-0 box-border',
@@ -961,7 +1028,10 @@ export function InventoryQuickActionBar({
                 window.setTimeout(() => setIsSearchFocused(false), 200);
               }}
             >
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+              <label htmlFor="quick-action-search" className="sr-only">
+                ค้นหาสินค้า
+              </label>
+              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 ref={searchInputRef}
                 id="quick-action-search"
@@ -1029,7 +1099,7 @@ export function InventoryQuickActionBar({
           </div>
 
           <div
-            className="hidden sm:inline-flex shrink-0 items-center gap-1.5 rounded-2xl border border-border/60 bg-muted/20 p-1"
+            className="hidden shrink-0 items-center gap-1.5 rounded-2xl border border-border/60 bg-muted/25 p-1 sm:inline-flex"
             role="group"
             aria-label="จำนวน ประเภท และบันทึก"
           >
@@ -1145,11 +1215,14 @@ export function InventoryQuickActionBar({
       {frequentItems.length > 0 && !collapseBulkQueueForSearch && !hideMobileSearchChrome && !fabMobileBulkShell && (
         <div
           className={cn(
-            'flex items-center gap-2 mt-6 pt-3 border-t border-border overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-1 scrollbar-hide',
+            'flex items-center gap-2 overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-1 scrollbar-hide',
+            isFabPanel
+              ? 'border-t border-border px-4 pb-4 pt-3 md:px-5 md:pb-5'
+              : 'mt-6 border-t border-border pt-3',
             isReadOnly && 'pointer-events-none opacity-60',
           )}
         >
-          <span className="text-[12px] text-muted-foreground font-normal whitespace-nowrap">รายการใช้บ่อย:</span>
+          <span className="whitespace-nowrap text-[12px] font-normal text-muted-foreground">ใช้บ่อย</span>
           {frequentItems.map((fi) => (
             <button
               key={fi.id}
@@ -1161,7 +1234,7 @@ export function InventoryQuickActionBar({
                 }
                 setQuickSearch(fi.name);
               }}
-              className="px-3 py-1.5 min-h-[44px] md:min-h-0 bg-muted hover:bg-muted/80 border border-border rounded-full text-base md:text-[13px] text-foreground/70 whitespace-nowrap transition-colors flex items-center justify-center"
+              className="flex min-h-[44px] items-center justify-center whitespace-nowrap rounded-full border border-border bg-muted px-3 py-1.5 text-base text-foreground/70 bb-transition hover:bg-muted/80 md:min-h-0 md:text-[13px]"
             >
               {fi.name}
             </button>

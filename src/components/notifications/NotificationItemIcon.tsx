@@ -58,7 +58,7 @@ export function NotificationItemIcon({
   return (
     <div
       className={cn(
-        'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
+        'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
         useHighPriority ? highPriorityFallbackClass : containerClass,
         className,
       )}

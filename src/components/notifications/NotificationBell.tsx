@@ -51,19 +51,22 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
   const content = (
     <>
       <Bell
-        className={cn(!isFab && 'h-[18px] w-[18px] text-foreground/80')}
-        size={18}
-        strokeWidth={isFab ? 1.5 : 1.75}
+        className={cn(
+          isFab ? 'text-black' : 'h-[18px] w-[18px] text-foreground/80',
+        )}
+        size={isFab ? 20 : 18}
+        strokeWidth={isFab ? 1.65 : 1.75}
         aria-hidden={isFab}
       />
       {unreadCount > 0 && (
         <span
           aria-hidden
           className={cn(
-            'absolute -top-0.5 -right-0.5 flex items-center justify-center rounded-full font-normal tabular-nums',
-            'bg-red-500 text-white border border-red-600/80 bb-shadow-sm',
+            'absolute flex items-center justify-center rounded-full font-medium tabular-nums',
+            'bg-red-500 text-white border-2 border-background bb-shadow-sm',
+            isFab ? '-top-1 -right-1' : '-top-0.5 -right-0.5',
             getInAppBadgeClassName(unreadCount),
-            pulse && 'animate-pulse ring-2 ring-red-400/60',
+            pulse && 'animate-pulse ring-2 ring-red-400/50 ring-offset-1 ring-offset-transparent',
           )}
         >
           {formatInAppBadgeLabel(unreadCount)}
@@ -94,10 +97,11 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
           whileTap={FAB_TAP}
           className={cn(
             'relative bb-transition',
-            'flex items-center justify-center rounded-full shadow-lg',
+            'flex items-center justify-center rounded-full bb-shadow-lg',
             FAB_SIZE_CLASS,
             INVENTORY_QUICK_ACTION_COLORS.fab,
             INVENTORY_QUICK_ACTION_HOVER.fab,
+            panelOpen && 'ring-2 ring-amber-600/35 ring-offset-2 ring-offset-background',
             !stacked && cn('fixed z-[201]', FAB_RIGHT_CLASS),
             className,
           )}

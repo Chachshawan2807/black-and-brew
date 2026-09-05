@@ -344,7 +344,7 @@ export default function InventoryQuickActionFAB() {
             className="fixed inset-0 z-[198]"
           >
             <div
-              className="absolute inset-0 bg-black/10 md:bg-black/0"
+              className="absolute inset-0 bg-black/15 backdrop-blur-[2px] md:bg-black/0 md:backdrop-blur-none"
               onClick={closeQuickPanel}
               aria-hidden
             />
@@ -362,7 +362,7 @@ export default function InventoryQuickActionFAB() {
                 exit={modalContent.exit}
                 transition={modalContent.transition}
                 className={cn(
-                  'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate',
+                  'pointer-events-auto box-border flex flex-col min-h-0 bg-card rounded-3xl isolate border border-border overflow-hidden',
                   'max-md:relative max-md:w-full',
                   FAB_MOBILE_PANEL_MAX_HEIGHT_CLASS,
                   fabMobileBulkQueueActive
@@ -425,6 +425,8 @@ export default function InventoryQuickActionFAB() {
                   onConfirmTransactionDate={quickAction.confirmTransactionDate}
                   onCancelTransactionDate={quickAction.cancelTransactionDate}
                   fabMobileBulkShell={fabMobileBulkQueueActive}
+                  panelVariant="fab"
+                  onClose={closeQuickPanel}
                   className="bb-shadow-xl"
                 />
               )}
