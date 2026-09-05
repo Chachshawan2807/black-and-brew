@@ -103,6 +103,7 @@ describe('notification fab cross-platform sync', () => {
     expect(hookSource).toContain('shouldDeferOsNotificationToPush');
     expect(hookSource).toContain('deferOsToPush');
     expect(hookSource).toContain('skipInsightOsNotification');
+    expect(hookSource).toContain('skipDailyReportOsNotification');
   });
 
   test('hook uses a unique realtime channel topic per subscribe attempt', () => {

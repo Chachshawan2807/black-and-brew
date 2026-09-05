@@ -159,6 +159,37 @@ function getSubscriptionDeviceKind(subscription: PushSubscriptionRow): 'mobile' 
   return /iphone|ipad|android|mobile/.test(userAgent) ? 'mobile' : 'desktop';
 }
 
+function resolveDailyReportSubscriptionKey(subscription: PushSubscriptionRow): string {
+  const sessionId = subscription.client_session_id?.trim();
+  if (sessionId) return `session:${sessionId}`;
+  return `user:${subscription.user_id}:${getSubscriptionDeviceKind(subscription)}`;
+}
+
+function compareDailyReportSubscriptionRecency(
+  left: PushSubscriptionRow,
+  right: PushSubscriptionRow,
+): number {
+  const leftUpdated = Date.parse(left.updated_at ?? '') || 0;
+  const rightUpdated = Date.parse(right.updated_at ?? '') || 0;
+  if (leftUpdated !== rightUpdated) return leftUpdated - rightUpdated;
+  return left.id.localeCompare(right.id);
+}
+
+/** One scheduled digest push per physical device (Chrome + PWA can register twice). */
+export function dedupeDailyReportPushSubscriptions(
+  subscriptions: PushSubscriptionRow[],
+): PushSubscriptionRow[] {
+  const byKey = new Map<string, PushSubscriptionRow>();
+  for (const subscription of subscriptions) {
+    const key = resolveDailyReportSubscriptionKey(subscription);
+    const existing = byKey.get(key);
+    if (!existing || compareDailyReportSubscriptionRecency(subscription, existing) > 0) {
+      byKey.set(key, subscription);
+    }
+  }
+  return Array.from(byKey.values());
+}
+
 function incrementCount(record: Record<string, number>, key: string): void {
   record[key] = (record[key] ?? 0) + 1;
 }
@@ -196,7 +227,7 @@ export async function dispatchDailyReportWebPush(
   const { data: subscriptions, error } = await supabase
     .from('push_subscriptions')
     .select(
-      'id, user_id, endpoint, p256dh, auth, client_session_id, user_agent, prefs_json, branch_id, profile_id',
+      'id, user_id, endpoint, p256dh, auth, client_session_id, user_agent, prefs_json, branch_id, profile_id, updated_at',
     );
 
   if (error) {
@@ -231,6 +262,7 @@ export async function dispatchDailyReportWebPush(
   // branch env var drifted from existing subscription rows.
   const { targetRows, eligibleRows, branchRows, branchFallback } =
     selectDailyReportTargetSubscriptions(rows, branchId);
+  const dedupedTargetRows = dedupeDailyReportPushSubscriptions(targetRows);
 
   let sent = 0;
   let failed = 0;
@@ -241,7 +273,7 @@ export async function dispatchDailyReportWebPush(
   const failedDeviceCounts: Record<string, number> = {};
   const removedDeviceCounts: Record<string, number> = {};
 
-  const deliveries = targetRows.map(async (subscription) => {
+  const deliveries = dedupedTargetRows.map(async (subscription) => {
     const deviceKind = getSubscriptionDeviceKind(subscription);
     incrementCount(targetDeviceCounts, deviceKind);
     const prefs = parseDailyReportPushPrefs(subscription.prefs_json);

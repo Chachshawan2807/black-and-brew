@@ -9,7 +9,12 @@ import {
 } from '@/app/actions/daily-report-actions';
 import { getBangkokCalendarIso } from '@/lib/date-utils';
 import { buildDailyReportAltText } from '@/lib/daily-report-summary';
-import { recordDailyReportNotificationLog } from '@/lib/daily-report-notification';
+import {
+  dailyReportNotificationLogId,
+  markDailyReportWebPushDispatched,
+  recordDailyReportNotificationLog,
+  wasDailyReportWebPushDispatched,
+} from '@/lib/daily-report-notification';
 import { dispatchDailyReportWebPush } from '@/lib/daily-report-web-push';
 import { evaluateAndDispatchInsights } from '@/lib/proactive-insights/evaluate-and-dispatch';
 import { denyUnlessBearerSecret } from '@/lib/security/route-auth';
@@ -45,8 +50,23 @@ export async function GET(request: Request) {
     const reportDateIso = resolveDailyReportTargetIso(schedule, now);
 
     const reportData = await compileDailyReportData(schedule, now);
+    const logId = dailyReportNotificationLogId(reportData.schedule, reportData.dateStr);
     await recordDailyReportNotificationLog(reportData, 'th');
-    const pushResult = await dispatchDailyReportWebPush(reportData);
+
+    const alreadyDispatched = await wasDailyReportWebPushDispatched(logId);
+    const pushResult = alreadyDispatched
+      ? {
+          sent: 0,
+          failed: 0,
+          removed: 0,
+          skipped: true,
+          error: 'already_dispatched' as const,
+        }
+      : await dispatchDailyReportWebPush(reportData);
+
+    if (!alreadyDispatched && pushResult.sent > 0) {
+      await markDailyReportWebPushDispatched(logId);
+    }
 
     if (pushResult.error === 'vapid_not_configured') {
       console.error('[CRON] Web Push not configured set VAPID keys on Vercel');

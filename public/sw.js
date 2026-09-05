@@ -1,4 +1,4 @@
-// v28
+// v29
 importScripts('/pwa-assets.js');
 importScripts('/notification-store.js');
 importScripts('/offline-mutation-store.js');
@@ -75,11 +75,18 @@ async function resolvePushAssets(payload) {
 async function buildNotificationOptions(payload, unreadCount, overrides = {}) {
   const { icon, badge } = await resolvePushAssets(payload);
   const display = resolveOsNotificationDisplay(payload);
+  const fallbackTag = payload.kind === 'security_alert'
+    ? 'bb-security'
+    : payload.kind === 'proactive_insight'
+      ? 'bb-insight'
+      : payload.kind === 'daily_report'
+        ? 'bb-daily-report'
+        : 'bb-inventory';
   return {
     body: display.body,
     icon,
     badge,
-    tag: payload.tag || 'bb-inventory',
+    tag: resolvePushNotificationTag(payload, fallbackTag),
     silent: false,
     requireInteraction: false,
     renotify: true,
@@ -106,6 +113,19 @@ function isDailyReportPayload(payload) {
   if (payload.kind === 'daily_report') return true;
   const meta = payload.notification && payload.notification.metadata;
   return meta && meta.kind === 'daily_report';
+}
+
+function isProactiveInsightPayload(payload) {
+  return payload.kind === 'proactive_insight';
+}
+
+/** Scheduled digests reuse stable tags so duplicate deliveries replace instead of stack. */
+function resolvePushNotificationTag(payload, fallbackTag) {
+  const baseTag = payload.tag || fallbackTag;
+  if (isDailyReportPayload(payload) || isProactiveInsightPayload(payload)) {
+    return baseTag;
+  }
+  return `${baseTag}-${Date.now()}`;
 }
 
 function readNotificationString(value) {
@@ -411,7 +431,7 @@ self.addEventListener('push', (event) => {
           await showPushNotification(
             display.title,
             await buildNotificationOptions(payload, unreadCount, {
-            tag: `${payload.tag || fallbackTag}-${Date.now()}`,
+            tag: resolvePushNotificationTag(payload, fallbackTag),
             requireInteraction: true,
             timestamp: Date.now(),
             data: {
@@ -445,7 +465,7 @@ self.addEventListener('push', (event) => {
       const unreadCount = await safeResolveUnreadCount(payload);
       const display = resolveOsNotificationDisplay(payload);
       const options = await buildNotificationOptions(payload, unreadCount, {
-        tag: `${payload.tag || 'bb-inventory'}-${Date.now()}`,
+        tag: resolvePushNotificationTag(payload, 'bb-inventory'),
       });
       const appVisible = await hasVisibleWindowClient();
 

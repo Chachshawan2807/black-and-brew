@@ -43,6 +43,13 @@ describe('mobile home-screen badge (sw.js)', () => {
     expect(sw).toMatch(/if \(!appVisible \|\| shouldAlwaysShowOsBanner\(payload\)\)/);
   });
 
+  test('scheduled digest pushes reuse stable notification tags to replace duplicates', () => {
+    expect(sw).toContain('function resolvePushNotificationTag');
+    expect(sw).toMatch(
+      /resolvePushNotificationTag\(payload[\s\S]*payload\.kind === 'daily_report'/,
+    );
+  });
+
   test('warms notification icon assets into cache before showNotification', () => {
     expect(sw).toContain('function ensureNotificationAssetCached');
     expect(sw).toContain('function warmNotificationAssets');

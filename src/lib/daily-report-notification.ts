@@ -15,6 +15,9 @@ export function dailyReportNotificationLogId(
   return `bb-daily-report-${schedule}-${dateStr}`;
 }
 
+/** Marks when the scheduled cron Web Push was delivered (prevents duplicate OS banners). */
+export const DAILY_REPORT_WEB_PUSH_DISPATCHED_KEY = 'webPushDispatchedAt';
+
 function scheduleTitle(schedule: DailyReportSchedule, locale: string): string {
   const isTh = locale === 'th';
   if (schedule === 'tomorrow') {
@@ -44,10 +47,10 @@ function buildDailyReportLogPayload(data: DailyReportData, locale: string) {
 async function findDailyReportLogRow(
   supabase: SupabaseClient,
   logId: string,
-) {
+): Promise<{ row: { id: string; metadata?: Record<string, unknown> | null } | null; tableMissing: boolean }> {
   const { data: existing, error: lookupError } = await supabase
     .from('data_change_logs')
-    .select('id')
+    .select('id, metadata')
     .eq('module', 'schedule')
     .eq('entity_type', 'daily_report')
     .eq('entity_id', logId)
@@ -62,6 +65,61 @@ async function findDailyReportLogRow(
   }
 
   return { row: existing?.[0] ?? null, tableMissing: false };
+}
+
+export function isDailyReportWebPushDispatched(
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  return typeof metadata?.[DAILY_REPORT_WEB_PUSH_DISPATCHED_KEY] === 'string';
+}
+
+/** True when the 05:00 / 18:00 cron already delivered Web Push for this schedule day. */
+export async function wasDailyReportWebPushDispatched(logId: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return false;
+
+  try {
+    const { row, tableMissing } = await findDailyReportLogRow(supabase, logId);
+    if (tableMissing || !row) return false;
+    const metadata =
+      typeof row.metadata === 'object' && row.metadata !== null
+        ? (row.metadata as Record<string, unknown>)
+        : undefined;
+    return isDailyReportWebPushDispatched(metadata);
+  } catch (error) {
+    console.error('[wasDailyReportWebPushDispatched] Exception:', error);
+    return false;
+  }
+}
+
+/** Record successful Web Push delivery so duplicate cron hits skip re-send. */
+export async function markDailyReportWebPushDispatched(logId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return;
+
+  try {
+    const { row, tableMissing } = await findDailyReportLogRow(supabase, logId);
+    if (tableMissing || !row) return;
+
+    const metadata = {
+      ...(typeof row.metadata === 'object' && row.metadata !== null
+        ? (row.metadata as Record<string, unknown>)
+        : {}),
+      [DAILY_REPORT_WEB_PUSH_DISPATCHED_KEY]: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('data_change_logs')
+      .update({ metadata })
+      .eq('id', row.id);
+
+    if (error) {
+      console.error('Supabase Error:', error.message, error.details);
+      throw error;
+    }
+  } catch (error) {
+    console.error('[markDailyReportWebPushDispatched] Exception:', error);
+  }
 }
 
 function getSupabaseAdmin() {

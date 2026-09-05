@@ -25,6 +25,7 @@ export interface PushSubscriptionRow {
   prefs_json: Record<string, unknown>;
   profile_id?: string | null;
   branch_id?: string | null;
+  updated_at?: string | null;
 }
 
 export interface WebPushPayload {

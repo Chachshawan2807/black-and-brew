@@ -10,11 +10,21 @@ vi.mock('next/cache', () => ({
 
 const recordLogMock = vi.fn();
 const dispatchPushMock = vi.fn();
+const wasDailyReportWebPushDispatchedMock = vi.fn();
+const markDailyReportWebPushDispatchedMock = vi.fn();
 const evaluateInsightsMock = vi.fn();
 
-vi.mock('@/lib/daily-report-notification', () => ({
-  recordDailyReportNotificationLog: (...args: unknown[]) => recordLogMock(...args),
-}));
+vi.mock('@/lib/daily-report-notification', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/daily-report-notification')>();
+  return {
+    ...actual,
+    recordDailyReportNotificationLog: (...args: unknown[]) => recordLogMock(...args),
+    wasDailyReportWebPushDispatched: (...args: unknown[]) =>
+      wasDailyReportWebPushDispatchedMock(...args),
+    markDailyReportWebPushDispatched: (...args: unknown[]) =>
+      markDailyReportWebPushDispatchedMock(...args),
+  };
+});
 
 vi.mock('@/lib/daily-report-web-push', () => ({
   dispatchDailyReportWebPush: (...args: unknown[]) => dispatchPushMock(...args),
@@ -53,10 +63,14 @@ describe('/api/daily-report (cron-job.org)', () => {
     vi.resetModules();
     recordLogMock.mockReset();
     dispatchPushMock.mockReset();
+    wasDailyReportWebPushDispatchedMock.mockReset();
+    markDailyReportWebPushDispatchedMock.mockReset();
     evaluateInsightsMock.mockReset();
     process.env.CRON_SECRET = 'test-cron-secret';
     recordLogMock.mockResolvedValue({ success: true });
-    dispatchPushMock.mockResolvedValue({ sent: 1, failed: 0, skipped: false });
+    wasDailyReportWebPushDispatchedMock.mockResolvedValue(false);
+    markDailyReportWebPushDispatchedMock.mockResolvedValue(undefined);
+    dispatchPushMock.mockResolvedValue({ sent: 1, failed: 0, removed: 0, skipped: false });
     evaluateInsightsMock.mockResolvedValue({
       dateIso: '2026-08-26',
       matchedRules: [],
@@ -146,5 +160,30 @@ describe('/api/daily-report (cron-job.org)', () => {
     expect(body.reportDateIso).toBe('2026-08-26');
     expect(body.dateStr).toBe('26/08/2026');
     expect(evaluateInsightsMock).toHaveBeenCalled();
+    expect(markDailyReportWebPushDispatchedMock).toHaveBeenCalledWith(
+      'bb-daily-report-tomorrow-26/08/2026',
+    );
+  });
+
+  test('18:00 ICT cron skips Web Push when already dispatched for the same schedule day', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-25T11:00:00.000Z'));
+
+    recordLogMock.mockResolvedValue({ success: true, skipped: true });
+    wasDailyReportWebPushDispatchedMock.mockResolvedValue(true);
+
+    const { GET } = await import('@/app/api/daily-report/route');
+    const res = await GET(
+      new Request('http://localhost/api/daily-report?schedule=tomorrow', {
+        headers: { authorization: 'Bearer test-cron-secret' },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.skipped).toBe(true);
+    expect(body.reason).toBe('already_dispatched');
+    expect(dispatchPushMock).not.toHaveBeenCalled();
+    expect(markDailyReportWebPushDispatchedMock).not.toHaveBeenCalled();
   });
 });

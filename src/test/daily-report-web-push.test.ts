@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import type { DailyReportData } from '@/app/actions/daily-report-actions';
 import {
   buildDailyReportPushPayload,
+  dedupeDailyReportPushSubscriptions,
   selectDailyReportTargetSubscriptions,
   shouldSendDailyReportToSubscription,
   type DailyReportPushPayload,
@@ -110,6 +111,35 @@ describe('daily-report-web-push', () => {
         'main'
       )
     ).toBe(true);
+  });
+
+  test('dedupeDailyReportPushSubscriptions keeps one row per client session on the same device', () => {
+    const sharedSession = 'bb-session-phone-1';
+    const older = sampleSubscription({
+      id: 'sub-old',
+      endpoint: 'https://fcm.googleapis.com/old',
+      client_session_id: sharedSession,
+      updated_at: '2026-09-04T10:00:00.000Z',
+      user_agent: 'Mozilla/5.0 (Linux; Android 14) Mobile',
+    });
+    const newer = sampleSubscription({
+      id: 'sub-new',
+      endpoint: 'https://fcm.googleapis.com/new',
+      client_session_id: sharedSession,
+      updated_at: '2026-09-05T18:00:00.000Z',
+      user_agent: 'Mozilla/5.0 (Linux; Android 14) Mobile',
+    });
+    const tablet = sampleSubscription({
+      id: 'sub-tablet',
+      endpoint: 'https://fcm.googleapis.com/tablet',
+      client_session_id: 'bb-session-tablet-1',
+      updated_at: '2026-09-05T17:00:00.000Z',
+      user_agent: 'Mozilla/5.0 (Linux; Android 14) Mobile',
+    });
+
+    const deduped = dedupeDailyReportPushSubscriptions([older, newer, tablet]);
+
+    expect(deduped.map((row) => row.id).sort()).toEqual(['sub-new', 'sub-tablet']);
   });
 
   test('selectDailyReportTargetSubscriptions falls back to all eligible rows when branch has no match', () => {
