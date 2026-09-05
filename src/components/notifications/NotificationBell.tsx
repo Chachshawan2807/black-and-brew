@@ -97,9 +97,9 @@ export function NotificationBell({ variant = 'sidebar', className, stacked = fal
           whileTap={FAB_TAP}
           className={cn(
             'relative bb-transition',
-            FAB_STACK_INNER_CLASS,
             INVENTORY_QUICK_ACTION_COLORS.fab,
             INVENTORY_QUICK_ACTION_HOVER.fab,
+            FAB_STACK_INNER_CLASS,
             panelOpen && 'ring-2 ring-amber-600/35 ring-offset-2 ring-offset-background',
             !stacked && cn('fixed z-[201]', FAB_RIGHT_CLASS),
             className,
