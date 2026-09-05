@@ -47,6 +47,7 @@ import type { HolidayLike, LeaveDetailEntry } from '@/lib/dashboard/leave-detail
 import { preloadLeaveDetailDialog } from '@/lib/preload-leave-detail-dialog';
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
 import { RosterExportStatSummary } from './RosterExportStatSummary';
+import { RosterExportPeriodHeader } from './RosterExportPeriodHeader';
 import { RosterExportDialog } from './RosterExportDialog';
 import { cn } from '@/lib/utils';
 import { BB_BTN_ICON } from '@/lib/ui-outlined-tokens';
@@ -470,7 +471,9 @@ export default function MonthlyRoster({
             </div>
           ) : (
             <div id="blackandbrew-roster-export" className="bg-card p-8">
-              <div className="flex flex-col md:flex-row md:items-center gap-6 mb-8 p-6 bg-card rounded-2xl border border-border">
+              <RosterExportPeriodHeader startDate={startDate} endDate={endDate} />
+
+              <div className="bb-roster-export-staff flex flex-col md:flex-row md:items-center gap-6 mb-8 p-6 bg-card rounded-2xl border border-border">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-foreground/85 bg-card text-foreground"><User className="w-5 h-5" /></div>
                   <span className="text-foreground text-lg font-normal">พนักงาน:</span>

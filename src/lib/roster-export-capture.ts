@@ -11,6 +11,8 @@ import {
   ROSTER_EXPORT_GRID_TEMPLATE,
   ROSTER_EXPORT_GRID_WIDTH,
   ROSTER_EXPORT_HEADER_ROW_HEIGHT,
+  ROSTER_EXPORT_PERIOD_BLOCK_HEIGHT,
+  ROSTER_EXPORT_PERIOD_MARGIN_BOTTOM,
   ROSTER_EXPORT_ROOT_PADDING,
   ROSTER_EXPORT_ROOT_WIDTH,
   ROSTER_EXPORT_STAFF_BLOCK_HEIGHT,
@@ -23,6 +25,8 @@ export const ROSTER_EXPORT_BG = '#faf9f2';
 export const ROSTER_EXPORT_CAPTURING_CLASS = 'bb-roster-export-capturing';
 export const ROSTER_EXPORT_SURFACE_CLASS = 'bb-roster-export-surface';
 const ROSTER_EXPORT_GRID_SELECTOR = '.bb-roster-export-grid';
+const ROSTER_EXPORT_PERIOD_SELECTOR = '.bb-roster-export-period';
+const ROSTER_EXPORT_STAFF_SELECTOR = '.bb-roster-export-staff';
 const ROSTER_EXPORT_SUMMARY_SELECTOR = '.bb-roster-export-summary';
 const ROSTER_EXPORT_FULL_DAY_NAMES = ROSTER_INDIVIDUAL_DAY_LABELS_FULL;
 
@@ -162,8 +166,36 @@ export function applyRosterCaptureStyles(root: HTMLElement): () => void {
     setInline(restores, node, 'font-family', fontFamily, true);
   });
 
-  const staffHeader = root.firstElementChild;
-  if (staffHeader instanceof HTMLElement) {
+  const periodHeader = root.querySelector<HTMLElement>(ROSTER_EXPORT_PERIOD_SELECTOR);
+  if (periodHeader) {
+    setInline(restores, periodHeader, 'display', 'flex', true);
+    setInline(restores, periodHeader, 'align-items', 'center', true);
+    setInline(restores, periodHeader, 'gap', '16px', true);
+    setInline(restores, periodHeader, 'margin-bottom', '24px', true);
+    setInline(restores, periodHeader, 'padding', '20px', true);
+    setInline(restores, periodHeader, 'border-radius', '16px', true);
+    setInline(restores, periodHeader, 'width', ROSTER_EXPORT_GRID_WIDTH, true);
+    setInline(restores, periodHeader, 'max-width', ROSTER_EXPORT_GRID_WIDTH, true);
+    setInline(restores, periodHeader, 'box-sizing', 'border-box', true);
+
+    periodHeader.querySelectorAll<HTMLElement>('.text-muted-foreground').forEach((caption) => {
+      setInline(restores, caption, 'font-size', '11px', true);
+      setInline(restores, caption, 'letter-spacing', '0.14em', true);
+      setInline(restores, caption, 'text-transform', 'uppercase', true);
+      setInline(restores, caption, 'color', 'rgb(0 0 0 / 0.55)', true);
+    });
+
+    const periodLabel = periodHeader.querySelector<HTMLElement>('.bb-roster-export-period-label');
+    if (periodLabel) {
+      setInline(restores, periodLabel, 'font-size', '24px', true);
+      setInline(restores, periodLabel, 'line-height', '1.3', true);
+      setInline(restores, periodLabel, 'font-weight', '400', true);
+      setInline(restores, periodLabel, 'color', '#111111', true);
+    }
+  }
+
+  const staffHeader = root.querySelector<HTMLElement>(ROSTER_EXPORT_STAFF_SELECTOR);
+  if (staffHeader) {
     setInline(restores, staffHeader, 'flex-direction', 'row', true);
     setInline(restores, staffHeader, 'align-items', 'center', true);
   }
@@ -301,10 +333,7 @@ async function ensureCaptureFontsReady(): Promise<void> {
 }
 
 function getRosterStaffHeader(root: HTMLElement): HTMLElement | null {
-  const first = root.firstElementChild;
-  if (!(first instanceof HTMLElement)) return null;
-  if (first.matches(ROSTER_EXPORT_GRID_SELECTOR)) return null;
-  return first;
+  return root.querySelector<HTMLElement>(ROSTER_EXPORT_STAFF_SELECTOR);
 }
 
 function getRosterExportBottomElement(root: HTMLElement): HTMLElement | null {
@@ -330,6 +359,9 @@ export function measureRosterExportContentHeight(root: HTMLElement): number {
   }
 
   const paddingTop = parseFloat(getComputedStyle(root).paddingTop) || parseInt(ROSTER_EXPORT_ROOT_PADDING, 10);
+  const periodHeader = root.querySelector<HTMLElement>(ROSTER_EXPORT_PERIOD_SELECTOR);
+  const periodBlockHeight = periodHeader ? ROSTER_EXPORT_PERIOD_BLOCK_HEIGHT : 0;
+  const periodMarginBottom = periodHeader ? ROSTER_EXPORT_PERIOD_MARGIN_BOTTOM : 0;
   const staffHeader = getRosterStaffHeader(root);
   const staffBlockHeight = staffHeader ? ROSTER_EXPORT_STAFF_BLOCK_HEIGHT : 0;
   const staffMarginBottom = staffHeader ? ROSTER_EXPORT_STAFF_MARGIN_BOTTOM : 0;
@@ -337,6 +369,8 @@ export function measureRosterExportContentHeight(root: HTMLElement): number {
 
   return Math.ceil(
     paddingTop +
+      periodBlockHeight +
+      periodMarginBottom +
       staffBlockHeight +
       staffMarginBottom +
       computeRosterExportGridHeight(grid) +

@@ -32,7 +32,8 @@ describe('schedule export theme (dark mode PNG)', () => {
 
   test('globals.css trims roster export bottom padding during capture', () => {
     const css = readFile('app/[locale]/globals.css');
-    expect(css).toContain('.bb-roster-export-capturing');
+    expect(css).toContain('.bb-roster-export-capturing .bb-roster-export-staff');
+    expect(css).toContain('.bb-roster-export-capturing .bb-roster-export-period');
     expect(css).toContain('.bb-roster-export-capturing .bb-roster-export-grid');
     expect(css).toMatch(/\.bb-roster-export-capturing \.bb-roster-export-grid[\s\S]*padding-bottom:\s*0\s*!important/);
     expect(css).toMatch(/\.bb-roster-export-capturing[\s\S]*width:\s*840px\s*!important/);

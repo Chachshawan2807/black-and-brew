@@ -118,6 +118,9 @@ describe('iOS scroll & export fixes', () => {
     expect(code).toContain('RosterExportDialog');
     expect(code).toContain('buildRosterIndividualExportFilename');
     expect(code).toContain('exportRosterImagesForStaff');
+    expect(code).toContain('RosterExportPeriodHeader');
+    const periodHeader = readFile('app/[locale]/dashboard/_components/RosterExportPeriodHeader.tsx');
+    expect(periodHeader).toContain('bb-roster-export-period');
     expect(code).toContain('พนักงาน:');
     expect(code).toContain('rounded-xl sm:rounded-3xl h-20');
     expect(code).not.toContain('bg-muted/30 rounded-xl sm:rounded-3xl');
@@ -127,7 +130,7 @@ describe('iOS scroll & export fixes', () => {
     const dialog = readFile('app/[locale]/dashboard/_components/RosterExportDialog.tsx');
     expect(dialog).toContain('เลือกทั้งหมด');
     expect(dialog).toContain('ดาวน์โหลดที่เลือก');
-    expect(dialog).toContain('ดาวน์โหลดทุกคน (แยกไฟล์)');
+    expect(dialog).toContain('ดาวน์โหลดทุกคน');
     expect(dialog).toContain('type="checkbox"');
   });
 

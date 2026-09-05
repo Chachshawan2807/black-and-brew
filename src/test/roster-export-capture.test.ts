@@ -135,6 +135,7 @@ describe('roster-export-capture', () => {
     root.style.paddingBottom = '32px';
 
     const staffHeader = document.createElement('div');
+    staffHeader.className = 'bb-roster-export-staff';
     root.appendChild(staffHeader);
 
     const grid = document.createElement('div');
@@ -146,6 +147,30 @@ describe('roster-export-capture', () => {
       ({ top: 0, bottom: 0, left: 0, right: 320, width: 320, height: 400, x: 0, y: 0, toJSON: () => {} }) as DOMRect;
 
     expect(measureRosterExportContentHeight(root)).toBe(368);
+  });
+
+  test('measureRosterExportContentHeight includes period header in deterministic height', () => {
+    const root = document.createElement('div');
+    root.style.paddingTop = '32px';
+    root.style.paddingBottom = '32px';
+
+    const periodHeader = document.createElement('div');
+    periodHeader.className = 'bb-roster-export-period';
+    root.appendChild(periodHeader);
+
+    const staffHeader = document.createElement('div');
+    staffHeader.className = 'bb-roster-export-staff';
+    root.appendChild(staffHeader);
+
+    const grid = document.createElement('div');
+    grid.className = 'bb-roster-export-grid';
+    for (let i = 0; i < 14; i++) grid.appendChild(document.createElement('div'));
+    root.appendChild(grid);
+
+    grid.getBoundingClientRect = () =>
+      ({ top: 0, bottom: 0, left: 0, right: 320, width: 320, height: 400, x: 0, y: 0, toJSON: () => {} }) as DOMRect;
+
+    expect(measureRosterExportContentHeight(root)).toBe(476);
   });
 
   test('computeRosterExportGridHeight matches desktop row geometry', () => {
@@ -204,6 +229,7 @@ describe('roster-export-capture', () => {
     const root = document.createElement('div');
 
     const staffHeader = document.createElement('div');
+    staffHeader.className = 'bb-roster-export-staff';
     root.appendChild(staffHeader);
 
     const grid = document.createElement('div');

@@ -166,7 +166,7 @@ export function RosterExportDialog({
             disabled={profiles.length === 0}
             className="rounded-2xl border border-border px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted disabled:opacity-40"
           >
-            ดาวน์โหลดทุกคน (แยกไฟล์)
+            ดาวน์โหลดทุกคน
           </button>
           <button
             type="button"
