@@ -1,7 +1,18 @@
 /** Shared framer-motion presets premium minimal, layout-neutral */
 
-/** Smooth deceleration snappy enter/exit without spring bounce */
-export const MODAL_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+/** Deceleration curve for enter / settle (matches --bb-ease-out in globals.css) */
+export const MODAL_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+/** Acceleration curve for dismiss / exit */
+export const MODAL_EXIT_EASE: [number, number, number, number] = [0.4, 0, 0.8, 0.4];
+
+/** Shared duration steps (seconds) aligned with CSS motion tokens */
+export const MOTION_DURATION = {
+  micro: 0.12,
+  fast: 0.18,
+  normal: 0.24,
+  slow: 0.32,
+} as const;
 
 export type MotionPreset = {
   initial: Record<string, number | string>;
@@ -18,10 +29,10 @@ export const fadeOverlay: MotionPreset = {
 };
 
 export const modalContent: MotionPreset = {
-  initial: { opacity: 0, scale: 0.96, y: 10 },
+  initial: { opacity: 0, scale: 0.97, y: 8 },
   animate: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.96, y: 10 },
-  transition: { duration: 0.22, ease: MODAL_EASE },
+  exit: { opacity: 0, scale: 0.98, y: 6 },
+  transition: { duration: MOTION_DURATION.normal, ease: MODAL_EASE },
 };
 
 /** Bottom sheet modals on mobile (schedule add employee, etc.) */
@@ -29,7 +40,7 @@ export const modalSheetBottom: MotionPreset = {
   initial: { opacity: 0, y: '100%' },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: '100%' },
-  transition: { duration: 0.28, ease: MODAL_EASE },
+  transition: { duration: MOTION_DURATION.slow, ease: MODAL_EASE },
 };
 
 /** Date picker / calendar popover */
@@ -42,10 +53,10 @@ export const calendarPopover: MotionPreset = {
 
 /** Centered notification panel slightly longer travel for smooth open/close */
 export const notificationPanel: MotionPreset = {
-  initial: { opacity: 0, scale: 0.94, y: 16 },
+  initial: { opacity: 0, scale: 0.96, y: 12 },
   animate: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.96, y: 10 },
-  transition: { duration: 0.28, ease: MODAL_EASE },
+  exit: { opacity: 0, scale: 0.98, y: 8 },
+  transition: { duration: MOTION_DURATION.slow, ease: MODAL_EASE },
 };
 
 export const notificationOverlay: MotionPreset = {
@@ -63,10 +74,10 @@ export const sheetPanel: MotionPreset = {
 };
 
 export const pageContent: MotionPreset = {
-  initial: { opacity: 0, y: 8 },
+  initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -4 },
-  transition: { duration: 0.26, ease: MODAL_EASE },
+  exit: { opacity: 0, y: -3 },
+  transition: { duration: MOTION_DURATION.normal, ease: MODAL_EASE },
 };
 
 export const sidebarSurface: MotionPreset = {
@@ -85,10 +96,10 @@ export const toastSlide: MotionPreset = {
 
 /** FAB stack triggers soft fade + scale without bounce */
 export const fabTrigger: MotionPreset = {
-  initial: { opacity: 0, scale: 0.82, y: 8 },
+  initial: { opacity: 0, scale: 0.9, y: 6 },
   animate: { opacity: 1, scale: 1, y: 0 },
-  exit: { opacity: 0, scale: 0.82, y: 8 },
-  transition: { duration: 0.26, ease: MODAL_EASE },
+  exit: { opacity: 0, scale: 0.92, y: 4 },
+  transition: { duration: MOTION_DURATION.normal, ease: MODAL_EASE },
 };
 
 /** Success / error inline banners */
@@ -124,10 +135,10 @@ export const staggeredSection: MotionPreset = {
 
 /** Table/list row appear */
 export const listRowReveal: MotionPreset = {
-  initial: { opacity: 0, scale: 0.95 },
+  initial: { opacity: 0, scale: 0.97 },
   animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.95 },
-  transition: { duration: 0.2, ease: MODAL_EASE },
+  exit: { opacity: 0, scale: 0.98 },
+  transition: { duration: MOTION_DURATION.fast, ease: MODAL_EASE },
 };
 
 /** Staggered table rows / list items */
@@ -195,7 +206,21 @@ export const microPopIn: MotionPreset = {
 };
 
 /** Snappy spring for cards and headings */
-export const SNAPPY_SPRING = { type: 'spring' as const, stiffness: 300, damping: 30, mass: 1 };
+export const SNAPPY_SPRING = {
+  type: 'spring' as const,
+  stiffness: 280,
+  damping: 32,
+  mass: 0.85,
+};
+
+/** Schedule grid DnD layout reorder */
+export const LAYOUT_DRAG_SPRING = {
+  type: 'spring' as const,
+  stiffness: 280,
+  damping: 32,
+  mass: 0.85,
+  layout: { duration: 0.28 },
+} as const;
 
 export const pageHeadingSpring = {
   initial: { opacity: 0, y: -10 },
@@ -209,7 +234,7 @@ export const listRowSpring = {
   transition: SNAPPY_SPRING,
 };
 
-export function staggerDelay(index: number, step = 0.03): number {
+export function staggerDelay(index: number, step = 0.035): number {
   return index * step;
 }
 
@@ -235,9 +260,9 @@ export const BUTTON_TAP = { scale: 0.98 } as const;
 
 /** Dashboard stat cards lift on hover */
 export const CARD_LIFT_HOVER = {
-  y: -4,
-  scale: 1.02,
-  transition: { duration: 0.2, ease: MODAL_EASE },
+  y: -3,
+  scale: 1.015,
+  transition: { duration: MOTION_DURATION.fast, ease: MODAL_EASE },
 } as const;
 export const CARD_PRESS_TAP = { scale: 0.98 } as const;
 

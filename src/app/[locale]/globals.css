@@ -24,23 +24,29 @@
   --animate-collapsible-up: collapsible-up 0.2s ease-out;
 
   /* Premium UI motion tokens */
-  --bb-modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --bb-vt-page-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --bb-vt-page-duration-out: 180ms;
-  --bb-vt-page-duration-in: 200ms;
-  --animate-page-enter: bb-page-enter 220ms var(--bb-modal-ease) both;
-  --animate-fade-in: bb-fade-in 150ms var(--bb-modal-ease) both;
-  --animate-fade-out: bb-fade-out 120ms ease-in both;
-  --animate-zoom-in-95: bb-zoom-in-95 150ms var(--bb-modal-ease) both;
-  --animate-slide-in-bottom: bb-slide-in-from-bottom 220ms var(--bb-modal-ease) both;
-  --animate-slide-in-bottom-2: bb-slide-in-from-bottom-2 160ms var(--bb-modal-ease) both;
-  --animate-slide-in-top-2: bb-slide-in-from-top-2 150ms var(--bb-modal-ease) both;
-  --animate-slide-in-right: bb-slide-in-from-right-full 220ms var(--bb-modal-ease) both;
-  --animate-slide-out-bottom: bb-slide-out-to-bottom 220ms ease-in both;
-  --animate-slide-out-bottom-2: bb-slide-out-to-bottom-2 140ms ease-in both;
-  --animate-slide-out-top-2: bb-slide-out-to-top-2 200ms ease-in both;
-  --animate-slide-out-left: bb-slide-out-to-left 300ms ease-in both;
-  --animate-slide-out-right: bb-slide-out-to-right 300ms ease-in both;
+  --bb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --bb-ease-in: cubic-bezier(0.4, 0, 0.8, 0.4);
+  --bb-modal-ease: var(--bb-ease-out);
+  --bb-vt-page-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --bb-vt-page-duration-out: 160ms;
+  --bb-vt-page-duration-in: 240ms;
+  --bb-duration-micro: 120ms;
+  --bb-duration-fast: 180ms;
+  --bb-duration-normal: 240ms;
+  --bb-duration-slow: 320ms;
+  --animate-page-enter: bb-page-enter var(--bb-duration-normal) var(--bb-modal-ease) both;
+  --animate-fade-in: bb-fade-in var(--bb-duration-fast) var(--bb-modal-ease) both;
+  --animate-fade-out: bb-fade-out var(--bb-duration-micro) var(--bb-ease-in) both;
+  --animate-zoom-in-95: bb-zoom-in-95 var(--bb-duration-fast) var(--bb-modal-ease) both;
+  --animate-slide-in-bottom: bb-slide-in-from-bottom var(--bb-duration-normal) var(--bb-modal-ease) both;
+  --animate-slide-in-bottom-2: bb-slide-in-from-bottom-2 var(--bb-duration-fast) var(--bb-modal-ease) both;
+  --animate-slide-in-top-2: bb-slide-in-from-top-2 var(--bb-duration-fast) var(--bb-modal-ease) both;
+  --animate-slide-in-right: bb-slide-in-from-right-full var(--bb-duration-normal) var(--bb-modal-ease) both;
+  --animate-slide-out-bottom: bb-slide-out-to-bottom var(--bb-duration-normal) var(--bb-ease-in) both;
+  --animate-slide-out-bottom-2: bb-slide-out-to-bottom-2 var(--bb-duration-micro) var(--bb-ease-in) both;
+  --animate-slide-out-top-2: bb-slide-out-to-top-2 var(--bb-duration-fast) var(--bb-ease-in) both;
+  --animate-slide-out-left: bb-slide-out-to-left var(--bb-duration-slow) var(--bb-ease-in) both;
+  --animate-slide-out-right: bb-slide-out-to-right var(--bb-duration-slow) var(--bb-ease-in) both;
 }
 
 @keyframes collapsible-down {
@@ -56,18 +62,18 @@
 @keyframes bb-page-enter {
   from {
     opacity: 0;
-    transform: translateY(6px) translateZ(0);
+    transform: translate3d(0, 6px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0) translateZ(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes bb-vt-page-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 8px, 0);
+    transform: translate3d(0, 6px, 0);
   }
   to {
     opacity: 1;
@@ -82,7 +88,7 @@
   }
   to {
     opacity: 0;
-    transform: translate3d(0, -4px, 0);
+    transform: translate3d(0, -3px, 0);
   }
 }
 
@@ -97,33 +103,33 @@
 }
 
 @keyframes bb-zoom-in-95 {
-  from { opacity: 0; transform: scale(0.98) translateZ(0); }
-  to { opacity: 1; transform: scale(1) translateZ(0); }
+  from { opacity: 0; transform: scale(0.97) translate3d(0, 0, 0); }
+  to { opacity: 1; transform: scale(1) translate3d(0, 0, 0); }
 }
 
 @keyframes bb-modal-panel-in {
-  from { opacity: 0; transform: scale(0.96) translateY(10px) translateZ(0); }
-  to { opacity: 1; transform: scale(1) translateY(0) translateZ(0); }
+  from { opacity: 0; transform: scale(0.97) translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: scale(1) translate3d(0, 0, 0); }
 }
 
 @keyframes bb-zoom-out-95 {
-  from { opacity: 1; transform: scale(1) translateZ(0); }
-  to { opacity: 0; transform: scale(0.95) translateZ(0); }
+  from { opacity: 1; transform: scale(1) translate3d(0, 0, 0); }
+  to { opacity: 0; transform: scale(0.98) translate3d(0, 0, 0); }
 }
 
 @keyframes bb-slide-in-from-right-2 {
-  from { opacity: 0; transform: translateX(0.5rem); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translate3d(0.5rem, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes bb-slide-in-from-left-2 {
-  from { opacity: 0; transform: translateX(-0.5rem); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translate3d(-0.5rem, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes bb-fade-up-in {
-  from { opacity: 0; transform: translateY(8px) translateZ(0); }
-  to { opacity: 1; transform: translateY(0) translateZ(0); }
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes bb-shimmer {
@@ -132,58 +138,58 @@
 }
 
 @keyframes bb-slide-in-from-bottom {
-  from { opacity: 0; transform: translateY(100%); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate3d(0, 100%, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes bb-slide-in-from-bottom-2 {
-  from { opacity: 0; transform: translateY(0.5rem); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate3d(0, 0.5rem, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes bb-slide-in-from-top-2 {
-  from { opacity: 0; transform: translateY(-0.5rem); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate3d(0, -0.5rem, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes bb-slide-in-from-right-full {
-  from { opacity: 0; transform: translateX(100%); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translate3d(100%, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes bb-slide-in-from-left {
-  from { opacity: 0; transform: translateX(-100%); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translate3d(-100%, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes bb-slide-in-from-right {
-  from { opacity: 0; transform: translateX(100%); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translate3d(100%, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes bb-slide-out-to-bottom {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(100%); }
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(0, 100%, 0); }
 }
 
 @keyframes bb-slide-out-to-bottom-2 {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(0.5rem); }
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(0, 0.5rem, 0); }
 }
 
 @keyframes bb-slide-out-to-top-2 {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-0.5rem); }
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(0, -0.5rem, 0); }
 }
 
 @keyframes bb-slide-out-to-left {
-  from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(-100%); }
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(-100%, 0, 0); }
 }
 
 @keyframes bb-slide-out-to-right {
-  from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(100%); }
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(100%, 0, 0); }
 }
 
 :root {
@@ -196,7 +202,9 @@
   --muted-foreground: rgb(0 0 0 / 0.55);
   --sidebar-surface: #f9f7ef;
   --bb-surface-highlight: rgb(255 255 255 / 0.55);
-  --bb-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --bb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --bb-ease-in: cubic-bezier(0.4, 0, 0.8, 0.4);
+  --bb-modal-ease: var(--bb-ease-out);
   --bb-ease-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
   font-size: 15.5px;
 }
@@ -359,17 +367,17 @@
 
   /* Staggered entrance for section children */
   .bb-stagger-children > * {
-    animation: bb-fade-up-in 420ms var(--bb-ease-out) both;
+    animation: bb-fade-up-in 380ms var(--bb-ease-out) both;
   }
 
   .bb-stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-  .bb-stagger-children > *:nth-child(2) { animation-delay: 40ms; }
-  .bb-stagger-children > *:nth-child(3) { animation-delay: 80ms; }
-  .bb-stagger-children > *:nth-child(4) { animation-delay: 120ms; }
-  .bb-stagger-children > *:nth-child(5) { animation-delay: 160ms; }
-  .bb-stagger-children > *:nth-child(6) { animation-delay: 200ms; }
-  .bb-stagger-children > *:nth-child(7) { animation-delay: 240ms; }
-  .bb-stagger-children > *:nth-child(8) { animation-delay: 280ms; }
+  .bb-stagger-children > *:nth-child(2) { animation-delay: 32ms; }
+  .bb-stagger-children > *:nth-child(3) { animation-delay: 64ms; }
+  .bb-stagger-children > *:nth-child(4) { animation-delay: 96ms; }
+  .bb-stagger-children > *:nth-child(5) { animation-delay: 128ms; }
+  .bb-stagger-children > *:nth-child(6) { animation-delay: 160ms; }
+  .bb-stagger-children > *:nth-child(7) { animation-delay: 192ms; }
+  .bb-stagger-children > *:nth-child(8) { animation-delay: 224ms; }
 
   /* Skeleton shimmer */
   .bb-shimmer {
@@ -380,7 +388,7 @@
       var(--muted) 100%
     );
     background-size: 200% 100%;
-    animation: bb-shimmer 1.6s ease-in-out infinite;
+    animation: bb-shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
 
   /* Auto depth for standard ERP panel shells */
@@ -511,18 +519,18 @@
   /* Premium motion utilities */
   .bb-transition {
     transition-property: color, background-color, border-color, opacity, box-shadow, transform, filter;
-    transition-duration: 220ms;
+    transition-duration: var(--bb-duration-normal, 240ms);
     transition-timing-function: var(--bb-ease-out);
   }
 
   .bb-modal-backdrop {
-    animation: bb-fade-in 150ms var(--bb-modal-ease) both;
+    animation: bb-fade-in var(--bb-duration-fast, 180ms) var(--bb-modal-ease) both;
     transform: translateZ(0);
     backface-visibility: hidden;
   }
 
   .bb-modal-panel {
-    animation: bb-modal-panel-in 200ms var(--bb-modal-ease) both;
+    animation: bb-modal-panel-in var(--bb-duration-normal, 240ms) var(--bb-modal-ease) both;
     transform: translateZ(0);
     backface-visibility: hidden;
     box-shadow:
@@ -532,17 +540,21 @@
   }
 
   .bb-sheet-panel {
-    animation: bb-slide-in-from-bottom 220ms var(--bb-modal-ease) both;
+    animation: bb-slide-in-from-bottom var(--bb-duration-normal, 240ms) var(--bb-modal-ease) both;
     transform: translateZ(0);
     backface-visibility: hidden;
   }
 
   .bb-toast-enter {
-    animation: bb-slide-in-from-bottom-2 180ms var(--bb-modal-ease) both, bb-fade-in 150ms var(--bb-modal-ease) both;
+    animation:
+      bb-slide-in-from-bottom-2 var(--bb-duration-fast, 180ms) var(--bb-modal-ease) both,
+      bb-fade-in var(--bb-duration-fast, 180ms) var(--bb-modal-ease) both;
   }
 
   .bb-toast-exit {
-    animation: bb-slide-out-to-bottom-2 140ms ease-in both, bb-fade-out 120ms ease-in both;
+    animation:
+      bb-slide-out-to-bottom-2 var(--bb-duration-micro, 120ms) var(--bb-ease-in) both,
+      bb-fade-out var(--bb-duration-micro, 120ms) var(--bb-ease-in) both;
   }
 
   .bb-input {
@@ -739,7 +751,7 @@
   @supports (animation-timeline: auto) {
     dialog.bb-native-overlay[open],
     dialog[open].bb-modal-panel {
-      animation: bb-modal-panel-in 220ms var(--bb-modal-ease) both;
+      animation: bb-modal-panel-in var(--bb-duration-normal, 240ms) var(--bb-modal-ease) both;
     }
   }
 
@@ -1003,9 +1015,9 @@
     overflow: hidden;
     white-space: nowrap;
     transition:
-      opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
-      transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
-      max-width 280ms cubic-bezier(0.22, 1, 0.36, 1);
+      opacity 300ms var(--bb-ease-out),
+      transform 300ms var(--bb-ease-out),
+      max-width 300ms var(--bb-ease-out);
   }
 
   .bb-sidebar-label--expanded {
@@ -1101,131 +1113,131 @@
 
   .fade-in {
     animation-name: bb-fade-in;
-    animation-duration: var(--tw-animation-duration, 200ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-fast, 180ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .fade-in-0 {
     animation-name: bb-fade-in;
-    animation-duration: var(--tw-animation-duration, 200ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-fast, 180ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .fade-out-0 {
     animation-name: bb-fade-out;
-    animation-duration: var(--tw-animation-duration, 200ms);
-    animation-timing-function: ease-in;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-micro, 120ms));
+    animation-timing-function: var(--bb-ease-in);
     animation-fill-mode: both;
   }
 
   .zoom-in-95 {
     animation-name: bb-zoom-in-95;
-    animation-duration: var(--tw-animation-duration, 200ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-fast, 180ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .zoom-out-95 {
     animation-name: bb-zoom-out-95;
-    animation-duration: var(--tw-animation-duration, 200ms);
-    animation-timing-function: ease-in;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-micro, 120ms));
+    animation-timing-function: var(--bb-ease-in);
     animation-fill-mode: both;
   }
 
   .slide-in-from-right-2 {
     animation-name: bb-slide-in-from-right-2;
-    animation-duration: var(--tw-animation-duration, 200ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-fast, 180ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .slide-in-from-left-2 {
     animation-name: bb-slide-in-from-left-2;
-    animation-duration: var(--tw-animation-duration, 200ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-fast, 180ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .bb-enter-fade-up {
-    animation: bb-fade-up-in 420ms var(--bb-ease-out) both;
+    animation: bb-fade-up-in 380ms var(--bb-ease-out) both;
   }
 
   .slide-in-from-bottom {
     animation-name: bb-slide-in-from-bottom;
-    animation-duration: var(--tw-animation-duration, 300ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-normal, 240ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .slide-in-from-bottom-2 {
     animation-name: bb-slide-in-from-bottom-2;
-    animation-duration: var(--tw-animation-duration, 300ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-normal, 240ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .slide-in-from-top-2 {
     animation-name: bb-slide-in-from-top-2;
-    animation-duration: var(--tw-animation-duration, 200ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-fast, 180ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .slide-in-from-right-full {
     animation-name: bb-slide-in-from-right-full;
-    animation-duration: var(--tw-animation-duration, 300ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-normal, 240ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .slide-in-from-right {
     animation-name: bb-slide-in-from-right;
-    animation-duration: var(--tw-animation-duration, 300ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-normal, 240ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .slide-in-from-left {
     animation-name: bb-slide-in-from-left;
-    animation-duration: var(--tw-animation-duration, 300ms);
-    animation-timing-function: ease-out;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-normal, 240ms));
+    animation-timing-function: var(--bb-modal-ease);
     animation-fill-mode: both;
   }
 
   .slide-out-to-bottom {
     animation-name: bb-slide-out-to-bottom;
-    animation-duration: var(--tw-animation-duration, 300ms);
-    animation-timing-function: ease-in;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-normal, 240ms));
+    animation-timing-function: var(--bb-ease-in);
     animation-fill-mode: both;
   }
 
   .slide-out-to-bottom-2 {
     animation-name: bb-slide-out-to-bottom-2;
-    animation-duration: var(--tw-animation-duration, 300ms);
-    animation-timing-function: ease-in;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-normal, 240ms));
+    animation-timing-function: var(--bb-ease-in);
     animation-fill-mode: both;
   }
 
   .slide-out-to-top-2 {
     animation-name: bb-slide-out-to-top-2;
-    animation-duration: var(--tw-animation-duration, 200ms);
-    animation-timing-function: ease-in;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-fast, 180ms));
+    animation-timing-function: var(--bb-ease-in);
     animation-fill-mode: both;
   }
 
   .slide-out-to-left {
     animation-name: bb-slide-out-to-left;
-    animation-duration: var(--tw-animation-duration, 300ms);
-    animation-timing-function: ease-in;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-slow, 320ms));
+    animation-timing-function: var(--bb-ease-in);
     animation-fill-mode: both;
   }
 
   .slide-out-to-right {
     animation-name: bb-slide-out-to-right;
-    animation-duration: var(--tw-animation-duration, 300ms);
-    animation-timing-function: ease-in;
+    animation-duration: var(--tw-animation-duration, var(--bb-duration-slow, 320ms));
+    animation-timing-function: var(--bb-ease-in);
     animation-fill-mode: both;
   }
 

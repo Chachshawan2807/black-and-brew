@@ -22,6 +22,7 @@ describe('motion-presets consolidation', () => {
     expect(code).toContain('export const fabIconClose');
     expect(code).toContain('export const alertSlideIn');
     expect(code).toContain('export function applyMotionPreset');
+    expect(code).toContain('export const LAYOUT_DRAG_SPRING');
     expect(code).toContain('export function staggerDelay');
     expect(code).toContain('export const FAB_HOVER');
     expect(code).toContain('export const FAB_TAP');
@@ -78,7 +79,7 @@ describe('motion-presets consolidation', () => {
 
   test('ScheduleClient keeps DnD spring transitions outside presets', () => {
     const code = readFile('app/[locale]/schedule/ScheduleClient.tsx');
-    expect(code).toMatch(/type:\s*"spring"/);
+    expect(code).toContain('LAYOUT_DRAG_SPRING');
     expect(code).not.toContain('FAB_HOVER');
   });
 

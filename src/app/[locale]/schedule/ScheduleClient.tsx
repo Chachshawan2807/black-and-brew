@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
+import { LAYOUT_DRAG_SPRING } from '@/lib/motion-presets';
 import { Plus, Trash2, UserCog, Calendar, CalendarDays, Pencil, GripVertical } from '@/lib/icons';
 import { RoundedSelect } from '@/components/ui/rounded-select';
 import { format } from 'date-fns';
@@ -332,12 +333,7 @@ const SortableEmployeeRow = React.memo(({
       layout
       layoutId={id}
       style={style}
-      transition={{
-        type: "spring",
-        stiffness: 300,
-        damping: 30,
-        layout: { duration: 0.3 }
-      }}
+      transition={LAYOUT_DRAG_SPRING}
       className={cn(
         "bb-schedule-grid grid border-b border-border bb-transition duration-300 relative bg-transparent",
         isDragging && "opacity-80 scale-[1.02] shadow-xl z-[100] bg-card ring-1 ring-border rounded-2xl cursor-grabbing"

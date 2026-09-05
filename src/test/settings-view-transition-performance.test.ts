@@ -92,7 +92,7 @@ describe('view transition navigation', () => {
     expect(pageTransition).toContain('completeViewTransitionNavigation');
     expect(css).toContain('::view-transition-new(root)');
     expect(css).toContain('bb-vt-page-in');
-    expect(css).toContain('--bb-vt-page-duration-in: 200ms');
+    expect(css).toContain('--bb-vt-page-duration-in: 240ms');
     expect(css).toContain('--bb-vt-page-ease:');
   });
 });
