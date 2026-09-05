@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { fadeOverlay, modalContent, withReducedMotion } from '@/lib/motion-presets';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { EXPORT_PROGRESS_OVERLAY_Z_CLASS } from '@/lib/floating-action-layout';
-import { LoadingIcon } from '@/components/ui/loading-icon';
 import { ImageDown } from '@/lib/icons';
 import { ModalPortal } from '@/components/ui/modal-portal';
 import { cn } from '@/lib/utils';
@@ -54,32 +53,32 @@ export function ExportProgressOverlay({
               transition={panel.transition}
               className="bb-export-progress-card relative w-full max-w-[min(300px,calc(100vw-2rem))] rounded-[28px] border border-border bg-card px-7 py-8 bb-shadow-xl backdrop-blur-xl"
             >
-              <div className="mx-auto mb-5 flex h-[72px] w-[72px] items-center justify-center">
+              <div className="relative mx-auto mb-5 h-[72px] w-[72px]">
                 {!reduced ? (
                   <>
                     <motion.div
-                      className="absolute h-[72px] w-[72px] rounded-[22px] border border-border bg-muted/50"
+                      className="absolute left-1/2 top-1/2 h-[72px] w-[72px] -translate-x-1/2 -translate-y-1/2 rounded-[22px] border border-border bg-muted/50"
                       animate={{ scale: [1, 1.05, 1], opacity: [0.55, 0.9, 0.55] }}
                       transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
                     />
                     <motion.div
-                      className="absolute h-[56px] w-[56px] rounded-[18px] border border-border bg-card bb-shadow-sm"
+                      className="absolute left-1/2 top-1/2 h-[56px] w-[56px] -translate-x-1/2 -translate-y-1/2 rounded-[18px] border border-border bg-card bb-shadow-sm"
                       animate={{ y: [0, -2, 0] }}
                       transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
                     />
                   </>
                 ) : (
-                  <div className="absolute h-[56px] w-[56px] rounded-[18px] border border-border bg-card bb-shadow-sm" />
+                  <div className="absolute left-1/2 top-1/2 h-[56px] w-[56px] -translate-x-1/2 -translate-y-1/2 rounded-[18px] border border-border bg-card bb-shadow-sm" />
                 )}
                 <motion.div
-                  className="relative flex h-[44px] w-[44px] items-center justify-center rounded-2xl border-2 border-foreground/85 bg-card text-foreground bb-shadow-md"
+                  className="absolute left-1/2 top-1/2 z-10 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl border-2 border-foreground/85 bg-card text-foreground bb-shadow-md"
                   animate={reduced ? undefined : { y: [0, -1, 0] }}
                   transition={{ duration: 2.2, repeat: reduced ? 0 : Infinity, ease: 'easeInOut', delay: 0.08 }}
                 >
-                  <LoadingIcon size="md" className="text-background" />
                   <ImageDown
-                    className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-card p-0.5 text-foreground"
+                    className="h-6 w-6 shrink-0 text-foreground"
                     strokeWidth={1.75}
+                    aria-hidden
                   />
                 </motion.div>
               </div>
