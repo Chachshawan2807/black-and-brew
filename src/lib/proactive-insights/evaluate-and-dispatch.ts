@@ -16,6 +16,7 @@ import {
   fetchDailyInsightDigestSummary,
 } from '@/lib/insight-notification';
 import { dispatchInsightWebPush } from '@/lib/insight-web-push';
+import type { InsightAlertWindow } from '@/lib/proactive-insights/insight-schedule';
 
 export type { InsightTrigger } from '@/lib/proactive-insights/insight-dispatch-triggers';
 
@@ -34,6 +35,8 @@ export type EvaluateInsightsOptions = {
   trigger?: InsightTrigger;
   dateIso?: string;
   locale?: string;
+  /** Morning (07:00) or evening (17:00) cron window. */
+  window?: InsightAlertWindow;
   /** Skip Web Push (still record data_change_logs). */
   skipPush?: boolean;
   /** Replace today's digest log and re-send push (for cron-job.org test runs). */
@@ -63,6 +66,7 @@ async function recordAndPushDigest(
   const logResult = await recordInsightNotificationLog(digest, dateIso, locale, {
     trigger: trigger === 'cron' ? 'cron' : undefined,
     force: recordForce,
+    window: options.window,
   });
   const recorded = {
     ruleId: digest.ruleId,
@@ -70,7 +74,7 @@ async function recordAndPushDigest(
     skipped: Boolean(logResult.skipped),
   };
 
-  if (logResult.skipped || options.skipPush || !shouldPushInsightNotification(trigger) || !logResult.success) {
+  if (logResult.skipped || options.skipPush || !shouldPushInsightNotification(trigger, options.window) || !logResult.success) {
     return {
       dateIso,
       trigger,
@@ -90,7 +94,7 @@ async function recordAndPushDigest(
 
   if (pushResult.sent > 0) {
     await markInsightMorningPushDispatched(logResult.logId, {
-      scheduledPushDateIso: trigger === 'cron' ? dateIso : undefined,
+      scheduledPushDateIso: trigger === 'cron' && options.window !== 'evening' ? dateIso : undefined,
     });
   }
 

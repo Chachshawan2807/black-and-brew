@@ -22,15 +22,34 @@ describe('resolveCronInsightRecordAction', () => {
     ).toBe('replace');
   });
 
-  test('scheduled cron skips only after todays scheduled push already sent', () => {
-    const scheduled = { todayIso: '2026-08-12', scheduledPushDateIso: '2026-08-12' };
+  test('scheduled cron skips only after todays scheduled push already sent (morning)', () => {
+    const scheduled = {
+      todayIso: '2026-08-12',
+      scheduledPushDateIso: '2026-08-12',
+      window: 'morning' as const,
+    };
     expect(
       resolveCronInsightRecordAction(true, '2026-08-12T00:00:00.000Z', false, scheduled),
     ).toBe('skip');
   });
 
+  test('evening cron refreshes digest even after morning push was sent', () => {
+    const scheduled = {
+      todayIso: '2026-08-12',
+      scheduledPushDateIso: '2026-08-12',
+      window: 'evening' as const,
+    };
+    expect(
+      resolveCronInsightRecordAction(true, '2026-08-12T00:00:00.000Z', false, scheduled),
+    ).toBe('update');
+  });
+
   test('scheduled cron redispatches when summary unchanged but new calendar day', () => {
-    const scheduled = { todayIso: '2026-08-13', scheduledPushDateIso: '2026-08-12' };
+    const scheduled = {
+      todayIso: '2026-08-13',
+      scheduledPushDateIso: '2026-08-12',
+      window: 'morning' as const,
+    };
     expect(
       resolveCronInsightRecordAction(true, '2026-08-12T00:00:00.000Z', false, scheduled),
     ).toBe('update');
@@ -38,7 +57,11 @@ describe('resolveCronInsightRecordAction', () => {
   });
 
   test('scheduled cron pushes even if bean-order mutation already notified today', () => {
-    const scheduled = { todayIso: '2026-08-12', scheduledPushDateIso: undefined };
+    const scheduled = {
+      todayIso: '2026-08-12',
+      scheduledPushDateIso: undefined,
+      window: 'morning' as const,
+    };
     expect(
       resolveCronInsightRecordAction(true, '2026-08-12T10:00:00.000Z', false, scheduled),
     ).toBe('update');

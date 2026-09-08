@@ -1,4 +1,5 @@
 import type { Insight } from '@/lib/proactive-insights/types';
+import type { InsightAlertWindow } from '@/lib/proactive-insights/insight-schedule';
 
 export type InsightTrigger =
   | 'cron'
@@ -20,9 +21,12 @@ export function isRealtimeInsightTrigger(trigger: InsightTrigger): boolean {
   return trigger === 'bean_order_update' || trigger === 'shift_update' || trigger === 'inventory_update';
 }
 
-/** Web Push / OS banners fire only from the scheduled daily cron not realtime refreshes. */
-export function shouldPushInsightNotification(trigger: InsightTrigger): boolean {
-  return trigger === 'cron';
+/** Web Push / OS banners fire only from the 07:00 morning cron, not evening refresh or realtime. */
+export function shouldPushInsightNotification(
+  trigger: InsightTrigger,
+  window: InsightAlertWindow = 'morning',
+): boolean {
+  return trigger === 'cron' && window === 'morning';
 }
 
 export function shouldDispatchInsightNotification(

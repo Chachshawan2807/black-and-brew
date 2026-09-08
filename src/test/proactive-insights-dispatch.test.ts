@@ -124,4 +124,20 @@ describe('evaluateAndDispatchInsights', () => {
       scheduledPushDateIso: '2026-08-11',
     });
   });
+
+  test('evening cron records digest but never pushes', async () => {
+    const { evaluateAndDispatchInsights } = await import(
+      '@/lib/proactive-insights/evaluate-and-dispatch'
+    );
+
+    const eveningResult = await evaluateAndDispatchInsights({
+      trigger: 'cron',
+      locale: 'th',
+      window: 'evening',
+    });
+    expect(recordMock).toHaveBeenCalledTimes(1);
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(eveningResult.pushed?.skipped).toBe(true);
+    expect(markMorningPushMock).not.toHaveBeenCalled();
+  });
 });

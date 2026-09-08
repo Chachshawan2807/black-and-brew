@@ -4,7 +4,10 @@ import { sanitizeJsonValue } from '@/lib/data-change-log';
 import type { InventoryNotification, NotificationPriority } from '@/lib/notification-types';
 import type { Insight, InsightRuleId } from '@/lib/proactive-insights/types';
 import type { InsightTrigger } from '@/lib/proactive-insights/evaluate-and-dispatch';
-import { resolveInsightCronOccurredAt } from '@/lib/proactive-insights/insight-schedule';
+import {
+  resolveInsightCronOccurredAt,
+  type InsightAlertWindow,
+} from '@/lib/proactive-insights/insight-schedule';
 
 export const INSIGHT_MORNING_PUSH_METADATA_KEY = 'morningPushDispatchedAt';
 /** ICT calendar date when the scheduled daily cron last pushed this digest. */
@@ -79,12 +82,17 @@ export function resolveCronInsightRecordAction(
   hasExisting: boolean,
   morningPushDispatchedAt: string | undefined,
   force?: boolean,
-  scheduled?: { todayIso: string; scheduledPushDateIso?: string },
+  scheduled?: {
+    todayIso: string;
+    scheduledPushDateIso?: string;
+    window?: InsightAlertWindow;
+  },
 ): 'insert' | 'update' | 'skip' | 'replace' {
   if (force) return 'replace';
 
   if (scheduled) {
-    if (scheduled.scheduledPushDateIso === scheduled.todayIso) {
+    const isEveningRefresh = scheduled.window === 'evening';
+    if (!isEveningRefresh && scheduled.scheduledPushDateIso === scheduled.todayIso) {
       return 'skip';
     }
     if (!hasExisting) return 'insert';
@@ -235,7 +243,7 @@ export async function recordInsightNotificationLog(
   insight: Insight,
   dateIso: string,
   locale = 'th',
-  options?: { trigger?: InsightTrigger; force?: boolean },
+  options?: { trigger?: InsightTrigger; force?: boolean; window?: InsightAlertWindow },
 ): Promise<{ success: boolean; skipped?: boolean; logId: string }> {
   const logId = insightNotificationLogId(insight.ruleId, dateIso);
   const supabase = getSupabaseAdmin();
@@ -280,7 +288,9 @@ export async function recordInsightNotificationLog(
       Boolean(existingRow),
       morningPushDispatchedAt,
       options?.force,
-      options?.trigger === 'cron' ? { todayIso: dateIso, scheduledPushDateIso } : undefined,
+      options?.trigger === 'cron'
+        ? { todayIso: dateIso, scheduledPushDateIso, window: options.window }
+        : undefined,
     );
 
     if (action === 'skip') {

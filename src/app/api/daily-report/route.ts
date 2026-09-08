@@ -133,7 +133,7 @@ export async function GET(request: Request) {
     // the 18:00 tomorrow schedule job (deduped per day in data_change_logs).
     const insightResult =
       schedule === 'tomorrow'
-        ? await evaluateAndDispatchInsights({ trigger: 'cron', locale: 'th' })
+        ? await evaluateAndDispatchInsights({ trigger: 'cron', locale: 'th', window: 'morning' })
         : null;
 
     return NextResponse.json({
