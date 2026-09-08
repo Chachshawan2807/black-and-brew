@@ -77,6 +77,17 @@ describe('secretary mobile task overlays', () => {
     expect(modal).toContain("verticalAlign: 'center'");
   });
 
+  test('purchase orders modal compacts filter chips and icon buttons on mobile', () => {
+    const modal = fs.readFileSync(
+      path.resolve(ROOT, 'app/[locale]/inventory/_components/PurchaseOrdersModal.tsx'),
+      'utf-8',
+    );
+    expect(modal).toContain('PO_FILTER_CHIP');
+    expect(modal).toContain('flex-nowrap sm:flex-wrap');
+    expect(modal).toContain('max-sm:h-9 max-sm:w-9');
+    expect(modal).toContain('px-2.5 py-1.5 sm:px-4 sm:py-2');
+  });
+
   test('branch withdraw overlay delegates to shared sub-window shell', () => {
     const overlay = fs.readFileSync(
       path.resolve(ROOT, 'app/[locale]/secretary/_components/BranchWithdrawOverlay.tsx'),
