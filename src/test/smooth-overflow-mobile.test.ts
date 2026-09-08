@@ -20,6 +20,13 @@ describe('bb-smooth-scroll mobile overflow utility', () => {
     expect(css).toMatch(/\.bb-sticky-scroll-cell\s*\{/);
   });
 
+  test('globals.css hides scrollbars project-wide while preserving scroll', () => {
+    const css = readFile('app/[locale]/globals.css');
+    expect(css).toMatch(/@layer base[\s\S]*scrollbar-width:\s*none/);
+    expect(css).toMatch(/\*::-webkit-scrollbar[\s\S]*display:\s*none/);
+    expect(css).toMatch(/@media \(prefers-contrast:\s*more\)/);
+  });
+
   test('MonthlyRoster consolidated table allows vertical scroll chaining from sticky name column', () => {
     const code = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
     expect(code).toMatch(/overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y/);

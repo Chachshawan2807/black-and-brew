@@ -271,6 +271,28 @@
     width: auto;
     z-index: 10;
   }
+
+  /*
+   * Hide scrollbars project-wide. Scroll/touch behavior unchanged.
+   * Standard: scrollbar-width (Baseline Newly available). WebKit fallback for older engines.
+   */
+  *,
+  html {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar,
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-contrast: more) {
+    *,
+    html {
+      scrollbar-width: thin;
+      scrollbar-color: var(--foreground) var(--background);
+    }
+  }
 }
 
 
