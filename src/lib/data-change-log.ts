@@ -32,6 +32,11 @@ export const EDIT_HISTORY_EXCLUDED_ENTITY_TYPES = [
   'secretary_digest',
 ] as const;
 
+/** Notification-only rows that share entity_type with real staff edits. */
+export const EDIT_HISTORY_EXCLUDED_METADATA_KINDS = [
+  'bean_order_payment_confirmed',
+] as const;
+
 export interface FieldChange {
   field: string;
   old_value: Json;
@@ -163,4 +168,18 @@ export function formatNotificationActorLabel(
     return formatEditorActorLabel(userAgent);
   }
   return actorLabel;
+}
+
+/** Drop notification-only rows that share entity_type with real staff edits. */
+export function filterEditHistoryRows<
+  T extends {
+    entity_type: string;
+    metadata?: Record<string, unknown> | null;
+  },
+>(rows: T[]): T[] {
+  const excludedKinds = new Set<string>(EDIT_HISTORY_EXCLUDED_METADATA_KINDS);
+  return rows.filter((row) => {
+    const kind = row.metadata?.kind;
+    return !(typeof kind === 'string' && excludedKinds.has(kind));
+  });
 }

@@ -2,7 +2,7 @@ import { fetchDataChangeLogs } from '@/app/actions/data-change-log-actions';
 import { fetchLoginHistoryBundle } from '@/app/actions/login-history-actions';
 import { getCurrentDevicePasskeyStatus } from '@/app/actions/passkey-actions';
 
-export const EDIT_HISTORY_INITIAL_LIMIT = 20;
+export const EDIT_HISTORY_INITIAL_LIMIT = 50;
 export const LOGIN_HISTORY_INITIAL_LIMIT = 20;
 
 const editHistoryPromises = new Map<string, ReturnType<typeof fetchDataChangeLogs>>();

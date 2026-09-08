@@ -316,4 +316,39 @@ describe('fetchDataChangeLogs', () => {
       expect(mockNeq).toHaveBeenCalledWith('entity_type', entityType);
     }
   });
+
+  test('filters notification payment duplicates after fetch for edit history', async () => {
+    const mockNeq = vi.fn();
+    let neqCalls = 0;
+    mockLimit.mockReturnValue({ neq: mockNeq });
+    mockNeq.mockImplementation(() => {
+      neqCalls += 1;
+      if (neqCalls >= EDIT_HISTORY_EXCLUDED_ENTITY_TYPES.length) {
+        return Promise.resolve({
+          data: [
+            {
+              id: 'staff-slip',
+              entity_type: 'bean_order_payment',
+              metadata: { action: 'slip_uploaded' },
+            },
+            {
+              id: 'notify-paid',
+              entity_type: 'bean_order_payment',
+              metadata: { kind: 'bean_order_payment_confirmed' },
+            },
+          ],
+          error: null,
+        });
+      }
+      return { neq: mockNeq };
+    });
+
+    const result = await fetchDataChangeLogs({ forEditHistory: true });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0]?.id).toBe('staff-slip');
+    }
+  });
 });

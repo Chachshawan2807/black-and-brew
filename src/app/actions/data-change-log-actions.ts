@@ -8,6 +8,7 @@ import type { Json } from '@/lib/database.types';
 import {
   computeFieldChanges,
   EDIT_HISTORY_EXCLUDED_ENTITY_TYPES,
+  filterEditHistoryRows,
   type DataChangeLogInput,
   type FieldChange,
   resolveActorLabel,
@@ -269,7 +270,12 @@ export async function fetchDataChangeLogs(
       throw error;
     }
 
-    return { success: true, rows: (data ?? []) as DataChangeLogRow[] };
+    const rows = (data ?? []) as DataChangeLogRow[];
+
+    return {
+      success: true,
+      rows: options.forEditHistory ? filterEditHistoryRows(rows) : rows,
+    };
   } catch {
     return { success: false, error: 'Failed to load data change history' };
   }

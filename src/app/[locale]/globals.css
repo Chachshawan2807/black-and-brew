@@ -284,24 +284,44 @@
   }
 
   /*
-   * Hide scrollbars project-wide. Scroll/touch behavior unchanged.
-   * Standard: scrollbar-width (Baseline Newly available). WebKit fallback for older engines.
+   * Scrollbars: hidden inside nested scroll areas; page scrollbar visible on desktop.
    */
-  *,
-  html {
+  * {
     scrollbar-width: none;
   }
 
-  *::-webkit-scrollbar,
-  html::-webkit-scrollbar {
+  *::-webkit-scrollbar {
     display: none;
   }
 
-  @media (prefers-contrast: more) {
-    *,
+  @media (min-width: 768px) {
     html {
       scrollbar-width: thin;
-      scrollbar-color: var(--foreground) var(--background);
+      scrollbar-color: color-mix(in srgb, var(--foreground) 32%, transparent) var(--background);
+    }
+
+    html::-webkit-scrollbar {
+      display: block;
+      width: 10px;
+    }
+
+    html::-webkit-scrollbar-track {
+      background: var(--background);
+    }
+
+    html::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--foreground) 32%, transparent);
+      border-radius: 9999px;
+      border: 2px solid var(--background);
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    @media (min-width: 768px) {
+      html {
+        scrollbar-width: thin;
+        scrollbar-color: var(--foreground) var(--background);
+      }
     }
   }
 }
