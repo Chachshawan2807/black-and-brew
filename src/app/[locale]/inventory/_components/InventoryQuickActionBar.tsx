@@ -138,7 +138,6 @@ function QuickActionPanelHeader({ onClose }: { onClose?: () => void }) {
     <InventoryModalHeader
       icon={<Package className="h-5 w-5 md:h-6 md:w-6" strokeWidth={ICON_STROKE} />}
       title="ปรับสต็อกด่วน"
-      subtitle="ค้นหาสินค้า แล้วรับเข้า นำออก หรือตั้งจำนวนคงเหลือใหม่"
       onClose={onClose}
       closeLabel="ปิดปรับสต็อกด่วน"
       sheet={false}

@@ -193,7 +193,7 @@ export function InventoryModalHeader({
       ) : null}
       {sheet ? <InventoryMobileSheetHandle /> : null}
       <motion.div
-        className="flex items-start gap-3"
+        className={cn('flex gap-3', subtitle ? 'items-start' : 'items-center')}
         initial={section.initial}
         animate={section.animate}
         transition={{ ...section.transition, delay: reduced ? 0 : 0.03 }}
@@ -201,7 +201,7 @@ export function InventoryModalHeader({
         <InventoryIconBadge tone={tone} size="lg">
           {icon}
         </InventoryIconBadge>
-        <div className="min-w-0 flex-1 pt-0.5">
+        <div className={cn('min-w-0 flex-1', subtitle && 'pt-0.5')}>
           <h2 className="text-lg md:text-xl font-normal text-foreground tracking-tight">{title}</h2>
           {subtitle ? (
             <p className="mt-1 text-[12px] md:text-[13px] leading-relaxed text-muted-foreground max-w-[32rem]">
