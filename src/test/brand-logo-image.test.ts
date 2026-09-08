@@ -66,6 +66,8 @@ describe('Brand logo Next/Image sizing', () => {
     expect(source).toContain('unoptimized');
     expect(source).toContain('quality={100}');
     expect(source).toContain('bb-brand-logo');
+    expect(source).toContain('satisfies Record<BrandLogoSize, BrandLogoLayout>');
+    expect(source).toContain('maxWidth: layout.maxWidth ?? layout.width');
   });
 
   test('sidebar surfaces use BrandLogo instead of inline logo.png Image', () => {

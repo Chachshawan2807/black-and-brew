@@ -4,6 +4,14 @@ import { BRAND_LOGO_INTRINSIC, BRAND_LOGO_SRC } from '@/lib/brand-assets';
 
 export type BrandLogoSize = 'sidebar-expanded' | 'sidebar-icon' | 'mobile';
 
+type BrandLogoLayout = {
+  width: string;
+  maxWidth?: string;
+  maxHeight: string;
+  sizes: string;
+  objectPosition?: string;
+};
+
 const BRAND_LOGO_DARK = 'dark:invert';
 
 /**
@@ -11,10 +19,7 @@ const BRAND_LOGO_DARK = 'dark:invert';
  * Display size uses one explicit axis + `height: auto` to avoid the dev warning:
  * "width or height modified, but not the other".
  */
-const SIZE_STYLES: Record<
-  BrandLogoSize,
-  { width: string; maxHeight: string; sizes: string; objectPosition?: string }
-> = {
+const SIZE_STYLES = {
   'sidebar-expanded': {
     width: '100%',
     maxWidth: '210px',
@@ -33,7 +38,7 @@ const SIZE_STYLES: Record<
     sizes: '200px',
     objectPosition: 'left center',
   },
-};
+} satisfies Record<BrandLogoSize, BrandLogoLayout>;
 
 export function BrandLogo({
   size,
@@ -46,14 +51,14 @@ export function BrandLogo({
   priority?: boolean;
   className?: string;
 }) {
-  const layout = SIZE_STYLES[size];
+  const layout: BrandLogoLayout = SIZE_STYLES[size];
 
   return (
     <div
       className={cn('bb-brand-logo-box flex shrink-0 items-center', className)}
       style={{
         width: layout.width,
-        maxWidth: layout.width,
+        maxWidth: layout.maxWidth ?? layout.width,
         height: layout.maxHeight,
         maxHeight: layout.maxHeight,
       }}
