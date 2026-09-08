@@ -10,6 +10,12 @@ import { detectStockOperationFromMetadata, formatStockOperationBatchedTitle, for
 
 import { isUuidString } from '@/lib/pwa-notification-bridge';
 
+import {
+  formatBeanOrderAuditHeadline,
+  formatBeanOrderEnumValue,
+  formatBeanOrderMetadataDetail,
+} from '@/lib/bean-orders/history-display';
+
 
 
 const FIELD_LABELS: Record<string, { th: string; en: string }> = {
@@ -91,6 +97,18 @@ const FIELD_LABELS: Record<string, { th: string; en: string }> = {
   date: { th: 'วันที่', en: 'Date' },
 
   day_of_week: { th: 'วันในสัปดาห์', en: 'Day of week' },
+
+  payment_status: { th: 'สถานะชำระเงิน', en: 'Payment status' },
+
+  fulfillment_status: { th: 'สถานะจัดส่ง', en: 'Fulfillment status' },
+
+  tracking_status: { th: 'สถานะพัสดุ', en: 'Tracking status' },
+
+  shipment: { th: 'การจัดส่ง', en: 'Shipment' },
+
+  totalBaht: { th: 'ยอดรวม', en: 'Total' },
+
+  orderNo: { th: 'เลขออเดอร์', en: 'Order no.' },
 
 };
 
@@ -344,6 +362,30 @@ export function filterChangesForDisplay(changes: FieldChange[]): FieldChange[] {
 
 
 
+const BEAN_ORDER_ENUM_FIELDS = new Set([
+
+  'payment_status',
+
+  'fulfillment_status',
+
+  'tracking_status',
+
+]);
+
+
+
+function formatBeanOrderFieldValue(value: unknown, isTh: boolean): string | null {
+
+  const enumLabel = formatBeanOrderEnumValue(value, isTh);
+
+  if (enumLabel) return enumLabel;
+
+  return formatDisplayValue(value, isTh);
+
+}
+
+
+
 export function formatFieldChange(change: FieldChange, isTh: boolean): string {
 
   const label = formatFieldLabel(change.field, isTh);
@@ -365,6 +407,38 @@ export function formatFieldChange(change: FieldChange, isTh: boolean): string {
     const oldVal = formatCountPolicyValue(change.old_value, isTh);
 
     const newVal = formatCountPolicyValue(change.new_value, isTh);
+
+    if (oldVal === null && newVal === null) return '';
+
+    if (oldVal === null && newVal !== null) return `${label}: ${newVal}`;
+
+    if (oldVal !== null && newVal === null) return `${label}: ${oldVal}`;
+
+    return `${label}: ${oldVal} → ${newVal}`;
+
+  }
+
+  if (change.field === 'shipment') {
+
+    const oldVal = formatBeanOrderEnumValue(change.old_value, isTh) ?? formatDisplayValue(change.old_value, isTh);
+
+    const newVal = formatBeanOrderEnumValue(change.new_value, isTh) ?? formatDisplayValue(change.new_value, isTh);
+
+    if (oldVal === null && newVal === null) return '';
+
+    if (oldVal === null && newVal !== null) return `${label}: ${newVal}`;
+
+    if (oldVal !== null && newVal === null) return `${label}: ${oldVal}`;
+
+    return `${label}: ${oldVal} → ${newVal}`;
+
+  }
+
+  if (BEAN_ORDER_ENUM_FIELDS.has(change.field)) {
+
+    const oldVal = formatBeanOrderFieldValue(change.old_value, isTh);
+
+    const newVal = formatBeanOrderFieldValue(change.new_value, isTh);
 
     if (oldVal === null && newVal === null) return '';
 
@@ -957,6 +1031,8 @@ const GENERIC_MODULE_LABELS: Record<string, { th: string; en: string }> = {
 
   settings: { th: 'ตั้งค่า', en: 'Settings' },
 
+  bean_orders: { th: 'ออเดอร์เมล็ด', en: 'Bean orders' },
+
 };
 
 
@@ -1068,6 +1144,14 @@ function withResolvedFieldChanges(row: DataChangeLogRow): DataChangeLogRow {
 
 
 function buildMetadataOperationDetail(row: DataChangeLogRow, isTh: boolean): string | null {
+
+  if (row.module === 'bean_orders') {
+
+    const beanDetail = formatBeanOrderMetadataDetail(row.metadata, isTh);
+
+    if (beanDetail) return beanDetail;
+
+  }
 
   const operation = row.metadata?.operation as string | undefined;
 
@@ -1305,6 +1389,14 @@ function buildHistoryDetail(row: DataChangeLogRow, isTh: boolean): string {
 
 
 
+  if (row.module === 'bean_orders' && metaDetail && changeLines.length === 0) {
+
+    return metaDetail;
+
+  }
+
+
+
   if (row.module === 'inventory') {
 
     const stockOp = detectStockOperation(row);
@@ -1402,6 +1494,30 @@ export function formatDataChangeLogDisplay(
 ): { headline: string; detail: string } {
 
   const isTh = locale === 'th';
+
+
+
+  if (row.module === 'bean_orders') {
+
+    return {
+
+      headline: formatBeanOrderAuditHeadline(
+
+        row.action,
+
+        row.entity_type,
+
+        row.entity_label,
+
+        isTh,
+
+      ),
+
+      detail: buildHistoryDetail(row, isTh),
+
+    };
+
+  }
 
 
 

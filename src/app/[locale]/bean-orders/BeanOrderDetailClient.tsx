@@ -27,6 +27,7 @@ import {
   validateBeanOrderShipmentCarrier,
 } from '@/lib/bean-orders/shipment-persist';
 import { getBeanOrderCustomerDisplayName } from '@/lib/bean-orders/customer-display';
+import { formatBeanOrderStatusHistoryLine } from '@/lib/bean-orders/history-display';
 import { formatShipmentTrackingLabel } from '@/lib/bean-orders/tracking-status-labels';
 import { PaymentSlipViewer } from './_components/PaymentSlipViewer';
 import { BeanOrderShippingFields } from './_components/BeanOrderShippingFields';
@@ -628,18 +629,7 @@ export default function BeanOrderDetailClient({
           ) : (
             order.statusHistory.map((entry, i) => (
               <li key={`${entry.at}-${i}`} className="py-2 first:pt-0 last:pb-0 text-muted-foreground">
-                <span className="tabular-nums text-foreground/80">
-                  {new Date(entry.at).toLocaleString('th-TH', {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-                {' / '}
-                {entry.action}
-                {' / '}
-                {entry.by}
+                {formatBeanOrderStatusHistoryLine(entry, 'th')}
               </li>
             ))
           )}

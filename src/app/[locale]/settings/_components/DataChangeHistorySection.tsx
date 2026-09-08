@@ -10,6 +10,7 @@ import {
 import {
   formatDataChangeLogDisplay,
 } from "@/lib/inventory-notification-formatter";
+import { formatDataChangeHistoryMeta } from "@/lib/data-change-history-display";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
 import {
   SETTINGS_BTN_GHOST,
@@ -34,6 +35,7 @@ const MODULE_LABELS: Record<string, { th: string; en: string }> = {
   holiday: { th: "วันหยุด", en: "Holidays" },
   dashboard: { th: "แดชบอร์ด", en: "Dashboard" },
   settings: { th: "ตั้งค่า", en: "Settings" },
+  bean_orders: { th: "ออเดอร์เมล็ด", en: "Bean orders" },
 };
 
 function ActionIcon({
@@ -60,35 +62,16 @@ function ActionIcon({
   }
 }
 
-function formatDateTime(iso: string, locale: string) {
-  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Bangkok",
-  }).format(new Date(iso));
-}
-
 function buildChangeLines(row: DataChangeLogRow, locale: string): string[] {
   const isTh = locale === "th";
   const { headline, detail } = formatDataChangeLogDisplay(row, locale);
-
-  const editedAtLabel = isTh ? "แก้ไขเมื่อ" : "Edited on";
-  const metaParts = [row.actor_label, editedAtLabel, formatDateTime(row.occurred_at, isTh ? "th" : "en")].filter(
-    Boolean
-  ) as string[];
 
   const detailLine =
     row.status === "failed"
       ? row.error_message ?? (isTh ? "บันทึกไม่สำเร็จ" : "Save failed")
       : detail;
 
-  const lines = [headline, detailLine, metaParts.join(" · ")];
-
-  if (row.ip_address) {
-    lines.push(isTh ? `จากเครือข่าย ${row.ip_address}` : `From ${row.ip_address}`);
-  }
-
-  return lines;
+  return [headline, detailLine, formatDataChangeHistoryMeta(row, locale)];
 }
 
 const HISTORY_LINE_STYLES = [

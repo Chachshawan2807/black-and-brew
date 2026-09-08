@@ -387,7 +387,37 @@ describe('formatDataChangeLogDisplay', () => {
       }),
       'th'
     );
+    expect(display.headline).toBe('แก้ไขออเดอร์ ลาเต้');
     expect(display.detail).toBe('หมวดหมู่: กาแฟร้อน → กาแฟเย็น');
+  });
+
+  test('shows bean order payment status in Thai', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        module: 'bean_orders',
+        entity_type: 'bean_order',
+        entity_label: 'BO-250908-01',
+        field_changes: [{ field: 'payment_status', old_value: 'unpaid', new_value: 'paid' }],
+      }),
+      'th',
+    );
+    expect(display.headline).toBe('แก้ไขออเดอร์ BO-250908-01');
+    expect(display.detail).toBe('สถานะชำระเงิน: ยังไม่ชำระ → ชำระแล้ว');
+  });
+
+  test('shows slip upload detail in Thai', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        module: 'bean_orders',
+        entity_type: 'bean_order_payment',
+        entity_label: 'BO-250908-01',
+        field_changes: [],
+        metadata: { action: 'slip_uploaded' },
+      }),
+      'th',
+    );
+    expect(display.headline).toBe('อัปโหลดสลิป: BO-250908-01');
+    expect(display.detail).toBe('อัปโหลดสลิปชำระเงิน');
   });
 
   test('formats regular holiday day list', () => {

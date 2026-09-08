@@ -23,7 +23,13 @@ describe('DataChangeHistorySection module filter', () => {
   test('reloads when moduleFilter changes and reuses load for retry', () => {
     expect(sectionSource).toMatch(/const load = useCallback\(async \(\) => \{/);
     expect(sectionSource).toMatch(/\}, \[moduleFilter\]\);/);
-    expect(sectionSource).toMatch(/void load\(\);\s*\}, \[moduleFilter,\s*load\]\)/);
+    expect(sectionSource).toMatch(/queueMicrotask\(\(\) => \{\s*void load\(\);\s*\}\);\s*\}, \[moduleFilter,\s*load\]\)/);
     expect(sectionSource).toMatch(/onClick=\{\(\) => void load\(\)\}/);
+  });
+
+  test('does not show network IP in edit history lines', () => {
+    expect(sectionSource).not.toContain('จากเครือข่าย');
+    expect(sectionSource).not.toContain('ip_address');
+    expect(sectionSource).toContain('formatDataChangeHistoryMeta');
   });
 });
