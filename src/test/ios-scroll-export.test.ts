@@ -181,10 +181,9 @@ describe('iOS scroll & export fixes', () => {
     expect(exportIdx).toBeLessThan(settingsIdx);
   });
 
-  test('ScheduleToolbar hides horizontal scrollbar on mobile action row', () => {
+  test('ScheduleToolbar mobile action row uses horizontal scroll surface', () => {
     const toolbar = readFile('app/[locale]/schedule/_components/ScheduleToolbar.tsx');
-    expect(toolbar).toMatch(/overflow-x-auto[\s\S]*scrollbar-none/);
-    expect(toolbar).toMatch(/\[scrollbar-width:none\]/);
-    expect(toolbar).toMatch(/\[&::-webkit-scrollbar\]:hidden/);
+    expect(toolbar).toMatch(/overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y/);
+    expect(toolbar).not.toMatch(/scrollbar-none|scrollbar-hide|scrollbar-thin|\[scrollbar-width:/);
   });
 });

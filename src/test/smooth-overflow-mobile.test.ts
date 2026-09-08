@@ -41,7 +41,7 @@ describe('bb-smooth-scroll mobile overflow utility', () => {
 
     const offenders = walk(srcRoot).filter((filePath) => {
       const content = fs.readFileSync(filePath, 'utf-8');
-      return /\[scrollbar-width:thin\]|scrollbar-thin|custom-scrollbar/.test(content);
+      return /\[scrollbar-width:|scrollbar-none|scrollbar-hide|scrollbar-thin|custom-scrollbar|\[&::-webkit-scrollbar\]/.test(content);
     });
 
     expect(offenders).toEqual([]);

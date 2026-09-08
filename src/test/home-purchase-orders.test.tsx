@@ -134,6 +134,7 @@ describe('HomePurchaseOrdersSection', () => {
     const scroller = allButton.closest('.overflow-x-auto');
     expect(scroller).toBeTruthy();
     expect(scroller?.className).toMatch(/\bpb-(?:2\.5|3|3\.5|4)\b/);
-    expect(scroller?.className).toMatch(/scrollbar-none|scrollbar-width:none|\[::-webkit-scrollbar\]:hidden/);
+    expect(scroller?.className).toMatch(/bb-smooth-scroll bb-smooth-scroll-chain-y/);
+    expect(scroller?.className).not.toMatch(/scrollbar-none|scrollbar-hide|scrollbar-thin|\[scrollbar-width:/);
   });
 });

@@ -132,8 +132,8 @@
 
 ### Table & Modal Layout (DEC-056–058)
 
-- Tables: wrap with `w-full overflow-x-auto scrollbar-thin border border-border rounded-3xl pb-8`; set sensible `min-width`; compact cell padding (`px-2 py-2`)
-- Modals: content `max-h-[90vh] overflow-y-auto scrollbar-thin`; overlay `flex items-center justify-center p-4`
+- Tables: wrap with `w-full overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y border border-border rounded-3xl pb-8`; set sensible `min-width`; compact cell padding (`px-2 py-2`). Scrollbars are hidden project-wide in `globals.css`; do not add per-component scrollbar classes.
+- Modals: content `max-h-[90vh] overflow-y-auto bb-smooth-scroll`; overlay `flex items-center justify-center p-4`
 
 ### Employee Roster Integrity (DEC-059)
 

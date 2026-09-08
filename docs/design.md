@@ -183,7 +183,7 @@ OUT: bg-slate-100 text-black/60 border border-black/5 px-4 py-1.5 rounded-full t
 
 ```html
 <!-- ตัวอย่างโครงสร้างที่ต้องการใน ScheduleClient.tsx -->
-<div class="overflow-x-auto scrollbar-none">
+<div class="overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y">
   <table>
     <td class="sticky left-0 z-20 bg-white border-r border-black/5 text-black">
        ชื่อพนักงาน

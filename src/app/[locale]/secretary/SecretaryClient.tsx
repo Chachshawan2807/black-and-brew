@@ -373,7 +373,7 @@ function TaskCard({
 
   const body = (
     <>
-      <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain bb-smooth-scroll px-0.5 pb-8 pt-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain bb-smooth-scroll px-0.5 pb-8 pt-0.5">
         <div className="my-auto flex w-full flex-col items-center gap-1">
           <p
             className={cn(

@@ -1215,7 +1215,7 @@ export function InventoryQuickActionBar({
       {frequentItems.length > 0 && !collapseBulkQueueForSearch && !hideMobileSearchChrome && !fabMobileBulkShell && (
         <div
           className={cn(
-            'flex items-center gap-2 overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-1 scrollbar-hide',
+            'flex items-center gap-2 overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y pb-1',
             isFabPanel
               ? 'border-t border-border px-4 pb-4 pt-3 md:px-5 md:pb-5'
               : 'mt-6 border-t border-border pt-3',
