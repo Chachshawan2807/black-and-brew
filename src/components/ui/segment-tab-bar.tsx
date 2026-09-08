@@ -2,7 +2,13 @@
 
 import { useCallback, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { BB_CHIP_IDLE, BB_CHIP_SELECTED } from '@/lib/ui-outlined-tokens';
+import {
+  BB_CHIP_IDLE,
+  BB_CHIP_SELECTED,
+  BB_COUNT_BADGE_ACTIVE,
+  BB_COUNT_BADGE_BASE,
+  BB_COUNT_BADGE_IDLE,
+} from '@/lib/ui-outlined-tokens';
 
 export type SegmentTabItem<T extends string = string> = {
   id: T;
@@ -124,12 +130,8 @@ export function SegmentTabBar<T extends string>({
             {tab.count !== undefined ? (
               <span
                 className={cn(
-                  'inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-px text-[10px] tabular-nums leading-none',
-                  isActive
-                    ? isScroll
-                      ? 'bg-background/20 text-inherit'
-                      : 'bg-muted text-muted-foreground'
-                    : 'bg-muted/70 text-muted-foreground',
+                  BB_COUNT_BADGE_BASE,
+                  isActive ? BB_COUNT_BADGE_ACTIVE : BB_COUNT_BADGE_IDLE,
                 )}
                 aria-hidden
               >
@@ -196,8 +198,8 @@ export function FilterChipBar({
             {chip.count !== undefined ? (
               <span
                 className={cn(
-                  'inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-px text-[10px] tabular-nums leading-none',
-                  isActive ? 'bg-background/20 text-inherit' : 'bg-muted/70 text-muted-foreground',
+                  BB_COUNT_BADGE_BASE,
+                  isActive ? BB_COUNT_BADGE_ACTIVE : BB_COUNT_BADGE_IDLE,
                 )}
                 aria-hidden
               >

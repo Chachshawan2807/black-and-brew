@@ -93,6 +93,14 @@ export const BB_CHIP_SELECTED =
 export const BB_CHIP_IDLE =
   'border-border/80 bg-background/80 text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:border-border';
 
+/** Count pill inside tabs/chips — readable on light and dark surfaces */
+export const BB_COUNT_BADGE_BASE =
+  'inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-px text-[10px] tabular-nums leading-none';
+
+export const BB_COUNT_BADGE_ACTIVE = 'bg-foreground/12 text-foreground';
+
+export const BB_COUNT_BADGE_IDLE = 'bg-foreground/10 text-foreground/80';
+
 /** FAB outlined shell (pastel fill + border applied separately) */
 export const BB_FAB_SHELL =
   'flex items-center justify-center rounded-2xl border-2 border-foreground/80 bb-shadow-lg bb-transition';

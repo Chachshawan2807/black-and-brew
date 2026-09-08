@@ -60,45 +60,34 @@ export default function ScheduleToolbar({
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3">
         <div className="flex items-start justify-end gap-3">
           <div className="flex shrink-0 items-center gap-2">
-            <div
-              className="inline-flex items-center gap-1 rounded-2xl border border-border/70 bg-background/60 p-0.5"
-              role="group"
-              aria-label="ประวัติการแก้ไข"
-            >
-              <HintTooltip tip="เลิกทำ">
-                <button
-                  onClick={onUndo}
-                  disabled={isReadOnly || undoStackLength === 0}
-                  className={cn(
-                    SCHEDULE_TOOLBAR_HISTORY_BUTTON,
-                    'border-0 bg-transparent shadow-none',
-                    canUndo
-                      ? 'hover:bg-muted/40 text-foreground cursor-pointer'
-                      : 'text-foreground/30 cursor-not-allowed',
-                  )}
-                  aria-label="เลิกทำ"
-                >
-                  <Undo2 className="w-4 h-4" strokeWidth={1.5} />
-                </button>
-              </HintTooltip>
-              <span className="h-5 w-px bg-border/80" aria-hidden />
-              <HintTooltip tip="ทำซ้ำ">
-                <button
-                  onClick={onRedo}
-                  disabled={isReadOnly || redoStackLength === 0}
-                  className={cn(
-                    SCHEDULE_TOOLBAR_HISTORY_BUTTON,
-                    'border-0 bg-transparent shadow-none',
-                    canRedo
-                      ? 'hover:bg-muted/40 text-foreground cursor-pointer'
-                      : 'text-foreground/30 cursor-not-allowed',
-                  )}
-                  aria-label="ทำซ้ำ"
-                >
-                  <Redo2 className="w-4 h-4" strokeWidth={1.5} />
-                </button>
-              </HintTooltip>
-            </div>
+            <HintTooltip tip="เลิกทำ">
+              <button
+                type="button"
+                onClick={onUndo}
+                disabled={isReadOnly || undoStackLength === 0}
+                className={cn(
+                  SCHEDULE_TOOLBAR_HISTORY_BUTTON,
+                  !canUndo && 'text-muted-foreground',
+                )}
+                aria-label="เลิกทำ"
+              >
+                <Undo2 className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </HintTooltip>
+            <HintTooltip tip="ทำซ้ำ">
+              <button
+                type="button"
+                onClick={onRedo}
+                disabled={isReadOnly || redoStackLength === 0}
+                className={cn(
+                  SCHEDULE_TOOLBAR_HISTORY_BUTTON,
+                  !canRedo && 'text-muted-foreground',
+                )}
+                aria-label="ทำซ้ำ"
+              >
+                <Redo2 className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </HintTooltip>
             <ClickableDatePicker
               value={initialDateStr}
               onChange={onDateChange}

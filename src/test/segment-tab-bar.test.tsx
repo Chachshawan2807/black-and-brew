@@ -60,5 +60,6 @@ describe('SegmentTabBar', () => {
     );
 
     expect(screen.getByRole('tab', { name: 'สั่งซื้อ' })).toBeInTheDocument();
+    expect(screen.getByText('3').className).toMatch(/text-foreground/);
   });
 });

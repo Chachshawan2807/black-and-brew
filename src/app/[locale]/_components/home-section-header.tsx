@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { BB_ICON_BADGE_OUTLINE } from '@/lib/ui-outlined-tokens';
 
 type HomeSectionHeaderProps = {
   icon: ReactNode;
@@ -86,9 +85,12 @@ type HomeSectionBadgeProps = {
 };
 
 const BADGE_TONE_CLASS = {
-  neutral: 'bg-muted/50',
-  alert: 'bg-red-50/70 dark:bg-red-950/30',
-  warning: 'bg-amber-50/70 dark:bg-amber-950/30',
+  neutral:
+    'border-border bg-muted/50 text-foreground [&_svg]:text-muted-foreground',
+  alert:
+    'border-red-200/80 bg-red-50/70 text-red-700 dark:border-red-800/50 dark:bg-red-950/40 dark:text-red-300 [&_svg]:text-red-600 dark:[&_svg]:text-red-300',
+  warning:
+    'border-amber-200/80 bg-amber-50/70 text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-300 [&_svg]:text-amber-700 dark:[&_svg]:text-amber-300',
 } as const;
 
 export function HomeSectionBadge({
@@ -101,7 +103,6 @@ export function HomeSectionBadge({
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-2xl border px-3 py-1 text-[12px] tabular-nums font-normal',
-        BB_ICON_BADGE_OUTLINE,
         BADGE_TONE_CLASS[tone],
         className,
       )}
