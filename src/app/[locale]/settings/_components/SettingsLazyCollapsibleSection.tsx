@@ -3,11 +3,14 @@
 import { useRef, useState, type ComponentType } from 'react';
 import SettingsCollapsibleSection from './SettingsCollapsibleSection';
 import { SETTINGS_BTN_GHOST } from './settings-ui-primitives';
+import { preloadSettingsSection } from '@/lib/settings-chunk-preload';
+
+type SettingsSectionKey = 'dataHistory' | 'loginHistory' | 'passkey';
 
 interface SettingsLazyCollapsibleSectionProps {
+  sectionKey: SettingsSectionKey;
   icon: 'history' | 'shield' | 'fingerprint';
   title: string;
-  description?: string;
   locale: string;
   load: () => Promise<{ default: ComponentType<{ locale: string }> }>;
   loadingLabel: string;
@@ -24,9 +27,9 @@ function SectionSkeleton() {
 }
 
 export default function SettingsLazyCollapsibleSection({
+  sectionKey,
   icon,
   title,
-  description,
   locale,
   load,
   loadingLabel,
@@ -34,18 +37,14 @@ export default function SettingsLazyCollapsibleSection({
   const [Section, setSection] = useState<ComponentType<{ locale: string }> | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const chunkWarmRef = useRef(false);
+  const preparedRef = useRef(false);
   const loadGenRef = useRef(0);
 
-  const warmChunk = () => {
-    if (chunkWarmRef.current || Section) return;
-    chunkWarmRef.current = true;
-    void load().catch(() => {
-      chunkWarmRef.current = false;
-    });
-  };
+  const prepareSection = () => {
+    if (preparedRef.current && (Section || loading)) return;
+    preparedRef.current = true;
+    preloadSettingsSection(sectionKey);
 
-  const mountSection = () => {
     if (Section || loading) return;
     const gen = ++loadGenRef.current;
     setLoading(true);
@@ -58,7 +57,7 @@ export default function SettingsLazyCollapsibleSection({
       .catch(() => {
         if (gen !== loadGenRef.current) return;
         setLoadError('load_failed');
-        chunkWarmRef.current = false;
+        preparedRef.current = false;
       })
       .finally(() => {
         if (gen === loadGenRef.current) {
@@ -68,13 +67,7 @@ export default function SettingsLazyCollapsibleSection({
   };
 
   return (
-    <SettingsCollapsibleSection
-      icon={icon}
-      title={title}
-      description={description}
-      onFirstOpen={mountSection}
-      onIntentPrefetch={warmChunk}
-    >
+    <SettingsCollapsibleSection icon={icon} title={title} onPrepare={prepareSection}>
       {Section ? (
         <Section locale={locale} />
       ) : loading ? (
@@ -86,7 +79,7 @@ export default function SettingsLazyCollapsibleSection({
           </p>
           <button
             type="button"
-            onClick={mountSection}
+            onClick={prepareSection}
             className={SETTINGS_BTN_GHOST}
           >
             {locale === 'th' ? 'ลองใหม่' : 'Try again'}

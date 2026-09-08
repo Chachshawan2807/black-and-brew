@@ -4,9 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, Pencil, Trash2, Layers } from '@/lib/icons';
 import { cn } from "@/lib/utils";
 import {
-  fetchDataChangeLogs,
   type DataChangeLogRow,
 } from "@/app/actions/data-change-log-actions";
+import {
+  EDIT_HISTORY_INITIAL_LIMIT,
+  getOrFetchEditHistory,
+} from "@/lib/settings-section-data-cache";
 import {
   formatDataChangeLogDisplay,
 } from "@/lib/inventory-notification-formatter";
@@ -128,10 +131,10 @@ export default function DataChangeHistorySection({
   const load = useCallback(async () => {
     const gen = ++loadGenRef.current;
     setLoading(true);
-    const result = await fetchDataChangeLogs({
-      limit: 50,
-      module: moduleFilter === "all" ? undefined : moduleFilter,
-      forEditHistory: true,
+    const module = moduleFilter === "all" ? undefined : moduleFilter;
+    const result = await getOrFetchEditHistory({
+      limit: EDIT_HISTORY_INITIAL_LIMIT,
+      module,
     });
     if (gen !== loadGenRef.current) return;
 
@@ -146,9 +149,7 @@ export default function DataChangeHistorySection({
   }, [moduleFilter]);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      void load();
-    });
+    void load();
   }, [moduleFilter, load]);
 
   const filterOptions = [

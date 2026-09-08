@@ -5,9 +5,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { Fingerprint, ScanFace } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import {
-  getCurrentDevicePasskeyStatus,
   removePasskeyForCurrentDevice,
 } from '@/app/actions/passkey-actions';
+import {
+  getOrFetchPasskeyStatus,
+  invalidatePasskeyStatusCache,
+} from '@/lib/settings-section-data-cache';
 import {
   getBiometricLoginAvailability,
   registerDevicePasskey,
@@ -110,7 +113,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStatus = useCallback(async () => {
+  const loadStatus = useCallback(async (force = false) => {
     setLoading(true);
     const device = collectClientDeviceInfo();
     const [biometric, kind] = await Promise.all([
@@ -126,7 +129,8 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
       setLoading(false);
       return;
     }
-    const status = await getCurrentDevicePasskeyStatus();
+    if (force) invalidatePasskeyStatusCache();
+    const status = await getOrFetchPasskeyStatus();
     setEnrolled(status.enrolled);
     setDeviceLabel(status.deviceLabel);
     setLoading(false);
@@ -149,7 +153,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
         return;
       }
       setMessage(biometricLabels.settingsEnabled);
-      await loadStatus();
+      await loadStatus(true);
     } finally {
       setBusy(false);
     }
@@ -168,7 +172,7 @@ export default function PasskeyDeviceSection({ locale }: PasskeyDeviceSectionPro
       setMessage(
         isTh ? 'ลบการเข้าด้วยยืนยันตัวตนแบบไบโอเมตริกบนเครื่องนี้แล้ว' : 'Biometric login removed on this device'
       );
-      await loadStatus();
+      await loadStatus(true);
     } finally {
       setBusy(false);
     }

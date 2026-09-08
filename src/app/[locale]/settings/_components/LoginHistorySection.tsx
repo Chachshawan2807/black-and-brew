@@ -4,10 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HelpCircle, LogIn, LogOut, ShieldAlert, ShieldX } from '@/lib/icons';
 import { cn } from "@/lib/utils";
 import {
-  fetchLoginHistoryBundle,
   type LoginHistoryRow,
 } from "@/app/actions/login-history-actions";
 import type { ActiveLoginSession } from "@/lib/login-session-status";
+import {
+  getOrFetchLoginHistoryBundle,
+  invalidateLoginHistoryCache,
+  LOGIN_HISTORY_INITIAL_LIMIT,
+} from "@/lib/settings-section-data-cache";
 import { ExpandableLines } from "@/components/ui/expandable-lines";
 import { ExpandMoreButton } from "@/components/ui/expand-more-button";
 import ActiveRemoteSessionsPanel from './ActiveRemoteSessionsPanel';
@@ -27,8 +31,8 @@ interface LoginHistorySectionProps {
   locale: string;
 }
 
-const PREVIEW_COUNT = 3;
-const INITIAL_FETCH_LIMIT = 50;
+const INITIAL_VISIBLE_COUNT = 3;
+const LOAD_MORE_COUNT = 5;
 
 function EventIcon({
   type,
@@ -166,14 +170,15 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
   const [sessions, setSessions] = useState<ActiveLoginSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
   const isTh = locale === "th";
   const loadGenRef = useRef(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     const gen = ++loadGenRef.current;
     setLoading(true);
-    const result = await fetchLoginHistoryBundle(INITIAL_FETCH_LIMIT);
+    if (force) invalidateLoginHistoryCache();
+    const result = await getOrFetchLoginHistoryBundle(LOGIN_HISTORY_INITIAL_LIMIT);
     if (gen !== loadGenRef.current) return;
 
     if (!result.success) {
@@ -189,13 +194,12 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
   }, []);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      void load();
-    });
+    void load();
   }, [load]);
 
-  const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);
-  const hasMoreRows = rows.length > PREVIEW_COUNT;
+  const visibleRows = rows.slice(0, visibleCount);
+  const hasMoreRows = visibleCount < rows.length;
+  const canCollapse = visibleCount > INITIAL_VISIBLE_COUNT;
 
   return (
     <div className="space-y-3">
@@ -204,7 +208,7 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
         sessions={sessions}
         loading={loading}
         loadError={error}
-        onReload={load}
+        onReload={() => load(true)}
       />
 
       {loading ? (
@@ -220,7 +224,7 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
           </p>
           <button
             type="button"
-            onClick={() => void load()}
+            onClick={() => void load(true)}
             className={SETTINGS_BTN_GHOST}
           >
             {isTh ? "ลองใหม่" : "Try again"}
@@ -231,21 +235,39 @@ export default function LoginHistorySection({ locale }: LoginHistorySectionProps
           {isTh ? "ยังไม่มีประวัติการเข้าสู่ระบบ" : "No sign-in history yet"}
         </p>
       ) : (
-        <div className="space-y-2">
-          {visibleRows.map((row) => (
-            <LoginEntry key={row.id} row={row} locale={locale} />
-          ))}
-          {hasMoreRows && (
-            <ExpandMoreButton
-              expanded={showAll}
-              onClick={() => setShowAll((v) => !v)}
-              isTh={isTh}
-              moreLabel={isTh ? "ดูรายละเอียด" : "View details"}
-              lessLabel={isTh ? "ย่อรายการ" : "Show less"}
-              className={SETTINGS_EXPAND_BTN}
-            />
+        <>
+          <div className="space-y-2">
+            {visibleRows.map((row) => (
+              <LoginEntry key={row.id} row={row} locale={locale} />
+            ))}
+          </div>
+          {(hasMoreRows || canCollapse) && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              {hasMoreRows ? (
+                <ExpandMoreButton
+                  expanded={false}
+                  onClick={() =>
+                    setVisibleCount((count) =>
+                      Math.min(count + LOAD_MORE_COUNT, rows.length),
+                    )
+                  }
+                  isTh={isTh}
+                  moreLabel={isTh ? "ดูเพิ่มเติม" : "Show more"}
+                  className={SETTINGS_EXPAND_BTN}
+                />
+              ) : null}
+              {canCollapse ? (
+                <ExpandMoreButton
+                  expanded={true}
+                  onClick={() => setVisibleCount(INITIAL_VISIBLE_COUNT)}
+                  isTh={isTh}
+                  lessLabel={isTh ? "ย่อรายการ" : "Show less"}
+                  className={SETTINGS_EXPAND_BTN}
+                />
+              ) : null}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );

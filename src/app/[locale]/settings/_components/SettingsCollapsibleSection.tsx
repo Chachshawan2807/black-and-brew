@@ -14,26 +14,28 @@ const ICONS = {
 interface SettingsCollapsibleSectionProps {
   icon: keyof typeof ICONS;
   title: string;
-  description?: string;
   children: ReactNode;
   defaultOpen?: boolean;
-  onFirstOpen?: () => void;
-  onIntentPrefetch?: () => void;
+  onPrepare?: () => void;
 }
 
 export default function SettingsCollapsibleSection({
   icon,
   title,
-  description,
   children,
   defaultOpen = false,
-  onFirstOpen,
-  onIntentPrefetch,
+  onPrepare,
 }: SettingsCollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [hasOpened, setHasOpened] = useState(defaultOpen);
   const panelId = useId();
   const Icon: LucideIcon = ICONS[icon];
+
+  const prepare = () => {
+    if (hasOpened) return;
+    setHasOpened(true);
+    onPrepare?.();
+  };
 
   return (
     <section className={SETTINGS_SECTION}>
@@ -42,44 +44,32 @@ export default function SettingsCollapsibleSection({
         onClick={() => {
           setOpen((v) => {
             const next = !v;
-            if (next) {
-              setHasOpened(true);
-              onFirstOpen?.();
-            }
+            if (next) prepare();
             return next;
           });
         }}
-        onPointerEnter={() => {
-          if (!hasOpened) onIntentPrefetch?.();
-        }}
-        onFocus={() => {
-          if (!hasOpened) onIntentPrefetch?.();
-        }}
+        onPointerEnter={prepare}
+        onFocus={prepare}
         aria-expanded={open}
         aria-controls={panelId}
         className={cn(
           'flex w-full items-center gap-3 p-4 md:p-5 text-left bb-transition',
           'hover:bg-muted/30',
-          open && 'border-b border-border'
+          open && 'border-b border-border',
         )}
       >
         <SettingsIconBadge className="shrink-0">
           <Icon size={18} strokeWidth={1.75} />
         </SettingsIconBadge>
-        <span className="flex-1 min-w-0">
-          <span className="block text-[14px] text-foreground leading-snug">{title}</span>
-          {description ? (
-            <span className="block text-[12px] text-muted-foreground mt-0.5 leading-normal">
-              {description}
-            </span>
-          ) : null}
+        <span className="flex-1 min-w-0 text-[14px] text-foreground leading-snug">
+          {title}
         </span>
         <ChevronDown
           size={16}
           strokeWidth={1.75}
           className={cn(
             'shrink-0 text-muted-foreground bb-transition',
-            open && 'rotate-180'
+            open && 'rotate-180',
           )}
         />
       </button>

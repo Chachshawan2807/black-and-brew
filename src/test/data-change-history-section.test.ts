@@ -11,19 +11,21 @@ const sectionSource = fs.readFileSync(
 );
 
 describe('DataChangeHistorySection module filter', () => {
-  test('passes moduleFilter to fetchDataChangeLogs instead of filtering only client-side', () => {
+  test('passes moduleFilter through settings data cache instead of filtering only client-side', () => {
+    expect(sectionSource).toContain('getOrFetchEditHistory');
     expect(sectionSource).toMatch(
-      /fetchDataChangeLogs\(\{\s*limit:\s*50,\s*module:\s*moduleFilter\s*===\s*["']all["']\s*\?\s*undefined\s*:\s*moduleFilter,\s*forEditHistory:\s*true/,
+      /getOrFetchEditHistory\(\{\s*limit:\s*EDIT_HISTORY_INITIAL_LIMIT,\s*module,/,
     );
     expect(sectionSource).not.toMatch(
       /moduleFilter === ["']all["'] \? rows : rows\.filter/,
     );
+    expect(sectionSource).not.toContain('fetchDataChangeLogs');
   });
 
   test('reloads when moduleFilter changes and reuses load for retry', () => {
     expect(sectionSource).toMatch(/const load = useCallback\(async \(\) => \{/);
     expect(sectionSource).toMatch(/\}, \[moduleFilter\]\);/);
-    expect(sectionSource).toMatch(/queueMicrotask\(\(\) => \{\s*void load\(\);\s*\}\);\s*\}, \[moduleFilter,\s*load\]\)/);
+    expect(sectionSource).toMatch(/void load\(\);\s*\}, \[moduleFilter,\s*load\]\)/);
     expect(sectionSource).toMatch(/onClick=\{\(\) => void load\(\)\}/);
   });
 

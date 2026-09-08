@@ -1,7 +1,13 @@
 /**
- * Warm settings lazy section chunks during idle time or hover intent.
+ * Warm settings lazy section chunks and data during idle time or hover intent.
  */
 import { scheduleIdleWork } from '@/lib/schedule-idle-work';
+import {
+  prefetchEditHistoryData,
+  prefetchLoginHistoryData,
+  prefetchPasskeyStatus,
+  prefetchAllSettingsSectionData,
+} from '@/lib/settings-section-data-cache';
 
 const preloaded = new Set<string>();
 
@@ -17,10 +23,17 @@ const SECTION_LOADERS: Record<string, () => Promise<unknown>> = {
   passkey: () => import('@/app/[locale]/settings/_components/PasskeyDeviceSection'),
 };
 
+const SECTION_DATA_PREFETCH: Partial<Record<keyof typeof SECTION_LOADERS, () => void>> = {
+  dataHistory: prefetchEditHistoryData,
+  loginHistory: prefetchLoginHistoryData,
+  passkey: prefetchPasskeyStatus,
+};
+
 export function preloadSettingsSection(key: keyof typeof SECTION_LOADERS): void {
   if (typeof window === 'undefined' || preloaded.has(key)) return;
   preloaded.add(key);
   void SECTION_LOADERS[key]();
+  SECTION_DATA_PREFETCH[key]?.();
 }
 
 export function preloadSettingsSectionsOnIdle(): void {
@@ -30,9 +43,10 @@ export function preloadSettingsSectionsOnIdle(): void {
     for (const key of ['dataHistory', 'loginHistory', 'passkey'] as const) {
       preloadSettingsSection(key);
     }
+    prefetchAllSettingsSectionData();
   };
 
-  scheduleIdleWork(run, { timeout: 5000 });
+  scheduleIdleWork(run, { timeout: 2000 });
 }
 
 export function resetSettingsChunkPreloadForTests(): void {

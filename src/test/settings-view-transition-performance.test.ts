@@ -24,7 +24,7 @@ describe('settings lazy-load performance', () => {
     expect(sections).toContain('preloadSettingsSectionsOnIdle');
   });
 
-  test('collapsible section triggers onFirstOpen before mounting children', () => {
+  test('collapsible section prepares chunk and data on hover or focus before open', () => {
     const collapsible = readFileSync(
       resolve(ROOT, 'src/app/[locale]/settings/_components/SettingsCollapsibleSection.tsx'),
       'utf-8',
@@ -34,13 +34,27 @@ describe('settings lazy-load performance', () => {
       'utf-8',
     );
 
-    expect(collapsible).toContain('onFirstOpen?: () => void');
-    expect(collapsible).toContain('onIntentPrefetch?: () => void');
-    expect(collapsible).toContain('onFirstOpen?.()');
-    expect(collapsible).toContain('onIntentPrefetch?.()');
-    expect(lazy).toContain('onFirstOpen={mountSection}');
-    expect(lazy).toContain('onIntentPrefetch={warmChunk}');
+    expect(collapsible).toContain('onPrepare?: () => void');
+    expect(collapsible).toContain('onPrepare?.()');
+    expect(collapsible).toContain('onPointerEnter={prepare}');
+    expect(collapsible).not.toContain('description');
+    expect(lazy).toContain('onPrepare={prepareSection}');
+    expect(lazy).toContain('preloadSettingsSection(sectionKey)');
     expect(lazy).toContain('void load()');
+  });
+
+  test('login history uses shared settings data cache with slimmer initial limit', () => {
+    const loginHistory = readFileSync(
+      resolve(ROOT, 'src/app/[locale]/settings/_components/LoginHistorySection.tsx'),
+      'utf-8',
+    );
+    const cache = readFileSync(resolve(ROOT, 'src/lib/settings-section-data-cache.ts'), 'utf-8');
+
+    expect(loginHistory).toContain('getOrFetchLoginHistoryBundle');
+    expect(loginHistory).toContain('LOGIN_HISTORY_INITIAL_LIMIT');
+    expect(loginHistory).not.toContain('fetchLoginHistoryBundle(200)');
+    expect(loginHistory).toContain('loadGenRef');
+    expect(cache).toContain('LOGIN_HISTORY_INITIAL_LIMIT = 20');
   });
 
   test('notification preferences skip server sync on first mount', () => {
@@ -56,15 +70,28 @@ describe('settings lazy-load performance', () => {
     );
   });
 
-  test('login history uses a slimmer initial fetch limit', () => {
-    const loginHistory = readFileSync(
-      resolve(ROOT, 'src/app/[locale]/settings/_components/LoginHistorySection.tsx'),
+
+  test('edit history and passkey sections use shared settings data cache', () => {
+    const editHistory = readFileSync(
+      resolve(ROOT, 'src/app/[locale]/settings/_components/DataChangeHistorySection.tsx'),
+      'utf-8',
+    );
+    const passkey = readFileSync(
+      resolve(ROOT, 'src/app/[locale]/settings/_components/PasskeyDeviceSection.tsx'),
       'utf-8',
     );
 
-    expect(loginHistory).toContain('INITIAL_FETCH_LIMIT = 50');
-    expect(loginHistory).not.toContain('fetchLoginHistoryBundle(200)');
-    expect(loginHistory).toContain('loadGenRef');
+    expect(editHistory).toContain('getOrFetchEditHistory');
+    expect(passkey).toContain('getOrFetchPasskeyStatus');
+  });
+
+  test('settings sections omit per-section descriptions', () => {
+    const sections = readFileSync(
+      resolve(ROOT, 'src/app/[locale]/settings/_components/SettingsPageSections.tsx'),
+      'utf-8',
+    );
+
+    expect(sections).not.toContain('description=');
   });
 });
 
