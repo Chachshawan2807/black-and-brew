@@ -286,31 +286,40 @@
   /*
    * Scrollbars: hidden inside nested scroll areas; page scrollbar visible on desktop.
    */
-  * {
+  :where(:not(html):not(body)) {
     scrollbar-width: none;
   }
 
-  *::-webkit-scrollbar {
+  :where(:not(html):not(body))::-webkit-scrollbar {
     display: none;
   }
 
   @media (min-width: 768px) {
     html {
+      overflow-y: auto;
       scrollbar-width: thin;
-      scrollbar-color: color-mix(in srgb, var(--foreground) 32%, transparent) var(--background);
+      scrollbar-color: color-mix(in srgb, var(--foreground) 42%, transparent) var(--background);
     }
 
-    html::-webkit-scrollbar {
+    body {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--foreground) 42%, transparent) var(--background);
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
       display: block;
       width: 10px;
     }
 
-    html::-webkit-scrollbar-track {
+    html::-webkit-scrollbar-track,
+    body::-webkit-scrollbar-track {
       background: var(--background);
     }
 
-    html::-webkit-scrollbar-thumb {
-      background: color-mix(in srgb, var(--foreground) 32%, transparent);
+    html::-webkit-scrollbar-thumb,
+    body::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--foreground) 42%, transparent);
       border-radius: 9999px;
       border: 2px solid var(--background);
     }
@@ -318,7 +327,8 @@
 
   @media (prefers-contrast: more) {
     @media (min-width: 768px) {
-      html {
+      html,
+      body {
         scrollbar-width: thin;
         scrollbar-color: var(--foreground) var(--background);
       }

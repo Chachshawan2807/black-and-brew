@@ -58,7 +58,7 @@ export default async function RootLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={`${appFontClassName} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${appFontClassName} min-h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground bb-transition">
         <script
           dangerouslySetInnerHTML={{ __html: PWA_SHELL_BOOTSTRAP_SCRIPT }}

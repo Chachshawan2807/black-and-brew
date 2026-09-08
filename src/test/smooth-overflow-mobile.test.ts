@@ -20,10 +20,13 @@ describe('bb-smooth-scroll mobile overflow utility', () => {
     expect(css).toMatch(/\.bb-sticky-scroll-cell\s*\{/);
   });
 
-  test('globals.css hides scrollbars project-wide while preserving scroll', () => {
+  test('globals.css hides nested scrollbars while showing page scrollbar on desktop', () => {
     const css = readFile('app/[locale]/globals.css');
-    expect(css).toMatch(/@layer base[\s\S]*scrollbar-width:\s*none/);
-    expect(css).toMatch(/\*::-webkit-scrollbar[\s\S]*display:\s*none/);
+    expect(css).toMatch(/:where\(:not\(html\):not\(body\)\)[\s\S]*scrollbar-width:\s*none/);
+    expect(css).toMatch(/:where\(:not\(html\):not\(body\)\)::-webkit-scrollbar[\s\S]*display:\s*none/);
+    expect(css).toMatch(/@media \(min-width:\s*768px\)[\s\S]*html[\s\S]*overflow-y:\s*auto/);
+    expect(css).toMatch(/@media \(min-width:\s*768px\)[\s\S]*html::-webkit-scrollbar[\s\S]*display:\s*block/);
+    expect(css).toMatch(/@media \(min-width:\s*768px\)[\s\S]*body::-webkit-scrollbar[\s\S]*display:\s*block/);
     expect(css).toMatch(/@media \(prefers-contrast:\s*more\)/);
   });
 
