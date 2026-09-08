@@ -58,6 +58,7 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 import { recordDataChange, fetchDataChangeLogs } from '@/app/actions/data-change-log-actions';
+import { EDIT_HISTORY_EXCLUDED_ENTITY_TYPES } from '@/lib/data-change-log';
 import { dispatchInventoryWebPush } from '@/lib/web-push';
 
 describe('computeFieldChanges', () => {
@@ -293,5 +294,26 @@ describe('fetchDataChangeLogs', () => {
     await fetchDataChangeLogs({ module: 'schedule' });
 
     expect(mockEq).toHaveBeenCalledWith('module', 'schedule');
+  });
+
+  test('excludes notification-only rows for edit history', async () => {
+    const mockNeq = vi.fn();
+    let neqCalls = 0;
+    mockLimit.mockReturnValue({ neq: mockNeq });
+    mockNeq.mockImplementation(() => {
+      neqCalls += 1;
+      if (neqCalls >= EDIT_HISTORY_EXCLUDED_ENTITY_TYPES.length) {
+        return Promise.resolve({ data: [], error: null });
+      }
+      return { neq: mockNeq };
+    });
+
+    await fetchDataChangeLogs({ forEditHistory: true });
+
+    expect(mockNeq).toHaveBeenCalledTimes(EDIT_HISTORY_EXCLUDED_ENTITY_TYPES.length);
+    expect(mockNeq).toHaveBeenCalledWith('entity_type', 'daily_report');
+    for (const entityType of EDIT_HISTORY_EXCLUDED_ENTITY_TYPES) {
+      expect(mockNeq).toHaveBeenCalledWith('entity_type', entityType);
+    }
   });
 });

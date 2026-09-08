@@ -454,6 +454,57 @@ describe('formatDataChangeLogDisplay', () => {
     expect(display.detail).toContain('หน้าร้าน');
     expect(display.detail).toContain('ครัว');
   });
+
+  test('formats daily report history in Thai instead of raw field diffs', () => {
+    const display = formatDataChangeLogDisplay(
+      makeRow({
+        module: 'schedule',
+        entity_type: 'daily_report',
+        entity_label: '09/09/2026 พ.',
+        field_changes: [
+          {
+            field: 'activeStaff',
+            old_value: [],
+            new_value: [{ name: 'ปิ่น', shiftText: '6:30' }],
+          },
+          {
+            field: 'schedule',
+            old_value: null,
+            new_value: 'tomorrow',
+          },
+        ],
+        new_value: {
+          schedule: 'tomorrow',
+          dateStr: '09/09/2026',
+          activeStaff: [
+            { name: 'ปิ่น', shiftText: '6:30' },
+            { name: 'เม', shiftText: '7:00' },
+          ],
+          otherDutyStaff: [{ name: 'ชัช', shiftText: 'ไปสาขา 2', remark: '' }],
+          offStaff: [{ name: 'นิต้า', shiftText: 'ลา' }],
+          headcount: 2,
+          holiday: null,
+        },
+        metadata: {
+          kind: 'daily_report',
+          title: 'ตารางงานพรุ่งนี้',
+          fieldSummary: 'ignored when snapshot exists',
+        },
+      }),
+      'th',
+    );
+
+    expect(display.headline).toBe('ตารางงานพรุ่งนี้');
+    expect(display.detailLines).toEqual([
+      'ตารางงาน 09/09/2026 พ. (พรุ่งนี้) · เข้างาน 2 คน',
+      'ปิ่น 6:30, เม 7:00',
+      'งานอื่น: ชัช ไปสาขา 2',
+      'ลา: นิต้า',
+    ]);
+    expect(display.detail).not.toContain('activeStaff');
+    expect(display.detail).not.toContain('shiftText');
+    expect(display.detail).not.toContain('tomorrow');
+  });
 });
 
 describe('formatInventoryNotification', () => {

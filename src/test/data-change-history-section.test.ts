@@ -13,7 +13,7 @@ const sectionSource = fs.readFileSync(
 describe('DataChangeHistorySection module filter', () => {
   test('passes moduleFilter to fetchDataChangeLogs instead of filtering only client-side', () => {
     expect(sectionSource).toMatch(
-      /fetchDataChangeLogs\(\{\s*limit:\s*50,\s*module:\s*moduleFilter\s*===\s*["']all["']\s*\?\s*undefined\s*:\s*moduleFilter/,
+      /fetchDataChangeLogs\(\{\s*limit:\s*50,\s*module:\s*moduleFilter\s*===\s*["']all["']\s*\?\s*undefined\s*:\s*moduleFilter,\s*forEditHistory:\s*true/,
     );
     expect(sectionSource).not.toMatch(
       /moduleFilter === ["']all["'] \? rows : rows\.filter/,

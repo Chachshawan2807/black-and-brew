@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { Json } from '@/lib/database.types';
 import {
   computeFieldChanges,
+  EDIT_HISTORY_EXCLUDED_ENTITY_TYPES,
   type DataChangeLogInput,
   type FieldChange,
   resolveActorLabel,
@@ -89,6 +90,8 @@ export interface DataChangeLogRow {
 export interface FetchDataChangeLogsOptions {
   limit?: number;
   module?: string;
+  /** Omit notification/digest rows from settings edit history. */
+  forEditHistory?: boolean;
 }
 
 /** Modules polled by the notification FAB for cross-device catch-up. */
@@ -248,6 +251,12 @@ export async function fetchDataChangeLogs(
 
     if (options.module) {
       query = query.eq('module', options.module);
+    }
+
+    if (options.forEditHistory) {
+      for (const entityType of EDIT_HISTORY_EXCLUDED_ENTITY_TYPES) {
+        query = query.neq('entity_type', entityType);
+      }
     }
 
     const { data, error } = await query;

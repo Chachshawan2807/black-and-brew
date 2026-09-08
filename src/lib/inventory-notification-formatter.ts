@@ -16,6 +16,11 @@ import {
   formatBeanOrderMetadataDetail,
 } from '@/lib/bean-orders/history-display';
 
+import {
+  formatDailyReportHistoryDetailLines,
+  formatDailyReportHistoryHeadline,
+} from '@/lib/daily-report-summary';
+
 
 
 const FIELD_LABELS: Record<string, { th: string; en: string }> = {
@@ -1377,6 +1382,14 @@ function buildDeleteFallback(row: DataChangeLogRow, isTh: boolean): string {
 
 function buildHistoryDetail(row: DataChangeLogRow, isTh: boolean): string {
 
+  const dailyReportLines = formatDailyReportHistoryDetailLines(row, isTh);
+
+  if (dailyReportLines) {
+
+    return dailyReportLines.join(' · ');
+
+  }
+
   const resolvedRow = withResolvedFieldChanges(row);
 
   const metaDetail = buildMetadataOperationDetail(resolvedRow, isTh);
@@ -1491,9 +1504,27 @@ export function formatDataChangeLogDisplay(
 
   locale: string
 
-): { headline: string; detail: string } {
+): { headline: string; detail: string; detailLines?: string[] } {
 
   const isTh = locale === 'th';
+
+
+
+  if (row.entity_type === 'daily_report') {
+
+    const detailLines = formatDailyReportHistoryDetailLines(row, isTh) ?? [];
+
+    return {
+
+      headline: formatDailyReportHistoryHeadline(row, isTh),
+
+      detail: detailLines.join(' · '),
+
+      detailLines,
+
+    };
+
+  }
 
 
 

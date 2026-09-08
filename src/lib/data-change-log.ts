@@ -21,6 +21,17 @@ export type DataChangeSource = 'web' | 'server_action' | 'api' | 'system';
 
 export type ActorAccessLevel = 'full' | 'read_only' | 'system';
 
+/** Rows in data_change_logs used for notifications/digests, not staff edits. */
+export const EDIT_HISTORY_EXCLUDED_ENTITY_TYPES = [
+  'daily_report',
+  'bean_order_created',
+  'bean_order_shipment',
+  'bean_order_delivery',
+  'cross_module_insight',
+  'pin_lockout',
+  'secretary_digest',
+] as const;
+
 export interface FieldChange {
   field: string;
   old_value: Json;

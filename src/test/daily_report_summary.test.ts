@@ -3,6 +3,8 @@ import type { DailyReportData } from '@/app/actions/daily-report-actions';
 import {
   buildDailyReportAltText,
   filterNotificationLeaveStaff,
+  formatDailyReportHistoryDetailLines,
+  formatDailyReportHistoryHeadline,
   HOLIDAY_SUMMARY_MAX_DAYS,
   isDayOffShiftText,
   shouldIncludeHolidaySummary,
@@ -83,5 +85,41 @@ describe('shouldIncludeHolidaySummary()', () => {
     expect(shouldIncludeHolidaySummary({ name: 'Test', daysRemaining: 14 })).toBe(true);
     expect(shouldIncludeHolidaySummary({ name: 'Test', daysRemaining: 15 })).toBe(false);
     expect(shouldIncludeHolidaySummary(null)).toBe(false);
+  });
+});
+
+describe('daily report edit history display', () => {
+  it('formats readable Thai lines from stored snapshot', () => {
+    const lines = formatDailyReportHistoryDetailLines(
+      {
+        entity_type: 'daily_report',
+        metadata: { kind: 'daily_report', title: 'ตารางงานพรุ่งนี้' },
+        new_value: sampleData,
+      },
+      true,
+    );
+
+    expect(lines).toEqual([
+      'ตารางงาน 13/06/2026 ส. (พรุ่งนี้) · เข้างาน 2 คน',
+      'ปิ่น 6:30, มุก 7:00',
+      'งานอื่น: ล่า ร้านซักผ้า',
+      'ลา: มุก',
+    ]);
+    expect(lines?.join(' ')).not.toContain('activeStaff');
+    expect(lines?.join(' ')).not.toContain('shiftText');
+    expect(lines?.join(' ')).not.toContain('tomorrow');
+  });
+
+  it('uses metadata title for headline', () => {
+    expect(
+      formatDailyReportHistoryHeadline(
+        {
+          entity_label: '09/09/2026 พ.',
+          metadata: { title: 'ตารางงานพรุ่งนี้' },
+          new_value: sampleData,
+        },
+        true,
+      ),
+    ).toBe('ตารางงานพรุ่งนี้');
   });
 });

@@ -65,14 +65,18 @@ function ActionIcon({
 
 function buildChangeLines(row: DataChangeLogRow, locale: string): string[] {
   const isTh = locale === "th";
-  const { headline, detail } = formatDataChangeLogDisplay(row, locale);
+  const { headline, detail, detailLines } = formatDataChangeLogDisplay(row, locale);
 
-  const detailLine =
+  const contentLines =
     row.status === "failed"
-      ? row.error_message ?? (isTh ? "บันทึกไม่สำเร็จ" : "Save failed")
-      : detail;
+      ? [row.error_message ?? (isTh ? "บันทึกไม่สำเร็จ" : "Save failed")]
+      : detailLines && detailLines.length > 0
+        ? detailLines
+        : detail
+          ? [detail]
+          : [];
 
-  return [headline, detailLine, formatDataChangeHistoryMeta(row, locale)];
+  return [headline, ...contentLines, formatDataChangeHistoryMeta(row, locale)];
 }
 
 const HISTORY_LINE_STYLES = [
@@ -127,6 +131,7 @@ export default function DataChangeHistorySection({
     const result = await fetchDataChangeLogs({
       limit: 50,
       module: moduleFilter === "all" ? undefined : moduleFilter,
+      forEditHistory: true,
     });
     if (gen !== loadGenRef.current) return;
 

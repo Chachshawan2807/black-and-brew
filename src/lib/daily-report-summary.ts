@@ -1,4 +1,5 @@
 import type { DailyReportData, StaffShiftEntry } from '@/app/actions/daily-report-actions';
+import type { DataChangeLogRow } from '@/app/actions/data-change-log-actions';
 import { formatScheduleNotificationDateDisplay } from '@/lib/date-utils';
 
 /** Include nearby public holidays in daily report summaries only within this many days. */
@@ -62,4 +63,107 @@ export function buildDailyReportNotificationLines(data: DailyReportData): string
 
 export function buildDailyReportAltText(data: DailyReportData): string {
   return truncate(buildDailyReportNotificationLines(data).join('\n'), 400);
+}
+
+function isStaffShiftEntry(value: unknown): value is StaffShiftEntry {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as StaffShiftEntry).name === 'string' &&
+    typeof (value as StaffShiftEntry).shiftText === 'string'
+  );
+}
+
+function isStaffShiftEntryArray(value: unknown): value is StaffShiftEntry[] {
+  return Array.isArray(value) && value.every(isStaffShiftEntry);
+}
+
+/** Parse stored daily report snapshot from data_change_logs.new_value. */
+export function parseDailyReportSnapshot(value: unknown): DailyReportData | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+  const snapshot = value as Record<string, unknown>;
+  if (snapshot.schedule !== 'today' && snapshot.schedule !== 'tomorrow') return null;
+  if (typeof snapshot.dateStr !== 'string') return null;
+  if (!isStaffShiftEntryArray(snapshot.activeStaff)) return null;
+  if (!isStaffShiftEntryArray(snapshot.otherDutyStaff)) return null;
+  if (!isStaffShiftEntryArray(snapshot.offStaff)) return null;
+  if (typeof snapshot.headcount !== 'number') return null;
+
+  const holiday = snapshot.holiday;
+  const parsedHoliday =
+    holiday === null
+      ? null
+      : typeof holiday === 'object' &&
+          holiday !== null &&
+          typeof (holiday as { name?: unknown }).name === 'string' &&
+          typeof (holiday as { daysRemaining?: unknown }).daysRemaining === 'number'
+        ? {
+            name: (holiday as { name: string }).name,
+            daysRemaining: (holiday as { daysRemaining: number }).daysRemaining,
+          }
+        : null;
+
+  return {
+    schedule: snapshot.schedule,
+    dateStr: snapshot.dateStr,
+    activeStaff: snapshot.activeStaff,
+    otherDutyStaff: snapshot.otherDutyStaff,
+    offStaff: snapshot.offStaff,
+    headcount: snapshot.headcount,
+    holiday: parsedHoliday,
+  };
+}
+
+export function formatDailyReportHistoryHeadline(
+  row: Pick<DataChangeLogRow, 'entity_label' | 'metadata' | 'new_value'>,
+  isTh: boolean,
+): string {
+  const meta = row.metadata ?? {};
+  const title = typeof meta.title === 'string' ? meta.title.trim() : '';
+  if (title) return title;
+
+  const snapshot = parseDailyReportSnapshot(row.new_value);
+  if (snapshot) {
+    const dateLabel = formatScheduleNotificationDateDisplay(snapshot.dateStr);
+    const scheduleLabel = snapshot.schedule === 'tomorrow'
+      ? isTh ? 'พรุ่งนี้' : 'tomorrow'
+      : isTh ? 'วันนี้' : 'today';
+    return isTh
+      ? `ตารางงาน ${dateLabel} (${scheduleLabel})`
+      : `Schedule ${dateLabel} (${scheduleLabel})`;
+  }
+
+  const entityLabel = row.entity_label?.trim();
+  if (entityLabel) {
+    return isTh ? `ตารางงาน ${entityLabel}` : `Schedule ${entityLabel}`;
+  }
+
+  return isTh ? 'ตารางงาน' : 'Schedule';
+}
+
+export function formatDailyReportHistoryDetailLines(
+  row: Pick<DataChangeLogRow, 'entity_type' | 'metadata' | 'new_value'>,
+  isTh: boolean,
+): string[] | null {
+  if (row.entity_type !== 'daily_report') return null;
+
+  const snapshot = parseDailyReportSnapshot(row.new_value);
+  if (snapshot) {
+    return buildDailyReportNotificationLines(snapshot);
+  }
+
+  const fieldSummary = row.metadata?.fieldSummary;
+  if (typeof fieldSummary === 'string' && fieldSummary.trim()) {
+    return fieldSummary
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+  }
+
+  const summary = row.metadata?.summary;
+  if (typeof summary === 'string' && summary.trim()) {
+    return [summary.trim()];
+  }
+
+  return [isTh ? 'อัปเดตตารางงาน' : 'Schedule updated'];
 }
