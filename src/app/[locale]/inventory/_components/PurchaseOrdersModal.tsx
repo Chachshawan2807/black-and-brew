@@ -231,7 +231,7 @@ export default function PurchaseOrdersModal({
             "rounded-2xl bb-shadow-sm border min-h-0",
             isExportMode
               ? "bg-white border-black/5 overflow-hidden"
-              : "flex-1 bg-card border-border overflow-auto bb-smooth-scroll bb-smooth-scroll-chain-y scrollbar-thin",
+              : "flex-1 bg-card border-border overflow-auto bb-smooth-scroll bb-smooth-scroll-chain-y",
           )}>
             <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>

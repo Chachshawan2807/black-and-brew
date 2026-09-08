@@ -27,6 +27,26 @@ describe('bb-smooth-scroll mobile overflow utility', () => {
     expect(css).toMatch(/@media \(prefers-contrast:\s*more\)/);
   });
 
+  test('src does not override global scrollbar hide with thin scrollbars', () => {
+    const srcRoot = path.resolve(ROOT, 'app');
+    const walk = (dir: string): string[] => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      return entries.flatMap((entry) => {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) return walk(fullPath);
+        if (/\.(tsx?|jsx?)$/.test(entry.name)) return [fullPath];
+        return [];
+      });
+    };
+
+    const offenders = walk(srcRoot).filter((filePath) => {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return /\[scrollbar-width:thin\]|scrollbar-thin|custom-scrollbar/.test(content);
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
   test('MonthlyRoster consolidated table allows vertical scroll chaining from sticky name column', () => {
     const code = readFile('app/[locale]/dashboard/_components/MonthlyRoster.tsx');
     expect(code).toMatch(/overflow-x-auto bb-smooth-scroll bb-smooth-scroll-chain-y/);

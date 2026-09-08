@@ -169,7 +169,7 @@ export default function MaintenanceModals({
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 min-h-0 overflow-y-auto bb-smooth-scroll custom-scrollbar bg-card">
+              <form onSubmit={handleSubmit} className="p-5 space-y-4 flex-1 min-h-0 overflow-y-auto bb-smooth-scroll bg-card">
                 <div className={isReadOnly ? 'pointer-events-none opacity-60' : ''}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-1.5 flex-1">

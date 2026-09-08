@@ -4,7 +4,7 @@ export const BRANCH_WITHDRAW_PAGE_SHELL_CLASS =
 
 /** Scroll region between pinned header/footer chrome inside branch-withdraw. */
 export const BRANCH_WITHDRAW_SCROLL_BODY_CLASS =
-  'min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bb-smooth-scroll [scrollbar-width:thin]';
+  'min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bb-smooth-scroll';
 
 /** Mobile standalone shell: fills main landmark (already below mobile header); FAB overlays content. */
 export const BRANCH_WITHDRAW_STANDALONE_MOBILE_SHELL_CLASS =

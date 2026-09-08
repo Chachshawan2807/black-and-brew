@@ -119,7 +119,7 @@ export default function SecretaryTaskPanelShell({
                 ? 'pb-3'
                 : 'pb-[max(0.75rem,env(safe-area-inset-bottom))]',
               bodyScroll
-                ? 'overflow-y-auto overscroll-contain bb-smooth-scroll [scrollbar-width:thin]'
+                ? 'overflow-y-auto overscroll-contain bb-smooth-scroll'
                 : 'overflow-hidden',
             )}
           >

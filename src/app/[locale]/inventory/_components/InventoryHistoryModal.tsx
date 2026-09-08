@@ -325,7 +325,7 @@ export function InventoryHistoryModal({
 
 
 
-        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto bb-smooth-scroll bb-scroll-xy px-4 py-4 md:px-6 md:py-4 bg-background scrollbar-thin relative">
+        <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto bb-smooth-scroll bb-scroll-xy px-4 py-4 md:px-6 md:py-4 bg-background relative">
 
           {isInitialLoading ? (
             <div className="flex flex-col items-center justify-center gap-3 py-20 text-foreground/40">

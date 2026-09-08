@@ -1635,7 +1635,7 @@ export default function ScheduleClient({
       <main className="bb-schedule-main flex-1 min-h-0 p-3 md:p-5 overflow-hidden flex flex-col">
         <div className="bb-schedule-table-frame bb-ios-scroll-host flex-1 flex flex-col bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
           <div
-            className="flex-1 min-h-0 min-w-0 overflow-x-auto scrollbar-thin overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-4 md:pb-6"
+            className="flex-1 min-h-0 min-w-0 overflow-x-auto overflow-y-auto bb-smooth-scroll bb-smooth-scroll-chain-y bb-scroll-xy pb-4 md:pb-6"
           >
             <div
               id="blackandbrew-schedule-table"
@@ -2060,7 +2060,7 @@ export default function ScheduleClient({
                     message="ไม่พบประวัติการจัดการ"
                   />
                 ) : (
-                  <div className="w-fit max-w-full overflow-x-auto bb-smooth-scroll-chain-y bb-smooth-scroll scrollbar-thin border border-border rounded-2xl">
+                  <div className="w-fit max-w-full overflow-x-auto bb-smooth-scroll-chain-y bb-smooth-scroll border border-border rounded-2xl">
                     <table
                       className="text-left border-collapse"
                       style={{ tableLayout: 'fixed', width: mgmtTableWidth }}

@@ -109,7 +109,7 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
           label={selectedOrderId ? 'กำลังโหลดรายละเอียดออเดอร์...' : 'กำลังโหลดออเดอร์เมล็ดกาแฟ...'}
         />
       ) : selectedOrder ? (
-        <div className="min-h-0 flex-1 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
+        <div className="min-h-0 flex-1 overflow-y-auto bb-smooth-scroll">
           <BeanOrderDetailClient
             order={selectedOrder}
             locale={locale}
@@ -118,7 +118,7 @@ export default function BeanOrdersOverlay({ task, locale, onClose }: BeanOrdersO
           />
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto bb-smooth-scroll [scrollbar-width:thin]">
+        <div className="min-h-0 flex-1 overflow-y-auto bb-smooth-scroll">
           <BeanOrdersClient
             initialOrders={orders}
             locale={locale}
