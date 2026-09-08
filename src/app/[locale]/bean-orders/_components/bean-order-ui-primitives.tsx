@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CloseIcon } from '@/components/ui/close-icon';
 import { FadeModalScaffold } from '@/components/ui/fade-modal-scaffold';
+import { ModalPortal } from '@/components/ui/modal-portal';
 import { LoadingIcon } from '@/components/ui/loading-icon';
+import { APP_MODAL_ABOVE_FAB_Z_INDEX } from '@/lib/floating-action-layout';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
@@ -404,6 +406,7 @@ type BeanOrderDialogShellProps = {
   keyboardAware?: boolean;
   centerScrollable?: boolean;
   layoutClassName?: string;
+  zIndex?: number;
   'aria-label'?: string;
 };
 
@@ -416,26 +419,30 @@ export function BeanOrderDialogShell({
   keyboardAware = true,
   centerScrollable = true,
   layoutClassName,
+  zIndex = APP_MODAL_ABOVE_FAB_Z_INDEX,
   'aria-label': ariaLabel,
 }: BeanOrderDialogShellProps) {
   return (
-    <FadeModalScaffold
-      open={open}
-      onClose={onClose}
-      overlayClassName={BEAN_ORDER_MODAL_OVERLAY}
-      panelClassName={cn(
-        BEAN_ORDER_MODAL_PANEL,
-        panelVariant === 'sheet' && BEAN_ORDER_MODAL_PANEL_SHEET,
-        panelClassName,
-      )}
-      panelVariant={panelVariant}
-      keyboardAware={keyboardAware}
-      centerScrollable={centerScrollable}
-      layoutClassName={layoutClassName}
-      aria-label={ariaLabel}
-    >
-      {children}
-    </FadeModalScaffold>
+    <ModalPortal>
+      <FadeModalScaffold
+        open={open}
+        onClose={onClose}
+        zIndex={zIndex}
+        overlayClassName={BEAN_ORDER_MODAL_OVERLAY}
+        panelClassName={cn(
+          BEAN_ORDER_MODAL_PANEL,
+          panelVariant === 'sheet' && BEAN_ORDER_MODAL_PANEL_SHEET,
+          panelClassName,
+        )}
+        panelVariant={panelVariant}
+        keyboardAware={keyboardAware}
+        centerScrollable={centerScrollable}
+        layoutClassName={layoutClassName}
+        aria-label={ariaLabel}
+      >
+        {children}
+      </FadeModalScaffold>
+    </ModalPortal>
   );
 }
 

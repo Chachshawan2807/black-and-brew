@@ -38,7 +38,7 @@ export const SLIP_MODAL_BODY_CLASS_LARGE =
   'flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden p-0';
 
 export const SLIP_MODAL_LAYOUT_CLASS_LARGE =
-  'items-center justify-center p-3 sm:p-4';
+  'items-center justify-center p-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:p-4';
 
 /** Fits within viewport padding and close button without scrolling */
 export const SLIP_IMAGE_CLASS_LARGE =
@@ -197,7 +197,7 @@ export function PaymentSlipViewer({
         open={expanded}
         onClose={handleClose}
         panelClassName={largeModal ? SLIP_MODAL_PANEL_CLASS_LARGE : SLIP_MODAL_PANEL_CLASS}
-        centerScrollable={!largeModal}
+        centerScrollable
         layoutClassName={largeModal ? SLIP_MODAL_LAYOUT_CLASS_LARGE : undefined}
         aria-label="สลิปชำระเงิน"
       >
