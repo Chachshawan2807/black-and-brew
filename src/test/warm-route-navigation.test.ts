@@ -18,4 +18,21 @@ describe('warmRouteNavigation', () => {
     // No throw chunk preload is fire-and-forget.
     expect(true).toBe(true);
   });
+
+  test('swallows router-not-ready prefetch errors', () => {
+    const prefetch = vi.fn(() => {
+      throw new Error('Internal Next.js error: Router action dispatched before initialization.');
+    });
+
+    expect(() => warmRouteNavigation('/th/bean-orders/order-1', prefetch)).not.toThrow();
+    expect(prefetch).toHaveBeenCalledWith('/th/bean-orders/order-1');
+  });
+
+  test('rethrows unexpected prefetch errors', () => {
+    const prefetch = vi.fn(() => {
+      throw new Error('network failed');
+    });
+
+    expect(() => warmRouteNavigation('/th/bean-orders/order-1', prefetch)).toThrow('network failed');
+  });
 });

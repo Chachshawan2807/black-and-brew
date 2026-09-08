@@ -32,4 +32,16 @@ describe('DataChangeHistorySection module filter', () => {
     expect(sectionSource).not.toContain('ip_address');
     expect(sectionSource).toContain('formatDataChangeHistoryMeta');
   });
+
+  test('loads edit history incrementally instead of expanding all at once', () => {
+    expect(sectionSource).toContain('INITIAL_VISIBLE_COUNT');
+    expect(sectionSource).toContain('LOAD_MORE_COUNT');
+    expect(sectionSource).toContain('visibleCount');
+    expect(sectionSource).not.toContain('showAll');
+    expect(sectionSource).toContain('ดูเพิ่มเติม');
+    expect(sectionSource).not.toContain('ดูรายละเอียด');
+    expect(sectionSource).toMatch(
+      /Math\.min\(count \+ LOAD_MORE_COUNT, rows\.length\)/,
+    );
+  });
 });

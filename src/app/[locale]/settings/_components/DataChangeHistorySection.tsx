@@ -26,7 +26,8 @@ interface DataChangeHistorySectionProps {
   locale: string;
 }
 
-const PREVIEW_COUNT = 3;
+const INITIAL_VISIBLE_COUNT = 3;
+const LOAD_MORE_COUNT = 5;
 
 const MODULE_LABELS: Record<string, { th: string; en: string }> = {
   inventory: { th: "คลังสินค้า", en: "Inventory" },
@@ -116,7 +117,7 @@ export default function DataChangeHistorySection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [moduleFilter, setModuleFilter] = useState<string>("all");
-  const [showAll, setShowAll] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
   const isTh = locale === "th";
   const loadGenRef = useRef(0);
 
@@ -153,8 +154,9 @@ export default function DataChangeHistorySection({
     })),
   ];
 
-  const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);
-  const hasMoreRows = rows.length > PREVIEW_COUNT;
+  const visibleRows = rows.slice(0, visibleCount);
+  const hasMoreRows = visibleCount < rows.length;
+  const canCollapse = visibleCount > INITIAL_VISIBLE_COUNT;
 
   return (
     <div className="space-y-3">
@@ -166,7 +168,7 @@ export default function DataChangeHistorySection({
             aria-pressed={moduleFilter === opt.value}
             onClick={() => {
               setModuleFilter(opt.value);
-              setShowAll(false);
+              setVisibleCount(INITIAL_VISIBLE_COUNT);
             }}
             className={cn(
               moduleFilter === opt.value ? SETTINGS_CHIP_SELECTED : SETTINGS_CHIP_IDLE,
@@ -207,15 +209,31 @@ export default function DataChangeHistorySection({
               <LogEntry key={row.id} row={row} locale={locale} />
             ))}
           </div>
-          {hasMoreRows && (
-            <ExpandMoreButton
-              expanded={showAll}
-              onClick={() => setShowAll((v) => !v)}
-              isTh={isTh}
-              moreLabel={isTh ? "ดูรายละเอียด" : "View details"}
-              lessLabel={isTh ? "ย่อรายการ" : "Show less"}
-              className={SETTINGS_EXPAND_BTN}
-            />
+          {(hasMoreRows || canCollapse) && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              {hasMoreRows ? (
+                <ExpandMoreButton
+                  expanded={false}
+                  onClick={() =>
+                    setVisibleCount((count) =>
+                      Math.min(count + LOAD_MORE_COUNT, rows.length),
+                    )
+                  }
+                  isTh={isTh}
+                  moreLabel={isTh ? "ดูเพิ่มเติม" : "Show more"}
+                  className={SETTINGS_EXPAND_BTN}
+                />
+              ) : null}
+              {canCollapse ? (
+                <ExpandMoreButton
+                  expanded={true}
+                  onClick={() => setVisibleCount(INITIAL_VISIBLE_COUNT)}
+                  isTh={isTh}
+                  lessLabel={isTh ? "ย่อรายการ" : "Show less"}
+                  className={SETTINGS_EXPAND_BTN}
+                />
+              ) : null}
+            </div>
           )}
         </>
       )}
