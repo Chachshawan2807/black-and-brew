@@ -12,18 +12,18 @@ interface SidebarToggleProps {
 
 export function SidebarToggle({ isOpen, setIsOpen }: SidebarToggleProps) {
   return (
-    <div className="invisible lg:visible absolute top-[16px] -right-[16px] z-[9999]">
+    <div className="invisible lg:visible absolute top-1/2 right-0 z-[9999] -translate-y-1/2 translate-x-1/2">
       <HintTooltip tip={isOpen === false ? "ขยายเมนูด้านข้าง" : "ย่อเมนูด้านข้าง"} side="right">
         <Button
           onClick={() => setIsOpen?.()}
-          className="rounded-full w-8 h-8 bg-card border border-border bb-shadow-sm hover:bg-muted dark:hover:bg-muted/80 bb-transition text-foreground"
+          className="rounded-full h-7 w-7 min-h-0 min-w-0 p-0 bg-card border border-border bb-shadow-sm hover:bg-muted dark:hover:bg-muted/80 bb-transition text-foreground"
           variant="ghost"
           size="icon"
           aria-label={isOpen === false ? "ขยายเมนูด้านข้าง" : "ย่อเมนูด้านข้าง"}
         >
           <ChevronLeft
             className={cn(
-              "h-4 w-4 text-foreground bb-transition [transition-property:transform]",
+              "h-3.5 w-3.5 text-foreground bb-transition [transition-property:transform]",
               isOpen === false ? "rotate-180" : "rotate-0"
             )}
             strokeWidth={2}

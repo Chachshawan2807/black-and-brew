@@ -25,7 +25,7 @@ function SidebarLogo({
     <div
       className={cn(
         'relative z-[110] min-w-0 bb-sidebar-logo',
-        sidebarOpen ? 'h-[90px] w-full' : 'h-14 w-14 mx-auto',
+        sidebarOpen ? 'h-[90px] w-full max-w-[calc(100%-0.5rem)]' : 'h-14 w-14 mx-auto',
       )}
     >
       <motion.div
@@ -78,15 +78,15 @@ export function Sidebar() {
           : 'md:w-[280px]'
       )}
     >
-      <SidebarToggle isOpen={sidebarOpen} setIsOpen={setIsOpen} />
       <div className="relative h-full flex flex-col pl-2 pr-3 py-4 overflow-hidden bg-[var(--sidebar-surface)] md:bg-transparent w-full">
         <div
           className={cn(
-            'mb-4 flex items-center transition-[justify-content] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none',
-            sidebarOpen === false ? 'justify-center' : 'justify-between gap-2',
+            'relative mb-4 flex items-center transition-[justify-content] [transition-duration:var(--bb-duration-slow)] [transition-timing-function:var(--bb-ease-out)] motion-reduce:transition-none',
+            sidebarOpen === false ? 'justify-center' : 'justify-start pr-9',
           )}
         >
           <SidebarLogo sidebarOpen={sidebarOpen} reduced={reduced} />
+          <SidebarToggle isOpen={sidebarOpen} setIsOpen={setIsOpen} />
         </div>
         <div className="flex-1 overflow-hidden">
           <Menu isOpen={sidebarOpen} />

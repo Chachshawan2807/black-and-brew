@@ -16,9 +16,10 @@ const SIZE_STYLES: Record<
   { width: string; maxHeight: string; sizes: string; objectPosition?: string }
 > = {
   'sidebar-expanded': {
-    width: '240px',
+    width: '100%',
+    maxWidth: '210px',
     maxHeight: '90px',
-    sizes: '240px',
+    sizes: '210px',
     objectPosition: 'left center',
   },
   'sidebar-icon': {
